@@ -4,7 +4,7 @@
  * Provides actions related to searching tweets, users, and trends.
  */
 
-import { ExtensionAction, Agent, ActionResult } from '../../../types/agent.js';
+import { ExtensionAction, Agent, ActionResult, ActionCategory } from '../../../types/agent.js';
 import { TwitterExtension } from '../index.js';
 import { BaseTwitterSkill } from './base-skill.js';
 import { TwitterActionType, TwitterErrorType } from '../types.js';
@@ -18,9 +18,10 @@ export class SearchSkill extends BaseTwitterSkill {
       [TwitterActionType.SEARCH_TWEETS]: {
         name: TwitterActionType.SEARCH_TWEETS,
         description: 'Search for tweets',
+        category: ActionCategory.OBSERVATION,
         parameters: { 
           query: 'string', 
-          max_results: 'number', 
+          max_results: 'string', 
           next_token: 'string' 
         },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
@@ -31,6 +32,7 @@ export class SearchSkill extends BaseTwitterSkill {
       [TwitterActionType.SEARCH_USERS]: {
         name: TwitterActionType.SEARCH_USERS,
         description: 'Search for users',
+        category: ActionCategory.OBSERVATION,
         parameters: { 
           query: 'string', 
           max_results: 'number', 
@@ -44,6 +46,7 @@ export class SearchSkill extends BaseTwitterSkill {
       [TwitterActionType.SEARCH_TRENDING]: {
         name: TwitterActionType.SEARCH_TRENDING,
         description: 'Get trending topics',
+        category: ActionCategory.OBSERVATION,
         parameters: { 
           woeid: 'number' 
         },

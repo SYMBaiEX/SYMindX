@@ -4,7 +4,7 @@
  * Provides actions related to managing user relationships and profile.
  */
 
-import { ExtensionAction, Agent, ActionResult } from '../../../types/agent.js';
+import { ExtensionAction, Agent, ActionResult, ActionCategory } from '../../../types/agent.js';
 import { TwitterExtension } from '../index.js';
 import { BaseTwitterSkill } from './base-skill.js';
 import { TwitterActionType, TwitterErrorType } from '../types.js';
@@ -18,6 +18,7 @@ export class UserManagementSkill extends BaseTwitterSkill {
       [TwitterActionType.FOLLOW]: {
         name: TwitterActionType.FOLLOW,
         description: 'Follow a user',
+        category: ActionCategory.SOCIAL,
         parameters: { 
           user_id: 'string' 
         },
@@ -29,6 +30,7 @@ export class UserManagementSkill extends BaseTwitterSkill {
       [TwitterActionType.UNFOLLOW]: {
         name: TwitterActionType.UNFOLLOW,
         description: 'Unfollow a user',
+        category: ActionCategory.SOCIAL,
         parameters: { 
           user_id: 'string' 
         },
@@ -40,6 +42,7 @@ export class UserManagementSkill extends BaseTwitterSkill {
       [TwitterActionType.BLOCK]: {
         name: TwitterActionType.BLOCK,
         description: 'Block a user',
+        category: ActionCategory.SOCIAL,
         parameters: { 
           user_id: 'string' 
         },
@@ -51,6 +54,7 @@ export class UserManagementSkill extends BaseTwitterSkill {
       [TwitterActionType.UNBLOCK]: {
         name: TwitterActionType.UNBLOCK,
         description: 'Unblock a user',
+        category: ActionCategory.SOCIAL,
         parameters: { 
           user_id: 'string' 
         },
@@ -62,6 +66,7 @@ export class UserManagementSkill extends BaseTwitterSkill {
       [TwitterActionType.MUTE]: {
         name: TwitterActionType.MUTE,
         description: 'Mute a user',
+        category: ActionCategory.SOCIAL,
         parameters: { 
           user_id: 'string' 
         },
@@ -73,6 +78,7 @@ export class UserManagementSkill extends BaseTwitterSkill {
       [TwitterActionType.UNMUTE]: {
         name: TwitterActionType.UNMUTE,
         description: 'Unmute a user',
+        category: ActionCategory.SOCIAL,
         parameters: { 
           user_id: 'string' 
         },
@@ -84,6 +90,7 @@ export class UserManagementSkill extends BaseTwitterSkill {
       'get_user_info': {
         name: 'get_user_info',
         description: 'Get information about a user',
+        category: ActionCategory.OBSERVATION,
         parameters: { 
           username: 'string', 
           user_id: 'string' 
@@ -96,6 +103,7 @@ export class UserManagementSkill extends BaseTwitterSkill {
       'get_followers': {
         name: 'get_followers',
         description: 'Get followers of a user',
+        category: ActionCategory.OBSERVATION,
         parameters: { 
           user_id: 'string', 
           max_results: 'number', 
@@ -109,6 +117,7 @@ export class UserManagementSkill extends BaseTwitterSkill {
       'get_following': {
         name: 'get_following',
         description: 'Get users that a user is following',
+        category: ActionCategory.OBSERVATION,
         parameters: { 
           user_id: 'string', 
           max_results: 'number', 

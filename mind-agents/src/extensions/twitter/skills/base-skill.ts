@@ -4,7 +4,7 @@
  * Provides the foundation for all Twitter skills.
  */
 
-import { ExtensionAction, Agent, ActionResult } from '../../../types/agent.js';
+import { Agent, ActionResult, ActionResultType, ExtensionAction } from '../../../types/agent.js';
 import { TwitterExtension } from '../index.js';
 import { TwitterActionType, TwitterErrorType } from '../types.js';
 
@@ -40,6 +40,7 @@ export abstract class BaseTwitterSkill implements TwitterSkill {
   protected createErrorResult(error: unknown, errorType: TwitterErrorType = TwitterErrorType.INTERNAL_ERROR): ActionResult {
     return {
       success: false,
+      type: ActionResultType.FAILURE,
       error: `${errorType}: ${error instanceof Error ? error.message : String(error)}`,
       metadata: { 
         timestamp: new Date().toISOString(),
@@ -54,6 +55,7 @@ export abstract class BaseTwitterSkill implements TwitterSkill {
   protected createSuccessResult(data?: any): ActionResult {
     return {
       success: true,
+      type: ActionResultType.SUCCESS,
       result: data,
       metadata: { timestamp: new Date().toISOString() }
     };
