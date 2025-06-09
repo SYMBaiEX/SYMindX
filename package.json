@@ -13,7 +13,8 @@
     "start": "bun run start:agent",
     "start:all": "concurrently \"bun run start:website\" \"bun run start:agent\"",
     "start:website": "cd website && bun run start",
-    "start:agent": "cd mind-agents && bun run start"
+    "start:agent": "cd mind-agents && bun run start",
+    "test": "cd mind-agents && bun test"
   },
   "dependencies": {
     "concurrently": "^9.1.0",

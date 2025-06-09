@@ -158,9 +158,11 @@ bun start        # Agent system only
 
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Commit changes: `git commit -m 'Add amazing feature'`
-4. Push to branch: `git push origin feature/amazing-feature`
-5. Open a Pull Request
+3. Install dependencies with `bun install` (run from the repo root)
+4. Run the test suite with `bun test`
+5. Commit changes: `git commit -m 'Add amazing feature'`
+6. Push to branch: `git push origin feature/amazing-feature`
+7. Open a Pull Request
 
 ## 📄 License
 
