@@ -4,7 +4,7 @@
  * Provides actions related to uploading and managing media.
  */
 
-import { ExtensionAction, Agent, ActionResult } from '../../../types/agent.js';
+import { ExtensionAction, Agent, ActionResult, ActionCategory } from '../../../types/agent.js';
 import { TwitterExtension } from '../index.js';
 import { BaseTwitterSkill } from './base-skill.js';
 import { TwitterActionType, TwitterErrorType, TwitterMediaType } from '../types.js';
@@ -18,6 +18,7 @@ export class MediaSkill extends BaseTwitterSkill {
       [TwitterActionType.UPLOAD_MEDIA]: {
         name: TwitterActionType.UPLOAD_MEDIA,
         description: 'Upload media to Twitter',
+        category: ActionCategory.MANIPULATION,
         parameters: { 
           file_path: 'string', 
           alt_text: 'string', 
@@ -35,6 +36,7 @@ export class MediaSkill extends BaseTwitterSkill {
       [TwitterActionType.DELETE_MEDIA]: {
         name: TwitterActionType.DELETE_MEDIA,
         description: 'Delete uploaded media',
+        category: ActionCategory.MANIPULATION,
         parameters: { 
           media_key: 'string' 
         },

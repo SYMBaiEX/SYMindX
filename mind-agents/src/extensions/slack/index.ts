@@ -214,6 +214,7 @@ export class SlackExtension implements Extension {
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to send message: ${error instanceof Error ? error.message : String(error)}`
       }
     }
@@ -292,6 +293,7 @@ export class SlackExtension implements Extension {
       
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: {
           approvalId,
           messageTs: result.ts,
@@ -301,6 +303,7 @@ export class SlackExtension implements Extension {
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to request approval: ${error instanceof Error ? error.message : String(error)}`
       }
     }
@@ -328,6 +331,7 @@ export class SlackExtension implements Extension {
       
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: {
           channel: result.channel,
           timestamp: result.ts
@@ -336,6 +340,7 @@ export class SlackExtension implements Extension {
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to send status: ${error instanceof Error ? error.message : String(error)}`
       }
     }
@@ -355,6 +360,7 @@ export class SlackExtension implements Extension {
       
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: {
           channel: result.channel,
           timestamp: result.ts,
@@ -364,6 +370,7 @@ export class SlackExtension implements Extension {
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to share thought: ${error instanceof Error ? error.message : String(error)}`
       }
     }
@@ -397,6 +404,7 @@ export class SlackExtension implements Extension {
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to ask question: ${error instanceof Error ? error.message : String(error)}`
       }
     }
@@ -412,11 +420,13 @@ export class SlackExtension implements Extension {
       
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: { channel, timestamp, emoji }
       }
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to react to message: ${error instanceof Error ? error.message : String(error)}`
       }
     }
@@ -425,19 +435,21 @@ export class SlackExtension implements Extension {
   async updateBotStatus(status: string, emoji?: string): Promise<ActionResult> {
     try {
       await this.client.users.profile.set({
-        profile: JSON.stringify({
+        profile: {
           status_text: status,
           status_emoji: emoji || ':robot_face:'
-        })
+        }
       })
       
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: { status, emoji }
       }
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to update status: ${error instanceof Error ? error.message : String(error)}`
       }
     }
@@ -453,6 +465,7 @@ export class SlackExtension implements Extension {
       
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: {
           scheduled_message_id: result.scheduled_message_id,
           channel,
@@ -462,6 +475,7 @@ export class SlackExtension implements Extension {
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to schedule message: ${error instanceof Error ? error.message : String(error)}`
       }
     }
@@ -762,11 +776,13 @@ export class SlackExtension implements Extension {
       await this.client.conversations.archive({ channel })
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: { channel, action: 'archived' }
       }
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to archive channel: ${error instanceof Error ? error.message : String(error)}`
       }
     }
@@ -777,11 +793,13 @@ export class SlackExtension implements Extension {
       await this.client.conversations.unarchive({ channel })
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: { channel, action: 'unarchived' }
       }
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to unarchive channel: ${error instanceof Error ? error.message : String(error)}`
       }
     }
@@ -792,11 +810,13 @@ export class SlackExtension implements Extension {
       await this.client.conversations.setTopic({ channel, topic })
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: { channel, topic }
       }
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to set channel topic: ${error instanceof Error ? error.message : String(error)}`
       }
     }
@@ -807,11 +827,13 @@ export class SlackExtension implements Extension {
       await this.client.conversations.setPurpose({ channel, purpose })
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: { channel, purpose }
       }
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to set channel purpose: ${error instanceof Error ? error.message : String(error)}`
       }
     }
@@ -822,11 +844,13 @@ export class SlackExtension implements Extension {
       const result = await this.client.conversations.info({ channel })
       return {
         success: true,
-        result: result.channel
+        type: ActionResultType.SUCCESS,
+        result: result.channel as any
       }
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to get channel info: ${error instanceof Error ? error.message : String(error)}`
       }
     }
@@ -840,11 +864,13 @@ export class SlackExtension implements Extension {
       })
       return {
         success: true,
-        result: result.channels
+        type: ActionResultType.SUCCESS,
+        result: result.channels as any
       }
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to list channels: ${error instanceof Error ? error.message : String(error)}`
       }
     }
@@ -860,11 +886,13 @@ export class SlackExtension implements Extension {
       })
       return {
         success: true,
-        result: result.file
+        type: ActionResultType.SUCCESS,
+        result: result.file as any
       }
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to upload file: ${error instanceof Error ? error.message : String(error)}`
       }
     }
@@ -890,11 +918,13 @@ export class SlackExtension implements Extension {
       
       return {
         success: true,
-        result: result.file
+        type: ActionResultType.SUCCESS,
+        result: result.file as any
       }
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to share file: ${error instanceof Error ? error.message : String(error)}`
       }
     }
@@ -905,11 +935,13 @@ export class SlackExtension implements Extension {
       const result = await this.client.files.info({ file })
       return {
         success: true,
-        result: result.file
+        type: ActionResultType.SUCCESS,
+        result: result.file as any
       }
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to get file info: ${error instanceof Error ? error.message : String(error)}`
       }
     }
@@ -920,11 +952,13 @@ export class SlackExtension implements Extension {
       await this.client.files.delete({ file })
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: { file, action: 'deleted' }
       }
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to delete file: ${error instanceof Error ? error.message : String(error)}`
       }
     }
@@ -940,11 +974,13 @@ export class SlackExtension implements Extension {
       })
       return {
         success: true,
-        result: result.files
+        type: ActionResultType.SUCCESS,
+        result: result.files as any
       }
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to list files: ${error instanceof Error ? error.message : String(error)}`
       }
     }
@@ -960,11 +996,13 @@ export class SlackExtension implements Extension {
       })
       return {
         success: true,
-        result: result.file
+        type: ActionResultType.SUCCESS,
+        result: result.file as any
       }
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to create snippet: ${error instanceof Error ? error.message : String(error)}`
       }
     }
@@ -993,11 +1031,13 @@ export class SlackExtension implements Extension {
       
       return {
         success: true,
-        result: result.channel
+        type: ActionResultType.SUCCESS,
+        result: result.channel as any
       }
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to create channel: ${error instanceof Error ? error.message : String(error)}`
       }
     }
@@ -1008,11 +1048,13 @@ export class SlackExtension implements Extension {
       const result = await this.client.conversations.join({ channel })
       return {
         success: true,
-        result: result.channel
+        type: ActionResultType.SUCCESS,
+        result: result.channel as any
       }
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to join channel: ${error instanceof Error ? error.message : String(error)}`
       }
     }
@@ -1023,11 +1065,13 @@ export class SlackExtension implements Extension {
       await this.client.conversations.leave({ channel })
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: { channel, action: 'left' }
       }
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to leave channel: ${error instanceof Error ? error.message : String(error)}`
       }
     }
@@ -1042,6 +1086,7 @@ export class SlackExtension implements Extension {
       })
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: {
           channel: result.channel,
           timestamp: result.ts,
@@ -1051,6 +1096,7 @@ export class SlackExtension implements Extension {
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to update message: ${error instanceof Error ? error.message : String(error)}`
       }
     }
@@ -1061,11 +1107,13 @@ export class SlackExtension implements Extension {
       const result = await this.client.reminders.list()
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: result.reminders
       }
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to list reminders: ${error instanceof Error ? error.message : String(error)}`
       }
     }
@@ -1076,11 +1124,13 @@ export class SlackExtension implements Extension {
       await this.client.reminders.delete({ reminder })
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: { reminder, action: 'deleted' }
       }
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to delete reminder: ${error instanceof Error ? error.message : String(error)}`
       }
     }
@@ -1099,6 +1149,7 @@ export class SlackExtension implements Extension {
       
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: {
           name,
           steps,
@@ -1109,6 +1160,7 @@ export class SlackExtension implements Extension {
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to create workflow: ${error instanceof Error ? error.message : String(error)}`
       }
     }
@@ -1132,6 +1184,7 @@ export class SlackExtension implements Extension {
       
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: {
           task,
           assignee,
@@ -1143,6 +1196,7 @@ export class SlackExtension implements Extension {
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to track task: ${error instanceof Error ? error.message : String(error)}`
       }
     }
@@ -1159,6 +1213,7 @@ export class SlackExtension implements Extension {
       
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: {
           user,
           message,
@@ -1168,6 +1223,7 @@ export class SlackExtension implements Extension {
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to send direct message: ${error instanceof Error ? error.message : String(error)}`
       }
     }
@@ -1182,6 +1238,7 @@ export class SlackExtension implements Extension {
       
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: {
           user,
           preferences: this.userPreferences.get(user)
@@ -1190,6 +1247,7 @@ export class SlackExtension implements Extension {
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to set user preferences: ${error instanceof Error ? error.message : String(error)}`
       }
     }
@@ -1201,6 +1259,7 @@ export class SlackExtension implements Extension {
       
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: {
           user,
           preferences
@@ -1209,6 +1268,7 @@ export class SlackExtension implements Extension {
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to get user preferences: ${error instanceof Error ? error.message : String(error)}`
       }
     }
@@ -1222,6 +1282,7 @@ export class SlackExtension implements Extension {
       
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: {
           user,
           presence: result.presence,
@@ -1235,6 +1296,7 @@ export class SlackExtension implements Extension {
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to get user presence: ${error instanceof Error ? error.message : String(error)}`
       }
     }

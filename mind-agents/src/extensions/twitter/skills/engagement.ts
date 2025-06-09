@@ -79,6 +79,7 @@ export class EngagementSkill extends BaseTwitterSkill {
       [TwitterActionType.QUOTE]: {
         name: TwitterActionType.QUOTE,
         description: 'Quote a tweet',
+        category: ActionCategory.SOCIAL,
         parameters: { 
           tweet_id: 'string', 
           text: 'string', 

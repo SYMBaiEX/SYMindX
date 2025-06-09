@@ -111,6 +111,7 @@ export class WorkflowSkill {
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to request approval: ${error instanceof Error ? error.message : String(error)}`,
         metadata: { timestamp: new Date().toISOString() }
       }

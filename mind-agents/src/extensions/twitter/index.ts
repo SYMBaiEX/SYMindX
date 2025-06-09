@@ -7,7 +7,8 @@
  */
 
 import puppeteer, { Browser, Page } from 'puppeteer';
-import { Agent, Extension, ExtensionAction, ExtensionEventHandler, ActionResult, ActionResultType } from '../../types/agent.js';
+import { Agent, Extension, ExtensionAction, ExtensionEventHandler, ActionResult, ActionResultType, ExtensionType, ExtensionStatus } from '../../types/agent.js';
+import { ExtensionConfig } from '../../types/common.js';
 import { initializeSkills, TwitterSkills } from './skills/index.js';
 import { TwitterConfig, TwitterActionType, TwitterErrorType, TwitterMediaType } from './types.js';
 
@@ -18,8 +19,11 @@ export class TwitterExtension implements Extension {
   id: string = 'twitter';
   name: string = 'Twitter';
   version: string = '1.0.0';
+  type: ExtensionType = ExtensionType.SOCIAL_PLATFORM;
   enabled: boolean = false;
-  config: TwitterConfig;
+  status: ExtensionStatus = ExtensionStatus.DISABLED;
+  config: ExtensionConfig;
+  private twitterConfig: TwitterConfig;
   skills: TwitterSkills;
   actions: Record<string, ExtensionAction> = {};
   events: Record<string, ExtensionEventHandler> = {};
@@ -29,7 +33,11 @@ export class TwitterExtension implements Extension {
   private loggedIn: boolean = false;
   
   constructor(config: TwitterConfig) {
-    this.config = config;
+    this.twitterConfig = config;
+    this.config = {
+      enabled: true,
+      settings: config as any
+    };
     
     // Initialize skills
     this.skills = initializeSkills(this);
@@ -55,8 +63,10 @@ export class TwitterExtension implements Extension {
       await this.login();
       
       this.enabled = true;
+      this.status = ExtensionStatus.ENABLED;
       console.log(`✅ Twitter extension initialized for ${agent.name}`);
     } catch (error) {
+      this.status = ExtensionStatus.ERROR;
       console.error(`❌ Failed to initialize Twitter extension: ${error}`);
       this.enabled = false;
       throw error;
@@ -407,6 +417,7 @@ export class TwitterExtension implements Extension {
     // Implementation would use Puppeteer to get followers
     return {
       success: true,
+      type: ActionResultType.SUCCESS,
       result: { userId, users: [], count: maxResults, nextToken, timestamp: new Date().toISOString() },
       metadata: { timestamp: new Date().toISOString() }
     };
@@ -416,6 +427,7 @@ export class TwitterExtension implements Extension {
     // Implementation would use Puppeteer to get users that a user is following
     return {
       success: true,
+      type: ActionResultType.SUCCESS,
       result: { userId, users: [], count: maxResults, nextToken, timestamp: new Date().toISOString() },
       metadata: { timestamp: new Date().toISOString() }
     };
@@ -530,7 +542,7 @@ export class TwitterExtension implements Extension {
   private async initBrowser(): Promise<void> {
     try {
       this.browser = await puppeteer.launch({
-        headless: this.config.headless ?? false,
+        headless: this.twitterConfig.headless ?? false,
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
@@ -570,14 +582,14 @@ export class TwitterExtension implements Extension {
       
       // Wait for username input and enter username
       await this.page.waitForSelector('input[name="text"]', { timeout: 10000 });
-      await this.page.type('input[name="text"]', this.config.username, { delay: 100 });
+      await this.page.type('input[name="text"]', this.twitterConfig.username, { delay: 100 });
       
       // Click Next button
       await this.page.click('[role="button"]:has-text("Next")');
       
       // Wait for password input and enter password
       await this.page.waitForSelector('input[name="password"]', { timeout: 10000 });
-      await this.page.type('input[name="password"]', this.config.password, { delay: 100 });
+      await this.page.type('input[name="password"]', this.twitterConfig.password, { delay: 100 });
       
       // Click Log in button
       await this.page.click('[data-testid="LoginForm_Login_Button"]');
@@ -589,7 +601,7 @@ export class TwitterExtension implements Extension {
       await this.page.waitForSelector('[data-testid="primaryColumn"]', { timeout: 10000 });
       
       this.loggedIn = true;
-      console.log(`✅ Successfully logged in to Twitter as ${this.config.username}`);
+      console.log(`✅ Successfully logged in to Twitter as ${this.twitterConfig.username}`);
     } catch (error) {
       console.error('❌ Failed to log in to Twitter:', error);
       this.loggedIn = false;
