@@ -255,7 +255,7 @@ export class ServerManagementSkill {
         success: true,
         result: {
           message: 'Server configuration updated successfully',
-          config: { ...this.extension.config } as GenericData,
+          config: { ...this.extension.config } as any,
           restarted: wasRunning
         }
       }

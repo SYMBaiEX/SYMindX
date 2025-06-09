@@ -438,6 +438,38 @@ export class McpExtension implements Extension {
     }
   }
 
+  getAvailableTools(): any[] {
+    return this.config.tools || []
+  }
+
+  validateToolParameters(toolName: string, parameters: any): { valid: boolean; errors?: string[] } {
+    const tool = this.config.tools.find(t => t.name === toolName)
+    if (!tool) {
+      return { valid: false, errors: [`Tool '${toolName}' not found`] }
+    }
+    // Basic validation - can be enhanced
+    return { valid: true }
+  }
+
+  async executeTool(toolName: string, parameters: any): Promise<any> {
+    const handler = this.toolHandlers.get(toolName)
+    if (!handler) {
+      return { success: false, error: `No handler found for tool: ${toolName}` }
+    }
+    
+    try {
+      const context = this.createContext()
+      const result = await handler(context, parameters)
+      return { success: true, result }
+    } catch (error: any) {
+      return { success: false, error: error.message }
+    }
+  }
+
+  logToolExecution(data: any): void {
+    console.log('🔧 Tool execution:', data)
+  }
+
   getServerStats(): any {
     return {
       toolsRegistered: this.config.tools.length,

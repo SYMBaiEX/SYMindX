@@ -10,7 +10,7 @@ import { EngagementSkill } from './engagement.js';
 import { SearchSkill } from './search.js';
 import { MediaSkill } from './media.js';
 import { UserManagementSkill } from './user-management.js';
-import { TwitterSkill } from './base-skill.js';
+import { TwitterSkill, BaseTwitterSkill } from './base-skill.js';
 import { TwitterExtension } from '../index.js';
 
 export {
@@ -19,7 +19,8 @@ export {
   SearchSkill,
   MediaSkill,
   UserManagementSkill,
-  TwitterSkill
+  TwitterSkill,
+  BaseTwitterSkill
 };
 
 /**

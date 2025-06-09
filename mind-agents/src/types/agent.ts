@@ -288,7 +288,8 @@ export enum ActionCategory {
   MANIPULATION = 'manipulation',
   SOCIAL = 'social',
   COGNITIVE = 'cognitive',
-  SYSTEM = 'system'
+  SYSTEM = 'system',
+  COMBAT = 'combat'
 }
 
 export interface ExtensionAction {

@@ -9,7 +9,13 @@ export class RuneLiteExtension implements Extension {
   name = 'RuneLite Integration'
   version = '1.0.0'
   enabled = true
-  config: RuneLiteConfig
+  config: RuneLiteConfig = {
+    host: 'localhost',
+    port: 8080,
+    autoConnect: true,
+    reconnectInterval: 5000,
+    maxReconnectAttempts: 10
+  }
   
   private ws?: WebSocket
   private eventEmitter = new EventEmitter()

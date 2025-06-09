@@ -1,4 +1,5 @@
 import { Extension, ExtensionAction, ExtensionEventHandler, Agent, ActionResult, ActionResultType, AgentEvent } from '../../types/agent.js'
+import { GenericData } from '../../types/common.js'
 import { App, SlackEventMiddlewareArgs, AllMiddlewareArgs } from '@slack/bolt'
 import { WebClient } from '@slack/web-api'
 import { 
@@ -20,7 +21,16 @@ export class SlackExtension implements Extension {
   name = 'Slack Integration'
   version = '1.0.0'
   enabled = true
-  config: SlackConfig
+  config: SlackConfig = {
+    enabled: true,
+    settings: {
+      botToken: process.env.SLACK_BOT_TOKEN || '',
+      signingSecret: process.env.SLACK_SIGNING_SECRET || '',
+      appToken: process.env.SLACK_APP_TOKEN || '',
+      socketMode: true,
+      port: 3000
+    }
+  }
   
   private app: App
   private client: WebClient
@@ -40,14 +50,14 @@ export class SlackExtension implements Extension {
     }
     
     this.app = new App({
-      token: this.config.botToken,
-      signingSecret: this.config.signingSecret,
-      socketMode: this.config.socketMode || false,
-      appToken: this.config.appToken,
-      port: this.config.port
+      token: this.config.settings.botToken,
+      signingSecret: this.config.settings.signingSecret,
+      socketMode: this.config.settings.socketMode || false,
+      appToken: this.config.settings.appToken,
+      port: this.config.settings.port
     })
     
-    this.client = new WebClient(this.config.botToken)
+    this.client = new WebClient(this.config.settings.botToken)
   }
 
   async init(agent: Agent): Promise<void> {
@@ -60,7 +70,7 @@ export class SlackExtension implements Extension {
       // Initialize skills
       this.skills = initializeSkills(this)
       
-      console.log(`✅ Slack extension initialized for ${agent.name} on port ${this.config.port}`)
+      console.log(`✅ Slack extension initialized for ${agent.name} on port ${this.config.settings.port}`)
     } catch (error) {
       console.error(`❌ Failed to initialize Slack extension:`, error)
       throw error
@@ -72,7 +82,7 @@ export class SlackExtension implements Extension {
     await this.processApprovalTimeouts()
     
     // Send periodic status updates if configured
-    if (this.config.statusUpdates?.enabled) {
+    if (this.config.settings.statusUpdates?.enabled) {
       await this.sendStatusUpdate(agent)
     }
   }
@@ -187,7 +197,7 @@ export class SlackExtension implements Extension {
   async sendMessage(agent: Agent, channel: string, message: string, thread_ts?: string): Promise<ActionResult> {
     try {
       // Truncate message if too long
-      const maxLength = this.config.maxMessageLength || 2000
+      const maxLength = this.config.settings.maxMessageLength || 2000
       const truncatedMessage = message.length > maxLength 
         ? message.substring(0, maxLength - 3) + '...'
         : message
@@ -205,6 +215,7 @@ export class SlackExtension implements Extension {
       
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: {
           channel: result.channel,
           timestamp: result.ts,
@@ -223,7 +234,7 @@ export class SlackExtension implements Extension {
   async requestApproval(agent: Agent, action: any, channel: string, timeout?: number): Promise<ActionResult> {
     try {
       const approvalId = `approval_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-      const timeoutMs = timeout || this.config.approvalTimeout || 30000
+      const timeoutMs = timeout || this.config.settings.approvalTimeout || 30000
       
       const blocks: MessageBlock[] = [
         {
@@ -759,15 +770,15 @@ export class SlackExtension implements Extension {
   }
 
   private async sendStatusUpdate(agent: Agent): Promise<void> {
-    if (!this.config.statusUpdates?.channel) return
+    if (!this.config.settings.statusUpdates?.channel) return
     
     const now = new Date()
-    const lastUpdate = this.config.statusUpdates.lastSent || new Date(0)
-    const interval = this.config.statusUpdates.interval || 3600000 // 1 hour
+    const lastUpdate = this.config.settings.statusUpdates.lastSent || new Date(0)
+    const interval = this.config.settings.statusUpdates.interval || 3600000 // 1 hour
     
-    if (now.getTime() - lastUpdate.getTime() > interval) {
-      await this.sendAgentStatus(agent, this.config.statusUpdates.channel, true)
-      this.config.statusUpdates.lastSent = now
+    if (now.getTime() - lastUpdate.getTime() >= interval) {
+      await this.sendAgentStatus(agent, this.config.settings.statusUpdates.channel, true)
+      this.config.settings.statusUpdates.lastSent = now
     }
   }
 
@@ -1108,7 +1119,7 @@ export class SlackExtension implements Extension {
       return {
         success: true,
         type: ActionResultType.SUCCESS,
-        result: result.reminders
+        result: { reminders: result.reminders } as GenericData
       }
     } catch (error) {
       return {
@@ -1242,7 +1253,7 @@ export class SlackExtension implements Extension {
         result: {
           user,
           preferences: this.userPreferences.get(user)
-        }
+        } as GenericData
       }
     } catch (error) {
       return {
@@ -1365,7 +1376,7 @@ export class SlackExtension implements Extension {
           channel,
           members: result.members,
           response_metadata: result.response_metadata
-        }
+        } as GenericData
       }
     } catch (error) {
       return {
@@ -1411,7 +1422,7 @@ export class SlackExtension implements Extension {
         success: true,
         type: ActionResultType.SUCCESS,
         result: {
-          user: result.user
+          user: result.user as GenericData
         }
       }
     } catch (error) {
@@ -1441,7 +1452,7 @@ export class SlackExtension implements Extension {
       // Download the file
       const response = await fetch(fileInfo.file.url_private_download, {
         headers: {
-          'Authorization': `Bearer ${this.config.botToken}`
+          'Authorization': `Bearer ${this.config.settings.botToken}`
         }
       })
       
@@ -1534,14 +1545,13 @@ export class SlackExtension implements Extension {
       const result = await this.client.reminders.add({
         text,
         time,
-        user,
-        channel
+        user
       })
       
       return {
         success: true,
         type: ActionResultType.SUCCESS,
-        result: result.reminder
+        result: result.reminder as GenericData
       }
     } catch (error) {
       return {

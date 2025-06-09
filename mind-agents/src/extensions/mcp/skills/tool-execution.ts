@@ -4,9 +4,8 @@
  * Handles execution of MCP tools and tool management operations.
  */
 
-import { Agent, ExtensionAction } from '../../../types/agent.js'
+import { Agent, ExtensionAction, ActionResult, ActionResultType, ActionCategory } from '../../../types/agent.js'
 import { McpExtension } from '../index.js'
-import { ActionResult } from '../../../types/common.js'
 
 export class ToolExecutionSkill {
   private extension: McpExtension
@@ -23,6 +22,7 @@ export class ToolExecutionSkill {
       execute_mcp_tool: {
         name: 'execute_mcp_tool',
         description: 'Execute a specific MCP tool with parameters',
+        category: ActionCategory.SYSTEM,
         parameters: {
           toolName: {
             type: 'string',
@@ -40,6 +40,7 @@ export class ToolExecutionSkill {
       list_available_tools: {
         name: 'list_available_tools',
         description: 'List all available MCP tools',
+        category: ActionCategory.SYSTEM,
         parameters: {
           category: {
             type: 'string',
@@ -52,6 +53,7 @@ export class ToolExecutionSkill {
       get_tool_info: {
         name: 'get_tool_info',
         description: 'Get detailed information about a specific tool',
+        category: ActionCategory.SYSTEM,
         parameters: {
           toolName: {
             type: 'string',
@@ -64,6 +66,7 @@ export class ToolExecutionSkill {
       validate_tool_parameters: {
         name: 'validate_tool_parameters',
         description: 'Validate parameters for a tool before execution',
+        category: ActionCategory.SYSTEM,
         parameters: {
           toolName: {
             type: 'string',
@@ -81,6 +84,7 @@ export class ToolExecutionSkill {
       get_tool_execution_history: {
         name: 'get_tool_execution_history',
         description: 'Get execution history for tools',
+        category: ActionCategory.SYSTEM,
         parameters: {
           toolName: {
             type: 'string',
@@ -98,6 +102,7 @@ export class ToolExecutionSkill {
       register_custom_tool: {
         name: 'register_custom_tool',
         description: 'Register a custom tool with the MCP server',
+        category: ActionCategory.SYSTEM,
         parameters: {
           toolDefinition: {
             type: 'object',
@@ -110,6 +115,7 @@ export class ToolExecutionSkill {
       unregister_tool: {
         name: 'unregister_tool',
         description: 'Unregister a tool from the MCP server',
+        category: ActionCategory.SYSTEM,
         parameters: {
           toolName: {
             type: 'string',
@@ -132,14 +138,16 @@ export class ToolExecutionSkill {
       if (!toolName) {
         return {
           success: false,
-          error: 'Tool name is required'
+          error: 'Tool name is required',
+          type: ActionResultType.FAILURE
         }
       }
 
       if (!this.extension.isServerRunning()) {
         return {
           success: false,
-          error: 'MCP server is not running'
+          error: 'MCP server is not running',
+          type: ActionResultType.FAILURE
         }
       }
 
@@ -150,7 +158,8 @@ export class ToolExecutionSkill {
       if (!tool) {
         return {
           success: false,
-          error: `Tool '${toolName}' not found. Available tools: ${availableTools.map(t => t.name).join(', ')}`
+          error: `Tool '${toolName}' not found. Available tools: ${availableTools.map(t => t.name).join(', ')}`,
+          type: ActionResultType.FAILURE
         }
       }
 
@@ -159,7 +168,8 @@ export class ToolExecutionSkill {
       if (!validation.valid) {
         return {
           success: false,
-          error: `Invalid parameters: ${validation.errors?.join(', ')}`
+          error: `Invalid parameters: ${validation.errors?.join(', ')}`,
+          type: ActionResultType.FAILURE
         }
       }
 
@@ -188,12 +198,14 @@ export class ToolExecutionSkill {
             timestamp: new Date().toISOString(),
             parametersUsed: parameters
           }
-        }
+        },
+        type: ActionResultType.SUCCESS
       }
     } catch (error) {
       return {
         success: false,
-        error: `Tool execution failed: ${error}`
+        error: `Tool execution failed: ${error}`,
+        type: ActionResultType.FAILURE
       }
     }
   }
@@ -206,7 +218,8 @@ export class ToolExecutionSkill {
       if (!this.extension.isServerRunning()) {
         return {
           success: false,
-          error: 'MCP server is not running'
+          error: 'MCP server is not running',
+          type: ActionResultType.FAILURE
         }
       }
 
@@ -215,7 +228,7 @@ export class ToolExecutionSkill {
       
       let filteredTools = tools
       if (category) {
-        filteredTools = tools.filter(tool => 
+        filteredTools = tools.filter((tool: any) => 
           tool.category === category || 
           tool.tags?.includes(category)
         )
@@ -224,7 +237,7 @@ export class ToolExecutionSkill {
       return {
         success: true,
         result: {
-          tools: filteredTools.map(tool => ({
+          tools: filteredTools.map((tool: any) => ({
             name: tool.name,
             description: tool.description,
             category: tool.category || 'general',
@@ -254,14 +267,16 @@ export class ToolExecutionSkill {
       if (!toolName) {
         return {
           success: false,
-          error: 'Tool name is required'
+          error: 'Tool name is required',
+          type: ActionResultType.FAILURE
         }
       }
 
       if (!this.extension.isServerRunning()) {
         return {
           success: false,
-          error: 'MCP server is not running'
+          error: 'MCP server is not running',
+          type: ActionResultType.FAILURE
         }
       }
 
@@ -440,7 +455,8 @@ export class ToolExecutionSkill {
       if (!toolName) {
         return {
           success: false,
-          error: 'Tool name is required'
+          error: 'Tool name is required',
+          type: ActionResultType.FAILURE
         }
       }
 

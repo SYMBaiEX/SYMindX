@@ -185,7 +185,7 @@ export class SYMindXDynamicToolSystem implements DynamicToolSystem {
       timeout: this.config.sandbox.timeoutMs
     }
 
-    const result = await this.codeExecution.execute(context.code, context.language, context)
+    const result = await this.codeExecution.execute(context.code, context.language, context as any)
     
     if (!result.success) {
       throw new Error(result.error || 'Code execution failed')

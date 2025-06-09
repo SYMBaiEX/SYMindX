@@ -1,18 +1,21 @@
 export interface SlackConfig {
-  botToken: string
-  signingSecret: string
-  appToken?: string
-  socketMode?: boolean
-  port?: number
-  approvalTimeout?: number
-  maxMessageLength?: number
-  allowedChannels?: string[]
-  adminUsers?: string[]
-  statusUpdates?: {
-    enabled: boolean
-    channel: string
-    interval: number
-    lastSent?: Date
+  enabled: boolean
+  settings: {
+    botToken: string
+    signingSecret: string
+    appToken?: string
+    socketMode?: boolean
+    port?: number
+    approvalTimeout?: number
+    maxMessageLength?: number
+    allowedChannels?: string[]
+    adminUsers?: string[]
+    statusUpdates?: {
+      enabled: boolean
+      channel: string
+      interval: number
+      lastSent?: Date
+    }
   }
 }
 

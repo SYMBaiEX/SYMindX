@@ -4,7 +4,7 @@
  * Provides actions related to workflows, approvals, and status updates in Slack.
  */
 
-import { ExtensionAction, Agent, ActionResult, ActionCategory } from '../../../types/agent.js'
+import { ExtensionAction, Agent, ActionResult, ActionCategory, ActionResultType } from '../../../types/agent.js'
 import { SlackExtension } from '../index.js'
 
 export class WorkflowSkill {
