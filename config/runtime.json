@@ -1,0 +1,25 @@
+{
+  "tickInterval": 1000,
+  "maxAgents": 10,
+  "logLevel": "info",
+  "persistence": {
+    "enabled": true,
+    "path": "./data"
+  },
+  "extensions": {
+    "autoLoad": true,
+    "paths": ["./extensions"]
+  },
+  "portals": {
+    "autoLoad": true,
+    "paths": ["./portals"],
+    "apiKeys": {
+      "openai": "",
+      "anthropic": "",
+      "groq": "",
+      "xai": "",
+      "openrouter": "",
+      "kluster.ai": ""
+    }
+  }
+}
