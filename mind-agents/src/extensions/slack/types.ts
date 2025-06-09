@@ -1,22 +1,25 @@
-export interface SlackConfig {
-  enabled: boolean
-  settings: {
-    botToken: string
-    signingSecret: string
-    appToken?: string
-    socketMode?: boolean
-    port?: number
-    approvalTimeout?: number
-    maxMessageLength?: number
-    allowedChannels?: string[]
-    adminUsers?: string[]
-    statusUpdates?: {
-      enabled: boolean
-      channel: string
-      interval: number
-      lastSent?: Date
-    }
+import { ExtensionConfig, BaseConfig } from '../../types/common.js'
+
+export interface SlackSettings extends BaseConfig {
+  botToken: string
+  signingSecret: string
+  appToken?: string
+  socketMode?: boolean
+  port?: number
+  approvalTimeout?: number
+  maxMessageLength?: number
+  allowedChannels?: string[]
+  adminUsers?: string[]
+  statusUpdates?: {
+    enabled: boolean
+    channel: string
+    interval: number
+    lastSent?: string
   }
+}
+
+export interface SlackConfig extends ExtensionConfig {
+  settings: SlackSettings
 }
 
 export interface PendingApproval {

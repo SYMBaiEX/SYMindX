@@ -1,4 +1,4 @@
-import { Extension, ExtensionAction, ExtensionEventHandler, Agent, ActionResult, ActionResultType, AgentEvent } from '../../types/agent.js'
+import { Extension, ExtensionAction, ExtensionEventHandler, Agent, ActionResult, ActionResultType, AgentEvent, ExtensionType, ExtensionStatus } from '../../types/agent.js'
 import { GenericData } from '../../types/common.js'
 import { App, SlackEventMiddlewareArgs, AllMiddlewareArgs } from '@slack/bolt'
 import { WebClient } from '@slack/web-api'
@@ -21,6 +21,8 @@ export class SlackExtension implements Extension {
   name = 'Slack Integration'
   version = '1.0.0'
   enabled = true
+  type = ExtensionType.COMMUNICATION
+  status = ExtensionStatus.DISABLED
   config: SlackConfig = {
     enabled: true,
     settings: {
@@ -41,12 +43,12 @@ export class SlackExtension implements Extension {
 
   constructor(config: SlackConfig) {
     this.config = {
-      port: 3001,
-      approvalTimeout: 300000, // 5 minutes
-      maxMessageLength: 2000,
-      allowedChannels: [],
-      adminUsers: [],
-      ...config
+      ...config,
+      settings: {
+        ...config.settings,
+        allowedChannels: config.settings?.allowedChannels || [],
+        adminUsers: config.settings?.adminUsers || []
+      }
     }
     
     this.app = new App({
@@ -137,11 +139,11 @@ export class SlackExtension implements Extension {
         type: 'message_received',
         source: 'slack',
         data: {
-          user: message.user,
-          channel: message.channel,
-          text: message.text,
-          timestamp: message.ts,
-          thread_ts: message.thread_ts
+          user: (message as any).user,
+          channel: (message as any).channel,
+          text: (message as any).text,
+          timestamp: (message as any).ts,
+          thread_ts: (message as any).thread_ts
         },
         timestamp: new Date(),
         processed: false
@@ -736,7 +738,7 @@ export class SlackExtension implements Extension {
   private async processApprovalTimeouts(): Promise<void> {
     const now = new Date()
     
-    for (const [id, approval] of this.approvalQueue.entries()) {
+    for (const [id, approval] of Array.from(this.approvalQueue.entries())) {
       if (approval.status === 'pending' && 
           now.getTime() - approval.requestedAt.getTime() > approval.timeout) {
         await this.handleApprovalTimeout(id)
@@ -773,12 +775,12 @@ export class SlackExtension implements Extension {
     if (!this.config.settings.statusUpdates?.channel) return
     
     const now = new Date()
-    const lastUpdate = this.config.settings.statusUpdates.lastSent || new Date(0)
+    const lastUpdate = this.config.settings.statusUpdates.lastSent ? new Date(this.config.settings.statusUpdates.lastSent) : new Date(0)
     const interval = this.config.settings.statusUpdates.interval || 3600000 // 1 hour
     
     if (now.getTime() - lastUpdate.getTime() >= interval) {
       await this.sendAgentStatus(agent, this.config.settings.statusUpdates.channel, true)
-      this.config.settings.statusUpdates.lastSent = now
+      this.config.settings.statusUpdates.lastSent = now.toISOString()
     }
   }
 
@@ -1119,7 +1121,7 @@ export class SlackExtension implements Extension {
       return {
         success: true,
         type: ActionResultType.SUCCESS,
-        result: { reminders: result.reminders } as GenericData
+        result: { reminders: result.reminders ? JSON.parse(JSON.stringify(result.reminders)) : [] } as GenericData
       }
     } catch (error) {
       return {
@@ -1252,7 +1254,7 @@ export class SlackExtension implements Extension {
         type: ActionResultType.SUCCESS,
         result: {
           user,
-          preferences: this.userPreferences.get(user)
+          preferences: this.userPreferences.get(user) ? JSON.parse(JSON.stringify(this.userPreferences.get(user))) : null
         } as GenericData
       }
     } catch (error) {
@@ -1375,7 +1377,7 @@ export class SlackExtension implements Extension {
         result: {
           channel,
           members: result.members,
-          response_metadata: result.response_metadata
+          response_metadata: result.response_metadata ? JSON.parse(JSON.stringify(result.response_metadata)) : null
         } as GenericData
       }
     } catch (error) {

@@ -128,6 +128,7 @@ export class WorkflowSkill {
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to send status: ${error instanceof Error ? error.message : String(error)}`,
         metadata: { timestamp: new Date().toISOString() }
       }
@@ -144,6 +145,7 @@ export class WorkflowSkill {
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to create poll: ${error instanceof Error ? error.message : String(error)}`,
         metadata: { timestamp: new Date().toISOString() }
       }
@@ -160,6 +162,7 @@ export class WorkflowSkill {
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to create reminder: ${error instanceof Error ? error.message : String(error)}`,
         metadata: { timestamp: new Date().toISOString() }
       }
@@ -176,6 +179,7 @@ export class WorkflowSkill {
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to list reminders: ${error instanceof Error ? error.message : String(error)}`,
         metadata: { timestamp: new Date().toISOString() }
       }
@@ -192,6 +196,7 @@ export class WorkflowSkill {
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to delete reminder: ${error instanceof Error ? error.message : String(error)}`,
         metadata: { timestamp: new Date().toISOString() }
       }
@@ -208,6 +213,7 @@ export class WorkflowSkill {
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to create workflow: ${error instanceof Error ? error.message : String(error)}`,
         metadata: { timestamp: new Date().toISOString() }
       }
@@ -224,6 +230,7 @@ export class WorkflowSkill {
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to track task: ${error instanceof Error ? error.message : String(error)}`,
         metadata: { timestamp: new Date().toISOString() }
       }
