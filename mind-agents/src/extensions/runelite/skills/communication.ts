@@ -4,7 +4,7 @@
  * Provides actions related to chat and messaging in the game world.
  */
 
-import { ExtensionAction, Agent, ActionResult } from '../../../types/agent.js'
+import { ExtensionAction, Agent, ActionResult, ActionCategory, ActionResultType } from '../../../types/agent.js'
 import { RuneLiteExtension } from '../index.js'
 
 export class CommunicationSkill {
@@ -22,6 +22,7 @@ export class CommunicationSkill {
       send_message: {
         name: 'send_message',
         description: 'Send a message in chat',
+        category: ActionCategory.COMMUNICATION,
         parameters: { message: 'string', channel: 'string' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.sendMessage(params.message, params.channel)
@@ -31,6 +32,7 @@ export class CommunicationSkill {
       private_message: {
         name: 'private_message',
         description: 'Send a private message to a player',
+        category: ActionCategory.COMMUNICATION,
         parameters: { message: 'string', playerName: 'string' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.privateMessage(params.message, params.playerName)
@@ -40,6 +42,7 @@ export class CommunicationSkill {
       clan_message: {
         name: 'clan_message',
         description: 'Send a message to clan chat',
+        category: ActionCategory.COMMUNICATION,
         parameters: { message: 'string' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.clanMessage(params.message)
@@ -56,6 +59,7 @@ export class CommunicationSkill {
       if (!this.extension.isConnected()) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: 'Not connected to RuneLite',
           metadata: { timestamp: new Date().toISOString() }
         }
@@ -69,12 +73,14 @@ export class CommunicationSkill {
 
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: { message, channel },
         metadata: { timestamp: new Date().toISOString() }
       }
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to send message: ${error}`,
         metadata: { timestamp: new Date().toISOString() }
       }
@@ -89,6 +95,7 @@ export class CommunicationSkill {
       if (!this.extension.isConnected()) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: 'Not connected to RuneLite',
           metadata: { timestamp: new Date().toISOString() }
         }
@@ -103,12 +110,14 @@ export class CommunicationSkill {
 
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: { message, playerName },
         metadata: { timestamp: new Date().toISOString() }
       }
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to send private message: ${error}`,
         metadata: { timestamp: new Date().toISOString() }
       }
@@ -123,6 +132,7 @@ export class CommunicationSkill {
       if (!this.extension.isConnected()) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: 'Not connected to RuneLite',
           metadata: { timestamp: new Date().toISOString() }
         }
@@ -136,12 +146,14 @@ export class CommunicationSkill {
 
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: { message },
         metadata: { timestamp: new Date().toISOString() }
       }
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to send clan message: ${error}`,
         metadata: { timestamp: new Date().toISOString() }
       }

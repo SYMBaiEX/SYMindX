@@ -590,10 +590,10 @@ export class PromptManagementSkill {
           total: history.length,
           summary: {
             totalExecutions: history.length,
-            successfulExecutions: history.filter(e => e.success).length,
-            failedExecutions: history.filter(e => !e.success).length,
+            successfulExecutions: history.filter((e: any) => e.success).length,
+            failedExecutions: history.filter((e: any) => !e.success).length,
             averageExecutionTime: history.length > 0
-              ? history.reduce((sum, e) => sum + e.executionTime, 0) / history.length
+              ? history.reduce((sum: any, e: any) => sum + e.executionTime, 0) / history.length
               : 0
           }
         }

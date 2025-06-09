@@ -4,7 +4,7 @@
  * Provides actions related to querying and interacting with the game state.
  */
 
-import { ExtensionAction, Agent, ActionResult } from '../../../types/agent.js'
+import { ExtensionAction, Agent, ActionResult, ActionResultType, ActionCategory } from '../../../types/agent.js'
 import { RuneLiteExtension } from '../index.js'
 import { GameState } from '../types.js'
 
@@ -23,6 +23,7 @@ export class GameStateSkill {
       get_game_state: {
         name: 'get_game_state',
         description: 'Get the current game state',
+        category: ActionCategory.OBSERVATION,
         parameters: {},
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.getGameState()
@@ -32,6 +33,7 @@ export class GameStateSkill {
       get_player_stats: {
         name: 'get_player_stats',
         description: 'Get the player\'s current stats',
+        category: ActionCategory.OBSERVATION,
         parameters: {},
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.getPlayerStats()
@@ -41,6 +43,7 @@ export class GameStateSkill {
       get_nearby_npcs: {
         name: 'get_nearby_npcs',
         description: 'Get information about nearby NPCs',
+        category: ActionCategory.OBSERVATION,
         parameters: { radius: 'number' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.getNearbyNPCs(params.radius)
@@ -50,6 +53,7 @@ export class GameStateSkill {
       get_nearby_players: {
         name: 'get_nearby_players',
         description: 'Get information about nearby players',
+        category: ActionCategory.OBSERVATION,
         parameters: { radius: 'number' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.getNearbyPlayers(params.radius)
@@ -59,6 +63,7 @@ export class GameStateSkill {
       get_nearby_objects: {
         name: 'get_nearby_objects',
         description: 'Get information about nearby game objects',
+        category: ActionCategory.OBSERVATION,
         parameters: { radius: 'number' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.getNearbyObjects(params.radius)
@@ -68,6 +73,7 @@ export class GameStateSkill {
       get_ground_items: {
         name: 'get_ground_items',
         description: 'Get information about items on the ground',
+        category: ActionCategory.OBSERVATION,
         parameters: { radius: 'number' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.getGroundItems(params.radius)
@@ -77,6 +83,7 @@ export class GameStateSkill {
       get_quest_status: {
         name: 'get_quest_status',
         description: 'Get the status of quests',
+        category: ActionCategory.OBSERVATION,
         parameters: { questName: 'string' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.getQuestStatus(params.questName)
@@ -93,6 +100,7 @@ export class GameStateSkill {
       if (!this.extension.isConnected()) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: 'Not connected to RuneLite',
           metadata: { timestamp: new Date().toISOString() }
         }
@@ -103,12 +111,14 @@ export class GameStateSkill {
 
       return {
         success: true,
-        result: gameState,
+        type: ActionResultType.SUCCESS,
+        result: gameState as any,
         metadata: { timestamp: new Date().toISOString() }
       }
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to get game state: ${error}`,
         metadata: { timestamp: new Date().toISOString() }
       }
@@ -123,6 +133,7 @@ export class GameStateSkill {
       if (!this.extension.isConnected()) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: 'Not connected to RuneLite',
           metadata: { timestamp: new Date().toISOString() }
         }
@@ -134,12 +145,14 @@ export class GameStateSkill {
 
       return {
         success: true,
-        result: playerStats,
+        type: ActionResultType.SUCCESS,
+        result: playerStats as any,
         metadata: { timestamp: new Date().toISOString() }
       }
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to get player stats: ${error}`,
         metadata: { timestamp: new Date().toISOString() }
       }
@@ -154,6 +167,7 @@ export class GameStateSkill {
       if (!this.extension.isConnected()) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: 'Not connected to RuneLite',
           metadata: { timestamp: new Date().toISOString() }
         }
@@ -171,12 +185,14 @@ export class GameStateSkill {
 
       return {
         success: true,
-        result: nearbyNPCs,
+        type: ActionResultType.SUCCESS,
+        result: nearbyNPCs as any,
         metadata: { timestamp: new Date().toISOString() }
       }
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to get nearby NPCs: ${error}`,
         metadata: { timestamp: new Date().toISOString() }
       }
@@ -191,6 +207,7 @@ export class GameStateSkill {
       if (!this.extension.isConnected()) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: 'Not connected to RuneLite',
           metadata: { timestamp: new Date().toISOString() }
         }
@@ -208,12 +225,14 @@ export class GameStateSkill {
 
       return {
         success: true,
-        result: nearbyPlayers,
+        type: ActionResultType.SUCCESS,
+        result: nearbyPlayers as any,
         metadata: { timestamp: new Date().toISOString() }
       }
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to get nearby players: ${error}`,
         metadata: { timestamp: new Date().toISOString() }
       }
@@ -228,6 +247,7 @@ export class GameStateSkill {
       if (!this.extension.isConnected()) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: 'Not connected to RuneLite',
           metadata: { timestamp: new Date().toISOString() }
         }
@@ -245,12 +265,14 @@ export class GameStateSkill {
 
       return {
         success: true,
-        result: nearbyObjects,
+        type: ActionResultType.SUCCESS,
+        result: nearbyObjects as any,
         metadata: { timestamp: new Date().toISOString() }
       }
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to get nearby objects: ${error}`,
         metadata: { timestamp: new Date().toISOString() }
       }
@@ -265,6 +287,7 @@ export class GameStateSkill {
       if (!this.extension.isConnected()) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: 'Not connected to RuneLite',
           metadata: { timestamp: new Date().toISOString() }
         }
@@ -282,12 +305,14 @@ export class GameStateSkill {
 
       return {
         success: true,
-        result: groundItems,
+        type: ActionResultType.SUCCESS,
+        result: groundItems as any,
         metadata: { timestamp: new Date().toISOString() }
       }
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to get ground items: ${error}`,
         metadata: { timestamp: new Date().toISOString() }
       }
@@ -302,6 +327,7 @@ export class GameStateSkill {
       if (!this.extension.isConnected()) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: 'Not connected to RuneLite',
           metadata: { timestamp: new Date().toISOString() }
         }
@@ -315,25 +341,29 @@ export class GameStateSkill {
         if (!quest) {
           return {
             success: false,
+            type: ActionResultType.FAILURE,
             error: `Quest not found: ${questName}`,
             metadata: { timestamp: new Date().toISOString() }
           }
         }
         return {
           success: true,
-          result: quest,
+          type: ActionResultType.SUCCESS,
+          result: quest as any,
           metadata: { timestamp: new Date().toISOString() }
         }
       }
       
       return {
         success: true,
-        result: gameState.quests,
+        type: ActionResultType.SUCCESS,
+        result: gameState.quests as any,
         metadata: { timestamp: new Date().toISOString() }
       }
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to get quest status: ${error}`,
         metadata: { timestamp: new Date().toISOString() }
       }

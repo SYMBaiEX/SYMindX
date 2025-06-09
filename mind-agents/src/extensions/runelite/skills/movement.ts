@@ -4,7 +4,7 @@
  * Provides actions related to character movement in the game world.
  */
 
-import { ExtensionAction, Agent, ActionResult } from '../../../types/agent.js'
+import { ExtensionAction, Agent, ActionResult, ActionResultType, ActionCategory } from '../../../types/agent.js'
 import { RuneLiteExtension } from '../index.js'
 
 export class MovementSkill {
@@ -22,6 +22,7 @@ export class MovementSkill {
       move: {
         name: 'move',
         description: 'Move to a specific location',
+        category: ActionCategory.MOVEMENT,
         parameters: { x: 'number', y: 'number', plane: 'number' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.move(params.x, params.y, params.plane)
@@ -38,6 +39,7 @@ export class MovementSkill {
       if (!this.extension.isConnected()) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: 'Not connected to RuneLite',
           metadata: { timestamp: new Date().toISOString() }
         }
@@ -52,12 +54,14 @@ export class MovementSkill {
 
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: { x, y, plane },
         metadata: { timestamp: new Date().toISOString() }
       }
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to move: ${error}`,
         metadata: { timestamp: new Date().toISOString() }
       }

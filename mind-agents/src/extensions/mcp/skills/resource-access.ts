@@ -4,9 +4,8 @@
  * Handles MCP resource management, access, and operations.
  */
 
-import { Agent, ExtensionAction } from '../../../types/agent.js'
+import { Agent, ExtensionAction, ActionCategory, ActionResult } from '../../../types/agent.js'
 import { McpExtension } from '../index.js'
-import { ActionResult } from '../../../types/common.js'
 
 export class ResourceAccessSkill {
   private extension: McpExtension
@@ -23,6 +22,7 @@ export class ResourceAccessSkill {
       list_resources: {
         name: 'list_resources',
         description: 'List all available MCP resources',
+        category: ActionCategory.OBSERVATION,
         parameters: {
           type: {
             type: 'string',
@@ -40,6 +40,7 @@ export class ResourceAccessSkill {
       read_resource: {
         name: 'read_resource',
         description: 'Read content from a specific MCP resource',
+        category: ActionCategory.OBSERVATION,
         parameters: {
           uri: {
             type: 'string',
@@ -52,6 +53,7 @@ export class ResourceAccessSkill {
       get_resource_info: {
         name: 'get_resource_info',
         description: 'Get detailed information about a resource',
+        category: ActionCategory.OBSERVATION,
         parameters: {
           uri: {
             type: 'string',
@@ -64,6 +66,7 @@ export class ResourceAccessSkill {
       subscribe_to_resource: {
         name: 'subscribe_to_resource',
         description: 'Subscribe to resource changes',
+        category: ActionCategory.SYSTEM,
         parameters: {
           uri: {
             type: 'string',
@@ -76,6 +79,7 @@ export class ResourceAccessSkill {
       unsubscribe_from_resource: {
         name: 'unsubscribe_from_resource',
         description: 'Unsubscribe from resource changes',
+        category: ActionCategory.SYSTEM,
         parameters: {
           uri: {
             type: 'string',
@@ -88,6 +92,7 @@ export class ResourceAccessSkill {
       search_resources: {
         name: 'search_resources',
         description: 'Search for resources by content or metadata',
+        category: ActionCategory.OBSERVATION,
         parameters: {
           query: {
             type: 'string',
@@ -110,12 +115,14 @@ export class ResourceAccessSkill {
       get_resource_templates: {
         name: 'get_resource_templates',
         description: 'Get available resource templates',
+        category: ActionCategory.OBSERVATION,
         parameters: {},
         execute: this.getResourceTemplates.bind(this)
       },
       validate_resource_uri: {
         name: 'validate_resource_uri',
         description: 'Validate a resource URI format',
+        category: ActionCategory.SYSTEM,
         parameters: {
           uri: {
             type: 'string',
@@ -258,7 +265,7 @@ export class ResourceAccessSkill {
       }
 
       const resources = this.extension.getAvailableResources()
-      const resource = resources.find(r => r.uri === uri)
+      const resource = resources.find((r: any) => r.uri === uri)
       
       if (!resource) {
         return {
@@ -275,7 +282,7 @@ export class ResourceAccessSkill {
           ? accessHistory[accessHistory.length - 1].timestamp
           : null,
         averageReadTime: accessHistory.length > 0
-          ? accessHistory.reduce((sum, a) => sum + (a.readTime || 0), 0) / accessHistory.length
+          ? accessHistory.reduce((sum: number, a: any) => sum + (a.readTime || 0), 0) / accessHistory.length
           : 0
       }
 

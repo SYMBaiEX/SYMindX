@@ -4,7 +4,7 @@
  * Provides actions related to inventory management in the game world.
  */
 
-import { ExtensionAction, Agent, ActionResult } from '../../../types/agent.js'
+import { ExtensionAction, Agent, ActionResult, ActionResultType, ActionCategory } from '../../../types/agent.js'
 import { RuneLiteExtension } from '../index.js'
 
 export class InventorySkill {
@@ -22,6 +22,7 @@ export class InventorySkill {
       use_item: {
         name: 'use_item',
         description: 'Use an item from inventory',
+        category: ActionCategory.MANIPULATION,
         parameters: { itemId: 'string', targetId: 'string' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.useItem(params.itemId, params.targetId)
@@ -31,6 +32,7 @@ export class InventorySkill {
       drop_item: {
         name: 'drop_item',
         description: 'Drop an item from inventory',
+        category: ActionCategory.MANIPULATION,
         parameters: { itemId: 'string' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.dropItem(params.itemId)
@@ -40,6 +42,7 @@ export class InventorySkill {
       equip_item: {
         name: 'equip_item',
         description: 'Equip an item from inventory',
+        category: ActionCategory.MANIPULATION,
         parameters: { itemId: 'string' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.equipItem(params.itemId)
@@ -56,6 +59,7 @@ export class InventorySkill {
       if (!this.extension.isConnected()) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: 'Not connected to RuneLite',
           metadata: { timestamp: new Date().toISOString() }
         }
@@ -70,12 +74,14 @@ export class InventorySkill {
 
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: { itemId, targetId },
         metadata: { timestamp: new Date().toISOString() }
       }
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to use item: ${error}`,
         metadata: { timestamp: new Date().toISOString() }
       }
@@ -90,6 +96,7 @@ export class InventorySkill {
       if (!this.extension.isConnected()) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: 'Not connected to RuneLite',
           metadata: { timestamp: new Date().toISOString() }
         }
@@ -104,12 +111,14 @@ export class InventorySkill {
 
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: { itemId },
         metadata: { timestamp: new Date().toISOString() }
       }
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to drop item: ${error}`,
         metadata: { timestamp: new Date().toISOString() }
       }
@@ -124,6 +133,7 @@ export class InventorySkill {
       if (!this.extension.isConnected()) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: 'Not connected to RuneLite',
           metadata: { timestamp: new Date().toISOString() }
         }
@@ -138,12 +148,14 @@ export class InventorySkill {
 
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: { itemId },
         metadata: { timestamp: new Date().toISOString() }
       }
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to equip item: ${error}`,
         metadata: { timestamp: new Date().toISOString() }
       }

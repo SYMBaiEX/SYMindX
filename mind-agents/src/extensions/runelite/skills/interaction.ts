@@ -4,7 +4,7 @@
  * Provides actions related to interacting with objects and NPCs in the game world.
  */
 
-import { ExtensionAction, Agent, ActionResult } from '../../../types/agent.js'
+import { ExtensionAction, Agent, ActionResult, ActionResultType, ActionCategory } from '../../../types/agent.js'
 import { RuneLiteExtension } from '../index.js'
 
 export class InteractionSkill {
@@ -22,6 +22,7 @@ export class InteractionSkill {
       interact: {
         name: 'interact',
         description: 'Interact with an object or NPC',
+        category: ActionCategory.INTERACTION,
         parameters: { targetId: 'string', action: 'string' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.interact(params.targetId, params.action)
@@ -31,6 +32,7 @@ export class InteractionSkill {
       skill_action: {
         name: 'skill_action',
         description: 'Perform a skill-based action',
+        category: ActionCategory.INTERACTION,
         parameters: { skill: 'string', action: 'string', targetId: 'string' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.skillAction(params.skill, params.action, params.targetId)
@@ -47,6 +49,7 @@ export class InteractionSkill {
       if (!this.extension.isConnected()) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: 'Not connected to RuneLite',
           metadata: { timestamp: new Date().toISOString() }
         }
@@ -61,12 +64,14 @@ export class InteractionSkill {
 
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: { targetId, action },
         metadata: { timestamp: new Date().toISOString() }
       }
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to interact with target: ${error}`,
         metadata: { timestamp: new Date().toISOString() }
       }
@@ -81,6 +86,7 @@ export class InteractionSkill {
       if (!this.extension.isConnected()) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: 'Not connected to RuneLite',
           metadata: { timestamp: new Date().toISOString() }
         }
@@ -95,12 +101,14 @@ export class InteractionSkill {
 
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: { skill, action, targetId },
         metadata: { timestamp: new Date().toISOString() }
       }
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to perform skill action: ${error}`,
         metadata: { timestamp: new Date().toISOString() }
       }

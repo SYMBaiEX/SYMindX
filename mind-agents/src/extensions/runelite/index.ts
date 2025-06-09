@@ -1,4 +1,4 @@
-import { Extension, ExtensionAction, ExtensionEventHandler, Agent, ActionResult, AgentEvent } from '../../types/agent.js'
+import { Extension, ExtensionAction, ExtensionEventHandler, Agent, ActionResult, ActionResultType, AgentEvent } from '../../types/agent.js'
 import { WebSocket } from 'ws'
 import { EventEmitter } from 'events'
 import { RuneLiteConfig, GameState, RuneLiteEvent, RuneLiteCommand, RuneLiteResponse } from './types.js'
@@ -305,7 +305,7 @@ export class RuneLiteExtension implements Extension {
   // Action implementations
   private async executeMove(x: number, y: number, plane: number): Promise<ActionResult> {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      return { success: false, error: 'Not connected to RuneLite' }
+      return { success: false, type: ActionResultType.FAILURE, error: 'Not connected to RuneLite' }
     }
     
     try {
@@ -320,15 +320,15 @@ export class RuneLiteExtension implements Extension {
         ...command
       }))
       
-      return { success: true, result: { x, y, plane } }
+      return { success: true, type: ActionResultType.SUCCESS, result: { x, y, plane } }
     } catch (error) {
-      return { success: false, error: error instanceof Error ? error.message : String(error) }
+      return { success: false, type: ActionResultType.FAILURE, error: error instanceof Error ? error.message : String(error) }
     }
   }
 
   private async executeAttack(targetId: string): Promise<ActionResult> {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      return { success: false, error: 'Not connected to RuneLite' }
+      return { success: false, type: ActionResultType.FAILURE, error: 'Not connected to RuneLite' }
     }
     
     try {
@@ -343,15 +343,15 @@ export class RuneLiteExtension implements Extension {
         ...command
       }))
       
-      return { success: true, result: { targetId, action: 'attack' } }
+      return { success: true, type: ActionResultType.SUCCESS, result: { targetId, action: 'attack' } }
     } catch (error) {
-      return { success: false, error: error instanceof Error ? error.message : String(error) }
+      return { success: false, type: ActionResultType.FAILURE, error: error instanceof Error ? error.message : String(error) }
     }
   }
 
   private async executeInteraction(targetId: string, action: string): Promise<ActionResult> {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      return { success: false, error: 'Not connected to RuneLite' }
+      return { success: false, type: ActionResultType.FAILURE, error: 'Not connected to RuneLite' }
     }
     
     try {
@@ -367,15 +367,15 @@ export class RuneLiteExtension implements Extension {
         ...command
       }))
       
-      return { success: true, result: { targetId, action } }
+      return { success: true, type: ActionResultType.SUCCESS, result: { targetId, action } }
     } catch (error) {
-      return { success: false, error: error instanceof Error ? error.message : String(error) }
+      return { success: false, type: ActionResultType.FAILURE, error: error instanceof Error ? error.message : String(error) }
     }
   }
 
   private async executeCastSpell(spellName: string, targetId?: string): Promise<ActionResult> {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      return { success: false, error: 'Not connected to RuneLite' }
+      return { success: false, type: ActionResultType.FAILURE, error: 'Not connected to RuneLite' }
     }
     
     try {
@@ -391,15 +391,15 @@ export class RuneLiteExtension implements Extension {
         ...command
       }))
       
-      return { success: true, result: { spellName, targetId } }
+      return { success: true, type: ActionResultType.SUCCESS, result: { spellName, targetId } }
     } catch (error) {
-      return { success: false, error: error instanceof Error ? error.message : String(error) }
+      return { success: false, type: ActionResultType.FAILURE, error: error instanceof Error ? error.message : String(error) }
     }
   }
 
   private async executeUseItem(itemId: string, targetId?: string): Promise<ActionResult> {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      return { success: false, error: 'Not connected to RuneLite' }
+      return { success: false, type: ActionResultType.FAILURE, error: 'Not connected to RuneLite' }
     }
     
     try {
@@ -415,15 +415,15 @@ export class RuneLiteExtension implements Extension {
         ...command
       }))
       
-      return { success: true, result: { itemId, targetId } }
+      return { success: true, type: ActionResultType.SUCCESS, result: { itemId, targetId } }
     } catch (error) {
-      return { success: false, error: error instanceof Error ? error.message : String(error) }
+      return { success: false, type: ActionResultType.FAILURE, error: error instanceof Error ? error.message : String(error) }
     }
   }
 
   private async executeChat(message: string, type: string): Promise<ActionResult> {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      return { success: false, error: 'Not connected to RuneLite' }
+      return { success: false, type: ActionResultType.FAILURE, error: 'Not connected to RuneLite' }
     }
     
     try {
@@ -438,15 +438,15 @@ export class RuneLiteExtension implements Extension {
         ...command
       }))
       
-      return { success: true, result: { message, type } }
+      return { success: true, type: ActionResultType.SUCCESS, result: { message, type } }
     } catch (error) {
-      return { success: false, error: error instanceof Error ? error.message : String(error) }
+      return { success: false, type: ActionResultType.FAILURE, error: error instanceof Error ? error.message : String(error) }
     }
   }
 
   private async executeBankOperation(action: string, itemId?: string, quantity?: number): Promise<ActionResult> {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      return { success: false, error: 'Not connected to RuneLite' }
+      return { success: false, type: ActionResultType.FAILURE, error: 'Not connected to RuneLite' }
     }
     
     try {
@@ -461,15 +461,15 @@ export class RuneLiteExtension implements Extension {
         ...command
       }))
       
-      return { success: true, result: { action, itemId, quantity } }
+      return { success: true, type: ActionResultType.SUCCESS, result: { action, itemId, quantity } }
     } catch (error) {
-      return { success: false, error: error instanceof Error ? error.message : String(error) }
+      return { success: false, type: ActionResultType.FAILURE, error: error instanceof Error ? error.message : String(error) }
     }
   }
 
   private async executeTrade(playerId: string, action: string, items?: any[]): Promise<ActionResult> {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      return { success: false, error: 'Not connected to RuneLite' }
+      return { success: false, type: ActionResultType.FAILURE, error: 'Not connected to RuneLite' }
     }
     
     try {
@@ -485,15 +485,15 @@ export class RuneLiteExtension implements Extension {
         ...command
       }))
       
-      return { success: true, result: { playerId, action, items } }
+      return { success: true, type: ActionResultType.SUCCESS, result: { playerId, action, items } }
     } catch (error) {
-      return { success: false, error: error instanceof Error ? error.message : String(error) }
+      return { success: false, type: ActionResultType.FAILURE, error: error instanceof Error ? error.message : String(error) }
     }
   }
 
   private async executeSkillAction(skill: string, action: string, targetId?: string): Promise<ActionResult> {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      return { success: false, error: 'Not connected to RuneLite' }
+      return { success: false, type: ActionResultType.FAILURE, error: 'Not connected to RuneLite' }
     }
     
     try {
@@ -509,9 +509,9 @@ export class RuneLiteExtension implements Extension {
         ...command
       }))
       
-      return { success: true, result: { skill, action, targetId } }
+      return { success: true, type: ActionResultType.SUCCESS, result: { skill, action, targetId } }
     } catch (error) {
-      return { success: false, error: error instanceof Error ? error.message : String(error) }
+      return { success: false, type: ActionResultType.FAILURE, error: error instanceof Error ? error.message : String(error) }
     }
   }
 

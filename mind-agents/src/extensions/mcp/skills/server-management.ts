@@ -4,9 +4,9 @@
  * Handles MCP server lifecycle, configuration, and management operations.
  */
 
-import { Agent, ExtensionAction } from '../../../types/agent.js'
+import { Agent, ExtensionAction, ActionCategory, ActionResult, ActionResultType } from '../../../types/agent.js'
+import { GenericData } from '../../../types/common.js'
 import { McpExtension } from '../index.js'
-import { ActionResult } from '../../../types/common.js'
 
 export class ServerManagementSkill {
   private extension: McpExtension
@@ -23,6 +23,7 @@ export class ServerManagementSkill {
       start_mcp_server: {
         name: 'start_mcp_server',
         description: 'Start the MCP server with specified configuration',
+        category: ActionCategory.SYSTEM,
         parameters: {
           config: {
             type: 'object',
@@ -35,12 +36,14 @@ export class ServerManagementSkill {
       stop_mcp_server: {
         name: 'stop_mcp_server',
         description: 'Stop the running MCP server',
+        category: ActionCategory.SYSTEM,
         parameters: {},
         execute: this.stopServer.bind(this)
       },
       restart_mcp_server: {
         name: 'restart_mcp_server',
         description: 'Restart the MCP server',
+        category: ActionCategory.SYSTEM,
         parameters: {
           config: {
             type: 'object',
@@ -53,12 +56,14 @@ export class ServerManagementSkill {
       get_server_status: {
         name: 'get_server_status',
         description: 'Get current MCP server status and information',
+        category: ActionCategory.SYSTEM,
         parameters: {},
         execute: this.getServerStatus.bind(this)
       },
       update_server_config: {
         name: 'update_server_config',
         description: 'Update MCP server configuration',
+        category: ActionCategory.SYSTEM,
         parameters: {
           config: {
             type: 'object',
@@ -71,12 +76,14 @@ export class ServerManagementSkill {
       list_server_capabilities: {
         name: 'list_server_capabilities',
         description: 'List all available server capabilities',
+        category: ActionCategory.SYSTEM,
         parameters: {},
         execute: this.listServerCapabilities.bind(this)
       },
       get_server_info: {
         name: 'get_server_info',
         description: 'Get detailed server information and metadata',
+        category: ActionCategory.SYSTEM,
         parameters: {},
         execute: this.getServerInfo.bind(this)
       }
@@ -88,10 +95,11 @@ export class ServerManagementSkill {
    */
   private async startServer(agent: Agent, params: any): Promise<ActionResult> {
     try {
-      const config = params.config || this.extension.getConfig()
+      const config = params.config || this.extension.config
       
       if (this.extension.isServerRunning()) {
         return {
+          type: ActionResultType.FAILURE,
           success: false,
           error: 'MCP server is already running'
         }
@@ -100,6 +108,7 @@ export class ServerManagementSkill {
       await this.extension.startServer(config)
       
       return {
+        type: ActionResultType.SUCCESS,
         success: true,
         result: {
           message: 'MCP server started successfully',
@@ -110,6 +119,7 @@ export class ServerManagementSkill {
       }
     } catch (error) {
       return {
+        type: ActionResultType.FAILURE,
         success: false,
         error: `Failed to start MCP server: ${error}`
       }
@@ -123,6 +133,7 @@ export class ServerManagementSkill {
     try {
       if (!this.extension.isServerRunning()) {
         return {
+          type: ActionResultType.FAILURE,
           success: false,
           error: 'MCP server is not running'
         }
@@ -131,6 +142,7 @@ export class ServerManagementSkill {
       await this.extension.stopServer()
       
       return {
+        type: ActionResultType.SUCCESS,
         success: true,
         result: {
           message: 'MCP server stopped successfully'
@@ -138,6 +150,7 @@ export class ServerManagementSkill {
       }
     } catch (error) {
       return {
+        type: ActionResultType.FAILURE,
         success: false,
         error: `Failed to stop MCP server: ${error}`
       }
@@ -149,7 +162,7 @@ export class ServerManagementSkill {
    */
   private async restartServer(agent: Agent, params: any): Promise<ActionResult> {
     try {
-      const config = params.config || this.extension.getConfig()
+      const config = params.config || this.extension.config
       
       if (this.extension.isServerRunning()) {
         await this.extension.stopServer()
@@ -158,6 +171,7 @@ export class ServerManagementSkill {
       await this.extension.startServer(config)
       
       return {
+        type: ActionResultType.SUCCESS,
         success: true,
         result: {
           message: 'MCP server restarted successfully',
@@ -168,6 +182,7 @@ export class ServerManagementSkill {
       }
     } catch (error) {
       return {
+        type: ActionResultType.FAILURE,
         success: false,
         error: `Failed to restart MCP server: ${error}`
       }
@@ -180,10 +195,11 @@ export class ServerManagementSkill {
   private async getServerStatus(agent: Agent, params: any): Promise<ActionResult> {
     try {
       const isRunning = this.extension.isServerRunning()
-      const config = this.extension.getConfig()
+      const config = this.extension.config
       const uptime = this.extension.getServerUptime()
       
       return {
+        type: ActionResultType.SUCCESS,
         success: true,
         result: {
           running: isRunning,
@@ -191,8 +207,8 @@ export class ServerManagementSkill {
           config: {
             port: config.port,
             transport: config.transport,
-            name: config.name,
-            version: config.version
+            name: config.serverName,
+            version: config.serverVersion
           },
           capabilities: this.extension.getServerCapabilities(),
           stats: this.extension.getServerStats()
@@ -200,6 +216,7 @@ export class ServerManagementSkill {
       }
     } catch (error) {
       return {
+        type: ActionResultType.FAILURE,
         success: false,
         error: `Failed to get server status: ${error}`
       }
@@ -215,6 +232,7 @@ export class ServerManagementSkill {
       
       if (!newConfig) {
         return {
+          type: ActionResultType.FAILURE,
           success: false,
           error: 'Configuration is required'
         }
@@ -233,15 +251,17 @@ export class ServerManagementSkill {
       }
       
       return {
+        type: ActionResultType.SUCCESS,
         success: true,
         result: {
           message: 'Server configuration updated successfully',
-          config: this.extension.getConfig(),
+          config: { ...this.extension.config } as GenericData,
           restarted: wasRunning
         }
       }
     } catch (error) {
       return {
+        type: ActionResultType.FAILURE,
         success: false,
         error: `Failed to update server configuration: ${error}`
       }
@@ -256,6 +276,7 @@ export class ServerManagementSkill {
       const capabilities = this.extension.getServerCapabilities()
       
       return {
+        type: ActionResultType.SUCCESS,
         success: true,
         result: {
           capabilities,
@@ -266,6 +287,7 @@ export class ServerManagementSkill {
       }
     } catch (error) {
       return {
+        type: ActionResultType.FAILURE,
         success: false,
         error: `Failed to list server capabilities: ${error}`
       }
@@ -277,17 +299,18 @@ export class ServerManagementSkill {
    */
   private async getServerInfo(agent: Agent, params: any): Promise<ActionResult> {
     try {
-      const config = this.extension.getConfig()
+      const config = this.extension.config
       const capabilities = this.extension.getServerCapabilities()
       const stats = this.extension.getServerStats()
       const uptime = this.extension.getServerUptime()
       
       return {
+        type: ActionResultType.SUCCESS,
         success: true,
         result: {
           server: {
-            name: config.name,
-            version: config.version,
+            name: config.serverName,
+            version: config.serverVersion,
             description: config.description,
             running: this.extension.isServerRunning(),
             uptime,

@@ -61,3 +61,5 @@ export abstract class BaseTwitterSkill implements TwitterSkill {
     };
   }
 }
+
+export { BaseTwitterSkill };

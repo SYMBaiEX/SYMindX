@@ -411,6 +411,126 @@ export class McpExtension implements Extension {
     this.promptHandlers.set(name, handler)
   }
 
+  // Server management methods
+  async startServer(config?: McpConfig): Promise<void> {
+    if (this.serverInstance && !this.serverInstance.isRunning) {
+      await this.serverInstance.server.connect(this.serverInstance.transport)
+      this.serverInstance.isRunning = true
+    }
+  }
+
+  async stopServer(): Promise<void> {
+    if (this.serverInstance && this.serverInstance.isRunning) {
+      await this.serverInstance.server.close()
+      this.serverInstance.isRunning = false
+    }
+  }
+
+  isServerRunning(): boolean {
+    return this.serverInstance?.isRunning || false
+  }
+
+  getServerCapabilities(): any {
+    return {
+      tools: this.config.tools.length > 0,
+      resources: this.config.resources.length > 0,
+      prompts: this.config.prompts.length > 0
+    }
+  }
+
+  getServerStats(): any {
+    return {
+      toolsRegistered: this.config.tools.length,
+      resourcesRegistered: this.config.resources.length,
+      promptsRegistered: this.config.prompts.length,
+      handlersRegistered: {
+        tools: this.toolHandlers.size,
+        resources: this.resourceHandlers.size,
+        prompts: this.promptHandlers.size
+      }
+    }
+  }
+
+  getServerUptime(): number {
+    // Return uptime in milliseconds since server started
+    // This is a simple implementation - could be enhanced with actual start time tracking
+    return this.serverInstance?.isRunning ? Date.now() : 0
+  }
+
+  updateConfig(newConfig: McpConfig): void {
+    this.config = { ...this.config, ...newConfig }
+  }
+
+  async unsubscribeFromResource(uri: string): Promise<ActionResult> {
+    // TODO: Implement resource unsubscription logic
+    return {
+      success: true,
+      result: { message: `Unsubscribed from resource: ${uri}`, uri }
+    }
+  }
+
+  async searchResources(query: string, options?: { type?: string; limit?: number }): Promise<any[]> {
+    // TODO: Implement resource search logic
+    return []
+  }
+
+  getResourceTemplates(): any[] {
+    // TODO: Implement resource templates logic
+    return []
+  }
+
+  validateResourceUri(uri: string): { valid: boolean; error?: string; errors?: string[]; warnings?: string[]; suggestions?: string[]; parsedUri?: any } {
+    // TODO: Implement URI validation logic
+    try {
+      const parsedUri = new URL(uri)
+      return { 
+        valid: true, 
+        errors: [],
+        warnings: [],
+        suggestions: [],
+        parsedUri 
+      }
+    } catch {
+      return { 
+        valid: false, 
+        error: 'Invalid URI format',
+        errors: ['Invalid URI format'],
+        warnings: [],
+        suggestions: [],
+        parsedUri: null 
+      }
+    }
+  }
+
+  // Resource management methods
+  async readResource(uri: string): Promise<any> {
+    // TODO: Implement resource reading logic
+    return {
+      content: '',
+      mimeType: 'text/plain',
+      encoding: 'utf-8',
+      size: 0,
+      metadata: {}
+    }
+  }
+
+  getAvailableResources(): any[] {
+    return this.config.resources || []
+  }
+
+  getResourceAccessHistory(uri: string): any[] {
+    // TODO: Implement resource access history tracking
+    return []
+  }
+
+  async subscribeToResource(uri: string): Promise<any> {
+    // TODO: Implement resource subscription logic
+    return {
+      success: true,
+      subscription: { uri, active: true }
+    }
+  }
+
   get actions(): Record<string, ExtensionAction> {
     // Collect actions from all skills
     const skillActions: Record<string, ExtensionAction> = {}

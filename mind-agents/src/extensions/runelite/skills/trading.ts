@@ -4,7 +4,7 @@
  * Provides actions related to player-to-player trading in the game world.
  */
 
-import { ExtensionAction, Agent, ActionResult } from '../../../types/agent.js'
+import { ExtensionAction, Agent, ActionResult, ActionResultType, ActionCategory } from '../../../types/agent.js'
 import { RuneLiteExtension } from '../index.js'
 
 export class TradingSkill {
@@ -22,6 +22,7 @@ export class TradingSkill {
       request_trade: {
         name: 'request_trade',
         description: 'Request a trade with another player',
+        category: ActionCategory.SOCIAL,
         parameters: { playerName: 'string' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.requestTrade(params.playerName)
@@ -31,6 +32,7 @@ export class TradingSkill {
       offer_item: {
         name: 'offer_item',
         description: 'Offer an item in a trade',
+        category: ActionCategory.SOCIAL,
         parameters: { itemId: 'string', quantity: 'number' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.offerItem(params.itemId, params.quantity)
@@ -40,6 +42,7 @@ export class TradingSkill {
       accept_trade: {
         name: 'accept_trade',
         description: 'Accept the current trade offer',
+        category: ActionCategory.SOCIAL,
         parameters: { stage: 'number' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.acceptTrade(params.stage)
@@ -49,6 +52,7 @@ export class TradingSkill {
       decline_trade: {
         name: 'decline_trade',
         description: 'Decline the current trade',
+        category: ActionCategory.SOCIAL,
         parameters: {},
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.declineTrade()
@@ -65,6 +69,7 @@ export class TradingSkill {
       if (!this.extension.isConnected()) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: 'Not connected to RuneLite',
           metadata: { timestamp: new Date().toISOString() }
         }
@@ -79,12 +84,14 @@ export class TradingSkill {
 
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: { playerName, action: 'trade_requested' },
         metadata: { timestamp: new Date().toISOString() }
       }
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to request trade: ${error}`,
         metadata: { timestamp: new Date().toISOString() }
       }
@@ -99,6 +106,7 @@ export class TradingSkill {
       if (!this.extension.isConnected()) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: 'Not connected to RuneLite',
           metadata: { timestamp: new Date().toISOString() }
         }
@@ -113,12 +121,14 @@ export class TradingSkill {
 
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: { itemId, quantity, action: 'item_offered' },
         metadata: { timestamp: new Date().toISOString() }
       }
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to offer item: ${error}`,
         metadata: { timestamp: new Date().toISOString() }
       }
@@ -134,6 +144,7 @@ export class TradingSkill {
       if (!this.extension.isConnected()) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: 'Not connected to RuneLite',
           metadata: { timestamp: new Date().toISOString() }
         }
@@ -148,12 +159,14 @@ export class TradingSkill {
 
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: { stage, action: 'trade_accepted' },
         metadata: { timestamp: new Date().toISOString() }
       }
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to accept trade: ${error}`,
         metadata: { timestamp: new Date().toISOString() }
       }
@@ -168,6 +181,7 @@ export class TradingSkill {
       if (!this.extension.isConnected()) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: 'Not connected to RuneLite',
           metadata: { timestamp: new Date().toISOString() }
         }
@@ -182,12 +196,14 @@ export class TradingSkill {
 
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: { action: 'trade_declined' },
         metadata: { timestamp: new Date().toISOString() }
       }
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to decline trade: ${error}`,
         metadata: { timestamp: new Date().toISOString() }
       }

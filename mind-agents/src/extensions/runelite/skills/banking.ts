@@ -4,7 +4,8 @@
  * Provides actions related to banking and item storage in the game world.
  */
 
-import { ExtensionAction, Agent, ActionResult } from '../../../types/agent.js'
+
+import { ExtensionAction, Agent, ActionResult, ActionCategory, ActionResultType } from '../../../types/agent.js'
 import { RuneLiteExtension } from '../index.js'
 
 export class BankingSkill {
@@ -22,6 +23,7 @@ export class BankingSkill {
       open_bank: {
         name: 'open_bank',
         description: 'Open the bank interface',
+        category: ActionCategory.INTERACTION,
         parameters: {},
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.openBank()
@@ -31,6 +33,7 @@ export class BankingSkill {
       deposit_item: {
         name: 'deposit_item',
         description: 'Deposit an item into the bank',
+        category: ActionCategory.INTERACTION,
         parameters: { itemId: 'string', quantity: 'number' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.depositItem(params.itemId, params.quantity)
@@ -40,6 +43,7 @@ export class BankingSkill {
       withdraw_item: {
         name: 'withdraw_item',
         description: 'Withdraw an item from the bank',
+        category: ActionCategory.INTERACTION,
         parameters: { itemId: 'string', quantity: 'number' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.withdrawItem(params.itemId, params.quantity)
@@ -49,6 +53,7 @@ export class BankingSkill {
       close_bank: {
         name: 'close_bank',
         description: 'Close the bank interface',
+        category: ActionCategory.INTERACTION,
         parameters: {},
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.closeBank()
@@ -65,6 +70,7 @@ export class BankingSkill {
       if (!this.extension.isConnected()) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: 'Not connected to RuneLite',
           metadata: { timestamp: new Date().toISOString() }
         }
@@ -78,12 +84,14 @@ export class BankingSkill {
 
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: { action: 'bank_opened' },
         metadata: { timestamp: new Date().toISOString() }
       }
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to open bank: ${error}`,
         metadata: { timestamp: new Date().toISOString() }
       }
@@ -98,6 +106,7 @@ export class BankingSkill {
       if (!this.extension.isConnected()) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: 'Not connected to RuneLite',
           metadata: { timestamp: new Date().toISOString() }
         }
@@ -112,12 +121,14 @@ export class BankingSkill {
 
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: { itemId, quantity, action: 'deposited' },
         metadata: { timestamp: new Date().toISOString() }
       }
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to deposit item: ${error}`,
         metadata: { timestamp: new Date().toISOString() }
       }
@@ -132,6 +143,7 @@ export class BankingSkill {
       if (!this.extension.isConnected()) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: 'Not connected to RuneLite',
           metadata: { timestamp: new Date().toISOString() }
         }
@@ -146,12 +158,14 @@ export class BankingSkill {
 
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: { itemId, quantity, action: 'withdrawn' },
         metadata: { timestamp: new Date().toISOString() }
       }
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to withdraw item: ${error}`,
         metadata: { timestamp: new Date().toISOString() }
       }
@@ -166,6 +180,7 @@ export class BankingSkill {
       if (!this.extension.isConnected()) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: 'Not connected to RuneLite',
           metadata: { timestamp: new Date().toISOString() }
         }
@@ -180,12 +195,14 @@ export class BankingSkill {
 
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: { action: 'bank_closed' },
         metadata: { timestamp: new Date().toISOString() }
       }
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to close bank: ${error}`,
         metadata: { timestamp: new Date().toISOString() }
       }
