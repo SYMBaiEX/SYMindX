@@ -19,9 +19,10 @@ export {
   SearchSkill,
   MediaSkill,
   UserManagementSkill,
-  TwitterSkill,
   BaseTwitterSkill
 };
+
+export type { TwitterSkill };
 
 /**
  * Interface for the skills container

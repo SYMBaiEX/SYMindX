@@ -1,374 +1,431 @@
 /**
  * MCP Client Extension Types
  * 
- * This file defines the types for the Model Context Protocol client extension.
- * This extension allows SYMindX agents to connect to external MCP servers as clients.
+ * Type definitions for the Model Context Protocol client extension.
  */
-import { Client } from '@modelcontextprotocol/sdk/client/index'
-import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio'
-import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse'
-import type { Tool, Resource, Prompt } from '@modelcontextprotocol/sdk/types'
 
-import { ExtensionConfig } from '../../types/common.js'
+import { BaseConfig, ExtensionConfig } from '../../types/common.js'
 
-export interface McpClientConfig extends ExtensionConfig {
+// Base MCP Client Settings
+export interface McpClientSettings extends BaseConfig {
   servers: McpServerConfig[]
-  autoConnect: boolean
-  reconnectAttempts: number
-  reconnectDelay: number
-  timeout: number
+  autoConnect?: boolean
+  reconnectAttempts?: number
+  reconnectDelay?: number
+  timeout?: number
+  enableLogging?: boolean
+  maxConcurrentConnections?: number
+  defaultTransport?: 'stdio' | 'sse' | 'websocket'
+  security?: McpClientSecurityConfig
 }
 
+// Main MCP Client Configuration
+export interface McpClientConfig extends ExtensionConfig {
+  settings: McpClientSettings
+}
+
+// MCP Server Configuration
 export interface McpServerConfig {
+  id: string
   name: string
-  description?: string
-  transport: McpTransportConfig
-  capabilities?: string[]
-  priority: number
-  enabled: boolean
-  auth?: McpAuthConfig
-}
-
-export interface McpTransportConfig {
-  type: 'stdio' | 'sse' | 'websocket'
-  command?: string
+  command: string
   args?: string[]
   env?: Record<string, string>
-  url?: string
-  headers?: Record<string, string>
-}
-
-export interface McpAuthConfig {
-  type: 'bearer' | 'apikey' | 'basic'
-  token?: string
-  username?: string
-  password?: string
-}
-
-export interface McpClientInstance {
-  name: string
-  client: Client
-  transport: StdioClientTransport | SSEClientTransport
-  isConnected: boolean
-  lastConnected?: Date
-  tools: Tool[]
-  resources: Resource[]
-  prompts: Prompt[]
-  capabilities: string[]
-  errorCount: number
-}
-
-export interface McpToolCall {
-  serverId: string
-  toolName: string
-  arguments: Record<string, any>
-  context?: McpCallContext
-}
-
-export interface McpResourceRequest {
-  serverId: string
-  resourceUri: string
-  context?: McpCallContext
-}
-
-export interface McpPromptRequest {
-  serverId: string
-  promptName: string
-  arguments?: Record<string, any>
-  context?: McpCallContext
-}
-
-export interface McpCallContext {
-  agentId: string
-  sessionId?: string
-  priority?: 'low' | 'normal' | 'high'
+  cwd?: string
+  transport: 'stdio' | 'sse' | 'websocket'
+  url?: string // For SSE/WebSocket transports
+  enabled?: boolean
+  autoReconnect?: boolean
+  maxReconnectAttempts?: number
+  reconnectDelay?: number
   timeout?: number
+  capabilities?: McpClientCapabilities
   metadata?: Record<string, any>
 }
 
-export interface McpCallResult {
-  success: boolean
-  result?: any
-  error?: string
+// Security Configuration
+export interface McpClientSecurityConfig {
+  allowedCommands?: string[]
+  blockedCommands?: string[]
+  sandboxed?: boolean
+  maxMemoryUsage?: number
+  maxExecutionTime?: number
+  allowNetworkAccess?: boolean
+  allowFileSystemAccess?: boolean
+}
+
+// Client Capabilities
+export interface McpClientCapabilities {
+  tools?: boolean
+  resources?: boolean
+  prompts?: boolean
+  logging?: boolean
+  sampling?: boolean
+  roots?: boolean
+}
+
+// Connection State
+export interface McpConnection {
+  id: string
   serverId: string
-  duration: number
-  timestamp: Date
+  status: 'disconnected' | 'connecting' | 'connected' | 'error' | 'reconnecting'
+  transport: 'stdio' | 'sse' | 'websocket'
+  process?: any // ChildProcess for stdio
+  client?: any // WebSocket or EventSource for other transports
+  capabilities?: McpServerCapabilities
+  lastConnected?: Date
+  lastError?: string
+  reconnectAttempts: number
+  messageId: number
+  pendingRequests: Map<string | number, PendingRequest>
+  stats: McpConnectionStats
 }
 
-export interface McpServerStatus {
-  name: string
-  connected: boolean
-  lastSeen?: Date
-  toolCount: number
-  resourceCount: number
-  promptCount: number
-  latency?: number
-  errors: number
-}
-
-// Enhanced Extension Interface
-export interface ExtensionLifecycle {
-  onLoad?: () => Promise<void>
-  onUnload?: () => Promise<void>
-  onReload?: () => Promise<void>
-  onError?: (error: Error) => Promise<void>
-}
-
-export interface SandboxConfig {
-  enabled: boolean
-  permissions: string[]
-  resourceLimits: {
-    memory?: number
-    cpu?: number
-    network?: boolean
-    filesystem?: boolean
+// Server Capabilities
+export interface McpServerCapabilities {
+  tools?: {
+    listChanged?: boolean
+  }
+  resources?: {
+    subscribe?: boolean
+    listChanged?: boolean
+  }
+  prompts?: {
+    listChanged?: boolean
+  }
+  logging?: {
+    level?: string
+  }
+  sampling?: {}
+  roots?: {
+    listChanged?: boolean
   }
 }
 
-export interface EnhancedExtension {
-  dependencies: string[]
-  lifecycle: ExtensionLifecycle
-  hotReload: boolean
-  sandboxing: SandboxConfig
+// Pending Request
+export interface PendingRequest {
+  resolve: (response: McpResponse) => void
+  reject: (error: Error) => void
+  timeout: NodeJS.Timeout
+  method: string
+  timestamp: Date
 }
 
-// Multi-Agent Orchestration Types
-export interface AgentHierarchy {
-  root: string
-  children: Map<string, string[]>
-  parents: Map<string, string>
-  roles: Map<string, AgentRole>
+// Connection Statistics
+export interface McpConnectionStats {
+  messagesReceived: number
+  messagesSent: number
+  errorsCount: number
+  lastActivity: Date
+  uptime: number
+  averageResponseTime: number
+  toolCallsCount: number
+  resourceReadsCount: number
+  promptGetsCount: number
 }
 
-export interface AgentRole {
-  name: string
-  permissions: string[]
-  capabilities: string[]
-  priority: number
-}
-
-export interface TaskDelegationSystem {
-  delegate(task: Task, fromAgent: string, toAgent: string): Promise<TaskResult>
-  canDelegate(task: Task, fromAgent: string, toAgent: string): boolean
-  getAvailableAgents(task: Task): string[]
-}
-
-export interface Task {
-  id: string
-  type: string
-  description: string
-  parameters: Record<string, any>
-  priority: number
-  deadline?: Date
-  dependencies: string[]
-  assignedTo?: string
-  status: TaskStatus
-}
-
-export enum TaskStatus {
-  PENDING = 'pending',
-  ASSIGNED = 'assigned',
-  IN_PROGRESS = 'in_progress',
-  COMPLETED = 'completed',
-  FAILED = 'failed',
-  CANCELLED = 'cancelled'
-}
-
-export interface TaskResult {
-  taskId: string
-  success: boolean
+// MCP Protocol Messages
+export interface McpMessage {
+  jsonrpc: '2.0'
+  id?: string | number
+  method?: string
+  params?: any
   result?: any
-  error?: string
-  duration: number
-  agentId: string
+  error?: McpError
 }
 
-export interface CommunicationProtocol {
-  sendMessage(fromAgent: string, toAgent: string, message: AgentMessage): Promise<void>
-  broadcast(fromAgent: string, message: AgentMessage, filter?: AgentFilter): Promise<void>
-  subscribe(agentId: string, messageType: string, handler: MessageHandler): void
+export interface McpRequest extends McpMessage {
+  method: string
+  params?: any
 }
 
-export interface AgentMessage {
-  id: string
-  type: string
-  from: string
-  to?: string
-  content: any
-  timestamp: Date
-  priority: number
+export interface McpResponse extends McpMessage {
+  id: string | number
+  result?: any
+  error?: McpError
 }
 
-export interface AgentFilter {
-  roles?: string[]
-  capabilities?: string[]
-  status?: string[]
-  exclude?: string[]
+export interface McpNotification extends McpMessage {
+  method: string
+  params?: any
 }
 
-export type MessageHandler = (message: AgentMessage) => Promise<void>
-
-// Streaming Interface Types
-export interface EventStream {
-  subscribe(listener: StreamListener): Subscription
-  emit(event: StreamEvent): void
-  close(): void
+export interface McpError {
+  code: number
+  message: string
+  data?: any
 }
 
-export interface StreamEvent {
-  type: string
+// Initialize Protocol
+export interface McpInitializeRequest {
+  protocolVersion: string
+  capabilities: McpClientCapabilities
+  clientInfo: {
+    name: string
+    version: string
+  }
+}
+
+export interface McpInitializeResponse {
+  protocolVersion: string
+  capabilities: McpServerCapabilities
+  serverInfo: {
+    name: string
+    version: string
+  }
+  instructions?: string
+}
+
+// Tools
+export interface McpTool {
+  name: string
+  description?: string
+  inputSchema: any // JSON Schema
+}
+
+export interface McpToolCallRequest {
+  name: string
+  arguments?: Record<string, any>
+}
+
+export interface McpToolCallResponse {
+  content: McpContent[]
+  isError?: boolean
+  _meta?: Record<string, any>
+}
+
+export interface McpToolListRequest {}
+
+export interface McpToolListResponse {
+  tools: McpTool[]
+  _meta?: Record<string, any>
+}
+
+// Resources
+export interface McpResource {
+  uri: string
+  name: string
+  description?: string
+  mimeType?: string
+  annotations?: {
+    audience?: ('user' | 'assistant')[]
+    priority?: number
+  }
+}
+
+export interface McpResourceRequest {
+  uri: string
+}
+
+export interface McpResourceResponse {
+  contents: McpResourceContent[]
+  _meta?: Record<string, any>
+}
+
+export interface McpResourceContent {
+  uri: string
+  mimeType?: string
+  text?: string
+  blob?: string // base64 encoded
+}
+
+export interface McpResourceListRequest {}
+
+export interface McpResourceListResponse {
+  resources: McpResource[]
+  nextCursor?: string
+  _meta?: Record<string, any>
+}
+
+export interface McpResourceSubscribeRequest {
+  uri: string
+}
+
+export interface McpResourceUnsubscribeRequest {
+  uri: string
+}
+
+export interface McpResourceUpdatedNotification {
+  uri: string
+}
+
+// Prompts
+export interface McpPrompt {
+  name: string
+  description?: string
+  arguments?: McpPromptArgument[]
+}
+
+export interface McpPromptArgument {
+  name: string
+  description?: string
+  required?: boolean
+}
+
+export interface McpPromptRequest {
+  name: string
+  arguments?: Record<string, any>
+}
+
+export interface McpPromptResponse {
+  description?: string
+  messages: McpPromptMessage[]
+  _meta?: Record<string, any>
+}
+
+export interface McpPromptMessage {
+  role: 'user' | 'assistant'
+  content: McpContent
+}
+
+export interface McpPromptListRequest {}
+
+export interface McpPromptListResponse {
+  prompts: McpPrompt[]
+  _meta?: Record<string, any>
+}
+
+// Content Types
+export type McpContent = McpTextContent | McpImageContent | McpEmbeddedResourceContent
+
+export interface McpTextContent {
+  type: 'text'
+  text: string
+  annotations?: {
+    audience?: ('user' | 'assistant')[]
+    priority?: number
+  }
+}
+
+export interface McpImageContent {
+  type: 'image'
+  data: string // base64 encoded
+  mimeType: string
+  annotations?: {
+    audience?: ('user' | 'assistant')[]
+    priority?: number
+  }
+}
+
+export interface McpEmbeddedResourceContent {
+  type: 'resource'
+  resource: {
+    uri: string
+    text?: string
+    blob?: string // base64 encoded
+    mimeType?: string
+  }
+  annotations?: {
+    audience?: ('user' | 'assistant')[]
+    priority?: number
+  }
+}
+
+// Logging
+export interface McpLogEntry {
+  level: 'debug' | 'info' | 'notice' | 'warning' | 'error' | 'critical' | 'alert' | 'emergency'
   data: any
-  timestamp: Date
-  source: string
+  logger?: string
 }
 
-export interface StreamListener {
-  onEvent(event: StreamEvent): void
-  onError?(error: Error): void
-  onClose?(): void
+export interface McpSetLevelRequest {
+  level: McpLogEntry['level']
 }
 
-export interface Subscription {
-  unsubscribe(): void
-  isActive(): boolean
+// Sampling
+export interface McpSamplingRequest {
+  method: string
+  params?: any
 }
 
-export interface ControlInterface {
-  pause(agentId: string): Promise<void>
-  resume(agentId: string): Promise<void>
-  stop(agentId: string): Promise<void>
-  restart(agentId: string): Promise<void>
-  configure(agentId: string, config: Partial<any>): Promise<void>
+export interface McpSamplingResponse {
+  model: string
+  stopReason?: 'endTurn' | 'stopSequence' | 'maxTokens'
+  role: 'assistant'
+  content: McpContent
 }
 
-export interface ProgressMonitor {
-  track(taskId: string, progress: Progress): void
-  getProgress(taskId: string): Progress | undefined
-  subscribe(taskId: string, listener: ProgressListener): Subscription
+// Roots
+export interface McpRoot {
+  uri: string
+  name?: string
 }
 
-export interface Progress {
-  taskId: string
-  percentage: number
-  stage: string
-  message?: string
-  estimatedCompletion?: Date
+export interface McpRootListRequest {}
+
+export interface McpRootListResponse {
+  roots: McpRoot[]
+  _meta?: Record<string, any>
 }
 
-export type ProgressListener = (progress: Progress) => void
-
-// Dynamic Tool System Types
-export interface ToolSpec {
-  name: string
-  description: string
-  code: string
-  language: 'javascript' | 'python' | 'bash'
-  inputs: ToolInput[]
-  outputs: ToolOutput[]
-  permissions: string[]
+// Progress
+export interface McpProgressNotification {
+  progressToken: string | number
+  progress: number
+  total?: number
 }
 
-export interface ToolInput {
-  name: string
-  type: string
-  description: string
-  required: boolean
-  default?: any
+// Client Events
+export interface McpClientEvents {
+  'connection:connecting': { serverId: string }
+  'connection:connected': { serverId: string, capabilities: McpServerCapabilities }
+  'connection:disconnected': { serverId: string, reason?: string }
+  'connection:error': { serverId: string, error: Error }
+  'connection:reconnecting': { serverId: string, attempt: number }
+  'tool:called': { serverId: string, toolName: string, arguments?: any }
+  'resource:read': { serverId: string, uri: string }
+  'resource:updated': { serverId: string, uri: string }
+  'prompt:get': { serverId: string, promptName: string, arguments?: any }
+  'log:message': { serverId: string, entry: McpLogEntry }
+  'progress:update': { serverId: string, progress: McpProgressNotification }
 }
 
-export interface ToolOutput {
-  name: string
-  type: string
-  description: string
+// Client State
+export interface McpClientState {
+  connections: Map<string, McpConnection>
+  globalStats: McpClientGlobalStats
+  eventHandlers: Map<keyof McpClientEvents, Function[]>
 }
 
-export interface CodeExecutor {
-  execute(code: string, language: string, context: ExecutionContext): Promise<ExecutionResult>
-  validate(code: string, language: string): Promise<ValidationResult>
-  sandbox(code: string, permissions: string[]): Promise<SandboxedExecutor>
+export interface McpClientGlobalStats {
+  totalConnections: number
+  activeConnections: number
+  totalMessages: number
+  totalErrors: number
+  uptime: number
+  lastActivity: Date
 }
 
-export interface ExecutionContext {
-  agentId?: string
-  sessionId?: string
-  language?: string
-  code?: string
-  input?: any
-  environment: Record<string, any>
-  timeout: number
-  permissions?: string[]
-  workingDirectory?: string
+// Error Codes
+export enum McpErrorCode {
+  // Standard JSON-RPC errors
+  ParseError = -32700,
+  InvalidRequest = -32600,
+  MethodNotFound = -32601,
+  InvalidParams = -32602,
+  InternalError = -32603,
+  
+  // MCP-specific errors
+  InvalidTool = -32000,
+  InvalidResource = -32001,
+  InvalidPrompt = -32002,
+  ResourceNotFound = -32003,
+  ToolExecutionError = -32004,
+  PromptExecutionError = -32005,
+  ConnectionError = -32006,
+  AuthenticationError = -32007,
+  AuthorizationError = -32008,
+  RateLimitError = -32009,
+  TimeoutError = -32010
 }
 
-export interface ExecutionResult {
-  success: boolean
-  output?: any
-  error?: string
-  duration: number
-  resourceUsage: ResourceUsage
-}
+// Utility Types
+export type McpClientEventHandler<T extends keyof McpClientEvents> = (
+  data: McpClientEvents[T]
+) => void | Promise<void>
 
-export interface ValidationResult {
-  valid: boolean
-  errors: string[]
-  warnings: string[]
-  suggestions: string[]
-}
+export type McpTransportType = 'stdio' | 'sse' | 'websocket'
 
-export interface SandboxedExecutor {
-  execute(input: any): Promise<any>
-  destroy(): void
-}
+export type McpConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error' | 'reconnecting'
 
-export interface ResourceUsage {
-  memory: number
-  cpu: number
-  network: number
-  filesystem: number
-}
-
-export interface TerminalInterface {
-  execute(command: string, args?: string[], options?: TerminalOptions): Promise<TerminalResult>
-  spawn(command: string, args: string[], options?: SpawnOptions): Promise<ExtendedTerminalProcess>
-  getShell(): string
-  setWorkingDirectory(path: string): void
-}
-
-export interface TerminalOptions {
-  cwd?: string
-  env?: Record<string, string>
-  timeout?: number
-  shell?: string
-}
-
-export interface TerminalResult {
-  stdout: string
-  stderr: string
-  exitCode: number
-  duration: number
-  processId?: string
-}
-
-export interface SpawnOptions extends TerminalOptions {
-  detached?: boolean
-  stdio?: 'pipe' | 'inherit' | 'ignore'
-}
-
-export interface TerminalProcess {
-  pid: number
-  stdin: NodeJS.WritableStream | null
-  stdout: NodeJS.ReadableStream | null
-  stderr: NodeJS.ReadableStream | null
-  kill(signal?: NodeJS.Signals): boolean
-  wait(): Promise<number | null>
-}
-
-export interface ExtendedTerminalProcess extends TerminalProcess {
-  id: string
-  command: string
-  args: string[]
-  startTime: Date
-  status: 'running' | 'completed' | 'failed' | 'killed' | 'error' | 'finished'
-  endTime?: Date
-  childProcess?: any
-}
+export type McpLogLevel = 'debug' | 'info' | 'notice' | 'warning' | 'error' | 'critical' | 'alert' | 'emergency'

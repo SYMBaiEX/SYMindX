@@ -1,692 +1,786 @@
-import { Extension, Agent, ActionResult, ExtensionAction, ExtensionEventHandler, ActionResultType, ExtensionType, ExtensionStatus, ActionCategory } from '../../types/agent.js'
-import { GenericData, BaseConfig, SkillParameters } from '../../types/common.js'
-import { Client } from '@modelcontextprotocol/sdk/client/index'
-import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio'
-import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse'
+/**
+ * MCP Client Extension
+ * 
+ * This extension provides a client interface for connecting to Model Context Protocol (MCP) servers.
+ * It manages multiple server connections, handles protocol communication, and provides a unified
+ * interface for accessing tools, resources, and prompts from connected MCP servers.
+ */
+
+import { EventEmitter } from 'events'
 import { spawn, ChildProcess } from 'child_process'
+import { WebSocket } from 'ws'
+import { EventSource } from 'eventsource'
+
+
 import {
   McpClientConfig,
+  McpClientSettings,
   McpServerConfig,
-  McpClientInstance,
-  McpToolCall,
+  McpConnection,
+  McpMessage,
+  McpRequest,
+  McpResponse,
+  McpNotification,
+  McpError,
+  McpInitializeRequest,
+  McpInitializeResponse,
+  McpTool,
+  McpToolCallRequest,
+  McpToolCallResponse,
+  McpToolListResponse,
+  McpResource,
   McpResourceRequest,
+  McpResourceResponse,
+  McpResourceListResponse,
+  McpPrompt,
   McpPromptRequest,
-  McpCallResult,
-  McpServerStatus,
-  EnhancedExtension,
-  ExtensionLifecycle,
-  SandboxConfig
+  McpPromptResponse,
+  McpPromptListResponse,
+  McpClientEvents,
+  McpClientState,
+  McpClientEventHandler,
+  McpTransportType,
+  McpConnectionStatus,
+  McpErrorCode,
+  PendingRequest
 } from './types.js'
-import { initializeSkills } from './skills/index.js'
 
-export class McpClientExtension implements Extension, EnhancedExtension {
-  name = 'mcp-client'
-  type = ExtensionType.INTEGRATION
+export class McpClientExtension implements Extension {
+  private mcpClientConfig: McpClientSettings
+  private state: McpClientState
+  private eventEmitter: EventEmitter
+  private reconnectTimers: Map<string, NodeJS.Timeout>
+  private isShuttingDown: boolean
+
+  id = 'mcp-client'
+  name = 'MCP Client'
   version = '1.0.0'
-  description = 'MCP Client Extension for connecting to MCP servers'
+  type = ExtensionType.COMMUNICATION
+  enabled = true
   status = ExtensionStatus.DISABLED
-  category = ActionCategory.INTEGRATION
-  
   config: McpClientConfig
-  
-  // Enhanced Extension Properties
-  metadata = {
-    author: 'SYMindX Team',
-    license: 'MIT',
-    repository: 'https://github.com/symindx/mind-agents',
-    documentation: 'https://docs.symindx.com/extensions/mcp-client',
-    tags: ['mcp', 'client', 'integration', 'protocol'],
-    compatibility: {
-      minAgentVersion: '1.0.0',
-      maxAgentVersion: '2.0.0'
-    }
-  }
-  
-  sandboxing: SandboxConfig = {
-    enabled: true,
-    permissions: ['network', 'process'],
-    resourceLimits: {
-      memory: 512 * 1024 * 1024, // 512MB
-      cpu: 80, // 80% CPU
-      network: true,
-      filesystem: false
-    }
-  }
-  
-  lifecycle: ExtensionLifecycle = {
-    onLoad: async () => {
-      console.log('🔌 MCP Client extension loaded')
-    },
-    onUnload: async () => {
-      await this.disconnectAll()
-      console.log('🔌 MCP Client extension unloaded')
-    },
-    onReload: async () => {
-      await this.disconnectAll()
-      await this.connectToServers()
-      console.log('🔌 MCP Client extension reloaded')
-    },
-    onError: async (error: Error) => {
-      console.error('❌ MCP Client extension error:', error)
-      await this.handleError(error)
-    }
-  }
-  
-  private clients: Map<string, McpClientInstance> = new Map()
-  private agent?: Agent
-  private reconnectTimers: Map<string, NodeJS.Timeout> = new Map()
-  private processes: Map<string, ChildProcess> = new Map()
-  private skills: ReturnType<typeof initializeSkills>
+  actions: Record<string, ExtensionAction> = {}
+  events: Record<string, ExtensionEventHandler> = {}
 
   constructor(config: McpClientConfig) {
-    this.config = {
-      ...config
+    // Default settings
+    const defaultSettings: McpClientSettings = {
+      servers: [],
+      autoConnect: true,
+      reconnectAttempts: 3,
+      reconnectDelay: 5000,
+      timeout: 30000,
+      enableLogging: false,
+      maxConcurrentConnections: 10,
+      defaultTransport: 'stdio',
+      security: {
+        sandboxed: true,
+        maxMemoryUsage: 512 * 1024 * 1024, // 512MB
+        maxExecutionTime: 30000, // 30 seconds
+        allowNetworkAccess: false,
+        allowFileSystemAccess: false
+      }
     }
+
+    this.config = {
+      ...config,
+      settings: { ...defaultSettings, ...config.settings }
+    }
+
+    this.mcpClientConfig = this.config.settings
+    this.state = {
+      connections: new Map(),
+      globalStats: {
+        totalConnections: 0,
+        activeConnections: 0,
+        totalMessages: 0,
+        totalErrors: 0,
+        uptime: 0,
+        lastActivity: new Date()
+      },
+      eventHandlers: new Map()
+    }
+    this.eventEmitter = new EventEmitter()
+    this.reconnectTimers = new Map()
+    this.isShuttingDown = false
   }
 
   async init(agent: Agent): Promise<void> {
-    if (!this.config.enabled) {
-      console.log('🔌 MCP Client Extension disabled')
-      return
-    }
-
-    this.status = ExtensionStatus.INITIALIZING
     this.agent = agent
-    console.log('🔌 Initializing MCP Client Extension...')
-
-    // Initialize skills
-    this.skills = initializeSkills(this)
-
-    if (this.config.autoConnect) {
-      await this.connectToServers()
+    this.log('Initializing MCP Client Extension')
+    
+    // Initialize global stats
+    this.state.globalStats.uptime = Date.now()
+    
+    // Auto-connect to enabled servers
+    if (this.mcpClientConfig.autoConnect) {
+      await this.connectToEnabledServers()
     }
-
-    this.status = ExtensionStatus.ENABLED
-    console.log('✅ MCP Client Extension initialized successfully')
+    
+    this.log('MCP Client Extension initialized successfully')
   }
 
-  async cleanup(): Promise<void> {
-    console.log('🧹 Cleaning up MCP Client Extension...')
-    await this.disconnectAll()
+  async tick(agent: Agent): Promise<void> {
+    // Periodic tasks for MCP client extension
+  }
+
+  async shutdown(): Promise<void> {
+    this.log('Shutting down MCP Client Extension')
+    this.isShuttingDown = true
     
-    // Clear all timers
+    // Clear all reconnect timers
     for (const timer of this.reconnectTimers.values()) {
       clearTimeout(timer)
     }
     this.reconnectTimers.clear()
     
-    // Kill all processes
-    for (const [name, process] of this.processes.entries()) {
-      console.log(`🔪 Killing MCP server process: ${name}`)
-      process.kill('SIGTERM')
-      
-      // Force kill after 5 seconds
-      setTimeout(() => {
-        if (!process.killed) {
-          process.kill('SIGKILL')
-        }
-      }, 5000)
-    }
-    this.processes.clear()
+    // Disconnect from all servers
+    const disconnectPromises = Array.from(this.state.connections.keys()).map(
+      serverId => this.disconnectFromServer(serverId)
+    )
+    await Promise.allSettled(disconnectPromises)
     
-    this.status = ExtensionStatus.DISABLED
-    console.log('✅ MCP Client Extension cleaned up')
+    // Clear state
+    this.state.connections.clear()
+    this.eventEmitter.removeAllListeners()
+    
+    this.log('MCP Client Extension shut down successfully')
   }
 
-  private async connectToServers(): Promise<void> {
-    const enabledServers = this.config.servers.filter(s => s.enabled)
+  // Connection Management
+  async connectToServer(serverId: string): Promise<boolean> {
+    const serverConfig = this.mcpClientConfig.servers.find(s => s.id === serverId)
+    if (!serverConfig) {
+      throw new Error(`Server configuration not found: ${serverId}`)
+    }
+
+    if (!serverConfig.enabled) {
+      this.log(`Server ${serverId} is disabled, skipping connection`)
+      return false
+    }
+
+    const existingConnection = this.state.connections.get(serverId)
+    if (existingConnection && existingConnection.status === 'connected') {
+      this.log(`Already connected to server: ${serverId}`)
+      return true
+    }
+
+    this.log(`Connecting to MCP server: ${serverId}`)
     
-    for (const serverConfig of enabledServers) {
-      try {
-        await this.connectToServer(serverConfig)
-      } catch (error) {
-        console.error(`❌ Failed to connect to MCP server ${serverConfig.name}:`, error)
+    const connection: McpConnection = {
+      id: `${serverId}-${Date.now()}`,
+      serverId,
+      status: 'connecting',
+      transport: serverConfig.transport,
+      reconnectAttempts: 0,
+      messageId: 1,
+      pendingRequests: new Map(),
+      stats: {
+        messagesReceived: 0,
+        messagesSent: 0,
+        errorsCount: 0,
+        lastActivity: new Date(),
+        uptime: 0,
+        averageResponseTime: 0,
+        toolCallsCount: 0,
+        resourceReadsCount: 0,
+        promptGetsCount: 0
       }
     }
-  }
 
-  private async connectToServer(serverConfig: McpServerConfig): Promise<void> {
-    console.log(`🔗 Connecting to MCP server: ${serverConfig.name}`)
+    this.state.connections.set(serverId, connection)
+    this.emit('connection:connecting', { serverId })
 
     try {
-      let transport
-      let process: ChildProcess | undefined
-
-      if (serverConfig.transport === 'stdio') {
-        // Start the server process
-        process = spawn(serverConfig.command, serverConfig.args || [], {
-          stdio: ['pipe', 'pipe', 'pipe'],
-          env: { ...process.env, ...serverConfig.env }
-        })
-
-        this.processes.set(serverConfig.name, process)
-
-        // Handle process events
-        process.on('error', (error) => {
-          console.error(`❌ MCP server process error (${serverConfig.name}):`, error)
-          this.handleError(error)
-        })
-
-        process.on('exit', (code, signal) => {
-          console.log(`🔄 MCP server process exited (${serverConfig.name}): code=${code}, signal=${signal}`)
-          this.processes.delete(serverConfig.name)
-          
-          // Attempt reconnection if enabled
-          if (this.config.reconnect?.enabled && code !== 0) {
-            this.scheduleReconnect(serverConfig.name)
-          }
-        })
-
-        transport = new StdioClientTransport({
-          command: serverConfig.command,
-          args: serverConfig.args || [],
-          env: serverConfig.env
-        })
-      } else if (serverConfig.transport === 'sse') {
-        transport = new SSEClientTransport(new URL(serverConfig.url!))
-      } else {
-        throw new Error(`Unsupported transport: ${serverConfig.transport}`)
+      switch (serverConfig.transport) {
+        case 'stdio':
+          await this.connectStdio(connection, serverConfig)
+          break
+        case 'sse':
+          await this.connectSSE(connection, serverConfig)
+          break
+        case 'websocket':
+          await this.connectWebSocket(connection, serverConfig)
+          break
+        default:
+          throw new Error(`Unsupported transport: ${serverConfig.transport}`)
       }
 
-      const client = new Client({
-        name: `mind-agent-${this.agent?.id || 'unknown'}`,
-        version: '1.0.0'
-      }, {
-        capabilities: {
-          tools: {},
-          resources: {},
-          prompts: {}
-        }
-      })
-
-      await client.connect(transport)
-
-      // Get server capabilities
-      const tools = await client.listTools()
-      const resources = await client.listResources()
-      const prompts = await client.listPrompts()
-
-      const clientInstance: McpClientInstance = {
-        name: serverConfig.name,
-        client,
-        transport,
-        process,
-        config: serverConfig,
-        tools: tools.tools || [],
-        resources: resources.resources || [],
-        prompts: prompts.prompts || [],
-        connected: true,
-        lastActivity: new Date()
-      }
-
-      this.clients.set(serverConfig.name, clientInstance)
+      // Initialize the connection
+      await this.initializeConnection(connection, serverConfig)
       
-      console.log(`✅ Connected to MCP server: ${serverConfig.name}`)
-      console.log(`📊 Server capabilities:`, {
-        tools: tools.tools?.length || 0,
-        resources: resources.resources?.length || 0,
-        prompts: prompts.prompts?.length || 0
+      connection.status = 'connected'
+      connection.stats.uptime = Date.now()
+      this.state.globalStats.activeConnections++
+      this.state.globalStats.totalConnections++
+      
+      this.emit('connection:connected', { 
+        serverId, 
+        capabilities: connection.capabilities || {} 
       })
-
-      // Emit connection event
-      this.agent?.eventBus.emit('serverConnected', {
-        serverName: serverConfig.name,
-        capabilities: {
-          tools: tools.tools?.length || 0,
-          resources: resources.resources?.length || 0,
-          prompts: prompts.prompts?.length || 0
-        },
-        timestamp: new Date(),
-        processed: false
-      })
+      
+      this.log(`Successfully connected to MCP server: ${serverId}`)
+      return true
+      
     } catch (error) {
-      console.error(`❌ Failed to connect to MCP server ${serverConfig.name}:`, error)
+      connection.status = 'error'
+      connection.lastError = error instanceof Error ? error.message : String(error)
+      this.state.globalStats.totalErrors++
+      
+      this.emit('connection:error', { serverId, error: error as Error })
+      this.log(`Failed to connect to MCP server ${serverId}: ${connection.lastError}`)
+      
+      // Schedule reconnection if enabled
+      if (serverConfig.autoReconnect && !this.isShuttingDown) {
+        this.scheduleReconnection(serverId)
+      }
+      
+      return false
+    }
+  }
+
+  async disconnectFromServer(serverId: string): Promise<void> {
+    const connection = this.state.connections.get(serverId)
+    if (!connection) {
+      return
+    }
+
+    this.log(`Disconnecting from MCP server: ${serverId}`)
+    
+    // Clear reconnect timer
+    const timer = this.reconnectTimers.get(serverId)
+    if (timer) {
+      clearTimeout(timer)
+      this.reconnectTimers.delete(serverId)
+    }
+    
+    // Reject all pending requests
+    for (const [requestId, pendingRequest] of connection.pendingRequests) {
+      clearTimeout(pendingRequest.timeout)
+      pendingRequest.reject(new Error('Connection closed'))
+    }
+    connection.pendingRequests.clear()
+    
+    // Close transport
+    try {
+      if (connection.process) {
+        connection.process.kill('SIGTERM')
+      }
+      if (connection.client) {
+        if (typeof connection.client.close === 'function') {
+          connection.client.close()
+        } else if (typeof connection.client.terminate === 'function') {
+          connection.client.terminate()
+        }
+      }
+    } catch (error) {
+      this.log(`Error closing transport for ${serverId}: ${error}`)
+    }
+    
+    if (connection.status === 'connected') {
+      this.state.globalStats.activeConnections--
+    }
+    
+    connection.status = 'disconnected'
+    this.emit('connection:disconnected', { serverId })
+    
+    this.log(`Disconnected from MCP server: ${serverId}`)
+  }
+
+  private async connectStdio(connection: McpConnection, config: McpServerConfig): Promise<void> {
+    const process = spawn(config.command, config.args || [], {
+      cwd: config.cwd,
+      env: { ...process.env, ...config.env },
+      stdio: ['pipe', 'pipe', 'pipe']
+    })
+
+    connection.process = process
+    
+    // Handle process events
+    process.on('error', (error) => {
+      connection.status = 'error'
+      connection.lastError = error.message
+      this.emit('connection:error', { serverId: connection.serverId, error })
+    })
+    
+    process.on('exit', (code) => {
+      if (connection.status === 'connected') {
+        this.emit('connection:disconnected', { 
+          serverId: connection.serverId, 
+          reason: `Process exited with code ${code}` 
+        })
+      }
+    })
+    
+    // Set up message handling
+    this.setupStdioMessageHandling(connection)
+  }
+
+  private async connectSSE(connection: McpConnection, config: McpServerConfig): Promise<void> {
+    if (!config.url) {
+      throw new Error('URL is required for SSE transport')
+    }
+    
+    const eventSource = new EventSource(config.url)
+    connection.client = eventSource
+    
+    eventSource.onopen = () => {
+      this.log(`SSE connection opened for ${connection.serverId}`)
+    }
+    
+    eventSource.onerror = (error) => {
+      connection.status = 'error'
+      connection.lastError = 'SSE connection error'
+      this.emit('connection:error', { serverId: connection.serverId, error: new Error('SSE error') })
+    }
+    
+    eventSource.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data)
+        this.handleMessage(connection, message)
+      } catch (error) {
+        this.log(`Failed to parse SSE message: ${error}`)
+      }
+    }
+  }
+
+  private async connectWebSocket(connection: McpConnection, config: McpServerConfig): Promise<void> {
+    if (!config.url) {
+      throw new Error('URL is required for WebSocket transport')
+    }
+    
+    const ws = new WebSocket(config.url)
+    connection.client = ws
+    
+    ws.on('open', () => {
+      this.log(`WebSocket connection opened for ${connection.serverId}`)
+    })
+    
+    ws.on('error', (error) => {
+      connection.status = 'error'
+      connection.lastError = error.message
+      this.emit('connection:error', { serverId: connection.serverId, error })
+    })
+    
+    ws.on('close', () => {
+      if (connection.status === 'connected') {
+        this.emit('connection:disconnected', { serverId: connection.serverId })
+      }
+    })
+    
+    ws.on('message', (data) => {
+      try {
+        const message = JSON.parse(data.toString())
+        this.handleMessage(connection, message)
+      } catch (error) {
+        this.log(`Failed to parse WebSocket message: ${error}`)
+      }
+    })
+  }
+
+  private setupStdioMessageHandling(connection: McpConnection): void {
+    if (!connection.process?.stdout) {
+      throw new Error('Process stdout not available')
+    }
+    
+    let buffer = ''
+    
+    connection.process.stdout.on('data', (data) => {
+      buffer += data.toString()
+      
+      // Process complete JSON messages
+      let newlineIndex
+      while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
+        const line = buffer.slice(0, newlineIndex).trim()
+        buffer = buffer.slice(newlineIndex + 1)
+        
+        if (line) {
+          try {
+            const message = JSON.parse(line)
+            this.handleMessage(connection, message)
+          } catch (error) {
+            this.log(`Failed to parse stdio message: ${error}`)
+          }
+        }
+      }
+    })
+  }
+
+  private async initializeConnection(connection: McpConnection, config: McpServerConfig): Promise<void> {
+    const initRequest: McpInitializeRequest = {
+      protocolVersion: '2024-11-05',
+      capabilities: config.capabilities || {
+        tools: true,
+        resources: true,
+        prompts: true,
+        logging: this.mcpClientConfig.enableLogging || false
+      },
+      clientInfo: {
+        name: 'SYMindX MCP Client',
+        version: '1.0.0'
+      }
+    }
+    
+    const response = await this.sendRequest(connection, 'initialize', initRequest)
+    const initResponse = response.result as McpInitializeResponse
+    
+    connection.capabilities = initResponse.capabilities
+    
+    // Send initialized notification
+    await this.sendNotification(connection, 'notifications/initialized', {})
+  }
+
+  private handleMessage(connection: McpConnection, message: McpMessage): void {
+    connection.stats.messagesReceived++
+    connection.stats.lastActivity = new Date()
+    this.state.globalStats.totalMessages++
+    this.state.globalStats.lastActivity = new Date()
+    
+    if (message.id !== undefined) {
+      // This is a response to a request
+      const pendingRequest = connection.pendingRequests.get(message.id)
+      if (pendingRequest) {
+        clearTimeout(pendingRequest.timeout)
+        connection.pendingRequests.delete(message.id)
+        
+        if (message.error) {
+          pendingRequest.reject(new Error(message.error.message))
+        } else {
+          pendingRequest.resolve(message as McpResponse)
+        }
+      }
+    } else if (message.method) {
+      // This is a notification or request from the server
+      this.handleServerMessage(connection, message as McpNotification)
+    }
+  }
+
+  private handleServerMessage(connection: McpConnection, message: McpNotification): void {
+    switch (message.method) {
+      case 'notifications/resources/updated':
+        this.emit('resource:updated', {
+          serverId: connection.serverId,
+          uri: message.params?.uri
+        })
+        break
+      case 'notifications/tools/list_changed':
+        // Refresh tool list
+        break
+      case 'notifications/prompts/list_changed':
+        // Refresh prompt list
+        break
+      case 'notifications/progress':
+        this.emit('progress:update', {
+          serverId: connection.serverId,
+          progress: message.params
+        })
+        break
+      default:
+        this.log(`Unhandled server message: ${message.method}`)
+    }
+  }
+
+  private async sendRequest(connection: McpConnection, method: string, params?: any): Promise<McpResponse> {
+    const requestId = connection.messageId++
+    const request: McpRequest = {
+      jsonrpc: '2.0',
+      id: requestId,
+      method,
+      params
+    }
+    
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        connection.pendingRequests.delete(requestId)
+        reject(new Error(`Request timeout: ${method}`))
+      }, this.mcpClientConfig.timeout || 30000)
+      
+      const pendingRequest: PendingRequest = {
+        resolve,
+        reject,
+        timeout,
+        method,
+        timestamp: new Date()
+      }
+      
+      connection.pendingRequests.set(requestId, pendingRequest)
+      this.sendMessage(connection, request)
+    })
+  }
+
+  private async sendNotification(connection: McpConnection, method: string, params?: any): Promise<void> {
+    const notification: McpNotification = {
+      jsonrpc: '2.0',
+      method,
+      params
+    }
+    
+    this.sendMessage(connection, notification)
+  }
+
+  private sendMessage(connection: McpConnection, message: McpMessage): void {
+    connection.stats.messagesSent++
+    
+    const messageStr = JSON.stringify(message)
+    
+    try {
+      switch (connection.transport) {
+        case 'stdio':
+          if (connection.process?.stdin) {
+            connection.process.stdin.write(messageStr + '\n')
+          }
+          break
+        case 'websocket':
+          if (connection.client && connection.client.readyState === WebSocket.OPEN) {
+            connection.client.send(messageStr)
+          }
+          break
+        case 'sse':
+          // SSE is typically one-way, server to client
+          throw new Error('Cannot send messages over SSE transport')
+        default:
+          throw new Error(`Unsupported transport: ${connection.transport}`)
+      }
+    } catch (error) {
+      this.log(`Failed to send message: ${error}`)
       throw error
     }
   }
 
-  private scheduleReconnect(serverName: string): void {
-    const reconnectConfig = this.config.reconnect
-    if (!reconnectConfig?.enabled) return
-
-    const delay = reconnectConfig.delay || 5000
-    console.log(`⏰ Scheduling reconnection for ${serverName} in ${delay}ms`)
-
+  private scheduleReconnection(serverId: string): void {
+    const connection = this.state.connections.get(serverId)
+    const serverConfig = this.mcpClientConfig.servers.find(s => s.id === serverId)
+    
+    if (!connection || !serverConfig || this.isShuttingDown) {
+      return
+    }
+    
+    const maxAttempts = serverConfig.maxReconnectAttempts || this.mcpClientConfig.reconnectAttempts || 3
+    if (connection.reconnectAttempts >= maxAttempts) {
+      this.log(`Max reconnection attempts reached for ${serverId}`)
+      return
+    }
+    
+    const delay = serverConfig.reconnectDelay || this.mcpClientConfig.reconnectDelay || 5000
     const timer = setTimeout(async () => {
-      try {
-        await this.reconnectServer(serverName)
-      } catch (error) {
-        console.error(`❌ Reconnection failed for ${serverName}:`, error)
-      }
+      this.reconnectTimers.delete(serverId)
+      connection.reconnectAttempts++
+      connection.status = 'reconnecting'
+      
+      this.emit('connection:reconnecting', { 
+        serverId, 
+        attempt: connection.reconnectAttempts 
+      })
+      
+      await this.connectToServer(serverId)
     }, delay)
-
-    this.reconnectTimers.set(serverName, timer)
+    
+    this.reconnectTimers.set(serverId, timer)
   }
 
-  private async reconnectServer(serverName: string): Promise<void> {
-    const serverConfig = this.config.servers.find(s => s.name === serverName)
-    if (!serverConfig) return
+  private async connectToEnabledServers(): Promise<void> {
+    const enabledServers = this.mcpClientConfig.servers.filter(s => s.enabled !== false)
+    const connectionPromises = enabledServers.map(server => 
+      this.connectToServer(server.id).catch(error => {
+        this.log(`Failed to connect to ${server.id}: ${error.message}`)
+        return false
+      })
+    )
+    
+    await Promise.allSettled(connectionPromises)
+  }
 
-    // Clear existing timer
-    const existingTimer = this.reconnectTimers.get(serverName)
-    if (existingTimer) {
-      clearTimeout(existingTimer)
-      this.reconnectTimers.delete(serverName)
+  // Public API Methods
+  async callTool(serverId: string, toolName: string, arguments_?: Record<string, any>): Promise<McpToolCallResponse> {
+    const connection = this.state.connections.get(serverId)
+    if (!connection || connection.status !== 'connected') {
+      throw new Error(`Not connected to server: ${serverId}`)
     }
+    
+    const request: McpToolCallRequest = {
+      name: toolName,
+      arguments: arguments_
+    }
+    
+    connection.stats.toolCallsCount++
+    this.emit('tool:called', { serverId, toolName, arguments: arguments_ })
+    
+    const response = await this.sendRequest(connection, 'tools/call', request)
+    return response.result as McpToolCallResponse
+  }
 
-    // Disconnect existing client if any
-    const existingClient = this.clients.get(serverName)
-    if (existingClient) {
+  async listTools(serverId: string): Promise<McpTool[]> {
+    const connection = this.state.connections.get(serverId)
+    if (!connection || connection.status !== 'connected') {
+      throw new Error(`Not connected to server: ${serverId}`)
+    }
+    
+    const response = await this.sendRequest(connection, 'tools/list', {})
+    const result = response.result as McpToolListResponse
+    return result.tools
+  }
+
+  async readResource(serverId: string, uri: string): Promise<McpResourceResponse> {
+    const connection = this.state.connections.get(serverId)
+    if (!connection || connection.status !== 'connected') {
+      throw new Error(`Not connected to server: ${serverId}`)
+    }
+    
+    const request: McpResourceRequest = { uri }
+    
+    connection.stats.resourceReadsCount++
+    this.emit('resource:read', { serverId, uri })
+    
+    const response = await this.sendRequest(connection, 'resources/read', request)
+    return response.result as McpResourceResponse
+  }
+
+  async listResources(serverId: string): Promise<McpResource[]> {
+    const connection = this.state.connections.get(serverId)
+    if (!connection || connection.status !== 'connected') {
+      throw new Error(`Not connected to server: ${serverId}`)
+    }
+    
+    const response = await this.sendRequest(connection, 'resources/list', {})
+    const result = response.result as McpResourceListResponse
+    return result.resources
+  }
+
+  async getPrompt(serverId: string, promptName: string, arguments_?: Record<string, any>): Promise<McpPromptResponse> {
+    const connection = this.state.connections.get(serverId)
+    if (!connection || connection.status !== 'connected') {
+      throw new Error(`Not connected to server: ${serverId}`)
+    }
+    
+    const request: McpPromptRequest = {
+      name: promptName,
+      arguments: arguments_
+    }
+    
+    connection.stats.promptGetsCount++
+    this.emit('prompt:get', { serverId, promptName, arguments: arguments_ })
+    
+    const response = await this.sendRequest(connection, 'prompts/get', request)
+    return response.result as McpPromptResponse
+  }
+
+  async listPrompts(serverId: string): Promise<McpPrompt[]> {
+    const connection = this.state.connections.get(serverId)
+    if (!connection || connection.status !== 'connected') {
+      throw new Error(`Not connected to server: ${serverId}`)
+    }
+    
+    const response = await this.sendRequest(connection, 'prompts/list', {})
+    const result = response.result as McpPromptListResponse
+    return result.prompts
+  }
+
+  // Event Management
+  on<T extends keyof McpClientEvents>(event: T, handler: McpClientEventHandler<T>): void {
+    const handlers = this.state.eventHandlers.get(event) || []
+    handlers.push(handler)
+    this.state.eventHandlers.set(event, handlers)
+  }
+
+  off<T extends keyof McpClientEvents>(event: T, handler: McpClientEventHandler<T>): void {
+    const handlers = this.state.eventHandlers.get(event) || []
+    const index = handlers.indexOf(handler)
+    if (index !== -1) {
+      handlers.splice(index, 1)
+      this.state.eventHandlers.set(event, handlers)
+    }
+  }
+
+  private emit<T extends keyof McpClientEvents>(event: T, data: McpClientEvents[T]): void {
+    const handlers = this.state.eventHandlers.get(event) || []
+    for (const handler of handlers) {
       try {
-        await existingClient.client.close()
+        handler(data)
       } catch (error) {
-        console.warn(`⚠️ Error closing existing client for ${serverName}:`, error)
-      }
-      this.clients.delete(serverName)
-    }
-
-    // Attempt reconnection
-    try {
-      await this.connectToServer(serverConfig)
-      console.log(`✅ Successfully reconnected to ${serverName}`)
-    } catch (error) {
-      console.error(`❌ Reconnection failed for ${serverName}:`, error)
-      
-      // Schedule another reconnection attempt
-      const maxRetries = this.config.reconnect?.maxRetries || 5
-      const currentRetries = this.reconnectTimers.size // Simple retry tracking
-      
-      if (currentRetries < maxRetries) {
-        this.scheduleReconnect(serverName)
-      } else {
-        console.error(`❌ Max reconnection attempts reached for ${serverName}`)
+        this.log(`Error in event handler for ${event}: ${error}`)
       }
     }
   }
 
-  private async disconnectAll(): Promise<void> {
-    console.log('🔌 Disconnecting all MCP clients...')
-    
-    for (const [name, clientInstance] of this.clients.entries()) {
-      try {
-        await clientInstance.client.close()
-        console.log(`✅ Disconnected from MCP server: ${name}`)
-        
-        // Emit disconnection event
-        this.agent?.eventBus.emit('serverDisconnected', {
-          serverName: name,
-          timestamp: new Date(),
-          processed: false
-        })
-      } catch (error) {
-        console.error(`❌ Error disconnecting from ${name}:`, error)
-      }
-    }
-    
-    this.clients.clear()
+  // Status and Monitoring
+  getConnectionStatus(serverId: string): McpConnectionStatus | undefined {
+    const connection = this.state.connections.get(serverId)
+    return connection?.status
   }
 
-  private async handleError(error: Error): Promise<void> {
-    console.error('❌ MCP Client Extension error:', error)
-    
-    // Emit error event
-    this.agent?.eventBus.emit('extensionError', {
-      extensionName: this.name,
-      error: error.message,
-      timestamp: new Date(),
-      processed: false
-    })
+  getConnectedServers(): string[] {
+    return Array.from(this.state.connections.entries())
+      .filter(([_, connection]) => connection.status === 'connected')
+      .map(([serverId, _]) => serverId)
   }
 
-  // Get all actions from skills and legacy actions
-  get actions(): Record<string, ExtensionAction> {
-    const skillActions: Record<string, ExtensionAction> = {}
-    
-    // Collect actions from all skills
-    if (this.skills) {
-      Object.values(this.skills).forEach(skill => {
-        const actions = skill.getActions()
-        Object.assign(skillActions, actions)
-      })
-    }
-    
-    // Legacy actions for backward compatibility
-    const legacyActions: Record<string, ExtensionAction> = {
-      callTool: {
-        name: 'callTool',
-        description: 'Call a tool on a connected MCP server',
-        category: ActionCategory.INTEGRATION,
-        parameters: {
-          serverName: { type: 'string', required: true, description: 'Name of the MCP server' },
-          toolName: { type: 'string', required: true, description: 'Name of the tool to call' },
-          arguments: { type: 'object', required: false, description: 'Arguments for the tool' }
-        },
-        handler: async (params: SkillParameters): Promise<ActionResult> => {
-          return await this.callTool(params as McpToolCall)
-        }
-      },
-      getResource: {
-        name: 'getResource',
-        description: 'Get a resource from a connected MCP server',
-        category: ActionCategory.INTEGRATION,
-        parameters: {
-          serverName: { type: 'string', required: true, description: 'Name of the MCP server' },
-          uri: { type: 'string', required: true, description: 'URI of the resource' }
-        },
-        handler: async (params: SkillParameters): Promise<ActionResult> => {
-          return await this.getResource(params as McpResourceRequest)
-        }
-      },
-      getPrompt: {
-        name: 'getPrompt',
-        description: 'Get a prompt from a connected MCP server',
-        category: ActionCategory.INTEGRATION,
-        parameters: {
-          serverName: { type: 'string', required: true, description: 'Name of the MCP server' },
-          name: { type: 'string', required: true, description: 'Name of the prompt' },
-          arguments: { type: 'object', required: false, description: 'Arguments for the prompt' }
-        },
-        handler: async (params: SkillParameters): Promise<ActionResult> => {
-          return await this.getPrompt(params as McpPromptRequest)
-        }
-      },
-      listServers: {
-        name: 'listServers',
-        description: 'List all connected MCP servers and their capabilities',
-        category: ActionCategory.INTEGRATION,
-        parameters: {},
-        handler: async (): Promise<ActionResult> => {
-          return await this.listServers()
-        }
-      },
-      getServerStatus: {
-        name: 'getServerStatus',
-        description: 'Get the status of a specific MCP server',
-        category: ActionCategory.INTEGRATION,
-        parameters: {
-          serverName: { type: 'string', required: true, description: 'Name of the MCP server' }
-        },
-        handler: async (params: SkillParameters): Promise<ActionResult> => {
-          return await this.getServerStatus(params.serverName as string)
-        }
-      },
-      reconnectServer: {
-        name: 'reconnectServer',
-        description: 'Reconnect to a specific MCP server',
-        category: ActionCategory.INTEGRATION,
-        parameters: {
-          serverName: { type: 'string', required: true, description: 'Name of the MCP server' }
-        },
-        handler: async (params: SkillParameters): Promise<ActionResult> => {
-          try {
-            await this.reconnectServer(params.serverName as string)
-            return {
-              type: ActionResultType.SUCCESS,
-              message: `Successfully reconnected to server: ${params.serverName}`,
-              result: { serverName: params.serverName, status: 'reconnected' } as unknown as GenericData
-            }
-          } catch (error) {
-            return {
-              type: ActionResultType.ERROR,
-              message: `Failed to reconnect to server: ${params.serverName}`,
-              error: error instanceof Error ? error.message : String(error)
-            }
-          }
-        }
-      }
-    }
-    
-    return { ...skillActions, ...legacyActions }
+  getServerStats(serverId: string) {
+    const connection = this.state.connections.get(serverId)
+    return connection?.stats
   }
 
-  // Extension Events
-  events: Record<string, ExtensionEventHandler> = {
-    serverConnected: {
-      name: 'serverConnected',
-      description: 'Fired when an MCP server connects',
-      handler: async (data: GenericData) => {
-        console.log('📡 MCP server connected:', data)
-      }
-    },
-    serverDisconnected: {
-      name: 'serverDisconnected',
-      description: 'Fired when an MCP server disconnects',
-      handler: async (data: GenericData) => {
-        console.log('📡 MCP server disconnected:', data)
-      }
-    }
-  }
-
-  // Legacy action implementations
-  private async callTool(request: McpToolCall): Promise<ActionResult> {
-    try {
-      const clientInstance = this.clients.get(request.serverName)
-      if (!clientInstance) {
-        return {
-          type: ActionResultType.ERROR,
-          message: `MCP server not found: ${request.serverName}`,
-          error: 'Server not connected'
-        }
-      }
-
-      if (!clientInstance.connected) {
-        return {
-          type: ActionResultType.ERROR,
-          message: `MCP server not connected: ${request.serverName}`,
-          error: 'Server disconnected'
-        }
-      }
-
-      // Update last activity
-      clientInstance.lastActivity = new Date()
-
-      const result = await clientInstance.client.callTool({
-        name: request.toolName,
-        arguments: request.arguments || {}
-      })
-
-      // Emit tool call event
-      this.agent?.eventBus.emit('mcpToolCalled', {
-        serverName: request.serverName,
-        toolName: request.toolName,
-        arguments: request.arguments,
-        result,
-        timestamp: new Date(),
-        processed: false
-      })
-
-      return {
-        type: ActionResultType.SUCCESS,
-        message: `Tool ${request.toolName} executed successfully`,
-        result: result as unknown as GenericData
-      }
-    } catch (error) {
-      return {
-        type: ActionResultType.ERROR,
-        message: `Failed to call tool ${request.toolName}`,
-        error: error instanceof Error ? error.message : String(error)
-      }
-    }
-  }
-
-  private async getResource(request: McpResourceRequest): Promise<ActionResult> {
-    try {
-      const clientInstance = this.clients.get(request.serverName)
-      if (!clientInstance) {
-        return {
-          type: ActionResultType.ERROR,
-          message: `MCP server not found: ${request.serverName}`,
-          error: 'Server not connected'
-        }
-      }
-
-      if (!clientInstance.connected) {
-        return {
-          type: ActionResultType.ERROR,
-          message: `MCP server not connected: ${request.serverName}`,
-          error: 'Server disconnected'
-        }
-      }
-
-      // Update last activity
-      clientInstance.lastActivity = new Date()
-
-      const result = await clientInstance.client.readResource({ uri: request.uri })
-
-      return {
-        type: ActionResultType.SUCCESS,
-        message: `Resource retrieved successfully: ${request.uri}`,
-        result: result as unknown as GenericData
-      }
-    } catch (error) {
-      return {
-        type: ActionResultType.ERROR,
-        message: `Failed to get resource: ${request.uri}`,
-        error: error instanceof Error ? error.message : String(error)
-      }
-    }
-  }
-
-  private async getPrompt(request: McpPromptRequest): Promise<ActionResult> {
-    try {
-      const clientInstance = this.clients.get(request.serverName)
-      if (!clientInstance) {
-        return {
-          type: ActionResultType.ERROR,
-          message: `MCP server not found: ${request.serverName}`,
-          error: 'Server not connected'
-        }
-      }
-
-      if (!clientInstance.connected) {
-        return {
-          type: ActionResultType.ERROR,
-          message: `MCP server not connected: ${request.serverName}`,
-          error: 'Server disconnected'
-        }
-      }
-
-      // Update last activity
-      clientInstance.lastActivity = new Date()
-
-      const result = await clientInstance.client.getPrompt({
-        name: request.name,
-        arguments: request.arguments || {}
-      })
-
-      return {
-        type: ActionResultType.SUCCESS,
-        message: `Prompt retrieved successfully: ${request.name}`,
-        result: result as unknown as GenericData
-      }
-    } catch (error) {
-      return {
-        type: ActionResultType.ERROR,
-        message: `Failed to get prompt: ${request.name}`,
-        error: error instanceof Error ? error.message : String(error)
-      }
-    }
-  }
-
-  private async listServers(): Promise<ActionResult> {
-    const servers: McpServerStatus[] = []
-    
-    for (const [name, clientInstance] of this.clients.entries()) {
-      servers.push({
-        name,
-        connected: clientInstance.connected,
-        transport: clientInstance.config.transport,
-        capabilities: {
-          tools: clientInstance.tools.length,
-          resources: clientInstance.resources.length,
-          prompts: clientInstance.prompts.length
-        },
-        lastActivity: clientInstance.lastActivity
-      })
-    }
-    
+  getGlobalStats() {
     return {
-      type: ActionResultType.SUCCESS,
-      message: `Found ${servers.length} MCP servers`,
-      result: servers as unknown as GenericData
+      ...this.state.globalStats,
+      uptime: Date.now() - this.state.globalStats.uptime
     }
   }
 
-  private async getServerStatus(serverName: string): Promise<ActionResult> {
-    const clientInstance = this.clients.get(serverName)
-    if (!clientInstance) {
-      return {
-        type: ActionResultType.ERROR,
-        message: `MCP server not found: ${serverName}`,
-        error: 'Server not found'
-      }
+  // Configuration Management
+  async addServer(serverConfig: McpServerConfig): Promise<void> {
+    // Check if server already exists
+    const existingIndex = this.mcpClientConfig.servers.findIndex(s => s.id === serverConfig.id)
+    if (existingIndex !== -1) {
+      throw new Error(`Server with ID ${serverConfig.id} already exists`)
     }
-
-    const status: McpServerStatus = {
-      name: serverName,
-      connected: clientInstance.connected,
-      transport: clientInstance.config.transport,
-      capabilities: {
-        tools: clientInstance.tools.length,
-        resources: clientInstance.resources.length,
-        prompts: clientInstance.prompts.length
-      },
-      lastActivity: clientInstance.lastActivity,
-      tools: clientInstance.tools,
-      resources: clientInstance.resources,
-      prompts: clientInstance.prompts
-    }
-
-    return {
-      type: ActionResultType.SUCCESS,
-      message: `Server status retrieved: ${serverName}`,
-      result: status as unknown as GenericData
+    
+    this.mcpClientConfig.servers.push(serverConfig)
+    
+    // Auto-connect if enabled
+    if (this.mcpClientConfig.autoConnect && serverConfig.enabled !== false) {
+      await this.connectToServer(serverConfig.id)
     }
   }
 
-  // Utility methods for getting available capabilities
-  getAvailableTools(): Array<{ serverName: string; tools: any[] }> {
-    const result: Array<{ serverName: string; tools: any[] }> = []
+  async removeServer(serverId: string): Promise<void> {
+    // Disconnect if connected
+    await this.disconnectFromServer(serverId)
     
-    for (const [serverName, clientInstance] of this.clients.entries()) {
-      if (clientInstance.connected) {
-        result.push({
-          serverName,
-          tools: clientInstance.tools
-        })
-      }
+    // Remove from configuration
+    const index = this.mcpClientConfig.servers.findIndex(s => s.id === serverId)
+    if (index !== -1) {
+      this.mcpClientConfig.servers.splice(index, 1)
     }
-    
-    return result
   }
 
-  getAvailableResources(): Array<{ serverName: string; resources: any[] }> {
-    const result: Array<{ serverName: string; resources: any[] }> = []
-    
-    for (const [serverName, clientInstance] of this.clients.entries()) {
-      if (clientInstance.connected) {
-        result.push({
-          serverName,
-          resources: clientInstance.resources
-        })
-      }
+  async updateServer(serverId: string, updates: Partial<McpServerConfig>): Promise<void> {
+    const index = this.mcpClientConfig.servers.findIndex(s => s.id === serverId)
+    if (index === -1) {
+      throw new Error(`Server not found: ${serverId}`)
     }
     
-    return result
+    // Disconnect if connected
+    await this.disconnectFromServer(serverId)
+    
+    // Update configuration
+    this.mcpClientConfig.servers[index] = {
+      ...this.mcpClientConfig.servers[index],
+      ...updates
+    }
+    
+    // Reconnect if enabled
+    const updatedConfig = this.mcpClientConfig.servers[index]
+    if (this.mcpClientConfig.autoConnect && updatedConfig.enabled !== false) {
+      await this.connectToServer(serverId)
+    }
   }
 
-  getAvailablePrompts(): Array<{ serverName: string; prompts: any[] }> {
-    const result: Array<{ serverName: string; prompts: any[] }> = []
-    
-    for (const [serverName, clientInstance] of this.clients.entries()) {
-      if (clientInstance.connected) {
-        result.push({
-          serverName,
-          prompts: clientInstance.prompts
-        })
-      }
+  private log(message: string): void {
+    if (this.mcpClientConfig.enableLogging) {
+      console.log(`[MCP Client] ${message}`)
     }
-    
-    return result
   }
 }
+
+export default McpClientExtension
+export * from './types.js'

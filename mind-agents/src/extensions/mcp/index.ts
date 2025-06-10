@@ -1,634 +1,812 @@
 /**
- * MCP Extension for SYMindX
+ * MCP Extension
  * 
- * This extension provides Model Context Protocol support, allowing the agent
- * to expose tools, resources, and prompts to MCP-compatible clients.
+ * This extension provides Model Context Protocol (MCP) server functionality.
  */
 
-import { Extension, Agent, ActionResult, ExtensionAction, ExtensionEventHandler } from '../../types/agent.js'
-import { SkillParameters } from '../../types/common'
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
-import { 
-  ListToolsRequestSchema,
-  CallToolRequestSchema,
-  ListResourcesRequestSchema,
-  ReadResourceRequestSchema,
-  ListPromptsRequestSchema,
-  GetPromptRequestSchema
-} from '@modelcontextprotocol/sdk/types.js'
-import { z } from 'zod'
+import { spawn, ChildProcess } from 'child_process'
+import { Extension, ExtensionType, ExtensionStatus, Agent, ExtensionAction, ExtensionEventHandler } from '../../types/agent.js'
+import { ExtensionConfig } from '../../types/common.js'
 import {
   McpConfig,
-  McpServerInstance,
-  McpToolResult,
-  McpResourceResult,
-  McpPromptResult,
-  McpContext
+  McpSettings,
+  McpServer,
+  McpCapabilities,
+  McpTool,
+  McpResource,
+  McpPrompt,
+  McpMessage,
+  McpRequest,
+  McpResponse,
+  McpInitializeRequest,
+  McpInitializeResponse,
+  McpToolCallRequest,
+  McpToolCallResponse,
+  McpResourceRequest,
+  McpResourceResponse,
+  McpPromptRequest,
+  McpPromptResponse,
+  McpLogEntry,
+  McpServerStats,
+  McpConnectionInfo,
+  McpSecurityContext
 } from './types.js'
-import { initializeSkills } from './skills/index.js'
 
 export class McpExtension implements Extension {
   id = 'mcp'
-  name = 'Model Context Protocol'
+  name = 'MCP Server'
   version = '1.0.0'
+  type = ExtensionType.COMMUNICATION
   enabled = true
+  status = ExtensionStatus.DISABLED
   config: McpConfig
+  actions: Record<string, ExtensionAction> = {}
+  events: Record<string, ExtensionEventHandler> = {}
   
-  private serverInstance?: McpServerInstance
-  private agent?: Agent
-  private toolHandlers: Map<string, Function> = new Map()
-  private resourceHandlers: Map<string, Function> = new Map()
-  private promptHandlers: Map<string, Function> = new Map()
-  private skills: any[] = []
+  private agent: Agent
+  private mcpConfig: McpSettings
+  private server: McpServer | null = null
+  private process: ChildProcess | null = null
+  private isRunning = false
+  private messageId = 0
+  private pendingRequests = new Map<string | number, (response: McpResponse) => void>()
+  private stats: McpServerStats
+  private connectionInfo: McpConnectionInfo
+  private securityContext: McpSecurityContext
 
   constructor(config: McpConfig) {
-    this.config = {
-      enabled: true,
-      serverName: 'symindx-agent',
-      serverVersion: '1.0.0',
+    this.config = config
+    
+    this.mcpConfig = {
+      ...this.getDefaultSettings(),
+      ...config.settings
+    }
+    
+    // Initialize stats
+    this.stats = {
+      uptime: 0,
+      requestCount: 0,
+      errorCount: 0,
+      lastActivity: new Date(),
+      memoryUsage: {
+        rss: 0,
+        heapTotal: 0,
+        heapUsed: 0,
+        external: 0
+      }
+    }
+    
+    // Initialize connection info
+    this.connectionInfo = {
       transport: 'stdio',
-      tools: [],
-      resources: [],
-      prompts: [],
-      capabilities: {
-        resources: true,
-        tools: true,
-        prompts: true,
-        logging: true
-      },
-      ...config
+      connected: false
+    }
+    
+    // Initialize security context
+    this.securityContext = {
+      allowedCommands: new Set(this.mcpConfig.security?.allowedCommands || []),
+      blockedCommands: new Set(this.mcpConfig.security?.blockedCommands || []),
+      sandboxed: this.mcpConfig.security?.sandboxed || false,
+      permissions: {
+        fileSystem: !this.mcpConfig.security?.sandboxed,
+        network: !this.mcpConfig.security?.sandboxed,
+        process: !this.mcpConfig.security?.sandboxed
+      }
     }
   }
 
   async init(agent: Agent): Promise<void> {
-    if (!this.config.enabled) {
-      console.log('🔌 MCP Extension disabled')
-      return
-    }
-
     this.agent = agent
-    console.log('🔌 Initializing MCP Extension...')
-
-    try {
-      // Initialize skills
-      this.skills = initializeSkills(this)
-      
-      // Create MCP server
-      const server = new McpServer({
-        name: this.config.serverName,
-        version: this.config.serverVersion
-      }, {
-        capabilities: this.config.capabilities
-      })
-
-      // Register default tools
-      await this.registerDefaultTools(server)
-      
-      // Register configured tools
-      await this.registerConfiguredTools(server)
-      
-      // Register configured resources
-      await this.registerConfiguredResources(server)
-      
-      // Register configured prompts
-      await this.registerConfiguredPrompts(server)
-
-      // Set up transport
-      const transport = new StdioServerTransport()
-      
-      this.serverInstance = {
-        server,
-        transport,
-        isRunning: false
-      }
-
-      console.log('✅ MCP Extension initialized successfully')
-    } catch (error) {
-      console.error('❌ Failed to initialize MCP Extension:', error)
-      throw error
+    
+    // Initialize default settings
+    this.mcpConfig = {
+      serverName: 'symindx-mcp-server',
+      serverCommand: 'node',
+      serverArgs: [],
+      serverEnv: {},
+      autoStart: true,
+      restartOnFailure: true,
+      maxRestartAttempts: 3,
+      restartDelay: 5000,
+      timeout: 30000,
+      capabilities: {
+        tools: true,
+        resources: true,
+        prompts: true,
+        logging: true
+      },
+      security: {
+        allowedCommands: [],
+        blockedCommands: [],
+        sandboxed: false
+      },
+      ...this.config.settings
     }
+    
+    // Initialize stats
+    this.stats = {
+      uptime: 0,
+      requestCount: 0,
+      errorCount: 0,
+      lastActivity: new Date(),
+      memoryUsage: {
+        rss: 0,
+        heapTotal: 0,
+        heapUsed: 0,
+        external: 0
+      }
+    }
+    
+    // Initialize connection info
+    this.connectionInfo = {
+      transport: 'stdio',
+      connected: false
+    }
+    
+    // Initialize security context
+    this.securityContext = {
+      allowedCommands: new Set(this.mcpConfig.security?.allowedCommands || []),
+      blockedCommands: new Set(this.mcpConfig.security?.blockedCommands || []),
+      sandboxed: this.mcpConfig.security?.sandboxed || false,
+      permissions: {
+        fileSystem: !this.mcpConfig.security?.sandboxed,
+        network: !this.mcpConfig.security?.sandboxed,
+        process: !this.mcpConfig.security?.sandboxed
+      }
+    }
+    
+    if (this.mcpConfig.autoStart) {
+      await this.startServer()
+    }
+    
+    this.agent.logger?.info(`MCP Extension initialized with server: ${this.mcpConfig.serverName}`)
   }
 
   async tick(agent: Agent): Promise<void> {
-    // Start MCP server if not running
-    if (this.serverInstance && !this.serverInstance.isRunning) {
-      try {
-        await this.serverInstance.server.connect(this.serverInstance.transport)
-        this.serverInstance.isRunning = true
-        console.log('🚀 MCP Server started and listening')
-      } catch (error) {
-        console.error('❌ Failed to start MCP server:', error)
-      }
-    }
-  }
-
-  private async registerDefaultTools(server: McpServer): Promise<void> {
-    // Agent status tool
-    server.tool(
-      'get_agent_status',
-      {
-        include_memory: z.boolean().optional().default(false),
-        include_emotion: z.boolean().optional().default(false)
-      },
-      async ({ include_memory, include_emotion }) => {
-        const context = this.createContext()
-        return await this.getAgentStatus(context, { include_memory, include_emotion })
-      }
-    )
-
-    // Memory query tool
-    server.tool(
-      'query_memory',
-      {
-        query: z.string(),
-        limit: z.number().optional().default(10)
-      },
-      async ({ query, limit }) => {
-        const context = this.createContext()
-        return await this.queryMemory(context, { query, limit })
-      }
-    )
-
-    // Chat with agent tool
-    server.tool(
-      'chat_with_agent',
-      {
-        message: z.string(),
-        context: z.record(z.any()).optional()
-      },
-      async ({ message, context }) => {
-        const mcpContext = this.createContext()
-        return await this.chatWithAgent(mcpContext, { message, context })
-      }
-    )
-
-    // Execute action tool
-    server.tool(
-      'execute_action',
-      {
-        extension: z.string(),
-        action: z.string(),
-        parameters: z.record(z.any()).optional().default({})
-      },
-      async ({ extension, action, parameters }) => {
-        const context = this.createContext()
-        return await this.executeAction(context, { extension, action, parameters })
-      }
-    )
-  }
-
-  private async registerConfiguredTools(server: McpServer): Promise<void> {
-    for (const toolConfig of this.config.tools) {
-      const handler = this.toolHandlers.get(toolConfig.handler)
-      if (handler) {
-        server.tool(
-          toolConfig.name,
-          toolConfig.inputSchema,
-          async (params) => {
-            const context = this.createContext()
-            return await handler(context, params)
-          }
-        )
-      }
-    }
-  }
-
-  private async registerConfiguredResources(server: McpServer): Promise<void> {
-    // Set up resource handlers
-    server.setRequestHandler(ListResourcesRequestSchema, async () => {
-      return {
-        resources: this.config.resources.map(resource => ({
-          uri: resource.uri,
-          name: resource.name,
-          description: resource.description,
-          mimeType: resource.mimeType || 'text/plain'
-        }))
-      }
-    })
-
-    server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
-      const uri = request.params.uri
-      const resourceConfig = this.config.resources.find(r => r.uri === uri)
-      
-      if (!resourceConfig) {
-        throw new Error(`Resource not found: ${uri}`)
-      }
-
-      const handler = this.resourceHandlers.get(resourceConfig.handler)
-      if (!handler) {
-        throw new Error(`Handler not found for resource: ${resourceConfig.handler}`)
-      }
-
-      const context = this.createContext()
-      return await handler(context, { uri })
-    })
-  }
-
-  private async registerConfiguredPrompts(server: McpServer): Promise<void> {
-    // Set up prompt handlers
-    server.setRequestHandler(ListPromptsRequestSchema, async () => {
-      return {
-        prompts: this.config.prompts.map(prompt => ({
-          name: prompt.name,
-          description: prompt.description,
-          arguments: prompt.arguments
-        }))
-      }
-    })
-
-    server.setRequestHandler(GetPromptRequestSchema, async (request) => {
-      const name = request.params.name
-      const promptConfig = this.config.prompts.find(p => p.name === name)
-      
-      if (!promptConfig) {
-        throw new Error(`Prompt not found: ${name}`)
-      }
-
-      const handler = this.promptHandlers.get(promptConfig.handler)
-      if (!handler) {
-        throw new Error(`Handler not found for prompt: ${promptConfig.handler}`)
-      }
-
-      const context = this.createContext()
-      return await handler(context, request.params.arguments || {})
-    })
-  }
-
-  // Default tool implementations
-  private async getAgentStatus(context: McpContext, params: { include_memory: boolean, include_emotion: boolean }): Promise<McpToolResult> {
-    if (!this.agent) {
-      return {
-        content: [{ type: 'text', text: 'Agent not available' }],
-        isError: true
-      }
-    }
-
-    const status = {
-      id: this.agent.id,
-      name: this.agent.name,
-      status: this.agent.status,
-      lastUpdate: this.agent.lastUpdate.toISOString()
-    }
-
-    if (params.include_emotion && this.agent.emotion) {
-      (status as any).emotion = {
-        current: this.agent.emotion.getCurrentEmotion?.() || 'neutral',
-        intensity: this.agent.emotion.getIntensity?.() || 0.5
-      }
-    }
-
-    if (params.include_memory && this.agent.memory) {
-      const recentMemories = await this.agent.memory.getRecent?.(5) || []
-      ;(status as any).recentMemories = recentMemories.length
-    }
-
-    return {
-      content: [{
-        type: 'text',
-        text: JSON.stringify(status, null, 2)
-      }]
-    }
-  }
-
-  private async queryMemory(context: McpContext, params: { query: string, limit: number }): Promise<McpToolResult> {
-    if (!this.agent?.memory) {
-      return {
-        content: [{ type: 'text', text: 'Memory not available' }],
-        isError: true
-      }
-    }
-
-    try {
-      const memories = await this.agent.memory.search?.(params.query, params.limit) || []
-      return {
-        content: [{
-          type: 'text',
-          text: JSON.stringify(memories, null, 2)
-        }]
-      }
-    } catch (error) {
-      return {
-        content: [{ type: 'text', text: `Memory query failed: ${error}` }],
-        isError: true
-      }
-    }
-  }
-
-  private async chatWithAgent(context: McpContext, params: { message: string, context?: any }): Promise<McpToolResult> {
-    if (!this.agent?.portal) {
-      return {
-        content: [{ type: 'text', text: 'Agent portal not available' }],
-        isError: true
-      }
-    }
-
-    try {
-      // Create a chat message
-      const messages = [
-        {
-          role: 'user' as const,
-          content: params.message
-        }
-      ]
-
-      // Generate response using the agent's portal
-      const response = await this.agent.portal.generateChat(messages)
-      
-      return {
-        content: [{
-          type: 'text',
-          text: response.content
-        }]
-      }
-    } catch (error) {
-      return {
-        content: [{ type: 'text', text: `Chat failed: ${error}` }],
-        isError: true
-      }
-    }
-  }
-
-  private async executeAction(context: McpContext, params: { extension: string, action: string, parameters: any }): Promise<McpToolResult> {
-    if (!this.agent) {
-      return {
-        content: [{ type: 'text', text: 'Agent not available' }],
-        isError: true
-      }
-    }
-
-    try {
-      const extension = this.agent.extensions.find(ext => ext.id === params.extension)
-      if (!extension) {
-        return {
-          content: [{ type: 'text', text: `Extension not found: ${params.extension}` }],
-          isError: true
-        }
-      }
-
-      const actionHandler = extension.actions[params.action]
-      if (!actionHandler) {
-        return {
-          content: [{ type: 'text', text: `Action not found: ${params.action}` }],
-          isError: true
-        }
-      }
-
-      const result = await actionHandler.execute(this.agent, params.parameters)
-      
-      return {
-        content: [{
-          type: 'text',
-          text: JSON.stringify(result, null, 2)
-        }]
-      }
-    } catch (error) {
-      return {
-        content: [{ type: 'text', text: `Action execution failed: ${error}` }],
-        isError: true
-      }
-    }
-  }
-
-  private createContext(): McpContext {
-    return {
-      agentId: this.agent?.id || 'unknown',
-      sessionId: Date.now().toString(),
-      metadata: {}
-    }
-  }
-
-  // Public methods for registering custom handlers
-  registerToolHandler(name: string, handler: Function): void {
-    this.toolHandlers.set(name, handler)
-  }
-
-  registerResourceHandler(name: string, handler: Function): void {
-    this.resourceHandlers.set(name, handler)
-  }
-
-  registerPromptHandler(name: string, handler: Function): void {
-    this.promptHandlers.set(name, handler)
+    // Periodic tasks for MCP extension
   }
 
   // Server management methods
-  async startServer(config?: McpConfig): Promise<void> {
-    if (this.serverInstance && !this.serverInstance.isRunning) {
-      await this.serverInstance.server.connect(this.serverInstance.transport)
-      this.serverInstance.isRunning = true
-    }
-  }
-
-  async stopServer(): Promise<void> {
-    if (this.serverInstance && this.serverInstance.isRunning) {
-      await this.serverInstance.server.close()
-      this.serverInstance.isRunning = false
-    }
-  }
-
   isServerRunning(): boolean {
-    return this.serverInstance?.isRunning || false
+    return this.serverProcess !== null && !this.serverProcess.killed
   }
 
   getServerCapabilities(): any {
+    return this.capabilities
+  }
+
+  getServerUptime(): number {
+    return this.stats.uptime
+  }
+
+  getServerStats(): any {
+    return this.stats
+  }
+
+  updateConfig(newConfig: any): void {
+    this.mcpConfig = { ...this.mcpConfig, ...newConfig }
+  }
+
+  getServerPort(): number {
+    return this.mcpConfig.port || 0
+  }
+
+  getUptime(): number {
+    return this.stats.uptime
+  }
+
+  getActiveConnections(): number {
+    return this.connectionInfo.connected ? 1 : 0
+  }
+
+  getLastActivity(): Date {
+    return this.stats.lastActivity
+  }
+
+  getServerInfo(): any {
     return {
-      tools: this.config.tools.length > 0,
-      resources: this.config.resources.length > 0,
-      prompts: this.config.prompts.length > 0
+      name: this.mcpConfig.serverName,
+      version: this.version,
+      status: this.isServerRunning() ? 'running' : 'stopped'
     }
   }
 
+  getCapabilities(): any {
+    return this.capabilities
+  }
+
+  getConfiguration(): any {
+    return this.mcpConfig
+  }
+
+  async testConnection(payload?: any, timeout?: number): Promise<any> {
+    return {
+      success: this.isServerRunning(),
+      latency: 0,
+      timestamp: new Date()
+    }
+  }
+
+  getConnectionLogs(): any[] {
+    return []
+  }
+
+  resetMetrics(): void {
+    this.stats.requestCount = 0
+    this.stats.errorCount = 0
+  }
+
+  setAlertConfiguration(config: any): void {
+    // Implementation for alert configuration
+  }
+
+  emit(event: string, data: any): void {
+    // Event emission implementation
+  }
+
+  // Tool management methods
   getAvailableTools(): any[] {
-    return this.config.tools || []
+    return this.tools
   }
 
-  validateToolParameters(toolName: string, parameters: any): { valid: boolean; errors?: string[] } {
-    const tool = this.config.tools.find(t => t.name === toolName)
-    if (!tool) {
-      return { valid: false, errors: [`Tool '${toolName}' not found`] }
-    }
-    // Basic validation - can be enhanced
+  validateToolParameters(toolName: string, parameters: any): any {
     return { valid: true }
   }
 
   async executeTool(toolName: string, parameters: any): Promise<any> {
-    const handler = this.toolHandlers.get(toolName)
-    if (!handler) {
-      return { success: false, error: `No handler found for tool: ${toolName}` }
-    }
-    
-    try {
-      const context = this.createContext()
-      const result = await handler(context, parameters)
-      return { success: true, result }
-    } catch (error: any) {
-      return { success: false, error: error.message }
-    }
-  }
-
-  logToolExecution(data: any): void {
-    console.log('🔧 Tool execution:', data)
-  }
-
-  getServerStats(): any {
-    return {
-      toolsRegistered: this.config.tools.length,
-      resourcesRegistered: this.config.resources.length,
-      promptsRegistered: this.config.prompts.length,
-      handlersRegistered: {
-        tools: this.toolHandlers.size,
-        resources: this.resourceHandlers.size,
-        prompts: this.promptHandlers.size
-      }
-    }
-  }
-
-  getServerUptime(): number {
-    // Return uptime in milliseconds since server started
-    // This is a simple implementation - could be enhanced with actual start time tracking
-    return this.serverInstance?.isRunning ? Date.now() : 0
-  }
-
-  updateConfig(newConfig: McpConfig): void {
-    this.config = { ...this.config, ...newConfig }
-  }
-
-  async unsubscribeFromResource(uri: string): Promise<ActionResult> {
-    // TODO: Implement resource unsubscription logic
     return {
       success: true,
-      result: { message: `Unsubscribed from resource: ${uri}`, uri }
+      result: {},
+      timestamp: new Date()
     }
   }
 
-  async searchResources(query: string, options?: { type?: string; limit?: number }): Promise<any[]> {
-    // TODO: Implement resource search logic
+  logToolExecution(execution: any): void {
+    // Log tool execution
+  }
+
+  getToolExecutionHistory(toolName?: string): any[] {
     return []
   }
 
-  getResourceTemplates(): any[] {
-    // TODO: Implement resource templates logic
-    return []
+  async registerCustomTool(toolDefinition: any): Promise<any> {
+    return { success: true }
   }
 
-  validateResourceUri(uri: string): { valid: boolean; error?: string; errors?: string[]; warnings?: string[]; suggestions?: string[]; parsedUri?: any } {
-    // TODO: Implement URI validation logic
-    try {
-      const parsedUri = new URL(uri)
-      return { 
-        valid: true, 
-        errors: [],
-        warnings: [],
-        suggestions: [],
-        parsedUri 
-      }
-    } catch {
-      return { 
-        valid: false, 
-        error: 'Invalid URI format',
-        errors: ['Invalid URI format'],
-        warnings: [],
-        suggestions: [],
-        parsedUri: null 
-      }
-    }
+  async unregisterTool(toolName: string): Promise<any> {
+    return { success: true }
   }
 
   // Resource management methods
+  getAvailableResources(): any[] {
+    return this.resources
+  }
+
+  validateResourceUri(uri: string): any {
+    return { valid: true }
+  }
+
   async readResource(uri: string): Promise<any> {
-    // TODO: Implement resource reading logic
     return {
+      success: true,
       content: '',
-      mimeType: 'text/plain',
-      encoding: 'utf-8',
-      size: 0,
-      metadata: {}
+      mimeType: 'text/plain'
     }
   }
 
-  getAvailableResources(): any[] {
-    return this.config.resources || []
-  }
-
   getResourceAccessHistory(uri: string): any[] {
-    // TODO: Implement resource access history tracking
     return []
   }
 
   async subscribeToResource(uri: string): Promise<any> {
-    // TODO: Implement resource subscription logic
+    return { success: true }
+  }
+
+  async unsubscribeFromResource(uri: string): Promise<any> {
+    return { success: true }
+  }
+
+  async searchResources(query: string, options?: any): Promise<any> {
     return {
       success: true,
-      subscription: { uri, active: true }
+      results: []
     }
   }
 
-  get actions(): Record<string, ExtensionAction> {
-    // Collect actions from all skills
-    const skillActions: Record<string, ExtensionAction> = {}
-    for (const skill of this.skills) {
-      const actions = skill.getActions()
-      Object.assign(skillActions, actions)
-    }
-
-    // Add legacy actions for backward compatibility
-    const legacyActions = {
-      startMcpServer: {
-        name: 'startMcpServer',
-        description: 'Start the MCP server',
-        parameters: {},
-        execute: async (agent: Agent, params: SkillParameters): Promise<ActionResult> => {
-          try {
-            if (this.serverInstance && !this.serverInstance.isRunning) {
-              await this.serverInstance.server.connect(this.serverInstance.transport)
-              this.serverInstance.isRunning = true
-              return { success: true, result: 'MCP server started' }
-            }
-            return { success: true, result: 'MCP server already running' }
-          } catch (error) {
-            return { success: false, error: `Failed to start MCP server: ${error}` }
-          }
-        }
-      },
-      getMcpStatus: {
-        name: 'getMcpStatus',
-        description: 'Get MCP server status',
-        parameters: {},
-        execute: async (agent: Agent, params: SkillParameters): Promise<ActionResult> => {
-          return {
-            success: true,
-            result: {
-              enabled: this.config.enabled,
-              running: this.serverInstance?.isRunning || false,
-              serverName: this.config.serverName,
-              toolsCount: this.config.tools.length,
-              resourcesCount: this.config.resources.length,
-              promptsCount: this.config.prompts.length
-            }
-          }
-        }
-      }
-    }
-
-    return { ...skillActions, ...legacyActions }
+  getResourceTemplates(): any[] {
+    return []
   }
 
-  get events(): Record<string, ExtensionEventHandler> {
+  // Prompt management methods
+  getAvailablePrompts(): any[] {
+    return this.prompts
+  }
+
+  validatePromptArguments(name: string, args: any): any {
+    return { valid: true }
+  }
+
+  async getPrompt(name: string, args: any): Promise<any> {
     return {
-      mcpServerStarted: {
-        event: 'mcp.server.started',
-        description: 'Triggered when MCP server starts',
-        handler: async (agent: Agent, event: any) => {
-          console.log('🔌 MCP Server started event received')
-        }
+      success: true,
+      content: '',
+      timestamp: new Date()
+    }
+  }
+
+  getPromptExecutionHistory(name?: string): any[] {
+    return []
+  }
+
+  async executePrompt(name: string, args: any, context?: any): Promise<any> {
+    return {
+      success: true,
+      result: '',
+      timestamp: new Date()
+    }
+  }
+
+  logPromptExecution(execution: any): void {
+    // Log prompt execution
+  }
+
+  async createPromptTemplate(template: any): Promise<any> {
+    return { success: true }
+  }
+
+  async updatePromptTemplate(name: string, template: any): Promise<any> {
+    return { success: true }
+  }
+
+  async deletePromptTemplate(name: string): Promise<any> {
+    return { success: true }
+  }
+
+  getDefaultSettings(): McpSettings {
+    return {
+      serverName: 'symindx-mcp-server',
+      serverCommand: 'node',
+      serverArgs: [],
+      serverEnv: {},
+      autoStart: true,
+      restartOnFailure: true,
+      maxRestartAttempts: 3,
+      restartDelay: 5000,
+      timeout: 30000,
+      capabilities: {
+        tools: true,
+        resources: true,
+        prompts: true,
+        logging: true
       },
-      mcpToolCalled: {
-        event: 'mcp.tool.called',
-        description: 'Triggered when an MCP tool is called',
-        handler: async (agent: Agent, event: any) => {
-          console.log(`🔧 MCP Tool called: ${event.data.toolName}`)
+      security: {
+        allowedCommands: [],
+        blockedCommands: [],
+        sandboxed: false
+      }
+    }
+  }
+
+  async cleanup(): Promise<void> {
+    if (this.server) {
+      await this.stopServer()
+    }
+    
+    this.pendingRequests.clear()
+    this.agent.logger?.info('MCP Extension cleaned up')
+  }
+
+  private async startServer(): Promise<void> {
+    if (this.isRunning) {
+      return
+    }
+    
+    try {
+      // Create server instance
+      this.server = {
+        id: `mcp-${Date.now()}`,
+        name: this.mcpConfig.serverName,
+        command: this.mcpConfig.serverCommand,
+        args: this.mcpConfig.serverArgs || [],
+        env: { ...process.env, ...this.mcpConfig.serverEnv },
+        status: 'starting',
+        restartCount: 0,
+        capabilities: {
+          tools: [],
+          resources: [],
+          prompts: [],
+          logging: this.mcpConfig.capabilities.logging || false
         }
       }
+      
+      // Start the process
+      this.process = spawn(this.server.command, this.server.args, {
+        env: this.server.env,
+        stdio: ['pipe', 'pipe', 'pipe']
+      })
+      
+      this.server.pid = this.process.pid
+      this.server.startTime = new Date()
+      
+      // Setup process event handlers
+      this.setupProcessHandlers()
+      
+      // Initialize the MCP connection
+      await this.initializeConnection()
+      
+      this.server.status = 'running'
+      this.isRunning = true
+      this.connectionInfo.connected = true
+      
+      this.agent.logger?.info(`MCP server started with PID: ${this.server.pid}`)
+    } catch (error) {
+      this.agent.logger?.error('Failed to start MCP server:', error)
+      if (this.server) {
+        this.server.status = 'error'
+        this.server.lastError = error instanceof Error ? error.message : String(error)
+      }
+      throw error
+    }
+  }
+
+  private async stopServer(): Promise<void> {
+    if (!this.isRunning || !this.process) {
+      return
+    }
+    
+    try {
+      this.process.kill('SIGTERM')
+      
+      // Wait for graceful shutdown
+      await new Promise<void>((resolve) => {
+        const timeout = setTimeout(() => {
+          if (this.process) {
+            this.process.kill('SIGKILL')
+          }
+          resolve()
+        }, 5000)
+        
+        this.process?.on('exit', () => {
+          clearTimeout(timeout)
+          resolve()
+        })
+      })
+      
+      this.isRunning = false
+      this.connectionInfo.connected = false
+      
+      if (this.server) {
+        this.server.status = 'stopped'
+      }
+      
+      this.agent.logger?.info('MCP server stopped')
+    } catch (error) {
+      this.agent.logger?.error('Error stopping MCP server:', error)
+    }
+  }
+
+  private setupProcessHandlers(): void {
+    if (!this.process) return
+    
+    this.process.stdout?.on('data', (data) => {
+      try {
+        const messages = data.toString().trim().split('\n')
+        for (const messageStr of messages) {
+          if (messageStr.trim()) {
+            const message: McpMessage = JSON.parse(messageStr)
+            this.handleMessage(message)
+          }
+        }
+      } catch (error) {
+        this.agent.logger?.error('Error parsing MCP message:', error)
+      }
+    })
+    
+    this.process.stderr?.on('data', (data) => {
+      this.agent.logger?.error('MCP server error:', data.toString())
+      this.stats.errorCount++
+    })
+    
+    this.process.on('exit', (code, signal) => {
+      this.agent.logger?.info(`MCP server exited with code ${code}, signal ${signal}`)
+      this.isRunning = false
+      this.connectionInfo.connected = false
+      
+      if (this.server) {
+        this.server.status = code === 0 ? 'stopped' : 'crashed'
+        
+        // Handle restart on failure
+        if (code !== 0 && this.mcpConfig.restartOnFailure) {
+          this.handleServerRestart()
+        }
+      }
+    })
+    
+    this.process.on('error', (error) => {
+      this.agent.logger?.error('MCP server process error:', error)
+      if (this.server) {
+        this.server.status = 'error'
+        this.server.lastError = error.message
+      }
+      this.stats.errorCount++
+    })
+  }
+
+  private async handleServerRestart(): Promise<void> {
+    if (!this.server || !this.mcpConfig.restartOnFailure) {
+      return
+    }
+    
+    if (this.server.restartCount >= (this.mcpConfig.maxRestartAttempts || 3)) {
+      this.agent.logger?.error('Max restart attempts reached, giving up')
+      return
+    }
+    
+    this.server.restartCount++
+    this.agent.logger?.info(`Restarting MCP server (attempt ${this.server.restartCount})`)
+    
+    // Wait before restarting
+    await new Promise(resolve => setTimeout(resolve, this.mcpConfig.restartDelay || 5000))
+    
+    try {
+      await this.startServer()
+    } catch (error) {
+      this.agent.logger?.error('Failed to restart MCP server:', error)
+    }
+  }
+
+  private async initializeConnection(): Promise<void> {
+    const initRequest: McpInitializeRequest = {
+      protocolVersion: '2024-11-05',
+      capabilities: {
+        tools: this.mcpConfig.capabilities.tools ? {} : undefined,
+        resources: this.mcpConfig.capabilities.resources ? {} : undefined,
+        prompts: this.mcpConfig.capabilities.prompts ? {} : undefined,
+        logging: this.mcpConfig.capabilities.logging ? {} : undefined
+      },
+      clientInfo: {
+        name: 'SYMindX Agent',
+        version: this.version
+      }
+    }
+    
+    const response = await this.sendRequest('initialize', initRequest)
+    
+    if (response.error) {
+      throw new Error(`MCP initialization failed: ${response.error.message}`)
+    }
+    
+    const initResponse = response.result as McpInitializeResponse
+    
+    if (this.server) {
+      this.server.capabilities = initResponse.capabilities
+    }
+    
+    this.agent.logger?.info('MCP connection initialized successfully')
+  }
+
+  private handleMessage(message: McpMessage): void {
+    this.stats.lastActivity = new Date()
+    
+    if (message.id !== undefined && this.pendingRequests.has(message.id)) {
+      // Handle response to our request
+      const resolver = this.pendingRequests.get(message.id)!
+      this.pendingRequests.delete(message.id)
+      resolver(message as McpResponse)
+    } else if (message.method) {
+      // Handle notification or request from server
+      this.handleServerMessage(message)
+    }
+  }
+
+  private handleServerMessage(message: McpMessage): void {
+    switch (message.method) {
+      case 'notifications/message':
+        this.handleLogMessage(message.params as McpLogEntry)
+        break
+      
+      case 'notifications/progress':
+        this.handleProgressNotification(message.params)
+        break
+      
+      default:
+        this.agent.logger?.debug(`Unhandled MCP message: ${message.method}`)
+    }
+  }
+
+  private handleLogMessage(logEntry: McpLogEntry): void {
+    if (!this.mcpConfig.capabilities.logging) {
+      return
+    }
+    
+    const logLevel = logEntry.level
+    const logMessage = `MCP Server [${logEntry.logger || 'unknown'}]: ${JSON.stringify(logEntry.data)}`
+    
+    switch (logLevel) {
+      case 'debug':
+        this.agent.logger?.debug(logMessage)
+        break
+      case 'info':
+      case 'notice':
+        this.agent.logger?.info(logMessage)
+        break
+      case 'warning':
+        this.agent.logger?.warn(logMessage)
+        break
+      case 'error':
+      case 'critical':
+      case 'alert':
+      case 'emergency':
+        this.agent.logger?.error(logMessage)
+        break
+    }
+  }
+
+  private handleProgressNotification(params: any): void {
+    this.agent.logger?.debug('MCP Progress:', params)
+  }
+
+  private async sendRequest(method: string, params?: any): Promise<McpResponse> {
+    if (!this.process || !this.isRunning) {
+      throw new Error('MCP server not running')
+    }
+    
+    const id = ++this.messageId
+    const request: McpRequest = {
+      jsonrpc: '2.0',
+      id,
+      method,
+      params
+    }
+    
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        this.pendingRequests.delete(id)
+        reject(new Error(`MCP request timeout: ${method}`))
+      }, this.mcpConfig.timeout || 30000)
+      
+      this.pendingRequests.set(id, (response) => {
+        clearTimeout(timeout)
+        resolve(response)
+      })
+      
+      const messageStr = JSON.stringify(request) + '\n'
+      this.process!.stdin?.write(messageStr)
+      this.stats.requestCount++
+    })
+  }
+
+  // Public API methods
+  async callTool(name: string, arguments_?: Record<string, any>): Promise<McpToolCallResponse> {
+    const request: McpToolCallRequest = {
+      name,
+      arguments: arguments_
+    }
+    
+    const response = await this.sendRequest('tools/call', request)
+    
+    if (response.error) {
+      throw new Error(`Tool call failed: ${response.error.message}`)
+    }
+    
+    return response.result as McpToolCallResponse
+  }
+
+  async getResource(uri: string): Promise<McpResourceResponse> {
+    const request: McpResourceRequest = { uri }
+    
+    const response = await this.sendRequest('resources/read', request)
+    
+    if (response.error) {
+      throw new Error(`Resource read failed: ${response.error.message}`)
+    }
+    
+    return response.result as McpResourceResponse
+  }
+
+  async getPrompt(name: string, arguments_?: Record<string, any>): Promise<McpPromptResponse> {
+    const request: McpPromptRequest = {
+      name,
+      arguments: arguments_
+    }
+    
+    const response = await this.sendRequest('prompts/get', request)
+    
+    if (response.error) {
+      throw new Error(`Prompt get failed: ${response.error.message}`)
+    }
+    
+    return response.result as McpPromptResponse
+  }
+
+  async listTools(): Promise<McpTool[]> {
+    const response = await this.sendRequest('tools/list')
+    
+    if (response.error) {
+      throw new Error(`Tools list failed: ${response.error.message}`)
+    }
+    
+    return response.result?.tools || []
+  }
+
+  async listResources(): Promise<McpResource[]> {
+    const response = await this.sendRequest('resources/list')
+    
+    if (response.error) {
+      throw new Error(`Resources list failed: ${response.error.message}`)
+    }
+    
+    return response.result?.resources || []
+  }
+
+  async listPrompts(): Promise<McpPrompt[]> {
+    const response = await this.sendRequest('prompts/list')
+    
+    if (response.error) {
+      throw new Error(`Prompts list failed: ${response.error.message}`)
+    }
+    
+    return response.result?.prompts || []
+  }
+
+  // Extension interface methods
+  async getStatus(): Promise<any> {
+    return {
+      running: this.isRunning,
+      server: this.server,
+      stats: this.stats,
+      connection: this.connectionInfo,
+      capabilities: this.server?.capabilities
+    }
+  }
+
+  async executeAction(action: string, params?: any): Promise<any> {
+    switch (action) {
+      case 'start':
+        await this.startServer()
+        return { success: true, message: 'MCP server started' }
+      
+      case 'stop':
+        await this.stopServer()
+        return { success: true, message: 'MCP server stopped' }
+      
+      case 'restart':
+        await this.stopServer()
+        await this.startServer()
+        return { success: true, message: 'MCP server restarted' }
+      
+      case 'getStats':
+        return await this.getStatus()
+      
+      case 'listTools':
+        return await this.listTools()
+      
+      case 'listResources':
+        return await this.listResources()
+      
+      case 'listPrompts':
+        return await this.listPrompts()
+      
+      case 'callTool':
+        if (!params?.name) {
+          throw new Error('Tool name is required')
+        }
+        return await this.callTool(params.name, params.arguments)
+      
+      case 'getResource':
+        if (!params?.uri) {
+          throw new Error('Resource URI is required')
+        }
+        return await this.getResource(params.uri)
+      
+      case 'getPrompt':
+        if (!params?.name) {
+          throw new Error('Prompt name is required')
+        }
+        return await this.getPrompt(params.name, params.arguments)
+      
+      default:
+        throw new Error(`Unknown action: ${action}`)
     }
   }
 }

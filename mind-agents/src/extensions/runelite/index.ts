@@ -1,4 +1,5 @@
-import { Extension, ExtensionAction, ExtensionEventHandler, Agent, ActionResult, ActionResultType, AgentEvent } from '../../types/agent.js'
+import { Extension, ExtensionAction, ExtensionEventHandler, Agent, ActionResult, ActionResultType, AgentEvent, ExtensionType, ExtensionStatus } from '../../types/agent.js'
+import { ExtensionConfig } from '../../types/common.js'
 import { WebSocket } from 'ws'
 import { EventEmitter } from 'events'
 import { RuneLiteConfig, GameState, RuneLiteEvent, RuneLiteCommand, RuneLiteResponse } from './types.js'
@@ -8,14 +9,10 @@ export class RuneLiteExtension implements Extension {
   id = 'runelite'
   name = 'RuneLite Integration'
   version = '1.0.0'
+  type = ExtensionType.GAME_INTEGRATION
   enabled = true
-  config: RuneLiteConfig = {
-    host: 'localhost',
-    port: 8080,
-    autoConnect: true,
-    reconnectInterval: 5000,
-    maxReconnectAttempts: 10
-  }
+  status = ExtensionStatus.ENABLED
+  config: ExtensionConfig
   
   private ws?: WebSocket
   private eventEmitter = new EventEmitter()
@@ -55,8 +52,10 @@ export class RuneLiteExtension implements Extension {
   private reconnectAttempts = 0
   private heartbeatInterval?: NodeJS.Timeout
 
-  constructor(config: RuneLiteConfig) {
-    this.config = {
+  private runeliteConfig: RuneLiteConfig
+
+  constructor(config?: Partial<RuneLiteConfig>) {
+    this.runeliteConfig = {
       websocketUrl: 'ws://localhost:8080/runelite',
       reconnectInterval: 5000,
       maxReconnectAttempts: 5,
@@ -68,6 +67,11 @@ export class RuneLiteExtension implements Extension {
       },
       autoReconnect: true,
       ...config
+    }
+    
+    this.config = {
+      enabled: true,
+      settings: this.runeliteConfig as any
     }
     
     // Initialize skills
@@ -90,11 +94,11 @@ export class RuneLiteExtension implements Extension {
   async tick(agent: Agent): Promise<void> {
     // Update game state and process any pending actions
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      if (this.config.gameStatePolling?.enabled) {
+      if (this.runeliteConfig.gameStatePolling?.enabled) {
         await this.updateGameState()
       }
       await this.processGameEvents(agent)
-    } else if (this.config.autoReconnect) {
+    } else if (this.runeliteConfig.autoReconnect) {
       await this.attemptReconnect()
     }
   }
@@ -169,10 +173,10 @@ export class RuneLiteExtension implements Extension {
   private async connectToRuneLite(): Promise<void> {
     return new Promise((resolve, reject) => {
       try {
-        this.ws = new WebSocket(this.config.websocketUrl || 'ws://localhost:8080')
+        this.ws = new WebSocket(this.runeliteConfig.websocketUrl || 'ws://localhost:8080')
         
         this.ws.on('open', () => {
-          if (this.config.enableLogging) {
+          if (this.runeliteConfig.enableLogging) {
             console.log('🔗 Connected to RuneLite WebSocket')
           }
           this.reconnectAttempts = 0
@@ -190,7 +194,7 @@ export class RuneLiteExtension implements Extension {
         })
         
         this.ws.on('close', () => {
-          if (this.config.enableLogging) {
+          if (this.runeliteConfig.enableLogging) {
             console.log('🔌 RuneLite WebSocket connection closed')
           }
           this.stopHeartbeat()
@@ -206,7 +210,7 @@ export class RuneLiteExtension implements Extension {
           if (this.ws?.readyState !== WebSocket.OPEN) {
             reject(new Error('Connection timeout'))
           }
-        }, this.config.commandTimeout)
+        }, this.runeliteConfig.commandTimeout)
         
       } catch (error) {
         reject(error)
@@ -215,18 +219,18 @@ export class RuneLiteExtension implements Extension {
   }
 
   private async attemptReconnect(): Promise<void> {
-    if (this.reconnectAttempts >= (this.config.maxReconnectAttempts || 5)) {
+    if (this.reconnectAttempts >= (this.runeliteConfig.maxReconnectAttempts || 5)) {
       console.error('❌ Max reconnection attempts reached for RuneLite')
       return
     }
     
     this.reconnectAttempts++
-    if (this.config.enableLogging) {
-      console.log(`🔄 Attempting to reconnect to RuneLite (${this.reconnectAttempts}/${this.config.maxReconnectAttempts})`)
+    if (this.runeliteConfig.enableLogging) {
+      console.log(`🔄 Attempting to reconnect to RuneLite (${this.reconnectAttempts}/${this.runeliteConfig.maxReconnectAttempts})`)
     }
     
     try {
-      await new Promise(resolve => setTimeout(resolve, this.config.reconnectInterval))
+      await new Promise(resolve => setTimeout(resolve, this.runeliteConfig.reconnectInterval))
       await this.connectToRuneLite()
     } catch (error) {
       console.error(`❌ Reconnection attempt ${this.reconnectAttempts} failed:`, error)
@@ -260,7 +264,7 @@ export class RuneLiteExtension implements Extension {
         // Heartbeat response
         break
       default:
-        if (this.config.enableLogging) {
+        if (this.runeliteConfig.enableLogging) {
           console.log('📨 Unknown RuneLite message type:', message.type)
         }
     }
@@ -318,7 +322,7 @@ export class RuneLiteExtension implements Extension {
       const command: RuneLiteCommand = {
         action: 'move',
         parameters: { x, y, plane },
-        timeout: this.config.commandTimeout
+        timeout: this.runeliteConfig.commandTimeout
       }
       
       this.ws.send(JSON.stringify({
@@ -341,7 +345,7 @@ export class RuneLiteExtension implements Extension {
       const command: RuneLiteCommand = {
         action: 'attack',
         target: targetId,
-        timeout: this.config.commandTimeout
+        timeout: this.runeliteConfig.commandTimeout
       }
       
       this.ws.send(JSON.stringify({
@@ -365,7 +369,7 @@ export class RuneLiteExtension implements Extension {
         action: 'interact',
         target: targetId,
         parameters: { action },
-        timeout: this.config.commandTimeout
+        timeout: this.runeliteConfig.commandTimeout
       }
       
       this.ws.send(JSON.stringify({
@@ -389,7 +393,7 @@ export class RuneLiteExtension implements Extension {
         action: 'cast_spell',
         target: targetId,
         parameters: { spellName },
-        timeout: this.config.commandTimeout
+        timeout: this.runeliteConfig.commandTimeout
       }
       
       this.ws.send(JSON.stringify({
@@ -413,7 +417,7 @@ export class RuneLiteExtension implements Extension {
         action: 'use_item',
         target: targetId,
         parameters: { itemId },
-        timeout: this.config.commandTimeout
+        timeout: this.runeliteConfig.commandTimeout
       }
       
       this.ws.send(JSON.stringify({
@@ -436,7 +440,7 @@ export class RuneLiteExtension implements Extension {
       const command: RuneLiteCommand = {
         action: 'chat',
         parameters: { message, type },
-        timeout: this.config.commandTimeout
+        timeout: this.runeliteConfig.commandTimeout
       }
       
       this.ws.send(JSON.stringify({
@@ -459,7 +463,7 @@ export class RuneLiteExtension implements Extension {
       const command: RuneLiteCommand = {
         action: 'bank',
         parameters: { action, itemId, quantity },
-        timeout: this.config.commandTimeout
+        timeout: this.runeliteConfig.commandTimeout
       }
       
       this.ws.send(JSON.stringify({
@@ -483,7 +487,7 @@ export class RuneLiteExtension implements Extension {
         action: 'trade',
         target: playerId,
         parameters: { action, items },
-        timeout: this.config.commandTimeout
+        timeout: this.runeliteConfig.commandTimeout
       }
       
       this.ws.send(JSON.stringify({
@@ -507,7 +511,7 @@ export class RuneLiteExtension implements Extension {
         action: 'skill_action',
         target: targetId,
         parameters: { skill, action },
-        timeout: this.config.commandTimeout
+        timeout: this.runeliteConfig.commandTimeout
       }
       
       this.ws.send(JSON.stringify({
@@ -525,7 +529,7 @@ export class RuneLiteExtension implements Extension {
   private async handleGameTick(agent: Agent, data: any): Promise<void> {
     // Update agent's understanding of game state
     // This could trigger memory updates, emotion changes, etc.
-    if (this.config.enableLogging) {
+    if (this.runeliteConfig.enableLogging) {
       console.log(`🎮 Game tick for agent ${agent.name}`)
     }
   }

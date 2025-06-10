@@ -285,9 +285,10 @@ export class ToolExecutionSkill {
       
       if (!tool) {
         return {
-          success: false,
-          error: `Tool '${toolName}' not found`
-        }
+        success: false,
+        error: `Tool '${toolName}' not found`,
+        type: ActionResultType.FAILURE
+      }
       }
 
       // Get execution statistics
