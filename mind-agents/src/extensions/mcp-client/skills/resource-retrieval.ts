@@ -4,9 +4,8 @@
  * Handles retrieval and management of resources from remote MCP servers.
  */
 
-import { Agent, ExtensionAction } from '../../../types/agent.js'
+import { Agent, ExtensionAction, ActionResult, ActionResultType, ActionCategory } from '../../../types/agent.js'
 import { McpClientExtension } from '../index.js'
-import { ActionResult } from '../../../types/common.js'
 
 export class ResourceRetrievalSkill {
   private extension: McpClientExtension
@@ -23,6 +22,7 @@ export class ResourceRetrievalSkill {
       list_resources: {
         name: 'list_resources',
         description: 'List available resources on servers',
+        category: ActionCategory.RESOURCE_MANAGEMENT,
         parameters: {
           serverId: {
             type: 'string',
@@ -50,6 +50,7 @@ export class ResourceRetrievalSkill {
       get_resource: {
         name: 'get_resource',
         description: 'Retrieve a specific resource',
+        category: ActionCategory.RESOURCE_MANAGEMENT,
         parameters: {
           serverId: {
             type: 'string',
@@ -72,6 +73,7 @@ export class ResourceRetrievalSkill {
       get_resource_info: {
         name: 'get_resource_info',
         description: 'Get metadata about a resource',
+        category: ActionCategory.RESOURCE_MANAGEMENT,
         parameters: {
           serverId: {
             type: 'string',
@@ -89,6 +91,7 @@ export class ResourceRetrievalSkill {
       subscribe_to_resource: {
         name: 'subscribe_to_resource',
         description: 'Subscribe to resource changes',
+        category: ActionCategory.RESOURCE_MANAGEMENT,
         parameters: {
           serverId: {
             type: 'string',
@@ -111,6 +114,7 @@ export class ResourceRetrievalSkill {
       unsubscribe_from_resource: {
         name: 'unsubscribe_from_resource',
         description: 'Unsubscribe from resource changes',
+        category: ActionCategory.RESOURCE_MANAGEMENT,
         parameters: {
           serverId: {
             type: 'string',
@@ -128,6 +132,7 @@ export class ResourceRetrievalSkill {
       search_resources: {
         name: 'search_resources',
         description: 'Search for resources across servers',
+        category: ActionCategory.RESOURCE_MANAGEMENT,
         parameters: {
           query: {
             type: 'string',
@@ -160,6 +165,7 @@ export class ResourceRetrievalSkill {
       download_resource: {
         name: 'download_resource',
         description: 'Download a resource to local file',
+        category: ActionCategory.RESOURCE_MANAGEMENT,
         parameters: {
           serverId: {
             type: 'string',
@@ -187,6 +193,7 @@ export class ResourceRetrievalSkill {
       batch_get_resources: {
         name: 'batch_get_resources',
         description: 'Retrieve multiple resources in batch',
+        category: ActionCategory.RESOURCE_MANAGEMENT,
         parameters: {
           requests: {
             type: 'array',
@@ -204,6 +211,7 @@ export class ResourceRetrievalSkill {
       get_resource_templates: {
         name: 'get_resource_templates',
         description: 'Get resource URI templates from servers',
+        category: ActionCategory.RESOURCE_MANAGEMENT,
         parameters: {
           serverId: {
             type: 'string',
@@ -216,6 +224,7 @@ export class ResourceRetrievalSkill {
       validate_resource_uri: {
         name: 'validate_resource_uri',
         description: 'Validate a resource URI',
+        category: ActionCategory.RESOURCE_MANAGEMENT,
         parameters: {
           serverId: {
             type: 'string',
@@ -249,6 +258,7 @@ export class ResourceRetrievalSkill {
       
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: {
           resources: resources.map(resource => ({
             uri: resource.uri,
@@ -267,15 +277,16 @@ export class ResourceRetrievalSkill {
             permissions: resource.permissions
           })),
           total: resources.length,
-          servers: [...new Set(resources.map(r => r.serverId))],
-          resourceTypes: [...new Set(resources.map(r => r.resourceType).filter(Boolean))],
-          mimeTypes: [...new Set(resources.map(r => r.mimeType).filter(Boolean))],
+          servers: Array.from(new Set(resources.map(r => r.serverId))),
+          resourceTypes: Array.from(new Set(resources.map(r => r.resourceType).filter(Boolean))),
+          mimeTypes: Array.from(new Set(resources.map(r => r.mimeType).filter(Boolean))),
           filters: { serverId, resourceType, search, mimeType }
         }
       }
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to list resources: ${error}`
       }
     }
@@ -291,6 +302,7 @@ export class ResourceRetrievalSkill {
       if (!serverId || !resourceUri) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: 'Server ID and resource URI are required'
         }
       }
@@ -303,6 +315,7 @@ export class ResourceRetrievalSkill {
       
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: {
           uri: resource.uri,
           name: resource.name,
@@ -323,6 +336,7 @@ export class ResourceRetrievalSkill {
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to get resource: ${error}`
       }
     }
@@ -338,6 +352,7 @@ export class ResourceRetrievalSkill {
       if (!serverId || !resourceUri) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: 'Server ID and resource URI are required'
         }
       }
@@ -347,12 +362,14 @@ export class ResourceRetrievalSkill {
       if (!info) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: `Resource '${resourceUri}' not found on server '${serverId}'`
         }
       }
 
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: {
           uri: info.uri,
           name: info.name,
@@ -379,6 +396,7 @@ export class ResourceRetrievalSkill {
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to get resource info: ${error}`
       }
     }
@@ -394,6 +412,7 @@ export class ResourceRetrievalSkill {
       if (!serverId || !resourceUri) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: 'Server ID and resource URI are required'
         }
       }
@@ -406,6 +425,7 @@ export class ResourceRetrievalSkill {
       
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: {
           message: `Subscribed to resource '${resourceUri}' on server '${serverId}'`,
           subscriptionId: subscription.subscriptionId,
@@ -419,6 +439,7 @@ export class ResourceRetrievalSkill {
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to subscribe to resource: ${error}`
       }
     }
@@ -434,6 +455,7 @@ export class ResourceRetrievalSkill {
       if (!serverId || !resourceUri) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: 'Server ID and resource URI are required'
         }
       }
@@ -445,6 +467,7 @@ export class ResourceRetrievalSkill {
       
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: {
           message: `Unsubscribed from resource '${resourceUri}' on server '${serverId}'`,
           resourceUri,
@@ -455,6 +478,7 @@ export class ResourceRetrievalSkill {
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to unsubscribe from resource: ${error}`
       }
     }
@@ -470,6 +494,7 @@ export class ResourceRetrievalSkill {
       if (!query) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: 'Search query is required'
         }
       }
@@ -484,6 +509,7 @@ export class ResourceRetrievalSkill {
       
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: {
           resources: results.resources.map(resource => ({
             uri: resource.uri,
@@ -511,6 +537,7 @@ export class ResourceRetrievalSkill {
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Resource search failed: ${error}`
       }
     }
@@ -526,6 +553,7 @@ export class ResourceRetrievalSkill {
       if (!serverId || !resourceUri || !localPath) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: 'Server ID, resource URI, and local path are required'
         }
       }
@@ -539,6 +567,7 @@ export class ResourceRetrievalSkill {
       
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: {
           message: `Resource downloaded to '${localPath}'`,
           resourceUri,
@@ -554,6 +583,7 @@ export class ResourceRetrievalSkill {
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to download resource: ${error}`
       }
     }
@@ -569,6 +599,7 @@ export class ResourceRetrievalSkill {
       if (!requests || !Array.isArray(requests)) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: 'Requests array is required'
         }
       }
@@ -580,6 +611,7 @@ export class ResourceRetrievalSkill {
       
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: {
           batchId: results.batchId,
           results: results.results.map(result => ({
@@ -609,6 +641,7 @@ export class ResourceRetrievalSkill {
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Batch resource retrieval failed: ${error}`
       }
     }
@@ -625,6 +658,7 @@ export class ResourceRetrievalSkill {
       
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: {
           templates: templates.map(template => ({
             uriTemplate: template.uriTemplate,
@@ -645,13 +679,14 @@ export class ResourceRetrievalSkill {
             mimeTypes: template.mimeTypes
           })),
           total: templates.length,
-          servers: [...new Set(templates.map(t => t.serverId))],
-          resourceTypes: [...new Set(templates.map(t => t.resourceType).filter(Boolean))]
+          servers: Array.from(new Set(templates.map(t => t.serverId))),
+          resourceTypes: Array.from(new Set(templates.map(t => t.resourceType).filter(Boolean)))
         }
       }
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to get resource templates: ${error}`
       }
     }
@@ -667,6 +702,7 @@ export class ResourceRetrievalSkill {
       if (!serverId || !resourceUri) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: 'Server ID and resource URI are required'
         }
       }
@@ -678,6 +714,7 @@ export class ResourceRetrievalSkill {
       
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: {
           valid: validation.valid,
           resourceUri,
@@ -702,6 +739,7 @@ export class ResourceRetrievalSkill {
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `URI validation failed: ${error}`
       }
     }

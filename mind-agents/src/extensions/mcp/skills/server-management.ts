@@ -205,10 +205,10 @@ export class ServerManagementSkill {
           running: isRunning,
           uptime,
           config: {
-            port: config.port,
-            transport: config.transport,
-            name: config.serverName,
-            version: config.serverVersion
+            port: config.settings.port,
+            transport: config.settings.transport,
+            name: config.settings.serverName,
+            version: config.settings.serverVersion
           },
           capabilities: this.extension.getServerCapabilities(),
           stats: this.extension.getServerStats()
@@ -309,13 +309,13 @@ export class ServerManagementSkill {
         success: true,
         result: {
           server: {
-            name: config.serverName,
-            version: config.serverVersion,
-            description: config.description,
+            name: config.settings.serverName,
+            version: config.settings.serverVersion,
+            description: config.settings.description || 'MCP Server',
             running: this.extension.isServerRunning(),
             uptime,
-            transport: config.transport,
-            port: config.port
+            transport: config.settings.transport || 'stdio',
+            port: config.settings.port || 0
           },
           capabilities: {
             tools: capabilities.tools?.length || 0,

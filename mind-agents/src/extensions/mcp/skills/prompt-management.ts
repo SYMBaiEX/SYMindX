@@ -4,9 +4,8 @@
  * Handles MCP prompt operations, templates, and management.
  */
 
-import { Agent, ExtensionAction } from '../../../types/agent.js'
+import { Agent, ExtensionAction, ActionResult, ActionResultType } from '../../../types/agent.js'
 import { McpExtension } from '../index.js'
-import { ActionResult } from '../../../types/common.js'
 
 export class PromptManagementSkill {
   private extension: McpExtension
@@ -192,6 +191,7 @@ export class PromptManagementSkill {
 
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: {
           prompts: prompts.map(prompt => ({
             name: prompt.name,
@@ -264,6 +264,7 @@ export class PromptManagementSkill {
       
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: {
           name: prompt.name,
           description: prompt.description,
@@ -333,6 +334,7 @@ export class PromptManagementSkill {
 
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: {
           name: prompt.name,
           description: prompt.description,
@@ -404,6 +406,7 @@ export class PromptManagementSkill {
 
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: {
           promptName: name,
           output: result.result,
@@ -442,6 +445,7 @@ export class PromptManagementSkill {
       
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: {
           valid: validation.valid,
           errors: validation.errors || [],
@@ -467,6 +471,7 @@ export class PromptManagementSkill {
       if (!template) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: 'Prompt template is required'
         }
       }
@@ -474,6 +479,7 @@ export class PromptManagementSkill {
       if (!template.name || !template.description) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: 'Template name and description are required'
         }
       }
@@ -482,6 +488,7 @@ export class PromptManagementSkill {
       
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: {
           message: `Prompt template '${template.name}' created successfully`,
           name: template.name,
@@ -491,6 +498,7 @@ export class PromptManagementSkill {
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to create prompt template: ${error}`
       }
     }
@@ -506,6 +514,7 @@ export class PromptManagementSkill {
       if (!name || !template) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: 'Prompt name and template are required'
         }
       }
@@ -514,6 +523,7 @@ export class PromptManagementSkill {
       
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: {
           message: `Prompt template '${name}' updated successfully`,
           name,
@@ -546,6 +556,7 @@ export class PromptManagementSkill {
       
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: {
           message: `Prompt template '${name}' deleted successfully`,
           name,
@@ -576,6 +587,7 @@ export class PromptManagementSkill {
 
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: {
           executions: history.map(execution => ({
             promptName: execution.promptName,
@@ -601,6 +613,7 @@ export class PromptManagementSkill {
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to get execution history: ${error}`
       }
     }

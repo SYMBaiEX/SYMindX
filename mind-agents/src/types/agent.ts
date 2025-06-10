@@ -289,7 +289,9 @@ export enum ActionCategory {
   SOCIAL = 'social',
   COGNITIVE = 'cognitive',
   SYSTEM = 'system',
-  COMBAT = 'combat'
+  COMBAT = 'combat',
+  TOOL_EXECUTION = 'tool_execution',
+  RESOURCE_MANAGEMENT = 'resource_management'
 }
 
 export interface ExtensionAction {

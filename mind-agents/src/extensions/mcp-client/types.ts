@@ -7,7 +7,7 @@
 import { BaseConfig, ExtensionConfig } from '../../types/common.js'
 
 // Base MCP Client Settings
-export interface McpClientSettings extends BaseConfig {
+export interface McpClientSettings {
   servers: McpServerConfig[]
   autoConnect?: boolean
   reconnectAttempts?: number
@@ -17,6 +17,7 @@ export interface McpClientSettings extends BaseConfig {
   maxConcurrentConnections?: number
   defaultTransport?: 'stdio' | 'sse' | 'websocket'
   security?: McpClientSecurityConfig
+  [key: string]: any
 }
 
 // Main MCP Client Configuration
@@ -181,6 +182,13 @@ export interface McpTool {
   name: string
   description?: string
   inputSchema: any // JSON Schema
+  outputSchema?: any // JSON Schema
+  category?: string
+  serverId?: string
+  serverName?: string
+  deprecated?: boolean
+  experimental?: boolean
+  version?: string
 }
 
 export interface McpToolCallRequest {
@@ -207,6 +215,16 @@ export interface McpResource {
   name: string
   description?: string
   mimeType?: string
+  resourceType?: string
+  serverId?: string
+  serverName?: string
+  permissions?: string[]
+  accessible?: boolean
+  metadata?: any
+  version?: string
+  tags?: string[]
+  lastModified?: Date
+  size?: number
   annotations?: {
     audience?: ('user' | 'assistant')[]
     priority?: number

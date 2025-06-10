@@ -4,9 +4,8 @@
  * Handles invocation of tools on remote MCP servers.
  */
 
-import { Agent, ExtensionAction } from '../../../types/agent.js'
+import { Agent, ExtensionAction, ActionResult, ActionResultType, ActionCategory } from '../../../types/agent.js'
 import { McpClientExtension } from '../index.js'
-import { ActionResult } from '../../../types/common.js'
 
 export class ToolInvocationSkill {
   private extension: McpClientExtension
@@ -23,6 +22,7 @@ export class ToolInvocationSkill {
       invoke_tool: {
         name: 'invoke_tool',
         description: 'Invoke a tool on a remote MCP server',
+        category: ActionCategory.TOOL_EXECUTION,
         parameters: {
           serverId: {
             type: 'string',
@@ -50,6 +50,7 @@ export class ToolInvocationSkill {
       list_tools: {
         name: 'list_tools',
         description: 'List available tools on servers',
+        category: ActionCategory.TOOL_EXECUTION,
         parameters: {
           serverId: {
             type: 'string',
@@ -72,6 +73,7 @@ export class ToolInvocationSkill {
       get_tool_info: {
         name: 'get_tool_info',
         description: 'Get detailed information about a tool',
+        category: ActionCategory.TOOL_EXECUTION,
         parameters: {
           serverId: {
             type: 'string',
@@ -94,6 +96,7 @@ export class ToolInvocationSkill {
       validate_tool_arguments: {
         name: 'validate_tool_arguments',
         description: 'Validate arguments for a tool',
+        category: ActionCategory.TOOL_EXECUTION,
         parameters: {
           serverId: {
             type: 'string',
@@ -116,6 +119,7 @@ export class ToolInvocationSkill {
       batch_invoke_tools: {
         name: 'batch_invoke_tools',
         description: 'Invoke multiple tools in batch',
+        category: ActionCategory.TOOL_EXECUTION,
         parameters: {
           invocations: {
             type: 'array',
@@ -138,6 +142,7 @@ export class ToolInvocationSkill {
       get_invocation_history: {
         name: 'get_invocation_history',
         description: 'Get tool invocation history',
+        category: ActionCategory.TOOL_EXECUTION,
         parameters: {
           serverId: {
             type: 'string',
@@ -165,6 +170,7 @@ export class ToolInvocationSkill {
       cancel_invocation: {
         name: 'cancel_invocation',
         description: 'Cancel a running tool invocation',
+        category: ActionCategory.TOOL_EXECUTION,
         parameters: {
           invocationId: {
             type: 'string',
@@ -177,6 +183,7 @@ export class ToolInvocationSkill {
       get_invocation_status: {
         name: 'get_invocation_status',
         description: 'Get status of a tool invocation',
+        category: ActionCategory.TOOL_EXECUTION,
         parameters: {
           invocationId: {
             type: 'string',
@@ -189,6 +196,7 @@ export class ToolInvocationSkill {
       create_tool_alias: {
         name: 'create_tool_alias',
         description: 'Create an alias for a tool',
+        category: ActionCategory.TOOL_EXECUTION,
         parameters: {
           serverId: {
             type: 'string',
@@ -216,6 +224,7 @@ export class ToolInvocationSkill {
       remove_tool_alias: {
         name: 'remove_tool_alias',
         description: 'Remove a tool alias',
+        category: ActionCategory.TOOL_EXECUTION,
         parameters: {
           alias: {
             type: 'string',
@@ -238,6 +247,7 @@ export class ToolInvocationSkill {
       if (!serverId || !toolName) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: 'Server ID and tool name are required'
         }
       }
@@ -251,6 +261,7 @@ export class ToolInvocationSkill {
       
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: {
           invocationId: result.invocationId,
           toolName,
@@ -269,6 +280,7 @@ export class ToolInvocationSkill {
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Tool invocation failed: ${error}`
       }
     }
@@ -289,6 +301,7 @@ export class ToolInvocationSkill {
       
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: {
           tools: tools.map(tool => ({
             name: tool.name,
@@ -310,14 +323,15 @@ export class ToolInvocationSkill {
             experimental: tool.experimental
           })),
           total: tools.length,
-          servers: [...new Set(tools.map(t => t.serverId))],
-          categories: [...new Set(tools.map(t => t.category).filter(Boolean))],
+          servers: Array.from(new Set(tools.map(t => t.serverId))),
+          categories: Array.from(new Set(tools.map(t => t.category).filter(Boolean))),
           filters: { serverId, category, search }
         }
       }
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to list tools: ${error}`
       }
     }
@@ -333,6 +347,7 @@ export class ToolInvocationSkill {
       if (!serverId || !toolName) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: 'Server ID and tool name are required'
         }
       }
@@ -344,12 +359,14 @@ export class ToolInvocationSkill {
       if (!toolInfo) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: `Tool '${toolName}' not found on server '${serverId}'`
         }
       }
 
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: {
           name: toolInfo.name,
           description: toolInfo.description,
@@ -381,6 +398,7 @@ export class ToolInvocationSkill {
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to get tool info: ${error}`
       }
     }
@@ -396,6 +414,7 @@ export class ToolInvocationSkill {
       if (!serverId || !toolName || !toolArgs) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: 'Server ID, tool name, and arguments are required'
         }
       }
@@ -408,6 +427,7 @@ export class ToolInvocationSkill {
       
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: {
           valid: validation.valid,
           errors: validation.errors || [],
@@ -424,6 +444,7 @@ export class ToolInvocationSkill {
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Argument validation failed: ${error}`
       }
     }
@@ -439,6 +460,7 @@ export class ToolInvocationSkill {
       if (!invocations || !Array.isArray(invocations)) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: 'Invocations array is required'
         }
       }
@@ -451,6 +473,7 @@ export class ToolInvocationSkill {
       
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: {
           batchId: results.batchId,
           results: results.results.map(result => ({
@@ -478,6 +501,7 @@ export class ToolInvocationSkill {
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Batch invocation failed: ${error}`
       }
     }
@@ -499,6 +523,7 @@ export class ToolInvocationSkill {
       
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: {
           invocations: history.invocations.map(inv => ({
             id: inv.id,
@@ -530,6 +555,7 @@ export class ToolInvocationSkill {
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to get invocation history: ${error}`
       }
     }
@@ -545,6 +571,7 @@ export class ToolInvocationSkill {
       if (!invocationId) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: 'Invocation ID is required'
         }
       }
@@ -553,6 +580,7 @@ export class ToolInvocationSkill {
       
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: {
           message: `Invocation '${invocationId}' cancelled`,
           invocationId,
@@ -564,6 +592,7 @@ export class ToolInvocationSkill {
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to cancel invocation: ${error}`
       }
     }
@@ -579,6 +608,7 @@ export class ToolInvocationSkill {
       if (!invocationId) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: 'Invocation ID is required'
         }
       }
@@ -588,12 +618,14 @@ export class ToolInvocationSkill {
       if (!status) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: `Invocation '${invocationId}' not found`
         }
       }
 
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: {
           invocationId,
           status: status.status,
@@ -611,6 +643,7 @@ export class ToolInvocationSkill {
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to get invocation status: ${error}`
       }
     }
@@ -626,6 +659,7 @@ export class ToolInvocationSkill {
       if (!serverId || !toolName || !alias) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: 'Server ID, tool name, and alias are required'
         }
       }
@@ -639,6 +673,7 @@ export class ToolInvocationSkill {
       
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: {
           message: `Alias '${alias}' created for tool '${toolName}' on server '${serverId}'`,
           alias,
@@ -651,6 +686,7 @@ export class ToolInvocationSkill {
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to create tool alias: ${error}`
       }
     }
@@ -666,6 +702,7 @@ export class ToolInvocationSkill {
       if (!alias) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: 'Alias name is required'
         }
       }
@@ -674,6 +711,7 @@ export class ToolInvocationSkill {
       
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: {
           message: `Alias '${alias}' removed`,
           alias,
@@ -683,6 +721,7 @@ export class ToolInvocationSkill {
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to remove tool alias: ${error}`
       }
     }

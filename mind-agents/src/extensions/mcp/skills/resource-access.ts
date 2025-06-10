@@ -4,7 +4,7 @@
  * Handles MCP resource management, access, and operations.
  */
 
-import { Agent, ExtensionAction, ActionCategory, ActionResult } from '../../../types/agent.js'
+import { Agent, ExtensionAction, ActionCategory, ActionResult, ActionResultType } from '../../../types/agent.js'
 import { McpExtension } from '../index.js'
 
 export class ResourceAccessSkill {
@@ -142,6 +142,7 @@ export class ResourceAccessSkill {
     try {
       if (!this.extension.isServerRunning()) {
         return {
+          type: ActionResultType.FAILURE,
           success: false,
           error: 'MCP server is not running'
         }
@@ -162,6 +163,7 @@ export class ResourceAccessSkill {
 
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: {
           resources: resources.map(resource => ({
             uri: resource.uri,
@@ -181,6 +183,7 @@ export class ResourceAccessSkill {
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to list resources: ${error}`
       }
     }
@@ -195,6 +198,7 @@ export class ResourceAccessSkill {
       
       if (!uri) {
         return {
+          type: ActionResultType.FAILURE,
           success: false,
           error: 'Resource URI is required'
         }
@@ -202,6 +206,7 @@ export class ResourceAccessSkill {
 
       if (!this.extension.isServerRunning()) {
         return {
+          type: ActionResultType.FAILURE,
           success: false,
           error: 'MCP server is not running'
         }
@@ -212,6 +217,7 @@ export class ResourceAccessSkill {
       if (!validation.valid) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: `Invalid resource URI: ${validation.error}`
         }
       }
@@ -222,6 +228,7 @@ export class ResourceAccessSkill {
 
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: {
           uri,
           content: resource.content,
@@ -238,6 +245,7 @@ export class ResourceAccessSkill {
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to read resource: ${error}`
       }
     }
@@ -252,6 +260,7 @@ export class ResourceAccessSkill {
       
       if (!uri) {
         return {
+          type: ActionResultType.FAILURE,
           success: false,
           error: 'Resource URI is required'
         }
@@ -259,6 +268,7 @@ export class ResourceAccessSkill {
 
       if (!this.extension.isServerRunning()) {
         return {
+          type: ActionResultType.FAILURE,
           success: false,
           error: 'MCP server is not running'
         }
@@ -270,6 +280,7 @@ export class ResourceAccessSkill {
       if (!resource) {
         return {
           success: false,
+          type: ActionResultType.FAILURE,
           error: `Resource not found: ${uri}`
         }
       }
@@ -288,6 +299,7 @@ export class ResourceAccessSkill {
 
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: {
           uri: resource.uri,
           name: resource.name,
@@ -310,6 +322,7 @@ export class ResourceAccessSkill {
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to get resource info: ${error}`
       }
     }
@@ -324,6 +337,7 @@ export class ResourceAccessSkill {
       
       if (!uri) {
         return {
+          type: ActionResultType.FAILURE,
           success: false,
           error: 'Resource URI is required'
         }
@@ -331,6 +345,7 @@ export class ResourceAccessSkill {
 
       if (!this.extension.isServerRunning()) {
         return {
+          type: ActionResultType.FAILURE,
           success: false,
           error: 'MCP server is not running'
         }
@@ -339,6 +354,7 @@ export class ResourceAccessSkill {
       const result = await this.extension.subscribeToResource(uri)
       
       return {
+        type: ActionResultType.SUCCESS,
         success: true,
         result: {
           message: `Subscribed to resource: ${uri}`,
@@ -349,6 +365,7 @@ export class ResourceAccessSkill {
       }
     } catch (error) {
       return {
+        type: ActionResultType.FAILURE,
         success: false,
         error: `Failed to subscribe to resource: ${error}`
       }
@@ -364,6 +381,7 @@ export class ResourceAccessSkill {
       
       if (!uri) {
         return {
+          type: ActionResultType.FAILURE,
           success: false,
           error: 'Resource URI is required'
         }
@@ -371,6 +389,7 @@ export class ResourceAccessSkill {
 
       if (!this.extension.isServerRunning()) {
         return {
+          type: ActionResultType.FAILURE,
           success: false,
           error: 'MCP server is not running'
         }
@@ -380,6 +399,7 @@ export class ResourceAccessSkill {
       
       return {
         success: true,
+        type: ActionResultType.SUCCESS,
         result: {
           message: `Unsubscribed from resource: ${uri}`,
           uri,
@@ -389,6 +409,7 @@ export class ResourceAccessSkill {
     } catch (error) {
       return {
         success: false,
+        type: ActionResultType.FAILURE,
         error: `Failed to unsubscribe from resource: ${error}`
       }
     }
@@ -403,6 +424,7 @@ export class ResourceAccessSkill {
       
       if (!query) {
         return {
+          type: ActionResultType.FAILURE,
           success: false,
           error: 'Search query is required'
         }
@@ -410,6 +432,7 @@ export class ResourceAccessSkill {
 
       if (!this.extension.isServerRunning()) {
         return {
+          type: ActionResultType.FAILURE,
           success: false,
           error: 'MCP server is not running'
         }
@@ -418,10 +441,11 @@ export class ResourceAccessSkill {
       const results = await this.extension.searchResources(query, { type, limit })
       
       return {
+        type: ActionResultType.SUCCESS,
         success: true,
         result: {
           query,
-          results: results.map(result => ({
+          results: results.map((result: any) => ({
             uri: result.uri,
             name: result.name,
             description: result.description,
@@ -436,6 +460,7 @@ export class ResourceAccessSkill {
       }
     } catch (error) {
       return {
+        type: ActionResultType.FAILURE,
         success: false,
         error: `Resource search failed: ${error}`
       }
@@ -449,6 +474,7 @@ export class ResourceAccessSkill {
     try {
       if (!this.extension.isServerRunning()) {
         return {
+          type: ActionResultType.FAILURE,
           success: false,
           error: 'MCP server is not running'
         }
@@ -457,6 +483,7 @@ export class ResourceAccessSkill {
       const templates = this.extension.getResourceTemplates()
       
       return {
+        type: ActionResultType.SUCCESS,
         success: true,
         result: {
           templates: templates.map(template => ({
@@ -472,6 +499,7 @@ export class ResourceAccessSkill {
       }
     } catch (error) {
       return {
+        type: ActionResultType.FAILURE,
         success: false,
         error: `Failed to get resource templates: ${error}`
       }
@@ -487,6 +515,7 @@ export class ResourceAccessSkill {
       
       if (!uri) {
         return {
+          type: ActionResultType.FAILURE,
           success: false,
           error: 'URI is required'
         }
@@ -495,6 +524,7 @@ export class ResourceAccessSkill {
       const validation = this.extension.validateResourceUri(uri)
       
       return {
+        type: ActionResultType.SUCCESS,
         success: true,
         result: {
           uri,
@@ -507,6 +537,7 @@ export class ResourceAccessSkill {
       }
     } catch (error) {
       return {
+        type: ActionResultType.FAILURE,
         success: false,
         error: `URI validation failed: ${error}`
       }

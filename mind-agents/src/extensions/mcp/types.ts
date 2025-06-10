@@ -16,6 +16,9 @@ export interface McpSettings extends BaseConfig {
   maxRestartAttempts?: number
   restartDelay?: number
   timeout?: number
+  port?: number
+  transport?: string
+  serverVersion?: string
   capabilities: {
     tools?: boolean
     resources?: boolean

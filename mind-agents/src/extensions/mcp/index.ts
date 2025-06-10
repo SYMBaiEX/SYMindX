@@ -5,7 +5,7 @@
  */
 
 import { spawn, ChildProcess } from 'child_process'
-import { Extension, ExtensionType, ExtensionStatus, Agent, ExtensionAction, ExtensionEventHandler } from '../../types/agent.js'
+import { Extension, ExtensionType, ExtensionStatus, Agent, ExtensionAction, ExtensionEventHandler, ActionResultType } from '../../types/agent.js'
 import { ExtensionConfig } from '../../types/common.js'
 import {
   McpConfig,
@@ -270,11 +270,11 @@ export class McpExtension implements Extension {
   }
 
   async registerCustomTool(toolDefinition: any): Promise<any> {
-    return { success: true }
+    return { success: true, type: ActionResultType.SUCCESS }
   }
 
   async unregisterTool(toolName: string): Promise<any> {
-    return { success: true }
+    return { success: true, type: ActionResultType.SUCCESS }
   }
 
   // Resource management methods
@@ -299,11 +299,11 @@ export class McpExtension implements Extension {
   }
 
   async subscribeToResource(uri: string): Promise<any> {
-    return { success: true }
+    return { success: true, type: ActionResultType.SUCCESS }
   }
 
   async unsubscribeFromResource(uri: string): Promise<any> {
-    return { success: true }
+    return { success: true, type: ActionResultType.SUCCESS }
   }
 
   async searchResources(query: string, options?: any): Promise<any> {
@@ -351,15 +351,15 @@ export class McpExtension implements Extension {
   }
 
   async createPromptTemplate(template: any): Promise<any> {
-    return { success: true }
+    return { success: true, type: ActionResultType.SUCCESS }
   }
 
   async updatePromptTemplate(name: string, template: any): Promise<any> {
-    return { success: true }
+    return { success: true, type: ActionResultType.SUCCESS }
   }
 
   async deletePromptTemplate(name: string): Promise<any> {
-    return { success: true }
+    return { success: true, type: ActionResultType.SUCCESS }
   }
 
   getDefaultSettings(): McpSettings {
@@ -396,7 +396,7 @@ export class McpExtension implements Extension {
     this.agent.logger?.info('MCP Extension cleaned up')
   }
 
-  private async startServer(): Promise<void> {
+  async startServer(config?: any): Promise<void> {
     if (this.isRunning) {
       return
     }
@@ -449,7 +449,7 @@ export class McpExtension implements Extension {
     }
   }
 
-  private async stopServer(): Promise<void> {
+  async stopServer(): Promise<void> {
     if (!this.isRunning || !this.process) {
       return
     }
@@ -764,16 +764,16 @@ export class McpExtension implements Extension {
     switch (action) {
       case 'start':
         await this.startServer()
-        return { success: true, message: 'MCP server started' }
+        return { type: ActionResultType.SUCCESS, success: true, message: 'MCP server started' }
       
       case 'stop':
         await this.stopServer()
-        return { success: true, message: 'MCP server stopped' }
+        return { type: ActionResultType.SUCCESS, success: true, message: 'MCP server stopped' }
       
       case 'restart':
         await this.stopServer()
         await this.startServer()
-        return { success: true, message: 'MCP server restarted' }
+        return { type: ActionResultType.SUCCESS, success: true, message: 'MCP server restarted' }
       
       case 'getStats':
         return await this.getStatus()

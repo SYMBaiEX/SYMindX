@@ -4,9 +4,8 @@
  * Handles MCP connection monitoring, health checks, and diagnostics.
  */
 
-import { Agent, ExtensionAction } from '../../../types/agent.js'
+import { Agent, ExtensionAction, ActionResult, ActionResultType } from '../../../types/agent.js'
 import { McpExtension } from '../index.js'
-import { ActionResult } from '../../../types/common.js'
 
 export class ConnectionMonitoringSkill {
   private extension: McpExtension

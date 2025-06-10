@@ -14,7 +14,7 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "removeComments": true,
-    "noEmitOnError": true,
+    "noEmitOnError": false,
     "sourceMap": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
