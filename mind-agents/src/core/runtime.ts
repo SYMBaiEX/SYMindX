@@ -26,6 +26,7 @@ import { ExtensionConfig } from '../types/common.js'
 import { EventEmitter } from 'events'
 import { PluginLoader, createPluginLoader } from './plugin-loader.js'
 import { SYMindXEnhancedEventBus } from './enhanced-event-bus.js'
+import { SYMindXModuleRegistry } from './registry.js'
 
 export class SYMindXRuntime implements AgentRuntime {
   public agents: Map<string, Agent> = new Map()
@@ -305,6 +306,23 @@ export class SYMindXRuntime implements AgentRuntime {
         console.log(`✅ Initialized extension: ${extension.name}`)
       } catch (error) {
         console.error(`❌ Failed to initialize extension ${extension.name}:`, error)
+      }
+    }
+    
+    // Initialize tools system if configured
+    if (config.modules?.tools?.enabled) {
+      try {
+        const toolSystemName = config.modules.tools.system || 'dynamic'
+        const toolSystem = this.getToolSystem(toolSystemName)
+        if (toolSystem) {
+          // Add tools system to agent (extend Agent interface as needed)
+          agent.toolSystem = toolSystem
+          console.log(`🔧 Initialized tool system: ${toolSystemName}`)
+        } else {
+          console.warn(`⚠️ Tool system '${toolSystemName}' not found`)
+        }
+      } catch (error) {
+        console.error(`❌ Failed to initialize tool system:`, error)
       }
     }
     
@@ -871,59 +889,3 @@ class SYMindXEventBus implements EventBus {
   }
 }
 
-class SYMindXModuleRegistry implements ModuleRegistry {
-  private memoryProviders = new Map<string, any>()
-  private emotionModules = new Map<string, any>()
-  private cognitionModules = new Map<string, any>()
-  private extensions = new Map<string, any>()
-  private portals = new Map<string, Portal>()
-
-  registerMemoryProvider(name: string, provider: any): void {
-    this.memoryProviders.set(name, provider)
-    console.log(`📝 Registered memory provider: ${name}`)
-  }
-
-  registerEmotionModule(name: string, module: any): void {
-    this.emotionModules.set(name, module)
-    console.log(`😊 Registered emotion module: ${name}`)
-  }
-
-  registerCognitionModule(name: string, module: any): void {
-    this.cognitionModules.set(name, module)
-    console.log(`🧠 Registered cognition module: ${name}`)
-  }
-
-  registerExtension(name: string, extension: any): void {
-    this.extensions.set(name, extension)
-    console.log(`🔌 Registered extension: ${name}`)
-  }
-
-  getMemoryProvider(name: string): any {
-    return this.memoryProviders.get(name)
-  }
-
-  getEmotionModule(name: string): any {
-    return this.emotionModules.get(name)
-  }
-
-  getCognitionModule(name: string): any {
-    return this.cognitionModules.get(name)
-  }
-
-  getExtension(name: string): any {
-    return this.extensions.get(name)
-  }
-
-  registerPortal(name: string, portal: Portal): void {
-    this.portals.set(name, portal)
-    console.log(`🔮 Registered portal: ${name}`)
-  }
-
-  getPortal(name: string): Portal | undefined {
-    return this.portals.get(name)
-  }
-
-  listPortals(): string[] {
-    return Array.from(this.portals.keys())
-  }
-}
