@@ -7,9 +7,9 @@
 import { 
   ModuleRegistry, 
   MemoryProvider, 
-  Extension,
-  Portal 
+  Extension
 } from '../types/agent.js'
+import { Portal } from '../types/portal.js'
 import { EmotionModule } from '../types/emotion.js'
 import { CognitionModule } from '../types/cognition.js'
 
