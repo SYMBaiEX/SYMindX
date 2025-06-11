@@ -8,13 +8,16 @@ import { Telegraf } from 'telegraf';
 import { message } from 'telegraf/filters';
 import {
   Extension,
-  ExtensionContext,
-  ExtensionType,
-  ActionResult,
   ExtensionAction,
+  ExtensionEventHandler,
+  ExtensionType,
+  Agent,
+  ActionResult,
   ActionResultType,
+  ActionCategory,
   ExtensionStatus
 } from '../../types/agent.js';
+import { GenericData, ExtensionConfig } from '../../types/common.js';
 import { TelegramConfig, TelegramErrorType, TelegramMessage, TelegramUser, TelegramChat } from './types.js';
 import { initializeSkills, TelegramSkill } from './skills/index.js';
 import { Logger } from '../../utils/logger.js';
@@ -25,31 +28,36 @@ import { Logger } from '../../utils/logger.js';
  * Provides integration with the Telegram Bot API using the Telegraf library.
  */
 export class TelegramExtension implements Extension {
-  id = 'telegram';
-  name = 'Telegram';
-  description = 'Telegram Bot API integration';
-  version = '1.0.0';
-  type = ExtensionType.COMMUNICATION;
-  status = ExtensionStatus.STOPPED;
+  public readonly id = 'telegram';
+  public readonly name = 'Telegram Bot Extension';
+  public readonly version = '1.0.0';
+  public readonly type = ExtensionType.COMMUNICATION;
+  public status: ExtensionStatus = ExtensionStatus.DISABLED;
+  public enabled: boolean = true;
+  public actions: Record<string, ExtensionAction> = {};
+  public events: Record<string, ExtensionEventHandler> = {};
   
+  public config: TelegramConfig;
   private bot: Telegraf | null = null;
-  private config: TelegramConfig;
+  private skills: Map<string, TelegramSkill> = new Map();
   private logger: Logger;
-  private skills: TelegramSkill[] = [];
-  private context: ExtensionContext;
+  // private context: ExtensionContext;
   private messageHandlers: Array<(message: TelegramMessage) => void> = [];
   
   /**
    * Constructor
    * @param context Extension context
    */
-  constructor(context: ExtensionContext) {
-    this.context = context;
-    this.logger = context.logger.child({ extension: this.id });
-    this.config = context.config as TelegramConfig;
+  constructor(config: TelegramConfig) {
+    this.config = config;
+    this.logger = new Logger('telegram');
     
     // Initialize skills
-    this.skills = initializeSkills(this);
+     const skillsArray = initializeSkills(this);
+     this.skills = new Map();
+     skillsArray.forEach(skill => {
+       this.skills.set(skill.constructor.name, skill);
+     });
     
     // Register actions from all skills
     this.registerSkillActions();
@@ -60,12 +68,12 @@ export class TelegramExtension implements Extension {
    */
   async init(): Promise<void> {
     try {
-      if (!this.config.botToken) {
+      if (!this.config.token) {
         throw new Error('Bot token is required');
       }
       
       // Create Telegraf instance
-      this.bot = new Telegraf(this.config.botToken);
+      this.bot = new Telegraf(this.config.token);
       
       // Set up message handlers
       this.setupMessageHandlers();
@@ -148,7 +156,7 @@ export class TelegramExtension implements Extension {
   private convertToTelegramMessage(telegrafMessage: any): TelegramMessage {
     // Basic conversion - would need to be expanded for a complete implementation
     return {
-      message_id: telegrafMessage.message_id,
+      messageId: telegrafMessage.message_id,
       from: telegrafMessage.from as TelegramUser,
       chat: telegrafMessage.chat as TelegramChat,
       date: telegrafMessage.date,
@@ -175,10 +183,10 @@ export class TelegramExtension implements Extension {
    * Register all actions from skills
    */
   private registerSkillActions(): void {
-    for (const skill of this.skills) {
+    for (const skill of Array.from(this.skills.values())) {
       const actions = skill.getActions();
       for (const [actionId, action] of Object.entries(actions)) {
-        this.context.registerAction(actionId, action);
+        this.actions[actionId] = action;
       }
     }
   }
@@ -200,16 +208,19 @@ export class TelegramExtension implements Extension {
       }
       
       const result = await this.bot.telegram.sendMessage(chatId, text, {
-        parse_mode: parseMode,
+        parse_mode: parseMode as any,
         disable_web_page_preview: disableWebPagePreview,
         disable_notification: disableNotification,
-        reply_to_message_id: replyToMessageId
+        reply_parameters: replyToMessageId ? {
+          message_id: replyToMessageId,
+          allow_sending_without_reply: true
+        } : undefined
       });
       
       return {
         success: true,
         type: ActionResultType.SUCCESS,
-        result: result as GenericData,
+        result: result as unknown as GenericData,
         metadata: { timestamp: new Date().toISOString() }
       };
     } catch (error) {
@@ -242,14 +253,14 @@ export class TelegramExtension implements Extension {
       }
       
       const result = await this.bot.telegram.editMessageText(chatId, messageId, undefined, text, {
-        parse_mode: parseMode,
+        parse_mode: parseMode as any,
         disable_web_page_preview: disableWebPagePreview
       });
       
       return {
         success: true,
         type: ActionResultType.SUCCESS,
-        result: result as GenericData,
+        result: result as unknown as GenericData,
         metadata: { timestamp: new Date().toISOString() }
       };
     } catch (error) {
@@ -280,7 +291,7 @@ export class TelegramExtension implements Extension {
       return {
         success: true,
         type: ActionResultType.SUCCESS,
-        result: result as GenericData,
+        result: result as unknown as GenericData,
         metadata: { timestamp: new Date().toISOString() }
       };
     } catch (error) {
@@ -317,7 +328,7 @@ export class TelegramExtension implements Extension {
       return {
         success: true,
         type: ActionResultType.SUCCESS,
-        result: result as GenericData,
+        result: result as unknown as GenericData,
         metadata: { timestamp: new Date().toISOString() }
       };
     } catch (error) {
@@ -348,7 +359,7 @@ export class TelegramExtension implements Extension {
       return {
         success: true,
         type: ActionResultType.SUCCESS,
-        result: result as GenericData,
+        result: result as unknown as GenericData,
         metadata: { timestamp: new Date().toISOString() }
       };
     } catch (error) {
@@ -379,7 +390,7 @@ export class TelegramExtension implements Extension {
       return {
         success: true,
         type: ActionResultType.SUCCESS,
-        result: result as GenericData,
+        result: result as unknown as GenericData,
         metadata: { timestamp: new Date().toISOString() }
       };
     } catch (error) {
@@ -410,7 +421,7 @@ export class TelegramExtension implements Extension {
       return {
         success: true,
         type: ActionResultType.SUCCESS,
-        result: result as GenericData,
+        result: result as unknown as GenericData,
         metadata: { timestamp: new Date().toISOString() }
       };
     } catch (error) {
@@ -441,7 +452,7 @@ export class TelegramExtension implements Extension {
       return {
         success: true,
         type: ActionResultType.SUCCESS,
-        result: result as GenericData,
+        result: result as unknown as GenericData,
         metadata: { timestamp: new Date().toISOString() }
       };
     } catch (error) {
@@ -472,7 +483,7 @@ export class TelegramExtension implements Extension {
       return {
         success: true,
         type: ActionResultType.SUCCESS,
-        result: result as GenericData,
+        result: result as unknown as GenericData,
         metadata: { timestamp: new Date().toISOString() }
       };
     } catch (error) {
@@ -503,7 +514,7 @@ export class TelegramExtension implements Extension {
       return {
         success: true,
         type: ActionResultType.SUCCESS,
-        result: result as GenericData,
+        result: result as unknown as GenericData,
         metadata: { timestamp: new Date().toISOString() }
       };
     } catch (error) {
@@ -542,7 +553,7 @@ export class TelegramExtension implements Extension {
       return {
         success: true,
         type: ActionResultType.SUCCESS,
-        result: result as GenericData,
+        result: result as unknown as GenericData,
         metadata: { timestamp: new Date().toISOString() }
       };
     } catch (error) {
@@ -579,7 +590,7 @@ export class TelegramExtension implements Extension {
       return {
         success: true,
         type: ActionResultType.SUCCESS,
-        result: result as GenericData,
+        result: result as unknown as GenericData,
         metadata: { timestamp: new Date().toISOString() }
       };
     } catch (error) {
@@ -618,7 +629,7 @@ export class TelegramExtension implements Extension {
       return {
         success: true,
         type: ActionResultType.SUCCESS,
-        result: result as GenericData,
+        result: result as unknown as GenericData,
         metadata: { timestamp: new Date().toISOString() }
       };
     } catch (error) {
@@ -653,7 +664,7 @@ export class TelegramExtension implements Extension {
       return {
         success: true,
         type: ActionResultType.SUCCESS,
-        result: result as GenericData,
+        result: result as unknown as GenericData,
         metadata: { timestamp: new Date().toISOString() }
       };
     } catch (error) {
@@ -690,13 +701,16 @@ export class TelegramExtension implements Extension {
         caption,
         parse_mode: parseMode,
         disable_notification: disableNotification,
-        reply_to_message_id: replyToMessageId
+        reply_parameters: replyToMessageId ? {
+          message_id: replyToMessageId,
+          allow_sending_without_reply: true
+        } : undefined
       });
       
       return {
         success: true,
         type: ActionResultType.SUCCESS,
-        result: result as GenericData,
+        result: result as unknown as GenericData,
         metadata: { timestamp: new Date().toISOString() }
       };
     } catch (error) {
@@ -739,13 +753,16 @@ export class TelegramExtension implements Extension {
         width,
         height,
         disable_notification: disableNotification,
-        reply_to_message_id: replyToMessageId
+        reply_parameters: replyToMessageId ? {
+          message_id: replyToMessageId,
+          allow_sending_without_reply: true
+        } : undefined
       });
       
       return {
         success: true,
         type: ActionResultType.SUCCESS,
-        result: result as GenericData,
+        result: result as unknown as GenericData,
         metadata: { timestamp: new Date().toISOString() }
       };
     } catch (error) {
@@ -788,13 +805,16 @@ export class TelegramExtension implements Extension {
         performer,
         title,
         disable_notification: disableNotification,
-        reply_to_message_id: replyToMessageId
+        reply_parameters: replyToMessageId ? {
+          message_id: replyToMessageId,
+          allow_sending_without_reply: true
+        } : undefined
       });
       
       return {
         success: true,
         type: ActionResultType.SUCCESS,
-        result: result as GenericData,
+        result: result as unknown as GenericData,
         metadata: { timestamp: new Date().toISOString() }
       };
     } catch (error) {
@@ -831,13 +851,16 @@ export class TelegramExtension implements Extension {
         caption,
         parse_mode: parseMode,
         disable_notification: disableNotification,
-        reply_to_message_id: replyToMessageId
+        reply_parameters: replyToMessageId ? {
+          message_id: replyToMessageId,
+          allow_sending_without_reply: true
+        } : undefined
       });
       
       return {
         success: true,
         type: ActionResultType.SUCCESS,
-        result: result as GenericData,
+        result: result as unknown as GenericData,
         metadata: { timestamp: new Date().toISOString() }
       };
     } catch (error) {
@@ -870,13 +893,16 @@ export class TelegramExtension implements Extension {
       
       const result = await this.bot.telegram.sendSticker(chatId, sticker, {
         disable_notification: disableNotification,
-        reply_to_message_id: replyToMessageId
+        reply_parameters: replyToMessageId ? {
+          message_id: replyToMessageId,
+          allow_sending_without_reply: true
+        } : undefined
       });
       
       return {
         success: true,
         type: ActionResultType.SUCCESS,
-        result: result as GenericData,
+        result: result as unknown as GenericData,
         metadata: { timestamp: new Date().toISOString() }
       };
     } catch (error) {
@@ -910,13 +936,16 @@ export class TelegramExtension implements Extension {
       
       const result = await this.bot.telegram.sendLocation(chatId, latitude, longitude, {
         disable_notification: disableNotification,
-        reply_to_message_id: replyToMessageId
+        reply_parameters: replyToMessageId ? {
+          message_id: replyToMessageId,
+          allow_sending_without_reply: true
+        } : undefined
       });
       
       return {
         success: true,
         type: ActionResultType.SUCCESS,
-        result: result as GenericData,
+        result: result as unknown as GenericData,
         metadata: { timestamp: new Date().toISOString() }
       };
     } catch (error) {

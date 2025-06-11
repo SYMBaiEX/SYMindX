@@ -4,6 +4,8 @@
  * Type definitions for the Telegram extension with improved type safety using enums.
  */
 
+import { ExtensionConfig } from '../../types/common.js';
+
 /**
  * Telegram action types enum
  */
@@ -111,7 +113,7 @@ export enum TelegramMediaType {
 /**
  * Telegram configuration interface
  */
-export interface TelegramConfig {
+export interface TelegramConfig extends ExtensionConfig {
   token: string;
   webhookUrl?: string;
   useWebhook?: boolean;

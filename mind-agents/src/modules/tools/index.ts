@@ -24,7 +24,9 @@ import {
   TerminalOptions,
   TerminalResult,
   SpawnOptions,
-  TerminalProcess
+  TerminalProcess,
+  TerminalSessionOptions,
+  TerminalSession
 } from '../../extensions/mcp-client/types.js'
 export interface DynamicToolSystem {
   createTool(specification: ToolSpec): ToolSpec
@@ -37,7 +39,7 @@ export interface ExtendedTerminalProcess extends TerminalProcess {
   command: string
   args: string[]
   startTime: Date
-  status: 'running' | 'finished' | 'killed' | 'error'
+  status: 'running' | 'exited' | 'killed' | 'error'
   endTime?: Date
   childProcess?: ChildProcess
 }
@@ -709,14 +711,10 @@ export class SYMindXTerminalInterface extends EventEmitter implements TerminalIn
         command,
         args,
         pid: child.pid || 0,
-        stdin: child.stdin,
-        stdout: child.stdout,
-        stderr: child.stderr,
-        kill: (signal?: NodeJS.Signals) => child.kill(signal),
-        wait: () => new Promise((resolve) => child.on('close', resolve)),
+        stdout: '',
+        stderr: '',
         startTime: new Date(),
-        status: 'running',
-        childProcess: child
+        status: 'running'
       }
       
       this.activeProcesses.set(processId, terminalProcess)
@@ -745,13 +743,13 @@ export class SYMindXTerminalInterface extends EventEmitter implements TerminalIn
           stderr: stderr + '\nProcess killed due to timeout',
           exitCode: -1,
           duration: Date.now() - startTime,
-          processId
+          killed: true
         })
       }, options.timeout || this.config.terminal.timeoutMs)
       
       child.on('close', (code) => {
         clearTimeout(timeout)
-        terminalProcess.status = 'finished'
+        terminalProcess.status = 'exited'
         terminalProcess.endTime = new Date()
         this.activeProcesses.delete(processId)
         
@@ -760,11 +758,11 @@ export class SYMindXTerminalInterface extends EventEmitter implements TerminalIn
           stderr,
           exitCode: code || 0,
           duration: Date.now() - startTime,
-          processId
+          killed: false
         }
         
         console.log(`✅ Terminal command completed (${processId}): exit code ${code}`)
-        this.emit('finished', processId, result)
+        this.emit('exited', processId, result)
         resolve(result)
       })
       
@@ -779,7 +777,7 @@ export class SYMindXTerminalInterface extends EventEmitter implements TerminalIn
           stderr: stderr + '\n' + error.message,
           exitCode: -1,
           duration: Date.now() - startTime,
-          processId
+          killed: false
         }
         
         console.error(`❌ Terminal command failed (${processId}):`, error)
@@ -808,14 +806,11 @@ export class SYMindXTerminalInterface extends EventEmitter implements TerminalIn
       command,
       args,
       pid: child.pid || 0,
-      stdin: child.stdin,
-      stdout: child.stdout,
-      stderr: child.stderr,
-      kill: (signal?: NodeJS.Signals) => child.kill(signal),
-      wait: () => new Promise((resolve) => child.on('exit', resolve)),
+
+      stdout: '',
+      stderr: '',
       startTime: new Date(),
-      status: 'running',
-      childProcess: child
+      status: 'running'
     }
     
     this.activeProcesses.set(processId, terminalProcess)
@@ -842,8 +837,32 @@ export class SYMindXTerminalInterface extends EventEmitter implements TerminalIn
     return Array.from(this.activeProcesses.values());
   }
 
-  getProcess(processId: string): ExtendedTerminalProcess | undefined {
-    return this.activeProcesses.get(processId);
+  getProcess(processId: string): TerminalProcess | null {
+    return this.activeProcesses.get(processId) || null;
+  }
+
+  async kill(processId: string, signal?: string): Promise<boolean> {
+    const terminalProcess = this.activeProcesses.get(processId);
+    if (!terminalProcess || !terminalProcess.pid) {
+      return false;
+    }
+    
+    try {
+      process.kill(terminalProcess.pid, signal as NodeJS.Signals || 'SIGTERM');
+      terminalProcess.status = 'killed';
+      this.activeProcesses.delete(processId);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  listProcesses(): TerminalProcess[] {
+    return Array.from(this.activeProcesses.values());
+  }
+
+  async createSession(options?: TerminalSessionOptions): Promise<TerminalSession> {
+    throw new Error('Terminal sessions not implemented yet');
   }
 
   getShell(): string {
@@ -864,8 +883,10 @@ export function createDynamicToolSystem(config?: Partial<ToolSystemConfig>): Dyn
 export function createCommonToolSpecs(): ToolSpec[] {
   return [
     {
+      id: 'file_reader',
       name: 'file_reader',
       description: 'Read contents of a file',
+      category: 'filesystem',
       code: `
 const fs = require('fs').promises;
 
@@ -891,8 +912,10 @@ readFile().then(result => console.log(JSON.stringify(result)));
       permissions: ['fs:read']
     },
     {
+      id: 'directory_lister',
       name: 'directory_lister',
       description: 'List contents of a directory',
+      category: 'filesystem',
       code: `ls -la "$1"`,
       language: 'bash',
       parameters: {
@@ -905,8 +928,10 @@ readFile().then(result => console.log(JSON.stringify(result)));
       permissions: ['fs:read']
     },
     {
+      id: 'text_processor',
       name: 'text_processor',
       description: 'Process text with various operations',
+      category: 'text',
       code: `
 function processText() {
   const { text, operation } = input;

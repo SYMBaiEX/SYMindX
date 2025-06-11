@@ -508,6 +508,30 @@ export interface RuntimeConfig {
   extensions: {
     autoLoad: boolean
     paths: string[]
+    slack?: {
+      enabled: boolean
+      [key: string]: any
+    }
+    runelite?: {
+      enabled: boolean
+      [key: string]: any
+    }
+    twitter?: {
+      enabled: boolean
+      [key: string]: any
+    }
+    telegram?: {
+      enabled: boolean
+      [key: string]: any
+    }
+    mcp?: {
+      enabled: boolean
+      [key: string]: any
+    }
+    api?: {
+      enabled: boolean
+      [key: string]: any
+    }
   }
   portals?: {
     autoLoad: boolean
