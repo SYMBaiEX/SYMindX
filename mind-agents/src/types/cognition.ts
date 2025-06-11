@@ -2,7 +2,7 @@
  * Cognition module types for SYMindX
  */
 
-import { Agent, ThoughtContext, ThoughtResult } from './agent.js'
+import { Agent, ThoughtContext, ThoughtResult, Plan, Decision } from './agent.js'
 import { BaseConfig } from './common'
 
 /**
@@ -16,6 +16,22 @@ export interface CognitionModule {
    * @returns The result of thinking
    */
   think(agent: Agent, context: ThoughtContext): Promise<ThoughtResult>;
+  
+  /**
+   * Create a plan for achieving a specific goal
+   * @param agent The agent that is planning
+   * @param goal The goal to plan for
+   * @returns A plan for achieving the goal
+   */
+  plan(agent: Agent, goal: string): Promise<Plan>;
+  
+  /**
+   * Make a decision between multiple options
+   * @param agent The agent that is deciding
+   * @param options The options to choose from
+   * @returns The chosen decision
+   */
+  decide(agent: Agent, options: Decision[]): Promise<Decision>;
   
   /**
    * Initialize the cognition module with configuration
