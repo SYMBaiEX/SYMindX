@@ -7,11 +7,40 @@ import { ToolSystemConfig } from '../types/config.types';
 import { IExtendedTerminalProcess, ITerminalInterface, ITerminalSession } from '../types/terminal.types';
 import { TerminalResult } from '../../../../extensions/mcp-client/types';
 
+/**
+ * SYMindXTerminalInterface provides a secure and managed way to execute terminal commands
+ * and manage processes. It implements the ITerminalInterface and provides additional
+ * functionality for process management and session handling.
+ * 
+ * @example
+ * ```typescript
+ * const terminal = new SYMindXTerminalInterface(config);
+ * const result = await terminal.execute('ls', ['-la']);
+ * console.log(result.output);
+ * ```
+ */
 export class SYMindXTerminalInterface implements ITerminalInterface {
   private processes: Map<string, IExtendedTerminalProcess> = new Map();
   private sessions: Map<string, ITerminalSession> = new Map();
   private logger: Logger;
 
+  /**
+   * Creates a new instance of SYMindXTerminalInterface
+   * 
+   * @param {ToolSystemConfig} config - Configuration for the terminal interface
+   * @param {Logger} [logger] - Optional logger instance. If not provided, a new one will be created.
+   * 
+   * @example
+   * ```typescript
+   * const config = {
+   *   terminal: {
+   *     // terminal-specific configuration
+   *   },
+   *   // ... other config
+   * };
+   * const terminal = new SYMindXTerminalInterface(config);
+   * ```
+   */
   constructor(
     private config: ToolSystemConfig,
     logger?: Logger
@@ -19,6 +48,29 @@ export class SYMindXTerminalInterface implements ITerminalInterface {
     this.logger = logger || new Logger('SYMindXTerminalInterface');
   }
 
+  /**
+   * Executes a terminal command and returns the result.
+   * 
+   * @param {string} command - The command to execute
+   * @param {string[]} [args=[]] - Command line arguments
+   * @param {Object} [options={}] - Execution options
+   * @param {string} [options.cwd] - Current working directory
+   * @param {NodeJS.ProcessEnv} [options.env] - Environment variables
+   * @param {boolean} [options.shell] - Whether to use shell
+   * @returns {Promise<TerminalResult>} The result of the command execution
+   * 
+   * @throws {Error} If command execution fails
+   * 
+   * @example
+   * ```typescript
+   * // Basic command execution
+   * const result = await terminal.execute('ls', ['-la']);
+   * console.log(result.output);
+   * 
+   * // With options
+   * const result = await terminal.execute('pwd', [], { cwd: '/some/directory' });
+   * ```
+   */
   async execute(
     command: string,
     args: string[] = [],
@@ -33,6 +85,34 @@ export class SYMindXTerminalInterface implements ITerminalInterface {
     }
   }
 
+  /**
+   * Spawns a new process with the given command and arguments.
+   * 
+   * @param {string} command - The command to execute
+   * @param {string[]} [args=[]] - Command line arguments
+   * @param {Object} [options={}] - Spawn options
+   * @param {string} [options.cwd] - Current working directory
+   * @param {NodeJS.ProcessEnv} [options.env] - Environment variables
+   * @param {boolean} [options.shell] - Whether to use shell
+   * @param {string} [options.sessionId] - Optional session ID to group processes
+   * @returns {Promise<IExtendedTerminalProcess>} The spawned process with extended properties
+   * 
+   * @throws {Error} If terminal access is disabled or command is not allowed
+   * 
+   * @example
+   * ```typescript
+   * // Spawn a process
+   * const process = await terminal.spawnProcess('node', ['app.js'], { 
+   *   cwd: '/app',
+   *   env: { NODE_ENV: 'development' }
+   * });
+   * 
+   * // Monitor process output
+   * process.stdout?.on('data', (data) => {
+   *   console.log(`Output: ${data}`);
+   * });
+   * ```
+   */
   async spawnProcess(
     command: string,
     args: string[] = [],
@@ -118,6 +198,22 @@ export class SYMindXTerminalInterface implements ITerminalInterface {
     return process;
   }
 
+  /**
+   * Kills a running process by its ID.
+   * 
+   * @param {string} processId - The ID of the process to kill
+   * @param {NodeJS.Signals} [signal='SIGTERM'] - Signal to send to the process
+   * @returns {Promise<boolean>} True if the process was successfully killed, false otherwise
+   * 
+   * @example
+   * ```typescript
+   * // Kill a process with default SIGTERM signal
+   * const success = await terminal.kill('process-123');
+   * 
+   * // Force kill a process with SIGKILL
+   * const forceKilled = await terminal.kill('process-123', 'SIGKILL');
+   * ```
+   */
   async kill(processId: string, signal?: NodeJS.Signals): Promise<boolean> {
     const process = this.processes.get(processId);
     if (!process) return false;
@@ -125,6 +221,26 @@ export class SYMindXTerminalInterface implements ITerminalInterface {
     return process.kill(signal);
   }
 
+  /**
+   * Lists all active processes, optionally filtered by session ID.
+   * 
+   * @param {string} [sessionId] - Optional session ID to filter processes
+   * @returns {Promise<IExtendedTerminalProcess[]>} Array of process objects
+   * 
+   * @example
+   * ```typescript
+   * // List all processes
+   * const allProcesses = await terminal.listProcesses();
+   * 
+   * // List processes for a specific session
+   * const sessionProcesses = await terminal.listProcesses('session-123');
+   * 
+   * // Display process information
+   * allProcesses.forEach(proc => {
+   *   console.log(`Process ${proc.id}: ${proc.command} (${proc.status})`);
+   * });
+   * ```
+   */
   async listProcesses(sessionId?: string): Promise<IExtendedTerminalProcess[]> {
     if (sessionId) {
       const session = this.sessions.get(sessionId);
@@ -136,10 +252,46 @@ export class SYMindXTerminalInterface implements ITerminalInterface {
     return Array.from(this.processes.values());
   }
 
+  /**
+   * Retrieves a process by its ID.
+   * 
+   * @param {string} processId - The ID of the process to retrieve
+   * @returns {IExtendedTerminalProcess | undefined} The process object if found, undefined otherwise
+   * 
+   * @example
+   * ```typescript
+   * // Get a specific process
+   * const process = terminal.getProcess('process-123');
+   * if (process) {
+   *   console.log(`Found process: ${process.command} (${process.status})`);
+   * } else {
+   *   console.log('Process not found');
+   * }
+   * ```
+   */
   getProcess(processId: string): IExtendedTerminalProcess | undefined {
     return this.processes.get(processId);
   }
 
+  /**
+   * Validates if a command is allowed to be executed based on the security configuration.
+   * 
+   * @private
+   * @param {string} command - The command to validate
+   * @param {string[]} [args=[]] - Command line arguments
+   * @throws {Error} If the command is blocked or not in the allowed list
+   * 
+   * @example
+   * ```typescript
+   * // This is called internally by execute() and spawnProcess()
+   * // Example of blocked command:
+   * try {
+   *   terminal['validateCommand']('rm', ['-rf', '/']);
+   * } catch (error) {
+   *   console.error(error.message); // Command 'rm -rf /' is blocked by security policy
+   * }
+   * ```
+   */
   private validateCommand(command: string, args: string[] = []): void {
     // Check blocked commands
     const fullCommand = [command, ...args].join(' ').toLowerCase();
@@ -165,6 +317,22 @@ export class SYMindXTerminalInterface implements ITerminalInterface {
     }
   }
 
+  /**
+   * Waits for a process to complete and collects its output.
+   * 
+   * @private
+   * @param {IExtendedTerminalProcess} process - The process to wait for
+   * @returns {Promise<TerminalResult>} The result of the process execution
+   * @throws {Error} If the process fails or times out
+   * 
+   * @example
+   * ```typescript
+   * // This is called internally by execute()
+   * const process = await terminal.spawnProcess('sleep', ['5']);
+   * const result = await terminal['waitForProcess'](process);
+   * console.log(`Process completed with code ${result.exitCode}`);
+   * ```
+   */
   private async waitForProcess(process: IExtendedTerminalProcess): Promise<TerminalResult> {
     try {
       const exitCode = await process.wait();
