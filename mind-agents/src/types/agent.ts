@@ -277,7 +277,9 @@ export enum ExtensionStatus {
   DISABLED = 'disabled',
   ERROR = 'error',
   INITIALIZING = 'initializing',
-  STOPPING = 'stopping'
+  STOPPING = 'stopping',
+  STOPPED = 'stopped',
+  RUNNING = 'running'
 }
 
 export interface Extension {
