@@ -13,6 +13,7 @@ import { TwitterExtension } from './twitter/index.js'
 import { McpExtension } from './mcp/index.js'
 import { McpClientExtension } from './mcp-client/index.js'
 import { ApiExtension } from './api/index.js'
+import { TelegramExtension } from './telegram/index.js'
 
 export async function registerExtensions(config: RuntimeConfig): Promise<Extension[]> {
   const extensions: Extension[] = []
@@ -36,6 +37,13 @@ export async function registerExtensions(config: RuntimeConfig): Promise<Extensi
     const twitterExtension = new TwitterExtension(config.extensions.twitter)
     extensions.push(twitterExtension)
     console.log('✅ Twitter extension registered')
+  }
+  
+  // Register Telegram extension if configured
+  if (config.extensions.telegram?.enabled) {
+    const telegramExtension = new TelegramExtension(config.extensions.telegram)
+    extensions.push(telegramExtension)
+    console.log('✅ Telegram extension registered')
   }
   
   // Register MCP Server extension if enabled
@@ -91,6 +99,14 @@ export function getAvailableExtensions() {
       version: '1.0.0',
       requiredConfig: ['username', 'password'],
       optionalConfig: ['headless', 'postingLimits', 'contentFilters']
+    },
+    {
+      id: 'telegram',
+      name: 'Telegram Integration',
+      description: 'Enables agent interaction through Telegram bot API',
+      version: '1.0.0',
+      requiredConfig: ['botToken'],
+      optionalConfig: ['rateLimits', 'sessionConfig']
     }
   ]
 }
@@ -98,5 +114,9 @@ export function getAvailableExtensions() {
 export {
   SlackExtension,
   RuneLiteExtension,
-  TwitterExtension
+  TwitterExtension,
+  McpExtension,
+  McpClientExtension,
+  ApiExtension,
+  TelegramExtension
 }

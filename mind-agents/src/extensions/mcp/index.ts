@@ -7,6 +7,8 @@
 import { spawn, ChildProcess } from 'child_process'
 import { Extension, ExtensionType, ExtensionStatus, Agent, ExtensionAction, ExtensionEventHandler, ActionResultType } from '../../types/agent.js'
 import { ExtensionConfig } from '../../types/common.js'
+import { ExtensionContext } from '../../types/extension.js'
+import { Logger } from '../../utils/logger.js'
 import {
   McpConfig,
   McpSettings,
@@ -43,6 +45,8 @@ export class McpExtension implements Extension {
   actions: Record<string, ExtensionAction> = {}
   events: Record<string, ExtensionEventHandler> = {}
   
+  private context: ExtensionContext
+  private logger: Logger
   private agent: Agent
   private mcpConfig: McpSettings
   private server: McpServer | null = null
@@ -53,13 +57,24 @@ export class McpExtension implements Extension {
   private stats: McpServerStats
   private connectionInfo: McpConnectionInfo
   private securityContext: McpSecurityContext
+  private tools: McpTool[] = []
+  private resources: McpResource[] = []
+  private prompts: McpPrompt[] = []
+  private mcpCapabilities: McpCapabilities = {
+    tools: [],
+    resources: [],
+    prompts: [],
+    logging: false
+  }
 
-  constructor(config: McpConfig) {
-    this.config = config
+  constructor(context: ExtensionContext) {
+    this.context = context
+    this.config = context.config as McpConfig
+    this.logger = context.logger.child({ extension: this.id })
     
     this.mcpConfig = {
       ...this.getDefaultSettings(),
-      ...config.settings
+      ...this.config.settings
     }
     
     // Initialize stats
@@ -95,8 +110,8 @@ export class McpExtension implements Extension {
     }
   }
 
-  async init(agent: Agent): Promise<void> {
-    this.agent = agent
+  async init(): Promise<void> {
+    this.agent = this.context.agent!
     
     // Initialize default settings
     this.mcpConfig = {
@@ -159,7 +174,7 @@ export class McpExtension implements Extension {
       await this.startServer()
     }
     
-    this.agent.logger?.info(`MCP Extension initialized with server: ${this.mcpConfig.serverName}`)
+    this.logger.info(`MCP Extension initialized with server: ${this.mcpConfig.serverName}`)
   }
 
   async tick(agent: Agent): Promise<void> {
@@ -168,11 +183,11 @@ export class McpExtension implements Extension {
 
   // Server management methods
   isServerRunning(): boolean {
-    return this.serverProcess !== null && !this.serverProcess.killed
+    return this.process !== null && !this.process.killed
   }
 
   getServerCapabilities(): any {
-    return this.capabilities
+    return this.mcpCapabilities
   }
 
   getServerUptime(): number {
@@ -212,7 +227,7 @@ export class McpExtension implements Extension {
   }
 
   getCapabilities(): any {
-    return this.capabilities
+    return this.mcpCapabilities
   }
 
   getConfiguration(): any {
@@ -326,13 +341,7 @@ export class McpExtension implements Extension {
     return { valid: true }
   }
 
-  async getPrompt(name: string, args: any): Promise<any> {
-    return {
-      success: true,
-      content: '',
-      timestamp: new Date()
-    }
-  }
+
 
   getPromptExecutionHistory(name?: string): any[] {
     return []
@@ -393,7 +402,7 @@ export class McpExtension implements Extension {
     }
     
     this.pendingRequests.clear()
-    this.agent.logger?.info('MCP Extension cleaned up')
+    this.logger.info('MCP Extension cleaned up')
   }
 
   async startServer(config?: any): Promise<void> {
@@ -438,9 +447,9 @@ export class McpExtension implements Extension {
       this.isRunning = true
       this.connectionInfo.connected = true
       
-      this.agent.logger?.info(`MCP server started with PID: ${this.server.pid}`)
+      this.logger.info(`MCP server started with PID: ${this.server.pid}`)
     } catch (error) {
-      this.agent.logger?.error('Failed to start MCP server:', error)
+      this.logger.error('Failed to start MCP server:', error)
       if (this.server) {
         this.server.status = 'error'
         this.server.lastError = error instanceof Error ? error.message : String(error)
@@ -479,9 +488,9 @@ export class McpExtension implements Extension {
         this.server.status = 'stopped'
       }
       
-      this.agent.logger?.info('MCP server stopped')
+      this.logger.info('MCP server stopped')
     } catch (error) {
-      this.agent.logger?.error('Error stopping MCP server:', error)
+      this.logger.error('Error stopping MCP server:', error)
     }
   }
 
@@ -498,17 +507,17 @@ export class McpExtension implements Extension {
           }
         }
       } catch (error) {
-        this.agent.logger?.error('Error parsing MCP message:', error)
+        this.logger.error('Error parsing MCP message:', error)
       }
     })
     
     this.process.stderr?.on('data', (data) => {
-      this.agent.logger?.error('MCP server error:', data.toString())
+      this.logger.error('MCP server error:', data.toString())
       this.stats.errorCount++
     })
     
     this.process.on('exit', (code, signal) => {
-      this.agent.logger?.info(`MCP server exited with code ${code}, signal ${signal}`)
+      this.logger.info(`MCP server exited with code ${code}, signal ${signal}`)
       this.isRunning = false
       this.connectionInfo.connected = false
       
@@ -523,7 +532,7 @@ export class McpExtension implements Extension {
     })
     
     this.process.on('error', (error) => {
-      this.agent.logger?.error('MCP server process error:', error)
+      this.logger.error('MCP server process error:', error)
       if (this.server) {
         this.server.status = 'error'
         this.server.lastError = error.message
@@ -538,12 +547,12 @@ export class McpExtension implements Extension {
     }
     
     if (this.server.restartCount >= (this.mcpConfig.maxRestartAttempts || 3)) {
-      this.agent.logger?.error('Max restart attempts reached, giving up')
+      this.logger.error('Max restart attempts reached, giving up')
       return
     }
     
     this.server.restartCount++
-    this.agent.logger?.info(`Restarting MCP server (attempt ${this.server.restartCount})`)
+    this.logger.info(`Restarting MCP server (attempt ${this.server.restartCount})`)
     
     // Wait before restarting
     await new Promise(resolve => setTimeout(resolve, this.mcpConfig.restartDelay || 5000))
@@ -551,7 +560,7 @@ export class McpExtension implements Extension {
     try {
       await this.startServer()
     } catch (error) {
-      this.agent.logger?.error('Failed to restart MCP server:', error)
+      this.logger.error('Failed to restart MCP server:', error)
     }
   }
 
@@ -582,7 +591,7 @@ export class McpExtension implements Extension {
       this.server.capabilities = initResponse.capabilities
     }
     
-    this.agent.logger?.info('MCP connection initialized successfully')
+    this.logger.info('MCP connection initialized successfully')
   }
 
   private handleMessage(message: McpMessage): void {
@@ -610,7 +619,7 @@ export class McpExtension implements Extension {
         break
       
       default:
-        this.agent.logger?.debug(`Unhandled MCP message: ${message.method}`)
+        this.logger.debug(`Unhandled MCP message: ${message.method}`)
     }
   }
 
@@ -624,26 +633,26 @@ export class McpExtension implements Extension {
     
     switch (logLevel) {
       case 'debug':
-        this.agent.logger?.debug(logMessage)
+        this.logger.debug(logMessage)
         break
       case 'info':
       case 'notice':
-        this.agent.logger?.info(logMessage)
+        this.logger.info(logMessage)
         break
       case 'warning':
-        this.agent.logger?.warn(logMessage)
+        this.logger.warn(logMessage)
         break
       case 'error':
       case 'critical':
       case 'alert':
       case 'emergency':
-        this.agent.logger?.error(logMessage)
+        this.logger.error(logMessage)
         break
     }
   }
 
   private handleProgressNotification(params: any): void {
-    this.agent.logger?.debug('MCP Progress:', params)
+    this.logger.debug('MCP Progress:', params)
   }
 
   private async sendRequest(method: string, params?: any): Promise<McpResponse> {

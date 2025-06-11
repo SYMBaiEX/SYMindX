@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-import path from 'path';
+import * as path from 'path';
 import { fileURLToPath } from 'url';
 
 // Load environment variables from root .env file

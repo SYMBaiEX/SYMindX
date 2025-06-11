@@ -1,0 +1,17 @@
+{
+  "id": "sample-extension",
+  "name": "Sample Extension",
+  "version": "1.0.0",
+  "description": "A sample extension demonstrating the dynamic plugin loading system",
+  "type": "extension",
+  "main": "index.js",
+  "enabled": true,
+  "dependencies": [],
+  "config": {
+    "greeting": "Hello from Sample Extension!",
+    "interval": 5000
+  },
+  "author": "SYMindX Team",
+  "license": "MIT",
+  "keywords": ["sample", "extension", "demo"]
+}

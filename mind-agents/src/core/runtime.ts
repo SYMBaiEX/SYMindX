@@ -24,19 +24,42 @@ import { CognitionModule, CognitionModuleFactory } from '../types/cognition.js'
 import { Portal, PortalConfig, PortalRegistry } from '../types/portal.js'
 import { ExtensionConfig } from '../types/common.js'
 import { EventEmitter } from 'events'
+import { PluginLoader, createPluginLoader } from './plugin-loader.js'
+import { SYMindXEnhancedEventBus } from './enhanced-event-bus.js'
 
 export class SYMindXRuntime implements AgentRuntime {
   public agents: Map<string, Agent> = new Map()
   public eventBus: EventBus
   public registry: ModuleRegistry
+  public pluginLoader: PluginLoader
   public config: RuntimeConfig
   private tickTimer?: NodeJS.Timeout
   private isRunning = false
 
   constructor(config: RuntimeConfig) {
     this.config = config
-    this.eventBus = new SYMindXEventBus()
+    this.eventBus = new SYMindXEnhancedEventBus({
+      persistence: {
+        enabled: true,
+        storePath: './data/events',
+        maxFileSize: 100 * 1024 * 1024,
+        compressionEnabled: true,
+        retentionDays: 30
+      },
+      performance: {
+        maxSubscribers: 1000,
+        eventBufferSize: 10000,
+        batchSize: 100,
+        flushIntervalMs: 5000
+      },
+      monitoring: {
+        metricsEnabled: true,
+        slowEventThresholdMs: 1000,
+        errorRetryAttempts: 3
+      }
+    })
     this.registry = new SYMindXModuleRegistry()
+    this.pluginLoader = createPluginLoader(this.registry)
   }
 
   async initialize(): Promise<void> {
@@ -101,10 +124,12 @@ export class SYMindXRuntime implements AgentRuntime {
   }
 
   async start(): Promise<void> {
-    if (this.isRunning) return
-    
-    console.log('🧠 Starting SYMindX Runtime...')
-    this.isRunning = true
+    if (this.isRunning) {
+      console.log('⚠️ Runtime is already running')
+      return
+    }
+
+    console.log('🎯 Starting SYMindX Runtime...')
     
     // Register core modules
     await this.registerCoreModules()
@@ -112,19 +137,34 @@ export class SYMindXRuntime implements AgentRuntime {
     // Load portals
     await this.loadPortals()
     
-    // Auto-load extensions if enabled
-    if (this.config.extensions.autoLoad) {
-      await this.loadExtensions()
-    }
+    // Load extensions (legacy method for built-in extensions)
+    await this.loadExtensions()
     
-    // Start the main tick loop
+    // Discover and load dynamic plugins
+    await this.loadDynamicPlugins()
+    
+    // Load agents
+    await this.loadAgents()
+    
+    this.isRunning = true
+    
+    // Start the main processing loop
     this.tickTimer = setInterval(() => {
       this.tick().catch(error => {
         console.error('❌ Runtime tick error:', error)
       })
     }, this.config.tickInterval)
     
-    console.log(`✅ SYMindX Runtime started with ${this.agents.size} agents`)
+    console.log('✅ SYMindX Runtime started successfully')
+        console.log('📊 Plugin Stats:', this.pluginLoader.getStats())
+        await this.eventBus.publish({
+          id: `event_${Date.now()}`,
+          type: 'runtime_started',
+          source: 'runtime',
+          data: { timestamp: new Date() },
+          timestamp: new Date(),
+          processed: false
+        })
   }
 
   async stop(): Promise<void> {
@@ -517,81 +557,258 @@ export class SYMindXRuntime implements AgentRuntime {
     }
   }
 
+  /**
+   * Load and register extensions
+   */
   private async loadExtensions(): Promise<void> {
-    console.log('📦 Auto-loading extensions...')
+    console.log('🔌 Loading built-in extensions...')
     
     try {
-      // Use the new extensions integration module
-      const { registerExtensions } = await import('../extensions/index.js')
+      // Import the extensions module
+      const extensionsModule = await import('../extensions/index.js')
       
-      // Get extension configs from environment variables or config
+      // Create extension configs from environment variables
       const extensionConfigs: Record<string, ExtensionConfig> = {}
       
-      // Slack configuration
-      if (process.env.SLACK_BOT_TOKEN && process.env.SLACK_SIGNING_SECRET) {
+      // Slack extension config
+      if (process.env.SLACK_BOT_TOKEN) {
         extensionConfigs.slack = {
           enabled: true,
-          settings: {
+          config: {
             botToken: process.env.SLACK_BOT_TOKEN,
             signingSecret: process.env.SLACK_SIGNING_SECRET,
-            appToken: process.env.SLACK_APP_TOKEN,
-            socketMode: process.env.SLACK_SOCKET_MODE === 'true',
-            port: parseInt(process.env.SLACK_PORT || '3001'),
-            approvalTimeout: parseInt(process.env.SLACK_APPROVAL_TIMEOUT || '300000')
+            appToken: process.env.SLACK_APP_TOKEN
           }
         }
       }
       
-      // RuneLite configuration
-      if (process.env.RUNELITE_PLUGIN_PORT) {
+      // RuneLite extension config
+      if (process.env.RUNELITE_ENABLED === 'true') {
         extensionConfigs.runelite = {
           enabled: true,
-          settings: {
-            pluginPort: parseInt(process.env.RUNELITE_PLUGIN_PORT),
-            autoLogin: process.env.RUNELITE_AUTO_LOGIN === 'true',
-            skillPreferences: process.env.RUNELITE_SKILL_PREFERENCES ? JSON.parse(process.env.RUNELITE_SKILL_PREFERENCES) : {},
-            safetyLimits: process.env.RUNELITE_SAFETY_LIMITS ? JSON.parse(process.env.RUNELITE_SAFETY_LIMITS) : {}
+          config: {
+            // RuneLite specific config
           }
         }
       }
       
-      // Twitter configuration
-      if (process.env.TWITTER_USERNAME && process.env.TWITTER_PASSWORD) {
+      // Twitter extension config
+      if (process.env.TWITTER_API_KEY) {
         extensionConfigs.twitter = {
           enabled: true,
-          settings: {
-            username: process.env.TWITTER_USERNAME,
-            password: process.env.TWITTER_PASSWORD,
-            headless: process.env.TWITTER_HEADLESS !== 'false',
-            postingLimits: process.env.TWITTER_POSTING_LIMITS ? JSON.parse(process.env.TWITTER_POSTING_LIMITS) : {},
-            contentFilters: process.env.TWITTER_CONTENT_FILTERS ? JSON.parse(process.env.TWITTER_CONTENT_FILTERS) : {}
+          config: {
+            apiKey: process.env.TWITTER_API_KEY,
+            apiSecret: process.env.TWITTER_API_SECRET,
+            accessToken: process.env.TWITTER_ACCESS_TOKEN,
+            accessTokenSecret: process.env.TWITTER_ACCESS_TOKEN_SECRET
           }
         }
       }
       
-      // Create a temporary config for extension registration
-      const tempConfig: RuntimeConfig = {
-        tickInterval: this.config.tickInterval,
-        maxAgents: this.config.maxAgents,
-        logLevel: this.config.logLevel,
-        persistence: this.config.persistence,
-        extensions: {
-          autoLoad: true,
-          paths: [],
-          ...extensionConfigs
+      // Telegram extension config
+      if (process.env.TELEGRAM_BOT_TOKEN) {
+        extensionConfigs.telegram = {
+          enabled: true,
+          config: {
+            botToken: process.env.TELEGRAM_BOT_TOKEN,
+            webhookUrl: process.env.TELEGRAM_WEBHOOK_URL
+          }
         }
       }
       
-      // Register all available extensions
-      const extensions = await registerExtensions(tempConfig)
-      
-      // Add extensions to registry
-      for (const extension of extensions) {
-        this.registry.registerExtension(extension.id, extension)
+      // Create a temporary RuntimeConfig for extensions
+      const tempConfig: RuntimeConfig = {
+        ...this.config,
+        extensions: extensionConfigs
       }
+      
+      // Register available extensions
+      await extensionsModule.registerExtensions(this.registry, tempConfig)
+      
+      console.log('✅ Built-in extensions loaded successfully')
     } catch (error) {
-      console.error('❌ Failed to load extensions:', error)
+      console.error('❌ Failed to load built-in extensions:', error)
     }
+  }
+
+  /**
+   * Load dynamic plugins using the plugin loader
+   */
+  private async loadDynamicPlugins(): Promise<void> {
+    console.log('🔍 Discovering dynamic plugins...')
+    
+    try {
+      // Discover available plugins
+      const manifests = await this.pluginLoader.discoverPlugins()
+      console.log(`📦 Found ${manifests.length} plugin(s)`)
+      
+      if (manifests.length > 0) {
+        console.log('📋 Available plugins:')
+        manifests.forEach(manifest => {
+          const status = manifest.enabled ? '✅' : '❌'
+          console.log(`  ${status} ${manifest.name} (${manifest.id}) - ${manifest.description}`)
+        })
+      }
+      
+      // Load all enabled plugins
+      const extensionConfigs = this.config.extensions || {}
+      const loadedPlugins = await this.pluginLoader.loadAllPlugins(extensionConfigs)
+      
+      console.log(`✅ Loaded ${loadedPlugins.length} dynamic plugin(s)`)
+      
+      // Emit plugin loaded events
+       for (const plugin of loadedPlugins) {
+         await this.eventBus.publish({
+           id: `plugin_loaded_${Date.now()}_${plugin.manifest.id}`,
+           type: 'plugin_loaded',
+           source: 'runtime',
+           data: {
+             pluginId: plugin.manifest.id,
+             pluginName: plugin.manifest.name,
+             pluginType: plugin.manifest.type,
+             loadTime: plugin.loadTime
+           },
+           timestamp: new Date(),
+           processed: false
+         })
+       }
+      
+    } catch (error) {
+      console.error('❌ Failed to load dynamic plugins:', error)
+    }
+  }
+
+  /**
+   * Get runtime statistics
+   */
+  getStats() {
+    return {
+      agents: this.agents.size,
+      isRunning: this.isRunning,
+      plugins: this.pluginLoader.getStats(),
+      eventBus: this.eventBus instanceof SYMindXEnhancedEventBus ? 
+               (this.eventBus as any).getMetrics?.() : null
+    }
+  }
+
+  /**
+   * Load a specific plugin by ID
+   */
+  async loadPlugin(pluginId: string, config?: ExtensionConfig): Promise<boolean> {
+    try {
+      const plugin = await this.pluginLoader.loadPlugin(pluginId, config)
+      if (plugin) {
+        await this.eventBus.publish({
+          id: `plugin_loaded_${Date.now()}_${pluginId}`,
+          type: 'plugin_loaded',
+          source: 'runtime',
+          data: {
+            pluginId: plugin.manifest.id,
+            pluginName: plugin.manifest.name,
+            pluginType: plugin.manifest.type,
+            loadTime: plugin.loadTime
+          },
+          timestamp: new Date(),
+          processed: false
+        })
+        return true
+      }
+      return false
+    } catch (error) {
+      console.error(`❌ Failed to load plugin '${pluginId}':`, error)
+      return false
+    }
+  }
+
+  /**
+   * Unload a specific plugin by ID
+   */
+  async unloadPlugin(pluginId: string): Promise<boolean> {
+    try {
+      const success = await this.pluginLoader.unloadPlugin(pluginId)
+      if (success) {
+        await this.eventBus.publish({
+          id: `plugin_unloaded_${Date.now()}_${pluginId}`,
+          type: 'plugin_unloaded',
+          source: 'runtime',
+          data: { pluginId },
+          timestamp: new Date(),
+          processed: false
+        })
+      }
+      return success
+    } catch (error) {
+      console.error(`❌ Failed to unload plugin '${pluginId}':`, error)
+      return false
+    }
+  }
+
+  /**
+   * Reload a specific plugin by ID
+   */
+  async reloadPlugin(pluginId: string, config?: ExtensionConfig): Promise<boolean> {
+    try {
+      const plugin = await this.pluginLoader.reloadPlugin(pluginId, config)
+      if (plugin) {
+        await this.eventBus.publish({
+          id: `plugin_reloaded_${Date.now()}_${pluginId}`,
+          type: 'plugin_reloaded',
+          source: 'runtime',
+          data: {
+            pluginId: plugin.manifest.id,
+            pluginName: plugin.manifest.name,
+            pluginType: plugin.manifest.type,
+            loadTime: plugin.loadTime
+          },
+          timestamp: new Date(),
+          processed: false
+        })
+        return true
+      }
+      return false
+    } catch (error) {
+      console.error(`❌ Failed to reload plugin '${pluginId}':`, error)
+      return false
+    }
+  }
+
+  /**
+   * Get list of available plugins
+   */
+  async getAvailablePlugins() {
+    return this.pluginLoader.discoverPlugins()
+  }
+
+  /**
+   * Get list of loaded plugins
+   */
+  getLoadedPlugins() {
+    return this.pluginLoader.getLoadedPlugins()
+  }
+
+  /**
+   * Subscribe to runtime events
+   */
+  subscribeToEvents(pattern: any, handler: any) {
+    if (this.eventBus instanceof SYMindXEnhancedEventBus) {
+      return this.eventBus.subscribe(pattern, handler)
+    } else {
+      // Fallback for basic event bus
+      return this.eventBus.subscribe(pattern.type || '*', handler)
+    }
+  }
+
+  /**
+   * Get event history
+   */
+  async getEventHistory(filter?: any) {
+    if (this.eventBus instanceof SYMindXEnhancedEventBus) {
+      const eventBus = this.eventBus as any
+      if (eventBus.replay) {
+        return eventBus.replay(filter)
+      }
+    }
+    return []
   }
 
   private async loadPortals(): Promise<void> {
