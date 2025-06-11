@@ -17,12 +17,22 @@ import {
          AgentStatus, 
          ActionResultType, 
          EnvironmentType,
-         MemoryRecord
+         MemoryRecord,
+         CognitionModule
         } from '../types/agent.js'
 import { EmotionModule, EmotionModuleFactory } from '../types/emotion.js'
 import { CognitionModule, CognitionModuleFactory } from '../types/cognition.js'
 import { Portal, PortalConfig, PortalRegistry } from '../types/portal.js'
 import { ExtensionConfig } from '../types/common.js'
+import {
+  ActionResultType,
+  ActionCategory,
+  RuntimeStatus,
+  ModuleStatus,
+  Result,
+  ErrorResult,
+  SuccessResult
+} from '../types/enums.js'
 import { EventEmitter } from 'events'
 import { PluginLoader, createPluginLoader } from './plugin-loader.js'
 import { SYMindXEnhancedEventBus } from './enhanced-event-bus.js'
@@ -251,16 +261,35 @@ export class SYMindXRuntime implements AgentRuntime {
       throw new Error(`Memory provider '${config.psyche.defaults.memory}' not found`)
     }
     
-    // Create cognition module
-    const cognitionModule = this.registry.getCognitionModule(config.psyche.defaults.cognition)
+    // Create cognition module (try factory first, then fallback to registry)
+    let cognitionModule = this.registry.getCognitionModule(config.psyche.defaults.cognition)
     if (!cognitionModule) {
-      throw new Error(`Cognition module '${config.psyche.defaults.cognition}' not found`)
+      // Try to create using factory with agent-specific config
+      const cognitionConfig = {
+        ...config.psyche.cognition,
+        agentId: agentId,
+        agentName: config.core.name
+      }
+      cognitionModule = this.registry.createCognitionModule(config.psyche.defaults.cognition, cognitionConfig)
+    }
+    if (!cognitionModule) {
+      throw new Error(`Cognition module '${config.psyche.defaults.cognition}' not found and could not be created`)
     }
     
-    // Create emotion module
-    const emotionModule = this.registry.getEmotionModule(config.psyche.defaults.emotion)
+    // Create emotion module (try factory first, then fallback to registry)
+    let emotionModule = this.registry.getEmotionModule(config.psyche.defaults.emotion)
     if (!emotionModule) {
-      throw new Error(`Emotion module '${config.psyche.defaults.emotion}' not found`)
+      // Try to create using factory with agent-specific config
+      const emotionConfig = {
+        ...config.psyche.emotion,
+        agentId: agentId,
+        agentName: config.core.name,
+        personality: config.psyche.traits
+      }
+      emotionModule = this.registry.createEmotionModule(config.psyche.defaults.emotion, emotionConfig)
+    }
+    if (!emotionModule) {
+      throw new Error(`Emotion module '${config.psyche.defaults.emotion}' not found and could not be created`)
     }
     
     // Load portal if specified
@@ -268,9 +297,29 @@ export class SYMindXRuntime implements AgentRuntime {
     if (config.psyche.defaults.portal) {
       portal = this.registry.getPortal(config.psyche.defaults.portal)
       if (!portal) {
-        console.warn(`⚠️ Portal '${config.psyche.defaults.portal}' not found, agent will run without AI capabilities`)
+        // Try to create portal dynamically using factory
+        const portalConfig: PortalConfig = {
+          ...config.psyche.portal,
+          ...this.config.portals?.apiKeys
+        }
+        portal = this.registry.createPortal(config.psyche.defaults.portal, portalConfig)
+      }
+      
+      if (!portal) {
+        console.warn(`⚠️ Portal '${config.psyche.defaults.portal}' not found and could not be created, agent will run without AI capabilities`)
       } else {
         console.log(`🔮 Using portal: ${config.psyche.defaults.portal}`)
+        // Initialize the portal with the agent
+        try {
+          await portal.init({
+            id: agentId,
+            name: config.core.name,
+            config
+          } as Agent)
+        } catch (error) {
+          console.warn(`⚠️ Failed to initialize portal '${config.psyche.defaults.portal}':`, error)
+          portal = undefined
+        }
       }
     }
     
@@ -549,9 +598,34 @@ export class SYMindXRuntime implements AgentRuntime {
 
   private async registerCoreModules(): Promise<void> {
     try {
-      // Use the core modules registration
+      console.log('🔧 Registering core modules with factory support...')
+      
+      // Import factory functions from modules
+      const { createEmotionModule, createCognitionModule } = await import('../modules/index.js')
+      const { getEmotionModuleTypes } = await import('../modules/emotion/index.js')
+      const { getCognitionModuleTypes } = await import('../modules/cognition/index.js')
+      
+      // Register emotion module factories
+      const emotionTypes = getEmotionModuleTypes()
+      for (const emotionType of emotionTypes) {
+        const factory: EmotionModuleFactory = (config) => createEmotionModule(emotionType, config)
+        this.registry.registerEmotionFactory(emotionType, factory)
+      }
+      
+      // Register cognition module factories
+      const cognitionTypes = getCognitionModuleTypes()
+      for (const cognitionType of cognitionTypes) {
+        const factory: CognitionModuleFactory = (config) => createCognitionModule(cognitionType, config)
+        this.registry.registerCognitionFactory(cognitionType, factory)
+      }
+      
+      // Also use the legacy registration for backward compatibility
       const { registerCoreModules } = await import('../modules/index.js')
       await registerCoreModules(this.registry)
+      
+      console.log('✅ Core modules and factories registered successfully')
+      console.log(`📊 Available emotion modules: ${this.registry.listEmotionModules().join(', ')}`)
+      console.log(`📊 Available cognition modules: ${this.registry.listCognitionModules().join(', ')}`)
     } catch (error) {
       console.error('❌ Failed to register core modules:', error)
     }
@@ -789,7 +863,7 @@ export class SYMindXRuntime implements AgentRuntime {
   /**
    * Subscribe to runtime events
    */
-  subscribeToEvents(pattern: any, handler: any) {
+  subscribeToEvents(pattern: { type?: string; source?: string }, handler: (event: AgentEvent) => void) {
     if (this.eventBus instanceof SYMindXEnhancedEventBus) {
       return this.eventBus.subscribe(pattern, handler)
     } else {
@@ -801,9 +875,9 @@ export class SYMindXRuntime implements AgentRuntime {
   /**
    * Get event history
    */
-  async getEventHistory(filter?: any) {
+  async getEventHistory(filter?: { type?: string; source?: string; limit?: number }): Promise<AgentEvent[]> {
     if (this.eventBus instanceof SYMindXEnhancedEventBus) {
-      const eventBus = this.eventBus as any
+      const eventBus = this.eventBus as SYMindXEnhancedEventBus & { replay?: (filter?: unknown) => Promise<AgentEvent[]> }
       if (eventBus.replay) {
         return eventBus.replay(filter)
       }
@@ -811,8 +885,72 @@ export class SYMindXRuntime implements AgentRuntime {
     return []
   }
 
+  /**
+   * Get comprehensive runtime capabilities and module information
+   */
+  getRuntimeCapabilities() {
+    return {
+      agents: {
+        count: this.agents.size,
+        list: Array.from(this.agents.keys())
+      },
+      modules: {
+        emotion: {
+          available: this.registry.listEmotionModules(),
+          factorySupported: true
+        },
+        cognition: {
+          available: this.registry.listCognitionModules(),
+          factorySupported: true
+        },
+        memory: {
+          available: ['memory', 'sqlite'], // TODO: make this dynamic
+          factorySupported: false
+        },
+        portals: {
+          available: this.registry.listPortals(),
+          factories: this.registry.listPortalFactories(),
+          factorySupported: true
+        }
+      },
+      extensions: {
+        loaded: this.getLoadedPlugins().map(p => p.manifest.id),
+        available: [] // TODO: get from plugin discovery
+      },
+      runtime: {
+        isRunning: this.isRunning,
+        tickInterval: this.config.tickInterval,
+        version: '1.0.0' // TODO: get from package.json
+      }
+    }
+  }
+
+  /**
+   * Create a new agent dynamically with the specified configuration
+   */
+  async createAgent(config: AgentConfig): Promise<string> {
+    const agent = await this.loadAgent(config)
+    console.log(`🤖 Dynamically created agent: ${agent.name} (${agent.id})`)
+    return agent.id
+  }
+
+  /**
+   * Remove an agent from the runtime
+   */
+  async removeAgent(agentId: string): Promise<boolean> {
+    const agent = this.agents.get(agentId)
+    if (!agent) {
+      return false
+    }
+    
+    await this.shutdownAgent(agent)
+    this.agents.delete(agentId)
+    console.log(`🗑️ Removed agent: ${agent.name} (${agentId})`)
+    return true
+  }
+
   private async loadPortals(): Promise<void> {
-    console.log('🔮 Loading portals...')
+    console.log('🔮 Loading portals and portal factories...')
     
     try {
       // Use the new portal integration module
@@ -826,6 +964,26 @@ export class SYMindXRuntime implements AgentRuntime {
       
       // Register all available portals
       await registerPortals(this.registry, apiKeys)
+      
+      // Register portal factories for dynamic creation
+      try {
+        const portalsModule = await import('../portals/index.js')
+        if (portalsModule.getAvailablePortalTypes) {
+          const portalTypes = portalsModule.getAvailablePortalTypes()
+          for (const portalType of portalTypes) {
+            if (portalsModule.createPortal) {
+              const factory = (config: PortalConfig) => portalsModule.createPortal(portalType, config)
+              this.registry.registerPortalFactory(portalType, factory)
+            }
+          }
+          console.log(`🏭 Registered portal factories: ${portalTypes.join(', ')}`)
+        }
+      } catch (factoryError) {
+        console.warn('⚠️ Portal factories not available:', factoryError instanceof Error ? factoryError.message : String(factoryError))
+      }
+      
+      console.log(`📊 Available portals: ${this.registry.listPortals().join(', ')}`)
+      console.log(`📊 Available portal factories: ${this.registry.listPortalFactories().join(', ')}`)
     } catch (error) {
       console.error('❌ Failed to load portals:', error)
     }
@@ -872,45 +1030,127 @@ class SYMindXEventBus implements EventBus {
 }
 
 class SYMindXModuleRegistry implements ModuleRegistry {
-  private memoryProviders = new Map<string, any>()
-  private emotionModules = new Map<string, any>()
-  private cognitionModules = new Map<string, any>()
-  private extensions = new Map<string, any>()
+  private memoryProviders = new Map<string, MemoryProvider>()
+  private emotionModules = new Map<string, EmotionModule>()
+  private cognitionModules = new Map<string, CognitionModule>()
+  private extensions = new Map<string, Extension>()
   private portals = new Map<string, Portal>()
+  
+  // Factory registries for dynamic module creation
+  private emotionFactories = new Map<string, EmotionModuleFactory>()
+  private cognitionFactories = new Map<string, CognitionModuleFactory>()
+  private portalFactories = new Map<string, (config: PortalConfig) => Portal>()
 
-  registerMemoryProvider(name: string, provider: any): void {
+  registerMemoryProvider(name: string, provider: MemoryProvider): void {
     this.memoryProviders.set(name, provider)
     console.log(`📝 Registered memory provider: ${name}`)
   }
 
-  registerEmotionModule(name: string, module: any): void {
+  registerEmotionModule(name: string, module: EmotionModule): void {
     this.emotionModules.set(name, module)
     console.log(`😊 Registered emotion module: ${name}`)
   }
 
-  registerCognitionModule(name: string, module: any): void {
+  registerCognitionModule(name: string, module: CognitionModule): void {
     this.cognitionModules.set(name, module)
     console.log(`🧠 Registered cognition module: ${name}`)
   }
 
-  registerExtension(name: string, extension: any): void {
+  registerExtension(name: string, extension: Extension): void {
     this.extensions.set(name, extension)
     console.log(`🔌 Registered extension: ${name}`)
   }
 
-  getMemoryProvider(name: string): any {
+  /**
+   * Register an emotion module factory for dynamic creation
+   */
+  registerEmotionFactory(name: string, factory: EmotionModuleFactory): void {
+    this.emotionFactories.set(name, factory)
+    console.log(`🏭 Registered emotion factory: ${name}`)
+  }
+
+  /**
+   * Register a cognition module factory for dynamic creation
+   */
+  registerCognitionFactory(name: string, factory: CognitionModuleFactory): void {
+    this.cognitionFactories.set(name, factory)
+    console.log(`🏭 Registered cognition factory: ${name}`)
+  }
+
+  /**
+   * Register a portal factory for dynamic creation
+   */
+  registerPortalFactory(name: string, factory: (config: PortalConfig) => Portal): void {
+    this.portalFactories.set(name, factory)
+    console.log(`🏭 Registered portal factory: ${name}`)
+  }
+
+  /**
+   * Create an emotion module dynamically using registered factories
+   */
+  createEmotionModule(name: string, config?: Record<string, unknown>): EmotionModule | null {
+    const factory = this.emotionFactories.get(name)
+    if (factory) {
+      const module = factory(config)
+      console.log(`🎭 Created emotion module: ${name}`)
+      return module
+    }
+    return null
+  }
+
+  /**
+   * Create a cognition module dynamically using registered factories
+   */
+  createCognitionModule(name: string, config?: Record<string, unknown>): CognitionModule | null {
+    const factory = this.cognitionFactories.get(name)
+    if (factory) {
+      const module = factory(config)
+      console.log(`🧠 Created cognition module: ${name}`)
+      return module
+    }
+    return null
+  }
+
+  /**
+   * Create a portal dynamically using registered factories
+   */
+  createPortal(name: string, config: PortalConfig): Portal | null {
+    const factory = this.portalFactories.get(name)
+    if (factory) {
+      const portal = factory(config)
+      console.log(`🔮 Created portal: ${name}`)
+      return portal
+    }
+    return null
+  }
+
+  getMemoryProvider(name: string): MemoryProvider | undefined {
     return this.memoryProviders.get(name)
   }
 
-  getEmotionModule(name: string): any {
-    return this.emotionModules.get(name)
+  getEmotionModule(name: string): EmotionModule | undefined {
+    // First try to get a pre-registered module
+    const existing = this.emotionModules.get(name)
+    if (existing) {
+      return existing
+    }
+    
+    // If not found, try to create one dynamically
+    return this.createEmotionModule(name) || undefined
   }
 
-  getCognitionModule(name: string): any {
-    return this.cognitionModules.get(name)
+  getCognitionModule(name: string): CognitionModule | undefined {
+    // First try to get a pre-registered module
+    const existing = this.cognitionModules.get(name)
+    if (existing) {
+      return existing
+    }
+    
+    // If not found, try to create one dynamically
+    return this.createCognitionModule(name) || undefined
   }
 
-  getExtension(name: string): any {
+  getExtension(name: string): Extension | undefined {
     return this.extensions.get(name)
   }
 
@@ -920,10 +1160,42 @@ class SYMindXModuleRegistry implements ModuleRegistry {
   }
 
   getPortal(name: string): Portal | undefined {
-    return this.portals.get(name)
+    // First try to get a pre-registered portal
+    const existing = this.portals.get(name)
+    if (existing) {
+      return existing
+    }
+    
+    // If not found, try to create one dynamically (would need config)
+    return undefined
   }
 
   listPortals(): string[] {
     return Array.from(this.portals.keys())
+  }
+
+  /**
+   * List all available emotion module types (both registered and factory-creatable)
+   */
+  listEmotionModules(): string[] {
+    const registered = Array.from(this.emotionModules.keys())
+    const factories = Array.from(this.emotionFactories.keys())
+    return [...new Set([...registered, ...factories])]
+  }
+
+  /**
+   * List all available cognition module types (both registered and factory-creatable)
+   */
+  listCognitionModules(): string[] {
+    const registered = Array.from(this.cognitionModules.keys())
+    const factories = Array.from(this.cognitionFactories.keys())
+    return [...new Set([...registered, ...factories])]
+  }
+
+  /**
+   * List all available portal types (both registered and factory-creatable)
+   */
+  listPortalFactories(): string[] {
+    return Array.from(this.portalFactories.keys())
   }
 }

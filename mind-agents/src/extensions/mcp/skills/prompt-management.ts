@@ -4,7 +4,10 @@
  * Handles MCP prompt operations, templates, and management.
  */
 
-import { Agent, ExtensionAction, ActionResult, ActionResultType } from '../../../types/agent.js'
+import { Agent, ExtensionAction, ActionResult, ActionResultType, ActionCategory } from '../../../types/agent.js'
+import { ActionParameters } from '../../../types/common.js'
+import { createSuccessResult, createFailureResult } from '../../../utils/action-helpers.js'
+import { createCognitiveAction, createSystemAction } from '../../../utils/extension-helpers.js'
 import { McpExtension } from '../index.js'
 
 export class PromptManagementSkill {
@@ -19,10 +22,10 @@ export class PromptManagementSkill {
    */
   getActions(): Record<string, ExtensionAction> {
     return {
-      list_prompts: {
-        name: 'list_prompts',
-        description: 'List all available MCP prompts',
-        parameters: {
+      list_prompts: createCognitiveAction(
+        'list_prompts',
+        'List all available MCP prompts',
+        {
           category: {
             type: 'string',
             description: 'Filter prompts by category',
@@ -34,12 +37,12 @@ export class PromptManagementSkill {
             required: false
           }
         },
-        execute: this.listPrompts.bind(this)
-      },
-      get_prompt: {
-        name: 'get_prompt',
-        description: 'Get a specific prompt with optional parameter substitution',
-        parameters: {
+        this.listPrompts.bind(this)
+      ),
+      get_prompt: createCognitiveAction(
+        'get_prompt',
+        'Get a specific prompt with optional parameter substitution',
+        {
           name: {
             type: 'string',
             description: 'Name of the prompt to retrieve',
@@ -51,24 +54,24 @@ export class PromptManagementSkill {
             required: false
           }
         },
-        execute: this.getPrompt.bind(this)
-      },
-      get_prompt_info: {
-        name: 'get_prompt_info',
-        description: 'Get detailed information about a prompt',
-        parameters: {
+        this.getPrompt.bind(this)
+      ),
+      get_prompt_info: createCognitiveAction(
+        'get_prompt_info',
+        'Get detailed information about a prompt',
+        {
           name: {
             type: 'string',
             description: 'Name of the prompt',
             required: true
           }
         },
-        execute: this.getPromptInfo.bind(this)
-      },
-      execute_prompt: {
-        name: 'execute_prompt',
-        description: 'Execute a prompt and get the result',
-        parameters: {
+        this.getPromptInfo.bind(this)
+      ),
+      execute_prompt: createCognitiveAction(
+        'execute_prompt',
+        'Execute a prompt and get the result',
+        {
           name: {
             type: 'string',
             description: 'Name of the prompt to execute',
@@ -85,12 +88,12 @@ export class PromptManagementSkill {
             required: false
           }
         },
-        execute: this.executePrompt.bind(this)
-      },
-      validate_prompt_arguments: {
-        name: 'validate_prompt_arguments',
-        description: 'Validate arguments for a prompt',
-        parameters: {
+        this.executePrompt.bind(this)
+      ),
+      validate_prompt_arguments: createCognitiveAction(
+        'validate_prompt_arguments',
+        'Validate arguments for a prompt',
+        {
           name: {
             type: 'string',
             description: 'Name of the prompt',
@@ -102,24 +105,24 @@ export class PromptManagementSkill {
             required: true
           }
         },
-        execute: this.validatePromptArguments.bind(this)
-      },
-      create_prompt_template: {
-        name: 'create_prompt_template',
-        description: 'Create a new prompt template',
-        parameters: {
+        this.validatePromptArguments.bind(this)
+      ),
+      create_prompt_template: createCognitiveAction(
+        'create_prompt_template',
+        'Create a new prompt template',
+        {
           template: {
             type: 'object',
             description: 'Prompt template definition',
             required: true
           }
         },
-        execute: this.createPromptTemplate.bind(this)
-      },
-      update_prompt_template: {
-        name: 'update_prompt_template',
-        description: 'Update an existing prompt template',
-        parameters: {
+        this.createPromptTemplate.bind(this)
+      ),
+      update_prompt_template: createCognitiveAction(
+        'update_prompt_template',
+        'Update an existing prompt template',
+        {
           name: {
             type: 'string',
             description: 'Name of the prompt to update',
@@ -131,24 +134,24 @@ export class PromptManagementSkill {
             required: true
           }
         },
-        execute: this.updatePromptTemplate.bind(this)
-      },
-      delete_prompt_template: {
-        name: 'delete_prompt_template',
-        description: 'Delete a prompt template',
-        parameters: {
+        this.updatePromptTemplate.bind(this)
+      ),
+      delete_prompt_template: createCognitiveAction(
+        'delete_prompt_template',
+        'Delete a prompt template',
+        {
           name: {
             type: 'string',
             description: 'Name of the prompt to delete',
             required: true
           }
         },
-        execute: this.deletePromptTemplate.bind(this)
-      },
-      get_prompt_execution_history: {
-        name: 'get_prompt_execution_history',
-        description: 'Get execution history for prompts',
-        parameters: {
+        this.deletePromptTemplate.bind(this)
+      ),
+      get_prompt_execution_history: createCognitiveAction(
+        'get_prompt_execution_history',
+        'Get execution history for prompts',
+        {
           name: {
             type: 'string',
             description: 'Filter by specific prompt name',
@@ -160,8 +163,8 @@ export class PromptManagementSkill {
             required: false
           }
         },
-        execute: this.getPromptExecutionHistory.bind(this)
-      }
+        this.getPromptExecutionHistory.bind(this)
+      )
     }
   }
 
@@ -171,10 +174,7 @@ export class PromptManagementSkill {
   private async listPrompts(agent: Agent, params: any): Promise<ActionResult> {
     try {
       if (!this.extension.isServerRunning()) {
-        return {
-          success: false,
-          error: 'MCP server is not running'
-        }
+        return createFailureResult('MCP server is not running')
       }
 
       const { category, tag } = params
@@ -189,31 +189,24 @@ export class PromptManagementSkill {
         prompts = prompts.filter(prompt => prompt.tags?.includes(tag))
       }
 
-      return {
-        success: true,
-        type: ActionResultType.SUCCESS,
-        result: {
-          prompts: prompts.map(prompt => ({
-            name: prompt.name,
-            description: prompt.description,
-            category: prompt.category || 'general',
-            tags: prompt.tags || [],
-            arguments: prompt.arguments || [],
-            version: prompt.version,
-            author: prompt.author,
-            lastModified: prompt.lastModified
-          })),
-          total: prompts.length,
-          categories: [...new Set(prompts.map(p => p.category || 'general'))],
-          tags: [...new Set(prompts.flatMap(p => p.tags || []))],
-          filters: { category, tag }
-        }
-      }
+      return createSuccessResult({
+        prompts: prompts.map(prompt => ({
+          name: prompt.name,
+          description: prompt.description,
+          category: prompt.category || 'general',
+          tags: prompt.tags || [],
+          arguments: prompt.arguments || [],
+          version: prompt.version,
+          author: prompt.author,
+          lastModified: prompt.lastModified
+        })),
+        total: prompts.length,
+        categories: [...new Set(prompts.map(p => p.category || 'general'))],
+        tags: [...new Set(prompts.flatMap(p => p.tags || []))],
+        filters: { category, tag }
+      })
     } catch (error) {
-      return {
-        success: false,
-        error: `Failed to list prompts: ${error}`
-      }
+      return createFailureResult(`Failed to list prompts: ${error}`)
     }
   }
 
@@ -232,10 +225,7 @@ export class PromptManagementSkill {
       }
 
       if (!this.extension.isServerRunning()) {
-        return {
-          success: false,
-          error: 'MCP server is not running'
-        }
+        return createFailureResult('MCP server is not running')
       }
 
       const prompts = this.extension.getAvailablePrompts()
@@ -301,10 +291,7 @@ export class PromptManagementSkill {
       }
 
       if (!this.extension.isServerRunning()) {
-        return {
-          success: false,
-          error: 'MCP server is not running'
-        }
+        return createFailureResult('MCP server is not running')
       }
 
       const prompts = this.extension.getAvailablePrompts()
@@ -374,10 +361,7 @@ export class PromptManagementSkill {
       }
 
       if (!this.extension.isServerRunning()) {
-        return {
-          success: false,
-          error: 'MCP server is not running'
-        }
+        return createFailureResult('MCP server is not running')
       }
 
       // Validate arguments
