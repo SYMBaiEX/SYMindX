@@ -4,7 +4,10 @@
  * Handles MCP connection monitoring, health checks, and diagnostics.
  */
 
-import { Agent, ExtensionAction, ActionResult, ActionResultType } from '../../../types/agent.js'
+import { Extension, ExtensionAction, Agent, ActionResult, ActionCategory } from '../../../types/agent.js'
+import { ActionParameters } from '../../../types/common.js'
+import { createSuccessResult, createFailureResult } from '../../../utils/action-helpers.js'
+import { createSystemAction } from '../../../utils/extension-helpers.js'
 import { McpExtension } from '../index.js'
 
 export class ConnectionMonitoringSkill {
@@ -21,22 +24,22 @@ export class ConnectionMonitoringSkill {
    */
   getActions(): Record<string, ExtensionAction> {
     return {
-      get_connection_status: {
-        name: 'get_connection_status',
-        description: 'Get current MCP connection status',
-        parameters: {
+      get_connection_status: createSystemAction(
+        'get_connection_status',
+        'Get current MCP connection status',
+        {
           detailed: {
             type: 'boolean',
             description: 'Include detailed connection information',
             required: false
           }
         },
-        execute: this.getConnectionStatus.bind(this)
-      },
-      monitor_connections: {
-        name: 'monitor_connections',
-        description: 'Start monitoring MCP connections',
-        parameters: {
+        this.getConnectionStatus.bind(this)
+      ),
+      monitor_connections: createSystemAction(
+        'monitor_connections',
+        'Start monitoring MCP connections',
+        {
           interval: {
             type: 'number',
             description: 'Monitoring interval in milliseconds',
@@ -48,54 +51,54 @@ export class ConnectionMonitoringSkill {
             required: false
           }
         },
-        execute: this.monitorConnections.bind(this)
-      },
-      stop_monitoring: {
-        name: 'stop_monitoring',
-        description: 'Stop connection monitoring',
-        parameters: {},
-        execute: this.stopMonitoring.bind(this)
-      },
-      health_check: {
-        name: 'health_check',
-        description: 'Perform a health check on MCP connections',
-        parameters: {
+        this.monitorConnections.bind(this)
+      ),
+      stop_monitoring: createSystemAction(
+        'stop_monitoring',
+        'Stop connection monitoring',
+        {},
+        this.stopMonitoring.bind(this)
+      ),
+      health_check: createSystemAction(
+        'health_check',
+        'Perform a health check on MCP connections',
+        {
           timeout: {
             type: 'number',
             description: 'Health check timeout in milliseconds',
             required: false
           }
         },
-        execute: this.healthCheck.bind(this)
-      },
-      get_connection_metrics: {
-        name: 'get_connection_metrics',
-        description: 'Get connection performance metrics',
-        parameters: {
+        this.healthCheck.bind(this)
+      ),
+      get_connection_metrics: createSystemAction(
+        'get_connection_metrics',
+        'Get connection performance metrics',
+        {
           timeRange: {
             type: 'string',
             description: 'Time range for metrics (1h, 24h, 7d)',
             required: false
           }
         },
-        execute: this.getConnectionMetrics.bind(this)
-      },
-      diagnose_connection: {
-        name: 'diagnose_connection',
-        description: 'Diagnose connection issues',
-        parameters: {
+        this.getConnectionMetrics.bind(this)
+      ),
+      diagnose_connection: createSystemAction(
+        'diagnose_connection',
+        'Diagnose connection issues',
+        {
           connectionId: {
             type: 'string',
             description: 'Specific connection to diagnose',
             required: false
           }
         },
-        execute: this.diagnoseConnection.bind(this)
-      },
-      test_connection: {
-        name: 'test_connection',
-        description: 'Test MCP connection with ping/echo',
-        parameters: {
+        this.diagnoseConnection.bind(this)
+      ),
+      test_connection: createSystemAction(
+        'test_connection',
+        'Test MCP connection with ping/echo',
+        {
           timeout: {
             type: 'number',
             description: 'Test timeout in milliseconds',
@@ -107,12 +110,12 @@ export class ConnectionMonitoringSkill {
             required: false
           }
         },
-        execute: this.testConnection.bind(this)
-      },
-      get_connection_logs: {
-        name: 'get_connection_logs',
-        description: 'Get connection-related logs',
-        parameters: {
+        this.testConnection.bind(this)
+      ),
+      get_connection_logs: createSystemAction(
+        'get_connection_logs',
+        'Get connection-related logs',
+        {
           level: {
             type: 'string',
             description: 'Log level filter (error, warn, info, debug)',
@@ -124,26 +127,26 @@ export class ConnectionMonitoringSkill {
             required: false
           }
         },
-        execute: this.getConnectionLogs.bind(this)
-      },
-      reset_connection_metrics: {
-        name: 'reset_connection_metrics',
-        description: 'Reset connection metrics and statistics',
-        parameters: {},
-        execute: this.resetConnectionMetrics.bind(this)
-      },
-      set_connection_alerts: {
-        name: 'set_connection_alerts',
-        description: 'Configure connection monitoring alerts',
-        parameters: {
+        this.getConnectionLogs.bind(this)
+      ),
+      reset_connection_metrics: createSystemAction(
+        'reset_connection_metrics',
+        'Reset connection metrics and statistics',
+        {},
+        this.resetConnectionMetrics.bind(this)
+      ),
+      set_connection_alerts: createSystemAction(
+        'set_connection_alerts',
+        'Configure connection monitoring alerts',
+        {
           config: {
             type: 'object',
             description: 'Alert configuration',
             required: true
           }
         },
-        execute: this.setConnectionAlerts.bind(this)
-      }
+        this.setConnectionAlerts.bind(this)
+      )
     }
   }
 
@@ -178,21 +181,12 @@ export class ConnectionMonitoringSkill {
           metrics: this.getMetricsSummary()
         }
         
-        return {
-          success: true,
-          result: detailedStatus
-        }
+        return createSuccessResult(detailedStatus)
       }
 
-      return {
-        success: true,
-        result: status
-      }
+      return createSuccessResult(status)
     } catch (error) {
-      return {
-        success: false,
-        error: `Failed to get connection status: ${error}`
-      }
+      return createFailureResult(`Failed to get connection status: ${error}`)
     }
   }
 
