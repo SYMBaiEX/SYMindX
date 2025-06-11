@@ -4,7 +4,7 @@
  * Provides actions related to authentication and authorization.
  */
 
-import { ExtensionAction, Agent, ActionResult, ActionResultType } from '../../../types/agent.js'
+import { ExtensionAction, Agent, ActionResult, ActionResultType, ActionCategory } from '../../../types/agent.js'
 import { ApiExtension } from '../index.js'
 import { Request } from 'express'
 
@@ -23,6 +23,7 @@ export class AuthenticationSkill {
       validate_token: {
         name: 'validate_token',
         description: 'Validate authentication token',
+        category: ActionCategory.SYSTEM,
         parameters: { token: 'string', type: 'string' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.validateToken(agent, params)
@@ -32,6 +33,7 @@ export class AuthenticationSkill {
       validate_api_key: {
         name: 'validate_api_key',
         description: 'Validate API key',
+        category: ActionCategory.SYSTEM,
         parameters: { apiKey: 'string', permissions: 'array' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.validateApiKey(agent, params)
@@ -41,6 +43,7 @@ export class AuthenticationSkill {
       check_permissions: {
         name: 'check_permissions',
         description: 'Check user permissions for specific action',
+        category: ActionCategory.SYSTEM,
         parameters: { userId: 'string', action: 'string', resource: 'string' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.checkPermissions(agent, params)
@@ -50,6 +53,7 @@ export class AuthenticationSkill {
       generate_session: {
         name: 'generate_session',
         description: 'Generate new session for authenticated user',
+        category: ActionCategory.SYSTEM,
         parameters: { userId: 'string', metadata: 'object' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.generateSession(agent, params)
@@ -59,6 +63,7 @@ export class AuthenticationSkill {
       revoke_session: {
         name: 'revoke_session',
         description: 'Revoke user session',
+        category: ActionCategory.SYSTEM,
         parameters: { sessionId: 'string', reason: 'string' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.revokeSession(agent, params)
@@ -76,7 +81,7 @@ export class AuthenticationSkill {
       
       if (!token) {
         return {
-          type: ActionResultType.ERROR,
+          type: ActionResultType.FAILURE,
           success: false,
           error: 'Token is required',
           metadata: {
@@ -93,7 +98,7 @@ export class AuthenticationSkill {
       return {
         type: ActionResultType.SUCCESS,
         success: true,
-        data: {
+        result: {
           isValid,
           decoded,
           tokenType: type,
@@ -107,7 +112,7 @@ export class AuthenticationSkill {
       }
     } catch (error) {
       return {
-        type: ActionResultType.ERROR,
+        type: ActionResultType.FAILURE,
         success: false,
         error: `Failed to validate token: ${error instanceof Error ? error.message : String(error)}`,
         metadata: {
@@ -127,7 +132,7 @@ export class AuthenticationSkill {
       
       if (!apiKey) {
         return {
-          type: ActionResultType.ERROR,
+          type: ActionResultType.FAILURE,
           success: false,
           error: 'API key is required',
           metadata: {
@@ -139,12 +144,12 @@ export class AuthenticationSkill {
       
       // Check if API key exists in configuration
       const config = this.extension.config
-      const isValid = config.auth?.apiKeys?.includes(apiKey) || false
+      const isValid = config.settings.auth?.apiKeys?.includes(apiKey) || false
       
       return {
         type: ActionResultType.SUCCESS,
         success: true,
-        data: {
+        result: {
           isValid,
           permissions: isValid ? permissions : [],
           timestamp: new Date().toISOString()
@@ -156,7 +161,7 @@ export class AuthenticationSkill {
       }
     } catch (error) {
       return {
-        type: ActionResultType.ERROR,
+        type: ActionResultType.FAILURE,
         success: false,
         error: `Failed to validate API key: ${error instanceof Error ? error.message : String(error)}`,
         metadata: {
@@ -180,7 +185,7 @@ export class AuthenticationSkill {
       return {
         type: ActionResultType.SUCCESS,
         success: true,
-        data: {
+        result: {
           hasPermission,
           userId,
           action,
@@ -195,7 +200,7 @@ export class AuthenticationSkill {
       }
     } catch (error) {
       return {
-        type: ActionResultType.ERROR,
+        type: ActionResultType.FAILURE,
         success: false,
         error: `Failed to check permissions: ${error instanceof Error ? error.message : String(error)}`,
         metadata: {
@@ -229,7 +234,7 @@ export class AuthenticationSkill {
       return {
         type: ActionResultType.SUCCESS,
         success: true,
-        data: {
+        result: {
           session,
           timestamp: new Date().toISOString()
         },
@@ -241,7 +246,7 @@ export class AuthenticationSkill {
       }
     } catch (error) {
       return {
-        type: ActionResultType.ERROR,
+        type: ActionResultType.FAILURE,
         success: false,
         error: `Failed to generate session: ${error instanceof Error ? error.message : String(error)}`,
         metadata: {
@@ -269,7 +274,7 @@ export class AuthenticationSkill {
       return {
         type: ActionResultType.SUCCESS,
         success: true,
-        data: {
+        result: {
           revoked,
           timestamp: new Date().toISOString()
         },
@@ -281,7 +286,7 @@ export class AuthenticationSkill {
       }
     } catch (error) {
       return {
-        type: ActionResultType.ERROR,
+        type: ActionResultType.FAILURE,
         success: false,
         error: `Failed to revoke session: ${error instanceof Error ? error.message : String(error)}`,
         metadata: {

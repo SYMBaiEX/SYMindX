@@ -26,16 +26,8 @@ export class PromptManagementSkill {
         'list_prompts',
         'List all available MCP prompts',
         {
-          category: {
-            type: 'string',
-            description: 'Filter prompts by category',
-            required: false
-          },
-          tag: {
-            type: 'string',
-            description: 'Filter prompts by tag',
-            required: false
-          }
+          category: '',
+          tag: ''
         },
         this.listPrompts.bind(this)
       ),
@@ -43,16 +35,8 @@ export class PromptManagementSkill {
         'get_prompt',
         'Get a specific prompt with optional parameter substitution',
         {
-          name: {
-            type: 'string',
-            description: 'Name of the prompt to retrieve',
-            required: true
-          },
-          arguments: {
-            type: 'object',
-            description: 'Arguments for prompt parameter substitution',
-            required: false
-          }
+          name: '',
+          arguments: {}
         },
         this.getPrompt.bind(this)
       ),
@@ -60,11 +44,7 @@ export class PromptManagementSkill {
         'get_prompt_info',
         'Get detailed information about a prompt',
         {
-          name: {
-            type: 'string',
-            description: 'Name of the prompt',
-            required: true
-          }
+          name: ''
         },
         this.getPromptInfo.bind(this)
       ),
@@ -72,21 +52,9 @@ export class PromptManagementSkill {
         'execute_prompt',
         'Execute a prompt and get the result',
         {
-          name: {
-            type: 'string',
-            description: 'Name of the prompt to execute',
-            required: true
-          },
-          arguments: {
-            type: 'object',
-            description: 'Arguments for the prompt',
-            required: false
-          },
-          context: {
-            type: 'object',
-            description: 'Additional context for prompt execution',
-            required: false
-          }
+          name: '',
+          arguments: {},
+          context: {}
         },
         this.executePrompt.bind(this)
       ),
@@ -94,16 +62,8 @@ export class PromptManagementSkill {
         'validate_prompt_arguments',
         'Validate arguments for a prompt',
         {
-          name: {
-            type: 'string',
-            description: 'Name of the prompt',
-            required: true
-          },
-          arguments: {
-            type: 'object',
-            description: 'Arguments to validate',
-            required: true
-          }
+          name: '',
+          arguments: {}
         },
         this.validatePromptArguments.bind(this)
       ),
@@ -111,11 +71,7 @@ export class PromptManagementSkill {
         'create_prompt_template',
         'Create a new prompt template',
         {
-          template: {
-            type: 'object',
-            description: 'Prompt template definition',
-            required: true
-          }
+          template: {}
         },
         this.createPromptTemplate.bind(this)
       ),
@@ -123,16 +79,8 @@ export class PromptManagementSkill {
         'update_prompt_template',
         'Update an existing prompt template',
         {
-          name: {
-            type: 'string',
-            description: 'Name of the prompt to update',
-            required: true
-          },
-          template: {
-            type: 'object',
-            description: 'Updated prompt template',
-            required: true
-          }
+          name: '',
+          template: {}
         },
         this.updatePromptTemplate.bind(this)
       ),
@@ -140,11 +88,7 @@ export class PromptManagementSkill {
         'delete_prompt_template',
         'Delete a prompt template',
         {
-          name: {
-            type: 'string',
-            description: 'Name of the prompt to delete',
-            required: true
-          }
+          name: ''
         },
         this.deletePromptTemplate.bind(this)
       ),

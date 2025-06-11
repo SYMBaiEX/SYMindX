@@ -4,7 +4,7 @@
  * Provides actions related to session lifecycle and management.
  */
 
-import { ExtensionAction, Agent, ActionResult, ActionResultType } from '../../../types/agent.js'
+import { ExtensionAction, Agent, ActionResult, ActionResultType, ActionCategory } from '../../../types/agent.js'
 import { ApiExtension } from '../index.js'
 
 export class SessionManagementSkill {
@@ -23,6 +23,7 @@ export class SessionManagementSkill {
       create_session: {
         name: 'create_session',
         description: 'Create a new user session',
+        category: ActionCategory.SYSTEM,
         parameters: { userId: 'string', metadata: 'object', ttl: 'number' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.createSession(agent, params)
@@ -32,6 +33,7 @@ export class SessionManagementSkill {
       get_session: {
         name: 'get_session',
         description: 'Retrieve session information',
+        category: ActionCategory.SYSTEM,
         parameters: { sessionId: 'string' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.getSession(agent, params)
@@ -41,6 +43,7 @@ export class SessionManagementSkill {
       update_session: {
         name: 'update_session',
         description: 'Update session data',
+        category: ActionCategory.SYSTEM,
         parameters: { sessionId: 'string', data: 'object' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.updateSession(agent, params)
@@ -50,6 +53,7 @@ export class SessionManagementSkill {
       extend_session: {
         name: 'extend_session',
         description: 'Extend session expiration time',
+        category: ActionCategory.SYSTEM,
         parameters: { sessionId: 'string', extensionTime: 'number' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.extendSession(agent, params)
@@ -59,6 +63,7 @@ export class SessionManagementSkill {
       destroy_session: {
         name: 'destroy_session',
         description: 'Destroy a session',
+        category: ActionCategory.SYSTEM,
         parameters: { sessionId: 'string', reason: 'string' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.destroySession(agent, params)
@@ -68,6 +73,7 @@ export class SessionManagementSkill {
       list_sessions: {
         name: 'list_sessions',
         description: 'List active sessions',
+        category: ActionCategory.SYSTEM,
         parameters: { userId: 'string', includeExpired: 'boolean' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.listSessions(agent, params)
@@ -77,6 +83,7 @@ export class SessionManagementSkill {
       cleanup_expired: {
         name: 'cleanup_expired',
         description: 'Clean up expired sessions',
+        category: ActionCategory.SYSTEM,
         parameters: {},
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.cleanupExpired(agent, params)
@@ -112,7 +119,7 @@ export class SessionManagementSkill {
       return {
         type: ActionResultType.SUCCESS,
         success: true,
-        data: {
+        result: {
           session,
           timestamp: new Date().toISOString()
         },
@@ -124,7 +131,7 @@ export class SessionManagementSkill {
       }
     } catch (error) {
       return {
-        type: ActionResultType.ERROR,
+        type: ActionResultType.FAILURE,
         success: false,
         error: `Failed to create session: ${error instanceof Error ? error.message : String(error)}`,
         metadata: {
@@ -146,7 +153,7 @@ export class SessionManagementSkill {
       
       if (!session) {
         return {
-          type: ActionResultType.ERROR,
+          type: ActionResultType.FAILURE,
           success: false,
           error: 'Session not found',
           metadata: {
@@ -163,7 +170,7 @@ export class SessionManagementSkill {
       return {
         type: ActionResultType.SUCCESS,
         success: true,
-        data: {
+        result: {
           session: {
             ...session,
             isExpired
@@ -178,7 +185,7 @@ export class SessionManagementSkill {
       }
     } catch (error) {
       return {
-        type: ActionResultType.ERROR,
+        type: ActionResultType.FAILURE,
         success: false,
         error: `Failed to get session: ${error instanceof Error ? error.message : String(error)}`,
         metadata: {
@@ -200,7 +207,7 @@ export class SessionManagementSkill {
       
       if (!session) {
         return {
-          type: ActionResultType.ERROR,
+          type: ActionResultType.FAILURE,
           success: false,
           error: 'Session not found',
           metadata: {
@@ -224,7 +231,7 @@ export class SessionManagementSkill {
       return {
         type: ActionResultType.SUCCESS,
         success: true,
-        data: {
+        result: {
           session: updatedSession,
           timestamp: new Date().toISOString()
         },
@@ -235,7 +242,7 @@ export class SessionManagementSkill {
       }
     } catch (error) {
       return {
-        type: ActionResultType.ERROR,
+        type: ActionResultType.FAILURE,
         success: false,
         error: `Failed to update session: ${error instanceof Error ? error.message : String(error)}`,
         metadata: {
@@ -257,7 +264,7 @@ export class SessionManagementSkill {
       
       if (!session) {
         return {
-          type: ActionResultType.ERROR,
+          type: ActionResultType.FAILURE,
           success: false,
           error: 'Session not found',
           metadata: {
@@ -283,7 +290,7 @@ export class SessionManagementSkill {
       return {
         type: ActionResultType.SUCCESS,
         success: true,
-        data: {
+        result: {
           session: extendedSession,
           extensionTime,
           timestamp: new Date().toISOString()
@@ -296,7 +303,7 @@ export class SessionManagementSkill {
       }
     } catch (error) {
       return {
-        type: ActionResultType.ERROR,
+        type: ActionResultType.FAILURE,
         success: false,
         error: `Failed to extend session: ${error instanceof Error ? error.message : String(error)}`,
         metadata: {
@@ -318,7 +325,7 @@ export class SessionManagementSkill {
       
       if (!session) {
         return {
-          type: ActionResultType.ERROR,
+          type: ActionResultType.FAILURE,
           success: false,
           error: 'Session not found',
           metadata: {
@@ -334,7 +341,7 @@ export class SessionManagementSkill {
       return {
         type: ActionResultType.SUCCESS,
         success: true,
-        data: {
+        result: {
           destroyed: true,
           sessionId,
           reason,
@@ -348,7 +355,7 @@ export class SessionManagementSkill {
       }
     } catch (error) {
       return {
-        type: ActionResultType.ERROR,
+        type: ActionResultType.FAILURE,
         success: false,
         error: `Failed to destroy session: ${error instanceof Error ? error.message : String(error)}`,
         metadata: {
@@ -382,7 +389,7 @@ export class SessionManagementSkill {
       return {
         type: ActionResultType.SUCCESS,
         success: true,
-        data: {
+        result: {
           sessions,
           count: sessions.length,
           timestamp: new Date().toISOString()
@@ -395,7 +402,7 @@ export class SessionManagementSkill {
       }
     } catch (error) {
       return {
-        type: ActionResultType.ERROR,
+        type: ActionResultType.FAILURE,
         success: false,
         error: `Failed to list sessions: ${error instanceof Error ? error.message : String(error)}`,
         metadata: {
@@ -414,7 +421,7 @@ export class SessionManagementSkill {
       const now = new Date()
       const expiredSessions: string[] = []
       
-      for (const [sessionId, session] of this.sessions.entries()) {
+      for (const [sessionId, session] of Array.from(this.sessions.entries())) {
         if (new Date(session.expiresAt) <= now) {
           this.sessions.delete(sessionId)
           expiredSessions.push(sessionId)
@@ -424,7 +431,7 @@ export class SessionManagementSkill {
       return {
         type: ActionResultType.SUCCESS,
         success: true,
-        data: {
+        result: {
           cleanedUp: true,
           expiredSessions,
           count: expiredSessions.length,
@@ -437,7 +444,7 @@ export class SessionManagementSkill {
       }
     } catch (error) {
       return {
-        type: ActionResultType.ERROR,
+        type: ActionResultType.FAILURE,
         success: false,
         error: `Failed to cleanup expired sessions: ${error instanceof Error ? error.message : String(error)}`,
         metadata: {

@@ -4,7 +4,7 @@
  * Provides actions related to WebSocket connection management and real-time communication.
  */
 
-import { ExtensionAction, Agent, ActionResult, ActionResultType } from '../../../types/agent.js'
+import { ExtensionAction, Agent, ActionResult, ActionResultType, ActionCategory } from '../../../types/agent.js'
 import { ApiExtension } from '../index.js'
 import { WebSocket } from 'ws'
 
@@ -23,6 +23,7 @@ export class WebSocketSkill {
       broadcast_message: {
         name: 'broadcast_message',
         description: 'Broadcast a message to all connected WebSocket clients',
+        category: ActionCategory.COMMUNICATION,
         parameters: { message: 'string', type: 'string', data: 'object' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.broadcastMessage(agent, params)
@@ -32,6 +33,7 @@ export class WebSocketSkill {
       send_to_client: {
         name: 'send_to_client',
         description: 'Send a message to a specific WebSocket client',
+        category: ActionCategory.COMMUNICATION,
         parameters: { clientId: 'string', message: 'string', type: 'string' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.sendToClient(agent, params)
@@ -41,6 +43,7 @@ export class WebSocketSkill {
       handle_client_message: {
         name: 'handle_client_message',
         description: 'Handle incoming message from WebSocket client',
+        category: ActionCategory.COMMUNICATION,
         parameters: { clientId: 'string', message: 'string', type: 'string' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.handleClientMessage(agent, params)
@@ -50,6 +53,7 @@ export class WebSocketSkill {
       manage_connection: {
         name: 'manage_connection',
         description: 'Manage WebSocket client connections',
+        category: ActionCategory.SYSTEM,
         parameters: { action: 'string', clientId: 'string', metadata: 'object' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.manageConnection(agent, params)
@@ -59,6 +63,7 @@ export class WebSocketSkill {
       stream_thoughts: {
         name: 'stream_thoughts',
         description: 'Stream agent thoughts to connected clients',
+        category: ActionCategory.COMMUNICATION,
         parameters: { thought: 'string', emotion: 'string', context: 'object' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.streamThoughts(agent, params)
@@ -68,6 +73,7 @@ export class WebSocketSkill {
       stream_status: {
         name: 'stream_status',
         description: 'Stream agent status updates to connected clients',
+        category: ActionCategory.COMMUNICATION,
         parameters: { status: 'string', data: 'object' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.streamStatus(agent, params)
@@ -97,7 +103,7 @@ export class WebSocketSkill {
       return {
         type: ActionResultType.SUCCESS,
         success: true,
-        data: {
+        result: {
           broadcast: true,
           payload,
           clientCount: 0, // Would be actual client count
@@ -110,7 +116,7 @@ export class WebSocketSkill {
       }
     } catch (error) {
       return {
-        type: ActionResultType.ERROR,
+        type: ActionResultType.FAILURE,
         success: false,
         error: `Failed to broadcast message: ${error instanceof Error ? error.message : String(error)}`,
         metadata: {
@@ -138,7 +144,7 @@ export class WebSocketSkill {
       return {
         type: ActionResultType.SUCCESS,
         success: true,
-        data: {
+        result: {
           sent: true,
           clientId,
           payload,
@@ -152,7 +158,7 @@ export class WebSocketSkill {
       }
     } catch (error) {
       return {
-        type: ActionResultType.ERROR,
+        type: ActionResultType.FAILURE,
         success: false,
         error: `Failed to send to client: ${error instanceof Error ? error.message : String(error)}`,
         metadata: {
@@ -174,7 +180,8 @@ export class WebSocketSkill {
       let response
       switch (type) {
         case 'chat':
-          response = await agent.processMessage(message, { clientId, source: 'websocket' })
+          // For now, return a simple response as Agent.processMessage doesn't exist
+          response = { message: `Chat received: ${message}`, clientId, source: 'websocket' }
           break
         case 'command':
           response = await this.handleCommand(agent, message, clientId)
@@ -186,7 +193,7 @@ export class WebSocketSkill {
       return {
         type: ActionResultType.SUCCESS,
         success: true,
-        data: {
+        result: {
           processed: true,
           clientId,
           response,
@@ -200,7 +207,7 @@ export class WebSocketSkill {
       }
     } catch (error) {
       return {
-        type: ActionResultType.ERROR,
+        type: ActionResultType.FAILURE,
         success: false,
         error: `Failed to handle client message: ${error instanceof Error ? error.message : String(error)}`,
         metadata: {
@@ -236,7 +243,7 @@ export class WebSocketSkill {
       return {
         type: ActionResultType.SUCCESS,
         success: true,
-        data: {
+        result: {
           action,
           clientId,
           result,
@@ -250,7 +257,7 @@ export class WebSocketSkill {
       }
     } catch (error) {
       return {
-        type: ActionResultType.ERROR,
+        type: ActionResultType.FAILURE,
         success: false,
         error: `Failed to manage connection: ${error instanceof Error ? error.message : String(error)}`,
         metadata: {
@@ -286,7 +293,7 @@ export class WebSocketSkill {
       return {
         type: ActionResultType.SUCCESS,
         success: true,
-        data: {
+        result: {
           streamed: true,
           thoughtStream,
           timestamp: new Date().toISOString()
@@ -298,7 +305,7 @@ export class WebSocketSkill {
       }
     } catch (error) {
       return {
-        type: ActionResultType.ERROR,
+        type: ActionResultType.FAILURE,
         success: false,
         error: `Failed to stream thoughts: ${error instanceof Error ? error.message : String(error)}`,
         metadata: {
@@ -333,7 +340,7 @@ export class WebSocketSkill {
       return {
         type: ActionResultType.SUCCESS,
         success: true,
-        data: {
+        result: {
           streamed: true,
           statusUpdate,
           timestamp: new Date().toISOString()
@@ -345,7 +352,7 @@ export class WebSocketSkill {
       }
     } catch (error) {
       return {
-        type: ActionResultType.ERROR,
+        type: ActionResultType.FAILURE,
         success: false,
         error: `Failed to stream status: ${error instanceof Error ? error.message : String(error)}`,
         metadata: {

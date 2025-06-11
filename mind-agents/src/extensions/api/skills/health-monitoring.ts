@@ -4,7 +4,7 @@
  * Provides actions for monitoring API health, performance metrics, and system status.
  */
 
-import { ExtensionAction, Agent, ActionResult, ActionResultType } from '../../../types/agent.js'
+import { ExtensionAction, Agent, ActionResult, ActionResultType, ActionCategory } from '../../../types/agent.js'
 import { ApiExtension } from '../index.js'
 
 interface HealthMetrics {
@@ -44,6 +44,7 @@ export class HealthMonitoringSkill {
       get_health_status: {
         name: 'get_health_status',
         description: 'Get overall API health status',
+        category: ActionCategory.OBSERVATION,
         parameters: { includeMetrics: 'boolean' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.getHealthStatus(agent, params)
@@ -53,6 +54,7 @@ export class HealthMonitoringSkill {
       get_metrics: {
         name: 'get_metrics',
         description: 'Get detailed performance metrics',
+        category: ActionCategory.OBSERVATION,
         parameters: { timeRange: 'string' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.getMetrics(agent, params)
@@ -62,6 +64,7 @@ export class HealthMonitoringSkill {
       check_endpoint: {
         name: 'check_endpoint',
         description: 'Check health of specific endpoint',
+        category: ActionCategory.OBSERVATION,
         parameters: { endpoint: 'string', method: 'string' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.checkEndpoint(agent, params)
@@ -71,6 +74,7 @@ export class HealthMonitoringSkill {
       record_request: {
         name: 'record_request',
         description: 'Record API request for monitoring',
+        category: ActionCategory.OBSERVATION,
         parameters: { endpoint: 'string', responseTime: 'number', success: 'boolean' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.recordRequest(agent, params)
@@ -80,6 +84,7 @@ export class HealthMonitoringSkill {
       get_system_info: {
         name: 'get_system_info',
         description: 'Get system information and resource usage',
+        category: ActionCategory.OBSERVATION,
         parameters: {},
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.getSystemInfo(agent, params)
@@ -89,6 +94,7 @@ export class HealthMonitoringSkill {
       reset_metrics: {
         name: 'reset_metrics',
         description: 'Reset monitoring metrics',
+        category: ActionCategory.SYSTEM,
         parameters: { confirm: 'boolean' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.resetMetrics(agent, params)
@@ -98,6 +104,7 @@ export class HealthMonitoringSkill {
       set_health_threshold: {
         name: 'set_health_threshold',
         description: 'Set health monitoring thresholds',
+        category: ActionCategory.OBSERVATION,
         parameters: { metric: 'string', threshold: 'number', operator: 'string' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.setHealthThreshold(agent, params)
@@ -147,7 +154,7 @@ export class HealthMonitoringSkill {
       return {
         type: ActionResultType.SUCCESS,
         success: true,
-        data: healthData,
+        result: healthData,
         metadata: {
           action: 'get_health_status',
           status,
@@ -156,7 +163,7 @@ export class HealthMonitoringSkill {
       }
     } catch (error) {
       return {
-        type: ActionResultType.ERROR,
+        type: ActionResultType.FAILURE,
         success: false,
         error: `Failed to get health status: ${error instanceof Error ? error.message : String(error)}`,
         metadata: {
@@ -193,9 +200,9 @@ export class HealthMonitoringSkill {
       return {
         type: ActionResultType.SUCCESS,
         success: true,
-        data: {
-          metrics,
-          endpoints: endpointHealthArray,
+        result: {
+          metrics: metrics as any,
+          endpoints: endpointHealthArray as any,
           summary: {
             totalEndpoints: endpointHealthArray.length,
             healthyEndpoints: endpointHealthArray.filter(e => e.status === 'healthy').length,
@@ -211,7 +218,7 @@ export class HealthMonitoringSkill {
       }
     } catch (error) {
       return {
-        type: ActionResultType.ERROR,
+        type: ActionResultType.FAILURE,
         success: false,
         error: `Failed to get metrics: ${error instanceof Error ? error.message : String(error)}`,
         metadata: {
@@ -265,8 +272,8 @@ export class HealthMonitoringSkill {
       return {
         type: ActionResultType.SUCCESS,
         success: true,
-        data: {
-          endpoint: endpointHealth,
+        result: {
+          endpoint: endpointHealth as any,
           timestamp: new Date().toISOString()
         },
         metadata: {
@@ -278,7 +285,7 @@ export class HealthMonitoringSkill {
       }
     } catch (error) {
       return {
-        type: ActionResultType.ERROR,
+        type: ActionResultType.FAILURE,
         success: false,
         error: `Failed to check endpoint: ${error instanceof Error ? error.message : String(error)}`,
         metadata: {
@@ -330,7 +337,7 @@ export class HealthMonitoringSkill {
       return {
         type: ActionResultType.SUCCESS,
         success: true,
-        data: {
+        result: {
           recorded: true,
           totalRequests: this.requestCount,
           totalErrors: this.errorCount,
@@ -344,7 +351,7 @@ export class HealthMonitoringSkill {
       }
     } catch (error) {
       return {
-        type: ActionResultType.ERROR,
+        type: ActionResultType.FAILURE,
         success: false,
         error: `Failed to record request: ${error instanceof Error ? error.message : String(error)}`,
         metadata: {
@@ -393,7 +400,7 @@ export class HealthMonitoringSkill {
       return {
         type: ActionResultType.SUCCESS,
         success: true,
-        data: systemInfo,
+        result: systemInfo,
         metadata: {
           action: 'get_system_info',
           timestamp: new Date().toISOString()
@@ -401,7 +408,7 @@ export class HealthMonitoringSkill {
       }
     } catch (error) {
       return {
-        type: ActionResultType.ERROR,
+        type: ActionResultType.FAILURE,
         success: false,
         error: `Failed to get system info: ${error instanceof Error ? error.message : String(error)}`,
         metadata: {
@@ -421,7 +428,7 @@ export class HealthMonitoringSkill {
       
       if (!confirm) {
         return {
-          type: ActionResultType.ERROR,
+          type: ActionResultType.FAILURE,
           success: false,
           error: 'Reset confirmation required. Set confirm=true to proceed.',
           metadata: {
@@ -448,7 +455,7 @@ export class HealthMonitoringSkill {
       return {
         type: ActionResultType.SUCCESS,
         success: true,
-        data: {
+        result: {
           reset: true,
           previousMetrics: oldMetrics,
           resetAt: new Date().toISOString()
@@ -460,7 +467,7 @@ export class HealthMonitoringSkill {
       }
     } catch (error) {
       return {
-        type: ActionResultType.ERROR,
+        type: ActionResultType.FAILURE,
         success: false,
         error: `Failed to reset metrics: ${error instanceof Error ? error.message : String(error)}`,
         metadata: {
@@ -486,7 +493,7 @@ export class HealthMonitoringSkill {
       
       if (!validMetrics.includes(metric)) {
         return {
-          type: ActionResultType.ERROR,
+          type: ActionResultType.FAILURE,
           success: false,
           error: `Invalid metric. Valid metrics: ${validMetrics.join(', ')}`,
           metadata: {
@@ -498,7 +505,7 @@ export class HealthMonitoringSkill {
       
       if (!validOperators.includes(operator)) {
         return {
-          type: ActionResultType.ERROR,
+          type: ActionResultType.FAILURE,
           success: false,
           error: `Invalid operator. Valid operators: ${validOperators.join(', ')}`,
           metadata: {
@@ -511,7 +518,7 @@ export class HealthMonitoringSkill {
       return {
         type: ActionResultType.SUCCESS,
         success: true,
-        data: {
+        result: {
           thresholdSet: true,
           metric,
           threshold,
@@ -527,7 +534,7 @@ export class HealthMonitoringSkill {
       }
     } catch (error) {
       return {
-        type: ActionResultType.ERROR,
+        type: ActionResultType.FAILURE,
         success: false,
         error: `Failed to set health threshold: ${error instanceof Error ? error.message : String(error)}`,
         metadata: {

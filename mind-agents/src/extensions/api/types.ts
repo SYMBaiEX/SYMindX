@@ -11,23 +11,35 @@ import { BaseConfig, ExtensionConfig } from '../../types/common.js'
 export interface ApiSettings extends BaseConfig {
   port: number
   host?: string
-  cors?: {
+  cors: {
     enabled: boolean
-    origins?: string[]
+    origins: string[]
+    methods: string[]
+    headers: string[]
     credentials?: boolean
   }
-  auth?: {
+  auth: {
     enabled: boolean
     type: 'bearer' | 'apikey'
-    secret?: string
+    secret: string
     apiKeys?: string[]
   }
-  rateLimit?: {
+  rateLimit: {
     enabled: boolean
     windowMs: number
     maxRequests: number
   }
-  endpoints: {
+  websocket: {
+    enabled: boolean
+    path: string
+    heartbeatInterval: number
+  }
+  logging: {
+    enabled: boolean
+    level: string
+    format: string
+  }
+  endpoints?: {
     chat: boolean
     status: boolean
     memory: boolean
@@ -56,7 +68,7 @@ export interface ChatRequest {
 
 export interface ChatResponse {
   response: string
-  sessionId: string
+  sessionId?: string
   timestamp: string
   metadata?: {
     tokensUsed?: number
@@ -125,10 +137,11 @@ export interface ActionResponse {
 }
 
 export interface WebSocketMessage {
-  type: 'chat' | 'status' | 'action' | 'memory' | 'event'
-  data: any
-  timestamp: string
-  id: string
+  type: 'chat' | 'status' | 'action' | 'memory' | 'event' | 'ping'
+  data?: any
+  timestamp?: string
+  id?: string
+  message?: string
 }
 
 export interface ApiMiddleware {
@@ -160,4 +173,38 @@ export interface ApiError {
   message: string
   details?: any
   timestamp: string
+}
+
+export interface ApiRequest {
+  method: string
+  url: string
+  headers: Record<string, string>
+  body?: any
+  timestamp: string
+}
+
+export interface ApiResponse {
+  statusCode: number
+  headers: Record<string, string>
+  body?: any
+  timestamp: string
+}
+
+export interface MemoryRequest {
+  content: string
+  metadata?: Record<string, any>
+  type?: string
+}
+
+export interface MemoryResponse {
+  success: boolean
+  id: string
+  timestamp: string
+  error?: string
+}
+
+export interface ConnectionInfo {
+  id: string
+  readyState: number
+  connectedAt: string
 }

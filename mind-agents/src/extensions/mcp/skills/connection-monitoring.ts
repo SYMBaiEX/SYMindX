@@ -28,11 +28,7 @@ export class ConnectionMonitoringSkill {
         'get_connection_status',
         'Get current MCP connection status',
         {
-          detailed: {
-            type: 'boolean',
-            description: 'Include detailed connection information',
-            required: false
-          }
+          detailed: false
         },
         this.getConnectionStatus.bind(this)
       ),
@@ -40,16 +36,8 @@ export class ConnectionMonitoringSkill {
         'monitor_connections',
         'Start monitoring MCP connections',
         {
-          interval: {
-            type: 'number',
-            description: 'Monitoring interval in milliseconds',
-            required: false
-          },
-          alertThreshold: {
-            type: 'number',
-            description: 'Alert threshold for connection issues',
-            required: false
-          }
+          interval: 5000,
+          alertThreshold: 10
         },
         this.monitorConnections.bind(this)
       ),
@@ -63,11 +51,7 @@ export class ConnectionMonitoringSkill {
         'health_check',
         'Perform a health check on MCP connections',
         {
-          timeout: {
-            type: 'number',
-            description: 'Health check timeout in milliseconds',
-            required: false
-          }
+          timeout: 30000
         },
         this.healthCheck.bind(this)
       ),
@@ -75,11 +59,7 @@ export class ConnectionMonitoringSkill {
         'get_connection_metrics',
         'Get connection performance metrics',
         {
-          timeRange: {
-            type: 'string',
-            description: 'Time range for metrics (1h, 24h, 7d)',
-            required: false
-          }
+          timeRange: '24h'
         },
         this.getConnectionMetrics.bind(this)
       ),
@@ -87,11 +67,7 @@ export class ConnectionMonitoringSkill {
         'diagnose_connection',
         'Diagnose connection issues',
         {
-          connectionId: {
-            type: 'string',
-            description: 'Specific connection to diagnose',
-            required: false
-          }
+          connectionId: ''
         },
         this.diagnoseConnection.bind(this)
       ),
@@ -99,16 +75,8 @@ export class ConnectionMonitoringSkill {
         'test_connection',
         'Test MCP connection with ping/echo',
         {
-          timeout: {
-            type: 'number',
-            description: 'Test timeout in milliseconds',
-            required: false
-          },
-          payload: {
-            type: 'string',
-            description: 'Test payload to send',
-            required: false
-          }
+          timeout: 5000,
+          payload: 'ping'
         },
         this.testConnection.bind(this)
       ),
@@ -116,16 +84,8 @@ export class ConnectionMonitoringSkill {
         'get_connection_logs',
         'Get connection-related logs',
         {
-          level: {
-            type: 'string',
-            description: 'Log level filter (error, warn, info, debug)',
-            required: false
-          },
-          limit: {
-            type: 'number',
-            description: 'Maximum number of log entries',
-            required: false
-          }
+          level: 'info',
+          limit: 100
         },
         this.getConnectionLogs.bind(this)
       ),
@@ -139,11 +99,7 @@ export class ConnectionMonitoringSkill {
         'set_connection_alerts',
         'Configure connection monitoring alerts',
         {
-          config: {
-            type: 'object',
-            description: 'Alert configuration',
-            required: true
-          }
+          config: {}
         },
         this.setConnectionAlerts.bind(this)
       )

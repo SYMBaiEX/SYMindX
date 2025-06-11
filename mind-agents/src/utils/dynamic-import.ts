@@ -87,7 +87,7 @@ export async function dynamicImportWithRetry(
   maxRetries: number = 3,
   retryDelay: number = 1000
 ): Promise<any> {
-  let lastError: Error;
+  let lastError: Error = new Error('Unknown error');
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {

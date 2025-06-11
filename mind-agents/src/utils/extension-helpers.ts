@@ -12,12 +12,7 @@ export function createExtensionAction(
   name: string,
   description: string,
   category: ActionCategory,
-  parameters: Record<string, {
-    type: string
-    description: string
-    required: boolean
-    default?: unknown
-  }>,
+  parameters: ActionParameters,
   execute: (agent: Agent, params: ActionParameters) => Promise<ActionResult>
 ): ExtensionAction {
   return {
@@ -35,12 +30,7 @@ export function createExtensionAction(
 export function createCommunicationAction(
   name: string,
   description: string,
-  parameters: Record<string, {
-    type: string
-    description: string
-    required: boolean
-    default?: unknown
-  }>,
+  parameters: ActionParameters,
   execute: (agent: Agent, params: ActionParameters) => Promise<ActionResult>
 ): ExtensionAction {
   return createExtensionAction(name, description, ActionCategory.COMMUNICATION, parameters, execute)
@@ -52,12 +42,7 @@ export function createCommunicationAction(
 export function createSystemAction(
   name: string,
   description: string,
-  parameters: Record<string, {
-    type: string
-    description: string
-    required: boolean
-    default?: unknown
-  }>,
+  parameters: ActionParameters,
   execute: (agent: Agent, params: ActionParameters) => Promise<ActionResult>
 ): ExtensionAction {
   return createExtensionAction(name, description, ActionCategory.SYSTEM, parameters, execute)
@@ -69,12 +54,7 @@ export function createSystemAction(
 export function createObservationAction(
   name: string,
   description: string,
-  parameters: Record<string, {
-    type: string
-    description: string
-    required: boolean
-    default?: unknown
-  }>,
+  parameters: ActionParameters,
   execute: (agent: Agent, params: ActionParameters) => Promise<ActionResult>
 ): ExtensionAction {
   return createExtensionAction(name, description, ActionCategory.OBSERVATION, parameters, execute)
@@ -86,12 +66,7 @@ export function createObservationAction(
 export function createCognitiveAction(
   name: string,
   description: string,
-  parameters: Record<string, {
-    type: string
-    description: string
-    required: boolean
-    default?: unknown
-  }>,
+  parameters: ActionParameters,
   execute: (agent: Agent, params: ActionParameters) => Promise<ActionResult>
 ): ExtensionAction {
   return createExtensionAction(name, description, ActionCategory.COGNITIVE, parameters, execute)
@@ -103,12 +78,7 @@ export function createCognitiveAction(
 export function createToolExecutionAction(
   name: string,
   description: string,
-  parameters: Record<string, {
-    type: string
-    description: string
-    required: boolean
-    default?: unknown
-  }>,
+  parameters: ActionParameters,
   execute: (agent: Agent, params: ActionParameters) => Promise<ActionResult>
 ): ExtensionAction {
   return createExtensionAction(name, description, ActionCategory.TOOL_EXECUTION, parameters, execute)

@@ -881,21 +881,13 @@ async function readFile() {
 readFile().then(result => console.log(JSON.stringify(result)));
 `,
       language: 'javascript',
-      inputs: [
-        {
-          name: 'filePath',
+      parameters: {
+        filePath: {
           type: 'string',
           description: 'Path to the file to read',
           required: true
         }
-      ],
-      outputs: [
-        {
-          name: 'result',
-          type: 'object',
-          description: 'File read result with success status and content or error'
-        }
-      ],
+      },
       permissions: ['fs:read']
     },
     {
@@ -903,21 +895,13 @@ readFile().then(result => console.log(JSON.stringify(result)));
       description: 'List contents of a directory',
       code: `ls -la "$1"`,
       language: 'bash',
-      inputs: [
-        {
-          name: 'dirPath',
+      parameters: {
+        dirPath: {
           type: 'string',
           description: 'Path to the directory to list',
           required: true
         }
-      ],
-      outputs: [
-        {
-          name: 'listing',
-          type: 'string',
-          description: 'Directory listing output'
-        }
-      ],
+      },
       permissions: ['fs:read']
     },
     {
@@ -945,27 +929,18 @@ const result = processText();
 console.log(JSON.stringify({ result }));
 `,
       language: 'javascript',
-      inputs: [
-        {
-          name: 'text',
+      parameters: {
+        text: {
           type: 'string',
           description: 'Text to process',
           required: true
         },
-        {
-          name: 'operation',
+        operation: {
           type: 'string',
           description: 'Operation to perform (uppercase, lowercase, reverse, wordcount)',
           required: true
         }
-      ],
-      outputs: [
-        {
-          name: 'result',
-          type: 'string',
-          description: 'Processed text result'
-        }
-      ],
+      },
       permissions: []
     }
   ]

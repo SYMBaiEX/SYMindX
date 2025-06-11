@@ -3,11 +3,12 @@
  * Provides HTTP REST API and WebSocket server capabilities
  */
 
-import express from 'express'
+import * as express from 'express'
 import cors from 'cors'
 import rateLimit from 'express-rate-limit'
 import { WebSocket, WebSocketServer } from 'ws'
 import { createServer } from 'http'
+import * as http from 'http'
 import { Extension, ExtensionType, ExtensionStatus, Agent, ExtensionAction, ExtensionEventHandler } from '../../types/agent.js'
 import { ExtensionConfig } from '../../types/common.js'
 import {
@@ -251,7 +252,7 @@ export class ApiExtension implements Extension {
     return {
       success: true,
       result: 'Action execution not implemented yet',
-      timestamp: new Date().toISOString()
+      executionTime: 0
     }
   }
 
