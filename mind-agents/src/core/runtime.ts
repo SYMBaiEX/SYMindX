@@ -36,6 +36,7 @@ import {
 import { EventEmitter } from 'events'
 import { PluginLoader, createPluginLoader } from './plugin-loader.js'
 import { SYMindXEnhancedEventBus } from './enhanced-event-bus.js'
+import { SYMindXModuleRegistry } from './registry.js'
 
 export class SYMindXRuntime implements AgentRuntime {
   public agents: Map<string, Agent> = new Map()
@@ -354,6 +355,23 @@ export class SYMindXRuntime implements AgentRuntime {
         console.log(`✅ Initialized extension: ${extension.name}`)
       } catch (error) {
         console.error(`❌ Failed to initialize extension ${extension.name}:`, error)
+      }
+    }
+    
+    // Initialize tools system if configured
+    if (config.modules?.tools?.enabled) {
+      try {
+        const toolSystemName = config.modules.tools.system || 'dynamic'
+        const toolSystem = this.getToolSystem(toolSystemName)
+        if (toolSystem) {
+          // Add tools system to agent (extend Agent interface as needed)
+          agent.toolSystem = toolSystem
+          console.log(`🔧 Initialized tool system: ${toolSystemName}`)
+        } else {
+          console.warn(`⚠️ Tool system '${toolSystemName}' not found`)
+        }
+      } catch (error) {
+        console.error(`❌ Failed to initialize tool system:`, error)
       }
     }
     

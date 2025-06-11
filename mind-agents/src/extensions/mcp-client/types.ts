@@ -447,3 +447,270 @@ export type McpTransportType = 'stdio' | 'sse' | 'websocket'
 export type McpConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error' | 'reconnecting'
 
 export type McpLogLevel = 'debug' | 'info' | 'notice' | 'warning' | 'error' | 'critical' | 'alert' | 'emergency'
+
+// Streaming Interface Types
+export interface EventStream {
+  subscribe(listener: StreamListener): Subscription
+  unsubscribe(subscription: Subscription): void
+  emit(event: StreamEvent): void
+  close(): void
+  getActiveListeners(): number
+}
+
+export interface StreamEvent {
+  id: string
+  type: string
+  data: any
+  timestamp: Date
+  source?: string
+  metadata?: Record<string, any>
+}
+
+export interface StreamListener {
+  (event: StreamEvent): void | Promise<void>
+}
+
+export interface Subscription {
+  id: string
+  active: boolean
+  unsubscribe(): void
+  getStats(): SubscriptionStats
+}
+
+export interface SubscriptionStats {
+  eventsReceived: number
+  lastEventTime?: Date
+  subscriptionTime: Date
+}
+
+export interface ControlInterface {
+  pause(): Promise<void>
+  resume(): Promise<void>
+  stop(): Promise<void>
+  restart(): Promise<void>
+  getStatus(): string
+  sendCommand(command: string, args?: any): Promise<any>
+}
+
+export interface ProgressMonitor {
+  track(taskId: string, total?: number): Progress
+  update(taskId: string, current: number, message?: string): void
+  complete(taskId: string, result?: any): void
+  fail(taskId: string, error: Error): void
+  getProgress(taskId: string): Progress | null
+  addListener(listener: ProgressListener): void
+  removeListener(listener: ProgressListener): void
+}
+
+export interface Progress {
+  taskId: string
+  current: number
+  total?: number
+  percentage: number
+  status: 'pending' | 'running' | 'completed' | 'failed'
+  message?: string
+  startTime: Date
+  endTime?: Date
+  result?: any
+  error?: Error
+}
+
+export interface ProgressListener {
+  (progress: Progress): void | Promise<void>
+}
+
+// Dynamic Tools Types
+export interface ToolSpec {
+  id: string
+  name: string
+  description: string
+  category: string
+  parameters: Record<string, any>
+  code?: string
+  language?: 'javascript' | 'python' | 'bash' | 'typescript'
+  version?: string
+  author?: string
+  tags?: string[]
+  permissions?: string[]
+  timeout?: number
+  retries?: number
+  validation?: ValidationSpec
+}
+
+export interface ValidationSpec {
+  input?: Record<string, any>
+  output?: Record<string, any>
+  required?: string[]
+}
+
+export interface ToolInput {
+  [key: string]: any
+}
+
+export interface ToolOutput {
+  success: boolean
+  result?: any
+  error?: string
+  metadata?: Record<string, any>
+  logs?: string[]
+  performance?: PerformanceMetrics
+}
+
+export interface PerformanceMetrics {
+  executionTime: number
+  memoryUsage: number
+  cpuUsage?: number
+}
+
+export interface CodeExecutor {
+  execute(code: string, context: ExecutionContext): Promise<ExecutionResult>
+  validate(code: string): Promise<ValidationResult>
+  getCapabilities(): ExecutorCapabilities
+}
+
+export interface ExecutorCapabilities {
+  languages: string[]
+  maxExecutionTime: number
+  maxMemoryUsage: number
+  sandboxed: boolean
+  networkAccess: boolean
+  fileSystemAccess: boolean
+}
+
+export interface ExecutionContext {
+  variables?: Record<string, any>
+  workingDirectory?: string
+  environment?: Record<string, string>
+  timeout?: number
+  memoryLimit?: number
+  userId?: string
+  sessionId?: string
+}
+
+export interface ExecutionResult {
+  success: boolean
+  output?: string
+  error?: string
+  exitCode?: number
+  duration: number
+  memoryUsage?: number
+  returnValue?: any
+  logs?: LogEntry[]
+}
+
+export interface LogEntry {
+  level: 'debug' | 'info' | 'warn' | 'error'
+  message: string
+  timestamp: Date
+  source?: string
+}
+
+export interface ValidationResult {
+  valid: boolean
+  errors?: string[]
+  warnings?: string[]
+  suggestions?: string[]
+}
+
+export interface SandboxedExecutor extends CodeExecutor {
+  createSandbox(options: SandboxOptions): Promise<string>
+  destroySandbox(sandboxId: string): Promise<void>
+  getSandboxStats(sandboxId: string): Promise<ResourceUsage>
+}
+
+export interface SandboxOptions {
+  memoryLimit?: number
+  timeLimit?: number
+  networkAccess?: boolean
+  fileSystemAccess?: boolean
+  allowedModules?: string[]
+  blockedModules?: string[]
+}
+
+export interface ResourceUsage {
+  cpuTime: number
+  memoryPeak: number
+  memoryAverage: number
+  diskUsage: number
+  networkBytesIn: number
+  networkBytesOut: number
+}
+
+export interface TerminalInterface {
+  spawn(command: string, args?: string[], options?: TerminalOptions): Promise<TerminalProcess>
+  kill(processId: string, signal?: string): Promise<boolean>
+  getProcess(processId: string): TerminalProcess | null
+  listProcesses(): TerminalProcess[]
+  createSession(options?: TerminalSessionOptions): Promise<TerminalSession>
+}
+
+export interface TerminalOptions {
+  cwd?: string
+  env?: Record<string, string>
+  timeout?: number
+  maxBuffer?: number
+  shell?: boolean | string
+  uid?: number
+  gid?: number
+}
+
+export interface TerminalSessionOptions {
+  shell?: string
+  rows?: number
+  cols?: number
+  cwd?: string
+  env?: Record<string, string>
+}
+
+export interface TerminalSession {
+  id: string
+  write(data: string): void
+  resize(cols: number, rows: number): void
+  kill(signal?: string): void
+  onData(callback: (data: string) => void): void
+  onExit(callback: (code: number, signal?: string) => void): void
+}
+
+export interface TerminalResult {
+  stdout: string
+  stderr: string
+  exitCode: number
+  signal?: string
+  duration: number
+  killed: boolean
+}
+
+export interface SpawnOptions {
+  cwd?: string
+  env?: Record<string, string>
+  timeout?: number
+  maxBuffer?: number
+  encoding?: BufferEncoding
+  shell?: boolean | string
+  windowsVerbatimArguments?: boolean
+  detached?: boolean
+  uid?: number
+  gid?: number
+  stdio?: any
+}
+
+export interface TerminalProcess {
+  id: string
+  pid?: number
+  command: string
+  args: string[]
+  status: 'running' | 'exited' | 'killed' | 'error'
+  exitCode?: number
+  signal?: string
+  startTime: Date
+  endTime?: Date
+  stdout: string
+  stderr: string
+}
+
+// Extended terminal process with additional properties
+export interface ExtendedTerminalProcess extends TerminalProcess {
+  memoryUsage?: number
+  cpuUsage?: number
+  duration?: number
+}

@@ -33,6 +33,7 @@ export interface Agent {
   cognition: CognitionModule
   extensions: Extension[]
   portal?: Portal
+  toolSystem?: any // Dynamic tools system for Agent Zero-style capabilities
   config: AgentConfig
   lastUpdate: Date
   eventBus?: EventBus // Added eventBus property as optional
@@ -64,6 +65,27 @@ export interface AgentConfig {
     emotion?: EmotionConfig
     cognition?: CognitionConfig
     portal?: PortalConfig
+    tools?: ToolsConfig
+  }
+}
+
+export interface ToolsConfig {
+  enabled: boolean
+  system: string
+  sandbox?: {
+    enabled: boolean
+    allowedLanguages: string[]
+    timeoutMs: number
+    memoryLimitMB: number
+    networkAccess: boolean
+    fileSystemAccess: boolean
+    maxProcesses: number
+  }
+  terminal?: {
+    enabled: boolean
+    workingDirectory: string
+    allowedCommands: string[]
+    timeoutMs: number
   }
 }
 
@@ -255,7 +277,9 @@ export enum ExtensionStatus {
   DISABLED = 'disabled',
   ERROR = 'error',
   INITIALIZING = 'initializing',
-  STOPPING = 'stopping'
+  STOPPING = 'stopping',
+  STOPPED = 'stopped',
+  RUNNING = 'running'
 }
 
 export interface Extension {
