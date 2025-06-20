@@ -149,13 +149,31 @@ export class SYMindXDynamicToolSystem implements DynamicToolSystem {
 
     const errors: string[] = []
 
-    // Validate inputs against the tool's parameters schema
-    if (spec.parameters) {
-      const { error } = spec.parameters.validate(input)
-      if (error) {
-        throw new Error(`Invalid inputs: ${error.message}`)
+async validateInput(spec: ToolSpec, input: any): Promise<ValidationResult> {
+  if (!this.config.validation.enabled) {
+    return { valid: true, errors: [], warnings: [], suggestions: [] }
+  }
+
+  // Validate inputs against the tool's parameters schema
+  if (spec.parameters) {
+    const { error } = spec.parameters.validate(input)
+    if (error) {
+      return {
+        valid: false,
+        errors: [error.message],
+        warnings: [],
+        suggestions: []
       }
     }
+  }
+
+  return {
+    valid: true,
+    errors: [],
+    warnings: [],
+    suggestions: []
+  }
+}
 
     return {
       valid: errors.length === 0,
