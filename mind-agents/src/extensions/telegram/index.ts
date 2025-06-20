@@ -5,8 +5,8 @@
  */
 
 import { Telegraf, Context } from 'telegraf'
-import { Extension, ExtensionAction, ExtensionEventHandler, Agent, ActionResult, ActionResultType, ExtensionType, ExtensionStatus, ActionCategory } from '../../types/agent.js'
-import { ExtensionConfig, SkillParameters } from '../../types/common.js'
+import { Extension, ExtensionAction, ExtensionEventHandler, Agent, ActionResult, ActionResultType, ExtensionType, ExtensionStatus, ActionCategory } from '../../types/agent'
+import { ExtensionConfig, SkillParameters } from '../../types/common'
 
 interface TelegramConfig extends ExtensionConfig {
   settings: {
@@ -356,6 +356,13 @@ export class TelegramExtension implements Extension {
       type: ActionResultType.SUCCESS,
       result: preferences
     }
+  }
+
+  /**
+   * Get the Telegraf bot instance
+   */
+  getBot(): Telegraf {
+    return this.bot
   }
 }
 

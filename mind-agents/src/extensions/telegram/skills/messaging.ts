@@ -4,10 +4,10 @@
  * Provides actions related to sending and managing messages.
  */
 
-import { ExtensionAction, Agent, ActionResult, ActionCategory } from '../../../types/agent.js';
-import { TelegramExtension } from '../index.js';
-import { BaseTelegramSkill } from './base-skill.js';
-import { TelegramActionType, TelegramErrorType } from '../types.js';
+import { ExtensionAction, Agent, ActionResult, ActionCategory } from '../../../types/agent';
+import { TelegramExtension } from '../index';
+import { BaseTelegramSkill } from './base-skill';
+import { TelegramActionType, TelegramErrorType } from '../types';
 
 export class MessagingSkill extends BaseTelegramSkill {
   /**
@@ -115,15 +115,20 @@ export class MessagingSkill extends BaseTelegramSkill {
     replyToMessageId?: number
   ): Promise<ActionResult> {
     try {
-      // Delegate to the extension's implementation
-      return await this.extension.sendMessage(
-        chatId, 
-        text, 
-        parseMode, 
-        disableWebPagePreview,
-        disableNotification,
-        replyToMessageId
-      );
+      const bot = this.extension.getBot();
+      const options: any = {};
+      if (parseMode) options.parse_mode = parseMode;
+      if (disableWebPagePreview) options.disable_web_page_preview = disableWebPagePreview;
+      if (disableNotification) options.disable_notification = disableNotification;
+      if (replyToMessageId) options.reply_to_message_id = replyToMessageId;
+      
+      const result = await bot.telegram.sendMessage(chatId, text, options);
+      
+      return this.createSuccessResult({
+        messageId: result.message_id,
+        chatId: result.chat.id,
+        text: result.text
+      });
     } catch (error) {
       return this.createErrorResult(error, TelegramErrorType.INVALID_REQUEST);
     }
@@ -140,14 +145,18 @@ export class MessagingSkill extends BaseTelegramSkill {
     disableWebPagePreview?: boolean
   ): Promise<ActionResult> {
     try {
-      // Delegate to the extension's implementation
-      return await this.extension.editMessage(
-        chatId, 
-        messageId, 
-        text, 
-        parseMode, 
-        disableWebPagePreview
-      );
+      const bot = this.extension.getBot();
+      const options: any = {};
+      if (parseMode) options.parse_mode = parseMode;
+      if (disableWebPagePreview) options.disable_web_page_preview = disableWebPagePreview;
+      
+      const result = await bot.telegram.editMessageText(chatId, messageId, undefined, text, options);
+      
+      return this.createSuccessResult({
+        success: true,
+        messageId,
+        chatId
+      });
     } catch (error) {
       return this.createErrorResult(error, TelegramErrorType.INVALID_REQUEST);
     }
@@ -158,8 +167,14 @@ export class MessagingSkill extends BaseTelegramSkill {
    */
   async deleteMessage(chatId: string | number, messageId: number): Promise<ActionResult> {
     try {
-      // Delegate to the extension's implementation
-      return await this.extension.deleteMessage(chatId, messageId);
+      const bot = this.extension.getBot();
+      await bot.telegram.deleteMessage(chatId, messageId);
+      
+      return this.createSuccessResult({
+        success: true,
+        messageId,
+        chatId
+      });
     } catch (error) {
       return this.createErrorResult(error, TelegramErrorType.INVALID_REQUEST);
     }
@@ -174,8 +189,16 @@ export class MessagingSkill extends BaseTelegramSkill {
     disableNotification?: boolean
   ): Promise<ActionResult> {
     try {
-      // Delegate to the extension's implementation
-      return await this.extension.pinMessage(chatId, messageId, disableNotification);
+      const bot = this.extension.getBot();
+      await bot.telegram.pinChatMessage(chatId, messageId, {
+        disable_notification: disableNotification
+      });
+      
+      return this.createSuccessResult({
+        success: true,
+        messageId,
+        chatId
+      });
     } catch (error) {
       return this.createErrorResult(error, TelegramErrorType.INVALID_REQUEST);
     }
@@ -186,8 +209,14 @@ export class MessagingSkill extends BaseTelegramSkill {
    */
   async unpinMessage(chatId: string | number, messageId: number): Promise<ActionResult> {
     try {
-      // Delegate to the extension's implementation
-      return await this.extension.unpinMessage(chatId, messageId);
+      const bot = this.extension.getBot();
+      await bot.telegram.unpinChatMessage(chatId, messageId);
+      
+      return this.createSuccessResult({
+        success: true,
+        messageId,
+        chatId
+      });
     } catch (error) {
       return this.createErrorResult(error, TelegramErrorType.INVALID_REQUEST);
     }

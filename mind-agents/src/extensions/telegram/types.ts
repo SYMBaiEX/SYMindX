@@ -4,7 +4,7 @@
  * Type definitions for the Telegram extension with improved type safety using enums.
  */
 
-import { ExtensionConfig } from '../../types/common.js';
+import { ExtensionConfig } from '../../types/common';
 
 /**
  * Telegram action types enum

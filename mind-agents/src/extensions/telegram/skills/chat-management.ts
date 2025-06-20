@@ -4,10 +4,10 @@
  * Provides actions related to managing chats and chat members.
  */
 
-import { ExtensionAction, Agent, ActionResult, ActionCategory } from '../../../types/agent.js';
-import { TelegramExtension } from '../index.js';
-import { BaseTelegramSkill } from './base-skill.js';
-import { TelegramActionType, TelegramErrorType } from '../types.js';
+import { ExtensionAction, Agent, ActionResult, ActionCategory } from '../../../types/agent';
+import { TelegramExtension } from '../index';
+import { BaseTelegramSkill } from './base-skill';
+import { TelegramActionType, TelegramErrorType } from '../types';
 
 export class ChatManagementSkill extends BaseTelegramSkill {
   /**
@@ -161,8 +161,12 @@ export class ChatManagementSkill extends BaseTelegramSkill {
    */
   async getChat(chatId: string | number): Promise<ActionResult> {
     try {
-      // Delegate to the extension's implementation
-      return await this.extension.getChat(chatId);
+      const bot = this.extension.getBot();
+      const result = await bot.telegram.getChat(chatId);
+      
+      return this.createSuccessResult({
+        chat: result
+      });
     } catch (error) {
       return this.createErrorResult(error, TelegramErrorType.INVALID_REQUEST);
     }
@@ -173,8 +177,12 @@ export class ChatManagementSkill extends BaseTelegramSkill {
    */
   async getChatMember(chatId: string | number, userId: number): Promise<ActionResult> {
     try {
-      // Delegate to the extension's implementation
-      return await this.extension.getChatMember(chatId, userId);
+      const bot = this.extension.getBot();
+      const result = await bot.telegram.getChatMember(chatId, userId);
+      
+      return this.createSuccessResult({
+        member: result
+      });
     } catch (error) {
       return this.createErrorResult(error, TelegramErrorType.INVALID_REQUEST);
     }
@@ -185,8 +193,12 @@ export class ChatManagementSkill extends BaseTelegramSkill {
    */
   async getChatAdministrators(chatId: string | number): Promise<ActionResult> {
     try {
-      // Delegate to the extension's implementation
-      return await this.extension.getChatAdministrators(chatId);
+      const bot = this.extension.getBot();
+      const result = await bot.telegram.getChatAdministrators(chatId);
+      
+      return this.createSuccessResult({
+        administrators: result
+      });
     } catch (error) {
       return this.createErrorResult(error, TelegramErrorType.INVALID_REQUEST);
     }
@@ -197,8 +209,12 @@ export class ChatManagementSkill extends BaseTelegramSkill {
    */
   async getChatMembersCount(chatId: string | number): Promise<ActionResult> {
     try {
-      // Delegate to the extension's implementation
-      return await this.extension.getChatMembersCount(chatId);
+      const bot = this.extension.getBot();
+      const result = await bot.telegram.getChatMembersCount(chatId);
+      
+      return this.createSuccessResult({
+        count: result
+      });
     } catch (error) {
       return this.createErrorResult(error, TelegramErrorType.INVALID_REQUEST);
     }
@@ -209,8 +225,12 @@ export class ChatManagementSkill extends BaseTelegramSkill {
    */
   async leaveChat(chatId: string | number): Promise<ActionResult> {
     try {
-      // Delegate to the extension's implementation
-      return await this.extension.leaveChat(chatId);
+      const bot = this.extension.getBot();
+      const result = await bot.telegram.leaveChat(chatId);
+      
+      return this.createSuccessResult({
+        success: result
+      });
     } catch (error) {
       return this.createErrorResult(error, TelegramErrorType.INVALID_REQUEST);
     }
@@ -226,8 +246,16 @@ export class ChatManagementSkill extends BaseTelegramSkill {
     revokeMessages?: boolean
   ): Promise<ActionResult> {
     try {
-      // Delegate to the extension's implementation
-      return await this.extension.banChatMember(chatId, userId, untilDate, revokeMessages);
+      const bot = this.extension.getBot();
+      const options: any = {};
+      if (untilDate) options.until_date = untilDate;
+      if (revokeMessages) options.revoke_messages = revokeMessages;
+      
+      const result = await bot.telegram.banChatMember(chatId, userId, options);
+      
+      return this.createSuccessResult({
+        success: result
+      });
     } catch (error) {
       return this.createErrorResult(error, TelegramErrorType.INVALID_REQUEST);
     }
@@ -242,8 +270,15 @@ export class ChatManagementSkill extends BaseTelegramSkill {
     onlyIfBanned?: boolean
   ): Promise<ActionResult> {
     try {
-      // Delegate to the extension's implementation
-      return await this.extension.unbanChatMember(chatId, userId, onlyIfBanned);
+      const bot = this.extension.getBot();
+      const options: any = {};
+      if (onlyIfBanned) options.only_if_banned = onlyIfBanned;
+      
+      const result = await bot.telegram.unbanChatMember(chatId, userId, options);
+      
+      return this.createSuccessResult({
+        success: result
+      });
     } catch (error) {
       return this.createErrorResult(error, TelegramErrorType.INVALID_REQUEST);
     }
@@ -259,8 +294,15 @@ export class ChatManagementSkill extends BaseTelegramSkill {
     untilDate?: number
   ): Promise<ActionResult> {
     try {
-      // Delegate to the extension's implementation
-      return await this.extension.restrictChatMember(chatId, userId, permissions, untilDate);
+      const bot = this.extension.getBot();
+      const options: any = { permissions };
+      if (untilDate) options.until_date = untilDate;
+      
+      const result = await bot.telegram.restrictChatMember(chatId, userId, options);
+      
+      return this.createSuccessResult({
+        success: result
+      });
     } catch (error) {
       return this.createErrorResult(error, TelegramErrorType.INVALID_REQUEST);
     }
@@ -275,8 +317,12 @@ export class ChatManagementSkill extends BaseTelegramSkill {
     permissions: any
   ): Promise<ActionResult> {
     try {
-      // Delegate to the extension's implementation
-      return await this.extension.promoteChatMember(chatId, userId, permissions);
+      const bot = this.extension.getBot();
+      const result = await bot.telegram.promoteChatMember(chatId, userId, permissions);
+      
+      return this.createSuccessResult({
+        success: result
+      });
     } catch (error) {
       return this.createErrorResult(error, TelegramErrorType.INVALID_REQUEST);
     }
