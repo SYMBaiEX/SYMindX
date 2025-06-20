@@ -48,21 +48,14 @@ export interface DynamicToolSystem {
 }
 
 export interface ExtendedTerminalProcess extends TerminalProcess {
-<<<<<<< Updated upstream
+export interface ExtendedTerminalProcess extends TerminalProcess {
   id: string
   command: string
   args: string[]
   startTime: Date
   status: 'running' | 'exited' | 'killed' | 'error'
   endTime?: Date
-=======
-  // Remove duplicate properties that are already in TerminalProcess
-  // Add only additional properties specific to ExtendedTerminalProcess
->>>>>>> Stashed changes
   childProcess?: ChildProcess
-  // Ensure status is compatible with TerminalProcess
-  status: 'running' | 'exited' | 'killed' | 'error'
-  // Add any additional methods
   wait: () => Promise<number | null>
   kill: (signal?: NodeJS.Signals) => boolean
 }
