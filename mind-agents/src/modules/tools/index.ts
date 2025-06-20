@@ -990,13 +990,8 @@ ${code}
           killed: false
         }
         
-<<<<<<< Updated upstream
         console.log(`✅ Terminal command completed (${processId}): exit code ${code}`)
         this.emit('exited', processId, result)
-=======
-        console.log(` Terminal command completed (${processId}): exit code ${code}`)
-        this.emit('finished', processId, result)
->>>>>>> Stashed changes
         resolve(result)
       })
       
