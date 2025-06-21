@@ -4,10 +4,10 @@
  * Provides actions related to sending and managing media files.
  */
 
-import { ExtensionAction, Agent, ActionResult, ActionCategory } from '../../../types/agent.js';
-import { TelegramExtension } from '../index.js';
-import { BaseTelegramSkill } from './base-skill.js';
-import { TelegramActionType, TelegramErrorType } from '../types.js';
+import { ExtensionAction, Agent, ActionResult, ActionCategory } from '../../../types/agent';
+import { TelegramExtension } from '../index';
+import { BaseTelegramSkill } from './base-skill';
+import { TelegramActionType, TelegramErrorType } from '../types';
 
 export class MediaSkill extends BaseTelegramSkill {
   /**
@@ -179,15 +179,19 @@ export class MediaSkill extends BaseTelegramSkill {
     replyToMessageId?: number
   ): Promise<ActionResult> {
     try {
-      // Delegate to the extension's implementation
-      return await this.extension.sendPhoto(
-        chatId, 
-        photo, 
-        caption, 
-        parseMode,
-        disableNotification,
-        replyToMessageId
-      );
+      const bot = this.extension.getBot();
+      const options: any = {};
+      if (caption) options.caption = caption;
+      if (parseMode) options.parse_mode = parseMode;
+      if (disableNotification) options.disable_notification = disableNotification;
+      if (replyToMessageId) options.reply_to_message_id = replyToMessageId;
+      
+      const result = await bot.telegram.sendPhoto(chatId, photo, options);
+      
+      return this.createSuccessResult({
+        messageId: result.message_id,
+        chatId: result.chat.id
+      });
     } catch (error) {
       return this.createErrorResult(error, TelegramErrorType.INVALID_REQUEST);
     }
@@ -208,18 +212,22 @@ export class MediaSkill extends BaseTelegramSkill {
     replyToMessageId?: number
   ): Promise<ActionResult> {
     try {
-      // Delegate to the extension's implementation
-      return await this.extension.sendVideo(
-        chatId, 
-        video, 
-        caption, 
-        parseMode,
-        duration,
-        width,
-        height,
-        disableNotification,
-        replyToMessageId
-      );
+      const bot = this.extension.getBot();
+      const options: any = {};
+      if (caption) options.caption = caption;
+      if (parseMode) options.parse_mode = parseMode;
+      if (duration) options.duration = duration;
+      if (width) options.width = width;
+      if (height) options.height = height;
+      if (disableNotification) options.disable_notification = disableNotification;
+      if (replyToMessageId) options.reply_to_message_id = replyToMessageId;
+      
+      const result = await bot.telegram.sendVideo(chatId, video, options);
+      
+      return this.createSuccessResult({
+        messageId: result.message_id,
+        chatId: result.chat.id
+      });
     } catch (error) {
       return this.createErrorResult(error, TelegramErrorType.INVALID_REQUEST);
     }
@@ -240,18 +248,22 @@ export class MediaSkill extends BaseTelegramSkill {
     replyToMessageId?: number
   ): Promise<ActionResult> {
     try {
-      // Delegate to the extension's implementation
-      return await this.extension.sendAudio(
-        chatId, 
-        audio, 
-        caption, 
-        parseMode,
-        duration,
-        performer,
-        title,
-        disableNotification,
-        replyToMessageId
-      );
+      const bot = this.extension.getBot();
+      const options: any = {};
+      if (caption) options.caption = caption;
+      if (parseMode) options.parse_mode = parseMode;
+      if (duration) options.duration = duration;
+      if (performer) options.performer = performer;
+      if (title) options.title = title;
+      if (disableNotification) options.disable_notification = disableNotification;
+      if (replyToMessageId) options.reply_to_message_id = replyToMessageId;
+      
+      const result = await bot.telegram.sendAudio(chatId, audio, options);
+      
+      return this.createSuccessResult({
+        messageId: result.message_id,
+        chatId: result.chat.id
+      });
     } catch (error) {
       return this.createErrorResult(error, TelegramErrorType.INVALID_REQUEST);
     }
@@ -269,15 +281,19 @@ export class MediaSkill extends BaseTelegramSkill {
     replyToMessageId?: number
   ): Promise<ActionResult> {
     try {
-      // Delegate to the extension's implementation
-      return await this.extension.sendDocument(
-        chatId, 
-        document, 
-        caption, 
-        parseMode,
-        disableNotification,
-        replyToMessageId
-      );
+      const bot = this.extension.getBot();
+      const options: any = {};
+      if (caption) options.caption = caption;
+      if (parseMode) options.parse_mode = parseMode;
+      if (disableNotification) options.disable_notification = disableNotification;
+      if (replyToMessageId) options.reply_to_message_id = replyToMessageId;
+      
+      const result = await bot.telegram.sendDocument(chatId, document, options);
+      
+      return this.createSuccessResult({
+        messageId: result.message_id,
+        chatId: result.chat.id
+      });
     } catch (error) {
       return this.createErrorResult(error, TelegramErrorType.INVALID_REQUEST);
     }
@@ -293,13 +309,17 @@ export class MediaSkill extends BaseTelegramSkill {
     replyToMessageId?: number
   ): Promise<ActionResult> {
     try {
-      // Delegate to the extension's implementation
-      return await this.extension.sendSticker(
-        chatId, 
-        sticker, 
-        disableNotification,
-        replyToMessageId
-      );
+      const bot = this.extension.getBot();
+      const options: any = {};
+      if (disableNotification) options.disable_notification = disableNotification;
+      if (replyToMessageId) options.reply_to_message_id = replyToMessageId;
+      
+      const result = await bot.telegram.sendSticker(chatId, sticker, options);
+      
+      return this.createSuccessResult({
+        messageId: result.message_id,
+        chatId: result.chat.id
+      });
     } catch (error) {
       return this.createErrorResult(error, TelegramErrorType.INVALID_REQUEST);
     }
@@ -316,14 +336,17 @@ export class MediaSkill extends BaseTelegramSkill {
     replyToMessageId?: number
   ): Promise<ActionResult> {
     try {
-      // Delegate to the extension's implementation
-      return await this.extension.sendLocation(
-        chatId, 
-        latitude, 
-        longitude,
-        disableNotification,
-        replyToMessageId
-      );
+      const bot = this.extension.getBot();
+      const options: any = {};
+      if (disableNotification) options.disable_notification = disableNotification;
+      if (replyToMessageId) options.reply_to_message_id = replyToMessageId;
+      
+      const result = await bot.telegram.sendLocation(chatId, latitude, longitude, options);
+      
+      return this.createSuccessResult({
+        messageId: result.message_id,
+        chatId: result.chat.id
+      });
     } catch (error) {
       return this.createErrorResult(error, TelegramErrorType.INVALID_REQUEST);
     }

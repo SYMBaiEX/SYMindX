@@ -17,6 +17,8 @@
     "@anthropic-ai/sdk": "^0.35.0",
     "@modelcontextprotocol/sdk": "^1.12.1",
     "@neondatabase/serverless": "^1.0.0",
+    "@octokit/auth-app": "^8.0.1",
+    "@octokit/rest": "^22.0.0",
     "@slack/bolt": "^4.0.0",
     "@slack/web-api": "^7.8.0",
     "@supabase/supabase-js": "^2.49.10",
@@ -34,12 +36,14 @@
     "puppeteer": "^24.10.0",
     "sqlite3": "^5.1.7",
     "tailwind-merge": "^2.5.4",
+    "telegraf": "^4.16.3",
     "twitter-api-v2": "^1.18.0",
     "uuid": "^11.0.0",
     "ws": "^8.18.2",
     "zod": "^3.24.0"
   },
   "devDependencies": {
+    "@types/babel__core": "^7.20.5",
     "@types/better-sqlite3": "^7.6.13",
     "@types/express": "^5.0.0",
     "@types/jest": "^29.5.14",

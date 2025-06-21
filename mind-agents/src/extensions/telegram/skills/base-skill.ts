@@ -4,9 +4,9 @@
  * Provides the foundation for all Telegram skills.
  */
 
-import { Agent, ActionResult, ActionResultType, ExtensionAction } from '../../../types/agent.js';
-import { TelegramExtension } from '../index.js';
-import { TelegramActionType, TelegramErrorType } from '../types.js';
+import { Agent, ActionResult, ActionResultType, ExtensionAction } from '../../../types/agent';
+import { TelegramExtension } from '../index';
+import { TelegramActionType, TelegramErrorType } from '../types';
 
 /**
  * Base skill interface that all Telegram skills must implement

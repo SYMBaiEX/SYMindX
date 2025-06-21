@@ -7,41 +7,58 @@
 import { 
   ModuleRegistry, 
   MemoryProvider, 
-  Extension
+  Extension,
+  Agent
 } from '../types/agent.js'
 import { Portal } from '../types/portal.js'
 import { EmotionModule } from '../types/emotion.js'
 import { CognitionModule } from '../types/cognition.js'
 
+// Temporary type definitions until they are properly defined in their respective modules
+type ToolSystem = {
+  name: string;
+  // Add more properties as needed
+};
+
+type ObservabilityModule = {
+  name: string;
+  // Add more properties as needed
+};
+
+type StreamingInterface = {
+  name: string;
+  // Add more properties as needed
+};
+
 /**
  * Main module registry implementation
  */
 export class SYMindXModuleRegistry implements ModuleRegistry {
-  private memoryProviders = new Map<string, any>()
-  private emotionModules = new Map<string, any>()
-  private cognitionModules = new Map<string, any>()
-  private extensions = new Map<string, any>()
+  private memoryProviders = new Map<string, MemoryProvider>()
+  private emotionModules = new Map<string, EmotionModule>()
+  private cognitionModules = new Map<string, CognitionModule>()
+  private extensions = new Map<string, Extension>()
   private portals = new Map<string, Portal>()
-  private toolSystems = new Map<string, any>()
-  private observabilityModules = new Map<string, any>()
-  private streamingInterfaces = new Map<string, any>()
+  private toolSystems = new Map<string, ToolSystem>()
+  private observabilityModules = new Map<string, ObservabilityModule>()
+  private streamingInterfaces = new Map<string, StreamingInterface>()
 
-  registerMemoryProvider(name: string, provider: any): void {
+  registerMemoryProvider(name: string, provider: MemoryProvider): void {
     this.memoryProviders.set(name, provider)
     console.log(`📝 Registered memory provider: ${name}`)
   }
 
-  registerEmotionModule(name: string, module: any): void {
+  registerEmotionModule(name: string, module: EmotionModule): void {
     this.emotionModules.set(name, module)
     console.log(`😊 Registered emotion module: ${name}`)
   }
 
-  registerCognitionModule(name: string, module: any): void {
+  registerCognitionModule(name: string, module: CognitionModule): void {
     this.cognitionModules.set(name, module)
     console.log(`🧠 Registered cognition module: ${name}`)
   }
 
-  registerExtension(name: string, extension: any): void {
+  registerExtension(name: string, extension: Extension): void {
     this.extensions.set(name, extension)
     console.log(`🔌 Registered extension: ${name}`)
   }
@@ -76,37 +93,59 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
   }
 
   // Tool system methods
-  registerToolSystem(name: string, toolSystem: any): void {
-    this.toolSystems.set(name, toolSystem)
-    console.log(`🔧 Registered tool system: ${name}`)
+  registerToolSystem(name: string, toolSystem: ToolSystem): void {
+    if (!name || !toolSystem) {
+      throw new Error('Tool system name and implementation are required');
+    }
+    this.toolSystems.set(name, toolSystem);
+    console.log(`🔧 Registered tool system: ${name}`);
   }
 
-  getToolSystem(name: string): any {
-    return this.toolSystems.get(name)
+  getToolSystem(name: string): ToolSystem | undefined {
+    if (!name) {
+      throw new Error('Tool system name is required');
+    }
+    return this.toolSystems.get(name);
   }
 
   listToolSystems(): string[] {
-    return Array.from(this.toolSystems.keys())
+    return Array.from(this.toolSystems.keys());
   }
 
   // Observability methods
-  registerObservability(name: string, observability: any): void {
-    this.observabilityModules.set(name, observability)
-    console.log(`📊 Registered observability module: ${name}`)
+  registerObservability(name: string, observability: ObservabilityModule): void {
+    if (!name || !observability) {
+      throw new Error('Observability module name and implementation are required');
+    }
+    this.observabilityModules.set(name, observability);
+    console.log(`📊 Registered observability module: ${name}`);
   }
 
-  getObservability(name: string): any {
-    return this.observabilityModules.get(name)
+  getObservability(name: string): ObservabilityModule | undefined {
+    if (!name) {
+      throw new Error('Observability module name is required');
+    }
+    return this.observabilityModules.get(name);
   }
 
-  // Streaming methods
-  registerStreaming(name: string, streaming: any): void {
-    this.streamingInterfaces.set(name, streaming)
-    console.log(`📡 Registered streaming interface: ${name}`)
+  listObservabilityModules(): string[] {
+    return Array.from(this.observabilityModules.keys());
   }
 
-  getStreaming(name: string): any {
-    return this.streamingInterfaces.get(name)
+  // Streaming interface methods
+  registerStreamingInterface(name: string, streaming: StreamingInterface): void {
+    if (!name || !streaming) {
+      throw new Error('Streaming interface name and implementation are required');
+    }
+    this.streamingInterfaces.set(name, streaming);
+    console.log(`🌊 Registered streaming interface: ${name}`);
+  }
+
+  getStreamingInterface(name: string): StreamingInterface | undefined {
+    if (!name) {
+      throw new Error('Streaming interface name is required');
+    }
+    return this.streamingInterfaces.get(name);
   }
 
   // Utility methods

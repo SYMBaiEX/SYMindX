@@ -4,15 +4,15 @@
  * Exports all skills for the Telegram extension.
  */
 
-export * from './base-skill.js';
-export * from './messaging.js';
-export * from './chat-management.js';
-export * from './media.js';
+export * from './base-skill';
+export * from './messaging';
+export * from './chat-management';
+export * from './media';
 
-import { TelegramExtension } from '../index.js';
-import { MessagingSkill } from './messaging.js';
-import { ChatManagementSkill } from './chat-management.js';
-import { MediaSkill } from './media.js';
+import { TelegramExtension } from '../index';
+import { MessagingSkill } from './messaging';
+import { ChatManagementSkill } from './chat-management';
+import { MediaSkill } from './media';
 
 /**
  * Initialize all skills for the Telegram extension
