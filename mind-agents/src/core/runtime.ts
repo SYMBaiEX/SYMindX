@@ -44,6 +44,7 @@ export class SYMindXRuntime implements AgentRuntime {
   public config: RuntimeConfig
   private tickTimer?: NodeJS.Timeout
   private isRunning = false
+  private startTime?: number
 
   constructor(config: RuntimeConfig) {
     this.config = config
@@ -156,6 +157,7 @@ export class SYMindXRuntime implements AgentRuntime {
     await this.loadAgents()
     
     this.isRunning = true
+    this.startTime = Date.now()
     
     // Start the main processing loop
     this.tickTimer = setInterval(() => {
@@ -186,6 +188,7 @@ export class SYMindXRuntime implements AgentRuntime {
       clearInterval(this.tickTimer)
       this.tickTimer = undefined
     }
+    this.startTime = undefined
     
     // Gracefully shutdown all agents
     for (const agent of this.agents.values()) {
@@ -193,6 +196,101 @@ export class SYMindXRuntime implements AgentRuntime {
     }
     
     console.log('✅ SYMindX Runtime stopped')
+  }
+
+  async pause(): Promise<void> {
+    if (!this.isRunning) return
+
+    console.log('⏸️ Pausing SYMindX Runtime...')
+    this.isRunning = false
+
+    if (this.tickTimer) {
+      clearInterval(this.tickTimer)
+      this.tickTimer = undefined
+    }
+
+    await this.eventBus.publish({
+      id: `event_${Date.now()}`,
+      type: 'runtime_paused',
+      source: 'runtime',
+      data: { timestamp: new Date() },
+      timestamp: new Date(),
+      processed: false
+    })
+    console.log('✅ SYMindX Runtime paused')
+  }
+
+  async resume(): Promise<void> {
+    if (this.isRunning) return
+
+    console.log('▶️ Resuming SYMindX Runtime...')
+    this.isRunning = true
+
+    this.tickTimer = setInterval(() => {
+      this.tick().catch(error => {
+        console.error('❌ Runtime tick error:', error)
+      })
+    }, this.config.tickInterval)
+
+    await this.eventBus.publish({
+      id: `event_${Date.now()}`,
+      type: 'runtime_resumed',
+      source: 'runtime',
+      data: { timestamp: new Date() },
+      timestamp: new Date(),
+      processed: false
+    })
+    console.log('✅ SYMindX Runtime resumed')
+  }
+
+  getUptime(): number {
+    return this.startTime ? Date.now() - this.startTime : 0
+  }
+
+  async reloadConfig(): Promise<void> {
+    console.log('🔄 Reloading runtime configuration...')
+    const fs = await import('fs/promises')
+    const path = await import('path')
+    const __dirname = path.dirname(new URL(import.meta.url).pathname)
+    const rootDir = path.resolve(__dirname, '../../..')
+    const configPath = path.join(rootDir, 'config', 'runtime.json')
+
+    try {
+      await fs.access(configPath)
+      const configData = await fs.readFile(configPath, 'utf-8')
+      const fileConfig = JSON.parse(configData) as Partial<RuntimeConfig>
+      this.config = {
+        ...this.config,
+        ...fileConfig,
+        persistence: {
+          ...this.config.persistence,
+          ...fileConfig.persistence
+        },
+        extensions: {
+          ...this.config.extensions,
+          ...fileConfig.extensions
+        },
+        portals: {
+          autoLoad: this.config.portals?.autoLoad ?? true,
+          paths: this.config.portals?.paths ?? ['./portals'],
+          ...fileConfig.portals,
+          apiKeys: {
+            ...this.config.portals?.apiKeys,
+            ...fileConfig.portals?.apiKeys
+          }
+        }
+      }
+      console.log('✅ Runtime configuration reloaded')
+    } catch (err) {
+      console.error('❌ Failed to reload configuration:', err)
+    }
+  }
+
+  getEventBusMetrics() {
+    if (this.eventBus instanceof SYMindXEnhancedEventBus) {
+      return this.eventBus.getMetrics()
+    }
+    return null
   }
 
   async loadAgents(): Promise<void> {

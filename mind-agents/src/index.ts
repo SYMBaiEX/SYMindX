@@ -14,7 +14,7 @@ import { LogLevel, MemoryProviderType, EmotionModuleType, CognitionModuleType } 
 
 // Default runtime configuration
 const config: RuntimeConfig = {
-  tickInterval: 1000,
+  tickInterval: process.env.TICK_INTERVAL ? parseInt(process.env.TICK_INTERVAL) : 1000,
   maxAgents: 10,
   logLevel: LogLevel.INFO,
   persistence: {
