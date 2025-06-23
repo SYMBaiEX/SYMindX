@@ -6,6 +6,7 @@
 
 import { Logger } from '../utils/logger.js'
 import { PluginManifest } from './plugin-config.js'
+import * as vm from 'node:vm'
 
 /**
  * Security context for plugin execution
@@ -44,8 +45,9 @@ export class PluginSecurityManager {
   private trustedPlugins: Set<string> = new Set()
   private blockedPlugins: Set<string> = new Set()
 
-  constructor(logger: Logger) {
-    this.logger = logger.child({ extension: 'plugin-security' })
+  constructor(logger?: Logger) {
+    const baseLogger = logger || new Logger('PluginSecurityManager')
+    this.logger = baseLogger.child({ extension: 'plugin-security' })
   }
 
   /**
@@ -237,15 +239,30 @@ export class SandboxEnvironment {
       throw new Error('Sandbox not initialized')
     }
 
-    // In a real implementation, this would use a proper sandbox like vm2 or isolated-vm
-    // For now, this is a placeholder that validates permissions
-    
+    // Validate permissions and scan code for dangerous patterns
     this.validateExecution(code)
-    
-    // TODO: Implement actual sandboxed execution
+
     this.logger.debug(`Executing code in sandbox for plugin: ${this.pluginId}`)
-    
-    return null
+
+    // Create a restricted context with provided globals and a limited console
+    const sandbox: Record<string, any> = {
+      console: {
+        log: (...args: any[]) => this.logger.info(`[${this.pluginId}]`, ...args),
+        error: (...args: any[]) => this.logger.error(`[${this.pluginId}]`, ...args),
+        warn: (...args: any[]) => this.logger.warn(`[${this.pluginId}]`, ...args)
+      },
+      ...globals
+    }
+
+    const context = vm.createContext(sandbox)
+    const script = new vm.Script(code, { filename: `${this.pluginId}.js` })
+
+    try {
+      return script.runInContext(context, { timeout: 1000 })
+    } catch (err) {
+      this.logger.error(`Sandbox execution error for plugin ${this.pluginId}: ${err}`)
+      throw err
+    }
   }
 
   /**
