@@ -258,7 +258,7 @@ export class SandboxEnvironment {
     const script = new vm.Script(code, { filename: `${this.pluginId}.js` })
 
     try {
-      return script.runInContext(context, { timeout: 1000 })
+      return script.runInContext(context, { timeout: this.context.restrictions.maxExecutionTime || 1000 })
     } catch (err) {
       this.logger.error(`Sandbox execution error for plugin ${this.pluginId}: ${err}`)
       throw err
