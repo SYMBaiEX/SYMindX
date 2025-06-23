@@ -15,6 +15,8 @@ SYMindX is a cutting-edge AI agent runtime that brings characters like `NyX` and
 - **🎭 Emotionally Reactive**: RuneScape-inspired emotion stack (focused, frustrated, excited)
 - **🧠 Memory-Driven**: Dynamic memory with Supabase (pgvector) + SQLite fallback
 - **🔄 Autonomous**: Runs independent thought/emotion/action loops
+- **⏯️ Pause/Resume**: Runtime can be paused and resumed without unloading agents
+- **📊 Metrics API**: Exposes event bus metrics and runtime uptime
 - **🌐 Multi-Platform**: Operates across games, web, Slack, and social platforms
 
 ## 🏗️ Architecture
@@ -86,6 +88,7 @@ bun install
 # Configure environment variables
 cp .env.example .env
 # Edit .env with your API keys and configuration
+# You can also set TICK_INTERVAL to control the runtime tick speed
 ```
 
 ### Development

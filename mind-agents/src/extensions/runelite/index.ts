@@ -2,8 +2,11 @@ import { Extension, ExtensionAction, ExtensionEventHandler, Agent, ActionResult,
 import { ExtensionConfig } from '../../types/common.js'
 import { WebSocket } from 'ws'
 import { EventEmitter } from 'events'
-import { RuneLiteConfig, GameState, RuneLiteEvent, RuneLiteCommand, RuneLiteResponse } from './types.js'
+import { RuneLiteConfig, GameState, RuneLiteEvent, RuneLiteCommand } from './types.js'
 import { initializeSkills } from './skills/index.js'
+import type { RuneLiteSkills } from './skills/index.js'
+import type { RuneLiteSkill, TradeItem } from './skills/types.js'
+import type { RuneLiteMessage } from './types.js'
 
 export class RuneLiteExtension implements Extension {
   id = 'runelite'
@@ -16,7 +19,7 @@ export class RuneLiteExtension implements Extension {
   
   private ws?: WebSocket
   private eventEmitter = new EventEmitter()
-  private skills: any
+  private skills: RuneLiteSkills
   private gameState: GameState = {
     player: {
       name: '',
@@ -71,7 +74,7 @@ export class RuneLiteExtension implements Extension {
     
     this.config = {
       enabled: true,
-      settings: this.runeliteConfig as any
+      settings: this.runeliteConfig
     }
     
     // Initialize skills
@@ -108,13 +111,11 @@ export class RuneLiteExtension implements Extension {
     const allActions: Record<string, ExtensionAction> = {}
     
     // Add actions from each skill
-    Object.entries(this.skills).forEach(([skillName, skill]: [string, any]) => {
-      if (skill && typeof skill.getActions === 'function') {
-        const skillActions = skill.getActions()
-        Object.entries(skillActions).forEach(([actionName, action]: [string, any]) => {
-          allActions[actionName] = action
-        })
-      }
+    Object.values(this.skills).forEach((skill: RuneLiteSkill) => {
+      const skillActions = skill.getActions()
+      Object.entries(skillActions).forEach(([actionName, action]) => {
+        allActions[actionName] = action
+      })
     })
     
     return allActions
@@ -252,7 +253,7 @@ export class RuneLiteExtension implements Extension {
     }
   }
 
-  private handleRuneLiteMessage(message: any): void {
+  private handleRuneLiteMessage(message: RuneLiteMessage): void {
     switch (message.type) {
       case 'game_state':
         this.updateGameStateFromMessage(message.data)
@@ -270,14 +271,14 @@ export class RuneLiteExtension implements Extension {
     }
   }
 
-  private updateGameStateFromMessage(data: any): void {
+  private updateGameStateFromMessage(data: Partial<GameState>): void {
     this.gameState = {
       ...this.gameState,
       ...data
     }
   }
 
-  private emitGameEvent(eventData: any): void {
+  private emitGameEvent(eventData: Record<string, any>): void {
     const event: RuneLiteEvent = {
       type: eventData.type,
       data: eventData,
@@ -477,7 +478,7 @@ export class RuneLiteExtension implements Extension {
     }
   }
 
-  private async executeTrade(playerId: string, action: string, items?: any[]): Promise<ActionResult> {
+  private async executeTrade(playerId: string, action: string, items?: TradeItem[]): Promise<ActionResult> {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
       return { success: false, type: ActionResultType.FAILURE, error: 'Not connected to RuneLite' }
     }
@@ -526,7 +527,7 @@ export class RuneLiteExtension implements Extension {
   }
 
   // Event handlers
-  private async handleGameTick(agent: Agent, data: any): Promise<void> {
+  private async handleGameTick(agent: Agent, data: Record<string, any>): Promise<void> {
     // Update agent's understanding of game state
     // This could trigger memory updates, emotion changes, etc.
     if (this.runeliteConfig.enableLogging) {
@@ -534,27 +535,27 @@ export class RuneLiteExtension implements Extension {
     }
   }
 
-  private async handlePlayerDeath(agent: Agent, data: any): Promise<void> {
+  private async handlePlayerDeath(agent: Agent, data: Record<string, any>): Promise<void> {
     // Handle death event - might trigger frustration emotion
     console.log(`💀 Player death detected for agent ${agent.name}`)
   }
 
-  private async handleLevelUp(agent: Agent, data: any): Promise<void> {
+  private async handleLevelUp(agent: Agent, data: Record<string, any>): Promise<void> {
     // Handle level up - might trigger excitement emotion
     console.log(`🎉 Level up detected for agent ${agent.name}: ${data.skill} level ${data.level}`)
   }
 
-  private async handleItemReceived(agent: Agent, data: any): Promise<void> {
+  private async handleItemReceived(agent: Agent, data: Record<string, any>): Promise<void> {
     // Handle item drops/rewards
     console.log(`📦 Item received for agent ${agent.name}: ${data.itemName}`)
   }
 
-  private async handleCombatStarted(agent: Agent, data: any): Promise<void> {
+  private async handleCombatStarted(agent: Agent, data: Record<string, any>): Promise<void> {
     // Handle combat initiation
     console.log(`⚔️ Combat started for agent ${agent.name}`)
   }
 
-  private async handleQuestUpdate(agent: Agent, data: any): Promise<void> {
+  private async handleQuestUpdate(agent: Agent, data: Record<string, any>): Promise<void> {
     // Handle quest progress
     console.log(`📜 Quest update for agent ${agent.name}: ${data.questName}`)
   }
@@ -590,3 +591,4 @@ export class RuneLiteExtension implements Extension {
 
 export * from './types.js'
 export default RuneLiteExtension
+
