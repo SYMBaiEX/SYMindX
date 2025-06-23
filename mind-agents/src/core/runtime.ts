@@ -251,8 +251,13 @@ export class SYMindXRuntime implements AgentRuntime {
     return this.startTime ? Date.now() - this.startTime : 0
   }
 
-  async reloadConfig(): Promise<void> {
-    console.log('🔄 Reloading runtime configuration...')
+  try {
+    const { fileURLToPath } = await import('url')
+    const __dirname = path.dirname(fileURLToPath(import.meta.url))
+  } catch (error) {
+    console.error('Failed to import URL module:', error)
+    throw new Error('Critical module import failed')
+  }
     const fs = await import('fs/promises')
     const path = await import('path')
     const { fileURLToPath } = await import('url')
