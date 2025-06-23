@@ -94,7 +94,7 @@ export class SYMindXCodeExecutor extends EventEmitter implements ICodeExecutor {
    * Creates a new instance of SYMindXCodeExecutor
    * 
    * @param {ToolSystemConfig} config - Configuration for the code executor
-   * @param {any} terminal - Terminal interface for command execution (TODO: Replace with ITerminalInterface)
+   * @param {ITerminalInterface} terminal - Terminal interface for command execution
    * @param {Logger} [logger] - Optional logger instance. If not provided, a new one will be created.
    * 
    * @example

@@ -103,8 +103,8 @@ export class SYMindXDynamicToolSystem implements DynamicToolSystem {
       ...config
     }
 
-    this.codeExecution = new SYMindXCodeExecutor(this.config)
     this.terminalAccess = new SYMindXTerminalInterface(this.config)
+    this.codeExecution = new SYMindXCodeExecutor(this.config, this.terminalAccess)
   }
 
   createTool(specification: ToolSpec): ToolSpec {
