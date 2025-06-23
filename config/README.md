@@ -8,9 +8,9 @@ The runtime configuration file (`runtime.json`) controls the behavior of the SYM
 
 ### Configuration Options
 
-#### Basic Settings
+-#### Basic Settings
 
-- `tickInterval`: The interval in milliseconds between runtime ticks (default: 1000)
+- `tickInterval`: The interval in milliseconds between runtime ticks (default: 1000). You can also override this with the `TICK_INTERVAL` environment variable.
 - `maxAgents`: The maximum number of agents that can be loaded simultaneously (default: 10)
 - `logLevel`: The logging level ('debug', 'info', 'warn', 'error')
 
