@@ -14,6 +14,7 @@ import { CommunicationSkill } from './communication.js'
 import { BankingSkill } from './banking.js'
 import { TradingSkill } from './trading.js'
 import { GameStateSkill } from './gamestate.js'
+import { QuestingSkill } from './questing.js'
 
 export {
   MovementSkill,
@@ -23,7 +24,8 @@ export {
   CommunicationSkill,
   BankingSkill,
   TradingSkill,
-  GameStateSkill
+  GameStateSkill,
+  QuestingSkill
 }
 
 /**
@@ -38,6 +40,7 @@ export interface RuneLiteSkills {
   banking: BankingSkill
   trading: TradingSkill
   gameState: GameStateSkill
+  questing: QuestingSkill
 }
 
 export function initializeSkills(extension: RuneLiteExtension): RuneLiteSkills {
@@ -49,6 +52,8 @@ export function initializeSkills(extension: RuneLiteExtension): RuneLiteSkills {
     communication: new CommunicationSkill(extension),
     banking: new BankingSkill(extension),
     trading: new TradingSkill(extension),
-    gameState: new GameStateSkill(extension)
+    gameState: new GameStateSkill(extension),
+    questing: new QuestingSkill(extension)
   }
 }
+

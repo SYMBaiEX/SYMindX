@@ -74,7 +74,7 @@ export class RuneLiteExtension implements Extension {
     
     this.config = {
       enabled: true,
-      settings: this.runeliteConfig as any
+      settings: this.runeliteConfig
     }
     
     // Initialize skills
@@ -527,7 +527,7 @@ export class RuneLiteExtension implements Extension {
   }
 
   // Event handlers
-  private async handleGameTick(agent: Agent, data: any): Promise<void> {
+  private async handleGameTick(agent: Agent, data: Record<string, any>): Promise<void> {
     // Update agent's understanding of game state
     // This could trigger memory updates, emotion changes, etc.
     if (this.runeliteConfig.enableLogging) {
@@ -535,27 +535,27 @@ export class RuneLiteExtension implements Extension {
     }
   }
 
-  private async handlePlayerDeath(agent: Agent, data: any): Promise<void> {
+  private async handlePlayerDeath(agent: Agent, data: Record<string, any>): Promise<void> {
     // Handle death event - might trigger frustration emotion
     console.log(`💀 Player death detected for agent ${agent.name}`)
   }
 
-  private async handleLevelUp(agent: Agent, data: any): Promise<void> {
+  private async handleLevelUp(agent: Agent, data: Record<string, any>): Promise<void> {
     // Handle level up - might trigger excitement emotion
     console.log(`🎉 Level up detected for agent ${agent.name}: ${data.skill} level ${data.level}`)
   }
 
-  private async handleItemReceived(agent: Agent, data: any): Promise<void> {
+  private async handleItemReceived(agent: Agent, data: Record<string, any>): Promise<void> {
     // Handle item drops/rewards
     console.log(`📦 Item received for agent ${agent.name}: ${data.itemName}`)
   }
 
-  private async handleCombatStarted(agent: Agent, data: any): Promise<void> {
+  private async handleCombatStarted(agent: Agent, data: Record<string, any>): Promise<void> {
     // Handle combat initiation
     console.log(`⚔️ Combat started for agent ${agent.name}`)
   }
 
-  private async handleQuestUpdate(agent: Agent, data: any): Promise<void> {
+  private async handleQuestUpdate(agent: Agent, data: Record<string, any>): Promise<void> {
     // Handle quest progress
     console.log(`📜 Quest update for agent ${agent.name}: ${data.questName}`)
   }
