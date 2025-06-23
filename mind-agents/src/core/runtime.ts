@@ -226,6 +226,10 @@ export class SYMindXRuntime implements AgentRuntime {
     console.log('▶️ Resuming SYMindX Runtime...')
     this.isRunning = true
 
+    if (!this.startTime) {
+      this.startTime = Date.now()
+    }
+
     this.tickTimer = setInterval(() => {
       this.tick().catch(error => {
         console.error('❌ Runtime tick error:', error)
