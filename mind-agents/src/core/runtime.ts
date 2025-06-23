@@ -251,7 +251,8 @@ export class SYMindXRuntime implements AgentRuntime {
     console.log('🔄 Reloading runtime configuration...')
     const fs = await import('fs/promises')
     const path = await import('path')
-    const __dirname = path.dirname(new URL(import.meta.url).pathname)
+    const { fileURLToPath } = await import('url')
+    const __dirname = path.dirname(fileURLToPath(import.meta.url))
     const rootDir = path.resolve(__dirname, '../../..')
     const configPath = path.join(rootDir, 'config', 'runtime.json')
 
