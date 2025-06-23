@@ -11,6 +11,11 @@ export interface RuneLiteConfig {
   autoReconnect?: boolean
 }
 
+export interface RuneLiteMessage {
+  type: string
+  data: any
+}
+
 export interface GameState {
   player: {
     name: string

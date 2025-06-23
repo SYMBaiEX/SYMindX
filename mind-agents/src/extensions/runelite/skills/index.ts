@@ -5,6 +5,7 @@
  * Each skill represents a group of related actions that the agent can perform.
  */
 
+import type { RuneLiteExtension } from '../index.js'
 import { MovementSkill } from './movement.js'
 import { CombatSkill } from './combat.js'
 import { InteractionSkill } from './interaction.js'
@@ -28,7 +29,18 @@ export {
 /**
  * Initialize all skills with the RuneLite extension instance
  */
-export function initializeSkills(extension: any) {
+export interface RuneLiteSkills {
+  movement: MovementSkill
+  combat: CombatSkill
+  interaction: InteractionSkill
+  inventory: InventorySkill
+  communication: CommunicationSkill
+  banking: BankingSkill
+  trading: TradingSkill
+  gameState: GameStateSkill
+}
+
+export function initializeSkills(extension: RuneLiteExtension): RuneLiteSkills {
   return {
     movement: new MovementSkill(extension),
     combat: new CombatSkill(extension),
