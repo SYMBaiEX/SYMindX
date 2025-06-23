@@ -6,8 +6,10 @@
 
 import { ExtensionAction, Agent, ActionResult, ActionResultType, ActionCategory } from '../../../types/agent.js'
 import { RuneLiteExtension } from '../index.js'
+import { SkillParameters } from '../../../types/common.js'
+import type { RuneLiteSkill } from './types.js'
 
-export class InteractionSkill {
+export class InteractionSkill implements RuneLiteSkill {
   private extension: RuneLiteExtension
 
   constructor(extension: RuneLiteExtension) {
@@ -24,7 +26,7 @@ export class InteractionSkill {
         description: 'Interact with an object or NPC',
         category: ActionCategory.INTERACTION,
         parameters: { targetId: 'string', action: 'string' },
-        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
+        execute: async (agent: Agent, params: SkillParameters): Promise<ActionResult> => {
           return this.interact(params.targetId, params.action)
         }
       },
@@ -34,7 +36,7 @@ export class InteractionSkill {
         description: 'Perform a skill-based action',
         category: ActionCategory.INTERACTION,
         parameters: { skill: 'string', action: 'string', targetId: 'string' },
-        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
+        execute: async (agent: Agent, params: SkillParameters): Promise<ActionResult> => {
           return this.skillAction(params.skill, params.action, params.targetId)
         }
       }

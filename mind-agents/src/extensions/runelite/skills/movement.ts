@@ -6,8 +6,10 @@
 
 import { ExtensionAction, Agent, ActionResult, ActionResultType, ActionCategory } from '../../../types/agent.js'
 import { RuneLiteExtension } from '../index.js'
+import { SkillParameters } from '../../../types/common.js'
+import type { RuneLiteSkill } from './types.js'
 
-export class MovementSkill {
+export class MovementSkill implements RuneLiteSkill {
   private extension: RuneLiteExtension
 
   constructor(extension: RuneLiteExtension) {
@@ -24,7 +26,7 @@ export class MovementSkill {
         description: 'Move to a specific location',
         category: ActionCategory.MOVEMENT,
         parameters: { x: 'number', y: 'number', plane: 'number' },
-        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
+        execute: async (agent: Agent, params: SkillParameters): Promise<ActionResult> => {
           return this.move(params.x, params.y, params.plane)
         }
       }

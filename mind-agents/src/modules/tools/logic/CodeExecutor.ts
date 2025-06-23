@@ -245,7 +245,7 @@ export class SYMindXCodeExecutor extends EventEmitter implements ICodeExecutor {
    * @example
    * ```typescript
    * // Start a long-running execution
-   * const execution = executor.execute('while(true) { /* long running */ }');
+   * const execution = executor.execute('while(true) { ... }');
    * 
    * // Later, stop it
    * const stopped = await executor.stopExecution(execution.id);

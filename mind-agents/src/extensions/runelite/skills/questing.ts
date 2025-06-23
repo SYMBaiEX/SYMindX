@@ -1,15 +1,15 @@
 /**
- * Trading Skill for RuneLite Extension
- * 
- * Provides actions related to player-to-player trading in the game world.
+ * Questing Skill for RuneLite Extension
+ *
+ * Provides actions related to starting and completing quests.
  */
 
-import { ExtensionAction, Agent, ActionResult, ActionResultType, ActionCategory } from '../../../types/agent.js'
+import { ExtensionAction, Agent, ActionResult, ActionCategory, ActionResultType } from '../../../types/agent.js'
 import { RuneLiteExtension } from '../index.js'
 import { SkillParameters } from '../../../types/common.js'
 import type { RuneLiteSkill } from './types.js'
 
-export class TradingSkill implements RuneLiteSkill {
+export class QuestingSkill implements RuneLiteSkill {
   private extension: RuneLiteExtension
 
   constructor(extension: RuneLiteExtension) {
@@ -17,56 +17,54 @@ export class TradingSkill implements RuneLiteSkill {
   }
 
   /**
-   * Get all trading-related actions
+   * Get all questing-related actions
    */
   getActions(): Record<string, ExtensionAction> {
     return {
-      request_trade: {
-        name: 'request_trade',
-        description: 'Request a trade with another player',
+      start_quest: {
+        name: 'start_quest',
+        description: 'Begin a quest',
         category: ActionCategory.SOCIAL,
-        parameters: { playerName: 'string' },
+        parameters: { questName: 'string' },
         execute: async (agent: Agent, params: SkillParameters): Promise<ActionResult> => {
-          return this.requestTrade(params.playerName)
+          return this.startQuest(params.questName)
         }
       },
-      
-      offer_item: {
-        name: 'offer_item',
-        description: 'Offer an item in a trade',
+
+      complete_quest: {
+        name: 'complete_quest',
+        description: 'Complete a quest',
         category: ActionCategory.SOCIAL,
-        parameters: { itemId: 'string', quantity: 'number' },
+        parameters: { questName: 'string' },
         execute: async (agent: Agent, params: SkillParameters): Promise<ActionResult> => {
-          return this.offerItem(params.itemId, params.quantity)
+          return this.completeQuest(params.questName)
         }
       },
-      
-      accept_trade: {
-        name: 'accept_trade',
-        description: 'Accept the current trade offer',
-        category: ActionCategory.SOCIAL,
-        parameters: { stage: 'number' },
+
+      talk_to_npc: {
+        name: 'talk_to_npc',
+        description: 'Initiate dialogue with an NPC',
+        category: ActionCategory.INTERACTION,
+        parameters: { npcId: 'string' },
         execute: async (agent: Agent, params: SkillParameters): Promise<ActionResult> => {
-          return this.acceptTrade(params.stage)
+          return this.talkToNPC(params.npcId)
         }
       },
-      
-      decline_trade: {
-        name: 'decline_trade',
-        description: 'Decline the current trade',
-        category: ActionCategory.SOCIAL,
-        parameters: {},
+
+      choose_dialogue_option: {
+        name: 'choose_dialogue_option',
+        description: 'Select a dialogue option during a conversation',
+        category: ActionCategory.INTERACTION,
+        parameters: { option: 'number' },
         execute: async (agent: Agent, params: SkillParameters): Promise<ActionResult> => {
-          return this.declineTrade()
+          return this.chooseDialogueOption(params.option)
         }
       }
     }
   }
 
-  /**
-   * Request a trade with another player
-   */
-  async requestTrade(playerName: string): Promise<ActionResult> {
+  /** Start a quest */
+  async startQuest(questName: string): Promise<ActionResult> {
     try {
       if (!this.extension.isConnected()) {
         return {
@@ -77,33 +75,30 @@ export class TradingSkill implements RuneLiteSkill {
         }
       }
 
-      // Send request trade command to RuneLite
       await this.extension.sendCommand({
-        action: 'trade',
-        target: playerName,
-        parameters: { action: 'request' }
+        action: 'quest',
+        target: questName,
+        parameters: { action: 'start' }
       })
 
       return {
         success: true,
         type: ActionResultType.SUCCESS,
-        result: { playerName, action: 'trade_requested' },
+        result: { questName, action: 'started' },
         metadata: { timestamp: new Date().toISOString() }
       }
     } catch (error) {
       return {
         success: false,
         type: ActionResultType.FAILURE,
-        error: `Failed to request trade: ${error}`,
+        error: `Failed to start quest: ${error}`,
         metadata: { timestamp: new Date().toISOString() }
       }
     }
   }
 
-  /**
-   * Offer an item in a trade
-   */
-  async offerItem(itemId: string, quantity: number = 1): Promise<ActionResult> {
+  /** Complete a quest */
+  async completeQuest(questName: string): Promise<ActionResult> {
     try {
       if (!this.extension.isConnected()) {
         return {
@@ -114,34 +109,30 @@ export class TradingSkill implements RuneLiteSkill {
         }
       }
 
-      // Send offer item command to RuneLite
       await this.extension.sendCommand({
-        action: 'trade',
-        target: 'offer',
-        parameters: { itemId, quantity }
+        action: 'quest',
+        target: questName,
+        parameters: { action: 'complete' }
       })
 
       return {
         success: true,
         type: ActionResultType.SUCCESS,
-        result: { itemId, quantity, action: 'item_offered' },
+        result: { questName, action: 'completed' },
         metadata: { timestamp: new Date().toISOString() }
       }
     } catch (error) {
       return {
         success: false,
         type: ActionResultType.FAILURE,
-        error: `Failed to offer item: ${error}`,
+        error: `Failed to complete quest: ${error}`,
         metadata: { timestamp: new Date().toISOString() }
       }
     }
   }
 
-  /**
-   * Accept the current trade offer
-   * @param stage 1 for first confirmation, 2 for final confirmation
-   */
-  async acceptTrade(stage: number = 1): Promise<ActionResult> {
+  /** Talk to an NPC */
+  async talkToNPC(npcId: string): Promise<ActionResult> {
     try {
       if (!this.extension.isConnected()) {
         return {
@@ -152,33 +143,30 @@ export class TradingSkill implements RuneLiteSkill {
         }
       }
 
-      // Send accept trade command to RuneLite
       await this.extension.sendCommand({
-        action: 'trade',
-        target: 'accept',
-        parameters: { stage }
+        action: 'quest',
+        target: npcId,
+        parameters: { action: 'talk' }
       })
 
       return {
         success: true,
         type: ActionResultType.SUCCESS,
-        result: { stage, action: 'trade_accepted' },
+        result: { npcId, action: 'talk' },
         metadata: { timestamp: new Date().toISOString() }
       }
     } catch (error) {
       return {
         success: false,
         type: ActionResultType.FAILURE,
-        error: `Failed to accept trade: ${error}`,
+        error: `Failed to talk to NPC: ${error}`,
         metadata: { timestamp: new Date().toISOString() }
       }
     }
   }
 
-  /**
-   * Decline the current trade
-   */
-  async declineTrade(): Promise<ActionResult> {
+  /** Choose a dialogue option */
+  async chooseDialogueOption(option: number): Promise<ActionResult> {
     try {
       if (!this.extension.isConnected()) {
         return {
@@ -189,26 +177,27 @@ export class TradingSkill implements RuneLiteSkill {
         }
       }
 
-      // Send decline trade command to RuneLite
       await this.extension.sendCommand({
-        action: 'trade',
-        target: 'decline',
-        parameters: {}
+        action: 'quest',
+        parameters: { action: 'dialogue', option }
       })
 
       return {
         success: true,
         type: ActionResultType.SUCCESS,
-        result: { action: 'trade_declined' },
+        result: { option },
         metadata: { timestamp: new Date().toISOString() }
       }
     } catch (error) {
       return {
         success: false,
         type: ActionResultType.FAILURE,
-        error: `Failed to decline trade: ${error}`,
+        error: `Failed to choose dialogue option: ${error}`,
         metadata: { timestamp: new Date().toISOString() }
       }
     }
   }
 }
+
+export default QuestingSkill
+
