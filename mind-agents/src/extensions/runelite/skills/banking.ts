@@ -7,10 +7,8 @@
 
 import { ExtensionAction, Agent, ActionResult, ActionCategory, ActionResultType } from '../../../types/agent.js'
 import { RuneLiteExtension } from '../index.js'
-import { SkillParameters } from '../../../types/common.js'
-import type { RuneLiteSkill } from './types.js'
 
-export class BankingSkill implements RuneLiteSkill {
+export class BankingSkill {
   private extension: RuneLiteExtension
 
   constructor(extension: RuneLiteExtension) {
@@ -27,7 +25,7 @@ export class BankingSkill implements RuneLiteSkill {
         description: 'Open the bank interface',
         category: ActionCategory.INTERACTION,
         parameters: {},
-        execute: async (agent: Agent, params: SkillParameters): Promise<ActionResult> => {
+        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.openBank()
         }
       },
@@ -37,7 +35,7 @@ export class BankingSkill implements RuneLiteSkill {
         description: 'Deposit an item into the bank',
         category: ActionCategory.INTERACTION,
         parameters: { itemId: 'string', quantity: 'number' },
-        execute: async (agent: Agent, params: SkillParameters): Promise<ActionResult> => {
+        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.depositItem(params.itemId, params.quantity)
         }
       },
@@ -47,7 +45,7 @@ export class BankingSkill implements RuneLiteSkill {
         description: 'Withdraw an item from the bank',
         category: ActionCategory.INTERACTION,
         parameters: { itemId: 'string', quantity: 'number' },
-        execute: async (agent: Agent, params: SkillParameters): Promise<ActionResult> => {
+        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.withdrawItem(params.itemId, params.quantity)
         }
       },
@@ -57,7 +55,7 @@ export class BankingSkill implements RuneLiteSkill {
         description: 'Close the bank interface',
         category: ActionCategory.INTERACTION,
         parameters: {},
-        execute: async (agent: Agent, params: SkillParameters): Promise<ActionResult> => {
+        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.closeBank()
         }
       }

@@ -6,10 +6,8 @@
 
 import { ExtensionAction, Agent, ActionResult, ActionResultType, ActionCategory } from '../../../types/agent.js'
 import { RuneLiteExtension } from '../index.js'
-import { SkillParameters } from '../../../types/common.js'
-import type { RuneLiteSkill } from './types.js'
 
-export class InventorySkill implements RuneLiteSkill {
+export class InventorySkill {
   private extension: RuneLiteExtension
 
   constructor(extension: RuneLiteExtension) {
@@ -26,7 +24,7 @@ export class InventorySkill implements RuneLiteSkill {
         description: 'Use an item from inventory',
         category: ActionCategory.MANIPULATION,
         parameters: { itemId: 'string', targetId: 'string' },
-        execute: async (agent: Agent, params: SkillParameters): Promise<ActionResult> => {
+        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.useItem(params.itemId, params.targetId)
         }
       },
@@ -36,7 +34,7 @@ export class InventorySkill implements RuneLiteSkill {
         description: 'Drop an item from inventory',
         category: ActionCategory.MANIPULATION,
         parameters: { itemId: 'string' },
-        execute: async (agent: Agent, params: SkillParameters): Promise<ActionResult> => {
+        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.dropItem(params.itemId)
         }
       },
@@ -46,7 +44,7 @@ export class InventorySkill implements RuneLiteSkill {
         description: 'Equip an item from inventory',
         category: ActionCategory.MANIPULATION,
         parameters: { itemId: 'string' },
-        execute: async (agent: Agent, params: SkillParameters): Promise<ActionResult> => {
+        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.equipItem(params.itemId)
         }
       }

@@ -53,14 +53,6 @@ export class McpClientExtension implements Extension {
   private reconnectTimers: Map<string, NodeJS.Timeout>
   private isShuttingDown: boolean
   private agent?: Agent
-  private serverStartTimes: Map<string, number> = new Map()
-  private sessions: Map<string, any> = new Map()
-  private promptTemplates: Map<string, any> = new Map()
-  private promptHistory: any[] = []
-  private resources: Map<string, any> = new Map()
-  private resourceAccessLogs: Map<string, any[]> = new Map()
-  private subscriptions: Map<string, Set<string>> = new Map()
-  private connectionTimeouts: Map<string, number> = new Map()
 
   id = 'mcp-client'
   name = 'MCP Client'
@@ -799,175 +791,116 @@ export class McpClientExtension implements Extension {
   }
 
   async startServer(config: any): Promise<void> {
-    const serverId = config?.id || this.mcpClientConfig.servers[0]?.id
-    if (!serverId) return
-
-    const existing = this.mcpClientConfig.servers.find(s => s.id === serverId)
-    if (!existing && config) {
-      this.mcpClientConfig.servers.push(config)
-    }
-
-    await this.connectToServer(serverId).catch(() => {})
-    this.serverStartTimes.set(serverId, Date.now())
+    // Implementation needed
+    throw new Error('Method not implemented')
   }
 
   async stopServer(): Promise<void> {
-    const ids = Array.from(this.state.connections.keys())
-    for (const id of ids) {
-      await this.disconnectFromServer(id)
-      this.serverStartTimes.delete(id)
-    }
+    // Implementation needed
+    throw new Error('Method not implemented')
   }
 
   getServerCapabilities(): any {
-    const capabilities: Record<string, any> = {}
-    for (const conn of this.state.connections.values()) {
-      if (conn.capabilities) {
-        Object.assign(capabilities, conn.capabilities)
-      }
-    }
-    return capabilities
+    // Implementation needed
+    return {}
   }
 
   getServerUptime(): number {
-    const now = Date.now()
-    const uptimes = Array.from(this.serverStartTimes.values()).map(t => now - t)
-    return uptimes.length ? Math.max(...uptimes) : 0
+    // Implementation needed
+    return 0
   }
 
   updateConfig(config: any): void {
-    this.mcpClientConfig = { ...this.mcpClientConfig, ...config }
+    // Implementation needed
   }
 
   async createSession(config: any): Promise<any> {
-    const id = `sess-${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`
-    const session = {
-      id,
-      ...config,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      expiresAt: config?.ttl ? new Date(Date.now() + config.ttl).toISOString() : undefined
-    }
-    this.sessions.set(id, session)
-    return session
+    // Implementation needed
+    throw new Error('Method not implemented')
   }
 
   async getSession(sessionId: string, options?: any): Promise<any> {
-    return this.sessions.get(sessionId) || null
+    // Implementation needed
+    throw new Error('Method not implemented')
   }
 
   async listSessions(options?: any): Promise<any[]> {
-    let all = Array.from(this.sessions.values())
-    if (options?.activeOnly) {
-      const now = Date.now()
-      all = all.filter(s => !s.expiresAt || new Date(s.expiresAt).getTime() > now)
-    }
-    return all
+    // Implementation needed
+    return []
   }
 
   async updateSession(sessionId: string, config: any): Promise<any> {
-    const session = this.sessions.get(sessionId)
-    if (!session) throw new Error('Session not found')
-    Object.assign(session, config, { updatedAt: new Date().toISOString() })
-    this.sessions.set(sessionId, session)
-    return session
+    // Implementation needed
+    throw new Error('Method not implemented')
   }
 
   async extendSession(sessionId: string, duration: number): Promise<any> {
-    const session = this.sessions.get(sessionId)
-    if (!session) throw new Error('Session not found')
-    const base = session.expiresAt ? new Date(session.expiresAt).getTime() : Date.now()
-    session.expiresAt = new Date(base + duration).toISOString()
-    session.updatedAt = new Date().toISOString()
-    this.sessions.set(sessionId, session)
-    return session
+    // Implementation needed
+    throw new Error('Method not implemented')
   }
 
   async closeSession(sessionId: string, reason?: string): Promise<any> {
-    const session = this.sessions.get(sessionId)
-    if (!session) throw new Error('Session not found')
-    this.sessions.delete(sessionId)
-    return { sessionId, closed: true, reason }
+    // Implementation needed
+    throw new Error('Method not implemented')
   }
 
   async getSessionMetrics(options?: any): Promise<any> {
-    return { totalSessions: this.sessions.size }
+    // Implementation needed
+    throw new Error('Method not implemented')
   }
 
   async cleanupSessions(options?: any): Promise<any> {
-    const now = Date.now()
-    const removed: string[] = []
-    for (const [id, s] of this.sessions.entries()) {
-      if (s.expiresAt && new Date(s.expiresAt).getTime() <= now) {
-        this.sessions.delete(id)
-        removed.push(id)
-      }
-    }
-    return { cleaned: removed.length, removed }
+    // Implementation needed
+    throw new Error('Method not implemented')
   }
 
   async saveSessionState(options: any): Promise<any> {
-    return { sessions: Array.from(this.sessions.values()) }
+    // Implementation needed
+    throw new Error('Method not implemented')
   }
 
   async restoreSessionState(options: any): Promise<any> {
-    this.sessions.clear()
-    if (options?.sessions) {
-      for (const s of options.sessions) {
-        this.sessions.set(s.id, s)
-      }
-    }
-    return { restored: this.sessions.size }
+    // Implementation needed
+    throw new Error('Method not implemented')
   }
 
   getAvailablePrompts(): any[] {
-    return Array.from(this.promptTemplates.values())
+    // Implementation needed
+    return []
   }
 
   validatePromptArguments(name: string, args: any): any {
-    const prompt = this.promptTemplates.get(name)
-    if (!prompt || !prompt.arguments) return { valid: true }
-    const missing = (prompt.arguments as any[])
-      .filter((a: any) => a.required && args?.[a.name] === undefined)
-      .map((a: any) => a.name)
-    return { valid: missing.length === 0, errors: missing }
+    // Implementation needed
+    return { valid: true }
   }
 
   async executePrompt(name: string, args: any, context?: any): Promise<any> {
-    const prompt = this.promptTemplates.get(name)
-    if (!prompt) throw new Error('Prompt not found')
-    let text: string = prompt.template || ''
-    for (const [k, v] of Object.entries(args || {})) {
-      text = text.replace(new RegExp(`{{\\s*${k}\\s*}}`, 'g'), String(v))
-    }
-    const result = { type: 'text', text }
-    this.logPromptExecution({ name, args, result, timestamp: new Date() })
-    return { success: true, result, messages: [{ role: 'assistant', content: result }] }
+    // Implementation needed
+    throw new Error('Method not implemented')
   }
 
   logPromptExecution(data: any): void {
-    this.promptHistory.push(data)
+    // Implementation needed
   }
 
   getPromptExecutionHistory(name: string): any[] {
-    return this.promptHistory.filter((h: any) => !name || h.name === name)
+    // Implementation needed
+    return []
   }
 
   async createPromptTemplate(template: any): Promise<any> {
-    this.promptTemplates.set(template.name, template)
-    return { success: true }
+    // Implementation needed
+    throw new Error('Method not implemented')
   }
 
   async updatePromptTemplate(name: string, template: any): Promise<any> {
-    const existing = this.promptTemplates.get(name)
-    if (!existing) throw new Error('Prompt not found')
-    this.promptTemplates.set(name, { ...existing, ...template })
-    return { success: true }
+    // Implementation needed
+    throw new Error('Method not implemented')
   }
 
   async deletePromptTemplate(name: string): Promise<any> {
-    const deleted = this.promptTemplates.delete(name)
-    return { success: deleted }
+    // Implementation needed
+    throw new Error('Method not implemented')
   }
 
   async discoverServers(options: any): Promise<any[]> {
@@ -1020,120 +953,105 @@ export class McpClientExtension implements Extension {
   }
 
   getAvailableResources(): any[] {
-    return Array.from(this.resources.values())
+    // Implementation needed
+    return []
   }
 
   validateResourceUri(params: any): any {
-    const uri = typeof params === 'string' ? params : params?.uri
-    return { valid: typeof uri === 'string' && uri.length > 0 }
+    // Implementation needed
+    return { valid: true }
   }
 
   getResourceAccessHistory(uri: string): any[] {
-    return this.resourceAccessLogs.get(uri) || []
+    // Implementation needed
+    return []
   }
 
   async subscribeToResource(options: any): Promise<any> {
-    const uri = options?.uri
-    if (!uri) throw new Error('URI required')
-    const set = this.subscriptions.get(uri) || new Set<string>()
-    const id = `sub-${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`
-    set.add(id)
-    this.subscriptions.set(uri, set)
-    return { subscriptionId: id, success: true }
+    // Implementation needed
+    return { subscriptionId: 'sub-' + Date.now(), success: true }
   }
 
   async unsubscribeFromResource(options: any): Promise<any> {
-    const uri = options?.uri
-    const id = options?.subscriptionId
-    const set = this.subscriptions.get(uri)
-    if (set && id) set.delete(id)
+    // Implementation needed
     return { success: true }
   }
 
   async searchResources(options: any): Promise<any> {
-    const query = options?.query?.toLowerCase() || ''
-    const start = Date.now()
-    const results = Array.from(this.resources.values()).filter(r =>
-      !query || r.name?.toLowerCase().includes(query) || r.uri.toLowerCase().includes(query)
-    )
-    return { resources: results, total: results.length, hasMore: false, searchTime: Date.now() - start, suggestions: [] }
+    // Implementation needed
+    return {
+      resources: [],
+      total: 0,
+      hasMore: false,
+      searchTime: 0,
+      suggestions: []
+    }
   }
 
   getResourceTemplates(serverId?: string): any[] {
+    // Implementation needed
     return []
   }
 
   async downloadResource(options: any): Promise<any> {
-    const res = this.resources.get(options?.uri)
-    if (!res) throw new Error('Resource not found')
-    return { uri: options.uri, content: res.content }
+    // Implementation needed
+    throw new Error('Method not implemented')
   }
 
   async batchGetResources(options: any): Promise<any> {
-    const start = Date.now()
-    const results = (options?.uris || []).map((u: string) => ({ uri: u, content: this.resources.get(u)?.content }))
-    return { batchId: 'batch-' + Date.now(), results, totalRetrievalTime: Date.now() - start }
-  }
-
-  async getResource(options: any): Promise<any> {
-    const res = this.resources.get(options?.uri)
-    if (!res) throw new Error('Resource not found')
-    return res
-  }
-
-  async getResourceInfo(serverId: string, uri: string): Promise<any> {
-    const res = this.resources.get(uri)
-    if (!res) throw new Error('Resource not found')
-    return { uri, size: res.content?.length || 0, metadata: res.metadata || {} }
-  }
-
-  getAllConnectionStatuses(): any {
-    const statuses: Record<string, any> = {}
-    this.state.connections.forEach((c, id) => { statuses[id] = c.status })
-    return statuses
-  }
-
-  listConnections(includeInactive?: boolean): any[] {
-    const list: any[] = []
-    this.state.connections.forEach((c, id) => {
-      if (includeInactive || c.status === 'connected') {
-        list.push({ id, status: c.status })
-      }
-    })
-    return list
-  }
-
-  async reconnectToServer(serverId: string, timeout?: number): Promise<any> {
-    await this.disconnectFromServer(serverId)
-    if (timeout) await new Promise(r => setTimeout(r, timeout))
-    const ok = await this.connectToServer(serverId)
-    return { reconnected: ok }
-  }
-
-  async testConnection(serverId: string, timeout?: number): Promise<any> {
-    const status = this.state.connections.get(serverId)?.status
-    return { serverId, reachable: status === 'connected' }
-  }
-
-  async configureConnection(serverId: string, config: any): Promise<void> {
-    const idx = this.mcpClientConfig.servers.findIndex(s => s.id === serverId)
-    if (idx !== -1) {
-      this.mcpClientConfig.servers[idx] = { ...this.mcpClientConfig.servers[idx], ...config }
+    // Implementation needed
+    return {
+      batchId: 'batch-' + Date.now(),
+      results: [],
+      totalRetrievalTime: 0
     }
   }
 
+  async getResource(options: any): Promise<any> {
+    // Implementation needed
+    throw new Error('Method not implemented')
+  }
+
+  async getResourceInfo(serverId: string, uri: string): Promise<any> {
+    // Implementation needed
+    throw new Error('Method not implemented')
+  }
+
+  getAllConnectionStatuses(): any {
+    // Implementation needed
+    return {}
+  }
+
+  listConnections(includeInactive?: boolean): any[] {
+    // Implementation needed
+    return []
+  }
+
+  async reconnectToServer(serverId: string, timeout?: number): Promise<any> {
+    // Implementation needed
+    throw new Error('Method not implemented')
+  }
+
+  async testConnection(serverId: string, timeout?: number): Promise<any> {
+    // Implementation needed
+    throw new Error('Method not implemented')
+  }
+
+  async configureConnection(serverId: string, config: any): Promise<void> {
+    // Implementation needed
+  }
+
   getConnectionMetrics(serverId: string, timeRange?: any): any {
-    const stats = this.getServerStats(serverId)
-    return stats || {}
+    // Implementation needed
+    return {}
   }
 
   async resetConnection(serverId: string, clearCache?: boolean): Promise<void> {
-    await this.disconnectFromServer(serverId)
-    await this.connectToServer(serverId)
+    // Implementation needed
   }
 
   async setConnectionTimeout(serverId: string, timeout: number): Promise<void> {
-    this.connectionTimeouts.set(serverId, timeout)
+    // Implementation needed
   }
 
   async invokeTool(options: any): Promise<any> {

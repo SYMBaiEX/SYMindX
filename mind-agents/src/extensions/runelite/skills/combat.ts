@@ -6,10 +6,8 @@
 
 import { ExtensionAction, Agent, ActionResult, ActionCategory, ActionResultType } from '../../../types/agent.js'
 import { RuneLiteExtension } from '../index.js'
-import { SkillParameters } from '../../../types/common.js'
-import type { RuneLiteSkill } from './types.js'
 
-export class CombatSkill implements RuneLiteSkill {
+export class CombatSkill {
   private extension: RuneLiteExtension
 
   constructor(extension: RuneLiteExtension) {
@@ -26,7 +24,7 @@ export class CombatSkill implements RuneLiteSkill {
         description: 'Attack a target NPC or player',
         category: ActionCategory.COMBAT,
         parameters: { targetId: 'string' },
-        execute: async (agent: Agent, params: SkillParameters): Promise<ActionResult> => {
+        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.attack(params.targetId)
         }
       },
@@ -36,7 +34,7 @@ export class CombatSkill implements RuneLiteSkill {
         description: 'Cast a magic spell',
         category: ActionCategory.COMBAT,
         parameters: { spellName: 'string', targetId: 'string' },
-        execute: async (agent: Agent, params: SkillParameters): Promise<ActionResult> => {
+        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.castSpell(params.spellName, params.targetId)
         }
       }
