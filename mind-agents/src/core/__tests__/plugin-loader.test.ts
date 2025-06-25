@@ -4,9 +4,7 @@
  * Tests for the dynamic plugin loading system.
  */
 
-// Bun's test runner provides a Jest-compatible API via the `bun:test` module.
-// Importing from `bun:test` ensures the tests run correctly with `bun test`.
-import { describe, test, expect, beforeEach, afterEach, jest, mock } from 'bun:test';
+import { describe, test, expect, beforeEach, afterEach, jest } from '@jest/globals';
 import { promises as fs } from 'fs';
 import * as path from 'path';
 import { PluginLoader, createPluginLoader } from '../plugin-loader.js';
@@ -15,26 +13,24 @@ import { createLogger } from '../../utils/logger.js';
 import { ExtensionType, ExtensionStatus } from '../../types/agent.js';
 
 // Mock file system
-mock.module('fs', () => ({
+jest.mock('fs', () => ({
   promises: {
     readdir: jest.fn(),
     readFile: jest.fn(),
     stat: jest.fn(),
-    access: jest.fn(),
-  },
+    access: jest.fn()
+  }
 }));
 
 // Mock dynamic imports
-mock.module('../../utils/dynamic-import.js', () => ({
-  dynamicImport: jest.fn(),
+jest.mock('../../utils/dynamic-import.js', () => ({
+  dynamicImport: jest.fn()
 }));
 
 const mockFs = fs as jest.Mocked<typeof fs>;
 const mockDynamicImport = require('../../utils/dynamic-import.js').dynamicImport as jest.MockedFunction<any>;
 
-// The plugin loader relies on filesystem and dynamic import features that are
-// not available in the test environment, so the suite is skipped.
-describe.skip('PluginLoader', () => {
+describe('PluginLoader', () => {
   let pluginLoader: PluginLoader;
   let registry: SYMindXModuleRegistry;
   let logger: any;

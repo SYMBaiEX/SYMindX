@@ -11,11 +11,6 @@ export interface RuneLiteConfig {
   autoReconnect?: boolean
 }
 
-export interface RuneLiteMessage {
-  type: string
-  data: any
-}
-
 export interface GameState {
   player: {
     name: string
@@ -158,10 +153,9 @@ export interface RuneLiteEvent {
 }
 
 export interface RuneLiteCommand {
-  action: 'move' | 'attack' | 'interact' | 'cast_spell' | 'use_item' |
+  action: 'move' | 'attack' | 'interact' | 'cast_spell' | 'use_item' | 
           'chat' | 'bank' | 'trade' | 'skill_action' | 'get_game_state' |
-          'click' | 'key_press' | 'menu_action' | 'camera_move' |
-          'quest'
+          'click' | 'key_press' | 'menu_action' | 'camera_move'
   target?: string | number
   parameters?: Record<string, any>
   timeout?: number

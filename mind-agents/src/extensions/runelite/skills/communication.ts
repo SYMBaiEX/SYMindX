@@ -6,10 +6,8 @@
 
 import { ExtensionAction, Agent, ActionResult, ActionCategory, ActionResultType } from '../../../types/agent.js'
 import { RuneLiteExtension } from '../index.js'
-import { SkillParameters } from '../../../types/common.js'
-import type { RuneLiteSkill } from './types.js'
 
-export class CommunicationSkill implements RuneLiteSkill {
+export class CommunicationSkill {
   private extension: RuneLiteExtension
 
   constructor(extension: RuneLiteExtension) {
@@ -26,7 +24,7 @@ export class CommunicationSkill implements RuneLiteSkill {
         description: 'Send a message in chat',
         category: ActionCategory.COMMUNICATION,
         parameters: { message: 'string', channel: 'string' },
-        execute: async (agent: Agent, params: SkillParameters): Promise<ActionResult> => {
+        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.sendMessage(params.message, params.channel)
         }
       },
@@ -36,7 +34,7 @@ export class CommunicationSkill implements RuneLiteSkill {
         description: 'Send a private message to a player',
         category: ActionCategory.COMMUNICATION,
         parameters: { message: 'string', playerName: 'string' },
-        execute: async (agent: Agent, params: SkillParameters): Promise<ActionResult> => {
+        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.privateMessage(params.message, params.playerName)
         }
       },
@@ -46,7 +44,7 @@ export class CommunicationSkill implements RuneLiteSkill {
         description: 'Send a message to clan chat',
         category: ActionCategory.COMMUNICATION,
         parameters: { message: 'string' },
-        execute: async (agent: Agent, params: SkillParameters): Promise<ActionResult> => {
+        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.clanMessage(params.message)
         }
       }

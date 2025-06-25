@@ -6,10 +6,8 @@
 
 import { ExtensionAction, Agent, ActionResult, ActionResultType, ActionCategory } from '../../../types/agent.js'
 import { RuneLiteExtension } from '../index.js'
-import { SkillParameters } from '../../../types/common.js'
-import type { RuneLiteSkill } from './types.js'
 
-export class TradingSkill implements RuneLiteSkill {
+export class TradingSkill {
   private extension: RuneLiteExtension
 
   constructor(extension: RuneLiteExtension) {
@@ -26,7 +24,7 @@ export class TradingSkill implements RuneLiteSkill {
         description: 'Request a trade with another player',
         category: ActionCategory.SOCIAL,
         parameters: { playerName: 'string' },
-        execute: async (agent: Agent, params: SkillParameters): Promise<ActionResult> => {
+        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.requestTrade(params.playerName)
         }
       },
@@ -36,7 +34,7 @@ export class TradingSkill implements RuneLiteSkill {
         description: 'Offer an item in a trade',
         category: ActionCategory.SOCIAL,
         parameters: { itemId: 'string', quantity: 'number' },
-        execute: async (agent: Agent, params: SkillParameters): Promise<ActionResult> => {
+        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.offerItem(params.itemId, params.quantity)
         }
       },
@@ -46,7 +44,7 @@ export class TradingSkill implements RuneLiteSkill {
         description: 'Accept the current trade offer',
         category: ActionCategory.SOCIAL,
         parameters: { stage: 'number' },
-        execute: async (agent: Agent, params: SkillParameters): Promise<ActionResult> => {
+        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.acceptTrade(params.stage)
         }
       },
@@ -56,7 +54,7 @@ export class TradingSkill implements RuneLiteSkill {
         description: 'Decline the current trade',
         category: ActionCategory.SOCIAL,
         parameters: {},
-        execute: async (agent: Agent, params: SkillParameters): Promise<ActionResult> => {
+        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.declineTrade()
         }
       }

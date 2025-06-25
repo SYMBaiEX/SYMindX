@@ -94,7 +94,7 @@ export class SYMindXCodeExecutor extends EventEmitter implements ICodeExecutor {
    * Creates a new instance of SYMindXCodeExecutor
    * 
    * @param {ToolSystemConfig} config - Configuration for the code executor
-   * @param {ITerminalInterface} terminal - Terminal interface for command execution
+   * @param {any} terminal - Terminal interface for command execution (TODO: Replace with ITerminalInterface)
    * @param {Logger} [logger] - Optional logger instance. If not provided, a new one will be created.
    * 
    * @example
@@ -245,7 +245,7 @@ export class SYMindXCodeExecutor extends EventEmitter implements ICodeExecutor {
    * @example
    * ```typescript
    * // Start a long-running execution
-   * const execution = executor.execute('while(true) { ... }');
+   * const execution = executor.execute('while(true) { /* long running */ }');
    * 
    * // Later, stop it
    * const stopped = await executor.stopExecution(execution.id);

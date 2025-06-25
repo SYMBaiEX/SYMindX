@@ -7,10 +7,8 @@
 import { ExtensionAction, Agent, ActionResult, ActionResultType, ActionCategory } from '../../../types/agent.js'
 import { RuneLiteExtension } from '../index.js'
 import { GameState } from '../types.js'
-import { SkillParameters } from '../../../types/common.js'
-import type { RuneLiteSkill } from './types.js'
 
-export class GameStateSkill implements RuneLiteSkill {
+export class GameStateSkill {
   private extension: RuneLiteExtension
 
   constructor(extension: RuneLiteExtension) {
@@ -27,7 +25,7 @@ export class GameStateSkill implements RuneLiteSkill {
         description: 'Get the current game state',
         category: ActionCategory.OBSERVATION,
         parameters: {},
-        execute: async (agent: Agent, params: SkillParameters): Promise<ActionResult> => {
+        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.getGameState()
         }
       },
@@ -37,7 +35,7 @@ export class GameStateSkill implements RuneLiteSkill {
         description: 'Get the player\'s current stats',
         category: ActionCategory.OBSERVATION,
         parameters: {},
-        execute: async (agent: Agent, params: SkillParameters): Promise<ActionResult> => {
+        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.getPlayerStats()
         }
       },
@@ -47,7 +45,7 @@ export class GameStateSkill implements RuneLiteSkill {
         description: 'Get information about nearby NPCs',
         category: ActionCategory.OBSERVATION,
         parameters: { radius: 'number' },
-        execute: async (agent: Agent, params: SkillParameters): Promise<ActionResult> => {
+        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.getNearbyNPCs(params.radius)
         }
       },
@@ -57,7 +55,7 @@ export class GameStateSkill implements RuneLiteSkill {
         description: 'Get information about nearby players',
         category: ActionCategory.OBSERVATION,
         parameters: { radius: 'number' },
-        execute: async (agent: Agent, params: SkillParameters): Promise<ActionResult> => {
+        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.getNearbyPlayers(params.radius)
         }
       },
@@ -67,7 +65,7 @@ export class GameStateSkill implements RuneLiteSkill {
         description: 'Get information about nearby game objects',
         category: ActionCategory.OBSERVATION,
         parameters: { radius: 'number' },
-        execute: async (agent: Agent, params: SkillParameters): Promise<ActionResult> => {
+        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.getNearbyObjects(params.radius)
         }
       },
@@ -77,7 +75,7 @@ export class GameStateSkill implements RuneLiteSkill {
         description: 'Get information about items on the ground',
         category: ActionCategory.OBSERVATION,
         parameters: { radius: 'number' },
-        execute: async (agent: Agent, params: SkillParameters): Promise<ActionResult> => {
+        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.getGroundItems(params.radius)
         }
       },
@@ -87,7 +85,7 @@ export class GameStateSkill implements RuneLiteSkill {
         description: 'Get the status of quests',
         category: ActionCategory.OBSERVATION,
         parameters: { questName: 'string' },
-        execute: async (agent: Agent, params: SkillParameters): Promise<ActionResult> => {
+        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
           return this.getQuestStatus(params.questName)
         }
       }
