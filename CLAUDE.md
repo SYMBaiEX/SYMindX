@@ -46,54 +46,109 @@ bun preview            # Preview production build
 
 ## Architecture Overview
 
-SYMindX is a modular AI agent runtime with a plugin-based architecture:
+SYMindX is a clean, modular AI agent runtime with a type-safe plugin architecture:
 
 ```
 SYMindX Runtime (mind-agents/)
-├── Core Runtime (src/core/)
-│   ├── SYMindXRuntime - Main orchestrator
-│   ├── ModuleRegistry - Type-safe plugin management
-│   ├── EventBus - Inter-component communication
-│   └── PluginLoader - Dynamic plugin loading
-├── Modules (src/modules/)
-│   ├── Memory - SQLite, Supabase, Neon providers
-│   ├── Emotion - RuneScape-style emotion stack
-│   ├── Cognition - HTN planner, reactive systems
-│   └── Tools - Agent action implementations
-├── Extensions (src/extensions/)
-│   ├── API - HTTP/WebSocket server
-│   ├── Slack - Chat integration
-│   ├── RuneLite - Game automation
-│   ├── Twitter - Social media posting
-│   ├── Telegram - Messaging platform
-│   └── MCP - Model Context Protocol client
-├── Portals (src/portals/)
-│   └── AI Providers - OpenAI, Anthropic, Groq, xAI, etc.
-└── Characters (src/characters/)
-    └── Agent definitions (nyx.json, etc.)
+├── 📁 src/
+│   ├── 🔧 api.ts - Public API interface
+│   ├── 🚀 index.ts - Main entry point
+│   │
+│   ├── 🏗️ core/ - Core Runtime System
+│   │   ├── runtime.ts - Main orchestrator
+│   │   ├── registry.ts - Type-safe module registry
+│   │   ├── enhanced-event-bus.ts - Inter-component communication
+│   │   └── plugin-loader.ts - Dynamic plugin loading
+│   │
+│   ├── 📚 types/ - Centralized Type System
+│   │   ├── index.ts - Master type exports (ALL TYPES HERE)
+│   │   ├── agent.ts - Agent and extension types
+│   │   ├── common.ts - Shared types
+│   │   └── [specialized type files]
+│   │
+│   ├── 🧩 modules/ - AI Module System
+│   │   ├── index.ts - Module factory registry
+│   │   ├── memory/ - SQLite, Supabase, Neon providers
+│   │   ├── emotion/ - Emotion processing systems
+│   │   ├── cognition/ - HTN planner, reactive systems
+│   │   ├── autonomous/ - Self-learning capabilities
+│   │   ├── consciousness/ - Advanced AI consciousness
+│   │   └── [additional modules with consistent patterns]
+│   │
+│   ├── 🔌 extensions/ - Extension System
+│   │   ├── api/ - HTTP/WebSocket server
+│   │   ├── slack/ - Chat integration
+│   │   ├── twitter/ - Social media
+│   │   └── [platform integrations]
+│   │
+│   ├── 🌐 portals/ - AI Provider Integrations
+│   │   ├── openai/ - OpenAI integration
+│   │   ├── anthropic/ - Anthropic integration
+│   │   └── [AI service providers]
+│   │
+│   ├── 🛡️ security/ - Security & Compliance
+│   │   ├── auth/ - Authentication systems
+│   │   ├── rbac/ - Role-based access control
+│   │   └── compliance/ - GDPR, HIPAA, SOX
+│   │
+│   └── 🛠️ utils/ - Utilities & Helpers
+│       ├── logger.ts - Structured logging
+│       └── [helper functions]
+│
+└── 👤 characters/ - Agent Definitions
+    └── [agent.json configurations]
 
 Web Interface (website/)
-├── Components (src/components/)
-│   ├── Agent Controls - Start/stop agents
-│   ├── Thought Streams - Live agent inner monologue
-│   ├── Emotion Graphs - Real-time emotion visualization
-│   └── Stream Canvas - OBS integration
-└── Real-time Dashboard - WebSocket connection to agents
+├── Components - React dashboard
+├── Real-time Visualization - Agent monitoring
+└── WebSocket Integration - Live updates
 ```
 
 ## Key Development Patterns
 
+### Clean Architecture Principles (NEW)
+SYMindX now follows clean architecture patterns:
+
+1. **Centralized Type System**: All types are exported from `src/types/index.ts`
+2. **Factory Pattern Consistency**: All modules use the same factory pattern
+3. **Barrel Exports**: Clean module exports through index.ts files
+4. **Type Safety**: Strong typing throughout with minimal 'any' usage
+5. **Public API**: Clean public interface through `src/api.ts`
+
 ### Module Factory Pattern
 All modules use factory functions for type-safe instantiation:
 ```typescript
+// Import from centralized API
+import { SYMindX } from './src/api.js';
+
+// Or use individual factories
+import { createMemoryProvider, createEmotionModule, createCognitionModule } from './src/modules/index.js';
+
 // Memory providers
-createMemoryProvider(type: 'sqlite' | 'supabase' | 'neon', config)
+createMemoryProvider('sqlite', config)
+createMemoryProvider('supabase', config)
+createMemoryProvider('neon', config)
 
 // Emotion modules  
-createEmotionModule(type: 'rune-emotion-stack', config)
+createEmotionModule('rune_emotion_stack', config)
 
 // Cognition modules
-createCognitionModule(type: 'htn-planner' | 'reactive', config)
+createCognitionModule('htn_planner', config)
+createCognitionModule('reactive', config)
+
+// Quick access via SYMindX namespace
+const memory = SYMindX.createMemory('sqlite', config);
+const emotion = SYMindX.createEmotion('rune_emotion_stack', config);
+const cognition = SYMindX.createCognition('htn_planner', config);
+```
+
+### Type-Safe Development
+```typescript
+// All types available from single import
+import type { Agent, AgentConfig, MemoryRecord, EmotionState } from './src/types/index.js';
+
+// Or use the centralized type export
+import type * as SYMindXTypes from './src/types/index.js';
 ```
 
 ### Plugin Registration
@@ -173,5 +228,30 @@ TELEGRAM_BOT_TOKEN=...
 4. **Develop**: Use `bun dev` to start both components
 5. **Test**: Use `bun test` to run the test suite
 6. **Build**: Use `bun build` for production builds
+
+## Core Development Concepts
+
+### Character System
+- Characters defined in `mind-agents/src/characters/*.json` with personality, psyche, and module defaults
+- Example: `nyx.json` defines NyX agent with "chaotic-empath hacker" tone
+- Each character specifies default memory provider, emotion module, cognition module, and AI portal
+
+### Module Factory System
+The architecture uses factory functions that return type-safe module instances:
+- Memory providers auto-detect available databases and fallback gracefully
+- Emotion modules can be swapped (currently supports RuneScape-style emotion stack)
+- Cognition modules support HTN planning, reactive systems, and hybrid approaches
+- All modules implement standardized interfaces for hot-swappability
+
+### Plugin Development
+- Extensions in `src/extensions/` implement the `Extension` interface with `init()` and `tick()` methods
+- Skills are modular capabilities within extensions (e.g., `messaging.ts`, `combat.ts`)
+- Each extension has its own configuration and can fail independently without affecting other plugins
+- Plugin registration happens automatically via `register*` functions
+
+### WebSocket Integration
+- Website connects to agent runtime via WebSocket for real-time updates
+- Thought streams, emotion changes, and agent actions broadcast live
+- Agent controls (start/stop) and configuration changes sent from web UI
 
 The system is designed for rapid development with hot reload, comprehensive logging, and modular architecture that allows easy extension and customization.

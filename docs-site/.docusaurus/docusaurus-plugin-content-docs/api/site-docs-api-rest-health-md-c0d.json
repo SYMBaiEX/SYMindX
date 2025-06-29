@@ -1,0 +1,23 @@
+{
+  "id": "rest/health",
+  "title": "Health Rest API",
+  "description": "This is the API documentation for health in the rest category.",
+  "source": "@site/docs/api/rest/health.md",
+  "sourceDirName": "rest",
+  "slug": "/rest/health",
+  "permalink": "/api/rest/health",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "apiSidebar",
+  "previous": {
+    "title": "Events Rest API",
+    "permalink": "/api/rest/events"
+  },
+  "next": {
+    "title": "Connection Websocket API",
+    "permalink": "/api/websocket/connection"
+  }
+}

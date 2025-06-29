@@ -1,0 +1,22 @@
+{
+  "id": "guides/plugin-development",
+  "title": "Plugin Development Guide",
+  "description": "Learn how to build powerful extensions for SYMindX that integrate with external platforms, add new capabilities, and extend agent functionality. This comprehensive guide covers everything from basic plugins to advanced enterprise integrations.",
+  "source": "@site/docs/guides/plugin-development.md",
+  "sourceDirName": "guides",
+  "slug": "/guides/plugin-development",
+  "permalink": "/docs/guides/plugin-development",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/guides/plugin-development.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "frontMatter": {},
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Architecture Overview",
+    "permalink": "/docs/architecture/overview"
+  }
+}

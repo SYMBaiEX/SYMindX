@@ -1,0 +1,23 @@
+{
+  "id": "rest/memory",
+  "title": "Memory Rest API",
+  "description": "This is the API documentation for memory in the rest category.",
+  "source": "@site/docs/api/rest/memory.md",
+  "sourceDirName": "rest",
+  "slug": "/rest/memory",
+  "permalink": "/api/rest/memory",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "apiSidebar",
+  "previous": {
+    "title": "Extensions Rest API",
+    "permalink": "/api/rest/extensions"
+  },
+  "next": {
+    "title": "Events Rest API",
+    "permalink": "/api/rest/events"
+  }
+}

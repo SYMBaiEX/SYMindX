@@ -1,0 +1,23 @@
+{
+  "id": "plugins/extension-interface",
+  "title": "Extension-interface Plugins API",
+  "description": "This is the API documentation for extension-interface in the plugins category.",
+  "source": "@site/docs/api/plugins/extension-interface.md",
+  "sourceDirName": "plugins",
+  "slug": "/plugins/extension-interface",
+  "permalink": "/api/plugins/extension-interface",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "apiSidebar",
+  "previous": {
+    "title": "Types Typescript API",
+    "permalink": "/api/typescript/types"
+  },
+  "next": {
+    "title": "Memory-provider Plugins API",
+    "permalink": "/api/plugins/memory-provider"
+  }
+}

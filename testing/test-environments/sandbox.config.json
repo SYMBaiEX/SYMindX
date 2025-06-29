@@ -1,0 +1,117 @@
+{
+  "name": "Sandbox Test Environment",
+  "description": "Sandboxed environment with limited external access",
+  "type": "sandbox",
+  "resources": {
+    "maxMemoryMB": 512,
+    "maxCpuPercent": 75,
+    "maxNetworkBandwidth": 5000000,
+    "maxDiskSpace": 2048,
+    "maxExecutionTime": 60000
+  },
+  "mockServices": [
+    {
+      "name": "mock-ai-portal",
+      "type": "ai-portal",
+      "endpoints": [
+        {
+          "path": "/v1/completions",
+          "method": "POST",
+          "responseId": "ai-completion-success"
+        }
+      ],
+      "responses": [
+        {
+          "id": "ai-completion-success",
+          "status": 200,
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "choices": [
+              {
+                "text": "This is a mock AI response for testing",
+                "finish_reason": "stop"
+              }
+            ]
+          },
+          "delay": 100
+        }
+      ]
+    },
+    {
+      "name": "mock-memory-service",
+      "type": "memory-service",
+      "endpoints": [
+        {
+          "path": "/memories",
+          "method": "GET",
+          "responseId": "memory-list"
+        },
+        {
+          "path": "/memories",
+          "method": "POST",
+          "responseId": "memory-stored"
+        }
+      ],
+      "responses": [
+        {
+          "id": "memory-list",
+          "status": 200,
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "memories": []
+          }
+        },
+        {
+          "id": "memory-stored",
+          "status": 201,
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "success": true,
+            "id": "mock-memory-id"
+          }
+        }
+      ]
+    }
+  ],
+  "dataFixtures": [
+    "comprehensive-agent-config",
+    "test-conversation-history",
+    "performance-test-data",
+    "integration-test-scenarios"
+  ],
+  "security": {
+    "networkAccess": true,
+    "allowedHosts": [
+      "localhost",
+      "127.0.0.1",
+      "*.test.local"
+    ],
+    "fileSystemAccess": true,
+    "allowedPaths": [
+      "/tmp/test-*",
+      "./test-data/"
+    ],
+    "processAccess": false
+  },
+  "monitoring": {
+    "enabled": true,
+    "metricsInterval": 5000,
+    "logLevel": "info",
+    "captureNetworkTraffic": true,
+    "captureFileOperations": true
+  },
+  "cleanup": {
+    "autoCleanup": true,
+    "cleanupTimeout": 10000,
+    "preserveLogs": true,
+    "cleanupPaths": [
+      "/tmp/test-*"
+    ]
+  }
+}

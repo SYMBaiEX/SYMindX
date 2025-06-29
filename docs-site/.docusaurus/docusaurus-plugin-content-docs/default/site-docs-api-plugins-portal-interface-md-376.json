@@ -1,0 +1,26 @@
+{
+  "id": "api/plugins/portal-interface",
+  "title": "Portal-interface Plugins API",
+  "description": "This is the API documentation for portal-interface in the plugins category.",
+  "source": "@site/docs/api/plugins/portal-interface.md",
+  "sourceDirName": "api/plugins",
+  "slug": "/api/plugins/portal-interface",
+  "permalink": "/docs/api/plugins/portal-interface",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/api/plugins/portal-interface.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "frontMatter": {},
+  "sidebar": "apiSidebar",
+  "previous": {
+    "title": "Cognition-module Plugins API",
+    "permalink": "/docs/api/plugins/cognition-module"
+  },
+  "next": {
+    "title": "Lifecycle Plugins API",
+    "permalink": "/docs/api/plugins/lifecycle"
+  }
+}

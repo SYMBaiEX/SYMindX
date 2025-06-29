@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: symindx
+  labels:
+    name: symindx
+    tier: production
+    app.kubernetes.io/name: symindx
+    app.kubernetes.io/version: "1.0.0"
+  annotations:
+    kubernetes.io/managed-by: "symindx-enterprise"

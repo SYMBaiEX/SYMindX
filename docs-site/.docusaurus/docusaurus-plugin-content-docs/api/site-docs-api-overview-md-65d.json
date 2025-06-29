@@ -1,0 +1,19 @@
+{
+  "id": "overview",
+  "title": "Overview Api API",
+  "description": "This is the API documentation for overview in the api category.",
+  "source": "@site/docs/api/overview.md",
+  "sourceDirName": ".",
+  "slug": "/overview",
+  "permalink": "/api/overview",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "apiSidebar",
+  "next": {
+    "title": "Authentication Rest API",
+    "permalink": "/api/rest/authentication"
+  }
+}

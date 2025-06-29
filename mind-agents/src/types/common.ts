@@ -71,6 +71,15 @@ export interface ApiResponse<T = GenericData> {
   metadata?: Metadata
 }
 
+// Action Result Types
+export interface ActionResult<T = GenericData> {
+  success: boolean
+  data?: T
+  error?: string
+  message?: string
+  metadata?: Metadata
+}
+
 // Validation Types
 export interface ValidationResult {
   valid: boolean

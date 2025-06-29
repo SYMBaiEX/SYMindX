@@ -12,6 +12,16 @@ import { SYMindXRuntime } from './core/runtime.js';
 import type { RuntimeConfig } from './types/agent.js';
 import { LogLevel, MemoryProviderType, EmotionModuleType, CognitionModuleType } from './types/agent.js';
 
+// Export autonomous components for external use
+export { AutonomousEngine } from './core/autonomous-engine.js';
+export { DecisionEngine } from './core/decision-engine.js';
+export { EthicsEngine } from './core/ethics-engine.js';
+export { InteractionManager } from './core/interaction-manager.js';
+// TEMPORARILY COMMENTED OUT - export conflicts
+// export * from './modules/behaviors/index.js';
+// export * from './modules/life-cycle/index.js';
+export * from './types/autonomous.js';
+
 // Default runtime configuration
 const config: RuntimeConfig = {
   tickInterval: 1000,

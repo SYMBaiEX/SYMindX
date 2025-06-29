@@ -1,0 +1,23 @@
+{
+  "id": "plugins/lifecycle",
+  "title": "Lifecycle Plugins API",
+  "description": "This is the API documentation for lifecycle in the plugins category.",
+  "source": "@site/docs/api/plugins/lifecycle.md",
+  "sourceDirName": "plugins",
+  "slug": "/plugins/lifecycle",
+  "permalink": "/api/plugins/lifecycle",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "apiSidebar",
+  "previous": {
+    "title": "Portal-interface Plugins API",
+    "permalink": "/api/plugins/portal-interface"
+  },
+  "next": {
+    "title": "Overview Openapi API",
+    "permalink": "/api/openapi/overview"
+  }
+}

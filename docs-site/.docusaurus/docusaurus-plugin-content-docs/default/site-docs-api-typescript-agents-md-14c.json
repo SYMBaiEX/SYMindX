@@ -1,0 +1,26 @@
+{
+  "id": "api/typescript/agents",
+  "title": "Agents Typescript API",
+  "description": "This is the API documentation for agents in the typescript category.",
+  "source": "@site/docs/api/typescript/agents.md",
+  "sourceDirName": "api/typescript",
+  "slug": "/api/typescript/agents",
+  "permalink": "/docs/api/typescript/agents",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/api/typescript/agents.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "frontMatter": {},
+  "sidebar": "apiSidebar",
+  "previous": {
+    "title": "Installation Typescript API",
+    "permalink": "/docs/api/typescript/installation"
+  },
+  "next": {
+    "title": "Extensions Typescript API",
+    "permalink": "/docs/api/typescript/extensions"
+  }
+}

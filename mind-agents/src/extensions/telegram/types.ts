@@ -1,277 +1,123 @@
 /**
  * Telegram Extension Types
- * 
- * Type definitions for the Telegram extension with improved type safety using enums.
  */
 
-import { ExtensionConfig } from '../../types/common.js';
-
-/**
- * Telegram action types enum
- */
-export enum TelegramActionType {
-  // Message actions
-  SEND_MESSAGE = 'send_message',
-  EDIT_MESSAGE = 'edit_message',
-  DELETE_MESSAGE = 'delete_message',
-  PIN_MESSAGE = 'pin_message',
-  UNPIN_MESSAGE = 'unpin_message',
-  
-  // Media actions
-  SEND_PHOTO = 'send_photo',
-  SEND_VIDEO = 'send_video',
-  SEND_AUDIO = 'send_audio',
-  SEND_DOCUMENT = 'send_document',
-  SEND_STICKER = 'send_sticker',
-  SEND_LOCATION = 'send_location',
-  
-  // Chat actions
-  JOIN_CHAT = 'join_chat',
-  LEAVE_CHAT = 'leave_chat',
-  GET_CHAT_INFO = 'get_chat_info',
-  GET_CHAT_MEMBERS = 'get_chat_members',
-  
-  // User actions
-  GET_USER_INFO = 'get_user_info',
-  BAN_USER = 'ban_user',
-  UNBAN_USER = 'unban_user',
-  RESTRICT_USER = 'restrict_user',
-  PROMOTE_USER = 'promote_user',
-  
-  // Bot actions
-  SET_COMMANDS = 'set_commands',
-  DELETE_COMMANDS = 'delete_commands',
-  GET_UPDATES = 'get_updates',
-  
-  // Inline actions
-  ANSWER_INLINE_QUERY = 'answer_inline_query',
-  ANSWER_CALLBACK_QUERY = 'answer_callback_query'
+export interface TelegramBotInfo {
+  id: number
+  is_bot: boolean
+  first_name: string
+  username?: string
+  can_join_groups?: boolean
+  can_read_all_group_messages?: boolean
+  supports_inline_queries?: boolean
 }
 
-/**
- * Telegram error types enum
- */
-export enum TelegramErrorType {
-  AUTHENTICATION_FAILED = 'authentication_failed',
-  RATE_LIMIT_EXCEEDED = 'rate_limit_exceeded',
-  NETWORK_ERROR = 'network_error',
-  PERMISSION_DENIED = 'permission_denied',
-  RESOURCE_NOT_FOUND = 'resource_not_found',
-  INVALID_REQUEST = 'invalid_request',
-  BOT_BLOCKED = 'bot_blocked',
-  CHAT_NOT_FOUND = 'chat_not_found',
-  USER_NOT_FOUND = 'user_not_found',
-  INTERNAL_ERROR = 'internal_error',
-  API_ERROR = 'api_error'
-}
-
-/**
- * Telegram chat type enum
- */
-export enum TelegramChatType {
-  PRIVATE = 'private',
-  GROUP = 'group',
-  SUPERGROUP = 'supergroup',
-  CHANNEL = 'channel'
-}
-
-/**
- * Telegram message entity type enum
- */
-export enum TelegramMessageEntityType {
-  MENTION = 'mention',
-  HASHTAG = 'hashtag',
-  CASHTAG = 'cashtag',
-  BOT_COMMAND = 'bot_command',
-  URL = 'url',
-  EMAIL = 'email',
-  PHONE_NUMBER = 'phone_number',
-  BOLD = 'bold',
-  ITALIC = 'italic',
-  UNDERLINE = 'underline',
-  STRIKETHROUGH = 'strikethrough',
-  CODE = 'code',
-  PRE = 'pre',
-  TEXT_LINK = 'text_link',
-  TEXT_MENTION = 'text_mention'
-}
-
-/**
- * Telegram media type enum
- */
-export enum TelegramMediaType {
-  PHOTO = 'photo',
-  VIDEO = 'video',
-  AUDIO = 'audio',
-  DOCUMENT = 'document',
-  STICKER = 'sticker',
-  ANIMATION = 'animation',
-  VOICE = 'voice',
-  VIDEO_NOTE = 'video_note'
-}
-
-/**
- * Telegram configuration interface
- */
-export interface TelegramConfig extends ExtensionConfig {
-  token: string;
-  webhookUrl?: string;
-  useWebhook?: boolean;
-  pollingTimeout?: number;
-  pollingLimit?: number;
-  rateLimits?: Record<TelegramActionType, TelegramRateLimit>;
-  rateLimitBuffer?: number; // milliseconds to wait between actions
-  sessionPersistence?: TelegramSessionConfig;
-}
-
-export interface TelegramRateLimit {
-  requests: number;
-  window: number; // in milliseconds
-}
-
-export interface TelegramSessionConfig {
-  enabled: boolean;
-  sessionPath?: string;
-}
-
-/**
- * Telegram user interface
- */
 export interface TelegramUser {
-  id: number;
-  isBot: boolean;
-  firstName: string;
-  lastName?: string;
-  username?: string;
-  languageCode?: string;
+  id: number
+  is_bot: boolean
+  first_name: string
+  last_name?: string
+  username?: string
+  language_code?: string
 }
 
-/**
- * Telegram chat interface
- */
 export interface TelegramChat {
-  id: number;
-  type: TelegramChatType;
-  title?: string;
-  username?: string;
-  firstName?: string;
-  lastName?: string;
-  description?: string;
-  inviteLink?: string;
-  permissions?: TelegramChatPermissions;
+  id: number
+  type: 'private' | 'group' | 'supergroup' | 'channel'
+  title?: string
+  username?: string
+  first_name?: string
+  last_name?: string
 }
 
-/**
- * Telegram chat permissions interface
- */
-export interface TelegramChatPermissions {
-  canSendMessages?: boolean;
-  canSendMediaMessages?: boolean;
-  canSendPolls?: boolean;
-  canSendOtherMessages?: boolean;
-  canAddWebPagePreviews?: boolean;
-  canChangeInfo?: boolean;
-  canInviteUsers?: boolean;
-  canPinMessages?: boolean;
-}
-
-/**
- * Telegram message interface
- */
-export interface TelegramMessage {
-  messageId: number;
-  from?: TelegramUser;
-  chat: TelegramChat;
-  date: number;
-  text?: string;
-  entities?: TelegramMessageEntity[];
-  photo?: TelegramPhotoSize[];
-  video?: TelegramVideo;
-  audio?: TelegramAudio;
-  document?: TelegramDocument;
-  sticker?: TelegramSticker;
-  caption?: string;
-  captionEntities?: TelegramMessageEntity[];
-  replyToMessage?: TelegramMessage;
-}
-
-/**
- * Telegram message entity interface
- */
 export interface TelegramMessageEntity {
-  type: TelegramMessageEntityType;
-  offset: number;
-  length: number;
-  url?: string;
-  user?: TelegramUser;
-  language?: string;
+  type: string
+  offset: number
+  length: number
+  url?: string
+  user?: TelegramUser
+  language?: string
 }
 
-/**
- * Telegram photo size interface
- */
-export interface TelegramPhotoSize {
-  fileId: string;
-  fileUniqueId: string;
-  width: number;
-  height: number;
-  fileSize?: number;
+export interface TelegramInlineKeyboardButton {
+  text: string
+  url?: string
+  callback_data?: string
+  web_app?: { url: string }
+  switch_inline_query?: string
+  switch_inline_query_current_chat?: string
 }
 
-/**
- * Telegram video interface
- */
-export interface TelegramVideo {
-  fileId: string;
-  fileUniqueId: string;
-  width: number;
-  height: number;
-  duration: number;
-  thumbnail?: TelegramPhotoSize;
-  fileName?: string;
-  mimeType?: string;
-  fileSize?: number;
+export interface TelegramInlineKeyboardMarkup {
+  inline_keyboard: TelegramInlineKeyboardButton[][]
 }
 
-/**
- * Telegram audio interface
- */
-export interface TelegramAudio {
-  fileId: string;
-  fileUniqueId: string;
-  duration: number;
-  performer?: string;
-  title?: string;
-  fileName?: string;
-  mimeType?: string;
-  fileSize?: number;
-  thumbnail?: TelegramPhotoSize;
+export interface TelegramReplyKeyboardMarkup {
+  keyboard: { text: string }[][]
+  resize_keyboard?: boolean
+  one_time_keyboard?: boolean
+  selective?: boolean
 }
 
-/**
- * Telegram document interface
- */
-export interface TelegramDocument {
-  fileId: string;
-  fileUniqueId: string;
-  thumbnail?: TelegramPhotoSize;
-  fileName?: string;
-  mimeType?: string;
-  fileSize?: number;
+export interface TelegramSendMessageOptions {
+  parse_mode?: 'Markdown' | 'MarkdownV2' | 'HTML'
+  entities?: TelegramMessageEntity[]
+  disable_web_page_preview?: boolean
+  disable_notification?: boolean
+  protect_content?: boolean
+  reply_to_message_id?: number
+  allow_sending_without_reply?: boolean
+  reply_markup?: TelegramInlineKeyboardMarkup | TelegramReplyKeyboardMarkup
 }
 
-/**
- * Telegram sticker interface
- */
-export interface TelegramSticker {
-  fileId: string;
-  fileUniqueId: string;
-  width: number;
-  height: number;
-  isAnimated: boolean;
-  isVideo: boolean;
-  thumbnail?: TelegramPhotoSize;
-  emoji?: string;
-  setName?: string;
-  fileSize?: number;
+export interface TelegramWebhookInfo {
+  url: string
+  has_custom_certificate: boolean
+  pending_update_count: number
+  ip_address?: string
+  last_error_date?: number
+  last_error_message?: string
+  last_synchronization_error_date?: number
+  max_connections?: number
+  allowed_updates?: string[]
+}
+
+export interface TelegramCommandScope {
+  type: 'default' | 'all_private_chats' | 'all_group_chats' | 'all_chat_administrators' | 'chat' | 'chat_administrators' | 'chat_member'
+  chat_id?: number
+  user_id?: number
+}
+
+export interface TelegramBotCommand {
+  command: string
+  description: string
+}
+
+export interface TelegramAnalytics {
+  totalMessages: number
+  totalUsers: number
+  totalChats: number
+  messagesPerHour: Record<string, number>
+  topCommands: Record<string, number>
+  errorCount: number
+  responseTimeAvg: number
+}
+
+export interface TelegramConversationContext {
+  chatId: number
+  userId: number
+  messageHistory: Array<{
+    text: string
+    timestamp: Date
+    isBot: boolean
+  }>
+  lastActivity: Date
+  metadata: Record<string, any>
+}
+
+export interface TelegramRateLimitConfig {
+  messagesPerMinute: number
+  messagesPerHour: number
+  burstLimit: number
+  timeWindow: number
 }

@@ -1,0 +1,26 @@
+{
+  "id": "api/websocket/streaming",
+  "title": "Streaming Websocket API",
+  "description": "This is the API documentation for streaming in the websocket category.",
+  "source": "@site/docs/api/websocket/streaming.md",
+  "sourceDirName": "api/websocket",
+  "slug": "/api/websocket/streaming",
+  "permalink": "/docs/api/websocket/streaming",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/api/websocket/streaming.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "frontMatter": {},
+  "sidebar": "apiSidebar",
+  "previous": {
+    "title": "Commands Websocket API",
+    "permalink": "/docs/api/websocket/commands"
+  },
+  "next": {
+    "title": "Installation Typescript API",
+    "permalink": "/docs/api/typescript/installation"
+  }
+}

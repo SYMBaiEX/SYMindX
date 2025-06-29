@@ -1,0 +1,23 @@
+{
+  "id": "rest/events",
+  "title": "Events Rest API",
+  "description": "This is the API documentation for events in the rest category.",
+  "source": "@site/docs/api/rest/events.md",
+  "sourceDirName": "rest",
+  "slug": "/rest/events",
+  "permalink": "/api/rest/events",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "apiSidebar",
+  "previous": {
+    "title": "Memory Rest API",
+    "permalink": "/api/rest/memory"
+  },
+  "next": {
+    "title": "Health Rest API",
+    "permalink": "/api/rest/health"
+  }
+}

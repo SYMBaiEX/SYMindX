@@ -1,0 +1,26 @@
+{
+  "id": "api/openapi/endpoints",
+  "title": "Endpoints Openapi API",
+  "description": "This is the API documentation for endpoints in the openapi category.",
+  "source": "@site/docs/api/openapi/endpoints.md",
+  "sourceDirName": "api/openapi",
+  "slug": "/api/openapi/endpoints",
+  "permalink": "/docs/api/openapi/endpoints",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/api/openapi/endpoints.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "frontMatter": {},
+  "sidebar": "apiSidebar",
+  "previous": {
+    "title": "Overview Openapi API",
+    "permalink": "/docs/api/openapi/overview"
+  },
+  "next": {
+    "title": "Schemas Openapi API",
+    "permalink": "/docs/api/openapi/schemas"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "id": "api/typescript/modules",
+  "title": "Modules Typescript API",
+  "description": "This is the API documentation for modules in the typescript category.",
+  "source": "@site/docs/api/typescript/modules.md",
+  "sourceDirName": "api/typescript",
+  "slug": "/api/typescript/modules",
+  "permalink": "/docs/api/typescript/modules",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/api/typescript/modules.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "frontMatter": {},
+  "sidebar": "apiSidebar",
+  "previous": {
+    "title": "Extensions Typescript API",
+    "permalink": "/docs/api/typescript/extensions"
+  },
+  "next": {
+    "title": "Runtime Typescript API",
+    "permalink": "/docs/api/typescript/runtime"
+  }
+}

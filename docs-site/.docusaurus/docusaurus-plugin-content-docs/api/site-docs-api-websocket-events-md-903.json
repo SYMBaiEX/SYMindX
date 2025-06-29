@@ -1,0 +1,23 @@
+{
+  "id": "websocket/events",
+  "title": "Events Websocket API",
+  "description": "This is the API documentation for events in the websocket category.",
+  "source": "@site/docs/api/websocket/events.md",
+  "sourceDirName": "websocket",
+  "slug": "/websocket/events",
+  "permalink": "/api/websocket/events",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "apiSidebar",
+  "previous": {
+    "title": "Connection Websocket API",
+    "permalink": "/api/websocket/connection"
+  },
+  "next": {
+    "title": "Commands Websocket API",
+    "permalink": "/api/websocket/commands"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "id": "rest/agents",
+  "title": "Agents Rest API",
+  "description": "This is the API documentation for agents in the rest category.",
+  "source": "@site/docs/api/rest/agents.md",
+  "sourceDirName": "rest",
+  "slug": "/rest/agents",
+  "permalink": "/api/rest/agents",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "apiSidebar",
+  "previous": {
+    "title": "Authentication Rest API",
+    "permalink": "/api/rest/authentication"
+  },
+  "next": {
+    "title": "Extensions Rest API",
+    "permalink": "/api/rest/extensions"
+  }
+}

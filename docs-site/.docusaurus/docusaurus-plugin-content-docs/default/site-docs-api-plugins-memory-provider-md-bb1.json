@@ -1,0 +1,26 @@
+{
+  "id": "api/plugins/memory-provider",
+  "title": "Memory-provider Plugins API",
+  "description": "This is the API documentation for memory-provider in the plugins category.",
+  "source": "@site/docs/api/plugins/memory-provider.md",
+  "sourceDirName": "api/plugins",
+  "slug": "/api/plugins/memory-provider",
+  "permalink": "/docs/api/plugins/memory-provider",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/api/plugins/memory-provider.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "frontMatter": {},
+  "sidebar": "apiSidebar",
+  "previous": {
+    "title": "Extension-interface Plugins API",
+    "permalink": "/docs/api/plugins/extension-interface"
+  },
+  "next": {
+    "title": "Emotion-module Plugins API",
+    "permalink": "/docs/api/plugins/emotion-module"
+  }
+}

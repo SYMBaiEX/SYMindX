@@ -1,0 +1,23 @@
+{
+  "id": "websocket/streaming",
+  "title": "Streaming Websocket API",
+  "description": "This is the API documentation for streaming in the websocket category.",
+  "source": "@site/docs/api/websocket/streaming.md",
+  "sourceDirName": "websocket",
+  "slug": "/websocket/streaming",
+  "permalink": "/api/websocket/streaming",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "apiSidebar",
+  "previous": {
+    "title": "Commands Websocket API",
+    "permalink": "/api/websocket/commands"
+  },
+  "next": {
+    "title": "Installation Typescript API",
+    "permalink": "/api/typescript/installation"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "id": "architecture/overview",
+  "title": "Architecture Overview",
+  "description": "SYMindX is built on a modular, event-driven architecture designed for scalability, extensibility, and real-time performance. This document provides a comprehensive overview of the system design and architectural patterns.",
+  "source": "@site/docs/architecture/overview.md",
+  "sourceDirName": "architecture",
+  "slug": "/architecture/overview",
+  "permalink": "/docs/architecture/overview",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/architecture/overview.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "frontMatter": {},
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Your First Agent",
+    "permalink": "/docs/getting-started/your-first-agent"
+  },
+  "next": {
+    "title": "Plugin Development Guide",
+    "permalink": "/docs/guides/plugin-development"
+  }
+}

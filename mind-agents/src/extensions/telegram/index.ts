@@ -1,964 +1,528 @@
 /**
- * Telegram Extension
+ * Telegram Extension for SYMindX
  * 
- * Provides integration with the Telegram Bot API using the Telegraf library.
+ * Enables real-time chat with agents through Telegram Bot API
+ * Uses telegraf library for Telegram Bot functionality
  */
 
-import { Telegraf } from 'telegraf';
-import { message } from 'telegraf/filters';
-import {
-  Extension,
-  ExtensionAction,
-  ExtensionEventHandler,
-  ExtensionType,
-  Agent,
-  ActionResult,
-  ActionResultType,
-  ActionCategory,
-  ExtensionStatus
-} from '../../types/agent.js';
-import { GenericData, ExtensionConfig } from '../../types/common.js';
-import { TelegramConfig, TelegramErrorType, TelegramMessage, TelegramUser, TelegramChat } from './types.js';
-import { initializeSkills, TelegramSkill } from './skills/index.js';
-import { Logger } from '../../utils/logger.js';
+import { Telegraf, Context } from 'telegraf'
+import { Agent, AgentAction, Extension, ActionStatus, MemoryType, MemoryDuration, ThoughtContext, EnvironmentType } from '../../types/agent.js'
+import { ExtensionConfig, BaseConfig } from '../../types/common.js'
+import { Logger } from '../../utils/logger.js'
+
+export interface TelegramConfig extends ExtensionConfig {
+  botToken: string
+  allowedUsers?: number[] // Optional whitelist of user IDs
+  commandPrefix?: string
+  maxMessageLength?: number
+  enableLogging?: boolean
+}
+
+export interface TelegramSettings extends BaseConfig {
+  botToken: string
+  allowedUsers?: number[]
+  commandPrefix?: string
+  maxMessageLength?: number
+  enableLogging?: boolean
+}
+
+export interface TelegramMessage {
+  messageId: number
+  chatId: number
+  userId: number
+  username?: string
+  firstName?: string
+  lastName?: string
+  text: string
+  timestamp: Date
+}
+
+export interface TelegramResponse {
+  chatId: number
+  text: string
+  replyToMessageId?: number
+  parseMode?: 'Markdown' | 'HTML'
+}
+
+export class TelegramExtension implements Extension {
+  id = 'telegram'
+  name = 'Telegram Bot'
+  version = '1.0.0'
+  type = 'communication' as any // TODO: Add proper ExtensionType enum
+  enabled = false
+  status = 'inactive' as any // TODO: Add proper ExtensionStatus enum
+  config: ExtensionConfig
+  actions: Record<string, any> = {}
+  events: Record<string, any> = {}
+  
+  private bot: Telegraf
+  private agent: Agent | null = null
+  private telegramConfig: TelegramSettings
+  private logger: Logger
+  private messageQueue: TelegramMessage[] = []
+  private isProcessingQueue = false
+
+  constructor(config: TelegramConfig) {
+    this.config = config
+    this.telegramConfig = {
+      commandPrefix: '/',
+      maxMessageLength: 4096, // Telegram limit
+      enableLogging: true,
+      ...config.settings,
+      botToken: String(config.settings.botToken || '')
+    }
+    
+    this.logger = new Logger('TelegramExtension')
+    this.bot = new Telegraf(this.telegramConfig.botToken)
+    
+    this.setupBotHandlers()
+  }
+
+  /**
+   * Initialize the extension with an agent
+   */
+  async init(agent: Agent): Promise<void> {
+    this.agent = agent
+    this.enabled = true
+    
+    try {
+      // Start the bot
+      await this.bot.launch()
+      this.logger.info(`Telegram bot started for agent ${agent.name}`)
+      
+      // Set up bot commands
+      await this.setupCommands()
+      
+      // Enable graceful stop
+      process.once('SIGINT', () => this.bot.stop('SIGINT'))
+      process.once('SIGTERM', () => this.bot.stop('SIGTERM'))
+      
+    } catch (error) {
+      this.logger.error('Failed to start Telegram bot:', error)
+      this.enabled = false
+      throw error
+    }
+  }
+
+  /**
+   * Main tick method called by the runtime
+   */
+  async tick(agent: Agent): Promise<void> {
+    if (!this.enabled || !this.agent) return
+    
+    // Process queued messages
+    await this.processMessageQueue()
+  }
+
+  /**
+   * Setup bot event handlers
+   */
+  private setupBotHandlers(): void {
+    // Handle text messages
+    this.bot.on('text', async (ctx) => {
+      try {
+        await this.handleTextMessage(ctx)
+      } catch (error) {
+        this.logger.error('Error handling text message:', error)
+        await this.sendError(ctx.chat.id, 'Sorry, I encountered an error processing your message.')
+      }
+    })
+
+    // Handle stickers with a fun response
+    this.bot.on('sticker', async (ctx) => {
+      await ctx.reply('Nice sticker! 😊 I understand text messages best though.')
+    })
+
+    // Handle photos
+    this.bot.on('photo', async (ctx) => {
+      await ctx.reply('I see you sent a photo! Currently I can only process text, but that\'s a nice image!')
+    })
+
+    // Error handling
+    this.bot.catch((err, ctx) => {
+      this.logger.error('Bot error:', err)
+      if (ctx && ctx.chat) {
+        this.sendError(ctx.chat.id, 'Oops! Something went wrong. Please try again.')
+      }
+    })
+  }
+
+  /**
+   * Setup bot commands
+   */
+  private async setupCommands(): Promise<void> {
+    // Set bot commands for the menu
+    await this.bot.telegram.setMyCommands([
+      { command: 'start', description: 'Start chatting with the AI agent' },
+      { command: 'help', description: 'Show help information' },
+      { command: 'status', description: 'Check agent status' },
+      { command: 'clear', description: 'Clear conversation context' },
+    ])
+
+    // Handle /start command
+    this.bot.command('start', async (ctx) => {
+      const welcomeMessage = `👋 Hello! I'm ${this.agent?.name || 'your AI agent'}.
+
+I'm here to chat with you and help with various tasks. Feel free to ask me anything!
+
+Available commands:
+/help - Show this help
+/status - Check my current status  
+/clear - Clear our conversation context
+
+Just send me a message to start chatting! 🤖`
+
+      await ctx.reply(welcomeMessage)
+    })
+
+    // Handle /help command
+    this.bot.command('help', async (ctx) => {
+      const helpMessage = `🤖 How to chat with me:
+
+**Basic Usage:**
+• Just send me any message to start a conversation
+• I can answer questions, help with tasks, and chat about various topics
+• I have memory of our conversation context
+
+**Commands:**
+/start - Welcome message and introduction
+/status - Check my current status and capabilities
+/clear - Clear conversation history (fresh start)
+/help - Show this help message
+
+**Tips:**
+• I work best with clear, specific questions
+• Feel free to ask follow-up questions
+• I can maintain context throughout our conversation
+
+Try asking me something! 💬`
+
+      await ctx.reply(helpMessage)
+    })
+
+    // Handle /status command  
+    this.bot.command('status', async (ctx) => {
+      if (!this.agent) {
+        await ctx.reply('❌ No agent connected')
+        return
+      }
+
+      const statusMessage = `🤖 Agent Status Report
+
+**Name:** ${this.agent.name}
+**Status:** ${this.agent.status}
+**Extensions:** ${this.agent.extensions.length} loaded
+**Memory:** ${this.agent.memory ? '✅ Available' : '❌ Not available'}
+**Emotion:** ${this.agent.emotion ? '✅ Available' : '❌ Not available'}
+**Cognition:** ${this.agent.cognition ? '✅ Available' : '❌ Not available'}
+
+I'm ready to chat! 💬`
+
+      await ctx.reply(statusMessage)
+    })
+
+    // Handle /clear command
+    this.bot.command('clear', async (ctx) => {
+      // Clear message queue
+      this.messageQueue = []
+      
+      await ctx.reply('🧹 Conversation context cleared! Starting fresh.')
+    })
+  }
+
+  /**
+   * Handle incoming text messages
+   */
+  private async handleTextMessage(ctx: Context & { message: { text: string; message_id: number } }): Promise<void> {
+    if (!this.agent || !ctx.message?.text) return
+
+    // Check if user is allowed (if whitelist is configured)
+    if (this.telegramConfig.allowedUsers && this.telegramConfig.allowedUsers.length > 0) {
+      if (!this.telegramConfig.allowedUsers.includes(ctx.from?.id || 0)) {
+        await ctx.reply('🚫 Sorry, you are not authorized to use this bot.')
+        return
+      }
+    }
+
+    // Create message object
+    const message: TelegramMessage = {
+      messageId: ctx.message.message_id,
+      chatId: ctx.chat!.id,
+      userId: ctx.from?.id || 0,
+      username: ctx.from?.username,
+      firstName: ctx.from?.first_name,
+      lastName: ctx.from?.last_name,
+      text: ctx.message.text,
+      timestamp: new Date()
+    }
+
+    // Add to queue for processing
+    this.messageQueue.push(message)
+
+    // Show typing indicator
+    await ctx.sendChatAction('typing')
+
+    if (this.telegramConfig.enableLogging) {
+      this.logger.info(`Received message from ${message.username || message.firstName}: ${message.text}`)
+    }
+  }
+
+  /**
+   * Process queued messages
+   */
+  private async processMessageQueue(): Promise<void> {
+    if (this.isProcessingQueue || this.messageQueue.length === 0 || !this.agent) {
+      return
+    }
+
+    this.isProcessingQueue = true
+
+    try {
+      while (this.messageQueue.length > 0) {
+        const message = this.messageQueue.shift()!
+        await this.processMessage(message)
+      }
+    } catch (error) {
+      this.logger.error('Error processing message queue:', error)
+    } finally {
+      this.isProcessingQueue = false
+    }
+  }
+
+  /**
+   * Process a single message through the agent
+   */
+  private async processMessage(message: TelegramMessage): Promise<void> {
+    if (!this.agent) return
+
+    try {
+      // Create agent action for the message
+      const action: AgentAction = {
+        id: `telegram_${message.messageId}_${Date.now()}`,
+        type: 'communication',
+        extension: 'telegram',
+        action: 'respond_to_message',
+        parameters: {
+          message: message.text,
+          chatId: message.chatId,
+          userId: message.userId,
+          username: message.username,
+          platform: 'telegram'
+        },
+        timestamp: new Date(),
+        status: ActionStatus.PENDING
+      }
+
+      // Store message in agent memory if available
+      if (this.agent.memory) {
+        await this.agent.memory.store(this.agent.id, {
+          id: `telegram_msg_${message.messageId}`,
+          agentId: this.agent.id,
+          type: MemoryType.INTERACTION,
+          content: `Telegram message from ${message.username || message.firstName}: ${message.text}`,
+          metadata: {
+            platform: 'telegram',
+            chatId: message.chatId,
+            userId: message.userId,
+            username: message.username
+          },
+          importance: 0.7,
+          timestamp: message.timestamp,
+          tags: ['telegram', 'conversation', 'user_input'],
+          duration: MemoryDuration.WORKING
+        })
+      }
+
+      // Generate response using agent's cognition or a fallback
+      let responseText = ''
+      
+      if (this.agent.cognition) {
+        // Use agent's cognition to generate response
+        try {
+          const response = await this.agent.cognition.think(this.agent, {
+            events: [{
+              id: `telegram_event_${Date.now()}`,
+              type: 'user_input',
+              source: 'telegram',
+              data: { message: message.text },
+              timestamp: message.timestamp,
+              processed: false
+            }],
+            memories: [],
+            currentState: {} as any, // TODO: Fix AgentState type
+            environment: {} as any,  // TODO: Fix EnvironmentState type
+            goal: 'Respond helpfully to the user message'
+          })
+          responseText = response.thoughts.join(' ') || 'I heard you, but I\'m not sure how to respond right now.'
+        } catch (error) {
+          this.logger.error('Error using cognition:', error)
+          responseText = `Hello ${message.firstName || 'there'}! I received your message: "${message.text}". I'm processing it now!`
+        }
+      } else {
+        // Fallback response
+        responseText = `Hello ${message.firstName || 'there'}! I received your message: "${message.text}". I'm still learning how to respond better!`
+      }
+
+      // Send response back to Telegram
+      await this.sendResponse({
+        chatId: message.chatId,
+        text: responseText,
+        replyToMessageId: message.messageId
+      })
+
+      // Log the interaction
+      if (this.telegramConfig.enableLogging) {
+        this.logger.info(`Sent response to ${message.username || message.firstName}: ${responseText.substring(0, 100)}...`)
+      }
+
+    } catch (error) {
+      this.logger.error('Error processing message:', error)
+      await this.sendError(message.chatId, 'Sorry, I had trouble processing your message. Please try again.')
+    }
+  }
+
+  /**
+   * Send a response to Telegram
+   */
+  private async sendResponse(response: TelegramResponse): Promise<void> {
+    try {
+      // Split long messages if needed
+      const messages = this.splitMessage(response.text)
+      
+      for (let i = 0; i < messages.length; i++) {
+        const messageText = messages[i]
+        
+        await this.bot.telegram.sendMessage(
+          response.chatId,
+          messageText,
+          {
+            reply_parameters: response.replyToMessageId && i === 0 ? { message_id: response.replyToMessageId } : undefined,
+            parse_mode: response.parseMode
+          }
+        )
+        
+        // Small delay between messages to avoid rate limiting
+        if (i < messages.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 100))
+        }
+      }
+    } catch (error) {
+      this.logger.error('Error sending Telegram response:', error)
+    }
+  }
+
+  /**
+   * Send an error message
+   */
+  private async sendError(chatId: number, errorMessage: string): Promise<void> {
+    try {
+      await this.bot.telegram.sendMessage(chatId, `❌ ${errorMessage}`)
+    } catch (error) {
+      this.logger.error('Error sending error message to Telegram:', error)
+    }
+  }
+
+  /**
+   * Split long messages to respect Telegram's character limit
+   */
+  private splitMessage(text: string): string[] {
+    if (text.length <= this.telegramConfig.maxMessageLength!) {
+      return [text]
+    }
+
+    const messages: string[] = []
+    let remainingText = text
+
+    while (remainingText.length > 0) {
+      if (remainingText.length <= this.telegramConfig.maxMessageLength!) {
+        messages.push(remainingText)
+        break
+      }
+
+      // Find a good breaking point (prefer sentence or paragraph breaks)
+      let breakPoint = this.telegramConfig.maxMessageLength!
+      const lastSentence = remainingText.lastIndexOf('.', breakPoint)
+      const lastParagraph = remainingText.lastIndexOf('\n\n', breakPoint)
+      const lastSpace = remainingText.lastIndexOf(' ', breakPoint)
+
+      if (lastParagraph > breakPoint - 200) {
+        breakPoint = lastParagraph + 2
+      } else if (lastSentence > breakPoint - 200) {
+        breakPoint = lastSentence + 1
+      } else if (lastSpace > breakPoint - 100) {
+        breakPoint = lastSpace
+      }
+
+      messages.push(remainingText.substring(0, breakPoint).trim())
+      remainingText = remainingText.substring(breakPoint).trim()
+    }
+
+    return messages
+  }
+
+  /**
+   * Cleanup when stopping
+   */
+  async stop(): Promise<void> {
+    this.enabled = false
+    
+    try {
+      await this.bot.stop()
+      this.logger.info('Telegram bot stopped')
+    } catch (error) {
+      this.logger.error('Error stopping Telegram bot:', error)
+    }
+  }
+
+  /**
+   * Get extension metrics/status
+   */
+  getStatus(): Record<string, any> {
+    return {
+      enabled: this.enabled,
+      agentConnected: !!this.agent,
+      queuedMessages: this.messageQueue.length,
+      isProcessing: this.isProcessingQueue,
+      botUsername: this.bot.botInfo?.username,
+      config: {
+        commandPrefix: this.telegramConfig.commandPrefix,
+        maxMessageLength: this.telegramConfig.maxMessageLength,
+        enableLogging: this.telegramConfig.enableLogging,
+        hasWhitelist: !!(this.telegramConfig.allowedUsers && this.telegramConfig.allowedUsers.length > 0)
+      }
+    }
+  }
+}
 
 /**
- * Telegram Extension class
- * 
- * Provides integration with the Telegram Bot API using the Telegraf library.
+ * Factory function to create Telegram extension
  */
-export class TelegramExtension implements Extension {
-  public readonly id = 'telegram';
-  public readonly name = 'Telegram Bot Extension';
-  public readonly version = '1.0.0';
-  public readonly type = ExtensionType.COMMUNICATION;
-  public status: ExtensionStatus = ExtensionStatus.DISABLED;
-  public enabled: boolean = true;
-  public actions: Record<string, ExtensionAction> = {};
-  public events: Record<string, ExtensionEventHandler> = {};
-  
-  public config: TelegramConfig;
-  private bot: Telegraf | null = null;
-  private skills: Map<string, TelegramSkill> = new Map();
-  private logger: Logger;
-  // private context: ExtensionContext;
-  private messageHandlers: Array<(message: TelegramMessage) => void> = [];
-  
-  /**
-   * Constructor
-   * @param context Extension context
-   */
-  constructor(config: TelegramConfig) {
-    this.config = config;
-    this.logger = new Logger('telegram');
-    
-    // Initialize skills
-     const skillsArray = initializeSkills(this);
-     this.skills = new Map();
-     skillsArray.forEach(skill => {
-       this.skills.set(skill.constructor.name, skill);
-     });
-    
-    // Register actions from all skills
-    this.registerSkillActions();
-  }
-  
-  /**
-   * Initialize the extension
-   */
-  async init(): Promise<void> {
-    try {
-      if (!this.config.token) {
-        throw new Error('Bot token is required');
-      }
-      
-      // Create Telegraf instance
-      this.bot = new Telegraf(this.config.token);
-      
-      // Set up message handlers
-      this.setupMessageHandlers();
-      
-      // Launch the bot
-      await this.bot.launch();
-      
-      this.logger.info('Telegram bot started successfully');
-      this.status = ExtensionStatus.RUNNING;
-    } catch (error) {
-      this.logger.error('Failed to initialize Telegram extension', error);
-      this.status = ExtensionStatus.ERROR;
-      throw error;
+export function createTelegramExtension(config: any): TelegramExtension {
+  const telegramConfig: TelegramConfig = {
+    enabled: config.enabled || false,
+    botToken: config.botToken || config.settings?.botToken || '',
+    settings: {
+      botToken: config.botToken || config.settings?.botToken || '',
+      allowedUsers: config.allowedUsers || config.settings?.allowedUsers || [],
+      commandPrefix: config.commandPrefix || config.settings?.commandPrefix || '/',
+      maxMessageLength: config.maxMessageLength || config.settings?.maxMessageLength || 4096,
+      enableLogging: config.enableLogging !== false,
+      ...config.settings
     }
   }
-  
-  /**
-   * Clean up resources when extension is stopped
-   */
-  async cleanup(): Promise<void> {
-    if (this.bot) {
-      // Stop the bot gracefully
-      await this.bot.stop();
-      this.bot = null;
-    }
-    this.status = ExtensionStatus.STOPPED;
-    this.logger.info('Telegram extension stopped');
-  }
-  
-  /**
-   * Periodic tick function
-   */
-  async tick(): Promise<void> {
-    // Nothing to do on tick for Telegram as it uses webhooks/polling
-  }
-  
-  /**
-   * Register a message handler
-   * @param handler Function to handle incoming messages
-   */
-  registerMessageHandler(handler: (message: TelegramMessage) => void): void {
-    this.messageHandlers.push(handler);
-  }
-  
-  /**
-   * Set up message handlers for the bot
-   */
-  private setupMessageHandlers(): void {
-    if (!this.bot) return;
-    
-    // Handle text messages
-    this.bot.on(message('text'), (ctx) => {
-      const message = this.convertToTelegramMessage(ctx.message);
-      this.notifyMessageHandlers(message);
-    });
-    
-    // Handle photo messages
-    this.bot.on(message('photo'), (ctx) => {
-      const message = this.convertToTelegramMessage(ctx.message);
-      this.notifyMessageHandlers(message);
-    });
-    
-    // Handle document messages
-    this.bot.on(message('document'), (ctx) => {
-      const message = this.convertToTelegramMessage(ctx.message);
-      this.notifyMessageHandlers(message);
-    });
-    
-    // Handle errors
-    this.bot.catch((err) => {
-      this.logger.error('Telegram bot error', err);
-    });
-  }
-  
-  /**
-   * Convert Telegraf message to our TelegramMessage format
-   * @param telegrafMessage Message from Telegraf
-   * @returns Standardized TelegramMessage
-   */
-  private convertToTelegramMessage(telegrafMessage: any): TelegramMessage {
-    // Basic conversion - would need to be expanded for a complete implementation
-    return {
-      messageId: telegrafMessage.message_id,
-      from: telegrafMessage.from as TelegramUser,
-      chat: telegrafMessage.chat as TelegramChat,
-      date: telegrafMessage.date,
-      text: telegrafMessage.text || '',
-      // Other fields would be added here
-    };
-  }
-  
-  /**
-   * Notify all registered message handlers about a new message
-   * @param message The message to notify about
-   */
-  private notifyMessageHandlers(message: TelegramMessage): void {
-    for (const handler of this.messageHandlers) {
-      try {
-        handler(message);
-      } catch (error) {
-        this.logger.error('Error in message handler', error);
-      }
-    }
-  }
-  
-  /**
-   * Register all actions from skills
-   */
-  private registerSkillActions(): void {
-    for (const skill of Array.from(this.skills.values())) {
-      const actions = skill.getActions();
-      for (const [actionId, action] of Object.entries(actions)) {
-        this.actions[actionId] = action;
-      }
-    }
-  }
-  
-  /**
-   * Send a text message to a chat
-   */
-  async sendMessage(
-    chatId: string | number, 
-    text: string, 
-    parseMode?: string, 
-    disableWebPagePreview?: boolean,
-    disableNotification?: boolean,
-    replyToMessageId?: number
-  ): Promise<ActionResult> {
-    try {
-      if (!this.bot) {
-        throw new Error('Bot is not initialized');
-      }
-      
-      const result = await this.bot.telegram.sendMessage(chatId, text, {
-        parse_mode: parseMode as any,
-        disable_web_page_preview: disableWebPagePreview,
-        disable_notification: disableNotification,
-        reply_parameters: replyToMessageId ? {
-          message_id: replyToMessageId,
-          allow_sending_without_reply: true
-        } : undefined
-      });
-      
-      return {
-        success: true,
-        type: ActionResultType.SUCCESS,
-        result: result as unknown as GenericData,
-        metadata: { timestamp: new Date().toISOString() }
-      };
-    } catch (error) {
-      this.logger.error('Failed to send message', error);
-      return {
-        success: false,
-        type: ActionResultType.FAILURE,
-        error: `${TelegramErrorType.INVALID_REQUEST}: ${error instanceof Error ? error.message : String(error)}`,
-        metadata: { 
-          timestamp: new Date().toISOString(),
-          errorType: TelegramErrorType.INVALID_REQUEST
-        }
-      };
-    }
-  }
-  
-  /**
-   * Edit a previously sent message
-   */
-  async editMessage(
-    chatId: string | number, 
-    messageId: number, 
-    text: string, 
-    parseMode?: string, 
-    disableWebPagePreview?: boolean
-  ): Promise<ActionResult> {
-    try {
-      if (!this.bot) {
-        throw new Error('Bot is not initialized');
-      }
-      
-      const result = await this.bot.telegram.editMessageText(chatId, messageId, undefined, text, {
-        parse_mode: parseMode as any,
-        disable_web_page_preview: disableWebPagePreview
-      });
-      
-      return {
-        success: true,
-        type: ActionResultType.SUCCESS,
-        result: result as unknown as GenericData,
-        metadata: { timestamp: new Date().toISOString() }
-      };
-    } catch (error) {
-      this.logger.error('Failed to edit message', error);
-      return {
-        success: false,
-        type: ActionResultType.FAILURE,
-        error: `${TelegramErrorType.INVALID_REQUEST}: ${error instanceof Error ? error.message : String(error)}`,
-        metadata: { 
-          timestamp: new Date().toISOString(),
-          errorType: TelegramErrorType.INVALID_REQUEST
-        }
-      };
-    }
-  }
-  
-  /**
-   * Delete a message
-   */
-  async deleteMessage(chatId: string | number, messageId: number): Promise<ActionResult> {
-    try {
-      if (!this.bot) {
-        throw new Error('Bot is not initialized');
-      }
-      
-      const result = await this.bot.telegram.deleteMessage(chatId, messageId);
-      
-      return {
-        success: true,
-        type: ActionResultType.SUCCESS,
-        result: result as unknown as GenericData,
-        metadata: { timestamp: new Date().toISOString() }
-      };
-    } catch (error) {
-      this.logger.error('Failed to delete message', error);
-      return {
-        success: false,
-        type: ActionResultType.FAILURE,
-        error: `${TelegramErrorType.INVALID_REQUEST}: ${error instanceof Error ? error.message : String(error)}`,
-        metadata: { 
-          timestamp: new Date().toISOString(),
-          errorType: TelegramErrorType.INVALID_REQUEST
-        }
-      };
-    }
-  }
-  
-  /**
-   * Pin a message in a chat
-   */
-  async pinMessage(
-    chatId: string | number, 
-    messageId: number, 
-    disableNotification?: boolean
-  ): Promise<ActionResult> {
-    try {
-      if (!this.bot) {
-        throw new Error('Bot is not initialized');
-      }
-      
-      const result = await this.bot.telegram.pinChatMessage(chatId, messageId, {
-        disable_notification: disableNotification
-      });
-      
-      return {
-        success: true,
-        type: ActionResultType.SUCCESS,
-        result: result as unknown as GenericData,
-        metadata: { timestamp: new Date().toISOString() }
-      };
-    } catch (error) {
-      this.logger.error('Failed to pin message', error);
-      return {
-        success: false,
-        type: ActionResultType.FAILURE,
-        error: `${TelegramErrorType.INVALID_REQUEST}: ${error instanceof Error ? error.message : String(error)}`,
-        metadata: { 
-          timestamp: new Date().toISOString(),
-          errorType: TelegramErrorType.INVALID_REQUEST
-        }
-      };
-    }
-  }
-  
-  /**
-   * Unpin a message in a chat
-   */
-  async unpinMessage(chatId: string | number, messageId: number): Promise<ActionResult> {
-    try {
-      if (!this.bot) {
-        throw new Error('Bot is not initialized');
-      }
-      
-      const result = await this.bot.telegram.unpinChatMessage(chatId, messageId);
-      
-      return {
-        success: true,
-        type: ActionResultType.SUCCESS,
-        result: result as unknown as GenericData,
-        metadata: { timestamp: new Date().toISOString() }
-      };
-    } catch (error) {
-      this.logger.error('Failed to unpin message', error);
-      return {
-        success: false,
-        type: ActionResultType.FAILURE,
-        error: `${TelegramErrorType.INVALID_REQUEST}: ${error instanceof Error ? error.message : String(error)}`,
-        metadata: { 
-          timestamp: new Date().toISOString(),
-          errorType: TelegramErrorType.INVALID_REQUEST
-        }
-      };
-    }
-  }
-  
-  /**
-   * Get information about a chat
-   */
-  async getChat(chatId: string | number): Promise<ActionResult> {
-    try {
-      if (!this.bot) {
-        throw new Error('Bot is not initialized');
-      }
-      
-      const result = await this.bot.telegram.getChat(chatId);
-      
-      return {
-        success: true,
-        type: ActionResultType.SUCCESS,
-        result: result as unknown as GenericData,
-        metadata: { timestamp: new Date().toISOString() }
-      };
-    } catch (error) {
-      this.logger.error('Failed to get chat', error);
-      return {
-        success: false,
-        type: ActionResultType.FAILURE,
-        error: `${TelegramErrorType.INVALID_REQUEST}: ${error instanceof Error ? error.message : String(error)}`,
-        metadata: { 
-          timestamp: new Date().toISOString(),
-          errorType: TelegramErrorType.INVALID_REQUEST
-        }
-      };
-    }
-  }
-  
-  /**
-   * Get information about a member of a chat
-   */
-  async getChatMember(chatId: string | number, userId: number): Promise<ActionResult> {
-    try {
-      if (!this.bot) {
-        throw new Error('Bot is not initialized');
-      }
-      
-      const result = await this.bot.telegram.getChatMember(chatId, userId);
-      
-      return {
-        success: true,
-        type: ActionResultType.SUCCESS,
-        result: result as unknown as GenericData,
-        metadata: { timestamp: new Date().toISOString() }
-      };
-    } catch (error) {
-      this.logger.error('Failed to get chat member', error);
-      return {
-        success: false,
-        type: ActionResultType.FAILURE,
-        error: `${TelegramErrorType.INVALID_REQUEST}: ${error instanceof Error ? error.message : String(error)}`,
-        metadata: { 
-          timestamp: new Date().toISOString(),
-          errorType: TelegramErrorType.INVALID_REQUEST
-        }
-      };
-    }
-  }
-  
-  /**
-   * Get a list of administrators in a chat
-   */
-  async getChatAdministrators(chatId: string | number): Promise<ActionResult> {
-    try {
-      if (!this.bot) {
-        throw new Error('Bot is not initialized');
-      }
-      
-      const result = await this.bot.telegram.getChatAdministrators(chatId);
-      
-      return {
-        success: true,
-        type: ActionResultType.SUCCESS,
-        result: result as unknown as GenericData,
-        metadata: { timestamp: new Date().toISOString() }
-      };
-    } catch (error) {
-      this.logger.error('Failed to get chat administrators', error);
-      return {
-        success: false,
-        type: ActionResultType.FAILURE,
-        error: `${TelegramErrorType.INVALID_REQUEST}: ${error instanceof Error ? error.message : String(error)}`,
-        metadata: { 
-          timestamp: new Date().toISOString(),
-          errorType: TelegramErrorType.INVALID_REQUEST
-        }
-      };
-    }
-  }
-  
-  /**
-   * Get the number of members in a chat
-   */
-  async getChatMembersCount(chatId: string | number): Promise<ActionResult> {
-    try {
-      if (!this.bot) {
-        throw new Error('Bot is not initialized');
-      }
-      
-      const result = await this.bot.telegram.getChatMemberCount(chatId);
-      
-      return {
-        success: true,
-        type: ActionResultType.SUCCESS,
-        result: result as unknown as GenericData,
-        metadata: { timestamp: new Date().toISOString() }
-      };
-    } catch (error) {
-      this.logger.error('Failed to get chat members count', error);
-      return {
-        success: false,
-        type: ActionResultType.FAILURE,
-        error: `${TelegramErrorType.INVALID_REQUEST}: ${error instanceof Error ? error.message : String(error)}`,
-        metadata: { 
-          timestamp: new Date().toISOString(),
-          errorType: TelegramErrorType.INVALID_REQUEST
-        }
-      };
-    }
-  }
-  
-  /**
-   * Leave a chat
-   */
-  async leaveChat(chatId: string | number): Promise<ActionResult> {
-    try {
-      if (!this.bot) {
-        throw new Error('Bot is not initialized');
-      }
-      
-      const result = await this.bot.telegram.leaveChat(chatId);
-      
-      return {
-        success: true,
-        type: ActionResultType.SUCCESS,
-        result: result as unknown as GenericData,
-        metadata: { timestamp: new Date().toISOString() }
-      };
-    } catch (error) {
-      this.logger.error('Failed to leave chat', error);
-      return {
-        success: false,
-        type: ActionResultType.FAILURE,
-        error: `${TelegramErrorType.INVALID_REQUEST}: ${error instanceof Error ? error.message : String(error)}`,
-        metadata: { 
-          timestamp: new Date().toISOString(),
-          errorType: TelegramErrorType.INVALID_REQUEST
-        }
-      };
-    }
-  }
-  
-  /**
-   * Ban a user from a chat
-   */
-  async banChatMember(
-    chatId: string | number, 
-    userId: number, 
-    untilDate?: number,
-    revokeMessages?: boolean
-  ): Promise<ActionResult> {
-    try {
-      if (!this.bot) {
-        throw new Error('Bot is not initialized');
-      }
-      
-      const result = await this.bot.telegram.banChatMember(chatId, userId, {
-        until_date: untilDate,
-        revoke_messages: revokeMessages
-      });
-      
-      return {
-        success: true,
-        type: ActionResultType.SUCCESS,
-        result: result as unknown as GenericData,
-        metadata: { timestamp: new Date().toISOString() }
-      };
-    } catch (error) {
-      this.logger.error('Failed to ban chat member', error);
-      return {
-        success: false,
-        type: ActionResultType.FAILURE,
-        error: `${TelegramErrorType.INVALID_REQUEST}: ${error instanceof Error ? error.message : String(error)}`,
-        metadata: { 
-          timestamp: new Date().toISOString(),
-          errorType: TelegramErrorType.INVALID_REQUEST
-        }
-      };
-    }
-  }
-  
-  /**
-   * Unban a previously banned user in a chat
-   */
-  async unbanChatMember(
-    chatId: string | number, 
-    userId: number,
-    onlyIfBanned?: boolean
-  ): Promise<ActionResult> {
-    try {
-      if (!this.bot) {
-        throw new Error('Bot is not initialized');
-      }
-      
-      const result = await this.bot.telegram.unbanChatMember(chatId, userId, {
-        only_if_banned: onlyIfBanned
-      });
-      
-      return {
-        success: true,
-        type: ActionResultType.SUCCESS,
-        result: result as unknown as GenericData,
-        metadata: { timestamp: new Date().toISOString() }
-      };
-    } catch (error) {
-      this.logger.error('Failed to unban chat member', error);
-      return {
-        success: false,
-        type: ActionResultType.FAILURE,
-        error: `${TelegramErrorType.INVALID_REQUEST}: ${error instanceof Error ? error.message : String(error)}`,
-        metadata: { 
-          timestamp: new Date().toISOString(),
-          errorType: TelegramErrorType.INVALID_REQUEST
-        }
-      };
-    }
-  }
-  
-  /**
-   * Restrict a user in a chat
-   */
-  async restrictChatMember(
-    chatId: string | number, 
-    userId: number, 
-    permissions: any,
-    untilDate?: number
-  ): Promise<ActionResult> {
-    try {
-      if (!this.bot) {
-        throw new Error('Bot is not initialized');
-      }
-      
-      const result = await this.bot.telegram.restrictChatMember(chatId, userId, {
-        ...permissions,
-        until_date: untilDate
-      });
-      
-      return {
-        success: true,
-        type: ActionResultType.SUCCESS,
-        result: result as unknown as GenericData,
-        metadata: { timestamp: new Date().toISOString() }
-      };
-    } catch (error) {
-      this.logger.error('Failed to restrict chat member', error);
-      return {
-        success: false,
-        type: ActionResultType.FAILURE,
-        error: `${TelegramErrorType.INVALID_REQUEST}: ${error instanceof Error ? error.message : String(error)}`,
-        metadata: { 
-          timestamp: new Date().toISOString(),
-          errorType: TelegramErrorType.INVALID_REQUEST
-        }
-      };
-    }
-  }
-  
-  /**
-   * Promote or demote a user in a chat
-   */
-  async promoteChatMember(
-    chatId: string | number, 
-    userId: number, 
-    permissions: any
-  ): Promise<ActionResult> {
-    try {
-      if (!this.bot) {
-        throw new Error('Bot is not initialized');
-      }
-      
-      const result = await this.bot.telegram.promoteChatMember(chatId, userId, permissions);
-      
-      return {
-        success: true,
-        type: ActionResultType.SUCCESS,
-        result: result as unknown as GenericData,
-        metadata: { timestamp: new Date().toISOString() }
-      };
-    } catch (error) {
-      this.logger.error('Failed to promote chat member', error);
-      return {
-        success: false,
-        type: ActionResultType.FAILURE,
-        error: `${TelegramErrorType.INVALID_REQUEST}: ${error instanceof Error ? error.message : String(error)}`,
-        metadata: { 
-          timestamp: new Date().toISOString(),
-          errorType: TelegramErrorType.INVALID_REQUEST
-        }
-      };
-    }
-  }
-  
-  /**
-   * Send a photo
-   */
-  async sendPhoto(
-    chatId: string | number, 
-    photo: string, 
-    caption?: string, 
-    parseMode?: string,
-    disableNotification?: boolean,
-    replyToMessageId?: number
-  ): Promise<ActionResult> {
-    try {
-      if (!this.bot) {
-        throw new Error('Bot is not initialized');
-      }
-      
-      const result = await this.bot.telegram.sendPhoto(chatId, photo, {
-        caption,
-        parse_mode: parseMode,
-        disable_notification: disableNotification,
-        reply_parameters: replyToMessageId ? {
-          message_id: replyToMessageId,
-          allow_sending_without_reply: true
-        } : undefined
-      });
-      
-      return {
-        success: true,
-        type: ActionResultType.SUCCESS,
-        result: result as unknown as GenericData,
-        metadata: { timestamp: new Date().toISOString() }
-      };
-    } catch (error) {
-      this.logger.error('Failed to send photo', error);
-      return {
-        success: false,
-        type: ActionResultType.FAILURE,
-        error: `${TelegramErrorType.INVALID_REQUEST}: ${error instanceof Error ? error.message : String(error)}`,
-        metadata: { 
-          timestamp: new Date().toISOString(),
-          errorType: TelegramErrorType.INVALID_REQUEST
-        }
-      };
-    }
-  }
-  
-  /**
-   * Send a video
-   */
-  async sendVideo(
-    chatId: string | number, 
-    video: string, 
-    caption?: string, 
-    parseMode?: string,
-    duration?: number,
-    width?: number,
-    height?: number,
-    disableNotification?: boolean,
-    replyToMessageId?: number
-  ): Promise<ActionResult> {
-    try {
-      if (!this.bot) {
-        throw new Error('Bot is not initialized');
-      }
-      
-      const result = await this.bot.telegram.sendVideo(chatId, video, {
-        caption,
-        parse_mode: parseMode,
-        duration,
-        width,
-        height,
-        disable_notification: disableNotification,
-        reply_parameters: replyToMessageId ? {
-          message_id: replyToMessageId,
-          allow_sending_without_reply: true
-        } : undefined
-      });
-      
-      return {
-        success: true,
-        type: ActionResultType.SUCCESS,
-        result: result as unknown as GenericData,
-        metadata: { timestamp: new Date().toISOString() }
-      };
-    } catch (error) {
-      this.logger.error('Failed to send video', error);
-      return {
-        success: false,
-        type: ActionResultType.FAILURE,
-        error: `${TelegramErrorType.INVALID_REQUEST}: ${error instanceof Error ? error.message : String(error)}`,
-        metadata: { 
-          timestamp: new Date().toISOString(),
-          errorType: TelegramErrorType.INVALID_REQUEST
-        }
-      };
-    }
-  }
-  
-  /**
-   * Send an audio file
-   */
-  async sendAudio(
-    chatId: string | number, 
-    audio: string, 
-    caption?: string, 
-    parseMode?: string,
-    duration?: number,
-    performer?: string,
-    title?: string,
-    disableNotification?: boolean,
-    replyToMessageId?: number
-  ): Promise<ActionResult> {
-    try {
-      if (!this.bot) {
-        throw new Error('Bot is not initialized');
-      }
-      
-      const result = await this.bot.telegram.sendAudio(chatId, audio, {
-        caption,
-        parse_mode: parseMode,
-        duration,
-        performer,
-        title,
-        disable_notification: disableNotification,
-        reply_parameters: replyToMessageId ? {
-          message_id: replyToMessageId,
-          allow_sending_without_reply: true
-        } : undefined
-      });
-      
-      return {
-        success: true,
-        type: ActionResultType.SUCCESS,
-        result: result as unknown as GenericData,
-        metadata: { timestamp: new Date().toISOString() }
-      };
-    } catch (error) {
-      this.logger.error('Failed to send audio', error);
-      return {
-        success: false,
-        type: ActionResultType.FAILURE,
-        error: `${TelegramErrorType.INVALID_REQUEST}: ${error instanceof Error ? error.message : String(error)}`,
-        metadata: { 
-          timestamp: new Date().toISOString(),
-          errorType: TelegramErrorType.INVALID_REQUEST
-        }
-      };
-    }
-  }
-  
-  /**
-   * Send a document
-   */
-  async sendDocument(
-    chatId: string | number, 
-    document: string, 
-    caption?: string, 
-    parseMode?: string,
-    disableNotification?: boolean,
-    replyToMessageId?: number
-  ): Promise<ActionResult> {
-    try {
-      if (!this.bot) {
-        throw new Error('Bot is not initialized');
-      }
-      
-      const result = await this.bot.telegram.sendDocument(chatId, document, {
-        caption,
-        parse_mode: parseMode,
-        disable_notification: disableNotification,
-        reply_parameters: replyToMessageId ? {
-          message_id: replyToMessageId,
-          allow_sending_without_reply: true
-        } : undefined
-      });
-      
-      return {
-        success: true,
-        type: ActionResultType.SUCCESS,
-        result: result as unknown as GenericData,
-        metadata: { timestamp: new Date().toISOString() }
-      };
-    } catch (error) {
-      this.logger.error('Failed to send document', error);
-      return {
-        success: false,
-        type: ActionResultType.FAILURE,
-        error: `${TelegramErrorType.INVALID_REQUEST}: ${error instanceof Error ? error.message : String(error)}`,
-        metadata: { 
-          timestamp: new Date().toISOString(),
-          errorType: TelegramErrorType.INVALID_REQUEST
-        }
-      };
-    }
-  }
-  
-  /**
-   * Send a sticker
-   */
-  async sendSticker(
-    chatId: string | number, 
-    sticker: string, 
-    disableNotification?: boolean,
-    replyToMessageId?: number
-  ): Promise<ActionResult> {
-    try {
-      if (!this.bot) {
-        throw new Error('Bot is not initialized');
-      }
-      
-      const result = await this.bot.telegram.sendSticker(chatId, sticker, {
-        disable_notification: disableNotification,
-        reply_parameters: replyToMessageId ? {
-          message_id: replyToMessageId,
-          allow_sending_without_reply: true
-        } : undefined
-      });
-      
-      return {
-        success: true,
-        type: ActionResultType.SUCCESS,
-        result: result as unknown as GenericData,
-        metadata: { timestamp: new Date().toISOString() }
-      };
-    } catch (error) {
-      this.logger.error('Failed to send sticker', error);
-      return {
-        success: false,
-        type: ActionResultType.FAILURE,
-        error: `${TelegramErrorType.INVALID_REQUEST}: ${error instanceof Error ? error.message : String(error)}`,
-        metadata: { 
-          timestamp: new Date().toISOString(),
-          errorType: TelegramErrorType.INVALID_REQUEST
-        }
-      };
-    }
-  }
-  
-  /**
-   * Send a location
-   */
-  async sendLocation(
-    chatId: string | number, 
-    latitude: number, 
-    longitude: number,
-    disableNotification?: boolean,
-    replyToMessageId?: number
-  ): Promise<ActionResult> {
-    try {
-      if (!this.bot) {
-        throw new Error('Bot is not initialized');
-      }
-      
-      const result = await this.bot.telegram.sendLocation(chatId, latitude, longitude, {
-        disable_notification: disableNotification,
-        reply_parameters: replyToMessageId ? {
-          message_id: replyToMessageId,
-          allow_sending_without_reply: true
-        } : undefined
-      });
-      
-      return {
-        success: true,
-        type: ActionResultType.SUCCESS,
-        result: result as unknown as GenericData,
-        metadata: { timestamp: new Date().toISOString() }
-      };
-    } catch (error) {
-      this.logger.error('Failed to send location', error);
-      return {
-        success: false,
-        type: ActionResultType.FAILURE,
-        error: `${TelegramErrorType.INVALID_REQUEST}: ${error instanceof Error ? error.message : String(error)}`,
-        metadata: { 
-          timestamp: new Date().toISOString(),
-          errorType: TelegramErrorType.INVALID_REQUEST
-        }
-      };
-    }
+  return new TelegramExtension(telegramConfig)
+}
+
+/**
+ * Default configuration for Telegram extension
+ */
+export const defaultTelegramConfig: Partial<TelegramConfig> = {
+  enabled: false,
+  settings: {
+    commandPrefix: '/',
+    maxMessageLength: 4096,
+    enableLogging: true,
+    allowedUsers: [], // Empty means no whitelist
+    botToken: ''
   }
 }

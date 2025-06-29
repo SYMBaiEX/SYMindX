@@ -1,0 +1,26 @@
+{
+  "id": "api/rest/agents",
+  "title": "Agents Rest API",
+  "description": "This is the API documentation for agents in the rest category.",
+  "source": "@site/docs/api/rest/agents.md",
+  "sourceDirName": "api/rest",
+  "slug": "/api/rest/agents",
+  "permalink": "/docs/api/rest/agents",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/api/rest/agents.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "frontMatter": {},
+  "sidebar": "apiSidebar",
+  "previous": {
+    "title": "Authentication Rest API",
+    "permalink": "/docs/api/rest/authentication"
+  },
+  "next": {
+    "title": "Extensions Rest API",
+    "permalink": "/docs/api/rest/extensions"
+  }
+}

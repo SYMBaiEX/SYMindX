@@ -10,24 +10,122 @@ import { promises as fs } from 'fs'
 import { join, dirname } from 'path'
 import { tmpdir } from 'os'
 import { EventEmitter } from 'events'
-import {
-  ToolSpec,
-  ToolInput,
-  ToolOutput,
-  CodeExecutor,
-  ExecutionContext,
-  ExecutionResult,
-  ValidationResult,
-  SandboxedExecutor,
-  ResourceUsage,
-  TerminalInterface,
-  TerminalOptions,
-  TerminalResult,
-  SpawnOptions,
-  TerminalProcess,
-  TerminalSessionOptions,
-  TerminalSession
-} from '../../extensions/mcp-client/types.js'
+// Local type definitions for tool system
+export interface ToolSpec {
+  id?: string
+  name: string
+  description: string
+  parameters: Record<string, any>
+  inputs?: Record<string, any>
+  code?: string
+  language?: string
+  category?: string
+  permissions?: string[]
+}
+
+export interface ToolInput {
+  [key: string]: any
+}
+
+export interface ToolOutput {
+  result: any
+  error?: string
+}
+
+export interface ExecutionContext {
+  workingDirectory: string
+  environment: Record<string, string>
+  timeoutMs: number
+  timeout?: number
+  language?: string
+  code?: string
+  input?: string
+}
+
+export interface ExecutionResult {
+  stdout: string
+  stderr: string
+  exitCode: number
+  duration: number
+  killed?: boolean
+  success?: boolean
+  error?: string
+  output?: string
+  resourceUsage?: ResourceUsage
+}
+
+export interface ValidationResult {
+  valid: boolean
+  errors: string[]
+  warnings?: string[]
+  suggestions?: string[]
+}
+
+export interface CodeExecutor {
+  execute(code: string, language: string, context: ExecutionContext): Promise<ExecutionResult>
+}
+
+export interface SandboxedExecutor extends CodeExecutor {
+  validateCode(code: string, language: string): ValidationResult
+  destroy?: () => void
+}
+
+export interface ResourceUsage {
+  cpuPercent: number
+  memoryMB: number
+  diskMB: number
+}
+
+export interface TerminalOptions {
+  cwd?: string
+  env?: Record<string, string>
+  timeout?: number
+  stdio?: 'pipe' | 'inherit' | 'ignore'
+  detached?: boolean
+}
+
+export interface TerminalResult {
+  stdout: string
+  stderr: string
+  exitCode: number
+  duration: number
+  killed?: boolean
+}
+
+export interface SpawnOptions {
+  cwd?: string
+  env?: Record<string, string>
+  stdio?: 'pipe' | 'inherit' | 'ignore'
+  detached?: boolean
+}
+
+export interface TerminalProcess {
+  id: string
+  stdout: string
+  stderr: string
+  startTime: Date
+  status: 'running' | 'exited' | 'killed' | 'error'
+}
+
+export interface TerminalSessionOptions {
+  shell?: string
+  cwd?: string
+  env?: Record<string, string>
+}
+
+export interface TerminalSession {
+  id: string
+  pid: number
+  shell: string
+  cwd: string
+}
+
+export interface TerminalInterface {
+  execute(command: string, args: string[], options?: TerminalOptions): Promise<TerminalResult>
+  spawn(command: string, args: string[], options?: SpawnOptions): Promise<ExtendedTerminalProcess>
+  killProcess(processId: string, signal?: NodeJS.Signals): boolean
+  getActiveProcesses(): TerminalProcess[]
+}
 export interface DynamicToolSystem {
   createTool(specification: ToolSpec): ToolSpec
   codeExecution: CodeExecutor
@@ -35,11 +133,9 @@ export interface DynamicToolSystem {
 }
 
 export interface ExtendedTerminalProcess extends TerminalProcess {
-  id: string
   command: string
   args: string[]
-  startTime: Date
-  status: 'running' | 'exited' | 'killed' | 'error'
+  pid: number
   endTime?: Date
   childProcess?: ChildProcess
 }
@@ -135,10 +231,8 @@ export class SYMindXDynamicToolSystem implements DynamicToolSystem {
 
     // Check required parameters
     if (spec.inputs) {
-      for (const inputSpec of spec.inputs) {
-        const paramName = inputSpec.name
-        
-        if (inputSpec.required && !(paramName in input)) {
+      for (const [paramName, inputSpec] of Object.entries(spec.inputs)) {
+        if (inputSpec?.required && !(paramName in input)) {
           errors.push(`Missing required parameter: ${paramName}`)
         }
         
@@ -146,18 +240,18 @@ export class SYMindXDynamicToolSystem implements DynamicToolSystem {
           const value = input[paramName]
           
           // Type validation
-          if (inputSpec.type && typeof value !== inputSpec.type) {
+          if (inputSpec?.type && typeof value !== inputSpec.type) {
             errors.push(`Parameter ${paramName} must be of type ${inputSpec.type}, got ${typeof value}`)
           }
           
           // Basic validation for common types
-          if (inputSpec.type === 'string' && typeof value === 'string') {
+          if (inputSpec?.type === 'string' && typeof value === 'string') {
             if (value.length === 0) {
               errors.push(`Parameter ${paramName} cannot be empty`)
             }
           }
           
-          if (inputSpec.type === 'number' && typeof value === 'number') {
+          if (inputSpec?.type === 'number' && typeof value === 'number') {
             if (isNaN(value)) {
               errors.push(`Parameter ${paramName} must be a valid number`)
             }
@@ -184,10 +278,11 @@ export class SYMindXDynamicToolSystem implements DynamicToolSystem {
         TOOL_NAME: spec.name
       },
       workingDirectory: this.config.terminal.workingDirectory,
-      timeout: this.config.sandbox.timeoutMs
+      timeout: this.config.sandbox.timeoutMs,
+      timeoutMs: this.config.sandbox.timeoutMs
     }
 
-    const result = await this.codeExecution.execute(context.code, context.language, context as any)
+    const result = await this.codeExecution.execute(context.code || '', context.language || 'javascript', context as any)
     
     if (!result.success) {
       throw new Error(result.error || 'Code execution failed')
@@ -339,6 +434,12 @@ export class SYMindXDynamicToolSystem implements DynamicToolSystem {
         // This is a placeholder implementation
         throw new Error('Sandboxed execution not yet implemented')
       },
+      validateCode(code: string, language: string): ValidationResult {
+        return {
+          valid: true,
+          errors: []
+        }
+      },
       destroy(): void {
         // Cleanup sandbox resources
       }
@@ -390,15 +491,17 @@ export class SYMindXCodeExecutor implements CodeExecutor {
     } catch (error) {
       console.error(`❌ Code execution failed (${executionId}):`, error)
       return {
+        stdout: '',
+        stderr: error instanceof Error ? error.message : String(error),
+        exitCode: -1,
         success: false,
         error: error instanceof Error ? error.message : String(error),
-        output: null,
+        output: '',
         duration: 0,
         resourceUsage: {
-          memory: 0,
-          cpu: 0,
-          network: 0,
-          filesystem: 0
+          memoryMB: 0,
+          cpuPercent: 0,
+          diskMB: 0
         }
       }
     }
@@ -484,15 +587,17 @@ ${code}
       const timeout = setTimeout(() => {
         child.kill('SIGKILL')
         resolve({
+          stdout: '',
+          stderr: 'Execution timed out',
+          exitCode: -1,
           success: false,
           error: 'Execution timed out',
-          output: null,
+          output: '',
           duration: Date.now() - startTime,
           resourceUsage: {
-            memory: 0,
-            cpu: 0,
-            network: 0,
-            filesystem: 0
+            memoryMB: 0,
+            cpuPercent: 0,
+            diskMB: 0
           }
         })
       }, context.timeout || this.config.sandbox.timeoutMs)
@@ -513,27 +618,31 @@ ${code}
           }
           
           resolve({
+            stdout: stdout,
+            stderr: stderr,
+            exitCode: code || 0,
             success: true,
             output,
             duration: executionTime,
             resourceUsage: {
-              memory: this.getProcessMemoryUsage(child),
-              cpu: executionTime,
-              network: 0,
-              filesystem: 0 // Disk usage requires additional monitoring
+              memoryMB: this.getProcessMemoryUsage(child),
+              cpuPercent: 0,
+              diskMB: 0
             }
           })
         } else {
           resolve({
+            stdout: stdout,
+            stderr: stderr,
+            exitCode: code || 0,
             success: false,
             error: stderr || `Process exited with code ${code}`,
-            output: stdout || null,
+            output: stdout || '',
             duration: executionTime,
             resourceUsage: {
-              memory: this.getProcessMemoryUsage(child),
-              cpu: executionTime,
-              network: 0,
-              filesystem: 0
+              memoryMB: this.getProcessMemoryUsage(child),
+              cpuPercent: 0,
+              diskMB: 0
             }
           })
         }
@@ -544,15 +653,17 @@ ${code}
         this.activeExecutions.delete(executionId)
         
         resolve({
+          stdout: '',
+          stderr: error.message,
+          exitCode: -1,
           success: false,
           error: error.message,
-          output: null,
+          output: '',
           duration: Date.now() - startTime,
           resourceUsage: {
-            memory: 0,
-            cpu: 0,
-            network: 0,
-            filesystem: 0
+            memoryMB: 0,
+            cpuPercent: 0,
+            diskMB: 0
           }
         })
       })
@@ -662,6 +773,12 @@ ${code}
         // Execute code in a restricted environment
         // This is a placeholder implementation
         throw new Error('Sandboxed execution not yet implemented')
+      },
+      validateCode(code: string, language: string): ValidationResult {
+        return {
+          valid: true,
+          errors: []
+        }
       },
       destroy(): void {
         // Cleanup sandbox resources

@@ -1,0 +1,23 @@
+{
+  "id": "typescript/agents",
+  "title": "Agents Typescript API",
+  "description": "This is the API documentation for agents in the typescript category.",
+  "source": "@site/docs/api/typescript/agents.md",
+  "sourceDirName": "typescript",
+  "slug": "/typescript/agents",
+  "permalink": "/api/typescript/agents",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "apiSidebar",
+  "previous": {
+    "title": "Runtime Typescript API",
+    "permalink": "/api/typescript/runtime"
+  },
+  "next": {
+    "title": "Modules Typescript API",
+    "permalink": "/api/typescript/modules"
+  }
+}

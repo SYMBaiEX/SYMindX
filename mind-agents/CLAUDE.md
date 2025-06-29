@@ -1,10 +1,10 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with the SYMindX AI Agent Framework.
 
-## Common Development Commands
+## Quick Start Commands
 
-### Building and Running
+### Development & Building
 ```bash
 npm run build      # Compile TypeScript to dist/
 npm run start      # Run the compiled application
@@ -12,25 +12,49 @@ npm run dev        # Watch mode: compile & run with hot reload
 npm test           # Run Jest tests
 ```
 
-### Important Build Notes
-- Uses TypeScript with ES modules (`"type": "module"`)
-- Build skips lib check with `--skipLibCheck` flag
-- Output goes to `dist/` directory
-- Path alias `@/*` maps to `./src/*`
+### Agent Interaction
+```bash
+# CLI Interface
+node dist/cli/index.js interactive        # Interactive CLI mode
+node dist/cli/index.js chat start nyx     # Chat with Nyx agent
+node dist/cli/index.js agent list -v      # List all agents (verbose)
+node dist/cli/index.js monitor all        # Monitor system
+
+# Web Interface  
+npm start                                  # Start server
+# Then visit: http://localhost:3001/ui
+```
 
 ## Architecture Overview
 
-SYMindX is a modular AI agent system with a plugin-style architecture:
+SYMindX is a comprehensive autonomous AI agent framework with advanced capabilities:
 
 ```
-SYMindX Runtime
-├── Module Registry (centralized plugin management)
-├── Event Bus (inter-component communication)
-├── Memory Providers (SQLite, Supabase, Neon, In-Memory)
-├── Emotion Modules (Rune Emotion Stack, custom emotions)
-├── Cognition Modules (HTN Planner, Reactive, Hybrid)
-├── Extensions (Slack, RuneLite, Twitter, Telegram, MCP)
-└── Portals (OpenAI, Anthropic, Groq, xAI, OpenRouter, Kluster.ai)
+SYMindX Framework
+├── 🤖 Autonomous Agents (living digital beings)
+│   ├── Independent decision-making and goal pursuit
+│   ├── Continuous life simulation with daily routines
+│   ├── Personality-driven behaviors and growth
+│   └── Ethical constraint system with safety controls
+├── 💬 Human Interaction (CLI + Web + API)
+│   ├── Real-time chat and command interfaces  
+│   ├── WebSocket-based live communication
+│   ├── Agent management and monitoring
+│   └── Task delegation and collaboration
+├── 🧠 Core Intelligence Systems
+│   ├── Memory (SQLite, Supabase, Neon with emotional weighting)
+│   ├── Emotion (Rune Emotion Stack with full spectrum)
+│   ├── Cognition (HTN Planner, Reactive, Hybrid with metacognition)
+│   └── Decision Making (Multi-criteria with ethical evaluation)
+├── 🔌 Extensions & Integrations
+│   ├── API Server (REST + WebSocket + WebUI)
+│   ├── Portal Connections (OpenAI, Anthropic, Groq, etc.)
+│   └── Extensible plugin architecture
+└── 🛡️ Enterprise Features
+    ├── Comprehensive monitoring and observability
+    ├── State persistence and recovery
+    ├── Resource management and scaling
+    └── Security and ethical governance
 ```
 
 ## Key Components

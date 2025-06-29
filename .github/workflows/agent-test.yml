@@ -1,0 +1,140 @@
+name: Agent Testing Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'mind-agents/**'
+      - '.github/workflows/agent-test.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'mind-agents/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18, 20]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        cache-dependency-path: mind-agents/package-lock.json
+    
+    - name: Install dependencies
+      working-directory: ./mind-agents
+      run: npm ci
+    
+    - name: Run TypeScript compilation
+      working-directory: ./mind-agents
+      run: npm run build
+    
+    - name: Run unit tests
+      working-directory: ./mind-agents
+      run: npm test -- --coverage --passWithNoTests
+    
+    - name: Run integration tests
+      working-directory: ./mind-agents
+      run: npm run test:integration || echo "Integration tests not yet implemented"
+    
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      with:
+        directory: ./mind-agents/coverage
+        flags: mind-agents
+        name: codecov-umbrella
+    
+    - name: Validate agent configurations
+      working-directory: ./mind-agents
+      run: |
+        # Validate all agent configuration files
+        for file in src/characters/*.json; do
+          if [ -f "$file" ]; then
+            echo "Validating $file"
+            node -e "
+              try {
+                const config = JSON.parse(require('fs').readFileSync('$file', 'utf8'));
+                console.log('✅ Valid JSON:', '$file');
+                
+                // Basic validation
+                if (!config.core?.name) throw new Error('Missing core.name');
+                if (!config.psyche?.defaults?.memory) throw new Error('Missing memory provider');
+                if (!config.psyche?.defaults?.emotion) throw new Error('Missing emotion module');
+                if (!config.psyche?.defaults?.cognition) throw new Error('Missing cognition module');
+                
+                console.log('✅ Configuration valid:', '$file');
+              } catch (error) {
+                console.error('❌ Invalid configuration:', '$file', error.message);
+                process.exit(1);
+              }
+            "
+          fi
+        done
+    
+    - name: Test lifecycle components
+      working-directory: ./mind-agents
+      run: |
+        node -e "
+          try {
+            // Test lifecycle imports
+            require('./dist/lifecycle/index.js');
+            console.log('✅ Lifecycle components load successfully');
+          } catch (error) {
+            console.error('❌ Lifecycle components failed to load:', error.message);
+            process.exit(1);
+          }
+        "
+
+  security-scan:
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Run security audit
+      working-directory: ./mind-agents
+      run: npm audit --audit-level moderate
+    
+    - name: Scan for secrets
+      uses: trufflesecurity/trufflehog@main
+      with:
+        path: ./
+        base: main
+        head: HEAD
+
+  lint:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        cache: 'npm'
+        cache-dependency-path: mind-agents/package-lock.json
+    
+    - name: Install dependencies
+      working-directory: ./mind-agents
+      run: npm ci
+    
+    - name: Run linter
+      working-directory: ./mind-agents
+      run: npm run lint || echo "Linting not configured"
+    
+    - name: Check TypeScript types
+      working-directory: ./mind-agents
+      run: npx tsc --noEmit

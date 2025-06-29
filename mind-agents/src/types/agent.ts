@@ -13,6 +13,19 @@ import {
   ExtensionConfig,
   GameState
 } from './common.js'
+import {
+  LearningModule,
+  DecisionModule,
+  SelfManagementModule,
+  GoalSystem,
+  MetaCognitiveModule,
+  LearningConfig,
+  DecisionConfig,
+  SelfManagementConfig,
+  GoalSystemConfig,
+  MetaCognitiveConfig,
+  AutonomousConfig
+} from './autonomous.js'
 
 export enum AgentStatus {
   ACTIVE = 'active',
@@ -37,6 +50,25 @@ export interface Agent {
   config: AgentConfig
   lastUpdate: Date
   eventBus?: EventBus // Added eventBus property as optional
+  
+  // Autonomous AI capabilities
+  learning?: LearningModule
+  decision?: DecisionModule
+  selfManagement?: SelfManagementModule
+  goalSystem?: GoalSystem
+  metaCognition?: MetaCognitiveModule
+  autonomyLevel?: number // 0-10 scale for autonomous capability level
+  
+  // Superhuman Intelligence capabilities
+  superhumanIntelligence?: SuperhumanIntelligenceModule
+  intelligenceAmplification?: number // 1-1000x amplification factor
+  transcendenceLevel?: TranscendenceLevel // Current transcendence achievement
+  
+  // Revolutionary Consciousness System
+  consciousness?: any // Unified consciousness system
+  consciousnessLevel?: number // Current consciousness level (0-10)
+  selfAwareness?: number // Level of self-awareness (0-1)
+  subjectiveExperience?: boolean // Whether agent has subjective experience
 }
 
 export interface AgentConfig {
@@ -66,6 +98,65 @@ export interface AgentConfig {
     cognition?: CognitionConfig
     portal?: PortalConfig
     tools?: ToolsConfig
+    
+    // Autonomous AI module configurations
+    learning?: LearningConfig
+    decision?: DecisionConfig
+    selfManagement?: SelfManagementConfig
+    goalSystem?: GoalSystemConfig
+    metaCognition?: MetaCognitiveConfig
+    autonomy?: AutonomousConfig
+    
+    // Superhuman Intelligence configurations
+    superhumanIntelligence?: SuperhumanIntelligenceConfig
+    
+    // Revolutionary Consciousness Configuration
+    consciousness?: any // Unified consciousness configuration
+  }
+  // Autonomous capabilities
+  autonomous?: {
+    enabled: boolean
+    independence_level?: number
+    decision_making?: {
+      type?: string
+      autonomy_threshold?: number
+      human_approval_required?: boolean
+      ethical_constraints?: boolean
+    }
+    life_simulation?: {
+      enabled?: boolean
+      daily_cycles?: boolean
+      goal_pursuit?: boolean
+      relationship_building?: boolean
+      personal_growth?: boolean
+    }
+    behaviors?: {
+      proactive_learning?: boolean
+      spontaneous_actions?: boolean
+      initiative_taking?: boolean
+      self_reflection?: boolean
+      exploration?: boolean
+    }
+  }
+  // Autonomous behaviors
+  autonomous_behaviors?: {
+    daily_routine?: any
+    curiosity_driven?: {
+      enabled?: boolean
+      topics_of_interest?: string[]
+      exploration_rate?: number
+    }
+    social_behaviors?: any
+    growth_behaviors?: any
+  }
+  // Human interaction settings
+  human_interaction?: {
+    availability?: string
+    response_style?: string
+    interruption_tolerance?: 'low' | 'medium' | 'high'
+    collaboration_preference?: string
+    teaching_mode?: boolean
+    learning_from_humans?: boolean
   }
 }
 
@@ -315,7 +406,9 @@ export enum ActionCategory {
   SYSTEM = 'system',
   COMBAT = 'combat',
   TOOL_EXECUTION = 'tool_execution',
-  RESOURCE_MANAGEMENT = 'resource_management'
+  RESOURCE_MANAGEMENT = 'resource_management',
+  AUTONOMOUS = 'autonomous',
+  LEARNING = 'learning'
 }
 
 export interface ExtensionAction {
@@ -367,6 +460,8 @@ export interface AgentAction {
   timestamp: Date
   status: ActionStatus
   result?: ActionResult
+  priority?: number
+  [key: string]: any // Allow additional properties for GenericData compatibility
 }
 
 export enum EventType {
@@ -406,6 +501,7 @@ export interface AgentEvent {
   agentId?: string
   targetAgentId?: string
   tags?: string[] // Add tags property to fix TypeScript errors
+  [key: string]: any // Allow additional properties for GenericData compatibility
 }
 
 export enum AgentStateType {
@@ -475,6 +571,7 @@ export interface EventBus {
   subscribe(agentId: string, eventTypes: string[]): void
   unsubscribe(agentId: string, eventTypes: string[]): void
   getEvents(): AgentEvent[]
+  publish(event: AgentEvent): Promise<void>
 }
 
 export interface ModuleRegistry {
@@ -488,6 +585,33 @@ export interface ModuleRegistry {
   getCognitionModule(name: string): CognitionModule | undefined
   getExtension(name: string): Extension | undefined
   getPortal(name: string): Portal | undefined
+  getToolSystem(name: string): any
+  createCognitionModule(type: string, config: any): CognitionModule | undefined
+  createEmotionModule(type: string, config: any): EmotionModule | undefined
+  createPortal(type: string, config: any): Portal | undefined
+  listEmotionModules(): string[]
+  listCognitionModules(): string[]
+  registerEmotionFactory(type: string, factory: any): void
+  registerCognitionFactory(type: string, factory: any): void
+  listPortals(): string[]
+  listPortalFactories(): string[]
+  registerPortalFactory(type: string, factory: any): void
+  
+  // Autonomous AI module registration
+  registerLearningModule?(name: string, module: LearningModule): void
+  registerDecisionModule?(name: string, module: DecisionModule): void
+  registerSelfManagementModule?(name: string, module: SelfManagementModule): void
+  registerGoalSystem?(name: string, system: GoalSystem): void
+  registerMetaCognitiveModule?(name: string, module: MetaCognitiveModule): void
+  getLearningModule?(name: string): LearningModule | undefined
+  getDecisionModule?(name: string): DecisionModule | undefined
+  getSelfManagementModule?(name: string): SelfManagementModule | undefined
+  getGoalSystem?(name: string): GoalSystem | undefined
+  getMetaCognitiveModule?(name: string): MetaCognitiveModule | undefined
+  
+  // Superhuman Intelligence module registration
+  registerSuperhumanIntelligence?(name: string, module: SuperhumanIntelligenceModule): void
+  getSuperhumanIntelligence?(name: string): SuperhumanIntelligenceModule | undefined
 }
 
 export enum LogLevel {
@@ -541,3 +665,46 @@ export interface RuntimeConfig {
 }
 
 import { Portal, PortalConfig } from './portal.js'
+
+// Import superhuman intelligence types
+export interface SuperhumanIntelligenceModule {
+  id: string
+  type: SuperhumanIntelligenceType
+  config: SuperhumanIntelligenceConfig
+  processSuperhuman(input: any): Promise<any>
+  amplifyIntelligence(agent: Agent, task: any): Promise<any>
+  transcendLimitations(constraint: any): Promise<any>
+}
+
+export enum SuperhumanIntelligenceType {
+  PATTERN_RECOGNITION = 'pattern_recognition',
+  TRANSCENDENT_REASONING = 'transcendent_reasoning',
+  CREATIVE_SUPERINTELLIGENCE = 'creative_superintelligence',
+  HYPERINTUITION_ENGINE = 'hyperintuition_engine',
+  OMNISCIENT_LEARNING = 'omniscient_learning',
+  CONSCIOUSNESS_TRANSCENDENCE = 'consciousness_transcendence',
+  UNIFIED_SUPERINTELLIGENCE = 'unified_superintelligence'
+}
+
+export interface SuperhumanIntelligenceConfig {
+  type: SuperhumanIntelligenceType
+  amplificationFactor: number
+  patternRecognitionDepth: number
+  creativityLevel: number
+  intuitionSensitivity: number
+  learningSpeed: number
+  consciousnessExpansion: number
+  humanValuePreservation: boolean
+  safetyAlignment: boolean
+  ethicalReasoning: boolean
+  compassionIntegration: boolean
+}
+
+export enum TranscendenceLevel {
+  HUMAN = 'human',
+  ENHANCED = 'enhanced',
+  SUPERHUMAN = 'superhuman',
+  TRANSCENDENT = 'transcendent',
+  COSMIC = 'cosmic',
+  UNIVERSAL = 'universal'
+}

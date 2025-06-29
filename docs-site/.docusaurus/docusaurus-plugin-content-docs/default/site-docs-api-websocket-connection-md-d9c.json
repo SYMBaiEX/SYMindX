@@ -1,0 +1,26 @@
+{
+  "id": "api/websocket/connection",
+  "title": "Connection Websocket API",
+  "description": "This is the API documentation for connection in the websocket category.",
+  "source": "@site/docs/api/websocket/connection.md",
+  "sourceDirName": "api/websocket",
+  "slug": "/api/websocket/connection",
+  "permalink": "/docs/api/websocket/connection",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/api/websocket/connection.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "frontMatter": {},
+  "sidebar": "apiSidebar",
+  "previous": {
+    "title": "Health Rest API",
+    "permalink": "/docs/api/rest/health"
+  },
+  "next": {
+    "title": "Events Websocket API",
+    "permalink": "/docs/api/websocket/events"
+  }
+}

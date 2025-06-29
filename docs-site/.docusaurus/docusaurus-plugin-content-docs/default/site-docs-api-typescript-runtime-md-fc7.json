@@ -1,0 +1,26 @@
+{
+  "id": "api/typescript/runtime",
+  "title": "Runtime Typescript API",
+  "description": "This is the API documentation for runtime in the typescript category.",
+  "source": "@site/docs/api/typescript/runtime.md",
+  "sourceDirName": "api/typescript",
+  "slug": "/api/typescript/runtime",
+  "permalink": "/docs/api/typescript/runtime",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/api/typescript/runtime.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "frontMatter": {},
+  "sidebar": "apiSidebar",
+  "previous": {
+    "title": "Modules Typescript API",
+    "permalink": "/docs/api/typescript/modules"
+  },
+  "next": {
+    "title": "Types Typescript API",
+    "permalink": "/docs/api/typescript/types"
+  }
+}

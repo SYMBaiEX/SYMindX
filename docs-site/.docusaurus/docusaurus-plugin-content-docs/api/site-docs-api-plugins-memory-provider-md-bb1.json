@@ -1,0 +1,23 @@
+{
+  "id": "plugins/memory-provider",
+  "title": "Memory-provider Plugins API",
+  "description": "This is the API documentation for memory-provider in the plugins category.",
+  "source": "@site/docs/api/plugins/memory-provider.md",
+  "sourceDirName": "plugins",
+  "slug": "/plugins/memory-provider",
+  "permalink": "/api/plugins/memory-provider",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "apiSidebar",
+  "previous": {
+    "title": "Extension-interface Plugins API",
+    "permalink": "/api/plugins/extension-interface"
+  },
+  "next": {
+    "title": "Emotion-module Plugins API",
+    "permalink": "/api/plugins/emotion-module"
+  }
+}

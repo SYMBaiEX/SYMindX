@@ -1,0 +1,23 @@
+{
+  "id": "plugins/portal-interface",
+  "title": "Portal-interface Plugins API",
+  "description": "This is the API documentation for portal-interface in the plugins category.",
+  "source": "@site/docs/api/plugins/portal-interface.md",
+  "sourceDirName": "plugins",
+  "slug": "/plugins/portal-interface",
+  "permalink": "/api/plugins/portal-interface",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "apiSidebar",
+  "previous": {
+    "title": "Cognition-module Plugins API",
+    "permalink": "/api/plugins/cognition-module"
+  },
+  "next": {
+    "title": "Lifecycle Plugins API",
+    "permalink": "/api/plugins/lifecycle"
+  }
+}

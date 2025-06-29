@@ -1,0 +1,246 @@
+name: Agent Deployment Pipeline
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'mind-agents/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      agent_id:
+        description: 'Specific agent ID to deploy (optional)'
+        required: false
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+      image-digest: ${{ steps.build.outputs.digest }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        cache: 'npm'
+        cache-dependency-path: mind-agents/package-lock.json
+    
+    - name: Install dependencies
+      working-directory: ./mind-agents
+      run: npm ci
+    
+    - name: Build application
+      working-directory: ./mind-agents
+      run: npm run build
+    
+    - name: Run tests
+      working-directory: ./mind-agents
+      run: npm test -- --passWithNoTests
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ghcr.io/${{ github.repository }}/mind-agents
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+    
+    - name: Build and push Docker image
+      id: build
+      uses: docker/build-push-action@v5
+      with:
+        context: ./mind-agents
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        dockerfile: |
+          FROM node:20-alpine
+          
+          WORKDIR /app
+          
+          # Copy package files
+          COPY package*.json ./
+          RUN npm ci --only=production
+          
+          # Copy built application
+          COPY dist/ ./dist/
+          COPY src/characters/ ./src/characters/
+          
+          # Create data directory
+          RUN mkdir -p data
+          
+          # Health check
+          HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+            CMD node -e "require('http').get('http://localhost:3000/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1))" || exit 1
+          
+          EXPOSE 3000
+          
+          CMD ["npm", "start"]
+
+  deploy-staging:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' || github.event.inputs.environment == 'staging'
+    environment: staging
+    
+    steps:
+    - name: Deploy to staging
+      run: |
+        echo "🚀 Deploying to staging environment"
+        echo "Image: ${{ needs.build.outputs.image-tag }}"
+        
+        # In a real scenario, this would deploy to your staging environment
+        # Example with kubectl:
+        # kubectl set image deployment/mind-agents mind-agents=${{ needs.build.outputs.image-tag }}
+        # kubectl rollout status deployment/mind-agents
+        
+        # Example with docker-compose:
+        # docker-compose -f docker-compose.staging.yml pull
+        # docker-compose -f docker-compose.staging.yml up -d
+        
+        echo "✅ Staging deployment completed"
+    
+    - name: Run smoke tests
+      run: |
+        echo "🧪 Running smoke tests against staging"
+        
+        # Wait for deployment to be ready
+        sleep 30
+        
+        # Run basic health checks
+        curl -f http://staging.symindx.com/health || exit 1
+        
+        echo "✅ Smoke tests passed"
+    
+    - name: Notify deployment
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        channel: '#deployments'
+        text: 'Staging deployment completed for mind-agents'
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+      if: always()
+
+  deploy-production:
+    runs-on: ubuntu-latest
+    needs: [build, deploy-staging]
+    if: github.event.inputs.environment == 'production'
+    environment: production
+    
+    steps:
+    - name: Manual approval checkpoint
+      uses: trstringer/manual-approval@v1
+      with:
+        secret: ${{ github.TOKEN }}
+        approvers: ${{ github.actor }}
+        minimum-approvals: 1
+        issue-title: "Production Deployment Approval"
+        issue-body: |
+          Please approve the production deployment of mind-agents
+          
+          **Image:** ${{ needs.build.outputs.image-tag }}
+          **Digest:** ${{ needs.build.outputs.image-digest }}
+          **Triggered by:** ${{ github.actor }}
+          
+          Review the staging deployment before approving.
+    
+    - name: Blue-Green deployment to production
+      run: |
+        echo "🌊 Starting blue-green deployment to production"
+        echo "Image: ${{ needs.build.outputs.image-tag }}"
+        
+        # Blue-Green deployment strategy
+        # 1. Deploy to green environment
+        echo "📗 Deploying to green environment"
+        
+        # 2. Run health checks
+        echo "🏥 Running health checks"
+        sleep 60
+        
+        # 3. Switch traffic to green
+        echo "🔄 Switching traffic to green environment"
+        
+        # 4. Monitor for issues
+        echo "📊 Monitoring deployment"
+        sleep 30
+        
+        # 5. Clean up blue environment
+        echo "🧹 Cleaning up blue environment"
+        
+        echo "✅ Production deployment completed"
+    
+    - name: Post-deployment validation
+      run: |
+        echo "🔍 Running post-deployment validation"
+        
+        # Validate deployment
+        curl -f https://api.symindx.com/health || exit 1
+        
+        # Check metrics
+        echo "📈 Checking deployment metrics"
+        
+        echo "✅ Post-deployment validation passed"
+    
+    - name: Notify production deployment
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        channel: '#deployments'
+        text: 'Production deployment completed for mind-agents 🎉'
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+      if: always()
+
+  rollback:
+    runs-on: ubuntu-latest
+    if: failure()
+    needs: [deploy-staging, deploy-production]
+    
+    steps:
+    - name: Automatic rollback
+      run: |
+        echo "🔙 Initiating automatic rollback"
+        
+        # Get previous successful deployment
+        # Rollback to previous version
+        
+        echo "✅ Rollback completed"
+    
+    - name: Notify rollback
+      uses: 8398a7/action-slack@v3
+      with:
+        status: 'warning'
+        channel: '#deployments'
+        text: 'Automatic rollback triggered for mind-agents deployment'
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}

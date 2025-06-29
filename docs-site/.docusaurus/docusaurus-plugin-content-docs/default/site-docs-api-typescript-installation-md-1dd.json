@@ -1,0 +1,26 @@
+{
+  "id": "api/typescript/installation",
+  "title": "Installation Typescript API",
+  "description": "This is the API documentation for installation in the typescript category.",
+  "source": "@site/docs/api/typescript/installation.md",
+  "sourceDirName": "api/typescript",
+  "slug": "/api/typescript/installation",
+  "permalink": "/docs/api/typescript/installation",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/api/typescript/installation.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "frontMatter": {},
+  "sidebar": "apiSidebar",
+  "previous": {
+    "title": "Streaming Websocket API",
+    "permalink": "/docs/api/websocket/streaming"
+  },
+  "next": {
+    "title": "Agents Typescript API",
+    "permalink": "/docs/api/typescript/agents"
+  }
+}

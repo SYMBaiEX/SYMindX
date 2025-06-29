@@ -1,0 +1,295 @@
+/**
+ * CSS files with the .module.css suffix will be treated as CSS modules
+ * and scoped locally.
+ */
+
+.heroBanner {
+  padding: 4rem 0;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+}
+
+.heroBanner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' width='32' height='32' fill='none' stroke='rgba(255,255,255,0.1)'%3e%3cpath d='m0 .5 32 32M0 32.5 32 .5'/%3e%3c/svg%3e");
+  pointer-events: none;
+}
+
+.buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin: 2rem 0;
+  flex-wrap: wrap;
+}
+
+.demoSection {
+  margin-top: 3rem;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.demoSection h3 {
+  color: white;
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.codeExample {
+  text-align: left;
+}
+
+.codeBlock {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 1.5rem;
+  font-family: 'Fira Code', 'JetBrains Mono', monospace;
+  font-size: 0.9rem;
+  color: white;
+  overflow-x: auto;
+  backdrop-filter: blur(10px);
+}
+
+.codeBlock code {
+  background: none;
+  color: inherit;
+  border: none;
+  padding: 0;
+  font-size: inherit;
+}
+
+.quickStart {
+  padding: 4rem 0;
+  background: var(--ifm-color-emphasis-50);
+}
+
+.quickStart h2 {
+  color: var(--ifm-color-primary);
+  margin-bottom: 1rem;
+  font-weight: 700;
+}
+
+.configExample {
+  background: var(--ifm-color-emphasis-100);
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 12px;
+  padding: 1.5rem;
+  font-family: 'Fira Code', monospace;
+  font-size: 0.85rem;
+  overflow-x: auto;
+  margin-top: 1rem;
+}
+
+.configExample code {
+  background: none;
+  color: var(--ifm-color-content);
+  border: none;
+  padding: 0;
+  font-size: inherit;
+}
+
+.apiExample {
+  background: var(--ifm-color-emphasis-100);
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-top: 1rem;
+}
+
+.apiMethod {
+  display: inline-block;
+  background: #10b981;
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.apiResponse {
+  background: var(--ifm-color-emphasis-200);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 1rem;
+  font-family: 'Fira Code', monospace;
+  font-size: 0.85rem;
+  overflow-x: auto;
+}
+
+.apiResponse code {
+  background: none;
+  color: var(--ifm-color-content);
+  border: none;
+  padding: 0;
+  font-size: inherit;
+}
+
+.useCases {
+  padding: 4rem 0;
+  background: white;
+}
+
+.useCases h2 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.useCaseCard {
+  background: white;
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 16px;
+  padding: 2rem;
+  height: 100%;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.useCaseCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.useCaseIcon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.useCaseCard h3 {
+  color: var(--ifm-color-primary);
+  font-weight: 700;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.useCaseCard p {
+  color: var(--ifm-color-content-secondary);
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.useCaseCard ul {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.useCaseCard li {
+  color: var(--ifm-color-content);
+  margin-bottom: 0.5rem;
+}
+
+.community {
+  padding: 4rem 0;
+  background: var(--ifm-color-emphasis-50);
+}
+
+.community h2 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--ifm-color-primary);
+  margin-bottom: 1rem;
+}
+
+.community p {
+  font-size: 1.125rem;
+  color: var(--ifm-color-content-secondary);
+  margin-bottom: 2rem;
+}
+
+.communityLinks {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+/* Dark theme adjustments */
+[data-theme='dark'] .quickStart {
+  background: var(--ifm-background-color);
+}
+
+[data-theme='dark'] .useCases {
+  background: var(--ifm-background-color);
+}
+
+[data-theme='dark'] .useCaseCard {
+  background: var(--ifm-color-emphasis-100);
+  border-color: var(--ifm-color-emphasis-300);
+}
+
+[data-theme='dark'] .configExample,
+[data-theme='dark'] .apiExample,
+[data-theme='dark'] .apiResponse {
+  background: var(--ifm-color-emphasis-200);
+  border-color: var(--ifm-color-emphasis-300);
+}
+
+[data-theme='dark'] .community {
+  background: var(--ifm-color-emphasis-100);
+}
+
+/* Responsive design */
+@media screen and (max-width: 996px) {
+  .heroBanner {
+    padding: 2rem 0;
+  }
+  
+  .buttons {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .quickStart,
+  .useCases,
+  .community {
+    padding: 2rem 0;
+  }
+  
+  .useCases h2,
+  .community h2 {
+    font-size: 2rem;
+  }
+  
+  .communityLinks {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .codeBlock,
+  .configExample,
+  .apiResponse {
+    font-size: 0.8rem;
+    padding: 1rem;
+  }
+  
+  .useCaseCard {
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  .heroBanner .hero__title {
+    font-size: 2rem;
+  }
+  
+  .heroBanner .hero__subtitle {
+    font-size: 1rem;
+  }
+}

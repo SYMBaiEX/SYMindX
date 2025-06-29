@@ -1,0 +1,33 @@
+{
+  "name": "Isolated Test Environment",
+  "description": "Completely isolated environment for unit testing",
+  "type": "isolated",
+  "resources": {
+    "maxMemoryMB": 256,
+    "maxCpuPercent": 50,
+    "maxNetworkBandwidth": 1000000,
+    "maxDiskSpace": 1024,
+    "maxExecutionTime": 30000
+  },
+  "mockServices": [],
+  "dataFixtures": [
+    "basic-agent-config",
+    "test-memories",
+    "sample-events"
+  ],
+  "security": {
+    "networkAccess": false,
+    "fileSystemAccess": false,
+    "processAccess": false
+  },
+  "monitoring": {
+    "enabled": true,
+    "metricsInterval": 1000,
+    "logLevel": "debug"
+  },
+  "cleanup": {
+    "autoCleanup": true,
+    "cleanupTimeout": 5000,
+    "preserveLogs": true
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "id": "introduction",
+  "title": "Introduction to SYMindX",
+  "description": "Welcome to SYMindX - a cutting-edge, modular AI agent framework designed to create intelligent, emotionally reactive characters that can operate autonomously across games, web platforms, and social media.",
+  "source": "@site/docs/introduction.md",
+  "sourceDirName": ".",
+  "slug": "/introduction",
+  "permalink": "/docs/introduction",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/introduction.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "frontMatter": {},
+  "sidebar": "tutorialSidebar",
+  "next": {
+    "title": "Installation",
+    "permalink": "/docs/getting-started/installation"
+  }
+}

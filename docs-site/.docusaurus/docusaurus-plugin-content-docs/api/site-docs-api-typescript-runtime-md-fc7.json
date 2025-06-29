@@ -1,0 +1,23 @@
+{
+  "id": "typescript/runtime",
+  "title": "Runtime Typescript API",
+  "description": "This is the API documentation for runtime in the typescript category.",
+  "source": "@site/docs/api/typescript/runtime.md",
+  "sourceDirName": "typescript",
+  "slug": "/typescript/runtime",
+  "permalink": "/api/typescript/runtime",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "apiSidebar",
+  "previous": {
+    "title": "Installation Typescript API",
+    "permalink": "/api/typescript/installation"
+  },
+  "next": {
+    "title": "Agents Typescript API",
+    "permalink": "/api/typescript/agents"
+  }
+}

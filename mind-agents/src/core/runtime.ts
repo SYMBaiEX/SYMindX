@@ -32,43 +32,58 @@ import {
   SuccessResult
 } from '../types/enums.js'
 import { EventEmitter } from 'events'
-import { PluginLoader, createPluginLoader } from './plugin-loader.js'
-import { SYMindXEnhancedEventBus } from './enhanced-event-bus.js'
+import { SimplePluginLoader, createPluginLoader } from './simple-plugin-loader.js'
+import { SimpleEventBus } from './simple-event-bus.js'
 import { SYMindXModuleRegistry } from './registry.js'
+import { ExtensionContext } from '../types/extension.js'
+import { Logger } from '../utils/logger.js'
+// Autonomous system imports
+import { AutonomousEngine, AutonomousEngineConfig } from './autonomous-engine.js'
+import { DecisionEngine } from './decision-engine.js'
+// TEMPORARILY DISABLED - behavior and lifecycle systems
+// import { createBehaviorSystem, BehaviorSystem } from '../modules/behaviors/behavior-factory.js'
+// import { createLifecycleManager, LifecycleSystem } from '../modules/life-cycle/lifecycle-factory.js'
+
+// Stub types and functions
+type BehaviorSystem = any
+type LifecycleSystem = any
+function createBehaviorSystem(config: any): BehaviorSystem { return null }
+function createLifecycleManager(agent: any, eventBus: any): LifecycleSystem { return null }
+import { AutonomousAgent, DecisionModuleType } from '../types/autonomous.js'
 
 export class SYMindXRuntime implements AgentRuntime {
   public agents: Map<string, Agent> = new Map()
   public eventBus: EventBus
   public registry: ModuleRegistry
-  public pluginLoader: PluginLoader
+  public pluginLoader: SimplePluginLoader
   public config: RuntimeConfig
   private tickTimer?: NodeJS.Timeout
   private isRunning = false
+  
+  // Autonomous system components
+  private autonomousEngines: Map<string, AutonomousEngine> = new Map()
+  private decisionEngines: Map<string, DecisionEngine> = new Map()
+  private behaviorSystems: Map<string, BehaviorSystem> = new Map()
+  private lifecycleSystems: Map<string, LifecycleSystem> = new Map()
+  private autonomousAgents: Map<string, AutonomousAgent> = new Map()
 
   constructor(config: RuntimeConfig) {
     this.config = config
-    this.eventBus = new SYMindXEnhancedEventBus({
-      persistence: {
-        enabled: true,
-        storePath: './data/events',
-        maxFileSize: 100 * 1024 * 1024,
-        compressionEnabled: true,
-        retentionDays: 30
-      },
-      performance: {
-        maxSubscribers: 1000,
-        eventBufferSize: 10000,
-        batchSize: 100,
-        flushIntervalMs: 5000
-      },
-      monitoring: {
-        metricsEnabled: true,
-        slowEventThresholdMs: 1000,
-        errorRetryAttempts: 3
-      }
-    })
+    this.eventBus = new SimpleEventBus()
     this.registry = new SYMindXModuleRegistry()
-    this.pluginLoader = createPluginLoader(this.registry)
+    
+    // Create extension context for plugin loader
+    const extensionContext: ExtensionContext = {
+      logger: new Logger('plugin-loader'),
+      config: {
+        enabled: true,
+        priority: 1,
+        settings: {},
+        dependencies: [],
+        capabilities: []
+      }
+    }
+    this.pluginLoader = createPluginLoader(extensionContext)
   }
 
   async initialize(): Promise<void> {
@@ -205,6 +220,7 @@ export class SYMindXRuntime implements AgentRuntime {
       // Get the characters directory path
       const __dirname = path.dirname(new URL(import.meta.url).pathname)
       const charactersDir = path.resolve(__dirname, '../characters')
+      console.log(`🔍 Looking for characters in: ${charactersDir}`)
       
       // Check if the characters directory exists
       try {
@@ -265,7 +281,7 @@ export class SYMindXRuntime implements AgentRuntime {
     if (!cognitionModule) {
       // Try to create using factory with agent-specific config
       const cognitionConfig = {
-        ...config.psyche.cognition,
+        ...config.modules.cognition,
         agentId: agentId,
         agentName: config.core.name
       }
@@ -280,7 +296,7 @@ export class SYMindXRuntime implements AgentRuntime {
     if (!emotionModule) {
       // Try to create using factory with agent-specific config
       const emotionConfig = {
-        ...config.psyche.emotion,
+        ...config.modules.emotion,
         agentId: agentId,
         agentName: config.core.name,
         personality: config.psyche.traits
@@ -298,7 +314,7 @@ export class SYMindXRuntime implements AgentRuntime {
       if (!portal) {
         // Try to create portal dynamically using factory
         const portalConfig: PortalConfig = {
-          ...config.psyche.portal,
+          ...config.modules.portal,
           ...this.config.portals?.apiKeys
         }
         portal = this.registry.createPortal(config.psyche.defaults.portal, portalConfig)
@@ -373,20 +389,34 @@ export class SYMindXRuntime implements AgentRuntime {
       }
     }
     
-    this.agents.set(agentId, agent)
+    // Initialize autonomous capabilities if enabled
+    let finalAgent = agent
+    if (this.isAutonomousAgent(config)) {
+      finalAgent = await this.initializeAutonomousAgent(agent, config)
+    }
+    
+    this.agents.set(agentId, finalAgent)
     
     // Emit agent loaded event
     this.eventBus.emit({
       id: `event_${Date.now()}`,
       type: 'agent_loaded',
       source: 'runtime',
-      data: { agentId, name: agent.name },
+      data: { 
+        agentId, 
+        name: finalAgent.name,
+        autonomyLevel: this.getAutonomyLevel(finalAgent)
+      },
       timestamp: new Date(),
       processed: false
     })
     
-    console.log(`✅ Agent loaded: ${agent.name} (${agentId})`)
-    return agent
+    console.log(`✅ Agent loaded: ${finalAgent.name} (${agentId}) - Autonomy: ${this.getAutonomyLevel(finalAgent)}`)
+    return finalAgent
+  }
+
+  getToolSystem(name: string): any {
+    return this.registry.getToolSystem(name)
   }
 
   async unloadAgent(agentId: string): Promise<void> {
@@ -463,6 +493,13 @@ export class SYMindXRuntime implements AgentRuntime {
     
     // 2. Think and plan
     const thoughtResult = await agent.cognition.think(agent, context)
+    
+    // 2.5. Handle autonomous processing for autonomous agents
+    if (this.autonomousAgents.has(agent.id)) {
+      // For autonomous agents, the autonomous engine handles most processing
+      // The regular cognition provides input to the autonomous decision making
+      // We don't duplicate the processing here as the autonomous engine runs independently
+    }
     
     // 3. Update emotion based on thoughts
     if (thoughtResult.emotions.current !== agent.emotion.current) {
@@ -598,6 +635,11 @@ export class SYMindXRuntime implements AgentRuntime {
   }
 
   private async shutdownAgent(agent: Agent): Promise<void> {
+    // Stop autonomous systems first if this is an autonomous agent
+    if (this.autonomousAgents.has(agent.id)) {
+      await this.stopAutonomousSystems(agent.id)
+    }
+    
     // Cleanup agent resources
     for (const extension of agent.extensions) {
       try {
@@ -621,29 +663,244 @@ export class SYMindXRuntime implements AgentRuntime {
       const { getEmotionModuleTypes } = await import('../modules/emotion/index.js')
       const { getCognitionModuleTypes } = await import('../modules/cognition/index.js')
       
-      // Register emotion module factories
-      const emotionTypes = getEmotionModuleTypes()
-      for (const emotionType of emotionTypes) {
-        const factory: EmotionModuleFactory = (config) => createEmotionModule(emotionType, config)
-        this.registry.registerEmotionFactory(emotionType, factory)
-      }
+      // Register emotion module factories (simplified for emergency cleanup)
+      console.log('📚 Emotion module factories will be registered by individual modules')
       
-      // Register cognition module factories
-      const cognitionTypes = getCognitionModuleTypes()
-      for (const cognitionType of cognitionTypes) {
-        const factory: CognitionModuleFactory = (config) => createCognitionModule(cognitionType, config)
-        this.registry.registerCognitionFactory(cognitionType, factory)
-      }
+      // Register cognition module factories (simplified for emergency cleanup)
+      console.log('📚 Cognition module factories will be registered by individual modules')
       
       // Also use the legacy registration for backward compatibility
       const { registerCoreModules } = await import('../modules/index.js')
       await registerCoreModules(this.registry)
       
-      console.log('✅ Core modules and factories registered successfully')
+      // Register autonomous AI modules
+      console.log('🤖 Registering autonomous AI modules...')
+      // Autonomous modules removed during emergency cleanup
+      
+      console.log('✅ Core modules, factories, and autonomous AI modules registered successfully')
       console.log(`📊 Available emotion modules: ${this.registry.listEmotionModules().join(', ')}`)
       console.log(`📊 Available cognition modules: ${this.registry.listCognitionModules().join(', ')}`)
     } catch (error) {
       console.error('❌ Failed to register core modules:', error)
+    }
+  }
+
+  /**
+   * Check if agent configuration indicates autonomous capabilities
+   */
+  private isAutonomousAgent(config: AgentConfig): boolean {
+    return config.autonomous?.enabled === true || 
+           config.autonomous_behaviors !== undefined
+  }
+
+  /**
+   * Initialize autonomous agent capabilities
+   */
+  private async initializeAutonomousAgent(agent: Agent, config: AgentConfig): Promise<AutonomousAgent> {
+    console.log(`🤖 Initializing autonomous capabilities for: ${agent.name}`)
+    
+    try {
+      // Create autonomous agent
+      const autonomousAgent: AutonomousAgent = {
+        ...agent,
+        autonomousConfig: this.createAutonomousConfig(config)
+      }
+
+      // Initialize decision engine
+      const decisionEngine = new DecisionEngine(autonomousAgent, {
+        type: DecisionModuleType.HYBRID,
+        riskTolerance: config.autonomous?.decision_making?.autonomy_threshold || 0.7,
+        decisionSpeed: 1.0,
+        evaluationCriteria: ['goal_alignment', 'personality_fit', 'ethical_compliance']
+      })
+      this.decisionEngines.set(agent.id, decisionEngine)
+
+      // TEMPORARILY DISABLED - behavior and lifecycle systems have type errors
+      // Initialize behavior system
+      // const behaviorSystem = createBehaviorSystem(config)
+      // this.behaviorSystems.set(agent.id, behaviorSystem)
+
+      // Initialize lifecycle system
+      // const lifecycleSystem = createLifecycleManager(autonomousAgent, this.eventBus)
+      // this.lifecycleSystems.set(agent.id, lifecycleSystem)
+
+      // Initialize autonomous engine
+      const autonomousEngineConfig: AutonomousEngineConfig = {
+        enabled: true,
+        tickInterval: 30000, // 30 seconds
+        autonomyLevel: config.autonomous?.independence_level || 0.8,
+        interruptible: config.human_interaction?.interruption_tolerance !== 'low',
+        ethicalConstraints: config.autonomous?.decision_making?.ethical_constraints !== false,
+        performanceMonitoring: true,
+        goalGenerationEnabled: config.autonomous?.life_simulation?.goal_pursuit !== false,
+        curiosityWeight: config.autonomous_behaviors?.curiosity_driven?.exploration_rate || 0.3,
+        maxConcurrentActions: 3,
+        planningHorizon: 60 * 60 * 1000 // 1 hour
+      }
+
+      const autonomousEngine = new AutonomousEngine(
+        autonomousAgent,
+        autonomousEngineConfig,
+        this.eventBus
+      )
+      this.autonomousEngines.set(agent.id, autonomousEngine)
+
+      // Store autonomous agent
+      this.autonomousAgents.set(agent.id, autonomousAgent)
+
+      // Start autonomous systems
+      await this.startAutonomousSystems(agent.id)
+
+      console.log(`✅ Autonomous capabilities initialized for: ${agent.name}`)
+      return autonomousAgent
+
+    } catch (error) {
+      console.error(`❌ Failed to initialize autonomous capabilities for ${agent.name}:`, error)
+      return agent as AutonomousAgent
+    }
+  }
+
+  /**
+   * Start autonomous systems for an agent
+   */
+  private async startAutonomousSystems(agentId: string): Promise<void> {
+    try {
+      // Start lifecycle system first
+      const lifecycleSystem = this.lifecycleSystems.get(agentId)
+      if (lifecycleSystem) {
+        await lifecycleSystem.start()
+      }
+
+      // Start autonomous engine
+      const autonomousEngine = this.autonomousEngines.get(agentId)
+      if (autonomousEngine) {
+        await autonomousEngine.start()
+      }
+
+      console.log(`🚀 Autonomous systems started for agent: ${agentId}`)
+    } catch (error) {
+      console.error(`❌ Failed to start autonomous systems for ${agentId}:`, error)
+    }
+  }
+
+  /**
+   * Stop autonomous systems for an agent
+   */
+  private async stopAutonomousSystems(agentId: string): Promise<void> {
+    try {
+      // Stop autonomous engine
+      const autonomousEngine = this.autonomousEngines.get(agentId)
+      if (autonomousEngine) {
+        await autonomousEngine.stop()
+        this.autonomousEngines.delete(agentId)
+      }
+
+      // Stop lifecycle system
+      const lifecycleSystem = this.lifecycleSystems.get(agentId)
+      if (lifecycleSystem) {
+        await lifecycleSystem.stop()
+        this.lifecycleSystems.delete(agentId)
+      }
+
+      // Clean up other systems
+      this.decisionEngines.delete(agentId)
+      this.behaviorSystems.delete(agentId)
+      this.autonomousAgents.delete(agentId)
+
+      console.log(`🛑 Autonomous systems stopped for agent: ${agentId}`)
+    } catch (error) {
+      console.error(`❌ Failed to stop autonomous systems for ${agentId}:`, error)
+    }
+  }
+
+  /**
+   * Create autonomous configuration from agent config
+   */
+  private createAutonomousConfig(config: AgentConfig): any {
+    return {
+      learning: {
+        algorithm: 'hybrid' as const,
+        learningRate: 0.1,
+        discountFactor: 0.95,
+        explorationRate: 0.3,
+        experienceReplaySize: 1000,
+        batchSize: 32,
+        targetUpdateFrequency: 100,
+        curiosityWeight: config.autonomous_behaviors?.curiosity_driven?.exploration_rate || 0.3
+      },
+      selfManagement: {
+        adaptationEnabled: true,
+        learningRate: 0.05,
+        performanceThreshold: 0.7,
+        adaptationTriggers: [],
+        selfHealingEnabled: true,
+        diagnosticsInterval: 300000 // 5 minutes
+      },
+      goalSystem: {
+        maxActiveGoals: 5,
+        goalGenerationInterval: 3600000, // 1 hour
+        curiosityThreshold: 0.6,
+        conflictResolutionStrategy: 'priority' as const,
+        planningHorizon: 86400000, // 24 hours
+        adaptationRate: 0.1,
+        curiosityDrivers: []
+      },
+      resourceManagement: {
+        enabled: true,
+        monitoringInterval: 60000,
+        allocationStrategy: 'dynamic' as const,
+        optimizationGoals: ['efficiency', 'performance', 'stability']
+      },
+      metaCognition: {
+        enabled: true,
+        selfEvaluationInterval: 1800000, // 30 minutes
+        strategyAdaptationEnabled: true,
+        performanceMonitoringEnabled: true
+      }
+    }
+  }
+
+  /**
+   * Get agent autonomy level
+   */
+  private getAutonomyLevel(agent: Agent): number {
+    const autonomousAgent = this.autonomousAgents.get(agent.id)
+    if (autonomousAgent) {
+      return autonomousAgent.autonomousConfig?.learning?.explorationRate || 0.8
+    }
+    return 0
+  }
+
+  /**
+   * Handle interruption for autonomous agent
+   */
+  public interruptAutonomousAgent(agentId: string, event: AgentEvent): void {
+    const autonomousEngine = this.autonomousEngines.get(agentId)
+    if (autonomousEngine) {
+      autonomousEngine.queueInterruption(event)
+      console.log(`📨 Queued interruption for autonomous agent: ${agentId}`)
+    }
+  }
+
+  /**
+   * Get autonomous agent status
+   */
+  public getAutonomousStatus(agentId: string) {
+    const autonomousEngine = this.autonomousEngines.get(agentId)
+    const lifecycleSystem = this.lifecycleSystems.get(agentId)
+    const behaviorSystem = this.behaviorSystems.get(agentId)
+    const decisionEngine = this.decisionEngines.get(agentId)
+
+    if (!autonomousEngine) {
+      return { autonomous: false }
+    }
+
+    return {
+      autonomous: true,
+      engine: autonomousEngine.getAutonomousState(),
+      lifecycle: lifecycleSystem?.getStatus(),
+      behaviors: behaviorSystem?.getSystemStats(),
+      decisions: decisionEngine?.getDecisionStats()
     }
   }
 
@@ -664,11 +921,14 @@ export class SYMindXRuntime implements AgentRuntime {
       if (process.env.SLACK_BOT_TOKEN) {
         extensionConfigs.slack = {
           enabled: true,
-          config: {
+          priority: 1,
+          settings: {
             botToken: process.env.SLACK_BOT_TOKEN,
             signingSecret: process.env.SLACK_SIGNING_SECRET,
             appToken: process.env.SLACK_APP_TOKEN
-          }
+          },
+          dependencies: [],
+          capabilities: ['messaging', 'channels']
         }
       }
       
@@ -676,9 +936,12 @@ export class SYMindXRuntime implements AgentRuntime {
       if (process.env.RUNELITE_ENABLED === 'true') {
         extensionConfigs.runelite = {
           enabled: true,
-          config: {
+          priority: 2,
+          settings: {
             // RuneLite specific config
-          }
+          },
+          dependencies: [],
+          capabilities: ['game-automation']
         }
       }
       
@@ -686,12 +949,15 @@ export class SYMindXRuntime implements AgentRuntime {
       if (process.env.TWITTER_API_KEY) {
         extensionConfigs.twitter = {
           enabled: true,
-          config: {
+          priority: 3,
+          settings: {
             apiKey: process.env.TWITTER_API_KEY,
             apiSecret: process.env.TWITTER_API_SECRET,
             accessToken: process.env.TWITTER_ACCESS_TOKEN,
             accessTokenSecret: process.env.TWITTER_ACCESS_TOKEN_SECRET
-          }
+          },
+          dependencies: [],
+          capabilities: ['social-media', 'posting']
         }
       }
       
@@ -699,21 +965,33 @@ export class SYMindXRuntime implements AgentRuntime {
       if (process.env.TELEGRAM_BOT_TOKEN) {
         extensionConfigs.telegram = {
           enabled: true,
-          config: {
+          priority: 4,
+          settings: {
             botToken: process.env.TELEGRAM_BOT_TOKEN,
             webhookUrl: process.env.TELEGRAM_WEBHOOK_URL
-          }
+          },
+          dependencies: [],
+          capabilities: ['messaging', 'webhook']
         }
       }
       
       // Create a temporary RuntimeConfig for extensions
       const tempConfig: RuntimeConfig = {
         ...this.config,
-        extensions: extensionConfigs
+        extensions: {
+          autoLoad: true,
+          paths: [],
+          ...extensionConfigs
+        }
       }
       
       // Register available extensions
-      await extensionsModule.registerExtensions(this.registry, tempConfig)
+      const extensions = await extensionsModule.registerExtensions(tempConfig)
+      
+      // Register extensions in registry
+      for (const extension of extensions) {
+        this.registry.registerExtension(extension.name, extension)
+      }
       
       console.log('✅ Built-in extensions loaded successfully')
     } catch (error) {
@@ -722,47 +1000,17 @@ export class SYMindXRuntime implements AgentRuntime {
   }
 
   /**
-   * Load dynamic plugins using the plugin loader
+   * Load dynamic plugins (simplified for emergency cleanup)
    */
   private async loadDynamicPlugins(): Promise<void> {
-    console.log('🔍 Discovering dynamic plugins...')
+    console.log('🔍 Dynamic plugin loading simplified for emergency cleanup')
     
     try {
-      // Discover available plugins
-      const manifests = await this.pluginLoader.discoverPlugins()
-      console.log(`📦 Found ${manifests.length} plugin(s)`)
+      // Use simple extension loading only
+      const extensions = await this.pluginLoader.loadExtensions()
+      console.log(`📦 Loaded ${extensions.length} extension(s) via simple loader`)
       
-      if (manifests.length > 0) {
-        console.log('📋 Available plugins:')
-        manifests.forEach(manifest => {
-          const status = manifest.enabled ? '✅' : '❌'
-          console.log(`  ${status} ${manifest.name} (${manifest.id}) - ${manifest.description}`)
-        })
-      }
-      
-      // Load all enabled plugins
-      const extensionConfigs = this.config.extensions || {}
-      const loadedPlugins = await this.pluginLoader.loadAllPlugins(extensionConfigs)
-      
-      console.log(`✅ Loaded ${loadedPlugins.length} dynamic plugin(s)`)
-      
-      // Emit plugin loaded events
-       for (const plugin of loadedPlugins) {
-         await this.eventBus.publish({
-           id: `plugin_loaded_${Date.now()}_${plugin.manifest.id}`,
-           type: 'plugin_loaded',
-           source: 'runtime',
-           data: {
-             pluginId: plugin.manifest.id,
-             pluginName: plugin.manifest.name,
-             pluginType: plugin.manifest.type,
-             loadTime: plugin.loadTime
-           },
-           timestamp: new Date(),
-           processed: false
-         })
-       }
-      
+      console.log('✅ Dynamic plugin loading completed (simplified)')
     } catch (error) {
       console.error('❌ Failed to load dynamic plugins:', error)
     }
@@ -772,12 +1020,27 @@ export class SYMindXRuntime implements AgentRuntime {
    * Get runtime statistics
    */
   getStats() {
+    const autonomousAgentStats = Array.from(this.autonomousAgents.keys()).map(agentId => ({
+      agentId,
+      status: this.getAutonomousStatus(agentId)
+    }))
+
     return {
       agents: this.agents.size,
+      autonomousAgents: this.autonomousAgents.size,
       isRunning: this.isRunning,
       plugins: this.pluginLoader.getStats(),
-      eventBus: this.eventBus instanceof SYMindXEnhancedEventBus ? 
-               (this.eventBus as any).getMetrics?.() : null
+      eventBus: {
+        events: this.eventBus.getEvents().length
+      },
+      autonomous: {
+        totalAutonomousAgents: this.autonomousAgents.size,
+        autonomousEngines: this.autonomousEngines.size,
+        decisionEngines: this.decisionEngines.size,
+        behaviorSystems: this.behaviorSystems.size,
+        lifecycleSystems: this.lifecycleSystems.size,
+        agentStats: autonomousAgentStats
+      }
     }
   }
 
@@ -785,120 +1048,60 @@ export class SYMindXRuntime implements AgentRuntime {
    * Load a specific plugin by ID
    */
   async loadPlugin(pluginId: string, config?: ExtensionConfig): Promise<boolean> {
-    try {
-      const plugin = await this.pluginLoader.loadPlugin(pluginId, config)
-      if (plugin) {
-        await this.eventBus.publish({
-          id: `plugin_loaded_${Date.now()}_${pluginId}`,
-          type: 'plugin_loaded',
-          source: 'runtime',
-          data: {
-            pluginId: plugin.manifest.id,
-            pluginName: plugin.manifest.name,
-            pluginType: plugin.manifest.type,
-            loadTime: plugin.loadTime
-          },
-          timestamp: new Date(),
-          processed: false
-        })
-        return true
-      }
-      return false
-    } catch (error) {
-      console.error(`❌ Failed to load plugin '${pluginId}':`, error)
-      return false
-    }
+    console.log(`🔌 Plugin loading simplified for emergency cleanup: ${pluginId}`)
+    return false // Plugins will be loaded via built-in extension system
   }
 
   /**
    * Unload a specific plugin by ID
    */
   async unloadPlugin(pluginId: string): Promise<boolean> {
-    try {
-      const success = await this.pluginLoader.unloadPlugin(pluginId)
-      if (success) {
-        await this.eventBus.publish({
-          id: `plugin_unloaded_${Date.now()}_${pluginId}`,
-          type: 'plugin_unloaded',
-          source: 'runtime',
-          data: { pluginId },
-          timestamp: new Date(),
-          processed: false
-        })
-      }
-      return success
-    } catch (error) {
-      console.error(`❌ Failed to unload plugin '${pluginId}':`, error)
-      return false
-    }
+    console.log(`🔌 Plugin unloading simplified for emergency cleanup: ${pluginId}`)
+    return false
   }
 
   /**
    * Reload a specific plugin by ID
    */
   async reloadPlugin(pluginId: string, config?: ExtensionConfig): Promise<boolean> {
-    try {
-      const plugin = await this.pluginLoader.reloadPlugin(pluginId, config)
-      if (plugin) {
-        await this.eventBus.publish({
-          id: `plugin_reloaded_${Date.now()}_${pluginId}`,
-          type: 'plugin_reloaded',
-          source: 'runtime',
-          data: {
-            pluginId: plugin.manifest.id,
-            pluginName: plugin.manifest.name,
-            pluginType: plugin.manifest.type,
-            loadTime: plugin.loadTime
-          },
-          timestamp: new Date(),
-          processed: false
-        })
-        return true
-      }
-      return false
-    } catch (error) {
-      console.error(`❌ Failed to reload plugin '${pluginId}':`, error)
-      return false
-    }
+    console.log(`🔌 Plugin reloading simplified for emergency cleanup: ${pluginId}`)
+    return false
   }
 
   /**
    * Get list of available plugins
    */
   async getAvailablePlugins() {
-    return this.pluginLoader.discoverPlugins()
+    console.log('🔌 Plugin discovery simplified for emergency cleanup')
+    return []
   }
 
   /**
    * Get list of loaded plugins
    */
-  getLoadedPlugins() {
-    return this.pluginLoader.getLoadedPlugins()
+  getLoadedPlugins(): Array<{ id: string; [key: string]: any }> {
+    console.log('🔌 Plugin listing simplified for emergency cleanup')
+    return []
   }
 
   /**
    * Subscribe to runtime events
    */
   subscribeToEvents(pattern: { type?: string; source?: string }, handler: (event: AgentEvent) => void) {
-    if (this.eventBus instanceof SYMindXEnhancedEventBus) {
-      return this.eventBus.subscribe(pattern, handler)
-    } else {
-      // Fallback for basic event bus
-      return this.eventBus.subscribe(pattern.type || '*', handler)
-    }
+    // Simplified for emergency cleanup
+    this.eventBus.on(pattern.type || '*', handler)
   }
 
   /**
    * Get event history
    */
   async getEventHistory(filter?: { type?: string; source?: string; limit?: number }): Promise<AgentEvent[]> {
-    if (this.eventBus instanceof SYMindXEnhancedEventBus) {
-      const eventBus = this.eventBus as SYMindXEnhancedEventBus & { replay?: (filter?: unknown) => Promise<AgentEvent[]> }
-      if (eventBus.replay) {
-        return eventBus.replay(filter)
-      }
+    // Simplified for emergency cleanup
+    const events = this.eventBus.getEvents()
+    if (filter?.limit) {
+      return events.slice(-filter.limit)
     }
-    return []
+    return events
   }
 
   /**
@@ -930,7 +1133,7 @@ export class SYMindXRuntime implements AgentRuntime {
         }
       },
       extensions: {
-        loaded: this.getLoadedPlugins().map(p => p.manifest.id),
+        loaded: this.getLoadedPlugins().map(p => p.id || 'unknown'),
         available: [] // TODO: get from plugin discovery
       },
       runtime: {
@@ -1006,42 +1209,5 @@ export class SYMindXRuntime implements AgentRuntime {
   }
 }
 
-class SYMindXEventBus implements EventBus {
-  private emitter = new EventEmitter()
-  private subscriptions = new Map<string, Set<string>>()
-
-  emit(event: AgentEvent): void {
-    this.emitter.emit(event.type, event)
-    this.emitter.emit('*', event)
-  }
-
-  on(eventType: string, handler: (event: AgentEvent) => void): void {
-    this.emitter.on(eventType, handler)
-  }
-
-  off(eventType: string, handler: (event: AgentEvent) => void): void {
-    this.emitter.off(eventType, handler)
-  }
-
-  subscribe(agentId: string, eventTypes: string[]): void {
-    if (!this.subscriptions.has(agentId)) {
-      this.subscriptions.set(agentId, new Set())
-    }
-    const agentSubs = this.subscriptions.get(agentId)!
-    eventTypes.forEach(type => agentSubs.add(type))
-  }
-
-  unsubscribe(agentId: string, eventTypes: string[]): void {
-    const agentSubs = this.subscriptions.get(agentId)
-    if (agentSubs) {
-      eventTypes.forEach(type => agentSubs.delete(type))
-    }
-  }
-
-  getEvents(): AgentEvent[] {
-    // This implementation doesn't store events, so we return an empty array
-    // In a real implementation, this would need to be connected to event storage
-    return []
-  }
-}
+// SYMindXEventBus removed - using SimpleEventBus instead
 

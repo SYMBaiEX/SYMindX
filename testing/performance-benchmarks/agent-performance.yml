@@ -1,0 +1,166 @@
+# Agent Performance Benchmarks
+# 
+# This file defines performance benchmarks and thresholds
+# for agent testing and validation.
+
+benchmarks:
+  # Response Time Benchmarks
+  response_times:
+    agent_initialization:
+      target: 2000ms
+      max_acceptable: 5000ms
+      description: "Time to fully initialize an agent"
+    
+    memory_retrieval:
+      target: 100ms
+      max_acceptable: 500ms
+      description: "Time to retrieve memories from storage"
+    
+    cognition_processing:
+      target: 500ms
+      max_acceptable: 2000ms
+      description: "Time for cognition module to process and decide"
+    
+    emotion_update:
+      target: 50ms
+      max_acceptable: 200ms
+      description: "Time to update emotion state"
+    
+    extension_action:
+      target: 1000ms
+      max_acceptable: 5000ms
+      description: "Time to execute extension action"
+
+  # Throughput Benchmarks
+  throughput:
+    events_per_second:
+      target: 100
+      min_acceptable: 50
+      description: "Number of events processed per second"
+    
+    actions_per_minute:
+      target: 300
+      min_acceptable: 150
+      description: "Number of actions executed per minute"
+    
+    memories_per_second:
+      target: 50
+      min_acceptable: 25
+      description: "Number of memories stored per second"
+
+  # Resource Usage Benchmarks
+  resources:
+    memory_usage:
+      target: 256MB
+      max_acceptable: 512MB
+      description: "Maximum memory usage per agent"
+    
+    cpu_usage:
+      target: 25%
+      max_acceptable: 50%
+      description: "Average CPU usage per agent"
+    
+    disk_io:
+      target: 10MB/s
+      max_acceptable: 50MB/s
+      description: "Disk I/O throughput"
+    
+    network_io:
+      target: 1MB/s
+      max_acceptable: 10MB/s
+      description: "Network I/O throughput"
+
+  # Quality Benchmarks
+  quality:
+    decision_accuracy:
+      target: 0.95
+      min_acceptable: 0.85
+      description: "Accuracy of agent decision making"
+    
+    memory_retention:
+      target: 0.98
+      min_acceptable: 0.90
+      description: "Percentage of memories successfully retained"
+    
+    error_rate:
+      target: 0.01
+      max_acceptable: 0.05
+      description: "Error rate during normal operations"
+    
+    uptime:
+      target: 0.999
+      min_acceptable: 0.99
+      description: "Agent uptime percentage"
+
+# Load Testing Scenarios
+load_tests:
+  light_load:
+    concurrent_agents: 5
+    events_per_second: 10
+    duration: 5m
+    description: "Light load testing scenario"
+  
+  medium_load:
+    concurrent_agents: 20
+    events_per_second: 50
+    duration: 15m
+    description: "Medium load testing scenario"
+  
+  heavy_load:
+    concurrent_agents: 50
+    events_per_second: 100
+    duration: 30m
+    description: "Heavy load testing scenario"
+  
+  stress_test:
+    concurrent_agents: 100
+    events_per_second: 200
+    duration: 60m
+    description: "Stress testing to find breaking points"
+
+# Performance Test Categories
+test_categories:
+  unit_tests:
+    max_duration: 30s
+    memory_limit: 128MB
+    cpu_limit: 25%
+    
+  integration_tests:
+    max_duration: 300s
+    memory_limit: 256MB
+    cpu_limit: 50%
+    
+  performance_tests:
+    max_duration: 1800s
+    memory_limit: 512MB
+    cpu_limit: 75%
+    
+  stress_tests:
+    max_duration: 3600s
+    memory_limit: 1024MB
+    cpu_limit: 90%
+
+# Monitoring Configuration
+monitoring:
+  metrics_collection_interval: 1s
+  performance_alerts:
+    - metric: response_time
+      threshold: 2000ms
+      severity: warning
+    - metric: memory_usage
+      threshold: 400MB
+      severity: critical
+    - metric: error_rate
+      threshold: 0.03
+      severity: warning
+    - metric: cpu_usage
+      threshold: 70%
+      severity: warning
+
+# Reporting Configuration
+reporting:
+  generate_charts: true
+  include_comparisons: true
+  export_formats: [json, csv, html]
+  benchmark_comparison: true
+  trend_analysis: true

@@ -1,0 +1,26 @@
+{
+  "id": "api/openapi/schemas",
+  "title": "Schemas Openapi API",
+  "description": "This is the API documentation for schemas in the openapi category.",
+  "source": "@site/docs/api/openapi/schemas.md",
+  "sourceDirName": "api/openapi",
+  "slug": "/api/openapi/schemas",
+  "permalink": "/docs/api/openapi/schemas",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/api/openapi/schemas.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "frontMatter": {},
+  "sidebar": "apiSidebar",
+  "previous": {
+    "title": "Endpoints Openapi API",
+    "permalink": "/docs/api/openapi/endpoints"
+  },
+  "next": {
+    "title": "Examples Openapi API",
+    "permalink": "/docs/api/openapi/examples"
+  }
+}

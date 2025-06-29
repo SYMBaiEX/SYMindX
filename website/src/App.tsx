@@ -13,6 +13,10 @@ import { Chat } from '@/components/Chat'
 import { CoordinationDashboard } from '@/components/CoordinationDashboard'
 import { StreamingDashboard } from '@/components/StreamingDashboard'
 import { DynamicToolsDashboard } from '@/components/DynamicToolsDashboard'
+import { AgentBuilder } from '@/components/AgentBuilder'
+import { TestingDashboard } from '@/components/TestingDashboard'
+import { DeploymentConsole } from '@/components/DeploymentConsole'
+import { AnalyticsPlatform } from '@/components/AnalyticsPlatform'
 
 interface Agent {
   id: string
@@ -235,8 +239,7 @@ function App() {
           {/* Main Dashboard */}
           <div className="lg:col-span-3">
             <Tabs defaultValue="thoughts" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-10">
-                <TabsTrigger value="chat">Chat</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-7">
                 <TabsTrigger value="thoughts" className="flex items-center space-x-2">
                   <MessageSquare className="h-4 w-4" />
                   <span>Thoughts</span>
@@ -245,22 +248,12 @@ function App() {
                   <Activity className="h-4 w-4" />
                   <span>Emotions</span>
                 </TabsTrigger>
-                <TabsTrigger value="stream">Stream</TabsTrigger>
-                <TabsTrigger value="controls">Controls</TabsTrigger>
-                <TabsTrigger value="mcp">MCP</TabsTrigger>
-                <TabsTrigger value="observability">Metrics</TabsTrigger>
+                <TabsTrigger value="lifecycle">Lifecycle</TabsTrigger>
                 <TabsTrigger value="coordination">Coordination</TabsTrigger>
                 <TabsTrigger value="streaming">Live Stream</TabsTrigger>
                 <TabsTrigger value="tools">Dynamic Tools</TabsTrigger>
+                <TabsTrigger value="legacy">Legacy</TabsTrigger>
               </TabsList>
-
-              <TabsContent value="chat" className="space-y-6">
-                <Chat 
-                  agents={agents} 
-                  selectedAgent={selectedAgent} 
-                  onAgentSelect={setSelectedAgent} 
-                />
-              </TabsContent>
 
               <TabsContent value="thoughts" className="space-y-6">
                 <ThoughtStream agentId={selectedAgent} />
@@ -270,16 +263,31 @@ function App() {
                 <EmotionGraph agentId={selectedAgent} />
               </TabsContent>
 
-              <TabsContent value="stream" className="space-y-6">
-                <StreamCanvas />
-              </TabsContent>
-
-              <TabsContent value="controls" className="space-y-6">
-                <AgentControls activeAgent={selectedAgent} />
-              </TabsContent>
-
-              <TabsContent value="mcp" className="space-y-6">
-                <McpServerManager selectedAgent={selectedAgent} />
+              <TabsContent value="lifecycle" className="space-y-6">
+                <Tabs defaultValue="builder" className="space-y-4">
+                  <TabsList className="grid w-full grid-cols-4">
+                    <TabsTrigger value="builder">Agent Builder</TabsTrigger>
+                    <TabsTrigger value="testing">Testing</TabsTrigger>
+                    <TabsTrigger value="deployment">Deployment</TabsTrigger>
+                    <TabsTrigger value="analytics">Analytics</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="builder">
+                    <AgentBuilder />
+                  </TabsContent>
+                  
+                  <TabsContent value="testing">
+                    <TestingDashboard selectedAgent={selectedAgent} />
+                  </TabsContent>
+                  
+                  <TabsContent value="deployment">
+                    <DeploymentConsole selectedAgent={selectedAgent} />
+                  </TabsContent>
+                  
+                  <TabsContent value="analytics">
+                    <AnalyticsPlatform selectedAgent={selectedAgent} />
+                  </TabsContent>
+                </Tabs>
               </TabsContent>
 
               <TabsContent value="observability" className="space-y-6">
@@ -378,6 +386,124 @@ function App() {
 
               <TabsContent value="tools">
                 <DynamicToolsDashboard selectedAgent={selectedAgent} />
+              </TabsContent>
+
+              <TabsContent value="legacy" className="space-y-6">
+                <Tabs defaultValue="controls" className="space-y-4">
+                  <TabsList className="grid w-full grid-cols-5">
+                    <TabsTrigger value="chat">Chat</TabsTrigger>
+                    <TabsTrigger value="controls">Controls</TabsTrigger>
+                    <TabsTrigger value="mcp">MCP</TabsTrigger>
+                    <TabsTrigger value="observability">Metrics</TabsTrigger>
+                    <TabsTrigger value="stream">Stream</TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="chat">
+                    <Chat 
+                      agents={agents} 
+                      selectedAgent={selectedAgent} 
+                      onAgentSelect={setSelectedAgent} 
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="controls">
+                    <AgentControls activeAgent={selectedAgent} />
+                  </TabsContent>
+
+                  <TabsContent value="mcp">
+                    <McpServerManager selectedAgent={selectedAgent} />
+                  </TabsContent>
+
+                  <TabsContent value="observability" className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>Performance Metrics</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-4">
+                            <div>
+                              <div className="flex justify-between text-sm">
+                                <span>Memory Usage</span>
+                                <span>{agents.find(a => a.id === selectedAgent)?.metrics?.memoryUsage || 0}%</span>
+                              </div>
+                              <div className="w-full bg-secondary rounded-full h-2 mt-1">
+                                <div 
+                                  className="bg-primary h-2 rounded-full" 
+                                  style={{ width: `${agents.find(a => a.id === selectedAgent)?.metrics?.memoryUsage || 0}%` }}
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-sm">Tasks Completed</div>
+                              <div className="text-2xl font-bold">{agents.find(a => a.id === selectedAgent)?.metrics?.tasksCompleted || 0}</div>
+                            </div>
+                            <div>
+                              <div className="text-sm">Uptime</div>
+                              <div className="text-lg">{Math.floor((agents.find(a => a.id === selectedAgent)?.metrics?.uptime || 0) / 3600000)}h</div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>Health Status</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm">Event Loop</span>
+                              <Badge variant="default">Healthy</Badge>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm">Memory</span>
+                              <Badge variant="default">Healthy</Badge>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm">Extensions</span>
+                              <Badge variant="default">Healthy</Badge>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm">MCP Servers</span>
+                              <Badge variant="default">Connected</Badge>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>Recent Events</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span>Tool executed</span>
+                              <span className="text-muted-foreground">2m ago</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Memory stored</span>
+                              <span className="text-muted-foreground">5m ago</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>MCP call</span>
+                              <span className="text-muted-foreground">8m ago</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Task delegated</span>
+                              <span className="text-muted-foreground">12m ago</span>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="stream">
+                    <StreamCanvas />
+                  </TabsContent>
+                </Tabs>
               </TabsContent>
             </Tabs>
           </div>

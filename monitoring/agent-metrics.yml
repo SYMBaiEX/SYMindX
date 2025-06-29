@@ -1,0 +1,388 @@
+# Agent Monitoring Configuration
+# 
+# This file defines comprehensive monitoring metrics, dashboards,
+# and alerting rules for the SYMindX agent lifecycle platform.
+
+# Core Agent Metrics
+metrics:
+  # Performance Metrics
+  performance:
+    - name: agent_response_time_seconds
+      type: histogram
+      description: "Response time for agent actions"
+      labels: [agent_id, action_type, extension]
+      buckets: [0.1, 0.5, 1.0, 2.0, 5.0, 10.0]
+    
+    - name: agent_throughput_total
+      type: counter
+      description: "Total number of actions processed"
+      labels: [agent_id, action_type, status]
+    
+    - name: agent_error_rate
+      type: gauge
+      description: "Error rate percentage"
+      labels: [agent_id, error_type]
+    
+    - name: agent_uptime_seconds
+      type: counter
+      description: "Agent uptime in seconds"
+      labels: [agent_id]
+
+  # Resource Metrics
+  resources:
+    - name: agent_cpu_usage_percent
+      type: gauge
+      description: "CPU usage percentage"
+      labels: [agent_id, instance]
+    
+    - name: agent_memory_usage_bytes
+      type: gauge
+      description: "Memory usage in bytes"
+      labels: [agent_id, instance, type]
+    
+    - name: agent_memory_total_bytes
+      type: gauge
+      description: "Total available memory in bytes"
+      labels: [agent_id, instance]
+    
+    - name: agent_disk_io_bytes_total
+      type: counter
+      description: "Disk I/O bytes total"
+      labels: [agent_id, direction, device]
+    
+    - name: agent_network_io_bytes_total
+      type: counter
+      description: "Network I/O bytes total"
+      labels: [agent_id, direction, interface]
+
+  # Module Metrics
+  modules:
+    - name: agent_cognition_decisions_total
+      type: counter
+      description: "Total number of cognition decisions"
+      labels: [agent_id, cognition_type, decision_type]
+    
+    - name: agent_cognition_processing_time_seconds
+      type: histogram
+      description: "Time spent on cognition processing"
+      labels: [agent_id, cognition_type]
+      buckets: [0.01, 0.05, 0.1, 0.5, 1.0, 2.0]
+    
+    - name: agent_memory_operations_total
+      type: counter
+      description: "Total memory operations"
+      labels: [agent_id, operation_type, status]
+    
+    - name: agent_memory_records_count
+      type: gauge
+      description: "Number of memory records stored"
+      labels: [agent_id, memory_type, duration]
+    
+    - name: agent_emotion_changes_total
+      type: counter
+      description: "Total emotion changes"
+      labels: [agent_id, from_emotion, to_emotion]
+    
+    - name: agent_emotion_intensity
+      type: gauge
+      description: "Current emotion intensity"
+      labels: [agent_id, emotion_type]
+
+  # Extension Metrics
+  extensions:
+    - name: agent_extension_actions_total
+      type: counter
+      description: "Total extension actions executed"
+      labels: [agent_id, extension_id, action_name, status]
+    
+    - name: agent_extension_response_time_seconds
+      type: histogram
+      description: "Extension action response time"
+      labels: [agent_id, extension_id, action_name]
+      buckets: [0.1, 0.5, 1.0, 5.0, 10.0]
+    
+    - name: agent_extension_health
+      type: gauge
+      description: "Extension health status (0=unhealthy, 1=healthy)"
+      labels: [agent_id, extension_id]
+
+  # Lifecycle Metrics
+  lifecycle:
+    - name: agent_deployments_total
+      type: counter
+      description: "Total agent deployments"
+      labels: [agent_id, environment, status]
+    
+    - name: agent_tests_total
+      type: counter
+      description: "Total tests executed"
+      labels: [agent_id, test_type, status]
+    
+    - name: agent_optimization_experiments_total
+      type: counter
+      description: "Total optimization experiments"
+      labels: [agent_id, experiment_type, status]
+
+# Dashboard Configurations
+dashboards:
+  # Agent Overview Dashboard
+  agent_overview:
+    title: "Agent Overview"
+    description: "High-level overview of all agents"
+    refresh_interval: 30s
+    panels:
+      - title: "Active Agents"
+        type: stat
+        query: 'count(up{job="agent-metrics"})'
+        
+      - title: "Average Response Time"
+        type: graph
+        query: 'avg(agent_response_time_seconds) by (agent_id)'
+        time_range: 1h
+        
+      - title: "Error Rate"
+        type: graph
+        query: 'rate(agent_error_rate[5m])'
+        time_range: 1h
+        
+      - title: "Resource Usage"
+        type: graph
+        queries:
+          - 'avg(agent_cpu_usage_percent) by (agent_id)'
+          - 'avg(agent_memory_usage_bytes) by (agent_id) / 1024 / 1024'
+        time_range: 1h
+
+  # Performance Dashboard
+  agent_performance:
+    title: "Agent Performance"
+    description: "Detailed performance metrics"
+    refresh_interval: 15s
+    panels:
+      - title: "Response Time Distribution"
+        type: heatmap
+        query: 'agent_response_time_seconds_bucket'
+        time_range: 4h
+        
+      - title: "Throughput"
+        type: graph
+        query: 'rate(agent_throughput_total[5m])'
+        time_range: 1h
+        
+      - title: "CPU Usage by Agent"
+        type: graph
+        query: 'agent_cpu_usage_percent'
+        time_range: 1h
+        
+      - title: "Memory Usage by Agent"
+        type: graph
+        query: 'agent_memory_usage_bytes / agent_memory_total_bytes * 100'
+        time_range: 1h
+
+  # Module Health Dashboard
+  module_health:
+    title: "Module Health"
+    description: "Health status of agent modules"
+    refresh_interval: 30s
+    panels:
+      - title: "Cognition Performance"
+        type: graph
+        query: 'avg(agent_cognition_processing_time_seconds) by (agent_id, cognition_type)'
+        time_range: 1h
+        
+      - title: "Memory Operations"
+        type: graph
+        query: 'rate(agent_memory_operations_total[5m])'
+        time_range: 1h
+        
+      - title: "Emotion Stability"
+        type: graph
+        query: 'rate(agent_emotion_changes_total[10m])'
+        time_range: 4h
+        
+      - title: "Extension Health"
+        type: stat
+        query: 'agent_extension_health'
+
+# Alert Rules
+alerts:
+  # Performance Alerts
+  - name: "HighResponseTime"
+    description: "Agent response time is too high"
+    query: 'avg(agent_response_time_seconds) by (agent_id) > 2'
+    for: 5m
+    severity: warning
+    labels:
+      category: performance
+    annotations:
+      summary: "High response time for agent {{ $labels.agent_id }}"
+      description: "Response time is {{ $value }}s which exceeds 2s threshold"
+
+  - name: "HighErrorRate"
+    description: "Agent error rate is too high"
+    query: 'rate(agent_error_rate[5m]) > 0.05'
+    for: 2m
+    severity: critical
+    labels:
+      category: reliability
+    annotations:
+      summary: "High error rate for agent {{ $labels.agent_id }}"
+      description: "Error rate is {{ $value | humanizePercentage }} which exceeds 5%"
+
+  # Resource Alerts
+  - name: "HighCpuUsage"
+    description: "Agent CPU usage is too high"
+    query: 'agent_cpu_usage_percent > 80'
+    for: 10m
+    severity: warning
+    labels:
+      category: resources
+    annotations:
+      summary: "High CPU usage for agent {{ $labels.agent_id }}"
+      description: "CPU usage is {{ $value }}% which exceeds 80%"
+
+  - name: "HighMemoryUsage"
+    description: "Agent memory usage is too high"
+    query: 'agent_memory_usage_bytes / agent_memory_total_bytes > 0.85'
+    for: 5m
+    severity: warning
+    labels:
+      category: resources
+    annotations:
+      summary: "High memory usage for agent {{ $labels.agent_id }}"
+      description: "Memory usage is {{ $value | humanizePercentage }} which exceeds 85%"
+
+  - name: "LowMemory"
+    description: "Agent is running low on memory"
+    query: 'agent_memory_usage_bytes / agent_memory_total_bytes > 0.95'
+    for: 1m
+    severity: critical
+    labels:
+      category: resources
+    annotations:
+      summary: "Critical memory usage for agent {{ $labels.agent_id }}"
+      description: "Memory usage is {{ $value | humanizePercentage }} which exceeds 95%"
+
+  # Health Alerts
+  - name: "AgentDown"
+    description: "Agent is not responding"
+    query: 'up{job="agent-metrics"} == 0'
+    for: 1m
+    severity: critical
+    labels:
+      category: availability
+    annotations:
+      summary: "Agent {{ $labels.agent_id }} is down"
+      description: "Agent has been unresponsive for more than 1 minute"
+
+  - name: "ExtensionUnhealthy"
+    description: "Extension is unhealthy"
+    query: 'agent_extension_health == 0'
+    for: 2m
+    severity: warning
+    labels:
+      category: modules
+    annotations:
+      summary: "Extension {{ $labels.extension_id }} is unhealthy"
+      description: "Extension on agent {{ $labels.agent_id }} has been unhealthy for 2 minutes"
+
+  # Business Logic Alerts
+  - name: "CognitionSlowdown"
+    description: "Cognition processing is slowing down"
+    query: 'avg(agent_cognition_processing_time_seconds) by (agent_id) > 1'
+    for: 5m
+    severity: warning
+    labels:
+      category: performance
+    annotations:
+      summary: "Slow cognition processing for agent {{ $labels.agent_id }}"
+      description: "Average cognition time is {{ $value }}s which exceeds 1s"
+
+  - name: "MemoryLeakSuspected"
+    description: "Possible memory leak detected"
+    query: 'increase(agent_memory_usage_bytes[1h]) > 100*1024*1024'
+    for: 10m
+    severity: warning
+    labels:
+      category: reliability
+    annotations:
+      summary: "Possible memory leak in agent {{ $labels.agent_id }}"
+      description: "Memory usage increased by {{ $value | humanizeBytes }} in the last hour"
+
+# Notification Channels
+notification_channels:
+  - name: "email-alerts"
+    type: email
+    config:
+      to: ["admin@symindx.com", "devops@symindx.com"]
+      subject: "[SYMindX] Alert: {{ .CommonAnnotations.summary }}"
+      body: |
+        Alert: {{ .CommonAnnotations.summary }}
+        
+        {{ range .Alerts }}
+        Agent: {{ .Labels.agent_id }}
+        Severity: {{ .Labels.severity }}
+        Description: {{ .Annotations.description }}
+        {{ end }}
+
+  - name: "slack-alerts"
+    type: slack
+    config:
+      webhook_url: "${SLACK_WEBHOOK_URL}"
+      channel: "#alerts"
+      title: "SYMindX Agent Alert"
+      text: "{{ .CommonAnnotations.summary }}"
+
+  - name: "pagerduty-critical"
+    type: pagerduty
+    config:
+      service_key: "${PAGERDUTY_SERVICE_KEY}"
+      severity: "critical"
+
+# Alert Routing
+alert_routing:
+  routes:
+    - match:
+        severity: critical
+      receiver: "pagerduty-critical"
+      continue: true
+      
+    - match:
+        category: performance
+      receiver: "slack-alerts"
+      continue: true
+      
+    - match:
+        category: resources
+      receiver: "email-alerts"
+      
+    - receiver: "email-alerts"  # Default route
+
+# Recording Rules for Performance
+recording_rules:
+  - name: "agent_performance"
+    interval: 30s
+    rules:
+      - record: "agent:response_time:avg5m"
+        expr: 'avg(rate(agent_response_time_seconds_sum[5m]) / rate(agent_response_time_seconds_count[5m])) by (agent_id)'
+        
+      - record: "agent:error_rate:5m"
+        expr: 'rate(agent_error_rate[5m])'
+        
+      - record: "agent:cpu_usage:avg5m"
+        expr: 'avg(agent_cpu_usage_percent) by (agent_id)'
+        
+      - record: "agent:memory_usage:avg5m"
+        expr: 'avg(agent_memory_usage_bytes / agent_memory_total_bytes) by (agent_id)'
+
+# Retention Policies
+retention:
+  metrics:
+    default: 30d
+    detailed: 7d
+    aggregated: 90d
+  logs:
+    default: 14d
+    error_logs: 30d
+  traces:
+    default: 3d
+    error_traces: 7d

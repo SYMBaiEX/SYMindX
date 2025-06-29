@@ -1,0 +1,23 @@
+{
+  "id": "openapi/endpoints",
+  "title": "Endpoints Openapi API",
+  "description": "This is the API documentation for endpoints in the openapi category.",
+  "source": "@site/docs/api/openapi/endpoints.md",
+  "sourceDirName": "openapi",
+  "slug": "/openapi/endpoints",
+  "permalink": "/api/openapi/endpoints",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "apiSidebar",
+  "previous": {
+    "title": "Overview Openapi API",
+    "permalink": "/api/openapi/overview"
+  },
+  "next": {
+    "title": "Schemas Openapi API",
+    "permalink": "/api/openapi/schemas"
+  }
+}

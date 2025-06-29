@@ -1,0 +1,26 @@
+{
+  "id": "api/plugins/emotion-module",
+  "title": "Emotion-module Plugins API",
+  "description": "This is the API documentation for emotion-module in the plugins category.",
+  "source": "@site/docs/api/plugins/emotion-module.md",
+  "sourceDirName": "api/plugins",
+  "slug": "/api/plugins/emotion-module",
+  "permalink": "/docs/api/plugins/emotion-module",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/api/plugins/emotion-module.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "frontMatter": {},
+  "sidebar": "apiSidebar",
+  "previous": {
+    "title": "Memory-provider Plugins API",
+    "permalink": "/docs/api/plugins/memory-provider"
+  },
+  "next": {
+    "title": "Cognition-module Plugins API",
+    "permalink": "/docs/api/plugins/cognition-module"
+  }
+}

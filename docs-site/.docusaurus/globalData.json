@@ -1,0 +1,199 @@
+{
+  "docusaurus-plugin-content-docs": {
+    "default": {
+      "path": "/docs",
+      "versions": [
+        {
+          "name": "current",
+          "label": "Next",
+          "isLast": true,
+          "path": "/docs",
+          "mainDocId": "introduction",
+          "docs": [
+            {
+              "id": "api/openapi/endpoints",
+              "path": "/docs/api/openapi/endpoints",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/openapi/examples",
+              "path": "/docs/api/openapi/examples",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/openapi/overview",
+              "path": "/docs/api/openapi/overview",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/openapi/schemas",
+              "path": "/docs/api/openapi/schemas",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/overview",
+              "path": "/docs/api/overview",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/plugins/cognition-module",
+              "path": "/docs/api/plugins/cognition-module",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/plugins/emotion-module",
+              "path": "/docs/api/plugins/emotion-module",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/plugins/extension-interface",
+              "path": "/docs/api/plugins/extension-interface",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/plugins/lifecycle",
+              "path": "/docs/api/plugins/lifecycle",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/plugins/memory-provider",
+              "path": "/docs/api/plugins/memory-provider",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/plugins/portal-interface",
+              "path": "/docs/api/plugins/portal-interface",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/rest/agents",
+              "path": "/docs/api/rest/agents",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/rest/authentication",
+              "path": "/docs/api/rest/authentication",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/rest/events",
+              "path": "/docs/api/rest/events",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/rest/extensions",
+              "path": "/docs/api/rest/extensions",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/rest/health",
+              "path": "/docs/api/rest/health",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/rest/memory",
+              "path": "/docs/api/rest/memory",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/typescript/agents",
+              "path": "/docs/api/typescript/agents",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/typescript/extensions",
+              "path": "/docs/api/typescript/extensions",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/typescript/installation",
+              "path": "/docs/api/typescript/installation",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/typescript/modules",
+              "path": "/docs/api/typescript/modules",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/typescript/runtime",
+              "path": "/docs/api/typescript/runtime",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/typescript/types",
+              "path": "/docs/api/typescript/types",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/websocket/commands",
+              "path": "/docs/api/websocket/commands",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/websocket/connection",
+              "path": "/docs/api/websocket/connection",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/websocket/events",
+              "path": "/docs/api/websocket/events",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/websocket/streaming",
+              "path": "/docs/api/websocket/streaming",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "architecture/overview",
+              "path": "/docs/architecture/overview",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "getting-started/installation",
+              "path": "/docs/getting-started/installation",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "getting-started/quick-start",
+              "path": "/docs/getting-started/quick-start",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "getting-started/your-first-agent",
+              "path": "/docs/getting-started/your-first-agent",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "guides/plugin-development",
+              "path": "/docs/guides/plugin-development",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "introduction",
+              "path": "/docs/introduction",
+              "sidebar": "tutorialSidebar"
+            }
+          ],
+          "draftIds": [],
+          "sidebars": {
+            "tutorialSidebar": {
+              "link": {
+                "path": "/docs/introduction",
+                "label": "introduction"
+              }
+            },
+            "apiSidebar": {
+              "link": {
+                "path": "/docs/api/overview",
+                "label": "api/overview"
+              }
+            }
+          }
+        }
+      ],
+      "breadcrumbs": true
+    }
+  }
+}

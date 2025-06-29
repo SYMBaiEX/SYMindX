@@ -3,7 +3,7 @@
  * Provides HTTP REST API and WebSocket server capabilities
  */
 
-import * as express from 'express'
+import express from 'express'
 import cors from 'cors'
 import rateLimit from 'express-rate-limit'
 import { WebSocket, WebSocketServer } from 'ws'
@@ -25,6 +25,9 @@ import {
   WebSocketMessage,
   ConnectionInfo
 } from './types.js'
+import { EnhancedWebSocketServer } from './websocket.js'
+import { WebUIServer } from './webui/index.js'
+import { CommandSystem } from '../../core/command-system.js'
 
 export class ApiExtension implements Extension {
   id = 'api'
@@ -44,6 +47,10 @@ export class ApiExtension implements Extension {
   private apiConfig: ApiSettings
   private connections = new Map<string, WebSocket>()
   private rateLimiters = new Map<string, { count: number; resetTime: number }>()
+  private enhancedWS?: EnhancedWebSocketServer
+  private webUI?: WebUIServer
+  private commandSystem?: CommandSystem
+  private runtime?: any
 
   constructor(config: ApiConfig) {
     this.config = config
@@ -58,11 +65,25 @@ export class ApiExtension implements Extension {
 
   async init(agent: Agent): Promise<void> {
     this.agent = agent
-    // Initialize API server if needed
+    
+    // Initialize command system integration
+    if (!this.commandSystem) {
+      this.commandSystem = new CommandSystem()
+    }
+    
+    // Register agent with command system
+    this.commandSystem.registerAgent(agent)
   }
 
   async tick(agent: Agent): Promise<void> {
-    // Periodic tasks for API extension
+    // Broadcast agent status updates via WebSocket
+    if (this.enhancedWS) {
+      this.enhancedWS.broadcastAgentUpdate(agent.id, {
+        status: agent.status,
+        emotion: agent.emotion?.current,
+        lastUpdate: agent.lastUpdate
+      })
+    }
   }
 
   private getDefaultSettings(): ApiSettings {
@@ -226,33 +247,120 @@ export class ApiExtension implements Extension {
   }
 
   private async processChatMessage(request: ChatRequest): Promise<ChatResponse> {
-    // Implement chat message processing
-    return {
-      response: 'Chat processing not implemented yet',
-      timestamp: new Date().toISOString()
+    if (!this.commandSystem || !this.agent) {
+      return {
+        response: 'Chat system not available',
+        timestamp: new Date().toISOString()
+      }
+    }
+
+    try {
+      const response = await this.commandSystem.sendMessage(this.agent.id, request.message)
+      return {
+        response,
+        timestamp: new Date().toISOString(),
+        sessionId: request.context?.sessionId,
+        metadata: {
+          tokensUsed: 0, // Would be calculated by the actual processing
+          processingTime: 0,
+          memoryRetrieved: false,
+          emotionState: this.agent.emotion?.current
+        }
+      }
+    } catch (error) {
+      return {
+        response: `Error processing message: ${error instanceof Error ? error.message : String(error)}`,
+        timestamp: new Date().toISOString()
+      }
     }
   }
 
   private async getMemories(): Promise<any[]> {
-    // Implement memory retrieval
-    return []
+    if (!this.agent?.memory) {
+      return []
+    }
+
+    try {
+      return await this.agent.memory.retrieve(this.agent.id, 'recent', 20)
+    } catch (error) {
+      console.error('Failed to retrieve memories:', error)
+      return []
+    }
   }
 
   private async storeMemory(request: MemoryRequest): Promise<MemoryResponse> {
-    // Implement memory storage
-    return {
-      success: true,
-      id: 'memory-' + Date.now(),
-      timestamp: new Date().toISOString()
+    if (!this.agent?.memory) {
+      return {
+        success: false,
+        id: '',
+        timestamp: new Date().toISOString(),
+        error: 'Memory system not available'
+      }
+    }
+
+    try {
+      await this.agent.memory.store(this.agent.id, {
+        id: 'memory-' + Date.now(),
+        agentId: this.agent.id,
+        content: request.content,
+        type: 'interaction' as any, // Convert string to MemoryType
+        metadata: request.metadata || {},
+        importance: 0.5,
+        timestamp: new Date(),
+        tags: [],
+        duration: 'short_term' as any
+      })
+      
+      return {
+        success: true,
+        id: 'memory-' + Date.now(),
+        timestamp: new Date().toISOString()
+      }
+    } catch (error) {
+      return {
+        success: false,
+        id: '',
+        timestamp: new Date().toISOString(),
+        error: error instanceof Error ? error.message : String(error)
+      }
     }
   }
 
   private async executeAction(request: ActionRequest): Promise<ActionResponse> {
-    // Implement action execution
-    return {
-      success: true,
-      result: 'Action execution not implemented yet',
-      executionTime: 0
+    if (!this.commandSystem || !this.agent) {
+      return {
+        success: false,
+        error: 'Action system not available',
+        executionTime: 0
+      }
+    }
+
+    try {
+      const startTime = Date.now()
+      const command = await this.commandSystem.sendCommand(
+        this.agent.id,
+        `${request.action} ${JSON.stringify(request.parameters || {})}`,
+        {
+          priority: 2, // Normal priority
+          async: request.async || false
+        }
+      )
+      
+      const executionTime = Date.now() - startTime
+      
+      return {
+        success: command.result?.success || false,
+        result: command.result?.response || command.result?.data,
+        error: command.result?.error,
+        executionTime,
+        actionId: command.id
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+        executionTime: 0
+      }
     }
   }
 
@@ -265,6 +373,9 @@ export class ApiExtension implements Extension {
         if (this.apiConfig.websocket.enabled) {
           this.setupWebSocketServer()
         }
+        
+        // Setup WebUI server
+        this.setupWebUIServer()
 
         this.server.listen(this.apiConfig.port, this.apiConfig.host, () => {
           console.log(`🚀 API Server running on ${this.apiConfig.host}:${this.apiConfig.port}`)
@@ -302,18 +413,25 @@ export class ApiExtension implements Extension {
   }
 
   private setupWebSocketServer(): void {
-    if (!this.server) return
+    if (!this.server || !this.commandSystem) return
 
+    // Initialize enhanced WebSocket server
+    this.enhancedWS = new EnhancedWebSocketServer(this.commandSystem)
+    this.enhancedWS.initialize(this.server, this.apiConfig.websocket.path)
+    
+    console.log(`🔌 Enhanced WebSocket server initialized on ${this.apiConfig.websocket.path}`)
+
+    // Keep legacy WebSocket for backward compatibility
     this.wss = new WebSocketServer({ 
       server: this.server,
-      path: this.apiConfig.websocket.path
+      path: this.apiConfig.websocket.path + '-legacy'
     })
 
     this.wss.on('connection', (ws: WebSocket, req) => {
       const connectionId = this.generateConnectionId()
       this.connections.set(connectionId, ws)
 
-      console.log(`🔌 WebSocket client connected: ${connectionId}`)
+      console.log(`🔌 Legacy WebSocket client connected: ${connectionId}`)
 
       ws.on('message', async (data) => {
         try {
@@ -326,11 +444,11 @@ export class ApiExtension implements Extension {
 
       ws.on('close', () => {
         this.connections.delete(connectionId)
-        console.log(`🔌 WebSocket client disconnected: ${connectionId}`)
+        console.log(`🔌 Legacy WebSocket client disconnected: ${connectionId}`)
       })
 
       ws.on('error', (error) => {
-        console.error(`❌ WebSocket error for ${connectionId}:`, error)
+        console.error(`❌ Legacy WebSocket error for ${connectionId}:`, error)
         this.connections.delete(connectionId)
       })
 
@@ -354,8 +472,25 @@ export class ApiExtension implements Extension {
           break
         case 'chat':
           // Handle chat message
-          const response = await this.processChatMessage({ message: message.data })
+          const response = await this.processChatMessage({ 
+            message: message.data || message.message || '',
+            context: { sessionId: connectionId }
+          })
           ws.send(JSON.stringify({ type: 'chat_response', data: response }))
+          break
+        case 'action':
+          // Handle command execution
+          if (this.commandSystem && this.agent) {
+            const command = await this.commandSystem.sendCommand(
+              this.agent.id,
+              message.data || '',
+              { priority: 2, async: true }
+            )
+            ws.send(JSON.stringify({ 
+              type: 'command_response', 
+              data: { commandId: command.id, status: command.status }
+            }))
+          }
           break
         default:
           ws.send(JSON.stringify({ error: 'Unknown message type' }))
@@ -370,10 +505,60 @@ export class ApiExtension implements Extension {
   }
 
   getConnectionInfo(): ConnectionInfo[] {
-    return Array.from(this.connections.entries()).map(([id, ws]) => ({
+    const legacyConnections = Array.from(this.connections.entries()).map(([id, ws]) => ({
       id,
       readyState: ws.readyState,
       connectedAt: new Date().toISOString() // This would need to be tracked properly
     }))
+    
+    const enhancedConnections = this.enhancedWS ? 
+      this.enhancedWS.getConnections().map(conn => ({
+        id: conn.id,
+        readyState: conn.ws.readyState,
+        connectedAt: conn.clientInfo.connectedAt.toISOString()
+      })) : []
+    
+    return [...legacyConnections, ...enhancedConnections]
+  }
+  
+  private setupWebUIServer(): void {
+    if (!this.commandSystem) return
+    
+    this.webUI = new WebUIServer(
+      this.commandSystem,
+      () => this.getAgentsMap(),
+      () => this.getRuntimeStats()
+    )
+    
+    // Mount WebUI routes
+    this.app.use('/ui', this.webUI.getExpressApp())
+    
+    console.log('🌐 WebUI server initialized at /ui')
+  }
+  
+  private getAgentsMap(): Map<string, any> {
+    // This would need to be injected or accessed from the runtime
+    return new Map()
+  }
+  
+  private getRuntimeStats(): any {
+    // This would need to be injected or accessed from the runtime
+    return {
+      isRunning: true,
+      agents: 0,
+      autonomousAgents: 0
+    }
+  }
+  
+  public setRuntime(runtime: any): void {
+    this.runtime = runtime
+  }
+  
+  public getCommandSystem(): CommandSystem | undefined {
+    return this.commandSystem
+  }
+  
+  public getEnhancedWebSocket(): EnhancedWebSocketServer | undefined {
+    return this.enhancedWS
   }
 }

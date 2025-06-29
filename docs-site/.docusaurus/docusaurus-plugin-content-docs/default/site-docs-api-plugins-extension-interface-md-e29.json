@@ -1,0 +1,26 @@
+{
+  "id": "api/plugins/extension-interface",
+  "title": "Extension-interface Plugins API",
+  "description": "This is the API documentation for extension-interface in the plugins category.",
+  "source": "@site/docs/api/plugins/extension-interface.md",
+  "sourceDirName": "api/plugins",
+  "slug": "/api/plugins/extension-interface",
+  "permalink": "/docs/api/plugins/extension-interface",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/api/plugins/extension-interface.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "frontMatter": {},
+  "sidebar": "apiSidebar",
+  "previous": {
+    "title": "Types Typescript API",
+    "permalink": "/docs/api/typescript/types"
+  },
+  "next": {
+    "title": "Memory-provider Plugins API",
+    "permalink": "/docs/api/plugins/memory-provider"
+  }
+}
