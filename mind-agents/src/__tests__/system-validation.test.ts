@@ -28,8 +28,7 @@ describe('System Validation', () => {
 
     // Try to load Nyx configuration for validation
     try {
-      const __dirname = path.dirname(new URL(import.meta.url).pathname)
-      const nyxPath = path.resolve(__dirname, '../characters/nyx.json')
+      const nyxPath = path.resolve(process.cwd(), 'src/characters/nyx.json')
       const nyxData = await fs.readFile(nyxPath, 'utf-8')
       nyxConfig = JSON.parse(nyxData)
       console.log('✅ Loaded Nyx configuration for validation')

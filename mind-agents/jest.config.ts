@@ -17,7 +17,11 @@ export default {
   },
   transform: {
     '^.+\\.tsx?$': ['ts-jest', {
-      useESM: true
+      useESM: true,
+      isolatedModules: true
     }]
-  }
+  },
+  transformIgnorePatterns: [
+    'node_modules/(?!(chalk|ansi-styles|supports-color)/)'
+  ]
 };

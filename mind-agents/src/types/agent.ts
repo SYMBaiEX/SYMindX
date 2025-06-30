@@ -257,6 +257,7 @@ export enum MemoryProviderType {
   SQLITE = 'sqlite',
   MEMORY = 'memory',
   NEON = 'neon',
+  POSTGRES = 'postgres',
   REDIS = 'redis',
   PINECONE = 'pinecone',
   WEAVIATE = 'weaviate'

@@ -1,19 +1,26 @@
 {
-  "name": "symindx",
+  "name": "@symindx/mind-agents",
   "version": "1.0.0",
-  "description": "Agent system with improved Twitter extension",
+  "description": "SYMindX Core Agent Runtime System",
   "main": "dist/index.js",
-  "bin": {
-    "symindx": "dist/cli/index.js"
+  "exports": {
+    ".": "./dist/index.js",
+    "./api": "./dist/api.js",
+    "./core/*": "./dist/core/*.js",
+    "./types/*": "./dist/types/*.js",
+    "./utils/*": "./dist/utils/*.js",
+    "./modules/*": "./dist/modules/*.js",
+    "./extensions/*": "./dist/extensions/*.js",
+    "./portals/*": "./dist/portals/*.js"
   },
   "type": "module",
   "scripts": {
     "build": "tsc --skipLibCheck",
     "start": "node dist/index.js",
+    "start:daemon": "nohup node dist/index.js > /dev/null 2>&1 & echo $! > .symindx.pid && echo 'SYMindX Runtime started as daemon (PID: '$(cat .symindx.pid)')'",
+    "stop:daemon": "if [ -f .symindx.pid ]; then kill $(cat .symindx.pid) && rm .symindx.pid && echo 'SYMindX Runtime daemon stopped'; else echo 'No daemon PID file found'; fi",
     "dev": "tsc -w --skipLibCheck & node --watch dist/index.js",
-    "test": "jest",
-    "cli": "node dist/cli/index.js",
-    "cli:dev": "tsc --skipLibCheck && node dist/cli/index.js"
+    "test": "node --experimental-vm-modules node_modules/.bin/jest"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^1.2.12",
