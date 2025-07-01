@@ -13,6 +13,7 @@
     "build:agent": "cd mind-agents && bun run build",
     "build:docs": "cd docs-site && npm install && npm run build",
     "start": "bun run start:agent",
+    "start:cli": "cd mind-agents && bun run start:cli",
     "start:all": "concurrently \"bun run start:website\" \"bun run start:agent\"",
     "start:website": "cd website && bun run start",
     "start:agent": "cd mind-agents && bun run start",

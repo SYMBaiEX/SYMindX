@@ -45,7 +45,8 @@ export interface Agent {
   memory: MemoryProvider
   cognition: CognitionModule
   extensions: Extension[]
-  portal?: Portal
+  portal?: Portal // Primary portal (for backward compatibility)
+  portals?: Portal[] // Multiple portals with different capabilities
   toolSystem?: any // Dynamic tools system for Agent Zero-style capabilities
   config: AgentConfig
   lastUpdate: Date
@@ -587,11 +588,13 @@ export interface ModuleRegistry {
   getExtension(name: string): Extension | undefined
   getPortal(name: string): Portal | undefined
   getToolSystem(name: string): any
+  createMemoryProvider(type: string, config: any): MemoryProvider | undefined
   createCognitionModule(type: string, config: any): CognitionModule | undefined
   createEmotionModule(type: string, config: any): EmotionModule | undefined
   createPortal(type: string, config: any): Portal | undefined
   listEmotionModules(): string[]
   listCognitionModules(): string[]
+  registerMemoryFactory(type: string, factory: any): void
   registerEmotionFactory(type: string, factory: any): void
   registerCognitionFactory(type: string, factory: any): void
   listPortals(): string[]

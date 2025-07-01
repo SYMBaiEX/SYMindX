@@ -14,6 +14,8 @@ import { PortalConfig, TextGenerationOptions, TextGenerationResult,
 
 export interface OpenAIConfig extends PortalConfig {
   model?: string
+  chatModel?: string  // Specific model for chat operations
+  toolModel?: string  // Faster model for tool/function calling
   embeddingModel?: string
   imageModel?: string
   organization?: string
@@ -51,7 +53,8 @@ export class OpenAIPortal extends BasePortal {
    */
   async generateText(prompt: string, options?: TextGenerationOptions): Promise<TextGenerationResult> {
     try {
-      const model = (this.config as OpenAIConfig).model || 'gpt-4o-mini'
+      // Use the general model for text generation
+      const model = options?.model || (this.config as OpenAIConfig).model || 'gpt-4o-mini'
       
       const result = await generateText({
         model: this.provider(model),
@@ -86,7 +89,19 @@ export class OpenAIPortal extends BasePortal {
    */
   async generateChat(messages: ChatMessage[], options?: ChatGenerationOptions): Promise<ChatGenerationResult> {
     try {
-      const model = (this.config as OpenAIConfig).model || 'gpt-4o-mini'
+      // Intelligent model selection based on use case
+      let model: string
+      
+      if (options?.model) {
+        // Use explicitly specified model
+        model = options.model
+      } else if (options?.functions && options.functions.length > 0) {
+        // Use tool model for function calling (faster, cheaper)
+        model = (this.config as OpenAIConfig).toolModel || 'gpt-4o-mini'
+      } else {
+        // Use chat model for regular conversations
+        model = (this.config as OpenAIConfig).chatModel || (this.config as OpenAIConfig).model || 'gpt-4o-mini'
+      }
       
       const result = await generateText({
         model: this.provider(model),
@@ -138,7 +153,7 @@ export class OpenAIPortal extends BasePortal {
    */
   async generateEmbedding(text: string, options?: EmbeddingOptions): Promise<EmbeddingResult> {
     try {
-      const model = options?.model || this.config.embeddingModel || 'text-embedding-3-large'
+      const model = options?.model || (this.config as OpenAIConfig).embeddingModel || 'text-embedding-3-large'
       
       const response = await fetch('https://api.openai.com/v1/embeddings', {
         method: 'POST',
@@ -183,7 +198,7 @@ export class OpenAIPortal extends BasePortal {
    */
   async generateImage(prompt: string, options?: ImageGenerationOptions): Promise<ImageGenerationResult> {
     try {
-      const model = options?.model || this.config.imageModel || 'dall-e-3'
+      const model = options?.model || (this.config as OpenAIConfig).imageModel || 'dall-e-3'
       
       const response = await fetch('https://api.openai.com/v1/images/generations', {
         method: 'POST',
@@ -229,7 +244,8 @@ export class OpenAIPortal extends BasePortal {
    */
   async *streamText(prompt: string, options?: TextGenerationOptions): AsyncGenerator<string> {
     try {
-      const model = (this.config as OpenAIConfig).model || 'gpt-4o-mini'
+      // Use the general model for text generation
+      const model = options?.model || (this.config as OpenAIConfig).model || 'gpt-4o-mini'
       
       const result = await streamText({
         model: this.provider(model),
@@ -252,7 +268,16 @@ export class OpenAIPortal extends BasePortal {
    */
   async *streamChat(messages: ChatMessage[], options?: ChatGenerationOptions): AsyncGenerator<string> {
     try {
-      const model = (this.config as OpenAIConfig).model || 'gpt-4o-mini'
+      // Intelligent model selection for streaming
+      let model: string
+      
+      if (options?.model) {
+        model = options.model
+      } else if (options?.functions && options.functions.length > 0) {
+        model = (this.config as OpenAIConfig).toolModel || 'gpt-4o-mini'
+      } else {
+        model = (this.config as OpenAIConfig).chatModel || (this.config as OpenAIConfig).model || 'gpt-4o-mini'
+      }
       
       const result = await streamText({
         model: this.provider(model),
@@ -314,6 +339,8 @@ export function createOpenAIPortal(config: OpenAIConfig): OpenAIPortal {
 // Export default configuration
 export const defaultOpenAIConfig: Partial<OpenAIConfig> = {
   model: 'gpt-4o-mini',
+  chatModel: 'gpt-4o-mini',  // Default for regular chat
+  toolModel: 'gpt-4o-mini',   // Fast model for tools/functions
   embeddingModel: 'text-embedding-3-large',
   imageModel: 'dall-e-3',
   maxTokens: 1000,

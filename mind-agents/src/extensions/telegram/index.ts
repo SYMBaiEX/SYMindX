@@ -8,6 +8,7 @@
 import { Telegraf, Context } from 'telegraf'
 import { Agent, AgentAction, Extension, ActionStatus, MemoryType, MemoryDuration, ThoughtContext, EnvironmentType } from '../../types/agent.js'
 import { ExtensionConfig, BaseConfig } from '../../types/common.js'
+import { MessageRole } from '../../types/portal.js'
 import { Logger } from '../../utils/logger.js'
 
 export interface TelegramConfig extends ExtensionConfig {
@@ -69,10 +70,17 @@ export class TelegramExtension implements Extension {
       maxMessageLength: 4096, // Telegram limit
       enableLogging: true,
       ...config.settings,
-      botToken: String(config.settings.botToken || '')
+      botToken: String(config.settings.botToken || config.botToken || '')
     }
     
     this.logger = new Logger('TelegramExtension')
+    console.log(`🔑 Telegram bot token configured: ${this.telegramConfig.botToken ? 'Yes' : 'No'} (length: ${this.telegramConfig.botToken?.length || 0})`)
+    
+    if (!this.telegramConfig.botToken || this.telegramConfig.botToken.length < 10) {
+      console.error('❌ Invalid or missing Telegram bot token')
+      throw new Error('Invalid or missing Telegram bot token')
+    }
+    
     this.bot = new Telegraf(this.telegramConfig.botToken)
     
     this.setupBotHandlers()
@@ -86,9 +94,43 @@ export class TelegramExtension implements Extension {
     this.enabled = true
     
     try {
-      // Start the bot
-      await this.bot.launch()
-      this.logger.info(`Telegram bot started for agent ${agent.name}`)
+      // Check if bot token is valid
+      const botToken = (this.config.settings as any)?.botToken || (this.config as any).botToken
+      if (!botToken || botToken.length < 10) {
+        throw new Error(`Invalid or missing bot token: ${botToken ? 'token too short' : 'no token'}`)
+      }
+      
+      console.log(`🤖 Starting Telegram bot for agent ${agent.name}...`)
+      console.log(`📡 Attempting to connect to Telegram API...`)
+      
+      // Start the bot with timeout
+      const launchTimeout = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Bot launch timeout after 10 seconds')), 10000)
+      )
+      
+      try {
+        await Promise.race([
+          this.bot.launch({
+            webhook: undefined,  // Don't use webhook, use long polling
+            dropPendingUpdates: true  // Ignore old messages
+          }),
+          launchTimeout
+        ])
+        this.logger.info(`Telegram bot started for agent ${agent.name}`)
+        console.log(`✅ Telegram bot started successfully`)
+        
+        // Get bot info
+        const botInfo = await this.bot.telegram.getMe()
+        console.log(`🤖 Bot username: @${botInfo.username}`)
+        
+      } catch (launchError) {
+        if (launchError instanceof Error && launchError.message.includes('timeout')) {
+          console.error('⏱️ Telegram bot launch timed out - continuing anyway')
+          this.logger.warn('Telegram bot launch timed out but may still be running')
+        } else {
+          throw launchError
+        }
+      }
       
       // Set up bot commands
       await this.setupCommands()
@@ -98,6 +140,7 @@ export class TelegramExtension implements Extension {
       process.once('SIGTERM', () => this.bot.stop('SIGTERM'))
       
     } catch (error) {
+      console.error(`❌ Failed to start Telegram bot:`, error)
       this.logger.error('Failed to start Telegram bot:', error)
       this.enabled = false
       throw error
@@ -333,34 +376,60 @@ I'm ready to chat! 💬`
         })
       }
 
-      // Generate response using agent's cognition or a fallback
+      // Generate response using agent's portal
       let responseText = ''
       
-      if (this.agent.cognition) {
-        // Use agent's cognition to generate response
+      if (this.agent.portal) {
+        // Use agent's AI portal to generate response
         try {
-          const response = await this.agent.cognition.think(this.agent, {
-            events: [{
-              id: `telegram_event_${Date.now()}`,
-              type: 'user_input',
-              source: 'telegram',
-              data: { message: message.text },
-              timestamp: message.timestamp,
-              processed: false
-            }],
-            memories: [],
-            currentState: {} as any, // TODO: Fix AgentState type
-            environment: {} as any,  // TODO: Fix EnvironmentState type
-            goal: 'Respond helpfully to the user message'
+          // Use the portal to generate a chat response
+          const systemPrompt = `You are ${this.agent.name}, ${this.agent.config.lore?.origin || 'an AI assistant'}. 
+Your personality: ${this.agent.config.core?.personality?.join(', ') || 'helpful and friendly'}.
+Communication style: ${this.agent.config.core?.tone || 'neutral'}.
+Current emotion: ${this.agent.emotion?.current || 'neutral'}`
+
+          const chatResponse = await this.agent.portal.generateChat([
+            {
+              role: MessageRole.SYSTEM,
+              content: systemPrompt
+            },
+            {
+              role: MessageRole.USER,
+              content: message.text
+            }
+          ], {
+            temperature: 0.8,
+            maxTokens: 1000
           })
-          responseText = response.thoughts.join(' ') || 'I heard you, but I\'m not sure how to respond right now.'
+          
+          responseText = chatResponse.message.content || 'I\'m having trouble forming a response right now.'
+          
         } catch (error) {
-          this.logger.error('Error using cognition:', error)
-          responseText = `Hello ${message.firstName || 'there'}! I received your message: "${message.text}". I'm processing it now!`
+          this.logger.error('Error using portal:', error)
+          // Try using cognition as fallback
+          if (this.agent.cognition) {
+            const response = await this.agent.cognition.think(this.agent, {
+              events: [{
+                id: `telegram_event_${Date.now()}`,
+                type: 'user_input',
+                source: 'telegram',
+                data: { message: message.text },
+                timestamp: message.timestamp,
+                processed: false
+              }],
+              memories: [],
+              currentState: {} as any,
+              environment: {} as any,
+              goal: 'Respond helpfully to the user message'
+            })
+            responseText = `I am thinking about: ${response.thoughts.length} events...`
+          } else {
+            responseText = `Hello ${message.firstName || 'there'}! I received your message but I'm having technical difficulties.`
+          }
         }
       } else {
-        // Fallback response
-        responseText = `Hello ${message.firstName || 'there'}! I received your message: "${message.text}". I'm still learning how to respond better!`
+        // No portal available
+        responseText = `Hello ${message.firstName || 'there'}! I received your message: "${message.text}" but I don't have an AI portal configured to generate responses.`
       }
 
       // Send response back to Telegram

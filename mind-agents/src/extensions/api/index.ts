@@ -28,6 +28,17 @@ import {
 import { EnhancedWebSocketServer } from './websocket.js'
 import { WebUIServer } from './webui/index.js'
 import { CommandSystem } from '../../core/command-system.js'
+import { SQLiteChatRepository, createSQLiteChatRepository } from '../../modules/memory/providers/sqlite/chat-repository.js'
+import { ChatMigrationManager, createChatMigrationManager } from '../../modules/memory/providers/sqlite/chat-migration.js'
+import { 
+  Conversation,
+  Message,
+  SenderType,
+  MessageType,
+  MessageStatus,
+  ConversationStatus,
+  ParticipantType
+} from '../../modules/memory/providers/sqlite/chat-types.js'
 
 export class ApiExtension implements Extension {
   id = 'api'
@@ -51,6 +62,9 @@ export class ApiExtension implements Extension {
   private webUI?: WebUIServer
   private commandSystem?: CommandSystem
   private runtime?: any
+  private chatRepository?: SQLiteChatRepository
+  private migrationManager?: ChatMigrationManager
+  private activeConversations: Map<string, string> = new Map() // userId -> conversationId
 
   constructor(config: ApiConfig) {
     this.config = config
@@ -66,6 +80,9 @@ export class ApiExtension implements Extension {
   async init(agent: Agent): Promise<void> {
     this.agent = agent
     
+    // Initialize chat persistence
+    await this.initializeChatPersistence()
+    
     // Initialize command system integration
     if (!this.commandSystem) {
       this.commandSystem = new CommandSystem()
@@ -73,6 +90,9 @@ export class ApiExtension implements Extension {
     
     // Register agent with command system
     this.commandSystem.registerAgent(agent)
+    
+    // Start the API server
+    await this.start()
   }
 
   async tick(agent: Agent): Promise<void> {
@@ -197,6 +217,48 @@ export class ApiExtension implements Extension {
       })
     })
 
+    // Agents endpoint (also available at /api/agents for consistency)
+    this.app.get('/agents', (req, res) => {
+      const agents = []
+      
+      // Get all agents from the agents map
+      const agentsMap = this.getAgentsMap()
+      for (const [id, agent] of agentsMap) {
+        agents.push({
+          id: agent.id,
+          name: agent.name,
+          status: agent.status,
+          emotion: agent.emotion?.current,
+          lastUpdate: agent.lastUpdate,
+          extensionCount: agent.extensions?.length || 0,
+          hasPortal: !!agent.portal
+        })
+      }
+      
+      res.json({ agents })
+    })
+    
+    // Also register at /api/agents for consistency with WebUI
+    this.app.get('/api/agents', (req, res) => {
+      const agents = []
+      
+      // Get all agents from the agents map
+      const agentsMap = this.getAgentsMap()
+      for (const [id, agent] of agentsMap) {
+        agents.push({
+          id: agent.id,
+          name: agent.name,
+          status: agent.status,
+          emotion: agent.emotion?.current,
+          lastUpdate: agent.lastUpdate,
+          extensionCount: agent.extensions?.length || 0,
+          hasPortal: !!agent.portal
+        })
+      }
+      
+      res.json({ agents })
+    })
+
     // Chat endpoint
     this.app.post('/chat', async (req, res) => {
       try {
@@ -211,6 +273,72 @@ export class ApiExtension implements Extension {
         res.json(response)
       } catch (error) {
         res.status(500).json({ error: 'Internal server error' })
+      }
+    })
+    
+    // Chat history endpoint
+    this.app.get('/chat/history/:agentId', async (req, res) => {
+      try {
+        const { agentId } = req.params
+        const limit = parseInt(req.query.limit as string) || 50
+        const userId = req.query.userId as string || 'default_user'
+        
+        if (!this.chatRepository) {
+          res.status(500).json({ error: 'Chat system not available' })
+          return
+        }
+        
+        // Find or create conversation
+        const conversationId = await this.getOrCreateConversationId(userId, agentId)
+        
+        const messages = await this.chatRepository.listMessages({
+          conversationId,
+          limit,
+          includeDeleted: false
+        })
+        
+        // Convert to API format
+        const apiMessages = messages.map(msg => ({
+          id: msg.id,
+          agentId,
+          sender: msg.senderType === SenderType.USER ? 'user' : 'agent',
+          message: msg.content,
+          timestamp: msg.timestamp,
+          metadata: msg.metadata
+        }))
+        
+        res.json({ 
+          agentId,
+          messages: apiMessages.reverse(), // Most recent last
+          total: apiMessages.length 
+        })
+      } catch (error) {
+        console.error('Error fetching chat history:', error)
+        res.status(500).json({ error: 'Failed to fetch chat history' })
+      }
+    })
+    
+    // Clear chat history endpoint
+    this.app.delete('/chat/history/:agentId', async (req, res) => {
+      try {
+        const { agentId } = req.params
+        const userId = req.query.userId as string || 'default_user'
+        
+        if (!this.chatRepository) {
+          res.status(500).json({ error: 'Chat system not available' })
+          return
+        }
+        
+        const conversationId = this.activeConversations.get(userId)
+        if (conversationId) {
+          await this.chatRepository.deleteConversation(conversationId, 'api_user')
+          this.activeConversations.delete(userId)
+        }
+        
+        res.json({ success: true, agentId })
+      } catch (error) {
+        console.error('Error clearing chat history:', error)
+        res.status(500).json({ error: 'Failed to clear chat history' })
       }
     })
 
@@ -244,30 +372,441 @@ export class ApiExtension implements Extension {
         res.status(500).json({ error: 'Failed to execute action' })
       }
     })
+
+    // Stats endpoint
+    this.app.get('/api/stats', (req, res) => {
+      const runtimeStats = this.getRuntimeStats()
+      const commandStats = this.commandSystem ? this.commandSystem.getStats() : {
+        totalCommands: 0,
+        completedCommands: 0,
+        failedCommands: 0,
+        pendingCommands: 0,
+        processingCommands: 0,
+        avgResponseTime: 0,
+        activeConnections: 0
+      }
+      
+      // Add WebSocket connection count
+      if (this.enhancedWS && 'activeConnections' in commandStats) {
+        commandStats.activeConnections = this.enhancedWS.getConnections().length
+      }
+      
+      res.json({
+        runtime: runtimeStats,
+        commands: commandStats,
+        system: {
+          memory: process.memoryUsage(),
+          uptime: process.uptime(),
+          platform: process.platform,
+          nodeVersion: process.version
+        }
+      })
+    })
+
+    // Commands endpoint for recent command history
+    this.app.get('/api/commands', (req, res) => {
+      const agentId = req.query.agent as string | undefined
+      const limit = parseInt(req.query.limit as string) || 20
+      
+      if (!this.commandSystem) {
+        res.json([])
+        return
+      }
+      
+      let commands = this.commandSystem.getAllCommands()
+      
+      if (agentId) {
+        commands = commands.filter(cmd => cmd.agentId === agentId)
+      }
+      
+      // Sort by timestamp and limit
+      commands = commands
+        .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+        .slice(0, limit)
+      
+      res.json(commands.map(cmd => ({
+        id: cmd.id,
+        agentId: cmd.agentId,
+        instruction: cmd.instruction,
+        type: cmd.type,
+        status: cmd.status,
+        timestamp: cmd.timestamp,
+        result: cmd.result,
+        executionTime: cmd.result?.executionTime
+      })))
+    })
+
+    // Conversation endpoints
+    this.app.get('/api/conversations', async (req, res) => {
+      try {
+        if (!this.chatRepository) {
+          res.status(500).json({ error: 'Chat system not available' })
+          return
+        }
+
+        const userId = req.query.userId as string || 'default_user'
+        const agentId = req.query.agentId as string
+        const status = req.query.status as ConversationStatus
+        const limit = parseInt(req.query.limit as string) || 50
+
+        const conversations = await this.chatRepository.listConversations({
+          userId,
+          agentId,
+          status,
+          limit,
+          orderBy: 'updated',
+          orderDirection: 'desc'
+        })
+
+        res.json({ conversations })
+      } catch (error) {
+        console.error('Error fetching conversations:', error)
+        res.status(500).json({ error: 'Failed to fetch conversations' })
+      }
+    })
+
+    this.app.post('/api/conversations', async (req, res) => {
+      try {
+        if (!this.chatRepository) {
+          res.status(500).json({ error: 'Chat system not available' })
+          return
+        }
+
+        const { agentId, userId = 'default_user', title } = req.body
+        
+        if (!agentId) {
+          res.status(400).json({ error: 'Agent ID is required' })
+          return
+        }
+
+        const conversation = await this.chatRepository.createConversation({
+          agentId,
+          userId,
+          title: title || `Chat with ${agentId}`,
+          status: ConversationStatus.ACTIVE,
+          messageCount: 0,
+          metadata: {
+            createdVia: 'api',
+            agentName: this.agent?.name || agentId
+          }
+        })
+
+        // Set as active conversation for this user
+        this.activeConversations.set(userId, conversation.id)
+
+        res.json({ conversation })
+      } catch (error) {
+        console.error('Error creating conversation:', error)
+        res.status(500).json({ error: 'Failed to create conversation' })
+      }
+    })
+
+    this.app.get('/api/conversations/:conversationId', async (req, res) => {
+      try {
+        if (!this.chatRepository) {
+          res.status(500).json({ error: 'Chat system not available' })
+          return
+        }
+
+        const { conversationId } = req.params
+        const conversation = await this.chatRepository.getConversation(conversationId)
+
+        if (!conversation) {
+          res.status(404).json({ error: 'Conversation not found' })
+          return
+        }
+
+        res.json({ conversation })
+      } catch (error) {
+        console.error('Error fetching conversation:', error)
+        res.status(500).json({ error: 'Failed to fetch conversation' })
+      }
+    })
+
+    this.app.get('/api/conversations/:conversationId/messages', async (req, res) => {
+      try {
+        if (!this.chatRepository) {
+          res.status(500).json({ error: 'Chat system not available' })
+          return
+        }
+
+        const { conversationId } = req.params
+        const limit = parseInt(req.query.limit as string) || 50
+        const offset = parseInt(req.query.offset as string) || 0
+
+        const messages = await this.chatRepository.listMessages({
+          conversationId,
+          limit,
+          offset,
+          includeDeleted: false
+        })
+
+        // Convert to API format
+        const apiMessages = messages.map(msg => ({
+          id: msg.id,
+          conversationId: msg.conversationId,
+          sender: msg.senderType === SenderType.USER ? 'user' : 'agent',
+          senderId: msg.senderId,
+          message: msg.content,
+          messageType: msg.messageType,
+          timestamp: msg.timestamp,
+          editedAt: msg.editedAt,
+          status: msg.status,
+          metadata: msg.metadata,
+          emotionState: msg.emotionState,
+          thoughtProcess: msg.thoughtProcess,
+          confidenceScore: msg.confidenceScore,
+          memoryReferences: msg.memoryReferences
+        }))
+
+        res.json({ 
+          conversationId,
+          messages: apiMessages.reverse(), // Most recent last
+          total: apiMessages.length 
+        })
+      } catch (error) {
+        console.error('Error fetching conversation messages:', error)
+        res.status(500).json({ error: 'Failed to fetch conversation messages' })
+      }
+    })
+
+    this.app.post('/api/conversations/:conversationId/messages', async (req, res) => {
+      try {
+        if (!this.chatRepository || !this.commandSystem) {
+          res.status(500).json({ error: 'Chat system not available' })
+          return
+        }
+
+        const { conversationId } = req.params
+        const { message, userId = 'default_user' } = req.body
+
+        if (!message) {
+          res.status(400).json({ error: 'Message is required' })
+          return
+        }
+
+        // Verify conversation exists
+        const conversation = await this.chatRepository.getConversation(conversationId)
+        if (!conversation) {
+          res.status(404).json({ error: 'Conversation not found' })
+          return
+        }
+
+        // Store user message
+        const userMessage = await this.chatRepository.createMessage({
+          conversationId,
+          senderType: SenderType.USER,
+          senderId: userId,
+          content: message,
+          messageType: MessageType.TEXT,
+          metadata: {},
+          memoryReferences: [],
+          createdMemories: [],
+          status: MessageStatus.SENT
+        })
+
+        // Process message through agent
+        const startTime = Date.now()
+        const response = await this.commandSystem.sendMessage(conversation.agentId, message)
+        const processingTime = Date.now() - startTime
+
+        // Store agent response
+        const agentMessage = await this.chatRepository.createMessage({
+          conversationId,
+          senderType: SenderType.AGENT,
+          senderId: conversation.agentId,
+          content: response,
+          messageType: MessageType.TEXT,
+          metadata: {
+            emotionState: this.agent?.emotion?.current,
+            processingTime
+          },
+          emotionState: this.agent?.emotion?.current ? {
+            current: this.agent.emotion.current,
+            intensity: 0.5,
+            triggers: [],
+            timestamp: new Date()
+          } : undefined,
+          memoryReferences: [],
+          createdMemories: [],
+          status: MessageStatus.SENT
+        })
+
+        res.json({
+          userMessage: {
+            id: userMessage.id,
+            message: userMessage.content,
+            timestamp: userMessage.timestamp
+          },
+          agentMessage: {
+            id: agentMessage.id,
+            message: agentMessage.content,
+            timestamp: agentMessage.timestamp
+          },
+          metadata: {
+            processingTime,
+            emotionState: this.agent?.emotion?.current
+          }
+        })
+      } catch (error) {
+        console.error('Error sending message:', error)
+        res.status(500).json({ error: 'Failed to send message' })
+      }
+    })
+
+    this.app.delete('/api/conversations/:conversationId', async (req, res) => {
+      try {
+        if (!this.chatRepository) {
+          res.status(500).json({ error: 'Chat system not available' })
+          return
+        }
+
+        const { conversationId } = req.params
+        const userId = req.query.userId as string || 'api_user'
+
+        await this.chatRepository.deleteConversation(conversationId, userId)
+        
+        // Remove from active conversations if it was active
+        for (const [user, activeConvId] of this.activeConversations.entries()) {
+          if (activeConvId === conversationId) {
+            this.activeConversations.delete(user)
+            break
+          }
+        }
+
+        res.json({ success: true })
+      } catch (error) {
+        console.error('Error deleting conversation:', error)
+        res.status(500).json({ error: 'Failed to delete conversation' })
+      }
+    })
   }
 
   private async processChatMessage(request: ChatRequest): Promise<ChatResponse> {
-    if (!this.commandSystem || !this.agent) {
+    if (!this.commandSystem || !this.agent || !this.chatRepository) {
       return {
         response: 'Chat system not available',
         timestamp: new Date().toISOString()
       }
     }
 
+    const agentId = request.agentId || this.agent.id
+    const userId = request.context?.userId || 'default_user'
+    const sessionId = request.context?.sessionId
+    
     try {
-      const response = await this.commandSystem.sendMessage(this.agent.id, request.message)
+      // Get or create conversation
+      const conversationId = await this.getOrCreateConversationId(userId, agentId)
+      
+      // Store user message in database
+      const userMessage = await this.chatRepository.createMessage({
+        conversationId,
+        senderType: SenderType.USER,
+        senderId: userId,
+        content: request.message,
+        messageType: MessageType.TEXT,
+        metadata: request.context || {},
+        memoryReferences: [],
+        createdMemories: [],
+        status: MessageStatus.SENT
+      })
+
+      console.log(`💬 User message stored: ${userMessage.id}`)
+      
+      // Process message through command system
+      const startTime = Date.now()
+      const response = await this.commandSystem.sendMessage(agentId, request.message)
+      const processingTime = Date.now() - startTime
+      
+      // Store agent response in database
+      const agentMessage = await this.chatRepository.createMessage({
+        conversationId,
+        senderType: SenderType.AGENT,
+        senderId: agentId,
+        content: response,
+        messageType: MessageType.TEXT,
+        metadata: {
+          emotionState: this.agent.emotion?.current,
+          processingTime
+        },
+        emotionState: this.agent.emotion?.current ? {
+          current: this.agent.emotion.current,
+          intensity: 0.5, // Default intensity
+          triggers: [],
+          timestamp: new Date()
+        } : undefined,
+        memoryReferences: [],
+        createdMemories: [],
+        status: MessageStatus.SENT
+      })
+
+      console.log(`🤖 Agent response stored: ${agentMessage.id}`)
+      
+      // Update session activity if sessionId provided
+      if (sessionId && this.chatRepository) {
+        try {
+          await this.chatRepository.updateSessionActivity(sessionId)
+        } catch (error) {
+          // Session might not exist, create it
+          try {
+            await this.chatRepository.createSession({
+              userId,
+              conversationId,
+              connectionId: sessionId,
+              clientInfo: { userAgent: 'API', source: 'http' }
+            })
+          } catch (createError) {
+            console.warn('Failed to create session:', createError)
+          }
+        }
+      }
+      
+      // Log analytics event
+      await this.chatRepository.logEvent({
+        eventType: 'message_processed',
+        conversationId,
+        userId,
+        agentId,
+        eventData: {
+          userMessageId: userMessage.id,
+          agentMessageId: agentMessage.id,
+          messageLength: request.message.length,
+          responseLength: response.length
+        },
+        processingTime
+      })
+      
       return {
         response,
         timestamp: new Date().toISOString(),
-        sessionId: request.context?.sessionId,
+        sessionId,
         metadata: {
           tokensUsed: 0, // Would be calculated by the actual processing
-          processingTime: 0,
+          processingTime,
           memoryRetrieved: false,
           emotionState: this.agent.emotion?.current
         }
       }
     } catch (error) {
+      console.error('Error processing chat message:', error)
+      
+      // Still try to log the error
+      try {
+        if (this.chatRepository) {
+          await this.chatRepository.logEvent({
+            eventType: 'message_error',
+            userId,
+            agentId,
+            eventData: {
+              error: error instanceof Error ? error.message : String(error),
+              originalMessage: request.message
+            }
+          })
+        }
+      } catch (logError) {
+        console.error('Failed to log error event:', logError)
+      }
+      
       return {
         response: `Error processing message: ${error instanceof Error ? error.message : String(error)}`,
         timestamp: new Date().toISOString()
@@ -394,23 +933,6 @@ export class ApiExtension implements Extension {
     })
   }
 
-  async stop(): Promise<void> {
-    return new Promise((resolve) => {
-      if (this.wss) {
-        this.wss.close()
-      }
-
-      if (this.server) {
-        this.server.close(() => {
-          console.log('🛑 API Server stopped')
-          this.status = ExtensionStatus.DISABLED
-          resolve()
-        })
-      } else {
-        resolve()
-      }
-    })
-  }
 
   private setupWebSocketServer(): void {
     if (!this.server || !this.commandSystem) return
@@ -537,21 +1059,39 @@ export class ApiExtension implements Extension {
   }
   
   private getAgentsMap(): Map<string, any> {
-    // This would need to be injected or accessed from the runtime
-    return new Map()
+    // Return a map with the current agent if available
+    const agentsMap = new Map()
+    if (this.agent) {
+      agentsMap.set(this.agent.id, this.agent)
+    }
+    // If runtime is available, get all agents from it
+    if (this.runtime && typeof this.runtime.agents !== 'undefined') {
+      return this.runtime.agents
+    }
+    return agentsMap
   }
   
   private getRuntimeStats(): any {
-    // This would need to be injected or accessed from the runtime
+    // Return actual runtime stats if available
+    if (this.runtime && typeof this.runtime.getStats === 'function') {
+      const stats = this.runtime.getStats()
+      return {
+        isRunning: stats.isRunning,
+        agents: stats.agents,
+        autonomousAgents: stats.autonomousAgents
+      }
+    }
+    // Fallback to basic stats
     return {
       isRunning: true,
-      agents: 0,
+      agents: this.agent ? 1 : 0,
       autonomousAgents: 0
     }
   }
   
   public setRuntime(runtime: any): void {
     this.runtime = runtime
+    console.log('🔗 API extension connected to runtime')
   }
   
   public getCommandSystem(): CommandSystem | undefined {
@@ -560,5 +1100,173 @@ export class ApiExtension implements Extension {
   
   public getEnhancedWebSocket(): EnhancedWebSocketServer | undefined {
     return this.enhancedWS
+  }
+
+  /**
+   * Initialize chat persistence system
+   */
+  private async initializeChatPersistence(): Promise<void> {
+    try {
+      // Determine database path
+      const dbPath = process.env.CHAT_DB_PATH || './data/chat.db'
+      
+      // Ensure directory exists
+      const { dirname } = await import('path')
+      const { mkdirSync } = await import('fs')
+      const dir = dirname(dbPath)
+      mkdirSync(dir, { recursive: true })
+      
+      console.log(`💾 Initializing chat database at: ${dbPath}`)
+      
+      // Create migration manager
+      this.migrationManager = createChatMigrationManager(dbPath)
+      
+      // Run migrations
+      await this.migrationManager.migrate()
+      
+      // Validate database
+      const validation = await this.migrationManager.validate()
+      if (!validation.valid) {
+        console.error('❌ Chat database validation failed:', validation.errors)
+        throw new Error('Chat database validation failed')
+      }
+      
+      // Create chat repository
+      this.chatRepository = createSQLiteChatRepository({
+        dbPath,
+        enableAnalytics: true,
+        enableFullTextSearch: true,
+        sessionTimeout: 30 * 60 * 1000, // 30 minutes
+        archiveAfterDays: 90,
+        maxMessageLength: 10000,
+        maxParticipantsPerConversation: 10
+      })
+      
+      console.log('✅ Chat persistence system initialized')
+      
+    } catch (error) {
+      console.error('❌ Failed to initialize chat persistence:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Get or create conversation ID for a user-agent pair
+   */
+  private async getOrCreateConversationId(userId: string, agentId: string): Promise<string> {
+    if (!this.chatRepository) {
+      throw new Error('Chat repository not initialized')
+    }
+    
+    // Check if we have an active conversation for this user
+    let conversationId = this.activeConversations.get(userId)
+    
+    if (conversationId) {
+      // Verify conversation still exists and is active
+      const conversation = await this.chatRepository.getConversation(conversationId)
+      if (conversation && conversation.status === ConversationStatus.ACTIVE) {
+        return conversationId
+      }
+    }
+    
+    // Look for existing active conversations between this user and agent
+    const existingConversations = await this.chatRepository.listConversations({
+      userId,
+      agentId,
+      status: ConversationStatus.ACTIVE,
+      limit: 1,
+      orderBy: 'updated',
+      orderDirection: 'desc'
+    })
+    
+    if (existingConversations.length > 0) {
+      conversationId = existingConversations[0].id
+      this.activeConversations.set(userId, conversationId)
+      return conversationId
+    }
+    
+    // Create new conversation
+    const conversation = await this.chatRepository.createConversation({
+      agentId,
+      userId,
+      title: `Chat with ${agentId}`,
+      status: ConversationStatus.ACTIVE,
+      messageCount: 0,
+      metadata: {
+        createdVia: 'api',
+        agentName: this.agent?.name || agentId
+      }
+    })
+    
+    this.activeConversations.set(userId, conversation.id)
+    console.log(`🆕 Created new conversation: ${conversation.id}`)
+    
+    return conversation.id
+  }
+
+  /**
+   * Clean up chat resources
+   */
+  private async cleanupChatResources(): Promise<void> {
+    if (this.chatRepository) {
+      try {
+        // Clean up expired sessions (older than 1 hour)
+        const expiredCount = await this.chatRepository.cleanupExpiredSessions(60 * 60 * 1000)
+        if (expiredCount > 0) {
+          console.log(`🧹 Cleaned up ${expiredCount} expired chat sessions`)
+        }
+        
+        // Archive old conversations (older than 90 days)
+        const archivedCount = await this.chatRepository.archiveOldConversations(90)
+        if (archivedCount > 0) {
+          console.log(`📦 Archived ${archivedCount} old conversations`)
+        }
+      } catch (error) {
+        console.error('❌ Error during chat cleanup:', error)
+      }
+    }
+  }
+
+  /**
+   * Override stop method to properly close database connections
+   */
+  async stop(): Promise<void> {
+    return new Promise((resolve) => {
+      // Cleanup chat resources
+      this.cleanupChatResources().catch(error => {
+        console.error('Error during chat cleanup:', error)
+      })
+
+      // Close database connections
+      if (this.chatRepository) {
+        try {
+          this.chatRepository.close()
+        } catch (error) {
+          console.error('Error closing chat repository:', error)
+        }
+      }
+
+      if (this.migrationManager) {
+        try {
+          this.migrationManager.close()
+        } catch (error) {
+          console.error('Error closing migration manager:', error)
+        }
+      }
+
+      if (this.wss) {
+        this.wss.close()
+      }
+
+      if (this.server) {
+        this.server.close(() => {
+          console.log('🛑 API Server stopped')
+          this.status = ExtensionStatus.DISABLED
+          resolve()
+        })
+      } else {
+        resolve()
+      }
+    })
   }
 }

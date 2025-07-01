@@ -20,6 +20,15 @@
       "xai": "YOUR_XAI_API_KEY",
       "openrouter": "YOUR_OPENROUTER_API_KEY",
       "kluster.ai": "YOUR_KLUSTERAI_API_KEY"
+    },
+    "modelConfig": {
+      "openai": {
+        "model": "gpt-4o-mini",
+        "chatModel": "gpt-4o-mini",
+        "toolModel": "gpt-4o-mini",
+        "embeddingModel": "text-embedding-3-large",
+        "imageModel": "dall-e-3"
+      }
     }
   }
 }

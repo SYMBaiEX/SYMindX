@@ -69,7 +69,11 @@ export class ChatCommand {
     try {
       // Select agent if not provided
       if (!agentId) {
-        const agents = Array.from(this.context.runtime.agents.values())
+        // Fetch agents from API
+        const response = await fetch(`${this.context.config.apiUrl}/agents`)
+        const data = await response.json()
+        const agents = data.agents || []
+        
         if (agents.length === 0) {
           console.log(chalk.yellow('⚠️  No agents available'))
           return
@@ -83,7 +87,7 @@ export class ChatCommand {
               type: 'list',
               name: 'selectedAgent',
               message: 'Select an agent to chat with:',
-              choices: agents.map(agent => ({
+              choices: agents.map((agent: any) => ({
                 name: `${agent.name} (${agent.id}) - ${agent.status}`,
                 value: agent.id
               }))
@@ -93,7 +97,11 @@ export class ChatCommand {
         }
       }
 
-      const agent = this.context.runtime.agents.get(agentId!)
+      // Verify agent exists via API
+      const agentResponse = await fetch(`${this.context.config.apiUrl}/agents`)
+      const agentData = await agentResponse.json()
+      const agent = agentData.agents?.find((a: any) => a.id === agentId)
+      
       if (!agent) {
         console.log(chalk.red(`❌ Agent '${agentId}' not found`))
         return
@@ -119,7 +127,11 @@ export class ChatCommand {
       return
     }
 
-    const agent = this.context.runtime.agents.get(this.context.selectedAgent)
+    // Fetch agent info from API
+    const response = await fetch(`${this.context.config.apiUrl}/agents`)
+    const data = await response.json()
+    const agent = data.agents?.find((a: any) => a.id === this.context.selectedAgent)
+    
     if (!agent) {
       console.log(chalk.red(`❌ Agent '${this.context.selectedAgent}' not found`))
       return
@@ -494,10 +506,30 @@ export class ChatCommand {
 
   private async processChatMessage(agentId: string, message: string): Promise<void> {
     try {
-      const response = await this.context.commandSystem.sendMessage(agentId, message)
-      const agent = this.context.runtime.agents.get(agentId)
+      // Send chat message via API
+      const response = await fetch(`${this.context.config.apiUrl}/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          agentId,
+          message
+        })
+      })
       
-      console.log(chalk.green(`${agent?.name || agentId}:`), response)
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.statusText}`)
+      }
+      
+      const data = await response.json()
+      
+      // Get agent name from API
+      const agentsResponse = await fetch(`${this.context.config.apiUrl}/agents`)
+      const agentsData = await agentsResponse.json()
+      const agent = agentsData.agents?.find((a: any) => a.id === agentId)
+      
+      console.log(chalk.green(`${agent?.name || agentId}:`), data.response)
       
     } catch (error) {
       console.log(chalk.red('❌ Error:'), (error as Error).message)

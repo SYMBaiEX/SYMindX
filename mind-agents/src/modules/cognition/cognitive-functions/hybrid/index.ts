@@ -92,7 +92,30 @@ export class HybridCognition extends BaseCognitionModule {
     }
     
     // 3. Integrate the results based on the situation
-    return this.integrateResults(agent, context, planningResult, reactiveResult, situationAnalysis)
+    const result = this.integrateResults(agent, context, planningResult, reactiveResult, situationAnalysis)
+    
+    // 4. Enhance thoughts with AI if available
+    if (agent.portal || (agent as any).findPortalByCapability) {
+      try {
+        const { PortalIntegration } = await import('../../../../core/portal-integration.js')
+        const aiThoughts = await PortalIntegration.generateThoughts(agent, {
+          ...context,
+          situationAnalysis,
+          cognitionMode: usePlanning ? 'planning' : 'reactive'
+        })
+        
+        // Replace placeholder thoughts with AI-generated ones if available
+        if (aiThoughts.length > 0) {
+          result.thoughts = aiThoughts
+        }
+      } catch (error) {
+        // Silently continue without AI enhancement
+      }
+    } else {
+      // No portal available, continue with basic thoughts
+    }
+    
+    return result
   }
 
   /**

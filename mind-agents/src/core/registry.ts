@@ -29,6 +29,7 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
   private streamingInterfaces = new Map<string, any>()
 
   // Factory storage maps
+  private memoryFactories = new Map<string, any>()
   private emotionFactories = new Map<string, EmotionModuleFactory>()
   private cognitionFactories = new Map<string, CognitionModuleFactory>()
   private portalFactories = new Map<string, PortalFactory>()
@@ -117,6 +118,11 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
   }
 
   // Factory registration methods
+  registerMemoryFactory(type: string, factory: any): void {
+    this.memoryFactories.set(type, factory)
+    console.log(`🏭 Registered memory factory: ${type}`)
+  }
+
   registerEmotionFactory(type: string, factory: EmotionModuleFactory): void {
     this.emotionFactories.set(type, factory)
     console.log(`🏭 Registered emotion factory: ${type}`)
@@ -133,6 +139,22 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
   }
 
   // Factory creation methods
+  createMemoryProvider(type: string, config: any): any {
+    const factory = this.memoryFactories.get(type)
+    if (!factory) {
+      console.warn(`⚠️ Memory factory for type '${type}' not found`)
+      return undefined
+    }
+    try {
+      const provider = factory(config)
+      console.log(`✅ Created memory provider: ${type}`)
+      return provider
+    } catch (error) {
+      console.error(`❌ Failed to create memory provider '${type}':`, error)
+      return undefined
+    }
+  }
+
   createEmotionModule(type: string, config: BaseConfig): EmotionModule | undefined {
     const factory = this.emotionFactories.get(type)
     if (!factory) {

@@ -17,6 +17,7 @@
   "scripts": {
     "build": "tsc --skipLibCheck",
     "start": "node dist/index.js",
+    "start:cli": "node dist/cli/index.js",
     "start:daemon": "nohup node dist/index.js > /dev/null 2>&1 & echo $! > .symindx.pid && echo 'SYMindX Runtime started as daemon (PID: '$(cat .symindx.pid)')'",
     "stop:daemon": "if [ -f .symindx.pid ]; then kill $(cat .symindx.pid) && rm .symindx.pid && echo 'SYMindX Runtime daemon stopped'; else echo 'No daemon PID file found'; fi",
     "dev": "tsc -w --skipLibCheck & node --watch dist/index.js",

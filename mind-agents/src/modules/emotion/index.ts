@@ -40,6 +40,19 @@ class SimpleEmotionModule {
     this.current = state.current || 'neutral';
     this.intensity = state.intensity || 0.5;
   }
+  
+  // Method expected by runtime for setting emotions
+  setEmotion(emotion: string, intensity: number, triggers: string[] = []): void {
+    this.current = emotion;
+    this.intensity = intensity;
+    this.triggers = triggers;
+    this.history.push({
+      emotion,
+      intensity,
+      triggers,
+      timestamp: new Date()
+    });
+  }
 }
 
 /**

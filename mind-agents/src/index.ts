@@ -6,7 +6,8 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '../..');
-dotenv.config({ path: path.join(rootDir, '.env') });
+const envPath = path.join(rootDir, '.env');
+dotenv.config({ path: envPath });
 
 import { SYMindXRuntime } from './core/runtime.js';
 import type { RuntimeConfig } from './types/agent.js';
@@ -59,11 +60,8 @@ async function start() {
     await runtime.initialize();
     console.log('SYMindX Runtime initialized successfully');
     
-    // Load available agents
-    await runtime.loadAgents();
-    
-    // Start the runtime loop
-    runtime.start();
+    // Start the runtime loop (which will load agents after registering modules)
+    await runtime.start();
     console.log('SYMindX Runtime started successfully');
   } catch (error) {
     console.error('Failed to start SYMindX Runtime:', error);

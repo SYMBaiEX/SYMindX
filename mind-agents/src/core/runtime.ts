@@ -18,6 +18,8 @@ import {
          EnvironmentType,
          MemoryRecord
         } from '../types/agent.js'
+import { CharacterConfig } from '../types/character.js'
+import { configResolver } from '../utils/config-resolver.js'
 import { EmotionModule, EmotionModuleFactory } from '../types/emotion.js'
 import { CognitionModule, CognitionModuleFactory } from '../types/cognition.js'
 import { Portal, PortalConfig, PortalRegistry } from '../types/portal.js'
@@ -240,7 +242,26 @@ export class SYMindXRuntime implements AgentRuntime {
           try {
             const configPath = path.join(charactersDir, file)
             const configData = await fs.readFile(configPath, 'utf-8')
-            const agentConfig = JSON.parse(configData) as AgentConfig
+            const rawConfig = JSON.parse(configData)
+            
+            let agentConfig: AgentConfig
+            
+            // Check if this is a new clean character config or old format
+            if (this.isCleanCharacterConfig(rawConfig)) {
+              console.log(`🔄 Processing clean character config: ${file}`)
+              // Validate environment variables
+              const envValidation = configResolver.validateEnvironment()
+              if (!envValidation.valid) {
+                console.warn(`⚠️ Missing environment variables for ${file}:`, envValidation.missing)
+              }
+              
+              // Transform clean config to runtime config
+              agentConfig = configResolver.resolveCharacterConfig(rawConfig as CharacterConfig)
+            } else {
+              console.log(`📝 Processing legacy character config: ${file}`)
+              // Legacy format - use as-is but process environment variables
+              agentConfig = this.processLegacyConfig(rawConfig)
+            }
             
             // Load the agent
             await this.loadAgent(agentConfig)
@@ -264,101 +285,244 @@ export class SYMindXRuntime implements AgentRuntime {
       console.error('❌ Error loading agents:', error)
     }
   }
+
+  private findPrimaryPortal(portals: any[]): any {
+    if (!portals || portals.length === 0) return null
+    // Find the portal marked as primary, or first enabled portal
+    return portals.find(p => p.primary === true && p.enabled !== false) ||
+           portals.find(p => p.enabled !== false) ||
+           portals[0]
+  }
+
+  private findPortalByCapability(portals: any[], capability: string): any {
+    if (!portals || portals.length === 0) return null
+    // Find first enabled portal with the specified capability
+    return portals.find(p => 
+      p.enabled !== false && 
+      p.capabilities && 
+      p.capabilities.includes(capability)
+    )
+  }
+
+  /**
+   * Check if this is a clean character config (new TypeScript format)
+   */
+  private isCleanCharacterConfig(config: any): boolean {
+    // Clean configs have specific fields and structure
+    return config.personality && 
+           config.autonomous &&
+           config.memory &&
+           config.emotion &&
+           config.cognition &&
+           config.communication &&
+           config.capabilities &&
+           config.portals &&
+           Array.isArray(config.portals) &&
+           // Old configs have psyche.defaults, new ones don't
+           !config.psyche
+  }
+
+  /**
+   * Process legacy character config (old format with ${} syntax)
+   */
+  private processLegacyConfig(config: any): any {
+    // For legacy configs, process environment variables in the existing format
+    return this.processEnvironmentVariables(config)
+  }
+
+  /**
+   * Process environment variables in legacy format
+   */
+  private processEnvironmentVariables(obj: any): any {
+    if (typeof obj === 'string') {
+      // Handle ${ENV_VAR:default} syntax
+      return obj.replace(/\$\{([^}:]+):?([^}]*)\}/g, (match, envVar, defaultValue) => {
+        return process.env[envVar] || defaultValue || match
+      })
+    } else if (Array.isArray(obj)) {
+      return obj.map(item => this.processEnvironmentVariables(item))
+    } else if (obj && typeof obj === 'object') {
+      const processed: any = {}
+      for (const [key, value] of Object.entries(obj)) {
+        processed[key] = this.processEnvironmentVariables(value)
+      }
+      return processed
+    }
+    return obj
+  }
   
-  async loadAgent(config: AgentConfig): Promise<Agent> {
+  private transformCharacterConfig(characterConfig: any): AgentConfig {
+    // Transform character config to expected AgentConfig format
+    return {
+      core: {
+        name: characterConfig.name || 'Unknown Agent',
+        tone: characterConfig.communication?.tone || 'neutral',
+        personality: characterConfig.personality?.traits ? Object.keys(characterConfig.personality.traits) : []
+      },
+      lore: {
+        origin: characterConfig.personality?.backstory || 'Unknown origin',
+        motive: characterConfig.personality?.goals?.[0] || 'Unknown motive'
+      },
+      psyche: {
+        traits: characterConfig.personality?.traits ? Object.keys(characterConfig.personality.traits) : [],
+        defaults: {
+          memory: characterConfig.memory?.type || 'memory',
+          emotion: characterConfig.emotion?.type || 'rune_emotion_stack',
+          cognition: characterConfig.cognition?.type || 'hybrid',
+          portal: this.findPrimaryPortal(characterConfig.portals)?.type || 'groq'
+        }
+      },
+      modules: {
+        extensions: characterConfig.extensions?.map((ext: any) => ext.name) || [],
+        memory: characterConfig.memory?.config,
+        emotion: characterConfig.emotion?.config,
+        cognition: characterConfig.cognition?.config,
+        portal: characterConfig.portals?.[0]?.config
+      }
+    }
+  }
+
+  async loadAgent(config: any): Promise<Agent> {
     const agentId = `agent_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     
-    console.log(`🤖 Loading agent: ${config.core.name} (${agentId})`)
+    // Transform character config to expected format
+    const agentConfig = this.transformCharacterConfig(config)
     
-    // Create memory provider
-    const memoryProvider = this.registry.getMemoryProvider(config.psyche.defaults.memory)
+    console.log(`🤖 Loading agent: ${agentConfig.core.name} (${agentId})`)
+    
+    // Create memory provider (try factory first, then fallback to registry)
+    let memoryProvider = this.registry.getMemoryProvider(agentConfig.psyche.defaults.memory)
     if (!memoryProvider) {
-      throw new Error(`Memory provider '${config.psyche.defaults.memory}' not found`)
+      // Try to create using factory with agent-specific config
+      const memoryConfig = {
+        ...agentConfig.modules.memory,
+        agentId: agentId,
+        agentName: agentConfig.core.name
+      }
+      memoryProvider = this.registry.createMemoryProvider(agentConfig.psyche.defaults.memory, memoryConfig)
+    }
+    if (!memoryProvider) {
+      throw new Error(`Memory provider '${agentConfig.psyche.defaults.memory}' not found and could not be created`)
     }
     
     // Create cognition module (try factory first, then fallback to registry)
-    let cognitionModule = this.registry.getCognitionModule(config.psyche.defaults.cognition)
+    let cognitionModule = this.registry.getCognitionModule(agentConfig.psyche.defaults.cognition)
     if (!cognitionModule) {
       // Try to create using factory with agent-specific config
       const cognitionConfig = {
-        ...config.modules.cognition,
+        ...agentConfig.modules.cognition,
         agentId: agentId,
-        agentName: config.core.name
+        agentName: agentConfig.core.name
       }
-      cognitionModule = this.registry.createCognitionModule(config.psyche.defaults.cognition, cognitionConfig)
+      cognitionModule = this.registry.createCognitionModule(agentConfig.psyche.defaults.cognition, cognitionConfig)
     }
     if (!cognitionModule) {
-      throw new Error(`Cognition module '${config.psyche.defaults.cognition}' not found and could not be created`)
+      throw new Error(`Cognition module '${agentConfig.psyche.defaults.cognition}' not found and could not be created`)
     }
     
     // Create emotion module (try factory first, then fallback to registry)
-    let emotionModule = this.registry.getEmotionModule(config.psyche.defaults.emotion)
+    let emotionModule = this.registry.getEmotionModule(agentConfig.psyche.defaults.emotion)
     if (!emotionModule) {
       // Try to create using factory with agent-specific config
       const emotionConfig = {
-        ...config.modules.emotion,
+        ...agentConfig.modules.emotion,
         agentId: agentId,
-        agentName: config.core.name,
-        personality: config.psyche.traits
+        agentName: agentConfig.core.name,
+        personality: agentConfig.psyche.traits
       }
-      emotionModule = this.registry.createEmotionModule(config.psyche.defaults.emotion, emotionConfig)
+      emotionModule = this.registry.createEmotionModule(agentConfig.psyche.defaults.emotion, emotionConfig)
     }
     if (!emotionModule) {
-      throw new Error(`Emotion module '${config.psyche.defaults.emotion}' not found and could not be created`)
+      throw new Error(`Emotion module '${agentConfig.psyche.defaults.emotion}' not found and could not be created`)
     }
     
-    // Load portal if specified
-    let portal = undefined
-    if (config.psyche.defaults.portal) {
-      portal = this.registry.getPortal(config.psyche.defaults.portal)
-      if (!portal) {
-        // Try to create portal dynamically using factory
-        const portalConfig: PortalConfig = {
-          ...config.modules.portal,
-          ...this.config.portals?.apiKeys
+    // Load multiple portals from character config
+    const portals: Portal[] = []
+    let primaryPortal = undefined
+    
+    if (config.portals && Array.isArray(config.portals)) {
+      for (const portalConfig of config.portals) {
+        if (portalConfig.enabled === false) {
+          console.log(`⏭️ Skipping disabled portal: ${portalConfig.name}`)
+          continue
         }
-        portal = this.registry.createPortal(config.psyche.defaults.portal, portalConfig)
-      }
-      
-      if (!portal) {
-        console.warn(`⚠️ Portal '${config.psyche.defaults.portal}' not found and could not be created, agent will run without AI capabilities`)
-      } else {
-        console.log(`🔮 Using portal: ${config.psyche.defaults.portal}`)
-        // Initialize the portal with the agent
+        
         try {
-          await portal.init({
-            id: agentId,
-            name: config.core.name,
-            config
-          } as Agent)
+          // Try to get existing portal or create new one
+          let portal = this.registry.getPortal(portalConfig.type)
+          if (!portal) {
+            // Create portal using factory with portal-specific config
+            const factoryConfig: PortalConfig = {
+              ...portalConfig.config,
+              ...this.config.portals?.apiKeys,
+              capabilities: portalConfig.capabilities || []
+            }
+            portal = this.registry.createPortal(portalConfig.type, factoryConfig)
+          }
+          
+          if (portal) {
+            // Initialize the portal
+            try {
+              await portal.init({
+                id: agentId,
+                name: agentConfig.core.name,
+                config: agentConfig
+              } as Agent)
+              
+              portals.push(portal)
+              console.log(`🔮 Loaded portal: ${portalConfig.name} (${portalConfig.type}) - Capabilities: ${portalConfig.capabilities?.join(', ') || 'default'}`)
+              
+              // Set primary portal
+              if (portalConfig.primary === true) {
+                primaryPortal = portal
+              }
+            } catch (error) {
+              console.warn(`⚠️ Failed to initialize portal '${portalConfig.name}':`, error)
+            }
+          } else {
+            console.warn(`⚠️ Portal '${portalConfig.name}' (${portalConfig.type}) not found and could not be created`)
+          }
         } catch (error) {
-          console.warn(`⚠️ Failed to initialize portal '${config.psyche.defaults.portal}':`, error)
-          portal = undefined
+          console.warn(`⚠️ Error loading portal '${portalConfig.name}':`, error)
         }
       }
+    }
+    
+    // Fallback to primary portal if no primary was set
+    if (!primaryPortal && portals.length > 0) {
+      primaryPortal = portals[0]
+      console.log(`🔮 Using first portal as primary: ${primaryPortal.constructor.name}`)
+    }
+    
+    if (portals.length === 0) {
+      console.warn(`⚠️ No portals loaded for agent, will run without AI capabilities`)
     }
     
     // Load extensions
     const extensions = []
-    for (const extName of config.modules.extensions) {
+    console.log(`🔍 Looking for extensions: ${agentConfig.modules.extensions.join(', ')}`)
+    
+    for (const extName of agentConfig.modules.extensions) {
       const extension = this.registry.getExtension(extName)
       if (extension) {
         extensions.push(extension)
+        console.log(`✅ Found extension: ${extName}`)
       } else {
-        console.warn(`⚠️ Extension '${extName}' not found, skipping`)
+        console.warn(`⚠️ Extension '${extName}' not found in registry, skipping`)
       }
     }
     
     const agent: Agent = {
       id: agentId,
-      name: config.core.name,
+      name: agentConfig.core.name,
       status: AgentStatus.IDLE,
       emotion: emotionModule,
       memory: memoryProvider,
       cognition: cognitionModule,
       extensions,
-      portal,
-      config,
+      portal: primaryPortal, // Primary portal for backward compatibility
+      portals: portals, // All available portals
+      config: agentConfig,
       lastUpdate: new Date()
     }
     
@@ -387,6 +551,18 @@ export class SYMindXRuntime implements AgentRuntime {
       } catch (error) {
         console.error(`❌ Failed to initialize tool system:`, error)
       }
+    }
+    
+    // Add utility method to find portals by capability
+    (agent as any).findPortalByCapability = (capability: string) => {
+      if (!agent.portals) return agent.portal
+      return agent.portals.find(p => {
+        if (typeof p.hasCapability === 'function') {
+          return p.hasCapability(capability as any)
+        }
+        // Fallback to checking config capabilities
+        return (p as any).capabilities?.includes(capability)
+      }) || agent.portal
     }
     
     // Initialize autonomous capabilities if enabled
@@ -467,6 +643,20 @@ export class SYMindXRuntime implements AgentRuntime {
   private async processAgent(agent: Agent): Promise<void> {
     // Skip processing if agent is not active
     if (agent.status === AgentStatus.ERROR) {
+      return
+    }
+    
+    // Skip processing if no AI capabilities available to prevent infinite loops
+    if (!agent.portal && (!agent.portals || agent.portals.length === 0)) {
+      console.log(`⏸️ Skipping agent ${agent.name} - no AI portals available`)
+      agent.status = AgentStatus.IDLE
+      return
+    }
+    
+    // Check if there are any events to process
+    const pendingEvents = this.getUnprocessedEvents(agent.id)
+    if (pendingEvents.length === 0 && agent.status === AgentStatus.IDLE) {
+      // No events to process and agent is idle, skip this tick
       return
     }
     
@@ -917,11 +1107,29 @@ export class SYMindXRuntime implements AgentRuntime {
       // Create extension configs from environment variables
       const extensionConfigs: Record<string, ExtensionConfig> = {}
       
+      // API extension config (always enabled by default)
+      extensionConfigs.api = {
+        enabled: true,
+        priority: 1,
+        settings: {
+          port: parseInt(process.env.API_PORT || '3001'),
+          host: process.env.API_HOST || 'localhost',
+          cors_enabled: true,
+          rate_limiting: true,
+          websocket_enabled: true,
+          webui_enabled: true,
+          auth_required: process.env.API_AUTH_REQUIRED === 'true',
+          max_connections: parseInt(process.env.API_MAX_CONNECTIONS || '100')
+        },
+        dependencies: [],
+        capabilities: ['http', 'websocket', 'webui', 'api']
+      }
+      
       // Slack extension config
       if (process.env.SLACK_BOT_TOKEN) {
         extensionConfigs.slack = {
           enabled: true,
-          priority: 1,
+          priority: 2,
           settings: {
             botToken: process.env.SLACK_BOT_TOKEN,
             signingSecret: process.env.SLACK_SIGNING_SECRET,
@@ -936,7 +1144,7 @@ export class SYMindXRuntime implements AgentRuntime {
       if (process.env.RUNELITE_ENABLED === 'true') {
         extensionConfigs.runelite = {
           enabled: true,
-          priority: 2,
+          priority: 3,
           settings: {
             // RuneLite specific config
           },
@@ -949,7 +1157,7 @@ export class SYMindXRuntime implements AgentRuntime {
       if (process.env.TWITTER_API_KEY) {
         extensionConfigs.twitter = {
           enabled: true,
-          priority: 3,
+          priority: 4,
           settings: {
             apiKey: process.env.TWITTER_API_KEY,
             apiSecret: process.env.TWITTER_API_SECRET,
@@ -965,7 +1173,7 @@ export class SYMindXRuntime implements AgentRuntime {
       if (process.env.TELEGRAM_BOT_TOKEN) {
         extensionConfigs.telegram = {
           enabled: true,
-          priority: 4,
+          priority: 5,
           settings: {
             botToken: process.env.TELEGRAM_BOT_TOKEN,
             webhookUrl: process.env.TELEGRAM_WEBHOOK_URL
@@ -988,9 +1196,14 @@ export class SYMindXRuntime implements AgentRuntime {
       // Register available extensions
       const extensions = await extensionsModule.registerExtensions(tempConfig)
       
-      // Register extensions in registry
+      // Register extensions in registry using their ID instead of name
       for (const extension of extensions) {
-        this.registry.registerExtension(extension.name, extension)
+        this.registry.registerExtension(extension.id, extension)
+        
+        // If this is the API extension, connect it to the runtime
+        if (extension.id === 'api' && 'setRuntime' in extension) {
+          ;(extension as any).setRuntime(this)
+        }
       }
       
       console.log('✅ Built-in extensions loaded successfully')

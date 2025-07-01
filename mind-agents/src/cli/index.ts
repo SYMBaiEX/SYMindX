@@ -84,9 +84,11 @@ class SYMindXCLI {
   }
 
   private getDefaultCLIConfig(): CLIConfig {
+    // Get port from environment or use default
+    const port = process.env.PORT || process.env.API_PORT || '3001'
     return {
-      apiUrl: process.env.SYMINDX_API_URL || 'http://localhost:3000',
-      wsUrl: process.env.SYMINDX_WS_URL || 'ws://localhost:3000/ws',
+      apiUrl: process.env.SYMINDX_API_URL || `http://localhost:${port}`,
+      wsUrl: process.env.SYMINDX_WS_URL || `ws://localhost:${port}/ws`,
       autoConnect: process.env.SYMINDX_AUTO_CONNECT === 'true',
       defaultAgent: process.env.SYMINDX_DEFAULT_AGENT,
       colors: process.env.NO_COLOR !== 'true',
@@ -172,7 +174,12 @@ class SYMindXCLI {
 
   async run(argv: string[]): Promise<void> {
     try {
-      await this.program.parseAsync(argv)
+      // If no command is provided (only node script.js), start interactive mode
+      if (argv.length <= 2) {
+        await this.startInteractiveMode()
+      } else {
+        await this.program.parseAsync(argv)
+      }
     } catch (error) {
       logger.error('CLI error:', error)
       process.exit(1)
@@ -416,15 +423,28 @@ class SYMindXCLI {
 
   private async getAvailableAgents(): Promise<Array<{ id: string; name: string; status: string }>> {
     try {
-      const agents = Array.from(this.context.runtime.agents.values())
-      return agents.map(agent => ({
-        id: agent.id,
-        name: agent.name,
-        status: agent.status
-      }))
+      // Fetch agents from API server
+      const response = await fetch(`${this.context.config.apiUrl}/agents`)
+      if (!response.ok) {
+        console.log(chalk.yellow('⚠️  Could not connect to API server. Is the runtime running?'))
+        return []
+      }
+      
+      const data = await response.json()
+      return data.agents || []
     } catch (error) {
-      logger.error('Failed to get agents:', error)
-      return []
+      // If API server is not running, try to get from local runtime if available
+      try {
+        const agents = Array.from(this.context.runtime.agents.values())
+        return agents.map(agent => ({
+          id: agent.id,
+          name: agent.name,
+          status: agent.status
+        }))
+      } catch {
+        logger.error('Failed to get agents:', error)
+        return []
+      }
     }
   }
 

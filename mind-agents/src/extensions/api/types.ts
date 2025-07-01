@@ -54,6 +54,7 @@ export interface ApiConfig extends ExtensionConfig {
 
 export interface ChatRequest {
   message: string
+  agentId?: string
   context?: {
     sessionId?: string
     userId?: string

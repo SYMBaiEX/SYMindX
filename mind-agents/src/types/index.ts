@@ -18,6 +18,16 @@ export type { Portal, PortalConfig, PortalType } from './portal.js';
 export type { EmotionModule } from './emotion.js';
 export type { CognitionModule } from './cognition.js';
 
+// Character configuration types
+export type { 
+  CharacterConfig,
+  EnvironmentConfig,
+  PortalConfig as CharacterPortalConfig,
+  PortalSpecificConfig,
+  PortalCapability
+} from './character.js';
+export { ConfigDefaults } from './character.js';
+
 // Lifecycle and operations (commented out due to conflicts)
 // export * from './lifecycle.js';
 

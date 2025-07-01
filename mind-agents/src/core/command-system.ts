@@ -493,49 +493,70 @@ export class CommandSystem extends EventEmitter {
   }
 
   private async processChatCommand(agent: Agent, command: Command): Promise<CommandResult> {
-    // Use agent's cognition to process the message
-    if (!agent.cognition) {
+    // Import portal integration helper
+    const { PortalIntegration } = await import('./portal-integration.js')
+    
+    // Generate AI response using portal
+    try {
+      const response = await PortalIntegration.generateResponse(
+        agent, 
+        command.instruction,
+        {
+          systemPrompt: `You are in a chat conversation. Respond naturally and helpfully.`,
+          previousThoughts: agent.memory ? 'I have memories of our past interactions.' : undefined
+        }
+      )
+
       return {
-        success: false,
-        error: 'Agent has no cognition module',
+        success: true,
+        response,
         executionTime: 0
       }
-    }
-
-    // Create a context for the thought
-    const context = {
-      events: [],
-      memories: [],
-      currentState: { location: 'chat', inventory: {}, stats: {}, goals: [], context: {} },
-      environment: { 
-        type: 'virtual' as any, 
-        time: new Date(), 
-        weather: 'clear', 
-        location: 'chat', 
-        npcs: [], 
-        objects: [], 
-        events: [] 
+    } catch (error) {
+      // Fallback to cognition module if portal fails
+      if (!agent.cognition) {
+        return {
+          success: false,
+          error: 'Agent has no cognition module',
+          executionTime: 0
+        }
       }
-    }
 
-    const thoughtResult = await agent.cognition.think(agent, context)
-    
-    // Look for communication actions in the response
-    const communicationActions = thoughtResult.actions.filter(
-      action => action.type === ActionCategory.COMMUNICATION
-    )
+      // Create a context for the thought
+      const context = {
+        events: [],
+        memories: [],
+        currentState: { location: 'chat', inventory: {}, stats: {}, goals: [], context: {} },
+        environment: { 
+          type: 'virtual' as any, 
+          time: new Date(), 
+          weather: 'clear', 
+          location: 'chat', 
+          npcs: [], 
+          objects: [], 
+          events: [] 
+        }
+      }
 
-    let response = 'I heard you, but I don\'t have anything to say right now.'
-    
-    if (communicationActions.length > 0) {
-      const firstComm = communicationActions[0]
-      response = String(firstComm.parameters?.message || firstComm.parameters?.text || response)
-    }
+      const thoughtResult = await agent.cognition.think(agent, context)
+      
+      // Look for communication actions in the response
+      const communicationActions = thoughtResult.actions.filter(
+        action => action.type === ActionCategory.COMMUNICATION
+      )
 
-    return {
-      success: true,
-      response,
-      executionTime: 0
+      let response = 'I heard you, but I don\'t have anything to say right now.'
+      
+      if (communicationActions.length > 0) {
+        const firstComm = communicationActions[0]
+        response = String(firstComm.parameters?.message || firstComm.parameters?.text || response)
+      }
+
+      return {
+        success: true,
+        response,
+        executionTime: 0
+      }
     }
   }
 
@@ -574,7 +595,43 @@ export class CommandSystem extends EventEmitter {
       }
     }
 
-    const memories = await agent.memory.retrieve(agent.id, command.instruction, 10)
+    // Check if embeddings are enabled from agent config
+    const memoryConfig = agent.config?.modules?.memory as any || {}
+    const useEmbeddings = memoryConfig.enable_embeddings === 'true' || 
+                         memoryConfig.enable_embeddings === true || 
+                         process.env.ENABLE_OPENAI_EMBEDDINGS === 'true'
+
+    let memories
+    if (useEmbeddings) {
+      // Find embedding-capable portal
+      const embeddingPortal = (agent as any).findPortalByCapability ? 
+                              (agent as any).findPortalByCapability('embedding_generation') : 
+                              agent.portal
+
+      if (embeddingPortal && typeof embeddingPortal.generateEmbedding === 'function') {
+        console.log('🔍 Using embeddings for enhanced memory retrieval')
+        try {
+          const embeddingResult = await embeddingPortal.generateEmbedding(command.instruction)
+          const queryEmbedding = embeddingResult.embedding
+
+          // Use vector search for more relevant memories
+          if (agent.memory.search && typeof agent.memory.search === 'function') {
+            memories = await agent.memory.search(agent.id, queryEmbedding, 10)
+          } else {
+            // Fallback to regular retrieval
+            memories = await agent.memory.retrieve(agent.id, command.instruction, 10)
+          }
+        } catch (error) {
+          console.warn('⚠️ Failed to generate embedding, falling back to text search:', error)
+          memories = await agent.memory.retrieve(agent.id, command.instruction, 10)
+        }
+      } else {
+        console.log('📝 No embedding portal available, using text search')
+        memories = await agent.memory.retrieve(agent.id, command.instruction, 10)
+      }
+    } else {
+      memories = await agent.memory.retrieve(agent.id, command.instruction, 10)
+    }
     
     return {
       success: true,
