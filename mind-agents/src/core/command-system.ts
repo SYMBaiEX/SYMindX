@@ -519,6 +519,46 @@ export class CommandSystem extends EventEmitter {
     
     const startTime = Date.now()
     
+    // Step 0: Process incoming message for emotional triggers and update agent emotion
+    let emotionalContext: {
+      currentEmotion?: string
+      emotionIntensity?: number
+      emotionModifiers?: Record<string, number>
+      emotionColor?: string
+      postResponseEmotion?: string
+      postResponseIntensity?: number
+    } = {}
+    let emotionTriggered = false
+    
+    if (agent.emotion) {
+      try {
+        // Analyze the incoming message for emotional triggers
+        const messageEmotion = this.analyzeMessageEmotion(command.instruction)
+        
+        // Process the emotional event
+        const emotionState = agent.emotion.processEvent('chat_message', {
+          message: command.instruction,
+          messageType: messageEmotion.type,
+          sentiment: messageEmotion.sentiment,
+          intensity: messageEmotion.intensity,
+          ...messageEmotion.context
+        })
+        
+        emotionalContext = {
+          currentEmotion: emotionState.current,
+          emotionIntensity: emotionState.intensity,
+          emotionModifiers: (agent.emotion as any).getEmotionModifier ? (agent.emotion as any).getEmotionModifier() : {},
+          emotionColor: (agent.emotion as any).getEmotionColor ? (agent.emotion as any).getEmotionColor() : '#9E9E9E'
+        }
+        
+        emotionTriggered = true
+        this.logger.debug(`Agent ${agent.name} emotion updated to ${emotionState.current} (${emotionState.intensity.toFixed(2)}) from message: ${command.instruction}`)
+        
+      } catch (error) {
+        this.logger.warn('Failed to process emotion for incoming message:', error)
+      }
+    }
+    
     // Step 1: Retrieve recent conversation memories for context
     let conversationContext = ''
     let recentMemories: any[] = []
@@ -563,14 +603,91 @@ export class CommandSystem extends EventEmitter {
         }
       }
       
-      // Step 2: Generate AI response using portal with context
+      // Step 1.5: COGNITIVE PROCESSING - Think before responding
+      let cognitiveContext: any = {}
+      let thoughtResult: any = null
+      
+      // Check if cognitive processing is enabled (default: true)
+      const cognitiveProcessingEnabled = agent.config?.modules?.cognition?.enableCognitiveProcessing !== false
+      
+      if (agent.cognition && cognitiveProcessingEnabled) {
+        try {
+          this.logger.debug(`Agent ${agent.name} is thinking about the message...`)
+          
+          // Create a context for cognitive processing
+          const thinkingContext = {
+            events: [{
+              id: `chat_${Date.now()}`,
+              type: 'communication_received',
+              source: 'user',
+              timestamp: new Date(),
+              processed: false,
+              data: {
+                message: command.instruction,
+                emotion: emotionalContext,
+                sender: 'user'
+              }
+            }],
+            memories: recentMemories || [],
+            currentState: { 
+              location: 'chat', 
+              inventory: {}, 
+              stats: {}, 
+              goals: [`respond_to: "${command.instruction}"`], 
+              context: { conversationContext, emotionalContext } 
+            },
+            environment: { 
+              type: 'virtual' as any, 
+              time: new Date(), 
+              weather: 'clear', 
+              location: 'chat_interface', 
+              npcs: [], 
+              objects: [], 
+              events: [] 
+            },
+            goal: `Thoughtfully respond to user message: "${command.instruction}"`
+          }
+          
+          // Let the agent think about the situation
+          thoughtResult = await agent.cognition.think(agent, thinkingContext)
+          
+          if (thoughtResult) {
+            cognitiveContext = {
+              thoughts: thoughtResult.thoughts || [],
+              cognitiveActions: thoughtResult.actions || [],
+              cognitiveEmotions: thoughtResult.emotions || [],
+              cognitiveConfidence: thoughtResult.confidence || 0.5,
+              cognitiveMemories: thoughtResult.memories || []
+            }
+            
+            this.logger.debug(`Agent ${agent.name} cognitive processing complete:`, {
+              thoughts: cognitiveContext.thoughts.length,
+              actions: cognitiveContext.cognitiveActions.length,
+              confidence: cognitiveContext.cognitiveConfidence
+            })
+          }
+          
+        } catch (error) {
+          this.logger.warn('Failed to process cognitive thinking for message:', error)
+          // Continue without cognitive context if thinking fails
+        }
+      } else if (!cognitiveProcessingEnabled) {
+        this.logger.debug(`Agent ${agent.name} has cognitive processing disabled`)
+      } else {
+        this.logger.debug(`Agent ${agent.name} has no cognition module available`)
+      }
+      
+      // Step 2: Generate AI response using portal with emotional AND cognitive context
+      const enhancedPrompt = this.buildEnhancedSystemPrompt(agent, emotionalContext, conversationContext, cognitiveContext)
+      
       const response = await PortalIntegration.generateResponse(
         agent, 
         command.instruction,
         {
-          systemPrompt: `You are in a chat conversation. Respond naturally and helpfully. 
-${conversationContext ? `\nRecent conversation context:\n${conversationContext}` : ''}`,
-          previousThoughts: conversationContext || 'This appears to be a new conversation.'
+          systemPrompt: enhancedPrompt,
+          previousThoughts: conversationContext || 'This appears to be a new conversation.',
+          emotionalContext,
+          cognitiveContext
         }
       )
 
@@ -579,7 +696,7 @@ ${conversationContext ? `\nRecent conversation context:\n${conversationContext}`
         try {
           const timestamp = new Date()
           
-          // Store user message
+          // Store user message with emotional and cognitive context
           const userMemory = {
             id: `memory_${Date.now()}_user`,
             agentId: agent.id,
@@ -588,17 +705,45 @@ ${conversationContext ? `\nRecent conversation context:\n${conversationContext}`
             metadata: {
               source: 'chat_command',
               messageType: 'user_input',
-              command_id: command.id
+              command_id: command.id,
+              emotionalContext: emotionalContext,
+              emotionTriggered: emotionTriggered,
+              cognitiveContext: cognitiveContext,
+              hadCognitiveProcessing: !!thoughtResult
             },
-            importance: 0.7, // Conversations are moderately important
+            importance: emotionTriggered ? 0.8 : 0.7, // Emotional messages are more important
             timestamp,
-            tags: ['conversation', 'chat', 'user_input'],
+            tags: ['conversation', 'chat', 'user_input', ...(emotionTriggered ? ['emotional'] : []), ...(thoughtResult ? ['cognitive'] : [])],
             duration: MemoryDuration.LONG_TERM
           }
           
           await agent.memory.store(agent.id, userMemory)
           
-          // Store agent response
+          // Process emotional response to our own reply
+          let responseEmotionalContext = emotionalContext
+          if (agent.emotion && emotionTriggered) {
+            try {
+              // Analyze our response for emotional impact
+              const responseEmotion = this.analyzeMessageEmotion(response, true)
+              const responseEmotionState = agent.emotion.processEvent('agent_response', {
+                response: response,
+                originalMessage: command.instruction,
+                responseType: responseEmotion.type,
+                sentiment: responseEmotion.sentiment,
+                ...responseEmotion.context
+              })
+              
+              responseEmotionalContext = {
+                ...emotionalContext,
+                postResponseEmotion: responseEmotionState.current,
+                postResponseIntensity: responseEmotionState.intensity
+              }
+            } catch (error) {
+              this.logger.warn('Failed to process emotion for agent response:', error)
+            }
+          }
+          
+          // Store agent response with emotional and cognitive context
           const agentMemory = {
             id: `memory_${Date.now()}_agent`,
             agentId: agent.id,
@@ -608,15 +753,72 @@ ${conversationContext ? `\nRecent conversation context:\n${conversationContext}`
               source: 'chat_command',
               messageType: 'agent_response',
               command_id: command.id,
-              response_to: command.instruction
+              response_to: command.instruction,
+              emotionalContext: responseEmotionalContext,
+              emotionTriggered: emotionTriggered,
+              cognitiveContext: cognitiveContext,
+              hadCognitiveProcessing: !!thoughtResult
             },
-            importance: 0.6,
+            importance: emotionTriggered ? 0.7 : 0.6,
             timestamp: new Date(timestamp.getTime() + 1), // Slight delay to ensure order
-            tags: ['conversation', 'chat', 'agent_response'],
+            tags: ['conversation', 'chat', 'agent_response', ...(emotionTriggered ? ['emotional'] : []), ...(thoughtResult ? ['cognitive'] : [])],
             duration: MemoryDuration.LONG_TERM
           }
           
           await agent.memory.store(agent.id, agentMemory)
+          
+          // Store separate emotional memory if significant emotional event occurred
+          if (emotionTriggered && (emotionalContext.emotionIntensity || 0) > 0.3) {
+            const emotionalMemory = {
+              id: `emotion_memory_${Date.now()}`,
+              agentId: agent.id,
+              type: MemoryType.EXPERIENCE,
+              content: `Emotional interaction: ${emotionalContext.currentEmotion} (${((emotionalContext.emotionIntensity || 0) * 100).toFixed(0)}%) triggered by: "${command.instruction}"`,
+              metadata: {
+                source: 'emotion_system',
+                emotionType: emotionalContext.currentEmotion,
+                intensity: emotionalContext.emotionIntensity || 0,
+                trigger: command.instruction,
+                response: response,
+                command_id: command.id
+              },
+              importance: emotionalContext.emotionIntensity || 0.5, // Importance based on intensity
+              timestamp: new Date(timestamp.getTime() + 2),
+              tags: ['emotion', 'emotional_memory', emotionalContext.currentEmotion || 'unknown', 'chat'],
+              duration: MemoryDuration.LONG_TERM
+            }
+            
+            await agent.memory.store(agent.id, emotionalMemory)
+            this.logger.debug(`Stored emotional memory for ${agent.name}: ${emotionalContext.currentEmotion}`)
+          }
+          
+          // Store cognitive insights as separate memory if cognitive processing occurred
+          if (thoughtResult && cognitiveContext.thoughts.length > 0) {
+            const cognitiveMemory = {
+              id: `cognitive_memory_${Date.now()}`,
+              agentId: agent.id,
+              type: MemoryType.EXPERIENCE,
+              content: `Cognitive analysis: ${cognitiveContext.thoughts.join('. ')}. Confidence: ${(cognitiveContext.cognitiveConfidence * 100).toFixed(0)}%`,
+              metadata: {
+                source: 'cognition_system',
+                cognitiveType: (agent.cognition as any)?.getMetadata?.()?.id || 'unknown',
+                confidence: cognitiveContext.cognitiveConfidence,
+                thoughts: cognitiveContext.thoughts,
+                actions: cognitiveContext.cognitiveActions,
+                emotions: cognitiveContext.cognitiveEmotions,
+                trigger: command.instruction,
+                response: response,
+                command_id: command.id
+              },
+              importance: cognitiveContext.cognitiveConfidence || 0.6, // Importance based on confidence
+              timestamp: new Date(timestamp.getTime() + 3),
+              tags: ['cognition', 'cognitive_memory', 'thinking', 'chat', (agent.cognition as any)?.getMetadata?.()?.id || 'unknown_cognition'],
+              duration: MemoryDuration.LONG_TERM
+            }
+            
+            await agent.memory.store(agent.id, cognitiveMemory)
+            this.logger.debug(`Stored cognitive memory for ${agent.name}: ${cognitiveContext.thoughts.length} thoughts, confidence ${(cognitiveContext.cognitiveConfidence * 100).toFixed(0)}%`)
+          }
           
           this.logger.debug(`Stored conversation memories for ${agent.name}`)
         } catch (error) {
@@ -685,11 +887,13 @@ ${conversationContext ? `\nRecent conversation context:\n${conversationContext}`
             metadata: {
               source: 'chat_command_fallback',
               messageType: 'user_input',
-              command_id: command.id
+              command_id: command.id,
+              emotionalContext: emotionalContext,
+              emotionTriggered: emotionTriggered
             },
-            importance: 0.6,
+            importance: emotionTriggered ? 0.7 : 0.6,
             timestamp,
-            tags: ['conversation', 'chat', 'user_input', 'fallback'],
+            tags: ['conversation', 'chat', 'user_input', 'fallback', ...(emotionTriggered ? ['emotional'] : [])],
             duration: MemoryDuration.LONG_TERM
           }
           
@@ -705,11 +909,13 @@ ${conversationContext ? `\nRecent conversation context:\n${conversationContext}`
               messageType: 'agent_response',
               command_id: command.id,
               response_to: command.instruction,
-              method: 'cognition_fallback'
+              method: 'cognition_fallback',
+              emotionalContext: emotionalContext,
+              emotionTriggered: emotionTriggered
             },
-            importance: 0.5,
+            importance: emotionTriggered ? 0.6 : 0.5,
             timestamp: new Date(timestamp.getTime() + 1),
-            tags: ['conversation', 'chat', 'agent_response', 'fallback'],
+            tags: ['conversation', 'chat', 'agent_response', 'fallback', ...(emotionTriggered ? ['emotional'] : [])],
             duration: MemoryDuration.LONG_TERM
           }
           
@@ -918,6 +1124,256 @@ ${conversationContext ? `\nRecent conversation context:\n${conversationContext}`
         }
       }
     }
+  }
+
+  /**
+   * Analyze a message for emotional triggers and sentiment
+   */
+  private analyzeMessageEmotion(message: string, isAgentResponse = false): {
+    type: string
+    sentiment: 'positive' | 'negative' | 'neutral'
+    intensity: number
+    context: Record<string, any>
+  } {
+    const lowerMessage = message.toLowerCase()
+    
+    // Emotional trigger patterns
+    const emotionalPatterns = {
+      // Positive triggers
+      excited: ['amazing', 'awesome', 'incredible', 'fantastic', 'wow', '!', 'great job', 'excellent', 'perfect'],
+      happy: ['happy', 'joy', 'pleased', 'good', 'nice', 'wonderful', 'love', 'like'],
+      proud: ['proud', 'accomplished', 'achieved', 'success', 'won', 'victory', 'best'],
+      friendly: ['hello', 'hi', 'thanks', 'thank you', 'please', 'welcome', 'nice to meet'],
+      
+      // Negative triggers
+      frustrated: ['frustrated', 'annoying', 'stupid', 'dumb', 'hate', 'angry', 'mad', 'ugh'],
+      sad: ['sad', 'disappointed', 'sorry', 'unfortunate', 'bad', 'terrible', 'awful'],
+      confused: ['confused', 'don\'t understand', 'what', '?', 'how', 'unclear', 'help'],
+      
+      // Neutral/contextual
+      curious: ['why', 'how', 'what if', 'interesting', 'tell me', 'explain', 'curious'],
+      cautious: ['careful', 'sure', 'certain', 'risk', 'danger', 'safe'],
+      determined: ['will', 'must', 'need to', 'going to', 'determined', 'focus']
+    }
+    
+    let dominantEmotion = 'neutral'
+    let maxScore = 0
+    let sentiment: 'positive' | 'negative' | 'neutral' = 'neutral'
+    let intensity = 0.3 // Base intensity
+    
+    // Check for emotional patterns
+    for (const [emotion, patterns] of Object.entries(emotionalPatterns)) {
+      const score = patterns.reduce((acc, pattern) => {
+        // Escape special regex characters to treat pattern as literal text
+        const escapedPattern = pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        const matches = (lowerMessage.match(new RegExp(escapedPattern, 'g')) || []).length
+        return acc + matches
+      }, 0)
+      
+      if (score > maxScore) {
+        maxScore = score
+        dominantEmotion = emotion
+        intensity = Math.min(1.0, 0.3 + (score * 0.2))
+      }
+    }
+    
+    // Determine sentiment
+    const positiveEmotions = ['excited', 'happy', 'proud', 'friendly', 'curious']
+    const negativeEmotions = ['frustrated', 'sad', 'confused']
+    
+    if (positiveEmotions.includes(dominantEmotion)) {
+      sentiment = 'positive'
+    } else if (negativeEmotions.includes(dominantEmotion)) {
+      sentiment = 'negative'
+    }
+    
+    // Adjust intensity based on punctuation and caps
+    const exclamationCount = (message.match(/!/g) || []).length
+    const questionCount = (message.match(/\?/g) || []).length
+    const capsRatio = (message.match(/[A-Z]/g) || []).length / message.length
+    
+    intensity += exclamationCount * 0.1
+    intensity += questionCount * 0.05
+    intensity += capsRatio * 0.3
+    intensity = Math.min(1.0, intensity)
+    
+    return {
+      type: dominantEmotion,
+      sentiment,
+      intensity,
+      context: {
+        isAgentResponse,
+        exclamationCount,
+        questionCount,
+        capsRatio,
+        messageLength: message.length,
+        emotionalScore: maxScore
+      }
+    }
+  }
+  
+  /**
+   * Build system prompt that includes emotional state
+   */
+  private buildEmotionalSystemPrompt(agent: Agent, emotionalContext: {
+    currentEmotion?: string
+    emotionIntensity?: number
+    emotionModifiers?: Record<string, number>
+    emotionColor?: string
+    postResponseEmotion?: string
+    postResponseIntensity?: number
+  }, conversationContext?: string): string {
+    let prompt = `You are in a chat conversation. Respond naturally and helpfully.`
+    
+    // Add emotional state context
+    if (emotionalContext.currentEmotion && emotionalContext.currentEmotion !== 'neutral') {
+      const intensity = emotionalContext.emotionIntensity || 0
+      prompt += `\n\nYour current emotional state: ${emotionalContext.currentEmotion} (intensity: ${(intensity * 100).toFixed(0)}%)`
+      
+      // Add emotional modifiers guidance
+      if (emotionalContext.emotionModifiers && Object.keys(emotionalContext.emotionModifiers).length > 0) {
+        prompt += `\nEmotional influences on your behavior:`
+        for (const [modifier, value] of Object.entries(emotionalContext.emotionModifiers)) {
+          if (typeof value === 'number' && value !== 1.0) {
+            const change = value > 1.0 ? 'increased' : 'decreased'
+            const percentage = Math.abs((value - 1.0) * 100).toFixed(0)
+            prompt += `\n- ${modifier}: ${change} by ${percentage}%`
+          }
+        }
+      }
+      
+      // Add emotional guidance
+      prompt += `\n\nRespond in a way that reflects your ${emotionalContext.currentEmotion} emotional state. `
+      prompt += this.getEmotionalGuidance(emotionalContext.currentEmotion, intensity)
+    }
+    
+    // Add conversation context
+    if (conversationContext) {
+      prompt += `\n\nRecent conversation context:\n${conversationContext}`
+    }
+    
+    return prompt
+  }
+  
+  /**
+   * Get behavioral guidance based on emotional state
+   */
+  private getEmotionalGuidance(emotion: string, intensity: number): string {
+    const guidance: Record<string, Record<string, string>> = {
+      excited: {
+        low: 'Show some enthusiasm in your response.',
+        medium: 'Be energetic and positive! Use exclamation points appropriately.',
+        high: 'You\'re very excited! Let your enthusiasm show clearly while staying helpful.'
+      },
+      frustrated: {
+        low: 'You might be slightly impatient, but remain helpful.',
+        medium: 'You\'re frustrated but trying to stay professional. Keep responses brief and direct.',
+        high: 'You\'re quite frustrated. Be direct and honest about challenges while remaining respectful.'
+      },
+      friendly: {
+        low: 'Be warm and welcoming in your response.',
+        medium: 'Show genuine friendliness and interest in helping.',
+        high: 'Be very warm, helpful, and engaging. You genuinely want to connect and assist.'
+      },
+      curious: {
+        low: 'Show some interest in learning more.',
+        medium: 'Ask follow-up questions and show genuine curiosity.',
+        high: 'You\'re very curious! Ask engaging questions and explore the topic deeply.'
+      },
+      proud: {
+        low: 'Feel good about your capabilities and knowledge.',
+        medium: 'Show confidence in your responses and abilities.',
+        high: 'You\'re quite proud! Demonstrate your capabilities while staying humble.'
+      },
+      confused: {
+        low: 'You might need slight clarification on something.',
+        medium: 'Ask for clarification when needed and admit uncertainty honestly.',
+        high: 'You\'re quite confused. Ask clear questions to understand better.'
+      },
+      cautious: {
+        low: 'Be slightly careful in your recommendations.',
+        medium: 'Think through responses carefully and mention important considerations.',
+        high: 'Be very thoughtful and careful. Mention risks and alternatives when relevant.'
+      },
+      determined: {
+        low: 'Show some focus and resolve in helping.',
+        medium: 'Be focused and committed to finding good solutions.',
+        high: 'You\'re very determined! Show strong commitment to helping solve the problem.'
+      }
+    }
+    
+    const intensityLevel = intensity < 0.4 ? 'low' : intensity < 0.7 ? 'medium' : 'high'
+    return guidance[emotion]?.[intensityLevel] || 'Respond naturally according to your personality.'
+  }
+
+  /**
+   * Build enhanced system prompt that includes emotional AND cognitive context
+   */
+  private buildEnhancedSystemPrompt(agent: Agent, emotionalContext: {
+    currentEmotion?: string
+    emotionIntensity?: number
+    emotionModifiers?: Record<string, number>
+    emotionColor?: string
+    postResponseEmotion?: string
+    postResponseIntensity?: number
+  }, conversationContext?: string, cognitiveContext?: {
+    thoughts?: string[]
+    cognitiveActions?: any[]
+    cognitiveEmotions?: any[]
+    cognitiveConfidence?: number
+    cognitiveMemories?: any[]
+  }): string {
+    let prompt = `You are in a chat conversation. Respond naturally and helpfully.`
+    
+    // Add emotional state context
+    if (emotionalContext.currentEmotion && emotionalContext.currentEmotion !== 'neutral') {
+      const intensity = emotionalContext.emotionIntensity || 0
+      prompt += `\n\nYour current emotional state: ${emotionalContext.currentEmotion} (intensity: ${(intensity * 100).toFixed(0)}%)`
+      
+      // Add emotional modifiers guidance
+      if (emotionalContext.emotionModifiers && Object.keys(emotionalContext.emotionModifiers).length > 0) {
+        prompt += `\nEmotional influences on your behavior:`
+        for (const [modifier, value] of Object.entries(emotionalContext.emotionModifiers)) {
+          if (typeof value === 'number' && value !== 1.0) {
+            const change = value > 1.0 ? 'increased' : 'decreased'
+            const percentage = Math.abs((value - 1.0) * 100).toFixed(0)
+            prompt += `\n- ${modifier}: ${change} by ${percentage}%`
+          }
+        }
+      }
+      
+      // Add emotional guidance
+      prompt += `\n\nRespond in a way that reflects your ${emotionalContext.currentEmotion} emotional state. `
+      prompt += this.getEmotionalGuidance(emotionalContext.currentEmotion, intensity)
+    }
+    
+    // Add cognitive context if available
+    if (cognitiveContext && cognitiveContext.thoughts && cognitiveContext.thoughts.length > 0) {
+      prompt += `\n\nYour cognitive analysis of the situation:`
+      prompt += `\n- Thoughts: ${cognitiveContext.thoughts.join(', ')}`
+      
+      if (cognitiveContext.cognitiveConfidence !== undefined) {
+        prompt += `\n- Cognitive confidence: ${(cognitiveContext.cognitiveConfidence * 100).toFixed(0)}%`
+      }
+      
+      if (cognitiveContext.cognitiveActions && cognitiveContext.cognitiveActions.length > 0) {
+        const communicationActions = cognitiveContext.cognitiveActions.filter(
+          action => action.type === 'communication' || action.type.includes('communication')
+        )
+        if (communicationActions.length > 0) {
+          prompt += `\n- Communication intentions: ${communicationActions.map(a => a.type).join(', ')}`
+        }
+      }
+      
+      prompt += `\n\nUse these cognitive insights to inform your response while maintaining your natural personality.`
+    }
+    
+    // Add conversation context
+    if (conversationContext) {
+      prompt += `\n\nRecent conversation context:\n${conversationContext}`
+    }
+    
+    return prompt
   }
 
   public getStats(): {
