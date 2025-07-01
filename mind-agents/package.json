@@ -21,7 +21,14 @@
     "start:daemon": "nohup node dist/index.js > /dev/null 2>&1 & echo $! > .symindx.pid && echo 'SYMindX Runtime started as daemon (PID: '$(cat .symindx.pid)')'",
     "stop:daemon": "if [ -f .symindx.pid ]; then kill $(cat .symindx.pid) && rm .symindx.pid && echo 'SYMindX Runtime daemon stopped'; else echo 'No daemon PID file found'; fi",
     "dev": "tsc -w --skipLibCheck & node --watch dist/index.js",
-    "test": "node --experimental-vm-modules node_modules/.bin/jest"
+    "test": "node --experimental-vm-modules node_modules/.bin/jest",
+    "agents:list": "node multi-agent-manager.js list",
+    "agents:status": "node multi-agent-manager.js status",
+    "agents:start": "node multi-agent-manager.js start",
+    "agents:stop": "node multi-agent-manager.js stop",
+    "agents:stop-all": "node multi-agent-manager.js stop-all",
+    "agents:scenario": "node multi-agent-manager.js scenario",
+    "agents:test-chat": "node multi-agent-manager.js test-chat"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^1.2.12",

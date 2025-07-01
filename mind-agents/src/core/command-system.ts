@@ -191,6 +191,15 @@ export class CommandSystem extends EventEmitter {
     if (!this.queues.has(agent.id)) {
       this.queues.set(agent.id, [])
     }
+    
+    // Also register by character ID for easier lookup
+    if (agent.character_id && agent.character_id !== agent.id) {
+      this.agents.set(agent.character_id, agent)
+      if (!this.queues.has(agent.character_id)) {
+        this.queues.set(agent.character_id, [])
+      }
+    }
+    
     this.logger.info(`Registered agent: ${agent.name} (${agent.id})`)
   }
 
@@ -261,6 +270,15 @@ export class CommandSystem extends EventEmitter {
 
   public getAgentQueue(agentId: string): Command[] {
     return this.queues.get(agentId) || []
+  }
+
+  public listAgents(): Agent[] {
+    // Return unique agents (avoid duplicates from character_id aliases)
+    const uniqueAgents = new Map<string, Agent>()
+    for (const agent of this.agents.values()) {
+      uniqueAgents.set(agent.id, agent)
+    }
+    return Array.from(uniqueAgents.values())
   }
 
   public getAllCommands(): Command[] {
@@ -493,39 +511,141 @@ export class CommandSystem extends EventEmitter {
   }
 
   private async processChatCommand(agent: Agent, command: Command): Promise<CommandResult> {
+    // Import types for memory operations
+    const { MemoryType, MemoryDuration, ActionCategory } = await import('../types/enums.js')
+    
     // Import portal integration helper
     const { PortalIntegration } = await import('./portal-integration.js')
     
-    // Generate AI response using portal
+    const startTime = Date.now()
+    
+    // Step 1: Retrieve recent conversation memories for context
+    let conversationContext = ''
+    let recentMemories: any[] = []
+    
     try {
+      
+      if (agent.memory) {
+        try {
+          // Get recent conversation memories
+          recentMemories = await agent.memory.retrieve(
+            agent.id, 
+            'conversation chat message', 
+            10 // Last 10 conversation exchanges
+          )
+          
+          // Also get recent memories by tags
+          const chatMemories = await agent.memory.getRecent(agent.id, 5)
+          const conversationMemories = chatMemories.filter(mem => 
+            mem.tags.includes('conversation') || 
+            mem.tags.includes('chat') ||
+            mem.type === MemoryType.INTERACTION
+          )
+          
+          // Combine and deduplicate
+          const allMemories = [...recentMemories, ...conversationMemories]
+          const uniqueMemories = allMemories.filter((mem, index, arr) => 
+            arr.findIndex(m => m.id === mem.id) === index
+          )
+          
+          // Sort by timestamp (most recent first)
+          uniqueMemories.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+          
+          // Build context string from recent memories
+          if (uniqueMemories.length > 0) {
+            conversationContext = uniqueMemories
+              .slice(0, 5) // Last 5 memories for context
+              .map(mem => `[${new Date(mem.timestamp).toLocaleTimeString()}] ${mem.content}`)
+              .join('\n')
+          }
+        } catch (error) {
+          this.logger.warn('Failed to retrieve conversation memories:', error)
+        }
+      }
+      
+      // Step 2: Generate AI response using portal with context
       const response = await PortalIntegration.generateResponse(
         agent, 
         command.instruction,
         {
-          systemPrompt: `You are in a chat conversation. Respond naturally and helpfully.`,
-          previousThoughts: agent.memory ? 'I have memories of our past interactions.' : undefined
+          systemPrompt: `You are in a chat conversation. Respond naturally and helpfully. 
+${conversationContext ? `\nRecent conversation context:\n${conversationContext}` : ''}`,
+          previousThoughts: conversationContext || 'This appears to be a new conversation.'
         }
       )
+
+      // Step 3: Store both user message and agent response as memories
+      if (agent.memory) {
+        try {
+          const timestamp = new Date()
+          
+          // Store user message
+          const userMemory = {
+            id: `memory_${Date.now()}_user`,
+            agentId: agent.id,
+            type: MemoryType.INTERACTION,
+            content: `User said: "${command.instruction}"`,
+            metadata: {
+              source: 'chat_command',
+              messageType: 'user_input',
+              command_id: command.id
+            },
+            importance: 0.7, // Conversations are moderately important
+            timestamp,
+            tags: ['conversation', 'chat', 'user_input'],
+            duration: MemoryDuration.LONG_TERM
+          }
+          
+          await agent.memory.store(agent.id, userMemory)
+          
+          // Store agent response
+          const agentMemory = {
+            id: `memory_${Date.now()}_agent`,
+            agentId: agent.id,
+            type: MemoryType.INTERACTION,
+            content: `I responded: "${response}"`,
+            metadata: {
+              source: 'chat_command',
+              messageType: 'agent_response',
+              command_id: command.id,
+              response_to: command.instruction
+            },
+            importance: 0.6,
+            timestamp: new Date(timestamp.getTime() + 1), // Slight delay to ensure order
+            tags: ['conversation', 'chat', 'agent_response'],
+            duration: MemoryDuration.LONG_TERM
+          }
+          
+          await agent.memory.store(agent.id, agentMemory)
+          
+          this.logger.debug(`Stored conversation memories for ${agent.name}`)
+        } catch (error) {
+          this.logger.warn('Failed to store conversation memories:', error)
+        }
+      }
 
       return {
         success: true,
         response,
-        executionTime: 0
+        executionTime: Date.now() - startTime
       }
+      
     } catch (error) {
+      this.logger.warn('Portal generation failed, falling back to cognition:', error)
+      
       // Fallback to cognition module if portal fails
       if (!agent.cognition) {
         return {
           success: false,
           error: 'Agent has no cognition module',
-          executionTime: 0
+          executionTime: Date.now() - startTime
         }
       }
 
-      // Create a context for the thought
+      // Create a context for the thought with retrieved memories
       const context = {
         events: [],
-        memories: [],
+        memories: recentMemories || [],
         currentState: { location: 'chat', inventory: {}, stats: {}, goals: [], context: {} },
         environment: { 
           type: 'virtual' as any, 
@@ -552,10 +672,57 @@ export class CommandSystem extends EventEmitter {
         response = String(firstComm.parameters?.message || firstComm.parameters?.text || response)
       }
 
+      // Store the conversation even with fallback response
+      if (agent.memory) {
+        try {
+          const timestamp = new Date()
+          
+          const userMemory = {
+            id: `memory_${Date.now()}_user_fallback`,
+            agentId: agent.id,
+            type: MemoryType.INTERACTION,
+            content: `User said: "${command.instruction}"`,
+            metadata: {
+              source: 'chat_command_fallback',
+              messageType: 'user_input',
+              command_id: command.id
+            },
+            importance: 0.6,
+            timestamp,
+            tags: ['conversation', 'chat', 'user_input', 'fallback'],
+            duration: MemoryDuration.LONG_TERM
+          }
+          
+          await agent.memory.store(agent.id, userMemory)
+          
+          const agentMemory = {
+            id: `memory_${Date.now()}_agent_fallback`,
+            agentId: agent.id,
+            type: MemoryType.INTERACTION,
+            content: `I responded (via cognition): "${response}"`,
+            metadata: {
+              source: 'chat_command_fallback',
+              messageType: 'agent_response',
+              command_id: command.id,
+              response_to: command.instruction,
+              method: 'cognition_fallback'
+            },
+            importance: 0.5,
+            timestamp: new Date(timestamp.getTime() + 1),
+            tags: ['conversation', 'chat', 'agent_response', 'fallback'],
+            duration: MemoryDuration.LONG_TERM
+          }
+          
+          await agent.memory.store(agent.id, agentMemory)
+        } catch (memError) {
+          this.logger.warn('Failed to store fallback conversation memories:', memError)
+        }
+      }
+
       return {
         success: true,
         response,
-        executionTime: 0
+        executionTime: Date.now() - startTime
       }
     }
   }

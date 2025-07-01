@@ -12,6 +12,7 @@
 import express from 'express'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import os from 'os'
 import { Agent } from '../../../types/agent.js'
 import { CommandSystem } from '../../../core/command-system.js'
 import { Logger } from '../../../utils/logger.js'
@@ -27,7 +28,8 @@ export class WebUIServer {
   constructor(
     private commandSystem: CommandSystem,
     private getAgents: () => Map<string, Agent>,
-    private getRuntimeStats: () => any
+    private getRuntimeStats: () => any,
+    private runtime?: any
   ) {
     this.app = express()
     this.setupMiddleware()
@@ -60,6 +62,16 @@ export class WebUIServer {
       res.send(this.generateMonitorHTML())
     })
 
+    // Multi-Agent Manager interface
+    this.app.get('/multi-agent', (req, res) => {
+      res.send(this.generateMultiAgentHTML())
+    })
+    
+    // Alternative route for UI namespace consistency
+    this.app.get('/ui/multi-agent', (req, res) => {
+      res.send(this.generateMultiAgentHTML())
+    })
+
     // API endpoints for dynamic content
     this.app.get('/api/agents', (req, res) => {
       const agents = Array.from(this.getAgents().values()).map(agent => ({
@@ -71,7 +83,7 @@ export class WebUIServer {
         extensionCount: agent.extensions.length,
         hasPortal: !!agent.portal
       }))
-      res.json(agents)
+      res.json({ agents })
     })
 
     this.app.get('/api/agent/:id', (req, res) => {
@@ -109,9 +121,14 @@ export class WebUIServer {
         commands: commandStats,
         system: {
           memory: process.memoryUsage(),
+          totalSystemMemory: os.totalmem(),
+          freeSystemMemory: os.freemem(),
           uptime: process.uptime(),
+          systemUptime: os.uptime(),
           platform: process.platform,
-          nodeVersion: process.version
+          nodeVersion: process.version,
+          cpus: os.cpus().length,
+          loadAverage: os.loadavg()
         }
       })
     })
@@ -186,6 +203,192 @@ export class WebUIServer {
       } catch (error) {
         res.status(500).json({ 
           error: 'Command execution failed',
+          details: error instanceof Error ? error.message : String(error)
+        })
+      }
+    })
+
+    // Characters API endpoint
+    this.app.get('/api/characters', async (req, res) => {
+      try {
+        const fs = await import('fs')
+        const path = await import('path')
+        const { fileURLToPath } = await import('url')
+        
+        const __dirname = path.dirname(fileURLToPath(import.meta.url))
+        const charactersDir = path.join(__dirname, '../../../characters')
+        
+        const files = fs.readdirSync(charactersDir)
+        const characters = []
+        
+        for (const file of files) {
+          if (file.endsWith('.json') && !file.includes('example')) {
+            try {
+              const filePath = path.join(charactersDir, file)
+              const data = fs.readFileSync(filePath, 'utf-8')
+              const character = JSON.parse(data)
+              
+              characters.push({
+                id: character.id,
+                name: character.name,
+                description: character.description,
+                version: character.version,
+                personality: character.personality?.traits || {},
+                capabilities: character.capabilities || {},
+                communication: character.communication || {},
+                file: file
+              })
+            } catch (error) {
+              console.warn(`Failed to parse character file ${file}:`, error)
+            }
+          }
+        }
+        
+        res.json({ characters })
+      } catch (error) {
+        res.status(500).json({ 
+          error: 'Failed to load characters',
+          details: error instanceof Error ? error.message : String(error)
+        })
+      }
+    })
+
+    // API endpoint to get all agents (from character files) with their running status
+    this.app.get('/api/agents/all', async (req, res) => {
+      try {
+        const fs = await import('fs')
+        const path = await import('path')
+        const { fileURLToPath } = await import('url')
+        
+        const __dirname = path.dirname(fileURLToPath(import.meta.url))
+        const charactersDir = path.join(__dirname, '../../../characters')
+        
+        // Get all character files
+        const files = fs.readdirSync(charactersDir)
+        const allAgents = []
+        
+        // Get currently running agents
+        const runningAgents = this.getAgents()
+        
+        for (const file of files) {
+          if (file.endsWith('.json') && !file.includes('example')) {
+            try {
+              const filePath = path.join(charactersDir, file)
+              const data = fs.readFileSync(filePath, 'utf-8')
+              const character = JSON.parse(data)
+              
+              // Check if this agent is currently running
+              const runningAgent = runningAgents.get(character.id)
+              const isRunning = !!runningAgent
+              
+              allAgents.push({
+                id: character.id,
+                name: character.name,
+                description: character.description,
+                version: character.version,
+                enabled: character.enabled !== false, // default to true if not specified
+                status: isRunning ? runningAgent.status : 'stopped',
+                isRunning: isRunning,
+                personality: character.personality?.traits || {},
+                capabilities: character.capabilities || {},
+                communication: character.communication || {},
+                // Include runtime data if agent is running
+                ...(isRunning && {
+                  emotion: runningAgent.emotion?.current,
+                  lastUpdate: runningAgent.lastUpdate,
+                  extensionCount: runningAgent.extensions?.length || 0,
+                  hasPortal: !!runningAgent.portal
+                }),
+                file: file
+              })
+            } catch (error) {
+              console.warn(`Failed to parse character file ${file}:`, error)
+            }
+          }
+        }
+        
+        res.json({ agents: allAgents })
+      } catch (error) {
+        res.status(500).json({ 
+          error: 'Failed to load all agents',
+          details: error instanceof Error ? error.message : String(error)
+        })
+      }
+    })
+
+    // API endpoint to start an agent
+    this.app.post('/api/agents/:id/start', async (req, res) => {
+      try {
+        const { id } = req.params
+        
+        if (!this.runtime) {
+          res.status(500).json({ error: 'Runtime not available' })
+          return
+        }
+
+        // Check if agent is already running
+        const runningAgents = this.getAgents()
+        if (runningAgents.has(id)) {
+          res.status(400).json({ error: 'Agent is already running' })
+          return
+        }
+
+        // Load character configuration
+        const fs = await import('fs')
+        const path = await import('path')
+        const { fileURLToPath } = await import('url')
+        
+        const __dirname = path.dirname(fileURLToPath(import.meta.url))
+        const charactersDir = path.join(__dirname, '../../../characters')
+        const characterFile = path.join(charactersDir, `${id}.json`)
+        
+        if (!fs.existsSync(characterFile)) {
+          res.status(404).json({ error: 'Character configuration not found' })
+          return
+        }
+
+        // Read and parse character config
+        const configData = fs.readFileSync(characterFile, 'utf-8')
+        const config = JSON.parse(configData)
+        
+        // Create agent using runtime
+        await this.runtime.createAgent(config)
+        
+        res.json({ success: true, message: `Agent ${id} started successfully` })
+      } catch (error) {
+        console.error('Failed to start agent:', error)
+        res.status(500).json({ 
+          error: 'Failed to start agent',
+          details: error instanceof Error ? error.message : String(error)
+        })
+      }
+    })
+
+    // API endpoint to stop an agent
+    this.app.post('/api/agents/:id/stop', async (req, res) => {
+      try {
+        const { id } = req.params
+        
+        if (!this.runtime) {
+          res.status(500).json({ error: 'Runtime not available' })
+          return
+        }
+
+        // Check if agent is running
+        const runningAgents = this.getAgents()
+        if (!runningAgents.has(id)) {
+          res.status(400).json({ error: 'Agent is not running' })
+          return
+        }
+
+        // Stop agent using runtime
+        await this.runtime.removeAgent(id)
+        
+        res.json({ success: true, message: `Agent ${id} stopped successfully` })
+      } catch (error) {
+        console.error('Failed to stop agent:', error)
+        res.status(500).json({ 
+          error: 'Failed to stop agent',
           details: error instanceof Error ? error.message : String(error)
         })
       }
@@ -771,6 +974,67 @@ export class WebUIServer {
             background: #fee2e2;
             color: #991b1b;
         }
+        .memory-info {
+            background: #f8fafc;
+            padding: 8px;
+            border-radius: 4px;
+            margin: 8px 0;
+            font-family: monospace;
+        }
+        .memory-warning {
+            color: #f59e0b;
+        }
+        .memory-critical {
+            color: #ef4444;
+        }
+        .agent-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 8px 0;
+        }
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .status-running {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .status-stopped {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .status-disabled {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+        .agent-card.disabled {
+            opacity: 0.7;
+        }
+        .agent-description {
+            color: #6b7280;
+            font-size: 0.9em;
+            margin: 8px 0;
+            line-height: 1.4;
+        }
+        .btn-start {
+            background: #10b981;
+            color: white;
+        }
+        .btn-start:hover {
+            background: #059669;
+        }
+        .btn-stop {
+            background: #ef4444;
+            color: white;
+        }
+        .btn-stop:hover {
+            background: #dc2626;
+        }
     </style>
 </head>
 <body>
@@ -905,6 +1169,388 @@ export class WebUIServer {
 </html>`
   }
 
+  private generateMultiAgentHTML(): string {
+    return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SYMindX Multi-Agent Manager</title>
+    <style>
+        ${this.getCommonStyles()}
+        .multi-agent-container {
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .control-panel {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .control-panel h2 {
+            margin-bottom: 20px;
+            color: #1f2937;
+        }
+        .control-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .spawn-panel {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px dashed #d1d5db;
+        }
+        .spawn-panel h3 {
+            margin-bottom: 15px;
+            color: #374151;
+        }
+        .character-select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            margin-bottom: 10px;
+        }
+        .spawn-form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .spawn-form input {
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+        }
+        .spawn-form label {
+            font-size: 0.9em;
+            color: #374151;
+            margin-bottom: 5px;
+        }
+        .bulk-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .system-metrics {
+            background: #f3f4f6;
+            padding: 15px;
+            border-radius: 6px;
+        }
+        .metric-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+            padding: 3px 0;
+        }
+        .metric-value {
+            font-weight: bold;
+            color: #2563eb;
+        }
+        .agents-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .agent-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+        }
+        .agent-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+        .agent-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 15px;
+        }
+        .agent-info h3 {
+            margin: 0 0 5px 0;
+            font-size: 1.3em;
+        }
+        .agent-id {
+            font-size: 0.8em;
+            color: #6b7280;
+            font-family: monospace;
+        }
+        .agent-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+        .status-running {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .status-stopped {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .status-error {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .status-starting {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .health-metrics {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 15px 0;
+        }
+        .health-section h4 {
+            margin: 0 0 8px 0;
+            color: #374151;
+            font-size: 0.9em;
+        }
+        .health-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px solid #f3f4f6;
+            font-size: 0.85em;
+        }
+        .health-item:last-child {
+            border-bottom: none;
+        }
+        .health-value {
+            font-weight: bold;
+        }
+        .health-good { color: #10b981; }
+        .health-warning { color: #f59e0b; }
+        .health-critical { color: #ef4444; }
+        .agent-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+        .agent-actions .btn {
+            font-size: 0.8em;
+            padding: 6px 12px;
+        }
+        .character-preview {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+            display: none;
+        }
+        .character-preview.active {
+            display: block;
+        }
+        .character-preview h4 {
+            margin: 0 0 10px 0;
+            color: #374151;
+        }
+        .character-traits {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin: 8px 0;
+        }
+        .trait-tag {
+            background: #e2e8f0;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            color: #475569;
+        }
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        .error-message {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-size: 0.9em;
+        }
+        .success-message {
+            background: #d1fae5;
+            color: #065f46;
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-size: 0.9em;
+        }
+        .info-message {
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-size: 0.9em;
+        }
+        .real-time-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .routing-panel {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+        }
+        .specialty-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin: 8px 0;
+        }
+        .specialty-tag {
+            background: #3b82f6;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.75em;
+        }
+    </style>
+</head>
+<body>
+    ${this.getNavigationHTML()}
+    
+    <div class="multi-agent-container">
+        <div class="control-panel">
+            <h2>🎛️ Multi-Agent Control Center <span class="real-time-indicator"></span></h2>
+            
+            <div class="control-grid">
+                <!-- Spawn New Agent -->
+                <div class="spawn-panel">
+                    <h3>🚀 Spawn New Agent</h3>
+                    <div class="spawn-form">
+                        <label>Character:</label>
+                        <select id="character-select" class="character-select" onchange="showCharacterPreview(this.value)">
+                            <option value="">Select a character...</option>
+                        </select>
+                        
+                        <div id="character-preview" class="character-preview">
+                            <!-- Character details will be loaded here -->
+                        </div>
+                        
+                        <label>Instance Name (optional):</label>
+                        <input type="text" id="instance-name" placeholder="Custom agent instance name">
+                        
+                        <label>
+                            <input type="checkbox" id="auto-start" checked>
+                            Auto-start after spawning
+                        </label>
+                        
+                        <button class="btn btn-primary" onclick="spawnAgent()">🚀 Spawn Agent</button>
+                    </div>
+                    
+                    <div id="spawn-message"></div>
+                </div>
+
+                <!-- System Metrics -->
+                <div class="system-metrics">
+                    <h3>📊 System Status</h3>
+                    <div id="system-metrics">
+                        <div class="metric-item">
+                            <span>Multi-Agent System:</span>
+                            <span class="metric-value" id="system-status">Loading...</span>
+                        </div>
+                        <div class="metric-item">
+                            <span>Active Agents:</span>
+                            <span class="metric-value" id="active-agents">0</span>
+                        </div>
+                        <div class="metric-item">
+                            <span>Memory Usage:</span>
+                            <span class="metric-value" id="total-memory">0 MB</span>
+                        </div>
+                        <div class="metric-item">
+                            <span>Avg Response Time:</span>
+                            <span class="metric-value" id="avg-response">0ms</span>
+                        </div>
+                        <div class="metric-item">
+                            <span>System Load:</span>
+                            <span class="metric-value" id="system-load">0%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Routing & Discovery -->
+                <div class="routing-panel">
+                    <h3>🎯 Agent Routing</h3>
+                    <div style="margin-bottom: 10px;">
+                        <label>Find agents by specialty:</label>
+                        <select id="specialty-select" onchange="findBySpecialty(this.value)">
+                            <option value="">Select specialty...</option>
+                            <option value="chat">Chat & Conversation</option>
+                            <option value="analysis">Data Analysis</option>
+                            <option value="creative">Creative Tasks</option>
+                            <option value="technical">Technical Support</option>
+                            <option value="emotional">Emotional Support</option>
+                        </select>
+                    </div>
+                    <div id="specialty-results"></div>
+                    
+                    <div style="margin-top: 15px;">
+                        <button class="btn btn-secondary" onclick="testRouting()">🧪 Test Routing</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bulk Actions -->
+            <div class="bulk-actions">
+                <button class="btn btn-primary" onclick="startAllAgents()">▶️ Start All</button>
+                <button class="btn btn-secondary" onclick="stopAllAgents()">⏹️ Stop All</button>
+                <button class="btn btn-secondary" onclick="restartAllAgents()">🔄 Restart All</button>
+                <button class="btn btn-secondary" onclick="refreshAgents()">🔄 Refresh</button>
+                <button class="btn btn-danger" onclick="emergencyStop()">🚨 Emergency Stop</button>
+            </div>
+        </div>
+
+        <!-- Managed Agents Grid -->
+        <div id="agents-grid" class="agents-grid">
+            <!-- Agent cards will be loaded here -->
+        </div>
+        
+        <div id="no-agents-message" style="display: none; text-align: center; padding: 60px; color: #6b7280;">
+            <h3>No Multi-Agent System Available</h3>
+            <p>The Multi-Agent Manager is not initialized or no agents are currently managed.</p>
+            <p>Spawn your first agent using the control panel above.</p>
+        </div>
+    </div>
+
+    <script>
+        ${this.getMultiAgentJavaScript()}
+    </script>
+</body>
+</html>`
+  }
+
   private getCommonStyles(): string {
     return `
         * {
@@ -983,6 +1629,7 @@ export class WebUIServer {
         <a href="/ui">Dashboard</a>
         <a href="/ui/chat">Chat</a>
         <a href="/ui/agents">Agents</a>
+        <a href="/ui/multi-agent">Multi-Agent Manager</a>
         <a href="/ui/monitor">Monitor</a>
     </nav>
     `
@@ -1141,7 +1788,7 @@ export class WebUIServer {
             try {
                 const response = await fetch('/api/agents');
                 const data = await response.json();
-                agents = data.agents || data;
+                agents = data.agents || [];
                 
                 const agentsGrid = document.getElementById('agents-grid');
                 const noAgentsDiv = document.getElementById('no-agents');
@@ -1622,32 +2269,75 @@ export class WebUIServer {
   private getAgentsJavaScript(): string {
     return `
         let selectedAgentDetails = null;
+        let systemStats = null;
+        
+        // Memory formatting function
+        function formatMemory(bytes) {
+            if (!bytes) return '0 MB';
+            const mb = bytes / 1024 / 1024;
+            if (mb > 1024) return (mb / 1024).toFixed(2) + ' GB';
+            return mb.toFixed(2) + ' MB';
+        }
+        
+        // Load system stats
+        async function loadSystemStats() {
+            try {
+                const response = await fetch('/api/stats');
+                systemStats = await response.json();
+            } catch (error) {
+                console.error('Failed to load system stats:', error);
+            }
+        }
         
         async function loadAgents() {
             try {
-                const response = await fetch('/api/agents');
+                // Load system stats first
+                await loadSystemStats();
+                
+                const response = await fetch('/api/agents/all');
+                if (!response.ok) {
+                    throw new Error(\`HTTP error! status: \${response.status}\`);
+                }
                 const data = await response.json();
                 const agents = data.agents || [];
                 const agentsList = document.getElementById('agents-list');
                 
-                if (agents.length === 0) {
-                    agentsList.innerHTML = '<div style="text-align: center; padding: 40px; color: #6b7280;">No agents are currently running. Start an agent to see it here.</div>';
+                console.log('Loaded all agents:', agents); // Debug log
+                
+                if (!agents || agents.length === 0) {
+                    agentsList.innerHTML = '<div style="text-align: center; padding: 40px; color: #6b7280;">No agent configurations found. Please add character files to get started.</div>';
                     return;
                 }
                 
                 agentsList.innerHTML = agents.map(agent => \`
-                    <div class="agent-card" id="agent-card-\${agent.id}">
+                    <div class="agent-card \${!agent.enabled ? 'disabled' : ''}" id="agent-card-\${agent.id}">
                         <div class="agent-header">
                             <div>
                                 <div class="agent-name">\${agent.name}</div>
                                 <div style="color: #6b7280; font-size: 0.9em;">\${agent.id}</div>
+                                <div class="agent-description">\${agent.description || ''}</div>
+                                <div class="agent-status">
+                                    <span class="status-badge status-\${agent.isRunning ? 'running' : (agent.enabled ? 'stopped' : 'disabled')}">
+                                        \${agent.isRunning ? 'Running' : (agent.enabled ? 'Stopped' : 'Disabled')}
+                                    </span>
+                                    <span style="color: #6b7280; font-size: 0.8em;">v\${agent.version || '1.0.0'}</span>
+                                </div>
                             </div>
                             <div class="agent-actions">
-                                <button class="btn btn-primary" onclick="chatWithAgent('\${agent.id}')">💬 Chat</button>
-                                <button class="btn btn-secondary" onclick="viewAgentDetails('\${agent.id}')">📋 Details</button>
-                                <button class="btn btn-secondary" onclick="sendCommand('\${agent.id}')">⚡ Command</button>
+                                \${agent.isRunning ? \`
+                                    <button class="btn btn-primary" onclick="chatWithAgent('\${agent.id}')">💬 Chat</button>
+                                    <button class="btn btn-secondary" onclick="viewAgentDetails('\${agent.id}')">📋 Details</button>
+                                    <button class="btn btn-secondary" onclick="sendCommand('\${agent.id}')">⚡ Command</button>
+                                    <button class="btn btn-stop" onclick="stopAgent('\${agent.id}')">🛑 Stop</button>
+                                \` : \`
+                                    <button class="btn btn-start" onclick="startAgent('\${agent.id}')" \${!agent.enabled ? 'disabled' : ''}>
+                                        ▶️ Start
+                                    </button>
+                                    <button class="btn btn-secondary" onclick="viewAgentConfig('\${agent.id}')">⚙️ Config</button>
+                                \`}
                             </div>
                         </div>
+                        \${agent.isRunning ? \`
                         <div class="agent-details">
                             <div class="detail-section">
                                 <h4>Status & State</h4>
@@ -1671,11 +2361,41 @@ export class WebUIServer {
                                 </div>
                             </div>
                         </div>
+                        \` : \`
+                        <div class="agent-details">
+                            <div class="detail-section">
+                                <h4>Personality Traits</h4>
+                                \${Object.entries(agent.personality).map(([trait, value]) => 
+                                    \`<div style="margin: 4px 0; display: flex; justify-content: space-between;">
+                                        <span>\${trait}:</span>
+                                        <span style="font-weight: bold;">\${typeof value === 'number' ? (value * 100).toFixed(0) + '%' : value}</span>
+                                    </div>\`
+                                ).join('')}
+                            </div>
+                            <div class="detail-section">
+                                <h4>Capabilities</h4>
+                                \${Object.entries(agent.capabilities).map(([category, caps]) =>
+                                    \`<div style="margin: 4px 0;">
+                                        <strong>\${category}:</strong>
+                                        <div style="margin-left: 10px; font-size: 0.9em; color: #6b7280;">
+                                            \${Object.entries(caps).filter(([_, enabled]) => enabled).map(([cap, _]) => cap).join(', ')}
+                                        </div>
+                                    </div>\`
+                                ).join('')}
+                            </div>
+                            <div class="detail-section">
+                                <h4>Communication</h4>
+                                <div style="margin: 4px 0;">Style: \${agent.communication.style || 'default'}</div>
+                                <div style="margin: 4px 0;">Tone: \${agent.communication.tone || 'neutral'}</div>
+                                <div style="margin: 4px 0;">Languages: \${(agent.communication.languages || ['en']).join(', ')}</div>
+                            </div>
+                        </div>
+                        \`}
                     </div>
                 \`).join('');
                 
-                // Load detailed info for each agent
-                agents.forEach(agent => loadAgentDetails(agent.id));
+                // Load detailed info for running agents
+                agents.filter(agent => agent.isRunning).forEach(agent => loadAgentDetails(agent.id));
             } catch (error) {
                 console.error('Failed to load agents:', error);
                 document.getElementById('agents-list').innerHTML = 
@@ -1698,6 +2418,10 @@ export class WebUIServer {
         async function loadAgentDetails(agentId) {
             try {
                 const response = await fetch(\`/api/agent/\${agentId}\`);
+                if (!response.ok) {
+                    console.error(\`Failed to load agent details for \${agentId}: HTTP \${response.status}\`);
+                    return;
+                }
                 const agent = await response.json();
                 
                 // Update extensions list
@@ -1710,12 +2434,44 @@ export class WebUIServer {
                     \`).join('');
                 }
                 
-                // Update metrics
+                // Update metrics with memory information
                 const metricsEl = document.getElementById(\`metrics-\${agentId}\`);
-                metricsEl.innerHTML = \`
-                    <div style="margin: 4px 0; color: #64748b;">Memory: Loading...</div>
-                    <div style="margin: 4px 0; color: #64748b;">Commands: Loading...</div>
-                    <div style="margin: 4px 0; color: #64748b;">Uptime: \${formatUptime(agent.lastUpdate)}...</div>
+                let memoryHtml = '<div class="memory-info">';
+                
+                if (systemStats && systemStats.system) {
+                    const processMemory = systemStats.system.memory;
+                    const systemMemoryUsed = systemStats.system.totalSystemMemory - systemStats.system.freeSystemMemory;
+                    const systemMemoryPercent = ((systemMemoryUsed / systemStats.system.totalSystemMemory) * 100).toFixed(1);
+                    const processMemoryPercent = ((processMemory.heapUsed / processMemory.heapTotal) * 100).toFixed(1);
+                    
+                    // Apply color coding based on memory usage
+                    const systemMemoryClass = systemMemoryPercent > 90 ? 'memory-critical' : systemMemoryPercent > 75 ? 'memory-warning' : '';
+                    const processMemoryClass = processMemoryPercent > 90 ? 'memory-critical' : processMemoryPercent > 75 ? 'memory-warning' : '';
+                    
+                    memoryHtml += \`
+                        <div style="margin: 4px 0;">
+                            <strong>System RAM:</strong> <span class="\${systemMemoryClass}">\${formatMemory(systemMemoryUsed)} / \${formatMemory(systemStats.system.totalSystemMemory)} (\${systemMemoryPercent}%)</span>
+                        </div>
+                        <div style="margin: 4px 0;">
+                            <strong>Process:</strong> <span class="\${processMemoryClass}">\${formatMemory(processMemory.heapUsed)} / \${formatMemory(processMemory.heapTotal)} (\${processMemoryPercent}%)</span>
+                        </div>
+                    \`;
+                }
+                
+                // If agent has individual memory tracking, add it
+                if (agent.memoryUsage) {
+                    memoryHtml += \`
+                        <div style="margin: 4px 0;">
+                            <strong>Agent Memory:</strong> \${formatMemory(agent.memoryUsage)}
+                        </div>
+                    \`;
+                }
+                
+                memoryHtml += '</div>';
+                
+                metricsEl.innerHTML = memoryHtml + \`
+                    <div style="margin: 4px 0; color: #64748b;">Commands: \${agent.commandsProcessed || 0}</div>
+                    <div style="margin: 4px 0; color: #64748b;">Uptime: \${formatUptime(agent.lastUpdate)}</div>
                 \`;
                 
             } catch (error) {
@@ -1789,6 +2545,88 @@ export class WebUIServer {
 
         function createAgent() {
             alert('Agent creation interface coming soon!\n\nTo create an agent:\n1. Add a character JSON file in src/characters/\n2. Configure it in config/runtime.json\n3. Restart the runtime');
+        }
+
+        async function startAgent(agentId) {
+            try {
+                const btn = document.querySelector(\`button[onclick="startAgent('\${agentId}')"]\`);
+                if (btn) {
+                    btn.disabled = true;
+                    btn.textContent = '⏳ Starting...';
+                }
+
+                const response = await fetch(\`/api/agents/\${agentId}/start\`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    console.log(\`Agent \${agentId} started successfully\`);
+                    // Refresh the agents list to show the updated status
+                    setTimeout(loadAgents, 1000);
+                } else {
+                    console.error('Failed to start agent:', data.error);
+                    alert(\`Failed to start agent: \${data.error}\`);
+                }
+            } catch (error) {
+                console.error('Error starting agent:', error);
+                alert(\`Error starting agent: \${error.message}\`);
+            } finally {
+                // Re-enable the button
+                const btn = document.querySelector(\`button[onclick="startAgent('\${agentId}')"]\`);
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = '▶️ Start';
+                }
+            }
+        }
+
+        async function stopAgent(agentId) {
+            try {
+                const btn = document.querySelector(\`button[onclick="stopAgent('\${agentId}')"]\`);
+                if (btn) {
+                    btn.disabled = true;
+                    btn.textContent = '⏳ Stopping...';
+                }
+
+                const response = await fetch(\`/api/agents/\${agentId}/stop\`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    console.log(\`Agent \${agentId} stopped successfully\`);
+                    // Refresh the agents list to show the updated status
+                    setTimeout(loadAgents, 1000);
+                } else {
+                    console.error('Failed to stop agent:', data.error);
+                    alert(\`Failed to stop agent: \${data.error}\`);
+                }
+            } catch (error) {
+                console.error('Error stopping agent:', error);
+                alert(\`Error stopping agent: \${error.message}\`);
+            } finally {
+                // Re-enable the button
+                const btn = document.querySelector(\`button[onclick="stopAgent('\${agentId}')"]\`);
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = '🛑 Stop';
+                }
+            }
+        }
+
+        function viewAgentConfig(agentId) {
+            // For now, show a simple alert with basic info
+            // In the future, this could open a modal with full config details
+            alert(\`Agent Configuration: \${agentId}\n\nConfiguration viewing interface coming soon!\n\nFor now, you can view the character file in src/characters/\${agentId}.json\`);
         }
 
         // Initialize and set up auto-refresh
@@ -1883,18 +2721,25 @@ export class WebUIServer {
                 return;
             }
             
-            const memoryPercent = system.memory?.heapUsed && system.memory?.heapTotal 
+            const heapPercent = system.memory?.heapUsed && system.memory?.heapTotal 
                 ? ((system.memory.heapUsed / system.memory.heapTotal) * 100).toFixed(1)
+                : 0;
+                
+            const systemMemoryUsed = system.totalSystemMemory && system.freeSystemMemory
+                ? system.totalSystemMemory - system.freeSystemMemory
+                : 0;
+            const systemMemoryPercent = system.totalSystemMemory
+                ? ((systemMemoryUsed / system.totalSystemMemory) * 100).toFixed(1)
                 : 0;
             
             document.getElementById('system-metrics').innerHTML = \`
                 <div class="metric">
-                    <span>Memory Usage:</span>
-                    <span class="metric-value">\${formatMemory(system.memory?.heapUsed || 0)} (\${memoryPercent}%)</span>
+                    <span>Process Memory:</span>
+                    <span class="metric-value">\${formatMemory(system.memory?.heapUsed || 0)} / \${formatMemory(system.memory?.heapTotal || 0)} (\${heapPercent}%)</span>
                 </div>
                 <div class="metric">
-                    <span>Total Memory:</span>
-                    <span class="metric-value">\${formatMemory(system.memory?.heapTotal || 0)}</span>
+                    <span>System Memory:</span>
+                    <span class="metric-value">\${formatMemory(systemMemoryUsed)} / \${formatMemory(system.totalSystemMemory || 0)} (\${systemMemoryPercent}%)</span>
                 </div>
                 <div class="metric">
                     <span>Uptime:</span>
@@ -2091,6 +2936,683 @@ export class WebUIServer {
                 console.error('WebSocket error:', err);
             }
         };
+    `
+  }
+
+  private getMultiAgentJavaScript(): string {
+    return `
+        let agents = [];
+        let characters = [];
+        let systemMetrics = {};
+        let autoRefresh = true;
+        let refreshInterval;
+        let selectedCharacter = null;
+
+        // Initialize the Multi-Agent Manager
+        async function initializeMultiAgent() {
+            try {
+                await Promise.all([
+                    loadCharacters(),
+                    loadManagedAgents(),
+                    loadSystemMetrics()
+                ]);
+                
+                setupAutoRefresh();
+                setupWebSocket();
+            } catch (error) {
+                console.error('Failed to initialize multi-agent manager:', error);
+                showError('Failed to initialize multi-agent manager');
+            }
+        }
+
+        // Load available characters
+        async function loadCharacters() {
+            try {
+                const response = await fetch('/api/characters');
+                const data = await response.json();
+                characters = data.characters || [];
+                
+                const characterSelect = document.getElementById('character-select');
+                characterSelect.innerHTML = '<option value="">Select a character...</option>';
+                
+                characters.forEach(character => {
+                    const option = document.createElement('option');
+                    option.value = character.id;
+                    option.textContent = \`\${character.name} - \${character.description}\`;
+                    characterSelect.appendChild(option);
+                });
+                
+                console.log('Loaded', characters.length, 'characters');
+            } catch (error) {
+                console.error('Failed to load characters:', error);
+                showError('Failed to load available characters');
+            }
+        }
+
+        // Load managed agents
+        async function loadManagedAgents() {
+            try {
+                const response = await fetch('/api/agents/managed');
+                const data = await response.json();
+                agents = data.agents || [];
+                
+                updateAgentsGrid();
+                updateSystemStatus();
+                
+                console.log('Loaded', agents.length, 'managed agents');
+            } catch (error) {
+                console.error('Failed to load managed agents:', error);
+                // Don't show error for this as it might be normal if no multi-agent system
+                if (error.message !== 'Multi-Agent Manager not available') {
+                    showError('Failed to load managed agents');
+                }
+                showNoAgentsMessage();
+            }
+        }
+
+        // Load system metrics
+        async function loadSystemMetrics() {
+            try {
+                const [agentsResponse, statsResponse] = await Promise.all([
+                    fetch('/api/agents'),
+                    fetch('/api/stats')
+                ]);
+                
+                const agentsData = await agentsResponse.json();
+                const statsData = await statsResponse.json();
+                
+                const activeAgentsCount = agentsData.filter(a => a.status === 'active' || a.status === 'running').length;
+                
+                systemMetrics = {
+                    enabled: true,
+                    totalAgents: agentsData.length,
+                    activeAgents: activeAgentsCount,
+                    totalMemoryUsage: statsData.system?.totalSystemMemory || 0,
+                    totalSystemMemory: statsData.system?.totalSystemMemory || 0,
+                    freeSystemMemory: statsData.system?.freeSystemMemory || 0,
+                    processMemory: statsData.system?.memory || {},
+                    averageResponseTime: 150, // Mock for now
+                    systemLoad: statsData.system?.loadAverage ? statsData.system.loadAverage[0] / statsData.system.cpus : 0
+                };
+                
+                updateSystemMetrics();
+            } catch (error) {
+                console.error('Failed to load system metrics:', error);
+                // Set default metrics
+                systemMetrics = {
+                    enabled: false,
+                    totalAgents: 0,
+                    activeAgents: 0,
+                    totalMemoryUsage: 0,
+                    totalSystemMemory: 0,
+                    freeSystemMemory: 0,
+                    processMemory: {},
+                    averageResponseTime: 0,
+                    systemLoad: 0
+                };
+                updateSystemMetrics();
+            }
+        }
+
+        // Update agents grid display
+        function updateAgentsGrid() {
+            const agentsGrid = document.getElementById('agents-grid');
+            const noAgentsMessage = document.getElementById('no-agents-message');
+            
+            if (!agents || agents.length === 0) {
+                agentsGrid.style.display = 'none';
+                noAgentsMessage.style.display = 'block';
+                return;
+            }
+            
+            agentsGrid.style.display = 'grid';
+            noAgentsMessage.style.display = 'none';
+            
+            agentsGrid.innerHTML = agents.map(agent => \`
+                <div class="agent-card" id="agent-\${agent.id}">
+                    <div class="real-time-indicator"></div>
+                    <div class="agent-header">
+                        <div class="agent-info">
+                            <h3>\${agent.name || agent.characterId}</h3>
+                            <div class="agent-id">\${agent.id}</div>
+                        </div>
+                        <div class="agent-status status-\${getStatusClass(agent.status)}">
+                            \${getStatusIcon(agent.status)} \${agent.status}
+                        </div>
+                    </div>
+                    
+                    <div class="health-metrics">
+                        <div class="health-section">
+                            <h4>Performance</h4>
+                            <div class="health-item">
+                                <span>Uptime:</span>
+                                <span class="health-value health-\${getHealthClass(agent.uptime)}">\${formatUptime(agent.uptime)}</span>
+                            </div>
+                            <div class="health-item">
+                                <span>Memory:</span>
+                                <span class="health-value health-\${getMemoryHealthClass(agent.memoryUsage)}">\${formatMemory(agent.memoryUsage)}</span>
+                            </div>
+                            <div class="health-item">
+                                <span>Response Time:</span>
+                                <span class="health-value health-\${getResponseHealthClass(agent.averageResponseTime)}">\${agent.averageResponseTime || 0}ms</span>
+                            </div>
+                        </div>
+                        
+                        <div class="health-section">
+                            <h4>Status</h4>
+                            <div class="health-item">
+                                <span>Character:</span>
+                                <span class="health-value">\${agent.characterId}</span>
+                            </div>
+                            <div class="health-item">
+                                <span>Priority:</span>
+                                <span class="health-value">\${agent.priority || 'normal'}</span>
+                            </div>
+                            <div class="health-item">
+                                <span>Last Seen:</span>
+                                <span class="health-value">\${formatTimeAgo(agent.lastUpdate)}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    \${agent.specialties && agent.specialties.length > 0 ? \`
+                        <div style="margin: 10px 0;">
+                            <h4 style="font-size: 0.9em; margin-bottom: 5px;">Specialties:</h4>
+                            <div class="specialty-tags">
+                                \${agent.specialties.map(s => \`<span class="specialty-tag">\${s}</span>\`).join('')}
+                            </div>
+                        </div>
+                    \` : ''}
+                    
+                    <div class="agent-actions">
+                        \${agent.status === 'stopped' ? 
+                            \`<button class="btn btn-primary" onclick="startAgent('\${agent.id}')">▶️ Start</button>\` :
+                            \`<button class="btn btn-secondary" onclick="stopAgent('\${agent.id}')">⏹️ Stop</button>\`
+                        }
+                        <button class="btn btn-secondary" onclick="restartAgent('\${agent.id}')">🔄 Restart</button>
+                        <button class="btn btn-secondary" onclick="viewAgentHealth('\${agent.id}')">📊 Health</button>
+                        <button class="btn btn-primary" onclick="chatWithAgent('\${agent.id}')">💬 Chat</button>
+                    </div>
+                </div>
+            \`).join('');
+        }
+
+        // Update system metrics display
+        function updateSystemMetrics() {
+            document.getElementById('system-status').textContent = systemMetrics.enabled ? 'Active' : 'Inactive';
+            document.getElementById('active-agents').textContent = systemMetrics.activeAgents || 0;
+            
+            // Display actual system memory with usage info
+            const systemMemoryUsed = systemMetrics.totalSystemMemory && systemMetrics.freeSystemMemory
+                ? systemMetrics.totalSystemMemory - systemMetrics.freeSystemMemory
+                : 0;
+            const systemMemoryPercent = systemMetrics.totalSystemMemory
+                ? ((systemMemoryUsed / systemMetrics.totalSystemMemory) * 100).toFixed(1)
+                : 0;
+            
+            const processMemoryUsed = systemMetrics.processMemory?.heapUsed || 0;
+            const processMemoryTotal = systemMetrics.processMemory?.heapTotal || 0;
+            const processMemoryPercent = processMemoryTotal > 0
+                ? ((processMemoryUsed / processMemoryTotal) * 100).toFixed(1)
+                : 0;
+                
+            document.getElementById('total-memory').innerHTML = \`
+                <div style="font-size: 0.9em;">
+                    System: \${formatMemory(systemMemoryUsed)} / \${formatMemory(systemMetrics.totalSystemMemory || 0)} (\${systemMemoryPercent}%)
+                    <br>
+                    Process: \${formatMemory(processMemoryUsed)} / \${formatMemory(processMemoryTotal)} (\${processMemoryPercent}%)
+                </div>
+            \`;
+            
+            document.getElementById('avg-response').textContent = (systemMetrics.averageResponseTime || 0) + 'ms';
+            document.getElementById('system-load').textContent = ((systemMetrics.systemLoad || 0) * 100).toFixed(1) + '%';
+        }
+
+        // Update system status
+        function updateSystemStatus() {
+            const activeCount = agents.filter(a => a.status === 'running').length;
+            document.getElementById('active-agents').textContent = activeCount;
+        }
+
+        // Show character preview
+        function showCharacterPreview(characterId) {
+            const preview = document.getElementById('character-preview');
+            
+            if (!characterId) {
+                preview.classList.remove('active');
+                selectedCharacter = null;
+                return;
+            }
+            
+            selectedCharacter = characters.find(c => c.id === characterId);
+            if (!selectedCharacter) return;
+            
+            preview.innerHTML = \`
+                <h4>\${selectedCharacter.name}</h4>
+                <p style="margin-bottom: 10px; color: #6b7280;">\${selectedCharacter.description}</p>
+                <div>
+                    <strong>Personality Traits:</strong>
+                    <div class="character-traits">
+                        \${Object.entries(selectedCharacter.personality).map(([trait, value]) => 
+                            \`<span class="trait-tag">\${trait}: \${typeof value === 'number' ? (value * 100).toFixed(0) + '%' : value}</span>\`
+                        ).join('')}
+                    </div>
+                </div>
+                <div style="margin-top: 8px;">
+                    <strong>Communication Style:</strong> \${selectedCharacter.communication.style || 'adaptive'}
+                </div>
+            \`;
+            preview.classList.add('active');
+        }
+
+        // Spawn new agent
+        async function spawnAgent() {
+            const characterId = document.getElementById('character-select').value;
+            const instanceName = document.getElementById('instance-name').value;
+            const autoStart = document.getElementById('auto-start').checked;
+            const messageEl = document.getElementById('spawn-message');
+            
+            if (!characterId) {
+                showMessage(messageEl, 'Please select a character first', 'error');
+                return;
+            }
+            
+            try {
+                showMessage(messageEl, 'Spawning agent...', 'info');
+                
+                const response = await fetch('/api/agents/spawn', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        characterId,
+                        instanceName: instanceName || undefined,
+                        autoStart,
+                        priority: 'normal'
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.error || 'Failed to spawn agent');
+                }
+                
+                showMessage(messageEl, \`✅ \${result.message}\`, 'success');
+                
+                // Clear form
+                document.getElementById('character-select').value = '';
+                document.getElementById('instance-name').value = '';
+                document.getElementById('character-preview').classList.remove('active');
+                
+                // Refresh agents list
+                setTimeout(loadManagedAgents, 1000);
+                
+            } catch (error) {
+                console.error('Failed to spawn agent:', error);
+                showMessage(messageEl, \`❌ \${error.message}\`, 'error');
+            }
+        }
+
+        // Agent control functions
+        async function startAgent(agentId) {
+            try {
+                await agentAction('start', agentId);
+            } catch (error) {
+                showError(\`Failed to start agent: \${error.message}\`);
+            }
+        }
+
+        async function stopAgent(agentId) {
+            try {
+                await agentAction('stop', agentId);
+            } catch (error) {
+                showError(\`Failed to stop agent: \${error.message}\`);
+            }
+        }
+
+        async function restartAgent(agentId) {
+            try {
+                await agentAction('restart', agentId);
+            } catch (error) {
+                showError(\`Failed to restart agent: \${error.message}\`);
+            }
+        }
+
+        async function agentAction(action, agentId) {
+            const response = await fetch(\`/api/agents/\${agentId}/\${action}\`, {
+                method: 'POST'
+            });
+            
+            const result = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(result.error || \`Failed to \${action} agent\`);
+            }
+            
+            // Update agent status immediately for better UX
+            const agentCard = document.getElementById(\`agent-\${agentId}\`);
+            if (agentCard) {
+                const statusEl = agentCard.querySelector('.agent-status');
+                if (statusEl) {
+                    statusEl.textContent = action === 'start' ? '🟡 Starting' : 
+                                         action === 'stop' ? '🔴 Stopping' : 
+                                         '🟡 Restarting';
+                }
+            }
+            
+            // Refresh after a delay
+            setTimeout(loadManagedAgents, 1500);
+        }
+
+        // Bulk operations
+        async function startAllAgents() {
+            const stoppedAgents = agents.filter(a => a.status === 'stopped');
+            if (stoppedAgents.length === 0) {
+                showError('No stopped agents to start');
+                return;
+            }
+            
+            if (!confirm(\`Start \${stoppedAgents.length} agents?\`)) return;
+            
+            for (const agent of stoppedAgents) {
+                try {
+                    await startAgent(agent.id);
+                } catch (error) {
+                    console.error(\`Failed to start agent \${agent.id}:\`, error);
+                }
+            }
+        }
+
+        async function stopAllAgents() {
+            const runningAgents = agents.filter(a => a.status === 'running');
+            if (runningAgents.length === 0) {
+                showError('No running agents to stop');
+                return;
+            }
+            
+            if (!confirm(\`Stop \${runningAgents.length} agents?\`)) return;
+            
+            for (const agent of runningAgents) {
+                try {
+                    await stopAgent(agent.id);
+                } catch (error) {
+                    console.error(\`Failed to stop agent \${agent.id}:\`, error);
+                }
+            }
+        }
+
+        async function restartAllAgents() {
+            if (agents.length === 0) {
+                showError('No agents to restart');
+                return;
+            }
+            
+            if (!confirm(\`Restart all \${agents.length} agents?\`)) return;
+            
+            for (const agent of agents) {
+                try {
+                    await restartAgent(agent.id);
+                } catch (error) {
+                    console.error(\`Failed to restart agent \${agent.id}:\`, error);
+                }
+            }
+        }
+
+        async function emergencyStop() {
+            if (!confirm('EMERGENCY STOP: This will immediately stop all agents. Continue?')) return;
+            
+            try {
+                // Stop all agents immediately
+                await stopAllAgents();
+                showError('Emergency stop executed - all agents stopped');
+            } catch (error) {
+                console.error('Emergency stop failed:', error);
+                showError('Emergency stop failed: ' + error.message);
+            }
+        }
+
+        // Agent routing and specialty functions
+        async function findBySpecialty(specialty) {
+            if (!specialty) {
+                document.getElementById('specialty-results').innerHTML = '';
+                return;
+            }
+            
+            try {
+                const response = await fetch(\`/api/agents/specialty/\${specialty}\`);
+                const data = await response.json();
+                
+                const resultsEl = document.getElementById('specialty-results');
+                if (data.agents && data.agents.length > 0) {
+                    resultsEl.innerHTML = \`
+                        <div style="margin-top: 10px;">
+                            <strong>\${data.agents.length} agents found:</strong>
+                            <div style="margin-top: 5px;">
+                                \${data.agents.map(agent => \`
+                                    <div style="padding: 5px; background: #f3f4f6; margin: 2px 0; border-radius: 4px;">
+                                        <strong>\${agent.name}</strong> (\${agent.status})
+                                    </div>
+                                \`).join('')}
+                            </div>
+                        </div>
+                    \`;
+                } else {
+                    resultsEl.innerHTML = '<div style="margin-top: 10px; color: #6b7280;">No agents found for this specialty</div>';
+                }
+            } catch (error) {
+                console.error('Failed to find agents by specialty:', error);
+                document.getElementById('specialty-results').innerHTML = '<div style="margin-top: 10px; color: #ef4444;">Failed to search agents</div>';
+            }
+        }
+
+        async function testRouting() {
+            try {
+                const response = await fetch('/api/agents/route', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        requirements: {
+                            specialty: 'chat',
+                            priority: 'normal',
+                            characteristics: ['empathetic', 'responsive']
+                        }
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.agentId) {
+                    alert(\`Routing test successful!\\nSelected agent: \${result.name} (\${result.agentId})\`);
+                } else {
+                    alert('No suitable agent found for routing test requirements');
+                }
+            } catch (error) {
+                console.error('Routing test failed:', error);
+                alert('Routing test failed: ' + error.message);
+            }
+        }
+
+        // View agent health details
+        async function viewAgentHealth(agentId) {
+            try {
+                const response = await fetch(\`/api/agents/\${agentId}/health\`);
+                const health = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(health.error || 'Failed to get health data');
+                }
+                
+                const healthModal = \`
+                    <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;" onclick="this.remove()">
+                        <div style="background: white; padding: 30px; border-radius: 8px; max-width: 600px; max-height: 80vh; overflow-y: auto;" onclick="event.stopPropagation()">
+                            <h2>Agent Health: \${health.agentId}</h2>
+                            <pre style="background: #f8fafc; padding: 15px; border-radius: 4px; overflow-x: auto; margin: 20px 0;">\${JSON.stringify(health, null, 2)}</pre>
+                            <button class="btn btn-secondary" onclick="this.parentElement.parentElement.remove()">Close</button>
+                        </div>
+                    </div>
+                \`;
+                
+                document.body.insertAdjacentHTML('beforeend', healthModal);
+            } catch (error) {
+                showError(\`Failed to load agent health: \${error.message}\`);
+            }
+        }
+
+        // Chat with agent
+        function chatWithAgent(agentId) {
+            window.location.href = \`/ui/chat?agent=\${agentId}\`;
+        }
+
+        // Refresh functions
+        function refreshAgents() {
+            loadManagedAgents();
+            loadSystemMetrics();
+        }
+
+        function setupAutoRefresh() {
+            if (refreshInterval) clearInterval(refreshInterval);
+            refreshInterval = setInterval(() => {
+                if (autoRefresh) {
+                    loadManagedAgents();
+                    loadSystemMetrics();
+                }
+            }, 3000); // Refresh every 3 seconds
+        }
+
+        // WebSocket setup for real-time updates
+        function setupWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const ws = new WebSocket(\`\${protocol}//\${window.location.host}/ws\`);
+            
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    
+                    if (data.type === 'multi-agent-update' || data.type === 'agent-update') {
+                        loadManagedAgents();
+                    } else if (data.type === 'system-metrics-update') {
+                        loadSystemMetrics();
+                    }
+                } catch (error) {
+                    console.error('WebSocket error:', error);
+                }
+            };
+            
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+        }
+
+        // Utility functions
+        function getStatusClass(status) {
+            switch (status?.toLowerCase()) {
+                case 'running': return 'running';
+                case 'stopped': return 'stopped';
+                case 'error': return 'error';
+                case 'starting': return 'starting';
+                default: return 'stopped';
+            }
+        }
+
+        function getStatusIcon(status) {
+            switch (status?.toLowerCase()) {
+                case 'running': return '🟢';
+                case 'stopped': return '🔴';
+                case 'error': return '🟡';
+                case 'starting': return '🟡';
+                default: return '🔴';
+            }
+        }
+
+        function getHealthClass(value) {
+            if (!value || value < 60000) return 'critical'; // Less than 1 minute
+            if (value < 300000) return 'warning';           // Less than 5 minutes
+            return 'good';
+        }
+
+        function getMemoryHealthClass(value) {
+            if (!value) return 'good';
+            const mb = value / 1024 / 1024;
+            if (mb > 500) return 'critical';
+            if (mb > 200) return 'warning';
+            return 'good';
+        }
+
+        function getResponseHealthClass(value) {
+            if (!value) return 'good';
+            if (value > 5000) return 'critical';
+            if (value > 2000) return 'warning';
+            return 'good';
+        }
+
+        function formatUptime(ms) {
+            if (!ms) return '0s';
+            const seconds = Math.floor(ms / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const hours = Math.floor(minutes / 60);
+            const days = Math.floor(hours / 24);
+            
+            if (days > 0) return \`\${days}d \${hours % 24}h\`;
+            if (hours > 0) return \`\${hours}h \${minutes % 60}m\`;
+            if (minutes > 0) return \`\${minutes}m \${seconds % 60}s\`;
+            return \`\${seconds}s\`;
+        }
+
+        function formatMemory(bytes) {
+            if (!bytes) return '0 MB';
+            const mb = bytes / 1024 / 1024;
+            if (mb > 1024) return (mb / 1024).toFixed(2) + ' GB';
+            return mb.toFixed(2) + ' MB';
+        }
+
+        function formatTimeAgo(timestamp) {
+            if (!timestamp) return 'Never';
+            const diff = Date.now() - new Date(timestamp).getTime();
+            const minutes = Math.floor(diff / 60000);
+            const hours = Math.floor(diff / 3600000);
+            const days = Math.floor(diff / 86400000);
+            
+            if (days > 0) return \`\${days}d ago\`;
+            if (hours > 0) return \`\${hours}h ago\`;
+            if (minutes > 0) return \`\${minutes}m ago\`;
+            return 'Just now';
+        }
+
+        function showMessage(element, message, type) {
+            element.innerHTML = \`<div class="\${type}-message">\${message}</div>\`;
+            if (type === 'success') {
+                setTimeout(() => element.innerHTML = '', 5000);
+            }
+        }
+
+        function showError(message) {
+            console.error(message);
+            // Could add a toast notification here
+        }
+
+        function showNoAgentsMessage() {
+            document.getElementById('agents-grid').style.display = 'none';
+            document.getElementById('no-agents-message').style.display = 'block';
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', initializeMultiAgent);
+        
+        // Expose functions globally for HTML onclick handlers
+        window.showCharacterPreview = showCharacterPreview;
+        window.spawnAgent = spawnAgent;
+        window.startAgent = startAgent;
+        window.stopAgent = stopAgent;
+        window.restartAgent = restartAgent;
+        window.startAllAgents = startAllAgents;
+        window.stopAllAgents = stopAllAgents;
+        window.restartAllAgents = restartAllAgents;
+        window.emergencyStop = emergencyStop;
+        window.findBySpecialty = findBySpecialty;
+        window.testRouting = testRouting;
+        window.viewAgentHealth = viewAgentHealth;
+        window.chatWithAgent = chatWithAgent;
+        window.refreshAgents = refreshAgents;
     `
   }
 

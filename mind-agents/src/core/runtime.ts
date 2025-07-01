@@ -52,6 +52,7 @@ type LifecycleSystem = any
 function createBehaviorSystem(config: any): BehaviorSystem { return null }
 function createLifecycleManager(agent: any, eventBus: any): LifecycleSystem { return null }
 import { AutonomousAgent, DecisionModuleType } from '../types/autonomous.js'
+import { MultiAgentManager } from './multi-agent-manager.js'
 
 export class SYMindXRuntime implements AgentRuntime {
   public agents: Map<string, Agent> = new Map()
@@ -61,6 +62,9 @@ export class SYMindXRuntime implements AgentRuntime {
   public config: RuntimeConfig
   private tickTimer?: NodeJS.Timeout
   private isRunning = false
+  
+  // Multi-Agent Manager
+  public multiAgentManager?: MultiAgentManager
   
   // Autonomous system components
   private autonomousEngines: Map<string, AutonomousEngine> = new Map()
@@ -166,10 +170,18 @@ export class SYMindXRuntime implements AgentRuntime {
     // Load extensions (legacy method for built-in extensions)
     await this.loadExtensions()
     
+    // Initialize Multi-Agent Manager
+    this.multiAgentManager = new MultiAgentManager(
+      this.registry as any, 
+      this.eventBus, 
+      this
+    )
+    console.log('🤖 Multi-Agent Manager initialized')
+    
     // Discover and load dynamic plugins
     await this.loadDynamicPlugins()
     
-    // Load agents
+    // Load agents (now through multi-agent manager for single agent compatibility)
     await this.loadAgents()
     
     this.isRunning = true
@@ -198,6 +210,11 @@ export class SYMindXRuntime implements AgentRuntime {
     
     console.log('🛑 Stopping SYMindX Runtime...')
     this.isRunning = false
+    
+    // Stop multi-agent manager first
+    if (this.multiAgentManager) {
+      await this.multiAgentManager.shutdown()
+    }
     
     if (this.tickTimer) {
       clearInterval(this.tickTimer)
@@ -230,7 +247,19 @@ export class SYMindXRuntime implements AgentRuntime {
         
         // Read all files in the characters directory
         const files = await fs.readdir(charactersDir)
-        const jsonFiles = files.filter(file => file.endsWith('.json'))
+        let jsonFiles = files.filter(file => file.endsWith('.json'))
+        
+        // Check if we should load only a specific agent
+        const forceSingleAgent = process.env.FORCE_SINGLE_AGENT
+        if (forceSingleAgent) {
+          const singleAgentFile = `${forceSingleAgent}.json`
+          if (jsonFiles.includes(singleAgentFile)) {
+            jsonFiles = [singleAgentFile]
+            console.log(`🎯 Loading single agent: ${forceSingleAgent}`)
+          } else {
+            console.log(`⚠️ Single agent ${forceSingleAgent} not found, loading all agents`)
+          }
+        }
         
         if (jsonFiles.length === 0) {
           console.log('⚠️ No agent configuration files found in characters directory')
@@ -243,6 +272,12 @@ export class SYMindXRuntime implements AgentRuntime {
             const configPath = path.join(charactersDir, file)
             const configData = await fs.readFile(configPath, 'utf-8')
             const rawConfig = JSON.parse(configData)
+            
+            // Check if agent is enabled
+            if (rawConfig.enabled === false) {
+              console.log(`⏸️ Skipping disabled agent: ${file}`)
+              continue
+            }
             
             let agentConfig: AgentConfig
             
@@ -264,7 +299,7 @@ export class SYMindXRuntime implements AgentRuntime {
             }
             
             // Load the agent
-            await this.loadAgent(agentConfig)
+            await this.loadAgent(agentConfig, rawConfig.id)
           } catch (error) {
             console.error(`❌ Error loading agent from ${file}:`, error)
           }
@@ -382,7 +417,7 @@ export class SYMindXRuntime implements AgentRuntime {
     }
   }
 
-  async loadAgent(config: any): Promise<Agent> {
+  async loadAgent(config: any, characterId?: string): Promise<Agent> {
     const agentId = `agent_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     
     // Transform character config to expected format
@@ -514,6 +549,7 @@ export class SYMindXRuntime implements AgentRuntime {
     
     const agent: Agent = {
       id: agentId,
+      character_id: characterId,
       name: agentConfig.core.name,
       status: AgentStatus.IDLE,
       emotion: emotionModule,
@@ -526,9 +562,20 @@ export class SYMindXRuntime implements AgentRuntime {
       lastUpdate: new Date()
     }
     
-    // Initialize extensions
+    // Initialize extensions (skip API extension - it's shared at runtime level)
     for (const extension of extensions) {
       try {
+        // Skip API extension initialization for individual agents - it's shared
+        if (extension.id === 'api') {
+          console.log(`🔗 API extension shared with agent: ${agent.name}`)
+          // Register agent with the shared API extension's command system
+          if ((extension as any).commandSystem) {
+            (extension as any).commandSystem.registerAgent(agent)
+            console.log(`📝 Registered agent ${agent.name} with command system`)
+          }
+          continue
+        }
+        
         await extension.init(agent)
         console.log(`✅ Initialized extension: ${extension.name}`)
       } catch (error) {
@@ -1112,7 +1159,7 @@ export class SYMindXRuntime implements AgentRuntime {
         enabled: true,
         priority: 1,
         settings: {
-          port: parseInt(process.env.API_PORT || '3001'),
+          port: parseInt(process.env.API_PORT || '8000'),
           host: process.env.API_HOST || 'localhost',
           cors_enabled: true,
           rate_limiting: true,
@@ -1200,9 +1247,24 @@ export class SYMindXRuntime implements AgentRuntime {
       for (const extension of extensions) {
         this.registry.registerExtension(extension.id, extension)
         
-        // If this is the API extension, connect it to the runtime
-        if (extension.id === 'api' && 'setRuntime' in extension) {
-          ;(extension as any).setRuntime(this)
+        // If this is the API extension, connect it to the runtime and initialize it
+        if (extension.id === 'api') {
+          if ('setRuntime' in extension) {
+            ;(extension as any).setRuntime(this)
+          }
+          // Initialize the API extension at runtime level with a dummy agent
+          try {
+            const dummyAgent = {
+              id: 'runtime',
+              name: 'Runtime',
+              status: 'active',
+              config: {}
+            }
+            await extension.init(dummyAgent as any)
+            console.log('🚀 API extension initialized at runtime level')
+          } catch (error) {
+            console.error('❌ Failed to initialize API extension at runtime level:', error)
+          }
         }
       }
       
@@ -1361,7 +1423,7 @@ export class SYMindXRuntime implements AgentRuntime {
    * Create a new agent dynamically with the specified configuration
    */
   async createAgent(config: AgentConfig): Promise<string> {
-    const agent = await this.loadAgent(config)
+    const agent = await this.loadAgent(config, undefined)
     console.log(`🤖 Dynamically created agent: ${agent.name} (${agent.id})`)
     return agent.id
   }

@@ -18,7 +18,7 @@ export async function registerExtensions(config: RuntimeConfig): Promise<Extensi
       const apiConfig = {
         enabled: true,
         settings: {
-          port: config.extensions.api?.settings?.port || parseInt(process.env.API_PORT || '3001'),
+          port: config.extensions.api?.settings?.port || parseInt(process.env.API_PORT || '8000'),
           host: config.extensions.api?.settings?.host || process.env.API_HOST || 'localhost',
           cors: {
             enabled: true,

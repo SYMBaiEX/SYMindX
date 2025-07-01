@@ -103,46 +103,31 @@ export class ListCommand {
 
   async listAgents(options: any): Promise<void> {
     try {
-      let agents = Array.from(this.context.runtime.agents.values())
+      // Fetch agents from API server
+      const response = await fetch(`${this.context.config.apiUrl}/agents`)
+      if (!response.ok) {
+        console.log(chalk.yellow('⚠️  Could not connect to API server. Is the runtime running?'))
+        return
+      }
+      
+      const data = await response.json()
+      let agents = data.agents || []
 
       // Apply filters
       if (options.status) {
-        agents = agents.filter(agent => 
+        agents = agents.filter((agent: any) => 
           agent.status.toLowerCase() === options.status.toLowerCase()
         )
       }
 
       if (options.type) {
-        const autonomousAgents = new Set()
-        for (const agentId of this.context.runtime.agents.keys()) {
-          const autonomousStatus = this.context.runtime.getAutonomousStatus(agentId)
-          if (autonomousStatus.autonomous) {
-            autonomousAgents.add(agentId)
-          }
-        }
-
-        if (options.type.toLowerCase() === 'autonomous') {
-          agents = agents.filter(agent => autonomousAgents.has(agent.id))
-        } else if (options.type.toLowerCase() === 'standard') {
-          agents = agents.filter(agent => !autonomousAgents.has(agent.id))
-        }
+        // For API-fetched agents, we might not have autonomy information
+        // This would need to be enhanced to call a separate API endpoint for autonomy status
+        console.log(chalk.yellow('⚠️  Type filtering not available via API yet'))
       }
 
       if (options.json) {
-        const agentData = agents.map(agent => ({
-          id: agent.id,
-          name: agent.name,
-          status: agent.status,
-          emotion: agent.emotion?.current,
-          lastUpdate: agent.lastUpdate,
-          extensions: agent.extensions.map(ext => ({
-            id: ext.id,
-            name: ext.name,
-            enabled: ext.enabled
-          })),
-          autonomous: this.context.runtime.getAutonomousStatus(agent.id).autonomous
-        }))
-        console.log(JSON.stringify(agentData, null, 2))
+        console.log(JSON.stringify(agents, null, 2))
         return
       }
 
@@ -163,14 +148,13 @@ export class ListCommand {
         console.log(chalk.gray('─'.repeat(80)))
         
         for (const agent of agents) {
-          const autonomousStatus = this.context.runtime.getAutonomousStatus(agent.id)
-          const typeIcon = autonomousStatus.autonomous ? '🤖' : '👤'
+          const typeIcon = '🤖' // Default to bot icon for API-fetched agents
           const statusColor = this.getStatusColor(agent.status)
           
           const name = agent.name.padEnd(20).substring(0, 20)
           const status = statusColor(agent.status.padEnd(10))
-          const emotion = (agent.emotion?.current || 'unknown').padEnd(10)
-          const extensions = agent.extensions.length.toString().padEnd(10)
+          const emotion = (agent.emotion || 'unknown').padEnd(10)
+          const extensions = (agent.extensionCount || 0).toString().padEnd(10)
           const id = chalk.gray(agent.id.substring(0, 12) + '...')
           
           console.log(`${typeIcon}    ${chalk.cyan(name)} ${status} ${emotion} ${extensions} ${id}`)
@@ -544,22 +528,17 @@ export class ListCommand {
   }
 
   private async displayAgentDetailed(agent: any): Promise<void> {
-    const autonomousStatus = this.context.runtime.getAutonomousStatus(agent.id)
-    const typeIcon = autonomousStatus.autonomous ? '🤖' : '👤'
+    const typeIcon = '🤖' // Default to bot icon for API-fetched agents
     const statusColor = this.getStatusColor(agent.status)
     
     console.log('\n' + typeIcon + ' ' + chalk.cyan.bold(agent.name) + ' ' + chalk.gray('(' + agent.id + ')'))
     console.log('  Status: ' + statusColor(agent.status))
-    console.log('  Emotion: ' + (agent.emotion?.current || 'unknown'))
-    console.log('  Last Update: ' + (agent.lastUpdate?.toLocaleString() || 'never'))
-    console.log('  Extensions: ' + agent.extensions.length + ' (' + agent.extensions.filter((e: any) => e.enabled).length + ' enabled)')
+    console.log('  Emotion: ' + (agent.emotion || 'unknown'))
+    console.log('  Last Update: ' + (agent.lastUpdate || 'never'))
+    console.log('  Extensions: ' + (agent.extensionCount || 0))
     
-    if (autonomousStatus.autonomous) {
-      console.log('  Autonomy Level: ' + ((autonomousStatus.engine?.autonomyLevel || 0) * 100).toFixed(0) + '%')
-    }
-    
-    if (agent.portal) {
-      console.log('  Portal: ' + (agent.portal.name || 'configured'))
+    if (agent.hasPortal) {
+      console.log('  Portal: configured')
     }
   }
 

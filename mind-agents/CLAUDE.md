@@ -22,7 +22,7 @@ node dist/cli/index.js monitor all        # Monitor system
 
 # Web Interface  
 npm start                                  # Start server
-# Then visit: http://localhost:3001/ui
+# Then visit: http://localhost:8000/ui
 ```
 
 ## Architecture Overview
@@ -37,7 +37,8 @@ SYMindX Framework
 │   ├── Personality-driven behaviors and growth
 │   └── Ethical constraint system with safety controls
 ├── 💬 Human Interaction (CLI + Web + API)
-│   ├── Real-time chat and command interfaces  
+│   ├── Real-time chat with persistent memory
+│   ├── Context-aware conversation continuity
 │   ├── WebSocket-based live communication
 │   ├── Agent management and monitoring
 │   └── Task delegation and collaboration

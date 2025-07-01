@@ -39,6 +39,7 @@ export enum AgentStatus {
 
 export interface Agent {
   id: string
+  character_id?: string
   name: string
   status: AgentStatus
   emotion: EmotionModule
@@ -250,7 +251,7 @@ export interface MemoryProvider {
   search(agentId: string, embedding: number[], limit?: number): Promise<MemoryRecord[]>
   delete(agentId: string, memoryId: string): Promise<void>
   clear(agentId: string): Promise<void>
-  getRecent(limit?: number): Promise<MemoryRecord[]>
+  getRecent(agentId: string, limit?: number): Promise<MemoryRecord[]>
 }
 
 export enum MemoryProviderType {

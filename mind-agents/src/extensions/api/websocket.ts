@@ -31,19 +31,27 @@ export interface WebSocketConnection {
 
 export interface WebSocketMessage {
   id?: string
-  type: 'ping' | 'chat' | 'command' | 'subscribe' | 'unsubscribe' | 'status' | 'monitor'
+  type: 'ping' | 'chat' | 'command' | 'subscribe' | 'unsubscribe' | 'status' | 'monitor' | 
+        'typing_start' | 'typing_stop' | 'join_conversation' | 'leave_conversation' | 
+        'agent_handoff' | 'multi_chat' | 'conversation_invite'
   data?: any
   timestamp?: string
   targetAgent?: string
+  conversationId?: string
+  userId?: string
   priority?: 'low' | 'normal' | 'high' | 'urgent'
 }
 
 export interface WebSocketResponse {
   id?: string
-  type: 'pong' | 'chat_response' | 'command_result' | 'status_update' | 'event' | 'error'
+  type: 'pong' | 'chat_response' | 'command_result' | 'status_update' | 'event' | 'error' |
+        'typing_indicator' | 'conversation_update' | 'agent_joined' | 'agent_left' | 
+        'conversation_transferred' | 'multi_agent_response'
   data?: any
   timestamp: string
   source?: string
+  conversationId?: string
+  agentId?: string
 }
 
 export class EnhancedWebSocketServer {
@@ -53,6 +61,9 @@ export class EnhancedWebSocketServer {
   private commandSystem: CommandSystem
   private heartbeatInterval?: NodeJS.Timeout
   private eventSubscriptions = new Map<string, Set<string>>() // eventType -> connectionIds
+  private conversationConnections = new Map<string, Set<string>>() // conversationId -> connectionIds
+  private typingIndicators = new Map<string, Map<string, NodeJS.Timeout>>() // conversationId -> userId -> timeout
+  private agentConnections = new Map<string, Set<string>>() // agentId -> connectionIds
 
   constructor(commandSystem: CommandSystem) {
     this.commandSystem = commandSystem
@@ -207,6 +218,27 @@ export class EnhancedWebSocketServer {
           break
         case 'monitor':
           await this.handleMonitorRequest(connectionId, message)
+          break
+        case 'typing_start':
+          await this.handleTypingStart(connectionId, message)
+          break
+        case 'typing_stop':
+          await this.handleTypingStop(connectionId, message)
+          break
+        case 'join_conversation':
+          await this.handleJoinConversation(connectionId, message)
+          break
+        case 'leave_conversation':
+          await this.handleLeaveConversation(connectionId, message)
+          break
+        case 'agent_handoff':
+          await this.handleAgentHandoff(connectionId, message)
+          break
+        case 'multi_chat':
+          await this.handleMultiChat(connectionId, message)
+          break
+        case 'conversation_invite':
+          await this.handleConversationInvite(connectionId, message)
           break
         default:
           this.sendError(connectionId, `Unknown message type: ${message.type}`, 'UNKNOWN_TYPE')
@@ -458,6 +490,338 @@ export class EnhancedWebSocketServer {
     })
   }
 
+  // ========================================
+  // ENHANCED MULTI-AGENT CHAT HANDLERS
+  // ========================================
+
+  private async handleTypingStart(connectionId: string, message: WebSocketMessage): Promise<void> {
+    const { conversationId, userId } = message
+    
+    if (!conversationId || !userId) {
+      this.sendError(connectionId, 'Conversation ID and User ID required for typing indicator', 'MISSING_PARAMS')
+      return
+    }
+
+    // Clear any existing typing timeout for this user
+    if (!this.typingIndicators.has(conversationId)) {
+      this.typingIndicators.set(conversationId, new Map())
+    }
+    
+    const conversationTyping = this.typingIndicators.get(conversationId)!
+    const existingTimeout = conversationTyping.get(userId)
+    if (existingTimeout) {
+      clearTimeout(existingTimeout)
+    }
+
+    // Set auto-stop timeout (typing stops after 10 seconds of inactivity)
+    const timeout = setTimeout(() => {
+      this.handleTypingStop(connectionId, { ...message, type: 'typing_stop' })
+    }, 10000)
+    
+    conversationTyping.set(userId, timeout)
+
+    // Broadcast typing indicator to other participants in the conversation
+    this.broadcastToConversation(conversationId, {
+      type: 'typing_indicator',
+      data: {
+        userId,
+        typing: true,
+        conversationId
+      },
+      timestamp: new Date().toISOString(),
+      conversationId
+    }, connectionId) // Exclude the sender
+  }
+
+  private async handleTypingStop(connectionId: string, message: WebSocketMessage): Promise<void> {
+    const { conversationId, userId } = message
+    
+    if (!conversationId || !userId) {
+      return // Silently ignore missing params for stop events
+    }
+
+    // Clear typing timeout
+    const conversationTyping = this.typingIndicators.get(conversationId)
+    if (conversationTyping) {
+      const timeout = conversationTyping.get(userId)
+      if (timeout) {
+        clearTimeout(timeout)
+        conversationTyping.delete(userId)
+      }
+    }
+
+    // Broadcast typing stopped to other participants
+    this.broadcastToConversation(conversationId, {
+      type: 'typing_indicator',
+      data: {
+        userId,
+        typing: false,
+        conversationId
+      },
+      timestamp: new Date().toISOString(),
+      conversationId
+    }, connectionId)
+  }
+
+  private async handleJoinConversation(connectionId: string, message: WebSocketMessage): Promise<void> {
+    const { conversationId, userId } = message
+    
+    if (!conversationId) {
+      this.sendError(connectionId, 'Conversation ID required', 'MISSING_CONVERSATION_ID')
+      return
+    }
+
+    // Add connection to conversation
+    if (!this.conversationConnections.has(conversationId)) {
+      this.conversationConnections.set(conversationId, new Set())
+    }
+    this.conversationConnections.get(conversationId)!.add(connectionId)
+
+    // Update connection metadata
+    const connection = this.connections.get(connectionId)
+    if (connection) {
+      connection.metadata.conversationId = conversationId
+      connection.metadata.userId = userId
+    }
+
+    // Notify other participants
+    this.broadcastToConversation(conversationId, {
+      type: 'conversation_update',
+      data: {
+        type: 'participant_joined',
+        userId,
+        conversationId,
+        timestamp: new Date().toISOString()
+      },
+      timestamp: new Date().toISOString(),
+      conversationId
+    }, connectionId)
+
+    // Confirm join to the user
+    this.send(connectionId, {
+      type: 'conversation_update',
+      data: {
+        type: 'joined',
+        conversationId,
+        message: 'Successfully joined conversation'
+      },
+      timestamp: new Date().toISOString(),
+      conversationId
+    })
+  }
+
+  private async handleLeaveConversation(connectionId: string, message: WebSocketMessage): Promise<void> {
+    const { conversationId, userId } = message
+    
+    if (!conversationId) {
+      this.sendError(connectionId, 'Conversation ID required', 'MISSING_CONVERSATION_ID')
+      return
+    }
+
+    // Remove connection from conversation
+    const conversationConnections = this.conversationConnections.get(conversationId)
+    if (conversationConnections) {
+      conversationConnections.delete(connectionId)
+      if (conversationConnections.size === 0) {
+        this.conversationConnections.delete(conversationId)
+      }
+    }
+
+    // Clear typing indicators
+    const conversationTyping = this.typingIndicators.get(conversationId)
+    if (conversationTyping && userId) {
+      const timeout = conversationTyping.get(userId)
+      if (timeout) {
+        clearTimeout(timeout)
+        conversationTyping.delete(userId)
+      }
+    }
+
+    // Update connection metadata
+    const connection = this.connections.get(connectionId)
+    if (connection) {
+      delete connection.metadata.conversationId
+      delete connection.metadata.userId
+    }
+
+    // Notify remaining participants
+    this.broadcastToConversation(conversationId, {
+      type: 'conversation_update',
+      data: {
+        type: 'participant_left',
+        userId,
+        conversationId,
+        timestamp: new Date().toISOString()
+      },
+      timestamp: new Date().toISOString(),
+      conversationId
+    })
+  }
+
+  private async handleAgentHandoff(connectionId: string, message: WebSocketMessage): Promise<void> {
+    const { conversationId, data } = message
+    const { fromAgent, toAgent, reason } = data || {}
+    
+    if (!conversationId || !fromAgent || !toAgent) {
+      this.sendError(connectionId, 'Conversation ID, fromAgent, and toAgent required', 'MISSING_HANDOFF_PARAMS')
+      return
+    }
+
+    // Broadcast handoff notification to all conversation participants
+    this.broadcastToConversation(conversationId, {
+      type: 'conversation_transferred',
+      data: {
+        conversationId,
+        fromAgent,
+        toAgent,
+        reason: reason || 'Agent handoff requested',
+        timestamp: new Date().toISOString(),
+        handoffInitiatedBy: 'user'
+      },
+      timestamp: new Date().toISOString(),
+      conversationId,
+      agentId: toAgent
+    })
+
+    // Update agent connections tracking
+    this.updateAgentConnections(fromAgent, toAgent, conversationId)
+  }
+
+  private async handleMultiChat(connectionId: string, message: WebSocketMessage): Promise<void> {
+    const { data } = message
+    const { targetAgents, chatMessage, userId = 'default_user' } = data || {}
+    
+    if (!targetAgents || !Array.isArray(targetAgents) || !chatMessage) {
+      this.sendError(connectionId, 'Target agents array and chat message required', 'MISSING_MULTI_CHAT_PARAMS')
+      return
+    }
+
+    // Process message for each target agent
+    const results = []
+    for (const agentId of targetAgents) {
+      try {
+        // Here you would integrate with your chat system to send the message
+        // For now, we'll simulate the response
+        const response = {
+          agentId,
+          response: `Agent ${agentId} received: ${chatMessage}`,
+          timestamp: new Date().toISOString(),
+          success: true
+        }
+        results.push(response)
+
+        // Broadcast to agent-specific connections
+        this.broadcastToAgent(agentId, {
+          type: 'multi_agent_response',
+          data: {
+            originalMessage: chatMessage,
+            response: response.response,
+            fromUser: userId,
+            multiChatSession: true
+          },
+          timestamp: new Date().toISOString(),
+          agentId
+        })
+      } catch (error) {
+        results.push({
+          agentId,
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        })
+      }
+    }
+
+    // Send aggregated results back to sender
+    this.send(connectionId, {
+      type: 'multi_agent_response',
+      data: {
+        originalMessage: chatMessage,
+        targetAgents,
+        results,
+        successful: results.filter(r => r.success).length,
+        failed: results.filter(r => !r.success).length
+      },
+      timestamp: new Date().toISOString()
+    })
+  }
+
+  private async handleConversationInvite(connectionId: string, message: WebSocketMessage): Promise<void> {
+    const { conversationId, data } = message
+    const { agentId, role = 'member' } = data || {}
+    
+    if (!conversationId || !agentId) {
+      this.sendError(connectionId, 'Conversation ID and Agent ID required', 'MISSING_INVITE_PARAMS')
+      return
+    }
+
+    // Broadcast invitation to conversation participants
+    this.broadcastToConversation(conversationId, {
+      type: 'agent_joined',
+      data: {
+        conversationId,
+        agentId,
+        role,
+        invitedAt: new Date().toISOString(),
+        message: `Agent ${agentId} has been invited to the conversation`
+      },
+      timestamp: new Date().toISOString(),
+      conversationId,
+      agentId
+    })
+
+    // Track agent connection
+    if (!this.agentConnections.has(agentId)) {
+      this.agentConnections.set(agentId, new Set())
+    }
+    this.agentConnections.get(agentId)!.add(connectionId)
+  }
+
+  // Helper methods for multi-agent chat
+
+  private broadcastToConversation(conversationId: string, response: WebSocketResponse, excludeConnectionId?: string): void {
+    const conversationConnections = this.conversationConnections.get(conversationId)
+    if (!conversationConnections) return
+
+    for (const connectionId of conversationConnections) {
+      if (excludeConnectionId && connectionId === excludeConnectionId) continue
+      this.send(connectionId, response)
+    }
+  }
+
+  private broadcastToAgent(agentId: string, response: WebSocketResponse): void {
+    const agentConnections = this.agentConnections.get(agentId)
+    if (!agentConnections) return
+
+    for (const connectionId of agentConnections) {
+      this.send(connectionId, response)
+    }
+  }
+
+  private updateAgentConnections(fromAgent: string, toAgent: string, conversationId: string): void {
+    // Remove connections from old agent
+    const fromConnections = this.agentConnections.get(fromAgent)
+    if (fromConnections) {
+      for (const connectionId of fromConnections) {
+        const connection = this.connections.get(connectionId)
+        if (connection?.metadata.conversationId === conversationId) {
+          fromConnections.delete(connectionId)
+        }
+      }
+    }
+
+    // Add connections to new agent
+    if (!this.agentConnections.has(toAgent)) {
+      this.agentConnections.set(toAgent, new Set())
+    }
+    
+    const conversationConnections = this.conversationConnections.get(conversationId)
+    if (conversationConnections) {
+      for (const connectionId of conversationConnections) {
+        this.agentConnections.get(toAgent)!.add(connectionId)
+      }
+    }
+  }
+
   private async getAgentStatus(agentId: string): Promise<any> {
     // This would integrate with the runtime to get actual agent status
     return {
@@ -556,6 +920,55 @@ export class EnhancedWebSocketServer {
     // Remove from all subscriptions
     for (const topic of connection.subscriptions) {
       this.eventSubscriptions.get(topic)?.delete(connectionId)
+    }
+
+    // Clean up conversation connections
+    const conversationId = connection.metadata.conversationId
+    if (conversationId) {
+      const conversationConnections = this.conversationConnections.get(conversationId)
+      if (conversationConnections) {
+        conversationConnections.delete(connectionId)
+        if (conversationConnections.size === 0) {
+          this.conversationConnections.delete(conversationId)
+        }
+      }
+
+      // Clean up typing indicators
+      const userId = connection.metadata.userId
+      if (userId) {
+        const conversationTyping = this.typingIndicators.get(conversationId)
+        if (conversationTyping) {
+          const timeout = conversationTyping.get(userId)
+          if (timeout) {
+            clearTimeout(timeout)
+            conversationTyping.delete(userId)
+          }
+          if (conversationTyping.size === 0) {
+            this.typingIndicators.delete(conversationId)
+          }
+        }
+
+        // Notify other participants about the disconnection
+        this.broadcastToConversation(conversationId, {
+          type: 'conversation_update',
+          data: {
+            type: 'participant_disconnected',
+            userId,
+            conversationId,
+            timestamp: new Date().toISOString()
+          },
+          timestamp: new Date().toISOString(),
+          conversationId
+        })
+      }
+    }
+
+    // Clean up agent connections
+    for (const [agentId, connections] of this.agentConnections) {
+      connections.delete(connectionId)
+      if (connections.size === 0) {
+        this.agentConnections.delete(agentId)
+      }
     }
 
     this.connections.delete(connectionId)

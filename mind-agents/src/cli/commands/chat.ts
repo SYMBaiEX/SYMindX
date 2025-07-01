@@ -100,12 +100,22 @@ export class ChatCommand {
       // Verify agent exists via API
       const agentResponse = await fetch(`${this.context.config.apiUrl}/agents`)
       const agentData = await agentResponse.json()
-      const agent = agentData.agents?.find((a: any) => a.id === agentId)
+      let agent = agentData.agents?.find((a: any) => a.id === agentId)
+      
+      // If not found by ID, try to find by name (case-insensitive)
+      if (!agent && agentId) {
+        agent = agentData.agents?.find((a: any) => 
+          a.name.toLowerCase() === agentId!.toLowerCase()
+        )
+      }
       
       if (!agent) {
         console.log(chalk.red(`❌ Agent '${agentId}' not found`))
         return
       }
+      
+      // Update agentId to the actual ID if we found by name
+      agentId = agent.id
 
       this.context.selectedAgent = agentId!
 
@@ -219,7 +229,22 @@ export class ChatCommand {
 
   async sendMessage(agentId: string, message: string, options?: { wait?: boolean }): Promise<void> {
     try {
-      const agent = this.context.runtime.agents.get(agentId)
+      // Verify agent exists via API
+      const agentResponse = await fetch(`${this.context.config.apiUrl}/agents`)
+      const agentData = await agentResponse.json()
+      let agent = agentData.agents?.find((a: any) => a.id === agentId)
+      
+      // If not found by ID, try to find by name (case-insensitive)
+      if (!agent && agentId) {
+        agent = agentData.agents?.find((a: any) => 
+          a.name.toLowerCase() === agentId.toLowerCase()
+        )
+        // Update agentId to the actual ID if we found by name
+        if (agent) {
+          agentId = agent.id
+        }
+      }
+      
       if (!agent) {
         console.log(chalk.red(`❌ Agent '${agentId}' not found`))
         return
@@ -227,12 +252,42 @@ export class ChatCommand {
 
       if (options?.wait) {
         console.log(chalk.blue(`Sending message to ${agent.name}...`))
-        const response = await this.context.commandSystem.sendMessage(agentId, message)
+        
+        // Send message via API
+        const response = await fetch(`${this.context.config.apiUrl}/chat`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            agentId,
+            message
+          })
+        })
+        
+        if (!response.ok) {
+          throw new Error(`API request failed: ${response.statusText}`)
+        }
+        
+        const data = await response.json()
         console.log(chalk.green(`\n💬 ${agent.name}:`))
-        console.log(chalk.white(response))
+        console.log(chalk.white(data.response))
       } else {
-        await this.context.commandSystem.sendCommand(agentId, message, { async: true })
-        console.log(chalk.green(`✅ Message sent to ${agent.name}`))
+        // For async messages, just use the chat endpoint without waiting for full response
+        fetch(`${this.context.config.apiUrl}/chat`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            agentId,
+            message
+          })
+        }).then(() => {
+          console.log(chalk.green(`✅ Message sent to ${agent.name}`))
+        }).catch(() => {
+          console.log(chalk.red('❌ Failed to send message'))
+        })
       }
 
     } catch (error) {

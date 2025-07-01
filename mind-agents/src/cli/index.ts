@@ -85,7 +85,7 @@ class SYMindXCLI {
 
   private getDefaultCLIConfig(): CLIConfig {
     // Get port from environment or use default
-    const port = process.env.PORT || process.env.API_PORT || '3001'
+    const port = process.env.API_PORT || '8000'
     return {
       apiUrl: process.env.SYMINDX_API_URL || `http://localhost:${port}`,
       wsUrl: process.env.SYMINDX_WS_URL || `ws://localhost:${port}/ws`,

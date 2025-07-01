@@ -70,8 +70,8 @@ ${context?.systemPrompt || ''}`
       
       // Generate response using the portal
       const result = await chatPortal.generateChat(messages, {
-        maxTokens: 150,
-        temperature: 0.7
+        maxTokens: 2048,
+        temperature: 0.6
       })
 
       // Handle different result formats from different portals
