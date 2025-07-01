@@ -1,0 +1,32 @@
+{
+  "id": "modules/memory/index",
+  "title": "Memory Modules",
+  "description": "Memory storage and retrieval systems",
+  "source": "@site/docs/06-modules/memory/index.md",
+  "sourceDirName": "06-modules/memory",
+  "slug": "/modules/memory/",
+  "permalink": "/docs/modules/memory/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/06-modules/memory/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "sidebar_label": "Memory Modules",
+    "title": "Memory Modules",
+    "description": "Memory storage and retrieval systems"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Modules",
+    "permalink": "/docs/modules/"
+  },
+  "next": {
+    "title": "Memory Providers",
+    "permalink": "/docs/modules/memory/providers/"
+  }
+}

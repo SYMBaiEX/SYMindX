@@ -50,6 +50,7 @@ export interface Agent {
   portals?: Portal[] // Multiple portals with different capabilities
   toolSystem?: any // Dynamic tools system for Agent Zero-style capabilities
   config: AgentConfig
+  characterConfig?: any // Original character configuration (preserves communication settings)
   lastUpdate: Date
   eventBus?: EventBus // Added eventBus property as optional
   
@@ -352,6 +353,7 @@ export interface CognitionConfig {
   planningDepth: number
   memoryIntegration: boolean
   creativityLevel: number
+  enableCognitiveProcessing?: boolean // Optional flag to enable/disable cognitive processing (default: true)
 }
 
 export enum ExtensionType {

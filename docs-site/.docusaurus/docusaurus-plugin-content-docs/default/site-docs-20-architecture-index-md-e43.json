@@ -1,0 +1,32 @@
+{
+  "id": "architecture/index",
+  "title": "Architecture",
+  "description": "System architecture and design patterns",
+  "source": "@site/docs/20-architecture/index.md",
+  "sourceDirName": "20-architecture",
+  "slug": "/architecture/",
+  "permalink": "/docs/architecture/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/20-architecture/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 20,
+  "frontMatter": {
+    "sidebar_position": 20,
+    "sidebar_label": "Architecture",
+    "title": "Architecture",
+    "description": "System architecture and design patterns"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Custom Portals",
+    "permalink": "/docs/advanced-topics/custom-portals/"
+  },
+  "next": {
+    "title": "Architecture Overview",
+    "permalink": "/docs/architecture/system-design/"
+  }
+}

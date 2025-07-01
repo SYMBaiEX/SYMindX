@@ -1,0 +1,31 @@
+{
+  "id": "community/discord/index",
+  "title": "Discord",
+  "description": "Discord community",
+  "source": "@site/docs/22-community/discord/index.md",
+  "sourceDirName": "22-community/discord",
+  "slug": "/community/discord/",
+  "permalink": "/docs/community/discord/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/22-community/discord/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "Discord",
+    "description": "Discord community"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Forums",
+    "permalink": "/docs/community/forums/"
+  },
+  "next": {
+    "title": "Contributors",
+    "permalink": "/docs/community/contributors/"
+  }
+}

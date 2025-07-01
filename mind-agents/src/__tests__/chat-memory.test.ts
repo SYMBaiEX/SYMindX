@@ -3,7 +3,8 @@
  */
 
 import { CommandSystem } from '../core/command-system.js'
-import { Agent, MemoryRecord, MemoryType, MemoryDuration } from '../types/index.js'
+import { Agent, MemoryType, MemoryDuration } from '../types/index.js'
+import { MemoryRecord } from '../types/agent.js'
 
 // Mock memory provider
 class MockMemoryProvider {

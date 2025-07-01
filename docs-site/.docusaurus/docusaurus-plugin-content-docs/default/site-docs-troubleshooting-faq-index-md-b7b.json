@@ -1,0 +1,27 @@
+{
+  "id": "troubleshooting/faq/index",
+  "title": "FAQ",
+  "description": "Frequently asked questions",
+  "source": "@site/docs/troubleshooting/faq/index.md",
+  "sourceDirName": "troubleshooting/faq",
+  "slug": "/troubleshooting/faq/",
+  "permalink": "/docs/troubleshooting/faq/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/troubleshooting/faq/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "FAQ",
+    "description": "Frequently asked questions"
+  },
+  "sidebar": "quickLinksSidebar",
+  "previous": {
+    "title": "Examples",
+    "permalink": "/docs/examples/"
+  }
+}

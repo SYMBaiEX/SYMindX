@@ -1,0 +1,31 @@
+{
+  "id": "development/debugging/index",
+  "title": "Debugging",
+  "description": "Debugging guide",
+  "source": "@site/docs/development/debugging/index.md",
+  "sourceDirName": "development/debugging",
+  "slug": "/development/debugging/",
+  "permalink": "/docs/development/debugging/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/development/debugging/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "Debugging",
+    "description": "Debugging guide"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Plugin Development Guide",
+    "permalink": "/docs/development/plugin-development/"
+  },
+  "next": {
+    "title": "Community",
+    "permalink": "/docs/community/"
+  }
+}

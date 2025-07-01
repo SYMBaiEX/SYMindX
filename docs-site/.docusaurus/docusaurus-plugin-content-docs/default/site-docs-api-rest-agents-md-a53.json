@@ -1,7 +1,7 @@
 {
   "id": "api/rest/agents",
-  "title": "Agents Rest API",
-  "description": "This is the API documentation for agents in the rest category.",
+  "title": "Agents REST API",
+  "description": "The Agents REST API provides comprehensive endpoints for managing AI agents in the SYMindX system, including single-agent operations and multi-agent coordination.",
   "source": "@site/docs/api/rest/agents.md",
   "sourceDirName": "api/rest",
   "slug": "/api/rest/agents",
@@ -11,8 +11,8 @@
   "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/api/rest/agents.md",
   "tags": [],
   "version": "current",
-  "lastUpdatedBy": "SYMBaiEX",
-  "lastUpdatedAt": 1751234689000,
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
   "frontMatter": {},
   "sidebar": "apiSidebar",
   "previous": {
@@ -20,7 +20,7 @@
     "permalink": "/docs/api/rest/authentication"
   },
   "next": {
-    "title": "Extensions Rest API",
-    "permalink": "/docs/api/rest/extensions"
+    "title": "Chat System REST API",
+    "permalink": "/docs/api/rest/chat"
   }
 }

@@ -1,0 +1,31 @@
+{
+  "id": "roadmap/timeline/index",
+  "title": "Timeline",
+  "description": "Development timeline",
+  "source": "@site/docs/roadmap/timeline/index.md",
+  "sourceDirName": "roadmap/timeline",
+  "slug": "/roadmap/timeline/",
+  "permalink": "/docs/roadmap/timeline/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/roadmap/timeline/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "Timeline",
+    "description": "Development timeline"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Features",
+    "permalink": "/docs/roadmap/features/"
+  },
+  "next": {
+    "title": "Vision",
+    "permalink": "/docs/roadmap/vision/"
+  }
+}

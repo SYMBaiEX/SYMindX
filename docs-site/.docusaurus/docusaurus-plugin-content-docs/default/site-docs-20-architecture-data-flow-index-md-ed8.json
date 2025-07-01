@@ -1,0 +1,31 @@
+{
+  "id": "architecture/data-flow/index",
+  "title": "Data Flow",
+  "description": "Data flow architecture",
+  "source": "@site/docs/20-architecture/data-flow/index.md",
+  "sourceDirName": "20-architecture/data-flow",
+  "slug": "/architecture/data-flow/",
+  "permalink": "/docs/architecture/data-flow/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/20-architecture/data-flow/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "Data Flow",
+    "description": "Data flow architecture"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Architecture Overview",
+    "permalink": "/docs/architecture/system-design/"
+  },
+  "next": {
+    "title": "Scalability",
+    "permalink": "/docs/architecture/scalability/"
+  }
+}

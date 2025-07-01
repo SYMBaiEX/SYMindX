@@ -1,0 +1,17 @@
+{
+  "id": "overview/roadmap/product-requirements",
+  "title": "🧠 SYMindX — High-Level Design (System Architecture)",
+  "description": "🧭 Purpose",
+  "source": "@site/docs/overview/roadmap/product-requirements.md",
+  "sourceDirName": "overview/roadmap",
+  "slug": "/overview/roadmap/product-requirements",
+  "permalink": "/docs/overview/roadmap/product-requirements",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/overview/roadmap/product-requirements.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "frontMatter": {}
+}

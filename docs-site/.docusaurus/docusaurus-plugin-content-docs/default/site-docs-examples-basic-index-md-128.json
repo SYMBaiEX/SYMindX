@@ -1,0 +1,31 @@
+{
+  "id": "examples/basic/index",
+  "title": "Basic Examples",
+  "description": "Simple getting started examples",
+  "source": "@site/docs/examples/basic/index.md",
+  "sourceDirName": "examples/basic",
+  "slug": "/examples/basic/",
+  "permalink": "/docs/examples/basic/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/examples/basic/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "Basic Examples",
+    "description": "Simple getting started examples"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Examples",
+    "permalink": "/docs/examples/"
+  },
+  "next": {
+    "title": "Advanced Examples",
+    "permalink": "/docs/examples/advanced/"
+  }
+}

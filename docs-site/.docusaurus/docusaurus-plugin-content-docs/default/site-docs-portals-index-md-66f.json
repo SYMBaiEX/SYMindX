@@ -1,0 +1,32 @@
+{
+  "id": "portals/index",
+  "title": "Portals",
+  "description": "AI provider integrations",
+  "source": "@site/docs/portals/index.md",
+  "sourceDirName": "portals",
+  "slug": "/portals/",
+  "permalink": "/docs/portals/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/portals/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 8,
+  "frontMatter": {
+    "sidebar_position": 8,
+    "sidebar_label": "Portals",
+    "title": "Portals",
+    "description": "AI provider integrations"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "CLI Extension",
+    "permalink": "/docs/extensions/cli/"
+  },
+  "next": {
+    "title": "OpenAI Portal",
+    "permalink": "/docs/portals/openai/"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "id": "community/showcase/index",
+  "title": "Showcase",
+  "description": "Community showcase",
+  "source": "@site/docs/22-community/showcase/index.md",
+  "sourceDirName": "22-community/showcase",
+  "slug": "/community/showcase/",
+  "permalink": "/docs/community/showcase/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/22-community/showcase/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "Showcase",
+    "description": "Community showcase"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Contributors",
+    "permalink": "/docs/community/contributors/"
+  },
+  "next": {
+    "title": "Changelog",
+    "permalink": "/docs/changelog/"
+  }
+}

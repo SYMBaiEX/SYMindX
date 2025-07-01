@@ -1,0 +1,32 @@
+{
+  "id": "integrations/index",
+  "title": "Integrations",
+  "description": "Third-party integrations",
+  "source": "@site/docs/16-integrations/index.md",
+  "sourceDirName": "16-integrations",
+  "slug": "/integrations/",
+  "permalink": "/docs/integrations/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/16-integrations/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 16,
+  "frontMatter": {
+    "sidebar_position": 16,
+    "sidebar_label": "Integrations",
+    "title": "Integrations",
+    "description": "Third-party integrations"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Breaking Changes",
+    "permalink": "/docs/migration/breaking-changes/"
+  },
+  "next": {
+    "title": "MCP",
+    "permalink": "/docs/integrations/mcp/"
+  }
+}

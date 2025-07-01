@@ -1,0 +1,31 @@
+{
+  "id": "advanced-topics/autonomous-agents/index",
+  "title": "Autonomous Agents",
+  "description": "Building autonomous agents",
+  "source": "@site/docs/19-advanced-topics/autonomous-agents/index.md",
+  "sourceDirName": "19-advanced-topics/autonomous-agents",
+  "slug": "/advanced-topics/autonomous-agents/",
+  "permalink": "/docs/advanced-topics/autonomous-agents/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/19-advanced-topics/autonomous-agents/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "Autonomous Agents",
+    "description": "Building autonomous agents"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Advanced Topics",
+    "permalink": "/docs/advanced-topics/"
+  },
+  "next": {
+    "title": "Multi-Modal AI",
+    "permalink": "/docs/advanced-topics/multi-modal/"
+  }
+}

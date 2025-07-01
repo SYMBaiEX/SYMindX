@@ -81,9 +81,21 @@ export default {
       "items": [
         {
           "type": "docSidebar",
-          "sidebarId": "tutorialSidebar",
+          "sidebarId": "docsSidebar",
           "position": "left",
           "label": "Documentation"
+        },
+        {
+          "type": "docSidebar",
+          "sidebarId": "quickLinksSidebar",
+          "position": "left",
+          "label": "Quick Start"
+        },
+        {
+          "type": "docSidebar",
+          "sidebarId": "apiSidebar",
+          "position": "left",
+          "label": "API Reference"
         },
         {
           "to": "/blog",
@@ -110,11 +122,23 @@ export default {
           "items": [
             {
               "label": "Getting Started",
-              "to": "/docs/getting-started"
+              "to": "/docs/getting-started/"
+            },
+            {
+              "label": "API Reference",
+              "to": "/docs/api-reference/"
             },
             {
               "label": "Architecture",
               "to": "/docs/architecture/"
+            },
+            {
+              "label": "Examples",
+              "to": "/docs/examples/"
+            },
+            {
+              "label": "Tutorials",
+              "to": "/docs/tutorials/"
             }
           ]
         },
@@ -148,7 +172,11 @@ export default {
             },
             {
               "label": "Changelog",
-              "href": "https://github.com/symindx/symindx/releases"
+              "to": "/docs/changelog/"
+            },
+            {
+              "label": "Roadmap",
+              "to": "/docs/roadmap/"
             }
           ]
         }

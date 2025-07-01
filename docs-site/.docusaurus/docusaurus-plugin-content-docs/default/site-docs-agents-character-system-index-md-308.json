@@ -1,0 +1,31 @@
+{
+  "id": "agents/character-system/index",
+  "title": "Character System",
+  "description": "Understanding the character system in SYMindX",
+  "source": "@site/docs/agents/character-system/index.md",
+  "sourceDirName": "agents/character-system",
+  "slug": "/agents/character-system/",
+  "permalink": "/docs/agents/character-system/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/agents/character-system/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "Character System",
+    "description": "Understanding the character system in SYMindX"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Agent Configuration",
+    "permalink": "/docs/agents/configuration/"
+  },
+  "next": {
+    "title": "Multi-Agent Systems Guide",
+    "permalink": "/docs/agents/multi-agent/"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "id": "security/authorization/index",
+  "title": "Authorization",
+  "description": "Access control and permissions",
+  "source": "@site/docs/security/authorization/index.md",
+  "sourceDirName": "security/authorization",
+  "slug": "/security/authorization/",
+  "permalink": "/docs/security/authorization/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/security/authorization/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "Authorization",
+    "description": "Access control and permissions"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Authentication",
+    "permalink": "/docs/security/authentication/"
+  },
+  "next": {
+    "title": "RBAC",
+    "permalink": "/docs/security/rbac/"
+  }
+}

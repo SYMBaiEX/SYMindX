@@ -1,0 +1,31 @@
+{
+  "id": "resources/references/index",
+  "title": "References",
+  "description": "External references",
+  "source": "@site/docs/26-resources/references/index.md",
+  "sourceDirName": "26-resources/references",
+  "slug": "/resources/references/",
+  "permalink": "/docs/resources/references/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/26-resources/references/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "References",
+    "description": "External references"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Glossary",
+    "permalink": "/docs/resources/glossary/"
+  },
+  "next": {
+    "title": "Tools",
+    "permalink": "/docs/resources/tools/"
+  }
+}

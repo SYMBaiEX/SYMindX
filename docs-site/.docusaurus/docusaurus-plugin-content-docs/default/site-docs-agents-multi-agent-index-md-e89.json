@@ -1,0 +1,26 @@
+{
+  "id": "agents/multi-agent/index",
+  "title": "Multi-Agent Systems Guide",
+  "description": "Learn how to build and manage sophisticated multi-agent AI systems with SYMindX's powerful coordination and management features.",
+  "source": "@site/docs/agents/multi-agent/index.md",
+  "sourceDirName": "agents/multi-agent",
+  "slug": "/agents/multi-agent/",
+  "permalink": "/docs/agents/multi-agent/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/agents/multi-agent/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "frontMatter": {},
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Character System",
+    "permalink": "/docs/agents/character-system/"
+  },
+  "next": {
+    "title": "Agent Lifecycle",
+    "permalink": "/docs/agents/lifecycle/"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "id": "support/index",
+  "title": "Support",
+  "description": "Getting help and support options",
+  "source": "@site/docs/support/index.md",
+  "sourceDirName": "support",
+  "slug": "/support/",
+  "permalink": "/docs/support/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/support/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 25,
+  "frontMatter": {
+    "sidebar_position": 25,
+    "sidebar_label": "Support",
+    "title": "Support",
+    "description": "Getting help and support options"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Vision",
+    "permalink": "/docs/roadmap/vision/"
+  },
+  "next": {
+    "title": "Documentation",
+    "permalink": "/docs/support/documentation/"
+  }
+}

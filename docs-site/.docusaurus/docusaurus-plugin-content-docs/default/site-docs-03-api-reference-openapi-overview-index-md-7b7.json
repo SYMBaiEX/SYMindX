@@ -1,0 +1,17 @@
+{
+  "id": "api-reference/openapi/overview/index",
+  "title": "Overview Openapi API",
+  "description": "This is the API documentation for overview in the openapi category.",
+  "source": "@site/docs/03-api-reference/openapi/overview/index.md",
+  "sourceDirName": "03-api-reference/openapi/overview",
+  "slug": "/api-reference/openapi/overview/",
+  "permalink": "/docs/api-reference/openapi/overview/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/03-api-reference/openapi/overview/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "frontMatter": {}
+}

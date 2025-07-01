@@ -1,0 +1,31 @@
+{
+  "id": "tutorials/advanced/index",
+  "title": "Advanced Tutorials",
+  "description": "Advanced tutorials",
+  "source": "@site/docs/tutorials/advanced/index.md",
+  "sourceDirName": "tutorials/advanced",
+  "slug": "/tutorials/advanced/",
+  "permalink": "/docs/tutorials/advanced/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/tutorials/advanced/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "Advanced Tutorials",
+    "description": "Advanced tutorials"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Intermediate Tutorials",
+    "permalink": "/docs/tutorials/intermediate/"
+  },
+  "next": {
+    "title": "Video Tutorials",
+    "permalink": "/docs/tutorials/video-tutorials/"
+  }
+}

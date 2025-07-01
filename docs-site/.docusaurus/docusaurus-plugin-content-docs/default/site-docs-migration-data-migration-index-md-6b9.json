@@ -1,0 +1,31 @@
+{
+  "id": "migration/data-migration/index",
+  "title": "Data Migration",
+  "description": "Migrating data between providers",
+  "source": "@site/docs/migration/data-migration/index.md",
+  "sourceDirName": "migration/data-migration",
+  "slug": "/migration/data-migration/",
+  "permalink": "/docs/migration/data-migration/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/migration/data-migration/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "Data Migration",
+    "description": "Migrating data between providers"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Version Upgrades",
+    "permalink": "/docs/migration/version-upgrades/"
+  },
+  "next": {
+    "title": "Breaking Changes",
+    "permalink": "/docs/migration/breaking-changes/"
+  }
+}

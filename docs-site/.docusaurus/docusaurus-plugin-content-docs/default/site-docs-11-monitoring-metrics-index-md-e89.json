@@ -1,0 +1,31 @@
+{
+  "id": "monitoring/metrics/index",
+  "title": "Metrics",
+  "description": "Application and system metrics",
+  "source": "@site/docs/11-monitoring/metrics/index.md",
+  "sourceDirName": "11-monitoring/metrics",
+  "slug": "/monitoring/metrics/",
+  "permalink": "/docs/monitoring/metrics/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/11-monitoring/metrics/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "Metrics",
+    "description": "Application and system metrics"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Logging",
+    "permalink": "/docs/monitoring/logging/"
+  },
+  "next": {
+    "title": "Tracing",
+    "permalink": "/docs/monitoring/tracing/"
+  }
+}

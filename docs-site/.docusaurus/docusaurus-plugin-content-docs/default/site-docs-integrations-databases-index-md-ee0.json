@@ -1,0 +1,31 @@
+{
+  "id": "integrations/databases/index",
+  "title": "Databases",
+  "description": "Database integrations",
+  "source": "@site/docs/integrations/databases/index.md",
+  "sourceDirName": "integrations/databases",
+  "slug": "/integrations/databases/",
+  "permalink": "/docs/integrations/databases/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/integrations/databases/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "Databases",
+    "description": "Database integrations"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Vector Stores",
+    "permalink": "/docs/integrations/vector-stores/"
+  },
+  "next": {
+    "title": "Examples",
+    "permalink": "/docs/examples/"
+  }
+}

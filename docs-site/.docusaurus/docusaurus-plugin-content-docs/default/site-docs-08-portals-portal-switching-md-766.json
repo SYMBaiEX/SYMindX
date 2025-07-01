@@ -1,0 +1,17 @@
+{
+  "id": "portals/portal-switching",
+  "title": "Portal Switching Guide - Full Composability",
+  "description": "Method 1: Environment Variables (Global Defaults)",
+  "source": "@site/docs/08-portals/portal-switching.md",
+  "sourceDirName": "08-portals",
+  "slug": "/portals/portal-switching",
+  "permalink": "/docs/portals/portal-switching",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/08-portals/portal-switching.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "frontMatter": {}
+}

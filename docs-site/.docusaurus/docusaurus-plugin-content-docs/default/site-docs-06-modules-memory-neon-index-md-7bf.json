@@ -1,0 +1,31 @@
+{
+  "id": "modules/memory/neon/index",
+  "title": "Neon Memory Provider",
+  "description": "Serverless PostgreSQL",
+  "source": "@site/docs/06-modules/memory/neon/index.md",
+  "sourceDirName": "06-modules/memory/neon",
+  "slug": "/modules/memory/neon/",
+  "permalink": "/docs/modules/memory/neon/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/06-modules/memory/neon/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "Neon Memory Provider",
+    "description": "Serverless PostgreSQL"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Supabase Memory Provider",
+    "permalink": "/docs/modules/memory/supabase/"
+  },
+  "next": {
+    "title": "Emotion Modules",
+    "permalink": "/docs/modules/emotion/"
+  }
+}

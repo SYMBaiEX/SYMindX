@@ -1,0 +1,32 @@
+{
+  "id": "modules/behavior/index",
+  "title": "Behavior Modules",
+  "description": "Agent behavior patterns",
+  "source": "@site/docs/modules/behavior/index.md",
+  "sourceDirName": "modules/behavior",
+  "slug": "/modules/behavior/",
+  "permalink": "/docs/modules/behavior/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/modules/behavior/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 5,
+  "frontMatter": {
+    "sidebar_position": 5,
+    "sidebar_label": "Behavior Modules",
+    "title": "Behavior Modules",
+    "description": "Agent behavior patterns"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Consciousness Modules",
+    "permalink": "/docs/modules/consciousness/"
+  },
+  "next": {
+    "title": "Tools",
+    "permalink": "/docs/modules/tools/"
+  }
+}

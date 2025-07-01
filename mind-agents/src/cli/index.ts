@@ -244,7 +244,7 @@ class SYMindXCLI {
         name: 'selectedAgent',
         message: 'Select an agent to chat with:',
         choices: agents.map(agent => ({
-          name: `${agent.name} (${agent.id}) - ${agent.status}`,
+          name: `${agent.name} (${agent.id}) - ${agent.status}${agent.status === 'error' ? ' ⚠️  [Check API keys]' : ''}`,
           value: agent.id
         }))
       }

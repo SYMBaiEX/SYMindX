@@ -1,0 +1,31 @@
+{
+  "id": "tutorials/intermediate/index",
+  "title": "Intermediate Tutorials",
+  "description": "Intermediate level tutorials",
+  "source": "@site/docs/tutorials/intermediate/index.md",
+  "sourceDirName": "tutorials/intermediate",
+  "slug": "/tutorials/intermediate/",
+  "permalink": "/docs/tutorials/intermediate/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/tutorials/intermediate/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "Intermediate Tutorials",
+    "description": "Intermediate level tutorials"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Beginner Tutorials",
+    "permalink": "/docs/tutorials/beginner/"
+  },
+  "next": {
+    "title": "Advanced Tutorials",
+    "permalink": "/docs/tutorials/advanced/"
+  }
+}

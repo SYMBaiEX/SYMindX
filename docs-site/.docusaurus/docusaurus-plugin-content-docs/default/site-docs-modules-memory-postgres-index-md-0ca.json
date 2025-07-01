@@ -1,0 +1,31 @@
+{
+  "id": "modules/memory/postgres/index",
+  "title": "PostgreSQL Memory Provider",
+  "description": "Production-ready SQL database",
+  "source": "@site/docs/modules/memory/postgres/index.md",
+  "sourceDirName": "modules/memory/postgres",
+  "slug": "/modules/memory/postgres/",
+  "permalink": "/docs/modules/memory/postgres/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/modules/memory/postgres/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "PostgreSQL Memory Provider",
+    "description": "Production-ready SQL database"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "SQLite Memory Provider",
+    "permalink": "/docs/modules/memory/sqlite/"
+  },
+  "next": {
+    "title": "Supabase Memory Provider",
+    "permalink": "/docs/modules/memory/supabase/"
+  }
+}

@@ -1,102 +1,427 @@
 import type {SidebarsConfig} from '@docusaurus/plugin-content-docs';
 
 /**
- * Creating a sidebar enables you to:
- - create an ordered group of docs
- - render a sidebar for each doc of that group
- - provide next/previous navigation
-
- The sidebars can be generated from the filesystem, or explicitly defined here.
-
- Create as many sidebars as you want.
+ * SYMindX Documentation Structure
+ * 26 Main Categories with Subcategories
  */
 const sidebars: SidebarsConfig = {
-  // Manual sidebar for existing documentation only
-  tutorialSidebar: [
-    'introduction',
+  // Main documentation sidebar
+  docsSidebar: [
     {
       type: 'category',
-      label: 'Getting Started',
+      label: '01. Overview',
+      collapsed: false,
       items: [
-        'getting-started/installation',
-        'getting-started/quick-start',
-        'getting-started/your-first-agent',
+        'overview/index',
+        'overview/introduction/index',
+        'overview/use-cases/index',
+        'overview/roadmap/index',
       ],
     },
     {
       type: 'category',
-      label: 'Architecture',
+      label: '02. Core Concepts',
+      collapsed: true,
       items: [
-        'architecture/overview',
+        'core-concepts/index',
+        'core-concepts/runtime/index',
+        'core-concepts/registry/index',
+        'core-concepts/event-bus/index',
+        'core-concepts/plugin-system/index',
+        'core-concepts/lifecycle/index',
       ],
     },
     {
       type: 'category',
-      label: 'Developer Guides',
+      label: '03. Agents',
+      collapsed: true,
       items: [
-        'guides/plugin-development',
+        'agents/index',
+        'agents/configuration/index',
+        'agents/character-system/index',
+        'agents/multi-agent/index',
+        'agents/lifecycle/index',
+        'agents/communication/index',
+      ],
+    },
+    {
+      type: 'category',
+      label: '04. Modules',
+      collapsed: true,
+      items: [
+        'modules/index',
+        {
+          type: 'category',
+          label: 'Memory',
+          items: [
+            'modules/memory/index',
+            'modules/memory/providers/index',
+            'modules/memory/sqlite/index',
+            'modules/memory/postgres/index',
+            'modules/memory/supabase/index',
+            'modules/memory/neon/index',
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Emotion',
+          items: [
+            'modules/emotion/index',
+            'modules/emotion/emotion-stack/index',
+            'modules/emotion/custom-emotions/index',
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Cognition',
+          items: [
+            'modules/cognition/index',
+            'modules/cognition/htn-planner/index',
+            'modules/cognition/reactive/index',
+            'modules/cognition/hybrid/index',
+          ],
+        },
+        'modules/consciousness/index',
+        'modules/behavior/index',
+        'modules/tools/index',
+      ],
+    },
+    {
+      type: 'category',
+      label: '05. Extensions',
+      collapsed: true,
+      items: [
+        'extensions/index',
+        'extensions/api-server/index',
+        'extensions/telegram/index',
+        'extensions/slack/index',
+        'extensions/discord/index',
+        'extensions/twitter/index',
+        'extensions/web-ui/index',
+        'extensions/cli/index',
+      ],
+    },
+    {
+      type: 'category',
+      label: '06. Portals',
+      collapsed: true,
+      items: [
+        'portals/index',
+        'portals/openai/index',
+        'portals/anthropic/index',
+        'portals/google/index',
+        'portals/groq/index',
+        'portals/xai/index',
+        'portals/ollama/index',
+        'portals/custom/index',
+      ],
+    },
+    {
+      type: 'category',
+      label: '07. Security',
+      collapsed: true,
+      items: [
+        'security/index',
+        'security/authentication/index',
+        'security/authorization/index',
+        'security/rbac/index',
+        'security/compliance/index',
+        'security/encryption/index',
+      ],
+    },
+    {
+      type: 'category',
+      label: '08. Deployment',
+      collapsed: true,
+      items: [
+        'deployment/index',
+        'deployment/docker/index',
+        'deployment/kubernetes/index',
+        'deployment/cloud/index',
+        'deployment/on-premise/index',
+        'deployment/configuration/index',
+      ],
+    },
+    {
+      type: 'category',
+      label: '09. Monitoring',
+      collapsed: true,
+      items: [
+        'monitoring/index',
+        'monitoring/logging/index',
+        'monitoring/metrics/index',
+        'monitoring/tracing/index',
+        'monitoring/alerts/index',
+        'monitoring/dashboards/index',
+      ],
+    },
+    {
+      type: 'category',
+      label: '10. Testing',
+      collapsed: true,
+      items: [
+        'testing/index',
+        'testing/unit-tests/index',
+        'testing/integration-tests/index',
+        'testing/e2e-tests/index',
+        'testing/benchmarks/index',
+        'testing/ci-cd/index',
+      ],
+    },
+    {
+      type: 'category',
+      label: '11. Performance',
+      collapsed: true,
+      items: [
+        'performance/index',
+        'performance/optimization/index',
+        'performance/benchmarks/index',
+        'performance/scaling/index',
+        'performance/caching/index',
+        'performance/profiling/index',
+      ],
+    },
+    {
+      type: 'category',
+      label: '12. Troubleshooting',
+      collapsed: true,
+      items: [
+        'troubleshooting/index',
+        'troubleshooting/common-issues/index',
+        'troubleshooting/debugging/index',
+        'troubleshooting/logs/index',
+        'troubleshooting/faq/index',
+      ],
+    },
+    {
+      type: 'category',
+      label: '13. Migration',
+      collapsed: true,
+      items: [
+        'migration/index',
+        'migration/version-upgrades/index',
+        'migration/data-migration/index',
+        'migration/breaking-changes/index',
+      ],
+    },
+    {
+      type: 'category',
+      label: '14. Integrations',
+      collapsed: true,
+      items: [
+        'integrations/index',
+        'integrations/mcp/index',
+        'integrations/langchain/index',
+        'integrations/llama-index/index',
+        'integrations/vector-stores/index',
+        'integrations/databases/index',
+      ],
+    },
+    {
+      type: 'category',
+      label: '15. Examples',
+      collapsed: true,
+      items: [
+        'examples/index',
+        'examples/basic/index',
+        'examples/advanced/index',
+        'examples/use-cases/index',
+        'examples/templates/index',
+      ],
+    },
+    {
+      type: 'category',
+      label: '16. Tutorials',
+      collapsed: true,
+      items: [
+        'tutorials/index',
+        'tutorials/beginner/index',
+        'tutorials/intermediate/index',
+        'tutorials/advanced/index',
+        'tutorials/video-tutorials/index',
+      ],
+    },
+    {
+      type: 'category',
+      label: '17. Advanced Topics',
+      collapsed: true,
+      items: [
+        'advanced-topics/index',
+        'advanced-topics/autonomous-agents/index',
+        'advanced-topics/multi-modal/index',
+        'advanced-topics/fine-tuning/index',
+        'advanced-topics/custom-portals/index',
+      ],
+    },
+    {
+      type: 'category',
+      label: '18. Architecture',
+      collapsed: true,
+      items: [
+        'architecture/index',
+        'architecture/system-design/index',
+        'architecture/data-flow/index',
+        'architecture/scalability/index',
+        'architecture/patterns/index',
+      ],
+    },
+    {
+      type: 'category',
+      label: '19. Development',
+      collapsed: true,
+      items: [
+        'development/index',
+        'development/contributing/index',
+        'development/code-style/index',
+        'development/plugin-development/index',
+        'development/debugging/index',
+      ],
+    },
+    {
+      type: 'category',
+      label: '20. Community',
+      collapsed: true,
+      items: [
+        'community/index',
+        'community/forums/index',
+        'community/discord/index',
+        'community/contributors/index',
+        'community/showcase/index',
+      ],
+    },
+    {
+      type: 'category',
+      label: '21. Changelog',
+      collapsed: true,
+      items: [
+        'changelog/index',
+        'changelog/releases/index',
+        'changelog/migration-guides/index',
+        'changelog/breaking-changes/index',
+      ],
+    },
+    {
+      type: 'category',
+      label: '22. Roadmap',
+      collapsed: true,
+      items: [
+        'roadmap/index',
+        'roadmap/features/index',
+        'roadmap/timeline/index',
+        'roadmap/vision/index',
+      ],
+    },
+    {
+      type: 'category',
+      label: '23. Support',
+      collapsed: true,
+      items: [
+        'support/index',
+        'support/documentation/index',
+        'support/community/index',
+        'support/enterprise/index',
+        'support/contact/index',
+      ],
+    },
+    {
+      type: 'category',
+      label: '24. Resources',
+      collapsed: true,
+      items: [
+        'resources/index',
+        'resources/glossary/index',
+        'resources/references/index',
+        'resources/tools/index',
+        'resources/learning/index',
       ],
     },
   ],
 
-  // API Reference sidebar - only existing files
+  // API-specific sidebar (can be used for API-only views)
   apiSidebar: [
-    'api/overview',
     {
       type: 'category',
-      label: 'OpenAPI',
+      label: 'API Documentation',
       items: [
-        'api/openapi/overview',
-        'api/openapi/endpoints',
-        'api/openapi/schemas',
-        'api/openapi/examples',
+        'api-reference/index',
+        {
+          type: 'category',
+          label: 'REST API',
+          items: [
+            'api-reference/rest-api/index',
+            'api-reference/rest-api/authentication/index',
+            'api-reference/rest-api/agents/index',
+            'api-reference/rest-api/chat/index',
+            'api-reference/rest-api/extensions/index',
+            'api-reference/rest-api/memory/index',
+            'api-reference/rest-api/events/index',
+            'api-reference/rest-api/health/index',
+          ],
+        },
+        {
+          type: 'category',
+          label: 'WebSocket API',
+          items: [
+            'api-reference/websocket-api/index',
+            'api-reference/websocket-api/connection/index',
+            'api-reference/websocket-api/events/index',
+            'api-reference/websocket-api/commands/index',
+            'api-reference/websocket-api/streaming/index',
+          ],
+        },
+        {
+          type: 'category',
+          label: 'TypeScript SDK',
+          items: [
+            'api-reference/typescript-sdk/index',
+            'api-reference/typescript-sdk/installation/index',
+            'api-reference/typescript-sdk/agents/index',
+            'api-reference/typescript-sdk/extensions/index',
+            'api-reference/typescript-sdk/modules/index',
+            'api-reference/typescript-sdk/runtime/index',
+            'api-reference/typescript-sdk/types/index',
+          ],
+        },
       ],
     },
+  ],
+
+  // Quick Start sidebar with getting started content
+  quickLinksSidebar: [
     {
-      type: 'category',
-      label: 'REST API',
-      items: [
-        'api/rest/authentication',
-        'api/rest/agents',
-        'api/rest/extensions',
-        'api/rest/memory',
-        'api/rest/events',
-        'api/rest/health',
-      ],
+      type: 'doc',
+      id: 'getting-started/index',
+      label: 'Getting Started',
     },
     {
-      type: 'category',
-      label: 'WebSocket API',
-      items: [
-        'api/websocket/connection',
-        'api/websocket/events',
-        'api/websocket/commands',
-        'api/websocket/streaming',
-      ],
+      type: 'doc',
+      id: 'getting-started/prerequisites/index',
+      label: 'Prerequisites',
     },
     {
-      type: 'category',
-      label: 'TypeScript SDK',
-      items: [
-        'api/typescript/installation',
-        'api/typescript/agents',
-        'api/typescript/extensions',
-        'api/typescript/modules',
-        'api/typescript/runtime',
-        'api/typescript/types',
-      ],
+      type: 'doc',
+      id: 'getting-started/installation/index',
+      label: 'Installation',
     },
     {
-      type: 'category',
-      label: 'Plugin API',
-      items: [
-        'api/plugins/extension-interface',
-        'api/plugins/memory-provider',
-        'api/plugins/emotion-module',
-        'api/plugins/cognition-module',
-        'api/plugins/portal-interface',
-        'api/plugins/lifecycle',
-      ],
+      type: 'doc',
+      id: 'getting-started/quick-start/index',
+      label: 'Quick Start',
+    },
+    {
+      type: 'doc',
+      id: 'getting-started/first-agent/index',
+      label: 'Your First Agent',
+    },
+    {
+      type: 'doc',
+      id: 'examples/index',
+      label: 'Examples',
+    },
+    {
+      type: 'doc',
+      id: 'troubleshooting/faq/index',
+      label: 'FAQ',
     },
   ],
 };

@@ -1,0 +1,17 @@
+{
+  "id": "migration/version-upgrades/v1-migration",
+  "title": "SYMindX Migration to Modular Architecture",
+  "description": "Overview",
+  "source": "@site/docs/migration/version-upgrades/v1-migration.md",
+  "sourceDirName": "migration/version-upgrades",
+  "slug": "/migration/version-upgrades/v1-migration",
+  "permalink": "/docs/migration/version-upgrades/v1-migration",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/migration/version-upgrades/v1-migration.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "frontMatter": {}
+}

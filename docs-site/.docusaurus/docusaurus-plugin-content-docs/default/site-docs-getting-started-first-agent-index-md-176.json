@@ -1,0 +1,26 @@
+{
+  "id": "getting-started/first-agent/index",
+  "title": "Your First Agent",
+  "description": "Now that you have SYMindX running, let's create a fully customized AI agent with personality, memory, and unique behaviors. This tutorial will teach you how to craft agents that feel truly alive.",
+  "source": "@site/docs/getting-started/first-agent/index.md",
+  "sourceDirName": "getting-started/first-agent",
+  "slug": "/getting-started/first-agent/",
+  "permalink": "/docs/getting-started/first-agent/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/getting-started/first-agent/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "frontMatter": {},
+  "sidebar": "quickLinksSidebar",
+  "previous": {
+    "title": "Quick Start",
+    "permalink": "/docs/getting-started/quick-start/"
+  },
+  "next": {
+    "title": "Examples",
+    "permalink": "/docs/examples/"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "id": "overview/index",
+  "title": "Overview",
+  "description": "Introduction to SYMindX and its capabilities",
+  "source": "@site/docs/01-overview/index.md",
+  "sourceDirName": "01-overview",
+  "slug": "/overview/",
+  "permalink": "/docs/overview/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/01-overview/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "sidebar_label": "Overview",
+    "title": "Overview",
+    "description": "Introduction to SYMindX and its capabilities"
+  },
+  "sidebar": "docsSidebar",
+  "next": {
+    "title": "Introduction to SYMindX",
+    "permalink": "/docs/overview/introduction/"
+  }
+}

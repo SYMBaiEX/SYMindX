@@ -1,0 +1,26 @@
+{
+  "id": "api-reference/typescript-sdk/extensions/index",
+  "title": "Extensions Typescript API",
+  "description": "This is the API documentation for extensions in the typescript category.",
+  "source": "@site/docs/api-reference/typescript-sdk/extensions/index.md",
+  "sourceDirName": "api-reference/typescript-sdk/extensions",
+  "slug": "/api-reference/typescript-sdk/extensions/",
+  "permalink": "/docs/api-reference/typescript-sdk/extensions/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/api-reference/typescript-sdk/extensions/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "frontMatter": {},
+  "sidebar": "apiSidebar",
+  "previous": {
+    "title": "Agents Typescript API",
+    "permalink": "/docs/api-reference/typescript-sdk/agents/"
+  },
+  "next": {
+    "title": "Modules Typescript API",
+    "permalink": "/docs/api-reference/typescript-sdk/modules/"
+  }
+}

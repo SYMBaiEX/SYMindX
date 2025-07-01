@@ -44,7 +44,7 @@ function App() {
   useEffect(() => {
     const fetchAgents = async () => {
       try {
-        const response = await fetch('http://localhost:3000/status')
+        const response = await fetch('http://localhost:3001/status')
         if (response.ok) {
           const data = await response.json()
           if (data.success && data.agent) {
@@ -81,7 +81,7 @@ function App() {
 
   // WebSocket connection for real-time updates
   useEffect(() => {
-    const ws = new WebSocket('ws://localhost:3000/ws')
+    const ws = new WebSocket('ws://localhost:3001/ws')
     
     ws.onopen = () => {
       setWsConnected(true)

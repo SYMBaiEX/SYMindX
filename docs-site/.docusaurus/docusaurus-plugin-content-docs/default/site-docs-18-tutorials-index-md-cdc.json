@@ -1,0 +1,32 @@
+{
+  "id": "tutorials/index",
+  "title": "Tutorials",
+  "description": "Step-by-step tutorials",
+  "source": "@site/docs/18-tutorials/index.md",
+  "sourceDirName": "18-tutorials",
+  "slug": "/tutorials/",
+  "permalink": "/docs/tutorials/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/18-tutorials/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 18,
+  "frontMatter": {
+    "sidebar_position": 18,
+    "sidebar_label": "Tutorials",
+    "title": "Tutorials",
+    "description": "Step-by-step tutorials"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Templates",
+    "permalink": "/docs/examples/templates/"
+  },
+  "next": {
+    "title": "Beginner Tutorials",
+    "permalink": "/docs/tutorials/beginner/"
+  }
+}

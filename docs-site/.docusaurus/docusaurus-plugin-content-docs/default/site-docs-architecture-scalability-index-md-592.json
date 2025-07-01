@@ -1,0 +1,31 @@
+{
+  "id": "architecture/scalability/index",
+  "title": "Scalability",
+  "description": "Scalability architecture",
+  "source": "@site/docs/architecture/scalability/index.md",
+  "sourceDirName": "architecture/scalability",
+  "slug": "/architecture/scalability/",
+  "permalink": "/docs/architecture/scalability/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/architecture/scalability/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "Scalability",
+    "description": "Scalability architecture"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Data Flow",
+    "permalink": "/docs/architecture/data-flow/"
+  },
+  "next": {
+    "title": "Patterns",
+    "permalink": "/docs/architecture/patterns/"
+  }
+}

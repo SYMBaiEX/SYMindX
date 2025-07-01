@@ -1,0 +1,32 @@
+{
+  "id": "overview/use-cases/index",
+  "title": "Use Cases",
+  "description": "Real-world applications of SYMindX",
+  "source": "@site/docs/01-overview/use-cases/index.md",
+  "sourceDirName": "01-overview/use-cases",
+  "slug": "/overview/use-cases/",
+  "permalink": "/docs/overview/use-cases/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/01-overview/use-cases/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 2,
+  "frontMatter": {
+    "sidebar_position": 2,
+    "sidebar_label": "Use Cases",
+    "title": "Use Cases",
+    "description": "Real-world applications of SYMindX"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Introduction to SYMindX",
+    "permalink": "/docs/overview/introduction/"
+  },
+  "next": {
+    "title": "Product Roadmap",
+    "permalink": "/docs/overview/roadmap/"
+  }
+}

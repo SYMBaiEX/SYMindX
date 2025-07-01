@@ -1,0 +1,17 @@
+{
+  "id": "modules/memory/providers/api",
+  "title": "Memory Provider Plugins API",
+  "description": "The Memory Provider API enables SYMindX agents to store, retrieve, and manage memories across different database backends with support for semantic search, chat persistence, and memory consolidation.",
+  "source": "@site/docs/06-modules/memory/providers/api.md",
+  "sourceDirName": "06-modules/memory/providers",
+  "slug": "/modules/memory/providers/api",
+  "permalink": "/docs/modules/memory/providers/api",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/06-modules/memory/providers/api.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "frontMatter": {}
+}

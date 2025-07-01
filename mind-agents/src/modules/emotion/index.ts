@@ -5,8 +5,12 @@
  * for agents to express and process emotions.
  */
 
-// Simple emotion module implementation for emergency build
-class SimpleEmotionModule {
+import { RuneEmotionStack } from './rune-emotion-stack.js';
+import { EmotionModule } from '../../types/emotion.js';
+import { EmotionConfig } from '../../types/agent.js';
+
+// Simple emotion module implementation for basic emotions
+class SimpleEmotionModule implements EmotionModule {
   constructor(public type: string, public config?: any) {}
   
   current = 'neutral'
@@ -14,35 +18,34 @@ class SimpleEmotionModule {
   triggers: string[] = []
   history: any[] = []
   
-  async update(agent: any, events: any[]): Promise<void> {
-    console.log(`💭 ${this.type} processing ${events.length} emotional events`);
+  processEvent(eventType: string, context?: any): any {
+    console.log(`💭 ${this.type} processing event: ${eventType}`);
     // Simple emotion logic
-    if (events.some(e => e.type === 'positive')) {
+    if (eventType.includes('positive') || context?.positive) {
       this.current = 'happy';
       this.intensity = Math.min(1, this.intensity + 0.1);
-    } else if (events.some(e => e.type === 'negative')) {
+    } else if (eventType.includes('negative') || context?.negative) {
       this.current = 'sad';
       this.intensity = Math.min(1, this.intensity + 0.1);
     }
+    return this.getCurrentState();
   }
   
-  async getState(): Promise<any> {
+  getCurrentState(): any {
     return {
       current: this.current,
       intensity: this.intensity,
       triggers: this.triggers,
-      history: this.history,
+      history: this.history.slice(-10),
       timestamp: new Date()
     };
   }
   
-  async setState(state: any): Promise<void> {
-    this.current = state.current || 'neutral';
-    this.intensity = state.intensity || 0.5;
+  getCurrentEmotion(): string {
+    return this.current;
   }
   
-  // Method expected by runtime for setting emotions
-  setEmotion(emotion: string, intensity: number, triggers: string[] = []): void {
+  setEmotion(emotion: string, intensity: number, triggers: string[] = []): any {
     this.current = emotion;
     this.intensity = intensity;
     this.triggers = triggers;
@@ -50,17 +53,66 @@ class SimpleEmotionModule {
       emotion,
       intensity,
       triggers,
-      timestamp: new Date()
+      timestamp: new Date(),
+      duration: 0
     });
+    return this.getCurrentState();
+  }
+  
+  getHistory(limit?: number): any[] {
+    const history = [...this.history].reverse();
+    return limit ? history.slice(0, limit) : history;
+  }
+  
+  reset(): any {
+    this.current = 'neutral';
+    this.intensity = 0;
+    this.triggers = [];
+    this.history = [];
+    return this.getCurrentState();
   }
 }
 
 /**
  * Create an emotion module based on configuration
  */
-export function createEmotionModule(type: string, config: any) {
+export function createEmotionModule(type: string, config: any): EmotionModule {
   console.log(`💭 Creating emotion module: ${type}`);
-  return new SimpleEmotionModule(type, config);
+  
+  try {
+    switch (type) {
+      case 'rune_emotion_stack':
+        // Create proper emotion config with defaults
+        const emotionConfig: EmotionConfig = {
+          sensitivity: config?.intensity_multiplier || 0.8,
+          transitionSpeed: config?.transition_speed || 0.5,
+          decayRate: config?.decay_rate || 0.1,
+          emotionalMemory: config?.emotional_memory ?? true,
+          empathyLevel: config?.empathy_level || 0.7,
+          emotionalGrowth: config?.emotional_growth ?? true,
+          ...config
+        };
+        
+        console.log(`✅ Creating RuneEmotionStack with config:`, emotionConfig);
+        return new RuneEmotionStack(emotionConfig);
+        
+      case 'basic_emotions':
+        console.log(`✅ Creating SimpleEmotionModule for basic emotions`);
+        return new SimpleEmotionModule(type, config);
+        
+      case 'complex_emotions':
+        console.log(`✅ Creating SimpleEmotionModule for complex emotions`);
+        return new SimpleEmotionModule(type, config);
+        
+      default:
+        console.warn(`⚠️ Unknown emotion module type: ${type}, falling back to SimpleEmotionModule`);
+        return new SimpleEmotionModule(type, config);
+    }
+  } catch (error) {
+    console.error(`❌ Failed to create emotion module ${type}:`, error);
+    console.log(`🔄 Falling back to SimpleEmotionModule`);
+    return new SimpleEmotionModule(type, config);
+  }
 }
 
 /**
@@ -70,13 +122,17 @@ export function getEmotionModuleTypes(): string[] {
   return ['rune_emotion_stack', 'basic_emotions', 'complex_emotions'];
 }
 
-export const RuneEmotionStack = SimpleEmotionModule;
+// Export the actual implementation
+export { RuneEmotionStack } from './rune-emotion-stack.js';
 
 // Registration function
 export function registerEmotionModules(registry: any) {
   console.log('💭 Registering emotion modules...');
-  registry.registerEmotionModule('rune_emotion_stack', new SimpleEmotionModule('rune_emotion_stack'));
-  registry.registerEmotionModule('basic_emotions', new SimpleEmotionModule('basic_emotions'));
-  registry.registerEmotionModule('complex_emotions', new SimpleEmotionModule('complex_emotions'));
-  console.log('✅ Emotion modules registered: rune_emotion_stack, basic_emotions, complex_emotions');
+  
+  // Register factory functions instead of creating instances
+  registry.registerEmotionFactory('rune_emotion_stack', (config: any) => createEmotionModule('rune_emotion_stack', config));
+  registry.registerEmotionFactory('basic_emotions', (config: any) => createEmotionModule('basic_emotions', config));
+  registry.registerEmotionFactory('complex_emotions', (config: any) => createEmotionModule('complex_emotions', config));
+  
+  console.log('✅ Emotion module factories registered: rune_emotion_stack, basic_emotions, complex_emotions');
 }

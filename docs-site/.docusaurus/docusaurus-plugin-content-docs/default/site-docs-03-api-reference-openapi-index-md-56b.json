@@ -1,0 +1,23 @@
+{
+  "id": "api-reference/openapi/index",
+  "title": "OpenAPI",
+  "description": "OpenAPI specification",
+  "source": "@site/docs/03-api-reference/openapi/index.md",
+  "sourceDirName": "03-api-reference/openapi",
+  "slug": "/api-reference/openapi/",
+  "permalink": "/docs/api-reference/openapi/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/03-api-reference/openapi/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 4,
+  "frontMatter": {
+    "sidebar_position": 4,
+    "sidebar_label": "OpenAPI",
+    "title": "OpenAPI",
+    "description": "OpenAPI specification"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "id": "testing/ci-cd/index",
+  "title": "CI/CD",
+  "description": "Continuous integration and deployment",
+  "source": "@site/docs/testing/ci-cd/index.md",
+  "sourceDirName": "testing/ci-cd",
+  "slug": "/testing/ci-cd/",
+  "permalink": "/docs/testing/ci-cd/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/testing/ci-cd/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "CI/CD",
+    "description": "Continuous integration and deployment"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Benchmarks",
+    "permalink": "/docs/testing/benchmarks/"
+  },
+  "next": {
+    "title": "Performance",
+    "permalink": "/docs/performance/"
+  }
+}

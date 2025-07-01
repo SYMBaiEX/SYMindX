@@ -95,6 +95,23 @@ export class SYMindXRuntime implements AgentRuntime {
   async initialize(): Promise<void> {
     console.log('🔄 Initializing SYMindX Runtime...')
     
+    // Load environment variables from .env file if it exists
+    try {
+      const { configDotenv } = await import('dotenv')
+      const path = await import('path')
+      
+      // Get the root directory path
+      const __dirname = path.dirname(new URL(import.meta.url).pathname)
+      const rootDir = path.resolve(__dirname, '../../..')
+      const envPath = path.join(rootDir, '.env')
+      
+      // Try to load .env file
+      configDotenv({ path: envPath })
+      console.log('🔧 Environment variables loaded from .env file')
+    } catch (error) {
+      console.log('⚠️ No .env file found or dotenv not available, using system environment variables')
+    }
+    
     // Try to load configuration from config/runtime.json
     try {
       const fs = await import('fs/promises')
@@ -114,7 +131,7 @@ export class SYMindXRuntime implements AgentRuntime {
         const configData = await fs.readFile(configPath, 'utf-8')
         const fileConfig = JSON.parse(configData) as Partial<RuntimeConfig>
         
-        // Merge with default config
+        // Merge with default config and load API keys from environment
         this.config = {
           ...this.config,
           ...fileConfig,
@@ -127,10 +144,19 @@ export class SYMindXRuntime implements AgentRuntime {
             ...fileConfig.extensions
           },
           portals: {
-            autoLoad: this.config.portals?.autoLoad ?? true,
-            paths: this.config.portals?.paths ?? ['./portals'],
-            ...fileConfig.portals,
+            // Ensure boolean values for autoLoad and proper array for paths
+            autoLoad: fileConfig.portals?.autoLoad ?? this.config.portals?.autoLoad ?? true,
+            paths: fileConfig.portals?.paths ?? this.config.portals?.paths ?? ['./portals'],
             apiKeys: {
+              // Default API keys from environment variables
+              openai: process.env.OPENAI_API_KEY || '',
+              anthropic: process.env.ANTHROPIC_API_KEY || '',
+              groq: process.env.GROQ_API_KEY || '',
+              xai: process.env.XAI_API_KEY || '',
+              google: process.env.GOOGLE_API_KEY || '',
+              'openrouter': process.env.OPENROUTER_API_KEY || '',
+              'kluster.ai': process.env.KLUSTER_AI_API_KEY || '',
+              // Override with any explicit config values
               ...this.config.portals?.apiKeys,
               ...fileConfig.portals?.apiKeys
             }
@@ -140,7 +166,27 @@ export class SYMindXRuntime implements AgentRuntime {
         console.log('✅ Configuration loaded successfully')
       } catch (err) {
         if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
-          console.log('⚠️ No runtime.json found, using default configuration')
+          console.log('⚠️ No runtime.json found, using default configuration with environment variables')
+          // Still load API keys from environment even without config file
+          this.config = {
+            ...this.config,
+            portals: {
+              autoLoad: this.config.portals?.autoLoad ?? true,
+              paths: this.config.portals?.paths ?? ['./portals'],
+              apiKeys: {
+                // Default API keys from environment variables
+                openai: process.env.OPENAI_API_KEY || '',
+                anthropic: process.env.ANTHROPIC_API_KEY || '',
+                groq: process.env.GROQ_API_KEY || '',
+                xai: process.env.XAI_API_KEY || '',
+                google: process.env.GOOGLE_API_KEY || '',
+                'openrouter': process.env.OPENROUTER_API_KEY || '',
+                'kluster.ai': process.env.KLUSTER_AI_API_KEY || '',
+                // Override with any existing config values
+                ...this.config.portals?.apiKeys
+              }
+            }
+          }
         } else {
           throw err
         }
@@ -559,6 +605,7 @@ export class SYMindXRuntime implements AgentRuntime {
       portal: primaryPortal, // Primary portal for backward compatibility
       portals: portals, // All available portals
       config: agentConfig,
+      characterConfig: config, // Preserve original character configuration
       lastUpdate: new Date()
     }
     

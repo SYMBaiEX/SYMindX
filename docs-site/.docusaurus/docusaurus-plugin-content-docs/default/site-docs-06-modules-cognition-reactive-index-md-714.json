@@ -1,0 +1,31 @@
+{
+  "id": "modules/cognition/reactive/index",
+  "title": "Reactive System",
+  "description": "Stimulus-response cognition",
+  "source": "@site/docs/06-modules/cognition/reactive/index.md",
+  "sourceDirName": "06-modules/cognition/reactive",
+  "slug": "/modules/cognition/reactive/",
+  "permalink": "/docs/modules/cognition/reactive/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/06-modules/cognition/reactive/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "Reactive System",
+    "description": "Stimulus-response cognition"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "HTN Planner",
+    "permalink": "/docs/modules/cognition/htn-planner/"
+  },
+  "next": {
+    "title": "Hybrid Cognition",
+    "permalink": "/docs/modules/cognition/hybrid/"
+  }
+}

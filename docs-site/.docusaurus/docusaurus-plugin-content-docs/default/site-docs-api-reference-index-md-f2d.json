@@ -1,0 +1,22 @@
+{
+  "id": "api-reference/index",
+  "title": "Overview Api API",
+  "description": "This is the API documentation for overview in the api category.",
+  "source": "@site/docs/api-reference/index.md",
+  "sourceDirName": "api-reference",
+  "slug": "/api-reference/",
+  "permalink": "/docs/api-reference/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/api-reference/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "frontMatter": {},
+  "sidebar": "apiSidebar",
+  "next": {
+    "title": "REST API",
+    "permalink": "/docs/api-reference/rest-api/"
+  }
+}

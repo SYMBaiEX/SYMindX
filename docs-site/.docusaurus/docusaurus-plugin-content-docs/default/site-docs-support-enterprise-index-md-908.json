@@ -1,0 +1,31 @@
+{
+  "id": "support/enterprise/index",
+  "title": "Enterprise Support",
+  "description": "Enterprise support options",
+  "source": "@site/docs/support/enterprise/index.md",
+  "sourceDirName": "support/enterprise",
+  "slug": "/support/enterprise/",
+  "permalink": "/docs/support/enterprise/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/support/enterprise/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "Enterprise Support",
+    "description": "Enterprise support options"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Community Support",
+    "permalink": "/docs/support/community/"
+  },
+  "next": {
+    "title": "Contact",
+    "permalink": "/docs/support/contact/"
+  }
+}

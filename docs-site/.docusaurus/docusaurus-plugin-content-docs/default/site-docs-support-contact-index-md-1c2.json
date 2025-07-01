@@ -1,0 +1,31 @@
+{
+  "id": "support/contact/index",
+  "title": "Contact",
+  "description": "Contact information",
+  "source": "@site/docs/support/contact/index.md",
+  "sourceDirName": "support/contact",
+  "slug": "/support/contact/",
+  "permalink": "/docs/support/contact/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/support/contact/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "Contact",
+    "description": "Contact information"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Enterprise Support",
+    "permalink": "/docs/support/enterprise/"
+  },
+  "next": {
+    "title": "Resources",
+    "permalink": "/docs/resources/"
+  }
+}

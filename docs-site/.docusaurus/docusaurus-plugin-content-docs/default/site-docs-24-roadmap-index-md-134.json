@@ -1,0 +1,32 @@
+{
+  "id": "roadmap/index",
+  "title": "Roadmap",
+  "description": "Future plans and feature roadmap",
+  "source": "@site/docs/24-roadmap/index.md",
+  "sourceDirName": "24-roadmap",
+  "slug": "/roadmap/",
+  "permalink": "/docs/roadmap/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/24-roadmap/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 24,
+  "frontMatter": {
+    "sidebar_position": 24,
+    "sidebar_label": "Roadmap",
+    "title": "Roadmap",
+    "description": "Future plans and feature roadmap"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Breaking Changes",
+    "permalink": "/docs/changelog/breaking-changes/"
+  },
+  "next": {
+    "title": "Features",
+    "permalink": "/docs/roadmap/features/"
+  }
+}

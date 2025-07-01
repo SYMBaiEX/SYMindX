@@ -1,0 +1,31 @@
+{
+  "id": "performance/profiling/index",
+  "title": "Profiling",
+  "description": "Performance profiling",
+  "source": "@site/docs/performance/profiling/index.md",
+  "sourceDirName": "performance/profiling",
+  "slug": "/performance/profiling/",
+  "permalink": "/docs/performance/profiling/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/performance/profiling/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "Profiling",
+    "description": "Performance profiling"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Caching",
+    "permalink": "/docs/performance/caching/"
+  },
+  "next": {
+    "title": "Troubleshooting",
+    "permalink": "/docs/troubleshooting/"
+  }
+}

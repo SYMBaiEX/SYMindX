@@ -1,0 +1,32 @@
+{
+  "id": "security/index",
+  "title": "Security",
+  "description": "Authentication, authorization, and compliance",
+  "source": "@site/docs/09-security/index.md",
+  "sourceDirName": "09-security",
+  "slug": "/security/",
+  "permalink": "/docs/security/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/09-security/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 9,
+  "frontMatter": {
+    "sidebar_position": 9,
+    "sidebar_label": "Security",
+    "title": "Security",
+    "description": "Authentication, authorization, and compliance"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Custom Portals",
+    "permalink": "/docs/portals/custom/"
+  },
+  "next": {
+    "title": "Authentication",
+    "permalink": "/docs/security/authentication/"
+  }
+}

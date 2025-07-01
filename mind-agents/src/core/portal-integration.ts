@@ -13,7 +13,7 @@ export class PortalIntegration {
    * Generate an AI response using the agent's portal
    * @param agent The agent with portal
    * @param prompt The prompt or message to respond to
-   * @param context Additional context for the AI
+   * @param context Additional context for the AI (includes emotional and cognitive context)
    * @param criteria Optional selection criteria for choosing portal
    * @returns The AI-generated response
    */
@@ -41,14 +41,53 @@ export class PortalIntegration {
       // Build conversation context
       const messages: ChatMessage[] = []
       
-      // Add system message with agent personality
+      // Add system message with agent personality and enhanced context
       if (agent.config?.core) {
+        let systemContent = `You are ${agent.name}${agent.config.lore?.origin ? `, ${agent.config.lore.origin}` : ''}. 
+Your personality traits: ${agent.config.core.personality?.join(', ') || 'helpful, friendly'}.`
+
+        // Add communication style and guidelines from character config
+        if (agent.characterConfig?.communication) {
+          const comm = agent.characterConfig.communication
+          if (comm.style) {
+            systemContent += `\nCommunication style: ${comm.style}.`
+          }
+          if (comm.tone) {
+            systemContent += `\nTone: ${comm.tone}.`
+          }
+          if (comm.verbosity) {
+            systemContent += `\nResponse length: ${comm.verbosity}.`
+          }
+          
+          // Add communication guidelines for natural conversation
+          if (comm.guidelines && Array.isArray(comm.guidelines)) {
+            systemContent += `\n\nCommunication guidelines:`
+            comm.guidelines.forEach((guideline: string) => {
+              systemContent += `\n- ${guideline}`
+            })
+          }
+        }
+
+        // Add enhanced system prompt that includes emotional and cognitive context
+        if (context?.systemPrompt) {
+          systemContent += `\n\n${context.systemPrompt}`
+        }
+
+        // Add cognitive insights if available
+        if (context && context.cognitiveContext && context.cognitiveContext.thoughts && context.cognitiveContext.thoughts.length > 0) {
+          systemContent += `\n\nYour recent cognitive analysis:`
+          systemContent += `\n- Thoughts: ${context.cognitiveContext.thoughts.join(', ')}`
+          
+          if (context.cognitiveContext.cognitiveConfidence !== undefined) {
+            systemContent += `\n- Analysis confidence: ${(context.cognitiveContext.cognitiveConfidence * 100).toFixed(0)}%`
+          }
+          
+          systemContent += `\nIncorporate these insights naturally into your response.`
+        }
+
         messages.push({
           role: MessageRole.SYSTEM,
-          content: `You are ${agent.name}, ${agent.config.lore?.origin || 'an AI agent'}. 
-Your personality traits: ${agent.config.core.personality?.join(', ') || 'helpful, friendly'}.
-Your communication style: ${agent.config.core.tone || 'neutral'}.
-${context?.systemPrompt || ''}`
+          content: systemContent
         })
       }
 
@@ -71,7 +110,7 @@ ${context?.systemPrompt || ''}`
       // Generate response using the portal
       const result = await chatPortal.generateChat(messages, {
         maxTokens: 2048,
-        temperature: 0.6
+        temperature: 0.4
       })
 
       // Handle different result formats from different portals
@@ -102,13 +141,13 @@ ${context?.systemPrompt || ''}`
     const lowerPrompt = prompt.toLowerCase()
     
     if (lowerPrompt.includes('hello') || lowerPrompt.includes('hi')) {
-      return "Hello! I'm currently running in limited mode without AI capabilities."
+      return "Hey! I'm having some technical issues right now."
     } else if (lowerPrompt.includes('how are you')) {
-      return "I'm functioning, though without my full AI capabilities at the moment."
+      return "I'm here, but having some connection problems at the moment."
     } else if (lowerPrompt.includes('help')) {
-      return "I'd like to help, but I'm currently operating without AI generation. Please try again later."
+      return "I'd like to help, but I'm having technical difficulties. Try again in a bit?"
     } else {
-      return "I understand you're trying to communicate, but I'm currently unable to generate proper responses without my AI portal."
+      return "Sorry, I'm having some technical issues right now. Give me a moment to sort this out."
     }
   }
 
@@ -130,7 +169,7 @@ ${context?.systemPrompt || ''}`
 What are your current thoughts? Respond with 2-3 brief thoughts.`
 
     const response = await this.generateResponse(agent, prompt, {
-      systemPrompt: "Express your thoughts naturally based on your personality."
+      systemPrompt: "Think naturally about the situation. Express your thoughts as if talking to yourself."
     })
 
     // Split response into individual thoughts

@@ -1,0 +1,31 @@
+{
+  "id": "core-concepts/event-bus/index",
+  "title": "Event Bus",
+  "description": "Event-driven communication system",
+  "source": "@site/docs/core-concepts/event-bus/index.md",
+  "sourceDirName": "core-concepts/event-bus",
+  "slug": "/core-concepts/event-bus/",
+  "permalink": "/docs/core-concepts/event-bus/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/core-concepts/event-bus/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "Event Bus",
+    "description": "Event-driven communication system"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Registry",
+    "permalink": "/docs/core-concepts/registry/"
+  },
+  "next": {
+    "title": "Plugin System",
+    "permalink": "/docs/core-concepts/plugin-system/"
+  }
+}

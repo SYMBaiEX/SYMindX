@@ -1,0 +1,28 @@
+{
+  "id": "getting-started/index",
+  "title": "Getting Started",
+  "description": "Quick start guide and installation instructions",
+  "source": "@site/docs/getting-started/index.md",
+  "sourceDirName": "getting-started",
+  "slug": "/getting-started/",
+  "permalink": "/docs/getting-started/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/getting-started/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 2,
+  "frontMatter": {
+    "sidebar_position": 2,
+    "sidebar_label": "Getting Started",
+    "title": "Getting Started",
+    "description": "Quick start guide and installation instructions"
+  },
+  "sidebar": "quickLinksSidebar",
+  "next": {
+    "title": "Prerequisites",
+    "permalink": "/docs/getting-started/prerequisites/"
+  }
+}

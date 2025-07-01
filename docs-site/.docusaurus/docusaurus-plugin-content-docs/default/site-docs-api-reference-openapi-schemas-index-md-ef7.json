@@ -1,0 +1,17 @@
+{
+  "id": "api-reference/openapi/schemas/index",
+  "title": "Schemas Openapi API",
+  "description": "This is the API documentation for schemas in the openapi category.",
+  "source": "@site/docs/api-reference/openapi/schemas/index.md",
+  "sourceDirName": "api-reference/openapi/schemas",
+  "slug": "/api-reference/openapi/schemas/",
+  "permalink": "/docs/api-reference/openapi/schemas/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/api-reference/openapi/schemas/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "frontMatter": {}
+}

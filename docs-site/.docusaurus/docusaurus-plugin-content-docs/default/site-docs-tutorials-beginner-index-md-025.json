@@ -1,0 +1,31 @@
+{
+  "id": "tutorials/beginner/index",
+  "title": "Beginner Tutorials",
+  "description": "Getting started tutorials",
+  "source": "@site/docs/tutorials/beginner/index.md",
+  "sourceDirName": "tutorials/beginner",
+  "slug": "/tutorials/beginner/",
+  "permalink": "/docs/tutorials/beginner/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/tutorials/beginner/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "Beginner Tutorials",
+    "description": "Getting started tutorials"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Tutorials",
+    "permalink": "/docs/tutorials/"
+  },
+  "next": {
+    "title": "Intermediate Tutorials",
+    "permalink": "/docs/tutorials/intermediate/"
+  }
+}

@@ -101,6 +101,7 @@ export interface CommunicationConfig {
   emotional_expression: boolean
   languages: string[]
   preferred_interactions: string[]
+  guidelines?: string[]
 }
 
 export interface CapabilitiesConfig {

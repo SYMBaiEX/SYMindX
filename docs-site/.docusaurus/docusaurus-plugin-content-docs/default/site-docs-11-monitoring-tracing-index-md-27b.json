@@ -1,0 +1,31 @@
+{
+  "id": "monitoring/tracing/index",
+  "title": "Tracing",
+  "description": "Distributed tracing",
+  "source": "@site/docs/11-monitoring/tracing/index.md",
+  "sourceDirName": "11-monitoring/tracing",
+  "slug": "/monitoring/tracing/",
+  "permalink": "/docs/monitoring/tracing/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/11-monitoring/tracing/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "Tracing",
+    "description": "Distributed tracing"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Metrics",
+    "permalink": "/docs/monitoring/metrics/"
+  },
+  "next": {
+    "title": "Alerts",
+    "permalink": "/docs/monitoring/alerts/"
+  }
+}

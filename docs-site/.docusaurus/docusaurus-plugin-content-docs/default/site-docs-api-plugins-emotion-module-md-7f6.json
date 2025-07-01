@@ -11,12 +11,12 @@
   "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/api/plugins/emotion-module.md",
   "tags": [],
   "version": "current",
-  "lastUpdatedBy": "SYMBaiEX",
-  "lastUpdatedAt": 1751234689000,
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
   "frontMatter": {},
   "sidebar": "apiSidebar",
   "previous": {
-    "title": "Memory-provider Plugins API",
+    "title": "Memory Provider Plugins API",
     "permalink": "/docs/api/plugins/memory-provider"
   },
   "next": {

@@ -1,0 +1,32 @@
+{
+  "id": "development/index",
+  "title": "Development",
+  "description": "Development guidelines and best practices",
+  "source": "@site/docs/21-development/index.md",
+  "sourceDirName": "21-development",
+  "slug": "/development/",
+  "permalink": "/docs/development/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/21-development/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 21,
+  "frontMatter": {
+    "sidebar_position": 21,
+    "sidebar_label": "Development",
+    "title": "Development",
+    "description": "Development guidelines and best practices"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Patterns",
+    "permalink": "/docs/architecture/patterns/"
+  },
+  "next": {
+    "title": "Contributing",
+    "permalink": "/docs/development/contributing/"
+  }
+}

@@ -9,6 +9,7 @@ const sidebarApi: SidebarsConfig = {
       items: [
         'rest/authentication',
         'rest/agents',
+        'rest/chat',
         'rest/extensions',
         'rest/memory',
         'rest/events',

@@ -1,0 +1,31 @@
+{
+  "id": "examples/advanced/index",
+  "title": "Advanced Examples",
+  "description": "Complex implementations",
+  "source": "@site/docs/examples/advanced/index.md",
+  "sourceDirName": "examples/advanced",
+  "slug": "/examples/advanced/",
+  "permalink": "/docs/examples/advanced/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/examples/advanced/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "Advanced Examples",
+    "description": "Complex implementations"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Basic Examples",
+    "permalink": "/docs/examples/basic/"
+  },
+  "next": {
+    "title": "Use Case Examples",
+    "permalink": "/docs/examples/use-cases/"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "id": "modules/memory/sqlite/index",
+  "title": "SQLite Memory Provider",
+  "description": "Local file-based memory storage",
+  "source": "@site/docs/06-modules/memory/sqlite/index.md",
+  "sourceDirName": "06-modules/memory/sqlite",
+  "slug": "/modules/memory/sqlite/",
+  "permalink": "/docs/modules/memory/sqlite/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/06-modules/memory/sqlite/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "SQLite Memory Provider",
+    "description": "Local file-based memory storage"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Memory Providers",
+    "permalink": "/docs/modules/memory/providers/"
+  },
+  "next": {
+    "title": "PostgreSQL Memory Provider",
+    "permalink": "/docs/modules/memory/postgres/"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "id": "security/encryption/index",
+  "title": "Encryption",
+  "description": "Data protection and encryption",
+  "source": "@site/docs/security/encryption/index.md",
+  "sourceDirName": "security/encryption",
+  "slug": "/security/encryption/",
+  "permalink": "/docs/security/encryption/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/security/encryption/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "Encryption",
+    "description": "Data protection and encryption"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Compliance",
+    "permalink": "/docs/security/compliance/"
+  },
+  "next": {
+    "title": "Deployment",
+    "permalink": "/docs/deployment/"
+  }
+}

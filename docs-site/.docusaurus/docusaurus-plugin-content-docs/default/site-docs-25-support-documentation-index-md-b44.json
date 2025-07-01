@@ -1,0 +1,31 @@
+{
+  "id": "support/documentation/index",
+  "title": "Documentation",
+  "description": "Documentation support",
+  "source": "@site/docs/25-support/documentation/index.md",
+  "sourceDirName": "25-support/documentation",
+  "slug": "/support/documentation/",
+  "permalink": "/docs/support/documentation/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/25-support/documentation/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "Documentation",
+    "description": "Documentation support"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Support",
+    "permalink": "/docs/support/"
+  },
+  "next": {
+    "title": "Community Support",
+    "permalink": "/docs/support/community/"
+  }
+}

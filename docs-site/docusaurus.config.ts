@@ -82,21 +82,22 @@ const config: Config = {
       items: [
         {
           type: 'docSidebar',
-          sidebarId: 'tutorialSidebar',
+          sidebarId: 'docsSidebar',
           position: 'left',
           label: 'Documentation',
         },
-        // Temporarily removed API Reference and Examples due to MDX compilation issues
-        // {
-        //   to: '/docs/api/',
-        //   label: 'API Reference',
-        //   position: 'left',
-        // },
-        // {
-        //   to: '/docs/examples/',
-        //   label: 'Examples',
-        //   position: 'left',
-        // },
+        {
+          type: 'docSidebar',
+          sidebarId: 'quickLinksSidebar',
+          position: 'left',
+          label: 'Quick Start',
+        },
+        {
+          type: 'docSidebar',
+          sidebarId: 'apiSidebar',
+          position: 'left',
+          label: 'API Reference',
+        },
         {
           to: '/blog',
           label: 'Blog',
@@ -121,21 +122,24 @@ const config: Config = {
           items: [
             {
               label: 'Getting Started',
-              to: '/docs/getting-started',
+              to: '/docs/getting-started/',
+            },
+            {
+              label: 'API Reference',
+              to: '/docs/api-reference/',
             },
             {
               label: 'Architecture',
               to: '/docs/architecture/',
             },
-            // Temporarily removed API Reference and Examples links
-            // {
-            //   label: 'API Reference',
-            //   to: '/docs/api/',
-            // },
-            // {
-            //   label: 'Examples',
-            //   to: '/docs/examples/',
-            // },
+            {
+              label: 'Examples',
+              to: '/docs/examples/',
+            },
+            {
+              label: 'Tutorials',
+              to: '/docs/tutorials/',
+            },
           ],
         },
         {
@@ -168,7 +172,11 @@ const config: Config = {
             },
             {
               label: 'Changelog',
-              href: 'https://github.com/symindx/symindx/releases',
+              to: '/docs/changelog/',
+            },
+            {
+              label: 'Roadmap',
+              to: '/docs/roadmap/',
             },
           ],
         },

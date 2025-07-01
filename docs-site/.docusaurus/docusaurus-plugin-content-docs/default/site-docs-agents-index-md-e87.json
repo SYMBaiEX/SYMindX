@@ -1,0 +1,32 @@
+{
+  "id": "agents/index",
+  "title": "Agents",
+  "description": "Creating and managing AI agents",
+  "source": "@site/docs/agents/index.md",
+  "sourceDirName": "agents",
+  "slug": "/agents/",
+  "permalink": "/docs/agents/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/agents/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 5,
+  "frontMatter": {
+    "sidebar_position": 5,
+    "sidebar_label": "Agents",
+    "title": "Agents",
+    "description": "Creating and managing AI agents"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Lifecycle",
+    "permalink": "/docs/core-concepts/lifecycle/"
+  },
+  "next": {
+    "title": "Agent Configuration",
+    "permalink": "/docs/agents/configuration/"
+  }
+}

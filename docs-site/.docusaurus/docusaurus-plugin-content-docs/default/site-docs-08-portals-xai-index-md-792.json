@@ -1,0 +1,31 @@
+{
+  "id": "portals/xai/index",
+  "title": "xAI Portal",
+  "description": "Grok model integration",
+  "source": "@site/docs/08-portals/xai/index.md",
+  "sourceDirName": "08-portals/xai",
+  "slug": "/portals/xai/",
+  "permalink": "/docs/portals/xai/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/08-portals/xai/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "xAI Portal",
+    "description": "Grok model integration"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Groq Portal",
+    "permalink": "/docs/portals/groq/"
+  },
+  "next": {
+    "title": "Ollama Portal",
+    "permalink": "/docs/portals/ollama/"
+  }
+}

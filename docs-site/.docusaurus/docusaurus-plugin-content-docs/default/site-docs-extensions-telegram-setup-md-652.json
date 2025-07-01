@@ -1,0 +1,17 @@
+{
+  "id": "extensions/telegram/setup",
+  "title": "🤖 Telegram Bot Setup Guide",
+  "description": "Quick Start: Chat with Nyx on Telegram!",
+  "source": "@site/docs/extensions/telegram/setup.md",
+  "sourceDirName": "extensions/telegram",
+  "slug": "/extensions/telegram/setup",
+  "permalink": "/docs/extensions/telegram/setup",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/extensions/telegram/setup.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "frontMatter": {}
+}

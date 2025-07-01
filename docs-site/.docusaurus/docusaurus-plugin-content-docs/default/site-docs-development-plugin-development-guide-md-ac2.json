@@ -1,0 +1,17 @@
+{
+  "id": "development/plugin-development/guide",
+  "title": "Plugin Development Guide",
+  "description": "This guide explains how to develop dynamic plugins for the SYMindX runtime system.",
+  "source": "@site/docs/development/plugin-development/guide.md",
+  "sourceDirName": "development/plugin-development",
+  "slug": "/development/plugin-development/guide",
+  "permalink": "/docs/development/plugin-development/guide",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/development/plugin-development/guide.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "frontMatter": {}
+}

@@ -1,0 +1,32 @@
+{
+  "id": "modules/index",
+  "title": "Modules",
+  "description": "Core modules: memory, emotion, cognition",
+  "source": "@site/docs/06-modules/index.md",
+  "sourceDirName": "06-modules",
+  "slug": "/modules/",
+  "permalink": "/docs/modules/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/06-modules/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 6,
+  "frontMatter": {
+    "sidebar_position": 6,
+    "sidebar_label": "Modules",
+    "title": "Modules",
+    "description": "Core modules: memory, emotion, cognition"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Agent Communication",
+    "permalink": "/docs/agents/communication/"
+  },
+  "next": {
+    "title": "Memory Modules",
+    "permalink": "/docs/modules/memory/"
+  }
+}

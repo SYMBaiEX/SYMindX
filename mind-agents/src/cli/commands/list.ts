@@ -135,6 +135,12 @@ export class ListCommand {
         console.log(chalk.yellow('No agents found matching criteria'))
         return
       }
+      
+      // Show warning if any agents are in error state
+      const errorAgents = agents.filter((agent: any) => agent.status === 'error')
+      if (errorAgents.length > 0) {
+        console.log(chalk.red(`⚠️  ${errorAgents.length} agent(s) are in error state. Check API keys and configuration.`))
+      }
 
       console.log(chalk.blue.bold(`\n🤖 Agents (${agents.length})`))
       console.log(chalk.gray('─'.repeat(80)))

@@ -88,7 +88,7 @@ export class ChatCommand {
               name: 'selectedAgent',
               message: 'Select an agent to chat with:',
               choices: agents.map((agent: any) => ({
-                name: `${agent.name} (${agent.id}) - ${agent.status}`,
+                name: `${agent.name} (${agent.id}) - ${agent.status}${agent.status === 'error' ? ' ⚠️' : ''}`,
                 value: agent.id
               }))
             }
@@ -145,6 +145,13 @@ export class ChatCommand {
     if (!agent) {
       console.log(chalk.red(`❌ Agent '${this.context.selectedAgent}' not found`))
       return
+    }
+    
+    // Check if agent is in error state and show helpful message
+    if (agent.status === 'error') {
+      console.log(chalk.yellow(`⚠️  Agent ${agent.name} is in error state. This may be due to missing API keys.`))
+      console.log(chalk.gray('   You can still try to chat, but responses may not work properly.'))
+      console.log(chalk.gray('   To fix: Add your API keys to .env file in the project root.'))
     }
 
     console.log(chalk.blue.bold(`\n💬 Chat with ${agent.name}`))

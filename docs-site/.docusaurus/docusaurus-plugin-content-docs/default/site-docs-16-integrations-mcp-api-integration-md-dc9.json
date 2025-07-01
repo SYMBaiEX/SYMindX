@@ -1,0 +1,17 @@
+{
+  "id": "integrations/mcp/api-integration",
+  "title": "MCP and API Integration for SYMindX",
+  "description": "This document describes the Model Context Protocol (MCP) and HTTP API extensions added to the SYMindX Mind-Agents framework.",
+  "source": "@site/docs/16-integrations/mcp/api-integration.md",
+  "sourceDirName": "16-integrations/mcp",
+  "slug": "/integrations/mcp/api-integration",
+  "permalink": "/docs/integrations/mcp/api-integration",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/16-integrations/mcp/api-integration.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "frontMatter": {}
+}

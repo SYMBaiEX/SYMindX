@@ -1,0 +1,31 @@
+{
+  "id": "migration/version-upgrades/index",
+  "title": "Version Upgrades",
+  "description": "Upgrading SYMindX versions",
+  "source": "@site/docs/15-migration/version-upgrades/index.md",
+  "sourceDirName": "15-migration/version-upgrades",
+  "slug": "/migration/version-upgrades/",
+  "permalink": "/docs/migration/version-upgrades/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/15-migration/version-upgrades/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "Version Upgrades",
+    "description": "Upgrading SYMindX versions"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Migration",
+    "permalink": "/docs/migration/"
+  },
+  "next": {
+    "title": "Data Migration",
+    "permalink": "/docs/migration/data-migration/"
+  }
+}

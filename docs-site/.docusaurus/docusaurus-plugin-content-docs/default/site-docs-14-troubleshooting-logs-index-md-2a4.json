@@ -1,0 +1,31 @@
+{
+  "id": "troubleshooting/logs/index",
+  "title": "Logs",
+  "description": "Log analysis",
+  "source": "@site/docs/14-troubleshooting/logs/index.md",
+  "sourceDirName": "14-troubleshooting/logs",
+  "slug": "/troubleshooting/logs/",
+  "permalink": "/docs/troubleshooting/logs/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/14-troubleshooting/logs/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "Logs",
+    "description": "Log analysis"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Debugging",
+    "permalink": "/docs/troubleshooting/debugging/"
+  },
+  "next": {
+    "title": "FAQ",
+    "permalink": "/docs/troubleshooting/faq/"
+  }
+}

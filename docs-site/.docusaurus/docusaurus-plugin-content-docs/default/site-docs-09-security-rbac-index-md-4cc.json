@@ -1,0 +1,31 @@
+{
+  "id": "security/rbac/index",
+  "title": "RBAC",
+  "description": "Role-based access control",
+  "source": "@site/docs/09-security/rbac/index.md",
+  "sourceDirName": "09-security/rbac",
+  "slug": "/security/rbac/",
+  "permalink": "/docs/security/rbac/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/09-security/rbac/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "RBAC",
+    "description": "Role-based access control"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Authorization",
+    "permalink": "/docs/security/authorization/"
+  },
+  "next": {
+    "title": "Compliance",
+    "permalink": "/docs/security/compliance/"
+  }
+}

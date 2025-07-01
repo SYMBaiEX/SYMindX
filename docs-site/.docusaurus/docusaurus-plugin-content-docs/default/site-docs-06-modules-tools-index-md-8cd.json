@@ -1,0 +1,32 @@
+{
+  "id": "modules/tools/index",
+  "title": "Tools",
+  "description": "Utility modules and helpers",
+  "source": "@site/docs/06-modules/tools/index.md",
+  "sourceDirName": "06-modules/tools",
+  "slug": "/modules/tools/",
+  "permalink": "/docs/modules/tools/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/06-modules/tools/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 6,
+  "frontMatter": {
+    "sidebar_position": 6,
+    "sidebar_label": "Tools",
+    "title": "Tools",
+    "description": "Utility modules and helpers"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Behavior Modules",
+    "permalink": "/docs/modules/behavior/"
+  },
+  "next": {
+    "title": "Extensions",
+    "permalink": "/docs/extensions/"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "id": "changelog/migration-guides/index",
+  "title": "Migration Guides",
+  "description": "Version migration guides",
+  "source": "@site/docs/changelog/migration-guides/index.md",
+  "sourceDirName": "changelog/migration-guides",
+  "slug": "/changelog/migration-guides/",
+  "permalink": "/docs/changelog/migration-guides/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/changelog/migration-guides/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "Migration Guides",
+    "description": "Version migration guides"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Releases",
+    "permalink": "/docs/changelog/releases/"
+  },
+  "next": {
+    "title": "Breaking Changes",
+    "permalink": "/docs/changelog/breaking-changes/"
+  }
+}

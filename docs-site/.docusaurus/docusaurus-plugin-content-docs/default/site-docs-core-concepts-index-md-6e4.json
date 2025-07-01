@@ -1,0 +1,32 @@
+{
+  "id": "core-concepts/index",
+  "title": "Core Concepts",
+  "description": "Fundamental concepts and architecture",
+  "source": "@site/docs/core-concepts/index.md",
+  "sourceDirName": "core-concepts",
+  "slug": "/core-concepts/",
+  "permalink": "/docs/core-concepts/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/core-concepts/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 4,
+  "frontMatter": {
+    "sidebar_position": 4,
+    "sidebar_label": "Core Concepts",
+    "title": "Core Concepts",
+    "description": "Fundamental concepts and architecture"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Product Roadmap",
+    "permalink": "/docs/overview/roadmap/"
+  },
+  "next": {
+    "title": "Runtime",
+    "permalink": "/docs/core-concepts/runtime/"
+  }
+}

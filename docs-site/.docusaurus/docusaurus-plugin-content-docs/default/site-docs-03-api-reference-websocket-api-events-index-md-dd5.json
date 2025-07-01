@@ -1,0 +1,26 @@
+{
+  "id": "api-reference/websocket-api/events/index",
+  "title": "WebSocket Events API",
+  "description": "The WebSocket Events API provides real-time event streaming for all agent activities, system updates, and chat interactions in the SYMindX system.",
+  "source": "@site/docs/03-api-reference/websocket-api/events/index.md",
+  "sourceDirName": "03-api-reference/websocket-api/events",
+  "slug": "/api-reference/websocket-api/events/",
+  "permalink": "/docs/api-reference/websocket-api/events/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/03-api-reference/websocket-api/events/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "frontMatter": {},
+  "sidebar": "apiSidebar",
+  "previous": {
+    "title": "Connection Websocket API",
+    "permalink": "/docs/api-reference/websocket-api/connection/"
+  },
+  "next": {
+    "title": "WebSocket Commands API",
+    "permalink": "/docs/api-reference/websocket-api/commands/"
+  }
+}

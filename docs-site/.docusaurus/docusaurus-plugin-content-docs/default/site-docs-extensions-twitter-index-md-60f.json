@@ -1,0 +1,31 @@
+{
+  "id": "extensions/twitter/index",
+  "title": "Twitter Extension",
+  "description": "Twitter/X integration",
+  "source": "@site/docs/extensions/twitter/index.md",
+  "sourceDirName": "extensions/twitter",
+  "slug": "/extensions/twitter/",
+  "permalink": "/docs/extensions/twitter/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/extensions/twitter/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "Twitter Extension",
+    "description": "Twitter/X integration"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Discord Extension",
+    "permalink": "/docs/extensions/discord/"
+  },
+  "next": {
+    "title": "Web UI Extension",
+    "permalink": "/docs/extensions/web-ui/"
+  }
+}

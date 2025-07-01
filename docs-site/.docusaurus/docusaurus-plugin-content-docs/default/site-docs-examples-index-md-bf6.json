@@ -1,0 +1,32 @@
+{
+  "id": "examples/index",
+  "title": "Examples",
+  "description": "Code examples and templates",
+  "source": "@site/docs/examples/index.md",
+  "sourceDirName": "examples",
+  "slug": "/examples/",
+  "permalink": "/docs/examples/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/examples/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 17,
+  "frontMatter": {
+    "sidebar_position": 17,
+    "sidebar_label": "Examples",
+    "title": "Examples",
+    "description": "Code examples and templates"
+  },
+  "sidebar": "quickLinksSidebar",
+  "previous": {
+    "title": "Your First Agent",
+    "permalink": "/docs/getting-started/first-agent/"
+  },
+  "next": {
+    "title": "FAQ",
+    "permalink": "/docs/troubleshooting/faq/"
+  }
+}

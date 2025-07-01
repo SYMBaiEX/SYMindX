@@ -1,0 +1,31 @@
+{
+  "id": "extensions/api-server/index",
+  "title": "API Server Extension",
+  "description": "REST and WebSocket API server",
+  "source": "@site/docs/extensions/api-server/index.md",
+  "sourceDirName": "extensions/api-server",
+  "slug": "/extensions/api-server/",
+  "permalink": "/docs/extensions/api-server/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/symindx/symindx/tree/main/docs-site/docs/extensions/api-server/index.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055000,
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "API Server Extension",
+    "description": "REST and WebSocket API server"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Extensions",
+    "permalink": "/docs/extensions/"
+  },
+  "next": {
+    "title": "Telegram Extension",
+    "permalink": "/docs/extensions/telegram/"
+  }
+}
