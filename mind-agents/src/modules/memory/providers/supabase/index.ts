@@ -1,14 +1,25 @@
 /**
  * Supabase Memory Provider for SYMindX
  * 
- * A comprehensive memory provider that uses Supabase as a backend with vector search capabilities
- * using pgvector extension for semantic similarity search.
+ * Enhanced Supabase-based memory provider with multi-tier memory architecture,
+ * vector embeddings, shared memory pools, and archival strategies.
  */
 
 import { createClient, SupabaseClient, RealtimeChannel } from '@supabase/supabase-js'
 import { MemoryRecord, MemoryType, MemoryDuration } from '../../../../types/agent.js'
-import { BaseMemoryProvider, BaseMemoryConfig } from '../../base-memory-provider.js'
-import { MemoryProviderMetadata } from '../../../../types/memory.js'
+import { BaseMemoryProvider, BaseMemoryConfig, MemoryRow, EnhancedMemoryRecord } from '../../base-memory-provider.js'
+import { 
+  MemoryProviderMetadata, 
+  MemoryTierType,
+  MemoryContext,
+  SharedMemoryConfig,
+  ArchivalStrategy,
+  MemoryPermission
+} from '../../../../types/memory.js'
+import { SharedMemoryPool } from './shared-pool.js'
+import { MemoryArchiver } from './archiver.js'
+import { runtimeLogger } from '../../../../utils/logger.js'
+import { runMigrations } from './migrations.js'
 
 /**
  * Configuration for the Supabase memory provider
@@ -24,12 +35,20 @@ export interface SupabaseMemoryConfig extends BaseMemoryConfig {
   enableRealtime?: boolean
   /** Custom table name (default: 'memories') */
   tableName?: string
+  /**
+   * Consolidation interval in milliseconds
+   */
+  consolidationInterval?: number
+  /**
+   * Archival interval in milliseconds
+   */
+  archivalInterval?: number
 }
 
 /**
  * Supabase database row type
  */
-export interface SupabaseMemoryRow {
+export interface SupabaseMemoryRow extends MemoryRow {
   id: string
   agent_id: string
   type: string
@@ -43,6 +62,8 @@ export interface SupabaseMemoryRow {
   expires_at?: string
   created_at: string
   updated_at: string
+  tier?: string
+  context?: Record<string, any> // JSON-encoded MemoryContext
 }
 
 /**
@@ -53,6 +74,9 @@ export class SupabaseMemoryProvider extends BaseMemoryProvider {
   protected declare config: SupabaseMemoryConfig
   private realtimeChannel?: RealtimeChannel
   private tableName: string
+  private sharedPools: Map<string, SharedMemoryPool> = new Map()
+  private consolidationTimer?: NodeJS.Timeout
+  private archivalTimer?: NodeJS.Timeout
 
   /**
    * Constructor for the Supabase memory provider
@@ -61,11 +85,18 @@ export class SupabaseMemoryProvider extends BaseMemoryProvider {
     const metadata: MemoryProviderMetadata = {
       id: 'supabase',
       name: 'Supabase Memory Provider',
-      description: 'A cloud-based memory provider using Supabase with vector search capabilities',
-      version: '1.0.0',
+      description: 'Enhanced Supabase provider with multi-tier memory, vector search, and shared pools',
+      version: '2.0.0',
       author: 'SYMindX Team',
       supportsVectorSearch: true,
-      isPersistent: true
+      isPersistent: true,
+      supportedTiers: [
+        MemoryTierType.WORKING,
+        MemoryTierType.EPISODIC,
+        MemoryTierType.SEMANTIC,
+        MemoryTierType.PROCEDURAL
+      ],
+      supportsSharedMemory: true
     }
 
     super(config, metadata)
@@ -82,6 +113,9 @@ export class SupabaseMemoryProvider extends BaseMemoryProvider {
     }) as SupabaseClient
 
     this.initializeDatabase()
+    
+    // Start background processes
+    this.startBackgroundProcesses(config)
   }
 
   /**
@@ -89,23 +123,23 @@ export class SupabaseMemoryProvider extends BaseMemoryProvider {
    */
   private async initializeDatabase(): Promise<void> {
     try {
+      // Run migrations to ensure schema is up to date
+      await runMigrations(this.client)
+
       // Check if pgvector extension is enabled
-      const { data: extensions } = await this.client.rpc('get_extensions')
+      const { data: extensions } = await this.client.rpc('get_extensions').catch(() => ({ data: [] }))
       const hasVector = extensions?.some((ext: any) => ext.name === 'vector')
       
       if (!hasVector) {
         console.warn('⚠️ pgvector extension not detected. Vector search will be limited.')
       }
 
-      // Create the memories table if it doesn't exist
-      await this.createMemoriesTable()
-
       // Enable realtime subscriptions if configured
       if (this.config.enableRealtime) {
         this.setupRealtimeSubscription()
       }
 
-      console.log('✅ Supabase memory provider initialized')
+      console.log('✅ Enhanced Supabase memory provider initialized')
     } catch (error) {
       console.error('❌ Failed to initialize Supabase memory provider:', error)
       throw error
@@ -113,17 +147,26 @@ export class SupabaseMemoryProvider extends BaseMemoryProvider {
   }
 
   /**
-   * Create the memories table with proper schema
+   * Start background processes for consolidation and archival
    */
-  private async createMemoriesTable(): Promise<void> {
-    const { error } = await this.client.rpc('create_memories_table_if_not_exists', {
-      table_name: this.tableName
-    })
+  private startBackgroundProcesses(config: SupabaseMemoryConfig): void {
+    if (config.consolidationInterval) {
+      this.consolidationTimer = setInterval(() => {
+        this.runConsolidation().catch(error => {
+          runtimeLogger.error('Consolidation error:', error)
+        })
+      }, config.consolidationInterval)
+    }
 
-    if (error) {
-      console.warn('⚠️ Could not create memories table via RPC, it may already exist:', error.message)
+    if (config.archivalInterval) {
+      this.archivalTimer = setInterval(() => {
+        this.runArchival().catch(error => {
+          runtimeLogger.error('Archival error:', error)
+        })
+      }, config.archivalInterval)
     }
   }
+
 
   /**
    * Setup realtime subscription for memory updates
@@ -152,6 +195,13 @@ export class SupabaseMemoryProvider extends BaseMemoryProvider {
    */
   async store(agentId: string, memory: MemoryRecord): Promise<void> {
     try {
+      const enhanced = memory as EnhancedMemoryRecord
+      
+      // Generate embedding if not provided
+      if (!memory.embedding && memory.content) {
+        memory.embedding = await this.generateEmbedding(memory.content)
+      }
+
       const memoryData: Partial<SupabaseMemoryRow> = {
         id: memory.id,
         agent_id: agentId,
@@ -164,7 +214,9 @@ export class SupabaseMemoryProvider extends BaseMemoryProvider {
         tags: memory.tags || [],
         duration: memory.duration || MemoryDuration.LONG_TERM,
         expires_at: memory.expiresAt?.toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        tier: enhanced.tier || MemoryTierType.EPISODIC,
+        context: enhanced.context || null
       }
 
       const { error } = await this.client
@@ -175,7 +227,19 @@ export class SupabaseMemoryProvider extends BaseMemoryProvider {
         throw new Error(`Failed to store memory: ${error.message}`)
       }
 
-      console.log(`💾 Stored ${memory.duration || 'long_term'} memory: ${memory.type} for agent ${agentId}`)
+      // Handle working memory specially
+      if (enhanced.tier === MemoryTierType.WORKING) {
+        await this.addToWorkingMemory(agentId, memory)
+      }
+
+      // Only log conversation memories from user interactions
+      if (memory.type === MemoryType.INTERACTION && 
+          (memory.metadata?.source === 'chat_command' || 
+           memory.metadata?.source === 'chat_command_fallback' ||
+           memory.metadata?.messageType === 'user_input' ||
+           memory.metadata?.messageType === 'agent_response')) {
+        console.log(`💾 Stored ${enhanced.tier || 'episodic'} memory: ${memory.type} for agent ${agentId}`)
+      }
     } catch (error) {
       console.error('❌ Error storing memory:', error)
       throw error
@@ -247,7 +311,11 @@ export class SupabaseMemoryProvider extends BaseMemoryProvider {
         return this.retrieve(agentId, 'recent', limit)
       }
 
-      return (data || []).map((row: any) => this.rowToMemoryRecord(row))
+      const results = (data || []).map((row: any) => this.rowToMemoryRecord(row))
+      
+      console.log(`🎯 Vector search found ${results.length} similar memories`)
+      
+      return results
     } catch (error) {
       console.error('❌ Error in vector search:', error)
       return this.retrieve(agentId, 'recent', limit)
@@ -376,8 +444,8 @@ export class SupabaseMemoryProvider extends BaseMemoryProvider {
   /**
    * Convert a database row to a memory record
    */
-  private rowToMemoryRecord(row: SupabaseMemoryRow): MemoryRecord {
-    return {
+  private rowToMemoryRecord(row: SupabaseMemoryRow): EnhancedMemoryRecord {
+    const record: EnhancedMemoryRecord = {
       id: row.id,
       agentId: row.agent_id,
       type: MemoryType[row.type.toUpperCase() as keyof typeof MemoryType] || MemoryType.EXPERIENCE,
@@ -390,6 +458,16 @@ export class SupabaseMemoryProvider extends BaseMemoryProvider {
       duration: MemoryDuration[row.duration.toUpperCase() as keyof typeof MemoryDuration] || MemoryDuration.LONG_TERM,
       expiresAt: row.expires_at ? new Date(row.expires_at) : undefined
     }
+
+    // Add tier and context if available
+    if (row.tier) {
+      record.tier = row.tier as MemoryTierType
+    }
+    if (row.context) {
+      record.context = row.context as MemoryContext
+    }
+
+    return record
   }
 
   /**
@@ -401,13 +479,328 @@ export class SupabaseMemoryProvider extends BaseMemoryProvider {
   }
 
   /**
+   * Consolidate memory from one tier to another
+   */
+  async consolidateMemory(
+    agentId: string, 
+    memoryId: string, 
+    fromTier: MemoryTierType, 
+    toTier: MemoryTierType
+  ): Promise<void> {
+    const { data, error } = await this.client
+      .from(this.tableName)
+      .update({ tier: toTier })
+      .eq('agent_id', agentId)
+      .eq('id', memoryId)
+      .eq('tier', fromTier)
+      .select()
+
+    if (error) {
+      throw new Error(`Failed to consolidate memory: ${error.message}`)
+    }
+
+    if (data && data.length > 0) {
+      runtimeLogger.memory(`Consolidated memory ${memoryId} from ${fromTier} to ${toTier}`)
+      
+      // Apply tier-specific transformations
+      if (fromTier === MemoryTierType.EPISODIC && toTier === MemoryTierType.SEMANTIC) {
+        // Extract concepts and update type
+        const memory = data[0]
+        if (memory) {
+          const concepts = await this.extractConcepts(memory.content)
+          await this.client
+            .from(this.tableName)
+            .update({ 
+              type: MemoryType.KNOWLEDGE, 
+              tags: concepts 
+            })
+            .eq('agent_id', agentId)
+            .eq('id', memoryId)
+        }
+      }
+    }
+  }
+
+  /**
+   * Get memories from a specific tier
+   */
+  async retrieveTier(agentId: string, tier: MemoryTierType, limit?: number): Promise<MemoryRecord[]> {
+    let query = this.client
+      .from(this.tableName)
+      .select('*')
+      .eq('agent_id', agentId)
+      .eq('tier', tier)
+      .order('timestamp', { ascending: false })
+
+    if (limit) {
+      query = query.limit(limit)
+    }
+
+    const { data, error } = await query
+
+    if (error) {
+      throw new Error(`Failed to retrieve tier memories: ${error.message}`)
+    }
+
+    return (data || []).map(row => this.rowToMemoryRecord(row))
+  }
+
+  /**
+   * Archive old memories based on configured strategies
+   */
+  async archiveMemories(agentId: string): Promise<void> {
+    if (!this.config.archival) return
+    
+    for (const strategy of this.config.archival) {
+      if (strategy.type === 'compression') {
+        await this.compressOldMemories(agentId, strategy)
+      } else if (strategy.type === 'summarization') {
+        await this.summarizeMemories(agentId, strategy)
+      }
+    }
+  }
+
+  /**
+   * Share memories with other agents in a pool
+   */
+  async shareMemories(agentId: string, memoryIds: string[], poolId: string): Promise<void> {
+    let pool = this.sharedPools.get(poolId)
+    
+    if (!pool && this.config.sharedMemory) {
+      pool = new SharedMemoryPool(poolId, this.config.sharedMemory)
+      this.sharedPools.set(poolId, pool)
+      
+      // Store pool configuration
+      await this.client
+        .from('shared_memory_pools')
+        .upsert({
+          pool_id: poolId,
+          config: this.config.sharedMemory,
+          created_at: new Date().toISOString()
+        })
+    }
+    
+    if (!pool) {
+      throw new Error(`Shared memory pool ${poolId} not found`)
+    }
+    
+    // Share each memory
+    for (const memoryId of memoryIds) {
+      const { data } = await this.client
+        .from(this.tableName)
+        .select('*')
+        .eq('agent_id', agentId)
+        .eq('id', memoryId)
+        .single()
+      
+      if (data) {
+        await pool.share(agentId, this.rowToMemoryRecord(data))
+        
+        // Record sharing
+        await this.client
+          .from('shared_memory_mappings')
+          .upsert({
+            memory_id: memoryId,
+            pool_id: poolId,
+            shared_by: agentId,
+            shared_at: new Date().toISOString(),
+            permissions: [MemoryPermission.READ]
+          })
+      }
+    }
+  }
+
+  /**
+   * Generate embedding for a memory
+   */
+  async generateEmbedding(content: string): Promise<number[]> {
+    // This would call the actual embedding API based on config
+    // For now, return a mock embedding
+    // In production, this would use OpenAI, Cohere, or another embedding service
+    return new Array(1536).fill(0).map(() => Math.random() * 2 - 1)
+  }
+
+  /**
+   * Extract concepts from content
+   */
+  private async extractConcepts(content: string): Promise<string[]> {
+    // Simple concept extraction - in production would use NLP
+    const words = content.toLowerCase().split(/\s+/)
+    const concepts = words
+      .filter(word => word.length > 4)
+      .filter((word, index, self) => self.indexOf(word) === index)
+      .slice(0, 5)
+    
+    return concepts
+  }
+
+  /**
+   * Run memory consolidation
+   */
+  private async runConsolidation(): Promise<void> {
+    // Get all unique agent IDs
+    const { data: agents } = await this.client
+      .from(this.tableName)
+      .select('agent_id')
+      .limit(1000)
+    
+    const uniqueAgents = [...new Set((agents || []).map(a => a.agent_id))]
+    
+    for (const agentId of uniqueAgents) {
+      // Check consolidation rules for each tier
+      for (const [, tier] of this.tiers) {
+        if (!tier.consolidationRules) continue
+        
+        for (const rule of tier.consolidationRules) {
+          const memories = await this.retrieveTier(agentId, rule.fromTier)
+          
+          for (const memory of memories) {
+            if (this.shouldConsolidate(memory as EnhancedMemoryRecord, rule)) {
+              await this.consolidateMemory(agentId, memory.id, rule.fromTier, rule.toTier)
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Check if memory should be consolidated
+   */
+  private shouldConsolidate(memory: EnhancedMemoryRecord, rule: any): boolean {
+    switch (rule.condition) {
+      case 'importance':
+        return (memory.importance || 0) >= rule.threshold
+      case 'age':
+        const ageInDays = (Date.now() - memory.timestamp.getTime()) / (1000 * 60 * 60 * 24)
+        return ageInDays >= rule.threshold
+      case 'emotional':
+        return (memory.context?.emotionalValence || 0) >= rule.threshold
+      default:
+        return false
+    }
+  }
+
+  /**
+   * Run memory archival
+   */
+  private async runArchival(): Promise<void> {
+    // Get all unique agent IDs
+    const { data: agents } = await this.client
+      .from(this.tableName)
+      .select('agent_id')
+      .limit(1000)
+    
+    const uniqueAgents = [...new Set((agents || []).map(a => a.agent_id))]
+    
+    for (const agentId of uniqueAgents) {
+      await this.archiveMemories(agentId)
+    }
+  }
+
+  /**
+   * Compress old memories
+   */
+  private async compressOldMemories(agentId: string, strategy: ArchivalStrategy): Promise<void> {
+    if (!strategy.triggerAge) return
+    
+    const cutoff = new Date()
+    cutoff.setDate(cutoff.getDate() - strategy.triggerAge)
+    
+    const { data: oldMemories } = await this.client
+      .from(this.tableName)
+      .select('*')
+      .eq('agent_id', agentId)
+      .lt('timestamp', cutoff.toISOString())
+      .eq('tier', 'episodic')
+      .order('timestamp', { ascending: false })
+    
+    if (!oldMemories || oldMemories.length === 0) return
+    
+    // Group similar memories and compress
+    const compressed = this.groupAndCompress(oldMemories.map(r => this.rowToMemoryRecord(r)))
+    
+    // Store compressed memories
+    for (const memory of compressed) {
+      await this.store(agentId, memory)
+    }
+    
+    // Delete original memories
+    const idsToDelete = oldMemories.map(m => m.id)
+    await this.client
+      .from(this.tableName)
+      .delete()
+      .in('id', idsToDelete)
+  }
+
+  /**
+   * Summarize memories
+   */
+  private async summarizeMemories(agentId: string, strategy: ArchivalStrategy): Promise<void> {
+    // Implementation would use LLM to summarize groups of memories
+    // For now, this is a placeholder
+    runtimeLogger.memory(`Summarizing memories for agent ${agentId}`)
+  }
+
+  /**
+   * Group and compress similar memories
+   */
+  private groupAndCompress(memories: EnhancedMemoryRecord[]): EnhancedMemoryRecord[] {
+    // Simple compression - group by day and combine
+    const grouped = new Map<string, EnhancedMemoryRecord[]>()
+    
+    for (const memory of memories) {
+      const day = memory.timestamp.toISOString().split('T')[0]
+      if (!grouped.has(day)) {
+        grouped.set(day, [])
+      }
+      grouped.get(day)!.push(memory)
+    }
+    
+    const compressed: EnhancedMemoryRecord[] = []
+    for (const [day, group] of grouped) {
+      compressed.push({
+        id: this.generateId(),
+        agentId: group[0].agentId,
+        type: MemoryType.EXPERIENCE,
+        content: `Summary of ${day}: ${group.map(m => m.content).join('; ')}`,
+        importance: Math.max(...group.map(m => m.importance || 0)),
+        timestamp: new Date(day),
+        tags: ['compressed', 'summary'],
+        duration: MemoryDuration.LONG_TERM,
+        tier: MemoryTierType.EPISODIC,
+        context: {
+          source: 'compression',
+          originalCount: group.length
+        }
+      })
+    }
+    
+    return compressed
+  }
+
+  /**
    * Cleanup connections and subscriptions
    */
   async disconnect(): Promise<void> {
+    if (this.consolidationTimer) {
+      clearInterval(this.consolidationTimer)
+    }
+    if (this.archivalTimer) {
+      clearInterval(this.archivalTimer)
+    }
+    
     if (this.realtimeChannel) {
       await this.client.removeChannel(this.realtimeChannel)
     }
     console.log('🔌 Supabase memory provider disconnected')
+  }
+
+  /**
+   * Clean up resources (alias for disconnect)
+   */
+  async destroy(): Promise<void> {
+    await this.disconnect()
   }
 }
 
@@ -425,7 +818,7 @@ export const SUPABASE_MEMORY_MIGRATION = `
 -- Enable the pgvector extension
 CREATE EXTENSION IF NOT EXISTS vector;
 
--- Create the memories table
+-- Create the memories table with tier and context support
 CREATE TABLE IF NOT EXISTS memories (
     id TEXT PRIMARY KEY,
     agent_id TEXT NOT NULL,
@@ -438,8 +831,27 @@ CREATE TABLE IF NOT EXISTS memories (
     tags TEXT[] DEFAULT '{}',
     duration TEXT NOT NULL DEFAULT 'long_term',
     expires_at TIMESTAMPTZ,
+    tier TEXT DEFAULT 'episodic',
+    context JSONB,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Create shared memory pools table
+CREATE TABLE IF NOT EXISTS shared_memory_pools (
+    pool_id TEXT PRIMARY KEY,
+    config JSONB NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Create shared memory mappings table
+CREATE TABLE IF NOT EXISTS shared_memory_mappings (
+    memory_id TEXT NOT NULL,
+    pool_id TEXT NOT NULL,
+    shared_by TEXT NOT NULL,
+    shared_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    permissions TEXT[] NOT NULL DEFAULT '{"read"}',
+    PRIMARY KEY (memory_id, pool_id)
 );
 
 -- Create indexes for performance
@@ -449,6 +861,8 @@ CREATE INDEX IF NOT EXISTS idx_memories_timestamp ON memories(timestamp);
 CREATE INDEX IF NOT EXISTS idx_memories_importance ON memories(importance);
 CREATE INDEX IF NOT EXISTS idx_memories_duration ON memories(duration);
 CREATE INDEX IF NOT EXISTS idx_memories_expires_at ON memories(expires_at);
+CREATE INDEX IF NOT EXISTS idx_memories_tier ON memories(tier);
+CREATE INDEX IF NOT EXISTS idx_shared_mappings_pool ON shared_memory_mappings(pool_id);
 
 -- Create vector similarity index
 CREATE INDEX IF NOT EXISTS idx_memories_embedding ON memories USING ivfflat (embedding vector_cosine_ops);
@@ -472,6 +886,8 @@ RETURNS TABLE (
     tags TEXT[],
     duration TEXT,
     expires_at TIMESTAMPTZ,
+    tier TEXT,
+    context JSONB,
     created_at TIMESTAMPTZ,
     updated_at TIMESTAMPTZ,
     similarity FLOAT
@@ -491,6 +907,8 @@ AS $$
         m.tags,
         m.duration,
         m.expires_at,
+        m.tier,
+        m.context,
         m.created_at,
         m.updated_at,
         1 - (m.embedding <=> query_embedding) AS similarity
@@ -513,6 +931,18 @@ BEGIN
     -- This function ensures the table exists
     -- The actual table creation is handled by the main migration above
     RAISE NOTICE 'Memories table initialization checked';
+END;
+$$;
+
+-- Function to create shared memory tables (callable via RPC)
+CREATE OR REPLACE FUNCTION create_shared_memory_tables_if_not_exists()
+RETURNS VOID
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    -- This function ensures the shared memory tables exist
+    -- The actual table creation is handled by the main migration above
+    RAISE NOTICE 'Shared memory tables initialization checked';
 END;
 $$;
 
