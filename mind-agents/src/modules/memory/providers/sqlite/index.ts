@@ -1,0 +1,428 @@
+/**
+ * SQLite Memory Provider for SYMindX
+ * 
+ * This module implements a SQLite-based memory provider for storing and retrieving
+ * agent memories using a local SQLite database.
+ */
+
+import { MemoryRecord, MemoryType, MemoryDuration } from '../../../../types/agent.js'
+import { BaseMemoryProvider, BaseMemoryConfig, MemoryRow } from '../../base-memory-provider.js'
+import { MemoryProviderMetadata } from '../../../../types/memory.js'
+import Database, { type Database as DatabaseType, type Statement } from 'better-sqlite3'
+import { readFileSync } from 'fs'
+import { join } from 'path'
+
+/**
+ * Configuration for the SQLite memory provider
+ */
+export interface SQLiteMemoryConfig extends BaseMemoryConfig {
+  /**
+   * Path to the SQLite database file
+   */
+  dbPath: string
+
+  /**
+   * Whether to create tables if they don't exist
+   */
+  createTables?: boolean
+}
+
+/**
+ * SQLite database row type
+ */
+export interface SQLiteMemoryRow extends MemoryRow {
+  embedding?: Buffer
+}
+
+/**
+ * SQLite memory provider implementation
+ */
+export class SQLiteMemoryProvider extends BaseMemoryProvider {
+  private db: DatabaseType
+
+  /**
+   * Constructor for the SQLite memory provider
+   * @param config Configuration for the SQLite memory provider
+   */
+  constructor(config: SQLiteMemoryConfig) {
+    const metadata: MemoryProviderMetadata = {
+      id: 'sqlite',
+      name: 'SQLite Memory Provider',
+      description: 'A memory provider that stores memories in a local SQLite database',
+      version: '1.0.0',
+      author: 'SYMindX Team',
+      supportsVectorSearch: true,
+      isPersistent: true
+    }
+    
+    super(config, metadata)
+    
+    this.db = new Database(config.dbPath)
+    
+    if (config.createTables !== false) {
+      this.initializeDatabase()
+    }
+  }
+
+  /**
+   * Initialize the SQLite database
+   */
+  private initializeDatabase(): void {
+    // Create memories table
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS memories (
+        id TEXT PRIMARY KEY,
+        agent_id TEXT NOT NULL,
+        type TEXT NOT NULL,
+        content TEXT NOT NULL,
+        embedding BLOB,
+        metadata TEXT,
+        importance REAL NOT NULL DEFAULT 0.5,
+        timestamp INTEGER NOT NULL,
+        tags TEXT,
+        duration TEXT NOT NULL DEFAULT 'long_term',
+        expires_at TEXT
+      )
+    `)
+
+    // Create indexes for better performance
+    this.db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_memories_agent_id ON memories(agent_id);
+      CREATE INDEX IF NOT EXISTS idx_memories_type ON memories(type);
+      CREATE INDEX IF NOT EXISTS idx_memories_timestamp ON memories(timestamp);
+      CREATE INDEX IF NOT EXISTS idx_memories_importance ON memories(importance);
+      CREATE INDEX IF NOT EXISTS idx_memories_duration ON memories(duration);
+      CREATE INDEX IF NOT EXISTS idx_memories_expires_at ON memories(expires_at);
+    `)
+
+    console.log('✅ SQLite memory database initialized')
+  }
+
+  /**
+   * Store a memory for an agent
+   * @param agentId The ID of the agent
+   * @param memory The memory to store
+   */
+  async store(agentId: string, memory: MemoryRecord): Promise<void> {
+    const stmt = this.db.prepare(`
+      INSERT OR REPLACE INTO memories (
+        id, agent_id, type, content, embedding, metadata, importance, timestamp, tags, duration, expires_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `)
+
+    const embeddingBuffer = memory.embedding ? Buffer.from(new Float32Array(memory.embedding).buffer) : null
+    const metadataJson = JSON.stringify(memory.metadata)
+    const tagsJson = JSON.stringify(memory.tags)
+
+    stmt.run(
+      memory.id,
+      agentId,
+      memory.type,
+      memory.content,
+      embeddingBuffer,
+      metadataJson,
+      memory.importance,
+      memory.timestamp.getTime(),
+      tagsJson,
+      memory.duration || 'long_term',
+      memory.expiresAt ? memory.expiresAt.getTime() : null
+    )
+
+    // Only log conversation memories from user interactions
+    if (memory.type === MemoryType.INTERACTION && 
+        (memory.metadata?.source === 'chat_command' || 
+         memory.metadata?.source === 'chat_command_fallback' ||
+         memory.metadata?.messageType === 'user_input' ||
+         memory.metadata?.messageType === 'agent_response')) {
+      console.log(`💾 Stored ${memory.duration || 'long_term'} memory: ${memory.type} for agent ${agentId}`)
+    }
+  }
+
+  /**
+   * Retrieve memories for an agent based on a query
+   * @param agentId The ID of the agent
+   * @param query The query to search for
+   * @param limit The maximum number of memories to return
+   */
+  async retrieve(agentId: string, query: string, limit = 10): Promise<MemoryRecord[]> {
+    let stmt: Statement
+    let params: (string | number | Date)[]
+
+    // Base condition to filter out expired short-term memories
+    const now = Date.now()
+    const baseCondition = `agent_id = ? AND (duration != 'short_term' OR expires_at IS NULL OR expires_at > ${now})`
+
+    if (query === 'recent') {
+      // Get most recent memories
+      stmt = this.db.prepare(`
+        SELECT * FROM memories 
+        WHERE ${baseCondition} 
+        ORDER BY timestamp DESC 
+        LIMIT ?
+      `)
+      params = [agentId, limit]
+    } else if (query === 'important') {
+      // Get most important memories
+      stmt = this.db.prepare(`
+        SELECT * FROM memories 
+        WHERE ${baseCondition} 
+        ORDER BY importance DESC 
+        LIMIT ?
+      `)
+      params = [agentId, limit]
+    } else if (query === 'short_term') {
+      // Get only short-term memories that haven't expired
+      stmt = this.db.prepare(`
+        SELECT * FROM memories 
+        WHERE agent_id = ? AND duration = 'short_term' AND (expires_at IS NULL OR expires_at > ${now})
+        ORDER BY timestamp DESC 
+        LIMIT ?
+      `)
+      params = [agentId, limit]
+    } else if (query === 'long_term') {
+      // Get only long-term memories
+      stmt = this.db.prepare(`
+        SELECT * FROM memories 
+        WHERE agent_id = ? AND duration = 'long_term'
+        ORDER BY importance DESC 
+        LIMIT ?
+      `)
+      params = [agentId, limit]
+    } else {
+      // Text search in content
+      stmt = this.db.prepare(`
+        SELECT * FROM memories 
+        WHERE ${baseCondition} AND content LIKE ? 
+        ORDER BY importance DESC, timestamp DESC 
+        LIMIT ?
+      `)
+      params = [agentId, `%${query}%`, limit]
+    }
+
+    const rows = stmt.all(...params) as SQLiteMemoryRow[]
+    return rows.map(row => this.rowToMemoryRecord(row))
+  }
+
+  /**
+   * Search for memories using vector similarity
+   * @param agentId The ID of the agent
+   * @param embedding The embedding vector to search with
+   * @param limit The maximum number of memories to return
+   */
+  async search(agentId: string, embedding: number[], limit = 10): Promise<MemoryRecord[]> {
+    const now = Date.now()
+    const baseCondition = `agent_id = ? AND embedding IS NOT NULL AND (duration != 'short_term' OR expires_at IS NULL OR expires_at > ${now})`
+
+    try {
+      // First, get all memories with embeddings for this agent
+      const stmt = this.db.prepare(`
+        SELECT * FROM memories 
+        WHERE ${baseCondition}
+        ORDER BY timestamp DESC
+      `)
+      
+      const rows = stmt.all(agentId) as SQLiteMemoryRow[]
+      
+      if (rows.length === 0) {
+        console.log('🔍 No memories with embeddings found, falling back to recent memories')
+        return this.retrieve(agentId, 'recent', limit)
+      }
+
+      // Calculate cosine similarity for each memory with an embedding
+      const similarities: { memory: MemoryRecord; similarity: number }[] = []
+      
+      for (const row of rows) {
+        if (row.embedding) {
+          const memoryEmbedding = this.bufferToEmbedding(row.embedding)
+          if (memoryEmbedding) {
+            const similarity = this.cosineSimilarity(embedding, memoryEmbedding)
+            similarities.push({
+              memory: this.rowToMemoryRecord(row),
+              similarity
+            })
+          }
+        }
+      }
+
+      // Sort by similarity and return top results
+      similarities.sort((a, b) => b.similarity - a.similarity)
+      const results = similarities.slice(0, limit).map(item => item.memory)
+      
+      console.log(`🎯 Vector search found ${results.length} similar memories (avg similarity: ${(similarities.slice(0, limit).reduce((sum, item) => sum + item.similarity, 0) / Math.min(limit, similarities.length)).toFixed(3)})`)
+      
+      return results
+    } catch (error) {
+      console.warn('⚠️ Vector search failed, falling back to recent memories:', error)
+      return this.retrieve(agentId, 'recent', limit)
+    }
+  }
+
+  /**
+   * Delete a memory for an agent
+   * @param agentId The ID of the agent
+   * @param memoryId The ID of the memory to delete
+   */
+  async delete(agentId: string, memoryId: string): Promise<void> {
+    const stmt = this.db.prepare(`
+      DELETE FROM memories 
+      WHERE agent_id = ? AND id = ?
+    `)
+
+    const result = stmt.run(agentId, memoryId)
+    
+    if (result.changes === 0) {
+      throw new Error(`Memory ${memoryId} not found for agent ${agentId}`)
+    }
+
+    console.log(`🗑️ Deleted memory: ${memoryId} for agent ${agentId}`)
+  }
+
+  /**
+   * Clear all memories for an agent
+   * @param agentId The ID of the agent
+   */
+  async clear(agentId: string): Promise<void> {
+    const stmt = this.db.prepare(`
+      DELETE FROM memories 
+      WHERE agent_id = ?
+    `)
+
+    const result = stmt.run(agentId)
+    console.log(`🧹 Cleared ${result.changes} memories for agent ${agentId}`)
+  }
+
+  /**
+   * Get statistics about an agent's memories
+   * @param agentId The ID of the agent
+   */
+  async getStats(agentId: string): Promise<{ total: number; byType: Record<string, number> }> {
+    const totalStmt = this.db.prepare(`
+      SELECT COUNT(*) as count FROM memories 
+      WHERE agent_id = ?
+    `)
+
+    const typeStmt = this.db.prepare(`
+      SELECT type, COUNT(*) as count FROM memories 
+      WHERE agent_id = ? 
+      GROUP BY type
+    `)
+
+    const totalResult = totalStmt.get(agentId) as { count: number } | undefined
+    const total = totalResult?.count || 0
+    const typeRows = typeStmt.all(agentId) as { type: string; count: number }[]
+    
+    const byType: Record<string, number> = {}
+    typeRows.forEach((row) => {
+      byType[row.type] = row.count
+    })
+
+    return { total, byType }
+  }
+
+  /**
+   * Clean up old memories for an agent
+   * @param agentId The ID of the agent
+   * @param retentionDays The number of days to retain memories
+   */
+  async cleanup(agentId: string, retentionDays: number): Promise<void> {
+    const now = Date.now()
+    const cutoffTime = now - (retentionDays * 24 * 60 * 60 * 1000)
+    
+    // First, clean up expired short-term memories
+    const expiredStmt = this.db.prepare(`
+      DELETE FROM memories 
+      WHERE agent_id = ? AND duration = 'short_term' AND expires_at IS NOT NULL AND expires_at < ?
+    `)
+
+    const expiredResult = expiredStmt.run(agentId, now)
+    console.log(`🧹 Cleaned up ${expiredResult.changes} expired short-term memories for agent ${agentId}`)
+    
+    // Then, clean up old memories based on retention days
+    const oldStmt = this.db.prepare(`
+      DELETE FROM memories 
+      WHERE agent_id = ? AND timestamp < ?
+    `)
+
+    const oldResult = oldStmt.run(agentId, cutoffTime)
+    console.log(`🧹 Cleaned up ${oldResult.changes} old memories for agent ${agentId}`)
+  }
+
+  /**
+   * Convert a database row to a memory record
+   * @param row The database row
+   * @returns The memory record
+   */
+  private rowToMemoryRecord(row: SQLiteMemoryRow): MemoryRecord {
+    let embedding: number[] | undefined = undefined
+    
+    if (row.embedding) {
+      embedding = this.bufferToEmbedding(row.embedding)
+    }
+
+    return {
+      id: row.id,
+      agentId: row.agent_id,
+      type: (row.type as string) ? MemoryType[row.type.toUpperCase() as keyof typeof MemoryType] || MemoryType.EXPERIENCE : MemoryType.EXPERIENCE,
+      content: row.content,
+      embedding,
+      metadata: JSON.parse(row.metadata as string || '{}') as Record<string, any>,
+      importance: row.importance,
+      timestamp: new Date(row.timestamp),
+      tags: JSON.parse(row.tags as string || '[]') as string[],
+      duration: (row.duration && typeof row.duration === 'string') ? MemoryDuration[row.duration.toUpperCase() as keyof typeof MemoryDuration] || MemoryDuration.LONG_TERM : MemoryDuration.LONG_TERM,
+      expiresAt: row.expires_at ? new Date(row.expires_at) : undefined
+    }
+  }
+
+  /**
+   * Convert a buffer to an embedding array
+   * @param buffer The buffer containing embedding data
+   * @returns The embedding array or undefined if conversion fails
+   */
+  private bufferToEmbedding(buffer: Buffer): number[] | undefined {
+    try {
+      const floatArray = new Float32Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / Float32Array.BYTES_PER_ELEMENT)
+      return Array.from(floatArray)
+    } catch (error) {
+      console.warn('⚠️ Failed to convert buffer to embedding:', error)
+      return undefined
+    }
+  }
+
+  /**
+   * Calculate cosine similarity between two vectors
+   * @param a First vector
+   * @param b Second vector
+   * @returns Cosine similarity (0-1, where 1 is most similar)
+   */
+  private cosineSimilarity(a: number[], b: number[]): number {
+    if (a.length !== b.length) {
+      console.warn(`⚠️ Vector dimension mismatch: ${a.length} vs ${b.length}`)
+      return 0
+    }
+
+    let dotProduct = 0
+    let normA = 0
+    let normB = 0
+
+    for (let i = 0; i < a.length; i++) {
+      dotProduct += a[i] * b[i]
+      normA += a[i] * a[i]
+      normB += b[i] * b[i]
+    }
+
+    const magnitude = Math.sqrt(normA) * Math.sqrt(normB)
+    if (magnitude === 0) return 0
+
+    return dotProduct / magnitude
+  }
+}
+
+/**
+ * Create a SQLite memory provider
+ * @param config Configuration for the SQLite memory provider
+ * @returns A SQLite memory provider instance
+ */
+export function createSQLiteMemoryProvider(config: SQLiteMemoryConfig): SQLiteMemoryProvider {
+  return new SQLiteMemoryProvider(config)
+}

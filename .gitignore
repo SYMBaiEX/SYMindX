@@ -246,7 +246,7 @@ Thumbs.db
 # Agent runtime data
 data/
 logs/
-memory/
+# memory/ # Removed - we want to track modules/memory
 *.db
 *.sqlite
 *.sqlite3
