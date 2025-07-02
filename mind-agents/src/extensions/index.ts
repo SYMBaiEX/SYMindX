@@ -1,13 +1,16 @@
 /**
- * SYMindX Extensions (Emergency Cleanup Version)
+ * SYMindX Extensions System
  * 
- * Simplified extension loading with only API extension
+ * Extension loading with modular architecture including API, Telegram, MCP, and Communication extensions
  */
 
 import { Extension } from '../types/agent.js'
 import { RuntimeConfig } from '../types/agent.js'
 import { ApiExtension } from './api/index.js'
 import { TelegramExtension, createTelegramExtension } from './telegram/index.js'
+import { MCPClientExtension } from './mcp-client/index.js'
+import { MCPServerExtension } from './mcp-server/index.js'
+import { CommunicationExtension } from './communication/index.js'
 
 export async function registerExtensions(config: RuntimeConfig): Promise<Extension[]> {
   const extensions: Extension[] = []
@@ -88,6 +91,72 @@ export async function registerExtensions(config: RuntimeConfig): Promise<Extensi
       console.warn('⚠️ Failed to load Telegram extension:', error)
     }
   }
+
+  // Register MCP Client extension if configured
+  if (config.extensions.mcpClient?.enabled) {
+    try {
+      const mcpClientConfig = {
+        servers: config.extensions.mcpClient.servers || [],
+        autoConnect: config.extensions.mcpClient.autoConnect !== false,
+        reconnectDelay: config.extensions.mcpClient.reconnectDelay || 5000,
+        maxReconnectAttempts: config.extensions.mcpClient.maxReconnectAttempts || 3,
+        ...config.extensions.mcpClient
+      }
+      const mcpClientExtension = new MCPClientExtension(mcpClientConfig)
+      extensions.push(mcpClientExtension)
+      console.log('✅ MCP Client extension registered')
+    } catch (error) {
+      console.warn('⚠️ Failed to load MCP Client extension:', error)
+    }
+  }
+
+  // Register MCP Server extension if configured
+  if (config.extensions.mcpServer?.enabled) {
+    try {
+      const mcpServerConfig = {
+        transport: config.extensions.mcpServer.transport || 'stdio',
+        port: config.extensions.mcpServer.port || 3001,
+        host: config.extensions.mcpServer.host || 'localhost',
+        path: config.extensions.mcpServer.path || '/mcp',
+        ...config.extensions.mcpServer
+      }
+      const mcpServerExtension = new MCPServerExtension(mcpServerConfig)
+      extensions.push(mcpServerExtension)
+      console.log('✅ MCP Server extension registered')
+    } catch (error) {
+      console.warn('⚠️ Failed to load MCP Server extension:', error)
+    }
+  }
+
+  // Register Communication extension if configured
+  if (config.extensions.communication?.enabled) {
+    try {
+      const communicationConfig = {
+        contextManager: {
+          enabled: true,
+          maxContextLength: 10000,
+          compressionThreshold: 8000,
+          ...config.extensions.communication.contextManager
+        },
+        expressionEngine: {
+          enabled: true,
+          defaultStyle: 'neutral',
+          ...config.extensions.communication.expressionEngine
+        },
+        styleAdapter: {
+          enabled: true,
+          adaptationLevel: 'medium',
+          ...config.extensions.communication.styleAdapter
+        },
+        ...config.extensions.communication
+      }
+      const communicationExtension = new CommunicationExtension(communicationConfig)
+      extensions.push(communicationExtension)
+      console.log('✅ Communication extension registered')
+    } catch (error) {
+      console.warn('⚠️ Failed to load Communication extension:', error)
+    }
+  }
   
   console.log(`📦 Loaded ${extensions.length} extension(s)`)
   return extensions
@@ -96,3 +165,6 @@ export async function registerExtensions(config: RuntimeConfig): Promise<Extensi
 // Export extension classes and types
 export { ApiExtension } from './api/index.js'
 export { TelegramExtension, createTelegramExtension, type TelegramConfig } from './telegram/index.js'
+export { MCPClientExtension, type MCPClientConfig } from './mcp-client/index.js'
+export { MCPServerExtension, type MCPServerConfig } from './mcp-server/index.js'
+export { CommunicationExtension, type CommunicationConfig } from './communication/index.js'

@@ -6,11 +6,7 @@
   "main": "index.js",
   "dependencies": {
     "@ai-sdk/mistral": "^1.0.8",
-    "ai": "^5.0.8"
-  },
-  "peerDependencies": {
-    "@symindx/types": "workspace:*",
-    "@symindx/utils": "workspace:*"
+    "ai": "^4.3.16"
   },
   "keywords": [
     "ai",

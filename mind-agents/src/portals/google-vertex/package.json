@@ -5,12 +5,8 @@
   "type": "module",
   "main": "index.js",
   "dependencies": {
-    "@ai-sdk/google-vertex": "^1.0.8",
-    "ai": "^5.0.8"
-  },
-  "peerDependencies": {
-    "@symindx/types": "workspace:*",
-    "@symindx/utils": "workspace:*"
+    "@ai-sdk/google-vertex": "^2.2.24",
+    "ai": "^4.3.16"
   },
   "keywords": [
     "ai",

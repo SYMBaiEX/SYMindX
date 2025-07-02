@@ -10,7 +10,7 @@ import {
   PortalConfig, PortalType, PortalStatus, ModelType, PortalCapability,
   TextGenerationOptions, TextGenerationResult, ChatMessage, ChatGenerationOptions, 
   ChatGenerationResult, EmbeddingOptions, EmbeddingResult, ImageGenerationOptions, 
-  ImageGenerationResult
+  ImageGenerationResult, FinishReason, MessageRole
 } from '../../types/portal.js'
 import { Agent } from '../../types/agent.js'
 import { 
@@ -28,12 +28,8 @@ import {
 import { createOpenAI } from '@ai-sdk/openai'
 import { createAnthropic } from '@ai-sdk/anthropic'
 import { createGroq } from '@ai-sdk/groq'
-import { createTogetherAI } from '@ai-sdk/togetherai'
 import { createCohere } from '@ai-sdk/cohere'
 import { createPerplexity } from '@ai-sdk/perplexity'
-import { createFireworks } from '@ai-sdk/fireworks'
-import { createDeepInfra } from '@ai-sdk/deepinfra'
-import { createReplicate } from '@ai-sdk/replicate'
 import { z } from 'zod'
 
 export interface VercelAIConfig extends PortalConfig {
@@ -168,11 +164,6 @@ export class VercelAIPortal extends BasePortal {
               apiKey: providerConfig?.apiKey || process.env.GROQ_API_KEY
             })
             break
-          case 'togetherai':
-            provider = createTogetherAI({
-              apiKey: providerConfig?.apiKey || process.env.TOGETHER_AI_API_KEY
-            })
-            break
           case 'cohere':
             provider = createCohere({
               apiKey: providerConfig?.apiKey || process.env.COHERE_API_KEY
@@ -181,21 +172,6 @@ export class VercelAIPortal extends BasePortal {
           case 'perplexity':
             provider = createPerplexity({
               apiKey: providerConfig?.apiKey || process.env.PERPLEXITY_API_KEY
-            })
-            break
-          case 'fireworks':
-            provider = createFireworks({
-              apiKey: providerConfig?.apiKey || process.env.FIREWORKS_API_KEY
-            })
-            break
-          case 'deepinfra':
-            provider = createDeepInfra({
-              apiKey: providerConfig?.apiKey || process.env.DEEPINFRA_API_KEY
-            })
-            break
-          case 'replicate':
-            provider = createReplicate({
-              apiToken: providerConfig?.apiKey || process.env.REPLICATE_API_TOKEN
             })
             break
           default:
@@ -361,7 +337,7 @@ export class VercelAIPortal extends BasePortal {
       })
 
       const assistantMessage: ChatMessage = {
-        role: 'assistant',
+        role: MessageRole.ASSISTANT,
         content: text,
         timestamp: new Date()
       }
@@ -418,7 +394,7 @@ export class VercelAIPortal extends BasePortal {
       })
       
       return {
-        images: [{ url: image.url || image.b64_json }],
+        images: [{ url: (image as any).url || (image as any).b64_json || 'data:image/png;base64,' + image }],
         model,
         usage: {
           promptTokens: prompt.length,
@@ -553,22 +529,23 @@ export class VercelAIPortal extends BasePortal {
     return toolsMap
   }
 
-  private mapFinishReason(reason?: string): 'stop' | 'length' | 'content-filter' | 'tool-calls' | 'error' | 'other' | 'cancelled' {
+  private mapFinishReason(reason?: string): FinishReason {
     switch (reason) {
       case 'stop':
-        return 'stop'
+        return FinishReason.STOP
       case 'length':
-        return 'length'
+        return FinishReason.LENGTH
       case 'tool-calls':
-        return 'tool-calls'
+      case 'function_call':
+        return FinishReason.FUNCTION_CALL
       case 'content-filter':
-        return 'content-filter'
+        return FinishReason.CONTENT_FILTER
       case 'error':
-        return 'error'
+        return FinishReason.ERROR
       case 'cancelled':
-        return 'cancelled'
+        return FinishReason.CANCELLED
       default:
-        return 'stop'
+        return FinishReason.STOP
     }
   }
 

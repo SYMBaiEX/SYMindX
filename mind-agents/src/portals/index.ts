@@ -5,7 +5,7 @@
  * for managing AI provider portals in the Symindx agent framework.
  */
 
-import { Portal, PortalConfig, PortalCapability, ToolEvaluationOptions, ToolEvaluationResult } from '../types/portal.js'
+import { Portal, PortalConfig, PortalCapability, PortalType, ToolEvaluationOptions, ToolEvaluationResult } from '../types/portal.js'
 import { Agent } from '../types/agent.js'
 import type { GoogleVertexConfig } from './google-vertex/index.js'
 import type { GoogleGenerativeConfig } from './google-generative/index.js'
@@ -297,7 +297,7 @@ export class PortalRouter {
     // For evaluation capability, prefer faster/cheaper models
     if (capability === PortalCapability.EVALUATION) {
       return capablePortals.find(portal => 
-        portal.type === 'custom' || // Groq, typically faster
+        portal.type === PortalType.GROQ || // Groq, typically faster
         (portal as any).config?.toolModel // Has dedicated tool model
       ) || capablePortals[0]
     }

@@ -5,14 +5,7 @@
   "type": "module",
   "main": "index.js",
   "dependencies": {
-    "ai": "^5.0.8"
-  },
-  "peerDependencies": {
-    "@symindx/types": "workspace:*",
-    "@symindx/utils": "workspace:*",
-    "@symindx/portal-openai": "workspace:*",
-    "@symindx/portal-anthropic": "workspace:*",
-    "@symindx/portal-google-vertex": "workspace:*"
+    "ai": "^4.3.16"
   },
   "keywords": [
     "ai",
