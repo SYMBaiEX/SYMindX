@@ -174,7 +174,7 @@ export default function ThoughtStream({ agentId, wsInstance }: ThoughtStreamProp
           <Button
             variant="outline"
             size="sm"
-            onClick={() => fetchThoughts()}
+            onClick={() => setThoughts([])}
             disabled={loading}
           >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />

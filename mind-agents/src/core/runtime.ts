@@ -38,7 +38,7 @@ import { SimplePluginLoader, createPluginLoader } from './plugin-loader.js'
 import { SimpleEventBus } from './event-bus.js'
 import { SYMindXModuleRegistry } from './registry.js'
 import { ExtensionContext } from '../types/extension.js'
-import { Logger } from '../utils/logger.js'
+import { Logger, runtimeLogger } from '../utils/logger.js'
 // Autonomous system imports
 import { AutonomousEngine, AutonomousEngineConfig } from './autonomous-engine.js'
 import { DecisionEngine } from './decision-engine.js'
@@ -85,7 +85,7 @@ export class SYMindXRuntime implements AgentRuntime {
   }
 
   async initialize(): Promise<void> {
-    console.log('🔄 Initializing SYMindX Runtime...')
+    runtimeLogger.start('Initializing SYMindX Runtime...')
     
     // Load environment variables from .env file if it exists
     try {
@@ -99,9 +99,9 @@ export class SYMindXRuntime implements AgentRuntime {
       
       // Try to load .env file
       configDotenv({ path: envPath })
-      console.log('🔧 Environment variables loaded from .env file')
+      runtimeLogger.config('🔧 Environment variables loaded from .env file')
     } catch (error) {
-      console.log('⚠️ No .env file found or dotenv not available, using system environment variables')
+      runtimeLogger.warn('⚠️ No .env file found or dotenv not available, using system environment variables')
     }
     
     // Try to load configuration from config/runtime.json
@@ -117,7 +117,7 @@ export class SYMindXRuntime implements AgentRuntime {
       // Check if the config file exists
       try {
         await fs.access(configPath)
-        console.log(`📄 Loading configuration from ${configPath}`)
+        runtimeLogger.config(`📄 Loading configuration from ${configPath}`)
         
         // Read and parse the config file
         const configData = await fs.readFile(configPath, 'utf-8')
@@ -155,10 +155,10 @@ export class SYMindXRuntime implements AgentRuntime {
           }
         }
         
-        console.log('✅ Configuration loaded successfully')
+        runtimeLogger.success('✅ Configuration loaded successfully')
       } catch (err) {
         if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
-          console.log('⚠️ No runtime.json found, using default configuration with environment variables')
+          runtimeLogger.warn('⚠️ No runtime.json found, using default configuration with environment variables')
           // Still load API keys from environment even without config file
           this.config = {
             ...this.config,
@@ -184,20 +184,20 @@ export class SYMindXRuntime implements AgentRuntime {
         }
       }
     } catch (error) {
-      console.error('❌ Error loading configuration:', error)
-      console.log('⚠️ Falling back to default configuration')
+      runtimeLogger.error('❌ Error loading configuration:', error)
+      runtimeLogger.warn('⚠️ Falling back to default configuration')
     }
     
-    console.log('✅ SYMindX Runtime initialized')
+    runtimeLogger.success('✅ SYMindX Runtime initialized')
   }
 
   async start(): Promise<void> {
     if (this.isRunning) {
-      console.log('⚠️ Runtime is already running')
+      runtimeLogger.warn('⚠️ Runtime is already running')
       return
     }
 
-    console.log('🎯 Starting SYMindX Runtime...')
+    runtimeLogger.start('🎯 Starting SYMindX Runtime...')
     
     // Register core modules
     await this.registerCoreModules()
@@ -214,7 +214,7 @@ export class SYMindXRuntime implements AgentRuntime {
       this.eventBus, 
       this
     )
-    console.log('🤖 Multi-Agent Manager initialized')
+    runtimeLogger.agent('🤖 Multi-Agent Manager initialized')
     
     // Initialize tool system
     await this.initializeToolSystem()
@@ -230,12 +230,12 @@ export class SYMindXRuntime implements AgentRuntime {
     // Start the main processing loop
     this.tickTimer = setInterval(() => {
       this.tick().catch(error => {
-        console.error('❌ Runtime tick error:', error)
+        runtimeLogger.error('❌ Runtime tick error:', error)
       })
     }, this.config.tickInterval)
     
-    console.log('✅ SYMindX Runtime started successfully')
-        console.log('📊 Plugin Stats:', this.pluginLoader.getStats())
+    runtimeLogger.success('✅ SYMindX Runtime started successfully')
+        runtimeLogger.info('📊 Plugin Stats:', this.pluginLoader.getStats())
         await this.eventBus.publish({
           id: `event_${Date.now()}`,
           type: 'runtime_started',
@@ -249,7 +249,7 @@ export class SYMindXRuntime implements AgentRuntime {
   async stop(): Promise<void> {
     if (!this.isRunning) return
     
-    console.log('🛑 Stopping SYMindX Runtime...')
+    runtimeLogger.warn('🛑 Stopping SYMindX Runtime...')
     this.isRunning = false
     
     // Stop multi-agent manager first
@@ -267,11 +267,11 @@ export class SYMindXRuntime implements AgentRuntime {
       await this.shutdownAgent(agent)
     }
     
-    console.log('✅ SYMindX Runtime stopped')
+    runtimeLogger.success('✅ SYMindX Runtime stopped')
   }
 
   async loadAgents(): Promise<void> {
-    console.log('🔍 Loading agents from characters directory...')
+    runtimeLogger.agent('🔍 Loading agents from characters directory...')
     
     try {
       const fs = await import('fs/promises')
@@ -280,7 +280,7 @@ export class SYMindXRuntime implements AgentRuntime {
       // Get the characters directory path
       const __dirname = path.dirname(new URL(import.meta.url).pathname)
       const charactersDir = path.resolve(__dirname, '../characters')
-      console.log(`🔍 Looking for characters in: ${charactersDir}`)
+      runtimeLogger.agent(`🔍 Looking for characters in: ${charactersDir}`)
       
       // Check if the characters directory exists
       try {
@@ -296,14 +296,14 @@ export class SYMindXRuntime implements AgentRuntime {
           const singleAgentFile = `${forceSingleAgent}.json`
           if (jsonFiles.includes(singleAgentFile)) {
             jsonFiles = [singleAgentFile]
-            console.log(`🎯 Loading single agent: ${forceSingleAgent}`)
+            runtimeLogger.agent(`🎯 Loading single agent: ${forceSingleAgent}`)
           } else {
-            console.log(`⚠️ Single agent ${forceSingleAgent} not found, loading all agents`)
+            runtimeLogger.warn(`⚠️ Single agent ${forceSingleAgent} not found, loading all agents`)
           }
         }
         
         if (jsonFiles.length === 0) {
-          console.log('⚠️ No agent configuration files found in characters directory')
+          runtimeLogger.warn('⚠️ No agent configuration files found in characters directory')
           return
         }
         
@@ -316,7 +316,7 @@ export class SYMindXRuntime implements AgentRuntime {
             
             // Check if agent is enabled
             if (rawConfig.enabled === false) {
-              console.log(`⏸️ Skipping disabled agent: ${file}`)
+              runtimeLogger.agent(`⏸️ Skipping disabled agent: ${file}`)
               continue
             }
             
@@ -324,17 +324,17 @@ export class SYMindXRuntime implements AgentRuntime {
             
             // Check if this is a new clean character config or old format
             if (this.isCleanCharacterConfig(rawConfig)) {
-              console.log(`🔄 Processing clean character config: ${file}`)
+              runtimeLogger.agent(`🔄 Processing clean character config: ${file}`)
               // Validate environment variables
               const envValidation = configResolver.validateEnvironment()
               if (!envValidation.valid) {
-                console.warn(`⚠️ Missing environment variables for ${file}:`, envValidation.missing)
+                runtimeLogger.warn(`⚠️ Missing environment variables for ${file}:`, envValidation.missing)
               }
               
               // Transform clean config to runtime config
               agentConfig = configResolver.resolveCharacterConfig(rawConfig as CharacterConfig)
             } else {
-              console.log(`📝 Processing legacy character config: ${file}`)
+              runtimeLogger.agent(`📝 Processing legacy character config: ${file}`)
               // Legacy format - use as-is but process environment variables
               agentConfig = this.processLegacyConfig(rawConfig)
             }
@@ -342,11 +342,11 @@ export class SYMindXRuntime implements AgentRuntime {
             // Load the agent
             await this.loadAgent(agentConfig, rawConfig.id)
           } catch (error) {
-            console.error(`❌ Error loading agent from ${file}:`, error)
+            runtimeLogger.error(`❌ Error loading agent from ${file}:`, error)
           }
         }
         
-        console.log(`✅ Loaded ${this.agents.size} agents`)
+        runtimeLogger.success(`✅ Loaded ${this.agents.size} agents`)
       } catch (err) {
         if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
           console.log('⚠️ Characters directory not found, no agents loaded')

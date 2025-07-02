@@ -12,6 +12,7 @@ dotenv.config({ path: envPath });
 import { SYMindXRuntime } from './core/runtime.js';
 import type { RuntimeConfig } from './types/agent.js';
 import { LogLevel, MemoryProviderType, EmotionModuleType, CognitionModuleType } from './types/agent.js';
+import { logger } from './utils/logger.js';
 
 // Export autonomous components for external use
 export { AutonomousEngine } from './core/autonomous-engine.js';
@@ -56,15 +57,16 @@ const runtime = new SYMindXRuntime(config);
 // Start the runtime
 async function start() {
   try {
-    console.log('Starting SYMindX Runtime...');
+    logger.banner('SYMindX Runtime', 'Modular AI Agent Framework');
+    logger.start('Initializing runtime...');
     await runtime.initialize();
-    console.log('SYMindX Runtime initialized successfully');
+    logger.success('Runtime initialized');
     
     // Start the runtime loop (which will load agents after registering modules)
     await runtime.start();
-    console.log('SYMindX Runtime started successfully');
+    logger.success('Runtime started successfully');
   } catch (error) {
-    console.error('Failed to start SYMindX Runtime:', error);
+    logger.error('Failed to start runtime:', error);
     process.exit(1);
   }
 }
@@ -73,15 +75,15 @@ start();
 
 // Handle graceful shutdown
 process.on('SIGINT', async () => {
-  console.log('Shutting down SYMindX Runtime...');
+  logger.warn('Received shutdown signal, stopping runtime...');
   await runtime.stop();
-  console.log('SYMindX Runtime stopped successfully');
+  logger.success('Runtime stopped successfully');
   process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
-  console.log('Shutting down SYMindX Runtime...');
+  logger.warn('Received termination signal, stopping runtime...');
   await runtime.stop();
-  console.log('SYMindX Runtime stopped successfully');
+  logger.success('Runtime stopped successfully');
   process.exit(0);
 });

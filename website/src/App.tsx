@@ -139,7 +139,8 @@ function App() {
                     metrics: {
                       ...agent.metrics,
                       uptime: message.data.uptime || agent.metrics?.uptime || 0,
-                      memoryUsage: message.data.memoryUsage || agent.metrics?.memoryUsage || 0
+                      memoryUsage: message.data.memoryUsage || agent.metrics?.memoryUsage || 0,
+                      tasksCompleted: message.data.tasksCompleted || agent.metrics?.tasksCompleted || 0
                     }
                   } : agent
                 ))
