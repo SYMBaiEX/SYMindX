@@ -7,7 +7,7 @@
 
 export { SYMindXRuntime } from './runtime.js'
 export { SYMindXModuleRegistry } from './registry.js'
-export type { SimplePluginLoader } from './simple-plugin-loader.js'
-export { SimpleEventBus } from './simple-event-bus.js'
+export type { SimplePluginLoader } from './plugin-loader.js'
+export { SimpleEventBus } from './event-bus.js'
 
 // Complex plugin system removed during emergency cleanup

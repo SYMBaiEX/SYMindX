@@ -1888,5 +1888,14 @@
       ],
       "breadcrumbs": true
     }
+  },
+  "docusaurus-plugin-google-gtag": {
+    "default": {
+      "trackingID": [
+        "G-XXXXXXXXXX"
+      ],
+      "anonymizeIP": true,
+      "id": "default"
+    }
   }
 }

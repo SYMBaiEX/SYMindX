@@ -33,9 +33,8 @@ export async function registerPortals(
         apiKey: apiKeys[portalName] || process.env[`${portalName.toUpperCase()}_API_KEY`] || defaultConfig.apiKey
       }
       
-      // Skip if no API key is available
+      // Skip if no API key is available (silently)
       if (!config.apiKey) {
-        console.warn(`⚠️ Skipping portal ${portalName}: No API key provided`)
         continue
       }
       

@@ -625,7 +625,8 @@ export class CommandSystem extends EventEmitter {
               data: {
                 message: command.instruction,
                 emotion: emotionalContext,
-                sender: 'user'
+                sender: 'user',
+                isSimpleChat: true // Flag for unified cognition
               }
             }],
             memories: recentMemories || [],
@@ -677,8 +678,12 @@ export class CommandSystem extends EventEmitter {
         this.logger.debug(`Agent ${agent.name} has no cognition module available`)
       }
       
-      // Step 2: Generate AI response using portal with emotional AND cognitive context
-      const enhancedPrompt = this.buildEnhancedSystemPrompt(agent, emotionalContext, conversationContext, cognitiveContext)
+      // Step 2: Generate AI response using sophisticated prompt system
+      let enhancedPrompt: string
+      
+      // TEMPORARILY DISABLED - Prompt integration
+      // Always use legacy prompt building for now
+      enhancedPrompt = this.buildEnhancedSystemPrompt(agent, command.instruction, emotionalContext, conversationContext, cognitiveContext)
       
       const response = await PortalIntegration.generateResponse(
         agent, 
@@ -1214,6 +1219,7 @@ export class CommandSystem extends EventEmitter {
   
   /**
    * Build system prompt that includes emotional state
+   * @deprecated Use PromptIntegration for sophisticated prompting
    */
   private buildEmotionalSystemPrompt(agent: Agent, emotionalContext: {
     currentEmotion?: string
@@ -1223,6 +1229,7 @@ export class CommandSystem extends EventEmitter {
     postResponseEmotion?: string
     postResponseIntensity?: number
   }, conversationContext?: string): string {
+    // Legacy implementation preserved for backward compatibility
     let prompt = `You are in a chat conversation. Respond naturally and helpfully.`
     
     // Add emotional state context
@@ -1309,7 +1316,7 @@ export class CommandSystem extends EventEmitter {
   /**
    * Build enhanced system prompt that includes emotional AND cognitive context
    */
-  private buildEnhancedSystemPrompt(agent: Agent, emotionalContext: {
+  private buildEnhancedSystemPrompt(agent: Agent, message: string, emotionalContext: {
     currentEmotion?: string
     emotionIntensity?: number
     emotionModifiers?: Record<string, number>
@@ -1323,57 +1330,20 @@ export class CommandSystem extends EventEmitter {
     cognitiveConfidence?: number
     cognitiveMemories?: any[]
   }): string {
-    let prompt = `You are in a chat conversation. Respond naturally and helpfully.`
+    // Build system prompt manually for now
+    const emotionString = emotionalContext?.currentEmotion ? `\nCurrent emotion: ${emotionalContext.currentEmotion} (${Math.round((emotionalContext.emotionIntensity || 0) * 100)}%)` : ''
+    const conversationString = conversationContext ? `\nConversation context:\n${conversationContext}` : ''
     
-    // Add emotional state context
-    if (emotionalContext.currentEmotion && emotionalContext.currentEmotion !== 'neutral') {
-      const intensity = emotionalContext.emotionIntensity || 0
-      prompt += `\n\nYour current emotional state: ${emotionalContext.currentEmotion} (intensity: ${(intensity * 100).toFixed(0)}%)`
-      
-      // Add emotional modifiers guidance
-      if (emotionalContext.emotionModifiers && Object.keys(emotionalContext.emotionModifiers).length > 0) {
-        prompt += `\nEmotional influences on your behavior:`
-        for (const [modifier, value] of Object.entries(emotionalContext.emotionModifiers)) {
-          if (typeof value === 'number' && value !== 1.0) {
-            const change = value > 1.0 ? 'increased' : 'decreased'
-            const percentage = Math.abs((value - 1.0) * 100).toFixed(0)
-            prompt += `\n- ${modifier}: ${change} by ${percentage}%`
-          }
-        }
-      }
-      
-      // Add emotional guidance
-      prompt += `\n\nRespond in a way that reflects your ${emotionalContext.currentEmotion} emotional state. `
-      prompt += this.getEmotionalGuidance(emotionalContext.currentEmotion, intensity)
-    }
+    // Access character config properties safely
+    const characterConfig = agent.characterConfig || agent.config
+    const backstory = characterConfig.personality?.backstory || ''
+    const guidelines = characterConfig.communication?.guidelines || []
     
-    // Add cognitive context if available
-    if (cognitiveContext && cognitiveContext.thoughts && cognitiveContext.thoughts.length > 0) {
-      prompt += `\n\nYour cognitive analysis of the situation:`
-      prompt += `\n- Thoughts: ${cognitiveContext.thoughts.join(', ')}`
-      
-      if (cognitiveContext.cognitiveConfidence !== undefined) {
-        prompt += `\n- Cognitive confidence: ${(cognitiveContext.cognitiveConfidence * 100).toFixed(0)}%`
-      }
-      
-      if (cognitiveContext.cognitiveActions && cognitiveContext.cognitiveActions.length > 0) {
-        const communicationActions = cognitiveContext.cognitiveActions.filter(
-          action => action.type === 'communication' || action.type.includes('communication')
-        )
-        if (communicationActions.length > 0) {
-          prompt += `\n- Communication intentions: ${communicationActions.map(a => a.type).join(', ')}`
-        }
-      }
-      
-      prompt += `\n\nUse these cognitive insights to inform your response while maintaining your natural personality.`
-    }
-    
-    // Add conversation context
-    if (conversationContext) {
-      prompt += `\n\nRecent conversation context:\n${conversationContext}`
-    }
-    
-    return prompt
+    return `You are ${agent.name}. ${backstory}
+
+${guidelines.join('\n')}${emotionString}${conversationString}
+
+Respond naturally to: "${message}"`
   }
 
   public getStats(): {

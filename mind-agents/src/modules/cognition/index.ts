@@ -1,20 +1,10 @@
 /**
  * Cognition Module Factory
  * 
- * This file exports all available cognition modules and provides factory functions
- * for creating them based on type.
+ * Simplified to use only the unified cognition module
  */
 
-import { 
-  HTNPlannerCognition, 
-  createHTNPlannerCognition,
-  ReactiveCognition,
-  createReactiveCognition, 
-  HybridCognition,
-  createHybridCognition,
-  createCognitionModule as createCognitionModuleFactory,
-  getAvailableCognitionModuleTypes
-} from './cognitive-functions/index.js'
+import { UnifiedCognition, createUnifiedCognition } from './cognition.js'
 import { CognitionModuleType } from '../../types/agent.js'
 
 /**
@@ -23,77 +13,60 @@ import { CognitionModuleType } from '../../types/agent.js'
 export function createCognitionModule(type: string, config: any) {
   console.log(`🧠 Creating cognition module: ${type}`);
   
-  // Map string types to enum types
-  let moduleType: CognitionModuleType;
+  // All types now use unified cognition with different configs
   switch (type) {
-    case 'htn_planner':
-      moduleType = CognitionModuleType.HTN_PLANNER;
-      break;
-    case 'reactive':
-      moduleType = CognitionModuleType.REACTIVE;
-      break;
-    case 'hybrid':
-      moduleType = CognitionModuleType.HYBRID;
-      break;
+    case 'unified':
+    case 'htn_planner': // Legacy compatibility
+    case 'reactive':    // Legacy compatibility  
+    case 'hybrid':      // Legacy compatibility
+      return createUnifiedCognition({
+        ...config,
+        // Adjust config based on legacy type
+        analysisDepth: type === 'htn_planner' ? 'deep' : 
+                      type === 'reactive' ? 'shallow' : 
+                      'normal'
+      })
     default:
-      throw new Error(`Unknown cognition module type: ${type}`);
+      console.warn(`Unknown cognition type: ${type}, using unified`)
+      return createUnifiedCognition(config)
   }
-  
-  return createCognitionModuleFactory(moduleType, config);
 }
 
 /**
  * Get all available cognition module types
  */
 export function getCognitionModuleTypes(): string[] {
-  return ['htn_planner', 'reactive', 'hybrid'];
+  return ['unified'] // Simplified to just unified
 }
 
-// Export cognition modules
-export { HTNPlannerCognition, ReactiveCognition, HybridCognition };
+// Export the unified cognition module
+export { UnifiedCognition }
 
 // Registration function
 export function registerCognitionModules(registry: any) {
-  console.log('🧠 Registering cognition modules...');
+  console.log('🧠 Registering unified cognition module...')
   
-  // Register factory functions for dynamic creation
-  registry.registerCognitionFactory('htn_planner', (config: any) => 
-    createHTNPlannerCognition(config || { planningDepth: 3, memoryIntegration: true, creativityLevel: 0.5 }));
-  registry.registerCognitionFactory('reactive', (config: any) => 
-    createReactiveCognition(config || { responseSpeed: 0.8, emotionalInfluence: 0.6, adaptability: 0.4 }));
-  registry.registerCognitionFactory('hybrid', (config: any) => 
-    createHybridCognition(config || { 
-      planningDepth: 3,
-      planningBreadth: 5,
-      planningHorizon: 10,
-      responseSpeed: 0.8, 
-      emotionalInfluence: 0.6, 
-      adaptability: 0.4,
-      planningThreshold: 0.5,
-      contextualWeight: 0.7
-    }));
+  // Register factory for unified cognition
+  registry.registerCognitionFactory('unified', (config: any) => 
+    createUnifiedCognition(config || {
+      thinkForActions: true,
+      thinkForMentions: true,
+      thinkOnRequest: true,
+      quickResponseMode: true,
+      analysisDepth: 'normal'
+    }))
   
-  // Also register default instances for backwards compatibility
-  registry.registerCognitionModule('htn_planner', createHTNPlannerCognition({ 
-    planningDepth: 3, 
-    memoryIntegration: true, 
-    creativityLevel: 0.5 
-  }));
-  registry.registerCognitionModule('reactive', createReactiveCognition({ 
-    responseSpeed: 0.8, 
-    emotionalInfluence: 0.6, 
-    adaptability: 0.4 
-  }));
-  registry.registerCognitionModule('hybrid', createHybridCognition({ 
-    planningDepth: 3,
-    planningBreadth: 5,
-    planningHorizon: 10, 
-    responseSpeed: 0.8, 
-    emotionalInfluence: 0.6, 
-    adaptability: 0.4,
-    planningThreshold: 0.5,
-    contextualWeight: 0.7
-  }));
+  // Register legacy names for compatibility
+  const legacyTypes = ['htn_planner', 'reactive', 'hybrid']
+  for (const type of legacyTypes) {
+    registry.registerCognitionFactory(type, (config: any) => 
+      createUnifiedCognition({
+        ...config,
+        analysisDepth: type === 'htn_planner' ? 'deep' : 
+                      type === 'reactive' ? 'shallow' : 
+                      'normal'
+      }))
+  }
   
-  console.log('✅ Cognition modules registered: htn_planner, reactive, hybrid');
+  console.log('✅ Cognition module registered: unified (with legacy compatibility)')
 }

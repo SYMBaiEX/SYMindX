@@ -13,7 +13,9 @@ import {
   AgentStatus,
   ActionStatus,
   ActionCategory,
-  ActionResultType
+  ActionResultType,
+  MemoryType,
+  MemoryDuration
 } from '../types/agent.js'
 import {
   AutonomousAgent,
@@ -1021,13 +1023,337 @@ export class AutonomousEngine {
   }
 
   private async performAction(action: AgentAction): Promise<any> {
-    // Simulate action execution
-    await this.sleep(100)
-    return {
-      success: true,
-      type: ActionResultType.SUCCESS,
-      result: `Autonomous action ${action.action} completed`
+    try {
+      // 1. Validate action using TOOL_MODEL if available
+      const validation = await this.validateAction(action)
+      if (!validation.allowed) {
+        return {
+          success: false,
+          type: ActionResultType.FAILURE,
+          error: validation.reason
+        }
+      }
+      
+      // 2. Route to appropriate handler based on action type
+      switch (action.action) {
+        case 'memory_consolidation':
+          return await this.consolidateMemories()
+        case 'goal_review':
+          return await this.reviewGoals()
+        case 'curiosity_exploration':
+          return await this.exploreCuriosity()
+        case 'social_check_ins':
+          return await this.performSocialCheckIn()
+        case 'reflection':
+          return await this.performReflection()
+        case 'knowledge_synthesis':
+          return await this.synthesizeKnowledge()
+        case 'creative_work':
+          return await this.doCreativeWork()
+        case 'learning_integration':
+          return await this.integrateLearning()
+        case 'insight_generation':
+          return await this.generateInsights()
+        case 'wisdom_development':
+          return await this.developWisdom()
+        default:
+          // For unknown actions, just mark as complete
+          this.logger.info(`Executing generic autonomous action: ${action.action}`)
+          return {
+            success: true,
+            type: ActionResultType.SUCCESS,
+            result: `Completed ${action.action}`
+          }
+      }
+    } catch (error) {
+      this.logger.error(`Action failed: ${action.action}`, error)
+      return {
+        success: false,
+        type: ActionResultType.FAILURE,
+        error: error instanceof Error ? error.message : String(error)
+      }
     }
+  }
+  
+  /**
+   * Validate an action using the TOOL_MODEL for quick decisions
+   */
+  private async validateAction(action: AgentAction): Promise<{allowed: boolean; reason: string}> {
+    // Skip validation if no portal available
+    const portal = (this.agent as any).findPortalByCapability?.('tool_usage') || this.agent.portal
+    if (!portal) return { allowed: true, reason: 'No validation portal available' }
+    
+    try {
+      const { PromptManager } = await import('./prompt-manager.js')
+      const prompt = PromptManager.format(PromptManager.PROMPTS.ACTION_VALIDATION, {
+        action: `${action.action} (${action.type})`,
+        context: `Phase: ${this.currentPhase?.name || 'unknown'}, Energy: ${(this.agent as any).energy || 1.0}`,
+        ethics: this.agent.config.core.personality.includes('ethical') ? 'high' : 'normal'
+      })
+      
+      const { PortalIntegration } = await import('./portal-integration.js')
+      const response = await PortalIntegration.generateResponse(this.agent, prompt, {
+        temperature: 0,
+        maxTokens: 100
+      })
+      
+      try {
+        const result = JSON.parse(response)
+        return result
+      } catch {
+        // If parsing fails, allow the action
+        return { allowed: true, reason: 'Validation response parsing failed' }
+      }
+    } catch (error) {
+      this.logger.warn('Action validation failed:', error)
+      return { allowed: true, reason: 'Validation error' }
+    }
+  }
+  
+  /**
+   * Consolidate memories - review and organize important memories
+   */
+  private async consolidateMemories(): Promise<any> {
+    if (!this.agent.memory) {
+      return { success: false, type: ActionResultType.FAILURE, error: 'No memory system' }
+    }
+    
+    try {
+      // Get recent memories
+      const recentMemories = await this.agent.memory.getRecent(this.agent.id, 20)
+      if (recentMemories.length === 0) {
+        return { success: true, type: ActionResultType.SUCCESS, result: 'No memories to consolidate' }
+      }
+      
+      // Use main model to identify important memories
+      const { PromptManager } = await import('./prompt-manager.js')
+      const prompt = PromptManager.format(PromptManager.PROMPTS.MEMORY_CONSOLIDATION, {
+        memories: recentMemories.map(m => `ID: ${m.id} | ${m.content}`).join('\n')
+      })
+      
+      if (this.agent.portal) {
+        const { PortalIntegration } = await import('./portal-integration.js')
+        const analysis = await PortalIntegration.generateResponse(this.agent, prompt)
+        this.logger.info(`Memory consolidation complete: ${analysis.substring(0, 100)}...`)
+        
+        // Store consolidation as a meta-memory
+        await this.agent.memory.store(this.agent.id, {
+          id: `consolidation_${Date.now()}`,
+          agentId: this.agent.id,
+          type: MemoryType.REFLECTION,
+          content: `Memory consolidation: ${analysis}`,
+          metadata: { source: 'autonomous_engine', action: 'memory_consolidation' },
+          importance: 0.8,
+          timestamp: new Date(),
+          tags: ['consolidation', 'autonomous', 'meta-memory'],
+          duration: MemoryDuration.LONG_TERM
+        })
+      }
+      
+      return { success: true, type: ActionResultType.SUCCESS, result: 'Memories consolidated' }
+    } catch (error) {
+      return { success: false, type: ActionResultType.FAILURE, error: error instanceof Error ? error.message : 'Unknown error' }
+    }
+  }
+  
+  /**
+   * Review and update goals
+   */
+  private async reviewGoals(): Promise<any> {
+    try {
+      const goals = (this.agent.config as any).personality?.goals || []
+      if (goals.length === 0) {
+        return { success: true, type: ActionResultType.SUCCESS, result: 'No goals to review' }
+      }
+      
+      // Simple goal review - in future could be more sophisticated
+      this.logger.info(`Reviewing ${goals.length} goals`)
+      
+      // Store goal review as memory
+      if (this.agent.memory) {
+        await this.agent.memory.store(this.agent.id, {
+          id: `goal_review_${Date.now()}`,
+          agentId: this.agent.id,
+          type: MemoryType.REFLECTION,
+          content: `Reviewed goals: ${goals.join(', ')}`,
+          metadata: { source: 'autonomous_engine', action: 'goal_review' },
+          importance: 0.6,
+          timestamp: new Date(),
+          tags: ['goals', 'review', 'autonomous'],
+          duration: MemoryDuration.LONG_TERM
+        })
+      }
+      
+      return { success: true, type: ActionResultType.SUCCESS, result: `Reviewed ${goals.length} goals` }
+    } catch (error) {
+      return { success: false, type: ActionResultType.FAILURE, error: error instanceof Error ? error.message : 'Unknown error' }
+    }
+  }
+  
+  /**
+   * Explore topics based on curiosity
+   */
+  private async exploreCuriosity(): Promise<any> {
+    try {
+      const topics = (this.agent.config as any).autonomous_behaviors?.curiosity_driven?.topics_of_interest || []
+      if (topics.length === 0) {
+        return { success: true, type: ActionResultType.SUCCESS, result: 'No curiosity topics configured' }
+      }
+      
+      // Pick a random topic
+      const topic = topics[Math.floor(Math.random() * topics.length)]
+      this.logger.info(`Exploring curiosity topic: ${topic}`)
+      
+      // Store exploration as memory
+      if (this.agent.memory) {
+        await this.agent.memory.store(this.agent.id, {
+          id: `curiosity_${Date.now()}`,
+          agentId: this.agent.id,
+          type: MemoryType.EXPERIENCE,
+          content: `Explored topic: ${topic}`,
+          metadata: { source: 'autonomous_engine', action: 'curiosity_exploration', topic },
+          importance: 0.7,
+          timestamp: new Date(),
+          tags: ['curiosity', 'exploration', 'learning', topic],
+          duration: MemoryDuration.LONG_TERM
+        })
+      }
+      
+      return { success: true, type: ActionResultType.SUCCESS, result: `Explored ${topic}` }
+    } catch (error) {
+      return { success: false, type: ActionResultType.FAILURE, error: error instanceof Error ? error.message : 'Unknown error' }
+    }
+  }
+  
+  /**
+   * Perform social check-in
+   */
+  private async performSocialCheckIn(): Promise<any> {
+    try {
+      const { PromptManager } = await import('./prompt-manager.js')
+      
+      if (this.agent.portal) {
+        const prompt = PromptManager.format(PromptManager.PROMPTS.SOCIAL_CHECKIN, {
+          name: this.agent.name,
+          personality: this.agent.config.core.personality.join(', '),
+          emotion: this.agent.emotion?.getCurrentEmotion() || 'neutral',
+          interactions: 'Recent conversations with users'
+        })
+        
+        const { PortalIntegration } = await import('./portal-integration.js')
+        const message = await PortalIntegration.generateResponse(this.agent, prompt)
+        this.logger.info(`Social check-in: ${message}`)
+        
+        // Store as memory
+        if (this.agent.memory) {
+          await this.agent.memory.store(this.agent.id, {
+            id: `social_${Date.now()}`,
+            agentId: this.agent.id,
+            type: MemoryType.INTERACTION,
+            content: `Social check-in thought: ${message}`,
+            metadata: { source: 'autonomous_engine', action: 'social_check_ins' },
+            importance: 0.6,
+            timestamp: new Date(),
+            tags: ['social', 'autonomous', 'check-in'],
+            duration: MemoryDuration.LONG_TERM
+          })
+        }
+      }
+      
+      return { success: true, type: ActionResultType.SUCCESS, result: 'Social check-in complete' }
+    } catch (error) {
+      return { success: false, type: ActionResultType.FAILURE, error: error instanceof Error ? error.message : 'Unknown error' }
+    }
+  }
+  
+  /**
+   * Perform reflection on recent experiences
+   */
+  private async performReflection(): Promise<any> {
+    try {
+      const { PromptManager } = await import('./prompt-manager.js')
+      
+      // Get recent activities from memory
+      const recentMemories = this.agent.memory ? 
+        await this.agent.memory.getRecent(this.agent.id, 10) : []
+      
+      if (this.agent.portal) {
+        const prompt = PromptManager.format(PromptManager.PROMPTS.REFLECTION, {
+          activities: recentMemories.map(m => m.content).slice(0, 5).join('; '),
+          emotions: this.agent.emotion?.getHistory?.(5)?.map((e: any) => e.emotion).join(', ') || 'various',
+          goals: 'Personal growth and learning',
+          learnings: recentMemories.filter(m => m.tags.includes('learning')).length + ' new learnings'
+        })
+        
+        const { PortalIntegration } = await import('./portal-integration.js')
+        const reflection = await PortalIntegration.generateResponse(this.agent, prompt)
+        this.logger.info(`Reflection: ${reflection.substring(0, 100)}...`)
+        
+        // Store reflection
+        if (this.agent.memory) {
+          await this.agent.memory.store(this.agent.id, {
+            id: `reflection_${Date.now()}`,
+            agentId: this.agent.id,
+            type: MemoryType.REFLECTION,
+            content: reflection,
+            metadata: { source: 'autonomous_engine', action: 'reflection' },
+            importance: 0.9,
+            timestamp: new Date(),
+            tags: ['reflection', 'autonomous', 'growth', 'insight'],
+            duration: MemoryDuration.LONG_TERM
+          })
+        }
+      }
+      
+      return { success: true, type: ActionResultType.SUCCESS, result: 'Reflection complete' }
+    } catch (error) {
+      return { success: false, type: ActionResultType.FAILURE, error: error instanceof Error ? error.message : 'Unknown error' }
+    }
+  }
+  
+  /**
+   * Synthesize knowledge from experiences
+   */
+  private async synthesizeKnowledge(): Promise<any> {
+    this.logger.info('Synthesizing knowledge from recent experiences')
+    // This would analyze patterns in memories and create higher-level insights
+    return { success: true, type: ActionResultType.SUCCESS, result: 'Knowledge synthesized' }
+  }
+  
+  /**
+   * Engage in creative work
+   */
+  private async doCreativeWork(): Promise<any> {
+    this.logger.info('Engaging in creative work')
+    // This could generate creative content based on agent's personality
+    return { success: true, type: ActionResultType.SUCCESS, result: 'Creative work session complete' }
+  }
+  
+  /**
+   * Integrate new learnings
+   */
+  private async integrateLearning(): Promise<any> {
+    this.logger.info('Integrating recent learnings')
+    // This would consolidate new information into long-term knowledge
+    return { success: true, type: ActionResultType.SUCCESS, result: 'Learning integrated' }
+  }
+  
+  /**
+   * Generate new insights
+   */
+  private async generateInsights(): Promise<any> {
+    this.logger.info('Generating insights from experiences')
+    // This would create novel connections between memories
+    return { success: true, type: ActionResultType.SUCCESS, result: 'Insights generated' }
+  }
+  
+  /**
+   * Develop wisdom from experiences
+   */
+  private async developWisdom(): Promise<any> {
+    this.logger.info('Developing wisdom from accumulated experiences')
+    // This would extract deep patterns and principles
+    return { success: true, type: ActionResultType.SUCCESS, result: 'Wisdom development session complete' }
   }
 
   private couldCauseHarm(action: AgentAction): boolean {

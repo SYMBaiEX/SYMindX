@@ -390,8 +390,8 @@ class SYMindXCLI {
         console.log(chalk.blue('\n🤖 Autonomous Systems'))
         console.log(`${chalk.cyan('Engines:')} ${stats.autonomous.autonomousEngines}`)
         console.log(`${chalk.cyan('Decision Engines:')} ${stats.autonomous.decisionEngines}`)
-        console.log(`${chalk.cyan('Behavior Systems:')} ${stats.autonomous.behaviorSystems}`)
-        console.log(`${chalk.cyan('Lifecycle Systems:')} ${stats.autonomous.lifecycleSystems}`)
+        console.log(`${chalk.cyan('Behaviors:')} Integrated into autonomous engines`)
+        console.log(`${chalk.cyan('Lifecycle:')} Integrated into autonomous engines`)
       }
     } catch (error) {
       console.log(chalk.red('❌ Failed to get runtime stats'))

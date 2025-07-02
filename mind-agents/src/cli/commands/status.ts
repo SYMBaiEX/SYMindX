@@ -195,8 +195,8 @@ export class StatusCommand {
         console.log(chalk.cyan('\nAutonomous Systems:'))
         console.log(`  Engines: ${stats.autonomous.autonomousEngines}`)
         console.log(`  Decision Engines: ${stats.autonomous.decisionEngines}`)
-        console.log(`  Behavior Systems: ${stats.autonomous.behaviorSystems}`)
-        console.log(`  Lifecycle Systems: ${stats.autonomous.lifecycleSystems}`)
+        console.log(`  Behaviors: Integrated into autonomous engines`)
+        console.log(`  Lifecycle: Integrated into autonomous engines`)
       }
 
       // Plugin information
@@ -268,9 +268,7 @@ export class StatusCommand {
         console.log(`  Interruptible: ${autonomousStatus.engine?.interruptible ? '✅' : '❌'}`)
         console.log(`  Ethical Constraints: ${autonomousStatus.engine?.ethicalConstraints ? '✅' : '❌'}`)
         
-        if (autonomousStatus.lifecycle) {
-          console.log(`  Lifecycle State: ${autonomousStatus.lifecycle?.lifecycle?.stage || 'unknown'}`)
-        }
+        console.log(`  Lifecycle: Integrated into autonomous engine`)
       }
 
       // Command queue

@@ -367,9 +367,7 @@ export class AgentCommand {
         console.log(`${chalk.cyan('Interruptible:')} ${autonomousStatus.engine.interruptible ? '✅' : '❌'}`)
         console.log(`${chalk.cyan('Ethical Constraints:')} ${autonomousStatus.engine.ethicalConstraints ? '✅' : '❌'}`)
         
-        if (autonomousStatus.lifecycle) {
-          console.log(chalk.cyan('Lifecycle State:') + ' ' + (autonomousStatus.lifecycle?.lifecycle?.stage || 'unknown'))
-        }
+        console.log(chalk.cyan('Lifecycle:') + ' Integrated into autonomous engine')
       }
 
       // Configuration summary

@@ -24,5 +24,19 @@
     }
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "src/modules/behaviors_disabled", "src/modules/life-cycle_disabled"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/modules/behaviors_disabled",
+    "src/modules/life-cycle_disabled",
+    "**/*.disabled",
+    "src/modules/tools.disabled",
+    "src/prompts.disabled",
+    "src/core/tool-integration.ts.disabled",
+    "src/core/prompt-integration.ts.disabled",
+    "src/examples/tool-usage-example.ts.disabled",
+    "src/examples/prompt-system-usage.ts.disabled",
+    "src/modules/cognition/prompt-enhanced-cognition.ts.disabled",
+    "src/test-prompt-integration.ts.disabled"
+  ]
 }

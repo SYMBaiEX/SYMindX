@@ -10,8 +10,8 @@
 export { SYMindXRuntime } from './core/runtime.js';
 export { SYMindXModuleRegistry } from './core/registry.js';
 export type { EnhancedEventBus } from './core/enhanced-event-bus.js';
-export type { SimplePluginLoader } from './core/simple-plugin-loader.js';
-export { createPluginLoader } from './core/simple-plugin-loader.js';
+export type { SimplePluginLoader } from './core/plugin-loader.js';
+export { createPluginLoader } from './core/plugin-loader.js';
 
 // === TYPE SYSTEM ===
 export type * from './types/index.js';

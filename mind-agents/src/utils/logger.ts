@@ -63,4 +63,7 @@ export function createLogger(options: LoggerOptions = {}): Logger {
   return new Logger('', options)
 }
 
+// Create a default logger instance
+export const logger = new Logger('SYMindX')
+
 export default Logger

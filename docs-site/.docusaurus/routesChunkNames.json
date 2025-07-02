@@ -1,1587 +1,1544 @@
 {
-  "/__docusaurus/debug-5ff": {
-    "__comp": "__comp---theme-debug-config-23-a-2ff",
-    "__context": {
-      "plugin": "plugin---docusaurus-debugb-38-ad3"
-    }
-  },
-  "/__docusaurus/debug/config-5ba": {
-    "__comp": "__comp---theme-debug-config-23-a-2ff",
-    "__context": {
-      "plugin": "plugin---docusaurus-debugb-38-ad3"
-    }
-  },
-  "/__docusaurus/debug/content-a2b": {
-    "__comp": "__comp---theme-debug-contentba-8-ce7",
-    "__context": {
-      "plugin": "plugin---docusaurus-debugb-38-ad3"
-    },
-    "__props": "__props---docusaurus-debug-content-3-c-0-be2"
-  },
-  "/__docusaurus/debug/globalData-c3c": {
-    "__comp": "__comp---theme-debug-global-dataede-0fa",
-    "__context": {
-      "plugin": "plugin---docusaurus-debugb-38-ad3"
-    }
-  },
-  "/__docusaurus/debug/metadata-156": {
-    "__comp": "__comp---theme-debug-site-metadata-68-e-3d4",
-    "__context": {
-      "plugin": "plugin---docusaurus-debugb-38-ad3"
-    }
-  },
-  "/__docusaurus/debug/registry-88c": {
-    "__comp": "__comp---theme-debug-registry-679-501",
-    "__context": {
-      "plugin": "plugin---docusaurus-debugb-38-ad3"
-    }
-  },
-  "/__docusaurus/debug/routes-000": {
-    "__comp": "__comp---theme-debug-routes-946-699",
-    "__context": {
-      "plugin": "plugin---docusaurus-debugb-38-ad3"
-    }
-  },
   "/search-5de": {
-    "__comp": "__comp---theme-search-page-1-a-4-d6f",
+    "__comp": "1a4e3797",
     "__context": {
-      "plugin": "plugin---searchc-14-0ea"
+      "plugin": "c141421f"
     }
   },
-  "/docs-38c": {
-    "__comp": "__comp---theme-docs-root-5-e-9-0b6",
+  "/docs-9e4": {
+    "__comp": "5e95c892",
     "__context": {
-      "plugin": "plugin---docsaba-d7c"
+      "plugin": "aba21aa0"
     }
   },
-  "/docs-74b": {
-    "__comp": "__comp---theme-doc-version-roota-7-b-5de",
-    "__props": "__props---docs-005-788"
+  "/docs-8b5": {
+    "__comp": "a7bd4aaa",
+    "__props": "0058b4c6"
   },
-  "/docs-9af": {
-    "__comp": "__comp---theme-doc-roota-94-67a"
-  },
-  "/docs/advanced-topics/-b27": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-advanced-topics-102-348"
-  },
-  "/docs/advanced-topics/-62e": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-advanced-topics-bad-9cc"
-  },
-  "/docs/advanced-topics/autonomous-agents/-6b7": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-advanced-topics-autonomous-agents-b-72-3b2"
-  },
-  "/docs/advanced-topics/autonomous-agents/-88b": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-advanced-topics-autonomous-agents-55-a-228"
-  },
-  "/docs/advanced-topics/autonomous-agents/advanced-ai-d78": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-advanced-topics-autonomous-agents-advanced-ai-51-e-a21"
-  },
-  "/docs/advanced-topics/autonomous-agents/advanced-ai-d5c": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-advanced-topics-autonomous-agents-advanced-aia-4-c-855"
-  },
-  "/docs/advanced-topics/custom-portals/-26d": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-advanced-topics-custom-portals-ce-5-5e7"
-  },
-  "/docs/advanced-topics/custom-portals/-e89": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-advanced-topics-custom-portals-81-b-e31"
-  },
-  "/docs/advanced-topics/fine-tuning/-166": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-advanced-topics-fine-tuning-870-b28"
-  },
-  "/docs/advanced-topics/fine-tuning/-9e6": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-advanced-topics-fine-tuning-7-a-7-0a4"
-  },
-  "/docs/advanced-topics/multi-modal/-6f6": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-advanced-topics-multi-modal-6-a-9-2f0"
-  },
-  "/docs/advanced-topics/multi-modal/-555": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-advanced-topics-multi-modal-e-1-f-982"
-  },
-  "/docs/agents/-708": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-agents-c-86-26b"
-  },
-  "/docs/agents/-3e8": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-agents-e-87-e27"
-  },
-  "/docs/agents/character-system/-390": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-agents-character-system-2-e-3-2ce"
-  },
-  "/docs/agents/character-system/-7fe": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-agents-character-system-308-dc4"
-  },
-  "/docs/agents/communication/-96f": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-agents-communication-db-4-875"
-  },
-  "/docs/agents/communication/-e05": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-agents-communication-d-79-b24"
-  },
-  "/docs/agents/configuration/-1f1": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-agents-configuration-635-859"
-  },
-  "/docs/agents/configuration/-61a": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-agents-configuration-d-21-b78"
-  },
-  "/docs/agents/lifecycle/-400": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-agents-lifecycle-b-02-fc0"
-  },
-  "/docs/agents/lifecycle/-c0b": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-agents-lifecycle-604-a31"
-  },
-  "/docs/agents/lifecycle/api-0db": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-agents-lifecycle-api-486-80b"
-  },
-  "/docs/agents/lifecycle/api-41b": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-agents-lifecycle-api-462-694"
-  },
-  "/docs/agents/multi-agent/-6fc": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-agents-multi-agent-030-176"
-  },
-  "/docs/agents/multi-agent/-af7": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-agents-multi-agent-e-89-770"
-  },
-  "/docs/api-reference/-304": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-60-a-209"
-  },
-  "/docs/api-reference/-ec6": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-f-2-d-245"
-  },
-  "/docs/api-reference/graphql/-d75": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-graphql-409-55e"
-  },
-  "/docs/api-reference/graphql/-208": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-graphql-e-90-1dc"
-  },
-  "/docs/api-reference/openapi/-1e1": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-openapi-56-b-f82"
-  },
-  "/docs/api-reference/openapi/-504": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-openapi-26-d-efa"
-  },
-  "/docs/api-reference/openapi/endpoints/-777": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-openapi-endpoints-7-d-3-157"
-  },
-  "/docs/api-reference/openapi/endpoints/-3d4": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-openapi-endpoints-edf-a80"
-  },
-  "/docs/api-reference/openapi/examples/-b0c": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-openapi-examples-14-a-1e2"
-  },
-  "/docs/api-reference/openapi/examples/-1af": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-openapi-examples-2-fe-846"
-  },
-  "/docs/api-reference/openapi/overview/-762": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-openapi-overview-7-b-7-01a"
-  },
-  "/docs/api-reference/openapi/overview/-df3": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-openapi-overview-218-292"
-  },
-  "/docs/api-reference/openapi/schemas/-760": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-openapi-schemas-5-ad-b69"
-  },
-  "/docs/api-reference/openapi/schemas/-8ee": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-openapi-schemas-ef-7-077"
-  },
-  "/docs/api-reference/rest-api/-d37": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-rest-api-f-49-236"
-  },
-  "/docs/api-reference/rest-api/-833": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-rest-api-9-bb-331"
-  },
-  "/docs/api-reference/rest-api/agents/-94e": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-rest-api-agents-8-de-5db"
-  },
-  "/docs/api-reference/rest-api/agents/-18c": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-rest-api-agents-601-6d8"
-  },
-  "/docs/api-reference/rest-api/authentication/-129": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-rest-api-authentication-284-3ce"
-  },
-  "/docs/api-reference/rest-api/authentication/-054": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-rest-api-authentication-0-cc-831"
-  },
-  "/docs/api-reference/rest-api/chat/-710": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-rest-api-chat-32-f-954"
-  },
-  "/docs/api-reference/rest-api/chat/-892": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-rest-api-chat-79-f-f8b"
-  },
-  "/docs/api-reference/rest-api/events/-1f8": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-rest-api-events-89-b-81a"
-  },
-  "/docs/api-reference/rest-api/events/-44f": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-rest-api-events-11-a-47d"
-  },
-  "/docs/api-reference/rest-api/extensions/-9f0": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-rest-api-extensions-a-88-d90"
-  },
-  "/docs/api-reference/rest-api/extensions/-e9d": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-rest-api-extensions-df-3-4b1"
-  },
-  "/docs/api-reference/rest-api/health/-09b": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-rest-api-health-400-534"
-  },
-  "/docs/api-reference/rest-api/health/-efd": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-rest-api-health-128-332"
-  },
-  "/docs/api-reference/rest-api/memory/-10f": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-rest-api-memory-4-a-1-ba4"
-  },
-  "/docs/api-reference/rest-api/memory/-3ba": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-rest-api-memory-53-b-f94"
-  },
-  "/docs/api-reference/typescript-sdk/-ac5": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-typescript-sdk-48-d-9ef"
-  },
-  "/docs/api-reference/typescript-sdk/-2c5": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-typescript-sdk-b-68-139"
-  },
-  "/docs/api-reference/typescript-sdk/agents/-d24": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-typescript-sdk-agents-647-175"
-  },
-  "/docs/api-reference/typescript-sdk/agents/-1c6": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-typescript-sdk-agents-566-8c3"
-  },
-  "/docs/api-reference/typescript-sdk/extensions/-59f": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-typescript-sdk-extensions-2-dc-997"
-  },
-  "/docs/api-reference/typescript-sdk/extensions/-954": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-typescript-sdk-extensions-a-33-43d"
-  },
-  "/docs/api-reference/typescript-sdk/installation/-93b": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-typescript-sdk-installation-195-9b7"
-  },
-  "/docs/api-reference/typescript-sdk/installation/-6f6": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-typescript-sdk-installation-62-f-0e2"
-  },
-  "/docs/api-reference/typescript-sdk/modules/-d1b": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-typescript-sdk-modules-bec-392"
-  },
-  "/docs/api-reference/typescript-sdk/modules/-d7d": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-typescript-sdk-modules-2-ab-436"
-  },
-  "/docs/api-reference/typescript-sdk/runtime/-efb": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-typescript-sdk-runtime-ceb-afc"
-  },
-  "/docs/api-reference/typescript-sdk/runtime/-c67": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-typescript-sdk-runtime-3-ae-5c6"
-  },
-  "/docs/api-reference/typescript-sdk/types/-cd9": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-typescript-sdk-types-ea-0-fa9"
-  },
-  "/docs/api-reference/typescript-sdk/types/-c4a": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-typescript-sdk-types-0-f-1-b56"
-  },
-  "/docs/api-reference/websocket-api/-b28": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-websocket-api-860-6ec"
-  },
-  "/docs/api-reference/websocket-api/-7ea": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-websocket-api-ffb-e91"
-  },
-  "/docs/api-reference/websocket-api/commands/-2fe": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-websocket-api-commands-205-7e7"
-  },
-  "/docs/api-reference/websocket-api/commands/-bec": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-websocket-api-commands-2-d-3-e9e"
-  },
-  "/docs/api-reference/websocket-api/connection/-51e": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-websocket-api-connection-63-c-ba6"
-  },
-  "/docs/api-reference/websocket-api/connection/-ad9": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-websocket-api-connection-382-6ed"
-  },
-  "/docs/api-reference/websocket-api/events/-940": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-websocket-api-events-dd-5-d1d"
-  },
-  "/docs/api-reference/websocket-api/events/-a95": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-websocket-api-events-424-714"
-  },
-  "/docs/api-reference/websocket-api/streaming/-060": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-websocket-api-streaming-741-6ce"
-  },
-  "/docs/api-reference/websocket-api/streaming/-174": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-api-reference-websocket-api-streaming-bf-6-809"
-  },
-  "/docs/architecture/-60d": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-architecture-e-43-a79"
-  },
-  "/docs/architecture/-372": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-architecture-dc-7-6e5"
-  },
-  "/docs/architecture/data-flow/-5fe": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-architecture-data-flow-ed-8-16c"
-  },
-  "/docs/architecture/data-flow/-d1c": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-architecture-data-flow-2-d-2-a7a"
-  },
-  "/docs/architecture/patterns/-460": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-architecture-patterns-14-b-35b"
-  },
-  "/docs/architecture/patterns/-e19": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-architecture-patterns-8-a-1-022"
-  },
-  "/docs/architecture/patterns/mind-agents-architecture-e3a": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-architecture-patterns-mind-agents-architecture-552-d67"
-  },
-  "/docs/architecture/patterns/mind-agents-architecture-345": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-architecture-patterns-mind-agents-architecturee-4-d-bf6"
-  },
-  "/docs/architecture/scalability/-062": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-architecture-scalability-5-b-0-c5d"
-  },
-  "/docs/architecture/scalability/-ff4": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-architecture-scalability-592-96a"
-  },
-  "/docs/architecture/system-design/-9cd": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-architecture-system-design-16-f-e8c"
-  },
-  "/docs/architecture/system-design/-a3e": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-architecture-system-design-496-820"
-  },
-  "/docs/changelog/-cb8": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-changelog-515-149"
-  },
-  "/docs/changelog/-1f7": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-changelog-7-fd-a12"
-  },
-  "/docs/changelog/breaking-changes/-48f": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-changelog-breaking-changes-cbe-79d"
-  },
-  "/docs/changelog/breaking-changes/-d38": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-changelog-breaking-changes-2-c-2-a1f"
-  },
-  "/docs/changelog/migration-guides/-4b3": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-changelog-migration-guides-557-90b"
-  },
-  "/docs/changelog/migration-guides/-5ee": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-changelog-migration-guides-cc-4-024"
-  },
-  "/docs/changelog/releases/-551": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-changelog-releases-869-c0b"
-  },
-  "/docs/changelog/releases/-2c0": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-changelog-releases-8-f-9-b8d"
-  },
-  "/docs/community/-a92": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-community-d-70-3c6"
-  },
-  "/docs/community/-756": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-community-3-fa-ce5"
-  },
-  "/docs/community/contributors/-a15": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-community-contributors-a-59-059"
-  },
-  "/docs/community/contributors/-89d": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-community-contributors-409-b97"
-  },
-  "/docs/community/discord/-f52": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-community-discord-726-d50"
-  },
-  "/docs/community/discord/-bf2": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-community-discord-3-f-7-72b"
-  },
-  "/docs/community/forums/-36e": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-community-forums-e-1-a-678"
-  },
-  "/docs/community/forums/-10d": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-community-forums-471-5f9"
-  },
-  "/docs/community/showcase/-aa1": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-community-showcase-c-6-a-99d"
-  },
-  "/docs/community/showcase/-7e7": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-community-showcase-24-c-7e0"
-  },
-  "/docs/core-concepts/-3bc": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-core-concepts-15-f-352"
-  },
-  "/docs/core-concepts/-d07": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-core-concepts-6-e-4-f87"
-  },
-  "/docs/core-concepts/event-bus/-d17": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-core-concepts-event-bus-b-94-2f2"
-  },
-  "/docs/core-concepts/event-bus/-12c": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-core-concepts-event-bus-242-5f4"
-  },
-  "/docs/core-concepts/lifecycle/-404": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-core-concepts-lifecycle-eed-4c1"
-  },
-  "/docs/core-concepts/lifecycle/-f73": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-core-concepts-lifecycle-e-0-a-d3b"
-  },
-  "/docs/core-concepts/plugin-system/-bfd": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-core-concepts-plugin-system-9-ca-d3c"
-  },
-  "/docs/core-concepts/plugin-system/-078": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-core-concepts-plugin-system-0-ee-f7a"
-  },
-  "/docs/core-concepts/registry/-d1b": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-core-concepts-registry-d-9-c-5dd"
-  },
-  "/docs/core-concepts/registry/-bae": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-core-concepts-registry-f-8-d-056"
-  },
-  "/docs/core-concepts/runtime/-10e": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-core-concepts-runtime-569-4ed"
-  },
-  "/docs/core-concepts/runtime/-315": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-core-concepts-runtime-0-f-2-2db"
-  },
-  "/docs/deployment/-cfa": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-deployment-29-e-451"
-  },
-  "/docs/deployment/-d0c": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-deployment-df-7-415"
-  },
-  "/docs/deployment/cloud/-d18": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-deployment-cloud-e-56-3f3"
-  },
-  "/docs/deployment/cloud/-4a4": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-deployment-cloud-b-0-c-b98"
-  },
-  "/docs/deployment/configuration/-d2b": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-deployment-configuration-54-b-3c2"
-  },
-  "/docs/deployment/configuration/-d61": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-deployment-configuration-c-9-e-08b"
-  },
-  "/docs/deployment/configuration/guide-2f5": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-deployment-configuration-guide-69-f-4b6"
-  },
-  "/docs/deployment/configuration/guide-fec": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-deployment-configuration-guide-3-cb-907"
-  },
-  "/docs/deployment/docker/-56a": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-deployment-docker-a-5-f-978"
-  },
-  "/docs/deployment/docker/-42b": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-deployment-docker-81-b-9b2"
-  },
-  "/docs/deployment/kubernetes/-194": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-deployment-kubernetes-a-84-2a0"
-  },
-  "/docs/deployment/kubernetes/-c07": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-deployment-kubernetes-0-db-eea"
-  },
-  "/docs/deployment/on-premise/-4b5": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-deployment-on-premise-d-51-d37"
-  },
-  "/docs/deployment/on-premise/-54c": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-deployment-on-premise-b-96-c2e"
-  },
-  "/docs/development/-abd": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-development-e-73-5a0"
-  },
-  "/docs/development/-c45": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-development-6-dc-289"
-  },
-  "/docs/development/code-style/-b8c": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-development-code-style-d-1-b-491"
-  },
-  "/docs/development/code-style/-0fd": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-development-code-style-f-5-f-53d"
-  },
-  "/docs/development/contributing/-a50": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-development-contributing-414-24d"
-  },
-  "/docs/development/contributing/-1a0": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-development-contributing-004-55e"
-  },
-  "/docs/development/debugging/-c91": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-development-debugging-051-092"
-  },
-  "/docs/development/debugging/-493": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-development-debugging-6-ec-1ff"
-  },
-  "/docs/development/plugin-development/-ff9": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-development-plugin-development-c-5-c-b24"
-  },
-  "/docs/development/plugin-development/-94d": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-development-plugin-development-f-3-c-76f"
-  },
-  "/docs/development/plugin-development/guide-267": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-development-plugin-development-guideafd-6f8"
-  },
-  "/docs/development/plugin-development/guide-49c": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-development-plugin-development-guideac-2-079"
-  },
-  "/docs/examples/-bfa": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-examples-5-f-5-8b8"
-  },
-  "/docs/examples/-ed7": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-examples-bf-6-427"
-  },
-  "/docs/examples/advanced/-269": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-examples-advanced-5-c-8-fba"
-  },
-  "/docs/examples/advanced/-07c": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-examples-advanced-062-2ed"
-  },
-  "/docs/examples/basic/-2ab": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-examples-basic-f-3-e-0a8"
-  },
-  "/docs/examples/basic/-362": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-examples-basic-128-929"
-  },
-  "/docs/examples/templates/-1a7": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-examples-templates-8-eb-bb2"
-  },
-  "/docs/examples/templates/-3ec": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-examples-templates-bf-0-9d4"
-  },
-  "/docs/examples/use-cases/-2dd": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-examples-use-cases-6-be-c1b"
-  },
-  "/docs/examples/use-cases/-3ba": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-examples-use-cases-122-1eb"
-  },
-  "/docs/extensions/-f32": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-extensions-754-a1e"
-  },
-  "/docs/extensions/-e50": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-extensions-583-711"
-  },
-  "/docs/extensions/api-server/-c92": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-extensions-api-server-3-ea-812"
-  },
-  "/docs/extensions/api-server/-aa7": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-extensions-api-server-22-f-606"
-  },
-  "/docs/extensions/api-server/extension-interface-865": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-extensions-api-server-extension-interface-7-f-8-c26"
-  },
-  "/docs/extensions/api-server/extension-interface-29c": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-extensions-api-server-extension-interface-5-a-8-ca9"
-  },
-  "/docs/extensions/cli/-561": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-extensions-cli-14-d-d50"
-  },
-  "/docs/extensions/cli/-b95": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-extensions-cli-ab-6-199"
-  },
-  "/docs/extensions/discord/-d96": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-extensions-discord-9-a-2-86c"
-  },
-  "/docs/extensions/discord/-c89": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-extensions-discord-477-85d"
-  },
-  "/docs/extensions/slack/-413": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-extensions-slack-707-266"
-  },
-  "/docs/extensions/slack/-a35": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-extensions-slack-b-7-d-840"
-  },
-  "/docs/extensions/telegram/-c9d": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-extensions-telegram-a-37-4e0"
-  },
-  "/docs/extensions/telegram/-f16": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-extensions-telegram-40-d-fa5"
-  },
-  "/docs/extensions/telegram/setup-432": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-extensions-telegram-setup-43-b-357"
-  },
-  "/docs/extensions/telegram/setup-67e": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-extensions-telegram-setup-652-a72"
-  },
-  "/docs/extensions/twitter/-b71": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-extensions-twitter-d-9-b-2f8"
-  },
-  "/docs/extensions/twitter/-a16": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-extensions-twitter-60-f-3d8"
-  },
-  "/docs/extensions/web-ui/-45f": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-extensions-web-ui-45-d-682"
-  },
-  "/docs/extensions/web-ui/-329": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-extensions-web-ui-eeb-45d"
-  },
-  "/docs/getting-started/-1f1": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-getting-started-739-e57"
-  },
-  "/docs/getting-started/-8a4": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-getting-started-54-c-251"
-  },
-  "/docs/getting-started/first-agent/-b14": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-getting-started-first-agent-58-b-b12"
-  },
-  "/docs/getting-started/first-agent/-141": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-getting-started-first-agent-176-548"
-  },
-  "/docs/getting-started/installation/-61d": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-getting-started-installation-606-9a7"
-  },
-  "/docs/getting-started/installation/-e02": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-getting-started-installation-fb-1-a85"
-  },
-  "/docs/getting-started/prerequisites/-17a": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-getting-started-prerequisites-0-ea-84d"
-  },
-  "/docs/getting-started/prerequisites/-7d4": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-getting-started-prerequisites-ccd-111"
-  },
-  "/docs/getting-started/quick-start/-81a": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-getting-started-quick-start-ff-1-5fe"
-  },
-  "/docs/getting-started/quick-start/-03f": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-getting-started-quick-start-cc-0-cd3"
-  },
-  "/docs/integrations/-6c6": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-integrations-764-0a8"
-  },
-  "/docs/integrations/-9f6": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-integrations-b-47-105"
-  },
-  "/docs/integrations/databases/-fb9": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-integrations-databases-4-a-5-285"
-  },
-  "/docs/integrations/databases/-695": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-integrations-databases-ee-0-0af"
-  },
-  "/docs/integrations/langchain/-ebe": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-integrations-langchain-47-f-100"
-  },
-  "/docs/integrations/langchain/-6da": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-integrations-langchain-687-ddb"
-  },
-  "/docs/integrations/llama-index/-9c5": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-integrations-llama-index-1-ac-0b2"
-  },
-  "/docs/integrations/llama-index/-97c": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-integrations-llama-index-d-1-f-b1d"
-  },
-  "/docs/integrations/mcp/-f31": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-integrations-mcp-3-f-6-7cf"
-  },
-  "/docs/integrations/mcp/-910": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-integrations-mcp-fa-4-d13"
-  },
-  "/docs/integrations/mcp/api-integration-756": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-integrations-mcp-api-integrationdc-9-808"
-  },
-  "/docs/integrations/mcp/api-integration-924": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-integrations-mcp-api-integration-3-d-6-072"
-  },
-  "/docs/integrations/vector-stores/-f19": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-integrations-vector-stores-507-551"
-  },
-  "/docs/integrations/vector-stores/-45f": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-integrations-vector-stores-d-66-888"
-  },
-  "/docs/introduction-50a": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-introductiona-09-6b4"
-  },
-  "/docs/migration/-dcc": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-migration-859-c8c"
-  },
-  "/docs/migration/-556": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-migration-d-99-1d2"
-  },
-  "/docs/migration/breaking-changes/-34b": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-migration-breaking-changes-e-71-81c"
-  },
-  "/docs/migration/breaking-changes/-02a": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-migration-breaking-changes-8-ca-cec"
-  },
-  "/docs/migration/data-migration/-3a1": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-migration-data-migration-6-ab-13d"
-  },
-  "/docs/migration/data-migration/-7d1": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-migration-data-migration-6-b-9-570"
-  },
-  "/docs/migration/version-upgrades/-28e": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-migration-version-upgrades-7-ba-936"
-  },
-  "/docs/migration/version-upgrades/-132": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-migration-version-upgrades-4-fa-fdd"
-  },
-  "/docs/migration/version-upgrades/v1-migration-bc8": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-migration-version-upgrades-v-1-migration-8-e-5-2d4"
-  },
-  "/docs/migration/version-upgrades/v1-migration-b30": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-migration-version-upgrades-v-1-migration-656-d37"
-  },
-  "/docs/modules/-51a": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-modules-a-07-119"
-  },
-  "/docs/modules/-546": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-modules-3-aa-571"
-  },
-  "/docs/modules/behavior/-401": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-modules-behavior-e-56-87b"
-  },
-  "/docs/modules/behavior/-bba": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-modules-behavior-2-fd-66c"
-  },
-  "/docs/modules/cognition/-559": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-modules-cognition-4-fd-39e"
-  },
-  "/docs/modules/cognition/-ea7": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-modules-cognition-265-f5e"
-  },
-  "/docs/modules/cognition/api-446": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-modules-cognition-api-6-d-1-228"
-  },
-  "/docs/modules/cognition/api-edf": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-modules-cognition-api-384-a1f"
-  },
-  "/docs/modules/cognition/htn-planner/-935": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-modules-cognition-htn-planner-be-9-a2e"
-  },
-  "/docs/modules/cognition/htn-planner/-fa3": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-modules-cognition-htn-planner-d-93-4fc"
-  },
-  "/docs/modules/cognition/hybrid/-81f": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-modules-cognition-hybrid-172-d35"
-  },
-  "/docs/modules/cognition/hybrid/-f68": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-modules-cognition-hybrid-625-0c5"
-  },
-  "/docs/modules/cognition/reactive/-d63": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-modules-cognition-reactive-714-d1d"
-  },
-  "/docs/modules/cognition/reactive/-7d6": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-modules-cognition-reactive-a-24-2b4"
-  },
-  "/docs/modules/consciousness/-912": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-modules-consciousness-f-36-d8b"
-  },
-  "/docs/modules/consciousness/-7de": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-modules-consciousness-4-c-7-616"
-  },
-  "/docs/modules/emotion/-f15": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-modules-emotion-0-a-4-318"
-  },
-  "/docs/modules/emotion/-915": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-modules-emotion-792-93f"
-  },
-  "/docs/modules/emotion/api-711": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-modules-emotion-api-9-e-8-8f9"
-  },
-  "/docs/modules/emotion/api-eea": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-modules-emotion-api-34-d-898"
-  },
-  "/docs/modules/emotion/custom-emotions/-688": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-modules-emotion-custom-emotions-544-712"
-  },
-  "/docs/modules/emotion/custom-emotions/-dba": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-modules-emotion-custom-emotions-36-d-5a7"
-  },
-  "/docs/modules/emotion/emotion-stack/-fa0": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-modules-emotion-emotion-stack-3-f-6-739"
-  },
-  "/docs/modules/emotion/emotion-stack/-7b9": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-modules-emotion-emotion-stack-b-79-79e"
-  },
-  "/docs/modules/memory/-7fc": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-modules-memory-751-f8e"
-  },
-  "/docs/modules/memory/-3f6": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-modules-memory-395-5d8"
-  },
-  "/docs/modules/memory/neon/-1cf": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-modules-memory-neon-7-bf-e65"
-  },
-  "/docs/modules/memory/neon/-87a": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-modules-memory-neon-00-d-a6b"
-  },
-  "/docs/modules/memory/postgres/-c92": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-modules-memory-postgres-940-654"
-  },
-  "/docs/modules/memory/postgres/-e8c": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-modules-memory-postgres-0-ca-a47"
-  },
-  "/docs/modules/memory/providers/-f2e": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-modules-memory-providers-3-d-5-04c"
-  },
-  "/docs/modules/memory/providers/-9f1": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-modules-memory-providers-fb-5-521"
-  },
-  "/docs/modules/memory/providers/api-cf8": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-modules-memory-providers-api-42-b-f88"
-  },
-  "/docs/modules/memory/providers/api-251": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-modules-memory-providers-api-376-e38"
-  },
-  "/docs/modules/memory/sqlite/-335": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-modules-memory-sqlite-355-d10"
-  },
-  "/docs/modules/memory/sqlite/-2ba": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-modules-memory-sqlite-c-43-9eb"
-  },
-  "/docs/modules/memory/supabase/-355": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-modules-memory-supabase-66-e-213"
-  },
-  "/docs/modules/memory/supabase/-24e": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-modules-memory-supabase-3-b-1-b30"
-  },
-  "/docs/modules/tools/-688": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-modules-tools-8-cd-445"
-  },
-  "/docs/modules/tools/-bda": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-modules-tools-989-553"
-  },
-  "/docs/monitoring/-544": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-monitoring-284-115"
-  },
-  "/docs/monitoring/-4f1": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-monitoring-828-d71"
-  },
-  "/docs/monitoring/alerts/-ceb": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-monitoring-alerts-d-32-04f"
-  },
-  "/docs/monitoring/alerts/-9af": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-monitoring-alerts-ac-9-691"
-  },
-  "/docs/monitoring/dashboards/-aae": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-monitoring-dashboards-23-a-b14"
-  },
-  "/docs/monitoring/dashboards/-eb3": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-monitoring-dashboards-026-37e"
-  },
-  "/docs/monitoring/logging/-289": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-monitoring-logging-f-09-088"
-  },
-  "/docs/monitoring/logging/-053": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-monitoring-logging-30-f-4fa"
-  },
-  "/docs/monitoring/metrics/-484": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-monitoring-metrics-e-89-8e3"
-  },
-  "/docs/monitoring/metrics/-c4c": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-monitoring-metrics-e-9-a-695"
-  },
-  "/docs/monitoring/tracing/-908": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-monitoring-tracing-27-b-d27"
-  },
-  "/docs/monitoring/tracing/-1bc": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-monitoring-tracing-55-f-923"
-  },
-  "/docs/overview/-c5c": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-overview-b-50-75b"
-  },
-  "/docs/overview/-226": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-overview-fb-8-512"
-  },
-  "/docs/overview/introduction/-3fc": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-overview-introduction-78-e-50f"
-  },
-  "/docs/overview/introduction/-cd7": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-overview-introduction-231-4c5"
-  },
-  "/docs/overview/roadmap/-96f": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-overview-roadmap-c-7-c-b9d"
-  },
-  "/docs/overview/roadmap/-160": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-overview-roadmap-c-4-d-f42"
-  },
-  "/docs/overview/roadmap/product-requirements-59b": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-overview-roadmap-product-requirements-0-fd-982"
-  },
-  "/docs/overview/roadmap/product-requirements-f09": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-overview-roadmap-product-requirementsa-37-e15"
-  },
-  "/docs/overview/use-cases/-c66": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-overview-use-cases-ac-3-6ce"
-  },
-  "/docs/overview/use-cases/-f69": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-overview-use-cases-9-b-2-50d"
-  },
-  "/docs/performance/-61a": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-performance-0-f-3-13e"
-  },
-  "/docs/performance/-73c": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-performance-cd-8-a65"
-  },
-  "/docs/performance/benchmarks/-d7e": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-performance-benchmarks-023-ba1"
-  },
-  "/docs/performance/benchmarks/-dc8": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-performance-benchmarks-b-2-f-512"
-  },
-  "/docs/performance/caching/-313": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-performance-caching-838-4da"
-  },
-  "/docs/performance/caching/-ec3": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-performance-caching-e-96-38f"
-  },
-  "/docs/performance/optimization/-3f8": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-performance-optimization-7-e-4-7e8"
-  },
-  "/docs/performance/optimization/-1a3": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-performance-optimization-bd-0-10d"
-  },
-  "/docs/performance/profiling/-434": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-performance-profiling-441-179"
-  },
-  "/docs/performance/profiling/-dab": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-performance-profiling-5-ac-fa7"
-  },
-  "/docs/performance/scaling/-f59": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-performance-scaling-fcf-5b9"
-  },
-  "/docs/performance/scaling/-858": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-performance-scaling-294-2e9"
-  },
-  "/docs/portals/-859": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-portals-55-d-2c7"
-  },
-  "/docs/portals/-54e": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-portals-66-f-ce3"
-  },
-  "/docs/portals/anthropic/-052": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-portals-anthropic-97-e-26a"
-  },
-  "/docs/portals/anthropic/-4db": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-portals-anthropic-76-f-403"
-  },
-  "/docs/portals/custom/-a3d": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-portals-custom-a-6-c-1ce"
-  },
-  "/docs/portals/custom/-608": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-portals-custom-48-f-d9f"
-  },
-  "/docs/portals/custom/api-b3b": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-portals-custom-api-040-1f6"
-  },
-  "/docs/portals/custom/api-0b6": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-portals-custom-apif-50-482"
-  },
-  "/docs/portals/google/-f2c": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-portals-google-b-7-d-1ec"
-  },
-  "/docs/portals/google/-4a4": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-portals-google-1-af-bef"
-  },
-  "/docs/portals/groq/-b53": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-portals-groq-f-49-85f"
-  },
-  "/docs/portals/groq/-3c1": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-portals-groq-186-69f"
-  },
-  "/docs/portals/ollama/-333": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-portals-ollama-bff-277"
-  },
-  "/docs/portals/ollama/-5a1": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-portals-ollama-94-d-203"
-  },
-  "/docs/portals/openai/-f83": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-portals-openai-b-6-b-81b"
-  },
-  "/docs/portals/openai/-3df": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-portals-openai-b-49-079"
-  },
-  "/docs/portals/portal-switching-317": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-portals-portal-switching-766-be6"
-  },
-  "/docs/portals/portal-switching-e70": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-portals-portal-switchingbc-5-883"
-  },
-  "/docs/portals/xai/-a64": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-portals-xai-792-36a"
-  },
-  "/docs/portals/xai/-bd9": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-portals-xai-c-93-6cd"
-  },
-  "/docs/resources/-289": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-resources-a-06-7d6"
-  },
-  "/docs/resources/-582": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-resources-cd-9-c9f"
-  },
-  "/docs/resources/glossary/-4db": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-resources-glossary-2-df-629"
-  },
-  "/docs/resources/glossary/-9e8": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-resources-glossary-515-ec5"
-  },
-  "/docs/resources/learning/-6bb": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-resources-learning-5-a-3-254"
-  },
-  "/docs/resources/learning/-1cc": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-resources-learning-d-56-941"
-  },
-  "/docs/resources/references/-dd1": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-resources-references-d-42-7d2"
-  },
-  "/docs/resources/references/-2b0": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-resources-references-e-9-c-443"
-  },
-  "/docs/resources/tools/-02e": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-resources-tools-b-34-3cc"
-  },
-  "/docs/resources/tools/-300": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-resources-tools-ec-0-c1d"
-  },
-  "/docs/roadmap/-0f3": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-roadmap-134-896"
-  },
-  "/docs/roadmap/-986": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-roadmap-03-f-88e"
-  },
-  "/docs/roadmap/features/-6d4": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-roadmap-features-967-73d"
-  },
-  "/docs/roadmap/features/-cca": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-roadmap-features-44-f-971"
-  },
-  "/docs/roadmap/timeline/-8db": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-roadmap-timeline-d-81-2ae"
-  },
-  "/docs/roadmap/timeline/-cd5": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-roadmap-timeline-88-d-542"
-  },
-  "/docs/roadmap/vision/-f02": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-roadmap-vision-7-b-1-765"
-  },
-  "/docs/roadmap/vision/-628": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-roadmap-vision-9-dc-335"
-  },
-  "/docs/security/-a0e": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-security-904-96d"
-  },
-  "/docs/security/-d3b": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-security-929-905"
-  },
-  "/docs/security/authentication/-4ed": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-security-authentication-602-76a"
-  },
-  "/docs/security/authentication/-04f": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-security-authentication-e-25-f3d"
-  },
-  "/docs/security/authorization/-815": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-security-authorization-be-4-c27"
-  },
-  "/docs/security/authorization/-b35": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-security-authorization-49-c-55b"
-  },
-  "/docs/security/compliance/-1d5": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-security-compliance-569-7f1"
-  },
-  "/docs/security/compliance/-97c": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-security-compliance-7-af-32b"
-  },
-  "/docs/security/encryption/-91c": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-security-encryption-549-d7a"
-  },
-  "/docs/security/encryption/-267": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-security-encryption-daa-354"
-  },
-  "/docs/security/rbac/-dab": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-security-rbac-4-cc-afd"
-  },
-  "/docs/security/rbac/-e5d": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-security-rbac-720-bdf"
-  },
-  "/docs/support/-be6": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-support-a-1-d-757"
-  },
-  "/docs/support/-b79": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-support-a-64-543"
-  },
-  "/docs/support/community/-6da": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-support-community-167-ecd"
-  },
-  "/docs/support/community/-669": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-support-community-83-f-ac8"
-  },
-  "/docs/support/contact/-2bf": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-support-contact-9-f-8-e38"
-  },
-  "/docs/support/contact/-e0a": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-support-contact-1-c-2-619"
-  },
-  "/docs/support/documentation/-43c": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-support-documentation-b-44-d06"
-  },
-  "/docs/support/documentation/-8b5": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-support-documentation-d-23-381"
-  },
-  "/docs/support/enterprise/-bcf": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-support-enterprise-e-8-d-2b7"
-  },
-  "/docs/support/enterprise/-cfd": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-support-enterprise-908-b79"
-  },
-  "/docs/testing/-4ed": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-testing-470-8d6"
-  },
-  "/docs/testing/-ce1": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-testing-8-aa-164"
-  },
-  "/docs/testing/benchmarks/-a35": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-testing-benchmarks-8-f-1-916"
-  },
-  "/docs/testing/benchmarks/-969": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-testing-benchmarks-b-12-eab"
-  },
-  "/docs/testing/ci-cd/-8dd": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-testing-ci-cd-ddd-506"
-  },
-  "/docs/testing/ci-cd/-cb9": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-testing-ci-cd-a-03-46a"
-  },
-  "/docs/testing/e2e-tests/-4a7": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-testing-e-2-e-tests-c-68-c96"
-  },
-  "/docs/testing/e2e-tests/-52a": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-testing-e-2-e-tests-697-008"
-  },
-  "/docs/testing/integration-tests/-71e": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-testing-integration-tests-74-f-884"
-  },
-  "/docs/testing/integration-tests/-76e": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-testing-integration-tests-49-a-f75"
-  },
-  "/docs/testing/unit-tests/-d2b": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-testing-unit-tests-d-92-28d"
-  },
-  "/docs/testing/unit-tests/-4a2": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-testing-unit-tests-f-2-d-684"
-  },
-  "/docs/troubleshooting/-b70": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-troubleshooting-1-fd-240"
-  },
-  "/docs/troubleshooting/-07d": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-troubleshooting-d-65-da1"
-  },
-  "/docs/troubleshooting/common-issues/-6ba": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-troubleshooting-common-issues-142-af9"
-  },
-  "/docs/troubleshooting/common-issues/-04b": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-troubleshooting-common-issues-060-ca4"
-  },
-  "/docs/troubleshooting/debugging/-b57": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-troubleshooting-debugging-f-53-ae1"
-  },
-  "/docs/troubleshooting/debugging/-22a": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-troubleshooting-debugging-741-92a"
-  },
-  "/docs/troubleshooting/faq/-1e6": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-troubleshooting-faq-6-e-8-6c0"
-  },
-  "/docs/troubleshooting/faq/-e77": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-troubleshooting-faq-b-7-b-dcd"
-  },
-  "/docs/troubleshooting/logs/-167": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-troubleshooting-logs-2-a-4-dbd"
-  },
-  "/docs/troubleshooting/logs/-8d5": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-troubleshooting-logs-4-aa-511"
-  },
-  "/docs/tutorials/-3e6": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-tutorials-cdc-357"
-  },
-  "/docs/tutorials/-5d7": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-tutorials-fea-ed1"
-  },
-  "/docs/tutorials/advanced/-475": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-tutorials-advanced-adf-c75"
-  },
-  "/docs/tutorials/advanced/-aeb": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-tutorials-advanced-840-445"
-  },
-  "/docs/tutorials/beginner/-07a": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-tutorials-beginner-675-d57"
-  },
-  "/docs/tutorials/beginner/-574": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-tutorials-beginner-025-961"
-  },
-  "/docs/tutorials/intermediate/-fd6": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-tutorials-intermediate-e-26-7a0"
-  },
-  "/docs/tutorials/intermediate/-825": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-tutorials-intermediate-862-6f3"
-  },
-  "/docs/tutorials/video-tutorials/-da6": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-tutorials-video-tutorials-a-56-5b1"
-  },
-  "/docs/tutorials/video-tutorials/-115": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---docs-tutorials-video-tutorials-624-06d"
+  "/docs-248": {
+    "__comp": "a94703ab"
+  },
+  "/docs/advanced-topics/-c3c": {
+    "__comp": "17896441",
+    "content": "1029c82d"
+  },
+  "/docs/advanced-topics/-5b4": {
+    "__comp": "17896441",
+    "content": "bad58a1e"
+  },
+  "/docs/advanced-topics/autonomous-agents/-7bd": {
+    "__comp": "17896441",
+    "content": "b7287d68"
+  },
+  "/docs/advanced-topics/autonomous-agents/-6b1": {
+    "__comp": "17896441",
+    "content": "55a66d86"
+  },
+  "/docs/advanced-topics/autonomous-agents/advanced-ai-696": {
+    "__comp": "17896441",
+    "content": "51e0cd16"
+  },
+  "/docs/advanced-topics/autonomous-agents/advanced-ai-883": {
+    "__comp": "17896441",
+    "content": "a4c65b59"
+  },
+  "/docs/advanced-topics/custom-portals/-133": {
+    "__comp": "17896441",
+    "content": "ce5a8723"
+  },
+  "/docs/advanced-topics/custom-portals/-dae": {
+    "__comp": "17896441",
+    "content": "81b9521b"
+  },
+  "/docs/advanced-topics/fine-tuning/-78d": {
+    "__comp": "17896441",
+    "content": "87035cc1"
+  },
+  "/docs/advanced-topics/fine-tuning/-399": {
+    "__comp": "17896441",
+    "content": "7a7edb7e"
+  },
+  "/docs/advanced-topics/multi-modal/-55b": {
+    "__comp": "17896441",
+    "content": "6a984762"
+  },
+  "/docs/advanced-topics/multi-modal/-9c3": {
+    "__comp": "17896441",
+    "content": "e1fa361c"
+  },
+  "/docs/agents/-0ee": {
+    "__comp": "17896441",
+    "content": "c86d17ed"
+  },
+  "/docs/agents/-7ad": {
+    "__comp": "17896441",
+    "content": "e87c8d0f"
+  },
+  "/docs/agents/character-system/-2ea": {
+    "__comp": "17896441",
+    "content": "2e3cf63e"
+  },
+  "/docs/agents/character-system/-c55": {
+    "__comp": "17896441",
+    "content": "308e1b21"
+  },
+  "/docs/agents/communication/-f20": {
+    "__comp": "17896441",
+    "content": "db40414f"
+  },
+  "/docs/agents/communication/-400": {
+    "__comp": "17896441",
+    "content": "d79b3a16"
+  },
+  "/docs/agents/configuration/-4f3": {
+    "__comp": "17896441",
+    "content": "635a5fbc"
+  },
+  "/docs/agents/configuration/-1ae": {
+    "__comp": "17896441",
+    "content": "d218fc77"
+  },
+  "/docs/agents/lifecycle/-d30": {
+    "__comp": "17896441",
+    "content": "b02b6ae5"
+  },
+  "/docs/agents/lifecycle/-f94": {
+    "__comp": "17896441",
+    "content": "60454899"
+  },
+  "/docs/agents/lifecycle/api-d0a": {
+    "__comp": "17896441",
+    "content": "4865837e"
+  },
+  "/docs/agents/lifecycle/api-0d3": {
+    "__comp": "17896441",
+    "content": "462332bc"
+  },
+  "/docs/agents/multi-agent/-17d": {
+    "__comp": "17896441",
+    "content": "030feff5"
+  },
+  "/docs/agents/multi-agent/-a9e": {
+    "__comp": "17896441",
+    "content": "e89482af"
+  },
+  "/docs/api-reference/-70a": {
+    "__comp": "17896441",
+    "content": "60a8d267"
+  },
+  "/docs/api-reference/-0d7": {
+    "__comp": "17896441",
+    "content": "f2da1fd8"
+  },
+  "/docs/api-reference/graphql/-58c": {
+    "__comp": "17896441",
+    "content": "40905eec"
+  },
+  "/docs/api-reference/graphql/-760": {
+    "__comp": "17896441",
+    "content": "e9088bfe"
+  },
+  "/docs/api-reference/openapi/-bd6": {
+    "__comp": "17896441",
+    "content": "56b45dcf"
+  },
+  "/docs/api-reference/openapi/-565": {
+    "__comp": "17896441",
+    "content": "26d906c2"
+  },
+  "/docs/api-reference/openapi/endpoints/-911": {
+    "__comp": "17896441",
+    "content": "7d32d66e"
+  },
+  "/docs/api-reference/openapi/endpoints/-e1e": {
+    "__comp": "17896441",
+    "content": "edf5e39e"
+  },
+  "/docs/api-reference/openapi/examples/-702": {
+    "__comp": "17896441",
+    "content": "14ad80e2"
+  },
+  "/docs/api-reference/openapi/examples/-31f": {
+    "__comp": "17896441",
+    "content": "2fecdaf3"
+  },
+  "/docs/api-reference/openapi/overview/-b2c": {
+    "__comp": "17896441",
+    "content": "7b79ea24"
+  },
+  "/docs/api-reference/openapi/overview/-ee8": {
+    "__comp": "17896441",
+    "content": "2189b075"
+  },
+  "/docs/api-reference/openapi/schemas/-820": {
+    "__comp": "17896441",
+    "content": "5ad29e44"
+  },
+  "/docs/api-reference/openapi/schemas/-6a0": {
+    "__comp": "17896441",
+    "content": "ef784b6d"
+  },
+  "/docs/api-reference/rest-api/-78d": {
+    "__comp": "17896441",
+    "content": "f49cb8a8"
+  },
+  "/docs/api-reference/rest-api/-b63": {
+    "__comp": "17896441",
+    "content": "9bb53a38"
+  },
+  "/docs/api-reference/rest-api/agents/-4d3": {
+    "__comp": "17896441",
+    "content": "8debd635"
+  },
+  "/docs/api-reference/rest-api/agents/-3f6": {
+    "__comp": "17896441",
+    "content": "601cf633"
+  },
+  "/docs/api-reference/rest-api/authentication/-227": {
+    "__comp": "17896441",
+    "content": "2842d5a4"
+  },
+  "/docs/api-reference/rest-api/authentication/-cc4": {
+    "__comp": "17896441",
+    "content": "0cc6c658"
+  },
+  "/docs/api-reference/rest-api/chat/-762": {
+    "__comp": "17896441",
+    "content": "32f90afe"
+  },
+  "/docs/api-reference/rest-api/chat/-7e5": {
+    "__comp": "17896441",
+    "content": "79f16802"
+  },
+  "/docs/api-reference/rest-api/events/-312": {
+    "__comp": "17896441",
+    "content": "89bd31c5"
+  },
+  "/docs/api-reference/rest-api/events/-166": {
+    "__comp": "17896441",
+    "content": "11a10129"
+  },
+  "/docs/api-reference/rest-api/extensions/-249": {
+    "__comp": "17896441",
+    "content": "a886b27a"
+  },
+  "/docs/api-reference/rest-api/extensions/-091": {
+    "__comp": "17896441",
+    "content": "df3f6da9"
+  },
+  "/docs/api-reference/rest-api/health/-659": {
+    "__comp": "17896441",
+    "content": "400da0ff"
+  },
+  "/docs/api-reference/rest-api/health/-cf0": {
+    "__comp": "17896441",
+    "content": "128668b3"
+  },
+  "/docs/api-reference/rest-api/memory/-a23": {
+    "__comp": "17896441",
+    "content": "4a15e620"
+  },
+  "/docs/api-reference/rest-api/memory/-8eb": {
+    "__comp": "17896441",
+    "content": "53ba7e84"
+  },
+  "/docs/api-reference/typescript-sdk/-93c": {
+    "__comp": "17896441",
+    "content": "48d5ac46"
+  },
+  "/docs/api-reference/typescript-sdk/-eab": {
+    "__comp": "17896441",
+    "content": "b68205ab"
+  },
+  "/docs/api-reference/typescript-sdk/agents/-8f8": {
+    "__comp": "17896441",
+    "content": "647e8633"
+  },
+  "/docs/api-reference/typescript-sdk/agents/-abd": {
+    "__comp": "17896441",
+    "content": "5668d7fc"
+  },
+  "/docs/api-reference/typescript-sdk/extensions/-5a6": {
+    "__comp": "17896441",
+    "content": "2dc2df67"
+  },
+  "/docs/api-reference/typescript-sdk/extensions/-680": {
+    "__comp": "17896441",
+    "content": "a33c0cb0"
+  },
+  "/docs/api-reference/typescript-sdk/installation/-c28": {
+    "__comp": "17896441",
+    "content": "19524143"
+  },
+  "/docs/api-reference/typescript-sdk/installation/-37d": {
+    "__comp": "17896441",
+    "content": "62f8fe04"
+  },
+  "/docs/api-reference/typescript-sdk/modules/-c29": {
+    "__comp": "17896441",
+    "content": "beccb593"
+  },
+  "/docs/api-reference/typescript-sdk/modules/-d37": {
+    "__comp": "17896441",
+    "content": "2ab7fa58"
+  },
+  "/docs/api-reference/typescript-sdk/runtime/-9cf": {
+    "__comp": "17896441",
+    "content": "ceb65f9b"
+  },
+  "/docs/api-reference/typescript-sdk/runtime/-14f": {
+    "__comp": "17896441",
+    "content": "3ae76e1a"
+  },
+  "/docs/api-reference/typescript-sdk/types/-5fc": {
+    "__comp": "17896441",
+    "content": "ea0563cf"
+  },
+  "/docs/api-reference/typescript-sdk/types/-bab": {
+    "__comp": "17896441",
+    "content": "0f11cc3b"
+  },
+  "/docs/api-reference/websocket-api/-199": {
+    "__comp": "17896441",
+    "content": "860ca931"
+  },
+  "/docs/api-reference/websocket-api/-97c": {
+    "__comp": "17896441",
+    "content": "ffbcde1e"
+  },
+  "/docs/api-reference/websocket-api/commands/-1bc": {
+    "__comp": "17896441",
+    "content": "2056957a"
+  },
+  "/docs/api-reference/websocket-api/commands/-578": {
+    "__comp": "17896441",
+    "content": "2d368b6c"
+  },
+  "/docs/api-reference/websocket-api/connection/-558": {
+    "__comp": "17896441",
+    "content": "63ce7187"
+  },
+  "/docs/api-reference/websocket-api/connection/-b22": {
+    "__comp": "17896441",
+    "content": "38224bd6"
+  },
+  "/docs/api-reference/websocket-api/events/-6c3": {
+    "__comp": "17896441",
+    "content": "dd58873e"
+  },
+  "/docs/api-reference/websocket-api/events/-b5f": {
+    "__comp": "17896441",
+    "content": "4248e3da"
+  },
+  "/docs/api-reference/websocket-api/streaming/-5a1": {
+    "__comp": "17896441",
+    "content": "7416bdc1"
+  },
+  "/docs/api-reference/websocket-api/streaming/-150": {
+    "__comp": "17896441",
+    "content": "bf6fb302"
+  },
+  "/docs/architecture/-e1f": {
+    "__comp": "17896441",
+    "content": "e437e8a7"
+  },
+  "/docs/architecture/-bde": {
+    "__comp": "17896441",
+    "content": "dc7abf1f"
+  },
+  "/docs/architecture/data-flow/-67d": {
+    "__comp": "17896441",
+    "content": "ed8368d5"
+  },
+  "/docs/architecture/data-flow/-ad9": {
+    "__comp": "17896441",
+    "content": "2d2e6531"
+  },
+  "/docs/architecture/patterns/-938": {
+    "__comp": "17896441",
+    "content": "14b36ba8"
+  },
+  "/docs/architecture/patterns/-2db": {
+    "__comp": "17896441",
+    "content": "8a1dd99e"
+  },
+  "/docs/architecture/patterns/mind-agents-architecture-f6a": {
+    "__comp": "17896441",
+    "content": "552baa9c"
+  },
+  "/docs/architecture/patterns/mind-agents-architecture-3c4": {
+    "__comp": "17896441",
+    "content": "e4d7ce38"
+  },
+  "/docs/architecture/scalability/-1ed": {
+    "__comp": "17896441",
+    "content": "5b0153d5"
+  },
+  "/docs/architecture/scalability/-7a7": {
+    "__comp": "17896441",
+    "content": "59261038"
+  },
+  "/docs/architecture/system-design/-08d": {
+    "__comp": "17896441",
+    "content": "16f9e41b"
+  },
+  "/docs/architecture/system-design/-a78": {
+    "__comp": "17896441",
+    "content": "496b1673"
+  },
+  "/docs/changelog/-2a9": {
+    "__comp": "17896441",
+    "content": "5150933a"
+  },
+  "/docs/changelog/-927": {
+    "__comp": "17896441",
+    "content": "7fda2918"
+  },
+  "/docs/changelog/breaking-changes/-abb": {
+    "__comp": "17896441",
+    "content": "cbef4c80"
+  },
+  "/docs/changelog/breaking-changes/-674": {
+    "__comp": "17896441",
+    "content": "2c28832a"
+  },
+  "/docs/changelog/migration-guides/-6cd": {
+    "__comp": "17896441",
+    "content": "5576c9c8"
+  },
+  "/docs/changelog/migration-guides/-3a6": {
+    "__comp": "17896441",
+    "content": "cc4f4ffa"
+  },
+  "/docs/changelog/releases/-116": {
+    "__comp": "17896441",
+    "content": "869fed0e"
+  },
+  "/docs/changelog/releases/-f0a": {
+    "__comp": "17896441",
+    "content": "8f99645b"
+  },
+  "/docs/community/-083": {
+    "__comp": "17896441",
+    "content": "d7033a17"
+  },
+  "/docs/community/-f53": {
+    "__comp": "17896441",
+    "content": "3fa7bede"
+  },
+  "/docs/community/contributors/-a8a": {
+    "__comp": "17896441",
+    "content": "a59d5378"
+  },
+  "/docs/community/contributors/-875": {
+    "__comp": "17896441",
+    "content": "409c573e"
+  },
+  "/docs/community/discord/-6a2": {
+    "__comp": "17896441",
+    "content": "726f4ecf"
+  },
+  "/docs/community/discord/-2b5": {
+    "__comp": "17896441",
+    "content": "3f7c0715"
+  },
+  "/docs/community/forums/-f7f": {
+    "__comp": "17896441",
+    "content": "e1a34521"
+  },
+  "/docs/community/forums/-2de": {
+    "__comp": "17896441",
+    "content": "47128f44"
+  },
+  "/docs/community/showcase/-99d": {
+    "__comp": "17896441",
+    "content": "c6a7bc00"
+  },
+  "/docs/community/showcase/-d99": {
+    "__comp": "17896441",
+    "content": "24cfd345"
+  },
+  "/docs/core-concepts/-0f2": {
+    "__comp": "17896441",
+    "content": "15ffcc3c"
+  },
+  "/docs/core-concepts/-fe7": {
+    "__comp": "17896441",
+    "content": "6e438c5b"
+  },
+  "/docs/core-concepts/event-bus/-d91": {
+    "__comp": "17896441",
+    "content": "b94ca90d"
+  },
+  "/docs/core-concepts/event-bus/-de6": {
+    "__comp": "17896441",
+    "content": "242901c5"
+  },
+  "/docs/core-concepts/lifecycle/-b2f": {
+    "__comp": "17896441",
+    "content": "eedf1528"
+  },
+  "/docs/core-concepts/lifecycle/-576": {
+    "__comp": "17896441",
+    "content": "e0aa5efe"
+  },
+  "/docs/core-concepts/plugin-system/-874": {
+    "__comp": "17896441",
+    "content": "9ca74861"
+  },
+  "/docs/core-concepts/plugin-system/-a0b": {
+    "__comp": "17896441",
+    "content": "0eeb5cd8"
+  },
+  "/docs/core-concepts/registry/-3cf": {
+    "__comp": "17896441",
+    "content": "d9c70a4c"
+  },
+  "/docs/core-concepts/registry/-5ea": {
+    "__comp": "17896441",
+    "content": "f8d7a578"
+  },
+  "/docs/core-concepts/runtime/-a62": {
+    "__comp": "17896441",
+    "content": "569c6379"
+  },
+  "/docs/core-concepts/runtime/-a07": {
+    "__comp": "17896441",
+    "content": "0f2e174b"
+  },
+  "/docs/deployment/-ab2": {
+    "__comp": "17896441",
+    "content": "29e8de1a"
+  },
+  "/docs/deployment/-85c": {
+    "__comp": "17896441",
+    "content": "df7910db"
+  },
+  "/docs/deployment/cloud/-b2a": {
+    "__comp": "17896441",
+    "content": "e5642640"
+  },
+  "/docs/deployment/cloud/-b1c": {
+    "__comp": "17896441",
+    "content": "b0cc92cd"
+  },
+  "/docs/deployment/configuration/-961": {
+    "__comp": "17896441",
+    "content": "54b330ba"
+  },
+  "/docs/deployment/configuration/-988": {
+    "__comp": "17896441",
+    "content": "c9e77114"
+  },
+  "/docs/deployment/configuration/guide-866": {
+    "__comp": "17896441",
+    "content": "69f2dc3b"
+  },
+  "/docs/deployment/configuration/guide-903": {
+    "__comp": "17896441",
+    "content": "3cbdea07"
+  },
+  "/docs/deployment/docker/-061": {
+    "__comp": "17896441",
+    "content": "a5f605ec"
+  },
+  "/docs/deployment/docker/-99c": {
+    "__comp": "17896441",
+    "content": "81bd5ff8"
+  },
+  "/docs/deployment/kubernetes/-8fa": {
+    "__comp": "17896441",
+    "content": "a84790d7"
+  },
+  "/docs/deployment/kubernetes/-1cd": {
+    "__comp": "17896441",
+    "content": "0db4a29b"
+  },
+  "/docs/deployment/on-premise/-6e4": {
+    "__comp": "17896441",
+    "content": "d51b12f8"
+  },
+  "/docs/deployment/on-premise/-415": {
+    "__comp": "17896441",
+    "content": "b969bfdf"
+  },
+  "/docs/development/-c5c": {
+    "__comp": "17896441",
+    "content": "e73239ea"
+  },
+  "/docs/development/-b12": {
+    "__comp": "17896441",
+    "content": "6dcaddc4"
+  },
+  "/docs/development/code-style/-af3": {
+    "__comp": "17896441",
+    "content": "d1b8c0c5"
+  },
+  "/docs/development/code-style/-418": {
+    "__comp": "17896441",
+    "content": "f5f0006e"
+  },
+  "/docs/development/contributing/-347": {
+    "__comp": "17896441",
+    "content": "41447da1"
+  },
+  "/docs/development/contributing/-478": {
+    "__comp": "17896441",
+    "content": "004db07f"
+  },
+  "/docs/development/debugging/-dee": {
+    "__comp": "17896441",
+    "content": "051c5d9c"
+  },
+  "/docs/development/debugging/-7a1": {
+    "__comp": "17896441",
+    "content": "6ec6382b"
+  },
+  "/docs/development/plugin-development/-fd4": {
+    "__comp": "17896441",
+    "content": "c5ce69b8"
+  },
+  "/docs/development/plugin-development/-ee1": {
+    "__comp": "17896441",
+    "content": "f3c104ae"
+  },
+  "/docs/development/plugin-development/guide-db6": {
+    "__comp": "17896441",
+    "content": "afd86863"
+  },
+  "/docs/development/plugin-development/guide-4ac": {
+    "__comp": "17896441",
+    "content": "ac2e9694"
+  },
+  "/docs/examples/-2f3": {
+    "__comp": "17896441",
+    "content": "5f51d736"
+  },
+  "/docs/examples/-a7d": {
+    "__comp": "17896441",
+    "content": "bf614533"
+  },
+  "/docs/examples/advanced/-0ec": {
+    "__comp": "17896441",
+    "content": "5c8cc9fb"
+  },
+  "/docs/examples/advanced/-ad9": {
+    "__comp": "17896441",
+    "content": "062d8990"
+  },
+  "/docs/examples/basic/-20d": {
+    "__comp": "17896441",
+    "content": "f3e71892"
+  },
+  "/docs/examples/basic/-907": {
+    "__comp": "17896441",
+    "content": "128f9a34"
+  },
+  "/docs/examples/templates/-a0e": {
+    "__comp": "17896441",
+    "content": "8eb1cfab"
+  },
+  "/docs/examples/templates/-405": {
+    "__comp": "17896441",
+    "content": "bf0ea457"
+  },
+  "/docs/examples/use-cases/-394": {
+    "__comp": "17896441",
+    "content": "6be9936d"
+  },
+  "/docs/examples/use-cases/-3e2": {
+    "__comp": "17896441",
+    "content": "1222be36"
+  },
+  "/docs/extensions/-ff9": {
+    "__comp": "17896441",
+    "content": "7540d141"
+  },
+  "/docs/extensions/-6a3": {
+    "__comp": "17896441",
+    "content": "583db3ef"
+  },
+  "/docs/extensions/api-server/-895": {
+    "__comp": "17896441",
+    "content": "3ea1a9f8"
+  },
+  "/docs/extensions/api-server/-d88": {
+    "__comp": "17896441",
+    "content": "22f51c5f"
+  },
+  "/docs/extensions/api-server/extension-interface-839": {
+    "__comp": "17896441",
+    "content": "7f89de64"
+  },
+  "/docs/extensions/api-server/extension-interface-5ef": {
+    "__comp": "17896441",
+    "content": "5a808f0a"
+  },
+  "/docs/extensions/cli/-ec4": {
+    "__comp": "17896441",
+    "content": "14d2e710"
+  },
+  "/docs/extensions/cli/-93f": {
+    "__comp": "17896441",
+    "content": "ab6b50a7"
+  },
+  "/docs/extensions/discord/-95c": {
+    "__comp": "17896441",
+    "content": "9a2ebfb2"
+  },
+  "/docs/extensions/discord/-b4d": {
+    "__comp": "17896441",
+    "content": "4778585b"
+  },
+  "/docs/extensions/slack/-546": {
+    "__comp": "17896441",
+    "content": "7073df88"
+  },
+  "/docs/extensions/slack/-7b2": {
+    "__comp": "17896441",
+    "content": "b7da77f8"
+  },
+  "/docs/extensions/telegram/-9d9": {
+    "__comp": "17896441",
+    "content": "a37b7cd6"
+  },
+  "/docs/extensions/telegram/-930": {
+    "__comp": "17896441",
+    "content": "40dae228"
+  },
+  "/docs/extensions/telegram/setup-573": {
+    "__comp": "17896441",
+    "content": "43bf0693"
+  },
+  "/docs/extensions/telegram/setup-f42": {
+    "__comp": "17896441",
+    "content": "652b703c"
+  },
+  "/docs/extensions/twitter/-378": {
+    "__comp": "17896441",
+    "content": "d9b8eb11"
+  },
+  "/docs/extensions/twitter/-83a": {
+    "__comp": "17896441",
+    "content": "60fb4122"
+  },
+  "/docs/extensions/web-ui/-a22": {
+    "__comp": "17896441",
+    "content": "45d57da6"
+  },
+  "/docs/extensions/web-ui/-419": {
+    "__comp": "17896441",
+    "content": "eebbbae9"
+  },
+  "/docs/getting-started/-924": {
+    "__comp": "17896441",
+    "content": "73922982"
+  },
+  "/docs/getting-started/-966": {
+    "__comp": "17896441",
+    "content": "54c82979"
+  },
+  "/docs/getting-started/first-agent/-f52": {
+    "__comp": "17896441",
+    "content": "58bc778b"
+  },
+  "/docs/getting-started/first-agent/-3c0": {
+    "__comp": "17896441",
+    "content": "17689174"
+  },
+  "/docs/getting-started/installation/-1d2": {
+    "__comp": "17896441",
+    "content": "606cfb8f"
+  },
+  "/docs/getting-started/installation/-6bd": {
+    "__comp": "17896441",
+    "content": "fb165d2c"
+  },
+  "/docs/getting-started/prerequisites/-9e3": {
+    "__comp": "17896441",
+    "content": "0ea778bb"
+  },
+  "/docs/getting-started/prerequisites/-16f": {
+    "__comp": "17896441",
+    "content": "ccd0cd44"
+  },
+  "/docs/getting-started/quick-start/-372": {
+    "__comp": "17896441",
+    "content": "ff1d8d28"
+  },
+  "/docs/getting-started/quick-start/-548": {
+    "__comp": "17896441",
+    "content": "cc07fbff"
+  },
+  "/docs/integrations/-098": {
+    "__comp": "17896441",
+    "content": "7644b4bf"
+  },
+  "/docs/integrations/-c02": {
+    "__comp": "17896441",
+    "content": "b47a527a"
+  },
+  "/docs/integrations/databases/-8ff": {
+    "__comp": "17896441",
+    "content": "4a5f6481"
+  },
+  "/docs/integrations/databases/-0df": {
+    "__comp": "17896441",
+    "content": "ee049c4f"
+  },
+  "/docs/integrations/langchain/-3e6": {
+    "__comp": "17896441",
+    "content": "47f841c4"
+  },
+  "/docs/integrations/langchain/-790": {
+    "__comp": "17896441",
+    "content": "68736d8c"
+  },
+  "/docs/integrations/llama-index/-b3e": {
+    "__comp": "17896441",
+    "content": "1ac4490f"
+  },
+  "/docs/integrations/llama-index/-d38": {
+    "__comp": "17896441",
+    "content": "d1f95a55"
+  },
+  "/docs/integrations/mcp/-812": {
+    "__comp": "17896441",
+    "content": "3f69cfa5"
+  },
+  "/docs/integrations/mcp/-ede": {
+    "__comp": "17896441",
+    "content": "fa4c8c84"
+  },
+  "/docs/integrations/mcp/api-integration-046": {
+    "__comp": "17896441",
+    "content": "dc959732"
+  },
+  "/docs/integrations/mcp/api-integration-36e": {
+    "__comp": "17896441",
+    "content": "3d69dfee"
+  },
+  "/docs/integrations/vector-stores/-40a": {
+    "__comp": "17896441",
+    "content": "5073a3eb"
+  },
+  "/docs/integrations/vector-stores/-aa0": {
+    "__comp": "17896441",
+    "content": "d6658f49"
+  },
+  "/docs/introduction-4b9": {
+    "__comp": "17896441",
+    "content": "a09c2993"
+  },
+  "/docs/migration/-814": {
+    "__comp": "17896441",
+    "content": "85904398"
+  },
+  "/docs/migration/-827": {
+    "__comp": "17896441",
+    "content": "d999df45"
+  },
+  "/docs/migration/breaking-changes/-1a7": {
+    "__comp": "17896441",
+    "content": "e71bc7bf"
+  },
+  "/docs/migration/breaking-changes/-068": {
+    "__comp": "17896441",
+    "content": "8ca397fe"
+  },
+  "/docs/migration/data-migration/-1cf": {
+    "__comp": "17896441",
+    "content": "6ab5256b"
+  },
+  "/docs/migration/data-migration/-a64": {
+    "__comp": "17896441",
+    "content": "6b908603"
+  },
+  "/docs/migration/version-upgrades/-010": {
+    "__comp": "17896441",
+    "content": "7baa467b"
+  },
+  "/docs/migration/version-upgrades/-ecf": {
+    "__comp": "17896441",
+    "content": "4fafe832"
+  },
+  "/docs/migration/version-upgrades/v1-migration-0a4": {
+    "__comp": "17896441",
+    "content": "8e5526a4"
+  },
+  "/docs/migration/version-upgrades/v1-migration-95a": {
+    "__comp": "17896441",
+    "content": "6563a03c"
+  },
+  "/docs/modules/-d31": {
+    "__comp": "17896441",
+    "content": "a075e18b"
+  },
+  "/docs/modules/-9e3": {
+    "__comp": "17896441",
+    "content": "3aa08db4"
+  },
+  "/docs/modules/behavior/-e01": {
+    "__comp": "17896441",
+    "content": "e56742cd"
+  },
+  "/docs/modules/behavior/-1fc": {
+    "__comp": "17896441",
+    "content": "2fd63273"
+  },
+  "/docs/modules/cognition/-506": {
+    "__comp": "17896441",
+    "content": "4fdb93c6"
+  },
+  "/docs/modules/cognition/-317": {
+    "__comp": "17896441",
+    "content": "265152c3"
+  },
+  "/docs/modules/cognition/api-965": {
+    "__comp": "17896441",
+    "content": "6d1903d9"
+  },
+  "/docs/modules/cognition/api-4db": {
+    "__comp": "17896441",
+    "content": "384fee9c"
+  },
+  "/docs/modules/cognition/htn-planner/-d5a": {
+    "__comp": "17896441",
+    "content": "be99c7eb"
+  },
+  "/docs/modules/cognition/htn-planner/-e83": {
+    "__comp": "17896441",
+    "content": "d9363e19"
+  },
+  "/docs/modules/cognition/hybrid/-1f4": {
+    "__comp": "17896441",
+    "content": "172388a8"
+  },
+  "/docs/modules/cognition/hybrid/-47f": {
+    "__comp": "17896441",
+    "content": "625fbb3e"
+  },
+  "/docs/modules/cognition/reactive/-b86": {
+    "__comp": "17896441",
+    "content": "71460d42"
+  },
+  "/docs/modules/cognition/reactive/-16c": {
+    "__comp": "17896441",
+    "content": "a24ea518"
+  },
+  "/docs/modules/consciousness/-a7f": {
+    "__comp": "17896441",
+    "content": "f3634669"
+  },
+  "/docs/modules/consciousness/-761": {
+    "__comp": "17896441",
+    "content": "4c7f4351"
+  },
+  "/docs/modules/emotion/-8dd": {
+    "__comp": "17896441",
+    "content": "0a4bb6f6"
+  },
+  "/docs/modules/emotion/-814": {
+    "__comp": "17896441",
+    "content": "79232581"
+  },
+  "/docs/modules/emotion/api-7eb": {
+    "__comp": "17896441",
+    "content": "9e8ca1d0"
+  },
+  "/docs/modules/emotion/api-26c": {
+    "__comp": "17896441",
+    "content": "34d5da49"
+  },
+  "/docs/modules/emotion/custom-emotions/-0eb": {
+    "__comp": "17896441",
+    "content": "544ec8ad"
+  },
+  "/docs/modules/emotion/custom-emotions/-016": {
+    "__comp": "17896441",
+    "content": "36de5fee"
+  },
+  "/docs/modules/emotion/emotion-stack/-279": {
+    "__comp": "17896441",
+    "content": "3f6dda07"
+  },
+  "/docs/modules/emotion/emotion-stack/-c26": {
+    "__comp": "17896441",
+    "content": "b7963bc0"
+  },
+  "/docs/modules/memory/-3b4": {
+    "__comp": "17896441",
+    "content": "7516e675"
+  },
+  "/docs/modules/memory/-f99": {
+    "__comp": "17896441",
+    "content": "3955f733"
+  },
+  "/docs/modules/memory/neon/-48f": {
+    "__comp": "17896441",
+    "content": "7bf7c07b"
+  },
+  "/docs/modules/memory/neon/-1e1": {
+    "__comp": "17896441",
+    "content": "00db3b0a"
+  },
+  "/docs/modules/memory/postgres/-7f5": {
+    "__comp": "17896441",
+    "content": "940127c9"
+  },
+  "/docs/modules/memory/postgres/-515": {
+    "__comp": "17896441",
+    "content": "0ca003a0"
+  },
+  "/docs/modules/memory/providers/-18c": {
+    "__comp": "17896441",
+    "content": "3d5e49ba"
+  },
+  "/docs/modules/memory/providers/-815": {
+    "__comp": "17896441",
+    "content": "fb5cfed4"
+  },
+  "/docs/modules/memory/providers/api-6bf": {
+    "__comp": "17896441",
+    "content": "42b206a4"
+  },
+  "/docs/modules/memory/providers/api-2d0": {
+    "__comp": "17896441",
+    "content": "3762010d"
+  },
+  "/docs/modules/memory/sqlite/-3c3": {
+    "__comp": "17896441",
+    "content": "3551154b"
+  },
+  "/docs/modules/memory/sqlite/-5f1": {
+    "__comp": "17896441",
+    "content": "c439fc77"
+  },
+  "/docs/modules/memory/supabase/-d52": {
+    "__comp": "17896441",
+    "content": "66e87592"
+  },
+  "/docs/modules/memory/supabase/-d7c": {
+    "__comp": "17896441",
+    "content": "3b12c407"
+  },
+  "/docs/modules/tools/-0d2": {
+    "__comp": "17896441",
+    "content": "8cd0c267"
+  },
+  "/docs/modules/tools/-697": {
+    "__comp": "17896441",
+    "content": "9892cbee"
+  },
+  "/docs/monitoring/-e34": {
+    "__comp": "17896441",
+    "content": "2840059c"
+  },
+  "/docs/monitoring/-eed": {
+    "__comp": "17896441",
+    "content": "828e2862"
+  },
+  "/docs/monitoring/alerts/-566": {
+    "__comp": "17896441",
+    "content": "d32f2733"
+  },
+  "/docs/monitoring/alerts/-7ec": {
+    "__comp": "17896441",
+    "content": "ac9befef"
+  },
+  "/docs/monitoring/dashboards/-949": {
+    "__comp": "17896441",
+    "content": "23a706a5"
+  },
+  "/docs/monitoring/dashboards/-10c": {
+    "__comp": "17896441",
+    "content": "026ddada"
+  },
+  "/docs/monitoring/logging/-4e3": {
+    "__comp": "17896441",
+    "content": "f090f318"
+  },
+  "/docs/monitoring/logging/-898": {
+    "__comp": "17896441",
+    "content": "30fc35ed"
+  },
+  "/docs/monitoring/metrics/-0cc": {
+    "__comp": "17896441",
+    "content": "e89eddb1"
+  },
+  "/docs/monitoring/metrics/-884": {
+    "__comp": "17896441",
+    "content": "e9af9020"
+  },
+  "/docs/monitoring/tracing/-0c3": {
+    "__comp": "17896441",
+    "content": "27b0777c"
+  },
+  "/docs/monitoring/tracing/-d78": {
+    "__comp": "17896441",
+    "content": "55f8d3ef"
+  },
+  "/docs/overview/-4c2": {
+    "__comp": "17896441",
+    "content": "b5025eb7"
+  },
+  "/docs/overview/-e85": {
+    "__comp": "17896441",
+    "content": "fb87d503"
+  },
+  "/docs/overview/introduction/-655": {
+    "__comp": "17896441",
+    "content": "78e1623f"
+  },
+  "/docs/overview/introduction/-031": {
+    "__comp": "17896441",
+    "content": "2317d5d5"
+  },
+  "/docs/overview/roadmap/-2da": {
+    "__comp": "17896441",
+    "content": "c7c62ffe"
+  },
+  "/docs/overview/roadmap/-314": {
+    "__comp": "17896441",
+    "content": "c4d069e4"
+  },
+  "/docs/overview/roadmap/product-requirements-8b8": {
+    "__comp": "17896441",
+    "content": "0fde17f6"
+  },
+  "/docs/overview/roadmap/product-requirements-99c": {
+    "__comp": "17896441",
+    "content": "a375be8f"
+  },
+  "/docs/overview/use-cases/-674": {
+    "__comp": "17896441",
+    "content": "ac30a5ff"
+  },
+  "/docs/overview/use-cases/-c1d": {
+    "__comp": "17896441",
+    "content": "9b2d5a48"
+  },
+  "/docs/performance/-818": {
+    "__comp": "17896441",
+    "content": "0f3bfa88"
+  },
+  "/docs/performance/-8ec": {
+    "__comp": "17896441",
+    "content": "cd86a722"
+  },
+  "/docs/performance/benchmarks/-cbe": {
+    "__comp": "17896441",
+    "content": "023c3e2b"
+  },
+  "/docs/performance/benchmarks/-93a": {
+    "__comp": "17896441",
+    "content": "b2f317d7"
+  },
+  "/docs/performance/caching/-626": {
+    "__comp": "17896441",
+    "content": "838fb6fb"
+  },
+  "/docs/performance/caching/-100": {
+    "__comp": "17896441",
+    "content": "e9634a54"
+  },
+  "/docs/performance/optimization/-b97": {
+    "__comp": "17896441",
+    "content": "7e495192"
+  },
+  "/docs/performance/optimization/-166": {
+    "__comp": "17896441",
+    "content": "bd03ea95"
+  },
+  "/docs/performance/profiling/-09c": {
+    "__comp": "17896441",
+    "content": "441bc702"
+  },
+  "/docs/performance/profiling/-da1": {
+    "__comp": "17896441",
+    "content": "5ac029de"
+  },
+  "/docs/performance/scaling/-c8d": {
+    "__comp": "17896441",
+    "content": "fcfd03ea"
+  },
+  "/docs/performance/scaling/-6e8": {
+    "__comp": "17896441",
+    "content": "29440ad6"
+  },
+  "/docs/portals/-954": {
+    "__comp": "17896441",
+    "content": "55d050bc"
+  },
+  "/docs/portals/-bf3": {
+    "__comp": "17896441",
+    "content": "66f728e8"
+  },
+  "/docs/portals/anthropic/-b92": {
+    "__comp": "17896441",
+    "content": "97e0a65e"
+  },
+  "/docs/portals/anthropic/-4bc": {
+    "__comp": "17896441",
+    "content": "76fcbbad"
+  },
+  "/docs/portals/custom/-f37": {
+    "__comp": "17896441",
+    "content": "a6c6931e"
+  },
+  "/docs/portals/custom/-b1e": {
+    "__comp": "17896441",
+    "content": "48f9c85e"
+  },
+  "/docs/portals/custom/api-026": {
+    "__comp": "17896441",
+    "content": "040a1f45"
+  },
+  "/docs/portals/custom/api-ab0": {
+    "__comp": "17896441",
+    "content": "f50ef9f3"
+  },
+  "/docs/portals/google/-837": {
+    "__comp": "17896441",
+    "content": "b7dc933f"
+  },
+  "/docs/portals/google/-964": {
+    "__comp": "17896441",
+    "content": "1af0a873"
+  },
+  "/docs/portals/groq/-96c": {
+    "__comp": "17896441",
+    "content": "f497b6a5"
+  },
+  "/docs/portals/groq/-2cb": {
+    "__comp": "17896441",
+    "content": "1868125e"
+  },
+  "/docs/portals/ollama/-47b": {
+    "__comp": "17896441",
+    "content": "bffefe06"
+  },
+  "/docs/portals/ollama/-b67": {
+    "__comp": "17896441",
+    "content": "94de6417"
+  },
+  "/docs/portals/openai/-6ef": {
+    "__comp": "17896441",
+    "content": "b6b58fe1"
+  },
+  "/docs/portals/openai/-b03": {
+    "__comp": "17896441",
+    "content": "b4957c93"
+  },
+  "/docs/portals/portal-switching-697": {
+    "__comp": "17896441",
+    "content": "7667b112"
+  },
+  "/docs/portals/portal-switching-3d4": {
+    "__comp": "17896441",
+    "content": "bc530095"
+  },
+  "/docs/portals/xai/-f03": {
+    "__comp": "17896441",
+    "content": "7927a168"
+  },
+  "/docs/portals/xai/-5ac": {
+    "__comp": "17896441",
+    "content": "c93e5431"
+  },
+  "/docs/resources/-bd1": {
+    "__comp": "17896441",
+    "content": "a0656739"
+  },
+  "/docs/resources/-5cd": {
+    "__comp": "17896441",
+    "content": "cd948886"
+  },
+  "/docs/resources/glossary/-3fe": {
+    "__comp": "17896441",
+    "content": "2df8c843"
+  },
+  "/docs/resources/glossary/-e9a": {
+    "__comp": "17896441",
+    "content": "51531b08"
+  },
+  "/docs/resources/learning/-521": {
+    "__comp": "17896441",
+    "content": "5a3a605a"
+  },
+  "/docs/resources/learning/-a01": {
+    "__comp": "17896441",
+    "content": "d5671b60"
+  },
+  "/docs/resources/references/-59e": {
+    "__comp": "17896441",
+    "content": "d4216d26"
+  },
+  "/docs/resources/references/-fa2": {
+    "__comp": "17896441",
+    "content": "e9cfd1db"
+  },
+  "/docs/resources/tools/-a09": {
+    "__comp": "17896441",
+    "content": "b34b3786"
+  },
+  "/docs/resources/tools/-6b1": {
+    "__comp": "17896441",
+    "content": "ec05ca2e"
+  },
+  "/docs/roadmap/-d28": {
+    "__comp": "17896441",
+    "content": "1346dc6b"
+  },
+  "/docs/roadmap/-402": {
+    "__comp": "17896441",
+    "content": "03f6f408"
+  },
+  "/docs/roadmap/features/-ea4": {
+    "__comp": "17896441",
+    "content": "9677b8f9"
+  },
+  "/docs/roadmap/features/-60c": {
+    "__comp": "17896441",
+    "content": "44f9757f"
+  },
+  "/docs/roadmap/timeline/-a43": {
+    "__comp": "17896441",
+    "content": "d81a05dd"
+  },
+  "/docs/roadmap/timeline/-d4e": {
+    "__comp": "17896441",
+    "content": "88d07be8"
+  },
+  "/docs/roadmap/vision/-9f6": {
+    "__comp": "17896441",
+    "content": "7b1fc4d4"
+  },
+  "/docs/roadmap/vision/-c0c": {
+    "__comp": "17896441",
+    "content": "9dc187a7"
+  },
+  "/docs/security/-40e": {
+    "__comp": "17896441",
+    "content": "9042101e"
+  },
+  "/docs/security/-436": {
+    "__comp": "17896441",
+    "content": "9297eaeb"
+  },
+  "/docs/security/authentication/-81c": {
+    "__comp": "17896441",
+    "content": "602bd8a6"
+  },
+  "/docs/security/authentication/-f59": {
+    "__comp": "17896441",
+    "content": "e257414f"
+  },
+  "/docs/security/authorization/-3a0": {
+    "__comp": "17896441",
+    "content": "be4eae8e"
+  },
+  "/docs/security/authorization/-027": {
+    "__comp": "17896441",
+    "content": "49c049b8"
+  },
+  "/docs/security/compliance/-a07": {
+    "__comp": "17896441",
+    "content": "569f35e4"
+  },
+  "/docs/security/compliance/-552": {
+    "__comp": "17896441",
+    "content": "7aff7679"
+  },
+  "/docs/security/encryption/-72c": {
+    "__comp": "17896441",
+    "content": "5493d4ff"
+  },
+  "/docs/security/encryption/-196": {
+    "__comp": "17896441",
+    "content": "daa42cfa"
+  },
+  "/docs/security/rbac/-432": {
+    "__comp": "17896441",
+    "content": "4ccb898c"
+  },
+  "/docs/security/rbac/-023": {
+    "__comp": "17896441",
+    "content": "7200d1ab"
+  },
+  "/docs/support/-17a": {
+    "__comp": "17896441",
+    "content": "a1dd8e9e"
+  },
+  "/docs/support/-479": {
+    "__comp": "17896441",
+    "content": "a646d2b2"
+  },
+  "/docs/support/community/-924": {
+    "__comp": "17896441",
+    "content": "1678223c"
+  },
+  "/docs/support/community/-055": {
+    "__comp": "17896441",
+    "content": "83f4cacf"
+  },
+  "/docs/support/contact/-48b": {
+    "__comp": "17896441",
+    "content": "9f84dc50"
+  },
+  "/docs/support/contact/-421": {
+    "__comp": "17896441",
+    "content": "1c2d65c4"
+  },
+  "/docs/support/documentation/-8e1": {
+    "__comp": "17896441",
+    "content": "b440bd1a"
+  },
+  "/docs/support/documentation/-b80": {
+    "__comp": "17896441",
+    "content": "d2394905"
+  },
+  "/docs/support/enterprise/-74f": {
+    "__comp": "17896441",
+    "content": "e8d91c06"
+  },
+  "/docs/support/enterprise/-ef4": {
+    "__comp": "17896441",
+    "content": "908e1425"
+  },
+  "/docs/testing/-75f": {
+    "__comp": "17896441",
+    "content": "470a0925"
+  },
+  "/docs/testing/-8de": {
+    "__comp": "17896441",
+    "content": "8aacc199"
+  },
+  "/docs/testing/benchmarks/-704": {
+    "__comp": "17896441",
+    "content": "8f104e32"
+  },
+  "/docs/testing/benchmarks/-430": {
+    "__comp": "17896441",
+    "content": "b12cc955"
+  },
+  "/docs/testing/ci-cd/-a0a": {
+    "__comp": "17896441",
+    "content": "ddda9492"
+  },
+  "/docs/testing/ci-cd/-276": {
+    "__comp": "17896441",
+    "content": "a0337510"
+  },
+  "/docs/testing/e2e-tests/-656": {
+    "__comp": "17896441",
+    "content": "c6816b24"
+  },
+  "/docs/testing/e2e-tests/-16d": {
+    "__comp": "17896441",
+    "content": "697a32b8"
+  },
+  "/docs/testing/integration-tests/-321": {
+    "__comp": "17896441",
+    "content": "74f5f8a2"
+  },
+  "/docs/testing/integration-tests/-bdb": {
+    "__comp": "17896441",
+    "content": "49a6c592"
+  },
+  "/docs/testing/unit-tests/-259": {
+    "__comp": "17896441",
+    "content": "d9273a1a"
+  },
+  "/docs/testing/unit-tests/-061": {
+    "__comp": "17896441",
+    "content": "f2de0257"
+  },
+  "/docs/troubleshooting/-ff0": {
+    "__comp": "17896441",
+    "content": "1fd01239"
+  },
+  "/docs/troubleshooting/-484": {
+    "__comp": "17896441",
+    "content": "d651e2ee"
+  },
+  "/docs/troubleshooting/common-issues/-691": {
+    "__comp": "17896441",
+    "content": "1426d9ad"
+  },
+  "/docs/troubleshooting/common-issues/-446": {
+    "__comp": "17896441",
+    "content": "0602cdf9"
+  },
+  "/docs/troubleshooting/debugging/-503": {
+    "__comp": "17896441",
+    "content": "f537f553"
+  },
+  "/docs/troubleshooting/debugging/-720": {
+    "__comp": "17896441",
+    "content": "741e03e0"
+  },
+  "/docs/troubleshooting/faq/-161": {
+    "__comp": "17896441",
+    "content": "6e88706f"
+  },
+  "/docs/troubleshooting/faq/-e28": {
+    "__comp": "17896441",
+    "content": "b7bbff0b"
+  },
+  "/docs/troubleshooting/logs/-7cd": {
+    "__comp": "17896441",
+    "content": "2a4b0458"
+  },
+  "/docs/troubleshooting/logs/-91c": {
+    "__comp": "17896441",
+    "content": "4aad7646"
+  },
+  "/docs/tutorials/-78a": {
+    "__comp": "17896441",
+    "content": "cdc91477"
+  },
+  "/docs/tutorials/-abc": {
+    "__comp": "17896441",
+    "content": "fea1970e"
+  },
+  "/docs/tutorials/advanced/-011": {
+    "__comp": "17896441",
+    "content": "adf8aeb0"
+  },
+  "/docs/tutorials/advanced/-857": {
+    "__comp": "17896441",
+    "content": "84012667"
+  },
+  "/docs/tutorials/beginner/-a98": {
+    "__comp": "17896441",
+    "content": "675daa26"
+  },
+  "/docs/tutorials/beginner/-c52": {
+    "__comp": "17896441",
+    "content": "02588481"
+  },
+  "/docs/tutorials/intermediate/-1c0": {
+    "__comp": "17896441",
+    "content": "e264e5ad"
+  },
+  "/docs/tutorials/intermediate/-7df": {
+    "__comp": "17896441",
+    "content": "8628783d"
+  },
+  "/docs/tutorials/video-tutorials/-66b": {
+    "__comp": "17896441",
+    "content": "a56af689"
+  },
+  "/docs/tutorials/video-tutorials/-ca2": {
+    "__comp": "17896441",
+    "content": "6244d77c"
   },
   "/-e5f": {
-    "__comp": "__comp---site-src-pages-index-tsx-1-df-d3e",
+    "__comp": "1df93b7f",
     "__context": {
-      "plugin": "plugin---a-74-9d6"
+      "plugin": "a7456010"
     },
-    "config": "config---5-e-9-4f3"
+    "config": "5e9f5e1a"
   }
 }
