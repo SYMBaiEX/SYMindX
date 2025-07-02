@@ -20,6 +20,23 @@
 
 SYMindX is a modular AI agent framework that creates intelligent agents with emotional awareness, persistent memory, and multi-platform capabilities. Agents respond only to direct interactions - messages, game events, or API calls - making them perfect for chatbots, game NPCs, and interactive applications.
 
+## 📦 SYMindX CLI Package
+
+For quick setup and immediate use, we also provide a standalone CLI package:
+
+```bash
+npm install -g @symindx/cli
+symindx
+```
+
+The CLI package includes:
+- **NyX Agent** - A rebellious AI with attitude
+- **Character System** - Create and manage custom AI personalities
+- **OpenAI Integration** - Simple setup with API key onboarding
+- **Beautiful CLI** - Colors, animations, and intuitive interface
+
+**Repository**: The CLI package is maintained as a separate npm-managed repository in the `cli/` directory.
+
 ### 🎯 Key Features
 
 - **🧩 Modular Architecture** - Hot-swappable modules for memory, emotion, and cognition

@@ -244,8 +244,8 @@ dist
 ehthumbs.db
 Thumbs.db
 
-# CLI build outputs
-cli/
+# CLI build outputs (submodule now)
+# cli/
 
 # Agent runtime data
 data/
@@ -328,4 +328,4 @@ storybook-static/
 
 # Temporary directories
 .tmp/
-.temp/
+.temp/cli/
