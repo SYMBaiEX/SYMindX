@@ -243,6 +243,9 @@ dist
 ehthumbs.db
 Thumbs.db
 
+# CLI build outputs
+cli/
+
 # Agent runtime data
 data/
 logs/

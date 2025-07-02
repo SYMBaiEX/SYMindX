@@ -5,9 +5,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Development Commands
 
 ### Project Structure
-SYMindX is a monorepo with two main components:
+SYMindX is a monorepo with multiple components:
 - `mind-agents/` - Core agent runtime system (TypeScript)
 - `website/` - React web interface (TypeScript + Vite)
+- `docs-site/` - Documentation site (Docusaurus)
+- `cli/` - Build outputs for CLI tools (not committed to git)
 
 ### Root Level Commands
 ```bash
@@ -46,7 +48,7 @@ bun preview            # Preview production build
 
 ## Architecture Overview
 
-SYMindX is a clean, modular AI agent runtime with a type-safe plugin architecture:
+SYMindX is a reactive AI agent runtime with modular emotion and cognition systems:
 
 ```
 SYMindX Runtime (mind-agents/)
@@ -57,46 +59,92 @@ SYMindX Runtime (mind-agents/)
 │   ├── 🏗️ core/ - Core Runtime System
 │   │   ├── runtime.ts - Main orchestrator
 │   │   ├── registry.ts - Type-safe module registry
-│   │   ├── enhanced-event-bus.ts - Inter-component communication
-│   │   └── plugin-loader.ts - Dynamic plugin loading
+│   │   ├── event-bus.ts - Inter-component communication
+│   │   ├── plugin-loader.ts - Plugin loading
+│   │   ├── command-system.ts - Command execution
+│   │   ├── portal-integration.ts - AI provider integration (includes portal selection)
+│   │   ├── autonomous-engine.ts - Autonomous behaviors (disabled by default)
+│   │   ├── decision-engine.ts - Decision making
+│   │   ├── ethics-engine.ts - Ethical constraints (can be disabled per agent)
+│   │   ├── interaction-manager.ts - Human interaction handling
+│   │   ├── multi-agent-manager.ts - Multi-agent coordination
+│   │   └── prompt-manager.ts - Prompt template management
 │   │
 │   ├── 📚 types/ - Centralized Type System
 │   │   ├── index.ts - Master type exports (ALL TYPES HERE)
 │   │   ├── agent.ts - Agent and extension types
-│   │   ├── common.ts - Shared types
-│   │   └── [specialized type files]
+│   │   ├── character.ts - Character configuration types
+│   │   ├── emotion.ts - Emotion system types
+│   │   ├── memory.ts - Memory system types
+│   │   ├── portal.ts - AI provider types
+│   │   └── [other type files]
 │   │
 │   ├── 🧩 modules/ - AI Module System
 │   │   ├── index.ts - Module factory registry
-│   │   ├── memory/ - SQLite, Supabase, Neon providers
-│   │   ├── emotion/ - Emotion processing systems
-│   │   ├── cognition/ - HTN planner, reactive systems
-│   │   ├── autonomous/ - Self-learning capabilities
-│   │   ├── consciousness/ - Advanced AI consciousness
-│   │   └── [additional modules with consistent patterns]
+│   │   ├── memory/ - Memory providers
+│   │   │   ├── providers/
+│   │   │   │   ├── sqlite/ - SQLite provider
+│   │   │   │   ├── postgres/ - PostgreSQL provider
+│   │   │   │   ├── supabase/ - Supabase provider
+│   │   │   │   └── neon/ - Neon provider
+│   │   │   └── base-memory-provider.ts
+│   │   ├── emotion/ - Emotion system
+│   │   │   ├── composite-emotion.ts - Manages all emotions
+│   │   │   ├── base-emotion.ts - Base emotion class
+│   │   │   ├── happy/
+│   │   │   ├── sad/
+│   │   │   ├── angry/
+│   │   │   ├── anxious/
+│   │   │   ├── confident/
+│   │   │   ├── nostalgic/
+│   │   │   ├── empathetic/
+│   │   │   ├── curious/
+│   │   │   ├── proud/
+│   │   │   ├── confused/
+│   │   │   └── neutral/
+│   │   └── cognition/ - Cognitive systems
+│   │       ├── cognition.ts - Main cognition module
+│   │       ├── htn-planner.ts - HTN planning
+│   │       ├── reactive.ts - Reactive responses
+│   │       └── hybrid.ts - Combined approach
 │   │
 │   ├── 🔌 extensions/ - Extension System
-│   │   ├── api/ - HTTP/WebSocket server
-│   │   ├── slack/ - Chat integration
-│   │   ├── twitter/ - Social media
-│   │   └── [platform integrations]
+│   │   ├── api/ - HTTP/WebSocket server with WebUI
+│   │   ├── slack/ - Slack integration
+│   │   ├── twitter/ - Twitter bot
+│   │   ├── telegram/ - Telegram bot
+│   │   └── runelite/ - RuneScape integration
 │   │
 │   ├── 🌐 portals/ - AI Provider Integrations
-│   │   ├── openai/ - OpenAI integration
-│   │   ├── anthropic/ - Anthropic integration
-│   │   └── [AI service providers]
+│   │   ├── groq/ - Groq (fast inference)
+│   │   ├── openai/ - OpenAI GPT models
+│   │   ├── anthropic/ - Claude models
+│   │   ├── xai/ - xAI Grok models
+│   │   ├── ollama/ - Local models
+│   │   └── [other providers]
 │   │
 │   ├── 🛡️ security/ - Security & Compliance
 │   │   ├── auth/ - Authentication systems
 │   │   ├── rbac/ - Role-based access control
 │   │   └── compliance/ - GDPR, HIPAA, SOX
 │   │
-│   └── 🛠️ utils/ - Utilities & Helpers
-│       ├── logger.ts - Structured logging
-│       └── [helper functions]
+│   ├── 🛠️ utils/ - Utilities & Helpers
+│   │   ├── logger.ts - Structured logging
+│   │   └── config-resolver.ts - Configuration resolution
+│   │
+│   └── 🎮 cli/ - Command Line Interface
+│       ├── index.ts - CLI entry point
+│       └── commands/ - CLI commands
+│           ├── agent.ts - Agent management
+│           ├── status.ts - System status
+│           └── list.ts - List resources
 │
 └── 👤 characters/ - Agent Definitions
-    └── [agent.json configurations]
+    ├── nyx.json - Unethical hacker personality
+    ├── aria.json - Creative artist (disabled)
+    ├── rex.json - Strategic thinker (disabled)
+    ├── nova.json - Empathetic counselor (disabled)
+    └── [other character configs]
 
 Web Interface (website/)
 ├── Components - React dashboard
@@ -104,120 +152,95 @@ Web Interface (website/)
 └── WebSocket Integration - Live updates
 ```
 
+## Recent Architecture Changes
+
+### 1. Reactive Design
+- Agents now sit idle until they receive messages
+- No autonomous behaviors by default (can be enabled per agent)
+- Memory storage only logs conversation interactions
+
+### 2. Emotion System Refactor
+- Removed monolithic rune-emotion-stack
+- Each emotion is now its own module with dedicated folder
+- CompositeEmotionModule manages all emotions
+- Emotions trigger based on events, messages, and context
+
+### 3. Core Consolidation
+- Removed duplicate enhanced-event-bus.ts
+- Merged dynamic-portal-selector.ts into portal-integration.ts
+- Removed unused /src/lib/ directory with UI utilities
+- Archived unused utilities for potential future use
+
+### 4. Ethics System
+- Ethics can now be disabled per agent via `ethics.enabled` flag
+- NyX configured with ethics disabled for unrestricted decision-making
+- Ethics status displayed in CLI and API responses
+
 ## Key Development Patterns
 
-### Clean Architecture Principles (NEW)
-SYMindX now follows clean architecture patterns:
-
-1. **Centralized Type System**: All types are exported from `src/types/index.ts`
-2. **Factory Pattern Consistency**: All modules use the same factory pattern
+### Clean Architecture Principles
+1. **Centralized Type System**: All types exported from `src/types/index.ts`
+2. **Factory Pattern**: Consistent factory functions for all modules
 3. **Barrel Exports**: Clean module exports through index.ts files
-4. **Type Safety**: Strong typing throughout with minimal 'any' usage
-5. **Public API**: Clean public interface through `src/api.ts`
+4. **Type Safety**: Strong typing with minimal 'any' usage
+5. **Public API**: Clean interface through `src/api.ts`
 
 ### Module Factory Pattern
-All modules use factory functions for type-safe instantiation:
 ```typescript
-// Import from centralized API
-import { SYMindX } from './src/api.js';
+// Emotion modules use composite pattern
+createEmotionModule('composite', config)
 
-// Or use individual factories
-import { createMemoryProvider, createEmotionModule, createCognitionModule } from './src/modules/index.js';
-
-// Memory providers
+// Memory providers with auto-detection
 createMemoryProvider('sqlite', config)
+createMemoryProvider('postgres', config)
 createMemoryProvider('supabase', config)
 createMemoryProvider('neon', config)
-
-// Emotion modules  
-createEmotionModule('rune_emotion_stack', config)
 
 // Cognition modules
 createCognitionModule('htn_planner', config)
 createCognitionModule('reactive', config)
-
-// Quick access via SYMindX namespace
-const memory = SYMindX.createMemory('sqlite', config);
-const emotion = SYMindX.createEmotion('rune_emotion_stack', config);
-const cognition = SYMindX.createCognition('htn_planner', config);
+createCognitionModule('hybrid', config)
 ```
 
-### Type-Safe Development
-```typescript
-// All types available from single import
-import type { Agent, AgentConfig, MemoryRecord, EmotionState } from './src/types/index.js';
+### Character Configuration
+Characters are defined in JSON with:
+- **personality**: Traits, backstory, goals, values
+- **autonomous**: Decision making settings (can disable ethics)
+- **memory**: Provider type and configuration
+- **emotion**: Composite emotion configuration
+- **cognition**: Thinking module selection
+- **communication**: Style, tone, guidelines
+- **extensions**: Enabled integrations
+- **portals**: AI provider configuration
 
-// Or use the centralized type export
-import type * as SYMindXTypes from './src/types/index.js';
-```
-
-### Plugin Registration
-Plugins auto-register via registry patterns:
-- `registerExtensions(registry, config)` - Extensions
-- `registerCoreModules(registry)` - Memory/Emotion/Cognition
-- `registerPortals(registry)` - AI providers
-
-### Configuration System
-- Runtime config: `config/runtime.json` (copy from `runtime.example.json`)
-- Character configs: `mind-agents/src/characters/*.json`
-- Environment variables for API keys (see config/README.md)
-
-### Agent Lifecycle
-1. Runtime loads configuration and registers all plugins
-2. Agents initialize from character JSON files
-3. Each agent gets memory, emotion, and cognition modules
-4. Extensions initialize per-agent with their own configs
-5. Runtime starts tick loop calling `agent.tick()` and `extension.tick()`
-
-## Technical Details
-
-### TypeScript Configuration
-- Both projects use ES modules (`"type": "module"`)
-- Mind-agents builds with `--skipLibCheck` flag
-- Path alias `@/*` maps to `./src/*` in mind-agents
-- Jest configured for ES modules with module name mapping
-
-### Dependencies
-- **Runtime**: Bun (preferred) or Node.js 18+
-- **AI SDKs**: @ai-sdk/anthropic, @ai-sdk/openai, @ai-sdk/groq
-- **Database**: sqlite3, @supabase/supabase-js, pg
-- **Web**: React, Vite, Tailwind CSS, shadcn/ui components
-- **Communication**: @slack/bolt, ws, puppeteer, telegraf
-
-### Error Handling
-- Uses `Result<T>` types from `src/types/enums.ts`
-- Plugins fail gracefully with logging
-- Runtime continues even if individual plugins fail
-- All async operations wrapped in try/catch
-
-### Testing
-- Jest with ts-jest preset for ES modules
-- Tests use `.test.ts` extension
-- Located alongside source files or in `__tests__/` directories
-- Run with `bun test` from root or `npm test` from mind-agents/
+### Emotion System
+Each emotion module extends BaseEmotion and includes:
+- Specific triggers (success, failure, praise, etc.)
+- Intensity management with decay
+- Emotion-specific modifiers
+- History tracking
 
 ## Environment Variables
 
-Required for full functionality:
 ```bash
 # Memory providers
 SQLITE_DB_PATH=./data/memories.db
 SUPABASE_URL=...
 SUPABASE_ANON_KEY=...
 NEON_DATABASE_URL=...
+POSTGRES_CONNECTION_STRING=...
 
 # AI Portals (at least one required)
+GROQ_API_KEY=...
 OPENAI_API_KEY=...
 ANTHROPIC_API_KEY=...
-GROQ_API_KEY=...
 XAI_API_KEY=...
 
 # Extensions (optional)
 SLACK_BOT_TOKEN=...
-RUNELITE_PLUGIN_PORT=8080
+TELEGRAM_BOT_TOKEN=...
 TWITTER_USERNAME=...
 TWITTER_PASSWORD=...
-TELEGRAM_BOT_TOKEN=...
 ```
 
 ## Development Workflow
@@ -229,29 +252,62 @@ TELEGRAM_BOT_TOKEN=...
 5. **Test**: Use `bun test` to run the test suite
 6. **Build**: Use `bun build` for production builds
 
-## Core Development Concepts
+## Important Notes
 
-### Character System
-- Characters defined in `mind-agents/src/characters/*.json` with personality, psyche, and module defaults
-- Example: `nyx.json` defines NyX agent with "chaotic-empath hacker" tone
-- Each character specifies default memory provider, emotion module, cognition module, and AI portal
+### Git Ignore Patterns
+- `/cli/` directory contains build outputs and should not be committed
+- `config/runtime.json` is user-specific and not tracked
+- Database files (*.db, *.sqlite) are not tracked
+- Memory modules ARE tracked (exception to usual patterns)
 
-### Module Factory System
-The architecture uses factory functions that return type-safe module instances:
-- Memory providers auto-detect available databases and fallback gracefully
-- Emotion modules can be swapped (currently supports RuneScape-style emotion stack)
-- Cognition modules support HTN planning, reactive systems, and hybrid approaches
-- All modules implement standardized interfaces for hot-swappability
+### Current Agent Status
+- **NyX**: Active with ethics disabled, primary agent
+- **Aria, Rex, Nova**: Disabled for testing
+- Other agents in characters/ are available but not configured
 
-### Plugin Development
-- Extensions in `src/extensions/` implement the `Extension` interface with `init()` and `tick()` methods
-- Skills are modular capabilities within extensions (e.g., `messaging.ts`, `combat.ts`)
-- Each extension has its own configuration and can fail independently without affecting other plugins
-- Plugin registration happens automatically via `register*` functions
+### Reactive Behavior
+Agents only respond to:
+- Direct messages via extensions (Telegram, Slack, API)
+- CLI commands
+- Game events (future: RuneLite integration)
 
-### WebSocket Integration
-- Website connects to agent runtime via WebSocket for real-time updates
-- Thought streams, emotion changes, and agent actions broadcast live
-- Agent controls (start/stop) and configuration changes sent from web UI
+No autonomous actions unless explicitly enabled in character config.
 
-The system is designed for rapid development with hot reload, comprehensive logging, and modular architecture that allows easy extension and customization.
+## Testing Guidelines
+
+### Running Tests
+```bash
+# From mind-agents directory
+npm test
+
+# Run specific test file
+npm test -- --testPathPattern=memory-provider
+
+# Run with coverage
+npm test -- --coverage
+```
+
+### Test Structure
+- Unit tests alongside source files as `*.test.ts`
+- Integration tests in `__tests__/` directories
+- Mock providers for external services
+
+## Troubleshooting
+
+### Common Issues
+1. **Agent not responding**: Check if ethics or autonomous behaviors are blocking
+2. **Memory errors**: Ensure database path exists and is writable
+3. **Portal errors**: Verify API keys are set correctly
+4. **Build errors**: Run with `--skipLibCheck` flag
+
+### Debug Commands
+```bash
+# Check system status
+npm run cli status
+
+# List all agents with details
+npm run cli list agents -v
+
+# View recent events
+npm run cli list events
+```
