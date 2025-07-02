@@ -26,7 +26,7 @@ import {
   WebSocketMessage,
   ConnectionInfo
 } from './types.js'
-import { WebSocketServerSkill } from './skills/websocket-server.js'
+// WebSocketServerSkill removed - using simple WebSocket server directly
 import { WebUIServer } from './webui/index.js'
 import { runtimeLogger } from '../../utils/logger.js'
 import { CommandSystem } from '../../core/command-system.js'
@@ -60,7 +60,7 @@ export class ApiExtension implements Extension {
   private apiConfig: ApiSettings
   private connections = new Map<string, WebSocket>()
   private rateLimiters = new Map<string, { count: number; resetTime: number }>()
-  private enhancedWS?: WebSocketServerSkill
+  // Enhanced WebSocket removed - using simple WebSocket server
   private webUI?: WebUIServer
   private commandSystem?: CommandSystem
   private runtime?: any
@@ -679,9 +679,9 @@ export class ApiExtension implements Extension {
       }
       
       // Add WebSocket connection count
-      if (this.enhancedWS && 'activeConnections' in commandStats) {
-        // Get connection count from the enhanced WebSocket server
-        commandStats.activeConnections = 0 // Will be updated by WebSocket metrics
+      if (this.wss && 'activeConnections' in commandStats) {
+        // Get connection count from the WebSocket server
+        commandStats.activeConnections = this.connections.size
       }
       
       // Add multi-agent metrics if available
@@ -1449,14 +1449,27 @@ export class ApiExtension implements Extension {
   }
 
   private async processChatMessage(request: ChatRequest): Promise<ChatResponse> {
-    if (!this.commandSystem || !this.agent || !this.chatRepository) {
+    if (!this.commandSystem || !this.chatRepository) {
       return {
         response: 'Chat system not available',
         timestamp: new Date().toISOString()
       }
     }
 
-    const agentId = request.agentId || this.agent.id
+    // Get agent ID from request or use first available agent
+    const agentsMap = this.getAgentsMap()
+    const firstAgent = agentsMap.values().next().value
+    const agentId = request.agentId || this.agent?.id || firstAgent?.id
+    
+    if (!agentId) {
+      return {
+        response: 'No agents available',
+        timestamp: new Date().toISOString()
+      }
+    }
+    
+    // Get the actual agent object
+    const agent = agentsMap.get(agentId) || this.agent || firstAgent
     const userId = request.context?.userId || 'default_user'
     const sessionId = request.context?.sessionId
     
@@ -1492,11 +1505,11 @@ export class ApiExtension implements Extension {
         content: response,
         messageType: MessageType.TEXT,
         metadata: {
-          emotionState: this.agent.emotion?.current,
+          emotionState: agent?.emotion?.current,
           processingTime
         },
-        emotionState: this.agent.emotion?.current ? {
-          current: this.agent.emotion.current,
+        emotionState: agent?.emotion?.current ? {
+          current: agent.emotion.current,
           intensity: 0.5, // Default intensity
           triggers: [],
           timestamp: new Date()
@@ -1550,7 +1563,7 @@ export class ApiExtension implements Extension {
           tokensUsed: 0, // Would be calculated by the actual processing
           processingTime,
           memoryRetrieved: false,
-          emotionState: this.agent.emotion?.current
+          emotionState: agent?.emotion?.current
         }
       }
     } catch (error) {
@@ -1703,52 +1716,80 @@ export class ApiExtension implements Extension {
   private setupWebSocketServer(): void {
     if (!this.server || !this.commandSystem) return
 
-    // Initialize enhanced WebSocket server
-    this.enhancedWS = new WebSocketServerSkill(this, {
-      path: this.apiConfig.websocket.path
-    })
-    this.enhancedWS.initialize(this.server)
-    
-    runtimeLogger.extension(`🔌 Enhanced WebSocket server initialized on ${this.apiConfig.websocket.path}`)
-
-    // Keep legacy WebSocket for backward compatibility
+    // Initialize main WebSocket server with strict compression prevention
     this.wss = new WebSocketServer({ 
       server: this.server,
-      path: this.apiConfig.websocket.path + '-legacy',
-      perMessageDeflate: false // Disable compression to avoid RSV1 errors
+      path: this.apiConfig.websocket.path,
+      perMessageDeflate: false,  // Disable compression completely
+      backlog: 511,              // Increase connection backlog
+      maxPayload: 100 * 1024 * 1024, // 100MB max payload
+      skipUTF8Validation: false  // Maintain UTF8 validation for security
     })
+    
+    runtimeLogger.extension(`🔌 WebSocket server initialized on ${this.apiConfig.websocket.path}`)
 
     this.wss.on('connection', (ws: WebSocket, req) => {
       const connectionId = this.generateConnectionId()
+      const clientIP = req.socket.remoteAddress || 'unknown'
+      
+      // Set additional WebSocket options to prevent compression
+      if ((ws as any).extensions) {
+        // Clear any extensions that might enable compression
+        Object.keys((ws as any).extensions).forEach((key: string) => {
+          if (key.includes('deflate') || key.includes('compress')) {
+            delete (ws as any).extensions[key]
+          }
+        })
+      }
+      
       this.connections.set(connectionId, ws)
 
-      runtimeLogger.extension(`🔌 Legacy WebSocket client connected: ${connectionId}`)
+      runtimeLogger.extension(`🔌 Legacy WebSocket client connected: ${connectionId} from ${clientIP}`)
 
       ws.on('message', async (data) => {
         try {
           const message: WebSocketMessage = JSON.parse(data.toString())
           await this.handleWebSocketMessage(connectionId, message)
         } catch (error) {
-          ws.send(JSON.stringify({ error: 'Invalid message format' }))
+          runtimeLogger.error(`❌ WebSocket message parsing error from ${connectionId}:`, error)
+          try {
+            ws.send(JSON.stringify({ 
+              type: 'error',
+              error: 'Invalid message format',
+              timestamp: new Date().toISOString()
+            }))
+          } catch (sendError) {
+            runtimeLogger.error(`❌ Failed to send error response to ${connectionId}:`, sendError)
+          }
         }
       })
 
-      ws.on('close', () => {
+      ws.on('close', (code, reason) => {
         this.connections.delete(connectionId)
-        runtimeLogger.extension(`🔌 Legacy WebSocket client disconnected: ${connectionId}`)
+        runtimeLogger.extension(`🔌 Legacy WebSocket client disconnected: ${connectionId} (code: ${code}, reason: ${reason})`)
       })
 
       ws.on('error', (error) => {
-        console.error(`❌ Legacy WebSocket error for ${connectionId}:`, error)
+        runtimeLogger.error(`❌ Legacy WebSocket error for ${connectionId}:`, error)
         this.connections.delete(connectionId)
       })
 
-      // Send welcome message
-      ws.send(JSON.stringify({
-        type: 'welcome',
-        connectionId,
-        timestamp: new Date().toISOString()
-      }))
+      // Send welcome message with confirmation of no compression
+      try {
+        ws.send(JSON.stringify({
+          type: 'welcome',
+          connectionId,
+          timestamp: new Date().toISOString(),
+          compression: false,
+          extensions: []
+        }))
+      } catch (error) {
+        runtimeLogger.error(`❌ Failed to send welcome message to ${connectionId}:`, error)
+      }
+    })
+
+    this.wss.on('error', (error) => {
+      runtimeLogger.error('❌ WebSocket Server error:', error)
     })
   }
 
@@ -1762,9 +1803,14 @@ export class ApiExtension implements Extension {
           ws.send(JSON.stringify({ type: 'pong', timestamp: new Date().toISOString() }))
           break
         case 'chat':
-          // Handle chat message
+          // Handle chat message - get first available agent if no specific agent requested
+          const agentsMap = this.getAgentsMap()
+          const firstAgent = agentsMap.values().next().value
+          const agentId = message.agentId || firstAgent?.id
+          
           const response = await this.processChatMessage({ 
             message: message.data || message.message || '',
+            agentId: agentId,
             context: { sessionId: connectionId }
           })
           ws.send(JSON.stringify({ type: 'chat_response', data: response }))
@@ -1873,8 +1919,8 @@ export class ApiExtension implements Extension {
     return this.commandSystem
   }
   
-  public getEnhancedWebSocket(): WebSocketServerSkill | undefined {
-    return this.enhancedWS
+  public getWebSocketServer(): WebSocketServer | undefined {
+    return this.wss
   }
 
   /**

@@ -5,8 +5,7 @@
  */
 
 import Database, { type Database as DatabaseType, type Statement } from 'better-sqlite3'
-import { readFileSync } from 'fs'
-import { join, dirname } from 'path'
+import { dirname } from 'path'
 import { fileURLToPath } from 'url'
 import {
   ChatRepository,
@@ -29,6 +28,7 @@ import {
   AnalyticsEvent,
   EmotionSnapshot
 } from './chat-types.js'
+import { runMigrations } from './migrations.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -45,38 +45,27 @@ export class SQLiteChatRepository implements ChatRepository {
     // Enable foreign keys
     this.db.pragma('foreign_keys = ON')
     
-    // Initialize database schema
-    this.initializeDatabase()
+    // Initialize database schema (async but constructor can't be async)
+    this.initializeDatabase().catch(error => {
+      console.error('Failed to initialize database:', error)
+      throw error
+    })
     
     // Prepare frequently used statements
     this.prepareStatements()
   }
 
-  private initializeDatabase(): void {
+  private async initializeDatabase(): Promise<void> {
     try {
-      // Read and execute schema SQL file
-      const schemaPath = join(__dirname, 'chat-schema.sql')
-      const schema = readFileSync(schemaPath, 'utf8')
+      // Enable WAL mode for better concurrency and performance
+      this.db.pragma('journal_mode = WAL')
       
-      // Execute the entire schema at once (SQLite can handle multiple statements)
-      this.db.exec(schema)
-      console.log('✅ Chat database schema initialized')
+      // Run migrations instead of reading SQL files
+      await runMigrations(this.db)
+      
+      console.log('✅ Chat database initialized with migrations')
     } catch (error) {
       console.error('❌ Failed to initialize chat database:', error)
-      // Check if it's just because tables already exist
-      if (error && typeof error === 'object' && 'code' in error && error.code === 'SQLITE_ERROR') {
-        try {
-          // Try to verify tables exist
-          const result = this.db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='conversations'").get()
-          if (result) {
-            console.log('✅ Chat database tables already exist')
-            return
-          }
-        } catch (checkError) {
-          // If we can't even check, something is seriously wrong
-          throw error
-        }
-      }
       throw error
     }
   }

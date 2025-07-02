@@ -98,7 +98,10 @@ export class WebSocketServerSkill {
     try {
       const serverOptions: any = {
         path: this.config.path,
-        perMessageDeflate: false // Disable compression to avoid RSV1 errors
+        perMessageDeflate: false,     // Disable compression completely
+        backlog: 511,                 // Increase connection backlog  
+        maxPayload: 100 * 1024 * 1024, // 100MB max payload
+        skipUTF8Validation: false     // Maintain UTF8 validation for security
       }
 
       if (httpServer) {
@@ -153,6 +156,15 @@ export class WebSocketServerSkill {
       },
       subscriptions: new Set(),
       metadata: {}
+    }
+
+    // Force disable any compression extensions that might have been negotiated
+    if ((ws as any).extensions) {
+      Object.keys((ws as any).extensions).forEach((key: string) => {
+        if (key.includes('deflate') || key.includes('compress')) {
+          delete (ws as any).extensions[key]
+        }
+      })
     }
 
     this.connections.set(connectionId, connection)

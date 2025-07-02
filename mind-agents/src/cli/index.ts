@@ -92,7 +92,7 @@ class AwesomeSYMindXCLI {
       .option('-v, --verbose', 'Enable verbose output')
       .option('--no-colors', 'Disable colored output')
       .option('--api-url <url>', 'API server URL', this.config.apiUrl)
-      .option('--ws-url <url>', 'WebSocket server URL', this.config.wsUrl)
+      .option('--ws-url <url>', 'WebSocket server URL (default: "ws://localhost:8000/ws")', this.config.wsUrl)
       .option('--agent <id>', 'Default agent to interact with')
       .option('--matrix', 'Show matrix rain animation on startup')
       .hook('preAction', (thisCommand) => {

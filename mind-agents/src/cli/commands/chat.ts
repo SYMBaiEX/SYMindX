@@ -204,7 +204,9 @@ export class ChatCommand {
       if (!wsUrl) {
         throw new Error('WebSocket URL not configured')
       }
-      this.ws = new WebSocket(wsUrl)
+      this.ws = new WebSocket(wsUrl, [], {
+        perMessageDeflate: false  // Disable compression to match server
+      })
       
       this.ws.on('open', () => {
         console.log(chalk.green('✅ Connected to WebSocket'))
