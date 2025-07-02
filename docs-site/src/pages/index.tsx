@@ -34,7 +34,7 @@ function HomepageHeader() {
             <h3>Get Started in Seconds</h3>
             <pre className={styles.codeBlock}>
               <code>{`# Clone and install
-git clone https://github.com/symindx/symindx.git
+git clone https://github.com/symbaiex/symindx.git
 cd symindx && bun install
 
 # Configure your first agent
@@ -177,7 +177,7 @@ function CommunitySection() {
               </Link>
               <Link
                 className="button button--outline button--primary button--lg margin--sm"
-                href="https://github.com/symindx/symindx">
+                href="https://github.com/symbaiex/symindx">
                 ⭐ GitHub Repository
               </Link>
               <Link

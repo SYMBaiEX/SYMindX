@@ -40,7 +40,7 @@ Deploy SYMindX locally for development and testing:
 
 ```bash
 # Clone repository
-git clone https://github.com/symindx/symindx.git
+git clone https://github.com/symbaiex/symindx.git
 cd symindx
 
 # Install dependencies
@@ -201,7 +201,7 @@ Deploy using Helm for easy management:
 replicaCount: 3
 
 image:
-  repository: symindx/symindx
+  repository: symbaiex/symindx
   tag: "1.0.0"
   pullPolicy: IfNotPresent
 
@@ -284,7 +284,7 @@ spec:
     spec:
       containers:
       - name: symindx
-        image: symindx/symindx:1.0.0
+        image: symbaiex/symindx:1.0.0
         ports:
         - containerPort: 3000
         env:
@@ -357,7 +357,7 @@ spec:
     spec:
       containers:
       - name: agent
-        image: symindx/symindx:1.0.0
+        image: symbaiex/symindx:1.0.0
         env:
         - name: AGENT_ID
           valueFrom:
@@ -413,7 +413,7 @@ export class SymindxStack extends cdk.Stack {
         memoryLimitMiB: 2048,
         desiredCount: 3,
         taskImageOptions: {
-          image: ecs.ContainerImage.fromRegistry('symindx/symindx:latest'),
+          image: ecs.ContainerImage.fromRegistry('symbaiex/symindx:latest'),
           environment: {
             NODE_ENV: 'production'
           }
@@ -489,7 +489,7 @@ Deploy on Azure using Container Instances:
       "containers": [{
         "name": "symindx",
         "properties": {
-          "image": "symindx/symindx:latest",
+          "image": "symbaiex/symindx:latest",
           "ports": [{
             "port": 3000,
             "protocol": "TCP"

@@ -266,7 +266,7 @@ graph TB
 **Developer Communities**
 - [Dev.to #symindx](https://dev.to/t/symindx)
 - [Stack Overflow Tag](https://stackoverflow.com/questions/tagged/symindx)
-- [GitHub Discussions](https://github.com/symindx/symindx/discussions)
+- [GitHub Discussions](https://github.com/symbaiex/symindx/discussions)
 - [Gitter Chat](https://gitter.im/symindx/community)
 
 ### Podcasts & Talks
@@ -286,9 +286,9 @@ graph TB
 ### How to Contribute
 
 **Code Contributions**
-- [Contributing Guide](https://github.com/symindx/symindx/blob/main/CONTRIBUTING.md)
-- [Development Setup](https://github.com/symindx/symindx/blob/main/docs/DEVELOPMENT.md)
-- [Code of Conduct](https://github.com/symindx/symindx/blob/main/CODE_OF_CONDUCT.md)
+- [Contributing Guide](https://github.com/symbaiex/symindx/blob/main/CONTRIBUTING.md)
+- [Development Setup](https://github.com/symbaiex/symindx/blob/main/docs/DEVELOPMENT.md)
+- [Code of Conduct](https://github.com/symbaiex/symindx/blob/main/CODE_OF_CONDUCT.md)
 
 **Documentation**
 - [Docs Repository](https://github.com/symindx/docs)

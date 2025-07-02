@@ -90,7 +90,7 @@ Get up and running with SYMindX in under 5 minutes:
 
 ```bash
 # Clone the repository
-git clone https://github.com/symindx/symindx.git
+git clone https://github.com/symbaiex/symindx.git
 cd symindx
 
 # Install dependencies

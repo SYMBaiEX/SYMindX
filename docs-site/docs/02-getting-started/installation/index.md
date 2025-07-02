@@ -27,7 +27,7 @@ Bun provides the fastest installation and runtime performance:
 curl -fsSL https://bun.sh/install | bash
 
 # Clone the SYMindX repository
-git clone https://github.com/symindx/symindx.git
+git clone https://github.com/symbaiex/symindx.git
 cd symindx
 
 # Install all dependencies
@@ -46,7 +46,7 @@ If you prefer to use Node.js:
 node --version
 
 # Clone the repository
-git clone https://github.com/symindx/symindx.git
+git clone https://github.com/symbaiex/symindx.git
 cd symindx
 
 # Install dependencies
@@ -62,7 +62,7 @@ For a containerized setup:
 
 ```bash
 # Clone the repository
-git clone https://github.com/symindx/symindx.git
+git clone https://github.com/symbaiex/symindx.git
 cd symindx
 
 # Build and run with Docker Compose

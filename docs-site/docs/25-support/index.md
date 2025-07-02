@@ -27,7 +27,7 @@ Need help with SYMindX? We offer multiple support channels to ensure you get the
 - Searchable Q&A format
 - Long-form technical discussions
 - Feature requests and ideas
-- [Visit Discussions](https://github.com/symindx/symindx/discussions)
+- [Visit Discussions](https://github.com/symbaiex/symindx/discussions)
 
 **Stack Overflow**
 - Tagged questions with `symindx`
@@ -59,14 +59,14 @@ Need help with SYMindX? We offer multiple support channels to ensure you get the
 
 **Bug Reports**
 Report bugs directly on GitHub:
-- [Create Bug Report](https://github.com/symindx/symindx/issues/new?template=bug_report.md)
+- [Create Bug Report](https://github.com/symbaiex/symindx/issues/new?template=bug_report.md)
 - Include minimal reproduction
 - Follow issue template
 - Track resolution progress
 
 **Feature Requests**
 Suggest new features:
-- [Request Feature](https://github.com/symindx/symindx/issues/new?template=feature_request.md)
+- [Request Feature](https://github.com/symbaiex/symindx/issues/new?template=feature_request.md)
 - Describe use case
 - Participate in discussion
 - Vote on proposals

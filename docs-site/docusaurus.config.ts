@@ -41,7 +41,7 @@ const config: Config = {
           sidebarPath: './sidebars.ts',
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
-          editUrl: 'https://github.com/symindx/symindx/tree/main/docs-site/',
+          editUrl: 'https://github.com/symbaiex/symindx/tree/main/docs-site/',
           showLastUpdateAuthor: true,
           showLastUpdateTime: true,
         },
@@ -53,7 +53,7 @@ const config: Config = {
           },
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
-          editUrl: 'https://github.com/symindx/symindx/tree/main/docs-site/',
+          editUrl: 'https://github.com/symbaiex/symindx/tree/main/docs-site/',
           // Useful options to enforce blogging best practices
           onInlineTags: 'warn',
           onInlineAuthors: 'warn',
@@ -105,8 +105,12 @@ const config: Config = {
           position: 'left'
         },
         {
-          href: 'https://github.com/symindx/symindx',
+          href: 'https://github.com/symbaiex/symindx',
           label: 'GitHub',
+          position: 'right',
+        },
+        {
+          type: 'search',
           position: 'right',
         },
       ],
@@ -152,7 +156,7 @@ const config: Config = {
             },
             {
               label: 'GitHub Discussions',
-              href: 'https://github.com/symindx/symindx/discussions',
+              href: 'https://github.com/symbaiex/symindx/discussions',
             },
           ],
         },
@@ -165,7 +169,7 @@ const config: Config = {
             },
             {
               label: 'GitHub',
-              href: 'https://github.com/symindx/symindx',
+              href: 'https://github.com/symbaiex/symindx',
             },
             {
               label: 'Changelog',
@@ -201,7 +205,7 @@ const config: Config = {
     announcementBar: {
       id: 'support_us',
       content:
-        '⭐️ If you like SYMindX, give it a star on <a target="_blank" rel="noopener noreferrer" href="https://github.com/symindx/symindx">GitHub</a>! ⭐️',
+        '⭐️ If you like SYMindX, give it a star on <a target="_blank" rel="noopener noreferrer" href="https://github.com/symbaiex/symindx">GitHub</a>! ⭐️',
       backgroundColor: '#fafbfc',
       textColor: '#091E42',
       isCloseable: false,

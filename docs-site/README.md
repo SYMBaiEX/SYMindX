@@ -233,9 +233,9 @@ This documentation was restructured from 6-8 monolithic pages to 26 well-organiz
 - [Deployment Guide](https://docusaurus.io/docs/deployment)
 
 ### SYMindX
-- [SYMindX Repository](https://github.com/symindx/symindx)
+- [SYMindX Repository](https://github.com/symbaiex/symindx)
 - [Community Discord](https://discord.gg/symindx)
-- [Issue Tracker](https://github.com/symindx/symindx/issues)
+- [Issue Tracker](https://github.com/symbaiex/symindx/issues)
 
 ## 📄 License
 

@@ -40,7 +40,7 @@ Our primary community hub with 5,000+ members:
 
 For longer-form conversations and proposals:
 
-🔗 **[GitHub Discussions](https://github.com/symindx/symindx/discussions)**
+🔗 **[GitHub Discussions](https://github.com/symbaiex/symindx/discussions)**
 
 **Categories:**
 - **Ideas** - Propose new features or improvements
@@ -87,12 +87,12 @@ Traditional forum for in-depth discussions:
    ```
 
 2. **Find Good First Issues**
-   - [Good First Issues](https://github.com/symindx/symindx/labels/good%20first%20issue)
-   - [Help Wanted](https://github.com/symindx/symindx/labels/help%20wanted)
+   - [Good First Issues](https://github.com/symbaiex/symindx/labels/good%20first%20issue)
+   - [Help Wanted](https://github.com/symbaiex/symindx/labels/help%20wanted)
 
 3. **Set Up Development Environment**
    ```bash
-   git clone https://github.com/symindx/symindx.git
+   git clone https://github.com/symbaiex/symindx.git
    cd symindx
    bun install
    bun test
