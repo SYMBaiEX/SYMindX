@@ -1,14 +1,31 @@
 /**
  * Neon Memory Provider for SYMindX
  * 
- * A comprehensive memory provider that uses Neon PostgreSQL as a backend with vector search capabilities.
- * Optimized for serverless environments with connection pooling and efficient resource usage.
+ * Enhanced Neon PostgreSQL provider with multi-tier memory architecture,
+ * vector embeddings, shared memory pools, and archival strategies.
  */
 
 import { Pool, PoolClient } from 'pg'
 import { MemoryRecord, MemoryType, MemoryDuration } from '../../../../types/agent.js'
-import { BaseMemoryProvider, BaseMemoryConfig } from '../../base-memory-provider.js'
-import { MemoryProviderMetadata } from '../../../../types/memory.js'
+import { BaseMemoryProvider, BaseMemoryConfig, MemoryRow, EnhancedMemoryRecord } from '../../base-memory-provider.js'
+import { 
+  MemoryProviderMetadata, 
+  MemoryTierType,
+  MemoryContext,
+  SharedMemoryConfig,
+  ArchivalStrategy,
+  MemoryPermission
+} from '../../../../types/memory.js'
+import { SharedMemoryPool } from './shared-pool.js'
+import { MemoryArchiver } from './archiver.js'
+import { runtimeLogger } from '../../../../utils/logger.js'
+import { 
+  MIGRATIONS, 
+  createMigrationsTable, 
+  isMigrationApplied, 
+  recordMigration, 
+  getCurrentBatch 
+} from './migrations.js'
 
 /**
  * Configuration for the Neon memory provider
@@ -26,23 +43,21 @@ export interface NeonMemoryConfig extends BaseMemoryConfig {
   ssl?: boolean
   /** Custom table name (default: 'memories') */
   tableName?: string
+  /** Auto-deploy schema on initialization (default: true) */
+  autoDeploySchema?: boolean
+  /** Consolidation interval in milliseconds */
+  consolidationInterval?: number
+  /** Archival interval in milliseconds */
+  archivalInterval?: number
 }
 
 /**
  * Neon database row type
  */
-export interface NeonMemoryRow {
-  id: string
-  agent_id: string
-  type: string
-  content: string
+export interface NeonMemoryRow extends MemoryRow {
   embedding?: number[]
-  metadata: Record<string, any>
-  importance: number
-  timestamp: Date
-  tags: string[]
-  duration: string
-  expires_at?: Date
+  tier?: string
+  context?: Record<string, any> // JSON-encoded MemoryContext
   created_at: Date
   updated_at: Date
 }
@@ -55,6 +70,10 @@ export class NeonMemoryProvider extends BaseMemoryProvider {
   protected declare config: NeonMemoryConfig
   private tableName: string
   private isInitialized = false
+  private schemaVersion = '2.0.0'
+  private sharedPools: Map<string, SharedMemoryPool> = new Map()
+  private consolidationTimer?: NodeJS.Timeout
+  private archivalTimer?: NodeJS.Timeout
 
   /**
    * Constructor for the Neon memory provider
@@ -63,30 +82,69 @@ export class NeonMemoryProvider extends BaseMemoryProvider {
     const metadata: MemoryProviderMetadata = {
       id: 'neon',
       name: 'Neon Memory Provider',
-      description: 'A serverless-optimized memory provider using Neon PostgreSQL with vector search',
-      version: '1.0.0',
+      description: 'Enhanced Neon PostgreSQL provider with multi-tier memory, vector search, and shared pools',
+      version: '2.0.0',
       author: 'SYMindX Team',
       supportsVectorSearch: true,
-      isPersistent: true
+      isPersistent: true,
+      supportedTiers: [
+        MemoryTierType.WORKING,
+        MemoryTierType.EPISODIC,
+        MemoryTierType.SEMANTIC,
+        MemoryTierType.PROCEDURAL
+      ],
+      supportsSharedMemory: true
     }
 
     super(config, metadata)
-    this.config = config
-    this.tableName = config.tableName || 'memories'
+    this.config = {
+      maxConnections: 10,
+      connectionTimeoutMillis: 5000,
+      idleTimeoutMillis: 30000,
+      ssl: true,
+      tableName: 'memories',
+      autoDeploySchema: true,
+      ...config
+    }
+    this.tableName = this.config.tableName!
 
     // Create connection pool optimized for serverless
     this.pool = new Pool({
       connectionString: config.connectionString,
-      max: config.maxConnections || 10,
-      connectionTimeoutMillis: config.connectionTimeoutMillis || 5000,
-      idleTimeoutMillis: config.idleTimeoutMillis || 30000,
-      ssl: config.ssl !== false ? { rejectUnauthorized: false } : false,
+      max: this.config.maxConnections,
+      connectionTimeoutMillis: this.config.connectionTimeoutMillis,
+      idleTimeoutMillis: this.config.idleTimeoutMillis,
+      ssl: this.config.ssl !== false ? { rejectUnauthorized: false } : false,
       // Optimizations for serverless
       allowExitOnIdle: true,
-      application_name: 'symindx-agent'
+      application_name: 'symindx-neon-provider'
     })
 
     this.initialize()
+
+    // Start background processes
+    this.startBackgroundProcesses(config)
+  }
+
+  /**
+   * Start background processes for consolidation and archival
+   */
+  private startBackgroundProcesses(config: NeonMemoryConfig): void {
+    if (config.consolidationInterval) {
+      this.consolidationTimer = setInterval(() => {
+        this.runConsolidation().catch(error => {
+          runtimeLogger.error('Consolidation error:', error)
+        })
+      }, config.consolidationInterval)
+    }
+
+    if (config.archivalInterval) {
+      this.archivalTimer = setInterval(() => {
+        this.runArchival().catch(error => {
+          runtimeLogger.error('Archival error:', error)
+        })
+      }, config.archivalInterval)
+    }
   }
 
   /**
@@ -96,12 +154,17 @@ export class NeonMemoryProvider extends BaseMemoryProvider {
     if (this.isInitialized) return
 
     try {
-      await this.createMemoriesTable()
-      await this.createIndexes()
-      await this.createVectorFunctions()
+      console.log('🚀 Initializing enhanced Neon memory provider...')
+      
+      // Test connection
+      await this.testConnection()
+      
+      if (this.config.autoDeploySchema) {
+        await this.runMigrations()
+      }
       
       this.isInitialized = true
-      console.log('✅ Neon memory provider initialized')
+      console.log('✅ Enhanced Neon memory provider initialized successfully')
     } catch (error) {
       console.error('❌ Failed to initialize Neon memory provider:', error)
       throw error
@@ -109,149 +172,58 @@ export class NeonMemoryProvider extends BaseMemoryProvider {
   }
 
   /**
-   * Create the memories table with proper schema
+   * Test database connection
    */
-  private async createMemoriesTable(): Promise<void> {
+  private async testConnection(): Promise<void> {
+    const client = await this.pool.connect()
+    try {
+      const result = await client.query('SELECT version()')
+      console.log('🔗 Connected to Neon PostgreSQL:', result.rows[0]?.version?.split(' ').slice(0, 2).join(' '))
+    } finally {
+      client.release()
+    }
+  }
+
+  /**
+   * Run database migrations
+   */
+  private async runMigrations(): Promise<void> {
     const client = await this.pool.connect()
     
     try {
-      // Enable pgvector extension if available
-      await client.query('CREATE EXTENSION IF NOT EXISTS vector;')
+      console.log('🔄 Running Neon database migrations...')
       
-      // Create the memories table
-      await client.query(`
-        CREATE TABLE IF NOT EXISTS ${this.tableName} (
-          id TEXT PRIMARY KEY,
-          agent_id TEXT NOT NULL,
-          type TEXT NOT NULL,
-          content TEXT NOT NULL,
-          embedding vector(1536), -- OpenAI embedding dimension
-          metadata JSONB DEFAULT '{}',
-          importance REAL NOT NULL DEFAULT 0.5,
-          timestamp TIMESTAMPTZ NOT NULL,
-          tags TEXT[] DEFAULT '{}',
-          duration TEXT NOT NULL DEFAULT 'long_term',
-          expires_at TIMESTAMPTZ,
-          created_at TIMESTAMPTZ DEFAULT NOW(),
-          updated_at TIMESTAMPTZ DEFAULT NOW()
-        );
-      `)
-    } finally {
-      client.release()
-    }
-  }
-
-  /**
-   * Create indexes for optimal performance
-   */
-  private async createIndexes(): Promise<void> {
-    const client = await this.pool.connect()
-    
-    try {
-      const indexes = [
-        `CREATE INDEX IF NOT EXISTS idx_${this.tableName}_agent_id ON ${this.tableName}(agent_id);`,
-        `CREATE INDEX IF NOT EXISTS idx_${this.tableName}_type ON ${this.tableName}(type);`,
-        `CREATE INDEX IF NOT EXISTS idx_${this.tableName}_timestamp ON ${this.tableName}(timestamp);`,
-        `CREATE INDEX IF NOT EXISTS idx_${this.tableName}_importance ON ${this.tableName}(importance);`,
-        `CREATE INDEX IF NOT EXISTS idx_${this.tableName}_duration ON ${this.tableName}(duration);`,
-        `CREATE INDEX IF NOT EXISTS idx_${this.tableName}_expires_at ON ${this.tableName}(expires_at);`,
-        `CREATE INDEX IF NOT EXISTS idx_${this.tableName}_content_gin ON ${this.tableName} USING gin(to_tsvector('english', content));`
-      ]
-
-      // Try to create vector index if pgvector is available
-      try {
-        await client.query(`CREATE INDEX IF NOT EXISTS idx_${this.tableName}_embedding ON ${this.tableName} USING ivfflat (embedding vector_cosine_ops);`)
-      } catch (error) {
-        console.warn('⚠️ Vector index creation failed, pgvector may not be available')
+      // Create migrations table
+      await createMigrationsTable(client)
+      
+      // Get current batch
+      const currentBatch = await getCurrentBatch(client)
+      
+      // Run pending migrations
+      let migrationsRun = 0
+      
+      for (const migration of MIGRATIONS) {
+        const isApplied = await isMigrationApplied(client, migration.name)
+        
+        if (!isApplied) {
+          console.log(`🔄 Running migration: ${migration.name}`)
+          console.log(`   ${migration.description}`)
+          
+          await migration.up(client)
+          await recordMigration(client, migration.name, currentBatch)
+          
+          console.log(`✅ Migration completed: ${migration.name}`)
+          migrationsRun++
+        } else {
+          console.log(`⏭️  Migration already applied: ${migration.name}`)
+        }
       }
-
-      for (const indexQuery of indexes) {
-        await client.query(indexQuery)
+      
+      if (migrationsRun > 0) {
+        console.log(`✅ Applied ${migrationsRun} new migrations successfully`)
+      } else {
+        console.log('✅ All migrations were already applied')
       }
-    } finally {
-      client.release()
-    }
-  }
-
-  /**
-   * Create vector search functions
-   */
-  private async createVectorFunctions(): Promise<void> {
-    const client = await this.pool.connect()
-    
-    try {
-      // Vector similarity search function
-      await client.query(`
-        CREATE OR REPLACE FUNCTION match_${this.tableName}(
-          p_agent_id TEXT,
-          query_embedding vector(1536),
-          match_threshold FLOAT DEFAULT 0.7,
-          match_count INT DEFAULT 10
-        )
-        RETURNS TABLE (
-          id TEXT,
-          agent_id TEXT,
-          type TEXT,
-          content TEXT,
-          embedding vector(1536),
-          metadata JSONB,
-          importance REAL,
-          timestamp TIMESTAMPTZ,
-          tags TEXT[],
-          duration TEXT,
-          expires_at TIMESTAMPTZ,
-          created_at TIMESTAMPTZ,
-          updated_at TIMESTAMPTZ,
-          similarity FLOAT
-        )
-        LANGUAGE SQL
-        STABLE
-        AS $$
-          SELECT 
-            m.id,
-            m.agent_id,
-            m.type,
-            m.content,
-            m.embedding,
-            m.metadata,
-            m.importance,
-            m.timestamp,
-            m.tags,
-            m.duration,
-            m.expires_at,
-            m.created_at,
-            m.updated_at,
-            1 - (m.embedding <=> query_embedding) AS similarity
-          FROM ${this.tableName} m
-          WHERE 
-            m.agent_id = p_agent_id
-            AND (m.duration != 'short_term' OR m.expires_at IS NULL OR m.expires_at > NOW())
-            AND m.embedding IS NOT NULL
-            AND 1 - (m.embedding <=> query_embedding) > match_threshold
-          ORDER BY similarity DESC
-          LIMIT match_count;
-        $$;
-      `)
-
-      // Update timestamp trigger function
-      await client.query(`
-        CREATE OR REPLACE FUNCTION update_${this.tableName}_updated_at()
-        RETURNS TRIGGER AS $$
-        BEGIN
-          NEW.updated_at = NOW();
-          RETURN NEW;
-        END;
-        $$ language 'plpgsql';
-      `)
-
-      // Create trigger
-      await client.query(`
-        DROP TRIGGER IF EXISTS update_${this.tableName}_updated_at ON ${this.tableName};
-        CREATE TRIGGER update_${this.tableName}_updated_at 
-          BEFORE UPDATE ON ${this.tableName}
-          FOR EACH ROW 
-          EXECUTE FUNCTION update_${this.tableName}_updated_at();
-      `)
     } finally {
       client.release()
     }
@@ -261,16 +233,22 @@ export class NeonMemoryProvider extends BaseMemoryProvider {
    * Store a memory for an agent
    */
   async store(agentId: string, memory: MemoryRecord): Promise<void> {
-    await this.initialize()
+    await this.ensureInitialized()
     
+    const enhanced = memory as EnhancedMemoryRecord
     const client = await this.pool.connect()
     
     try {
+      // Generate embedding if not provided
+      if (!memory.embedding && memory.content) {
+        memory.embedding = await this.generateEmbedding(memory.content)
+      }
+
       const query = `
         INSERT INTO ${this.tableName} (
           id, agent_id, type, content, embedding, metadata, importance, 
-          timestamp, tags, duration, expires_at, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
+          timestamp, tags, duration, expires_at, tier, context, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW())
         ON CONFLICT (id) DO UPDATE SET
           agent_id = EXCLUDED.agent_id,
           type = EXCLUDED.type,
@@ -282,6 +260,8 @@ export class NeonMemoryProvider extends BaseMemoryProvider {
           tags = EXCLUDED.tags,
           duration = EXCLUDED.duration,
           expires_at = EXCLUDED.expires_at,
+          tier = EXCLUDED.tier,
+          context = EXCLUDED.context,
           updated_at = NOW()
       `
 
@@ -296,11 +276,25 @@ export class NeonMemoryProvider extends BaseMemoryProvider {
         memory.timestamp,
         memory.tags || [],
         memory.duration || MemoryDuration.LONG_TERM,
-        memory.expiresAt
+        memory.expiresAt,
+        enhanced.tier || MemoryTierType.EPISODIC,
+        enhanced.context ? JSON.stringify(enhanced.context) : null
       ]
 
       await client.query(query, values)
-      console.log(`💾 Stored ${memory.duration || 'long_term'} memory: ${memory.type} for agent ${agentId}`)
+
+      // Handle working memory specially
+      if (enhanced.tier === MemoryTierType.WORKING) {
+        await this.addToWorkingMemory(agentId, memory)
+      }
+
+      // Only log conversation memories
+      if (memory.type === MemoryType.INTERACTION && 
+          (memory.metadata?.source === 'chat_command' || 
+           memory.metadata?.messageType === 'user_input' ||
+           memory.metadata?.messageType === 'agent_response')) {
+        console.log(`💾 Stored ${enhanced.tier || 'episodic'} memory: ${memory.type} for agent ${agentId}`)
+      }
     } finally {
       client.release()
     }
@@ -310,7 +304,7 @@ export class NeonMemoryProvider extends BaseMemoryProvider {
    * Retrieve memories for an agent based on a query
    */
   async retrieve(agentId: string, query: string, limit = 10): Promise<MemoryRecord[]> {
-    await this.initialize()
+    await this.ensureInitialized()
     
     const client = await this.pool.connect()
     
@@ -353,6 +347,15 @@ export class NeonMemoryProvider extends BaseMemoryProvider {
           LIMIT $2
         `
         values = [agentId, limit]
+      } else if (query.startsWith('tier:')) {
+        const tier = query.substring(5)
+        queryText = `
+          SELECT * FROM ${this.tableName} 
+          WHERE agent_id = $1 AND tier = $2
+          ORDER BY timestamp DESC 
+          LIMIT $3
+        `
+        values = [agentId, tier, limit]
       } else {
         // Full-text search using PostgreSQL's text search
         queryText = `
@@ -376,13 +379,13 @@ export class NeonMemoryProvider extends BaseMemoryProvider {
    * Search for memories using vector similarity
    */
   async search(agentId: string, embedding: number[], limit = 10): Promise<MemoryRecord[]> {
-    await this.initialize()
+    await this.ensureInitialized()
     
     const client = await this.pool.connect()
     
     try {
-      // Try vector search first
-      const vectorQuery = `SELECT * FROM match_${this.tableName}($1, $2, $3, $4)`
+      // Use the enhanced search function
+      const vectorQuery = `SELECT * FROM search_memories($1, $2, $3, $4)`
       
       try {
         const result = await client.query(vectorQuery, [agentId, JSON.stringify(embedding), 0.7, limit])
@@ -400,7 +403,7 @@ export class NeonMemoryProvider extends BaseMemoryProvider {
    * Delete a memory for an agent
    */
   async delete(agentId: string, memoryId: string): Promise<void> {
-    await this.initialize()
+    await this.ensureInitialized()
     
     const client = await this.pool.connect()
     
@@ -422,7 +425,7 @@ export class NeonMemoryProvider extends BaseMemoryProvider {
    * Clear all memories for an agent
    */
   async clear(agentId: string): Promise<void> {
-    await this.initialize()
+    await this.ensureInitialized()
     
     const client = await this.pool.connect()
     
@@ -440,31 +443,40 @@ export class NeonMemoryProvider extends BaseMemoryProvider {
    * Get statistics about an agent's memories
    */
   async getStats(agentId: string): Promise<{ total: number; byType: Record<string, number> }> {
-    await this.initialize()
+    await this.ensureInitialized()
     
     const client = await this.pool.connect()
     
     try {
-      // Get total count
-      const totalQuery = `SELECT COUNT(*) as count FROM ${this.tableName} WHERE agent_id = $1`
-      const totalResult = await client.query(totalQuery, [agentId])
-      const total = parseInt(totalResult.rows[0]?.count || '0')
-
-      // Get count by type
-      const typeQuery = `
-        SELECT type, COUNT(*) as count 
-        FROM ${this.tableName} 
-        WHERE agent_id = $1 
-        GROUP BY type
-      `
-      const typeResult = await client.query(typeQuery, [agentId])
+      // Use the enhanced stats function
+      const statsQuery = `SELECT * FROM get_memory_stats($1)`
+      const statsResult = await client.query(statsQuery, [agentId])
       
-      const byType: Record<string, number> = {}
-      typeResult.rows.forEach(row => {
-        byType[row.type] = parseInt(row.count)
-      })
+      if (statsResult.rows.length > 0) {
+        const stats = statsResult.rows[0]
+        
+        // Get count by type
+        const typeQuery = `
+          SELECT type, COUNT(*) as count 
+          FROM ${this.tableName} 
+          WHERE agent_id = $1 
+          GROUP BY type
+        `
+        const typeResult = await client.query(typeQuery, [agentId])
+        
+        const byType: Record<string, number> = {}
+        typeResult.rows.forEach(row => {
+          byType[row.type] = parseInt(row.count)
+        })
 
-      return { total, byType }
+        return { 
+          total: stats.total_memories,
+          byType,
+          ...stats // Include additional stats
+        }
+      }
+
+      return { total: 0, byType: {} }
     } finally {
       client.release()
     }
@@ -474,21 +486,17 @@ export class NeonMemoryProvider extends BaseMemoryProvider {
    * Clean up old and expired memories for an agent
    */
   async cleanup(agentId: string, retentionDays: number): Promise<void> {
-    await this.initialize()
+    await this.ensureInitialized()
     
     const client = await this.pool.connect()
     
     try {
       const cutoffDate = new Date(Date.now() - (retentionDays * 24 * 60 * 60 * 1000))
 
-      // Clean up expired short-term memories
-      const expiredQuery = `
-        DELETE FROM ${this.tableName} 
-        WHERE agent_id = $1 AND duration = 'short_term' 
-          AND expires_at IS NOT NULL AND expires_at < NOW()
-      `
-      const expiredResult = await client.query(expiredQuery, [agentId])
-      console.log(`🧹 Cleaned up ${expiredResult.rowCount} expired short-term memories`)
+      // Use the cleanup function for expired memories
+      const expiredQuery = `SELECT cleanup_expired_memories()`
+      const expiredResult = await client.query(expiredQuery)
+      console.log(`🧹 Cleaned up ${expiredResult.rows[0]} expired short-term memories`)
 
       // Clean up old memories beyond retention period
       const oldQuery = `DELETE FROM ${this.tableName} WHERE agent_id = $1 AND timestamp < $2`
@@ -500,9 +508,148 @@ export class NeonMemoryProvider extends BaseMemoryProvider {
   }
 
   /**
+   * Consolidate memory from one tier to another
+   */
+  async consolidateMemory(
+    agentId: string, 
+    memoryId: string, 
+    fromTier: MemoryTierType, 
+    toTier: MemoryTierType
+  ): Promise<void> {
+    await this.ensureInitialized()
+    
+    const client = await this.pool.connect()
+    
+    try {
+      // Use the consolidation function
+      const result = await client.query(
+        'SELECT consolidate_memory($1, $2, $3, $4)',
+        [agentId, memoryId, fromTier, toTier]
+      )
+      
+      if (result.rows[0]?.consolidate_memory) {
+        // Record consolidation history
+        await client.query(`
+          INSERT INTO consolidation_history (agent_id, memory_id, from_tier, to_tier, reason)
+          VALUES ($1, $2, $3, $4, $5)
+        `, [agentId, memoryId, fromTier, toTier, 'automatic'])
+        
+        runtimeLogger.memory(`Consolidated memory ${memoryId} from ${fromTier} to ${toTier}`)
+        
+        // Apply tier-specific transformations
+        if (fromTier === MemoryTierType.EPISODIC && toTier === MemoryTierType.SEMANTIC) {
+          await this.transformToSemantic(client, agentId, memoryId)
+        }
+      }
+    } finally {
+      client.release()
+    }
+  }
+
+  /**
+   * Get memories from a specific tier
+   */
+  async retrieveTier(agentId: string, tier: MemoryTierType, limit?: number): Promise<MemoryRecord[]> {
+    return this.retrieve(agentId, `tier:${tier}`, limit)
+  }
+
+  /**
+   * Archive old memories based on configured strategies
+   */
+  async archiveMemories(agentId: string): Promise<void> {
+    if (!this.config.archival) return
+    
+    const client = await this.pool.connect()
+    
+    try {
+      // Get archival rules for this agent
+      const rulesResult = await client.query(
+        'SELECT * FROM archival_rules WHERE agent_id = $1 AND enabled = true',
+        [agentId]
+      )
+      
+      for (const rule of rulesResult.rows) {
+        if (rule.rule_type === 'compression') {
+          await this.compressOldMemories(client, agentId, rule)
+        } else if (rule.rule_type === 'summarization') {
+          await this.summarizeMemories(client, agentId, rule)
+        }
+      }
+    } finally {
+      client.release()
+    }
+  }
+
+  /**
+   * Share memories with other agents in a pool
+   */
+  async shareMemories(agentId: string, memoryIds: string[], poolId: string): Promise<void> {
+    await this.ensureInitialized()
+    
+    let pool = this.sharedPools.get(poolId)
+    
+    if (!pool && this.config.sharedMemory) {
+      pool = new SharedMemoryPool(poolId, this.config.sharedMemory)
+      this.sharedPools.set(poolId, pool)
+      
+      // Store pool configuration
+      const client = await this.pool.connect()
+      try {
+        await client.query(`
+          INSERT INTO shared_memory_pools (pool_id, config)
+          VALUES ($1, $2)
+          ON CONFLICT (pool_id) DO UPDATE SET config = EXCLUDED.config
+        `, [poolId, JSON.stringify(this.config.sharedMemory)])
+      } finally {
+        client.release()
+      }
+    }
+    
+    if (!pool) {
+      throw new Error(`Shared memory pool ${poolId} not found`)
+    }
+    
+    const client = await this.pool.connect()
+    
+    try {
+      // Share each memory
+      for (const memoryId of memoryIds) {
+        const result = await client.query(
+          'SELECT * FROM memories WHERE agent_id = $1 AND id = $2',
+          [agentId, memoryId]
+        )
+        
+        if (result.rows.length > 0) {
+          const memory = this.rowToMemoryRecord(result.rows[0])
+          await pool.share(agentId, memory)
+          
+          // Record sharing
+          await client.query(`
+            INSERT INTO shared_memory_mappings (memory_id, pool_id, shared_by, permissions)
+            VALUES ($1, $2, $3, $4)
+            ON CONFLICT (memory_id, pool_id) DO UPDATE 
+            SET shared_by = EXCLUDED.shared_by, shared_at = NOW()
+          `, [memoryId, poolId, agentId, [MemoryPermission.READ]])
+        }
+      }
+    } finally {
+      client.release()
+    }
+  }
+
+  /**
+   * Generate embedding for a memory
+   */
+  async generateEmbedding(content: string): Promise<number[]> {
+    // This would call the actual embedding API based on config
+    // For now, return a mock embedding
+    return new Array(1536).fill(0).map(() => Math.random() * 2 - 1)
+  }
+
+  /**
    * Convert a database row to a memory record
    */
-  private rowToMemoryRecord(row: any): MemoryRecord {
+  private rowToMemoryRecord(row: any): EnhancedMemoryRecord {
     let embedding: number[] | undefined = undefined
     
     if (row.embedding) {
@@ -515,7 +662,7 @@ export class NeonMemoryProvider extends BaseMemoryProvider {
       }
     }
 
-    return {
+    const record: EnhancedMemoryRecord = {
       id: row.id,
       agentId: row.agent_id,
       type: MemoryType[row.type.toUpperCase() as keyof typeof MemoryType] || MemoryType.EXPERIENCE,
@@ -528,6 +675,230 @@ export class NeonMemoryProvider extends BaseMemoryProvider {
       duration: MemoryDuration[row.duration.toUpperCase() as keyof typeof MemoryDuration] || MemoryDuration.LONG_TERM,
       expiresAt: row.expires_at ? new Date(row.expires_at) : undefined
     }
+
+    // Add tier and context if available
+    if (row.tier) {
+      record.tier = row.tier as MemoryTierType
+    }
+    if (row.context) {
+      record.context = typeof row.context === 'string' ? JSON.parse(row.context) : row.context
+    }
+
+    return record
+  }
+
+  /**
+   * Ensure the provider is initialized
+   */
+  private async ensureInitialized(): Promise<void> {
+    if (!this.isInitialized) {
+      await this.initialize()
+    }
+  }
+
+  /**
+   * Transform memory to semantic tier
+   */
+  private async transformToSemantic(client: PoolClient, agentId: string, memoryId: string): Promise<void> {
+    // Extract concepts and update type
+    const result = await client.query(
+      'SELECT content FROM memories WHERE agent_id = $1 AND id = $2',
+      [agentId, memoryId]
+    )
+    
+    if (result.rows.length > 0) {
+      const concepts = await this.extractConcepts(result.rows[0].content)
+      
+      await client.query(`
+        UPDATE memories 
+        SET type = $1, tags = array_cat(tags, $2::text[]), updated_at = NOW()
+        WHERE agent_id = $3 AND id = $4
+      `, [MemoryType.KNOWLEDGE, concepts, agentId, memoryId])
+    }
+  }
+
+  /**
+   * Extract concepts from content
+   */
+  private async extractConcepts(content: string): Promise<string[]> {
+    // Simple concept extraction - in production would use NLP
+    const words = content.toLowerCase().split(/\s+/)
+    const concepts = words
+      .filter(word => word.length > 4)
+      .filter((word, index, self) => self.indexOf(word) === index)
+      .slice(0, 5)
+    
+    return concepts
+  }
+
+  /**
+   * Run memory consolidation
+   */
+  private async runConsolidation(): Promise<void> {
+    const client = await this.pool.connect()
+    
+    try {
+      // Get all agents
+      const agentsResult = await client.query('SELECT DISTINCT agent_id FROM memories')
+      
+      for (const { agent_id } of agentsResult.rows) {
+        // Get consolidation rules for this agent
+        const rulesResult = await client.query(
+          'SELECT * FROM consolidation_rules WHERE agent_id = $1 AND enabled = true',
+          [agent_id]
+        )
+        
+        for (const rule of rulesResult.rows) {
+          const memories = await this.retrieveTier(agent_id, rule.from_tier as MemoryTierType)
+          
+          for (const memory of memories) {
+            if (this.shouldConsolidate(memory as EnhancedMemoryRecord, rule)) {
+              await this.consolidateMemory(agent_id, memory.id, rule.from_tier, rule.to_tier)
+            }
+          }
+        }
+      }
+    } finally {
+      client.release()
+    }
+  }
+
+  /**
+   * Check if memory should be consolidated
+   */
+  private shouldConsolidate(memory: EnhancedMemoryRecord, rule: any): boolean {
+    switch (rule.condition_type) {
+      case 'importance':
+        return (memory.importance || 0) >= rule.threshold
+      case 'age':
+        const ageInDays = (Date.now() - memory.timestamp.getTime()) / (1000 * 60 * 60 * 24)
+        return ageInDays >= rule.threshold
+      case 'emotional':
+        return (memory.context?.emotionalValence || 0) >= rule.threshold
+      case 'access_frequency':
+        return (memory.metadata?.accessCount || 0) >= rule.threshold
+      default:
+        return false
+    }
+  }
+
+  /**
+   * Run memory archival
+   */
+  private async runArchival(): Promise<void> {
+    const client = await this.pool.connect()
+    
+    try {
+      const agentsResult = await client.query('SELECT DISTINCT agent_id FROM memories')
+      
+      for (const { agent_id } of agentsResult.rows) {
+        await this.archiveMemories(agent_id)
+      }
+    } finally {
+      client.release()
+    }
+  }
+
+  /**
+   * Compress old memories
+   */
+  private async compressOldMemories(client: PoolClient, agentId: string, rule: any): Promise<void> {
+    if (!rule.trigger_age_days) return
+    
+    const cutoff = new Date(Date.now() - (rule.trigger_age_days * 24 * 60 * 60 * 1000))
+    const tier = rule.tier || 'episodic'
+    
+    const oldMemories = await client.query(`
+      SELECT * FROM memories 
+      WHERE agent_id = $1 AND timestamp < $2 AND tier = $3
+      ORDER BY timestamp DESC
+      LIMIT 100
+    `, [agentId, cutoff, tier])
+    
+    if (oldMemories.rows.length === 0) return
+    
+    // Group and compress
+    const compressed = this.groupAndCompress(oldMemories.rows.map(r => this.rowToMemoryRecord(r)))
+    
+    // Store compressed memories
+    for (const memory of compressed) {
+      await this.store(agentId, memory)
+    }
+    
+    // Archive original memories
+    const originalIds = oldMemories.rows.map(r => r.id)
+    await client.query(`
+      INSERT INTO archived_memories (
+        agent_id, original_ids, summary, type, metadata, importance,
+        start_date, end_date, memory_count
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    `, [
+      agentId,
+      originalIds,
+      compressed[0]?.content || 'Compressed memories',
+      'compression',
+      JSON.stringify({ rule_id: rule.id }),
+      Math.max(...oldMemories.rows.map(r => r.importance)),
+      oldMemories.rows[oldMemories.rows.length - 1].timestamp,
+      oldMemories.rows[0].timestamp,
+      oldMemories.rows.length
+    ])
+    
+    // Delete original memories
+    await client.query(
+      'DELETE FROM memories WHERE id = ANY($1)',
+      [originalIds]
+    )
+  }
+
+  /**
+   * Summarize memories
+   */
+  private async summarizeMemories(client: PoolClient, agentId: string, rule: any): Promise<void> {
+    // Implementation would use LLM to summarize groups of memories
+    runtimeLogger.memory(`Summarizing memories for agent ${agentId}`)
+  }
+
+  /**
+   * Group and compress similar memories
+   */
+  private groupAndCompress(memories: EnhancedMemoryRecord[]): EnhancedMemoryRecord[] {
+    // Simple compression - group by day and combine
+    const grouped = new Map<string, EnhancedMemoryRecord[]>()
+    
+    for (const memory of memories) {
+      const day = memory.timestamp.toISOString().split('T')[0]
+      if (!grouped.has(day)) {
+        grouped.set(day, [])
+      }
+      grouped.get(day)!.push(memory)
+    }
+    
+    const compressed: EnhancedMemoryRecord[] = []
+    for (const [day, group] of Array.from(grouped.entries())) {
+      compressed.push({
+        id: this.generateId(),
+        agentId: group[0].agentId,
+        type: MemoryType.EXPERIENCE,
+        content: `Summary of ${day}: ${group.map(m => m.content).join('; ')}`,
+        importance: Math.max(...group.map(m => m.importance || 0)),
+        timestamp: new Date(day),
+        tags: ['compressed', 'summary'],
+        duration: MemoryDuration.LONG_TERM,
+        tier: MemoryTierType.EPISODIC,
+        metadata: {
+          compression: {
+            originalCount: group.length,
+            compressedAt: new Date().toISOString()
+          }
+        },
+        context: {
+          source: 'experience'
+        }
+      })
+    }
+    
+    return compressed
   }
 
   /**
@@ -567,11 +938,27 @@ export class NeonMemoryProvider extends BaseMemoryProvider {
    */
   async disconnect(): Promise<void> {
     try {
+      // Clear timers
+      if (this.consolidationTimer) {
+        clearInterval(this.consolidationTimer)
+      }
+      if (this.archivalTimer) {
+        clearInterval(this.archivalTimer)
+      }
+      
+      // Close pool
       await this.pool.end()
-      console.log('🔌 Neon memory provider disconnected')
+      console.log('🔌 Enhanced Neon memory provider disconnected')
     } catch (error) {
       console.error('❌ Error disconnecting Neon provider:', error)
     }
+  }
+
+  /**
+   * Clean up resources on destroy
+   */
+  async destroy(): Promise<void> {
+    await this.disconnect()
   }
 }
 
