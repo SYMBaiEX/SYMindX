@@ -174,6 +174,10 @@ export class AutonomousEngine {
     // Initialize ethics engine
     const ethicsConfig = this.createEthicsConfig()
     this.ethicsEngine = new EthicsEngine(ethicsConfig)
+    
+    if (!ethicsConfig.enabled) {
+      this.logger.warn(`⚠️ Ethics engine DISABLED for agent ${agent.name}`)
+    }
 
     // Initialize interaction manager
     const interactionConfig = this.createInteractionConfig()
@@ -741,7 +745,7 @@ export class AutonomousEngine {
     // Customize based on agent configuration
     const customConfig: EthicsConfig = {
       ...defaultConfig,
-      enabled: this.config.ethicalConstraints,
+      enabled: agentEthics.enabled !== undefined ? agentEthics.enabled : this.config.ethicalConstraints,
       strictMode: agentEthics.decision_framework === 'utilitarian_with_rights',
       interventionLevel: agentEthics.transparency === 'high' ? 'blocking' : 'advisory'
     }

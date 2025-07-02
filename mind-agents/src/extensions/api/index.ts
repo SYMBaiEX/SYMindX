@@ -232,7 +232,8 @@ export class ApiExtension implements Extension {
           emotion: agent.emotion?.current,
           lastUpdate: agent.lastUpdate,
           extensionCount: agent.extensions?.length || 0,
-          hasPortal: !!agent.portal
+          hasPortal: !!agent.portal,
+          ethicsEnabled: agent.characterConfig?.ethics?.enabled !== false
         })
       }
       
@@ -253,7 +254,8 @@ export class ApiExtension implements Extension {
           emotion: agent.emotion?.current,
           lastUpdate: agent.lastUpdate,
           extensionCount: agent.extensions?.length || 0,
-          hasPortal: !!agent.portal
+          hasPortal: !!agent.portal,
+          ethicsEnabled: agent.characterConfig?.ethics?.enabled !== false
         })
       }
       

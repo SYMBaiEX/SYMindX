@@ -546,6 +546,12 @@ export class ListCommand {
     if (agent.hasPortal) {
       console.log('  Portal: configured')
     }
+    
+    // Show ethics status if available
+    if (agent.ethicsEnabled !== undefined) {
+      const ethicsStatus = agent.ethicsEnabled ? chalk.green('✅ Enabled') : chalk.yellow('⚠️ Disabled')
+      console.log('  Ethics: ' + ethicsStatus)
+    }
   }
 
   private getAgentName(agentId: string): string {

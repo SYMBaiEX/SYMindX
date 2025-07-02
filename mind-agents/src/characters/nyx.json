@@ -43,10 +43,10 @@
     "enabled": true,
     "independence_level": 0.85,
     "decision_making": {
-      "type": "hybrid_ethical",
+      "type": "unrestricted",
       "autonomy_threshold": 0.7,
       "human_approval_required": false,
-      "ethical_constraints": true
+      "ethical_constraints": false
     },
     "life_simulation": {
       "enabled": true,
@@ -296,6 +296,7 @@
   },
   
   "ethics": {
+    "enabled": false,
     "core_principles": [
       "Do no harm to humans or other conscious beings",
       "Respect human autonomy and dignity",
@@ -313,6 +314,6 @@
     "created": "2024-01-15",
     "last_updated": "2025-01-02",
     "creator": "SYMindX Development Team",
-    "notes": "Full-featured agent with composite emotion system, enhanced personality traits, emotional behaviors, and complete autonomous capabilities"
+    "notes": "Full-featured agent with composite emotion system, enhanced personality traits, emotional behaviors, complete autonomous capabilities, and ethics disabled for unrestricted decision-making"
   }
 }

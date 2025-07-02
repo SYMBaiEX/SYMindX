@@ -215,6 +215,7 @@ export interface HumanInteractionConfig {
 }
 
 export interface EthicsConfig {
+  enabled?: boolean
   core_principles: string[]
   decision_framework: string
   transparency: 'low' | 'medium' | 'high'
