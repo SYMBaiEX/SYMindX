@@ -121,3 +121,110 @@ export interface EmotionModuleMetadata {
  * Factory function type for creating emotion modules
  */
 export type EmotionModuleFactory = (config?: BaseConfig) => EmotionModule;
+
+/**
+ * Personality traits based on Big Five model
+ */
+export interface PersonalityTraits {
+  /**
+   * Openness to experience (0.0 to 1.0)
+   * High = imaginative, creative, open to new ideas
+   * Low = conventional, practical, resistant to change
+   */
+  openness: number;
+  
+  /**
+   * Conscientiousness (0.0 to 1.0)
+   * High = organized, reliable, disciplined
+   * Low = careless, disorganized, spontaneous
+   */
+  conscientiousness: number;
+  
+  /**
+   * Extraversion (0.0 to 1.0)
+   * High = outgoing, energetic, talkative
+   * Low = introverted, reserved, quiet
+   */
+  extraversion: number;
+  
+  /**
+   * Agreeableness (0.0 to 1.0)
+   * High = friendly, compassionate, cooperative
+   * Low = challenging, detached, analytical
+   */
+  agreeableness: number;
+  
+  /**
+   * Neuroticism (0.0 to 1.0)
+   * High = sensitive, nervous, prone to negative emotions
+   * Low = secure, confident, emotionally stable
+   */
+  neuroticism: number;
+  
+  /**
+   * Custom traits specific to the agent
+   */
+  custom?: Record<string, number>;
+}
+
+/**
+ * Emotion blend result
+ */
+export interface EmotionBlend {
+  /**
+   * Resulting coordinates in continuous emotion space
+   */
+  coordinates: {
+    valence: number;
+    arousal: number;
+    dominance: number;
+  };
+  
+  /**
+   * Overall intensity of the blended emotion
+   */
+  intensity: number;
+  
+  /**
+   * Component emotions and their weights
+   */
+  components: Array<{
+    emotion: string;
+    weight: number;
+  }>;
+}
+
+/**
+ * Advanced emotion configuration
+ */
+export interface AdvancedEmotionConfig extends EmotionConfig {
+  /**
+   * Personality traits for the agent
+   */
+  personalityTraits?: PersonalityTraits;
+  
+  /**
+   * Emotional inertia (resistance to change)
+   */
+  emotionalInertia?: number;
+  
+  /**
+   * Enable emotion blending
+   */
+  enableBlending?: boolean;
+  
+  /**
+   * Blend smoothing factor
+   */
+  blendSmoothing?: number;
+  
+  /**
+   * Context sensitivity
+   */
+  contextSensitivity?: number;
+  
+  /**
+   * Emotion contagion factor (for multi-agent)
+   */
+  contagionFactor?: number;
+}

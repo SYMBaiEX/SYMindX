@@ -6,6 +6,7 @@
 
 import { UnifiedCognition, createUnifiedCognition } from './cognition.js'
 import { CognitionModuleType } from '../../types/agent.js'
+import { TheoryOfMind, createTheoryOfMind } from './theory-of-mind.js'
 
 /**
  * Create a cognition module based on type and configuration
@@ -39,8 +40,8 @@ export function getCognitionModuleTypes(): string[] {
   return ['unified'] // Simplified to just unified
 }
 
-// Export the unified cognition module
-export { UnifiedCognition }
+// Export the cognition modules
+export { UnifiedCognition, TheoryOfMind }
 
 // Registration function
 export function registerCognitionModules(registry: any) {

@@ -12,6 +12,8 @@ export enum PortalType {
   OPENAI = 'openai',
   ANTHROPIC = 'anthropic',
   GOOGLE = 'google',
+  GOOGLE_VERTEX = 'google_vertex',
+  VERCEL_AI = 'vercel_ai',
   AZURE = 'azure',
   HUGGINGFACE = 'huggingface',
   OLLAMA = 'ollama',

@@ -34,6 +34,17 @@ export class HappyEmotion extends BaseEmotion {
         energy: 1.1,
         social: 1.3,
         focus: 1.0
+      },
+      coordinates: {
+        valence: 0.8,      // Very positive
+        arousal: 0.6,      // Moderately high arousal
+        dominance: 0.4     // Slightly dominant
+      },
+      personalityInfluence: {
+        extraversion: 0.6,     // Extraverts experience happiness more intensely
+        neuroticism: -0.4,     // High neuroticism dampens happiness
+        agreeableness: 0.3,    // Agreeable people find joy in social harmony
+        openness: 0.2          // Open people find joy in new experiences
       }
     }
   }

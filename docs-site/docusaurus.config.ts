@@ -5,10 +5,55 @@ import type * as Preset from '@docusaurus/preset-classic';
 const config: Config = {
   title: 'SYMindX',
   tagline: 'Modular AI Agent Framework - Build Intelligent, Emotionally Reactive Characters',
-  favicon: 'assets/images/symindx.png',
+  favicon: 'img/favicon.ico',
 
   // Set the production url of your site here
   url: 'https://symindx.dev',
+  
+  // Additional head tags for comprehensive favicon support
+  headTags: [
+    {
+      tagName: 'link',
+      attributes: {
+        rel: 'icon',
+        type: 'image/x-icon',
+        href: '/img/favicon.ico',
+      },
+    },
+    {
+      tagName: 'link',
+      attributes: {
+        rel: 'icon',
+        type: 'image/png',
+        sizes: '32x32',
+        href: '/img/favicon-32x32.png',
+      },
+    },
+    {
+      tagName: 'link',
+      attributes: {
+        rel: 'icon',
+        type: 'image/png',
+        sizes: '16x16',
+        href: '/img/favicon-16x16.png',
+      },
+    },
+    {
+      tagName: 'link',
+      attributes: {
+        rel: 'apple-touch-icon',
+        sizes: '180x180',
+        href: '/img/apple-touch-icon.png',
+      },
+    },
+    {
+      tagName: 'meta',
+      attributes: {
+        name: 'theme-color',
+        content: '#2e8555',
+      },
+    },
+  ],
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
   baseUrl: '/',
@@ -208,20 +253,23 @@ const config: Config = {
   plugins: [
     // Local search plugin for better search experience
     [
-      '@easyops-cn/docusaurus-search-local',
+      'docusaurus-lunr-search',
       {
         // Whether to index docs pages
         indexDocs: true,
-        // Whether to index blog pages
+        // Whether to index blog pages  
         indexBlog: true,
-        // Whether to index static pages
-        indexPages: false,
-        // Language of your documentation
-        language: "en",
-        // Highlight the search terms on the target page
-        highlightSearchTermsOnTargetPage: true,
         // Include translations in search
-        explicitSearchResultPath: true,
+        excludeRoutes: [
+          '/docs/tags/**/*',
+          '/blog/tags/**/*'
+        ],
+        // Language of your documentation
+        languages: ['en'],
+        // Highlight search terms
+        highlightSearchTermsOnTargetPage: true,
+        // Maximum search results
+        maxSearchResults: 8,
       },
     ],
     // API docs plugin disabled due to MDX compilation issues with function declarations

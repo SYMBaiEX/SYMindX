@@ -34,6 +34,17 @@ export class AngryEmotion extends BaseEmotion {
         energy: 1.2,
         social: 0.5,
         focus: 0.7
+      },
+      coordinates: {
+        valence: -0.8,     // Very negative
+        arousal: 0.8,      // High arousal
+        dominance: 0.6     // Dominant
+      },
+      personalityInfluence: {
+        neuroticism: 0.5,          // Neuroticism can trigger anger
+        agreeableness: -0.6,       // Low agreeableness = more anger
+        conscientiousness: -0.3,   // Low conscientiousness = frustration
+        extraversion: 0.3          // Extraverts express anger more
       }
     }
   }

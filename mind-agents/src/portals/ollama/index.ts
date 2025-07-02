@@ -1,8 +1,8 @@
 /**
- * Edge AI Portals Index
+ * Ollama Local AI Portal Index
  * 
- * Exports edge computing and local AI portal implementations for privacy-preserving
- * and low-latency AI processing
+ * Exports Ollama portal implementations for privacy-preserving local AI inference
+ * with support for quantized models and edge computing
  */
 
 // Ollama Local AI Portal

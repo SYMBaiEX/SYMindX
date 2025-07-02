@@ -7,12 +7,16 @@
 
 import { Portal, PortalConfig, PortalCapability, ToolEvaluationOptions, ToolEvaluationResult } from '../types/portal.js'
 import { Agent } from '../types/agent.js'
-import type { GoogleConfig } from './google/index.js'
+import type { GoogleVertexConfig } from './google-vertex/index.js'
+import type { GoogleGenerativeConfig } from './google-generative/index.js'
+import type { VercelAIConfig } from './vercel/index.js'
 import type { MultimodalConfig } from './multimodal/index.js'
 import { MultimodalPortalType } from './multimodal/index.js'
-import type { MistralConfig } from './specialized/mistral.js'
-import type { CohereConfig } from './specialized/cohere.js'
-import type { AzureOpenAIConfig } from './specialized/azure-openai.js'
+import type { MistralConfig } from './mistral/index.js'
+import type { CohereConfig } from './cohere/index.js'
+import type { AzureOpenAIConfig } from './azure-openai/index.js'
+import type { OllamaConfig } from './ollama/index.js'
+import type { LMStudioConfig } from './lmstudio/index.js'
 
 // Import all portal implementations
 export { OpenAIPortal, createOpenAIPortal, defaultOpenAIConfig, type OpenAIConfig } from './openai/index.js'
@@ -23,7 +27,9 @@ export { OpenRouterPortal, createOpenRouterPortal, defaultOpenRouterConfig, open
 export { KlusterAiPortal, createKlusterAiPortal, defaultKlusterAiConfig, klusterAiModels, type KlusterAiConfig } from './kluster.ai/index.js'
 
 // Advanced AI Portals
-export { GooglePortal, createGooglePortal, defaultGoogleConfig, googleModels, type GoogleConfig } from './google/index.js'
+export { GoogleVertexPortal, createGoogleVertexPortal, defaultVertexConfig, vertexModels, type GoogleVertexConfig } from './google-vertex/index.js'
+export { GoogleGenerativePortal, createGoogleGenerativePortal, defaultGenerativeConfig, generativeModels, type GoogleGenerativeConfig } from './google-generative/index.js'
+export { VercelAIPortal, createVercelAIPortal, defaultVercelConfig, supportedProviders, type VercelAIConfig, type ProviderConfig, type ModelConfig, type ToolDefinition } from './vercel/index.js'
 
 // Multimodal AI Portals
 export { 
@@ -47,14 +53,14 @@ export {
   defaultMistralConfig, 
   mistralModels,
   type MistralConfig 
-} from './specialized/mistral.js'
+} from './mistral/index.js'
 export { 
   CoherePortal, 
   createCoherePortal, 
   defaultCohereConfig, 
   cohereModels,
   type CohereConfig 
-} from './specialized/cohere.js'
+} from './cohere/index.js'
 export { 
   AzureOpenAIPortal, 
   createAzureOpenAIPortal, 
@@ -62,10 +68,10 @@ export {
   azureOpenAIModels,
   type AzureOpenAIConfig,
   type ContentFilterConfig
-} from './specialized/azure-openai.js'
-export { type ContentFilterLevel } from './specialized/azure-openai.js'
+} from './azure-openai/index.js'
+export { type ContentFilterLevel } from './azure-openai/index.js'
 
-// Edge AI Portals
+// Local AI Portals
 export { 
   OllamaPortal, 
   createOllamaPortal, 
@@ -73,7 +79,16 @@ export {
   ollamaModels,
   type OllamaConfig,
   type OllamaModelStatus
-} from './edge/ollama.js'
+} from './ollama/index.js'
+export { 
+  LMStudioPortal, 
+  createLMStudioPortal, 
+  defaultLMStudioConfig, 
+  lmStudioModels,
+  type LMStudioConfig,
+  type LMStudioModelInfo,
+  type LMStudioServerStatus
+} from './lmstudio/index.js'
 
 // Import the default configs and portal creators for internal use
 import { defaultOpenAIConfig, createOpenAIPortal } from './openai/index.js'
@@ -82,12 +97,15 @@ import { defaultAnthropicConfig, createAnthropicPortal } from './anthropic/index
 import { defaultXAIConfig, createXAIPortal } from './xai/index.js'
 import { defaultOpenRouterConfig, createOpenRouterPortal } from './openrouter/index.js'
 import { defaultKlusterAiConfig, createKlusterAiPortal } from './kluster.ai/index.js'
-import { defaultGoogleConfig, createGooglePortal } from './google/index.js'
+import { defaultVertexConfig, createGoogleVertexPortal } from './google-vertex/index.js'
+import { defaultGenerativeConfig, createGoogleGenerativePortal } from './google-generative/index.js'
+import { defaultVercelConfig, createVercelAIPortal } from './vercel/index.js'
 import { defaultMultimodalConfig, createMultimodalPortal } from './multimodal/index.js'
-import { defaultMistralConfig, createMistralPortal } from './specialized/mistral.js'
-import { defaultCohereConfig, createCoherePortal } from './specialized/cohere.js'
-import { defaultAzureOpenAIConfig, createAzureOpenAIPortal } from './specialized/azure-openai.js'
-import { defaultOllamaConfig, createOllamaPortal } from './edge/ollama.js'
+import { defaultMistralConfig, createMistralPortal } from './mistral/index.js'
+import { defaultCohereConfig, createCoherePortal } from './cohere/index.js'
+import { defaultAzureOpenAIConfig, createAzureOpenAIPortal } from './azure-openai/index.js'
+import { defaultOllamaConfig, createOllamaPortal } from './ollama/index.js'
+import { defaultLMStudioConfig, createLMStudioPortal } from './lmstudio/index.js'
 
 // Export base portal
 export { BasePortal } from './base-portal.js'
@@ -125,7 +143,9 @@ export class PortalRegistry {
     this.register('kluster.ai', createKlusterAiPortal)
     
     // Advanced AI portals
-    this.register('google', (config: PortalConfig) => createGooglePortal(config as GoogleConfig))
+    this.register('google-vertex', (config: PortalConfig) => createGoogleVertexPortal(config as GoogleVertexConfig))
+    this.register('google-generative', (config: PortalConfig) => createGoogleGenerativePortal(config as GoogleGenerativeConfig))
+    this.register('vercel-ai', (config: PortalConfig) => createVercelAIPortal(config as VercelAIConfig))
     this.register('multimodal', (config: PortalConfig) => createMultimodalPortal(MultimodalPortalType.UNIFIED_MULTIMODAL, config as MultimodalConfig))
     
     // Specialized AI portals
@@ -133,8 +153,9 @@ export class PortalRegistry {
     this.register('cohere', (config: PortalConfig) => createCoherePortal(config as CohereConfig))
     this.register('azure-openai', (config: PortalConfig) => createAzureOpenAIPortal(config as AzureOpenAIConfig))
     
-    // Edge AI portals
-    this.register('ollama', createOllamaPortal)
+    // Local AI portals
+    this.register('ollama', (config: PortalConfig) => createOllamaPortal(config as OllamaConfig))
+    this.register('lmstudio', (config: PortalConfig) => createLMStudioPortal(config as LMStudioConfig))
   }
 
   /**
@@ -190,8 +211,12 @@ export class PortalRegistry {
         return defaultOpenRouterConfig
       case 'kluster.ai':
         return defaultKlusterAiConfig
-      case 'google':
-        return defaultGoogleConfig
+      case 'google-vertex':
+        return defaultVertexConfig
+      case 'google-generative':
+        return defaultGenerativeConfig
+      case 'vercel-ai':
+        return defaultVercelConfig
       case 'multimodal':
         return defaultMultimodalConfig
       case 'mistral':
@@ -202,6 +227,8 @@ export class PortalRegistry {
         return defaultAzureOpenAIConfig
       case 'ollama':
         return defaultOllamaConfig
+      case 'lmstudio':
+        return defaultLMStudioConfig
       default:
         return {
           maxTokens: 1000,

@@ -28,10 +28,9 @@ SYMindX has been enhanced with cutting-edge AI integration capabilities, transfo
 
 ### Configuration
 ```typescript
-import { createGooglePortal } from './portals/google/index.js'
+import { createPortal } from '@symindx/core';
 
-const googlePortal = createGooglePortal({
-  apiKey: process.env.GOOGLE_API_KEY,
+const googleVertexPortal = createPortal('google-vertex', {
   projectId: 'your-project-id',
   location: 'us-central1',
   model: 'gemini-1.5-pro',
@@ -50,10 +49,10 @@ const googlePortal = createGooglePortal({
 ### Usage
 ```typescript
 // Text generation
-const result = await googlePortal.generateText('Explain quantum computing')
+const result = await googleVertexPortal.generateText('Explain quantum computing')
 
 // Chat with images
-const chatResult = await googlePortal.generateChat([
+const chatResult = await googleVertexPortal.generateChat([
   {
     role: MessageRole.USER,
     content: 'What do you see in this image?',
@@ -66,7 +65,7 @@ const chatResult = await googlePortal.generateChat([
 ])
 
 // Streaming
-for await (const chunk of googlePortal.streamText('Write a story about AI')) {
+for await (const chunk of googleVertexPortal.streamText('Write a story about AI')) {
   console.log(chunk)
 }
 ```

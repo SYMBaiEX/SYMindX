@@ -27,6 +27,18 @@ export class NeutralEmotion extends BaseEmotion {
         energy: 1.0,
         social: 1.0,
         focus: 1.0
+      },
+      coordinates: {
+        valence: 0,        // Neutral valence
+        arousal: 0,        // Neutral arousal
+        dominance: 0       // Neutral dominance
+      },
+      personalityInfluence: {
+        // Neutral emotion is less influenced by personality
+        neuroticism: -0.1,     // Slightly less neutral if neurotic
+        extraversion: 0.05,    // Minimal influence
+        agreeableness: 0.05,   // Minimal influence
+        conscientiousness: 0.1 // Slightly more stable if conscientious
       }
     }
   }
