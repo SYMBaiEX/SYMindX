@@ -429,7 +429,7 @@ export function AnalyticsPlatform({ selectedAgent }: { selectedAgent: string }) 
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Brain className="h-5 w-5" />
+                <img src="/assets/images/logos/symindx-logo.png" alt="SYMindX" className="h-5 w-5" />
                 Quick Insights
               </CardTitle>
             </CardHeader>

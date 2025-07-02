@@ -1,21 +1,21 @@
 {
-  "/search-5de": {
+  "/search-822": {
     "__comp": "1a4e3797",
     "__context": {
-      "plugin": "c141421f"
+      "plugin": "138e0e15"
     }
   },
-  "/docs-9e4": {
+  "/docs-61c": {
     "__comp": "5e95c892",
     "__context": {
       "plugin": "aba21aa0"
     }
   },
-  "/docs-8b5": {
+  "/docs-ba2": {
     "__comp": "a7bd4aaa",
     "__props": "0058b4c6"
   },
-  "/docs-248": {
+  "/docs-99a": {
     "__comp": "a94703ab"
   },
   "/docs/advanced-topics/-c3c": {
@@ -234,11 +234,11 @@
     "__comp": "17896441",
     "content": "128668b3"
   },
-  "/docs/api-reference/rest-api/memory/-a23": {
+  "/docs/api-reference/rest-api/memory/-955": {
     "__comp": "17896441",
     "content": "4a15e620"
   },
-  "/docs/api-reference/rest-api/memory/-8eb": {
+  "/docs/api-reference/rest-api/memory/-3d1": {
     "__comp": "17896441",
     "content": "53ba7e84"
   },
@@ -569,6 +569,14 @@
   "/docs/development/-b12": {
     "__comp": "17896441",
     "content": "6dcaddc4"
+  },
+  "/docs/development/assets-organization-3a3": {
+    "__comp": "17896441",
+    "content": "06de7d94"
+  },
+  "/docs/development/assets-organization-16a": {
+    "__comp": "17896441",
+    "content": "52450167"
   },
   "/docs/development/code-style/-af3": {
     "__comp": "17896441",
@@ -966,59 +974,59 @@
     "__comp": "17896441",
     "content": "b7963bc0"
   },
-  "/docs/modules/memory/-3b4": {
+  "/docs/modules/memory/-b11": {
     "__comp": "17896441",
     "content": "7516e675"
   },
-  "/docs/modules/memory/-f99": {
+  "/docs/modules/memory/-7be": {
     "__comp": "17896441",
     "content": "3955f733"
   },
-  "/docs/modules/memory/neon/-48f": {
+  "/docs/modules/memory/neon/-a17": {
     "__comp": "17896441",
     "content": "7bf7c07b"
   },
-  "/docs/modules/memory/neon/-1e1": {
+  "/docs/modules/memory/neon/-aca": {
     "__comp": "17896441",
     "content": "00db3b0a"
   },
-  "/docs/modules/memory/postgres/-7f5": {
+  "/docs/modules/memory/postgres/-494": {
     "__comp": "17896441",
     "content": "940127c9"
   },
-  "/docs/modules/memory/postgres/-515": {
+  "/docs/modules/memory/postgres/-d4d": {
     "__comp": "17896441",
     "content": "0ca003a0"
   },
-  "/docs/modules/memory/providers/-18c": {
+  "/docs/modules/memory/providers/-093": {
     "__comp": "17896441",
     "content": "3d5e49ba"
   },
-  "/docs/modules/memory/providers/-815": {
+  "/docs/modules/memory/providers/-34e": {
     "__comp": "17896441",
     "content": "fb5cfed4"
   },
-  "/docs/modules/memory/providers/api-6bf": {
+  "/docs/modules/memory/providers/api-8fa": {
     "__comp": "17896441",
     "content": "42b206a4"
   },
-  "/docs/modules/memory/providers/api-2d0": {
+  "/docs/modules/memory/providers/api-5a3": {
     "__comp": "17896441",
     "content": "3762010d"
   },
-  "/docs/modules/memory/sqlite/-3c3": {
+  "/docs/modules/memory/sqlite/-307": {
     "__comp": "17896441",
     "content": "3551154b"
   },
-  "/docs/modules/memory/sqlite/-5f1": {
+  "/docs/modules/memory/sqlite/-db3": {
     "__comp": "17896441",
     "content": "c439fc77"
   },
-  "/docs/modules/memory/supabase/-d52": {
+  "/docs/modules/memory/supabase/-386": {
     "__comp": "17896441",
     "content": "66e87592"
   },
-  "/docs/modules/memory/supabase/-d7c": {
+  "/docs/modules/memory/supabase/-e66": {
     "__comp": "17896441",
     "content": "3b12c407"
   },

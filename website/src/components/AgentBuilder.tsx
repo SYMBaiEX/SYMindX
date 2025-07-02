@@ -314,10 +314,10 @@ export function AgentBuilder() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold flex items-center gap-2">
-            <Brain className="h-6 w-6 text-blue-500" />
+            <img src="/assets/images/logos/symindx-logo.png" alt="SYMindX" className="h-6 w-6" />
             Agent Builder
           </h2>
-          <p className="text-muted-foreground">Create and configure intelligent agents with visual tools</p>
+          <p className="text-muted-foreground">Design and configure new AI agents with custom personalities, capabilities, and behaviors</p>
         </div>
         <div className="flex gap-2">
           <Button

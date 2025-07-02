@@ -7,7 +7,7 @@ const theme = create({
   // Brand
   brandTitle: 'SYMindX Design System',
   brandUrl: 'https://symindx.dev',
-  brandImage: undefined, // Add logo URL here when available
+  brandImage: '/assets/images/logos/symindx-logo.png',
   brandTarget: '_self',
   
   // Colors

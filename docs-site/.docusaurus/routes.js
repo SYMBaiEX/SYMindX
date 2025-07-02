@@ -4,20 +4,20 @@ import ComponentCreator from '@docusaurus/ComponentCreator';
 export default [
   {
     path: '/search',
-    component: ComponentCreator('/search', '5de'),
+    component: ComponentCreator('/search', '822'),
     exact: true
   },
   {
     path: '/docs',
-    component: ComponentCreator('/docs', '9e4'),
+    component: ComponentCreator('/docs', '61c'),
     routes: [
       {
         path: '/docs',
-        component: ComponentCreator('/docs', '8b5'),
+        component: ComponentCreator('/docs', 'ba2'),
         routes: [
           {
             path: '/docs',
-            component: ComponentCreator('/docs', '248'),
+            component: ComponentCreator('/docs', '99a'),
             routes: [
               {
                 path: '/docs/advanced-topics/',
@@ -329,13 +329,13 @@ export default [
               },
               {
                 path: '/docs/api-reference/rest-api/memory/',
-                component: ComponentCreator('/docs/api-reference/rest-api/memory/', 'a23'),
+                component: ComponentCreator('/docs/api-reference/rest-api/memory/', '955'),
                 exact: true,
                 sidebar: "apiSidebar"
               },
               {
                 path: '/docs/api-reference/rest-api/memory/',
-                component: ComponentCreator('/docs/api-reference/rest-api/memory/', '8eb'),
+                component: ComponentCreator('/docs/api-reference/rest-api/memory/', '3d1'),
                 exact: true,
                 sidebar: "apiSidebar"
               },
@@ -826,6 +826,16 @@ export default [
                 component: ComponentCreator('/docs/development/', 'b12'),
                 exact: true,
                 sidebar: "docsSidebar"
+              },
+              {
+                path: '/docs/development/assets-organization',
+                component: ComponentCreator('/docs/development/assets-organization', '3a3'),
+                exact: true
+              },
+              {
+                path: '/docs/development/assets-organization',
+                component: ComponentCreator('/docs/development/assets-organization', '16a'),
+                exact: true
               },
               {
                 path: '/docs/development/code-style/',
@@ -1408,83 +1418,83 @@ export default [
               },
               {
                 path: '/docs/modules/memory/',
-                component: ComponentCreator('/docs/modules/memory/', '3b4'),
+                component: ComponentCreator('/docs/modules/memory/', 'b11'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
                 path: '/docs/modules/memory/',
-                component: ComponentCreator('/docs/modules/memory/', 'f99'),
+                component: ComponentCreator('/docs/modules/memory/', '7be'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
                 path: '/docs/modules/memory/neon/',
-                component: ComponentCreator('/docs/modules/memory/neon/', '48f'),
+                component: ComponentCreator('/docs/modules/memory/neon/', 'a17'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
                 path: '/docs/modules/memory/neon/',
-                component: ComponentCreator('/docs/modules/memory/neon/', '1e1'),
+                component: ComponentCreator('/docs/modules/memory/neon/', 'aca'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
                 path: '/docs/modules/memory/postgres/',
-                component: ComponentCreator('/docs/modules/memory/postgres/', '7f5'),
+                component: ComponentCreator('/docs/modules/memory/postgres/', '494'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
                 path: '/docs/modules/memory/postgres/',
-                component: ComponentCreator('/docs/modules/memory/postgres/', '515'),
+                component: ComponentCreator('/docs/modules/memory/postgres/', 'd4d'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
                 path: '/docs/modules/memory/providers/',
-                component: ComponentCreator('/docs/modules/memory/providers/', '18c'),
+                component: ComponentCreator('/docs/modules/memory/providers/', '093'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
                 path: '/docs/modules/memory/providers/',
-                component: ComponentCreator('/docs/modules/memory/providers/', '815'),
+                component: ComponentCreator('/docs/modules/memory/providers/', '34e'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
                 path: '/docs/modules/memory/providers/api',
-                component: ComponentCreator('/docs/modules/memory/providers/api', '6bf'),
+                component: ComponentCreator('/docs/modules/memory/providers/api', '8fa'),
                 exact: true
               },
               {
                 path: '/docs/modules/memory/providers/api',
-                component: ComponentCreator('/docs/modules/memory/providers/api', '2d0'),
+                component: ComponentCreator('/docs/modules/memory/providers/api', '5a3'),
                 exact: true
               },
               {
                 path: '/docs/modules/memory/sqlite/',
-                component: ComponentCreator('/docs/modules/memory/sqlite/', '3c3'),
+                component: ComponentCreator('/docs/modules/memory/sqlite/', '307'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
                 path: '/docs/modules/memory/sqlite/',
-                component: ComponentCreator('/docs/modules/memory/sqlite/', '5f1'),
+                component: ComponentCreator('/docs/modules/memory/sqlite/', 'db3'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
                 path: '/docs/modules/memory/supabase/',
-                component: ComponentCreator('/docs/modules/memory/supabase/', 'd52'),
+                component: ComponentCreator('/docs/modules/memory/supabase/', '386'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
                 path: '/docs/modules/memory/supabase/',
-                component: ComponentCreator('/docs/modules/memory/supabase/', 'd7c'),
+                component: ComponentCreator('/docs/modules/memory/supabase/', 'e66'),
                 exact: true,
                 sidebar: "docsSidebar"
               },

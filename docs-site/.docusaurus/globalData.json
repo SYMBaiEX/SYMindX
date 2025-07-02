@@ -671,6 +671,14 @@
               "sidebar": "docsSidebar"
             },
             {
+              "id": "development/assets-organization",
+              "path": "/docs/development/assets-organization"
+            },
+            {
+              "id": "development/assets-organization",
+              "path": "/docs/development/assets-organization"
+            },
+            {
               "id": "development/code-style/index",
               "path": "/docs/development/code-style/",
               "sidebar": "docsSidebar"
@@ -1887,15 +1895,6 @@
         }
       ],
       "breadcrumbs": true
-    }
-  },
-  "docusaurus-plugin-google-gtag": {
-    "default": {
-      "trackingID": [
-        "G-XXXXXXXXXX"
-      ],
-      "anonymizeIP": true,
-      "id": "default"
     }
   }
 }

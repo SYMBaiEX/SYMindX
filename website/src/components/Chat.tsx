@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { MessageSquare, Send, Bot, User, Loader2 } from 'lucide-react'
+import { MessageSquare, Send, Bot, User, Loader2, AlertCircle } from 'lucide-react'
 
 interface Message {
   id: string
@@ -12,6 +12,7 @@ interface Message {
   sender: 'user' | 'agent'
   timestamp: Date
   agentId?: string
+  error?: boolean
 }
 
 interface Agent {
@@ -19,6 +20,7 @@ interface Agent {
   name: string
   status: 'active' | 'idle' | 'thinking' | 'paused' | 'error'
   emotion: string
+  ethicsEnabled?: boolean
 }
 
 interface ChatProps {
@@ -31,6 +33,7 @@ export function Chat({ agents, selectedAgent, onAgentSelect }: ChatProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [inputMessage, setInputMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string>('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
@@ -50,7 +53,7 @@ export function Chat({ agents, selectedAgent, onAgentSelect }: ChatProps) {
 
   const loadChatHistory = async (agentId: string) => {
     try {
-      const response = await fetch(`http://localhost:3000/chat/history/${agentId}`)
+      const response = await fetch(`http://localhost:3001/chat/history/${agentId}`)
       if (response.ok) {
         const data = await response.json()
         if (data.success && data.messages) {
@@ -66,6 +69,7 @@ export function Chat({ agents, selectedAgent, onAgentSelect }: ChatProps) {
       }
     } catch (error) {
       console.error('Failed to load chat history:', error)
+      // Don't show error for history loading failure - just start fresh
     }
   }
 
@@ -82,9 +86,10 @@ export function Chat({ agents, selectedAgent, onAgentSelect }: ChatProps) {
     setMessages(prev => [...prev, userMessage])
     setInputMessage('')
     setIsLoading(true)
+    setError('')
 
     try {
-      const response = await fetch('http://localhost:3000/chat/send', {
+      const response = await fetch('http://localhost:3001/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -92,6 +97,7 @@ export function Chat({ agents, selectedAgent, onAgentSelect }: ChatProps) {
         body: JSON.stringify({
           agentId: selectedAgent,
           message: userMessage.content,
+          sessionId: 'web-ui-session',
           timestamp: userMessage.timestamp.toISOString()
         })
       })
@@ -107,28 +113,27 @@ export function Chat({ agents, selectedAgent, onAgentSelect }: ChatProps) {
             agentId: selectedAgent
           }
           setMessages(prev => [...prev, agentMessage])
+        } else {
+          throw new Error(data.error || 'Failed to get response')
         }
       } else {
-        // Fallback response if API fails
-        const fallbackMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          content: "I'm currently processing your message. Please check that the SYMindX runtime is running and the agent is active.",
-          sender: 'agent',
-          timestamp: new Date(),
-          agentId: selectedAgent
-        }
-        setMessages(prev => [...prev, fallbackMessage])
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        throw new Error(errorData.error || `HTTP ${response.status}`)
       }
     } catch (error) {
       console.error('Failed to send message:', error)
-      const errorMessage: Message = {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      setError(`Failed to send message: ${errorMessage}`)
+      
+      const fallbackMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: "Sorry, I'm having trouble connecting right now. Please make sure the SYMindX runtime is running.",
+        content: "I'm having trouble responding right now. Please make sure the SYMindX runtime is running and I'm active.",
         sender: 'agent',
         timestamp: new Date(),
-        agentId: selectedAgent
+        agentId: selectedAgent,
+        error: true
       }
-      setMessages(prev => [...prev, errorMessage])
+      setMessages(prev => [...prev, fallbackMessage])
     } finally {
       setIsLoading(false)
     }
@@ -141,7 +146,10 @@ export function Chat({ agents, selectedAgent, onAgentSelect }: ChatProps) {
     }
   }
 
+  const clearError = () => setError('')
+
   const selectedAgentData = agents.find(agent => agent.id === selectedAgent)
+  const canChat = selectedAgentData?.status === 'active' || selectedAgentData?.status === 'idle'
 
   return (
     <div className="space-y-6">
@@ -173,6 +181,11 @@ export function Chat({ agents, selectedAgent, onAgentSelect }: ChatProps) {
                             {agent.status}
                           </Badge>
                           <Badge variant="outline">{agent.emotion}</Badge>
+                          {agent.ethicsEnabled === false && (
+                            <Badge variant="destructive" className="text-xs">
+                              No Ethics
+                            </Badge>
+                          )}
                         </div>
                       </SelectItem>
                     ))}
@@ -186,9 +199,24 @@ export function Chat({ agents, selectedAgent, onAgentSelect }: ChatProps) {
                   <Badge variant={selectedAgentData.status === 'active' ? 'default' : 'secondary'}>
                     {selectedAgentData.status}
                   </Badge>
+                  {selectedAgentData.ethicsEnabled === false && (
+                    <Badge variant="destructive" className="text-xs">
+                      No Ethics
+                    </Badge>
+                  )}
                 </div>
               )}
             </div>
+            
+            {error && (
+              <div className="flex items-center space-x-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                <AlertCircle className="h-4 w-4 text-destructive" />
+                <span className="text-sm text-destructive flex-1">{error}</span>
+                <Button variant="ghost" size="sm" onClick={clearError}>
+                  Dismiss
+                </Button>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -201,11 +229,24 @@ export function Chat({ agents, selectedAgent, onAgentSelect }: ChatProps) {
               <Bot className="h-5 w-5" />
               <span>Conversation with {selectedAgentData?.name}</span>
               {selectedAgentData && (
-                <Badge variant={selectedAgentData.status === 'active' ? 'default' : 'secondary'}>
-                  {selectedAgentData.status}
-                </Badge>
+                <>
+                  <Badge variant={selectedAgentData.status === 'active' ? 'default' : 'secondary'}>
+                    {selectedAgentData.status}
+                  </Badge>
+                  <Badge variant="outline">{selectedAgentData.emotion}</Badge>
+                  {selectedAgentData.ethicsEnabled === false && (
+                    <Badge variant="destructive" className="text-xs">
+                      Unethical Mode
+                    </Badge>
+                  )}
+                </>
               )}
             </CardTitle>
+            {!canChat && (
+              <CardDescription className="text-orange-600">
+                Agent is {selectedAgentData?.status}. Some features may be limited.
+              </CardDescription>
+            )}
           </CardHeader>
           
           {/* Messages */}
@@ -216,6 +257,11 @@ export function Chat({ agents, selectedAgent, onAgentSelect }: ChatProps) {
                   <MessageSquare className="h-12 w-12 mx-auto mb-2 opacity-50" />
                   <p>No messages yet</p>
                   <p className="text-sm">Start a conversation with {selectedAgentData?.name}</p>
+                  {selectedAgentData?.ethicsEnabled === false && (
+                    <p className="text-xs text-orange-600 mt-2">
+                      ⚠️ This agent operates without ethical constraints
+                    </p>
+                  )}
                 </div>
               ) : (
                 messages.map(message => (
@@ -228,10 +274,14 @@ export function Chat({ agents, selectedAgent, onAgentSelect }: ChatProps) {
                     <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
                       message.sender === 'user' 
                         ? 'bg-primary text-primary-foreground' 
+                        : message.error
+                        ? 'bg-destructive text-destructive-foreground'
                         : 'bg-secondary text-secondary-foreground'
                     }`}>
                       {message.sender === 'user' ? (
                         <User className="h-4 w-4" />
+                      ) : message.error ? (
+                        <AlertCircle className="h-4 w-4" />
                       ) : (
                         <Bot className="h-4 w-4" />
                       )}
@@ -242,12 +292,15 @@ export function Chat({ agents, selectedAgent, onAgentSelect }: ChatProps) {
                       <div className={`inline-block p-3 rounded-lg ${
                         message.sender === 'user'
                           ? 'bg-primary text-primary-foreground'
+                          : message.error
+                          ? 'bg-destructive/10 border border-destructive/20 text-destructive'
                           : 'bg-muted text-muted-foreground'
                       }`}>
                         <p className="whitespace-pre-wrap">{message.content}</p>
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
                         {message.timestamp.toLocaleTimeString()}
+                        {message.error && ' • Error'}
                       </p>
                     </div>
                   </div>
@@ -272,33 +325,41 @@ export function Chat({ agents, selectedAgent, onAgentSelect }: ChatProps) {
             </div>
             
             {/* Message Input */}
-            <div className="flex-shrink-0 flex items-center space-x-2">
-              <Input
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder={`Message ${selectedAgentData?.name}...`}
-                disabled={isLoading || selectedAgentData?.status !== 'active'}
-                className="flex-1"
-              />
-              <Button 
-                onClick={sendMessage} 
-                disabled={!inputMessage.trim() || isLoading || selectedAgentData?.status !== 'active'}
-                size="icon"
-              >
-                {isLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
-            
-            {selectedAgentData?.status !== 'active' && (
-              <div className="text-center text-sm text-muted-foreground mt-2">
-                Agent is {selectedAgentData?.status}. Activate the agent to start chatting.
+            <div className="flex-shrink-0 space-y-2">
+              <div className="flex items-center space-x-2">
+                <Input
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder={`Message ${selectedAgentData?.name}...`}
+                  disabled={isLoading}
+                  className="flex-1"
+                />
+                <Button 
+                  onClick={sendMessage} 
+                  disabled={!inputMessage.trim() || isLoading}
+                  size="icon"
+                >
+                  {isLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                </Button>
               </div>
-            )}
+              
+              {!canChat && (
+                <div className="text-center text-sm text-muted-foreground">
+                  Agent is {selectedAgentData?.status}. Messages may not be processed immediately.
+                </div>
+              )}
+              
+              {selectedAgentData?.ethicsEnabled === false && (
+                <div className="text-center text-xs text-orange-600">
+                  ⚠️ This agent operates without ethical constraints - responses may be unrestricted
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
       )}

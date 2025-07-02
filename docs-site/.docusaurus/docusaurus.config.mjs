@@ -6,7 +6,7 @@
 export default {
   "title": "SYMindX",
   "tagline": "Modular AI Agent Framework - Build Intelligent, Emotionally Reactive Characters",
-  "favicon": "img/favicon.ico",
+  "favicon": "assets/images/symindx.png",
   "url": "https://symindx.dev",
   "baseUrl": "/",
   "organizationName": "symindx",
@@ -62,21 +62,17 @@ export default {
         },
         "theme": {
           "customCss": "./src/css/custom.css"
-        },
-        "gtag": {
-          "trackingID": "G-XXXXXXXXXX",
-          "anonymizeIP": true
         }
       }
     ]
   ],
   "themeConfig": {
-    "image": "img/symindx-social-card.jpg",
+    "image": "assets/images/symindx-logo.png",
     "navbar": {
       "title": "SYMindX",
       "logo": {
         "alt": "SYMindX Logo",
-        "src": "img/logo.svg"
+        "src": "assets/images/symindx-logo.png"
       },
       "items": [
         {
@@ -105,10 +101,6 @@ export default {
         {
           "href": "https://github.com/symindx/symindx",
           "label": "GitHub",
-          "position": "right"
-        },
-        {
-          "type": "search",
           "position": "right"
         }
       ],
@@ -392,19 +384,6 @@ export default {
         }
       ]
     },
-    "algolia": {
-      "appId": "YOUR_APP_ID",
-      "apiKey": "YOUR_SEARCH_API_KEY",
-      "indexName": "symindx",
-      "contextualSearch": true,
-      "externalUrlRegex": "external\\.com|domain\\.com",
-      "replaceSearchResultPathname": {
-        "from": "/docs/",
-        "to": "/"
-      },
-      "searchParameters": {},
-      "searchPagePath": "search"
-    },
     "colorMode": {
       "defaultMode": "light",
       "disableSwitch": false,
@@ -442,7 +421,19 @@ export default {
       "options": {}
     }
   },
-  "plugins": [],
+  "plugins": [
+    [
+      "@easyops-cn/docusaurus-search-local",
+      {
+        "indexDocs": true,
+        "indexBlog": true,
+        "indexPages": false,
+        "language": "en",
+        "highlightSearchTermsOnTargetPage": true,
+        "explicitSearchResultPath": true
+      }
+    ]
+  ],
   "baseUrlIssueBanner": true,
   "future": {
     "v4": {

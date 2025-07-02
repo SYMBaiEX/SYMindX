@@ -5,7 +5,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 const config: Config = {
   title: 'SYMindX',
   tagline: 'Modular AI Agent Framework - Build Intelligent, Emotionally Reactive Characters',
-  favicon: 'img/favicon.ico',
+  favicon: 'assets/images/symindx.png',
 
   // Set the production url of your site here
   url: 'https://symindx.dev',
@@ -62,22 +62,23 @@ const config: Config = {
         theme: {
           customCss: './src/css/custom.css',
         },
-        gtag: {
-          trackingID: 'G-XXXXXXXXXX',
-          anonymizeIP: true,
-        },
+        // Google Analytics disabled for development - replace with real tracking ID for production
+        // gtag: {
+        //   trackingID: 'G-XXXXXXXXXX',
+        //   anonymizeIP: true,
+        // },
       } satisfies Preset.Options,
     ],
   ],
 
   themeConfig: {
     // Replace with your project's social card
-    image: 'img/symindx-social-card.jpg',
+    image: 'assets/images/symindx-logo.png',
     navbar: {
       title: 'SYMindX',
       logo: {
         alt: 'SYMindX Logo',
-        src: 'img/logo.svg',
+        src: 'assets/images/symindx-logo.png',
       },
       items: [
         {
@@ -106,10 +107,6 @@ const config: Config = {
         {
           href: 'https://github.com/symindx/symindx',
           label: 'GitHub',
-          position: 'right',
-        },
-        {
-          type: 'search',
           position: 'right',
         },
       ],
@@ -188,26 +185,14 @@ const config: Config = {
       darkTheme: prismThemes.dracula,
       additionalLanguages: ['bash', 'json', 'javascript', 'typescript'],
     },
-    algolia: {
-      // The application ID provided by Algolia
-      appId: 'YOUR_APP_ID',
-      // Public API key: it is safe to commit it
-      apiKey: 'YOUR_SEARCH_API_KEY',
-      indexName: 'symindx',
-      // Optional: see doc section below
-      contextualSearch: true,
-      // Optional: Specify domains where the navigation should occur through window.location instead on history.push
-      externalUrlRegex: 'external\\.com|domain\\.com',
-      // Optional: Replace parts of the item URLs from Algolia. Useful when using the same search index for multiple deployments using a different baseUrl. You can use regexp or string in the `from` param. For example: localhost:3000 vs myCompany.com/docs
-      replaceSearchResultPathname: {
-        from: '/docs/', // or as RegExp: /\/docs\//
-        to: '/',
-      },
-      // Optional: Algolia search parameters
-      searchParameters: {},
-      // Optional: path for search page that enabled by default (`false` to disable it)
-      searchPagePath: 'search',
-    },
+    // Algolia search disabled - using local search instead
+    // algolia: {
+    //   appId: 'YOUR_APP_ID',
+    //   apiKey: 'YOUR_SEARCH_API_KEY',
+    //   indexName: 'symindx',
+    //   contextualSearch: true,
+    //   searchPagePath: 'search',
+    // },
     colorMode: {
       defaultMode: 'light',
       disableSwitch: false,
@@ -224,6 +209,24 @@ const config: Config = {
   } satisfies Preset.ThemeConfig,
 
   plugins: [
+    // Local search plugin for better search experience
+    [
+      '@easyops-cn/docusaurus-search-local',
+      {
+        // Whether to index docs pages
+        indexDocs: true,
+        // Whether to index blog pages
+        indexBlog: true,
+        // Whether to index static pages
+        indexPages: false,
+        // Language of your documentation
+        language: "en",
+        // Highlight the search terms on the target page
+        highlightSearchTermsOnTargetPage: true,
+        // Include translations in search
+        explicitSearchResultPath: true,
+      },
+    ],
     // API docs plugin disabled due to MDX compilation issues with function declarations
     // The content needs to be restructured to avoid ES module parsing conflicts
     // [
