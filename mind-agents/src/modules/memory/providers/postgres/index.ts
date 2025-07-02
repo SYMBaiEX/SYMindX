@@ -1,14 +1,25 @@
 /**
  * PostgreSQL Memory Provider for SYMindX
  * 
- * A comprehensive memory provider that uses PostgreSQL as a backend with automatic schema deployment,
- * vector search capabilities, and optimized performance for production workloads.
+ * Enhanced PostgreSQL-based memory provider with multi-tier memory architecture,
+ * vector embeddings, shared memory pools, and archival strategies.
  */
 
 import { Pool, PoolClient } from 'pg'
 import { MemoryRecord, MemoryType, MemoryDuration } from '../../../../types/agent.js'
-import { BaseMemoryProvider, BaseMemoryConfig } from '../../base-memory-provider.js'
-import { MemoryProviderMetadata } from '../../../../types/memory.js'
+import { BaseMemoryProvider, BaseMemoryConfig, MemoryRow, EnhancedMemoryRecord } from '../../base-memory-provider.js'
+import { 
+  MemoryProviderMetadata, 
+  MemoryTierType,
+  MemoryContext,
+  SharedMemoryConfig,
+  ArchivalStrategy,
+  MemoryPermission
+} from '../../../../types/memory.js'
+import { SharedMemoryPool } from './shared-pool.js'
+import { MemoryArchiver } from './archiver.js'
+import { runtimeLogger } from '../../../../utils/logger.js'
+import { v4 as uuidv4 } from 'uuid'
 
 /**
  * Configuration for the PostgreSQL memory provider
@@ -30,23 +41,19 @@ export interface PostgresMemoryConfig extends BaseMemoryConfig {
   autoDeploySchema?: boolean
   /** Enable connection pooling (default: true) */
   enablePooling?: boolean
+  /** Consolidation interval in milliseconds */
+  consolidationInterval?: number
+  /** Archival interval in milliseconds */
+  archivalInterval?: number
 }
 
 /**
  * PostgreSQL database row type
  */
-export interface PostgresMemoryRow {
-  id: string
-  agent_id: string
-  type: string
-  content: string
+export interface PostgresMemoryRow extends MemoryRow {
   embedding?: number[]
-  metadata: Record<string, any>
-  importance: number
-  timestamp: Date
-  tags: string[]
-  duration: string
-  expires_at?: Date
+  tier?: string
+  context?: Record<string, any> // JSON-encoded MemoryContext
   created_at: Date
   updated_at: Date
 }
@@ -59,7 +66,10 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
   protected declare config: PostgresMemoryConfig
   private tableName: string
   private isInitialized = false
-  private schemaVersion = '1.0.0'
+  private schemaVersion = '2.0.0'
+  private sharedPools: Map<string, SharedMemoryPool> = new Map()
+  private consolidationTimer?: NodeJS.Timeout
+  private archivalTimer?: NodeJS.Timeout
 
   /**
    * Constructor for the PostgreSQL memory provider
@@ -68,11 +78,18 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
     const metadata: MemoryProviderMetadata = {
       id: 'postgres',
       name: 'PostgreSQL Memory Provider',
-      description: 'A production-ready memory provider using PostgreSQL with auto-deployment and vector search',
-      version: '1.0.0',
+      description: 'Enhanced PostgreSQL provider with multi-tier memory, vector search, and shared pools',
+      version: '2.0.0',
       author: 'SYMindX Team',
       supportsVectorSearch: true,
-      isPersistent: true
+      isPersistent: true,
+      supportedTiers: [
+        MemoryTierType.WORKING,
+        MemoryTierType.EPISODIC,
+        MemoryTierType.SEMANTIC,
+        MemoryTierType.PROCEDURAL
+      ],
+      supportsSharedMemory: true
     }
 
     super(config, metadata)
@@ -99,6 +116,30 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
     })
 
     this.initialize()
+
+    // Start background processes
+    this.startBackgroundProcesses(config)
+  }
+
+  /**
+   * Start background processes for consolidation and archival
+   */
+  private startBackgroundProcesses(config: PostgresMemoryConfig): void {
+    if (config.consolidationInterval) {
+      this.consolidationTimer = setInterval(() => {
+        this.runConsolidation().catch(error => {
+          runtimeLogger.error('Consolidation error:', error)
+        })
+      }, config.consolidationInterval)
+    }
+
+    if (config.archivalInterval) {
+      this.archivalTimer = setInterval(() => {
+        this.runArchival().catch(error => {
+          runtimeLogger.error('Archival error:', error)
+        })
+      }, config.archivalInterval)
+    }
   }
 
   /**
@@ -118,7 +159,7 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
       }
       
       this.isInitialized = true
-      console.log('✅ PostgreSQL memory provider initialized successfully')
+      console.log('✅ Enhanced PostgreSQL memory provider initialized successfully')
     } catch (error) {
       console.error('❌ Failed to initialize PostgreSQL memory provider:', error)
       throw error
@@ -160,6 +201,9 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
       
       // Create triggers
       await this.createTriggers(client)
+      
+      // Create shared memory tables
+      await this.createSharedMemoryTables(client)
       
       // Create schema version tracking
       await this.createSchemaVersioning(client)
@@ -208,6 +252,8 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
         tags TEXT[] DEFAULT '{}',
         duration TEXT NOT NULL DEFAULT 'long_term' CHECK (duration IN ('short_term', 'long_term', 'working', 'episodic')),
         expires_at TIMESTAMPTZ,
+        tier TEXT DEFAULT 'episodic' CHECK (tier IN ('working', 'episodic', 'semantic', 'procedural')),
+        context JSONB,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       );
@@ -229,11 +275,13 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
       `CREATE INDEX IF NOT EXISTS idx_${this.tableName}_importance ON ${this.tableName}(importance DESC);`,
       `CREATE INDEX IF NOT EXISTS idx_${this.tableName}_duration ON ${this.tableName}(duration);`,
       `CREATE INDEX IF NOT EXISTS idx_${this.tableName}_expires_at ON ${this.tableName}(expires_at) WHERE expires_at IS NOT NULL;`,
+      `CREATE INDEX IF NOT EXISTS idx_${this.tableName}_tier ON ${this.tableName}(tier);`,
       
       // Composite indexes for common query patterns
       `CREATE INDEX IF NOT EXISTS idx_${this.tableName}_agent_type_time ON ${this.tableName}(agent_id, type, timestamp DESC);`,
       `CREATE INDEX IF NOT EXISTS idx_${this.tableName}_agent_duration_time ON ${this.tableName}(agent_id, duration, timestamp DESC);`,
       `CREATE INDEX IF NOT EXISTS idx_${this.tableName}_agent_importance ON ${this.tableName}(agent_id, importance DESC);`,
+      `CREATE INDEX IF NOT EXISTS idx_${this.tableName}_agent_tier_time ON ${this.tableName}(agent_id, tier, timestamp DESC);`,
       
       // Full-text search index
       `CREATE INDEX IF NOT EXISTS idx_${this.tableName}_content_fts ON ${this.tableName} USING gin(to_tsvector('english', content));`,
@@ -280,7 +328,8 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
         p_match_count INTEGER DEFAULT 10,
         p_memory_type TEXT DEFAULT NULL,
         p_duration TEXT DEFAULT NULL,
-        p_min_importance FLOAT DEFAULT NULL
+        p_min_importance FLOAT DEFAULT NULL,
+        p_tier TEXT DEFAULT NULL
       )
       RETURNS TABLE (
         id TEXT,
@@ -319,6 +368,7 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
         AND (p_memory_type IS NULL OR m.type = p_memory_type)
         AND (p_duration IS NULL OR m.duration = p_duration)
         AND (p_min_importance IS NULL OR m.importance >= p_min_importance)
+        AND (p_tier IS NULL OR m.tier = p_tier)
         AND (m.duration != 'short_term' OR m.expires_at IS NULL OR m.expires_at > NOW())
         AND 1 - (m.embedding <=> p_query_embedding) > p_match_threshold
         ORDER BY similarity DESC
@@ -396,6 +446,52 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
   }
 
   /**
+   * Create shared memory tables
+   */
+  private async createSharedMemoryTables(client: PoolClient): Promise<void> {
+    // Create shared memory pools table
+    const poolsTable = `
+      CREATE TABLE IF NOT EXISTS shared_memory_pools (
+        pool_id TEXT PRIMARY KEY,
+        config JSONB NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `
+
+    // Create shared memory mappings table
+    const mappingsTable = `
+      CREATE TABLE IF NOT EXISTS shared_memory_mappings (
+        memory_id TEXT NOT NULL,
+        pool_id TEXT NOT NULL,
+        shared_by TEXT NOT NULL,
+        shared_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        permissions TEXT[] NOT NULL,
+        PRIMARY KEY (memory_id, pool_id),
+        FOREIGN KEY (pool_id) REFERENCES shared_memory_pools(pool_id) ON DELETE CASCADE
+      );
+    `
+
+    // Create indexes
+    const mappingIndexes = [
+      `CREATE INDEX IF NOT EXISTS idx_shared_mappings_pool ON shared_memory_mappings(pool_id);`,
+      `CREATE INDEX IF NOT EXISTS idx_shared_mappings_shared_by ON shared_memory_mappings(shared_by);`
+    ]
+
+    try {
+      await client.query(poolsTable)
+      await client.query(mappingsTable)
+      
+      for (const index of mappingIndexes) {
+        await client.query(index)
+      }
+      
+      console.log('🔗 Created shared memory tables')
+    } catch (error) {
+      console.warn('⚠️ Could not create shared memory tables:', (error as any).message)
+    }
+  }
+
+  /**
    * Create database triggers
    */
   private async createTriggers(client: PoolClient): Promise<void> {
@@ -461,14 +557,20 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
   async store(agentId: string, memory: MemoryRecord): Promise<void> {
     await this.initialize()
     
+    const enhanced = memory as EnhancedMemoryRecord
     const client = await this.pool.connect()
     
     try {
+      // Generate embedding if not provided
+      if (!memory.embedding && memory.content) {
+        memory.embedding = await this.generateEmbedding(memory.content)
+      }
+
       const query = `
         INSERT INTO ${this.tableName} (
           id, agent_id, type, content, embedding, metadata, importance, 
-          timestamp, tags, duration, expires_at, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
+          timestamp, tags, duration, expires_at, tier, context, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW())
         ON CONFLICT (id) DO UPDATE SET
           agent_id = EXCLUDED.agent_id,
           type = EXCLUDED.type,
@@ -480,6 +582,8 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
           tags = EXCLUDED.tags,
           duration = EXCLUDED.duration,
           expires_at = EXCLUDED.expires_at,
+          tier = EXCLUDED.tier,
+          context = EXCLUDED.context,
           updated_at = NOW()
       `
 
@@ -488,17 +592,32 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
         agentId,
         memory.type,
         memory.content,
-        memory.embedding ? JSON.stringify(memory.embedding) : null,
-        JSON.stringify(memory.metadata || {}),
+        memory.embedding ? `[${memory.embedding.join(',')}]` : null,
+        memory.metadata || {},
         memory.importance,
         memory.timestamp,
         memory.tags || [],
         memory.duration || MemoryDuration.LONG_TERM,
-        memory.expiresAt
+        memory.expiresAt,
+        enhanced.tier || MemoryTierType.EPISODIC,
+        enhanced.context || null
       ]
 
       await client.query(query, values)
-      console.log(`💾 Stored ${memory.duration || 'long_term'} memory: ${memory.type} for agent ${agentId}`)
+      
+      // Handle working memory specially
+      if (enhanced.tier === MemoryTierType.WORKING) {
+        await this.addToWorkingMemory(agentId, memory)
+      }
+
+      // Only log conversation memories from user interactions
+      if (memory.type === MemoryType.INTERACTION && 
+          (memory.metadata?.source === 'chat_command' || 
+           memory.metadata?.source === 'chat_command_fallback' ||
+           memory.metadata?.messageType === 'user_input' ||
+           memory.metadata?.messageType === 'agent_response')) {
+        console.log(`💾 Stored ${enhanced.tier || 'episodic'} memory: ${memory.type} for agent ${agentId}`)
+      }
     } finally {
       client.release()
     }
@@ -580,10 +699,19 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
     
     try {
       // Try vector search using the database function
-      const vectorQuery = `SELECT * FROM search_${this.tableName}($1, $2, $3, $4)`
+      const vectorQuery = `SELECT * FROM search_${this.tableName}($1, $2, $3, $4, $5, $6, $7, $8)`
       
       try {
-        const result = await client.query(vectorQuery, [agentId, JSON.stringify(embedding), 0.7, limit])
+        const result = await client.query(vectorQuery, [
+          agentId, 
+          JSON.stringify(embedding), 
+          0.7,     // match_threshold
+          limit,   // match_count
+          null,    // memory_type
+          null,    // duration
+          null,    // min_importance
+          null     // tier
+        ])
         return result.rows.map(row => this.rowToMemoryRecord(row))
       } catch (error) {
         console.warn('⚠️ Vector search failed, falling back to recent memories:', error)
@@ -699,7 +827,7 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
   /**
    * Convert a database row to a memory record
    */
-  private rowToMemoryRecord(row: any): MemoryRecord {
+  private rowToMemoryRecord(row: any): EnhancedMemoryRecord {
     let embedding: number[] | undefined = undefined
     
     if (row.embedding) {
@@ -712,7 +840,7 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
       }
     }
 
-    return {
+    const record: EnhancedMemoryRecord = {
       id: row.id,
       agentId: row.agent_id,
       type: MemoryType[row.type.toUpperCase() as keyof typeof MemoryType] || MemoryType.EXPERIENCE,
@@ -725,6 +853,16 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
       duration: MemoryDuration[row.duration.toUpperCase() as keyof typeof MemoryDuration] || MemoryDuration.LONG_TERM,
       expiresAt: row.expires_at ? new Date(row.expires_at) : undefined
     }
+
+    // Add tier and context if available
+    if (row.tier) {
+      record.tier = row.tier as MemoryTierType
+    }
+    if (row.context) {
+      record.context = row.context as MemoryContext
+    }
+
+    return record
   }
 
   /**
@@ -794,15 +932,336 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
   }
 
   /**
+   * Consolidate memory from one tier to another
+   */
+  async consolidateMemory(
+    agentId: string, 
+    memoryId: string, 
+    fromTier: MemoryTierType, 
+    toTier: MemoryTierType
+  ): Promise<void> {
+    const client = await this.pool.connect()
+    
+    try {
+      const query = `
+        UPDATE ${this.tableName} 
+        SET tier = $1, updated_at = NOW() 
+        WHERE agent_id = $2 AND id = $3 AND tier = $4
+      `
+      
+      const result = await client.query(query, [toTier, agentId, memoryId, fromTier])
+      
+      if (result.rowCount && result.rowCount > 0) {
+        runtimeLogger.memory(`Consolidated memory ${memoryId} from ${fromTier} to ${toTier}`)
+        
+        // Apply tier-specific transformations
+        if (fromTier === MemoryTierType.EPISODIC && toTier === MemoryTierType.SEMANTIC) {
+          // Extract concepts and update type
+          const memoryQuery = `SELECT content FROM ${this.tableName} WHERE id = $1`
+          const memoryResult = await client.query(memoryQuery, [memoryId])
+          
+          if (memoryResult.rows[0]) {
+            const concepts = await this.extractConcepts(memoryResult.rows[0].content)
+            const updateQuery = `
+              UPDATE ${this.tableName} 
+              SET type = $1, tags = $2, updated_at = NOW() 
+              WHERE agent_id = $3 AND id = $4
+            `
+            await client.query(updateQuery, [MemoryType.KNOWLEDGE, concepts, agentId, memoryId])
+          }
+        }
+      }
+    } finally {
+      client.release()
+    }
+  }
+
+  /**
+   * Get memories from a specific tier
+   */
+  async retrieveTier(agentId: string, tier: MemoryTierType, limit?: number): Promise<MemoryRecord[]> {
+    const client = await this.pool.connect()
+    
+    try {
+      const query = limit 
+        ? `SELECT * FROM ${this.tableName} WHERE agent_id = $1 AND tier = $2 ORDER BY timestamp DESC LIMIT $3`
+        : `SELECT * FROM ${this.tableName} WHERE agent_id = $1 AND tier = $2 ORDER BY timestamp DESC`
+      
+      const values = limit ? [agentId, tier, limit] : [agentId, tier]
+      const result = await client.query(query, values)
+      
+      return result.rows.map(row => this.rowToMemoryRecord(row))
+    } finally {
+      client.release()
+    }
+  }
+
+  /**
+   * Archive old memories based on configured strategies
+   */
+  async archiveMemories(agentId: string): Promise<void> {
+    if (!this.config.archival) return
+    
+    for (const strategy of this.config.archival) {
+      if (strategy.type === 'compression') {
+        await this.compressOldMemories(agentId, strategy)
+      } else if (strategy.type === 'summarization') {
+        await this.summarizeMemories(agentId, strategy)
+      }
+    }
+  }
+
+  /**
+   * Share memories with other agents in a pool
+   */
+  async shareMemories(agentId: string, memoryIds: string[], poolId: string): Promise<void> {
+    const client = await this.pool.connect()
+    
+    try {
+      let pool = this.sharedPools.get(poolId)
+      
+      if (!pool && this.config.sharedMemory) {
+        pool = new SharedMemoryPool(poolId, this.config.sharedMemory)
+        this.sharedPools.set(poolId, pool)
+        
+        // Store pool configuration
+        const poolQuery = `
+          INSERT INTO shared_memory_pools (pool_id, config, created_at)
+          VALUES ($1, $2, NOW())
+          ON CONFLICT (pool_id) DO NOTHING
+        `
+        await client.query(poolQuery, [poolId, this.config.sharedMemory])
+      }
+      
+      if (!pool) {
+        throw new Error(`Shared memory pool ${poolId} not found`)
+      }
+      
+      // Share each memory
+      for (const memoryId of memoryIds) {
+        const memoryQuery = `SELECT * FROM ${this.tableName} WHERE agent_id = $1 AND id = $2`
+        const memoryResult = await client.query(memoryQuery, [agentId, memoryId])
+        
+        if (memoryResult.rows[0]) {
+          await pool.share(agentId, this.rowToMemoryRecord(memoryResult.rows[0]))
+          
+          // Record sharing
+          const mappingQuery = `
+            INSERT INTO shared_memory_mappings 
+            (memory_id, pool_id, shared_by, shared_at, permissions)
+            VALUES ($1, $2, $3, NOW(), $4)
+            ON CONFLICT (memory_id, pool_id) DO UPDATE SET
+              shared_by = EXCLUDED.shared_by,
+              shared_at = EXCLUDED.shared_at,
+              permissions = EXCLUDED.permissions
+          `
+          await client.query(mappingQuery, [
+            memoryId, 
+            poolId, 
+            agentId, 
+            [MemoryPermission.READ]
+          ])
+        }
+      }
+    } finally {
+      client.release()
+    }
+  }
+
+  /**
+   * Generate embedding for a memory
+   */
+  async generateEmbedding(content: string): Promise<number[]> {
+    // This would call the actual embedding API based on config
+    // For now, return a mock embedding
+    return new Array(1536).fill(0).map(() => Math.random() * 2 - 1)
+  }
+
+  /**
+   * Extract concepts from content
+   */
+  private async extractConcepts(content: string): Promise<string[]> {
+    // Simple concept extraction - in production would use NLP
+    const words = content.toLowerCase().split(/\s+/)
+    const concepts = words
+      .filter(word => word.length > 4)
+      .filter((word, index, self) => self.indexOf(word) === index)
+      .slice(0, 5)
+    
+    return concepts
+  }
+
+  /**
+   * Run memory consolidation
+   */
+  private async runConsolidation(): Promise<void> {
+    const client = await this.pool.connect()
+    
+    try {
+      const agentsQuery = `SELECT DISTINCT agent_id FROM ${this.tableName}`
+      const agentsResult = await client.query(agentsQuery)
+      
+      for (const { agent_id } of agentsResult.rows) {
+        // Check consolidation rules for each tier
+        for (const [, tier] of this.tiers) {
+          if (!tier.consolidationRules) continue
+          
+          for (const rule of tier.consolidationRules) {
+            const memories = await this.retrieveTier(agent_id, rule.fromTier)
+            
+            for (const memory of memories) {
+              if (this.shouldConsolidate(memory as EnhancedMemoryRecord, rule)) {
+                await this.consolidateMemory(agent_id, memory.id, rule.fromTier, rule.toTier)
+              }
+            }
+          }
+        }
+      }
+    } finally {
+      client.release()
+    }
+  }
+
+  /**
+   * Check if memory should be consolidated
+   */
+  private shouldConsolidate(memory: EnhancedMemoryRecord, rule: any): boolean {
+    switch (rule.condition) {
+      case 'importance':
+        return (memory.importance || 0) >= rule.threshold
+      case 'age':
+        const ageInDays = (Date.now() - memory.timestamp.getTime()) / (1000 * 60 * 60 * 24)
+        return ageInDays >= rule.threshold
+      case 'emotional':
+        return (memory.context?.emotionalValence || 0) >= rule.threshold
+      default:
+        return false
+    }
+  }
+
+  /**
+   * Run memory archival
+   */
+  private async runArchival(): Promise<void> {
+    const client = await this.pool.connect()
+    
+    try {
+      const agentsQuery = `SELECT DISTINCT agent_id FROM ${this.tableName}`
+      const agentsResult = await client.query(agentsQuery)
+      
+      for (const { agent_id } of agentsResult.rows) {
+        await this.archiveMemories(agent_id)
+      }
+    } finally {
+      client.release()
+    }
+  }
+
+  /**
+   * Compress old memories
+   */
+  private async compressOldMemories(agentId: string, strategy: ArchivalStrategy): Promise<void> {
+    if (!strategy.triggerAge) return
+    
+    const client = await this.pool.connect()
+    
+    try {
+      const cutoffDate = new Date(Date.now() - (strategy.triggerAge * 24 * 60 * 60 * 1000))
+      const query = `
+        SELECT * FROM ${this.tableName} 
+        WHERE agent_id = $1 AND timestamp < $2 AND tier = 'episodic'
+        ORDER BY timestamp DESC
+      `
+      const result = await client.query(query, [agentId, cutoffDate])
+      
+      // Group similar memories and compress
+      const compressed = this.groupAndCompress(result.rows.map(r => this.rowToMemoryRecord(r)))
+      
+      // Store compressed memories
+      for (const memory of compressed) {
+        await this.store(agentId, memory)
+      }
+      
+      // Delete original memories
+      const deleteQuery = `DELETE FROM ${this.tableName} WHERE id = ANY($1)`
+      const idsToDelete = result.rows.map(row => row.id)
+      if (idsToDelete.length > 0) {
+        await client.query(deleteQuery, [idsToDelete])
+      }
+    } finally {
+      client.release()
+    }
+  }
+
+  /**
+   * Summarize memories
+   */
+  private async summarizeMemories(agentId: string, strategy: ArchivalStrategy): Promise<void> {
+    // Implementation would use LLM to summarize groups of memories
+    runtimeLogger.memory(`Summarizing memories for agent ${agentId}`)
+  }
+
+  /**
+   * Group and compress similar memories
+   */
+  private groupAndCompress(memories: EnhancedMemoryRecord[]): EnhancedMemoryRecord[] {
+    // Simple compression - group by day and combine
+    const grouped = new Map<string, EnhancedMemoryRecord[]>()
+    
+    for (const memory of memories) {
+      const day = memory.timestamp.toISOString().split('T')[0]
+      if (!grouped.has(day)) {
+        grouped.set(day, [])
+      }
+      grouped.get(day)!.push(memory)
+    }
+    
+    const compressed: EnhancedMemoryRecord[] = []
+    for (const [day, group] of grouped) {
+      compressed.push({
+        id: this.generateId(),
+        agentId: group[0].agentId,
+        type: MemoryType.EXPERIENCE,
+        content: `Summary of ${day}: ${group.map(m => m.content).join('; ')}`,
+        importance: Math.max(...group.map(m => m.importance || 0)),
+        timestamp: new Date(day),
+        tags: ['compressed', 'summary'],
+        duration: MemoryDuration.LONG_TERM,
+        tier: MemoryTierType.EPISODIC,
+        context: {
+          source: 'compression',
+          originalCount: group.length
+        } as any
+      })
+    }
+    
+    return compressed
+  }
+
+  /**
    * Cleanup connections and resources
    */
   async disconnect(): Promise<void> {
     try {
+      if (this.consolidationTimer) {
+        clearInterval(this.consolidationTimer)
+      }
+      if (this.archivalTimer) {
+        clearInterval(this.archivalTimer)
+      }
+      
       await this.pool.end()
       console.log('🔌 PostgreSQL memory provider disconnected')
     } catch (error) {
       console.error('❌ Error disconnecting PostgreSQL provider:', error)
     }
+  }
+
+  /**
+   * Clean up resources (alias for disconnect)
+   */
+  async destroy(): Promise<void> {
+    await this.disconnect()
   }
 }
 
