@@ -9,7 +9,7 @@
 // === CORE RUNTIME ===
 export { SYMindXRuntime } from './core/runtime.js';
 export { SYMindXModuleRegistry } from './core/registry.js';
-export type { EnhancedEventBus } from './core/enhanced-event-bus.js';
+export type { SimpleEventBus } from './core/event-bus.js';
 export type { SimplePluginLoader } from './core/plugin-loader.js';
 export { createPluginLoader } from './core/plugin-loader.js';
 
