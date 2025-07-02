@@ -92,6 +92,13 @@ export class CompositeEmotionModule implements EmotionModule {
   }
 
   private transitionToEmotion(emotion: string, intensity: number): void {
+    // Only transition if it's a significant change
+    const isSignificantChange = 
+      emotion !== this._current || 
+      Math.abs(intensity - this._intensity) > 0.2
+
+    if (!isSignificantChange) return
+
     // Record the transition
     this._history.push({
       emotion: this._current,
@@ -106,7 +113,10 @@ export class CompositeEmotionModule implements EmotionModule {
     this._current = emotion
     this._intensity = intensity
 
-    console.log(`😊 Emotion changed to ${this._current} (${(this._intensity * 100).toFixed(0)}%)`)
+    // Only log significant emotion changes (not neutral or minor changes)
+    if (emotion !== 'neutral' && intensity > 0.3) {
+      console.log(`😊 Emotion changed to ${this._current} (${(this._intensity * 100).toFixed(0)}%)`)
+    }
   }
 
   getCurrentState(): EmotionState {

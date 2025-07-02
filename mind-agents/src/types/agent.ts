@@ -200,11 +200,11 @@ export interface EmotionRecord {
 }
 
 export enum EmotionModuleType {
-  RUNE_EMOTION_STACK = 'rune_emotion_stack',
   BASIC_EMOTIONS = 'basic_emotions',
   COMPLEX_EMOTIONS = 'complex_emotions',
   PLUTCHIK_WHEEL = 'plutchik_wheel',
-  DIMENSIONAL = 'dimensional'
+  DIMENSIONAL = 'dimensional',
+  COMPOSITE = 'composite'
 }
 
 export interface EmotionConfig {
@@ -413,7 +413,8 @@ export enum ActionCategory {
   TOOL_EXECUTION = 'tool_execution',
   RESOURCE_MANAGEMENT = 'resource_management',
   AUTONOMOUS = 'autonomous',
-  LEARNING = 'learning'
+  LEARNING = 'learning',
+  MEMORY = 'memory'
 }
 
 export interface ExtensionAction {
@@ -436,13 +437,15 @@ export enum ActionResultType {
   FAILURE = 'failure',
   PARTIAL = 'partial',
   PENDING = 'pending',
-  CANCELLED = 'cancelled'
+  CANCELLED = 'cancelled',
+  ERROR = 'error'
 }
 
 export interface ActionResult {
   success: boolean
   type: ActionResultType
   result?: GenericData
+  data?: any
   error?: string
   metadata?: Metadata
   duration?: number
@@ -632,6 +635,8 @@ export interface RuntimeConfig {
   tickInterval: number
   maxAgents: number
   logLevel: LogLevel
+  apiUrl?: string
+  wsUrl?: string
   persistence: {
     enabled: boolean
     path: string

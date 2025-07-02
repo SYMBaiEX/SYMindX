@@ -13,6 +13,7 @@ import { SYMindXRuntime } from './core/runtime.js';
 import type { RuntimeConfig } from './types/agent.js';
 import { LogLevel, MemoryProviderType, EmotionModuleType, CognitionModuleType } from './types/agent.js';
 import { logger } from './utils/logger.js';
+import { displayBanner, createSpinner, animateLoading, displaySuccess, animateShutdown, matrixRain, createStatusDashboard } from './utils/cli-ui.js';
 
 // Export autonomous components for external use
 export { AutonomousEngine } from './core/autonomous-engine.js';
@@ -54,36 +55,99 @@ const config: RuntimeConfig = {
 // Initialize the runtime
 const runtime = new SYMindXRuntime(config);
 
+// Create status dashboard
+const dashboard = createStatusDashboard();
+
 // Start the runtime
 async function start() {
   try {
-    logger.banner('SYMindX Runtime', 'Modular AI Agent Framework');
-    logger.start('Initializing runtime...');
-    await runtime.initialize();
-    logger.success('Runtime initialized');
+    // Show awesome banner
+    await displayBanner();
     
-    // Start the runtime loop (which will load agents after registering modules)
+    // Optional: Show matrix rain for 2 seconds
+    if (process.env.SHOW_MATRIX === 'true') {
+      await matrixRain(2000);
+    }
+    
+    // Animated initialization sequence
+    await animateLoading('🔧 Loading configuration', 500);
+    await animateLoading('📦 Initializing core modules', 800);
+    
+    const initSpinner = createSpinner('Initializing SYMindX Runtime...', 'star');
+    initSpinner.start();
+    
+    await runtime.initialize();
+    
+    initSpinner.succeed('Runtime initialized successfully!');
+    
+    await animateLoading('🔮 Connecting to AI portals', 1000);
+    await animateLoading('🤖 Loading agents', 1000);
+    
+    // Start the runtime loop
+    const startSpinner = createSpinner('Starting runtime engine...', 'bouncingBar');
+    startSpinner.start();
+    
     await runtime.start();
-    logger.success('Runtime started successfully');
+    
+    startSpinner.succeed('Runtime engine started!');
+    
+    console.log();
+    displaySuccess('SYMindX is now running! All systems operational.');
+    console.log();
+    
+    // Track command and portal metrics
+    let commandCount = 0;
+    let portalRequestCount = 0;
+    
+    // Listen to events to track real metrics
+    runtime.eventBus.on('command:executed', () => commandCount++);
+    runtime.eventBus.on('portal:request', () => portalRequestCount++);
+    
+    // Update dashboard periodically
+    setInterval(() => {
+      const agents = Array.from(runtime.agents.values()).map(agent => ({
+        id: agent.id,
+        name: agent.name,
+        status: agent.status,
+        emotion: {
+          current: agent.emotion?.getCurrentState?.()?.current || agent.emotion?.current || 'neutral',
+          intensity: agent.emotion?.getCurrentState?.()?.intensity || agent.emotion?.intensity || 0
+        },
+        portal: agent.portal,
+        extensions: agent.extensions
+      }));
+      
+      dashboard.update({
+        agents,
+        metrics: {
+          uptime: Date.now() - startTime,
+          memory: process.memoryUsage().heapUsed,
+          activeAgents: agents.filter(a => a.status === 'active').length,
+          commandsProcessed: commandCount,
+          portalRequests: portalRequestCount
+        }
+      });
+    }, 5000);
+    
   } catch (error) {
     logger.error('Failed to start runtime:', error);
     process.exit(1);
   }
 }
 
+const startTime = Date.now();
+
 start();
 
 // Handle graceful shutdown
 process.on('SIGINT', async () => {
-  logger.warn('Received shutdown signal, stopping runtime...');
+  await animateShutdown();
   await runtime.stop();
-  logger.success('Runtime stopped successfully');
   process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
-  logger.warn('Received termination signal, stopping runtime...');
+  await animateShutdown();
   await runtime.stop();
-  logger.success('Runtime stopped successfully');
   process.exit(0);
 });

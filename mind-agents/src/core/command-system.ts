@@ -8,8 +8,9 @@
 import { EventEmitter } from 'events'
 import { Agent, AgentAction, ActionStatus, MemoryType, MemoryDuration } from '../types/agent.js'
 import { ActionCategory, ActionResultType } from '../types/enums.js'
-import { Logger } from '../utils/logger.js'
+import { Logger, runtimeLogger } from '../utils/logger.js'
 import { WebSocket } from 'ws'
+import { PortalRouter } from '../portals/index.js'
 
 export interface Command {
   id: string
@@ -678,12 +679,24 @@ export class CommandSystem extends EventEmitter {
         this.logger.debug(`Agent ${agent.name} has no cognition module available`)
       }
       
-      // Step 2: Generate AI response using sophisticated prompt system
-      let enhancedPrompt: string
+      // Step 2: Determine routing for this request
+      const routingDecision = PortalRouter.getModelType(agent, {
+        type: 'chat',
+        message: command.instruction,
+        hasTools: false,
+        userFacing: true
+      })
       
-      // TEMPORARILY DISABLED - Prompt integration
-      // Always use legacy prompt building for now
-      enhancedPrompt = this.buildEnhancedSystemPrompt(agent, command.instruction, emotionalContext, conversationContext, cognitiveContext)
+      this.logger.debug(`🚦 Routing chat to ${routingDecision.modelType} model: ${routingDecision.reasoning}`)
+      
+      // Step 3: Generate AI response using modern dual-model architecture
+      const enhancedPrompt = this.buildEnhancedSystemPrompt(
+        agent, 
+        command.instruction, 
+        emotionalContext, 
+        conversationContext, 
+        cognitiveContext
+      )
       
       const response = await PortalIntegration.generateResponse(
         agent, 
@@ -772,8 +785,8 @@ export class CommandSystem extends EventEmitter {
           
           await agent.memory.store(agent.id, agentMemory)
           
-          // Store separate emotional memory if significant emotional event occurred
-          if (emotionTriggered && (emotionalContext.emotionIntensity || 0) > 0.3) {
+          // Store separate emotional memory only for SIGNIFICANT emotional events
+          if (emotionTriggered && (emotionalContext.emotionIntensity || 0) > 0.7) {
             const emotionalMemory = {
               id: `emotion_memory_${Date.now()}`,
               agentId: agent.id,
@@ -797,8 +810,8 @@ export class CommandSystem extends EventEmitter {
             this.logger.debug(`Stored emotional memory for ${agent.name}: ${emotionalContext.currentEmotion}`)
           }
           
-          // Store cognitive insights as separate memory if cognitive processing occurred
-          if (thoughtResult && cognitiveContext.thoughts.length > 0) {
+          // Store cognitive insights as separate memory only for significant insights
+          if (thoughtResult && cognitiveContext.thoughts.length > 2 && cognitiveContext.cognitiveConfidence > 0.7) {
             const cognitiveMemory = {
               id: `cognitive_memory_${Date.now()}`,
               agentId: agent.id,
@@ -939,6 +952,16 @@ export class CommandSystem extends EventEmitter {
   }
 
   private async processActionCommand(agent: Agent, command: Command): Promise<CommandResult> {
+    // Determine routing for action commands
+    const routingDecision = PortalRouter.getModelType(agent, {
+      type: 'action',
+      message: command.instruction,
+      hasTools: true,
+      userFacing: false
+    })
+    
+    this.logger.debug(`🚦 Routing action to ${routingDecision.modelType} model: ${routingDecision.reasoning}`)
+    
     // Find the extension that can handle this action
     const extension = agent.extensions.find(ext => 
       Object.keys(ext.actions).includes(command.instruction)
@@ -987,7 +1010,7 @@ export class CommandSystem extends EventEmitter {
                               agent.portal
 
       if (embeddingPortal && typeof embeddingPortal.generateEmbedding === 'function') {
-        console.log('🔍 Using embeddings for enhanced memory retrieval')
+        runtimeLogger.memory('🔍 Using embeddings for enhanced memory retrieval')
         try {
           const embeddingResult = await embeddingPortal.generateEmbedding(command.instruction)
           const queryEmbedding = embeddingResult.embedding
@@ -1004,7 +1027,7 @@ export class CommandSystem extends EventEmitter {
           memories = await agent.memory.retrieve(agent.id, command.instruction, 10)
         }
       } else {
-        console.log('📝 No embedding portal available, using text search')
+        runtimeLogger.memory('📝 No embedding portal available, using text search')
         memories = await agent.memory.retrieve(agent.id, command.instruction, 10)
       }
     } else {

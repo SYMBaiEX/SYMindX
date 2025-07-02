@@ -8,6 +8,7 @@
 import { CompositeEmotionModule } from './composite-emotion.js';
 import { EmotionModule } from '../../types/emotion.js';
 import { EmotionConfig } from '../../types/agent.js';
+import { runtimeLogger } from '../../utils/logger.js';
 
 // Export individual emotions for direct use if needed
 export { HappyEmotion } from './happy/index.js'
@@ -26,7 +27,7 @@ export { NeutralEmotion } from './neutral/index.js'
  * Create an emotion module based on configuration
  */
 export function createEmotionModule(type: string, config: any): EmotionModule {
-  console.log(`💭 Creating emotion module: ${type}`);
+  runtimeLogger.emotion(`💭 Creating emotion module: ${type}`);
   
   try {
     // All emotion types now use the composite module
@@ -37,12 +38,12 @@ export function createEmotionModule(type: string, config: any): EmotionModule {
       case 'basic_emotions':     // Legacy compatibility
       case 'complex_emotions':   // Legacy compatibility
       default:
-        console.log(`✅ Creating CompositeEmotionModule with all emotions`);
+        runtimeLogger.success(`✅ Creating CompositeEmotionModule with all emotions`);
         return new CompositeEmotionModule(config);
     }
   } catch (error) {
-    console.error(`❌ Failed to create emotion module ${type}:`, error);
-    console.log(`🔄 Creating default CompositeEmotionModule`);
+    runtimeLogger.error(`❌ Failed to create emotion module ${type}:`, error);
+    runtimeLogger.emotion(`🔄 Creating default CompositeEmotionModule`);
     return new CompositeEmotionModule(config);
   }
 }
@@ -67,7 +68,7 @@ export { BaseEmotion } from './base-emotion.js';
 
 // Registration function
 export function registerEmotionModules(registry: any) {
-  console.log('💭 Registering emotion modules...');
+  runtimeLogger.emotion('💭 Registering emotion modules...');
   
   // Register all as using the composite module
   const emotionTypes = getEmotionModuleTypes();
@@ -75,5 +76,5 @@ export function registerEmotionModules(registry: any) {
     registry.registerEmotionFactory(type, (config: any) => createEmotionModule(type, config));
   }
   
-  console.log(`✅ Emotion module factories registered: ${emotionTypes.join(', ')}`);
+  runtimeLogger.success(`✅ Emotion module factories registered: ${emotionTypes.join(', ')}`);
 }

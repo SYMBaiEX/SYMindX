@@ -91,21 +91,24 @@ export class TelegramExtension implements Extension {
    */
   async init(agent: Agent): Promise<void> {
     this.agent = agent
-    this.enabled = true
     
     try {
       // Check if bot token is valid
       const botToken = (this.config.settings as any)?.botToken || (this.config as any).botToken
       if (!botToken || botToken.length < 10) {
-        throw new Error(`Invalid or missing bot token: ${botToken ? 'token too short' : 'no token'}`)
+        console.log(`⏭️ Telegram extension disabled - no bot token configured`)
+        this.enabled = false
+        return
       }
+      
+      this.enabled = true
       
       console.log(`🤖 Starting Telegram bot for agent ${agent.name}...`)
       console.log(`📡 Attempting to connect to Telegram API...`)
       
-      // Start the bot with timeout
+      // Start the bot with shorter timeout
       const launchTimeout = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Bot launch timeout after 10 seconds')), 10000)
+        setTimeout(() => reject(new Error('Bot launch timeout after 3 seconds')), 3000)
       )
       
       try {
@@ -558,6 +561,21 @@ Current emotion: ${this.agent.emotion?.current || 'neutral'}`
         maxMessageLength: this.telegramConfig.maxMessageLength,
         enableLogging: this.telegramConfig.enableLogging,
         hasWhitelist: !!(this.telegramConfig.allowedUsers && this.telegramConfig.allowedUsers.length > 0)
+      }
+    }
+  }
+
+  /**
+   * Cleanup method to properly stop the bot
+   */
+  async cleanup(): Promise<void> {
+    if (this.bot && this.enabled) {
+      try {
+        console.log(`🧹 Stopping Telegram bot for agent ${this.agent?.name || 'unknown'}...`)
+        await this.bot.stop()
+        console.log(`✅ Telegram bot stopped cleanly`)
+      } catch (error) {
+        this.logger.warn('Error stopping Telegram bot:', error)
       }
     }
   }

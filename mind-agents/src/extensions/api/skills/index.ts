@@ -6,14 +6,16 @@
  */
 
 import { HttpSkill } from './http.js'
-import { WebSocketSkill } from './websocket.js'
+import { WebSocketServerSkill } from './websocket-server.js'
+import { ChatSkill } from './chat.js'
 import { AuthenticationSkill } from './authentication.js'
 import { SessionManagementSkill } from './session-management.js'
 import { HealthMonitoringSkill } from './health-monitoring.js'
 
 export {
   HttpSkill,
-  WebSocketSkill,
+  WebSocketServerSkill,
+  ChatSkill,
   AuthenticationSkill,
   SessionManagementSkill,
   HealthMonitoringSkill
@@ -22,10 +24,11 @@ export {
 /**
  * Initialize all skills with the API extension instance
  */
-export function initializeSkills(extension: any) {
+export function initializeSkills(extension: any, config: any = {}) {
   return {
     http: new HttpSkill(extension),
-    websocket: new WebSocketSkill(extension),
+    websocketServer: new WebSocketServerSkill(extension, config.websocket),
+    chat: new ChatSkill(extension),
     authentication: new AuthenticationSkill(extension),
     sessionManagement: new SessionManagementSkill(extension),
     healthMonitoring: new HealthMonitoringSkill(extension)

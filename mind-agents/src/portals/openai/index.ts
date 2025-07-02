@@ -10,7 +10,8 @@ import { generateText, streamText } from 'ai'
 import { BasePortal } from '../base-portal.js'
 import { PortalConfig, TextGenerationOptions, TextGenerationResult, 
   ChatMessage, ChatGenerationOptions, ChatGenerationResult, EmbeddingOptions, EmbeddingResult,
-  ImageGenerationOptions, ImageGenerationResult, PortalCapability, MessageRole, FinishReason, PortalType, ModelType } from '../../types/portal.js'
+  ImageGenerationOptions, ImageGenerationResult, PortalCapability, MessageRole, FinishReason, PortalType, ModelType,
+  ToolEvaluationOptions, ToolEvaluationResult } from '../../types/portal.js'
 
 export interface OpenAIConfig extends PortalConfig {
   model?: string

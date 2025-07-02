@@ -167,8 +167,7 @@ export class ChatCommand {
             type: 'input',
             name: 'message',
             message: chalk.cyan('You:'),
-            prefix: '',
-            validate: (input) => {
+            validate: (input: string) => {
               if (!input.trim()) return 'Please enter a message'
               return true
             }
@@ -201,7 +200,11 @@ export class ChatCommand {
     try {
       console.log(chalk.blue('🔌 Connecting to WebSocket...'))
       
-      this.ws = new WebSocket(this.context.config.wsUrl)
+      const wsUrl = this.context.config.wsUrl
+      if (!wsUrl) {
+        throw new Error('WebSocket URL not configured')
+      }
+      this.ws = new WebSocket(wsUrl)
       
       this.ws.on('open', () => {
         console.log(chalk.green('✅ Connected to WebSocket'))

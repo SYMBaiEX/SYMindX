@@ -13,7 +13,13 @@ import chalk from 'chalk'
 import inquirer from 'inquirer'
 import ora from 'ora'
 import { CLIContext } from '../index.js'
-import { AgentConfig, AgentStatus } from '../../types/agent.js'
+import { 
+  AgentConfig, 
+  AgentStatus, 
+  MemoryProviderType, 
+  CognitionModuleType, 
+  EmotionModuleType 
+} from '../../types/agent.js'
 import { Logger } from '../../utils/logger.js'
 
 export class AgentCommand {
@@ -589,8 +595,8 @@ export class AgentCommand {
         type: 'list',
         name: 'emotion',
         message: 'Emotion module:',
-        choices: ['rune-emotion-stack'],
-        default: 'rune-emotion-stack'
+        choices: ['composite', 'complex-emotions', 'basic-emotions'],
+        default: 'composite'
       },
       {
         type: 'confirm',
@@ -620,17 +626,17 @@ export class AgentCommand {
       },
       modules: {
         memory: {
-          provider: 'sqlite' as any,
+          provider: MemoryProviderType.SQLITE,
           maxRecords: 1000
         },
         cognition: {
-          type: 'reactive' as any,
+          type: CognitionModuleType.REACTIVE,
           planningDepth: 3,
           memoryIntegration: true,
           creativityLevel: 0.7
         },
         emotion: {
-          type: 'rune_emotion_stack' as any,
+          type: EmotionModuleType.COMPOSITE,
           sensitivity: 0.6,
           decayRate: 0.1,
           transitionSpeed: 0.5
@@ -655,23 +661,23 @@ export class AgentCommand {
         defaults: {
           memory: 'sqlite',
           cognition: 'htn-planner',
-          emotion: 'rune-emotion-stack'
+          emotion: 'composite'
         },
         traits: ['analytical', 'curious', 'helpful', 'persistent']
       },
       modules: {
         memory: {
-          provider: 'sqlite' as any,
+          provider: MemoryProviderType.SQLITE,
           maxRecords: 1000
         },
         cognition: {
-          type: 'reactive' as any,
+          type: CognitionModuleType.REACTIVE,
           planningDepth: 3,
           memoryIntegration: true,
           creativityLevel: 0.7
         },
         emotion: {
-          type: 'rune_emotion_stack' as any,
+          type: EmotionModuleType.COMPOSITE,
           sensitivity: 0.6,
           decayRate: 0.1,
           transitionSpeed: 0.5

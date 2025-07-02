@@ -202,14 +202,7 @@ const config: Config = {
       disableSwitch: false,
       respectPrefersColorScheme: true,
     },
-    announcementBar: {
-      id: 'support_us',
-      content:
-        '⭐️ If you like SYMindX, give it a star on <a target="_blank" rel="noopener noreferrer" href="https://github.com/symbaiex/symindx">GitHub</a>! ⭐️',
-      backgroundColor: '#fafbfc',
-      textColor: '#091E42',
-      isCloseable: false,
-    },
+
   } satisfies Preset.ThemeConfig,
 
   plugins: [

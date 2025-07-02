@@ -1,0 +1,18 @@
+{
+  "name": "symindx",
+  "version": "1.0.0",
+  "description": "SYMindX CLI - Install redirects to @symindx/cli",
+  "bin": {
+    "symindx": "./bin.js"
+  },
+  "scripts": {
+    "postinstall": "npm install -g @symindx/cli"
+  },
+  "keywords": ["symindx", "ai", "cli", "agents"],
+  "author": "SYMindX Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SYMBaiEX/symindx-cli.git"
+  }
+}

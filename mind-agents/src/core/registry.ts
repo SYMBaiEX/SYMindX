@@ -10,6 +10,7 @@ import {
   Extension
 } from '../types/agent.js'
 import { Portal, PortalConfig } from '../types/portal.js'
+import { runtimeLogger } from '../utils/logger.js'
 import { EmotionModule, EmotionModuleFactory } from '../types/emotion.js'
 import { CognitionModule, CognitionModuleFactory } from '../types/cognition.js'
 import { PortalFactory } from '../portals/index.js'
@@ -36,27 +37,27 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
 
   registerMemoryProvider(name: string, provider: any): void {
     this.memoryProviders.set(name, provider)
-    console.log(`📝 Registered memory provider: ${name}`)
+    runtimeLogger.factory(`📝 Registered memory provider: ${name}`)
   }
 
   registerEmotionModule(name: string, module: any): void {
     this.emotionModules.set(name, module)
-    console.log(`😊 Registered emotion module: ${name}`)
+    runtimeLogger.factory(`😊 Registered emotion module: ${name}`)
   }
 
   registerCognitionModule(name: string, module: any): void {
     this.cognitionModules.set(name, module)
-    console.log(`🧠 Registered cognition module: ${name}`)
+    runtimeLogger.factory(`🧠 Registered cognition module: ${name}`)
   }
 
   registerExtension(name: string, extension: any): void {
     this.extensions.set(name, extension)
-    console.log(`🔌 Registered extension: ${name}`)
+    runtimeLogger.factory(`🔌 Registered extension: ${name}`)
   }
 
   registerPortal(name: string, portal: Portal): void {
     this.portals.set(name, portal)
-    console.log(`🔮 Registered portal: ${name}`)
+    runtimeLogger.factory(`🔮 Registered portal: ${name}`)
   }
 
   getMemoryProvider(name: string): MemoryProvider | undefined {
@@ -86,7 +87,7 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
   // Tool system methods
   registerToolSystem(name: string, toolSystem: any): void {
     this.toolSystems.set(name, toolSystem)
-    console.log(`🔧 Registered tool system: ${name}`)
+    runtimeLogger.factory(`🔧 Registered tool system: ${name}`)
   }
 
   getToolSystem(name: string): any {
@@ -100,7 +101,7 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
   // Observability methods
   registerObservability(name: string, observability: any): void {
     this.observabilityModules.set(name, observability)
-    console.log(`📊 Registered observability module: ${name}`)
+    runtimeLogger.factory(`📊 Registered observability module: ${name}`)
   }
 
   getObservability(name: string): any {
@@ -110,7 +111,7 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
   // Streaming methods
   registerStreaming(name: string, streaming: any): void {
     this.streamingInterfaces.set(name, streaming)
-    console.log(`📡 Registered streaming interface: ${name}`)
+    runtimeLogger.factory(`📡 Registered streaming interface: ${name}`)
   }
 
   getStreaming(name: string): any {
@@ -120,37 +121,37 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
   // Factory registration methods
   registerMemoryFactory(type: string, factory: any): void {
     this.memoryFactories.set(type, factory)
-    console.log(`🏭 Registered memory factory: ${type}`)
+    runtimeLogger.factory(`🏭 Registered memory factory: ${type}`)
   }
 
   registerEmotionFactory(type: string, factory: EmotionModuleFactory): void {
     this.emotionFactories.set(type, factory)
-    console.log(`🏭 Registered emotion factory: ${type}`)
+    runtimeLogger.factory(`🏭 Registered emotion factory: ${type}`)
   }
 
   registerCognitionFactory(type: string, factory: CognitionModuleFactory): void {
     this.cognitionFactories.set(type, factory)
-    console.log(`🏭 Registered cognition factory: ${type}`)
+    runtimeLogger.factory(`🏭 Registered cognition factory: ${type}`)
   }
 
   registerPortalFactory(type: string, factory: PortalFactory): void {
     this.portalFactories.set(type, factory)
-    console.log(`🏭 Registered portal factory: ${type}`)
+    runtimeLogger.factory(`🏭 Registered portal factory: ${type}`)
   }
 
   // Factory creation methods
   createMemoryProvider(type: string, config: any): any {
     const factory = this.memoryFactories.get(type)
     if (!factory) {
-      console.warn(`⚠️ Memory factory for type '${type}' not found`)
+      runtimeLogger.warn(`⚠️ Memory factory for type '${type}' not found`)
       return undefined
     }
     try {
       const provider = factory(config)
-      console.log(`✅ Created memory provider: ${type}`)
+      runtimeLogger.factory(`✅ Created memory provider: ${type}`)
       return provider
     } catch (error) {
-      console.error(`❌ Failed to create memory provider '${type}':`, error)
+      runtimeLogger.error(`❌ Failed to create memory provider '${type}':`, error)
       return undefined
     }
   }
@@ -158,15 +159,15 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
   createEmotionModule(type: string, config: BaseConfig): EmotionModule | undefined {
     const factory = this.emotionFactories.get(type)
     if (!factory) {
-      console.warn(`⚠️ Emotion factory for type '${type}' not found`)
+      runtimeLogger.warn(`⚠️ Emotion factory for type '${type}' not found`)
       return undefined
     }
     try {
       const module = factory(config)
-      console.log(`✅ Created emotion module: ${type}`)
+      runtimeLogger.factory(`✅ Created emotion module: ${type}`)
       return module
     } catch (error) {
-      console.error(`❌ Failed to create emotion module '${type}':`, error)
+      runtimeLogger.error(`❌ Failed to create emotion module '${type}':`, error)
       return undefined
     }
   }
@@ -174,15 +175,15 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
   createCognitionModule(type: string, config: BaseConfig): CognitionModule | undefined {
     const factory = this.cognitionFactories.get(type)
     if (!factory) {
-      console.warn(`⚠️ Cognition factory for type '${type}' not found`)
+      runtimeLogger.warn(`⚠️ Cognition factory for type '${type}' not found`)
       return undefined
     }
     try {
       const module = factory(config)
-      console.log(`✅ Created cognition module: ${type}`)
+      runtimeLogger.factory(`✅ Created cognition module: ${type}`)
       return module
     } catch (error) {
-      console.error(`❌ Failed to create cognition module '${type}':`, error)
+      runtimeLogger.error(`❌ Failed to create cognition module '${type}':`, error)
       return undefined
     }
   }
@@ -190,15 +191,15 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
   createPortal(type: string, config: PortalConfig): Portal | undefined {
     const factory = this.portalFactories.get(type)
     if (!factory) {
-      console.warn(`⚠️ Portal factory for type '${type}' not found`)
+      runtimeLogger.warn(`⚠️ Portal factory for type '${type}' not found`)
       return undefined
     }
     try {
       const portal = factory(config)
-      console.log(`✅ Created portal: ${type}`)
+      runtimeLogger.factory(`✅ Created portal: ${type}`)
       return portal
     } catch (error) {
-      console.error(`❌ Failed to create portal '${type}':`, error)
+      runtimeLogger.error(`❌ Failed to create portal '${type}':`, error)
       return undefined
     }
   }
@@ -251,6 +252,6 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
     this.emotionFactories.clear()
     this.cognitionFactories.clear()
     this.portalFactories.clear()
-    console.log('🧹 Registry cleared')
+    runtimeLogger.info('🧹 Registry cleared')
   }
 }

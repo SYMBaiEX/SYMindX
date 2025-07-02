@@ -131,7 +131,10 @@ export class InMemoryProvider extends BaseMemoryProvider {
     agentStorage.memories.set(memory.id, { ...memory })
     agentStorage.lastAccessed = Date.now()
 
-    console.log(`💾 Stored ${memory.duration || 'long_term'} memory: ${memory.type} for agent ${agentId}`)
+    // Only log significant memories
+    if (memory.importance > 0.7 || memory.type === MemoryType.GOAL) {
+      console.log(`💾 Stored significant memory: ${memory.type} for agent ${agentId}`)
+    }
   }
 
   /**

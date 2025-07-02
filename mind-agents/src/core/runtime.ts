@@ -197,7 +197,8 @@ export class SYMindXRuntime implements AgentRuntime {
       return
     }
 
-    runtimeLogger.start('🎯 Starting SYMindX Runtime...')
+    // Quiet mode - UI handles display
+    // runtimeLogger.start('🎯 Starting SYMindX Runtime...')
     
     // Register core modules
     await this.registerCoreModules()

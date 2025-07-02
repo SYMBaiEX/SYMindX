@@ -6,6 +6,8 @@
 
 import { Agent } from '../types/agent.js'
 import { ChatMessage, MessageRole, Portal, PortalCapability, PortalType } from '../types/portal.js'
+import { runtimeLogger } from '../utils/logger.js'
+import { PortalRouter } from '../portals/index.js'
 
 export interface PortalSelectionCriteria {
   capability: PortalCapability
@@ -47,7 +49,7 @@ export class PortalIntegration {
     }
     
     if (!chatPortal || !chatPortal.generateChat) {
-      console.log('⚠️ No chat-capable portal available, using fallback response')
+      runtimeLogger.warn('⚠️ No chat-capable portal available, using fallback response')
       return this.getFallbackResponse(prompt)
     }
 
@@ -119,7 +121,7 @@ Your personality traits: ${agent.config.core.personality?.join(', ') || 'helpful
         content: prompt
       })
 
-      console.log(`🤖 ${agent.name} is thinking using ${chatPortal.name}...`)
+      runtimeLogger.portal(`🤖 ${agent.name} is thinking using ${chatPortal.name}...`)
       
       // Generate response using the portal
       const result = await chatPortal.generateChat(messages, {
@@ -381,6 +383,71 @@ What are your current thoughts? Respond with 2-3 brief thoughts.`
   }
 
   /**
+   * Evaluate a task using the tool model (background processing)
+   * This is the new dual-model architecture entry point
+   */
+  static async evaluateTask(
+    agent: Agent,
+    task: string,
+    context?: string,
+    criteria?: string[]
+  ): Promise<{
+    analysis: string
+    recommendations?: string[]
+    confidence?: number
+    model?: string
+  }> {
+    try {
+      const result = await PortalRouter.evaluateTask(agent, {
+        task,
+        context,
+        criteria,
+        outputFormat: 'structured'
+      })
+
+      runtimeLogger.portal(`🔧 Task evaluated using tool model: ${result.metadata?.model}`)
+      
+      return {
+        analysis: result.analysis,
+        recommendations: result.recommendations,
+        confidence: result.confidence,
+        model: result.metadata?.model
+      }
+    } catch (error) {
+      console.error('❌ Task evaluation failed:', error)
+      return {
+        analysis: 'Unable to evaluate task at this time',
+        confidence: 0
+      }
+    }
+  }
+
+  /**
+   * Intelligent request routing based on type and complexity
+   */
+  static async routeRequest(
+    agent: Agent,
+    request: {
+      type: 'chat' | 'action' | 'evaluation' | 'function_call'
+      message?: string
+      hasTools?: boolean
+      userFacing?: boolean
+    }
+  ): Promise<{
+    portal: Portal | undefined
+    modelType: 'chat' | 'tool'
+    reasoning: string
+  }> {
+    const decision = PortalRouter.getModelType(agent, request)
+    
+    runtimeLogger.portal(
+      `🚦 Routing ${request.type} to ${decision.modelType} model: ${decision.reasoning}`
+    )
+    
+    return decision
+  }
+
+  /**
    * Create a portal selection strategy for common scenarios
    */
   static strategies = {
@@ -411,6 +478,12 @@ What are your current thoughts? Respond with 2-3 brief thoughts.`
       capability: PortalCapability.CHAT_GENERATION,
       priority: 'local',
       requireLocal: true
+    }),
+
+    toolEvaluation: (): PortalSelectionCriteria => ({
+      capability: PortalCapability.EVALUATION,
+      priority: 'speed',
+      context: { complexity: 'simple' }
     })
   }
 }

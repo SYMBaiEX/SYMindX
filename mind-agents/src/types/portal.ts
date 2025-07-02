@@ -56,6 +56,7 @@ export interface Portal {
   generateImage?(prompt: string, options?: ImageGenerationOptions): Promise<ImageGenerationResult>
   streamText?(prompt: string, options?: TextGenerationOptions): AsyncGenerator<string>
   streamChat?(messages: ChatMessage[], options?: ChatGenerationOptions): AsyncGenerator<string>
+  evaluateTask?(options: ToolEvaluationOptions): Promise<ToolEvaluationResult>
   hasCapability(capability: PortalCapability): boolean
   getUsage?(): Promise<PortalUsage>
   healthCheck?(): Promise<boolean>
@@ -290,6 +291,34 @@ export interface ImageGenerationResult {
 }
 
 /**
+ * Options for tool evaluation
+ */
+export interface ToolEvaluationOptions {
+  task: string
+  context?: string
+  criteria?: string[]
+  outputFormat?: 'json' | 'text' | 'structured'
+  timeout?: number
+  model?: string
+}
+
+/**
+ * Result of tool evaluation
+ */
+export interface ToolEvaluationResult {
+  analysis: string
+  score?: number
+  confidence?: number
+  reasoning: string
+  recommendations?: string[]
+  metadata?: {
+    model: string
+    processingTime: number
+    [key: string]: any
+  }
+}
+
+/**
  * Vector store configuration for embedding storage
  */
 export interface VectorStoreConfig {
@@ -312,5 +341,7 @@ export enum PortalCapability {
   STREAMING = 'streaming',
   FUNCTION_CALLING = 'function_calling',
   VISION = 'vision',
-  AUDIO = 'audio'
+  AUDIO = 'audio',
+  TOOL_USAGE = 'tool_usage',
+  EVALUATION = 'evaluation'
 }

@@ -138,7 +138,8 @@ export interface ActionResponse {
 }
 
 export interface WebSocketMessage {
-  type: 'chat' | 'status' | 'action' | 'memory' | 'event' | 'ping'
+  type: 'chat' | 'status' | 'action' | 'memory' | 'event' | 'ping' | 'subscribe' | 'unsubscribe' | 'chat_message' | 'command' | 'get_history'
+  agentId?: string
   data?: any
   timestamp?: string
   id?: string
@@ -207,5 +208,10 @@ export interface MemoryResponse {
 export interface ConnectionInfo {
   id: string
   readyState: number
-  connectedAt: string
+  ip: string
+  userAgent?: string
+  connectedAt: Date
+  lastActivity: Date
+  subscriptions: string[]
+  metadata: Record<string, any>
 }
