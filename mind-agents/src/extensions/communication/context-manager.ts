@@ -5,10 +5,10 @@
  * and provides context-aware responses.
  */
 
-import { Agent, MemoryRecord } from '../types/agent.js'
-import { BaseConfig } from '../types/common.js'
-import { MemoryType, MemoryDuration } from '../types/enums.js'
-import { runtimeLogger } from '../utils/logger.js'
+import { Agent, MemoryRecord } from '../../types/agent.js'
+import { BaseConfig } from '../../types/common.js'
+import { MemoryType, MemoryDuration } from '../../types/memory.js'
+import { runtimeLogger } from '../../utils/logger.js'
 
 /**
  * Conversation context
@@ -164,7 +164,7 @@ export class ContextManager {
     this.contexts.set(contextId, context)
     this.activeContexts.set(agentId, contextId)
     
-    runtimeLogger.context(`Created new context ${contextId} for agent ${agentId}`)
+    runtimeLogger.debug(`Created new context ${contextId} for agent ${agentId}`)
     return context
   }
   
@@ -295,37 +295,14 @@ export class ContextManager {
     if (memory.type !== MemoryType.INTERACTION) return null
     if (!memory.metadata?.contextId) return null
     
-    // Helper function to safely extract string from MetadataValue
-    const getString = (value: any): string => {
-      if (typeof value === 'string') return value
-      if (typeof value === 'number') return value.toString()
-      if (typeof value === 'boolean') return value.toString()
-      if (value instanceof Date) return value.toISOString()
-      return String(value || '')
-    }
-    
-    // Helper function to safely extract string array from MetadataValue
-    const getStringArray = (value: any): string[] => {
-      if (Array.isArray(value)) return value.map(v => getString(v))
-      if (typeof value === 'string') return [value]
-      return []
-    }
-    
-    // Helper function to safely extract Set<string> from MetadataValue
-    const getStringSet = (value: any): Set<string> => {
-      if (Array.isArray(value)) return new Set(value.map(v => getString(v)))
-      if (typeof value === 'string') return new Set([value])
-      return new Set<string>()
-    }
-    
     // Create restored context
     const context: ConversationContext = {
-      id: getString(memory.metadata.contextId),
+      id: memory.metadata.contextId,
       agentId,
       startedAt: memory.timestamp,
       lastActive: new Date(),
-      participants: getStringSet(memory.metadata.participants),
-      topics: getStringArray(memory.metadata.topics).map((topic: string) => ({
+      participants: new Set(memory.metadata.participants || []),
+      topics: (memory.metadata.topics || []).map((topic: string) => ({
         topic,
         mentions: 1,
         firstMentioned: memory.timestamp,
@@ -333,14 +310,14 @@ export class ContextManager {
       })),
       messages: [],
       state: {
-        phase: 'active' as const,
-        mood: (getString(memory.metadata.mood) as 'positive' | 'negative' | 'neutral') || 'neutral',
+        phase: 'active',
+        mood: memory.metadata.mood || 'neutral',
         formality: 0.5,
         engagement: 0.5
       },
       pendingQuestions: [],
-      followUpTopics: getStringArray(memory.metadata.topics),
-      previousContextId: getString(memory.metadata.contextId),
+      followUpTopics: memory.metadata.topics || [],
+      previousContextId: memory.metadata.contextId,
       metadata: {
         restored: true,
         restoredFrom: memory.id
@@ -573,7 +550,7 @@ export class ContextManager {
     
     for (const id of toDelete) {
       this.contexts.delete(id)
-      runtimeLogger.context(`Cleaned up old context: ${id}`)
+      runtimeLogger.debug(`Cleaned up old context: ${id}`)
     }
   }
   

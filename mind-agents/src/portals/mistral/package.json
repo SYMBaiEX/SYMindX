@@ -1,0 +1,23 @@
+{
+  "name": "@symindx/portal-mistral",
+  "version": "1.0.0",
+  "description": "Mistral AI Portal for SYMindX",
+  "type": "module",
+  "main": "index.js",
+  "dependencies": {
+    "@ai-sdk/mistral": "^1.0.8",
+    "ai": "^5.0.8"
+  },
+  "peerDependencies": {
+    "@symindx/types": "workspace:*",
+    "@symindx/utils": "workspace:*"
+  },
+  "keywords": [
+    "ai",
+    "mistral",
+    "symindx",
+    "portal",
+    "llm"
+  ],
+  "license": "MIT"
+}

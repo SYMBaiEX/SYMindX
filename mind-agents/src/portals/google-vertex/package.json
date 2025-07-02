@@ -1,0 +1,25 @@
+{
+  "name": "@symindx/portal-google-vertex",
+  "version": "1.0.0",
+  "description": "Google Vertex AI Portal for SYMindX",
+  "type": "module",
+  "main": "index.js",
+  "dependencies": {
+    "@ai-sdk/google-vertex": "^1.0.8",
+    "ai": "^5.0.8"
+  },
+  "peerDependencies": {
+    "@symindx/types": "workspace:*",
+    "@symindx/utils": "workspace:*"
+  },
+  "keywords": [
+    "ai",
+    "google",
+    "vertex",
+    "symindx",
+    "portal",
+    "llm",
+    "gemini"
+  ],
+  "license": "MIT"
+}

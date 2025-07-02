@@ -5,9 +5,20 @@
  * Integrates with the AI SDK's experimental MCP client for seamless tool usage
  */
 
-import { experimental_createMCPClient } from 'ai'
+import { experimental_createMCPClient } from '@modelcontextprotocol/sdk/client'
 import { z } from 'zod'
 import { runtimeLogger } from '../utils/logger.js'
+
+/**
+ * MCP Client configuration interface
+ */
+export interface MCPClientConfig {
+  name: string
+  version?: string
+  timeout?: number
+  retryAttempts?: number
+  autoReconnect?: boolean
+}
 
 export interface MCPServerConfig {
   name: string

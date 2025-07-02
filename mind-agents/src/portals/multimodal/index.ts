@@ -314,7 +314,7 @@ export const defaultMultimodalConfig: Partial<MultimodalConfig> = {
 }
 
 export class MultimodalPortal extends BasePortal {
-  type = PortalType.CUSTOM
+  type = PortalType.MULTIMODAL
   supportedModels = [
     ModelType.MULTIMODAL,
     ModelType.TEXT_GENERATION,

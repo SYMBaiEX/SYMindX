@@ -187,6 +187,16 @@ export class Logger {
     this.info(`${icon} ${message}`, ...args)
   }
 
+  context(message: string, ...args: any[]): void {
+    const icon = '🗂️'
+    this.info(`${icon} ${message}`, ...args)
+  }
+
+  style(message: string, ...args: any[]): void {
+    const icon = '🎨'
+    this.info(`${icon} ${message}`, ...args)
+  }
+
   // Helper method for clean startup banners
   banner(title: string, subtitle?: string): void {
     const line = '─'.repeat(50)

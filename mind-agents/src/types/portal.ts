@@ -9,15 +9,34 @@ import { Agent } from './agent.js'
 import { BaseConfig, Metadata, ActionParameters } from './common.js'
 
 export enum PortalType {
+  // Core AI Providers
   OPENAI = 'openai',
   ANTHROPIC = 'anthropic',
-  GOOGLE = 'google',
-  GOOGLE_VERTEX = 'google_vertex',
-  VERCEL_AI = 'vercel_ai',
-  AZURE = 'azure',
-  HUGGINGFACE = 'huggingface',
+  GROQ = 'groq',
+  
+  // Google AI Portals
+  GOOGLE_GENERATIVE = 'google-generative',
+  GOOGLE_VERTEX = 'google-vertex',
+  
+  // Enterprise AI Portals
+  AZURE_OPENAI = 'azure-openai',
+  VERCEL_AI = 'vercel-ai',
+  
+  // Router & Aggregator Portals
+  OPENROUTER = 'openrouter',
+  XAI = 'xai',
+  KLUSTER_AI = 'kluster.ai',
+  
+  // Specialized AI Portals
+  MISTRAL = 'mistral',
+  COHERE = 'cohere',
+  MULTIMODAL = 'multimodal',
+  
+  // Local AI Portals
   OLLAMA = 'ollama',
-  LOCAL = 'local',
+  LMSTUDIO = 'lmstudio',
+  
+  // Custom/Extensible
   CUSTOM = 'custom'
 }
 

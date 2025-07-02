@@ -20,7 +20,7 @@ export interface GroqConfig extends PortalConfig {
 }
 
 export class GroqPortal extends BasePortal {
-  type: PortalType = PortalType.CUSTOM;
+  type: PortalType = PortalType.GROQ;
   supportedModels: ModelType[] = [ModelType.TEXT_GENERATION, ModelType.CHAT, ModelType.CODE_GENERATION];
   private provider: any
   

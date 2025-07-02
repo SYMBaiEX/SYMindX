@@ -1,0 +1,24 @@
+{
+  "name": "@symindx/portal-groq",
+  "version": "1.0.0",
+  "description": "Groq Portal for SYMindX",
+  "type": "module",
+  "main": "index.js",
+  "dependencies": {
+    "@ai-sdk/groq": "^1.0.8",
+    "ai": "^5.0.8"
+  },
+  "peerDependencies": {
+    "@symindx/types": "workspace:*",
+    "@symindx/utils": "workspace:*"
+  },
+  "keywords": [
+    "ai",
+    "groq",
+    "symindx",
+    "portal",
+    "llm",
+    "fast-inference"
+  ],
+  "license": "MIT"
+}

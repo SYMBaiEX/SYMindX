@@ -223,7 +223,7 @@ export const lmStudioModels = [
 ]
 
 export class LMStudioPortal extends BasePortal {
-  type = PortalType.CUSTOM
+  type = PortalType.LMSTUDIO
   supportedModels = [
     ModelType.TEXT_GENERATION,
     ModelType.CHAT,

@@ -277,4 +277,4 @@ SYMindX will remain open source:
 
 ---
 
-*This roadmap is a living document, updated quarterly based on community feedback and technological advances. Last updated: January 2024*
+*This roadmap is a living document, updated quarterly based on community feedback and technological advances. Last updated: July 2nd 2025*

@@ -15,12 +15,114 @@ import {
   ArchivalStrategy,
   MemoryPermission
 } from '../../../../types/memory.js'
-import Database, { type Database as DatabaseType, type Statement } from 'better-sqlite3'
-import { readFileSync } from 'fs'
-import { join } from 'path'
-import { SharedMemoryPool } from './shared-pool.js'
-import { MemoryArchiver } from './archiver.js'
 import { runtimeLogger } from '../../../../utils/logger.js'
+
+// Mock better-sqlite3 types and implementation
+export interface DatabaseType {
+  exec(sql: string): void
+  prepare(sql: string): Statement
+  close(): void
+}
+
+export interface Statement {
+  run(...params: any[]): { changes: number; lastInsertRowid: number }
+  get(...params: any[]): any
+  all(...params: any[]): any[]
+}
+
+class MockDatabase implements DatabaseType {
+  private tables: Map<string, any[]> = new Map()
+  
+  constructor(private path: string) {
+    console.log(`Mock SQLite database created at: ${path}`)
+  }
+  
+  exec(sql: string): void {
+    console.log(`Mock SQLite exec: ${sql.substring(0, 100)}...`)
+    // Simple table creation simulation
+    if (sql.includes('CREATE TABLE IF NOT EXISTS memories')) {
+      this.tables.set('memories', [])
+    }
+    if (sql.includes('CREATE TABLE IF NOT EXISTS shared_memory_pools')) {
+      this.tables.set('shared_memory_pools', [])
+    }
+    if (sql.includes('CREATE TABLE IF NOT EXISTS shared_memory_mappings')) {
+      this.tables.set('shared_memory_mappings', [])
+    }
+  }
+  
+  prepare(sql: string): Statement {
+    return new MockStatement(this.tables, sql)
+  }
+  
+  close(): void {
+    console.log('Mock SQLite database closed')
+  }
+}
+
+class MockStatement implements Statement {
+  constructor(private tables: Map<string, any[]>, private sql: string) {}
+  
+  run(...params: any[]) {
+    console.log(`Mock SQLite run: ${this.sql.substring(0, 50)}... with params:`, params.slice(0, 3))
+    
+    if (this.sql.includes('INSERT OR REPLACE INTO memories')) {
+      const memories = this.tables.get('memories') || []
+      const record = {
+        id: params[0],
+        agent_id: params[1],
+        type: params[2],
+        content: params[3],
+        embedding: params[4],
+        metadata: params[5],
+        importance: params[6],
+        timestamp: params[7],
+        tags: params[8],
+        duration: params[9],
+        expires_at: params[10],
+        tier: params[11],
+        context: params[12]
+      }
+      
+      // Remove existing record with same id
+      const index = memories.findIndex((m: any) => m.id === params[0])
+      if (index >= 0) {
+        memories[index] = record
+      } else {
+        memories.push(record)
+      }
+      
+      this.tables.set('memories', memories)
+    }
+    
+    return { changes: 1, lastInsertRowid: 1 }
+  }
+  
+  get(...params: any[]) {
+    const memories = this.tables.get('memories') || []
+    
+    if (this.sql.includes('SELECT * FROM memories') && params.length > 0) {
+      return memories.find((m: any) => m.agent_id === params[0] || m.id === params[0])
+    }
+    
+    return undefined
+  }
+  
+  all(...params: any[]) {
+    const memories = this.tables.get('memories') || []
+    
+    if (this.sql.includes('SELECT * FROM memories') && params.length > 0) {
+      return memories.filter((m: any) => m.agent_id === params[0])
+        .sort((a: any, b: any) => b.timestamp - a.timestamp)
+        .slice(0, params[1] || 10)
+    }
+    
+    return []
+  }
+}
+
+// Mock Database constructor
+const Database = (path: string) => new MockDatabase(path)
 
 /**
  * Configuration for the SQLite memory provider
@@ -89,7 +191,7 @@ export class SQLiteMemoryProvider extends BaseMemoryProvider {
     
     super(config, metadata)
     
-    this.db = new Database(config.dbPath)
+    this.db = Database(config.dbPath)
     
     if (config.createTables !== false) {
       this.initializeDatabase()

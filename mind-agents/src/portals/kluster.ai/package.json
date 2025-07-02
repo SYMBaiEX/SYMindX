@@ -1,0 +1,25 @@
+{
+  "name": "@symindx/portal-klusterai",
+  "version": "1.0.0",
+  "description": "Kluster.ai Portal for SYMindX",
+  "type": "module",
+  "main": "index.js",
+  "dependencies": {
+    "@ai-sdk/openai-compatible": "^0.0.7",
+    "@ai-sdk/provider": "^1.0.2",
+    "@ai-sdk/provider-utils": "^2.0.4",
+    "ai": "^5.0.8"
+  },
+  "peerDependencies": {
+    "@symindx/types": "workspace:*",
+    "@symindx/utils": "workspace:*"
+  },
+  "keywords": [
+    "ai",
+    "kluster",
+    "symindx",
+    "portal",
+    "llm"
+  ],
+  "license": "MIT"
+}

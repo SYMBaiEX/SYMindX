@@ -16,7 +16,7 @@ export interface KlusterAiConfig extends PortalConfig {
 }
 
 export class KlusterAiPortal extends BasePortal {
-  type: PortalType = PortalType.CUSTOM;
+  type: PortalType = PortalType.KLUSTER_AI;
   supportedModels: ModelType[] = [ModelType.TEXT_GENERATION, ModelType.CHAT, ModelType.CODE_GENERATION];
   private baseURL: string
   

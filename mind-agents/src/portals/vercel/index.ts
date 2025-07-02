@@ -7,41 +7,33 @@
 
 import { BasePortal } from '../base-portal.js'
 import { 
-  Portal, PortalConfig, PortalType, PortalStatus, ModelType, PortalCapability,
+  PortalConfig, PortalType, PortalStatus, ModelType, PortalCapability,
   TextGenerationOptions, TextGenerationResult, ChatMessage, ChatGenerationOptions, 
   ChatGenerationResult, EmbeddingOptions, EmbeddingResult, ImageGenerationOptions, 
-  ImageGenerationResult, MessageRole, MessageType, FinishReason
+  ImageGenerationResult
 } from '../../types/portal.js'
 import { Agent } from '../../types/agent.js'
 import { 
   generateText, 
-  generateObject, 
   streamText, 
-  streamObject,
   embed,
-  embedMany,
   experimental_generateImage as generateImage,
-  createProviderRegistry,
-  customProvider,
   tool,
-  convertToCoreMessages,
+  createProviderRegistry,
   type CoreMessage,
-  type TextStreamPart,
   type LanguageModelV1,
-  type EmbeddingModelV2,
-  type ImageModelV2
+  type EmbeddingModel,
+  type ImageModel
 } from 'ai'
-import { openai } from '@ai-sdk/openai'
-import { anthropic } from '@ai-sdk/anthropic'
-import { google } from '@ai-sdk/google'
-import { mistral } from '@ai-sdk/mistral'
-import { groq } from '@ai-sdk/groq'
-import { togetherai } from '@ai-sdk/togetherai'
-import { cohere } from '@ai-sdk/cohere'
-import { perplexity } from '@ai-sdk/perplexity'
-import { fireworks } from '@ai-sdk/fireworks'
-import { deepinfra } from '@ai-sdk/deepinfra'
-import { replicate } from '@ai-sdk/replicate'
+import { createOpenAI } from '@ai-sdk/openai'
+import { createAnthropic } from '@ai-sdk/anthropic'
+import { createGroq } from '@ai-sdk/groq'
+import { createTogetherAI } from '@ai-sdk/togetherai'
+import { createCohere } from '@ai-sdk/cohere'
+import { createPerplexity } from '@ai-sdk/perplexity'
+import { createFireworks } from '@ai-sdk/fireworks'
+import { createDeepInfra } from '@ai-sdk/deepinfra'
+import { createReplicate } from '@ai-sdk/replicate'
 import { z } from 'zod'
 
 export interface VercelAIConfig extends PortalConfig {
@@ -162,70 +154,49 @@ export class VercelAIPortal extends BasePortal {
         
         switch (providerName) {
           case 'openai':
-            provider = openai
-            if (providerConfig?.apiKey) {
-              provider = openai({ apiKey: providerConfig.apiKey })
-            }
+            provider = createOpenAI({
+              apiKey: providerConfig?.apiKey || process.env.OPENAI_API_KEY
+            })
             break
-          case 'anthropic':
-            provider = anthropic
-            if (providerConfig?.apiKey) {
-              provider = anthropic({ apiKey: providerConfig.apiKey })
-            }
-            break
-          case 'google':
-            provider = google
-            if (providerConfig?.apiKey) {
-              provider = google({ apiKey: providerConfig.apiKey })
-            }
-            break
-          case 'mistral':
-            provider = mistral
-            if (providerConfig?.apiKey) {
-              provider = mistral({ apiKey: providerConfig.apiKey })
-            }
+          case 'anthropic': 
+            provider = createAnthropic({
+              apiKey: providerConfig?.apiKey || process.env.ANTHROPIC_API_KEY
+            })
             break
           case 'groq':
-            provider = groq
-            if (providerConfig?.apiKey) {
-              provider = groq({ apiKey: providerConfig.apiKey })
-            }
+            provider = createGroq({
+              apiKey: providerConfig?.apiKey || process.env.GROQ_API_KEY
+            })
             break
           case 'togetherai':
-            provider = togetherai
-            if (providerConfig?.apiKey) {
-              provider = togetherai({ apiKey: providerConfig.apiKey })
-            }
+            provider = createTogetherAI({
+              apiKey: providerConfig?.apiKey || process.env.TOGETHER_AI_API_KEY
+            })
             break
           case 'cohere':
-            provider = cohere
-            if (providerConfig?.apiKey) {
-              provider = cohere({ apiKey: providerConfig.apiKey })
-            }
+            provider = createCohere({
+              apiKey: providerConfig?.apiKey || process.env.COHERE_API_KEY
+            })
             break
           case 'perplexity':
-            provider = perplexity
-            if (providerConfig?.apiKey) {
-              provider = perplexity({ apiKey: providerConfig.apiKey })
-            }
+            provider = createPerplexity({
+              apiKey: providerConfig?.apiKey || process.env.PERPLEXITY_API_KEY
+            })
             break
           case 'fireworks':
-            provider = fireworks
-            if (providerConfig?.apiKey) {
-              provider = fireworks({ apiKey: providerConfig.apiKey })
-            }
+            provider = createFireworks({
+              apiKey: providerConfig?.apiKey || process.env.FIREWORKS_API_KEY
+            })
             break
           case 'deepinfra':
-            provider = deepinfra
-            if (providerConfig?.apiKey) {
-              provider = deepinfra({ apiKey: providerConfig.apiKey })
-            }
+            provider = createDeepInfra({
+              apiKey: providerConfig?.apiKey || process.env.DEEPINFRA_API_KEY
+            })
             break
           case 'replicate':
-            provider = replicate
-            if (providerConfig?.apiKey) {
-              provider = replicate({ auth: providerConfig.apiKey })
-            }
+            provider = createReplicate({
+              apiToken: providerConfig?.apiKey || process.env.REPLICATE_API_TOKEN
+            })
             break
           default:
             console.warn(`Unknown provider: ${providerName}`)
@@ -312,7 +283,7 @@ export class VercelAIPortal extends BasePortal {
     throw new Error(`Model not found: ${modelSpec}`)
   }
 
-  private getEmbeddingModel(modelSpec: string): EmbeddingModelV2<string> {
+  private getEmbeddingModel(modelSpec: string): EmbeddingModel<string> {
     if (modelSpec.includes(':')) {
       const [providerName, modelId] = modelSpec.split(':')
       const provider = this.providers.get(providerName)
@@ -324,7 +295,7 @@ export class VercelAIPortal extends BasePortal {
     throw new Error(`Embedding model not found: ${modelSpec}`)
   }
 
-  private getImageModel(modelSpec: string): ImageModelV2 {
+  private getImageModel(modelSpec: string): ImageModel {
     if (modelSpec.includes(':')) {
       const [providerName, modelId] = modelSpec.split(':')
       const provider = this.providers.get(providerName)
@@ -350,7 +321,7 @@ export class VercelAIPortal extends BasePortal {
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
         presencePenalty: options?.presencePenalty,
-        stop: options?.stop,
+        stopSequences: options?.stop,
         tools: toolsToUse.size > 0 ? Object.fromEntries(toolsToUse) : undefined
       })
       
@@ -385,12 +356,12 @@ export class VercelAIPortal extends BasePortal {
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
         presencePenalty: options?.presencePenalty,
-        stop: options?.stop,
+        stopSequences: options?.stop,
         tools: toolsToUse.size > 0 ? Object.fromEntries(toolsToUse) : undefined
       })
 
       const assistantMessage: ChatMessage = {
-        role: MessageRole.ASSISTANT,
+        role: 'assistant',
         content: text,
         timestamp: new Date()
       }
@@ -442,12 +413,12 @@ export class VercelAIPortal extends BasePortal {
       const { image } = await generateImage({
         model: this.getImageModel(model),
         prompt,
-        size: options?.size,
+        size: options?.size as `${number}x${number}` | undefined,
         n: options?.n || 1
       })
       
       return {
-        images: [image],
+        images: [{ url: image.url || image.b64_json }],
         model,
         usage: {
           promptTokens: prompt.length,
@@ -473,7 +444,7 @@ export class VercelAIPortal extends BasePortal {
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
         presencePenalty: options?.presencePenalty,
-        stop: options?.stop,
+        stopSequences: options?.stop,
         tools: toolsToUse.size > 0 ? Object.fromEntries(toolsToUse) : undefined
       })
       
@@ -500,7 +471,7 @@ export class VercelAIPortal extends BasePortal {
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
         presencePenalty: options?.presencePenalty,
-        stop: options?.stop,
+        stopSequences: options?.stop,
         tools: toolsToUse.size > 0 ? Object.fromEntries(toolsToUse) : undefined
       })
       
@@ -545,7 +516,7 @@ export class VercelAIPortal extends BasePortal {
         const content: any[] = [{ type: 'text', text: msg.content }]
         
         for (const attachment of msg.attachments) {
-          if (attachment.type === MessageType.IMAGE) {
+          if (attachment.type === 'image') {
             if (attachment.data) {
               content.push({
                 type: 'image',
@@ -582,22 +553,22 @@ export class VercelAIPortal extends BasePortal {
     return toolsMap
   }
 
-  private mapFinishReason(reason?: string): FinishReason {
+  private mapFinishReason(reason?: string): 'stop' | 'length' | 'content-filter' | 'tool-calls' | 'error' | 'other' | 'cancelled' {
     switch (reason) {
       case 'stop':
-        return FinishReason.STOP
+        return 'stop'
       case 'length':
-        return FinishReason.LENGTH
+        return 'length'
       case 'tool-calls':
-        return FinishReason.FUNCTION_CALL
+        return 'tool-calls'
       case 'content-filter':
-        return FinishReason.CONTENT_FILTER
+        return 'content-filter'
       case 'error':
-        return FinishReason.ERROR
+        return 'error'
       case 'cancelled':
-        return FinishReason.CANCELLED
+        return 'cancelled'
       default:
-        return FinishReason.STOP
+        return 'stop'
     }
   }
 

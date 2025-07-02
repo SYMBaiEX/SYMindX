@@ -9,7 +9,7 @@ export class ConfidentEmotion extends BaseEmotion {
   getDefinition(): EmotionDefinition {
     return {
       name: 'confident',
-      intensity: 0.7,
+      intensity: 0.8,
       triggers: [
         'success',
         'mastery',
@@ -26,13 +26,18 @@ export class ConfidentEmotion extends BaseEmotion {
         'assured',
         'certain'
       ],
-      color: '#4ECDC4',
-      description: 'Feeling self-assured and capable',
+      color: '#FFD700',
+      description: 'Feeling certain of one\'s ability to succeed',
+      coordinates: {
+        valence: 0.7,     // Positive emotion
+        arousal: 0.6,     // Moderately high arousal
+        dominance: 0.8    // High sense of control
+      },
       modifiers: {
-        creativity: 1.1,
-        energy: 1.1,
-        social: 1.2,
-        focus: 1.2
+        creativity: 0.4,
+        energy: 0.6,
+        social: 0.5,
+        focus: 0.7
       }
     }
   }

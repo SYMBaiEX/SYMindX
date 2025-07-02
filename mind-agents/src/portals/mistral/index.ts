@@ -110,7 +110,7 @@ export const mistralModels = [
 ]
 
 export class MistralPortal extends BasePortal {
-  type = PortalType.CUSTOM
+  type = PortalType.MISTRAL
   supportedModels = [
     ModelType.TEXT_GENERATION,
     ModelType.CHAT,

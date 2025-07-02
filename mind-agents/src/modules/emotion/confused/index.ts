@@ -9,7 +9,7 @@ export class ConfusedEmotion extends BaseEmotion {
   getDefinition(): EmotionDefinition {
     return {
       name: 'confused',
-      intensity: 0.4,
+      intensity: 0.6,
       triggers: [
         'complexity',
         'contradiction',
@@ -24,13 +24,18 @@ export class ConfusedEmotion extends BaseEmotion {
         'mixed_signals',
         'paradox'
       ],
-      color: '#795548',
-      description: 'Feeling uncertain or puzzled',
+      color: '#9370DB',
+      description: 'Feeling uncertain or unable to understand something',
+      coordinates: {
+        valence: -0.3,    // Slightly negative
+        arousal: 0.4,     // Moderate arousal
+        dominance: -0.5   // Low sense of control
+      },
       modifiers: {
-        creativity: 0.9,
-        energy: 0.9,
-        social: 0.8,
-        focus: 0.6
+        creativity: 0.3,
+        energy: -0.2,
+        social: -0.1,
+        focus: -0.4
       }
     }
   }

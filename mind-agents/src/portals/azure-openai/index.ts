@@ -209,7 +209,7 @@ export const azureOpenAIModels = [
 ]
 
 export class AzureOpenAIPortal extends BasePortal {
-  type = PortalType.AZURE
+  type = PortalType.AZURE_OPENAI
   supportedModels = [
     ModelType.TEXT_GENERATION,
     ModelType.CHAT,

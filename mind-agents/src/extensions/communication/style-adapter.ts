@@ -5,9 +5,10 @@
  * context, and learned patterns.
  */
 
-import { BaseConfig } from '../types/common.js'
-import { PersonalityTraits } from '../types/emotion.js'
-import { runtimeLogger } from '../utils/logger.js'
+import { BaseConfig } from '../../types/common.js'
+import { PersonalityTraits } from '../../types/emotion.js'
+import { Agent } from '../../types/agent.js'
+import { runtimeLogger } from '../../utils/logger.js'
 
 /**
  * Communication style parameters
@@ -52,7 +53,7 @@ export interface CommunicationStyle {
 /**
  * Style adaptation configuration
  */
-export interface StyleAdapterConfig {
+export interface StyleAdapterConfig extends BaseConfig {
   // Learning settings
   enableLearning?: boolean          // Learn from interactions
   learningRate?: number            // How fast to adapt
@@ -81,6 +82,7 @@ export class StyleAdapter {
     style: CommunicationStyle
     timestamp: Date
   }>> = new Map()
+  private agent?: Agent
   
   constructor(config: StyleAdapterConfig = {}) {
     this.config = {
@@ -107,6 +109,59 @@ export class StyleAdapter {
       ...this.config.defaultStyle
     }
   }
+
+  /**
+   * Initialize with agent
+   */
+  async initialize(agent: Agent): Promise<void> {
+    this.agent = agent
+    runtimeLogger.debug('🎨 Style Adapter initialized for agent', agent.name)
+  }
+
+  /**
+   * Adapt style based on context and user preferences
+   */
+  async adaptStyle(context: {
+    mood?: string
+    formality?: number
+    participantStyle?: any
+    topics?: string[]
+    conversationPhase?: string
+  }): Promise<any> {
+    const adaptedStyle = { ...this.defaultStyle }
+
+    // Apply context-based adaptations
+    if (context.mood) {
+      adaptedStyle.emotionality = this.adjustForMood(adaptedStyle.emotionality, context.mood)
+    }
+
+    if (context.formality !== undefined) {
+      adaptedStyle.formality = context.formality
+    }
+
+    if (context.conversationPhase === 'greeting') {
+      adaptedStyle.empathy += 0.1
+    }
+
+    return adaptedStyle
+  }
+
+  /**
+   * Apply style to a message
+   */
+  async applyStyle(message: string, styleParams: {
+    mood?: string
+    formality?: number
+    participantStyle?: any
+    topics?: string[]
+    conversationPhase?: string
+  }): Promise<string> {
+    const style = await this.adaptStyle(styleParams)
+    return this.adaptMessage(message, 'default', {
+      emotion: styleParams.mood,
+      phase: styleParams.conversationPhase
+    }, style)
+  }
   
   /**
    * Get or create style for a user
@@ -129,9 +184,10 @@ export class StyleAdapter {
       mood?: string
       topic?: string
       phase?: string
-    }
+    },
+    overrideStyle?: CommunicationStyle
   ): string {
-    const style = this.getStyle(userId)
+    const style = overrideStyle || this.getStyle(userId)
     let adapted = message
     
     // Apply formality adaptations
@@ -208,7 +264,7 @@ export class StyleAdapter {
       this.adjustStyle(userId, currentStyle)
     }
     
-    runtimeLogger.style(`Learned from ${feedback} feedback for user ${userId}`)
+    runtimeLogger.debug(`Learned from ${feedback} feedback for user ${userId}`)
   }
   
   /**
@@ -286,6 +342,20 @@ export class StyleAdapter {
     adapted.emotionality = adapted.emotionality * (0.7 + traits.neuroticism * 0.3)
     
     return adapted
+  }
+
+  /**
+   * Adjust emotionality based on mood
+   */
+  private adjustForMood(baseEmotionality: number, mood: string): number {
+    const moodAdjustments: Record<string, number> = {
+      positive: 0.1,
+      negative: -0.1,
+      neutral: 0
+    }
+
+    const adjustment = moodAdjustments[mood] || 0
+    return Math.max(0, Math.min(1, baseEmotionality + adjustment))
   }
   
   /**

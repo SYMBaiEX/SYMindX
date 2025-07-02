@@ -243,7 +243,7 @@ export const cohereModels = [
 ]
 
 export class CoherePortal extends BasePortal {
-  type = PortalType.CUSTOM
+  type = PortalType.COHERE
   supportedModels = [
     ModelType.TEXT_GENERATION,
     ModelType.CHAT,

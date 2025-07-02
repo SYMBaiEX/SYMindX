@@ -16,7 +16,7 @@ export interface XAIConfig extends PortalConfig {
 }
 
 export class XAIPortal extends BasePortal {
-  type: PortalType = PortalType.CUSTOM;
+  type: PortalType = PortalType.XAI;
   supportedModels: ModelType[] = [ModelType.TEXT_GENERATION, ModelType.CHAT, ModelType.CODE_GENERATION];
   private baseURL: string
   

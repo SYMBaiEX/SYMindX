@@ -1,0 +1,42 @@
+{
+  "name": "@symindx/portal-vercel",
+  "version": "1.0.0",
+  "description": "Vercel AI SDK Portal for SYMindX",
+  "type": "module",
+  "main": "index.js",
+  "dependencies": {
+    "ai": "^5.0.8",
+    "@ai-sdk/openai": "^1.0.13",
+    "@ai-sdk/anthropic": "^1.0.12",
+    "@ai-sdk/groq": "^1.0.8",
+    "@ai-sdk/togetherai": "^1.0.4",
+    "@ai-sdk/cohere": "^1.0.5",
+    "@ai-sdk/perplexity": "^1.0.4",
+    "@ai-sdk/fireworks": "^1.0.4",
+    "@ai-sdk/deepinfra": "^1.0.4",
+    "@ai-sdk/replicate": "^1.0.4",
+    "zod": "^3.23.8"
+  },
+  "peerDependencies": {
+    "@symindx/types": "workspace:*",
+    "@symindx/utils": "workspace:*"
+  },
+  "keywords": [
+    "ai",
+    "vercel",
+    "sdk",
+    "symindx",
+    "portal",
+    "llm",
+    "openai",
+    "anthropic",
+    "groq",
+    "togetherai",
+    "cohere",
+    "perplexity",
+    "fireworks",
+    "deepinfra",
+    "replicate"
+  ],
+  "license": "MIT"
+}
