@@ -71,6 +71,7 @@ export class UnifiedCognition implements CognitionModule {
   public id: string
   public type: string = 'unified'
   private config: UnifiedCognitionConfig
+  private theoryOfMind?: any  // Theory of Mind module (optional)
   
   // Dual-process state
   private system1Cache: Map<string, { response: any, timestamp: number }> = new Map()
@@ -104,6 +105,13 @@ export class UnifiedCognition implements CognitionModule {
       maxActiveGoals: 5,
       goalPersistence: 86400000, // 24 hours
       ...config
+    }
+    
+    // Initialize theory of mind if enabled
+    if (this.config.enableTheoryOfMind) {
+      // Theory of mind would be initialized here if we had the module
+      // For now, we'll leave it undefined
+      // this.theoryOfMind = new TheoryOfMind(this.config.theoryOfMindConfig)
     }
   }
 
@@ -554,8 +562,7 @@ export class UnifiedCognition implements CognitionModule {
       actions: [],
       emotions: emotion,
       memories: [],
-      confidence,
-      metadata: { system: 1, patterns }
+      confidence
     }
     
     // Cache the result
@@ -611,12 +618,7 @@ export class UnifiedCognition implements CognitionModule {
       actions: analysis.actions,
       emotions: analysis.emotions,
       memories: analysis.memories,
-      confidence: analysis.confidence,
-      metadata: { 
-        system: 2, 
-        thinkingTime: Date.now() - startTime,
-        goalCount: this.activeGoals.size
-      }
+      confidence: analysis.confidence
     }
   }
   
@@ -731,10 +733,10 @@ export class UnifiedCognition implements CognitionModule {
     )
     
     for (const q of questions) {
-      if (q.data?.message.includes('or')) {
+      if (q.data?.message && typeof q.data.message === 'string' && q.data.message.includes('or')) {
         alternatives.push('Multiple choice detected')
       }
-      if (q.data?.message.includes('why')) {
+      if (q.data?.message && typeof q.data.message === 'string' && q.data.message.includes('why')) {
         alternatives.push('Causal explanation needed')
       }
     }

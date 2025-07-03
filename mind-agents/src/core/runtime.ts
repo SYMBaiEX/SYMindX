@@ -103,7 +103,7 @@ export class SYMindXRuntime implements AgentRuntime {
       
       // Try to load .env file
       configDotenv({ path: envPath })
-      runtimeLogger.config('🔧 Environment variables loaded from .env file')
+      // Environment variables loaded - logged by UI
     } catch (error) {
       runtimeLogger.warn('⚠️ No .env file found or dotenv not available, using system environment variables')
     }
@@ -121,7 +121,7 @@ export class SYMindXRuntime implements AgentRuntime {
       // Check if the config file exists
       try {
         await fs.access(configPath)
-        runtimeLogger.config(`📄 Loading configuration from ${configPath}`)
+        // Loading configuration - logged by UI
         
         // Read and parse the config file
         const configData = await fs.readFile(configPath, 'utf-8')
@@ -287,7 +287,16 @@ export class SYMindXRuntime implements AgentRuntime {
       
       // Get the characters directory path
       const __dirname = path.dirname(new URL(import.meta.url).pathname)
-      const charactersDir = path.resolve(__dirname, '../characters')
+      // Look for characters in src/characters first, then dist/characters
+      const srcCharactersDir = path.resolve(__dirname, '../../src/characters')
+      const distCharactersDir = path.resolve(__dirname, '../characters')
+      
+      let charactersDir = srcCharactersDir
+      try {
+        await fs.access(srcCharactersDir)
+      } catch {
+        charactersDir = distCharactersDir
+      }
       // Looking for characters - logged by UI
       
       // Check if the characters directory exists
@@ -1661,117 +1670,12 @@ export class SYMindXRuntime implements AgentRuntime {
         console.warn('⚠️ Portal factories not available:', factoryError instanceof Error ? factoryError.message : String(factoryError))
       }
       
-      console.log(`📊 Available portals: ${this.registry.listPortals().join(', ')}`)
-      console.log(`📊 Available portal factories: ${this.registry.listPortalFactories().join(', ')}`)
+      // Portal information displayed by UI
     } catch (error) {
       console.error('❌ Failed to load portals:', error)
     }
   }
 
-  // Lazy agent management methods
-  async activateAgent(agentId: string): Promise<Agent> {
-    runtimeLogger.info(`🔄 Activating agent: ${agentId}`)
-    
-    // Check if agent is already active
-    const existingAgent = this.agents.get(agentId)
-    if (existingAgent) {
-      runtimeLogger.info(`✅ Agent ${agentId} already active`)
-      return existingAgent
-    }
-
-    // Get lazy agent
-    const lazyAgent = this.lazyAgents.get(agentId)
-    if (!lazyAgent) {
-      throw new Error(`Lazy agent '${agentId}' not found`)
-    }
-
-    // Update state to loading
-    lazyAgent.state = LazyAgentState.LOADING
-    
-    try {
-      // Create the actual agent instance
-      const agent = await this.loadAgent(lazyAgent.config, lazyAgent.character_id)
-      
-      // Update lazy agent with actual instance
-      lazyAgent.agent = agent
-      lazyAgent.state = LazyAgentState.ACTIVE
-      lazyAgent.lastActivated = new Date()
-      lazyAgent.lazyMetrics.activationCount++
-      lazyAgent.lazyMetrics.lastActivationTime = new Date()
-      
-      // Store in active agents map
-      this.agents.set(agentId, agent)
-      
-      runtimeLogger.info(`✅ Agent ${agentId} activated successfully`)
-      return agent
-    } catch (error) {
-      lazyAgent.state = LazyAgentState.ERROR
-      lazyAgent.lazyMetrics.lastError = error instanceof Error ? error.message : String(error)
-      runtimeLogger.error(`❌ Failed to activate agent ${agentId}:`, error)
-      throw error
-    }
-  }
-
-  async deactivateAgent(agentId: string): Promise<void> {
-    runtimeLogger.info(`⏸️ Deactivating agent: ${agentId}`)
-    
-    const lazyAgent = this.lazyAgents.get(agentId)
-    if (!lazyAgent) {
-      throw new Error(`Lazy agent '${agentId}' not found`)
-    }
-
-    const agent = this.agents.get(agentId)
-    if (!agent) {
-      runtimeLogger.warn(`⚠️ Agent ${agentId} not active, nothing to deactivate`)
-      return
-    }
-
-    try {
-      lazyAgent.state = LazyAgentState.DEACTIVATING
-
-      // Calculate active time for metrics
-      if (lazyAgent.lastActivated) {
-        const activeTime = Date.now() - lazyAgent.lastActivated.getTime()
-        const currentAverage = lazyAgent.lazyMetrics.averageActiveTime
-        const count = lazyAgent.lazyMetrics.activationCount
-        lazyAgent.lazyMetrics.averageActiveTime = (currentAverage * (count - 1) + activeTime) / count
-      }
-
-      // Shutdown the agent
-      await this.shutdownAgent(agent)
-      
-      // Remove from active agents
-      this.agents.delete(agentId)
-      
-      // Update lazy agent state
-      lazyAgent.agent = undefined
-      lazyAgent.state = LazyAgentState.LOADED
-      
-      runtimeLogger.info(`✅ Agent ${agentId} deactivated successfully`)
-    } catch (error) {
-      lazyAgent.state = LazyAgentState.ERROR
-      lazyAgent.lazyMetrics.lastError = error instanceof Error ? error.message : String(error)
-      runtimeLogger.error(`❌ Failed to deactivate agent ${agentId}:`, error)
-      throw error
-    }
-  }
-
-  isAgentActive(agentId: string): boolean {
-    return this.agents.has(agentId)
-  }
-
-  getAgentState(agentId: string): LazyAgentState | undefined {
-    const lazyAgent = this.lazyAgents.get(agentId)
-    return lazyAgent?.state
-  }
-
-  getLazyAgent(agentId: string): LazyAgent | undefined {
-    return this.lazyAgents.get(agentId)
-  }
-
-  listLazyAgents(): LazyAgent[] {
-    return Array.from(this.lazyAgents.values())
-  }
 
   async preloadAgent(agentId: string): Promise<void> {
     const lazyAgent = this.lazyAgents.get(agentId)
@@ -1865,31 +1769,6 @@ export class SYMindXRuntime implements AgentRuntime {
   }
 
   /**
-   * Create a lazy agent from configuration
-   */
-  private createLazyAgent(agentConfig: AgentConfig, characterConfig: any, characterId?: string): LazyAgent {
-    const agentId = `agent_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-    
-    const lazyAgent: LazyAgent = {
-      id: agentId,
-      character_id: characterId,
-      name: agentConfig.core?.name || characterConfig.name || 'Unknown Agent',
-      state: LazyAgentState.UNLOADED,
-      config: agentConfig,
-      characterConfig: characterConfig,
-      priority: this.calculateAgentPriority(characterConfig),
-      lazyMetrics: {
-        activationCount: 0,
-        averageActiveTime: 0,
-        memoryUsage: 0
-      }
-    }
-
-    runtimeLogger.factory(`🎭 Created lazy agent: ${lazyAgent.name} (${agentId})`)
-    return lazyAgent
-  }
-
-  /**
    * Calculate agent priority based on configuration
    */
   private calculateAgentPriority(characterConfig: any): number {
@@ -1932,7 +1811,135 @@ export class SYMindXRuntime implements AgentRuntime {
     }
     
     this.registry.registerAgentFactory('default', defaultAgentFactory)
-    runtimeLogger.factory('🏭 Registered default agent factory')
+    // Agent factory registered - logged by UI
+  }
+
+  /**
+   * Create a lazy agent from configuration
+   */
+  private createLazyAgent(agentConfig: AgentConfig, characterConfig: any, characterId?: string): LazyAgent {
+    const agentId = characterId || `agent_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    
+    const lazyAgent: LazyAgent = {
+      id: agentId,
+      character_id: characterId,
+      name: characterConfig.name || agentConfig.core?.name || 'Unknown Agent',
+      state: LazyAgentState.UNLOADED,
+      config: agentConfig,
+      characterConfig: characterConfig,
+      lastActivated: undefined,
+      agent: undefined,
+      priority: this.calculateAgentPriority(characterConfig),
+      lazyMetrics: {
+        activationCount: 0,
+        lastActivationTime: undefined,
+        averageActiveTime: 0,
+        memoryUsage: 0,
+        lastError: undefined
+      }
+    }
+    
+    return lazyAgent
+  }
+
+  /**
+   * Activate a lazy agent
+   */
+  async activateAgent(agentId: string): Promise<Agent> {
+    const lazyAgent = this.lazyAgents.get(agentId)
+    if (!lazyAgent) {
+      throw new Error(`Lazy agent ${agentId} not found`)
+    }
+
+    if (lazyAgent.state === LazyAgentState.ACTIVE && lazyAgent.agent) {
+      return lazyAgent.agent // Already active
+    }
+
+    try {
+      lazyAgent.state = LazyAgentState.LOADING
+      
+      // Create the full agent using existing loadAgent method
+      const agent = await this.loadAgent(lazyAgent.config, lazyAgent.characterConfig?.id)
+      
+      // Update lazy agent state
+      lazyAgent.state = LazyAgentState.ACTIVE
+      lazyAgent.lazyMetrics.activationCount++
+      lazyAgent.lazyMetrics.lastActivationTime = new Date()
+      lazyAgent.lastActivated = new Date()
+      lazyAgent.agent = agent
+      
+      // Store in active agents
+      this.agents.set(agentId, agent)
+      
+      runtimeLogger.success(`✅ Activated agent: ${lazyAgent.name}`)
+      return agent
+    } catch (error) {
+      lazyAgent.state = LazyAgentState.ERROR
+      lazyAgent.lazyMetrics.lastError = (error as Error).message
+      runtimeLogger.error(`❌ Failed to activate agent ${agentId}:`, error)
+      throw error
+    }
+  }
+
+  /**
+   * Deactivate an agent and return it to lazy state
+   */
+  async deactivateAgent(agentId: string): Promise<void> {
+    const lazyAgent = this.lazyAgents.get(agentId)
+    const agent = this.agents.get(agentId)
+    
+    if (!lazyAgent || !agent) {
+      return
+    }
+
+    try {
+      lazyAgent.state = LazyAgentState.DEACTIVATING
+      
+      // Shutdown agent resources
+      await this.shutdownAgent(agent)
+      
+      // Remove from active agents
+      this.agents.delete(agentId)
+      
+      // Update lazy agent state
+      lazyAgent.state = LazyAgentState.UNLOADED
+      lazyAgent.agent = undefined
+      
+      runtimeLogger.info(`💤 Deactivated agent: ${lazyAgent.name}`)
+    } catch (error) {
+      lazyAgent.state = LazyAgentState.ERROR
+      lazyAgent.lazyMetrics.lastError = (error as Error).message
+      runtimeLogger.error(`❌ Failed to deactivate agent ${agentId}:`, error)
+    }
+  }
+
+  /**
+   * Check if an agent is currently active
+   */
+  isAgentActive(agentId: string): boolean {
+    return this.agents.has(agentId)
+  }
+
+  /**
+   * Get the state of a lazy agent
+   */
+  getAgentState(agentId: string): LazyAgentState | undefined {
+    const lazyAgent = this.lazyAgents.get(agentId)
+    return lazyAgent?.state
+  }
+
+  /**
+   * Get a lazy agent by ID
+   */
+  getLazyAgent(agentId: string): LazyAgent | undefined {
+    return this.lazyAgents.get(agentId)
+  }
+
+  /**
+   * List all lazy agents
+   */
+  listLazyAgents(): LazyAgent[] {
+    return Array.from(this.lazyAgents.values())
   }
 }
 

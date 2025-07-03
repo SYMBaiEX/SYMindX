@@ -1,3 +1,4 @@
+import { convertUsage } from '../utils.js'
 /**
  * Cohere AI Portal
  * 
@@ -31,7 +32,7 @@ export interface CohereConfig extends PortalConfig {
 export const defaultCohereConfig: Partial<CohereConfig> = {
   model: 'command-r-plus',
   version: '2024-04-15',
-  maxTokens: 4000,
+  maxOutputTokens: 4000,
   temperature: 0.7,
   timeout: 30000,
   baseUrl: 'https://api.cohere.ai/v1',
@@ -100,7 +101,7 @@ export class CoherePortal extends BasePortal {
           baseURL: (this.config as CohereConfig).baseUrl
         }),
         messages: [{ role: 'user', content: 'Hello' }],
-        maxTokens: 10
+        maxOutputTokens: 10
       })
       return true
     } catch (error) {
@@ -131,7 +132,7 @@ export class CoherePortal extends BasePortal {
           baseURL: (this.config as CohereConfig).baseUrl
         }),
         messages: [{ role: 'user', content: prompt }],
-        maxTokens: options?.maxTokens ?? this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -142,11 +143,7 @@ export class CoherePortal extends BasePortal {
       return {
         text,
         model: (this.config as CohereConfig).model || 'command-r-plus',
-        usage: {
-          promptTokens: usage?.promptTokens || 0,
-          completionTokens: usage?.completionTokens || 0,
-          totalTokens: usage?.totalTokens || 0
-        },
+        usage: convertUsage(usage),
         finishReason: this.mapFinishReason(finishReason),
         timestamp: new Date()
       }
@@ -173,7 +170,7 @@ export class CoherePortal extends BasePortal {
           baseURL: (this.config as CohereConfig).baseUrl
         }),
         messages: coreMessages,
-        maxTokens: options?.maxTokens ?? this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -199,11 +196,7 @@ export class CoherePortal extends BasePortal {
         text,
         model: (this.config as CohereConfig).model || 'command-r-plus',
         message,
-        usage: {
-          promptTokens: usage?.promptTokens || 0,
-          completionTokens: usage?.completionTokens || 0,
-          totalTokens: usage?.totalTokens || 0
-        },
+        usage: convertUsage(usage),
         finishReason: this.mapFinishReason(finishReason),
         timestamp: new Date()
       }
@@ -253,7 +246,7 @@ export class CoherePortal extends BasePortal {
           baseURL: (this.config as CohereConfig).baseUrl
         }),
         messages: [{ role: 'user', content: prompt }],
-        maxTokens: options?.maxTokens ?? this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -287,7 +280,7 @@ export class CoherePortal extends BasePortal {
           baseURL: (this.config as CohereConfig).baseUrl
         }),
         messages: coreMessages,
-        maxTokens: options?.maxTokens ?? this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,

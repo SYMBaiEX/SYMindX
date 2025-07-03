@@ -1,3 +1,4 @@
+import { convertUsage } from '../utils.js'
 /**
  * Azure OpenAI Portal
  * 
@@ -124,7 +125,7 @@ export class AzureOpenAIPortal extends BasePortal {
       await aiGenerateText({
         model: this.model,
         messages: [{ role: 'user', content: 'Hello' }],
-        maxTokens: 10
+        maxOutputTokens: 10
       })
       return true
     } catch (error) {
@@ -170,7 +171,7 @@ export class AzureOpenAIPortal extends BasePortal {
       const { text, usage, finishReason } = await aiGenerateText({
         model: this.model,
         messages: [{ role: 'user', content: prompt }],
-        maxTokens: options?.maxTokens ?? this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -181,11 +182,7 @@ export class AzureOpenAIPortal extends BasePortal {
       return {
         text,
         model: (this.config as AzureOpenAIConfig).deploymentName || 'gpt-4',
-        usage: {
-          promptTokens: usage?.promptTokens || 0,
-          completionTokens: usage?.completionTokens || 0,
-          totalTokens: usage?.totalTokens || 0
-        },
+        usage: convertUsage(usage),
         finishReason: this.mapFinishReason(finishReason),
         timestamp: new Date()
       }
@@ -201,7 +198,7 @@ export class AzureOpenAIPortal extends BasePortal {
       const { text, usage, finishReason } = await aiGenerateText({
         model: this.model,
         messages: coreMessages,
-        maxTokens: options?.maxTokens ?? this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -227,11 +224,7 @@ export class AzureOpenAIPortal extends BasePortal {
         text,
         model: (this.config as AzureOpenAIConfig).deploymentName || 'gpt-4',
         message,
-        usage: {
-          promptTokens: usage?.promptTokens || 0,
-          completionTokens: usage?.completionTokens || 0,
-          totalTokens: usage?.totalTokens || 0
-        },
+        usage: convertUsage(usage),
         finishReason: this.mapFinishReason(finishReason),
         timestamp: new Date()
       }
@@ -293,7 +286,7 @@ export class AzureOpenAIPortal extends BasePortal {
       const { textStream } = await aiStreamText({
         model: this.model,
         messages: [{ role: 'user', content: prompt }],
-        maxTokens: options?.maxTokens ?? this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -316,7 +309,7 @@ export class AzureOpenAIPortal extends BasePortal {
       const { textStream } = await aiStreamText({
         model: this.model,
         messages: coreMessages,
-        maxTokens: options?.maxTokens ?? this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,

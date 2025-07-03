@@ -5,8 +5,7 @@
  * with the agent through the Model Context Protocol standard.
  */
 
-import { ExtensionConfig, Extension, ExtensionMetadata } from '../types.js'
-import { Agent } from '../../types/agent.js'
+import { ExtensionConfig, Extension, ExtensionMetadata, Agent } from '../../types/index.js'
 import { runtimeLogger } from '../../utils/logger.js'
 import { MCPServerManager } from './mcp-server-manager.js'
 import { MCPServerConfig, MCPServerTool, MCPServerResource, MCPServerPrompt } from './types.js'
@@ -17,6 +16,13 @@ export interface MCPServerExtensionConfig extends ExtensionConfig {
 }
 
 export class MCPServerExtension implements Extension {
+  public readonly id = 'mcp-server'
+  public readonly name = 'MCP Server Extension'
+  public readonly version = '1.0.0'
+  public readonly type = 'mcp_server'
+  public enabled = true
+  public status = 'stopped'
+  
   public readonly metadata: ExtensionMetadata = {
     name: 'mcp-server',
     version: '1.0.0',
@@ -35,15 +41,17 @@ export class MCPServerExtension implements Extension {
     ]
   }
 
-  private config: MCPServerExtensionConfig
+  public config: MCPServerExtensionConfig
+  public actions: Record<string, any> = {}
+  public events: Record<string, any> = {}
+  
   private mcpServer: MCPServerManager
   private agent?: Agent
 
   constructor(config: MCPServerExtensionConfig) {
     this.config = {
-      enabled: true,
+      ...config,
       server: {
-        enabled: true,
         port: 3001,
         host: 'localhost',
         name: 'symindx-agent',
@@ -60,15 +68,25 @@ export class MCPServerExtension implements Extension {
           cognitiveState: true,
           agentManagement: false,
           extensionControl: false
-        }
-      },
-      ...config
+        },
+        ...config.server
+      }
     }
 
     this.mcpServer = new MCPServerManager(this.config.server)
     runtimeLogger.info('🎯 MCP Server Extension initialized')
   }
 
+  async init(agent: Agent): Promise<void> {
+    // Initialize with agent
+    this.status = 'initializing'
+    await this.initialize(agent)
+  }
+  
+  async tick(agent: Agent): Promise<void> {
+    // Periodic tick - could be used for health checks
+  }
+  
   async initialize(agent: Agent): Promise<void> {
     if (!this.config.enabled || !this.config.server.enabled) {
       runtimeLogger.info('⏸️ MCP Server Extension is disabled')

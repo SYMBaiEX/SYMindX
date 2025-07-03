@@ -1,3 +1,4 @@
+import { convertUsage } from './utils.js'
 /**
  * Portals Index
  * 
@@ -229,7 +230,7 @@ export class PortalRegistry {
         return defaultLMStudioConfig
       default:
         return {
-          maxTokens: 1000,
+          maxOutputTokens: 1000,
           temperature: 0.7,
           timeout: 30000
         }

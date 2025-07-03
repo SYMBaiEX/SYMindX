@@ -42,7 +42,6 @@ export class MCPServerManager extends EventEmitter {
     super()
     
     this.config = {
-      enabled: true,
       port: 3001,
       host: 'localhost',
       name: 'symindx-agent',

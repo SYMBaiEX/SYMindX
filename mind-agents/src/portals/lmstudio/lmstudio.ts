@@ -1,3 +1,4 @@
+import { convertUsage } from '../utils.js'
 /**
  * LM Studio Local AI Portal
  * 
@@ -179,7 +180,7 @@ export const defaultLMStudioConfig: Partial<LMStudioConfig> = {
   baseUrl: 'http://localhost:1234',
   apiVersion: 'v1',
   model: 'lmstudio-community/Meta-Llama-3.1-8B-Instruct-GGUF',
-  maxTokens: 4096,
+  maxOutputTokens: 4096,
   temperature: 0.7,
   timeout: 120000,
   enableGPU: true,

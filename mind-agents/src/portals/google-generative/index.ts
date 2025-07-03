@@ -1,3 +1,4 @@
+import { convertUsage } from '../utils.js'
 /**
  * Google Generative AI Portal
  * 
@@ -49,7 +50,7 @@ export interface GenerationConfig {
 
 export const defaultGenerativeConfig: Partial<GoogleGenerativeConfig> = {
   model: 'gemini-2.0-flash-exp',
-  maxTokens: 8192,
+  maxOutputTokens: 8192,
   temperature: 0.7,
   timeout: 60000,
   apiVersion: 'v1',
@@ -128,7 +129,7 @@ export class GoogleGenerativePortal extends BasePortal {
       const { text } = await generateText({
         model,
         prompt: 'Hello',
-        maxTokens: 10
+        maxOutputTokens: 10
       })
       return !!text
     } catch (error) {
@@ -152,7 +153,7 @@ export class GoogleGenerativePortal extends BasePortal {
       const { text, usage, finishReason } = await generateText({
         model: this.getLanguageModel(model),
         prompt,
-        maxTokens: options?.maxTokens ?? config.generationConfig?.maxOutputTokens ?? this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens ?? config.generationConfig?.maxOutputTokens ?? this.config.maxTokens,
         temperature: options?.temperature ?? config.generationConfig?.temperature ?? this.config.temperature,
         topP: options?.topP ?? config.generationConfig?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -163,11 +164,7 @@ export class GoogleGenerativePortal extends BasePortal {
       return {
         text,
         model,
-        usage: usage ? {
-          promptTokens: usage.promptTokens,
-          completionTokens: usage.completionTokens,
-          totalTokens: usage.totalTokens
-        } : undefined,
+        usage: convertUsage(usage),
         finishReason: this.mapFinishReason(finishReason),
         timestamp: new Date()
       }
@@ -186,7 +183,7 @@ export class GoogleGenerativePortal extends BasePortal {
       const { text, usage, finishReason } = await generateText({
         model: this.getLanguageModel(model),
         messages: coreMessages,
-        maxTokens: options?.maxTokens ?? config.generationConfig?.maxOutputTokens ?? this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens ?? config.generationConfig?.maxOutputTokens ?? this.config.maxTokens,
         temperature: options?.temperature ?? config.generationConfig?.temperature ?? this.config.temperature,
         topP: options?.topP ?? config.generationConfig?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -204,11 +201,7 @@ export class GoogleGenerativePortal extends BasePortal {
         text,
         model,
         message: assistantMessage,
-        usage: usage ? {
-          promptTokens: usage.promptTokens,
-          completionTokens: usage.completionTokens,
-          totalTokens: usage.totalTokens
-        } : undefined,
+        usage: convertUsage(usage),
         finishReason: this.mapFinishReason(finishReason),
         timestamp: new Date()
       }
@@ -245,7 +238,7 @@ export class GoogleGenerativePortal extends BasePortal {
       const { textStream } = streamText({
         model: this.getLanguageModel(model),
         prompt,
-        maxTokens: options?.maxTokens ?? config.generationConfig?.maxOutputTokens ?? this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens ?? config.generationConfig?.maxOutputTokens ?? this.config.maxTokens,
         temperature: options?.temperature ?? config.generationConfig?.temperature ?? this.config.temperature,
         topP: options?.topP ?? config.generationConfig?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -271,7 +264,7 @@ export class GoogleGenerativePortal extends BasePortal {
       const { textStream } = streamText({
         model: this.getLanguageModel(model),
         messages: coreMessages,
-        maxTokens: options?.maxTokens ?? config.generationConfig?.maxOutputTokens ?? this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens ?? config.generationConfig?.maxOutputTokens ?? this.config.maxTokens,
         temperature: options?.temperature ?? config.generationConfig?.temperature ?? this.config.temperature,
         topP: options?.topP ?? config.generationConfig?.topP,
         frequencyPenalty: options?.frequencyPenalty,

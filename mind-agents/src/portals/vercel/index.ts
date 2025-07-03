@@ -1,3 +1,4 @@
+import { convertUsage } from '../utils.js'
 /**
  * Vercel AI SDK Portal
  * 
@@ -21,7 +22,7 @@ import {
   tool,
   createProviderRegistry,
   type CoreMessage,
-  type LanguageModelV1,
+  type LanguageModel,
   type EmbeddingModel,
   type ImageModel
 } from 'ai'
@@ -233,7 +234,7 @@ export class VercelAIPortal extends BasePortal {
       const { text } = await generateText({
         model: this.getLanguageModel(model),
         prompt: 'Hello',
-        maxTokens: 10
+        maxOutputTokens: 10
       })
       return !!text
     } catch (error) {
@@ -242,7 +243,7 @@ export class VercelAIPortal extends BasePortal {
     }
   }
 
-  private getLanguageModel(modelSpec: string): LanguageModelV1 {
+  private getLanguageModel(modelSpec: string): LanguageModel {
     if (modelSpec.includes(':')) {
       const [providerName, modelId] = modelSpec.split(':')
       const provider = this.providers.get(providerName)
@@ -292,7 +293,7 @@ export class VercelAIPortal extends BasePortal {
       const { text, usage, finishReason } = await generateText({
         model: this.getLanguageModel(model),
         prompt,
-        maxTokens: options?.maxTokens || this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -304,11 +305,7 @@ export class VercelAIPortal extends BasePortal {
       return {
         text,
         model,
-        usage: usage ? {
-          promptTokens: usage.promptTokens,
-          completionTokens: usage.completionTokens,
-          totalTokens: usage.totalTokens
-        } : undefined,
+        usage: convertUsage(usage),
         finishReason: this.mapFinishReason(finishReason),
         timestamp: new Date()
       }
@@ -327,7 +324,7 @@ export class VercelAIPortal extends BasePortal {
       const { text, usage, finishReason } = await generateText({
         model: this.getLanguageModel(model),
         messages: coreMessages,
-        maxTokens: options?.maxTokens || this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -346,11 +343,7 @@ export class VercelAIPortal extends BasePortal {
         text,
         model,
         message: assistantMessage,
-        usage: usage ? {
-          promptTokens: usage.promptTokens,
-          completionTokens: usage.completionTokens,
-          totalTokens: usage.totalTokens
-        } : undefined,
+        usage: convertUsage(usage),
         finishReason: this.mapFinishReason(finishReason),
         timestamp: new Date()
       }
@@ -415,7 +408,7 @@ export class VercelAIPortal extends BasePortal {
       const { textStream } = await streamText({
         model: this.getLanguageModel(model),
         prompt,
-        maxTokens: options?.maxTokens || this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -442,7 +435,7 @@ export class VercelAIPortal extends BasePortal {
       const { textStream } = await streamText({
         model: this.getLanguageModel(model),
         messages: coreMessages,
-        maxTokens: options?.maxTokens || this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,

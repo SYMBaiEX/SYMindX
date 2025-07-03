@@ -117,6 +117,20 @@ export interface ExtensionConfig {
   capabilities?: string[]
 }
 
+export interface ExtensionMetadata {
+  name: string
+  version: string
+  description?: string
+  author?: string
+  repository?: string
+  license?: string
+  tags?: string[]
+  category?: string
+  compatibility?: string[]
+  dependencies?: string[]
+  capabilities?: string[]
+}
+
 // Portal Configuration Types
 export interface PortalSettings {
   apiKey?: string

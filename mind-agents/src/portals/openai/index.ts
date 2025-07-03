@@ -1,3 +1,4 @@
+import { convertUsage } from '../utils.js'
 /**
  * OpenAI Portal Implementation
  * 
@@ -6,7 +7,7 @@
  */
 
 import { openai } from '@ai-sdk/openai'
-import { generateText, streamText, embed, embedMany, generateObject, type CoreMessage, type LanguageModelV1 } from 'ai'
+import { generateText, streamText, embed, embedMany, generateObject, type CoreMessage, type LanguageModel } from 'ai'
 import { z } from 'zod'
 import { BasePortal } from '../base-portal.js'
 import { PortalConfig, TextGenerationOptions, TextGenerationResult, 
@@ -38,7 +39,7 @@ export class OpenAIPortal extends BasePortal {
   /**
    * Get language model instance
    */
-  private getLanguageModel(modelId?: string): LanguageModelV1 {
+  private getLanguageModel(modelId?: string): LanguageModel {
     const model = modelId || (this.config as OpenAIConfig).model || 'gpt-4o-mini'
     const config = this.config as OpenAIConfig
     return this.openaiProvider(model, {
@@ -96,7 +97,7 @@ export class OpenAIPortal extends BasePortal {
       const result = await generateText({
         model: this.getLanguageModel(model),
         prompt,
-        maxTokens: options?.maxTokens || this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -105,11 +106,7 @@ export class OpenAIPortal extends BasePortal {
 
       return {
         text: result.text,
-        usage: {
-          promptTokens: result.usage?.promptTokens || 0,
-          completionTokens: result.usage?.completionTokens || 0,
-          totalTokens: result.usage?.totalTokens || 0
-        },
+        usage: convertUsage(result.usage),
         metadata: {
           model,
           provider: 'openai'
@@ -145,7 +142,7 @@ export class OpenAIPortal extends BasePortal {
       const result = await generateText({
         model: this.getLanguageModel(model),
         messages: coreMessages,
-        maxTokens: options?.maxTokens || this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -167,11 +164,7 @@ export class OpenAIPortal extends BasePortal {
           role: MessageRole.ASSISTANT,
           content: result.text
         },
-        usage: {
-          promptTokens: result.usage?.promptTokens || 0,
-          completionTokens: result.usage?.completionTokens || 0,
-          totalTokens: result.usage?.totalTokens || 0
-        },
+        usage: convertUsage(result.usage),
         finishReason: this.mapFinishReason(result.finishReason),
         metadata: {
           model,
@@ -270,7 +263,7 @@ export class OpenAIPortal extends BasePortal {
       const { textStream } = await streamText({
         model: this.getLanguageModel(model),
         prompt,
-        maxTokens: options?.maxTokens || this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -307,7 +300,7 @@ export class OpenAIPortal extends BasePortal {
       const { textStream } = await streamText({
         model: this.getLanguageModel(model),
         messages: coreMessages,
-        maxTokens: options?.maxTokens || this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,

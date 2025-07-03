@@ -115,6 +115,16 @@ class AwesomeSYMindXCLI {
         await this.startInteractiveMode()
       })
 
+    // Ink CLI mode - modern React-based CLI interface
+    this.program
+      .command('dashboard')
+      .alias('ink')
+      .description('📊 Start modern React-based CLI dashboard')
+      .option('--view <view>', 'Initial view (dashboard, agents, status)', 'dashboard')
+      .action(async (options) => {
+        await this.startInkCLI(options.view)
+      })
+
     // Chat command
     this.program
       .command('chat [message]')
@@ -197,8 +207,8 @@ class AwesomeSYMindXCLI {
 
   async run(argv: string[]): Promise<void> {
     try {
-      // Show banner on startup
-      if (argv.length <= 2 || argv.includes('--matrix')) {
+      // Show banner on startup for non-ink commands
+      if (argv.length <= 2 || (argv.includes('--matrix') && !argv.includes('dashboard') && !argv.includes('ink'))) {
         await displayBanner()
         
         if (argv.includes('--matrix')) {
@@ -232,6 +242,7 @@ class AwesomeSYMindXCLI {
             { name: chalk.magenta('🤖 Manage Agents'), value: 'agents' },
             { name: chalk.blue('📊 System Status'), value: 'status' },
             { name: chalk.green('🎯 Live Dashboard'), value: 'dashboard' },
+            { name: chalk.rgb(255, 165, 0)('⚡ Modern Dashboard (React UI)'), value: 'ink' },
             { name: chalk.yellow('🎨 Cool Animations'), value: 'animations' },
             new inquirer.Separator(chalk.gray('─────────────────────')),
             { name: chalk.red('❌ Exit'), value: 'exit' }
@@ -253,6 +264,9 @@ class AwesomeSYMindXCLI {
           break
         case 'dashboard':
           await this.showDashboard()
+          break
+        case 'ink':
+          await this.startInkCLI('dashboard')
           break
         case 'animations':
           await this.animationsMenu()
@@ -946,6 +960,44 @@ class AwesomeSYMindXCLI {
         message: chalk.gray('Press Enter to continue...')
       }
     ])
+  }
+
+  /**
+   * Start the modern React-based Ink CLI interface
+   */
+  private async startInkCLI(initialView: string = 'dashboard'): Promise<void> {
+    try {
+      // Import React and Ink components dynamically
+      const React = await import('react')
+      const { render } = await import('ink')
+      const { MainLayout } = await import('./layouts/index.js')
+      
+      // Clear the console and start the Ink app
+      console.clear()
+      
+      // Render the Ink CLI app
+      const app = render(React.createElement(MainLayout, { 
+        command: initialView, 
+        args: [] 
+      }))
+      
+      // Handle graceful shutdown
+      const cleanup = () => {
+        app.unmount()
+        process.exit(0)
+      }
+      
+      process.on('SIGINT', cleanup)
+      process.on('SIGTERM', cleanup)
+      
+      // Wait for the app to exit
+      await app.waitUntilExit()
+      
+    } catch (error) {
+      console.error(chalk.red('❌ Failed to start Ink CLI:'), error)
+      console.error(chalk.yellow('💡 Falling back to interactive mode...'))
+      await this.startInteractiveMode()
+    }
   }
 }
 

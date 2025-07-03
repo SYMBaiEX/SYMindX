@@ -1,3 +1,4 @@
+import { convertUsage } from './utils.js'
 /**
  * Portal Integration
  * 
@@ -145,14 +146,14 @@ export function getRecommendedModelConfig(
       return {
         model: (config as any).chatModel || config.defaultModel,
         temperature: 0.7,
-        maxTokens: 2000
+        maxOutputTokens: 2000
       }
     
     case 'tool':
       return {
         model: (config as any).toolModel || config.defaultModel,
         temperature: 0.3,  // Lower temperature for more deterministic tool use
-        maxTokens: 1000    // Usually tools need less tokens
+        maxOutputTokens: 1000    // Usually tools need less tokens
       }
     
     case 'embedding':
@@ -169,7 +170,7 @@ export function getRecommendedModelConfig(
       return {
         model: config.defaultModel,
         temperature: config.temperature,
-        maxTokens: config.maxTokens
+        maxOutputTokens: config.maxTokens
       }
   }
 }

@@ -5,9 +5,8 @@
  * and provides context-aware responses.
  */
 
-import { Agent, MemoryRecord } from '../../types/agent.js'
-import { BaseConfig } from '../../types/common.js'
-import { MemoryTierType, MemoryDuration } from '../../types/memory.js'
+import { Agent, MemoryRecord, MemoryType, MemoryDuration } from '../../types/agent.js'
+import { BaseConfig, Metadata, MetadataValue } from '../../types/common.js'
 import { runtimeLogger } from '../../utils/logger.js'
 
 /**
@@ -266,7 +265,7 @@ export class ContextManager {
     const memory: MemoryRecord = {
       id: `mem_ctx_${Date.now()}`,
       agentId: agent.id,
-      type: MemoryTierType.INTERACTION,
+      type: MemoryType.INTERACTION,
       content: this.summarizeContext(context),
       metadata: {
         contextId,
@@ -292,17 +291,17 @@ export class ContextManager {
     agentId: string,
     memory: MemoryRecord
   ): ConversationContext | null {
-    if (memory.type !== MemoryTierType.INTERACTION) return null
+    if (memory.type !== MemoryType.INTERACTION) return null
     if (!memory.metadata?.contextId) return null
     
     // Create restored context
     const context: ConversationContext = {
-      id: memory.metadata.contextId,
+      id: memory.metadata.contextId as string,
       agentId,
       startedAt: memory.timestamp,
       lastActive: new Date(),
-      participants: new Set(memory.metadata.participants || []),
-      topics: (memory.metadata.topics || []).map((topic: string) => ({
+      participants: new Set((memory.metadata.participants as string[]) || []),
+      topics: ((memory.metadata.topics as string[]) || []).map((topic: string) => ({
         topic,
         mentions: 1,
         firstMentioned: memory.timestamp,
@@ -311,13 +310,13 @@ export class ContextManager {
       messages: [],
       state: {
         phase: 'active',
-        mood: memory.metadata.mood || 'neutral',
+        mood: (memory.metadata.mood as 'positive' | 'negative' | 'neutral') || 'neutral',
         formality: 0.5,
         engagement: 0.5
       },
       pendingQuestions: [],
-      followUpTopics: memory.metadata.topics || [],
-      previousContextId: memory.metadata.contextId,
+      followUpTopics: (memory.metadata.topics as string[]) || [],
+      previousContextId: memory.metadata.contextId as string,
       metadata: {
         restored: true,
         restoredFrom: memory.id

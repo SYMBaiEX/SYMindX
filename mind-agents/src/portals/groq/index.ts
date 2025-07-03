@@ -1,3 +1,4 @@
+import { convertUsage } from '../utils.js'
 /**
  * Groq Portal Implementation
  * 
@@ -57,7 +58,7 @@ export class GroqPortal extends BasePortal {
           baseURL: (this.config as GroqConfig).baseURL
         }),
         prompt,
-        maxTokens: options?.maxTokens || this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -66,11 +67,7 @@ export class GroqPortal extends BasePortal {
 
       return {
         text: result.text,
-        usage: {
-          promptTokens: result.usage?.promptTokens || 0,
-          completionTokens: result.usage?.completionTokens || 0,
-          totalTokens: result.usage?.totalTokens || 0
-        },
+        usage: convertUsage(result.usage),
         finishReason: (result.finishReason as FinishReason) || FinishReason.STOP,
         metadata: {
           model,
@@ -102,7 +99,7 @@ export class GroqPortal extends BasePortal {
           baseURL: (this.config as GroqConfig).baseURL
         }),
         messages: coreMessages,
-        maxTokens: options?.maxTokens || this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -124,11 +121,7 @@ export class GroqPortal extends BasePortal {
           content: result.text
         },
         text: result.text,
-        usage: {
-          promptTokens: result.usage?.promptTokens || 0,
-          completionTokens: result.usage?.completionTokens || 0,
-          totalTokens: result.usage?.totalTokens || 0
-        },
+        usage: convertUsage(result.usage),
         finishReason: (result.finishReason as FinishReason) || FinishReason.STOP,
         metadata: {
           model,
@@ -175,7 +168,7 @@ export class GroqPortal extends BasePortal {
           baseURL: (this.config as GroqConfig).baseURL
         }),
         prompt: evaluationPrompt,
-        maxTokens: options.timeout ? Math.min(4000, options.timeout / 10) : 2000,
+        maxOutputTokens: options.timeout ? Math.min(4000, options.timeout / 10) : 2000,
         temperature: 0.1, // Lower temperature for more consistent evaluations
         topP: 0.9
       })
@@ -194,11 +187,7 @@ export class GroqPortal extends BasePortal {
         metadata: {
           model: toolModel,
           processingTime,
-          tokenUsage: {
-            promptTokens: result.usage?.promptTokens || 0,
-            completionTokens: result.usage?.completionTokens || 0,
-            totalTokens: result.usage?.totalTokens || 0
-          },
+          tokenUsage: convertUsage(result.usage),
           evaluationCriteria: options.criteria,
           outputFormat: options.outputFormat
         }
@@ -305,7 +294,7 @@ export class GroqPortal extends BasePortal {
           baseURL: (this.config as GroqConfig).baseURL
         }),
         prompt,
-        maxTokens: options?.maxTokens || this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature
       })
 
@@ -337,7 +326,7 @@ export class GroqPortal extends BasePortal {
           baseURL: (this.config as GroqConfig).baseURL
         }),
         messages: coreMessages,
-        maxTokens: options?.maxTokens || this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -385,7 +374,7 @@ export function createGroqPortal(config: GroqConfig): GroqPortal {
 export const defaultGroqConfig: Partial<GroqConfig> = {
   model: 'meta-llama/llama-4-scout-17b-16e-instruct',
   toolModel: 'llama-3.1-8b-instant',
-  maxTokens: 1000,
+  maxOutputTokens: 1000,
   temperature: 0.7,
   timeout: 30000
 }

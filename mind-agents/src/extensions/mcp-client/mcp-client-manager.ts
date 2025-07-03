@@ -41,7 +41,7 @@ export class MCPClientManager {
     runtimeLogger.info('🔧 Initializing MCP Client Manager')
     
     // Start health check timer if configured
-    if (this.config.healthCheckInterval > 0) {
+    if (this.config.healthCheckInterval && this.config.healthCheckInterval > 0) {
       this.startHealthCheck()
     }
   }
@@ -57,7 +57,9 @@ export class MCPClientManager {
     try {
       const client = experimental_createMCPClient({
         name: config.name,
-        version: '1.0.0'
+        command: config.command,
+        args: config.args,
+        env: config.env
       })
 
       const connection: MCPServerConnection = {
@@ -638,7 +640,9 @@ export class MCPClientManager {
         if (jsonSchema.minLength) stringSchema = stringSchema.min(jsonSchema.minLength)
         if (jsonSchema.maxLength) stringSchema = stringSchema.max(jsonSchema.maxLength)
         if (jsonSchema.pattern) stringSchema = stringSchema.regex(new RegExp(jsonSchema.pattern))
-        if (jsonSchema.enum) stringSchema = z.enum(jsonSchema.enum)
+        if (jsonSchema.enum && Array.isArray(jsonSchema.enum) && jsonSchema.enum.length > 0) {
+          return z.enum(jsonSchema.enum as [string, ...string[]])
+        }
         return stringSchema
       
       case 'number':

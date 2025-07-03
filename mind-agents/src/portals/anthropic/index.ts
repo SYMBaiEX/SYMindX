@@ -1,3 +1,4 @@
+import { convertUsage } from '../utils.js'
 /**
  * Anthropic Portal Implementation
  * 
@@ -6,7 +7,7 @@
  */
 
 import { anthropic } from '@ai-sdk/anthropic'
-import { generateText, streamText, type CoreMessage, type LanguageModelV1 } from 'ai'
+import { generateText, streamText, type CoreMessage, type LanguageModel } from 'ai'
 import { BasePortal } from '../base-portal.js'
 import { PortalConfig, TextGenerationOptions, TextGenerationResult, 
   ChatMessage, ChatGenerationOptions, ChatGenerationResult, EmbeddingOptions, EmbeddingResult,
@@ -25,19 +26,19 @@ export class AnthropicPortal extends BasePortal {
   constructor(config: AnthropicConfig) {
     super('anthropic', 'Anthropic', '1.0.0', config)
     
-    // Create provider with API key
-    this.anthropicProvider = anthropic({
-      apiKey: config.apiKey || process.env.ANTHROPIC_API_KEY,
-      baseURL: config.baseURL
-    })
+    // Store the anthropic function
+    this.anthropicProvider = anthropic
   }
 
   /**
    * Get language model instance
    */
-  private getLanguageModel(modelId?: string): LanguageModelV1 {
+  private getLanguageModel(modelId?: string): LanguageModel {
     const model = modelId || (this.config as AnthropicConfig).model || 'claude-4-sonnet'
-    return this.anthropicProvider(model)
+    return this.anthropicProvider(model, {
+      apiKey: (this.config as AnthropicConfig).apiKey || process.env.ANTHROPIC_API_KEY,
+      baseURL: (this.config as AnthropicConfig).baseURL
+    })
   }
 
   /**
@@ -50,18 +51,14 @@ export class AnthropicPortal extends BasePortal {
       const result = await generateText({
         model: this.getLanguageModel(model),
         prompt,
-        maxTokens: options?.maxTokens || this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP
       })
 
       return {
         text: result.text,
-        usage: result.usage ? {
-          promptTokens: result.usage.promptTokens,
-          completionTokens: result.usage.completionTokens,
-          totalTokens: result.usage.totalTokens
-        } : undefined,
+        usage: convertUsage(result.usage),
         finishReason: this.mapFinishReason(result.finishReason),
         metadata: {
           model,
@@ -85,7 +82,7 @@ export class AnthropicPortal extends BasePortal {
       const result = await generateText({
         model: this.getLanguageModel(model),
         messages: coreMessages,
-        maxTokens: options?.maxTokens || this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         tools: options?.functions ? Object.fromEntries(
@@ -93,7 +90,7 @@ export class AnthropicPortal extends BasePortal {
             fn.name,
             {
               description: fn.description,
-              parameters: fn.parameters
+              parameters: fn.parameters as any
             }
           ])
         ) : undefined
@@ -109,11 +106,7 @@ export class AnthropicPortal extends BasePortal {
         message: assistantMessage,
         text: result.text,
         model,
-        usage: result.usage ? {
-          promptTokens: result.usage.promptTokens,
-          completionTokens: result.usage.completionTokens,
-          totalTokens: result.usage.totalTokens
-        } : undefined,
+        usage: convertUsage(result.usage),
         finishReason: this.mapFinishReason(result.finishReason),
         timestamp: new Date(),
         metadata: {
@@ -153,7 +146,7 @@ export class AnthropicPortal extends BasePortal {
       const result = await streamText({
         model: this.getLanguageModel(model),
         prompt,
-        maxTokens: options?.maxTokens || this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP
       })
@@ -178,7 +171,7 @@ export class AnthropicPortal extends BasePortal {
       const result = await streamText({
         model: this.getLanguageModel(model),
         messages: coreMessages,
-        maxTokens: options?.maxTokens || this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         tools: options?.functions ? Object.fromEntries(
@@ -186,7 +179,7 @@ export class AnthropicPortal extends BasePortal {
             fn.name,
             {
               description: fn.description,
-              parameters: fn.parameters
+              parameters: fn.parameters as any
             }
           ])
         ) : undefined

@@ -1,4 +1,4 @@
-import { EmotionState, EmotionRecord } from '../../types/agent.js'
+import { EmotionState, EmotionRecord, EmotionModuleType } from '../../types/agent.js'
 import { EmotionModule, PersonalityTraits, EmotionBlend, AdvancedEmotionConfig } from '../../types/emotion.js'
 import { BaseEmotion } from './base-emotion.js'
 
@@ -30,30 +30,30 @@ export class CompositeEmotionModule implements EmotionModule {
   private _blendSmoothing: number = 0.3
   private _contextSensitivity: number = 0.5
 
-  constructor(config: AdvancedEmotionConfig = {}) {
+  constructor(config: AdvancedEmotionConfig = {
+    type: EmotionModuleType.COMPOSITE,
+    sensitivity: 0.5,
+    decayRate: 0.1,
+    transitionSpeed: 0.3
+  }) {
     this.config = config
     this._personalityTraits = config.personalityTraits
     this._enableBlending = config.enableBlending ?? false
     this._blendSmoothing = config.blendSmoothing ?? 0.3
     this._contextSensitivity = config.contextSensitivity ?? 0.5
     
-    // Initialize all emotion modules with personality traits
-    const emotionConfig = {
-      ...config,
-      personalityTraits: this._personalityTraits
-    }
-    
-    this.emotions.set('happy', new HappyEmotion(emotionConfig))
-    this.emotions.set('sad', new SadEmotion(emotionConfig))
-    this.emotions.set('angry', new AngryEmotion(emotionConfig))
-    this.emotions.set('anxious', new AnxiousEmotion(emotionConfig))
-    this.emotions.set('confident', new ConfidentEmotion(emotionConfig))
-    this.emotions.set('nostalgic', new NostalgicEmotion(emotionConfig))
-    this.emotions.set('empathetic', new EmpatheticEmotion(emotionConfig))
-    this.emotions.set('curious', new CuriousEmotion(emotionConfig))
-    this.emotions.set('proud', new ProudEmotion(emotionConfig))
-    this.emotions.set('confused', new ConfusedEmotion(emotionConfig))
-    this.emotions.set('neutral', new NeutralEmotion(emotionConfig))
+    // Initialize all emotion modules with default configs
+    this.emotions.set('happy', new HappyEmotion({}))
+    this.emotions.set('sad', new SadEmotion({}))
+    this.emotions.set('angry', new AngryEmotion({}))
+    this.emotions.set('anxious', new AnxiousEmotion({}))
+    this.emotions.set('confident', new ConfidentEmotion({}))
+    this.emotions.set('nostalgic', new NostalgicEmotion({}))
+    this.emotions.set('empathetic', new EmpatheticEmotion({}))
+    this.emotions.set('curious', new CuriousEmotion({}))
+    this.emotions.set('proud', new ProudEmotion({}))
+    this.emotions.set('confused', new ConfusedEmotion({}))
+    this.emotions.set('neutral', new NeutralEmotion({}))
   }
 
   get current(): string {

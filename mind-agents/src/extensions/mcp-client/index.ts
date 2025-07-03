@@ -6,8 +6,7 @@
  * resources, and prompts.
  */
 
-import { ExtensionConfig, Extension, ExtensionMetadata } from '../types.js'
-import { Agent } from '../../types/agent.js'
+import { ExtensionConfig, Extension, ExtensionMetadata, Agent } from '../../types/index.js'
 import { runtimeLogger } from '../../utils/logger.js'
 import { MCPClientManager } from './mcp-client-manager.js'
 import { MCPServerConfig, MCPTool, MCPResource, MCPPrompt } from './types.js'
@@ -22,6 +21,13 @@ export interface MCPClientExtensionConfig extends ExtensionConfig {
 }
 
 export class MCPClientExtension implements Extension {
+  public readonly id = 'mcp-client'
+  public readonly name = 'MCP Client Extension'
+  public readonly version = '1.0.0'
+  public readonly type = 'mcp_client'
+  public enabled = true
+  public status = 'stopped'
+  
   public readonly metadata: ExtensionMetadata = {
     name: 'mcp-client',
     version: '1.0.0',
@@ -37,14 +43,15 @@ export class MCPClientExtension implements Extension {
     ]
   }
 
-  private config: MCPClientExtensionConfig
+  public config: MCPClientExtensionConfig
+  public actions: Record<string, any> = {}
+  public events: Record<string, any> = {}
+  
   private mcpManager: MCPClientManager
   private agent?: Agent
 
   constructor(config: MCPClientExtensionConfig) {
     this.config = {
-      enabled: true,
-      servers: [],
       globalTimeout: 30000,
       maxRetries: 3,
       enableAutoReconnect: true,
@@ -61,6 +68,16 @@ export class MCPClientExtension implements Extension {
     runtimeLogger.info('🔌 MCP Client Extension initialized')
   }
 
+  async init(agent: Agent): Promise<void> {
+    // Initialize with agent
+    this.status = 'initializing'
+    await this.initialize(agent)
+  }
+  
+  async tick(agent: Agent): Promise<void> {
+    // Periodic tick - could be used for tool discovery refresh
+  }
+  
   async initialize(agent: Agent): Promise<void> {
     if (!this.config.enabled) {
       runtimeLogger.info('⏸️ MCP Client Extension is disabled')
@@ -206,11 +223,11 @@ export class MCPClientExtension implements Extension {
     try {
       const aiSDKTools = this.mcpManager.getAISDKTools()
       
-      // Add MCP tools to the agent's available tools
-      if (this.agent.tools) {
-        Object.assign(this.agent.tools, aiSDKTools)
+      // Add MCP tools to the agent's toolSystem if available
+      if (this.agent.toolSystem) {
+        Object.assign(this.agent.toolSystem, aiSDKTools)
       } else {
-        this.agent.tools = aiSDKTools
+        this.agent.toolSystem = aiSDKTools
       }
 
       runtimeLogger.info(`🔧 Integrated ${Object.keys(aiSDKTools).length} MCP tools with AI SDK`)

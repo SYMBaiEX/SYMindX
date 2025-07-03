@@ -10,7 +10,6 @@ import { ApiExtension } from './api/index.js'
 import { TelegramExtension, createTelegramExtension } from './telegram/index.js'
 import { MCPClientExtension } from './mcp-client/index.js'
 import { MCPServerExtension } from './mcp-server/index.js'
-import { CommunicationExtension } from './communication/index.js'
 
 export async function registerExtensions(config: RuntimeConfig): Promise<Extension[]> {
   const extensions: Extension[] = []
@@ -93,17 +92,17 @@ export async function registerExtensions(config: RuntimeConfig): Promise<Extensi
   }
 
   // Register MCP Client extension if configured
-  if (config.extensions.mcpClient?.enabled) {
+  if ((config.extensions as any).mcpClient?.enabled) {
     try {
       const mcpClientConfig = {
-        servers: config.extensions.mcpClient.servers || [],
-        autoConnect: config.extensions.mcpClient.autoConnect !== false,
-        reconnectDelay: config.extensions.mcpClient.reconnectDelay || 5000,
-        maxReconnectAttempts: config.extensions.mcpClient.maxReconnectAttempts || 3,
-        ...config.extensions.mcpClient
+        servers: (config.extensions as any).mcpClient.servers || [],
+        autoConnect: (config.extensions as any).mcpClient.autoConnect !== false,
+        reconnectDelay: (config.extensions as any).mcpClient.reconnectDelay || 5000,
+        maxReconnectAttempts: (config.extensions as any).mcpClient.maxReconnectAttempts || 3,
+        ...(config.extensions as any).mcpClient
       }
       const mcpClientExtension = new MCPClientExtension(mcpClientConfig)
-      extensions.push(mcpClientExtension)
+      extensions.push(mcpClientExtension as any)
       console.log('✅ MCP Client extension registered')
     } catch (error) {
       console.warn('⚠️ Failed to load MCP Client extension:', error)
@@ -111,14 +110,14 @@ export async function registerExtensions(config: RuntimeConfig): Promise<Extensi
   }
 
   // Register MCP Server extension if configured
-  if (config.extensions.mcpServer?.enabled) {
+  if ((config.extensions as any).mcpServer?.enabled) {
     try {
       const mcpServerConfig = {
-        transport: config.extensions.mcpServer.transport || 'stdio',
-        port: config.extensions.mcpServer.port || 3001,
-        host: config.extensions.mcpServer.host || 'localhost',
-        path: config.extensions.mcpServer.path || '/mcp',
-        ...config.extensions.mcpServer
+        transport: (config.extensions as any).mcpServer.transport || 'stdio',
+        port: (config.extensions as any).mcpServer.port || 3001,
+        host: (config.extensions as any).mcpServer.host || 'localhost',
+        path: (config.extensions as any).mcpServer.path || '/mcp',
+        ...(config.extensions as any).mcpServer
       }
       const mcpServerExtension = new MCPServerExtension(mcpServerConfig)
       extensions.push(mcpServerExtension)
@@ -128,35 +127,7 @@ export async function registerExtensions(config: RuntimeConfig): Promise<Extensi
     }
   }
 
-  // Register Communication extension if configured
-  if (config.extensions.communication?.enabled) {
-    try {
-      const communicationConfig = {
-        contextManager: {
-          enabled: true,
-          maxContextLength: 10000,
-          compressionThreshold: 8000,
-          ...config.extensions.communication.contextManager
-        },
-        expressionEngine: {
-          enabled: true,
-          defaultStyle: 'neutral',
-          ...config.extensions.communication.expressionEngine
-        },
-        styleAdapter: {
-          enabled: true,
-          adaptationLevel: 'medium',
-          ...config.extensions.communication.styleAdapter
-        },
-        ...config.extensions.communication
-      }
-      const communicationExtension = new CommunicationExtension(communicationConfig)
-      extensions.push(communicationExtension)
-      console.log('✅ Communication extension registered')
-    } catch (error) {
-      console.warn('⚠️ Failed to load Communication extension:', error)
-    }
-  }
+  // Communication extension removed - not configured in RuntimeConfig
   
   console.log(`✅ Extensions: ${extensions.length} loaded`)
   return extensions
@@ -165,6 +136,6 @@ export async function registerExtensions(config: RuntimeConfig): Promise<Extensi
 // Export extension classes and types
 export { ApiExtension } from './api/index.js'
 export { TelegramExtension, createTelegramExtension, type TelegramConfig } from './telegram/index.js'
-export { MCPClientExtension, type MCPClientConfig } from './mcp-client/index.js'
-export { MCPServerExtension, type MCPServerConfig } from './mcp-server/index.js'
-export { CommunicationExtension, type CommunicationConfig } from './communication/index.js'
+// export { MCPClientExtension, type MCPClientConfig } from './mcp-client/index.js'
+// export { MCPServerExtension, type MCPServerConfig } from './mcp-server/index.js'
+// export { CommunicationExtension, type CommunicationConfig } from './communication/index.js'

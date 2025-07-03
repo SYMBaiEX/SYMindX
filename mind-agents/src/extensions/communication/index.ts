@@ -5,7 +5,8 @@
  * expression adaptation, and style customization for agent interactions.
  */
 
-import { ExtensionConfig, Extension, ExtensionMetadata } from '../../types/agent.js'
+import { ExtensionConfig, ExtensionMetadata } from '../../types/common.js'
+import { Extension, ExtensionType, ExtensionStatus } from '../../types/agent.js'
 import { Agent } from '../../types/agent.js'
 import { runtimeLogger } from '../../utils/logger.js'
 import { ContextManager, ContextManagerConfig } from './context-manager.js'
@@ -13,7 +14,6 @@ import { ExpressionEngine, ExpressionEngineConfig } from './expression-engine.js
 import { StyleAdapter, StyleAdapterConfig } from './style-adapter.js'
 
 export interface CommunicationExtensionConfig extends ExtensionConfig {
-  enabled: boolean
   contextManager?: ContextManagerConfig
   expressionEngine?: ExpressionEngineConfig
   styleAdapter?: StyleAdapterConfig
@@ -23,24 +23,24 @@ export interface CommunicationExtensionConfig extends ExtensionConfig {
 }
 
 export class CommunicationExtension implements Extension {
+  public readonly id: string = 'communication'
+  public readonly name: string = 'Communication Extension'
+  public readonly version: string = '1.0.0'
+  public readonly type: ExtensionType = ExtensionType.COMMUNICATION
+  public enabled: boolean = true
+  public status: ExtensionStatus = ExtensionStatus.STOPPED
+  public actions: Record<string, any> = {}
+  public events: Record<string, any> = {}
+
   public readonly metadata: ExtensionMetadata = {
     name: 'communication',
     version: '1.0.0',
     description: 'Advanced communication features with context, expression, and style management',
-    author: 'SYMindX',
-    dependencies: [],
-    capabilities: [
-      'context_management',
-      'conversation_continuity',
-      'style_adaptation',
-      'expression_variation',
-      'mood_detection',
-      'intent_analysis',
-      'topic_tracking'
-    ]
+    author: 'SYMindX'
   }
 
-  private config: CommunicationExtensionConfig
+  public config: ExtensionConfig
+  private communicationConfig: CommunicationExtensionConfig
   private contextManager: ContextManager
   private expressionEngine: ExpressionEngine
   private styleAdapter: StyleAdapter
@@ -48,30 +48,38 @@ export class CommunicationExtension implements Extension {
 
   constructor(config: CommunicationExtensionConfig) {
     this.config = {
-      enabled: true,
-      enableContextPersistence: true,
-      enableStyleAdaptation: true,
-      enableExpressionVariation: true,
-      contextManager: {},
-      expressionEngine: {},
-      styleAdapter: {},
-      ...config
+      enabled: config.enabled ?? true,
+      priority: config.priority ?? 1,
+      settings: config.settings ?? {},
+      dependencies: config.dependencies ?? [],
+      capabilities: config.capabilities ?? []
     }
 
-    this.contextManager = new ContextManager(this.config.contextManager)
-    this.expressionEngine = new ExpressionEngine(this.config.expressionEngine || {})
-    this.styleAdapter = new StyleAdapter(this.config.styleAdapter || {})
+    this.communicationConfig = {
+      ...this.config,
+      enableContextPersistence: config.enableContextPersistence ?? true,
+      enableStyleAdaptation: config.enableStyleAdaptation ?? true,
+      enableExpressionVariation: config.enableExpressionVariation ?? true,
+      contextManager: config.contextManager ?? {},
+      expressionEngine: config.expressionEngine ?? {},
+      styleAdapter: config.styleAdapter ?? {}
+    }
+
+    this.contextManager = new ContextManager(this.communicationConfig.contextManager || {})
+    this.expressionEngine = new ExpressionEngine(this.communicationConfig.expressionEngine || {})
+    this.styleAdapter = new StyleAdapter(this.communicationConfig.styleAdapter || {})
 
     runtimeLogger.info('💬 Communication Extension initialized')
   }
 
-  async initialize(agent: Agent): Promise<void> {
+  async init(agent: Agent): Promise<void> {
     if (!this.config.enabled) {
       runtimeLogger.info('⏸️ Communication Extension is disabled')
       return
     }
 
     this.agent = agent
+    this.status = ExtensionStatus.INITIALIZING
 
     try {
       // Initialize components
@@ -81,22 +89,48 @@ export class CommunicationExtension implements Extension {
       // Set up integrations
       await this.setupIntegrations()
 
+      this.status = ExtensionStatus.RUNNING
       runtimeLogger.info('💬 Communication Extension initialized successfully')
     } catch (error) {
+      this.status = ExtensionStatus.ERROR
       runtimeLogger.error('❌ Failed to initialize Communication Extension:', error)
       throw error
     }
   }
 
+  async tick(agent: Agent): Promise<void> {
+    // This method is called on each tick - can be used for periodic operations
+    // For communication extension, we might:
+    // - Clean up old conversation contexts
+    // - Update conversation state
+    // - Handle any pending communication tasks
+    
+    try {
+      // Update agent reference if needed
+      if (this.agent?.id !== agent.id) {
+        this.agent = agent
+      }
+      
+      // Perform periodic maintenance if needed
+      // Note: cleanupOldContexts is private, so we skip that for now
+    } catch (error) {
+      runtimeLogger.error('❌ Error during Communication Extension tick:', error)
+    }
+  }
+
   async cleanup(): Promise<void> {
     try {
+      this.status = ExtensionStatus.STOPPING
+      
       // Export contexts if persistence is enabled
-      if (this.config.enableContextPersistence) {
+      if (this.communicationConfig.enableContextPersistence) {
         await this.exportContexts()
       }
 
+      this.status = ExtensionStatus.STOPPED
       runtimeLogger.info('💬 Communication Extension cleaned up')
     } catch (error) {
+      this.status = ExtensionStatus.ERROR
       runtimeLogger.error('❌ Error during Communication Extension cleanup:', error)
     }
   }
@@ -158,7 +192,7 @@ export class CommunicationExtension implements Extension {
 
     // Adapt style if enabled
     let adaptedStyle: any = {}
-    if (this.config.enableStyleAdaptation && contextSummary) {
+    if (this.communicationConfig.enableStyleAdaptation && contextSummary) {
       adaptedStyle = await this.styleAdapter.adaptStyle({
         mood: contextSummary.mood,
         formality: metadata?.formality || 0.5,
@@ -170,7 +204,7 @@ export class CommunicationExtension implements Extension {
 
     // Generate expression variations if enabled
     let expressionVariations: string[] = []
-    if (this.config.enableExpressionVariation) {
+    if (this.communicationConfig.enableExpressionVariation) {
       expressionVariations = await this.expressionEngine.generateVariations(
         message,
         {
@@ -216,7 +250,7 @@ export class CommunicationExtension implements Extension {
 
     // Adapt style
     let adaptedResponse = baseResponse
-    if (this.config.enableStyleAdaptation) {
+    if (this.communicationConfig.enableStyleAdaptation) {
       adaptedResponse = await this.styleAdapter.applyStyle(baseResponse, {
         mood: contextSummary.mood,
         formality: metadata?.formality || 0.5,
@@ -227,7 +261,7 @@ export class CommunicationExtension implements Extension {
     }
 
     // Apply expression enhancements
-    if (this.config.enableExpressionVariation) {
+    if (this.communicationConfig.enableExpressionVariation) {
       adaptedResponse = await this.expressionEngine.enhanceExpression(
         adaptedResponse,
         {
@@ -266,7 +300,7 @@ export class CommunicationExtension implements Extension {
         if (context.messages.length > 5) { // Only save substantial conversations
           const memory = await this.contextManager.preserveToMemory(this.agent, context.id)
           if (memory && this.agent.memory) {
-            await this.agent.memory.store(memory)
+            await this.agent.memory.store(this.agent.id, memory)
           }
         }
       }
@@ -330,7 +364,7 @@ export class CommunicationExtension implements Extension {
     // Re-initialize components if needed
     if (this.agent && updates.enabled !== undefined) {
       if (updates.enabled && !this.config.enabled) {
-        await this.initialize(this.agent)
+        await this.init(this.agent)
       } else if (!updates.enabled && this.config.enabled) {
         await this.cleanup()
       }

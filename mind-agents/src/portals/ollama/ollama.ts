@@ -1,3 +1,4 @@
+import { convertUsage } from '../utils.js'
 /**
  * Ollama Edge AI Portal
  * 
@@ -166,7 +167,7 @@ export const defaultOllamaConfig: Partial<OllamaConfig> = {
   host: 'localhost',
   port: 11434,
   model: 'llama3.2',
-  maxTokens: 4000,
+  maxOutputTokens: 4000,
   temperature: 0.7,
   timeout: 120000,
   enableGPU: true,

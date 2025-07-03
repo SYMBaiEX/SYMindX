@@ -298,6 +298,216 @@ npm test -- --coverage
 - Integration tests in `__tests__/` directories
 - Mock providers for external services
 
+## Multi-Agent Collaboration (Claude Code Best Practices)
+
+### Architecture Principles
+
+When implementing multi-agent workflows with Claude Code, follow these architecture patterns:
+
+#### Lead Agent Pattern
+- **Lead Agent**: Analyzes queries, develops strategies, and spawns subagents
+- **Subagents**: Act as intelligent filters, explore specific aspects simultaneously  
+- **Results Compilation**: Subagents return results to lead agent for synthesis
+
+#### Task Division Strategy
+```typescript
+// GOOD: Specific, detailed task descriptions
+interface AgentTask {
+  objective: string;           // Clear goal
+  outputFormat: string;        // Expected response structure
+  toolsToUse: string[];       // Specific tools and sources
+  boundaries: string[];        // Clear task boundaries
+  context: TaskContext;        // Relevant background info
+}
+
+// BAD: Vague instructions lead to duplication and gaps
+// "research the semiconductor shortage" ❌
+```
+
+### Multi-Agent Development Patterns
+
+#### 1. Git Worktrees for Parallel Development
+```bash
+# Create separate worktrees for parallel agent development
+git worktree add ../symindx-feature-a feature/agent-a
+git worktree add ../symindx-feature-b feature/agent-b
+
+# Each agent works in isolated environment
+cd ../symindx-feature-a && claude "Implement feature A"
+cd ../symindx-feature-b && claude "Implement feature B"
+```
+
+#### 2. Autonomous Feedback Loops
+```typescript
+// Design agents with complete feedback loops
+interface AutonomousAgent {
+  trySolution(): Promise<Result>;
+  assessResult(result: Result): Assessment;
+  adjustStrategy(assessment: Assessment): Strategy;
+  // No conversation turns needed for failure reporting
+}
+```
+
+#### 3. Test-Driven Multi-Agent Development
+```bash
+# Have each agent write tests based on expected input/output
+claude "Write comprehensive tests for user authentication, use TDD approach"
+claude "Implement payment processing with full test coverage"
+claude "Create notification system tests, then implement"
+```
+
+### Extended Thinking Integration
+
+#### Trigger Words for Thinking Levels
+Use progressive thinking triggers for complex multi-agent tasks:
+
+```bash
+# Basic thinking
+claude "think about the best approach for this feature"
+
+# Enhanced thinking  
+claude "think hard about the architectural implications"
+
+# Deep thinking
+claude "think harder about edge cases and error handling"
+
+# Maximum thinking
+claude "ultrathink this distributed system design"
+```
+
+#### Thinking Budget Management
+```javascript
+// Configure thinking budget for multi-agent coordination
+const response = await client.messages.create({
+  model: "claude-opus-4-20250514",
+  thinking: {
+    type: "enabled",
+    budget_tokens: 15000  // Higher budget for multi-agent coordination
+  },
+  extra_headers: {
+    "anthropic-beta": "interleaved-thinking-2025-05-14"
+  }
+});
+```
+
+### Resource Management
+
+#### Token Usage Optimization
+- **Single Agent**: ~1x baseline token usage
+- **Multi-Agent**: ~15x baseline token usage (monitor carefully)
+- **Scaling Strategy**: Scale effort proportional to query complexity
+
+#### Cost Considerations
+```bash
+# Recommended subscription tiers for multi-agent development
+# Claude Max ($100-200/month) for generous Claude Code usage
+# API bills can reach $1000+/month without subscription
+
+# Monitor usage with built-in tracking
+claude --track-usage "complex multi-agent task"
+```
+
+### MCP Integration for Multi-Agent Systems
+
+#### Multiple MCP Servers Configuration
+```json
+{
+  "mcpServers": {
+    "agent-coordinator": {
+      "command": "npx",
+      "args": ["@company/agent-coordinator-mcp"],
+      "env": { "COORDINATOR_TOKEN": "token" }
+    },
+    "task-distributor": {
+      "command": "npx", 
+      "args": ["@company/task-distributor-mcp"],
+      "env": { "DISTRIBUTOR_TOKEN": "token" }
+    },
+    "result-aggregator": {
+      "command": "npx",
+      "args": ["@company/result-aggregator-mcp"],
+      "env": { "AGGREGATOR_TOKEN": "token" }
+    }
+  }
+}
+```
+
+#### Agent-Specific MCP Tools
+```bash
+# Use scoped MCP tools for different agents
+claude --allowedTools "mcp__coordinator__spawn_agent,mcp__coordinator__monitor_progress"
+claude --allowedTools "mcp__distributor__assign_task,mcp__distributor__check_status"  
+claude --allowedTools "mcp__aggregator__collect_results,mcp__aggregator__synthesize"
+```
+
+### Environment Configuration
+
+#### Repository Setup for Multi-Agent Development
+```bash
+# Create CLAUDE.md with agent-specific guidance
+echo "
+# Agent Coordination Guidelines
+- Use feature branches for parallel development
+- Implement autonomous feedback loops
+- Follow TDD approach for all agents
+- Use git worktrees for isolation
+- Agents should not trample each other's work
+" > CLAUDE.md
+```
+
+#### Branch Management
+```bash
+# Branch naming convention for multi-agent work
+git checkout -b agent/lead-coordinator
+git checkout -b agent/data-processor  
+git checkout -b agent/result-synthesizer
+
+# Merge strategy (prefer rebase for cleaner history)
+git config branch.autosetuprebase always
+```
+
+### Success Metrics & Monitoring
+
+#### Multi-Agent Health Checks
+```typescript
+interface MultiAgentHealth {
+  agentCount: number;
+  activeAgents: number;
+  taskDistribution: Record<string, number>;
+  coordinationEfficiency: number;
+  resourceUtilization: ResourceMetrics;
+}
+```
+
+#### Performance Optimization
+- **Parallel Execution**: Design independent agent tasks
+- **Resource Sharing**: Use shared MCP servers for common tools
+- **Result Caching**: Cache intermediate results between agents
+- **Load Balancing**: Distribute computational load across agents
+
+### Advanced Patterns
+
+#### Claude Squad Integration
+```bash
+# Install Claude Squad for multi-agent terminal management
+npm install -g claude-squad
+
+# Manage multiple agents in parallel workspaces
+claude-squad start --agents 4 --auto-accept
+```
+
+#### Interleaved Thinking for Agent Coordination
+```python
+# Use interleaved thinking for agent decision-making
+response = client.messages.create(
+    model="claude-opus-4-20250514",
+    thinking={"type": "enabled", "budget_tokens": 10000},
+    extra_headers={"anthropic-beta": "interleaved-thinking-2025-05-14"},
+    tools=[coordinator_tool, distributor_tool],
+    messages=[{"role": "user", "content": "Coordinate these 5 agents for the complex task"}]
+)
+```
+
 ## Troubleshooting
 
 ### Common Issues
@@ -305,6 +515,8 @@ npm test -- --coverage
 2. **Memory errors**: Ensure database path exists and is writable
 3. **Portal errors**: Verify API keys are set correctly
 4. **Build errors**: Run with `--skipLibCheck` flag
+5. **Multi-agent conflicts**: Use git worktrees and clear task boundaries
+6. **Token exhaustion**: Monitor usage and scale appropriately
 
 ### Debug Commands
 ```bash
@@ -316,4 +528,10 @@ npm run cli list agents -v
 
 # View recent events
 npm run cli list events
+
+# Monitor multi-agent coordination
+npm run cli multi-agent status
+
+# Check agent task distribution
+npm run cli multi-agent tasks
 ```

@@ -14,6 +14,9 @@ export type { Agent, AgentConfig, AgentStatus, AgentState } from './agent.js';
 export type { Extension } from './extension.js';
 export type { Portal, PortalConfig, PortalType } from './portal.js';
 
+// Export ExtensionMetadata and ExtensionConfig from common.js
+export type { ExtensionMetadata, ExtensionConfig } from './common.js';
+
 // Advanced module types (selective exports)
 export type { 
   EmotionModule, 

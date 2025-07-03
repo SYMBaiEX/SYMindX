@@ -85,9 +85,11 @@ export class MCPIntegration {
       this.servers.set(config.name, config)
       
       // Create MCP client for this server
-      const client = experimental_createMCPClient({
+      const client = new Client({
         name: config.name,
         version: '1.0.0'
+      }, {
+        capabilities: {}
       })
 
       // Connect to the server

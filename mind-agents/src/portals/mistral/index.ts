@@ -1,3 +1,4 @@
+import { convertUsage } from '../utils.js'
 /**
  * Mistral AI Portal
  * 
@@ -34,7 +35,7 @@ export interface MistralConfig extends PortalConfig {
 
 export const defaultMistralConfig: Partial<MistralConfig> = {
   model: 'mistral-large-latest',
-  maxTokens: 8192,
+  maxOutputTokens: 8192,
   temperature: 0.7,
   timeout: 30000,
   baseUrl: 'https://api.mistral.ai/v1',
@@ -99,7 +100,7 @@ export class MistralPortal extends BasePortal {
       await aiGenerateText({
         model: this.model,
         messages: [{ role: 'user', content: 'Hello' }],
-        maxTokens: 10
+        maxOutputTokens: 10
       })
       return true
     } catch (error) {
@@ -128,7 +129,7 @@ export class MistralPortal extends BasePortal {
       const { text, usage, finishReason } = await aiGenerateText({
         model: this.model,
         messages: [{ role: 'user', content: prompt }],
-        maxTokens: options?.maxTokens ?? this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -140,11 +141,7 @@ export class MistralPortal extends BasePortal {
       return {
         text,
         model: (this.config as MistralConfig).model || 'mistral-large-latest',
-        usage: {
-          promptTokens: usage?.promptTokens || 0,
-          completionTokens: usage?.completionTokens || 0,
-          totalTokens: usage?.totalTokens || 0
-        },
+        usage: convertUsage(usage),
         finishReason: this.mapFinishReason(finishReason),
         timestamp: new Date()
       }
@@ -160,7 +157,7 @@ export class MistralPortal extends BasePortal {
       const { text, usage, finishReason } = await aiGenerateText({
         model: this.model,
         messages: coreMessages,
-        maxTokens: options?.maxTokens ?? this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -179,11 +176,7 @@ export class MistralPortal extends BasePortal {
         text,
         model: (this.config as MistralConfig).model || 'mistral-large-latest',
         message,
-        usage: {
-          promptTokens: usage?.promptTokens || 0,
-          completionTokens: usage?.completionTokens || 0,
-          totalTokens: usage?.totalTokens || 0
-        },
+        usage: convertUsage(usage),
         finishReason: this.mapFinishReason(finishReason),
         timestamp: new Date()
       }
@@ -226,7 +219,7 @@ export class MistralPortal extends BasePortal {
       const { textStream } = await aiStreamText({
         model: this.model,
         messages: [{ role: 'user', content: prompt }],
-        maxTokens: options?.maxTokens ?? this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -250,7 +243,7 @@ export class MistralPortal extends BasePortal {
       const { textStream } = await aiStreamText({
         model: this.model,
         messages: coreMessages,
-        maxTokens: options?.maxTokens ?? this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
