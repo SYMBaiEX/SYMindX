@@ -34,6 +34,24 @@ export interface LMStudioConfig extends PortalConfig {
   enableMmap?: boolean
   /** Enable memory locking */
   enableMlock?: boolean
+  /** Repetition penalty for reducing repetitive output */
+  repetitionPenalty?: number
+  /** Top-k sampling parameter */
+  topK?: number
+  /** Typical P sampling parameter */
+  typicalP?: number
+  /** Tail free sampling parameter */
+  tfsZ?: number
+  /** Mirostat sampling mode */
+  mirostat?: number
+  /** Mirostat tau parameter */
+  mirostatTau?: number
+  /** Mirostat eta parameter */
+  mirostatEta?: number
+  /** Repeat last N tokens for repetition penalty */
+  repeatLastN?: number
+  /** Penalize newline characters */
+  penalizeNewline?: boolean
   /** Flash attention support */
   enableFlashAttention?: boolean
   /** Model precision (fp16, fp32, q4_0, q4_1, q5_0, q5_1, q8_0) */
@@ -628,7 +646,7 @@ export class LMStudioPortal extends BasePortal {
     }
   }
 
-  private convertMessagesToOpenAIFormat(messages: ChatMessage[]): Array<{role: string, content: string}> {
+  private convertMessagesToOpenAIFormat(messages: ChatMessage[]): Array<{role: 'system' | 'user' | 'assistant', content: string}> {
     return messages.map(message => ({
       role: this.mapRole(message.role),
       content: message.content

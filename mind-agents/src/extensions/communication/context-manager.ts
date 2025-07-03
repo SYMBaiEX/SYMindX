@@ -7,7 +7,7 @@
 
 import { Agent, MemoryRecord } from '../../types/agent.js'
 import { BaseConfig } from '../../types/common.js'
-import { MemoryType, MemoryDuration } from '../../types/memory.js'
+import { MemoryTierType, MemoryDuration } from '../../types/memory.js'
 import { runtimeLogger } from '../../utils/logger.js'
 
 /**
@@ -266,7 +266,7 @@ export class ContextManager {
     const memory: MemoryRecord = {
       id: `mem_ctx_${Date.now()}`,
       agentId: agent.id,
-      type: MemoryType.INTERACTION,
+      type: MemoryTierType.INTERACTION,
       content: this.summarizeContext(context),
       metadata: {
         contextId,
@@ -292,7 +292,7 @@ export class ContextManager {
     agentId: string,
     memory: MemoryRecord
   ): ConversationContext | null {
-    if (memory.type !== MemoryType.INTERACTION) return null
+    if (memory.type !== MemoryTierType.INTERACTION) return null
     if (!memory.metadata?.contextId) return null
     
     // Create restored context

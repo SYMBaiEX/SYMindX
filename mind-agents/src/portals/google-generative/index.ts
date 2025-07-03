@@ -1,63 +1,26 @@
 /**
  * Google Generative AI Portal
  * 
- * Advanced AI portal using Google's Generative AI SDK for direct access to Gemini models
- * with simple API key authentication through the Gemini Developer API
+ * Advanced AI portal using Vercel AI SDK for Google's Generative AI models
  */
 
 import { BasePortal } from '../base-portal.js'
 import { 
-  Portal, PortalConfig, PortalType, PortalStatus, ModelType, PortalCapability,
+  PortalConfig, PortalType, PortalStatus, ModelType, PortalCapability,
   TextGenerationOptions, TextGenerationResult, ChatMessage, ChatGenerationOptions, 
   ChatGenerationResult, EmbeddingOptions, EmbeddingResult, ImageGenerationOptions, 
-  ImageGenerationResult, MessageRole, MessageType, FinishReason
+  ImageGenerationResult, MessageRole, FinishReason
 } from '../../types/portal.js'
 import { Agent } from '../../types/agent.js'
-
-// Type definitions for Google Generative AI SDK
-export interface GoogleGenAI {
-  models: {
-    generateContent(params: GenerateContentParams): Promise<GenerateContentResponse>
-  }
-  chats: {
-    create(params: ChatCreateParams): Promise<ChatSession>
-  }
-}
-
-export interface ChatCreateParams {
-  model: string
-  config?: GenerationConfig
-  history?: GenAIContent[]
-}
-
-export interface ChatSession {
-  sendMessage(params: { message: GenAIContent }): Promise<GenerateContentResponse>
-}
-
-export interface GenerateContentParams {
-  model: string
-  contents: string | GenAIContent[]
-  config?: GenerationConfig
-}
-
-export interface GenerateContentResponse {
-  text?: string
-  usage?: {
-    inputTokens?: number
-    outputTokens?: number
-    totalTokens?: number
-  }
-  finishReason?: string
-  candidates?: Array<{
-    content: GenAIContent
-    finishReason?: string
-    index?: number
-    safetyRatings?: Array<{
-      category: string
-      probability: string
-    }>
-  }>
-}
+import { 
+  generateText, 
+  streamText, 
+  generateObject,
+  type CoreMessage,
+  type LanguageModelV1
+} from 'ai'
+import { google } from '@ai-sdk/google'
+import { z } from 'zod'
 
 export interface GoogleGenerativeConfig extends PortalConfig {
   apiKey: string
@@ -65,7 +28,6 @@ export interface GoogleGenerativeConfig extends PortalConfig {
   safetySettings?: SafetySetting[]
   generationConfig?: GenerationConfig
   systemInstruction?: string
-  tools?: Tool[]
   apiVersion?: 'v1' | 'v1alpha'
 }
 
@@ -85,67 +47,12 @@ export interface GenerationConfig {
   responseSchema?: any
 }
 
-export interface Tool {
-  functionDeclarations?: FunctionDeclaration[]
-  codeExecution?: CodeExecutionTool
-  googleSearchRetrieval?: GoogleSearchRetrievalTool
-}
-
-export interface FunctionDeclaration {
-  name: string
-  description: string
-  parameters?: {
-    type: string
-    properties: Record<string, any>
-    required?: string[]
-  }
-}
-
-export interface CodeExecutionTool {
-  enabled: boolean
-}
-
-export interface GoogleSearchRetrievalTool {
-  enabled: boolean
-}
-
-export interface GenAIContent {
-  role: 'user' | 'model'
-  parts: GenAIPart[]
-}
-
-export interface GenAIPart {
-  text?: string
-  inlineData?: {
-    mimeType: string
-    data: string
-  }
-  fileData?: {
-    mimeType: string
-    fileUri: string
-  }
-  functionCall?: {
-    name: string
-    args: Record<string, any>
-  }
-  functionResponse?: {
-    name: string
-    response: Record<string, any>
-  }
-}
-
 export const defaultGenerativeConfig: Partial<GoogleGenerativeConfig> = {
-  model: 'gemini-2.0-flash-001',
+  model: 'gemini-2.0-flash-exp',
   maxTokens: 8192,
   temperature: 0.7,
   timeout: 60000,
   apiVersion: 'v1',
-  safetySettings: [
-    { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-    { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-    { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-    { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' }
-  ],
   generationConfig: {
     temperature: 0.7,
     topP: 0.8,
@@ -155,18 +62,13 @@ export const defaultGenerativeConfig: Partial<GoogleGenerativeConfig> = {
 }
 
 export const generativeModels = [
-  'gemini-2.0-flash-001',
   'gemini-2.0-flash-exp',
   'gemini-1.5-pro',
-  'gemini-1.5-pro-001',
   'gemini-1.5-pro-002',
   'gemini-1.5-flash',
-  'gemini-1.5-flash-001',
   'gemini-1.5-flash-002',
   'gemini-1.5-flash-8b',
-  'gemini-1.0-pro',
-  'gemini-1.0-pro-001',
-  'text-embedding-004'
+  'gemini-1.0-pro'
 ]
 
 export class GoogleGenerativePortal extends BasePortal {
@@ -179,59 +81,21 @@ export class GoogleGenerativePortal extends BasePortal {
     ModelType.CODE_GENERATION
   ]
 
-  private genAI: GoogleGenAI
-  private models: Map<string, any> = new Map()
+  private googleProvider: any
 
   constructor(config: GoogleGenerativeConfig) {
     super('google-generative', 'Google Generative AI', '1.0.0', config)
     
-    // Create mock GoogleGenAI instance since the actual package may not be available
-    this.genAI = {
-      models: {
-        generateContent: async (params: GenerateContentParams): Promise<GenerateContentResponse> => {
-          // Mock implementation for development
-          return {
-            text: `Mock response for: ${typeof params.contents === 'string' ? params.contents : 'complex content'}`,
-            candidates: [{
-              content: {
-                role: 'model',
-                parts: [{ text: 'Mock response' }]
-              },
-              finishReason: 'STOP'
-            }]
-          }
-        }
-      },
-      chats: {
-        create: async (params: ChatCreateParams): Promise<ChatSession> => {
-          // Mock implementation for development
-          return {
-            sendMessage: async (message: { message: GenAIContent }): Promise<GenerateContentResponse> => {
-              const textPart = message.message.parts.find(part => part.text)
-              const responseText = textPart?.text || 'Mock response'
-              return {
-                text: `Mock response to: ${responseText}`,
-                usage: {
-                  inputTokens: responseText.length,
-                  outputTokens: responseText.length,
-                  totalTokens: responseText.length * 2
-                },
-                finishReason: 'STOP'
-              }
-            }
-          }
-        }
-      }
-    }
+    this.googleProvider = google
   }
 
   protected getDefaultModel(type: 'chat' | 'tool' | 'embedding' | 'image'): string {
     switch (type) {
-      case 'chat': return 'gemini-2.0-flash-001'
+      case 'chat': return 'gemini-2.0-flash-exp'
       case 'tool': return 'gemini-1.5-flash'
       case 'embedding': return 'text-embedding-004'
-      case 'image': return 'gemini-2.0-flash-001'
-      default: return 'gemini-2.0-flash-001'
+      case 'image': return 'gemini-2.0-flash-exp'
+      default: return 'gemini-2.0-flash-exp'
     }
   }
 
@@ -252,22 +116,32 @@ export class GoogleGenerativePortal extends BasePortal {
   }
 
   protected async validateConfig(): Promise<void> {
-    if (!this.config.apiKey) {
+    const config = this.config as GoogleGenerativeConfig
+    if (!config.apiKey && !process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
       throw new Error('API key is required for Google Generative AI portal')
     }
   }
 
   async healthCheck(): Promise<boolean> {
     try {
-      const response = await this.genAI.models.generateContent({
-        model: 'gemini-2.0-flash-001',
-        contents: 'Hello'
+      const model = this.getLanguageModel('gemini-1.5-flash')
+      const { text } = await generateText({
+        model,
+        prompt: 'Hello',
+        maxTokens: 10
       })
-      return !!response.text
+      return !!text
     } catch (error) {
       console.error('Google Generative AI health check failed:', error)
       return false
     }
+  }
+
+  private getLanguageModel(modelId?: string): LanguageModelV1 {
+    const model = modelId || this.resolveModel('chat')
+    return this.googleProvider(model, {
+      apiKey: (this.config as GoogleGenerativeConfig).apiKey || process.env.GOOGLE_GENERATIVE_AI_API_KEY
+    })
   }
 
   async generateText(prompt: string, options?: TextGenerationOptions): Promise<TextGenerationResult> {
@@ -275,27 +149,26 @@ export class GoogleGenerativePortal extends BasePortal {
     
     try {
       const config = this.config as GoogleGenerativeConfig
-      const response = await this.genAI.models.generateContent({
-        model,
-        contents: prompt,
-        config: {
-          temperature: options?.temperature ?? config.generationConfig?.temperature,
-          maxOutputTokens: options?.maxTokens ?? config.generationConfig?.maxOutputTokens,
-          topP: options?.topP ?? config.generationConfig?.topP,
-          topK: config.generationConfig?.topK,
-          stopSequences: options?.stop ?? config.generationConfig?.stopSequences
-        }
+      const { text, usage, finishReason } = await generateText({
+        model: this.getLanguageModel(model),
+        prompt,
+        maxTokens: options?.maxTokens ?? config.generationConfig?.maxOutputTokens ?? this.config.maxTokens,
+        temperature: options?.temperature ?? config.generationConfig?.temperature ?? this.config.temperature,
+        topP: options?.topP ?? config.generationConfig?.topP,
+        frequencyPenalty: options?.frequencyPenalty,
+        presencePenalty: options?.presencePenalty,
+        stopSequences: options?.stop ?? config.generationConfig?.stopSequences
       })
       
       return {
-        text: response.text || '',
+        text,
         model,
-        usage: response.usage ? {
-          promptTokens: response.usage.inputTokens || 0,
-          completionTokens: response.usage.outputTokens || 0,
-          totalTokens: response.usage.totalTokens || 0
+        usage: usage ? {
+          promptTokens: usage.promptTokens,
+          completionTokens: usage.completionTokens,
+          totalTokens: usage.totalTokens
         } : undefined,
-        finishReason: this.mapFinishReason(response.finishReason),
+        finishReason: this.mapFinishReason(finishReason),
         timestamp: new Date()
       }
     } catch (error) {
@@ -308,39 +181,35 @@ export class GoogleGenerativePortal extends BasePortal {
     
     try {
       const config = this.config as GoogleGenerativeConfig
-      const chat = await this.genAI.chats.create({
-        model,
-        config: {
-          temperature: options?.temperature ?? config.generationConfig?.temperature,
-          maxOutputTokens: options?.maxTokens ?? config.generationConfig?.maxOutputTokens,
-          topP: options?.topP ?? config.generationConfig?.topP,
-          topK: config.generationConfig?.topK,
-          stopSequences: options?.stop ?? config.generationConfig?.stopSequences
-        },
-        history: this.convertToGenAIHistory(messages.slice(0, -1))
-      })
-
-      const lastMessage = messages[messages.length - 1]
-      const response = await chat.sendMessage({
-        message: this.convertMessageToGenAI(lastMessage)
+      const coreMessages = this.convertToCoreMessages(messages)
+      
+      const { text, usage, finishReason } = await generateText({
+        model: this.getLanguageModel(model),
+        messages: coreMessages,
+        maxTokens: options?.maxTokens ?? config.generationConfig?.maxOutputTokens ?? this.config.maxTokens,
+        temperature: options?.temperature ?? config.generationConfig?.temperature ?? this.config.temperature,
+        topP: options?.topP ?? config.generationConfig?.topP,
+        frequencyPenalty: options?.frequencyPenalty,
+        presencePenalty: options?.presencePenalty,
+        stopSequences: options?.stop ?? config.generationConfig?.stopSequences
       })
 
       const assistantMessage: ChatMessage = {
         role: MessageRole.ASSISTANT,
-        content: response.text || '',
+        content: text,
         timestamp: new Date()
       }
 
       return {
-        text: response.text || '',
+        text,
         model,
         message: assistantMessage,
-        usage: response.usage ? {
-          promptTokens: response.usage.inputTokens || 0,
-          completionTokens: response.usage.outputTokens || 0,
-          totalTokens: response.usage.totalTokens || 0
+        usage: usage ? {
+          promptTokens: usage.promptTokens,
+          completionTokens: usage.completionTokens,
+          totalTokens: usage.totalTokens
         } : undefined,
-        finishReason: this.mapFinishReason(response.finishReason),
+        finishReason: this.mapFinishReason(finishReason),
         timestamp: new Date()
       }
     } catch (error) {
@@ -352,7 +221,7 @@ export class GoogleGenerativePortal extends BasePortal {
     const model = options?.model || this.resolveModel('embedding')
     
     try {
-      // Note: Google Gen AI SDK doesn't directly support embeddings yet
+      // Note: Google AI SDK doesn't support embeddings yet in v5
       // This is a placeholder implementation
       return {
         embedding: new Array(768).fill(0).map(() => Math.random() * 2 - 1),
@@ -373,26 +242,19 @@ export class GoogleGenerativePortal extends BasePortal {
     
     try {
       const config = this.config as GoogleGenerativeConfig
-      // Mock streaming response since generateContentStream is not available in mock
-      const response = await this.genAI.models.generateContent({
-        model,
-        contents: prompt,
-        config: {
-          temperature: options?.temperature ?? config.generationConfig?.temperature,
-          maxOutputTokens: options?.maxTokens ?? config.generationConfig?.maxOutputTokens,
-          topP: options?.topP ?? config.generationConfig?.topP,
-          topK: config.generationConfig?.topK,
-          stopSequences: options?.stop ?? config.generationConfig?.stopSequences
-        }
+      const { textStream } = streamText({
+        model: this.getLanguageModel(model),
+        prompt,
+        maxTokens: options?.maxTokens ?? config.generationConfig?.maxOutputTokens ?? this.config.maxTokens,
+        temperature: options?.temperature ?? config.generationConfig?.temperature ?? this.config.temperature,
+        topP: options?.topP ?? config.generationConfig?.topP,
+        frequencyPenalty: options?.frequencyPenalty,
+        presencePenalty: options?.presencePenalty,
+        stopSequences: options?.stop ?? config.generationConfig?.stopSequences
       })
       
-      // Simulate streaming by yielding the response in chunks
-      if (response.text) {
-        const words = response.text.split(' ')
-        for (const word of words) {
-          yield word + ' '
-          await new Promise(resolve => setTimeout(resolve, 10)) // Small delay to simulate streaming
-        }
+      for await (const textPart of textStream) {
+        yield textPart
       }
     } catch (error) {
       throw new Error(`Google Generative AI text streaming failed: ${error}`)
@@ -404,30 +266,21 @@ export class GoogleGenerativePortal extends BasePortal {
     
     try {
       const config = this.config as GoogleGenerativeConfig
-      const chat = await this.genAI.chats.create({
-        model,
-        config: {
-          temperature: options?.temperature ?? config.generationConfig?.temperature,
-          maxOutputTokens: options?.maxTokens ?? config.generationConfig?.maxOutputTokens,
-          topP: options?.topP ?? config.generationConfig?.topP,
-          topK: config.generationConfig?.topK,
-          stopSequences: options?.stop ?? config.generationConfig?.stopSequences
-        },
-        history: this.convertToGenAIHistory(messages.slice(0, -1))
+      const coreMessages = this.convertToCoreMessages(messages)
+      
+      const { textStream } = streamText({
+        model: this.getLanguageModel(model),
+        messages: coreMessages,
+        maxTokens: options?.maxTokens ?? config.generationConfig?.maxOutputTokens ?? this.config.maxTokens,
+        temperature: options?.temperature ?? config.generationConfig?.temperature ?? this.config.temperature,
+        topP: options?.topP ?? config.generationConfig?.topP,
+        frequencyPenalty: options?.frequencyPenalty,
+        presencePenalty: options?.presencePenalty,
+        stopSequences: options?.stop ?? config.generationConfig?.stopSequences
       })
-
-      const lastMessage = messages[messages.length - 1]
-      const response = await chat.sendMessage({
-        message: this.convertMessageToGenAI(lastMessage)
-      })
-
-      // Simulate streaming by yielding the response in chunks
-      if (response.text) {
-        const words = response.text.split(' ')
-        for (const word of words) {
-          yield word + ' '
-          await new Promise(resolve => setTimeout(resolve, 10)) // Small delay to simulate streaming
-        }
+      
+      for await (const textPart of textStream) {
+        yield textPart
       }
     } catch (error) {
       throw new Error(`Google Generative AI chat streaming failed: ${error}`)
@@ -438,100 +291,72 @@ export class GoogleGenerativePortal extends BasePortal {
     switch (capability) {
       case PortalCapability.TEXT_GENERATION:
       case PortalCapability.CHAT_GENERATION:
-      case PortalCapability.EMBEDDING_GENERATION:
       case PortalCapability.STREAMING:
       case PortalCapability.FUNCTION_CALLING:
       case PortalCapability.VISION:
       case PortalCapability.EVALUATION:
+      case PortalCapability.TOOL_USAGE:
         return true
+      case PortalCapability.EMBEDDING_GENERATION:
+        return false // Not yet supported in AI SDK v5
       case PortalCapability.IMAGE_GENERATION:
       case PortalCapability.AUDIO:
-        return false // Not supported by Generative AI SDK yet
+        return false
       default:
         return false
     }
   }
 
-  private convertToGenAIHistory(messages: ChatMessage[]): any[] {
-    const history: any[] = []
-    
-    for (const message of messages) {
-      if (message.role === MessageRole.SYSTEM) {
-        // System messages are handled in systemInstruction
-        continue
+  private convertToCoreMessages(messages: ChatMessage[]): CoreMessage[] {
+    return messages.map(msg => {
+      const coreMessage: CoreMessage = {
+        role: msg.role as any,
+        content: msg.content
       }
 
-      history.push({
-        role: message.role === MessageRole.USER ? 'user' : 'model',
-        parts: this.convertMessagePartsToGenAI(message)
-      })
-    }
-
-    return history
-  }
-
-  private convertMessageToGenAI(message: ChatMessage): any {
-    return {
-      parts: this.convertMessagePartsToGenAI(message)
-    }
-  }
-
-  private convertMessagePartsToGenAI(message: ChatMessage): any[] {
-    const parts: any[] = []
-
-    // Handle text content
-    if (message.content) {
-      parts.push({ text: message.content })
-    }
-
-    // Handle attachments (multimodal content)
-    if (message.attachments) {
-      for (const attachment of message.attachments) {
-        if (attachment.type === MessageType.IMAGE) {
-          if (attachment.data) {
-            parts.push({
-              inlineData: {
-                mimeType: attachment.mimeType || 'image/jpeg',
-                data: attachment.data
-              }
-            })
-          } else if (attachment.url) {
-            parts.push({
-              fileData: {
-                mimeType: attachment.mimeType || 'image/jpeg',
-                fileUri: attachment.url
-              }
-            })
+      // Handle attachments for multimodal support
+      if (msg.attachments && msg.attachments.length > 0) {
+        const content: any[] = [{ type: 'text', text: msg.content }]
+        
+        for (const attachment of msg.attachments) {
+          if (attachment.type === 'image') {
+            if (attachment.data) {
+              content.push({
+                type: 'image',
+                image: attachment.data,
+                mimeType: attachment.mimeType
+              })
+            } else if (attachment.url) {
+              content.push({
+                type: 'image',
+                image: new URL(attachment.url)
+              })
+            }
           }
         }
+        
+        coreMessage.content = content
       }
-    }
 
-    // Handle function calls
-    if (message.functionCall) {
-      parts.push({
-        functionCall: {
-          name: message.functionCall.name,
-          args: JSON.parse(message.functionCall.arguments)
-        }
-      })
-    }
-
-    return parts
+      return coreMessage
+    })
   }
 
   private mapFinishReason(reason?: string): FinishReason {
     switch (reason) {
-      case 'STOP':
+      case 'stop':
         return FinishReason.STOP
-      case 'MAX_TOKENS':
+      case 'length':
         return FinishReason.LENGTH
-      case 'SAFETY':
+      case 'content-filter':
         return FinishReason.CONTENT_FILTER
-      case 'RECITATION':
-        return FinishReason.CONTENT_FILTER
-      case 'FUNCTION_CALL':
+      case 'tool-calls':
+      case 'function-call':
         return FinishReason.FUNCTION_CALL
+      case 'error':
+        return FinishReason.ERROR
+      case 'cancelled':
+        return FinishReason.CANCELLED
       default:
         return FinishReason.STOP
     }

@@ -5,7 +5,7 @@
  * Integrates with the AI SDK's experimental MCP client for seamless tool usage
  */
 
-import { experimental_createMCPClient } from '@modelcontextprotocol/sdk/client'
+import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { z } from 'zod'
 import { runtimeLogger } from '../utils/logger.js'
 

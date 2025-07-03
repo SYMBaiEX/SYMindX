@@ -23,13 +23,21 @@ The OpenAI Portal offers:
 ### Supported Models
 
 ```typescript
-// Available OpenAI models
+// Available OpenAI models with AI SDK v5
+import { openai } from '@ai-sdk/openai';
+
 const models = {
-  "gpt-4": {
-    maxTokens: 8192,
-    contextWindow: 8192,
-    cost: { input: 0.03, output: 0.06 }, // per 1K tokens
-    capabilities: ["chat", "functions", "vision"]
+  "gpt-4o": {
+    maxTokens: 16384,
+    contextWindow: 128000,
+    cost: { input: 0.005, output: 0.015 }, // per 1K tokens
+    capabilities: ["chat", "functions", "vision", "streaming"]
+  },
+  "gpt-4o-mini": {
+    maxTokens: 16384,
+    contextWindow: 128000,
+    cost: { input: 0.00015, output: 0.0006 },
+    capabilities: ["chat", "functions", "vision", "streaming"]
   },
   "gpt-4-turbo": {
     maxTokens: 4096,
@@ -37,11 +45,11 @@ const models = {
     cost: { input: 0.01, output: 0.03 },
     capabilities: ["chat", "functions", "vision", "json_mode"]
   },
-  "gpt-3.5-turbo": {
-    maxTokens: 4096,
-    contextWindow: 16385,
-    cost: { input: 0.0015, output: 0.002 },
-    capabilities: ["chat", "functions"]
+  "o3": {
+    maxTokens: 8192,
+    contextWindow: 32000,
+    cost: { input: 0.05, output: 0.15 }, // reasoning model
+    capabilities: ["chat", "advanced-reasoning", "streaming"]
   }
 };
 ```
@@ -49,40 +57,41 @@ const models = {
 ### Advanced Capabilities
 
 ```typescript
-// Function calling example
-const functions = [
-  {
-    name: "get_weather",
-    description: "Get current weather for a location",
-    parameters: {
-      type: "object",
-      properties: {
-        location: {
-          type: "string",
-          description: "City name or coordinates"
-        }
-      },
-      required: ["location"]
-    }
-  }
-];
+// Function calling with AI SDK v5 and Zod
+import { tool } from 'ai';
+import { z } from 'zod';
 
-// Vision capabilities (GPT-4V)
-const visionPrompt = {
-  model: "gpt-4-vision-preview",
+const tools = {
+  get_weather: tool({
+    description: "Get current weather for a location",
+    parameters: z.object({
+      location: z.string().describe("City name or coordinates")
+    }),
+    execute: async ({ location }) => {
+      // Implementation
+      return { temperature: 72, condition: 'sunny' };
+    }
+  })
+};
+
+// Vision capabilities with AI SDK v5
+import { streamText } from 'ai';
+
+const { text, textStream } = await streamText({
+  model: openai('gpt-4o'),
   messages: [
     {
-      role: "user",
+      role: 'user',
       content: [
-        { type: "text", text: "What's in this image?" },
+        { type: 'text', text: "What's in this image?" },
         { 
-          type: "image_url", 
-          image_url: { url: "data:image/jpeg;base64,..." }
+          type: 'image', 
+          image: "data:image/jpeg;base64,..." 
         }
       ]
     }
   ]
-};
+});
 ```
 
 ## Configuration

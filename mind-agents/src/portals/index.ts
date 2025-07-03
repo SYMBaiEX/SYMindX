@@ -66,10 +66,8 @@ export {
   createAzureOpenAIPortal, 
   defaultAzureOpenAIConfig, 
   azureOpenAIModels,
-  type AzureOpenAIConfig,
-  type ContentFilterConfig
+  type AzureOpenAIConfig
 } from './azure-openai/index.js'
-export { type ContentFilterLevel } from './azure-openai/index.js'
 
 // Local AI Portals
 export { 

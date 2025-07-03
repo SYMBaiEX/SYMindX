@@ -5,8 +5,8 @@
   "type": "module",
   "main": "index.js",
   "dependencies": {
-    "@ai-sdk/google": "^1.0.18",
-    "ai": "^4.3.16"
+    "@ai-sdk/google": "^2.0.0-canary.20",
+    "ai": "^5.0.0-canary.24"
   },
   "keywords": [
     "ai",

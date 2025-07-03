@@ -10,10 +10,26 @@ import { MemoryProvider, MemoryRecord } from './agent.js'
  * Memory tier types for multi-level memory architecture
  */
 export enum MemoryTierType {
-  WORKING = 'working',      // Short-term active memory (7±2 items)
-  EPISODIC = 'episodic',    // Event-based memories with temporal context
-  SEMANTIC = 'semantic',    // Fact-based knowledge and concepts
-  PROCEDURAL = 'procedural' // Skill-based and how-to memories
+  WORKING = 'working',        // Short-term active memory (7±2 items)
+  EPISODIC = 'episodic',      // Event-based memories with temporal context
+  SEMANTIC = 'semantic',      // Fact-based knowledge and concepts
+  PROCEDURAL = 'procedural',  // Skill-based and how-to memories
+  INTERACTION = 'interaction' // Interactive conversation memory
+}
+
+/**
+ * @deprecated Use MemoryTierType instead
+ */
+export type MemoryType = MemoryTierType
+
+/**
+ * Memory duration types for retention policies
+ */
+export enum MemoryDuration {
+  SHORT_TERM = 'short_term',     // Minutes to hours
+  MEDIUM_TERM = 'medium_term',   // Hours to days
+  LONG_TERM = 'long_term',       // Days to weeks
+  PERMANENT = 'permanent'        // Indefinite retention
 }
 
 /**

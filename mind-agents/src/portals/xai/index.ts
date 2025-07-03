@@ -1,14 +1,16 @@
 /**
  * XAI Portal Implementation
  * 
- * This portal provides integration with XAI's Grok API.
- * Since ai-sdk may not have direct XAI support, we'll use a generic HTTP approach.
+ * This portal provides integration with XAI's Grok API using AI SDK v5.
  */
 
 import { BasePortal } from '../base-portal.js'
 import { PortalConfig, TextGenerationOptions, TextGenerationResult, 
   ChatMessage, ChatGenerationOptions, ChatGenerationResult, EmbeddingOptions, EmbeddingResult,
   ImageGenerationOptions, ImageGenerationResult, PortalCapability, MessageRole, FinishReason, PortalType, ModelType } from '../../types/portal.js'
+import { xai } from '@ai-sdk/xai'
+import { generateText as aiGenerateText, streamText as aiStreamText, tool, type CoreMessage } from 'ai'
+import { z } from 'zod'
 
 export interface XAIConfig extends PortalConfig {
   model?: string
@@ -18,55 +20,53 @@ export interface XAIConfig extends PortalConfig {
 export class XAIPortal extends BasePortal {
   type: PortalType = PortalType.XAI;
   supportedModels: ModelType[] = [ModelType.TEXT_GENERATION, ModelType.CHAT, ModelType.CODE_GENERATION];
-  private baseURL: string
+  private model: any
   
   constructor(config: XAIConfig) {
     super('xai', 'XAI', '1.0.0', config)
-    this.baseURL = config.baseURL || 'https://api.x.ai/v1'
+    const modelName = config.model || 'grok-2'
+    this.model = xai(modelName)
   }
+
+  /**
+   * Convert ChatMessage to CoreMessage format
+   */
+  private convertToCoreMessage(message: ChatMessage): CoreMessage {
+    return {
+      role: message.role === MessageRole.USER ? 'user' : 
+            message.role === MessageRole.ASSISTANT ? 'assistant' : 
+            'system',
+      content: message.content
+    }
+  }
+
 
   /**
    * Generate text using XAI's completion API
    */
   async generateText(prompt: string, options?: TextGenerationOptions): Promise<TextGenerationResult> {
     try {
-      const model = (this.config as XAIConfig).model || 'grok-beta'
-      
-      const response = await fetch(`${this.baseURL}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.config.apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model,
-          messages: [{ role: 'user', content: prompt }],
-          max_tokens: options?.maxTokens || this.config.maxTokens,
-          temperature: options?.temperature || this.config.temperature,
-          top_p: options?.topP,
-          frequency_penalty: options?.frequencyPenalty,
-          presence_penalty: options?.presencePenalty,
-          stop: options?.stop
-        })
+      const { text, usage, finishReason } = await aiGenerateText({
+        model: this.model,
+        messages: [{ role: 'user', content: prompt }],
+        maxTokens: options?.maxTokens || this.config.maxTokens,
+        temperature: options?.temperature || this.config.temperature,
+        topP: options?.topP,
+        frequencyPenalty: options?.frequencyPenalty,
+        presencePenalty: options?.presencePenalty,
+        stopSequences: options?.stop
       })
 
-      if (!response.ok) {
-        throw new Error(`XAI API error: ${response.statusText}`)
-      }
-
-      const data = await response.json()
-      const choice = data.choices[0]
-
       return {
-        text: choice.message.content,
+        text,
         usage: {
-          promptTokens: data.usage?.prompt_tokens || 0,
-          completionTokens: data.usage?.completion_tokens || 0,
-          totalTokens: data.usage?.total_tokens || 0
+          promptTokens: usage?.promptTokens || 0,
+          completionTokens: usage?.completionTokens || 0,
+          totalTokens: usage?.totalTokens || 0
         },
-        finishReason: (choice.finish_reason as FinishReason) || FinishReason.STOP,
+        finishReason: this.mapFinishReason(finishReason),
         metadata: {
-          model,
+          model: (this.config as XAIConfig).model || 'grok-2',
           provider: 'xai'
         }
       }
@@ -81,57 +81,33 @@ export class XAIPortal extends BasePortal {
    */
   async generateChat(messages: ChatMessage[], options?: ChatGenerationOptions): Promise<ChatGenerationResult> {
     try {
-      const model = (this.config as XAIConfig).model || 'grok-beta'
+      const coreMessages: CoreMessage[] = messages.map(msg => this.convertToCoreMessage(msg))
       
-      const response = await fetch(`${this.baseURL}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.config.apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model,
-          messages: messages.map(msg => ({
-            role: msg.role,
-            content: msg.content
-          })),
-          max_tokens: options?.maxTokens || this.config.maxTokens,
-          temperature: options?.temperature || this.config.temperature,
-          top_p: options?.topP,
-          frequency_penalty: options?.frequencyPenalty,
-          presence_penalty: options?.presencePenalty,
-          tools: options?.functions?.map(fn => ({
-            type: 'function',
-            function: {
-              name: fn.name,
-              description: fn.description,
-              parameters: fn.parameters
-            }
-          }))
-        })
+      const { text, usage, finishReason } = await aiGenerateText({
+        model: this.model,
+        messages: coreMessages,
+        maxTokens: options?.maxTokens || this.config.maxTokens,
+        temperature: options?.temperature || this.config.temperature,
+        topP: options?.topP,
+        frequencyPenalty: options?.frequencyPenalty,
+        presencePenalty: options?.presencePenalty,
+        // TODO: Implement tools support for AI SDK v5
       })
 
-      if (!response.ok) {
-        throw new Error(`XAI API error: ${response.statusText}`)
-      }
-
-      const data = await response.json()
-      const choice = data.choices[0]
-
       return {
-        text: choice.message.content,
+        text,
         message: {
           role: MessageRole.ASSISTANT,
-          content: choice.message.content
+          content: text
         },
         usage: {
-          promptTokens: data.usage?.prompt_tokens || 0,
-          completionTokens: data.usage?.completion_tokens || 0,
-          totalTokens: data.usage?.total_tokens || 0
+          promptTokens: usage?.promptTokens || 0,
+          completionTokens: usage?.completionTokens || 0,
+          totalTokens: usage?.totalTokens || 0
         },
-        finishReason: (choice.finish_reason as FinishReason) || FinishReason.STOP,
+        finishReason: this.mapFinishReason(finishReason),
         metadata: {
-          model,
+          model: (this.config as XAIConfig).model || 'grok-2',
           provider: 'xai'
         }
       }
@@ -162,63 +138,19 @@ export class XAIPortal extends BasePortal {
    */
   async *streamText(prompt: string, options?: TextGenerationOptions): AsyncGenerator<string> {
     try {
-      const model = (this.config as XAIConfig).model || 'grok-beta'
-      
-      const response = await fetch(`${this.baseURL}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.config.apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model,
-          messages: [{ role: 'user', content: prompt }],
-          max_tokens: options?.maxTokens || this.config.maxTokens,
-          temperature: options?.temperature || this.config.temperature,
-          stream: true
-        })
+      const { textStream } = await aiStreamText({
+        model: this.model,
+        messages: [{ role: 'user', content: prompt }],
+        maxTokens: options?.maxTokens || this.config.maxTokens,
+        temperature: options?.temperature || this.config.temperature,
+        topP: options?.topP,
+        frequencyPenalty: options?.frequencyPenalty,
+        presencePenalty: options?.presencePenalty,
+        stopSequences: options?.stop
       })
 
-      if (!response.ok) {
-        throw new Error(`XAI API error: ${response.statusText}`)
-      }
-
-      const reader = response.body?.getReader()
-      if (!reader) {
-        throw new Error('Failed to get response reader')
-      }
-
-      const decoder = new TextDecoder()
-      let buffer = ''
-
-      try {
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
-
-          buffer += decoder.decode(value, { stream: true })
-          const lines = buffer.split('\n')
-          buffer = lines.pop() || ''
-
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6)
-              if (data === '[DONE]') return
-              
-              try {
-                const parsed = JSON.parse(data)
-                const delta = parsed.choices[0]?.delta?.content
-                if (delta) {
-                  yield delta
-                }
-              } catch (e) {
-                // Skip invalid JSON lines
-              }
-            }
-          }
-        }
-      } finally {
-        reader.releaseLock()
+      for await (const chunk of textStream) {
+        yield chunk
       }
     } catch (error) {
       console.error('XAI stream text error:', error)
@@ -231,70 +163,43 @@ export class XAIPortal extends BasePortal {
    */
   async *streamChat(messages: ChatMessage[], options?: ChatGenerationOptions): AsyncGenerator<string> {
     try {
-      const model = (this.config as XAIConfig).model || 'grok-beta'
+      const coreMessages: CoreMessage[] = messages.map(msg => this.convertToCoreMessage(msg))
       
-      const response = await fetch(`${this.baseURL}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.config.apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model,
-          messages: messages.map(msg => ({
-            role: msg.role,
-            content: msg.content
-          })),
-          max_tokens: options?.maxTokens || this.config.maxTokens,
-          temperature: options?.temperature || this.config.temperature,
-          stream: true
-        })
+      const { textStream } = await aiStreamText({
+        model: this.model,
+        messages: coreMessages,
+        maxTokens: options?.maxTokens || this.config.maxTokens,
+        temperature: options?.temperature || this.config.temperature,
+        topP: options?.topP,
+        frequencyPenalty: options?.frequencyPenalty,
+        presencePenalty: options?.presencePenalty,
+        // TODO: Implement tools support for AI SDK v5
       })
 
-      if (!response.ok) {
-        throw new Error(`XAI API error: ${response.statusText}`)
-      }
-
-      const reader = response.body?.getReader()
-      if (!reader) {
-        throw new Error('Failed to get response reader')
-      }
-
-      const decoder = new TextDecoder()
-      let buffer = ''
-
-      try {
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
-
-          buffer += decoder.decode(value, { stream: true })
-          const lines = buffer.split('\n')
-          buffer = lines.pop() || ''
-
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6)
-              if (data === '[DONE]') return
-              
-              try {
-                const parsed = JSON.parse(data)
-                const delta = parsed.choices[0]?.delta?.content
-                if (delta) {
-                  yield delta
-                }
-              } catch (e) {
-                // Skip invalid JSON lines
-              }
-            }
-          }
-        }
-      } finally {
-        reader.releaseLock()
+      for await (const chunk of textStream) {
+        yield chunk
       }
     } catch (error) {
       console.error('XAI stream chat error:', error)
       throw new Error(`XAI stream chat failed: ${error}`)
+    }
+  }
+
+  /**
+   * Map AI SDK finish reason to our FinishReason enum
+   */
+  private mapFinishReason(reason?: string): FinishReason {
+    switch (reason) {
+      case 'stop':
+        return FinishReason.STOP
+      case 'length':
+        return FinishReason.LENGTH
+      case 'content-filter':
+        return FinishReason.CONTENT_FILTER
+      case 'tool-calls':
+        return FinishReason.FUNCTION_CALL
+      default:
+        return FinishReason.STOP
     }
   }
   

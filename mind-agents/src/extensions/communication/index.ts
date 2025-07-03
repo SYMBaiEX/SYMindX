@@ -5,7 +5,7 @@
  * expression adaptation, and style customization for agent interactions.
  */
 
-import { ExtensionConfig, Extension, ExtensionMetadata } from '../types.js'
+import { ExtensionConfig, Extension, ExtensionMetadata } from '../../types/agent.js'
 import { Agent } from '../../types/agent.js'
 import { runtimeLogger } from '../../utils/logger.js'
 import { ContextManager, ContextManagerConfig } from './context-manager.js'

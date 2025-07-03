@@ -115,12 +115,18 @@ SYMindX Runtime (mind-agents/)
 │   │   ├── telegram/ - Telegram bot
 │   │   └── runelite/ - RuneScape integration
 │   │
-│   ├── 🌐 portals/ - AI Provider Integrations
+│   ├── 🌐 portals/ - AI Provider Integrations (AI SDK v5)
 │   │   ├── groq/ - Groq (fast inference)
 │   │   ├── openai/ - OpenAI GPT models
 │   │   ├── anthropic/ - Claude models
 │   │   ├── xai/ - xAI Grok models
+│   │   ├── google-generative/ - Google Gemini
+│   │   ├── google-vertex/ - Google Vertex AI
+│   │   ├── mistral/ - Mistral AI
+│   │   ├── cohere/ - Cohere models
+│   │   ├── azure-openai/ - Azure OpenAI
 │   │   ├── ollama/ - Local models
+│   │   ├── lmstudio/ - LM Studio
 │   │   └── [other providers]
 │   │
 │   ├── 🛡️ security/ - Security & Compliance

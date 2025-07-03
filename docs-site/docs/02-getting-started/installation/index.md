@@ -123,10 +123,17 @@ SUPABASE_URL=your_supabase_url
 SUPABASE_ANON_KEY=your_supabase_anon_key
 NEON_DATABASE_URL=your_neon_database_url
 
-# AI Portals (at least one required)
+# AI Portals (at least one required) - AI SDK v5
 OPENAI_API_KEY=your_openai_api_key
 ANTHROPIC_API_KEY=your_anthropic_api_key
 GROQ_API_KEY=your_groq_api_key
+GOOGLE_GENERATIVE_AI_API_KEY=your_google_api_key
+GOOGLE_VERTEX_PROJECT_ID=your_gcp_project_id
+GOOGLE_VERTEX_LOCATION=us-central1
+MISTRAL_API_KEY=your_mistral_api_key
+COHERE_API_KEY=your_cohere_api_key
+AZURE_OPENAI_API_KEY=your_azure_api_key
+AZURE_OPENAI_ENDPOINT=your_azure_endpoint
 XAI_API_KEY=your_xai_api_key
 
 # Extensions (optional)

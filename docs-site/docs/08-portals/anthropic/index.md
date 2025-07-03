@@ -6,24 +6,22 @@ description: "Claude integration for SYMindX"
 
 # Anthropic Portal
 
-Advanced Claude integration featuring the latest Claude 4 models with superior coding and reasoning capabilities.
+Advanced Claude integration using Vercel AI SDK v5, featuring Claude 3.5 Sonnet and other Claude models with superior coding and reasoning capabilities.
 
 ## Overview
 
-The Anthropic portal provides access to Claude's most advanced models including Claude 4 Opus and Claude 4 Sonnet, which are recognized as the world's best coding models with sustained performance. Features 200K+ context windows, constitutional AI safety, and advanced reasoning capabilities.
+The Anthropic portal provides access to Claude's most advanced models including Claude 3.5 Sonnet (20241022), which features excellent coding and reasoning capabilities. Features 200K token context windows, constitutional AI safety, and advanced reasoning capabilities.
 
-## Latest Models (2025)
+## Available Models
 
-### Claude 4 Series (Latest)
-- **Claude 4 Opus**: World's best coding model with sustained performance
-- **Claude 4 Sonnet**: Significant upgrade with superior coding and reasoning
+### Claude 3.5 Series
+- **Claude 3.5 Sonnet (20241022)**: Latest and most capable model
+- **Claude 3.5 Haiku**: Fast, efficient responses
 
-### Claude 3.7 Series
-- **Claude 3.7 Sonnet**: Enhanced capabilities over previous versions
-
-### Claude 3.5 Series (Legacy)
-- **Claude 3.5 Sonnet (20241022)**: Latest 3.5 version
-- **Claude 3.5 Haiku (20241022)**: Fast responses
+### Claude 3 Series
+- **Claude 3 Opus**: Most capable Claude 3 model
+- **Claude 3 Sonnet**: Balanced performance
+- **Claude 3 Haiku**: Fast and cost-effective
 
 ## Configuration
 
@@ -34,9 +32,10 @@ The Anthropic portal provides access to Claude's most advanced models including 
   "portals": {
     "anthropic": {
       "apiKey": "sk-ant-...",
-      "model": "claude-4-sonnet",
+      "model": "claude-3-5-sonnet-20241022",
       "maxTokens": 4096,
-      "temperature": 0.7
+      "temperature": 0.7,
+      "streaming": true  // AI SDK v5 streaming
     }
   }
 }
@@ -49,11 +48,13 @@ The Anthropic portal provides access to Claude's most advanced models including 
   "portals": {
     "anthropic": {
       "apiKey": "sk-ant-...",
-      "model": "claude-4-opus",
+      "model": "claude-3-5-sonnet-20241022",
       "maxTokens": 8192,
       "temperature": 0.8,
       "timeout": 60000,
-      "streamingEnabled": true
+      "streaming": true,
+      "topP": 0.95,
+      "topK": 40
     }
   }
 }
@@ -66,8 +67,9 @@ The Anthropic portal provides access to Claude's most advanced models including 
 ANTHROPIC_API_KEY=sk-ant-...
 
 # Optional
-ANTHROPIC_MODEL=claude-4-sonnet
+ANTHROPIC_MODEL=claude-3-5-sonnet-20241022
 ANTHROPIC_MAX_TOKENS=4096
+ANTHROPIC_BASE_URL=https://api.anthropic.com
 ```
 
 ## Features
@@ -77,20 +79,26 @@ ANTHROPIC_MAX_TOKENS=4096
 Claude models feature built-in constitutional AI principles for safer, more ethical responses:
 
 ```typescript
-// Claude automatically applies constitutional principles
-const response = await portal.generateChat([
-  {
-    role: 'user',
-    content: 'Help me write secure code for user authentication'
-  }
-]);
+// Claude with AI SDK v5
+import { anthropic } from '@ai-sdk/anthropic';
+import { streamText } from 'ai';
+
+const { text, textStream } = await streamText({
+  model: anthropic('claude-3-5-sonnet-20241022'),
+  messages: [
+    {
+      role: 'user',
+      content: 'Help me write secure code for user authentication'
+    }
+  ]
+});
 
 // Claude will provide security-conscious advice automatically
 ```
 
 ### Extended Context Windows
 
-Claude 4 models support 200K+ token context windows for processing large documents:
+Claude models support up to 200K token context windows for processing large documents:
 
 ```typescript
 // Process large documents
@@ -106,21 +114,25 @@ const analysis = await portal.generateChat([
 
 ### Vision Analysis
 
-Claude 4 models include advanced vision capabilities:
+Claude models include advanced vision capabilities with AI SDK v5:
 
 ```typescript
-// Analyze images and documents
-const analysis = await portal.generateChat([
-  {
-    role: 'user',
-    content: 'Analyze this technical diagram and explain the architecture',
-    attachments: [{
-      type: 'image',
-      url: 'https://example.com/architecture-diagram.png',
-      mimeType: 'image/png'
-    }]
-  }
-]);
+// Vision analysis with AI SDK v5
+const { text } = await generateText({
+  model: anthropic('claude-3-5-sonnet-20241022'),
+  messages: [
+    {
+      role: 'user',
+      content: [
+        { type: 'text', text: 'Analyze this technical diagram and explain the architecture' },
+        { 
+          type: 'image', 
+          image: 'https://example.com/architecture-diagram.png' 
+        }
+      ]
+    }
+  ]
+});
 ```
 
 ### Function Calling
@@ -128,26 +140,22 @@ const analysis = await portal.generateChat([
 Advanced tool integration with natural function calling:
 
 ```typescript
-// Define tools for Claude
-const functions = [
-  {
-    name: 'analyze_code',
+// Function calling with AI SDK v5 and Zod
+import { tool } from 'ai';
+import { z } from 'zod';
+
+const tools = {
+  analyze_code: tool({
     description: 'Analyze code for quality and security issues',
-    parameters: {
-      type: 'object',
-      properties: {
-        code: { 
-          type: 'string', 
-          description: 'The code to analyze' 
-        },
-        language: { 
-          type: 'string', 
-          description: 'Programming language' 
-        }
-      },
-      required: ['code']
+    parameters: z.object({
+      code: z.string().describe('The code to analyze'),
+      language: z.string().optional().describe('Programming language')
+    }),
+    execute: async ({ code, language }) => {
+      // Implementation
+      return { issues: [], score: 95 };
     }
-  }
+  })
 ];
 
 const response = await portal.generateChat(messages, {

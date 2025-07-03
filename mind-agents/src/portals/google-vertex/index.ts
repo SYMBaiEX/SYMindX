@@ -2,7 +2,7 @@
  * Google Vertex AI Portal
  * 
  * Advanced AI portal supporting Google's Vertex AI platform with comprehensive
- * multimodal capabilities using the official Vertex AI Node.js SDK
+ * multimodal capabilities using AI SDK v5
  */
 
 import { BasePortal } from '../base-portal.js'
@@ -13,6 +13,8 @@ import {
   ImageGenerationResult, MessageRole, MessageType, FinishReason
 } from '../../types/portal.js'
 import { Agent } from '../../types/agent.js'
+import { vertex } from '@ai-sdk/google-vertex'
+import { generateText, streamText, type CoreMessage } from 'ai'
 
 // Type definitions for Google Cloud Vertex AI SDK
 export interface VertexAI {
@@ -178,15 +180,15 @@ export class GoogleVertexPortal extends BasePortal {
     ModelType.IMAGE_GENERATION
   ]
 
-  private vertexAI: VertexAI
+  private vertexProvider: any
   private projectId: string
   private location: string
-  private models: Map<string, GenerativeModel> = new Map()
 
   constructor(config: GoogleVertexConfig) {
     super('google-vertex', 'Google Vertex AI', '1.0.0', config)
-    this.projectId = config.projectId
-    this.location = config.location || 'us-central1'
+    this.projectId = config.projectId || process.env.GOOGLE_VERTEX_PROJECT || ''
+    this.location = config.location || process.env.GOOGLE_VERTEX_LOCATION || 'us-central1'
+    this.vertexProvider = vertex
     
     // Create mock VertexAI instance since the actual package may not be available
     this.vertexAI = {

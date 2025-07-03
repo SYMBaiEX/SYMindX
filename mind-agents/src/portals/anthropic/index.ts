@@ -5,8 +5,8 @@
  * Supports Claude's advanced reasoning and safety features.
  */
 
-import { anthropic, createAnthropic } from '@ai-sdk/anthropic'
-import { generateText, streamText } from 'ai'
+import { anthropic } from '@ai-sdk/anthropic'
+import { generateText, streamText, type CoreMessage, type LanguageModelV1 } from 'ai'
 import { BasePortal } from '../base-portal.js'
 import { PortalConfig, TextGenerationOptions, TextGenerationResult, 
   ChatMessage, ChatGenerationOptions, ChatGenerationResult, EmbeddingOptions, EmbeddingResult,
@@ -20,25 +20,24 @@ export interface AnthropicConfig extends PortalConfig {
 export class AnthropicPortal extends BasePortal {
   type: PortalType = PortalType.ANTHROPIC;
   supportedModels: ModelType[] = [ModelType.TEXT_GENERATION, ModelType.CHAT, ModelType.MULTIMODAL];
-  private provider: any
+  private anthropicProvider: any
   
   constructor(config: AnthropicConfig) {
     super('anthropic', 'Anthropic', '1.0.0', config)
     
-    // Create a custom Anthropic provider instance if we have custom settings
-    if (config.baseURL) {
-      this.provider = createAnthropic({
-        apiKey: config.apiKey,
-        baseURL: config.baseURL
-      })
-    } else {
-      // Use the default provider with API key from environment or config
-      this.provider = anthropic
-      // Set API key in environment if provided in config
-      if (config.apiKey && !process.env.ANTHROPIC_API_KEY) {
-        process.env.ANTHROPIC_API_KEY = config.apiKey
-      }
-    }
+    // Create provider with API key
+    this.anthropicProvider = anthropic({
+      apiKey: config.apiKey || process.env.ANTHROPIC_API_KEY,
+      baseURL: config.baseURL
+    })
+  }
+
+  /**
+   * Get language model instance
+   */
+  private getLanguageModel(modelId?: string): LanguageModelV1 {
+    const model = modelId || (this.config as AnthropicConfig).model || 'claude-4-sonnet'
+    return this.anthropicProvider(model)
   }
 
   /**
@@ -46,10 +45,10 @@ export class AnthropicPortal extends BasePortal {
    */
   async generateText(prompt: string, options?: TextGenerationOptions): Promise<TextGenerationResult> {
     try {
-      const model = (this.config as AnthropicConfig).model || 'claude-4-sonnet'
+      const model = options?.model || (this.config as AnthropicConfig).model || 'claude-4-sonnet'
       
       const result = await generateText({
-        model: this.provider(model),
+        model: this.getLanguageModel(model),
         prompt,
         maxTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
@@ -58,12 +57,12 @@ export class AnthropicPortal extends BasePortal {
 
       return {
         text: result.text,
-        usage: {
-          promptTokens: result.usage?.promptTokens || 0,
-          completionTokens: result.usage?.completionTokens || 0,
-          totalTokens: result.usage?.totalTokens || 0
-        },
-        finishReason: (result.finishReason as FinishReason) || FinishReason.STOP,
+        usage: result.usage ? {
+          promptTokens: result.usage.promptTokens,
+          completionTokens: result.usage.completionTokens,
+          totalTokens: result.usage.totalTokens
+        } : undefined,
+        finishReason: this.mapFinishReason(result.finishReason),
         metadata: {
           model,
           provider: 'anthropic'
@@ -80,14 +79,12 @@ export class AnthropicPortal extends BasePortal {
    */
   async generateChat(messages: ChatMessage[], options?: ChatGenerationOptions): Promise<ChatGenerationResult> {
     try {
-      const model = (this.config as AnthropicConfig).model || 'claude-4-sonnet'
+      const model = options?.model || (this.config as AnthropicConfig).model || 'claude-4-sonnet'
+      const coreMessages = this.convertToCoreMessages(messages)
       
       const result = await generateText({
-        model: this.provider(model),
-        messages: messages.map(msg => ({
-          role: msg.role === 'function' ? 'assistant' : msg.role,
-          content: msg.content
-        })) as any,
+        model: this.getLanguageModel(model),
+        messages: coreMessages,
         maxTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
@@ -102,18 +99,23 @@ export class AnthropicPortal extends BasePortal {
         ) : undefined
       })
 
+      const assistantMessage: ChatMessage = {
+        role: MessageRole.ASSISTANT,
+        content: result.text,
+        timestamp: new Date()
+      }
+
       return {
-        message: {
-          role: MessageRole.ASSISTANT,
-          content: result.text
-        },
+        message: assistantMessage,
         text: result.text,
-        usage: {
-          promptTokens: result.usage?.promptTokens || 0,
-          completionTokens: result.usage?.completionTokens || 0,
-          totalTokens: result.usage?.totalTokens || 0
-        },
-        finishReason: (result.finishReason as FinishReason) || FinishReason.STOP,
+        model,
+        usage: result.usage ? {
+          promptTokens: result.usage.promptTokens,
+          completionTokens: result.usage.completionTokens,
+          totalTokens: result.usage.totalTokens
+        } : undefined,
+        finishReason: this.mapFinishReason(result.finishReason),
+        timestamp: new Date(),
         metadata: {
           model,
           provider: 'anthropic'
@@ -146,17 +148,18 @@ export class AnthropicPortal extends BasePortal {
    */
   async *streamText(prompt: string, options?: TextGenerationOptions): AsyncGenerator<string> {
     try {
-      const model = (this.config as AnthropicConfig).model || 'claude-4-sonnet'
+      const model = options?.model || (this.config as AnthropicConfig).model || 'claude-4-sonnet'
       
       const result = await streamText({
-        model: this.provider(model),
+        model: this.getLanguageModel(model),
         prompt,
         maxTokens: options?.maxTokens || this.config.maxTokens,
-        temperature: options?.temperature || this.config.temperature
+        temperature: options?.temperature || this.config.temperature,
+        topP: options?.topP
       })
 
-      for await (const delta of result.textStream) {
-        yield delta
+      for await (const textPart of result.textStream) {
+        yield textPart
       }
     } catch (error) {
       console.error('Anthropic stream text error:', error)
@@ -169,14 +172,12 @@ export class AnthropicPortal extends BasePortal {
    */
   async *streamChat(messages: ChatMessage[], options?: ChatGenerationOptions): AsyncGenerator<string> {
     try {
-      const model = (this.config as AnthropicConfig).model || 'claude-4-sonnet'
+      const model = options?.model || (this.config as AnthropicConfig).model || 'claude-4-sonnet'
+      const coreMessages = this.convertToCoreMessages(messages)
       
       const result = await streamText({
-        model: this.provider(model),
-        messages: messages.map(msg => ({
-          role: msg.role === 'function' ? 'assistant' : msg.role,
-          content: msg.content
-        })) as any,
+        model: this.getLanguageModel(model),
+        messages: coreMessages,
         maxTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
@@ -191,8 +192,8 @@ export class AnthropicPortal extends BasePortal {
         ) : undefined
       })
 
-      for await (const delta of result.textStream) {
-        yield delta
+      for await (const textPart of result.textStream) {
+        yield textPart
       }
     } catch (error) {
       console.error('Anthropic stream chat error:', error)
@@ -200,6 +201,85 @@ export class AnthropicPortal extends BasePortal {
     }
   }
   
+  /**
+   * Convert ChatMessage[] to CoreMessage[] format
+   */
+  private convertToCoreMessages(messages: ChatMessage[]): CoreMessage[] {
+    const coreMessages: CoreMessage[] = []
+    
+    // Extract system messages and combine them
+    const systemMessages = messages.filter(msg => msg.role === MessageRole.SYSTEM)
+    if (systemMessages.length > 0) {
+      // Anthropic expects a single system message at the beginning
+      const systemContent = systemMessages.map(msg => msg.content).join('\n\n')
+      coreMessages.push({
+        role: 'system',
+        content: systemContent
+      })
+    }
+    
+    // Add non-system messages
+    for (const msg of messages) {
+      if (msg.role === MessageRole.SYSTEM) continue
+      
+      const coreMessage: CoreMessage = {
+        role: msg.role === MessageRole.FUNCTION ? 'assistant' : msg.role as any,
+        content: msg.content
+      }
+
+      // Handle attachments for multimodal support
+      if (msg.attachments && msg.attachments.length > 0) {
+        const content: any[] = [{ type: 'text', text: msg.content }]
+        
+        for (const attachment of msg.attachments) {
+          if (attachment.type === 'image') {
+            if (attachment.data) {
+              content.push({
+                type: 'image',
+                image: attachment.data,
+                mimeType: attachment.mimeType
+              })
+            } else if (attachment.url) {
+              content.push({
+                type: 'image',
+                image: new URL(attachment.url)
+              })
+            }
+          }
+        }
+        
+        coreMessage.content = content
+      }
+
+      coreMessages.push(coreMessage)
+    }
+
+    return coreMessages
+  }
+
+  /**
+   * Map finish reasons from AI SDK to our internal format
+   */
+  private mapFinishReason(reason?: string): FinishReason {
+    switch (reason) {
+      case 'stop':
+        return FinishReason.STOP
+      case 'length':
+        return FinishReason.LENGTH
+      case 'content-filter':
+        return FinishReason.CONTENT_FILTER
+      case 'tool-calls':
+      case 'function-call':
+        return FinishReason.FUNCTION_CALL
+      case 'error':
+        return FinishReason.ERROR
+      case 'cancelled':
+        return FinishReason.CANCELLED
+      default:
+        return FinishReason.STOP
+    }
+  }
+
   /**
    * Check if the portal supports a specific capability
    */
