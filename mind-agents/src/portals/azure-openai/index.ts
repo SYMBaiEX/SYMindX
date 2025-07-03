@@ -14,7 +14,7 @@ import {
 } from '../../types/portal.js'
 import { Agent } from '../../types/agent.js'
 import { createAzure } from '@ai-sdk/azure'
-import { generateText as aiGenerateText, streamText as aiStreamText, embed as aiEmbed, generateImage as aiGenerateImage, CoreMessage } from 'ai'
+import { generateText as aiGenerateText, streamText as aiStreamText, embed as aiEmbed, experimental_generateImage as aiGenerateImage, CoreMessage } from 'ai'
 
 export interface AzureOpenAIConfig extends PortalConfig {
   apiKey: string

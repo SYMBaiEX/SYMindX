@@ -45,8 +45,6 @@ export { UnifiedCognition, TheoryOfMind }
 
 // Registration function
 export function registerCognitionModules(registry: any) {
-  console.log('🧠 Registering unified cognition module...')
-  
   // Register factory for unified cognition
   registry.registerCognitionFactory('unified', (config: any) => 
     createUnifiedCognition(config || {
@@ -69,5 +67,5 @@ export function registerCognitionModules(registry: any) {
       }))
   }
   
-  console.log('✅ Cognition module registered: unified (with legacy compatibility)')
+  // Cognition factories registered - logged by runtime
 }

@@ -16,7 +16,10 @@ import {
          ActionResult, 
          AgentStatus, 
          EnvironmentType,
-         MemoryRecord
+         MemoryRecord,
+         LazyAgent,
+         LazyAgentState,
+         AgentFactory
         } from '../types/agent.js'
 import { CharacterConfig } from '../types/character.js'
 import { configResolver } from '../utils/config-resolver.js'
@@ -48,6 +51,7 @@ import { MultiAgentManager } from './multi-agent-manager.js'
 
 export class SYMindXRuntime implements AgentRuntime {
   public agents: Map<string, Agent> = new Map()
+  public lazyAgents: Map<string, LazyAgent> = new Map()
   public eventBus: EventBus
   public registry: ModuleRegistry
   public pluginLoader: SimplePluginLoader
@@ -155,7 +159,7 @@ export class SYMindXRuntime implements AgentRuntime {
           }
         }
         
-        runtimeLogger.success('✅ Configuration loaded successfully')
+        // Configuration loaded - logged by UI
       } catch (err) {
         if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
           runtimeLogger.warn('⚠️ No runtime.json found, using default configuration with environment variables')
@@ -188,7 +192,7 @@ export class SYMindXRuntime implements AgentRuntime {
       runtimeLogger.warn('⚠️ Falling back to default configuration')
     }
     
-    runtimeLogger.success('✅ SYMindX Runtime initialized')
+    // Runtime initialized - logged by UI
   }
 
   async start(): Promise<void> {
@@ -203,6 +207,9 @@ export class SYMindXRuntime implements AgentRuntime {
     // Register core modules
     await this.registerCoreModules()
     
+    // Register default agent factory
+    this.registerDefaultAgentFactory()
+    
     // Load portals
     await this.loadPortals()
     
@@ -215,7 +222,7 @@ export class SYMindXRuntime implements AgentRuntime {
       this.eventBus, 
       this
     )
-    runtimeLogger.agent('🤖 Multi-Agent Manager initialized')
+    // Multi-Agent Manager initialized - logged by UI
     
     // Initialize tool system
     await this.initializeToolSystem()
@@ -272,7 +279,7 @@ export class SYMindXRuntime implements AgentRuntime {
   }
 
   async loadAgents(): Promise<void> {
-    runtimeLogger.agent('🔍 Loading agents from characters directory...')
+    // Loading agents - logged by UI
     
     try {
       const fs = await import('fs/promises')
@@ -281,7 +288,7 @@ export class SYMindXRuntime implements AgentRuntime {
       // Get the characters directory path
       const __dirname = path.dirname(new URL(import.meta.url).pathname)
       const charactersDir = path.resolve(__dirname, '../characters')
-      runtimeLogger.agent(`🔍 Looking for characters in: ${charactersDir}`)
+      // Looking for characters - logged by UI
       
       // Check if the characters directory exists
       try {
@@ -308,6 +315,11 @@ export class SYMindXRuntime implements AgentRuntime {
           return
         }
         
+        // Count enabled vs disabled agents
+        let enabledCount = 0
+        let disabledCount = 0
+        let errorCount = 0
+        
         // Load each agent configuration
         for (const file of jsonFiles) {
           try {
@@ -317,7 +329,7 @@ export class SYMindXRuntime implements AgentRuntime {
             
             // Check if agent is enabled
             if (rawConfig.enabled === false) {
-              runtimeLogger.agent(`⏸️ Skipping disabled agent: ${file}`)
+              disabledCount++
               continue
             }
             
@@ -325,29 +337,47 @@ export class SYMindXRuntime implements AgentRuntime {
             
             // Check if this is a new clean character config or old format
             if (this.isCleanCharacterConfig(rawConfig)) {
-              runtimeLogger.agent(`🔄 Processing clean character config: ${file}`)
               // Validate environment variables
               const envValidation = configResolver.validateEnvironment()
               if (!envValidation.valid) {
-                runtimeLogger.warn(`⚠️ Missing environment variables for ${file}:`, envValidation.missing)
+                runtimeLogger.warn(`⚠️ Missing environment variables for ${rawConfig.name}:`, envValidation.missing)
               }
               
               // Transform clean config to runtime config
               agentConfig = configResolver.resolveCharacterConfig(rawConfig as CharacterConfig)
             } else {
-              runtimeLogger.agent(`📝 Processing legacy character config: ${file}`)
               // Legacy format - use as-is but process environment variables
               agentConfig = this.processLegacyConfig(rawConfig)
             }
             
-            // Load the agent
-            await this.loadAgent(agentConfig, rawConfig.id)
+            // Create lazy agent instead of immediately loading
+            const lazyAgent = this.createLazyAgent(agentConfig, rawConfig, rawConfig.id)
+            this.lazyAgents.set(lazyAgent.id, lazyAgent)
+            this.registry.registerLazyAgent(lazyAgent)
+            
+            // For backward compatibility, still load primary/high-priority agents immediately
+            if (rawConfig.priority === 'high' || rawConfig.primary === true) {
+              try {
+                await this.activateAgent(lazyAgent.id)
+              } catch (error) {
+                runtimeLogger.error(`❌ Failed to activate priority agent ${lazyAgent.id}:`, error)
+              }
+            }
+            
+            enabledCount++
           } catch (error) {
-            runtimeLogger.error(`❌ Error loading agent from ${file}:`, error)
+            runtimeLogger.error(`❌ Error loading agent ${file}:`, error)
+            errorCount++
           }
         }
         
-        runtimeLogger.success(`✅ Loaded ${this.agents.size} agents`)
+        // Summary output
+        const summary = []
+        if (enabledCount > 0) summary.push(`${enabledCount} active`)
+        if (disabledCount > 0) summary.push(`${disabledCount} disabled`)
+        if (errorCount > 0) summary.push(`${errorCount} errors`)
+        
+        runtimeLogger.success(`✅ Agents: ${summary.join(', ')}`)
       } catch (err) {
         if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
           console.log('⚠️ Characters directory not found, no agents loaded')
@@ -444,7 +474,7 @@ export class SYMindXRuntime implements AgentRuntime {
         traits: characterConfig.personality?.traits ? Object.keys(characterConfig.personality.traits) : [],
         defaults: {
           memory: characterConfig.memory?.type || 'memory',
-          emotion: characterConfig.emotion?.type || 'rune_emotion_stack',
+          emotion: characterConfig.emotion?.type || 'composite',
           cognition: characterConfig.cognition?.type || 'hybrid',
           portal: this.findPrimaryPortal(characterConfig.portals)?.type || 'groq'
         }
@@ -728,35 +758,16 @@ export class SYMindXRuntime implements AgentRuntime {
   }
 
   private async initializeToolSystem(): Promise<void> {
-    // TEMPORARILY DISABLED - Tool system initialization
-    console.log('⏸️ Tool system temporarily disabled for build fix')
-    return
-    /*
     try {
       console.log('🔧 Initializing tool system...')
       
-      // Create prompt system
-      this.promptSystem = new DefaultPromptSystem({
-        defaultTemplates: true,
-        enableSafetyChecks: true,
-        enableOptimization: true,
-        cacheEnabled: true,
-        cacheSize: 100
-      })
+      // Simple tool system placeholder until full implementation
+      // TODO: Implement proper tool system when classes are available
       
-      // Create tool integration manager
-      this.toolIntegrationManager = createToolIntegrationManager(this.promptSystem, {
-        enableDynamicTools: true,
-        enableToolLearning: true,
-        toolDiscoveryEnabled: true,
-        autoChainCreation: true
-      })
-      
-      console.log('✅ Tool system initialized')
+      console.log('✅ Tool system initialized (placeholder)')
     } catch (error) {
       console.error('❌ Failed to initialize tool system:', error)
     }
-    */
   }
 
   async tick(): Promise<void> {
@@ -764,7 +775,10 @@ export class SYMindXRuntime implements AgentRuntime {
     
     const startTime = Date.now()
     
-    // Process each agent
+    // Check for lazy agents that need activation based on events
+    await this.checkLazyAgentActivation()
+    
+    // Process each active agent
     for (const agent of this.agents.values()) {
       try {
         await this.processAgent(agent)
@@ -772,6 +786,13 @@ export class SYMindXRuntime implements AgentRuntime {
         console.error(`❌ Error processing agent ${agent.name}:`, error)
         agent.status = AgentStatus.ERROR
       }
+    }
+    
+    // Periodically clean up inactive agents (every 10 minutes)
+    if (startTime % (10 * 60 * 1000) < this.config.tickInterval) {
+      this.unloadInactiveAgents().catch(error => {
+        runtimeLogger.error('❌ Error unloading inactive agents:', error)
+      })
     }
     
     const duration = Date.now() - startTime
@@ -1081,30 +1102,17 @@ export class SYMindXRuntime implements AgentRuntime {
 
   private async registerCoreModules(): Promise<void> {
     try {
-      console.log('🔧 Registering core modules with factory support...')
-      
       // Import factory functions from modules
       const { createEmotionModule, createCognitionModule } = await import('../modules/index.js')
       const { getEmotionModuleTypes } = await import('../modules/emotion/index.js')
       const { getCognitionModuleTypes } = await import('../modules/cognition/index.js')
       
-      // Register emotion module factories (simplified for emergency cleanup)
-      console.log('📚 Emotion module factories will be registered by individual modules')
-      
-      // Register cognition module factories (simplified for emergency cleanup)
-      console.log('📚 Cognition module factories will be registered by individual modules')
-      
-      // Also use the legacy registration for backward compatibility
+      // Register core modules
       const { registerCoreModules } = await import('../modules/index.js')
       await registerCoreModules(this.registry)
       
-      // Register autonomous AI modules
-      console.log('🤖 Registering autonomous AI modules...')
-      // Autonomous modules removed during emergency cleanup
-      
-      console.log('✅ Core modules, factories, and autonomous AI modules registered successfully')
-      console.log(`📊 Available emotion modules: ${this.registry.listEmotionModules().join(', ')}`)
-      console.log(`📊 Available cognition modules: ${this.registry.listCognitionModules().join(', ')}`)
+      // Clean summary logging
+      console.log(`✅ Core modules: ${this.registry.listEmotionModules().join(', ')}, ${this.registry.listCognitionModules().join(', ')}`)
     } catch (error) {
       console.error('❌ Failed to register core modules:', error)
     }
@@ -1448,7 +1456,7 @@ export class SYMindXRuntime implements AgentRuntime {
     try {
       // Use simple extension loading only
       const extensions = await this.pluginLoader.loadExtensions()
-      console.log(`📦 Loaded ${extensions.length} extension(s) via simple loader`)
+      console.log(`✅ Plugins: ${extensions.length} loaded`)
       
       console.log('✅ Dynamic plugin loading completed (simplified)')
     } catch (error) {
@@ -1467,6 +1475,7 @@ export class SYMindXRuntime implements AgentRuntime {
 
     return {
       agents: this.agents.size,
+      lazyAgents: this.lazyAgents.size,
       autonomousAgents: this.autonomousAgents.size,
       isRunning: this.isRunning,
       plugins: this.pluginLoader.getStats(),
@@ -1478,6 +1487,13 @@ export class SYMindXRuntime implements AgentRuntime {
         autonomousEngines: this.autonomousEngines.size,
         decisionEngines: this.decisionEngines.size,
         agentStats: autonomousAgentStats
+      },
+      lazy: {
+        totalLazyAgents: this.lazyAgents.size,
+        activeAgents: this.agents.size,
+        unloadedAgents: Array.from(this.lazyAgents.values()).filter(la => la.state === LazyAgentState.UNLOADED).length,
+        loadedAgents: Array.from(this.lazyAgents.values()).filter(la => la.state === LazyAgentState.LOADED).length,
+        errorAgents: Array.from(this.lazyAgents.values()).filter(la => la.state === LazyAgentState.ERROR).length
       }
     }
   }
@@ -1548,8 +1564,16 @@ export class SYMindXRuntime implements AgentRuntime {
   getRuntimeCapabilities() {
     return {
       agents: {
-        count: this.agents.size,
-        list: Array.from(this.agents.keys())
+        active: this.agents.size,
+        lazy: this.lazyAgents.size,
+        total: this.agents.size + this.lazyAgents.size,
+        activeList: Array.from(this.agents.keys()),
+        lazyList: Array.from(this.lazyAgents.values()).map(la => ({
+          id: la.id,
+          name: la.name,
+          state: la.state,
+          priority: la.priority
+        }))
       },
       modules: {
         emotion: {
@@ -1607,8 +1631,6 @@ export class SYMindXRuntime implements AgentRuntime {
   }
 
   private async loadPortals(): Promise<void> {
-    console.log('🔮 Loading portals and portal factories...')
-    
     try {
       // Use the new portal integration module
       const { registerPortals } = await import('../portals/integration.js')
@@ -1633,7 +1655,7 @@ export class SYMindXRuntime implements AgentRuntime {
               this.registry.registerPortalFactory(portalType, factory)
             }
           }
-          console.log(`🏭 Registered portal factories: ${portalTypes.join(', ')}`)
+          // Portal factories registered - logged by integration
         }
       } catch (factoryError) {
         console.warn('⚠️ Portal factories not available:', factoryError instanceof Error ? factoryError.message : String(factoryError))
@@ -1644,6 +1666,273 @@ export class SYMindXRuntime implements AgentRuntime {
     } catch (error) {
       console.error('❌ Failed to load portals:', error)
     }
+  }
+
+  // Lazy agent management methods
+  async activateAgent(agentId: string): Promise<Agent> {
+    runtimeLogger.info(`🔄 Activating agent: ${agentId}`)
+    
+    // Check if agent is already active
+    const existingAgent = this.agents.get(agentId)
+    if (existingAgent) {
+      runtimeLogger.info(`✅ Agent ${agentId} already active`)
+      return existingAgent
+    }
+
+    // Get lazy agent
+    const lazyAgent = this.lazyAgents.get(agentId)
+    if (!lazyAgent) {
+      throw new Error(`Lazy agent '${agentId}' not found`)
+    }
+
+    // Update state to loading
+    lazyAgent.state = LazyAgentState.LOADING
+    
+    try {
+      // Create the actual agent instance
+      const agent = await this.loadAgent(lazyAgent.config, lazyAgent.character_id)
+      
+      // Update lazy agent with actual instance
+      lazyAgent.agent = agent
+      lazyAgent.state = LazyAgentState.ACTIVE
+      lazyAgent.lastActivated = new Date()
+      lazyAgent.lazyMetrics.activationCount++
+      lazyAgent.lazyMetrics.lastActivationTime = new Date()
+      
+      // Store in active agents map
+      this.agents.set(agentId, agent)
+      
+      runtimeLogger.info(`✅ Agent ${agentId} activated successfully`)
+      return agent
+    } catch (error) {
+      lazyAgent.state = LazyAgentState.ERROR
+      lazyAgent.lazyMetrics.lastError = error instanceof Error ? error.message : String(error)
+      runtimeLogger.error(`❌ Failed to activate agent ${agentId}:`, error)
+      throw error
+    }
+  }
+
+  async deactivateAgent(agentId: string): Promise<void> {
+    runtimeLogger.info(`⏸️ Deactivating agent: ${agentId}`)
+    
+    const lazyAgent = this.lazyAgents.get(agentId)
+    if (!lazyAgent) {
+      throw new Error(`Lazy agent '${agentId}' not found`)
+    }
+
+    const agent = this.agents.get(agentId)
+    if (!agent) {
+      runtimeLogger.warn(`⚠️ Agent ${agentId} not active, nothing to deactivate`)
+      return
+    }
+
+    try {
+      lazyAgent.state = LazyAgentState.DEACTIVATING
+
+      // Calculate active time for metrics
+      if (lazyAgent.lastActivated) {
+        const activeTime = Date.now() - lazyAgent.lastActivated.getTime()
+        const currentAverage = lazyAgent.lazyMetrics.averageActiveTime
+        const count = lazyAgent.lazyMetrics.activationCount
+        lazyAgent.lazyMetrics.averageActiveTime = (currentAverage * (count - 1) + activeTime) / count
+      }
+
+      // Shutdown the agent
+      await this.shutdownAgent(agent)
+      
+      // Remove from active agents
+      this.agents.delete(agentId)
+      
+      // Update lazy agent state
+      lazyAgent.agent = undefined
+      lazyAgent.state = LazyAgentState.LOADED
+      
+      runtimeLogger.info(`✅ Agent ${agentId} deactivated successfully`)
+    } catch (error) {
+      lazyAgent.state = LazyAgentState.ERROR
+      lazyAgent.lazyMetrics.lastError = error instanceof Error ? error.message : String(error)
+      runtimeLogger.error(`❌ Failed to deactivate agent ${agentId}:`, error)
+      throw error
+    }
+  }
+
+  isAgentActive(agentId: string): boolean {
+    return this.agents.has(agentId)
+  }
+
+  getAgentState(agentId: string): LazyAgentState | undefined {
+    const lazyAgent = this.lazyAgents.get(agentId)
+    return lazyAgent?.state
+  }
+
+  getLazyAgent(agentId: string): LazyAgent | undefined {
+    return this.lazyAgents.get(agentId)
+  }
+
+  listLazyAgents(): LazyAgent[] {
+    return Array.from(this.lazyAgents.values())
+  }
+
+  async preloadAgent(agentId: string): Promise<void> {
+    const lazyAgent = this.lazyAgents.get(agentId)
+    if (!lazyAgent) {
+      throw new Error(`Lazy agent '${agentId}' not found`)
+    }
+
+    if (lazyAgent.state === LazyAgentState.LOADED || lazyAgent.state === LazyAgentState.ACTIVE) {
+      runtimeLogger.info(`✅ Agent ${agentId} already loaded`)
+      return
+    }
+
+    runtimeLogger.info(`📦 Preloading agent: ${agentId}`)
+    lazyAgent.state = LazyAgentState.LOADING
+
+    try {
+      // Just validate that the agent can be created without storing it
+      const testAgent = await this.loadAgent(lazyAgent.config, lazyAgent.character_id)
+      await this.shutdownAgent(testAgent)
+      
+      lazyAgent.state = LazyAgentState.LOADED
+      runtimeLogger.info(`✅ Agent ${agentId} preloaded successfully`)
+    } catch (error) {
+      lazyAgent.state = LazyAgentState.ERROR
+      lazyAgent.lazyMetrics.lastError = error instanceof Error ? error.message : String(error)
+      runtimeLogger.error(`❌ Failed to preload agent ${agentId}:`, error)
+      throw error
+    }
+  }
+
+  async unloadInactiveAgents(): Promise<number> {
+    runtimeLogger.info('🧹 Unloading inactive agents...')
+    
+    let unloadedCount = 0
+    const cutoffTime = Date.now() - (30 * 60 * 1000) // 30 minutes
+
+    for (const [agentId, lazyAgent] of this.lazyAgents) {
+      // Skip agents that are already unloaded or currently loading
+      if (lazyAgent.state === LazyAgentState.UNLOADED || lazyAgent.state === LazyAgentState.LOADING) {
+        continue
+      }
+
+      // Check if agent is inactive
+      const lastActive = lazyAgent.lastActivated?.getTime() || 0
+      if (lastActive < cutoffTime && this.agents.has(agentId)) {
+        try {
+          await this.deactivateAgent(agentId)
+          unloadedCount++
+        } catch (error) {
+          runtimeLogger.error(`❌ Failed to unload inactive agent ${agentId}:`, error)
+        }
+      }
+    }
+
+    runtimeLogger.info(`✅ Unloaded ${unloadedCount} inactive agents`)
+    return unloadedCount
+  }
+
+  /**
+   * Check if any lazy agents need activation based on pending events
+   */
+  private async checkLazyAgentActivation(): Promise<void> {
+    const allEvents = this.eventBus.getEvents()
+    const pendingEvents = allEvents.filter(event => !event.processed)
+    
+    if (pendingEvents.length === 0) return
+
+    // Check each lazy agent to see if they should be activated
+    for (const [agentId, lazyAgent] of this.lazyAgents) {
+      // Skip if agent is already active or in error state
+      if (lazyAgent.state === LazyAgentState.ACTIVE || lazyAgent.state === LazyAgentState.ERROR) {
+        continue
+      }
+
+      // Check if any events are targeted at this agent
+      const relevantEvents = pendingEvents.filter(event => 
+        event.targetAgentId === agentId ||
+        event.type.includes(lazyAgent.name.toLowerCase()) ||
+        (event.data && event.data.agentId === agentId)
+      )
+
+      if (relevantEvents.length > 0) {
+        try {
+          runtimeLogger.info(`🔥 Activating lazy agent ${lazyAgent.name} due to ${relevantEvents.length} relevant events`)
+          await this.activateAgent(agentId)
+        } catch (error) {
+          runtimeLogger.error(`❌ Failed to activate lazy agent ${agentId}:`, error)
+        }
+      }
+    }
+  }
+
+  /**
+   * Create a lazy agent from configuration
+   */
+  private createLazyAgent(agentConfig: AgentConfig, characterConfig: any, characterId?: string): LazyAgent {
+    const agentId = `agent_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    
+    const lazyAgent: LazyAgent = {
+      id: agentId,
+      character_id: characterId,
+      name: agentConfig.core?.name || characterConfig.name || 'Unknown Agent',
+      state: LazyAgentState.UNLOADED,
+      config: agentConfig,
+      characterConfig: characterConfig,
+      priority: this.calculateAgentPriority(characterConfig),
+      lazyMetrics: {
+        activationCount: 0,
+        averageActiveTime: 0,
+        memoryUsage: 0
+      }
+    }
+
+    runtimeLogger.factory(`🎭 Created lazy agent: ${lazyAgent.name} (${agentId})`)
+    return lazyAgent
+  }
+
+  /**
+   * Calculate agent priority based on configuration
+   */
+  private calculateAgentPriority(characterConfig: any): number {
+    // Default priority
+    let priority = 5
+
+    // Check explicit priority setting
+    if (characterConfig.priority) {
+      if (typeof characterConfig.priority === 'string') {
+        switch (characterConfig.priority.toLowerCase()) {
+          case 'high': priority = 8; break
+          case 'medium': priority = 5; break
+          case 'low': priority = 2; break
+          default: priority = 5
+        }
+      } else if (typeof characterConfig.priority === 'number') {
+        priority = Math.max(1, Math.min(10, characterConfig.priority))
+      }
+    }
+
+    // Boost priority for primary agents
+    if (characterConfig.primary === true) {
+      priority = Math.min(10, priority + 2)
+    }
+
+    // Boost priority for autonomous agents
+    if (characterConfig.autonomous?.enabled === true) {
+      priority = Math.min(10, priority + 1)
+    }
+
+    return priority
+  }
+
+  /**
+   * Register a default agent factory for creating agents from configurations
+   */
+  private registerDefaultAgentFactory(): void {
+    const defaultAgentFactory: AgentFactory = async (config: AgentConfig, characterConfig?: any) => {
+      return this.loadAgent(config, characterConfig?.id)
+    }
+    
+    this.registry.registerAgentFactory('default', defaultAgentFactory)
+    runtimeLogger.factory('🏭 Registered default agent factory')
   }
 }
 

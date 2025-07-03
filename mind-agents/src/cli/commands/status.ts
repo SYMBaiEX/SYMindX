@@ -420,9 +420,11 @@ export class StatusCommand {
 
       // Agents
       console.log(chalk.cyan('\nAgents:'))
-      console.log(`  Total: ${capabilities.agents.count}`)
-      if (capabilities.agents.list.length > 0) {
-        console.log(`  IDs: ${capabilities.agents.list.join(', ')}`)
+      console.log(`  Active: ${capabilities.agents.active}`)
+      console.log(`  Lazy: ${capabilities.agents.lazy}`)
+      console.log(`  Total: ${capabilities.agents.total}`)
+      if (capabilities.agents.activeList.length > 0) {
+        console.log(`  Active IDs: ${capabilities.agents.activeList.join(', ')}`)
       }
 
       // Modules

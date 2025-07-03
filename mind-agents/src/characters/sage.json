@@ -73,7 +73,7 @@
   },
 
   "emotion": {
-    "type": "rune_emotion_stack",
+    "type": "composite",
     "config": {
       "emotional_range": "calm_and_balanced",
       "intensity_multiplier": 0.7,
@@ -150,40 +150,18 @@
 
   "portals": [
     {
-      "name": "anthropic_wisdom",
-      "type": "anthropic",
+      "name": "main_openai",
+      "type": "openai",
       "enabled": true,
       "primary": true,
-      "capabilities": ["chat_generation", "text_generation"],
-      "config": {
-        "model": "claude-3-5-sonnet-20241022",
-        "max_tokens": 4096,
-        "temperature": 0.4
-      }
-    },
-    {
-      "name": "openai_strategic",
-      "type": "openai",
-      "enabled": true,
-      "primary": false,
-      "capabilities": ["chat_generation", "text_generation", "function_calling"],
+      "capabilities": ["chat_generation", "text_generation", "image_generation", "embedding_generation", "tool_usage", "function_calling"],
       "config": {
         "model": "gpt-4o",
-        "chatModel": "gpt-4o",
-        "toolModel": "gpt-4o",
+        "imageModel": "dall-e-3",
+        "embeddingModel": "text-embedding-3-large",
+        "embeddingDimensions": 3072,
         "max_tokens": 4096,
         "temperature": 0.4
-      }
-    },
-    {
-      "name": "openai_embeddings",
-      "type": "openai",
-      "enabled": true,
-      "primary": false,
-      "capabilities": ["embedding_generation"],
-      "config": {
-        "embeddingModel": "text-embedding-3-large",
-        "embeddingDimensions": 3072
       }
     }
   ],

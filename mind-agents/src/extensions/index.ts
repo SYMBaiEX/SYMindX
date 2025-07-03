@@ -158,7 +158,7 @@ export async function registerExtensions(config: RuntimeConfig): Promise<Extensi
     }
   }
   
-  console.log(`📦 Loaded ${extensions.length} extension(s)`)
+  console.log(`✅ Extensions: ${extensions.length} loaded`)
   return extensions
 }
 

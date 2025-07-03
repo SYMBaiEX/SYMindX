@@ -37,6 +37,15 @@ export enum AgentStatus {
   STOPPING = 'stopping'
 }
 
+export enum LazyAgentState {
+  UNLOADED = 'unloaded',
+  LOADING = 'loading',
+  LOADED = 'loaded',
+  ACTIVE = 'active',
+  DEACTIVATING = 'deactivating',
+  ERROR = 'error'
+}
+
 export interface Agent {
   id: string
   character_id?: string
@@ -73,6 +82,27 @@ export interface Agent {
   selfAwareness?: number // Level of self-awareness (0-1)
   subjectiveExperience?: boolean // Whether agent has subjective experience
 }
+
+export interface LazyAgent {
+  id: string
+  character_id?: string
+  name: string
+  state: LazyAgentState
+  config: AgentConfig
+  characterConfig?: any
+  lastActivated?: Date
+  agent?: Agent // Actual agent instance when loaded
+  priority: number // For loading priority
+  lazyMetrics: {
+    activationCount: number
+    lastActivationTime?: Date
+    averageActiveTime: number
+    memoryUsage: number
+    lastError?: string
+  }
+}
+
+export type AgentFactory = (config: AgentConfig, characterConfig?: any) => Promise<Agent>
 
 export interface AgentConfig {
   core: {
@@ -560,6 +590,7 @@ export interface EnvironmentState {
 
 export interface AgentRuntime {
   agents: Map<string, Agent>
+  lazyAgents: Map<string, LazyAgent>
   eventBus: EventBus
   registry: ModuleRegistry
   config: RuntimeConfig
@@ -570,6 +601,16 @@ export interface AgentRuntime {
   loadAgent(config: AgentConfig): Promise<Agent>
   unloadAgent(agentId: string): Promise<void>
   tick(): Promise<void>
+  
+  // Lazy agent management
+  activateAgent(agentId: string): Promise<Agent>
+  deactivateAgent(agentId: string): Promise<void>
+  isAgentActive(agentId: string): boolean
+  getAgentState(agentId: string): LazyAgentState | undefined
+  getLazyAgent(agentId: string): LazyAgent | undefined
+  listLazyAgents(): LazyAgent[]
+  preloadAgent(agentId: string): Promise<void>
+  unloadInactiveAgents(): Promise<number>
 }
 
 export interface EventBus {
@@ -583,6 +624,28 @@ export interface EventBus {
 }
 
 export interface ModuleRegistry {
+  // Factory registration methods (new primary approach)
+  registerMemoryFactory(type: string, factory: any): void
+  registerEmotionFactory(type: string, factory: any): void
+  registerCognitionFactory(type: string, factory: any): void
+  registerPortalFactory(type: string, factory: any): void
+  registerExtensionFactory(type: string, factory: any): void
+  registerAgentFactory(type: string, factory: AgentFactory): void
+  
+  // Factory creation methods (primary interface)
+  createMemoryProvider(type: string, config: any): MemoryProvider | undefined
+  createEmotionModule(type: string, config: any): EmotionModule | undefined
+  createCognitionModule(type: string, config: any): CognitionModule | undefined
+  createPortal(type: string, config: any): Portal | undefined
+  createExtension(type: string, config: any): Extension | undefined
+  createAgent(type: string, config: AgentConfig, characterConfig?: any): Promise<Agent>
+  
+  // Lazy agent management
+  registerLazyAgent(lazyAgent: LazyAgent): void
+  getLazyAgent(id: string): LazyAgent | undefined
+  listLazyAgents(): LazyAgent[]
+  
+  // Legacy instance methods (for backward compatibility, may be deprecated)
   registerMemoryProvider(name: string, provider: MemoryProvider): void
   registerEmotionModule(name: string, module: EmotionModule): void
   registerCognitionModule(name: string, module: CognitionModule): void
@@ -594,18 +657,14 @@ export interface ModuleRegistry {
   getExtension(name: string): Extension | undefined
   getPortal(name: string): Portal | undefined
   getToolSystem(name: string): any
-  createMemoryProvider(type: string, config: any): MemoryProvider | undefined
-  createCognitionModule(type: string, config: any): CognitionModule | undefined
-  createEmotionModule(type: string, config: any): EmotionModule | undefined
-  createPortal(type: string, config: any): Portal | undefined
+  
+  // Listing methods
   listEmotionModules(): string[]
   listCognitionModules(): string[]
-  registerMemoryFactory(type: string, factory: any): void
-  registerEmotionFactory(type: string, factory: any): void
-  registerCognitionFactory(type: string, factory: any): void
   listPortals(): string[]
   listPortalFactories(): string[]
-  registerPortalFactory(type: string, factory: any): void
+  listExtensions(): string[]
+  listAgentFactories(): string[]
   
   // Autonomous AI module registration
   registerLearningModule?(name: string, module: LearningModule): void

@@ -27,23 +27,20 @@ export { NeutralEmotion } from './neutral/index.js'
  * Create an emotion module based on configuration
  */
 export function createEmotionModule(type: string, config: any): EmotionModule {
-  runtimeLogger.emotion(`💭 Creating emotion module: ${type}`);
+  // Creating emotion module - logged by runtime
   
   try {
     // All emotion types now use the composite module
     switch (type) {
       case 'composite':
       case 'unified':
-      case 'rune_emotion_stack': // Legacy compatibility
-      case 'basic_emotions':     // Legacy compatibility
-      case 'complex_emotions':   // Legacy compatibility
       default:
-        runtimeLogger.success(`✅ Creating CompositeEmotionModule with all emotions`);
+        // Creating CompositeEmotionModule - logged by runtime
         return new CompositeEmotionModule(config);
     }
   } catch (error) {
     runtimeLogger.error(`❌ Failed to create emotion module ${type}:`, error);
-    runtimeLogger.emotion(`🔄 Creating default CompositeEmotionModule`);
+    // Creating default CompositeEmotionModule - logged by runtime
     return new CompositeEmotionModule(config);
   }
 }
@@ -52,7 +49,7 @@ export function createEmotionModule(type: string, config: any): EmotionModule {
  * Get all available emotion module types
  */
 export function getEmotionModuleTypes(): string[] {
-  return ['composite', 'unified', 'rune_emotion_stack', 'basic_emotions', 'complex_emotions'];
+  return ['composite', 'unified'];
 }
 
 /**
@@ -68,13 +65,11 @@ export { BaseEmotion } from './base-emotion.js';
 
 // Registration function
 export function registerEmotionModules(registry: any) {
-  runtimeLogger.emotion('💭 Registering emotion modules...');
-  
   // Register all as using the composite module
   const emotionTypes = getEmotionModuleTypes();
   for (const type of emotionTypes) {
     registry.registerEmotionFactory(type, (config: any) => createEmotionModule(type, config));
   }
   
-  runtimeLogger.success(`✅ Emotion module factories registered: ${emotionTypes.join(', ')}`);
+  // Emotion factories registered - logged by runtime
 }

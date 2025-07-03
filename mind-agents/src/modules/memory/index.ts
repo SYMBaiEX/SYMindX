@@ -36,8 +36,6 @@ export function createMemoryProvider(type: string, config?: any) {
 
 // Registration function with real providers
 export function registerMemoryProviders(registry: any) {
-  console.log('🧠 Registering memory providers...')
-  
   try {
     // Register memory factories in the registry
     registry.registerMemoryFactory('memory', (config: any) => createInMemoryProvider(config))
@@ -49,7 +47,7 @@ export function registerMemoryProviders(registry: any) {
     // Also register some default instances for backward compatibility
     registry.registerMemoryProvider('memory', createDefaultInMemoryProvider())
     
-    console.log('✅ Memory providers registered: memory, sqlite, supabase_pgvector, neon, postgres')
+    // Memory providers registered - logged by runtime
   } catch (error) {
     console.error('❌ Error registering memory providers:', error)
     // Fallback registration

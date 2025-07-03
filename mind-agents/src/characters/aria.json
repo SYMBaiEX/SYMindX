@@ -56,13 +56,15 @@
   },
   "portals": [
     {
-      "name": "main_chat",
-      "type": "groq",
+      "name": "main_openai",
+      "type": "openai",
       "primary": true,
       "enabled": true,
-      "capabilities": ["chat_generation", "text_generation"],
+      "capabilities": ["chat_generation", "text_generation", "image_generation", "embedding_generation", "tool_usage"],
       "config": {
-        "model": "llama-3.3-70b-versatile",
+        "model": "gpt-4o-mini",
+        "imageModel": "dall-e-3",
+        "embeddingModel": "text-embedding-3-small",
         "temperature": 0.8,
         "maxTokens": 500
       }
