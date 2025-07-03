@@ -395,10 +395,10 @@ class AwesomeSYMindXCLI {
     } else {
       // Fallback to HTTP API
       try {
-        const response = await fetch(`${this.config.apiUrl}/agents/${agentId}/chat`, {
+        const response = await fetch(`${this.config.apiUrl}/chat`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message })
+          body: JSON.stringify({ agentId, message })
         })
 
         if (response.ok) {

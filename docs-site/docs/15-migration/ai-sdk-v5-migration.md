@@ -102,6 +102,8 @@ Update your dependencies to the canary versions:
     "@ai-sdk/mistral": "^2.0.0-canary.7",
     "@ai-sdk/cohere": "^2.0.0-canary.7",
     "@ai-sdk/azure": "^2.0.0-canary.7",
+    "@ai-sdk/xai": "^0.0.14",
+    "ollama-ai-provider": "^0.14.1",
     "zod": "^3.23.8"
   }
 }
@@ -131,11 +133,18 @@ Update your dependencies to the canary versions:
 - Both support Gemini 2.0 models
 - Unified safety settings interface
 
-### New Portals
-- **Mistral AI**: European AI with GDPR compliance
-- **Cohere**: Enterprise text processing with RAG
-- **Azure OpenAI**: Enterprise OpenAI deployment
-- **Vercel AI SDK Portal**: Multi-provider support
+### New Portals Added
+- **Mistral AI**: European AI with GDPR compliance and efficient inference
+- **Cohere**: Enterprise-focused natural language understanding and generation
+- **Azure OpenAI**: Enterprise OpenAI deployment with security and compliance
+- **xAI Grok**: Witty and unconventional AI with real-time web access
+- **Vercel AI SDK Portal**: Multi-provider edge computing support
+- **Ollama**: Local model deployment for privacy-focused applications
+- **LM Studio**: Local model experimentation and development
+- **OpenRouter**: Multi-model routing and intelligent selection
+- **Kluster.ai**: Distributed computing and high-performance clusters
+- **Google Vertex AI**: Enterprise ML platform with cloud-native features
+- **Multimodal Portal**: Vision, image, and multimedia processing capabilities
 
 ## Migration Steps
 

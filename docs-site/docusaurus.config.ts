@@ -145,6 +145,12 @@ const config: Config = {
           label: 'API Reference',
         },
         {
+          type: 'docSidebar',
+          sidebarId: 'examplesSidebar',
+          position: 'left',
+          label: 'Examples',
+        },
+        {
           to: '/blog',
           label: 'Blog',
           position: 'left'

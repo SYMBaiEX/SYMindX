@@ -3,6 +3,7 @@ import { Box, Text, useInput } from 'ink';
 import { Dashboard } from '../components/Dashboard.js';
 import { AgentList } from '../components/AgentList.js';
 import { SystemStatus } from '../components/SystemStatus.js';
+import { Chat } from '../components/Chat.js';
 
 interface MainLayoutProps {
   command?: string;
@@ -36,6 +37,11 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ command = 'dashboard', a
       setCurrentView('status');
       setShowHelp(false);
     }
+    
+    if (input === 'c') {
+      setCurrentView('chat');
+      setShowHelp(false);
+    }
   });
 
   const renderHelp = () => (
@@ -45,6 +51,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ command = 'dashboard', a
       <Text><Text color="green">d</Text> - Dashboard view</Text>
       <Text><Text color="green">a</Text> - Agent list view</Text>
       <Text><Text color="green">s</Text> - System status view</Text>
+      <Text><Text color="green">c</Text> - Chat with agents</Text>
       <Text><Text color="green">h/?</Text> - Toggle this help</Text>
       <Text><Text color="red">ESC</Text> - Exit</Text>
     </Box>
@@ -56,6 +63,8 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ command = 'dashboard', a
         return <AgentList />;
       case 'status':
         return <SystemStatus />;
+      case 'chat':
+        return <Chat />;
       case 'dashboard':
       default:
         return <Dashboard />;
@@ -76,7 +85,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ command = 'dashboard', a
       </Box>
       
       <Box padding={1} borderStyle="single" borderColor="gray">
-        <Text color="gray">Navigation: [d]ashboard | [a]gents | [s]tatus | [h]elp | [ESC] exit</Text>
+        <Text color="gray">Navigation: [d]ashboard | [a]gents | [s]tatus | [c]hat | [h]elp | [ESC] exit</Text>
       </Box>
     </Box>
   );
