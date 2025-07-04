@@ -265,6 +265,8 @@ logs/
 # Local configuration
 config/runtime.json
 config/local.json
+mind-agents/src/core/config/runtime.json
+mind-agents/src/core/config/local.json
 
 # Temporary files
 *.tmp

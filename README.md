@@ -92,12 +92,12 @@ cd symindx
 bun install
 
 # Copy configuration
-cp config/runtime.example.json config/runtime.json
+cp mind-agents/src/core/config/runtime.example.json mind-agents/src/core/config/runtime.json
 ```
 
 ### Configuration
 
-Edit `config/runtime.json` with your API keys:
+Edit `mind-agents/src/core/config/runtime.json` with your API keys:
 
 ```json
 {

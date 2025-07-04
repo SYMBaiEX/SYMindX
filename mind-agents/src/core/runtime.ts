@@ -113,10 +113,9 @@ export class SYMindXRuntime implements AgentRuntime {
       const fs = await import('fs/promises')
       const path = await import('path')
       
-      // Get the root directory path
+      // Get the core directory path
       const __dirname = path.dirname(new URL(import.meta.url).pathname)
-      const rootDir = path.resolve(__dirname, '../../..')
-      const configPath = path.join(rootDir, 'config', 'runtime.json')
+      const configPath = path.join(__dirname, 'config', 'runtime.json')
       
       // Check if the config file exists
       try {

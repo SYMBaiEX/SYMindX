@@ -251,7 +251,7 @@ TWITTER_PASSWORD=...
 
 ## Development Workflow
 
-1. **Setup**: Copy `config/runtime.example.json` to `config/runtime.json`
+1. **Setup**: Copy `mind-agents/src/core/config/runtime.example.json` to `mind-agents/src/core/config/runtime.json`
 2. **Configure**: Add API keys to runtime.json or environment variables
 3. **Install**: Run `bun install` from repository root
 4. **Develop**: Use `bun dev` to start both components
@@ -262,7 +262,7 @@ TWITTER_PASSWORD=...
 
 ### Git Ignore Patterns
 - `/cli/` directory contains build outputs and should not be committed
-- `config/runtime.json` is user-specific and not tracked
+- `mind-agents/src/core/config/runtime.json` is user-specific and not tracked
 - Database files (*.db, *.sqlite) are not tracked
 - Memory modules ARE tracked (exception to usual patterns)
 

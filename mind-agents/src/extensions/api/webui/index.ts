@@ -2544,7 +2544,7 @@ export class WebUIServer {
         }
 
         function createAgent() {
-            alert('Agent creation interface coming soon!\n\nTo create an agent:\n1. Add a character JSON file in src/characters/\n2. Configure it in config/runtime.json\n3. Restart the runtime');
+            alert('Agent creation interface coming soon!\n\nTo create an agent:\n1. Add a character JSON file in src/characters/\n2. Configure it in mind-agents/src/core/config/runtime.json\n3. Restart the runtime');
         }
 
         async function startAgent(agentId) {

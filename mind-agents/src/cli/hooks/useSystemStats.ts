@@ -65,7 +65,7 @@ export const useSystemStats = (): SystemStats => {
       nodeVersion: process.version,
       platform: os.platform(),
       arch: os.arch(),
-      configFile: './config/runtime.json',
+      configFile: './mind-agents/src/core/config/runtime.json',
       logLevel: 'info',
       env: process.env.NODE_ENV || 'development'
     },
@@ -173,7 +173,7 @@ export const useSystemStats = (): SystemStats => {
             nodeVersion: process.version,
             platform: os.platform(),
             arch: os.arch(),
-            configFile: './config/runtime.json',
+            configFile: './mind-agents/src/core/config/runtime.json',
             logLevel: 'info',
             env: process.env.NODE_ENV || 'development'
           },
