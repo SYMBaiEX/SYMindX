@@ -1,0 +1,349 @@
+---
+description: APPLY modern modular architecture patterns when developing core agent systems to ensure scalability and edge-first design
+globs: mind-agents/src/**/*,**/edge/**,**/workers/**
+---
+# Modern SYMindX Architecture Patterns 2025
+
+**Rule Priority:** Core Architecture  
+**Activation:** Always Active  
+**Scope:** System design, modular architecture, and edge computing
+
+## System Architecture Overview
+
+SYMindX follows a **modular, event-driven architecture** designed for scalability, hot-swappable components, and multi-platform agent deployment. The system is organized as a workspace with three main components:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     SYMindX Workspace                        │
+├─────────────────────────────────────────────────────────────┤
+│  mind-agents/     │  website/        │  docs-site/          │
+│  (Core Runtime)   │  (React UI)      │  (Documentation)     │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                    ┌─────────┴─────────┐
+                    │  SYMindX Runtime  │
+                    │   (Event-Driven)  │
+                    └─────────┬─────────┘
+                              │
+        ┌─────────────────────┼─────────────────────┐
+        │                     │                     │
+   ┌────▼────┐        ┌──────▼──────┐       ┌─────▼─────┐
+   │ Module  │        │   Event     │       │ Extension │
+   │Registry │◄──────►│    Bus      │◄─────►│  Loader   │
+   └─────────┘        └─────────────┘       └───────────┘
+```
+
+## 2025 Architectural Principles
+
+### 1. Edge-First Modular Design
+
+- **Hot-swappable modules** for memory, emotion, and cognition
+- **Edge-deployable components** for distributed processing
+- **Plugin-based extensions** for platform integrations
+- **Provider pattern** with edge-compatible AI service abstractions
+- **Registry pattern** for component discovery and lifecycle
+- **Micro-frontend integration** for distributed UI components
+
+### 2. Event-Driven Architecture with Edge Distribution
+
+- **Centralized Event Bus** for component communication
+- **Edge-distributed event processing** for reduced latency
+- **Pub/Sub pattern** with WebSocket and WebRTC support
+- **Message-driven interactions** between agents and extensions
+- **Real-time event processing** with streaming capabilities
+- **Event sourcing** for distributed state management
+
+### 3. Multi-Agent Coordination with Cloud-Edge Hybrid
+
+- **Agent isolation** with shared resource management
+- **Centralized coordination** through multi-agent manager
+- **Edge deployment** for latency-sensitive operations
+- **Resource pooling** for memory and AI portals
+- **Conflict resolution** for concurrent operations
+- **Auto-scaling** based on demand and resource availability
+
+### 4. 2025 Performance Optimization Patterns
+
+- **Progressive Web App (PWA)** architecture for offline capabilities
+- **Service Worker** integration for background processing
+- **WebAssembly (WASM)** modules for compute-intensive operations
+- **HTTP/3 and QUIC** protocol support for faster communication
+- **Streaming data processing** with backpressure handling
+- **Adaptive resource allocation** based on device capabilities
+
+## Module Architecture Patterns
+
+### Memory Module Pattern
+```typescript
+interface MemoryProvider {
+  readonly id: string;
+  readonly type: 'sqlite' | 'supabase' | 'neon' | 'postgres' | 'memory';
+  
+  initialize(config: MemoryConfig): Promise<void>;
+  store(conversation: Conversation): Promise<void>;
+  retrieve(query: SearchQuery): Promise<Memory[]>;
+  search(embedding: number[]): Promise<Memory[]>;
+  shutdown(): Promise<void>;
+}
+
+// Hot-swappable implementation
+abstract class BaseMemoryProvider implements MemoryProvider {
+  protected abstract onHotReload(newConfig: MemoryConfig): Promise<void>;
+  protected abstract validateConfig(config: MemoryConfig): boolean;
+}
+```
+
+**Available Providers:**
+
+- `sqlite/` - Local SQLite database with vector search
+- `supabase/` - Supabase with pgvector for embeddings
+- `neon/` - Neon database with vector capabilities
+- `postgres/` - Direct PostgreSQL with pgvector
+- `memory/` - In-memory storage (non-persistent)
+
+### Emotion Module Pattern
+```typescript
+interface EmotionModule {
+  readonly id: string;
+  readonly emotions: EmotionType[];
+  
+  processEvent(event: EmotionalEvent): Promise<EmotionState>;
+  getCurrentState(): EmotionState;
+  getEmotionHistory(): EmotionHistory[];
+  influenceResponse(response: string): string;
+}
+
+// Composite emotion system
+class CompositeEmotion implements EmotionModule {
+  private readonly emotions = [
+    'happy', 'sad', 'angry', 'curious', 'confident', 
+    'anxious', 'empathetic', 'nostalgic', 'proud', 
+    'confused', 'neutral'
+  ];
+}
+```
+
+**11 Distinct Emotions** (RuneScape-inspired):
+
+- Individual emotion modules in `emotion/{type}/`
+- Composite emotion system combining multiple states
+- Context-aware emotional transitions
+- Emotion influence on response generation
+
+### Cognition Module Pattern
+```typescript
+interface CognitionModule {
+  readonly id: string;
+  readonly type: 'htn_planner' | 'reactive' | 'hybrid';
+  
+  plan(goal: Goal, context: Context): Promise<Plan>;
+  execute(plan: Plan): Promise<ActionResult>;
+  adapt(feedback: Feedback): Promise<void>;
+  reflect(outcome: Outcome): Promise<void>;
+}
+```
+
+**Available Cognition Types:**
+
+- `htn_planner` - Hierarchical Task Network planning
+- `reactive` - Immediate response to stimuli
+- `hybrid` - Combined planning and reactive behaviors
+
+## Portal Architecture Pattern
+
+### AI Provider Abstraction
+```typescript
+interface AIPortal {
+  readonly provider: string;
+  readonly models: string[];
+  
+  generate(prompt: string, options: GenerationOptions): Promise<AIResponse>;
+  stream(prompt: string, options: StreamOptions): AsyncIterable<AIChunk>;
+  embed(text: string): Promise<number[]>;
+  moderate(content: string): Promise<ModerationResult>;
+}
+
+// Vercel AI SDK v5 integration
+abstract class BasePortal implements AIPortal {
+  protected abstract createProvider(): Provider;
+  protected abstract handleRateLimit(): Promise<void>;
+  protected abstract handleFallback(error: Error): Promise<AIResponse>;
+}
+```
+
+**Supported Providers:**
+
+- `openai/` - OpenAI GPT models
+- `anthropic/` - Anthropic Claude models
+- `groq/` - Groq fast inference
+- `xai/` - xAI Grok models
+- `google-vertex/` - Google Vertex AI
+- `google-generative/` - Google Generative AI
+- `mistral/` - Mistral AI models
+- `cohere/` - Cohere models
+- `azure-openai/` - Azure OpenAI
+- `openrouter/` - OpenRouter API
+- `ollama/` - Local Ollama models
+- `lmstudio/` - LM Studio local models
+- `kluster.ai/` - Kluster.ai models
+- `vercel/` - Vercel AI SDK providers
+- `multimodal/` - Multi-modal AI capabilities
+
+## Extension Architecture Pattern
+
+### Platform Extension Pattern
+```typescript
+interface Extension {
+  readonly id: string;
+  readonly platform: string;
+  readonly capabilities: string[];
+  
+  initialize(config: ExtensionConfig): Promise<void>;
+  handleMessage(message: IncomingMessage): Promise<void>;
+  sendMessage(message: OutgoingMessage): Promise<void>;
+  shutdown(): Promise<void>;
+}
+
+// Communication abstraction
+abstract class CommunicationExtension implements Extension {
+  protected abstract parseIncomingMessage(raw: unknown): IncomingMessage;
+  protected abstract formatOutgoingMessage(msg: OutgoingMessage): unknown;
+  protected abstract establishConnection(): Promise<void>;
+}
+```
+
+**Extension Types:**
+
+- `communication/` - Base communication abstractions
+- `api/` - REST/WebSocket API server
+- `telegram/` - Telegram bot integration
+- `mcp-server/` - Model Context Protocol server
+- `mcp-client/` - Model Context Protocol client
+
+## Character System Pattern
+
+### Agent Configuration Pattern
+```typescript
+interface AgentCharacter {
+  readonly id: string;
+  readonly core: {
+    name: string;
+    tone: string;
+    personality: string[];
+  };
+  readonly lore: {
+    origin: string;
+    motive: string;
+    background: string;
+  };
+  readonly psyche: {
+    traits: string[];
+    defaults: {
+      memory: string;
+      emotion: string;
+      cognition: string;
+      portal: string;
+    };
+  };
+  readonly modules: ModuleConfigurations;
+}
+```
+
+**Character Definition:**
+
+- JSON-based character configurations in `characters/`
+- Personality-driven behavior patterns
+- Module preference specifications
+- Lore and backstory integration
+
+## Runtime Coordination Pattern
+
+### Event Bus Architecture
+```typescript
+interface EventBus {
+  subscribe<T>(event: string, handler: EventHandler<T>): void;
+  unsubscribe(event: string, handler: EventHandler): void;
+  emit<T>(event: string, data: T): Promise<void>;
+  emitSync<T>(event: string, data: T): void;
+}
+
+// Core runtime coordination
+class SYMindXRuntime {
+  private readonly eventBus: EventBus;
+  private readonly registry: ModuleRegistry;
+  private readonly multiAgentManager: MultiAgentManager;
+  
+  async tick(): Promise<void> {
+    // Main runtime loop
+    await this.processEvents();
+    await this.updateAgentStates();
+    await this.executeScheduledTasks();
+  }
+}
+```
+
+### Registry Pattern
+```typescript
+interface ModuleRegistry {
+  register<T>(module: T, metadata: ModuleMetadata): void;
+  unregister(id: string): void;
+  get<T>(id: string): T | null;
+  list(type?: string): ModuleInfo[];
+  hot_reload(id: string, newModule: unknown): Promise<void>;
+}
+```
+
+## Workspace Organization
+
+### Multi-Package Workspace
+```json
+{
+  "workspaces": [
+    "mind-agents",                    // Core runtime
+    "website",                        // React interface
+    "docs-site",                      // Documentation
+    "mind-agents/src/portals/*"       // AI provider packages
+  ]
+}
+```
+
+### Package Management
+
+- **Bun** as primary runtime and package manager
+- **TypeScript** for type safety across all packages
+- **Hot module replacement** for development workflow
+- **Monorepo** structure with workspace dependencies
+
+## Performance Patterns
+
+### Resource Management
+
+- **Connection pooling** for database providers
+- **Rate limiting** for AI provider APIs
+- **Caching layers** for frequently accessed data
+- **Memory optimization** for long-running agents
+
+### Scalability Patterns
+
+- **Horizontal scaling** through multiple runtime instances
+- **Vertical scaling** through resource allocation
+- **Load balancing** across AI providers
+- **State persistence** for agent continuity
+
+## Security Architecture
+
+### Access Control
+
+- **API key management** through configuration
+- **Rate limiting** on external APIs
+- **Input validation** on all user interactions
+- **Error boundary isolation** between modules
+
+### Data Protection
+
+- **Encryption at rest** for sensitive memory data
+- **Secure communication** channels for extensions
+- **Audit logging** for security monitoring
+- **Privacy controls** for user data
+
+This architecture ensures SYMindX maintains modularity, scalability, and extensibility while providing a robust foundation for intelligent agent development.

@@ -1,0 +1,608 @@
+---
+description: APPLY CLI design patterns when developing command-line tools and scripts
+globs: mind-agents/src/cli/**/*
+---
+
+# CLI and Tooling Patterns
+
+## CLI Architecture
+
+SYMindX provides comprehensive command-line interfaces for agent management, development workflows, and operational tasks, built with modern CLI patterns and developer experience best practices.
+
+### Core CLI Principles
+
+**🔧 Developer-First Design**
+
+- Intuitive command structure with discoverability
+- Rich help documentation and examples
+- Auto-completion support for shells
+- Progress indicators for long-running operations
+
+**⚡ Performance Optimized**
+
+- Fast startup times with lazy loading
+- Efficient operations with minimal overhead
+- Parallel execution where possible
+- Smart caching for repeated operations
+
+**🔌 Extensible Framework**
+
+- Plugin architecture for custom commands
+- Configuration management with validation
+- Integration with external development tools
+- Scripting support for automation
+
+## Agent Management CLI
+
+### Agent Lifecycle Commands
+
+```bash
+# Agent creation and configuration
+symindx agent create --type chat --name "customer-support" --config ./config.json
+symindx agent clone --from production-bot --to dev-bot --environment dev
+symindx agent configure --agent customer-support --memory-provider supabase
+symindx agent validate --agent customer-support --config
+
+# Agent deployment and management
+symindx agent deploy --agent customer-support --environment production
+symindx agent start --agent customer-support --watch
+symindx agent stop --agent customer-support --graceful
+symindx agent restart --agent customer-support --force
+
+# Agent monitoring and debugging
+symindx agent status --all
+symindx agent logs --agent customer-support --follow --level error
+symindx agent health --agent customer-support --verbose
+symindx agent metrics --agent customer-support --time-range 1h
+```
+
+### Module Management
+
+```bash
+# Memory module operations
+symindx module install memory-provider-redis --version latest
+symindx module list --type memory --installed
+symindx module configure memory-sqlite --database-path ./data/memory.db
+symindx module hot-swap --agent customer-support --module memory --to supabase
+
+# Emotion module management
+symindx module emotion list --available
+symindx module emotion configure --agent customer-support --emotions happy,excited,calm
+symindx module emotion test --agent customer-support --input "Great news!"
+
+# Cognition module operations
+symindx module cognition list --type planning
+symindx module cognition install htn-planner --version 2.1.0
+symindx module cognition configure --agent customer-support --planner htn --reactive-fallback true
+```
+
+## Development Tooling
+
+### Project Scaffolding
+
+```bash
+# Project initialization
+symindx init --template agent-starter --name my-agent
+symindx init --template portal-integration --provider custom-ai
+symindx init --template extension-slack --workspace my-company
+
+# Component generation
+symindx generate agent --name sales-bot --type conversational
+symindx generate portal --name custom-llm --provider ollama
+symindx generate extension --platform discord --features moderation,games
+symindx generate memory-provider --name vector-db --database chroma
+```
+
+### Configuration Management
+
+```bash
+# Environment management
+symindx config init --environment development
+symindx config set AI_PROVIDER_API_KEY="sk-..." --environment production
+symindx config get --all --environment staging
+symindx config validate --environment production --strict
+
+# Configuration templates
+symindx config template list --category portal
+symindx config template apply openai-portal --agent customer-support
+symindx config template create --name custom-setup --from ./my-config.json
+symindx config diff production staging --show-secrets false
+```
+
+### Testing and Quality Assurance
+
+```bash
+# Agent testing
+symindx test agent --agent customer-support --scenarios ./test-scenarios/
+symindx test conversation --agent customer-support --input "Hello" --expected-emotion friendly
+symindx test memory --agent customer-support --operation store,retrieve --verify-accuracy
+symindx test portal --provider openai --model gpt-4 --test-cases ./portal-tests.json
+
+# Performance testing
+symindx benchmark agent --agent customer-support --concurrent-users 10 --duration 5m
+symindx benchmark memory --provider supabase --operations 1000 --parallel 5
+symindx benchmark portal --provider anthropic --requests 100 --measure-latency
+
+# Quality checks
+symindx lint --agent customer-support --check-config --check-dependencies
+symindx security-scan --agent customer-support --check-api-keys --check-permissions
+symindx audit --agent customer-support --check-performance --check-memory-leaks
+```
+
+## Operational Tooling
+
+### Deployment and Release
+
+```bash
+# Build and packaging
+symindx build --agent customer-support --optimize --target production
+symindx package --agent customer-support --format docker --include-dependencies
+symindx package --agent customer-support --format zip --exclude-dev-dependencies
+
+# Deployment automation
+symindx deploy --agent customer-support --environment staging --wait-for-health
+symindx deploy --agent customer-support --environment production --blue-green
+symindx rollback --agent customer-support --environment production --to-version 1.2.3
+symindx release --version 1.3.0 --changelog-from v1.2.0 --publish
+
+# Environment promotion
+symindx promote --agent customer-support --from staging --to production --verify-tests
+symindx sync-config --from production --to staging --exclude-secrets
+```
+
+### Monitoring and Debugging
+
+```bash
+# Real-time monitoring
+symindx monitor --agent customer-support --metrics response-time,error-rate --dashboard
+symindx monitor --all-agents --alert-threshold error-rate:5% --notify-slack
+symindx monitor performance --agent customer-support --profile-memory --duration 10m
+
+# Log management
+symindx logs stream --agent customer-support --level info --filter "conversation"
+symindx logs search --query "error AND portal" --time-range 24h --format json
+symindx logs export --agent customer-support --start "2024-01-01" --format csv
+symindx logs analyze --agent customer-support --detect-patterns --report-errors
+
+# Debugging tools
+symindx debug conversation --agent customer-support --session-id abc123 --trace-full
+symindx debug memory --agent customer-support --operation retrieve --query "customer support"
+symindx debug portal --provider openai --request-id req_xyz789 --show-tokens
+symindx debug event-bus --agent customer-support --event-type emotion --real-time
+```
+
+### Data Management
+
+```bash
+# Memory operations
+symindx memory export --agent customer-support --format json --include-embeddings
+symindx memory import --agent customer-support --file ./backup.json --merge
+symindx memory cleanup --agent customer-support --older-than 30d --confirm
+symindx memory reindex --agent customer-support --provider supabase --parallel
+
+# Conversation management
+symindx conversation export --agent customer-support --user-id user123 --format markdown
+symindx conversation archive --agent customer-support --older-than 90d --compress
+symindx conversation replay --agent customer-support --session-id abc123 --step-by-step
+symindx conversation analyze --agent customer-support --sentiment --topics --export-report
+```
+
+## CLI Implementation Patterns
+
+### Command Structure
+
+```typescript
+interface Command {
+  name: string;
+  description: string;
+  arguments: Argument[];
+  options: Option[];
+  action: (args: any, options: any) => Promise<void>;
+  examples: string[];
+}
+
+interface Argument {
+  name: string;
+  description: string;
+  required: boolean;
+  type: 'string' | 'number' | 'boolean';
+  choices?: string[];
+  validation?: (value: any) => boolean | string;
+}
+
+interface Option {
+  short?: string;
+  long: string;
+  description: string;
+  type: 'string' | 'number' | 'boolean' | 'array';
+  default?: any;
+  required?: boolean;
+  conflicts?: string[];
+  depends?: string[];
+}
+
+class CLIFramework {
+  private commands: Map<string, Command> = new Map();
+  private globalOptions: Option[] = [];
+  
+  register(command: Command): void {
+    this.commands.set(command.name, command);
+  }
+  
+  async execute(argv: string[]): Promise<void> {
+    const parsed = this.parse(argv);
+    const command = this.commands.get(parsed.command);
+    
+    if (!command) {
+      throw new Error(`Unknown command: ${parsed.command}`);
+    }
+    
+    // Validate arguments and options
+    this.validate(command, parsed.args, parsed.options);
+    
+    // Execute command with error handling
+    try {
+      await command.action(parsed.args, parsed.options);
+    } catch (error) {
+      this.handleError(error, command);
+    }
+  }
+}
+```
+
+### Progress Indicators
+
+```typescript
+class ProgressManager {
+  private activeOperations: Map<string, ProgressOperation> = new Map();
+  
+  start(id: string, title: string, total?: number): void {
+    const operation = new ProgressOperation(id, title, total);
+    this.activeOperations.set(id, operation);
+    operation.start();
+  }
+  
+  update(id: string, progress: number, message?: string): void {
+    const operation = this.activeOperations.get(id);
+    if (operation) {
+      operation.update(progress, message);
+    }
+  }
+  
+  complete(id: string, message?: string): void {
+    const operation = this.activeOperations.get(id);
+    if (operation) {
+      operation.complete(message);
+      this.activeOperations.delete(id);
+    }
+  }
+  
+  fail(id: string, error: string): void {
+    const operation = this.activeOperations.get(id);
+    if (operation) {
+      operation.fail(error);
+      this.activeOperations.delete(id);
+    }
+  }
+}
+
+class ProgressOperation {
+  private spinner: any;
+  private progressBar: any;
+  
+  constructor(
+    private id: string,
+    private title: string,
+    private total?: number
+  ) {
+    if (total) {
+      this.progressBar = new ProgressBar(`${title} [:bar] :percent :etas`, {
+        complete: '█',
+        incomplete: '░',
+        width: 40,
+        total
+      });
+    } else {
+      this.spinner = new Spinner(`${title} %s`);
+    }
+  }
+  
+  start(): void {
+    if (this.spinner) {
+      this.spinner.start();
+    }
+  }
+  
+  update(progress: number, message?: string): void {
+    if (this.progressBar) {
+      this.progressBar.tick(progress - this.progressBar.curr);
+    } else if (this.spinner) {
+      this.spinner.text = message || this.title;
+    }
+  }
+  
+  complete(message?: string): void {
+    if (this.spinner) {
+      this.spinner.succeed(message || `${this.title} completed`);
+    } else if (this.progressBar) {
+      this.progressBar.tick(this.progressBar.total - this.progressBar.curr);
+      console.log(chalk.green(`✓ ${message || this.title} completed`));
+    }
+  }
+  
+  fail(error: string): void {
+    if (this.spinner) {
+      this.spinner.fail(`${this.title} failed: ${error}`);
+    } else if (this.progressBar) {
+      console.log(chalk.red(`✗ ${this.title} failed: ${error}`));
+    }
+  }
+}
+```
+
+### Configuration Management
+
+```typescript
+interface CLIConfig {
+  environment: string;
+  defaults: Record<string, any>;
+  profiles: Record<string, Profile>;
+  paths: {
+    config: string;
+    data: string;
+    logs: string;
+    cache: string;
+  };
+}
+
+interface Profile {
+  name: string;
+  environment: string;
+  aiProviders: Record<string, ProviderConfig>;
+  memoryProvider: MemoryProviderConfig;
+  extensions: ExtensionConfig[];
+}
+
+class ConfigManager {
+  private config: CLIConfig;
+  private configPath: string;
+  
+  constructor(configPath?: string) {
+    this.configPath = configPath || this.getDefaultConfigPath();
+    this.load();
+  }
+  
+  get(key: string, profile?: string): any {
+    const profileConfig = profile ? this.config.profiles[profile] : {};
+    return profileConfig[key] ?? this.config.defaults[key];
+  }
+  
+  set(key: string, value: any, profile?: string): void {
+    if (profile) {
+      if (!this.config.profiles[profile]) {
+        this.config.profiles[profile] = {
+          name: profile,
+          environment: 'development',
+          aiProviders: {},
+          memoryProvider: { type: 'sqlite', config: {} },
+          extensions: []
+        };
+      }
+      this.config.profiles[profile][key] = value;
+    } else {
+      this.config.defaults[key] = value;
+    }
+    
+    this.save();
+  }
+  
+  validate(profile?: string): ValidationResult {
+    const profileToValidate = profile || this.config.environment;
+    const profileConfig = this.config.profiles[profileToValidate];
+    
+    if (!profileConfig) {
+      return { valid: false, errors: [`Profile '${profileToValidate}' not found`] };
+    }
+    
+    const errors: string[] = [];
+    
+    // Validate AI provider configurations
+    for (const [provider, config] of Object.entries(profileConfig.aiProviders)) {
+      if (!config.apiKey && !config.endpoint) {
+        errors.push(`AI provider '${provider}' missing apiKey or endpoint`);
+      }
+    }
+    
+    // Validate memory provider
+    if (!profileConfig.memoryProvider?.type) {
+      errors.push('Memory provider type not specified');
+    }
+    
+    return { valid: errors.length === 0, errors };
+  }
+  
+  private load(): void {
+    try {
+      if (fs.existsSync(this.configPath)) {
+        const data = fs.readFileSync(this.configPath, 'utf8');
+        this.config = JSON.parse(data);
+      } else {
+        this.config = this.getDefaultConfig();
+        this.save();
+      }
+    } catch (error) {
+      console.warn(`Failed to load config from ${this.configPath}, using defaults`);
+      this.config = this.getDefaultConfig();
+    }
+  }
+  
+  private save(): void {
+    try {
+      fs.writeFileSync(this.configPath, JSON.stringify(this.config, null, 2));
+    } catch (error) {
+      console.error(`Failed to save config to ${this.configPath}:`, error.message);
+    }
+  }
+}
+```
+
+## Developer Experience
+
+### Auto-completion
+
+```bash
+# Enable shell completion
+symindx completion bash >> ~/.bashrc
+symindx completion zsh >> ~/.zshrc
+symindx completion fish >> ~/.config/fish/completions/symindx.fish
+
+# Dynamic completion for agent names, configurations, etc.
+symindx agent start <TAB>  # Shows available agents
+symindx config set <TAB>   # Shows configuration keys
+```
+
+### Interactive Mode
+
+```bash
+# Interactive agent creation
+symindx agent create --interactive
+# ? Agent name: customer-support
+# ? Agent type: (chat, analysis, creative, coding)
+# ? Memory provider: (sqlite, supabase, postgresql, neon)
+# ? AI providers: (select multiple with space)
+
+# Interactive configuration
+symindx config setup --interactive
+# Guides through complete environment setup
+```
+
+### Help and Documentation
+
+```bash
+# Comprehensive help system
+symindx --help
+symindx agent --help
+symindx agent create --help
+
+# Examples and tutorials
+symindx examples list
+symindx examples show agent-creation
+symindx tutorial start --topic "Creating your first agent"
+```
+
+## Tool Integration
+
+### IDE Extensions
+
+```bash
+# VS Code extension installation
+symindx tools install vscode-extension
+symindx tools configure vscode --workspace ./my-project
+
+# IntelliJ plugin
+symindx tools install intellij-plugin
+symindx tools configure intellij --project-path ./my-project
+```
+
+### CI/CD Integration
+
+```bash
+# GitHub Actions workflow generation
+symindx ci generate github-actions --test --deploy --environments staging,production
+
+# GitLab CI configuration
+symindx ci generate gitlab-ci --include-security-scan --include-performance-test
+
+# Jenkins pipeline
+symindx ci generate jenkins --declarative --multi-branch
+```
+
+### External Tool Integration
+
+```bash
+# Docker integration
+symindx docker build --agent customer-support --multi-stage --optimize
+symindx docker run --agent customer-support --port 8080 --env production
+
+# Kubernetes deployment
+symindx k8s generate --agent customer-support --namespace production --replicas 3
+symindx k8s deploy --agent customer-support --cluster production --wait
+
+# Monitoring integration
+symindx monitoring setup prometheus --agents all --custom-metrics
+symindx monitoring setup grafana --dashboard-url http://grafana.local --import-dashboards
+```
+
+## Configuration Standards
+
+```typescript
+interface CLIConfiguration {
+  // Global CLI settings
+  global: {
+    defaultProfile: string;         // Default: 'development'
+    outputFormat: 'json' | 'yaml' | 'table'; // Default: 'table'
+    colorOutput: boolean;           // Default: true
+    verboseMode: boolean;           // Default: false
+    parallelOperations: number;     // Default: 4
+  };
+  
+  // Command-specific defaults
+  commands: {
+    agent: {
+      defaultMemoryProvider: string; // Default: 'sqlite'
+      defaultCognitionModule: string; // Default: 'reactive'
+      autoStartAfterCreate: boolean;  // Default: false
+    };
+    
+    deploy: {
+      defaultEnvironment: string;     // Default: 'staging'
+      waitForHealth: boolean;         // Default: true
+      backupBeforeDeploy: boolean;    // Default: true
+    };
+    
+    test: {
+      parallelTests: number;          // Default: 2
+      timeoutPerTest: number;         // Default: 30000ms
+      failFast: boolean;              // Default: false
+    };
+  };
+  
+  // Tool integrations
+  integrations: {
+    docker: {
+      registry: string;               // Default: 'ghcr.io'
+      baseImage: string;              // Default: 'node:18-alpine'
+      enableBuildCache: boolean;      // Default: true
+    };
+    
+    monitoring: {
+      metricsPort: number;            // Default: 9090
+      healthCheckEndpoint: string;    // Default: '/health'
+      enableDetailedMetrics: boolean; // Default: false
+    };
+  };
+}
+```
+
+## Best Practices
+
+**🎯 Usability First**
+
+- Consistent command naming and structure
+- Rich help documentation with examples
+- Intuitive defaults with easy customization
+- Clear error messages with suggested fixes
+
+**⚡ Performance Optimized**
+
+- Fast command execution with minimal startup overhead
+- Efficient operations with progress indicators
+- Smart caching for repeated operations
+- Parallel execution where beneficial
+
+**🔧 Development Workflow**
+
+- Seamless integration with existing development tools
+- Automated testing and quality assurance commands
+- Configuration management with environment isolation
+- Comprehensive debugging and monitoring capabilities

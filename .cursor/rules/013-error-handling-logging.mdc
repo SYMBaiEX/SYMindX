@@ -1,0 +1,129 @@
+---
+description: IMPLEMENT proper error handling when writing error-prone or logging code
+globs: **/*.ts, **/*.js
+---
+
+# Error Handling and Logging Patterns
+
+## Error Handling Architecture
+
+SYMindX implements comprehensive error handling across all system layers with structured logging, automated recovery mechanisms, and intelligent error propagation patterns for multi-agent coordination.
+
+## Core Error Types
+
+### Error Categories
+
+```typescript
+enum ErrorCategory {
+  NETWORK = 'network',
+  DATABASE = 'database', 
+  AI_PROVIDER = 'ai_provider',
+  VALIDATION = 'validation',
+  AUTHENTICATION = 'authentication',
+  AGENT_LIFECYCLE = 'agent_lifecycle',
+  MEMORY_OPERATION = 'memory_operation'
+}
+
+interface StructuredError {
+  id: string;
+  category: ErrorCategory;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  message: string;
+  context: ErrorContext;
+  timestamp: Date;
+  correlationId?: string;
+  agentId?: string;
+  conversationId?: string;
+}
+```
+
+## Logging System
+
+### Structured Logger
+
+```typescript
+class StructuredLogger {
+  debug(message: string, metadata: Record<string, any> = {}): void {
+    this.log('debug', message, metadata);
+  }
+  
+  info(message: string, metadata: Record<string, any> = {}): void {
+    this.log('info', message, metadata);
+  }
+  
+  warn(message: string, metadata: Record<string, any> = {}): void {
+    this.log('warn', message, metadata);
+  }
+  
+  error(message: string, error?: Error, metadata: Record<string, any> = {}): void {
+    this.log('error', message, { ...metadata, error });
+  }
+}
+```
+
+## Error Recovery
+
+### Circuit Breaker Pattern
+
+```typescript
+class CircuitBreaker {
+  private state: 'closed' | 'open' | 'half-open' = 'closed';
+  private failureCount = 0;
+  
+  async execute<T>(operation: () => Promise<T>): Promise<T> {
+    if (this.state === 'open') {
+      throw new Error('Circuit breaker is open');
+    }
+    
+    try {
+      const result = await operation();
+      this.onSuccess();
+      return result;
+    } catch (error) {
+      this.onFailure(error);
+      throw error;
+    }
+  }
+}
+```
+
+## Monitoring and Alerting
+
+### Health Checks
+
+```typescript
+interface HealthCheck {
+  name: string;
+  check: () => Promise<boolean>;
+  timeout: number;
+  critical: boolean;
+}
+
+class HealthCheckManager {
+  async runHealthChecks(): Promise<Map<string, boolean>> {
+    // Run all registered health checks
+    // Return status for each check
+  }
+}
+```
+
+## Configuration
+
+```typescript
+interface ErrorConfig {
+  logging: {
+    level: 'debug' | 'info' | 'warn' | 'error';
+    enableCorrelation: boolean;
+  };
+  
+  circuitBreaker: {
+    failureThreshold: number;
+    recoveryTimeout: number;
+  };
+  
+  retry: {
+    maxAttempts: number;
+    baseDelay: number;
+  };
+}
+```

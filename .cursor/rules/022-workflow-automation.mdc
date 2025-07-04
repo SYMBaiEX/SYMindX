@@ -1,0 +1,527 @@
+# Cursor Workflow Automation & Action Orchestration
+
+This rule defines comprehensive patterns for leveraging Cursor's workflow automation capabilities, including background agents, action-based triggers, and multi-agent coordination for complex development tasks.
+
+## Core Workflow Architecture
+
+### Workflow Definition Patterns
+
+**Declarative Workflow Files**
+```yaml
+# .cursor/workflows/ai-portal-validation.yaml
+name: "AI Portal Validation Pipeline"
+description: "Automated validation of new AI portal configurations"
+triggers:
+  - type: file_change
+    patterns: ["mind-agents/src/portals/*/config.json"]
+  - type: manual
+    command: "validate-portal"
+  - type: schedule
+    cron: "0 2 * * *"  # Daily at 2 AM
+
+actions:
+  - name: "validate-config"
+    agent: "config-validator"
+    inputs:
+      config_file: "${trigger.file_path}"
+    timeout: 300
+    
+  - name: "test-connection"
+    agent: "connection-tester"
+    depends_on: ["validate-config"]
+    inputs:
+      portal_name: "${actions.validate-config.outputs.portal_name}"
+    parallel: false
+    
+  - name: "generate-docs"
+    agent: "doc-generator"
+    depends_on: ["test-connection"]
+    inputs:
+      portal_config: "${actions.validate-config.outputs.config}"
+      test_results: "${actions.test-connection.outputs.results}"
+
+error_handling:
+  retry_attempts: 3
+  retry_delay: 30
+  fallback: "notify-maintainers"
+```
+
+**Workflow Orchestration Rules**
+```typescript
+// .cursor/workflows/types.ts
+interface WorkflowDefinition {
+  name: string;
+  description: string;
+  triggers: WorkflowTrigger[];
+  actions: WorkflowAction[];
+  error_handling: ErrorHandlingConfig;
+  monitoring: MonitoringConfig;
+}
+
+interface WorkflowAction {
+  name: string;
+  agent: string;
+  inputs: Record<string, any>;
+  outputs?: Record<string, any>;
+  depends_on?: string[];
+  parallel?: boolean;
+  timeout?: number;
+  retry_policy?: RetryPolicy;
+}
+```
+
+### Action-Based Trigger System
+
+**Event-Driven Automation**
+```yaml
+# .cursor/workflows/triggers/git-events.yaml
+triggers:
+  git_commit:
+    patterns:
+      - "feat(portals): *"
+      - "fix(memory): *"
+    actions:
+      - validate-affected-systems
+      - run-integration-tests
+      - update-documentation
+      
+  git_merge:
+    branches: ["main", "develop"]
+    actions:
+      - deploy-to-staging
+      - run-performance-tests
+      - notify-team
+      
+  file_change:
+    patterns:
+      - "mind-agents/src/characters/*.json"
+    actions:
+      - validate-character-schema
+      - update-character-docs
+      - test-character-behavior
+```
+
+**Development Lifecycle Integration**
+```yaml
+# .cursor/workflows/triggers/development.yaml
+triggers:
+  pr_opened:
+    conditions:
+      - label: "needs-review"
+      - files_changed: "*.ts"
+    actions:
+      - code-quality-check
+      - security-scan
+      - documentation-check
+      
+  issue_labeled:
+    labels: ["bug", "high-priority"]
+    actions:
+      - create-hotfix-branch
+      - assign-emergency-team
+      - schedule-investigation
+      
+  deployment_complete:
+    environment: "production"
+    actions:
+      - run-smoke-tests
+      - update-monitoring
+      - notify-stakeholders
+```
+
+## Agent Coordination Patterns
+
+### Multi-Agent Workflows
+
+**Sequential Agent Pipeline**
+```yaml
+# .cursor/workflows/memory-optimization.yaml
+name: "Memory System Optimization"
+description: "Automated memory system maintenance and optimization"
+
+agents:
+  memory-analyzer:
+    model: "gpt-4o"
+    context: ["@mind-agents/src/memory/", "@docs/memory/"]
+    capabilities: ["analysis", "reporting"]
+    
+  memory-optimizer:
+    model: "claude-3.5-sonnet"
+    context: ["@mind-agents/src/memory/", "@AI_MEMORY.md"]
+    capabilities: ["code-modification", "optimization"]
+    
+  memory-tester:
+    model: "gpt-4.1-mini"
+    context: ["@mind-agents/src/__tests__/memory/"]
+    capabilities: ["testing", "validation"]
+
+workflow:
+  - step: "analyze"
+    agent: "memory-analyzer"
+    task: "Analyze memory usage patterns and identify optimization opportunities"
+    outputs: ["analysis_report", "optimization_candidates"]
+    
+  - step: "optimize"
+    agent: "memory-optimizer"
+    depends_on: ["analyze"]
+    task: "Implement optimizations based on analysis report"
+    inputs: 
+      analysis: "${steps.analyze.outputs.analysis_report}"
+      candidates: "${steps.analyze.outputs.optimization_candidates}"
+    outputs: ["optimized_code", "change_summary"]
+    
+  - step: "test"
+    agent: "memory-tester"
+    depends_on: ["optimize"]
+    task: "Test optimized memory system for correctness and performance"
+    inputs:
+      changes: "${steps.optimize.outputs.change_summary}"
+    outputs: ["test_results", "performance_metrics"]
+```
+
+**Parallel Agent Execution**
+```yaml
+# .cursor/workflows/comprehensive-testing.yaml
+name: "Comprehensive System Testing"
+description: "Parallel testing across all SYMindX components"
+
+parallel_groups:
+  core_systems:
+    - agent: "portal-tester"
+      task: "Test all AI portal configurations"
+      context: ["@mind-agents/src/portals/"]
+      
+    - agent: "memory-tester"
+      task: "Test memory provider implementations"
+      context: ["@mind-agents/src/memory/"]
+      
+    - agent: "emotion-tester"
+      task: "Test emotion system responses"
+      context: ["@mind-agents/src/emotion/"]
+      
+  extensions:
+    - agent: "telegram-tester"
+      task: "Test Telegram integration"
+      context: ["@mind-agents/src/extensions/telegram/"]
+      
+    - agent: "api-tester"
+      task: "Test REST/WebSocket APIs"
+      context: ["@mind-agents/src/extensions/api/"]
+      
+    - agent: "mcp-tester"
+      task: "Test MCP server implementation"
+      context: ["@mind-agents/src/extensions/mcp-server/"]
+
+coordination:
+  wait_for_all: true
+  aggregate_results: true
+  failure_threshold: 0.8  # 80% must pass
+```
+
+### Agent Handoff Patterns
+
+**Context Transfer Protocol**
+```typescript
+// .cursor/workflows/agent-handoff.ts
+interface AgentHandoff {
+  from_agent: string;
+  to_agent: string;
+  context_transfer: {
+    preserve: string[];  // What to keep
+    transform: string[]; // What to modify
+    summarize: string[]; // What to compress
+  };
+  validation: {
+    required_outputs: string[];
+    quality_checks: string[];
+  };
+}
+
+// Example handoff configuration
+const codeGenToReviewHandoff: AgentHandoff = {
+  from_agent: "code-generator",
+  to_agent: "code-reviewer",
+  context_transfer: {
+    preserve: ["original_requirements", "generated_code", "test_cases"],
+    transform: ["context_summary"],
+    summarize: ["implementation_decisions", "alternative_approaches"]
+  },
+  validation: {
+    required_outputs: ["code_diff", "implementation_plan"],
+    quality_checks: ["syntax_valid", "tests_passing", "style_compliant"]
+  }
+};
+```
+
+## SYMindX-Specific Workflows
+
+### AI Portal Management Automation
+
+**Portal Validation Pipeline**
+```yaml
+# .cursor/workflows/portal-lifecycle.yaml
+name: "AI Portal Lifecycle Management"
+
+workflows:
+  new_portal_setup:
+    trigger: "file_created:mind-agents/src/portals/*/index.ts"
+    steps:
+      - validate_portal_interface
+      - test_api_connection
+      - generate_configuration_docs
+      - create_test_suite
+      - update_portal_registry
+      
+  portal_configuration_change:
+    trigger: "file_modified:**/config.json"
+    steps:
+      - validate_configuration_schema
+      - test_backward_compatibility
+      - update_environment_configs
+      - refresh_documentation
+      - notify_dependent_services
+      
+  portal_performance_monitoring:
+    trigger: "schedule:0 */6 * * *"  # Every 6 hours
+    steps:
+      - benchmark_all_portals
+      - analyze_response_times
+      - check_error_rates
+      - generate_performance_report
+      - alert_on_degradation
+```
+
+### Memory System Maintenance
+
+**Automated Memory Operations**
+```yaml
+# .cursor/workflows/memory-maintenance.yaml
+name: "Memory System Maintenance"
+
+workflows:
+  vector_optimization:
+    trigger: "schedule:0 1 * * 0"  # Weekly on Sunday at 1 AM
+    steps:
+      - analyze_vector_usage_patterns
+      - identify_stale_embeddings
+      - compress_sparse_vectors
+      - reindex_frequently_accessed_data
+      - validate_search_performance
+      
+  conversation_cleanup:
+    trigger: "schedule:0 2 * * *"  # Daily at 2 AM
+    steps:
+      - identify_expired_conversations
+      - archive_old_sessions
+      - cleanup_orphaned_memories
+      - optimize_database_indexes
+      - backup_critical_memories
+      
+  memory_consistency_check:
+    trigger: "file_modified:mind-agents/src/memory/**/*.ts"
+    steps:
+      - validate_schema_migrations
+      - test_provider_compatibility
+      - check_data_integrity
+      - verify_backup_systems
+      - update_memory_documentation
+```
+
+### Character System Workflows
+
+**Character Management Automation**
+```yaml
+# .cursor/workflows/character-system.yaml
+name: "Character System Management"
+
+workflows:
+  character_validation:
+    trigger: "file_modified:mind-agents/src/characters/*.json"
+    steps:
+      - validate_character_schema
+      - test_personality_consistency
+      - verify_emotion_mappings
+      - check_trait_compatibility
+      - update_character_registry
+      
+  personality_testing:
+    trigger: "manual:test-character-personality"
+    steps:
+      - generate_test_scenarios
+      - simulate_character_responses
+      - analyze_personality_consistency
+      - evaluate_emotion_authenticity
+      - generate_personality_report
+      
+  batch_character_updates:
+    trigger: "manual:update-all-characters"
+    steps:
+      - backup_current_characters
+      - apply_schema_migrations
+      - validate_updated_characters
+      - test_behavior_changes
+      - deploy_character_updates
+```
+
+## Workflow Monitoring & Debugging
+
+### Status Tracking System
+
+**Workflow Dashboard Configuration**
+```yaml
+# .cursor/workflows/monitoring/dashboard.yaml
+monitoring:
+  real_time_status:
+    enabled: true
+    refresh_interval: 5  # seconds
+    display_metrics:
+      - active_workflows
+      - queued_actions
+      - agent_utilization
+      - error_rates
+      - completion_times
+      
+  workflow_history:
+    retention_days: 30
+    log_levels: ["info", "warn", "error"]
+    include_context: true
+    export_formats: ["json", "csv"]
+    
+  alerting:
+    channels: ["slack", "email", "webhook"]
+    conditions:
+      - type: "failure_rate"
+        threshold: 0.1  # 10% failure rate
+        window: "1h"
+      - type: "execution_time"
+        threshold: "30m"
+        action: "timeout_alert"
+      - type: "agent_unavailable"
+        threshold: "5m"
+        action: "escalate"
+```
+
+**Debugging Workflow Issues**
+```typescript
+// .cursor/workflows/debug.ts
+interface WorkflowDebugger {
+  traceExecution(workflowId: string): ExecutionTrace;
+  analyzeFailure(workflowId: string): FailureAnalysis;
+  replayWorkflow(workflowId: string, fromStep?: string): void;
+  inspectAgentState(agentId: string): AgentState;
+}
+
+// Debug commands for workflow troubleshooting
+const debugCommands = {
+  "trace-workflow": "Show execution trace for workflow ID",
+  "replay-from-step": "Replay workflow from specific step",
+  "inspect-agent": "Show current agent state and context",
+  "analyze-failure": "Deep analysis of workflow failure",
+  "export-logs": "Export workflow logs for external analysis"
+};
+```
+
+### Performance Optimization
+
+**Workflow Performance Tuning**
+```yaml
+# .cursor/workflows/performance/optimization.yaml
+performance:
+  agent_pooling:
+    enabled: true
+    pool_size: 5
+    warm_up_agents: true
+    load_balancing: "round_robin"
+    
+  caching:
+    enabled: true
+    cache_duration: "1h"
+    cache_keys:
+      - "agent_context_hash"
+      - "workflow_inputs_hash"
+    invalidation_triggers:
+      - "file_modified"
+      - "config_changed"
+      
+  resource_limits:
+    max_concurrent_workflows: 10
+    max_agent_memory: "2GB"
+    max_execution_time: "30m"
+    timeout_grace_period: "2m"
+    
+  optimization_strategies:
+    - "parallel_execution_where_possible"
+    - "context_caching_for_repeated_operations"
+    - "agent_specialization_for_specific_tasks"
+    - "incremental_processing_for_large_datasets"
+```
+
+## Best Practices & Guidelines
+
+### Workflow Design Principles
+
+**Idempotent Operations**
+- Design actions to be safely repeatable
+- Include state validation before execution
+- Implement proper rollback mechanisms
+- Use checksums and verification steps
+
+**Error Boundaries**
+- Define clear failure scopes
+- Implement circuit breaker patterns
+- Provide meaningful error messages
+- Enable partial workflow recovery
+
+**Security Considerations**
+- Validate all workflow inputs
+- Restrict agent permissions appropriately
+- Audit workflow execution logs
+- Encrypt sensitive workflow data
+
+### Integration Guidelines
+
+**SYMindX Workflow Integration**
+1. **Context Preservation**: Maintain SYMindX project context across workflow steps
+2. **Module Awareness**: Respect hot-swappable module boundaries
+3. **Event Bus Integration**: Leverage SYMindX EventBus for workflow coordination
+4. **Configuration Management**: Use SYMindX config system for workflow parameters
+5. **Testing Integration**: Align with SYMindX testing standards and practices
+
+**Performance Considerations**
+- Cache frequently accessed project context
+- Optimize agent model selection for workflow tasks
+- Implement progressive complexity (simple → advanced workflows)
+- Monitor resource usage and adjust limits appropriately
+
+This workflow automation framework enables sophisticated orchestration of development tasks while maintaining the flexibility and modularity that defines the SYMindX architecture.
+
+## Related Rules and Integration
+
+### Foundation Requirements
+- @001-symindx-workspace.mdc - Core SYMindX architecture and project structure
+- @003-typescript-standards.mdc - TypeScript/Bun development standards for workflow scripts
+- @004-architecture-patterns.mdc - Modular design principles for workflow components
+
+### Core Integration Rules
+- @018-git-hooks.mdc - Git automation that triggers workflow executions
+- @019-background-agents.mdc - Background task execution within workflows
+- @020-mcp-integration.mdc - External tool integration for workflow actions
+- @021-advanced-context.mdc - Context-aware workflow activation and rule selection
+
+### Supporting Development Rules
+- @008-testing-and-quality-standards.mdc - Testing strategies for workflow validation
+- @013-error-handling-logging.mdc - Error handling and monitoring for workflow execution
+- @015-configuration-management.mdc - Workflow configuration and environment management
+- @012-performance-optimization.mdc - Performance optimization for workflow execution
+
+### Component-Specific Workflow Integration
+- @005-ai-integration-patterns.mdc - AI portal workflows and automated validation
+- @011-data-management-patterns.mdc - Memory system maintenance workflows
+- @007-extension-system-patterns.mdc - Platform extension deployment workflows
+- @009-deployment-and-operations.mdc - Production deployment and monitoring workflows
+
+### Documentation and Governance
+- @016-documentation-standards.mdc - Workflow documentation standards
+- @017-community-and-governance.mdc - Contribution workflows and governance automation
+
+This rule builds upon the entire SYMindX rules framework to provide comprehensive workflow orchestration capabilities.

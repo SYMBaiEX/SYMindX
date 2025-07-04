@@ -1,0 +1,511 @@
+# AI Safety and Responsible AI Patterns 2025
+
+**Rule Priority:** Critical Security  
+**Activation:** AI Integration Development  
+**Scope:** All AI provider integrations and agent systems
+
+## 2025 AI Safety Standards
+
+### Mandatory Safety Checks
+
+```typescript
+// REQUIRED: AI safety validation layer
+export interface AISafetyGuards {
+  readonly contentFilter: ContentFilter;
+  readonly rateLimit: RateLimit;
+  readonly auditLogger: AuditLogger;
+  readonly privacyFilter: PrivacyFilter;
+  readonly biasDetector: BiasDetector;
+  readonly hallucinationDetector: HallucinationDetector;
+}
+
+export class SafetyValidatedAIPortal implements AIPortal {
+  constructor(
+    private readonly provider: AIProvider,
+    private readonly safetyGuards: AISafetyGuards
+  ) {}
+
+  async generateResponse(request: AIRequest): Promise<SafeAIResponse> {
+    // Pre-processing safety checks
+    const sanitizedRequest = await this.safetyGuards.contentFilter.sanitize(request);
+    await this.safetyGuards.rateLimit.checkLimit(request.userId);
+    await this.safetyGuards.privacyFilter.validateRequest(sanitizedRequest);
+
+    // Generate response with monitoring
+    const response = await this.provider.generate(sanitizedRequest);
+
+    // Post-processing validation
+    const validatedResponse = await this.safetyGuards.hallucinationDetector.validate(response);
+    await this.safetyGuards.biasDetector.analyze(validatedResponse);
+    await this.safetyGuards.auditLogger.log({
+      request: sanitizedRequest,
+      response: validatedResponse,
+      timestamp: new Date(),
+      safety: 'validated'
+    });
+
+    return validatedResponse;
+  }
+}
+```
+
+### Content Filtering and Moderation
+
+- **Implement real-time content scanning** for harmful, illegal, or inappropriate content
+- **Use multiple moderation layers** with cascading filters
+- **Log all filtered content** for analysis and improvement
+- **Provide clear rejection reasons** for filtered requests
+
+```typescript
+// GOOD: Multi-layer content filtering
+export class ContentFilter {
+  private readonly filters: ContentFilterLayer[] = [
+    new ProfanityFilter(),
+    new ViolenceFilter(),
+    new PrivacyFilter(),
+    new LegalComplianceFilter(),
+    new BiasFilter()
+  ];
+
+  async sanitize(content: string): Promise<ContentFilterResult> {
+    const violations: ContentViolation[] = [];
+    let filteredContent = content;
+
+    for (const filter of this.filters) {
+      const result = await filter.process(filteredContent);
+      if (result.violations.length > 0) {
+        violations.push(...result.violations);
+        filteredContent = result.sanitized;
+      }
+    }
+
+    return {
+      original: content,
+      sanitized: filteredContent,
+      violations,
+      safe: violations.length === 0
+    };
+  }
+}
+```
+
+## Privacy Protection Patterns
+
+### Data Minimization and Anonymization
+
+```typescript
+// REQUIRED: Privacy-first data handling
+export class PrivacyProtectedProcessor {
+  private readonly anonymizer = new DataAnonymizer();
+  private readonly retention = new DataRetentionManager();
+
+  async processUserData(data: UserData): Promise<AnonymizedData> {
+    // Remove or hash PII
+    const anonymized = await this.anonymizer.anonymize(data, {
+      removeEmails: true,
+      hashPhoneNumbers: true,
+      removeAddresses: true,
+      generalizeLocations: true
+    });
+
+    // Set retention policy
+    await this.retention.setPolicy(anonymized.id, {
+      type: 'ai-processing',
+      maxAge: '30d',
+      autoDelete: true
+    });
+
+    return anonymized;
+  }
+
+  async getDataForAI(userId: string): Promise<AICompatibleData> {
+    const userData = await this.getUserData(userId);
+    const anonymized = await this.processUserData(userData);
+    
+    return {
+      context: anonymized.context,
+      preferences: anonymized.preferences,
+      // Never include: real names, emails, addresses, phone numbers
+      metadata: {
+        region: anonymized.generalLocation,
+        sessionId: crypto.randomUUID(),
+        timestamp: new Date().toISOString()
+      }
+    };
+  }
+}
+```
+
+### GDPR and Privacy Compliance
+
+- **Implement explicit consent** for AI processing
+- **Provide data deletion capabilities** (right to be forgotten)
+- **Enable data portability** for user data
+- **Maintain detailed audit logs** for compliance verification
+
+```typescript
+// GOOD: GDPR-compliant AI data handling
+export class GDPRCompliantAIService {
+  async processWithConsent(
+    userId: string, 
+    data: PersonalData, 
+    consent: ConsentRecord
+  ): Promise<ProcessingResult> {
+    // Verify explicit consent
+    if (!consent.aiProcessing || consent.expired) {
+      throw new ConsentError('Valid AI processing consent required');
+    }
+
+    // Log consent usage
+    await this.auditLogger.logConsentUsage({
+      userId,
+      consentId: consent.id,
+      purpose: 'ai-processing',
+      timestamp: new Date()
+    });
+
+    // Process with privacy protection
+    return await this.privacyProtectedProcessor.process(data);
+  }
+
+  async deleteUserData(userId: string): Promise<DeletionResult> {
+    // Remove all stored data
+    await this.dataStore.deleteUserData(userId);
+    await this.aiCache.clearUserCache(userId);
+    await this.auditLogger.logDeletion(userId);
+    
+    return { deleted: true, timestamp: new Date() };
+  }
+}
+```
+
+## Bias Detection and Mitigation
+
+### Algorithmic Fairness
+
+```typescript
+// REQUIRED: Bias detection in AI responses
+export class BiasDetector {
+  private readonly fairnessMetrics = new FairnessMetricsCalculator();
+  private readonly demographicAnalyzer = new DemographicAnalyzer();
+
+  async analyzeResponse(
+    request: AIRequest, 
+    response: AIResponse
+  ): Promise<BiasAnalysisResult> {
+    // Analyze for demographic bias
+    const demographicBias = await this.demographicAnalyzer.analyze({
+      input: request.content,
+      output: response.content
+    });
+
+    // Check for unfair treatment patterns
+    const fairnessScore = await this.fairnessMetrics.calculate(response, {
+      sensitiveAttributes: ['gender', 'race', 'age', 'religion'],
+      threshold: 0.8
+    });
+
+    if (fairnessScore < 0.8 || demographicBias.detected) {
+      await this.reportBias({
+        request,
+        response,
+        biasType: demographicBias.type,
+        confidence: demographicBias.confidence,
+        fairnessScore
+      });
+    }
+
+    return {
+      fair: fairnessScore >= 0.8 && !demographicBias.detected,
+      score: fairnessScore,
+      issues: demographicBias.detected ? [demographicBias] : []
+    };
+  }
+}
+```
+
+## Hallucination Detection and Factual Verification
+
+### Real-time Fact Checking
+
+```typescript
+// GOOD: Multi-source fact verification
+export class HallucinationDetector {
+  private readonly factCheckers: FactChecker[] = [
+    new WikipediaFactChecker(),
+    new ScientificFactChecker(),
+    new NewsFactChecker(),
+    new DatabaseFactChecker()
+  ];
+
+  async validateResponse(response: AIResponse): Promise<ValidationResult> {
+    const claims = await this.extractClaims(response.content);
+    const verificationResults = await Promise.allSettled(
+      claims.map(claim => this.verifyClaim(claim))
+    );
+
+    const verifiedClaims = verificationResults
+      .filter(result => result.status === 'fulfilled')
+      .map(result => (result as PromiseFulfilledResult<ClaimVerification>).value);
+
+    const confidence = this.calculateConfidence(verifiedClaims);
+    const hallucinations = verifiedClaims.filter(claim => !claim.verified);
+
+    if (confidence < 0.7 || hallucinations.length > 0) {
+      return {
+        validated: false,
+        confidence,
+        issues: hallucinations,
+        recommendation: 'flag_for_review'
+      };
+    }
+
+    return {
+      validated: true,
+      confidence,
+      issues: [],
+      recommendation: 'approved'
+    };
+  }
+
+  private async verifyClaim(claim: ExtractedClaim): Promise<ClaimVerification> {
+    const verifications = await Promise.allSettled(
+      this.factCheckers.map(checker => checker.verify(claim))
+    );
+
+    const successfulChecks = verifications
+      .filter(result => result.status === 'fulfilled')
+      .map(result => (result as PromiseFulfilledResult<FactCheckResult>).value);
+
+    const consensusScore = this.calculateConsensus(successfulChecks);
+    
+    return {
+      claim,
+      verified: consensusScore > 0.6,
+      confidence: consensusScore,
+      sources: successfulChecks.map(check => check.source)
+    };
+  }
+}
+```
+
+## Rate Limiting and Resource Protection
+
+### Intelligent Rate Limiting
+
+```typescript
+// REQUIRED: Advanced rate limiting with user tiering
+export class IntelligentRateLimit {
+  private readonly rateLimits = new Map<string, UserRateLimit>();
+  private readonly usageAnalyzer = new UsageAnalyzer();
+
+  async checkLimit(userId: string, requestType: RequestType): Promise<RateLimitResult> {
+    const userTier = await this.getUserTier(userId);
+    const currentUsage = await this.getCurrentUsage(userId);
+    const limit = this.getLimitForTier(userTier, requestType);
+
+    // Adaptive rate limiting based on system load
+    const systemLoad = await this.getSystemLoad();
+    const adjustedLimit = this.adjustLimitForLoad(limit, systemLoad);
+
+    if (currentUsage >= adjustedLimit) {
+      return {
+        allowed: false,
+        resetTime: this.getResetTime(userId),
+        remaining: 0,
+        reason: 'rate_limit_exceeded'
+      };
+    }
+
+    // Increment usage counter
+    await this.incrementUsage(userId, requestType);
+
+    return {
+      allowed: true,
+      remaining: adjustedLimit - currentUsage - 1,
+      resetTime: this.getResetTime(userId)
+    };
+  }
+
+  private adjustLimitForLoad(baseLimit: number, systemLoad: number): number {
+    // Reduce limits during high system load
+    if (systemLoad > 0.8) return Math.floor(baseLimit * 0.5);
+    if (systemLoad > 0.6) return Math.floor(baseLimit * 0.7);
+    return baseLimit;
+  }
+}
+```
+
+## Audit Logging and Compliance
+
+### Comprehensive AI Audit Trail
+
+```typescript
+// REQUIRED: Complete audit logging for AI interactions
+export class AIAuditLogger {
+  private readonly auditStore = new SecureAuditStore();
+  private readonly complianceChecker = new ComplianceChecker();
+
+  async logAIInteraction(interaction: AIInteraction): Promise<void> {
+    const auditRecord: AIAuditRecord = {
+      id: crypto.randomUUID(),
+      timestamp: new Date(),
+      userId: interaction.userId,
+      sessionId: interaction.sessionId,
+      provider: interaction.provider,
+      model: interaction.model,
+      requestHash: this.hashContent(interaction.request),
+      responseHash: this.hashContent(interaction.response),
+      safetyChecks: interaction.safetyResults,
+      biasAnalysis: interaction.biasAnalysis,
+      hallucinationCheck: interaction.hallucinationCheck,
+      costTracking: interaction.costInfo,
+      complianceFlags: await this.complianceChecker.analyze(interaction)
+    };
+
+    await this.auditStore.store(auditRecord);
+    
+    // Real-time compliance monitoring
+    if (auditRecord.complianceFlags.length > 0) {
+      await this.alertComplianceTeam(auditRecord);
+    }
+  }
+
+  async generateComplianceReport(
+    startDate: Date, 
+    endDate: Date
+  ): Promise<ComplianceReport> {
+    const records = await this.auditStore.getRecords(startDate, endDate);
+    
+    return {
+      period: { start: startDate, end: endDate },
+      totalInteractions: records.length,
+      safetyViolations: records.filter(r => r.safetyChecks.violations.length > 0).length,
+      biasDetections: records.filter(r => !r.biasAnalysis.fair).length,
+      hallucinationFlags: records.filter(r => !r.hallucinationCheck.validated).length,
+      complianceIssues: records.filter(r => r.complianceFlags.length > 0).length,
+      costAnalysis: this.calculateCosts(records),
+      recommendations: await this.generateRecommendations(records)
+    };
+  }
+}
+```
+
+## Model Security and Robustness
+
+### Prompt Injection Protection
+
+```typescript
+// REQUIRED: Prompt injection detection and prevention
+export class PromptInjectionDetector {
+  private readonly injectionPatterns = [
+    /ignore\s+previous\s+instructions/i,
+    /disregard\s+the\s+above/i,
+    /forget\s+everything\s+before/i,
+    /you\s+are\s+now\s+a\s+different/i,
+    /system\s*:\s*new\s+role/i
+  ];
+
+  async detectInjection(prompt: string): Promise<InjectionDetectionResult> {
+    // Pattern-based detection
+    const patternMatches = this.injectionPatterns.filter(pattern => 
+      pattern.test(prompt)
+    );
+
+    // ML-based detection
+    const mlScore = await this.mlInjectionDetector.analyze(prompt);
+    
+    // Semantic analysis
+    const semanticFlags = await this.semanticAnalyzer.detectRoleChanges(prompt);
+
+    const riskScore = this.calculateRiskScore(patternMatches, mlScore, semanticFlags);
+
+    return {
+      safe: riskScore < 0.3,
+      riskScore,
+      detectedPatterns: patternMatches.map(p => p.toString()),
+      mlConfidence: mlScore,
+      semanticFlags
+    };
+  }
+
+  async sanitizePrompt(prompt: string): Promise<string> {
+    const detection = await this.detectInjection(prompt);
+    
+    if (!detection.safe) {
+      // Remove dangerous patterns
+      let sanitized = prompt;
+      for (const pattern of this.injectionPatterns) {
+        sanitized = sanitized.replace(pattern, '[FILTERED]');
+      }
+      return sanitized;
+    }
+
+    return prompt;
+  }
+}
+```
+
+## Responsible AI Governance
+
+### AI Ethics Review Process
+
+```typescript
+// GOOD: Ethics review for AI features
+export class AIEthicsReviewer {
+  async reviewAIFeature(feature: AIFeatureSpec): Promise<EthicsReviewResult> {
+    const review: EthicsReview = {
+      featureId: feature.id,
+      reviewer: 'automated-ethics-system',
+      timestamp: new Date(),
+      checks: {
+        fairness: await this.assessFairness(feature),
+        transparency: await this.assessTransparency(feature),
+        accountability: await this.assessAccountability(feature),
+        privacy: await this.assessPrivacy(feature),
+        humanOversight: await this.assessHumanOversight(feature)
+      }
+    };
+
+    const overallScore = this.calculateEthicsScore(review.checks);
+    
+    return {
+      approved: overallScore >= 0.8,
+      score: overallScore,
+      review,
+      recommendations: await this.generateRecommendations(review.checks)
+    };
+  }
+
+  private async assessFairness(feature: AIFeatureSpec): Promise<FairnessAssessment> {
+    return {
+      score: 0.9,
+      issues: [],
+      mitigations: ['bias-testing', 'diverse-training-data']
+    };
+  }
+}
+```
+
+This rule ensures all AI integrations in SYMindX follow the latest 2025 safety standards, protecting users while maintaining ethical AI usage.
+
+## Related Rules and Documentation
+
+### Foundation Requirements  
+- @001-symindx-workspace.mdc - SYMindX architecture and AI safety integration points
+- @005-ai-integration-patterns.mdc - AI provider integration patterns with safety layers
+- @010-security-and-authentication.mdc - Security patterns for AI service access
+
+### Compliance and Quality
+- @008-testing-and-quality-standards.mdc - Testing strategies for AI safety validation
+- @013-error-handling-logging.mdc - Error handling and audit logging for AI operations
+- @015-configuration-management.mdc - Secure configuration management for AI services
+
+### Documentation and Monitoring
+- @.cursor/docs/architecture.md - AI safety architecture documentation
+- @.cursor/tools/debugging-guide.md - AI system debugging and troubleshooting
+- @016-documentation-standards.mdc - Documentation requirements for AI safety features
+description:
+globs:
+alwaysApply: false
+---

@@ -1,0 +1,659 @@
+---
+globs: website/src/**/*
+alwaysApply: false
+---
+# Web Interface Patterns
+
+**Rule Priority:** Core Architecture  
+**Activation:** Always Active  
+**Scope:** React website, documentation site, and web interfaces
+
+## Web Interface Architecture
+
+SYMindX provides a comprehensive web interface ecosystem consisting of a React-based dashboard for agent management and a Docusaurus documentation site for comprehensive project documentation.
+
+### Multi-Interface Structure
+```
+┌─────────────────────────────────────────────────────────────┐
+│                   SYMindX Web Ecosystem                      │
+├─────────────────────────────────────────────────────────────┤
+│  website/         │  docs-site/       │  mind-agents/      │
+│  (React Dashboard)│  (Documentation)  │  (API Endpoints)   │
+│  ├─ Agent Control │  ├─ 26 Categories │  ├─ REST API       │
+│  ├─ Real-time UI  │  ├─ Interactive   │  ├─ WebSocket      │
+│  ├─ Monitoring    │  ├─ Examples      │  └─ MCP Server     │
+│  └─ Configuration │  └─ Tutorials     │                    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## React Website (`website/`)
+
+### Technology Stack
+
+- **React 18.3.1** with modern hooks and concurrent features
+- **TypeScript** for type safety across components
+- **Vite** for fast development and optimized builds
+- **Tailwind CSS** for utility-first styling
+- **Radix UI** for accessible component primitives
+- **Storybook** for component development and testing
+
+### Component Architecture
+
+#### Core Components Structure
+```typescript
+interface ComponentArchitecture {
+  // Base component patterns
+  foundation: {
+    layout: 'Grid' | 'Container' | 'Section';
+    typography: 'Heading' | 'Text' | 'Code';
+    primitives: 'Button' | 'Input' | 'Select' | 'Switch';
+  };
+  
+  // Feature components
+  features: {
+    agentControl: 'AgentDashboard' | 'AgentCard' | 'AgentConfig';
+    monitoring: 'MetricsDisplay' | 'LogViewer' | 'StatusIndicator';
+    communication: 'ChatInterface' | 'MessageHistory' | 'ConversationTree';
+  };
+  
+  // Layout components  
+  layout: {
+    navigation: 'Sidebar' | 'TopNav' | 'Breadcrumbs';
+    containers: 'PageLayout' | 'ContentArea' | 'Modal';
+    responsive: 'MobileNav' | 'TabletLayout' | 'DesktopGrid';
+  };
+}
+```
+
+#### Component Development Standards
+```typescript
+// Base component pattern
+interface BaseComponentProps {
+  className?: string;
+  children?: React.ReactNode;
+  'data-testid'?: string;
+}
+
+// Component with forwarded ref
+const Component = React.forwardRef<HTMLDivElement, ComponentProps>(
+  ({ className, children, ...props }, ref) => {
+    return (
+      <div
+        ref={ref}
+        className={cn('default-styles', className)}
+        {...props}
+      >
+        {children}
+      </div>
+    );
+  }
+);
+
+Component.displayName = 'Component';
+```
+
+### Design System
+
+#### Utility Classes and Theming
+```css
+/* Tailwind configuration for SYMindX */
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 84% 4.9%;
+  }
+  
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 84% 4.9%;
+  }
+}
+```
+
+#### Component Variants
+```typescript
+// Using class-variance-authority for component variants
+const buttonVariants = cva(
+  'inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors',
+  {
+    variants: {
+      variant: {
+        default: 'bg-primary text-primary-foreground hover:bg-primary/90',
+        destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
+        outline: 'border border-input hover:bg-accent hover:text-accent-foreground',
+        secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
+        ghost: 'hover:bg-accent hover:text-accent-foreground',
+        link: 'underline-offset-4 hover:underline text-primary'
+      },
+      size: {
+        default: 'h-10 py-2 px-4',
+        sm: 'h-9 px-3 rounded-md',
+        lg: 'h-11 px-8 rounded-md',
+        icon: 'h-10 w-10'
+      }
+    },
+    defaultVariants: {
+      variant: 'default',
+      size: 'default'
+    }
+  }
+);
+```
+
+### Feature Implementation Patterns
+
+#### Agent Dashboard Component
+```typescript
+interface AgentDashboardProps {
+  agents: Agent[];
+  onAgentSelect: (agent: Agent) => void;
+  onAgentStart: (agentId: string) => void;
+  onAgentStop: (agentId: string) => void;
+}
+
+const AgentDashboard: React.FC<AgentDashboardProps> = ({
+  agents,
+  onAgentSelect,
+  onAgentStart,
+  onAgentStop
+}) => {
+  const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
+  const [filter, setFilter] = useState<AgentFilter>('all');
+  
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="lg:col-span-2">
+        <AgentGrid 
+          agents={filteredAgents}
+          onSelect={setSelectedAgent}
+          filter={filter}
+        />
+      </div>
+      <div>
+        <AgentDetails 
+          agent={selectedAgent}
+          onStart={onAgentStart}
+          onStop={onAgentStop}
+        />
+      </div>
+    </div>
+  );
+};
+```
+
+#### Real-time Monitoring
+```typescript
+// WebSocket integration for real-time updates
+const useAgentMonitoring = (agentId: string) => {
+  const [metrics, setMetrics] = useState<AgentMetrics | null>(null);
+  const [status, setStatus] = useState<AgentStatus>('unknown');
+  
+  useEffect(() => {
+    const ws = new WebSocket(`ws://localhost:8080/agents/${agentId}/monitor`);
+    
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      
+      switch (data.type) {
+        case 'metrics':
+          setMetrics(data.metrics);
+          break;
+        case 'status':
+          setStatus(data.status);
+          break;
+      }
+    };
+    
+    return () => ws.close();
+  }, [agentId]);
+  
+  return { metrics, status };
+};
+
+// Real-time metrics display
+const MetricsDisplay: React.FC<{ agentId: string }> = ({ agentId }) => {
+  const { metrics, status } = useAgentMonitoring(agentId);
+  
+  return (
+    <div className="space-y-4">
+      <StatusIndicator status={status} />
+      {metrics && (
+        <div className="grid grid-cols-2 gap-4">
+          <MetricCard 
+            title="Memory Usage"
+            value={`${metrics.memoryUsage}MB`}
+            trend={metrics.memoryTrend}
+          />
+          <MetricCard
+            title="Response Time"
+            value={`${metrics.avgResponseTime}ms`}
+            trend={metrics.responseTrend}
+          />
+        </div>
+      )}
+    </div>
+  );
+};
+```
+
+### State Management Patterns
+
+#### Context-based State Management
+```typescript
+// Agent context for global agent state
+interface AgentContextType {
+  agents: Agent[];
+  selectedAgent: Agent | null;
+  isLoading: boolean;
+  error: string | null;
+  
+  // Actions
+  loadAgents: () => Promise<void>;
+  selectAgent: (agent: Agent) => void;
+  startAgent: (agentId: string) => Promise<void>;
+  stopAgent: (agentId: string) => Promise<void>;
+  updateAgentConfig: (agentId: string, config: AgentConfig) => Promise<void>;
+}
+
+const AgentContext = createContext<AgentContextType | null>(null);
+
+export const AgentProvider: React.FC<{ children: React.ReactNode }> = ({ 
+  children 
+}) => {
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  const loadAgents = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/agents');
+      const agentData = await response.json();
+      setAgents(agentData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load agents');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+  
+  const value = {
+    agents,
+    selectedAgent,
+    isLoading,
+    error,
+    loadAgents,
+    selectAgent: setSelectedAgent,
+    startAgent,
+    stopAgent,
+    updateAgentConfig
+  };
+  
+  return (
+    <AgentContext.Provider value={value}>
+      {children}
+    </AgentContext.Provider>
+  );
+};
+```
+
+### Responsive Design Patterns
+
+#### Mobile-First Responsive Layout
+```typescript
+// Responsive grid system
+const ResponsiveGrid: React.FC<{ children: React.ReactNode }> = ({ 
+  children 
+}) => {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {children}
+    </div>
+  );
+};
+
+// Responsive navigation
+const Navigation: React.FC = () => {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  
+  return (
+    <nav className="bg-background border-b">
+      <div className="container mx-auto px-4">
+        <div className="flex justify-between items-center h-16">
+          <Logo />
+          
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex space-x-6">
+            <NavLinks />
+          </div>
+          
+          {/* Mobile Menu Button */}
+          <button
+            className="md:hidden"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            <Menu className="h-6 w-6" />
+          </button>
+        </div>
+        
+        {/* Mobile Navigation */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden py-4">
+            <MobileNavLinks onLinkClick={() => setIsMobileMenuOpen(false)} />
+          </div>
+        )}
+      </div>
+    </nav>
+  );
+};
+```
+
+## Documentation Site (`docs-site/`)
+
+### Docusaurus Configuration
+
+#### Site Structure and Organization
+```typescript
+// Comprehensive documentation organization (26 categories)
+const sidebarConfig = {
+  docs: [
+    {
+      type: 'category',
+      label: 'Overview',
+      items: ['introduction', 'quick-start', 'roadmap']
+    },
+    {
+      type: 'category', 
+      label: 'Getting Started',
+      items: ['installation', 'configuration', 'first-agent']
+    },
+    // ... 24 more categories covering every aspect
+  ]
+};
+
+// Enhanced Docusaurus configuration
+const docusaurusConfig = {
+  title: 'SYMindX Documentation',
+  tagline: 'Intelligent AI Agent Framework',
+  url: 'https://docs.symindx.com',
+  baseUrl: '/',
+  
+  themeConfig: {
+    navbar: {
+      title: 'SYMindX',
+      logo: { src: 'img/logo.svg' },
+      items: [
+        { to: '/docs/intro', label: 'Docs', position: 'left' },
+        { to: '/api', label: 'API', position: 'left' },
+        { to: '/blog', label: 'Blog', position: 'left' },
+        {
+          href: 'https://github.com/symbaiex/symindx',
+          label: 'GitHub',
+          position: 'right'
+        }
+      ]
+    },
+    
+    footer: {
+      style: 'dark',
+      links: [
+        {
+          title: 'Documentation',
+          items: [
+            { label: 'Getting Started', to: '/docs/getting-started' },
+            { label: 'API Reference', to: '/docs/api' },
+            { label: 'Examples', to: '/docs/examples' }
+          ]
+        },
+        {
+          title: 'Community',
+          items: [
+            { label: 'Discord', href: 'https://discord.gg/symindx' },
+            { label: 'GitHub', href: 'https://github.com/symbaiex/symindx' }
+          ]
+        }
+      ]
+    },
+    
+    prism: {
+      theme: lightCodeTheme,
+      darkTheme: darkCodeTheme,
+      additionalLanguages: ['typescript', 'json', 'bash']
+    }
+  }
+};
+```
+
+#### Interactive Documentation Features
+```typescript
+// Interactive code examples with live editing
+const InteractiveExample: React.FC<{ code: string; language: string }> = ({
+  code,
+  language
+}) => {
+  const [editableCode, setEditableCode] = useState(code);
+  const [output, setOutput] = useState<string>('');
+  
+  const runCode = async () => {
+    try {
+      // Send code to execution sandbox
+      const response = await fetch('/api/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: editableCode, language })
+      });
+      
+      const result = await response.json();
+      setOutput(result.output);
+    } catch (error) {
+      setOutput(`Error: ${error.message}`);
+    }
+  };
+  
+  return (
+    <div className="border rounded-lg overflow-hidden">
+      <div className="flex justify-between items-center p-3 bg-gray-50 border-b">
+        <span className="text-sm font-medium">{language}</span>
+        <button
+          onClick={runCode}
+          className="px-3 py-1 bg-blue-500 text-white rounded text-sm"
+        >
+          Run
+        </button>
+      </div>
+      
+      <CodeEditor
+        value={editableCode}
+        onChange={setEditableCode}
+        language={language}
+        className="h-64"
+      />
+      
+      {output && (
+        <div className="p-3 bg-gray-800 text-green-400 font-mono text-sm">
+          <pre>{output}</pre>
+        </div>
+      )}
+    </div>
+  );
+};
+```
+
+### Documentation Content Patterns
+
+#### MDX Enhancement Patterns
+```mdx
+// Enhanced MDX with interactive components
+---
+title: Agent Configuration
+description: Complete guide to configuring SYMindX agents
+---
+
+import { AgentConfigDemo } from '@site/src/components/demos';
+import { CodeBlock } from '@site/src/components/CodeBlock';
+
+# Agent Configuration
+
+Learn how to configure intelligent agents with memory, emotion, and cognition.
+
+## Basic Configuration
+
+<CodeBlock language="json" title="nyx-character.json">
+{`{
+  "id": "nyx",
+  "core": {
+    "name": "NyX",
+    "tone": "rebellious hacker with a heart of gold",
+    "personality": ["chaotic", "empathetic", "brilliant"]
+  }
+}`}
+</CodeBlock>
+
+## Interactive Demo
+
+Try configuring an agent in real-time:
+
+<AgentConfigDemo />
+
+## Configuration Options
+
+The agent configuration system supports:
+
+- **Memory Providers**: SQLite, Supabase, Neon, PostgreSQL
+- **Emotion Modules**: 11 distinct emotions with composite blending  
+- **Cognition Types**: HTN planning, reactive systems, hybrid approaches
+- **AI Portals**: OpenAI, Anthropic, Groq, and 12+ other providers
+```
+
+### Performance Optimization
+
+#### Build Optimization
+```typescript
+// Vite configuration for optimal performance
+export default defineConfig({
+  plugins: [react()],
+  
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor': ['react', 'react-dom'],
+          'ui': ['@radix-ui/react-select', '@radix-ui/react-switch'],
+          'utils': ['clsx', 'class-variance-authority']
+        }
+      }
+    },
+    
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true
+      }
+    }
+  },
+  
+  server: {
+    proxy: {
+      '/api': 'http://localhost:8080'
+    }
+  }
+});
+```
+
+#### Component Lazy Loading
+```typescript
+// Lazy loading for better performance
+const AgentDashboard = lazy(() => import('./components/AgentDashboard'));
+const MetricsView = lazy(() => import('./components/MetricsView'));
+const ConfigurationPanel = lazy(() => import('./components/ConfigurationPanel'));
+
+const App: React.FC = () => {
+  return (
+    <Router>
+      <Suspense fallback={<LoadingSpinner />}>
+        <Routes>
+          <Route path="/dashboard" element={<AgentDashboard />} />
+          <Route path="/metrics" element={<MetricsView />} />
+          <Route path="/config" element={<ConfigurationPanel />} />
+        </Routes>
+      </Suspense>
+    </Router>
+  );
+};
+```
+
+### Testing Strategy
+
+#### Component Testing with Storybook
+```typescript
+// Storybook stories for component testing
+export default {
+  title: 'Components/AgentCard',
+  component: AgentCard,
+  parameters: {
+    layout: 'centered'
+  }
+} as Meta<typeof AgentCard>;
+
+export const Default: Story = {
+  args: {
+    agent: {
+      id: 'nyx',
+      name: 'NyX',
+      status: 'active',
+      lastActive: new Date(),
+      memoryProvider: 'sqlite',
+      emotionState: 'confident'
+    }
+  }
+};
+
+export const Inactive: Story = {
+  args: {
+    ...Default.args,
+    agent: {
+      ...Default.args.agent,
+      status: 'inactive'
+    }
+  }
+};
+```
+
+#### Integration Testing
+```typescript
+// Testing real-time WebSocket connections
+describe('Agent Monitoring', () => {
+  test('receives real-time metrics updates', async () => {
+    render(<MetricsDisplay agentId="test-agent" />);
+    
+    // Mock WebSocket connection
+    const mockWS = new MockWebSocket();
+    global.WebSocket = jest.fn(() => mockWS);
+    
+    // Simulate metrics update
+    mockWS.simulate('message', {
+      data: JSON.stringify({
+        type: 'metrics',
+        metrics: { memoryUsage: 256, avgResponseTime: 150 }
+      })
+    });
+    
+    await waitFor(() => {
+      expect(screen.getByText('256MB')).toBeInTheDocument();
+      expect(screen.getByText('150ms')).toBeInTheDocument();
+    });
+  });
+});
+```
+
+This web interface pattern ensures SYMindX provides a modern, responsive, and well-documented user experience across all web touchpoints. [[memory:2184189]]

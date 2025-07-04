@@ -1,0 +1,750 @@
+---
+description: ENFORCE comprehensive testing standards when writing or modifying test files
+globs: **/*.test.ts, **/*.spec.ts, jest.config.js
+---
+globs: **/*.test.ts, **/*.spec.ts, jest.config.js
+alwaysApply: false
+---
+# Testing and Quality Standards
+
+**Rule Priority:** Core Architecture  
+**Activation:** Always Active  
+**Scope:** Testing strategies, quality assurance, and code standards
+
+## Testing Architecture Overview
+
+SYMindX follows a **comprehensive testing strategy** that ensures reliability, performance, and maintainability across all system components through multiple testing layers.
+
+### Testing Pyramid Structure
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     SYMindX Testing Pyramid                  │
+├─────────────────────────────────────────────────────────────┤
+│              E2E Tests (10%)                │              │
+│         ┌─────────────────────────────────────┐              │
+│         │  Integration Tests (20%)            │              │
+│    ┌─────────────────────────────────────────────────┐       │
+│    │           Unit Tests (70%)                      │       │
+│    └─────────────────────────────────────────────────┘       │
+│                                                               │
+│  Coverage Requirements:                                       │
+│  • Unit Tests: 90%+ coverage                                │
+│  • Integration Tests: Critical paths                         │
+│  • E2E Tests: User journeys                                 │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## Unit Testing Standards
+
+### Jest Configuration
+```typescript
+// jest.config.ts
+import type { Config } from '@jest/types';
+
+const config: Config.InitialOptions = {
+  preset: 'ts-jest',
+  testEnvironment: 'node',
+  roots: ['<rootDir>/src', '<rootDir>/tests'],
+  testMatch: [
+    '**/__tests__/**/*.ts',
+    '**/?(*.)+(spec|test).ts'
+  ],
+  transform: {
+    '^.+\\.ts$': ['ts-jest', {
+      useESM: true,
+      tsconfig: {
+        module: 'esnext'
+      }
+    }]
+  },
+  collectCoverageFrom: [
+    'src/**/*.ts',
+    '!src/**/*.d.ts',
+    '!src/**/*.types.ts',
+    '!src/**/index.ts'
+  ],
+  coverageThreshold: {
+    global: {
+      branches: 90,
+      functions: 90,
+      lines: 90,
+      statements: 90
+    }
+  },
+  setupFilesAfterEnv: [
+    '<rootDir>/tests/setup.ts'
+  ],
+  moduleNameMapping: {
+    '^@/(.*)$': '<rootDir>/src/$1'
+  }
+};
+
+export default config;
+```
+
+### Test File Organization
+```typescript
+// Standard test file structure
+describe('AIPortalManager', () => {
+  let portalManager: AIPortalManager;
+  let mockEventBus: jest.Mocked<EventBus>;
+  let mockConfig: AIPortalConfig;
+  
+  beforeEach(() => {
+    // Setup mocks and test instances
+    mockEventBus = createMockEventBus();
+    mockConfig = createTestConfig();
+    portalManager = new AIPortalManager(mockEventBus, mockConfig);
+  });
+  
+  afterEach(() => {
+    // Cleanup resources
+    jest.clearAllMocks();
+  });
+  
+  describe('initialization', () => {
+    it('should initialize all enabled portals', async () => {
+      // Test setup and execution
+    });
+    
+    it('should handle initialization failures gracefully', async () => {
+      // Error condition testing
+    });
+  });
+  
+  describe('provider selection', () => {
+    it('should select primary provider for standard requests', async () => {
+      // Normal flow testing
+    });
+    
+    it('should fallback to secondary provider when primary fails', async () => {
+      // Fallback behavior testing
+    });
+  });
+  
+  describe('error handling', () => {
+    it('should retry failed requests with exponential backoff', async () => {
+      // Retry logic testing
+    });
+    
+    it('should circuit break after repeated failures', async () => {
+      // Circuit breaker testing
+    });
+  });
+});
+```
+
+### Mock Factory Patterns
+```typescript
+// Mock factories for consistent test data
+export class TestFactories {
+  static createMockAgent(overrides: Partial<Agent> = {}): Agent {
+    return {
+      id: 'test-agent-id',
+      name: 'Test Agent',
+      characterId: 'nyx',
+      status: 'inactive',
+      config: {
+        memoryProvider: 'sqlite',
+        emotionModule: 'confident',
+        cognitiveModule: 'reactive',
+        aiPortal: 'openai'
+      },
+      metadata: {
+        createdAt: new Date('2024-01-01'),
+        lastActive: null,
+        version: '1.0.0'
+      },
+      ...overrides
+    };
+  }
+  
+  static createMockMessage(overrides: Partial<Message> = {}): Message {
+    return {
+      id: `msg-${Date.now()}`,
+      content: 'Test message content',
+      sender: {
+        id: 'test-user',
+        name: 'Test User',
+        platform: 'test'
+      },
+      channel: {
+        id: 'test-channel',
+        type: 'direct',
+        platform: 'test'
+      },
+      timestamp: new Date(),
+      ...overrides
+    };
+  }
+  
+  static createMockEventBus(): jest.Mocked<EventBus> {
+    return {
+      emit: jest.fn(),
+      emitAndWait: jest.fn(),
+      on: jest.fn(),
+      off: jest.fn(),
+      once: jest.fn(),
+      removeAllListeners: jest.fn()
+    } as jest.Mocked<EventBus>;
+  }
+}
+```
+
+### Testing AI Portal Integrations
+```typescript
+describe('OpenAIPortal', () => {
+  let portal: OpenAIPortal;
+  let mockOpenAI: jest.Mocked<OpenAI>;
+  
+  beforeEach(() => {
+    mockOpenAI = {
+      chat: {
+        completions: {
+          create: jest.fn()
+        }
+      }
+    } as any;
+    
+    portal = new OpenAIPortal({
+      apiKey: 'test-key',
+      models: {
+        chat: 'gpt-4o',
+        tools: 'gpt-4.1-mini'
+      }
+    });
+    
+    // Inject mock
+    (portal as any).client = mockOpenAI;
+  });
+  
+  describe('text generation', () => {
+    it('should generate text response with correct parameters', async () => {
+      const mockResponse = {
+        choices: [{
+          message: {
+            content: 'Test response',
+            role: 'assistant'
+          }
+        }],
+        usage: {
+          prompt_tokens: 10,
+          completion_tokens: 5,
+          total_tokens: 15
+        }
+      };
+      
+      mockOpenAI.chat.completions.create.mockResolvedValue(mockResponse as any);
+      
+      const request: GenerationRequest = {
+        messages: [{ role: 'user', content: 'Test prompt' }],
+        temperature: 0.7,
+        maxTokens: 100
+      };
+      
+      const result = await portal.generate(request);
+      
+      expect(result.content).toBe('Test response');
+      expect(result.usage.totalTokens).toBe(15);
+      expect(mockOpenAI.chat.completions.create).toHaveBeenCalledWith({
+        model: 'gpt-4o',
+        messages: request.messages,
+        temperature: 0.7,
+        max_tokens: 100
+      });
+    });
+    
+    it('should handle rate limiting with exponential backoff', async () => {
+      const rateLimitError = new Error('Rate limit exceeded');
+      (rateLimitError as any).status = 429;
+      
+      mockOpenAI.chat.completions.create
+        .mockRejectedValueOnce(rateLimitError)
+        .mockRejectedValueOnce(rateLimitError)
+        .mockResolvedValueOnce({
+          choices: [{ message: { content: 'Success after retries' } }]
+        } as any);
+      
+      const request: GenerationRequest = {
+        messages: [{ role: 'user', content: 'Test' }]
+      };
+      
+      const result = await portal.generate(request);
+      
+      expect(result.content).toBe('Success after retries');
+      expect(mockOpenAI.chat.completions.create).toHaveBeenCalledTimes(3);
+    });
+  });
+});
+```
+
+### Memory Provider Testing
+```typescript
+describe('SQLiteMemoryProvider', () => {
+  let provider: SQLiteMemoryProvider;
+  let testDb: Database;
+  
+  beforeEach(async () => {
+    // Use in-memory database for testing
+    testDb = new Database(':memory:');
+    provider = new SQLiteMemoryProvider(testDb);
+    await provider.initialize();
+  });
+  
+  afterEach(async () => {
+    await provider.shutdown();
+    testDb.close();
+  });
+  
+  describe('memory storage', () => {
+    it('should store and retrieve memories with embeddings', async () => {
+      const memory: Memory = {
+        id: 'test-memory',
+        content: 'Test memory content',
+        agentId: 'test-agent',
+        timestamp: new Date(),
+        embedding: new Array(1536).fill(0.1),
+        metadata: { importance: 0.8 }
+      };
+      
+      await provider.storeMemory(memory);
+      
+      const retrieved = await provider.getMemory('test-memory');
+      
+      expect(retrieved).toEqual(memory);
+    });
+    
+    it('should perform semantic search correctly', async () => {
+      // Store test memories
+      const memories = [
+        TestFactories.createMemory({ content: 'AI and machine learning' }),
+        TestFactories.createMemory({ content: 'Cooking recipes' }),
+        TestFactories.createMemory({ content: 'Artificial intelligence research' })
+      ];
+      
+      for (const memory of memories) {
+        await provider.storeMemory(memory);
+      }
+      
+      // Search for AI-related content
+      const results = await provider.searchMemories('artificial intelligence', {
+        limit: 10,
+        threshold: 0.7
+      });
+      
+      expect(results).toHaveLength(2);
+      expect(results[0].content).toContain('AI');
+    });
+  });
+});
+```
+
+## Integration Testing
+
+### Agent Integration Tests
+```typescript
+describe('Agent Integration', () => {
+  let agent: Agent;
+  let testContainer: TestContainer;
+  
+  beforeEach(async () => {
+    testContainer = await createTestContainer();
+    agent = await testContainer.createAgent({
+      characterId: 'nyx',
+      memoryProvider: 'sqlite',
+      aiPortal: 'mock'
+    });
+  });
+  
+  afterEach(async () => {
+    await testContainer.cleanup();
+  });
+  
+  describe('message processing', () => {
+    it('should process messages through complete pipeline', async () => {
+      const message = TestFactories.createMockMessage({
+        content: 'Hello, can you help me?'
+      });
+      
+      const response = await agent.processMessage(message);
+      
+      expect(response).toBeDefined();
+      expect(response.content).toBeTruthy();
+      expect(response.metadata.agentId).toBe(agent.id);
+    });
+    
+    it('should maintain conversation context across messages', async () => {
+      const firstMessage = TestFactories.createMockMessage({
+        content: 'My name is John'
+      });
+      
+      const secondMessage = TestFactories.createMockMessage({
+        content: 'What is my name?'
+      });
+      
+      await agent.processMessage(firstMessage);
+      const response = await agent.processMessage(secondMessage);
+      
+      expect(response.content.toLowerCase()).toContain('john');
+    });
+  });
+  
+  describe('module hot-swapping', () => {
+    it('should swap memory providers without losing data', async () => {
+      // Store initial memory
+      await agent.storeMemory('Important information');
+      
+      // Swap to different provider
+      await agent.swapMemoryProvider('postgres');
+      
+      // Verify memory is accessible
+      const memories = await agent.searchMemories('Important');
+      expect(memories).toHaveLength(1);
+    });
+    
+    it('should swap emotion modules and maintain state', async () => {
+      // Set initial emotion
+      await agent.setEmotion('confident', 0.8);
+      
+      // Swap emotion module
+      await agent.swapEmotionModule('empathetic');
+      
+      // Verify emotion influence continues
+      const message = TestFactories.createMockMessage({
+        content: 'I am feeling sad'
+      });
+      
+      const response = await agent.processMessage(message);
+      expect(response.emotionState.empathy).toBeGreaterThan(0.5);
+    });
+  });
+});
+```
+
+### Extension Integration Tests
+```typescript
+describe('Extension Integration', () => {
+  let extensionRegistry: ExtensionRegistry;
+  let testContainer: TestContainer;
+  
+  beforeEach(async () => {
+    testContainer = await createTestContainer();
+    extensionRegistry = testContainer.getExtensionRegistry();
+  });
+  
+  describe('communication extensions', () => {
+    it('should route messages between platforms correctly', async () => {
+      // Register mock extensions
+      const telegramExt = new MockTelegramExtension();
+      const discordExt = new MockDiscordExtension();
+      
+      await extensionRegistry.register(telegramExt);
+      await extensionRegistry.register(discordExt);
+      
+      // Send message from Telegram
+      const telegramMessage = TestFactories.createMockMessage({
+        sender: { platform: 'telegram' },
+        content: 'Forward this to Discord'
+      });
+      
+      await telegramExt.handleMessage(telegramMessage);
+      
+      // Verify Discord received the message
+      expect(discordExt.lastSentMessage).toBeDefined();
+      expect(discordExt.lastSentMessage.content).toContain('Forward this');
+    });
+  });
+  
+  describe('API extensions', () => {
+    it('should handle concurrent API requests correctly', async () => {
+      const apiExt = new APIExtension();
+      await extensionRegistry.register(apiExt);
+      
+      // Send multiple concurrent requests
+      const requests = Array.from({ length: 10 }, (_, i) => 
+        testContainer.apiClient.post('/chat', {
+          message: `Test message ${i}`,
+          agentId: 'test-agent'
+        })
+      );
+      
+      const responses = await Promise.all(requests);
+      
+      // Verify all requests succeeded
+      responses.forEach((response, i) => {
+        expect(response.status).toBe(200);
+        expect(response.data.success).toBe(true);
+      });
+    });
+  });
+});
+```
+
+## End-to-End Testing
+
+### User Journey Tests
+```typescript
+describe('E2E User Journeys', () => {
+  let browser: Browser;
+  let page: Page;
+  let testAgent: Agent;
+  
+  beforeAll(async () => {
+    browser = await chromium.launch();
+    page = await browser.newPage();
+    testAgent = await createTestAgent();
+  });
+  
+  afterAll(async () => {
+    await browser.close();
+    await cleanupTestAgent(testAgent);
+  });
+  
+  describe('Web Interface', () => {
+    it('should complete agent creation workflow', async () => {
+      // Navigate to agent creation page
+      await page.goto('http://localhost:3000/agents/new');
+      
+      // Fill out agent form
+      await page.fill('[data-testid="agent-name"]', 'Test Agent');
+      await page.selectOption('[data-testid="character-select"]', 'nyx');
+      await page.selectOption('[data-testid="memory-provider"]', 'sqlite');
+      await page.selectOption('[data-testid="ai-portal"]', 'openai');
+      
+      // Submit form
+      await page.click('[data-testid="create-agent-btn"]');
+      
+      // Verify agent appears in dashboard
+      await page.waitForSelector('[data-testid="agent-card"]');
+      const agentName = await page.textContent('[data-testid="agent-card"] h3');
+      expect(agentName).toBe('Test Agent');
+      
+      // Start agent
+      await page.click('[data-testid="start-agent-btn"]');
+      await page.waitForSelector('[data-testid="agent-status-active"]');
+      
+      // Send test message
+      await page.fill('[data-testid="chat-input"]', 'Hello, test agent!');
+      await page.click('[data-testid="send-message-btn"]');
+      
+      // Verify response
+      await page.waitForSelector('[data-testid="agent-response"]');
+      const response = await page.textContent('[data-testid="agent-response"]');
+      expect(response).toBeTruthy();
+    });
+  });
+  
+  describe('Multi-Platform Communication', () => {
+    it('should handle cross-platform message routing', async () => {
+      // Setup mock platforms
+      const telegramBot = new MockTelegramBot();
+      const discordBot = new MockDiscordBot();
+      
+      // Connect agent to both platforms
+      await testAgent.addExtension('telegram', telegramBot);
+      await testAgent.addExtension('discord', discordBot);
+      
+      // Send message from Telegram
+      await telegramBot.sendMessage('Hello from Telegram!');
+      
+      // Verify agent processes and responds
+      await waitFor(() => {
+        expect(telegramBot.lastResponse).toBeDefined();
+      });
+      
+      // Verify cross-platform notification if configured
+      if (testAgent.config.crossPlatformNotifications) {
+        await waitFor(() => {
+          expect(discordBot.lastNotification).toBeDefined();
+        });
+      }
+    });
+  });
+});
+```
+
+## Performance Testing
+
+### Load Testing
+```typescript
+describe('Performance Tests', () => {
+  describe('Concurrent Message Processing', () => {
+    it('should handle 100 concurrent messages within SLA', async () => {
+      const agent = await createPerformanceTestAgent();
+      const startTime = Date.now();
+      
+      // Generate 100 concurrent messages
+      const messages = Array.from({ length: 100 }, (_, i) => 
+        TestFactories.createMockMessage({
+          content: `Performance test message ${i}`
+        })
+      );
+      
+      // Process all messages concurrently
+      const responses = await Promise.all(
+        messages.map(msg => agent.processMessage(msg))
+      );
+      
+      const endTime = Date.now();
+      const totalTime = endTime - startTime;
+      
+      // Verify all responses received
+      expect(responses).toHaveLength(100);
+      responses.forEach(response => {
+        expect(response).toBeDefined();
+        expect(response.content).toBeTruthy();
+      });
+      
+      // Verify SLA (< 5 seconds for 100 messages)
+      expect(totalTime).toBeLessThan(5000);
+      
+      // Verify average response time (< 200ms per message)
+      const avgResponseTime = totalTime / 100;
+      expect(avgResponseTime).toBeLessThan(200);
+    });
+  });
+  
+  describe('Memory Performance', () => {
+    it('should maintain search performance with large memory datasets', async () => {
+      const memoryProvider = new SQLiteMemoryProvider();
+      await memoryProvider.initialize();
+      
+      // Store 10,000 memories
+      const memories = Array.from({ length: 10000 }, (_, i) => 
+        TestFactories.createMemory({
+          content: `Memory ${i}: ${generateRandomContent()}`
+        })
+      );
+      
+      const storeStartTime = Date.now();
+      await Promise.all(
+        memories.map(memory => memoryProvider.storeMemory(memory))
+      );
+      const storeEndTime = Date.now();
+      
+      // Verify storage performance (< 30 seconds for 10k memories)
+      expect(storeEndTime - storeStartTime).toBeLessThan(30000);
+      
+      // Test search performance
+      const searchStartTime = Date.now();
+      const results = await memoryProvider.searchMemories('test query', {
+        limit: 10
+      });
+      const searchEndTime = Date.now();
+      
+      // Verify search performance (< 100ms)
+      expect(searchEndTime - searchStartTime).toBeLessThan(100);
+      expect(results).toHaveLength(10);
+    });
+  });
+});
+```
+
+## Quality Assurance
+
+### Code Quality Tools
+```json
+{
+  "scripts": {
+    "lint": "eslint src/ --ext .ts,.tsx",
+    "lint:fix": "eslint src/ --ext .ts,.tsx --fix",
+    "type-check": "tsc --noEmit",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:e2e": "playwright test",
+    "quality": "npm run lint && npm run type-check && npm run test"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write",
+      "git add"
+    ]
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged",
+      "pre-push": "npm run quality"
+    }
+  }
+}
+```
+
+### ESLint Configuration
+```typescript
+// .eslintrc.js
+module.exports = {
+  extends: [
+    '@typescript-eslint/recommended',
+    '@typescript-eslint/recommended-requiring-type-checking'
+  ],
+  rules: {
+    '@typescript-eslint/no-unused-vars': 'error',
+    '@typescript-eslint/explicit-function-return-type': 'warn',
+    '@typescript-eslint/no-explicit-any': 'warn',
+    '@typescript-eslint/prefer-nullish-coalescing': 'error',
+    '@typescript-eslint/prefer-optional-chain': 'error',
+    'complexity': ['error', 10],
+    'max-lines-per-function': ['error', 50],
+    'max-depth': ['error', 4]
+  }
+};
+```
+
+### Continuous Integration
+```yaml
+# .github/workflows/ci.yml
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18, 20]
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+          
+      - name: Install dependencies
+        run: bun install
+        
+      - name: Type checking
+        run: bun run type-check
+        
+      - name: Linting
+        run: bun run lint
+        
+      - name: Unit tests
+        run: bun run test:coverage
+        
+      - name: Integration tests
+        run: bun run test:integration
+        
+      - name: E2E tests
+        run: bun run test:e2e
+        
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage/lcov.info
+```
+
+This comprehensive testing and quality assurance framework ensures SYMindX maintains high reliability, performance, and code quality standards across all development phases. [[memory:2184189]]

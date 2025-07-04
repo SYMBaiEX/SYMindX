@@ -1,0 +1,603 @@
+# Advanced Context Awareness and Dynamic Rule Activation
+
+**Rule Priority:** Advanced Intelligence  
+**Activation:** All development activities with dynamic context switching  
+**Scope:** Global context management and intelligent rule selection
+
+## Overview
+
+Cursor's advanced context system in v1.2+ enables sophisticated awareness of development environment, file types, git status, time of day, project phase, and user patterns. This rule creates intelligent context switching that dynamically activates relevant rules and optimizes AI assistance based on current conditions.
+
+## Context Detection Systems
+
+### Environment Context Detection
+
+```typescript
+// Advanced context detection engine
+interface ContextState {
+  // File and Project Context
+  currentFile: string;
+  fileType: string;
+  fileSize: number;
+  projectType: string;
+  
+  // Git Context
+  gitBranch: string;
+  gitStatus: 'clean' | 'modified' | 'staged' | 'conflict';
+  uncommittedChanges: number;
+  lastCommitTime: Date;
+  
+  // Development Context
+  activeRules: string[];
+  recentFiles: string[];
+  openTabs: string[];
+  cursorPosition: { line: number; column: number };
+  
+  // Temporal Context
+  timeOfDay: 'morning' | 'afternoon' | 'evening' | 'night';
+  dayOfWeek: string;
+  timezone: string;
+  
+  // User Context
+  workingPattern: 'focused' | 'exploratory' | 'debugging' | 'reviewing';
+  errorCount: number;
+  productivityScore: number;
+  
+  // System Context
+  cpuUsage: number;
+  memoryUsage: number;
+  networkStatus: 'online' | 'offline' | 'slow';
+}
+
+class ContextEngine {
+  private state: ContextState;
+  private listeners: ContextListener[] = [];
+  
+  async detectContext(): Promise<ContextState> {
+    return {
+      // File context
+      currentFile: await this.getCurrentFile(),
+      fileType: await this.detectFileType(),
+      fileSize: await this.getFileSize(),
+      projectType: await this.detectProjectType(),
+      
+      // Git context
+      gitBranch: await this.getGitBranch(),
+      gitStatus: await this.getGitStatus(),
+      uncommittedChanges: await this.countUncommittedChanges(),
+      lastCommitTime: await this.getLastCommitTime(),
+      
+      // Development context
+      activeRules: await this.getActiveRules(),
+      recentFiles: await this.getRecentFiles(),
+      openTabs: await this.getOpenTabs(),
+      cursorPosition: await this.getCursorPosition(),
+      
+      // Temporal context
+      timeOfDay: this.getTimeOfDay(),
+      dayOfWeek: new Date().toLocaleDateString('en-US', { weekday: 'long' }),
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      
+      // User context
+      workingPattern: await this.detectWorkingPattern(),
+      errorCount: await this.getErrorCount(),
+      productivityScore: await this.calculateProductivityScore(),
+      
+      // System context
+      cpuUsage: await this.getCPUUsage(),
+      memoryUsage: await this.getMemoryUsage(),
+      networkStatus: await this.getNetworkStatus()
+    };
+  }
+  
+  onContextChange(listener: ContextListener): void {
+    this.listeners.push(listener);
+  }
+  
+  private async detectWorkingPattern(): Promise<string> {
+    // Analyze recent activity patterns
+    const recentActions = await this.getRecentActions();
+    
+    if (recentActions.includes('debugging')) return 'debugging';
+    if (recentActions.includes('exploring')) return 'exploratory';
+    if (recentActions.includes('reviewing')) return 'reviewing';
+    return 'focused';
+  }
+}
+```
+
+### SYMindX-Specific Context
+
+```typescript
+// SYMindX project-specific context detection
+class SYMindXContextDetector {
+  async detectSYMindXContext(): Promise<SYMindXContext> {
+    const currentFile = await this.getCurrentFile();
+    
+    return {
+      // Component detection
+      component: this.detectComponent(currentFile),
+      
+      // Agent context
+      agentType: this.detectAgentType(currentFile),
+      
+      // Module context
+      moduleType: this.detectModuleType(currentFile),
+      
+      // Portal context
+      portalProvider: this.detectPortalProvider(currentFile),
+      
+      // Architecture layer
+      layer: this.detectArchitectureLayer(currentFile)
+    };
+  }
+  
+  private detectComponent(filePath: string): string {
+    if (filePath.includes('mind-agents/src/core/')) return 'core-runtime';
+    if (filePath.includes('mind-agents/src/portals/')) return 'ai-portal';
+    if (filePath.includes('mind-agents/src/memory/')) return 'memory-system';
+    if (filePath.includes('mind-agents/src/emotion/')) return 'emotion-system';
+    if (filePath.includes('mind-agents/src/cognition/')) return 'cognition-module';
+    if (filePath.includes('mind-agents/src/extensions/')) return 'platform-extension';
+    if (filePath.includes('mind-agents/src/characters/')) return 'character-system';
+    if (filePath.includes('website/')) return 'web-interface';
+    if (filePath.includes('docs-site/')) return 'documentation';
+    return 'general';
+  }
+  
+  private detectAgentType(filePath: string): string | null {
+    // Extract agent type from file path or content
+    if (filePath.includes('characters/')) {
+      const filename = filePath.split('/').pop();
+      return filename?.replace('.json', '') || null;
+    }
+    return null;
+  }
+  
+  private detectModuleType(filePath: string): string | null {
+    if (filePath.includes('memory/providers/')) return 'memory-provider';
+    if (filePath.includes('memory/embeddings/')) return 'embedding-service';
+    if (filePath.includes('emotion/engines/')) return 'emotion-engine';
+    if (filePath.includes('cognition/planners/')) return 'task-planner';
+    return null;
+  }
+  
+  private detectPortalProvider(filePath: string): string | null {
+    const providers = ['openai', 'anthropic', 'groq', 'xai', 'google-vertex', 'google-generative'];
+    for (const provider of providers) {
+      if (filePath.includes(`portals/${provider}/`)) return provider;
+    }
+    return null;
+  }
+  
+  private detectArchitectureLayer(filePath: string): string {
+    if (filePath.includes('src/core/')) return 'infrastructure';
+    if (filePath.includes('src/modules/')) return 'domain';
+    if (filePath.includes('src/extensions/')) return 'application';
+    if (filePath.includes('website/src/')) return 'presentation';
+    return 'unknown';
+  }
+}
+```
+
+## Dynamic Rule Activation
+
+### Context-Based Rule Selection
+
+```typescript
+// Dynamic rule activation based on context
+interface RuleActivationConfig {
+  ruleId: string;
+  priority: number;
+  conditions: ContextCondition[];
+  conflictResolution: 'override' | 'merge' | 'skip';
+}
+
+interface ContextCondition {
+  type: 'file' | 'git' | 'time' | 'user' | 'system' | 'project';
+  field: string;
+  operator: 'equals' | 'contains' | 'matches' | 'greater' | 'less';
+  value: any;
+  weight: number;
+}
+
+class DynamicRuleEngine {
+  private rules: Map<string, RuleActivationConfig> = new Map();
+  
+  constructor() {
+    this.initializeRules();
+  }
+  
+  private initializeRules(): void {
+    // Core TypeScript rules - always active
+    this.addRule({
+      ruleId: '003-typescript-standards',
+      priority: 100,
+      conditions: [
+        { type: 'file', field: 'fileType', operator: 'matches', value: /\.(ts|tsx)$/, weight: 1.0 }
+      ],
+      conflictResolution: 'merge'
+    });
+    
+    // Git hooks - active during git operations
+    this.addRule({
+      ruleId: '018-git-hooks',
+      priority: 90,
+      conditions: [
+        { type: 'git', field: 'gitStatus', operator: 'equals', value: 'staged', weight: 0.8 },
+        { type: 'user', field: 'workingPattern', operator: 'equals', value: 'focused', weight: 0.6 }
+      ],
+      conflictResolution: 'override'
+    });
+    
+    // Background agents - active during complex tasks
+    this.addRule({
+      ruleId: '019-background-agents',
+      priority: 85,
+      conditions: [
+        { type: 'file', field: 'fileSize', operator: 'greater', value: 1000, weight: 0.7 },
+        { type: 'user', field: 'workingPattern', operator: 'equals', value: 'exploratory', weight: 0.8 },
+        { type: 'system', field: 'cpuUsage', operator: 'less', value: 80, weight: 0.5 }
+      ],
+      conflictResolution: 'merge'
+    });
+    
+    // MCP integration - active when working with external services
+    this.addRule({
+      ruleId: '020-mcp-integration',
+      priority: 80,
+      conditions: [
+        { type: 'file', field: 'currentFile', operator: 'contains', value: 'mcp', weight: 0.9 },
+        { type: 'project', field: 'component', operator: 'equals', value: 'platform-extension', weight: 0.7 }
+      ],
+      conflictResolution: 'merge'
+    });
+    
+    // AI portal rules - active when working with AI providers
+    this.addRule({
+      ruleId: '005-ai-integration-patterns',
+      priority: 75,
+      conditions: [
+        { type: 'project', field: 'component', operator: 'equals', value: 'ai-portal', weight: 1.0 },
+        { type: 'project', field: 'portalProvider', operator: 'matches', value: /.+/, weight: 0.8 }
+      ],
+      conflictResolution: 'merge'
+    });
+    
+    // Memory system rules - active in memory components
+    this.addRule({
+      ruleId: '011-data-management-patterns',
+      priority: 70,
+      conditions: [
+        { type: 'project', field: 'component', operator: 'equals', value: 'memory-system', weight: 1.0 },
+        { type: 'file', field: 'currentFile', operator: 'contains', value: 'memory', weight: 0.8 }
+      ],
+      conflictResolution: 'merge'
+    });
+    
+    // Testing rules - active during testing
+    this.addRule({
+      ruleId: '008-testing-and-quality-standards',
+      priority: 65,
+      conditions: [
+        { type: 'file', field: 'currentFile', operator: 'contains', value: '__tests__', weight: 1.0 },
+        { type: 'file', field: 'currentFile', operator: 'contains', value: '.test.', weight: 1.0 },
+        { type: 'file', field: 'currentFile', operator: 'contains', value: '.spec.', weight: 1.0 }
+      ],
+      conflictResolution: 'override'
+    });
+    
+    // Performance rules - active during optimization
+    this.addRule({
+      ruleId: '012-performance-optimization',
+      priority: 60,
+      conditions: [
+        { type: 'user', field: 'workingPattern', operator: 'equals', value: 'debugging', weight: 0.9 },
+        { type: 'system', field: 'cpuUsage', operator: 'greater', value: 70, weight: 0.7 },
+        { type: 'user', field: 'errorCount', operator: 'greater', value: 5, weight: 0.6 }
+      ],
+      conflictResolution: 'merge'
+    });
+  }
+  
+  async getActiveRules(context: ContextState): Promise<string[]> {
+    const scored = new Map<string, number>();
+    
+    for (const [ruleId, config] of this.rules) {
+      const score = this.calculateRuleScore(config, context);
+      if (score > 0.5) { // Activation threshold
+        scored.set(ruleId, score);
+      }
+    }
+    
+    // Sort by score (highest first)
+    return Array.from(scored.entries())
+      .sort(([, a], [, b]) => b - a)
+      .map(([ruleId]) => ruleId);
+  }
+  
+  private calculateRuleScore(config: RuleActivationConfig, context: ContextState): number {
+    let totalScore = 0;
+    let totalWeight = 0;
+    
+    for (const condition of config.conditions) {
+      const conditionMet = this.evaluateCondition(condition, context);
+      if (conditionMet) {
+        totalScore += condition.weight;
+      }
+      totalWeight += condition.weight;
+    }
+    
+    return totalWeight > 0 ? totalScore / totalWeight : 0;
+  }
+  
+  private evaluateCondition(condition: ContextCondition, context: ContextState): boolean {
+    const value = this.getContextValue(condition.type, condition.field, context);
+    
+    switch (condition.operator) {
+      case 'equals':
+        return value === condition.value;
+      case 'contains':
+        return typeof value === 'string' && value.includes(condition.value);
+      case 'matches':
+        return condition.value instanceof RegExp && condition.value.test(value);
+      case 'greater':
+        return typeof value === 'number' && value > condition.value;
+      case 'less':
+        return typeof value === 'number' && value < condition.value;
+      default:
+        return false;
+    }
+  }
+  
+  private getContextValue(type: string, field: string, context: ContextState): any {
+    switch (type) {
+      case 'file':
+        return context[field as keyof ContextState];
+      case 'git':
+        return context[field as keyof ContextState];
+      case 'time':
+        return context[field as keyof ContextState];
+      case 'user':
+        return context[field as keyof ContextState];
+      case 'system':
+        return context[field as keyof ContextState];
+      case 'project':
+        // Would need to integrate with SYMindXContextDetector
+        return null;
+      default:
+        return null;
+    }
+  }
+}
+```
+
+## Smart Context Switching
+
+### Temporal Context Rules
+
+```typescript
+// Time-based rule activation
+class TemporalRuleEngine {
+  getTimeBasedRules(timeOfDay: string, dayOfWeek: string): string[] {
+    const rules: string[] = [];
+    
+    // Morning rules - focus on planning and architecture
+    if (timeOfDay === 'morning') {
+      rules.push('004-architecture-patterns');
+      rules.push('016-documentation-standards');
+    }
+    
+    // Afternoon rules - implementation and testing
+    if (timeOfDay === 'afternoon') {
+      rules.push('003-typescript-standards');
+      rules.push('008-testing-and-quality-standards');
+      rules.push('019-background-agents'); // Delegate tasks
+    }
+    
+    // Evening rules - review and optimization
+    if (timeOfDay === 'evening') {
+      rules.push('012-performance-optimization');
+      rules.push('013-error-handling-logging');
+    }
+    
+    // Weekend rules - exploration and experimentation
+    if (dayOfWeek === 'Saturday' || dayOfWeek === 'Sunday') {
+      rules.push('020-mcp-integration');
+      rules.push('007-extension-system-patterns');
+    }
+    
+    return rules;
+  }
+  
+  getProductivityBasedRules(productivityScore: number): string[] {
+    const rules: string[] = [];
+    
+    // High productivity - tackle complex tasks
+    if (productivityScore > 0.8) {
+      rules.push('004-architecture-patterns');
+      rules.push('005-ai-integration-patterns');
+      rules.push('019-background-agents');
+    }
+    
+    // Medium productivity - standard development
+    if (productivityScore > 0.5 && productivityScore <= 0.8) {
+      rules.push('003-typescript-standards');
+      rules.push('008-testing-and-quality-standards');
+    }
+    
+    // Low productivity - simplify and delegate
+    if (productivityScore <= 0.5) {
+      rules.push('019-background-agents'); // Delegate tasks
+      rules.push('020-mcp-integration'); // Use tools
+      rules.push('016-documentation-standards'); // Light tasks
+    }
+    
+    return rules;
+  }
+}
+```
+
+### Intelligent Assistance Optimization
+
+```typescript
+// Optimize AI assistance based on context
+class AssistanceOptimizer {
+  optimizeForContext(context: ContextState, activeRules: string[]): AssistanceConfig {
+    return {
+      suggestionLevel: this.getSuggestionLevel(context),
+      autocompletionMode: this.getAutocompletionMode(context),
+      errorHighlighting: this.getErrorHighlighting(context),
+      codeGeneration: this.getCodeGenerationMode(context),
+      backgroundTasks: this.getBackgroundTasksMode(context)
+    };
+  }
+  
+  private getSuggestionLevel(context: ContextState): 'minimal' | 'moderate' | 'aggressive' {
+    if (context.workingPattern === 'focused') return 'minimal';
+    if (context.workingPattern === 'exploratory') return 'aggressive';
+    if (context.errorCount > 5) return 'aggressive';
+    return 'moderate';
+  }
+  
+  private getAutocompletionMode(context: ContextState): 'off' | 'basic' | 'intelligent' {
+    if (context.fileSize > 5000) return 'basic'; // Large files - reduce overhead
+    if (context.cpuUsage > 80) return 'basic'; // High CPU - reduce load
+    if (context.workingPattern === 'debugging') return 'off'; // Debugging - avoid distractions
+    return 'intelligent';
+  }
+  
+  private getErrorHighlighting(context: ContextState): 'disabled' | 'passive' | 'active' {
+    if (context.workingPattern === 'reviewing') return 'active';
+    if (context.errorCount > 10) return 'active';
+    if (context.fileType.includes('test')) return 'active';
+    return 'passive';
+  }
+  
+  private getCodeGenerationMode(context: ContextState): 'manual' | 'assisted' | 'automatic' {
+    if (context.workingPattern === 'focused') return 'manual';
+    if (context.productivityScore < 0.5) return 'automatic';
+    if (context.timeOfDay === 'evening') return 'assisted';
+    return 'assisted';
+  }
+  
+  private getBackgroundTasksMode(context: ContextState): 'disabled' | 'selective' | 'aggressive' {
+    if (context.cpuUsage > 85) return 'disabled';
+    if (context.workingPattern === 'debugging') return 'disabled';
+    if (context.productivityScore < 0.6) return 'aggressive';
+    return 'selective';
+  }
+}
+```
+
+## Context-Aware Notifications
+
+### Smart Notification System
+
+```typescript
+// Context-aware notification management
+class ContextNotificationManager {
+  shouldNotify(event: NotificationEvent, context: ContextState): boolean {
+    // Don't interrupt during focused work
+    if (context.workingPattern === 'focused' && event.priority < 8) {
+      return false;
+    }
+    
+    // Batch notifications during debugging
+    if (context.workingPattern === 'debugging' && event.type === 'suggestion') {
+      return false;
+    }
+    
+    // More aggressive notifications during exploration
+    if (context.workingPattern === 'exploratory') {
+      return event.priority >= 5;
+    }
+    
+    // Time-based filtering
+    if (context.timeOfDay === 'evening' && event.type === 'error') {
+      return event.priority >= 7; // Only important errors
+    }
+    
+    return event.priority >= 6; // Default threshold
+  }
+  
+  getNotificationStyle(event: NotificationEvent, context: ContextState): NotificationStyle {
+    if (context.workingPattern === 'focused') {
+      return { mode: 'subtle', duration: 'short', position: 'corner' };
+    }
+    
+    if (context.errorCount > 5) {
+      return { mode: 'prominent', duration: 'long', position: 'center' };
+    }
+    
+    return { mode: 'normal', duration: 'medium', position: 'sidebar' };
+  }
+}
+```
+
+## Integration with SYMindX Development Flow
+
+### Project Phase Detection
+
+```typescript
+// Detect current development phase
+class ProjectPhaseDetector {
+  detectPhase(context: ContextState): ProjectPhase {
+    const recentCommits = context.lastCommitTime;
+    const filePattern = context.currentFile;
+    
+    // Initial development
+    if (!recentCommits || this.isNewProject()) {
+      return 'initial-development';
+    }
+    
+    // Feature development
+    if (context.gitBranch.includes('feature/')) {
+      return 'feature-development';
+    }
+    
+    // Bug fixing
+    if (context.gitBranch.includes('bugfix/') || context.errorCount > 5) {
+      return 'bug-fixing';
+    }
+    
+    // Testing phase
+    if (filePattern.includes('test') || filePattern.includes('spec')) {
+      return 'testing';
+    }
+    
+    // Documentation
+    if (filePattern.includes('docs') || filePattern.includes('README')) {
+      return 'documentation';
+    }
+    
+    // Optimization
+    if (context.cpuUsage > 70 || context.workingPattern === 'debugging') {
+      return 'optimization';
+    }
+    
+    return 'maintenance';
+  }
+  
+  getPhaseRules(phase: ProjectPhase): string[] {
+    switch (phase) {
+      case 'initial-development':
+        return ['001-symindx-workspace', '004-architecture-patterns'];
+      case 'feature-development':
+        return ['003-typescript-standards', '005-ai-integration-patterns'];
+      case 'bug-fixing':
+        return ['013-error-handling-logging', '012-performance-optimization'];
+      case 'testing':
+        return ['008-testing-and-quality-standards'];
+      case 'documentation':
+        return ['016-documentation-standards'];
+      case 'optimization':
+        return ['012-performance-optimization', '019-background-agents'];
+      default:
+        return ['003-typescript-standards'];
+    }
+  }
+}
+```
+
+This rule creates an intelligent context-aware system that dynamically optimizes Cursor's assistance based on current development conditions, user patterns, and project state, ensuring the most relevant rules and features are activated at the right time.

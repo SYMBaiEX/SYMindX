@@ -1,0 +1,643 @@
+---
+description: APPLY open source best practices when working with community and governance files
+globs: .github/**/*.*, CONTRIBUTING.md, LICENSE, CODE_OF_CONDUCT.md
+---
+
+# Community and Governance Standards
+
+This rule establishes comprehensive community management, contribution workflows, and project governance standards for the SYMindX open source project.
+
+## Project Governance
+
+### Governance Structure
+
+```
+SYMindX Project Structure:
+├── Core Maintainers (2-4 people)
+│   ├── Project Lead (1 person)
+│   ├── Technical Lead (1 person)
+│   └── Community Manager (1 person)
+├── Active Contributors (5-10 people)
+├── Community Contributors (unlimited)
+└── Advisors/Emeritus (as needed)
+```
+
+### Roles and Responsibilities
+
+#### Core Maintainers
+
+**Project Lead**
+
+- Overall project direction and vision
+- Final decision authority on major changes
+- Community representation and external partnerships
+- Release planning and roadmap management
+
+**Technical Lead**
+
+- Architecture decisions and technical direction
+- Code quality and review standards
+- Performance and security oversight
+- Technical roadmap alignment
+
+**Community Manager**
+
+- Community engagement and support
+- Documentation and onboarding
+- Issue triage and contributor guidance
+- Event planning and outreach
+
+#### Active Contributors
+
+- Regular code contributions and reviews
+- Issue triage and community support
+- Documentation improvements
+- Feature development and bug fixes
+
+#### Community Contributors
+
+- Bug reports and feature requests
+- Code contributions and documentation
+- Community support and engagement
+- Testing and feedback
+
+### Decision Making Process
+
+#### 1. Consensus Building
+
+```markdown
+# Decision Framework
+
+## Minor Changes (Bug fixes, docs, small features)
+- Single maintainer approval
+- Community input welcomed
+- Fast-track for obvious improvements
+
+## Major Changes (API changes, architecture, new features)
+- Multiple maintainer review required
+- Community discussion period (1 week minimum)
+- RFC process for significant changes
+
+## Breaking Changes
+- All maintainer approval required
+- Extended community discussion (2+ weeks)
+- Migration guide required
+- Deprecation period when possible
+```
+
+#### 2. RFC Process
+
+**Request for Comments (RFC) Structure**
+
+```markdown
+# RFC: [Feature Name]
+
+## Summary
+Brief description of the proposed change
+
+## Motivation
+- What problem does this solve?
+- Why is this change needed?
+- What are the use cases?
+
+## Detailed Design
+- Technical implementation details
+- API changes and additions
+- Migration strategy
+- Performance implications
+
+## Drawbacks
+- What are the downsides?
+- What alternatives were considered?
+- What are the trade-offs?
+
+## Alternatives
+- Other approaches considered
+- Why this approach was chosen
+- Future possibilities
+
+## Unresolved Questions
+- What needs to be figured out?
+- What are the unknowns?
+- What decisions need community input?
+
+## Implementation Timeline
+- Development phases
+- Release target
+- Migration period
+```
+
+## Contribution Workflow
+
+### Getting Started for Contributors
+
+#### 1. Onboarding Process
+
+```markdown
+# Contributor Onboarding Checklist
+
+## Before Your First Contribution
+- [ ] Read CODE_OF_CONDUCT.md
+- [ ] Review CONTRIBUTING.md guidelines
+- [ ] Set up development environment
+- [ ] Join community Discord/Slack
+- [ ] Introduce yourself in #introductions
+
+## First Contribution
+- [ ] Look for "good first issue" labels
+- [ ] Comment on issue before starting work
+- [ ] Create feature branch from main
+- [ ] Follow commit message conventions
+- [ ] Create pull request with template
+- [ ] Respond to review feedback
+```
+
+#### 2. Development Environment Setup
+
+```bash
+# Quick setup script
+#!/bin/bash
+
+# Clone the repository
+git clone https://github.com/symindx/symindx.git
+cd symindx
+
+# Install dependencies
+bun install
+
+# Set up pre-commit hooks
+bun run setup:hooks
+
+# Copy environment template
+cp .env.example .env.local
+
+# Run tests to verify setup
+bun test
+
+# Start development server
+bun dev
+```
+
+### Contribution Guidelines
+
+#### 1. Code Contributions
+
+**Branch Naming Convention**
+
+```
+feature/description-of-feature
+bugfix/issue-number-short-description
+hotfix/critical-issue-description
+docs/documentation-improvement
+refactor/component-or-system-name
+```
+
+**Commit Message Format**
+
+```
+type(scope): description
+
+[optional body]
+
+[optional footer]
+```
+
+**Types:**
+
+- `feat`: New feature
+- `fix`: Bug fix
+- `docs`: Documentation changes
+- `style`: Code style changes (formatting, etc.)
+- `refactor`: Code refactoring
+- `test`: Adding or updating tests
+- `chore`: Maintenance tasks
+
+**Examples:**
+
+```
+feat(ai-portal): add support for Claude-3.5 Sonnet
+fix(memory): resolve SQLite connection pooling issue
+docs(api): update authentication examples
+refactor(core): simplify agent lifecycle management
+```
+
+#### 2. Pull Request Process
+
+**Pull Request Template**
+
+```markdown
+## Description
+Brief description of changes
+
+## Type of Change
+- [ ] Bug fix (non-breaking change that fixes an issue)
+- [ ] New feature (non-breaking change that adds functionality)
+- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
+- [ ] Documentation update
+
+## Testing
+- [ ] Unit tests pass
+- [ ] Integration tests pass
+- [ ] Manual testing completed
+- [ ] Added tests for new functionality
+
+## Screenshots (if applicable)
+[Include screenshots for UI changes]
+
+## Breaking Changes
+[Describe any breaking changes and migration steps]
+
+## Checklist
+- [ ] Code follows project style guidelines
+- [ ] Self-review completed
+- [ ] Documentation updated
+- [ ] Tests added/updated
+- [ ] Changelog updated (for significant changes)
+```
+
+**Review Process**
+
+```
+1. Automated Checks
+   ├── Code style (Prettier, ESLint)
+   ├── Type checking (TypeScript)
+   ├── Tests (Jest, integration tests)
+   ├── Security scan
+   └── Build verification
+
+2. Code Review
+   ├── Functionality review
+   ├── Code quality assessment
+   ├── Performance considerations
+   ├── Security implications
+   └── Documentation review
+
+3. Final Approval
+   ├── Maintainer approval
+   ├── CI/CD pipeline success
+   ├── Merge conflicts resolved
+   └── Ready for merge
+```
+
+### Issue Management
+
+#### 1. Issue Templates
+
+**Bug Report Template**
+
+```markdown
+---
+name: Bug Report
+about: Create a report to help us improve
+title: '[BUG] '
+labels: 'bug'
+assignees: ''
+---
+
+## Bug Description
+A clear and concise description of what the bug is.
+
+## Steps to Reproduce
+1. Go to '...'
+2. Click on '....'
+3. Scroll down to '....'
+4. See error
+
+## Expected Behavior
+A clear and concise description of what you expected to happen.
+
+## Actual Behavior
+What actually happened instead.
+
+## Environment
+- OS: [e.g. Ubuntu 22.04]
+- Node.js Version: [e.g. 18.17.0]
+- SYMindX Version: [e.g. 1.2.3]
+- AI Provider: [e.g. OpenAI GPT-4]
+
+## Additional Context
+Add any other context about the problem here.
+
+## Logs
+```
+[Paste relevant logs here]
+```
+```
+
+**Feature Request Template**
+
+```markdown
+---
+name: Feature Request
+about: Suggest an idea for this project
+title: '[FEATURE] '
+labels: 'enhancement'
+assignees: ''
+---
+
+## Feature Summary
+A clear and concise description of what you want to happen.
+
+## Problem/Use Case
+Describe the problem you're trying to solve or the use case this feature would enable.
+
+## Proposed Solution
+A clear and concise description of what you want to happen.
+
+## Alternatives Considered
+A clear and concise description of any alternative solutions or features you've considered.
+
+## Implementation Ideas
+If you have ideas about how this could be implemented, share them here.
+
+## Additional Context
+Add any other context or screenshots about the feature request here.
+```
+
+#### 2. Issue Triage Process
+
+**Issue Labels**
+
+```yaml
+# Priority Labels
+priority/critical: Critical issues that break core functionality
+priority/high: High priority features or important bugs
+priority/medium: Standard priority items
+priority/low: Nice-to-have features or minor issues
+
+# Type Labels
+bug: Something isn't working
+enhancement: New feature or request
+documentation: Improvements or additions to documentation
+question: Further information is requested
+duplicate: This issue or pull request already exists
+wontfix: This will not be worked on
+
+# Status Labels
+status/needs-triage: Needs initial triage
+status/needs-reproduction: Bug needs reproduction steps
+status/blocked: Blocked by external dependency
+status/in-progress: Currently being worked on
+status/needs-review: Ready for review
+
+# Area Labels
+area/core: Core agent functionality
+area/ai-portal: AI provider integrations
+area/memory: Memory system
+area/extensions: Extension system
+area/web: Web interface
+area/docs: Documentation
+area/ci-cd: CI/CD and automation
+```
+
+**Triage Workflow**
+
+```
+New Issue Created
+├── Auto-label based on template
+├── Community member triage (within 24h)
+│   ├── Add appropriate labels
+│   ├── Ask for clarification if needed
+│   └── Assign if straightforward
+├── Maintainer review (within 48h)
+│   ├── Validate priority
+│   ├── Provide technical guidance
+│   └── Add to project board
+└── Regular triage meetings (weekly)
+```
+
+## Release Management
+
+### Release Process
+
+#### 1. Release Cycles
+
+**Release Schedule**
+
+```
+Major Releases (x.0.0): Every 6 months
+- Breaking changes allowed
+- New major features
+- Architecture improvements
+
+Minor Releases (x.y.0): Every 4-6 weeks
+- New features
+- Non-breaking improvements
+- Performance enhancements
+
+Patch Releases (x.y.z): As needed
+- Bug fixes
+- Security patches
+- Critical hotfixes
+```
+
+#### 2. Release Preparation
+
+**Pre-Release Checklist**
+
+```markdown
+# Release Checklist
+
+## Code Preparation
+- [ ] All planned features completed
+- [ ] All tests passing
+- [ ] Performance benchmarks met
+- [ ] Security scan completed
+- [ ] Documentation updated
+
+## Version Management
+- [ ] Version number decided
+- [ ] CHANGELOG.md updated
+- [ ] Migration guides written (if needed)
+- [ ] Breaking changes documented
+
+## Testing
+- [ ] Integration tests pass
+- [ ] End-to-end tests complete
+- [ ] Manual testing on all platforms
+- [ ] Beta testing with community
+
+## Release Notes
+- [ ] Release notes drafted
+- [ ] Breaking changes highlighted
+- [ ] Migration instructions clear
+- [ ] Contributors acknowledged
+```
+
+**Release Automation**
+
+```yaml
+# .github/workflows/release.yml
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+      - name: Install dependencies
+        run: bun install
+      - name: Run tests
+        run: bun test
+      - name: Build packages
+        run: bun run build
+      - name: Publish to npm
+        run: bun run publish
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          body_path: RELEASE_NOTES.md
+```
+
+### Versioning Strategy
+
+#### 1. Semantic Versioning
+
+**Version Format: MAJOR.MINOR.PATCH**
+
+```
+MAJOR version: Breaking changes
+- API changes that break backward compatibility
+- Significant architecture changes
+- Removal of deprecated features
+
+MINOR version: New features
+- New functionality that is backward compatible
+- New AI provider support
+- New extension capabilities
+
+PATCH version: Bug fixes
+- Bug fixes that don't break compatibility
+- Security patches
+- Performance improvements
+```
+
+#### 2. Pre-Release Versions
+
+```
+Alpha: x.y.z-alpha.n
+- Early development
+- Internal testing
+- Major features in development
+
+Beta: x.y.z-beta.n
+- Feature complete
+- Community testing
+- Bug fixes and polishing
+
+Release Candidate: x.y.z-rc.n
+- Production ready candidate
+- Final testing phase
+- Only critical fixes
+```
+
+## Community Engagement
+
+### Communication Channels
+
+#### 1. Official Channels
+
+```
+Primary Channels:
+├── GitHub Discussions: Technical discussions, Q&A
+├── Discord Server: Real-time chat, community support
+├── Twitter/X: Announcements, news, community highlights
+├── Newsletter: Monthly updates, feature highlights
+└── Blog: Deep dives, tutorials, case studies
+
+Support Channels:
+├── GitHub Issues: Bug reports, feature requests
+├── Discord #support: Community help
+├── Stack Overflow: Technical questions (tag: symindx)
+└── Email: security@symindx.com (security issues)
+```
+
+#### 2. Community Events
+
+**Regular Events**
+
+```markdown
+# Community Calendar
+
+## Weekly Events
+- Community Office Hours (Fridays, 3 PM UTC)
+- Contributor Sync (Tuesdays, 4 PM UTC)
+
+## Monthly Events
+- Community Showcase (First Friday)
+- Technical Deep Dive (Third Thursday)
+- Maintainer Q&A (Last Wednesday)
+
+## Quarterly Events
+- Release Planning Sessions
+- Community Survey Reviews
+- Roadmap Updates
+
+## Annual Events
+- SYMindX Conference
+- Contributor Summit
+- Hackathon Events
+```
+
+### Code of Conduct
+
+#### 1. Community Standards
+
+**Our Pledge**
+
+```markdown
+# Contributor Covenant Code of Conduct
+
+## Our Pledge
+We pledge to make participation in our community a harassment-free experience for everyone, regardless of age, body size, visible or invisible disability, ethnicity, sex characteristics, gender identity and expression, level of experience, education, socio-economic status, nationality, personal appearance, race, religion, or sexual identity and orientation.
+
+## Our Standards
+Examples of behavior that contributes to a positive environment:
+- Using welcoming and inclusive language
+- Being respectful of differing viewpoints and experiences
+- Gracefully accepting constructive criticism
+- Focusing on what is best for the community
+- Showing empathy towards other community members
+
+Examples of unacceptable behavior:
+- The use of sexualized language or imagery
+- Trolling, insulting/derogatory comments, and personal attacks
+- Public or private harassment
+- Publishing others' private information without permission
+- Other conduct which could reasonably be considered inappropriate
+```
+
+#### 2. Enforcement
+
+**Enforcement Process**
+
+```
+1. Report Incident
+   ├── Contact: conduct@symindx.com
+   ├── Provide detailed information
+   └── Include evidence if available
+
+2. Investigation
+   ├── Review by conduct team
+   ├── Interview involved parties
+   └── Gather additional context
+
+3. Resolution
+   ├── Warning (first offense)
+   ├── Temporary ban (repeated violations)
+   ├── Permanent ban (severe violations)
+   └── Appeal process available
+```
+
+This community and governance framework ensures that SYMindX maintains a healthy, inclusive, and productive open source community while establishing clear processes for contribution, decision-making, and conflict resolution.

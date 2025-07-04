@@ -1,0 +1,531 @@
+# Background Agents for Cloud-Powered Development
+
+**Rule Priority:** Advanced Automation  
+**Activation:** Complex multi-step tasks and parallel workflows  
+**Scope:** All development tasks suitable for agent delegation
+
+## Overview
+
+Cursor's Background Agents feature enables cloud-powered AI agents to work on tasks in parallel while you focus on core development. These agents can handle UI fixes, content updates, pull request creation, and complex refactoring tasks without blocking your main workflow.
+
+## Background Agent Activation
+
+### Settings Configuration
+
+```json
+// .cursor/background-agents.json
+{
+  "enabled": true,
+  "maxConcurrentAgents": 5,
+  "autoCreatePRs": true,
+  "branchPrefix": "agent/",
+  "githubIntegration": true,
+  "costLimit": {
+    "dailyMax": 50.00,
+    "warningThreshold": 40.00
+  },
+  "agentTypes": {
+    "uiFixes": true,
+    "contentUpdates": true,
+    "refactoring": true,
+    "testing": true,
+    "documentation": true
+  }
+}
+```
+
+### Authentication Setup
+
+```bash
+# Enable Background Agents in Cursor Settings
+# 1. Settings → Beta → Enable Background Agents
+# 2. Authenticate GitHub for PR handling
+# 3. Snapshot environment for cloud agents
+# 4. Configure cost limits and permissions
+```
+
+## Agent Task Templates
+
+### UI Fix Agent Template
+
+```typescript
+// Template for delegating UI fixes to background agents
+interface UIFixTask {
+  type: 'ui-fix';
+  description: string;
+  targetFiles: string[];
+  screenshot?: string;
+  requirements: {
+    responsive: boolean;
+    accessibility: boolean;
+    designSystem: string;
+  };
+  priority: 'low' | 'medium' | 'high';
+}
+
+// Example UI fix delegation
+const uiFixTask: UIFixTask = {
+  type: 'ui-fix',
+  description: 'Fix mobile responsive layout for navbar component',
+  targetFiles: ['website/src/components/Navigation.tsx'],
+  requirements: {
+    responsive: true,
+    accessibility: true,
+    designSystem: 'tailwind'
+  },
+  priority: 'medium'
+};
+
+// Cursor will automatically:
+// 1. Create new branch: agent/fix-navbar-mobile
+// 2. Apply responsive fixes
+// 3. Test across breakpoints
+// 4. Create pull request with screenshots
+// 5. Notify when ready for review
+```
+
+### Content Update Agent Template
+
+```typescript
+// Template for content updates and data synchronization
+interface ContentUpdateTask {
+  type: 'content-update';
+  description: string;
+  contentType: 'documentation' | 'config' | 'assets' | 'data';
+  sourceFiles: string[];
+  updatePattern: 'replace' | 'merge' | 'append';
+  validation: string[];
+}
+
+// Example content update
+const contentTask: ContentUpdateTask = {
+  type: 'content-update',
+  description: 'Update AI portal configurations with new models',
+  contentType: 'config',
+  sourceFiles: ['mind-agents/src/portals/*/config.json'],
+  updatePattern: 'merge',
+  validation: ['schema-validation', 'connectivity-test']
+};
+```
+
+### Refactoring Agent Template
+
+```typescript
+// Template for complex refactoring tasks
+interface RefactoringTask {
+  type: 'refactoring';
+  description: string;
+  scope: 'file' | 'module' | 'system';
+  targetPattern: string;
+  transformations: RefactoringTransformation[];
+  preserveTests: boolean;
+}
+
+interface RefactoringTransformation {
+  name: string;
+  description: string;
+  pattern: string;
+  replacement: string;
+  validation: string;
+}
+
+// Example refactoring task
+const refactorTask: RefactoringTask = {
+  type: 'refactoring',
+  description: 'Extract common portal interface from all AI providers',
+  scope: 'module',
+  targetPattern: 'mind-agents/src/portals/*/index.ts',
+  transformations: [
+    {
+      name: 'extract-interface',
+      description: 'Create common BasePortal interface',
+      pattern: 'export class (.+)Portal',
+      replacement: 'export class $1Portal extends BasePortal',
+      validation: 'typescript-compile'
+    }
+  ],
+  preserveTests: true
+};
+```
+
+## Parallel Task Execution
+
+### Multi-Agent Workflows
+
+```typescript
+// Coordinate multiple agents for complex tasks
+interface MultiAgentWorkflow {
+  name: string;
+  agents: AgentTask[];
+  dependencies: AgentDependency[];
+  mergeStrategy: 'sequential' | 'parallel' | 'hybrid';
+}
+
+interface AgentTask {
+  id: string;
+  type: string;
+  description: string;
+  estimatedTime: number;
+  priority: number;
+}
+
+interface AgentDependency {
+  agentId: string;
+  dependsOn: string[];
+  condition: 'completion' | 'approval' | 'merge';
+}
+
+// Example: Complete feature implementation
+const featureWorkflow: MultiAgentWorkflow = {
+  name: 'Add New Emotion Support',
+  agents: [
+    {
+      id: 'emotion-types',
+      type: 'code-generation',
+      description: 'Add new emotion types to type definitions',
+      estimatedTime: 300, // 5 minutes
+      priority: 1
+    },
+    {
+      id: 'emotion-logic',
+      type: 'implementation',
+      description: 'Implement emotion calculation logic',
+      estimatedTime: 900, // 15 minutes
+      priority: 2
+    },
+    {
+      id: 'emotion-tests',
+      type: 'testing',
+      description: 'Generate comprehensive test suite',
+      estimatedTime: 600, // 10 minutes
+      priority: 3
+    },
+    {
+      id: 'emotion-docs',
+      type: 'documentation',
+      description: 'Update documentation and examples',
+      estimatedTime: 480, // 8 minutes
+      priority: 4
+    }
+  ],
+  dependencies: [
+    {
+      agentId: 'emotion-logic',
+      dependsOn: ['emotion-types'],
+      condition: 'completion'
+    },
+    {
+      agentId: 'emotion-tests',
+      dependsOn: ['emotion-logic'],
+      condition: 'completion'
+    },
+    {
+      agentId: 'emotion-docs',
+      dependsOn: ['emotion-logic'],
+      condition: 'completion'
+    }
+  ],
+  mergeStrategy: 'sequential'
+};
+```
+
+### Task Delegation Patterns
+
+```typescript
+// Smart task delegation based on complexity and type
+class BackgroundAgentManager {
+  async delegateTask(task: AgentTask): Promise<AgentExecution> {
+    // Analyze task complexity
+    const complexity = this.analyzeComplexity(task);
+    
+    // Select appropriate agent type
+    const agentType = this.selectAgentType(task.type, complexity);
+    
+    // Estimate cost and time
+    const estimates = this.estimateExecution(task, agentType);
+    
+    // Create execution plan
+    return this.createExecution(task, agentType, estimates);
+  }
+  
+  private analyzeComplexity(task: AgentTask): 'simple' | 'moderate' | 'complex' {
+    // Analyze file count, dependencies, test requirements
+    if (task.targetFiles.length > 10) return 'complex';
+    if (task.targetFiles.length > 3) return 'moderate';
+    return 'simple';
+  }
+  
+  private selectAgentType(taskType: string, complexity: string): string {
+    const agentMap = {
+      'ui-fix': complexity === 'simple' ? 'ui-specialist' : 'full-stack',
+      'refactoring': complexity === 'complex' ? 'architecture' : 'code-specialist',
+      'testing': 'test-specialist',
+      'documentation': 'content-specialist'
+    };
+    
+    return agentMap[taskType] || 'generalist';
+  }
+}
+```
+
+## Agent Communication and Monitoring
+
+### Real-Time Status Tracking
+
+```typescript
+// Monitor agent progress and status
+interface AgentStatus {
+  id: string;
+  status: 'queued' | 'running' | 'completed' | 'failed' | 'blocked';
+  progress: number; // 0-100
+  currentStep: string;
+  estimatedCompletion: Date;
+  cost: number;
+  logs: AgentLog[];
+  artifacts: AgentArtifact[];
+}
+
+interface AgentLog {
+  timestamp: Date;
+  level: 'info' | 'warning' | 'error';
+  message: string;
+  context?: Record<string, any>;
+}
+
+interface AgentArtifact {
+  type: 'file' | 'pr' | 'branch' | 'deployment';
+  path: string;
+  url?: string;
+  description: string;
+}
+
+// Real-time monitoring
+class AgentMonitor {
+  subscribe(agentId: string, callback: (status: AgentStatus) => void): void {
+    // Subscribe to agent status updates
+  }
+  
+  getActiveAgents(): AgentStatus[] {
+    // Get all currently running agents
+  }
+  
+  getCostSummary(): AgentCostSummary {
+    // Get cost breakdown and projections
+  }
+}
+```
+
+### Agent Results Integration
+
+```typescript
+// Handle agent completion and integration
+interface AgentResult {
+  agentId: string;
+  success: boolean;
+  artifacts: AgentArtifact[];
+  pullRequest?: {
+    url: string;
+    number: number;
+    branch: string;
+  };
+  reviewRequired: boolean;
+  autoMergeEligible: boolean;
+}
+
+class AgentResultHandler {
+  async handleCompletion(result: AgentResult): Promise<void> {
+    if (result.success) {
+      // Notify user of completion
+      await this.notifyCompletion(result);
+      
+      // Auto-merge if eligible
+      if (result.autoMergeEligible) {
+        await this.autoMergePR(result.pullRequest);
+      }
+      
+      // Update project status
+      await this.updateProjectStatus(result);
+    } else {
+      // Handle failures and retry logic
+      await this.handleFailure(result);
+    }
+  }
+  
+  private async autoMergePR(pr: PullRequest): Promise<void> {
+    // Run final checks
+    const checks = await this.runPreMergeChecks(pr);
+    
+    if (checks.passed) {
+      await this.mergePR(pr);
+      await this.cleanupBranch(pr.branch);
+    }
+  }
+}
+```
+
+## SYMindX-Specific Agent Workflows
+
+### AI Portal Management
+
+```typescript
+// Delegate AI portal updates to background agents
+const portalUpdateWorkflow = {
+  name: 'Update All AI Portals',
+  tasks: [
+    {
+      type: 'config-update',
+      description: 'Update OpenAI portal with GPT-4.1 support',
+      files: ['mind-agents/src/portals/openai/']
+    },
+    {
+      type: 'config-update', 
+      description: 'Update Anthropic portal with Claude 3.5 Sonnet',
+      files: ['mind-agents/src/portals/anthropic/']
+    },
+    {
+      type: 'testing',
+      description: 'Run integration tests for all portals',
+      files: ['mind-agents/src/portals/__tests__/']
+    }
+  ],
+  execution: 'parallel'
+};
+```
+
+### Memory System Optimization
+
+```typescript
+// Background optimization of memory providers
+const memoryOptimization = {
+  name: 'Optimize Memory Performance',
+  agents: [
+    {
+      type: 'performance-analysis',
+      description: 'Analyze vector search performance',
+      target: 'mind-agents/src/memory/providers/'
+    },
+    {
+      type: 'database-optimization',
+      description: 'Optimize SQLite and PostgreSQL queries',
+      target: 'mind-agents/src/memory/sql/'
+    },
+    {
+      type: 'caching-strategy',
+      description: 'Implement intelligent caching layer',
+      target: 'mind-agents/src/memory/cache/'
+    }
+  ]
+};
+```
+
+### Character System Updates
+
+```typescript
+// Automate character definition management
+const characterManagement = {
+  name: 'Character System Enhancement',
+  workflow: [
+    {
+      agent: 'content-specialist',
+      task: 'Update character personality traits',
+      files: ['mind-agents/src/characters/*.json']
+    },
+    {
+      agent: 'validation-specialist', 
+      task: 'Validate character schema compliance',
+      dependencies: ['content-update']
+    },
+    {
+      agent: 'test-specialist',
+      task: 'Generate character interaction tests',
+      dependencies: ['validation']
+    }
+  ]
+};
+```
+
+## Cost Management and Optimization
+
+### Smart Cost Controls
+
+```typescript
+// Implement cost-aware task delegation
+interface CostManager {
+  dailyBudget: number;
+  currentSpend: number;
+  taskCostEstimates: Map<string, number>;
+  
+  canAffordTask(task: AgentTask): boolean;
+  optimizeTaskExecution(tasks: AgentTask[]): AgentTask[];
+  scheduleTasksWithinBudget(tasks: AgentTask[]): ScheduledTask[];
+}
+
+// Cost optimization strategies
+const costStrategies = {
+  // Batch similar tasks to reduce overhead
+  batchSimilarTasks: (tasks: AgentTask[]) => {
+    return tasks.reduce((batches, task) => {
+      const key = `${task.type}-${task.complexity}`;
+      batches[key] = batches[key] || [];
+      batches[key].push(task);
+      return batches;
+    }, {});
+  },
+  
+  // Prioritize high-value, low-cost tasks
+  prioritizeValue: (tasks: AgentTask[]) => {
+    return tasks.sort((a, b) => {
+      const valueA = a.businessValue / a.estimatedCost;
+      const valueB = b.businessValue / b.estimatedCost;
+      return valueB - valueA;
+    });
+  }
+};
+```
+
+## Best Practices and Guidelines
+
+### When to Use Background Agents
+
+**Good Candidates:**
+- UI fixes and responsive design adjustments
+- Content updates and synchronization
+- Repetitive refactoring tasks
+- Test generation and validation
+- Documentation updates
+- Configuration file management
+
+**Avoid for:**
+- Core architecture decisions
+- Security-sensitive changes
+- Complex business logic
+- Performance-critical code
+- Experimental features
+
+### Task Preparation
+
+```typescript
+// Prepare tasks for optimal agent execution
+interface TaskPreparation {
+  // Provide clear, specific descriptions
+  description: string; // "Fix navbar mobile responsive layout for screens < 768px"
+  
+  // Include relevant context files
+  contextFiles: string[];
+  
+  // Specify acceptance criteria
+  acceptanceCriteria: string[];
+  
+  // Provide visual references when applicable
+  screenshots?: string[];
+  
+  // Define validation requirements
+  validation: {
+    tests: string[];
+    performance: boolean;
+    accessibility: boolean;
+  };
+}
+```
+
+This rule enables powerful background agent utilization for parallel development workflows, automating complex tasks while maintaining quality and cost efficiency.

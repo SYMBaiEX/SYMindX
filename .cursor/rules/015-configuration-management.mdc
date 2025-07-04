@@ -1,0 +1,150 @@
+---
+description: MANAGE configurations safely when working with config files and environment variables
+globs: config/**/*.*, *.config.*, .env*
+---
+
+# Configuration Management Patterns
+
+## Configuration Architecture
+
+SYMindX implements environment-based configuration management with secure secrets handling, schema validation, and runtime updates for all system components.
+
+## Core Configuration Schema
+
+```typescript
+interface SYMindXConfig {
+  environment: 'development' | 'staging' | 'production';
+  version: string;
+  
+  runtime: {
+    maxConcurrentAgents: number;
+    agentTimeoutMs: number;
+    enableHotSwapping: boolean;
+  };
+  
+  aiProviders: Record<string, {
+    enabled: boolean;
+    priority: number;
+    type: 'openai' | 'anthropic' | 'groq' | 'google' | 'local';
+    models: {
+      chat: string;
+      embedding: string;
+    };
+  }>;
+  
+  memory: {
+    type: 'sqlite' | 'postgresql' | 'supabase' | 'neon';
+    connection: {
+      database: string;
+      poolSize: { min: number; max: number; };
+    };
+  };
+  
+  extensions: ExtensionConfig[];
+}
+```
+
+## Environment Management
+
+```typescript
+class ConfigurationManager {
+  private config: SYMindXConfig;
+  
+  async loadConfiguration(environment: string): Promise<void> {
+    const baseConfig = await this.loadBaseConfig();
+    const envConfig = await this.loadEnvironmentConfig(environment);
+    this.config = this.mergeConfigurations(baseConfig, envConfig);
+    await this.resolveSecrets();
+    this.validateConfiguration();
+  }
+  
+  updateConfiguration(path: string, value: any): boolean {
+    try {
+      set(this.config, path, value);
+      this.validateConfiguration();
+      this.persistConfiguration();
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+}
+```
+
+## Secrets Management
+
+```typescript
+interface SecretsProvider {
+  getSecret(name: string): Promise<string>;
+  setSecret(name: string, value: string): Promise<void>;
+}
+
+class EnvironmentSecretsProvider implements SecretsProvider {
+  async getSecret(name: string): Promise<string> {
+    const value = process.env[name];
+    if (!value) throw new Error(`Secret ${name} not found`);
+    return value;
+  }
+  
+  async setSecret(name: string, value: string): Promise<void> {
+    process.env[name] = value;
+  }
+}
+```
+
+## Configuration Validation
+
+```typescript
+class ConfigurationValidator {
+  validate(config: any): ValidationResult {
+    const errors: string[] = [];
+    
+    if (!config.environment) {
+      errors.push('Environment is required');
+    }
+    
+    if (!config.aiProviders || Object.keys(config.aiProviders).length === 0) {
+      errors.push('At least one AI provider must be configured');
+    }
+    
+    return { valid: errors.length === 0, errors };
+  }
+}
+```
+
+## Environment Files Structure
+
+```bash
+config/
+├── base.json              # Base configuration
+├── development.json       # Development overrides
+├── staging.json          # Staging overrides
+├── production.json       # Production overrides
+└── secrets/
+    ├── development.env   # Development secrets
+    ├── staging.env      # Staging secrets
+    └── production.env   # Production secrets
+```
+
+## Configuration Best Practices
+
+**Environment Separation**
+
+- Use environment-specific configuration files
+- Never store secrets in configuration files
+- Validate configuration on startup
+- Support runtime updates for non-critical settings
+
+**Security Guidelines**
+
+- Use dedicated secret management systems
+- Encrypt sensitive data at rest
+- Audit configuration changes
+- Implement least-privilege access
+
+**Performance Optimization**
+
+- Cache frequently accessed configuration
+- Minimize file system operations
+- Use efficient data structures
+- Optimize configuration loading

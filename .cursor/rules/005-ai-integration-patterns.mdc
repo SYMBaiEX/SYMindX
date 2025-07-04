@@ -1,0 +1,570 @@
+---
+description: APPLY AI portal integration standards when working with AI provider code
+globs: mind-agents/src/portals/**/*
+---
+globs: mind-agents/src/portals/**/*
+alwaysApply: false
+---
+# AI Integration Patterns
+
+**Rule Priority:** Core Architecture  
+**Activation:** Always Active  
+**Scope:** AI provider integrations and portal management
+
+## AI Portal Architecture
+
+SYMindX implements a **unified portal architecture** that abstracts AI provider interactions through the Vercel AI SDK v5, enabling seamless switching between providers and models.
+
+### Portal Abstraction Layer
+```typescript
+interface AIPortal {
+  readonly id: string;
+  readonly provider: string;
+  readonly models: ModelInfo[];
+  readonly capabilities: PortalCapability[];
+  
+  // Core operations
+  generate(request: GenerationRequest): Promise<GenerationResponse>;
+  stream(request: StreamRequest): AsyncIterable<StreamChunk>;
+  embed(text: string, options?: EmbedOptions): Promise<number[]>;
+  moderate(content: string): Promise<ModerationResult>;
+  
+  // Management
+  initialize(config: PortalConfig): Promise<void>;
+  healthCheck(): Promise<HealthStatus>;
+  shutdown(): Promise<void>;
+}
+
+// Base portal implementation
+abstract class BasePortal implements AIPortal {
+  protected abstract createProvider(): Provider;
+  protected abstract handleRateLimit(error: Error): Promise<void>;
+  protected abstract selectModel(task: TaskType): string;
+}
+```
+
+## Supported AI Providers
+
+### OpenAI Portal (`portals/openai/`)
+```typescript
+interface OpenAIConfig {
+  apiKey: string;
+  organization?: string;
+  baseURL?: string;
+  models: {
+    chat: string;          // Default: "gpt-4o"
+    tools: string;         // Default: "gpt-4.1-mini"
+    embedding: string;     // Default: "text-embedding-3-small"
+  };
+}
+
+// Implementation with retries and fallbacks
+class OpenAIPortal extends BasePortal {
+  private readonly client: OpenAI;
+  
+  async generate(request: GenerationRequest): Promise<GenerationResponse> {
+    return await this.withRetry(async () => {
+      const result = await generateText({
+        model: this.openai(this.selectModel('chat')),
+        messages: request.messages,
+        temperature: request.temperature,
+        maxTokens: request.maxTokens,
+        tools: request.tools
+      });
+      
+      return this.transformResponse(result);
+    });
+  }
+}
+```
+
+### Anthropic Portal (`portals/anthropic/`)
+```typescript
+interface AnthropicConfig {
+  apiKey: string;
+  baseURL?: string;
+  models: {
+    chat: string;          // Default: "claude-3-6-sonnet-20250101"
+tools: string;         // Default: "claude-3-6-haiku-20250101"
+  };
+}
+
+class AnthropicPortal extends BasePortal {
+  private readonly client: Anthropic;
+  
+  // Handle Anthropic-specific message format
+  protected transformMessages(messages: Message[]): AnthropicMessage[] {
+    return messages.map(msg => ({
+      role: msg.role === 'assistant' ? 'assistant' : 'user',
+      content: msg.content
+    }));
+  }
+}
+```
+
+### Groq Portal (`portals/groq/`)
+```typescript
+interface GroqConfig {
+  apiKey: string;
+  models: {
+    chat: string;          // Default: "llama-3.3-70b-versatile"
+    tools: string;         // Default: "llama-3.1-8b-instant"
+  };
+}
+
+// Optimized for speed
+class GroqPortal extends BasePortal {
+  // Ultra-fast inference configuration
+  protected getDefaultOptions(): GenerationOptions {
+    return {
+      temperature: 0.7,
+      maxTokens: 2048,
+      stream: true,           // Always stream for responsiveness
+      parallel_tool_calls: true
+    };
+  }
+}
+```
+
+### Google Vertex AI Portal (`portals/google-vertex/`)
+```typescript
+interface VertexConfig {
+  projectId: string;
+  location: string;
+  credentialsPath?: string;
+  models: {
+    chat: string;          // Default: "gemini-1.5-pro"
+    embedding: string;     // Default: "text-embedding-004"
+  };
+}
+
+class GoogleVertexPortal extends BasePortal {
+  // Handle Google's safety settings
+  protected getSafetySettings(): SafetySetting[] {
+    return [
+      { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+      { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' }
+    ];
+  }
+}
+```
+
+### Local AI Portals
+
+#### Ollama Portal (`portals/ollama/`)
+```typescript
+interface OllamaConfig {
+  baseURL: string;       // Default: "http://localhost:11434"
+  models: {
+    chat: string;        // e.g., "llama3.2:latest"
+    embedding: string;   // e.g., "nomic-embed-text"
+  };
+}
+
+class OllamaPortal extends BasePortal {
+  // Check model availability
+  async checkModelAvailability(model: string): Promise<boolean> {
+    try {
+      const response = await fetch(`${this.baseURL}/api/tags`);
+      const { models } = await response.json();
+      return models.some((m: any) => m.name === model);
+    } catch {
+      return false;
+    }
+  }
+}
+```
+
+#### LM Studio Portal (`portals/lmstudio/`)
+```typescript
+interface LMStudioConfig {
+  baseURL: string;       // Default: "http://localhost:1234"
+  model: string;         // Currently loaded model
+}
+
+class LMStudioPortal extends BasePortal {
+  // OpenAI-compatible API
+  protected createProvider(): Provider {
+    return openai({
+      baseURL: this.config.baseURL + '/v1',
+      apiKey: 'not-needed'  // LM Studio doesn't require API key
+    });
+  }
+}
+```
+
+## Portal Integration Patterns
+
+### Provider Selection Strategy
+```typescript
+interface ProviderSelector {
+  selectProvider(task: TaskType, requirements: Requirements): AIPortal;
+  getFallbackChain(primary: string): string[];
+  estimateCost(provider: string, tokens: number): number;
+}
+
+class IntelligentProviderSelector implements ProviderSelector {
+  selectProvider(task: TaskType, requirements: Requirements): AIPortal {
+    // Cost optimization for embeddings
+    if (task === 'embedding') {
+      return this.registry.get('openai'); // Most cost-effective
+    }
+    
+    // Speed optimization for real-time chat
+    if (requirements.speed === 'realtime') {
+      return this.registry.get('groq'); // Fastest inference
+    }
+    
+    // Quality optimization for complex reasoning
+    if (requirements.quality === 'maximum') {
+      return this.registry.get('anthropic'); // Claude for reasoning
+    }
+    
+    return this.registry.get(this.defaultProvider);
+  }
+}
+```
+
+### Fallback and Resilience
+```typescript
+class ResilientPortalManager {
+  async executeWithFallback<T>(
+    operation: (portal: AIPortal) => Promise<T>,
+    task: TaskType
+  ): Promise<T> {
+    const fallbackChain = this.getFallbackChain(task);
+    
+    for (const providerId of fallbackChain) {
+      try {
+        const portal = this.registry.get(providerId);
+        if (await portal.healthCheck()) {
+          return await operation(portal);
+        }
+      } catch (error) {
+        this.logger.warn(`Provider ${providerId} failed:`, error);
+        // Continue to next fallback
+      }
+    }
+    
+    throw new Error('All AI providers failed');
+  }
+  
+  private getFallbackChain(task: TaskType): string[] {
+    switch (task) {
+      case 'chat':
+        return ['openai', 'anthropic', 'groq', 'ollama'];
+      case 'embedding':
+        return ['openai', 'google-vertex', 'ollama'];
+      case 'tools':
+        return ['openai', 'anthropic', 'groq'];
+      default:
+        return ['openai', 'anthropic'];
+    }
+  }
+}
+```
+
+### Rate Limiting and Cost Management
+```typescript
+interface RateLimiter {
+  canExecute(provider: string): boolean;
+  waitTime(provider: string): number;
+  recordUsage(provider: string, tokens: number): void;
+}
+
+class TokenBucketRateLimiter implements RateLimiter {
+  private buckets = new Map<string, TokenBucket>();
+  
+  canExecute(provider: string): boolean {
+    const bucket = this.getBucket(provider);
+    return bucket.hasTokens(1);
+  }
+  
+  private getBucket(provider: string): TokenBucket {
+    if (!this.buckets.has(provider)) {
+      const limits = this.getProviderLimits(provider);
+      this.buckets.set(provider, new TokenBucket(limits));
+    }
+    return this.buckets.get(provider)!;
+  }
+  
+  private getProviderLimits(provider: string): RateLimits {
+    const limits = {
+      'openai': { rpm: 3500, tpm: 200000 },
+      'anthropic': { rpm: 1000, tpm: 100000 },
+      'groq': { rpm: 30, tpm: 6000 },
+      'ollama': { rpm: 1000, tpm: 1000000 }, // Local unlimited
+    };
+    return limits[provider] || { rpm: 60, tpm: 10000 };
+  }
+}
+```
+
+## Message Format Standardization
+
+### Universal Message Format
+```typescript
+interface StandardMessage {
+  role: 'system' | 'user' | 'assistant' | 'tool';
+  content: string | MultimodalContent[];
+  name?: string;
+  tool_calls?: ToolCall[];
+  tool_call_id?: string;
+}
+
+interface MultimodalContent {
+  type: 'text' | 'image' | 'audio';
+  content: string | Uint8Array;
+  mimeType?: string;
+}
+
+// Portal-specific message transformation
+abstract class MessageTransformer {
+  abstract transformToProvider(messages: StandardMessage[]): unknown;
+  abstract transformFromProvider(response: unknown): StandardMessage;
+}
+```
+
+### Tool Calling Standardization
+```typescript
+interface ToolDefinition {
+  name: string;
+  description: string;
+  parameters: JSONSchema;
+}
+
+interface ToolCall {
+  id: string;
+  name: string;
+  arguments: Record<string, unknown>;
+}
+
+class UnifiedToolSystem {
+  async executeTool(toolCall: ToolCall, context: AgentContext): Promise<ToolResult> {
+    const tool = this.toolRegistry.get(toolCall.name);
+    if (!tool) {
+      throw new Error(`Unknown tool: ${toolCall.name}`);
+    }
+    
+    // Validate arguments against schema
+    const isValid = this.validateArguments(tool.parameters, toolCall.arguments);
+    if (!isValid) {
+      throw new Error(`Invalid arguments for tool: ${toolCall.name}`);
+    }
+    
+    return await tool.execute(toolCall.arguments, context);
+  }
+}
+```
+
+## Multi-Modal Capabilities
+
+### Multi-Modal Portal (`portals/multimodal/`)
+```typescript
+interface MultiModalCapabilities {
+  vision: boolean;
+  audio: boolean;
+  generation: boolean;
+}
+
+class MultiModalPortal extends BasePortal {
+  async analyzeImage(
+    image: Uint8Array,
+    prompt: string,
+    mimeType: string
+  ): Promise<ImageAnalysisResult> {
+    return await generateText({
+      model: this.getVisionModel(),
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'text', text: prompt },
+          { 
+            type: 'image', 
+            image: this.encodeImage(image, mimeType)
+          }
+        ]
+      }]
+    });
+  }
+  
+  async generateImage(
+    prompt: string,
+    options: ImageGenerationOptions
+  ): Promise<GeneratedImage> {
+    // Integrate with DALL-E, Midjourney, etc.
+    return await this.imageProvider.generate(prompt, options);
+  }
+}
+```
+
+## Configuration Management
+
+### Portal Configuration
+```typescript
+interface PortalConfiguration {
+  portals: {
+    [providerId: string]: {
+      enabled: boolean;
+      config: ProviderConfig;
+      priority: number;
+      models: ModelConfiguration;
+    };
+  };
+  defaults: {
+    chat: string;
+    tools: string;
+    embedding: string;
+  };
+  fallbacks: {
+    [taskType: string]: string[];
+  };
+}
+
+// Runtime configuration example
+const portalConfig: PortalConfiguration = {
+  portals: {
+    openai: {
+      enabled: true,
+      config: {
+        apiKey: process.env.OPENAI_API_KEY!,
+        models: {
+          chat: "gpt-4o",
+          tools: "gpt-4.1-mini",
+          embedding: "text-embedding-3-small"
+        }
+      },
+      priority: 1
+    },
+    anthropic: {
+      enabled: true,
+      config: {
+        apiKey: process.env.ANTHROPIC_API_KEY!,
+        models: {
+          chat: "claude-3-6-sonnet-20250101",
+tools: "claude-3-6-haiku-20250101"
+        }
+      },
+      priority: 2
+    },
+    groq: {
+      enabled: true,
+      config: {
+        apiKey: process.env.GROQ_API_KEY!,
+        models: {
+          chat: "llama-3.3-70b-versatile",
+          tools: "llama-3.1-8b-instant"
+        }
+      },
+      priority: 3
+    }
+  },
+  defaults: {
+    chat: "openai",
+    tools: "openai", 
+    embedding: "openai"
+  },
+  fallbacks: {
+    chat: ["openai", "anthropic", "groq"],
+    tools: ["openai", "anthropic"],
+    embedding: ["openai"]
+  }
+};
+```
+
+## Performance Optimization
+
+### Caching Strategy
+```typescript
+interface ResponseCache {
+  get(key: string): Promise<CachedResponse | null>;
+  set(key: string, response: CachedResponse, ttl: number): Promise<void>;
+  invalidate(pattern: string): Promise<void>;
+}
+
+class IntelligentCache implements ResponseCache {
+  async get(key: string): Promise<CachedResponse | null> {
+    // Check if response is still valid
+    const cached = await this.storage.get(key);
+    if (cached && !this.isExpired(cached)) {
+      return cached.response;
+    }
+    return null;
+  }
+  
+  private generateKey(request: GenerationRequest): string {
+    // Create deterministic cache key
+    return crypto
+      .createHash('sha256')
+      .update(JSON.stringify({
+        messages: request.messages,
+        temperature: request.temperature,
+        model: request.model
+      }))
+      .digest('hex');
+  }
+}
+```
+
+### Connection Pooling
+```typescript
+class PortalConnectionPool {
+  private pools = new Map<string, ConnectionPool>();
+  
+  async getConnection(provider: string): Promise<PortalConnection> {
+    const pool = this.getPool(provider);
+    return await pool.acquire();
+  }
+  
+  private getPool(provider: string): ConnectionPool {
+    if (!this.pools.has(provider)) {
+      this.pools.set(provider, new ConnectionPool({
+        max: this.getMaxConnections(provider),
+        min: 1,
+        acquireTimeoutMillis: 30000,
+        createTimeoutMillis: 30000,
+        destroyTimeoutMillis: 5000,
+        idleTimeoutMillis: 30000,
+        reapIntervalMillis: 1000
+      }));
+    }
+    return this.pools.get(provider)!;
+  }
+}
+```
+
+This AI integration pattern ensures SYMindX can efficiently utilize multiple AI providers while maintaining reliability, performance, and cost-effectiveness.
+
+## Related Rules and Integration
+
+### Foundation Requirements
+- @001-symindx-workspace.mdc - SYMindX architecture and AI portal directory structure  
+- @003-typescript-standards.mdc - TypeScript development standards for portal implementations
+- @004-architecture-patterns.mdc - Modular design principles and hot-swappable portal patterns
+- @.cursor/docs/architecture.md - Detailed AI portal layer architecture and design decisions
+
+### Security and Configuration
+- @010-security-and-authentication.mdc - API key management and secure AI provider connections
+- @015-configuration-management.mdc - Portal configuration and environment variable management
+
+### Performance and Quality
+- @012-performance-optimization.mdc - Portal caching strategies and connection pooling optimization
+- @008-testing-and-quality-standards.mdc - AI portal testing strategies and integration testing
+- @013-error-handling-logging.mdc - Portal error handling and monitoring patterns
+- @.cursor/tools/project-analyzer.md - Portal performance analysis and metrics collection
+
+### Development Tools and Templates
+- @.cursor/tools/code-generator.md - AI portal templates and consistent code generation patterns
+- @.cursor/tools/debugging-guide.md - Portal connection debugging and troubleshooting strategies
+- @.cursor/docs/contributing.md - Development workflow for AI portal contributions
+
+### Advanced Integration
+- @020-mcp-integration.mdc - External AI service integration via Model Context Protocol
+- @022-workflow-automation.mdc - Automated AI portal validation and deployment workflows
+- @019-background-agents.mdc - Background portal optimization and maintenance tasks
+
+### Deployment and Operations
+- @009-deployment-and-operations.mdc - AI portal deployment and infrastructure requirements
+- @016-documentation-standards.mdc - Portal API documentation and integration guides
+
+This rule defines the core patterns for AI provider integration that support the entire SYMindX agent ecosystem.

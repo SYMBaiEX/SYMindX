@@ -1,0 +1,521 @@
+---
+description: FOLLOW documentation standards when writing README, docs, or API documentation
+globs: **/*.md, docs-site/**/*
+---
+
+# Documentation Standards and Practices
+
+This rule defines comprehensive documentation standards for the SYMindX project, ensuring consistent, maintainable, and accessible documentation across all components.
+
+## Documentation Architecture
+
+### Multi-Layer Documentation System
+
+```
+docs/
+├── README.md                    # Project overview and quick start
+├── CONTRIBUTING.md             # Contribution guidelines
+├── ARCHITECTURE.md             # High-level system architecture
+├── API.md                      # API documentation
+├── DEPLOYMENT.md              # Deployment and operations guide
+├── TROUBLESHOOTING.md         # Common issues and solutions
+├── CHANGELOG.md               # Version history and changes
+├── guides/                    # Step-by-step guides
+│   ├── getting-started.md
+│   ├── configuration.md
+│   ├── extensions.md
+│   └── ai-providers.md
+├── api-reference/             # Detailed API documentation
+│   ├── core/
+│   ├── extensions/
+│   └── providers/
+├── examples/                  # Code examples and tutorials
+│   ├── basic-agent/
+│   ├── custom-extension/
+│   └── ai-integration/
+└── assets/                    # Images, diagrams, videos
+    ├── diagrams/
+    ├── screenshots/
+    └── videos/
+```
+
+### Documentation Types and Standards
+
+#### 1. README Files
+
+**Project Root README.md**
+
+```markdown
+# SYMindX
+
+Brief description and value proposition
+
+## Quick Start
+- Installation instructions
+- Basic usage example
+- Links to detailed docs
+
+## Features
+- Core capabilities
+- Key differentiators
+
+## Documentation
+- Links to all major docs
+- Getting started guide
+
+## Community
+- Contributing guidelines
+- Support channels
+- License information
+```
+
+**Component README.md**
+
+```markdown
+# Component Name
+
+Purpose and role in system
+
+## Installation
+npm/bun install instructions
+
+## Usage
+Basic usage examples
+
+## API Reference
+Link to detailed API docs
+
+## Examples
+Links to example implementations
+
+## Contributing
+Component-specific contribution notes
+```
+
+#### 2. API Documentation
+
+**TSDoc Standards**
+
+```typescript
+/**
+ * Brief description of the function/class
+ * 
+ * Detailed description explaining:
+ * - Purpose and use cases
+ * - Important behavior notes
+ * - Performance considerations
+ * 
+ * @param paramName - Parameter description with type info
+ * @param options - Configuration object description
+ * @param options.property - Nested property description
+ * 
+ * @returns Description of return value and type
+ * 
+ * @throws {ErrorType} Description of when/why error is thrown
+ * 
+ * @example
+ * ```typescript
+ * const result = await functionName(param, {
+ *   property: 'value'
+ * });
+ * console.log(result);
+ * ```
+ * 
+ * @see {@link RelatedFunction} for related functionality
+ * @since 1.0.0
+ * @internal (if internal API)
+ */
+```
+
+**API Reference Structure**
+
+```markdown
+# API Reference
+
+## Overview
+- Purpose and scope
+- Authentication requirements
+- Rate limiting info
+
+## Endpoints
+
+### POST /api/agents
+
+Description of endpoint purpose
+
+**Request**
+```json
+{
+  "name": "string",
+  "config": {
+    "provider": "string",
+    "model": "string"
+  }
+}
+```
+
+**Response**
+```json
+{
+  "id": "string",
+  "status": "active",
+  "created_at": "timestamp"
+}
+```
+
+**Error Responses**
+- 400: Invalid request format
+- 401: Authentication required
+- 429: Rate limit exceeded
+
+**Examples**
+[Code examples in multiple languages]
+```
+
+#### 3. Architecture Documentation
+
+**System Architecture Documentation**
+
+```markdown
+# SYMindX Architecture
+
+## Overview
+High-level system description
+
+## Core Components
+
+### Agent Runtime
+- Purpose and responsibilities
+- Key interfaces
+- Lifecycle management
+
+### Memory System
+- Storage architecture
+- Retrieval mechanisms
+- Consistency guarantees
+
+### AI Portal System
+- Provider abstraction
+- Load balancing
+- Failover mechanisms
+
+## Data Flow
+Mermaid diagrams showing:
+- Request processing flow
+- Event propagation
+- Memory operations
+
+## Design Decisions
+- Why specific patterns were chosen
+- Trade-offs considered
+- Alternative approaches evaluated
+
+## Extension Points
+- How to extend the system
+- Plugin architecture
+- Custom integrations
+```
+
+#### 4. Guides and Tutorials
+
+**Getting Started Guide Structure**
+
+```markdown
+# Getting Started with SYMindX
+
+## Prerequisites
+- System requirements
+- Required software
+- Account setup
+
+## Installation
+
+### Quick Start (Recommended)
+```bash
+# One-line installation
+curl -fsSL https://get.symindx.com | sh
+```
+
+### Manual Installation
+Detailed step-by-step process
+
+## Your First Agent
+
+### 1. Basic Configuration
+[Step-by-step with screenshots]
+
+### 2. Testing the Agent
+[How to verify everything works]
+
+### 3. Customization
+[Basic customization options]
+
+## Next Steps
+- Links to advanced guides
+- Community resources
+- Support channels
+```
+
+## Documentation Maintenance
+
+### Automated Documentation
+
+**TypeScript to Docs Generation**
+
+```typescript
+// scripts/generate-docs.ts
+export class DocGenerator {
+  async generateApiDocs(): Promise<void> {
+    // Generate API docs from TypeScript interfaces
+    // Extract JSDoc comments
+    // Generate markdown files
+  }
+
+  async generateExamples(): Promise<void> {
+    // Extract code examples from tests
+    // Generate runnable example files
+    // Validate examples against current API
+  }
+
+  async validateDocumentation(): Promise<void> {
+    // Check for broken links
+    // Validate code examples
+    // Ensure all public APIs are documented
+  }
+}
+```
+
+**Documentation Pipeline**
+
+```yaml
+# .github/workflows/docs.yml
+name: Documentation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths: ['src/**', 'docs/**']
+
+jobs:
+  validate-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+      - name: Install dependencies
+        run: bun install
+      - name: Generate API docs
+        run: bun run docs:generate
+      - name: Validate documentation
+        run: bun run docs:validate
+      - name: Check for broken links
+        run: bun run docs:check-links
+```
+
+### Version Control for Docs
+
+**Documentation Branching Strategy**
+
+```
+main branch: Latest stable docs
+develop branch: Work-in-progress docs
+version branches: Version-specific docs (v1.x, v2.x)
+```
+
+**Change Management**
+
+```markdown
+# Documentation Change Log
+
+## [Unreleased]
+### Added
+- New API endpoint documentation
+- Advanced configuration guide
+
+### Changed
+- Updated installation instructions
+- Revised architecture diagrams
+
+### Deprecated
+- Legacy API endpoints (removal in v2.0)
+
+### Removed
+- Outdated configuration options
+
+### Fixed
+- Broken links in getting started guide
+- Code examples for memory providers
+```
+
+## Content Standards
+
+### Writing Style Guidelines
+
+**Voice and Tone**
+
+- Technical but approachable
+- Clear and concise explanations
+- Consistent terminology usage
+- Active voice preferred
+- Present tense for current features
+
+**Structure and Formatting**
+
+- Use descriptive headings (H2, H3 hierarchy)
+- Lead with purpose/overview
+- Include practical examples
+- End with next steps/related topics
+- Consistent code formatting
+
+**Code Examples**
+
+```typescript
+// ✅ Good: Complete, runnable example with context
+import { SYMindXAgent } from '@symindx/core';
+
+async function createBasicAgent() {
+  const agent = new SYMindXAgent({
+    name: 'assistant',
+    provider: 'openai',
+    model: 'gpt-4-turbo'
+  });
+
+  await agent.initialize();
+  
+  const response = await agent.chat('Hello, how can you help?');
+  console.log(response.content);
+}
+
+// ❌ Bad: Incomplete fragment without context
+agent.chat('Hello');
+```
+
+### Accessibility Standards
+
+**Document Accessibility**
+
+- Alt text for all images and diagrams
+- Descriptive link text (avoid "click here")
+- Proper heading hierarchy
+- High contrast code syntax highlighting
+- Screen reader compatible tables
+
+**Code Documentation Accessibility**
+
+```typescript
+/**
+ * Creates a new AI agent with specified configuration
+ * 
+ * This function initializes an agent instance with the provided
+ * configuration and establishes connections to the specified
+ * AI provider.
+ * 
+ * @param config - Agent configuration object
+ * @param config.name - Human-readable agent identifier
+ * @param config.provider - AI service provider ('openai', 'anthropic', etc.)
+ * @param config.model - Specific model to use for this agent
+ * 
+ * @returns Promise that resolves to initialized agent instance
+ * 
+ * @example
+ * // Create a basic conversational agent
+ * const agent = await createAgent({
+ *   name: 'helper',
+ *   provider: 'openai',
+ *   model: 'gpt-4-turbo'
+ * });
+ */
+```
+
+## Quality Assurance
+
+### Documentation Testing
+
+**Automated Testing**
+
+```typescript
+// tests/docs/examples.test.ts
+describe('Documentation Examples', () => {
+  test('all code examples compile and run', async () => {
+    const exampleFiles = await glob('docs/examples/**/*.ts');
+    
+    for (const file of exampleFiles) {
+      const result = await validateExample(file);
+      expect(result.isValid).toBe(true);
+    }
+  });
+
+  test('all API references match current implementation', async () => {
+    const apiDocs = await parseApiDocs();
+    const actualApi = await extractApiFromSource();
+    
+    expect(apiDocs).toMatchApiStructure(actualApi);
+  });
+});
+```
+
+**Manual Review Checklist**
+
+- [ ] All code examples are tested and work
+- [ ] Screenshots are current and accurate
+- [ ] Links are functional and point to correct resources
+- [ ] Terminology is consistent throughout
+- [ ] Examples cover common use cases
+- [ ] Error handling scenarios are documented
+- [ ] Performance implications are noted
+- [ ] Security considerations are addressed
+
+### Metrics and Analytics
+
+**Documentation Metrics**
+
+```typescript
+interface DocMetrics {
+  coverage: {
+    apiEndpoints: number;
+    publicMethods: number;
+    configOptions: number;
+  };
+  quality: {
+    brokenLinks: number;
+    outdatedExamples: number;
+    missingExamples: number;
+  };
+  usage: {
+    pageViews: Record<string, number>;
+    searchQueries: string[];
+    userFeedback: DocFeedback[];
+  };
+}
+```
+
+## Tools and Integration
+
+### Documentation Tools
+
+**Recommended Tools**
+
+- **API Generation**: TypeDoc for TypeScript API docs
+- **Diagrams**: Mermaid for system diagrams
+- **Screenshots**: Automated screenshot testing
+- **Link Checking**: markdown-link-check
+- **Spell Check**: cspell with technical dictionary
+
+**Integration with Development**
+
+```json
+{
+  "scripts": {
+    "docs:generate": "typedoc && npm run docs:examples",
+    "docs:examples": "node scripts/extract-examples.js",
+    "docs:validate": "npm run docs:links && npm run docs:spell",
+    "docs:links": "markdown-link-check docs/**/*.md",
+    "docs:spell": "cspell 'docs/**/*.md'",
+    "docs:serve": "docsify serve docs"
+  }
+}
+```
+
+This documentation standards framework ensures that SYMindX maintains high-quality, accessible, and maintainable documentation that scales with the project's growth and evolution.

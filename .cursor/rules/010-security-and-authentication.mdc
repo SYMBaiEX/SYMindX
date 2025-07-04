@@ -1,0 +1,599 @@
+---
+description: ENFORCE security standards when handling authentication or sensitive data
+globs: **/*.ts, **/*.js, .env*, config/**/*
+---
+
+# Security and Authentication Patterns
+
+## Security Architecture Overview
+
+SYMindX implements defense-in-depth security patterns across all layers of the agent framework, with particular focus on AI provider API key management, multi-platform authentication, and secure inter-agent communication.
+
+### Core Security Principles
+
+**🔐 Zero Trust Architecture**
+
+- All components authenticate and authorize every request
+- No implicit trust between internal services
+- Continuous verification of security posture
+
+**🛡️ Least Privilege Access**
+
+- Agents receive minimum permissions needed for their role
+- Platform extensions isolated with specific scopes
+- API keys restricted to required endpoints only
+
+**🔄 Security by Design**
+
+- Security controls integrated into development workflow
+- Automated security testing in CI/CD pipeline
+- Regular security audits and penetration testing
+
+## API Key Management
+
+### Secure Storage Patterns
+
+```typescript
+// Environment-based configuration (development)
+interface SecureConfig {
+  vault: {
+    enabled: boolean;
+    url: string;
+    token: string;
+  };
+  encryption: {
+    algorithm: 'aes-256-gcm';
+    keyDerivation: 'pbkdf2';
+    saltRounds: 100000;
+  };
+}
+
+// Production vault integration
+class SecureConfigManager {
+  private vault: VaultClient;
+  private cache: Map<string, EncryptedValue> = new Map();
+  
+  async getAPIKey(provider: string): Promise<string> {
+    const cacheKey = `api_key_${provider}`;
+    
+    // Check cache first (with TTL)
+    if (this.cache.has(cacheKey)) {
+      const cached = this.cache.get(cacheKey)!;
+      if (cached.expiresAt > Date.now()) {
+        return this.decrypt(cached.value);
+      }
+    }
+    
+    // Fetch from vault
+    const secret = await this.vault.read(`secret/ai-providers/${provider}`);
+    const encrypted = this.encrypt(secret.data.api_key);
+    
+    // Cache with 1-hour TTL
+    this.cache.set(cacheKey, {
+      value: encrypted,
+      expiresAt: Date.now() + 3600000
+    });
+    
+    return secret.data.api_key;
+  }
+}
+```
+
+### Key Rotation Strategies
+
+```typescript
+interface KeyRotationConfig {
+  rotationSchedule: {
+    openai: '30d';      // Rotate every 30 days
+    anthropic: '30d';
+    groq: '60d';
+    localProviders: 'never';
+  };
+  gracePeriod: '24h';   // Keep old keys valid during rotation
+  notification: {
+    webhooks: string[];
+    email: string[];
+  };
+}
+
+class KeyRotationManager {
+  async rotateProviderKey(provider: string): Promise<void> {
+    const oldKey = await this.configManager.getAPIKey(provider);
+    
+    // Generate new key via provider API
+    const newKey = await this.generateNewKey(provider);
+    
+    // Store new key in vault
+    await this.vault.write(`secret/ai-providers/${provider}`, {
+      api_key: newKey,
+      previous_key: oldKey,
+      rotated_at: new Date().toISOString()
+    });
+    
+    // Update all active agents gradually
+    await this.updateAgentConfigurations(provider, newKey);
+    
+    // Schedule old key deletion after grace period
+    setTimeout(() => {
+      this.revokeOldKey(provider, oldKey);
+    }, this.parseTimespan(this.config.gracePeriod));
+  }
+}
+```
+
+## Authentication Flows
+
+### Agent Authentication
+
+```typescript
+interface AgentIdentity {
+  agentId: string;
+  characterId: string;
+  platform: string;
+  permissions: Permission[];
+  sessionToken: string;
+  expiresAt: Date;
+}
+
+class AgentAuthenticator {
+  async authenticateAgent(credentials: AgentCredentials): Promise<AgentIdentity> {
+    // Validate agent exists and is active
+    const agent = await this.agentRegistry.getAgent(credentials.agentId);
+    if (!agent || agent.status === 'disabled') {
+      throw new UnauthorizedError('Agent not found or disabled');
+    }
+    
+    // Verify character permissions
+    const character = await this.characterRegistry.getCharacter(agent.characterId);
+    const permissions = this.calculatePermissions(character, credentials.platform);
+    
+    // Generate session token with platform-specific scope
+    const sessionToken = await this.tokenManager.generateSessionToken({
+      agentId: credentials.agentId,
+      platform: credentials.platform,
+      permissions,
+      expiresIn: '24h'
+    });
+    
+    return {
+      agentId: credentials.agentId,
+      characterId: agent.characterId,
+      platform: credentials.platform,
+      permissions,
+      sessionToken,
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
+    };
+  }
+}
+```
+
+### Platform Extension Authentication
+
+```typescript
+// Platform-specific authentication patterns
+abstract class PlatformAuthenticator {
+  abstract authenticate(credentials: PlatformCredentials): Promise<PlatformSession>;
+  abstract refreshToken(session: PlatformSession): Promise<PlatformSession>;
+  abstract validatePermissions(session: PlatformSession, action: string): boolean;
+}
+
+// Telegram authentication
+class TelegramAuthenticator extends PlatformAuthenticator {
+  async authenticate(credentials: TelegramCredentials): Promise<TelegramSession> {
+    // Validate bot token with Telegram API
+    const botInfo = await this.telegram.getMe(credentials.botToken);
+    
+    // Verify webhook signature for incoming updates
+    const isValidWebhook = this.verifyWebhookSignature(
+      credentials.webhookData,
+      credentials.secretToken
+    );
+    
+    if (!isValidWebhook) {
+      throw new UnauthorizedError('Invalid webhook signature');
+    }
+    
+    return {
+      platform: 'telegram',
+      botId: botInfo.id,
+      botUsername: botInfo.username,
+      permissions: ['message.send', 'message.receive', 'chat.manage'],
+      token: credentials.botToken,
+      expiresAt: null // Telegram tokens don't expire
+    };
+  }
+}
+
+// Slack authentication (OAuth2)
+class SlackAuthenticator extends PlatformAuthenticator {
+  async authenticate(credentials: SlackCredentials): Promise<SlackSession> {
+    // Exchange authorization code for access token
+    const tokenResponse = await fetch('https://slack.com/api/oauth.v2.access', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': `Basic ${Buffer.from(`${this.clientId}:${this.clientSecret}`).toString('base64')}`
+      },
+      body: new URLSearchParams({
+        code: credentials.authCode,
+        redirect_uri: credentials.redirectUri
+      })
+    });
+    
+    const { access_token, scope, team, authed_user } = await tokenResponse.json();
+    
+    return {
+      platform: 'slack',
+      teamId: team.id,
+      userId: authed_user.id,
+      permissions: scope.split(','),
+      token: access_token,
+      expiresAt: null // Slack tokens don't expire unless revoked
+    };
+  }
+}
+```
+
+## Security Middleware
+
+### Request Validation
+
+```typescript
+interface SecurityMiddleware {
+  rateLimiting: RateLimitConfig;
+  authentication: AuthConfig;
+  encryption: EncryptionConfig;
+  audit: AuditConfig;
+}
+
+class SecurityManager {
+  // Rate limiting per agent per platform
+  async rateLimitCheck(agentId: string, platform: string): Promise<boolean> {
+    const key = `rate_limit:${agentId}:${platform}`;
+    const current = await this.redis.get(key);
+    
+    if (!current) {
+      await this.redis.setex(key, 3600, '1'); // 1 request per hour window
+      return true;
+    }
+    
+    const requests = parseInt(current);
+    const limit = this.getRateLimit(platform);
+    
+    if (requests >= limit) {
+      throw new TooManyRequestsError(`Rate limit exceeded for ${agentId} on ${platform}`);
+    }
+    
+    await this.redis.incr(key);
+    return true;
+  }
+  
+  // Input sanitization and validation
+  async validateAndSanitizeInput(input: any, schema: ValidationSchema): Promise<any> {
+    // XSS prevention
+    const sanitized = this.sanitizeHTML(input);
+    
+    // SQL injection prevention (even though we use ORMs)
+    const escaped = this.escapeSQL(sanitized);
+    
+    // Schema validation with Zod
+    const validated = await schema.parseAsync(escaped);
+    
+    // Additional business logic validation
+    await this.businessRuleValidation(validated);
+    
+    return validated;
+  }
+}
+```
+
+### Encryption Patterns
+
+```typescript
+class EncryptionManager {
+  private readonly algorithm = 'aes-256-gcm';
+  private readonly keyDerivation = 'pbkdf2';
+  
+  // Encrypt sensitive agent data
+  async encryptAgentData(data: any, agentId: string): Promise<EncryptedData> {
+    const key = await this.deriveKey(agentId);
+    const iv = crypto.randomBytes(16);
+    
+    const cipher = crypto.createCipher(this.algorithm, key);
+    cipher.setAAD(Buffer.from(agentId)); // Additional authenticated data
+    
+    let encrypted = cipher.update(JSON.stringify(data), 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+    
+    const authTag = cipher.getAuthTag();
+    
+    return {
+      data: encrypted,
+      iv: iv.toString('hex'),
+      authTag: authTag.toString('hex'),
+      algorithm: this.algorithm
+    };
+  }
+  
+  // Decrypt agent data
+  async decryptAgentData(encryptedData: EncryptedData, agentId: string): Promise<any> {
+    const key = await this.deriveKey(agentId);
+    
+    const decipher = crypto.createDecipher(encryptedData.algorithm, key);
+    decipher.setAAD(Buffer.from(agentId));
+    decipher.setAuthTag(Buffer.from(encryptedData.authTag, 'hex'));
+    
+    let decrypted = decipher.update(encryptedData.data, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    
+    return JSON.parse(decrypted);
+  }
+}
+```
+
+## Vulnerability Prevention
+
+### Common Attack Vectors
+
+**🚫 Injection Attacks**
+
+```typescript
+class InjectionPrevention {
+  // Prevent prompt injection in AI interactions
+  sanitizeAIPrompt(userInput: string): string {
+    // Remove common prompt injection patterns
+    const dangerousPatterns = [
+      /ignore.{0,20}previous.{0,20}instructions/gi,
+      /system.{0,10}prompt/gi,
+      /\[.{0,50}INST.{0,50}\]/gi,
+      /<.{0,20}system.{0,20}>/gi
+    ];
+    
+    let sanitized = userInput;
+    for (const pattern of dangerousPatterns) {
+      sanitized = sanitized.replace(pattern, '[FILTERED]');
+    }
+    
+    // Limit input length
+    return sanitized.substring(0, 4000);
+  }
+  
+  // Prevent code injection in dynamic module loading
+  validateModulePath(modulePath: string): boolean {
+    const allowedPaths = [
+      /^modules\/memory\/providers\/.+\.js$/,
+      /^modules\/emotion\/.+\.js$/,
+      /^modules\/cognition\/.+\.js$/
+    ];
+    
+    return allowedPaths.some(pattern => pattern.test(modulePath));
+  }
+}
+```
+
+**🛡️ Access Control**
+
+```typescript
+interface Permission {
+  resource: string;
+  action: string;
+  conditions?: Record<string, any>;
+}
+
+class AccessController {
+  async checkPermission(
+    agentId: string, 
+    resource: string, 
+    action: string, 
+    context?: any
+  ): Promise<boolean> {
+    const agent = await this.getAgent(agentId);
+    const permissions = await this.getAgentPermissions(agent);
+    
+    for (const permission of permissions) {
+      if (this.matchesPermission(permission, resource, action)) {
+        // Check additional conditions
+        if (permission.conditions) {
+          return this.evaluateConditions(permission.conditions, context);
+        }
+        return true;
+      }
+    }
+    
+    // Log unauthorized access attempt
+    await this.auditLogger.logUnauthorizedAccess({
+      agentId,
+      resource,
+      action,
+      timestamp: new Date(),
+      context
+    });
+    
+    return false;
+  }
+}
+```
+
+## Security Monitoring
+
+### Audit Logging
+
+```typescript
+interface AuditEvent {
+  eventType: 'auth' | 'access' | 'error' | 'admin';
+  agentId?: string;
+  userId?: string;
+  resource: string;
+  action: string;
+  result: 'success' | 'failure' | 'blocked';
+  metadata: Record<string, any>;
+  timestamp: Date;
+  ipAddress?: string;
+  userAgent?: string;
+}
+
+class AuditLogger {
+  async logSecurityEvent(event: AuditEvent): Promise<void> {
+    // Store in secure audit log
+    await this.auditDB.insert('security_events', {
+      ...event,
+      hash: this.calculateEventHash(event) // Tamper detection
+    });
+    
+    // Real-time alerting for critical events
+    if (this.isCriticalEvent(event)) {
+      await this.alertManager.sendSecurityAlert(event);
+    }
+    
+    // Update security metrics
+    await this.metricsCollector.updateSecurityMetrics(event);
+  }
+  
+  // Detect suspicious patterns
+  async detectAnomalies(agentId: string): Promise<SecurityAlert[]> {
+    const recentEvents = await this.getRecentEvents(agentId, '24h');
+    const alerts: SecurityAlert[] = [];
+    
+    // Unusual access patterns
+    if (this.detectUnusualAccessPatterns(recentEvents)) {
+      alerts.push({
+        type: 'unusual_access',
+        severity: 'medium',
+        agentId,
+        description: 'Unusual access patterns detected'
+      });
+    }
+    
+    // Multiple failed authentications
+    const failedAuths = recentEvents.filter(e => 
+      e.eventType === 'auth' && e.result === 'failure'
+    );
+    
+    if (failedAuths.length > 5) {
+      alerts.push({
+        type: 'brute_force',
+        severity: 'high',
+        agentId,
+        description: 'Multiple authentication failures detected'
+      });
+    }
+    
+    return alerts;
+  }
+}
+```
+
+### Security Health Checks
+
+```typescript
+class SecurityHealthChecker {
+  async performSecurityAudit(): Promise<SecurityAuditReport> {
+    const report: SecurityAuditReport = {
+      timestamp: new Date(),
+      overallScore: 0,
+      checks: []
+    };
+    
+    // API key security check
+    report.checks.push(await this.checkAPIKeySecurity());
+    
+    // Agent authentication check
+    report.checks.push(await this.checkAgentAuthentication());
+    
+    // Permission configuration check
+    report.checks.push(await this.checkPermissionConfiguration());
+    
+    // Encryption implementation check
+    report.checks.push(await this.checkEncryptionImplementation());
+    
+    // Vulnerability scan
+    report.checks.push(await this.performVulnerabilityScan());
+    
+    // Calculate overall score
+    report.overallScore = this.calculateSecurityScore(report.checks);
+    
+    return report;
+  }
+}
+```
+
+## Configuration Requirements
+
+### Security Configuration Schema
+
+```typescript
+interface SecurityConfig {
+  authentication: {
+    sessionTimeout: string;        // Default: "24h"
+    maxConcurrentSessions: number; // Default: 5
+    requireMFA: boolean;           // Default: false
+    passwordPolicy: {
+      minLength: number;           // Default: 12
+      requireSpecialChars: boolean; // Default: true
+      maxAge: string;              // Default: "90d"
+    };
+  };
+  
+  encryption: {
+    algorithm: string;             // Default: "aes-256-gcm"
+    keyRotationInterval: string;   // Default: "30d"
+    enableTransitEncryption: boolean; // Default: true
+  };
+  
+  audit: {
+    enableAuditLogging: boolean;   // Default: true
+    retentionPeriod: string;       // Default: "1y"
+    enableRealTimeAlerts: boolean; // Default: true
+    alertThresholds: {
+      failedAuthAttempts: number;  // Default: 5
+      unusualAccessCount: number;  // Default: 10
+    };
+  };
+  
+  rateLimiting: {
+    enabled: boolean;              // Default: true
+    windowSize: string;            // Default: "1h"
+    maxRequests: {
+      telegram: number;            // Default: 30
+      slack: number;               // Default: 100
+      discord: number;             // Default: 50
+      api: number;                 // Default: 1000
+    };
+  };
+}
+```
+
+## Security Testing Requirements
+
+**🧪 Security Test Patterns**
+
+- Penetration testing for all authentication flows
+- API key rotation testing
+- Injection attack simulation
+- Access control verification
+- Encryption/decryption validation
+- Audit log integrity testing
+- Performance impact assessment
+
+**🔍 Continuous Security Monitoring**
+
+- Real-time threat detection
+- Automated vulnerability scanning
+- Security metrics dashboard
+- Incident response automation
+- Compliance reporting
+
+**📋 Security Checklist**
+
+Before deploying any agent or extension:
+
+- [ ] All API keys stored securely (never in code)
+- [ ] Authentication flows tested
+- [ ] Permission boundaries verified
+- [ ] Input validation implemented
+- [ ] Audit logging configured
+- [ ] Rate limiting enabled
+- [ ] Encryption keys rotated
+- [ ] Security tests passing
+- [ ] Vulnerability scan clean
+- [ ] Access patterns documented
