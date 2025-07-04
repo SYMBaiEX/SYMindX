@@ -28,7 +28,7 @@ export abstract class BasePortal implements Portal {
     this.name = name
     this.version = version
     this.config = {
-      maxOutputTokens: 1000,
+      maxTokens: 1000,
       temperature: 0.7,
       timeout: 30000,
       ...config
@@ -174,7 +174,7 @@ export abstract class BasePortal implements Portal {
       // Generate evaluation using tool model
       const result = await this.generateText(evaluationPrompt, {
         model: toolModel,
-        maxOutputTokens: options.timeout ? Math.min(2000, options.timeout / 10) : 1000,
+        maxTokens: options.timeout ? Math.min(2000, options.timeout / 10) : 1000,
         temperature: 0.1, // Lower temperature for consistent evaluations
       })
 

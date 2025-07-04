@@ -137,7 +137,7 @@ export interface VertexResponse {
 export const defaultVertexConfig: Partial<GoogleVertexConfig> = {
   location: 'us-central1',
   model: 'gemini-1.5-pro',
-  maxOutputTokens: 8192,
+  maxTokens: 8192,
   temperature: 0.7,
   timeout: 60000,
   safetySettings: [
@@ -150,7 +150,7 @@ export const defaultVertexConfig: Partial<GoogleVertexConfig> = {
     temperature: 0.7,
     topP: 0.8,
     topK: 40,
-    maxOutputTokens: 8192
+    maxTokens: 8192
   }
 }
 

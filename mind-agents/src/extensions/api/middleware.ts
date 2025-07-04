@@ -222,7 +222,7 @@ export class ExtensionMiddleware {
    */
   static rateLimit(config: RateLimitConfig) {
     return (req: ExtensionRequest, res: Response, next: NextFunction): void => {
-      const key = config.keyGenerator ? config.keyGenerator(req) : req.ip
+      const key = config.keyGenerator ? config.keyGenerator(req) : req.ip || 'unknown'
       const now = Date.now()
       
       // Clean up old entries

@@ -272,7 +272,7 @@ export function createKlusterAiPortal(config: KlusterAiConfig): KlusterAiPortal 
 // Export default configuration
 export const defaultKlusterAiConfig: Partial<KlusterAiConfig> = {
   model: 'llama-4-maverick',
-  maxOutputTokens: 1000,
+  maxTokens: 1000,
   temperature: 0.7,
   timeout: 30000,
   baseURL: 'https://api.kluster.ai/v1'

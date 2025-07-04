@@ -500,6 +500,9 @@ export class SYMindXRuntime implements AgentRuntime {
   async loadAgent(config: any, characterId?: string): Promise<Agent> {
     const agentId = `agent_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     
+    // Store original character config for extension creation
+    const characterConfig = config
+    
     // Transform character config to expected format
     const agentConfig = this.transformCharacterConfig(config)
     
@@ -618,12 +621,26 @@ export class SYMindXRuntime implements AgentRuntime {
     console.log(`🔍 Looking for extensions: ${agentConfig.modules.extensions.join(', ')}`)
     
     for (const extName of agentConfig.modules.extensions) {
-      const extension = this.registry.getExtension(extName)
+      let extension = this.registry.getExtension(extName)
+      
+      if (!extension) {
+        // Try to create extension dynamically if it has a factory and configuration
+        const extensionConfig = characterConfig.extensions?.find((ext: any) => ext.name === extName)
+        if (extensionConfig) {
+          extension = this.registry.createExtension(extName, extensionConfig.config)
+          if (extension) {
+            // Register the created extension
+            this.registry.registerExtension(extName, extension)
+            console.log(`✅ Created and registered extension: ${extName}`)
+          }
+        }
+      }
+      
       if (extension) {
         extensions.push(extension)
         console.log(`✅ Found extension: ${extName}`)
       } else {
-        console.warn(`⚠️ Extension '${extName}' not found in registry, skipping`)
+        console.warn(`⚠️ Extension '${extName}' not found in registry and could not be created, skipping`)
       }
     }
     

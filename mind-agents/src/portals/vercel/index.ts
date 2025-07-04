@@ -234,7 +234,7 @@ export class VercelAIPortal extends BasePortal {
       const { text } = await generateText({
         model: this.getLanguageModel(model),
         prompt: 'Hello',
-        maxOutputTokens: 10
+        maxTokens: 10
       })
       return !!text
     } catch (error) {
@@ -293,7 +293,7 @@ export class VercelAIPortal extends BasePortal {
       const { text, usage, finishReason } = await generateText({
         model: this.getLanguageModel(model),
         prompt,
-        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
+        maxTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -324,7 +324,7 @@ export class VercelAIPortal extends BasePortal {
       const { text, usage, finishReason } = await generateText({
         model: this.getLanguageModel(model),
         messages: coreMessages,
-        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
+        maxTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -408,7 +408,7 @@ export class VercelAIPortal extends BasePortal {
       const { textStream } = await streamText({
         model: this.getLanguageModel(model),
         prompt,
-        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
+        maxTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -435,7 +435,7 @@ export class VercelAIPortal extends BasePortal {
       const { textStream } = await streamText({
         model: this.getLanguageModel(model),
         messages: coreMessages,
-        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
+        maxTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,

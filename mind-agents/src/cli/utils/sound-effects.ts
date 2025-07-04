@@ -18,6 +18,8 @@ export enum SoundType {
   CHAT_SEND = 'chat_send',
   CHAT_RECEIVE = 'chat_receive',
   NAVIGATION = 'navigation',
+  NAVIGATE = 'navigate', // Alias for navigation
+  SELECT = 'select',
   WARNING = 'warning',
   LOADING = 'loading',
 }
@@ -92,6 +94,13 @@ const SOUND_CONFIGS: Record<SoundType, SoundConfig[]> = {
   ],
   [SoundType.NAVIGATION]: [
     { frequency: 1500, duration: 30, volume: 0.3 },
+  ],
+  [SoundType.NAVIGATE]: [
+    { frequency: 1500, duration: 30, volume: 0.3 },
+  ],
+  [SoundType.SELECT]: [
+    { frequency: 1800, duration: 50 },
+    { frequency: 2200, duration: 50 },
   ],
   [SoundType.WARNING]: [
     { frequency: 440, duration: 200, type: 'triangle' },

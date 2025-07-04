@@ -12,6 +12,9 @@ export interface AgentInfo {
   portals?: string[];
   ethicsEnabled?: boolean;
   autonomousEnabled?: boolean;
+  emotion?: string;
+  extensionCount?: number;
+  portal?: string; // For backward compatibility
 }
 
 export interface ActivityEntry {
@@ -28,6 +31,8 @@ export interface AgentData {
   recentActivity: ActivityEntry[];
   isConnected: boolean;
   error?: string;
+  activeAgents?: number; // For backward compatibility
+  totalAgents?: number;  // For backward compatibility
 }
 
 export const useAgentData = (): AgentData => {
@@ -83,7 +88,10 @@ export const useAgentData = (): AgentData => {
           extensions: [], // Would need to fetch detailed agent info
           portals: agent.hasPortal ? ['connected'] : [],
           ethicsEnabled: agent.ethicsEnabled,
-          autonomousEnabled: false // Runtime doesn't expose this directly
+          autonomousEnabled: false, // Runtime doesn't expose this directly
+          emotion: agent.emotion || 'neutral',
+          extensionCount: agent.extensionCount,
+          portal: agent.hasPortal ? 'connected' : undefined
         }));
 
         // Convert events to activity entries
@@ -102,14 +110,19 @@ export const useAgentData = (): AgentData => {
         const extensionsCount = agents.reduce((count, agent) => 
           count + agent.extensionCount, 0);
 
+        const activeCount = agents.filter(a => a.status === 'active').length;
+        const totalCount = agents.length;
+        
         setAgentData({
           agents: convertedAgents,
-          activeCount: agents.filter(a => a.status === 'active').length,
-          totalCount: agents.length,
+          activeCount,
+          totalCount,
           extensionsCount,
           recentActivity,
           isConnected: true,
-          error: undefined
+          error: undefined,
+          activeAgents: activeCount,
+          totalAgents: totalCount
         });
 
       } catch (error) {

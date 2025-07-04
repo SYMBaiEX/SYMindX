@@ -13,7 +13,7 @@ import { MCPServerConfig, MCPTool, MCPResource, MCPPrompt } from './types.js'
 
 export interface MCPClientExtensionConfig extends ExtensionConfig {
   enabled: boolean
-  servers: MCPServerConfig[]
+  mcpServers: Record<string, MCPServerConfig>
   globalTimeout?: number
   maxRetries?: number
   enableAutoReconnect?: boolean
@@ -24,7 +24,7 @@ export class MCPClientExtension implements Extension {
   public readonly id = 'mcp-client'
   public readonly name = 'MCP Client Extension'
   public readonly version = '1.0.0'
-  public readonly type = 'mcp_client'
+  public readonly type = 'MCP_CLIENT' as const
   public enabled = true
   public status = 'stopped'
   
@@ -68,10 +68,9 @@ export class MCPClientExtension implements Extension {
     runtimeLogger.info('🔌 MCP Client Extension initialized')
   }
 
-  async init(agent: Agent): Promise<void> {
-    // Initialize with agent
+  async init(): Promise<void> {
+    // Initialize without agent for factory compatibility
     this.status = 'initializing'
-    await this.initialize(agent)
   }
   
   async tick(agent: Agent): Promise<void> {
@@ -91,12 +90,14 @@ export class MCPClientExtension implements Extension {
       await this.mcpManager.initialize()
 
       // Connect to configured servers
-      for (const serverConfig of this.config.servers) {
+      for (const [serverName, serverConfig] of Object.entries(this.config.mcpServers)) {
         try {
-          await this.mcpManager.addServer(serverConfig)
-          runtimeLogger.info(`✅ Connected to MCP server: ${serverConfig.name}`)
+          // Ensure the server has a name
+          const configWithName = { ...serverConfig, name: serverName }
+          await this.mcpManager.addServer(configWithName)
+          runtimeLogger.info(`✅ Connected to MCP server: ${serverName}`)
         } catch (error) {
-          runtimeLogger.error(`❌ Failed to connect to MCP server ${serverConfig.name}:`, error)
+          runtimeLogger.error(`❌ Failed to connect to MCP server ${serverName}:`, error)
         }
       }
 
@@ -128,9 +129,10 @@ export class MCPClientExtension implements Extension {
   /**
    * Add a new MCP server
    */
-  async addServer(serverConfig: MCPServerConfig): Promise<void> {
-    await this.mcpManager.addServer(serverConfig)
-    this.config.servers.push(serverConfig)
+  async addServer(serverName: string, serverConfig: MCPServerConfig): Promise<void> {
+    const configWithName = { ...serverConfig, name: serverName }
+    await this.mcpManager.addServer(configWithName)
+    this.config.mcpServers[serverName] = serverConfig
   }
 
   /**
@@ -138,7 +140,7 @@ export class MCPClientExtension implements Extension {
    */
   async removeServer(serverName: string): Promise<void> {
     await this.mcpManager.disconnectServer(serverName)
-    this.config.servers = this.config.servers.filter(s => s.name !== serverName)
+    delete this.config.mcpServers[serverName]
   }
 
   /**
@@ -198,14 +200,14 @@ export class MCPClientExtension implements Extension {
     const resources = this.mcpManager.getAvailableResources()
     const prompts = this.mcpManager.getAvailablePrompts()
 
-    return this.config.servers.map(server => {
-      const connected = connectedServers.includes(server.name)
-      const toolCount = Array.from(tools.keys()).filter(key => key.startsWith(`${server.name}:`)).length
-      const resourceCount = Array.from(resources.keys()).filter(key => key.startsWith(`${server.name}:`)).length
-      const promptCount = Array.from(prompts.keys()).filter(key => key.startsWith(`${server.name}:`)).length
+    return Object.entries(this.config.mcpServers).map(([serverName, server]) => {
+      const connected = connectedServers.includes(serverName)
+      const toolCount = Array.from(tools.keys()).filter(key => key.startsWith(`${serverName}:`)).length
+      const resourceCount = Array.from(resources.keys()).filter(key => key.startsWith(`${serverName}:`)).length
+      const promptCount = Array.from(prompts.keys()).filter(key => key.startsWith(`${serverName}:`)).length
 
       return {
-        name: server.name,
+        name: serverName,
         connected,
         toolCount,
         resourceCount,

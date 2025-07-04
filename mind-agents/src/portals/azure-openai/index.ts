@@ -125,7 +125,7 @@ export class AzureOpenAIPortal extends BasePortal {
       await aiGenerateText({
         model: this.model,
         messages: [{ role: 'user', content: 'Hello' }],
-        maxOutputTokens: 10
+        maxTokens: 10
       })
       return true
     } catch (error) {
@@ -171,7 +171,7 @@ export class AzureOpenAIPortal extends BasePortal {
       const { text, usage, finishReason } = await aiGenerateText({
         model: this.model,
         messages: [{ role: 'user', content: prompt }],
-        maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
+        maxTokens: options?.maxTokens ?? this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -198,7 +198,7 @@ export class AzureOpenAIPortal extends BasePortal {
       const { text, usage, finishReason } = await aiGenerateText({
         model: this.model,
         messages: coreMessages,
-        maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
+        maxTokens: options?.maxTokens ?? this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -286,7 +286,7 @@ export class AzureOpenAIPortal extends BasePortal {
       const { textStream } = await aiStreamText({
         model: this.model,
         messages: [{ role: 'user', content: prompt }],
-        maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
+        maxTokens: options?.maxTokens ?? this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -309,7 +309,7 @@ export class AzureOpenAIPortal extends BasePortal {
       const { textStream } = await aiStreamText({
         model: this.model,
         messages: coreMessages,
-        maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
+        maxTokens: options?.maxTokens ?? this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,

@@ -268,6 +268,13 @@ export class RuntimeClient {
   }
 
   /**
+   * Get detailed agent information (alias for getAgent)
+   */
+  async getAgentDetail(agentId: string): Promise<any> {
+    return this.getAgent(agentId);
+  }
+
+  /**
    * Start an agent
    */
   async startAgent(agentId: string): Promise<boolean> {

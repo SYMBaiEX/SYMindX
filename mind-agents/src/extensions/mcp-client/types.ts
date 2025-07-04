@@ -6,14 +6,14 @@ import { z } from 'zod'
 
 export interface MCPServerConfig {
   name: string
-  command: string
+  // Local server configuration (command-based)
+  command?: string
   args?: string[]
   env?: Record<string, string>
-  timeout?: number
-  retryAttempts?: number
-  autoReconnect?: boolean
+  // Remote server configuration (URL-based)
+  url?: string
+  // Optional description for documentation purposes
   description?: string
-  tags?: string[]
 }
 
 export interface MCPTool {
@@ -92,6 +92,7 @@ export interface MCPManagerConfig {
   enableAutoReconnect: boolean
   reconnectDelay?: number
   healthCheckInterval?: number
+  retryAttempts?: number
 }
 
 export interface MCPServerHealth {

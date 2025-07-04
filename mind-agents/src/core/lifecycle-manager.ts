@@ -176,7 +176,7 @@ export class LifecycleManager extends EventEmitter {
         if (options.saveMemories !== false) {
           try {
             // Force any pending memory writes
-            if (typeof agent.memory.flush === 'function') {
+            if (agent.memory && typeof (agent.memory as any).flush === 'function') {
               await (agent.memory as any).flush()
             }
           } catch (error) {
@@ -216,6 +216,7 @@ export class LifecycleManager extends EventEmitter {
   async robustStartup(lazyAgent: LazyAgent, options: StartupOptions = {}): Promise<Agent> {
     const operationId = this.createOperation(lazyAgent.id, 'startup')
     const operation = this.activeOperations.get(operationId)!
+    let snapshot: any = null // Initialize snapshot variable
     
     try {
       this.logger.info(`Starting robust startup for agent ${lazyAgent.id}`)

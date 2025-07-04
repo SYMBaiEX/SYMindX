@@ -395,7 +395,9 @@ export enum ExtensionType {
   SENSOR = 'sensor',
   ACTUATOR = 'actuator',
   UTILITY = 'utility',
-  CUSTOM = 'custom'
+  CUSTOM = 'custom',
+  MCP_CLIENT = 'mcp_client',
+  MCP_SERVER = 'mcp_server'
 }
 
 export enum ExtensionStatus {
@@ -403,6 +405,8 @@ export enum ExtensionStatus {
   DISABLED = 'disabled',
   ERROR = 'error',
   INITIALIZING = 'initializing',
+  STARTING = 'starting',
+  ACTIVE = 'active',
   STOPPING = 'stopping',
   STOPPED = 'stopped',
   RUNNING = 'running'

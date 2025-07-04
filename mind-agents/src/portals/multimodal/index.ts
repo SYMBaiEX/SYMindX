@@ -292,7 +292,7 @@ export interface CrossModalReasoningResult {
 }
 
 export const defaultMultimodalConfig: Partial<MultimodalConfig> = {
-  maxOutputTokens: 4096,
+  maxTokens: 4096,
   temperature: 0.7,
   timeout: 120000,
   processingTimeout: 300000, // 5 minutes for complex multimodal processing

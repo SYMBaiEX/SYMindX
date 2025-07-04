@@ -5,7 +5,9 @@
  * Enhanced with better error handling, health monitoring, and connection management
  */
 
-import { experimental_createMCPClient } from 'ai'
+import { Client } from '@modelcontextprotocol/sdk/client/index.js'
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
+import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js'
 import { z } from 'zod'
 import { runtimeLogger } from '../../utils/logger.js'
 import {
@@ -54,13 +56,41 @@ export class MCPClientManager {
       throw new Error(`MCP server '${config.name}' is already configured`)
     }
 
+    // Validate configuration
+    if (!config.command && !config.url) {
+      throw new Error(`MCP server '${config.name}' must specify either 'command' or 'url'`)
+    }
+
     try {
-      const client = experimental_createMCPClient({
-        name: config.name,
-        command: config.command,
-        args: config.args,
-        env: config.env
-      })
+      let transport: any
+      let client: Client
+
+      if (config.url) {
+        // Remote MCP server (URL-based)
+        transport = new SSEClientTransport(new URL(config.url))
+      } else {
+        // Local MCP server (command-based)
+        transport = new StdioClientTransport({
+          command: config.command!,
+          args: config.args || [],
+          env: config.env
+        })
+      }
+
+      client = new Client(
+        {
+          name: 'symindx-mcp-client',
+          version: '1.0.0'
+        },
+        {
+          capabilities: {
+            roots: {
+              listChanged: true
+            },
+            sampling: {}
+          }
+        }
+      )
 
       const connection: MCPServerConnection = {
         name: config.name,
@@ -88,12 +118,22 @@ export class MCPClientManager {
     const { name, client, config } = connection
 
     try {
-      // Connect to the server process
-      await client.connect({
-        command: config.command,
-        args: config.args || [],
-        env: config.env || {}
-      })
+      let transport: any
+
+      if (config.url) {
+        // URL-based server
+        transport = new SSEClientTransport(new URL(config.url))
+      } else {
+        // Command-based server
+        transport = new StdioClientTransport({
+          command: config.command!,
+          args: config.args || [],
+          env: config.env || {}
+        })
+      }
+
+      // Connect to the server using the transport
+      await client.connect(transport)
 
       connection.connected = true
       connection.lastConnection = new Date()
@@ -108,7 +148,7 @@ export class MCPClientManager {
       await this.discoverPrompts(connection)
 
       // Set up auto-reconnect if enabled
-      if (config.autoReconnect) {
+      if (this.config.enableAutoReconnect) {
         this.setupAutoReconnect(connection)
       }
 
@@ -118,7 +158,7 @@ export class MCPClientManager {
       runtimeLogger.error(`❌ Failed to connect to MCP server ${name}:`, error)
       
       // Retry if configured
-      if (config.retryAttempts && connection.retryCount < config.retryAttempts) {
+      if (this.config.retryAttempts && connection.retryCount < this.config.retryAttempts) {
         this.scheduleReconnect(connection)
       }
       
@@ -131,26 +171,24 @@ export class MCPClientManager {
    */
   private async discoverCapabilities(connection: MCPServerConnection): Promise<void> {
     try {
-      const response = await connection.client.request({
-        method: 'initialize',
-        params: {
-          protocolVersion: '2024-11-05',
-          capabilities: {
-            roots: { listChanged: true },
-            sampling: {}
-          },
-          clientInfo: {
-            name: 'symindx-mcp-client',
-            version: '1.0.0'
-          }
-        }
-      })
-
-      connection.capabilities = response.capabilities || {}
+      // The client.connect() method already handles initialization
+      // We can access capabilities from the client
+      const serverInfo = (connection.client as any).serverInfo
+      connection.capabilities = serverInfo?.capabilities || {
+        tools: true,
+        resources: true,
+        prompts: true,
+        logging: true
+      }
       runtimeLogger.debug(`🔍 Discovered capabilities for ${connection.name}:`, connection.capabilities)
     } catch (error) {
       runtimeLogger.warn(`⚠️ Failed to discover capabilities for ${connection.name}:`, error)
-      connection.capabilities = {}
+      connection.capabilities = {
+        tools: true,
+        resources: true,
+        prompts: true,
+        logging: true
+      }
     }
   }
 
@@ -164,10 +202,7 @@ export class MCPClientManager {
     }
 
     try {
-      const response = await connection.client.request({
-        method: 'tools/list',
-        params: {}
-      })
+      const response = await connection.client.listTools()
 
       if (response.tools) {
         for (const tool of response.tools) {
@@ -204,10 +239,7 @@ export class MCPClientManager {
     }
 
     try {
-      const response = await connection.client.request({
-        method: 'resources/list',
-        params: {}
-      })
+      const response = await connection.client.listResources()
 
       if (response.resources) {
         for (const resource of response.resources) {
@@ -238,10 +270,7 @@ export class MCPClientManager {
     }
 
     try {
-      const response = await connection.client.request({
-        method: 'prompts/list',
-        params: {}
-      })
+      const response = await connection.client.listPrompts()
 
       if (response.prompts) {
         for (const prompt of response.prompts) {
@@ -288,12 +317,9 @@ export class MCPClientManager {
       tool.inputSchema.parse(args)
 
       // Execute the tool
-      const response = await connection.client.request({
-        method: 'tools/call',
-        params: {
-          name: tool.name,
-          arguments: args
-        }
+      const response = await connection.client.callTool({
+        name: tool.name,
+        arguments: args
       })
 
       execution.endTime = new Date()
@@ -339,11 +365,8 @@ export class MCPClientManager {
     }
 
     try {
-      const response = await connection.client.request({
-        method: 'resources/read',
-        params: {
-          uri: resource.uri
-        }
+      const response = await connection.client.readResource({
+        uri: resource.uri
       })
 
       runtimeLogger.debug(`📁 Read resource: ${resourceUri}`)
@@ -378,12 +401,9 @@ export class MCPClientManager {
     }
 
     try {
-      const response = await connection.client.request({
-        method: 'prompts/get',
-        params: {
-          name: prompt.name,
-          arguments: args || {}
-        }
+      const response = await connection.client.getPrompt({
+        name: prompt.name,
+        arguments: args || {}
       })
 
       runtimeLogger.debug(`💭 Retrieved prompt: ${promptName}`)
@@ -431,7 +451,7 @@ export class MCPClientManager {
   getServerHealth(): Map<string, MCPServerHealth> {
     const health = new Map<string, MCPServerHealth>()
     
-    for (const [name, connection] of this.connections) {
+    for (const [name, connection] of Array.from(this.connections.entries())) {
       health.set(name, {
         name,
         status: connection.connected ? 'connected' : 'disconnected',
@@ -456,7 +476,7 @@ export class MCPClientManager {
 
     try {
       if (connection.connected) {
-        await connection.client.disconnect()
+        await connection.client.close()
       }
       
       connection.connected = false
@@ -496,7 +516,7 @@ export class MCPClientManager {
   getAISDKTools(): Record<string, any> {
     const tools: Record<string, any> = {}
     
-    for (const [toolKey, tool] of this.tools) {
+    for (const [toolKey, tool] of Array.from(this.tools.entries())) {
       tools[toolKey] = {
         description: tool.description,
         parameters: tool.inputSchema,
@@ -542,7 +562,7 @@ export class MCPClientManager {
         runtimeLogger.error(`❌ Reconnection failed for MCP server ${connection.name}:`, error)
         
         // Schedule another attempt if within retry limits
-        if (connection.retryCount < (connection.config.retryAttempts || this.config.maxRetries)) {
+        if (connection.retryCount < (this.config.retryAttempts || this.config.maxRetries)) {
           this.scheduleReconnect(connection)
         }
       }
@@ -564,19 +584,16 @@ export class MCPClientManager {
    * Perform health check on all connections
    */
   private async performHealthCheck(): Promise<void> {
-    for (const connection of this.connections.values()) {
+    for (const connection of Array.from(this.connections.values())) {
       if (connection.connected) {
         try {
           // Simple ping to check if server is responsive
-          await connection.client.request({
-            method: 'ping',
-            params: {}
-          })
+          await connection.client.ping()
         } catch (error) {
           runtimeLogger.warn(`⚠️ Health check failed for ${connection.name}:`, error)
           connection.connected = false
           
-          if (connection.config.autoReconnect) {
+          if (this.config.enableAutoReconnect) {
             this.scheduleReconnect(connection)
           }
         }
@@ -589,21 +606,21 @@ export class MCPClientManager {
    */
   private cleanupServerResources(serverName: string): void {
     // Remove tools from this server
-    for (const [key] of this.tools) {
+    for (const key of Array.from(this.tools.keys())) {
       if (key.startsWith(`${serverName}:`)) {
         this.tools.delete(key)
       }
     }
     
     // Remove resources from this server
-    for (const [key] of this.resources) {
+    for (const key of Array.from(this.resources.keys())) {
       if (key.startsWith(`${serverName}:`)) {
         this.resources.delete(key)
       }
     }
     
     // Remove prompts from this server
-    for (const [key] of this.prompts) {
+    for (const key of Array.from(this.prompts.keys())) {
       if (key.startsWith(`${serverName}:`)) {
         this.prompts.delete(key)
       }

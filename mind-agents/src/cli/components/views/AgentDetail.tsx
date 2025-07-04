@@ -32,7 +32,7 @@ interface AgentDetailData {
   debugMetrics: DebugMetrics
 }
 
-interface EmotionDetailData {
+export interface EmotionDetailData {
   current: string
   intensity: number
   triggers: string[]
@@ -72,7 +72,7 @@ interface PersonalityTraits {
   protective: number
 }
 
-interface MemoryDetailData {
+export interface MemoryDetailData {
   provider: string
   totalEntries: number
   recentEntries: MemoryEntry[]
@@ -100,7 +100,7 @@ interface EmbeddingStats {
   coverage: number
 }
 
-interface CognitionDetailData {
+export interface CognitionDetailData {
   type: string
   planningDepth: number
   currentThoughts: ThoughtProcess[]
@@ -148,7 +148,7 @@ interface Decision {
   outcome?: string
 }
 
-interface PerformanceDetailData {
+export interface PerformanceDetailData {
   uptime: number
   messagesProcessed: number
   averageResponseTime: number
@@ -167,7 +167,7 @@ interface ResourceUtilization {
   timestamps: Date[]
 }
 
-interface AutonomyDetailData {
+export interface AutonomyDetailData {
   enabled: boolean
   independenceLevel: number
   autonomousActions: AutonomousAction[]
@@ -201,7 +201,7 @@ interface SocialBehavior {
   effectiveness: number
 }
 
-interface PortalDetailData {
+export interface PortalDetailData {
   name: string
   type: string
   enabled: boolean
@@ -226,7 +226,7 @@ interface PortalPerformance {
   timestamps: Date[]
 }
 
-interface ExtensionDetailData {
+export interface ExtensionDetailData {
   name: string
   type: string
   enabled: boolean
@@ -703,8 +703,13 @@ export const AgentDetail: React.FC<AgentDetailProps> = ({ agentId, onBack }) => 
     <Box flexDirection="column" padding={1}>
       {/* Header */}
       <Box marginBottom={1}>
-        <GlitchText intensity={0.1} frequency={3000} color={cyberpunkTheme.colors.accent} bold>
-          AGENT DEEP DIAGNOSTICS: {agentData.name.toUpperCase()}
+        <GlitchText 
+          intensity={0.1} 
+          frequency={3000} 
+          color={cyberpunkTheme.colors.accent} 
+          bold
+        >
+          {`AGENT DEEP DIAGNOSTICS: ${agentData.name.toUpperCase()}`}
         </GlitchText>
       </Box>
 

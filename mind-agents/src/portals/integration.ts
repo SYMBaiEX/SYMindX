@@ -146,14 +146,14 @@ export function getRecommendedModelConfig(
       return {
         model: (config as any).chatModel || config.defaultModel,
         temperature: 0.7,
-        maxOutputTokens: 2000
+        maxTokens: 2000
       }
     
     case 'tool':
       return {
         model: (config as any).toolModel || config.defaultModel,
         temperature: 0.3,  // Lower temperature for more deterministic tool use
-        maxOutputTokens: 1000    // Usually tools need less tokens
+        maxTokens: 1000    // Usually tools need less tokens
       }
     
     case 'embedding':
@@ -170,7 +170,7 @@ export function getRecommendedModelConfig(
       return {
         model: config.defaultModel,
         temperature: config.temperature,
-        maxOutputTokens: config.maxTokens
+        maxTokens: config.maxTokens
       }
   }
 }

@@ -19,7 +19,7 @@ export class MCPServerExtension implements Extension {
   public readonly id = 'mcp-server'
   public readonly name = 'MCP Server Extension'
   public readonly version = '1.0.0'
-  public readonly type = 'mcp_server'
+  public readonly type = 'MCP_SERVER' as const
   public enabled = true
   public status = 'stopped'
   
@@ -77,10 +77,9 @@ export class MCPServerExtension implements Extension {
     runtimeLogger.info('🎯 MCP Server Extension initialized')
   }
 
-  async init(agent: Agent): Promise<void> {
-    // Initialize with agent
+  async init(): Promise<void> {
+    // Initialize without agent for factory compatibility
     this.status = 'initializing'
-    await this.initialize(agent)
   }
   
   async tick(agent: Agent): Promise<void> {

@@ -3,6 +3,9 @@
  */
 
 import { EmotionState, EmotionRecord, EmotionConfig } from './agent.js'
+
+// Re-export for convenience
+export type { EmotionState, EmotionRecord, EmotionConfig }
 import { Context, BaseConfig } from './common'
 
 /**
@@ -18,6 +21,16 @@ export interface EmotionModule {
    * Current emotion intensity (0.0 to 1.0)
    */
   intensity: number;
+  
+  /**
+   * Recent triggers that caused emotion changes
+   */
+  triggers?: string[];
+  
+  /**
+   * History of emotion changes
+   */
+  history?: EmotionRecord[];
   
   /**
    * Process an event and update the emotion state

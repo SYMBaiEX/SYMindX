@@ -208,7 +208,7 @@ export class StateManager {
         
         metadata: {
           checkpointType: type,
-          integrity: this.calculateIntegrity(snapshot as any),
+          integrity: '', // Will be calculated after snapshot is complete
           dependencies: this.gatherDependencies(agent),
           recoveryData: type === CheckpointType.EMERGENCY ? {
             reason: 'emergency_checkpoint',

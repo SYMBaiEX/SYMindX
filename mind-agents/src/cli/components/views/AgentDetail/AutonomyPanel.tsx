@@ -193,9 +193,11 @@ export const AutonomyPanel: React.FC<AutonomyPanelProps> = ({ agentData }) => {
                 </Text>
               </Box>
               
-              <Text color={cyberpunkTheme.colors.textDim} marginTop={1}>
-                Recent Actions ({selectedAction + 1}/{autonomy.autonomousActions.length}):
-              </Text>
+              <Box marginTop={1}>
+                <Text color={cyberpunkTheme.colors.textDim}>
+                  Recent Actions ({selectedAction + 1}/{autonomy.autonomousActions.length}):
+                </Text>
+              </Box>
               
               {autonomy.autonomousActions.slice(0, 4).map((action, i) => (
                 <Box
@@ -444,7 +446,7 @@ export const AutonomyPanel: React.FC<AutonomyPanelProps> = ({ agentData }) => {
                 
                 <Box flexDirection="column" marginTop={1}>
                   <Text color={cyberpunkTheme.colors.textDim}>Topics of Interest:</Text>
-                  <Box flexDirection="row" gap={2} wrap="wrap">
+                  <Box flexDirection="row" gap={2} flexWrap="wrap">
                     {autonomy.curiosityTopics.map((topic, i) => (
                       <Box key={i} borderStyle="single" borderColor={cyberpunkTheme.colors.matrix} padding={1}>
                         <Text color={cyberpunkTheme.colors.accent}>
@@ -491,9 +493,11 @@ export const AutonomyPanel: React.FC<AutonomyPanelProps> = ({ agentData }) => {
                       ))}
                     </Box>
                     {routine.timestamp && (
-                      <Text color={cyberpunkTheme.colors.textDim} marginLeft={2}>
-                        Last executed: {routine.timestamp.toLocaleString()}
-                      </Text>
+                      <Box marginLeft={2}>
+                        <Text color={cyberpunkTheme.colors.textDim}>
+                          Last executed: {routine.timestamp.toLocaleString()}
+                        </Text>
+                      </Box>
                     )}
                   </Box>
                 ))}
@@ -524,9 +528,11 @@ export const AutonomyPanel: React.FC<AutonomyPanelProps> = ({ agentData }) => {
                         {'░'.repeat(20 - Math.round(behavior.effectiveness * 20))}
                       </Text>
                     </Box>
-                    <Text color={cyberpunkTheme.colors.textDim} marginLeft={2}>
-                      Last occurrence: {behavior.lastOccurrence.toLocaleString()}
-                    </Text>
+                    <Box marginLeft={2}>
+                      <Text color={cyberpunkTheme.colors.textDim}>
+                        Last occurrence: {behavior.lastOccurrence.toLocaleString()}
+                      </Text>
+                    </Box>
                   </Box>
                 ))}
               </Box>

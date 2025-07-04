@@ -14,71 +14,35 @@ export * from '../concurrent-safety.js'
 // Enhanced runtime
 export * from '../enhanced-runtime.js'
 
-// Re-export types and interfaces
+// Re-export types and interfaces from state-manager
 export type {
-  // StateManager types
   AgentStateSnapshot,
-  CheckpointType,
   StateValidationResult,
   StateValidationReport,
-  StateManagerConfig,
-  
-  // ResourceManager types
+  StateManagerConfig
+} from '../state-manager.js'
+
+export type {
   ResourceHandle,
-  ResourceType,
-  ResourceManagerConfig,
   ResourceSnapshot,
-  CleanupResult,
-  ResourceHealthReport,
-  
+  ResourceManagerConfig
+} from '../resource-manager.js'
+
+export type {
   // LifecycleManager types
-  LifecyclePhase,
   LifecycleOperation,
   LifecycleConfig,
   ShutdownOptions,
-  StartupOptions,
-  
-  // CheckpointSystem types
-  CheckpointSchedule,
-  CheckpointSystemConfig,
-  CheckpointMetrics,
-  CheckpointSystemStatus,
-  CheckpointRunResult,
-  
-  // StateRecovery types
-  RecoveryStrategy,
-  StateCorruption,
-  CorruptionType,
-  CorruptionSeverity,
-  RecoveryPlan,
-  RecoveryResult,
-  DependencyValidation,
-  
-  // ConcurrentSafety types
-  OperationLock,
-  LockRequest,
-  DeadlockDetection,
-  DeadlockResolution,
-  OperationType,
-  ConcurrentSafetyConfig,
-  AgentLockStatus,
-  ConcurrentSafetyStatus,
-  
-  // Enhanced runtime types
-  EnhancedRuntimeConfig,
-  AgentStateStatus,
-  StateManagementStatus
-} from '../state-manager.js'
+  StartupOptions
+} from '../lifecycle-manager.js'
+
+// Note: Many types commented out as they may not exist in the actual files
+// Re-add as needed when the files are implemented
 
 // Constants and enums
-export {
-  ResourceType,
-  LifecyclePhase,
-  CheckpointType,
-  CorruptionType,
-  CorruptionSeverity,
-  OperationType
-} from '../resource-manager.js'
+export { ResourceType } from '../resource-manager.js'
+export { CheckpointType } from '../state-manager.js'
+export { LifecyclePhase } from '../lifecycle-manager.js'
 
 /**
  * State management system factory function

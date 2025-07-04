@@ -206,6 +206,24 @@
         "memory_integration": true,
         "emotional_responses": true
       }
+    },
+    {
+      "name": "mcp-client",
+      "enabled": true,
+      "config": {
+        "enabled": true,
+        "globalTimeout": 30000,
+        "maxRetries": 3,
+        "enableAutoReconnect": true,
+        "aiSDKIntegration": true,
+        "mcpServers": {
+          "context7": {
+            "command": "npx",
+            "args": ["-y", "@upstash/context7-mcp"],
+            "description": "Context7 MCP Server - Provides access to up-to-date documentation for various libraries and frameworks"
+          }
+        }
+      }
     }
   ],
   

@@ -61,9 +61,34 @@ export async function registerCoreModules(registry: ModuleRegistry): Promise<voi
     const { registerCognitionModules } = await import('./cognition/index.js')
     await registerCognitionModules(registry)
     
+    // Register extension factories
+    await registerExtensionFactories(registry)
+    
     // Core modules registered - logged by runtime
   } catch (error) {
     console.error('❌ Failed to register core modules:', error)
+    throw error
+  }
+}
+
+/**
+ * Register extension factories with registry
+ */
+export async function registerExtensionFactories(registry: ModuleRegistry): Promise<void> {
+  try {
+    // Register MCP Client Extension factory
+    const { createMCPClientExtension } = await import('../extensions/mcp-client/index.js')
+    registry.registerExtensionFactory('mcp-client', createMCPClientExtension)
+    
+    // Register other extension factories as needed
+    // const { createTelegramExtension } = await import('../extensions/telegram/index.js')
+    // registry.registerExtensionFactory('telegram', createTelegramExtension)
+    
+    // const { ApiExtension } = await import('../extensions/api/index.js')
+    // registry.registerExtensionFactory('api', (config: any) => new ApiExtension(config))
+    
+  } catch (error) {
+    console.error('❌ Failed to register extension factories:', error)
     throw error
   }
 }

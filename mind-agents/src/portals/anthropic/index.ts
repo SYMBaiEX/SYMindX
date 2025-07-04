@@ -51,7 +51,7 @@ export class AnthropicPortal extends BasePortal {
       const result = await generateText({
         model: this.getLanguageModel(model),
         prompt,
-        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
+        maxTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP
       })
@@ -82,7 +82,7 @@ export class AnthropicPortal extends BasePortal {
       const result = await generateText({
         model: this.getLanguageModel(model),
         messages: coreMessages,
-        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
+        maxTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         tools: options?.functions ? Object.fromEntries(
@@ -146,7 +146,7 @@ export class AnthropicPortal extends BasePortal {
       const result = await streamText({
         model: this.getLanguageModel(model),
         prompt,
-        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
+        maxTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP
       })
@@ -171,7 +171,7 @@ export class AnthropicPortal extends BasePortal {
       const result = await streamText({
         model: this.getLanguageModel(model),
         messages: coreMessages,
-        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
+        maxTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         tools: options?.functions ? Object.fromEntries(
