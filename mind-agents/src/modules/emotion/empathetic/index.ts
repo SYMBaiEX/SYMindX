@@ -9,7 +9,7 @@ export class EmpatheticEmotion extends BaseEmotion {
   getDefinition(): EmotionDefinition {
     return {
       name: 'empathetic',
-      intensity: 0.6,
+      intensity: 0.8,
       triggers: [
         'others_pain',
         'helping',
@@ -25,13 +25,18 @@ export class EmpatheticEmotion extends BaseEmotion {
         'feel_for',
         'solidarity'
       ],
-      color: '#E74C3C',
-      description: 'Feeling connected to others\' emotions',
+      color: '#FF69B4',
+      description: 'Feeling understanding and sharing the feelings of others',
+      coordinates: {
+        valence: 0.4,     // Positive but can vary
+        arousal: 0.5,     // Moderate arousal
+        dominance: 0.2    // Low to moderate control
+      },
       modifiers: {
-        creativity: 1.0,
-        energy: 1.0,
-        social: 1.4,
-        focus: 0.9
+        creativity: 0.3,
+        energy: 0.2,
+        social: 0.9,
+        focus: 0.4
       }
     }
   }

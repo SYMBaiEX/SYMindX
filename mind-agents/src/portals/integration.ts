@@ -1,3 +1,4 @@
+import { convertUsage } from './utils.js'
 /**
  * Portal Integration
  * 
@@ -17,8 +18,6 @@ export async function registerPortals(
   registry: ModuleRegistry,
   apiKeys: Record<string, string> = {}
 ): Promise<void> {
-  console.log('🔮 Registering portals with runtime...')
-  
   const portalRegistry = PortalRegistry.getInstance()
   const availablePortals = getAvailablePortals()
   
@@ -42,14 +41,12 @@ export async function registerPortals(
       const portal = createPortal(portalName, config)
       registry.registerPortal(portalName, portal)
       registeredCount++
-      
-      console.log(`✅ Registered portal: ${portalName}`)
     } catch (error) {
       console.warn(`⚠️ Failed to register portal ${portalName}:`, (error as Error).message)
     }
   }
   
-  console.log(`✅ Registered ${registeredCount}/${availablePortals.length} portals`)
+  console.log(`✅ Portals: ${registeredCount}/${availablePortals.length} active`)
 }
 
 /**
@@ -65,7 +62,7 @@ export async function initializePortal(
     try {
       await portal.init(agent)
       portal.enabled = true
-      console.log(`✅ Initialized portal: ${portal.name} for agent ${agent.name}`)
+      // Portal initialized - logged by runtime
     } catch (error) {
       console.error(`❌ Failed to initialize portal for ${agent.name}:`, (error as Error).message)
       throw error
@@ -149,14 +146,14 @@ export function getRecommendedModelConfig(
       return {
         model: (config as any).chatModel || config.defaultModel,
         temperature: 0.7,
-        maxTokens: 2000
+        maxOutputTokens: 2000
       }
     
     case 'tool':
       return {
         model: (config as any).toolModel || config.defaultModel,
         temperature: 0.3,  // Lower temperature for more deterministic tool use
-        maxTokens: 1000    // Usually tools need less tokens
+        maxOutputTokens: 1000    // Usually tools need less tokens
       }
     
     case 'embedding':
@@ -173,7 +170,7 @@ export function getRecommendedModelConfig(
       return {
         model: config.defaultModel,
         temperature: config.temperature,
-        maxTokens: config.maxTokens
+        maxOutputTokens: config.maxTokens
       }
   }
 }

@@ -73,7 +73,7 @@
   },
 
   "emotion": {
-    "type": "rune_emotion_stack",
+    "type": "composite",
     "config": {
       "emotional_range": "supportive_focused",
       "intensity_multiplier": 0.8,
@@ -150,40 +150,18 @@
 
   "portals": [
     {
-      "name": "openai_assistant",
+      "name": "main_openai",
       "type": "openai",
       "enabled": true,
       "primary": true,
-      "capabilities": ["chat_generation", "text_generation", "function_calling"],
+      "capabilities": ["chat_generation", "text_generation", "image_generation", "embedding_generation", "tool_usage", "function_calling"],
       "config": {
         "model": "gpt-4o-mini",
-        "chatModel": "gpt-4o-mini",
-        "toolModel": "gpt-4o-mini",
-        "max_tokens": 2048,
-        "temperature": 0.3
-      }
-    },
-    {
-      "name": "groq_backup",
-      "type": "groq",
-      "enabled": true,
-      "primary": false,
-      "capabilities": ["chat_generation", "text_generation"],
-      "config": {
-        "model": "llama-3.3-70b-versatile",
-        "max_tokens": 2048,
-        "temperature": 0.3
-      }
-    },
-    {
-      "name": "openai_embeddings",
-      "type": "openai",
-      "enabled": true,
-      "primary": false,
-      "capabilities": ["embedding_generation"],
-      "config": {
+        "imageModel": "dall-e-3",
         "embeddingModel": "text-embedding-3-large",
-        "embeddingDimensions": 3072
+        "embeddingDimensions": 3072,
+        "max_tokens": 2048,
+        "temperature": 0.3
       }
     }
   ],

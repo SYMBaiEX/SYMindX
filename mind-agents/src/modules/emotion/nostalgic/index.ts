@@ -9,7 +9,7 @@ export class NostalgicEmotion extends BaseEmotion {
   getDefinition(): EmotionDefinition {
     return {
       name: 'nostalgic',
-      intensity: 0.5,
+      intensity: 0.6,
       triggers: [
         'memory',
         'past_experience',
@@ -26,13 +26,18 @@ export class NostalgicEmotion extends BaseEmotion {
         'throwback',
         'history'
       ],
-      color: '#95A5A6',
-      description: 'Feeling wistful about the past',
+      color: '#DDA0DD',
+      description: 'Feeling a sentimental longing for the past',
+      coordinates: {
+        valence: 0.2,     // Bittersweet (mildly positive)
+        arousal: -0.3,    // Low arousal
+        dominance: -0.2   // Low control (swept by memories)
+      },
       modifiers: {
-        creativity: 1.1,
-        energy: 0.9,
-        social: 1.0,
-        focus: 0.8
+        creativity: 0.5,
+        energy: -0.3,
+        social: 0.1,
+        focus: -0.2
       }
     }
   }

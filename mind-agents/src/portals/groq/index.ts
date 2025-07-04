@@ -1,3 +1,4 @@
+import { convertUsage } from '../utils.js'
 /**
  * Groq Portal Implementation
  * 
@@ -5,8 +6,8 @@
  * Groq specializes in fast inference with open-source models.
  */
 
-import { groq, createGroq } from '@ai-sdk/groq'
-import { generateText, streamText } from 'ai'
+import { groq } from '@ai-sdk/groq'
+import { generateText, streamText, CoreMessage } from 'ai'
 import { BasePortal } from '../base-portal.js'
 import { PortalConfig, TextGenerationOptions, TextGenerationResult, 
   ChatMessage, ChatGenerationOptions, ChatGenerationResult, EmbeddingOptions, EmbeddingResult,
@@ -20,27 +21,15 @@ export interface GroqConfig extends PortalConfig {
 }
 
 export class GroqPortal extends BasePortal {
-  type: PortalType = PortalType.CUSTOM;
+  type: PortalType = PortalType.GROQ;
   supportedModels: ModelType[] = [ModelType.TEXT_GENERATION, ModelType.CHAT, ModelType.CODE_GENERATION];
-  private provider: any
+  private groqProvider: any
   
   constructor(config: GroqConfig) {
     super('groq', 'Groq', '1.0.0', config)
     
-    // Create a custom Groq provider instance if we have custom settings
-    if (config.baseURL) {
-      this.provider = createGroq({
-        apiKey: config.apiKey,
-        baseURL: config.baseURL
-      })
-    } else {
-      // Use the default provider with API key from environment or config
-      this.provider = groq
-      // Set API key in environment if provided in config
-      if (config.apiKey && !process.env.GROQ_API_KEY) {
-        process.env.GROQ_API_KEY = config.apiKey
-      }
-    }
+    // Initialize the Groq provider with configuration
+    this.groqProvider = groq
   }
 
   /**
@@ -64,9 +53,12 @@ export class GroqPortal extends BasePortal {
       const model = this.resolveModel('chat', 'GROQ')
       
       const result = await generateText({
-        model: this.provider(model),
+        model: this.groqProvider(model, {
+          apiKey: (this.config as GroqConfig).apiKey || process.env.GROQ_API_KEY,
+          baseURL: (this.config as GroqConfig).baseURL
+        }),
         prompt,
-        maxTokens: options?.maxTokens || this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -75,11 +67,7 @@ export class GroqPortal extends BasePortal {
 
       return {
         text: result.text,
-        usage: {
-          promptTokens: result.usage?.promptTokens || 0,
-          completionTokens: result.usage?.completionTokens || 0,
-          totalTokens: result.usage?.totalTokens || 0
-        },
+        usage: convertUsage(result.usage),
         finishReason: (result.finishReason as FinishReason) || FinishReason.STOP,
         metadata: {
           model,
@@ -99,13 +87,19 @@ export class GroqPortal extends BasePortal {
     try {
       const model = this.resolveModel('chat', 'GROQ')
       
+      // Convert ChatMessage[] to CoreMessage[]
+      const coreMessages: CoreMessage[] = messages.map(msg => ({
+        role: msg.role === 'function' ? 'assistant' : msg.role,
+        content: msg.content
+      }) as CoreMessage)
+      
       const result = await generateText({
-        model: this.provider(model),
-        messages: messages.map(msg => ({
-          role: msg.role === 'function' ? 'assistant' : msg.role,
-          content: msg.content
-        })) as any,
-        maxTokens: options?.maxTokens || this.config.maxTokens,
+        model: this.groqProvider(model, {
+          apiKey: (this.config as GroqConfig).apiKey || process.env.GROQ_API_KEY,
+          baseURL: (this.config as GroqConfig).baseURL
+        }),
+        messages: coreMessages,
+        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -127,11 +121,7 @@ export class GroqPortal extends BasePortal {
           content: result.text
         },
         text: result.text,
-        usage: {
-          promptTokens: result.usage?.promptTokens || 0,
-          completionTokens: result.usage?.completionTokens || 0,
-          totalTokens: result.usage?.totalTokens || 0
-        },
+        usage: convertUsage(result.usage),
         finishReason: (result.finishReason as FinishReason) || FinishReason.STOP,
         metadata: {
           model,
@@ -173,9 +163,12 @@ export class GroqPortal extends BasePortal {
       const evaluationPrompt = super.buildEvaluationPrompt(options)
       
       const result = await generateText({
-        model: this.provider(toolModel),
+        model: this.groqProvider(toolModel, {
+          apiKey: (this.config as GroqConfig).apiKey || process.env.GROQ_API_KEY,
+          baseURL: (this.config as GroqConfig).baseURL
+        }),
         prompt: evaluationPrompt,
-        maxTokens: options.timeout ? Math.min(4000, options.timeout / 10) : 2000,
+        maxOutputTokens: options.timeout ? Math.min(4000, options.timeout / 10) : 2000,
         temperature: 0.1, // Lower temperature for more consistent evaluations
         topP: 0.9
       })
@@ -194,11 +187,7 @@ export class GroqPortal extends BasePortal {
         metadata: {
           model: toolModel,
           processingTime,
-          tokenUsage: {
-            promptTokens: result.usage?.promptTokens || 0,
-            completionTokens: result.usage?.completionTokens || 0,
-            totalTokens: result.usage?.totalTokens || 0
-          },
+          tokenUsage: convertUsage(result.usage),
           evaluationCriteria: options.criteria,
           outputFormat: options.outputFormat
         }
@@ -299,10 +288,13 @@ export class GroqPortal extends BasePortal {
     try {
       const model = this.resolveModel('chat', 'GROQ')
       
-      const result = await streamText({
-        model: this.provider(model),
+      const result = streamText({
+        model: this.groqProvider(model, {
+          apiKey: (this.config as GroqConfig).apiKey || process.env.GROQ_API_KEY,
+          baseURL: (this.config as GroqConfig).baseURL
+        }),
         prompt,
-        maxTokens: options?.maxTokens || this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature
       })
 
@@ -322,13 +314,19 @@ export class GroqPortal extends BasePortal {
     try {
       const model = this.resolveModel('chat', 'GROQ')
       
-      const result = await streamText({
-        model: this.provider(model),
-        messages: messages.map(msg => ({
-          role: msg.role === 'function' ? 'assistant' : msg.role,
-          content: msg.content
-        })) as any,
-        maxTokens: options?.maxTokens || this.config.maxTokens,
+      // Convert ChatMessage[] to CoreMessage[]
+      const coreMessages: CoreMessage[] = messages.map(msg => ({
+        role: msg.role === 'function' ? 'assistant' : msg.role,
+        content: msg.content
+      }) as CoreMessage)
+      
+      const result = streamText({
+        model: this.groqProvider(model, {
+          apiKey: (this.config as GroqConfig).apiKey || process.env.GROQ_API_KEY,
+          baseURL: (this.config as GroqConfig).baseURL
+        }),
+        messages: coreMessages,
+        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -376,7 +374,7 @@ export function createGroqPortal(config: GroqConfig): GroqPortal {
 export const defaultGroqConfig: Partial<GroqConfig> = {
   model: 'meta-llama/llama-4-scout-17b-16e-instruct',
   toolModel: 'llama-3.1-8b-instant',
-  maxTokens: 1000,
+  maxOutputTokens: 1000,
   temperature: 0.7,
   timeout: 30000
 }

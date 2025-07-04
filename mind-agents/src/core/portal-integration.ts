@@ -309,7 +309,7 @@ What are your current thoughts? Respond with 2-3 brief thoughts.`
     switch (criteria.priority) {
       case 'speed':
         // Groq and local models are typically faster
-        if (portal.type === PortalType.CUSTOM || portal.type === PortalType.OLLAMA) {
+        if (portal.type === PortalType.GROQ || portal.type === PortalType.OLLAMA || portal.type === PortalType.LMSTUDIO) {
           score += 30
         }
         // Smaller models are faster
@@ -331,7 +331,7 @@ What are your current thoughts? Respond with 2-3 brief thoughts.`
 
       case 'cost':
         // Local models are free
-        if (portal.type === PortalType.OLLAMA) {
+        if (portal.type === PortalType.OLLAMA || portal.type === PortalType.LMSTUDIO) {
           score += 40
         }
         // Smaller models are cheaper
@@ -342,7 +342,7 @@ What are your current thoughts? Respond with 2-3 brief thoughts.`
 
       case 'local':
         // Prefer local models
-        if (portal.type === PortalType.OLLAMA) {
+        if (portal.type === PortalType.OLLAMA || portal.type === PortalType.LMSTUDIO) {
           score += 50
         }
         break
@@ -361,7 +361,7 @@ What are your current thoughts? Respond with 2-3 brief thoughts.`
 
       // High urgency prefers fast models
       if (ctx.urgency === 'high') {
-        if (portal.type === PortalType.CUSTOM || config.model?.includes('instant')) {
+        if (portal.type === PortalType.GROQ || config.model?.includes('instant')) {
           score += 15
         }
       }

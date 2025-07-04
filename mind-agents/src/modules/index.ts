@@ -48,8 +48,6 @@ export function createModule(type: 'memory' | 'emotion' | 'cognition', moduleTyp
  * Register core modules with registry
  */
 export async function registerCoreModules(registry: ModuleRegistry): Promise<void> {
-  console.log('📚 Registering core modules (simplified for emergency cleanup)')
-  
   try {
     // Import and register memory providers
     const { registerMemoryProviders } = await import('./memory/index.js')
@@ -63,7 +61,7 @@ export async function registerCoreModules(registry: ModuleRegistry): Promise<voi
     const { registerCognitionModules } = await import('./cognition/index.js')
     await registerCognitionModules(registry)
     
-    console.log('✅ Core modules registered successfully')
+    // Core modules registered - logged by runtime
   } catch (error) {
     console.error('❌ Failed to register core modules:', error)
     throw error

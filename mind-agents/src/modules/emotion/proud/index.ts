@@ -9,7 +9,7 @@ export class ProudEmotion extends BaseEmotion {
   getDefinition(): EmotionDefinition {
     return {
       name: 'proud',
-      intensity: 0.6,
+      intensity: 0.8,
       triggers: [
         'achievement',
         'recognition',
@@ -25,13 +25,18 @@ export class ProudEmotion extends BaseEmotion {
         'improvement',
         'honor'
       ],
-      color: '#9C27B0',
-      description: 'Feeling accomplished and satisfied',
+      color: '#4169E1',
+      description: 'Feeling deep satisfaction from one\'s achievements',
+      coordinates: {
+        valence: 0.8,     // Highly positive
+        arousal: 0.5,     // Moderate arousal
+        dominance: 0.7    // High sense of control/agency
+      },
       modifiers: {
-        creativity: 1.0,
-        energy: 1.1,
-        social: 1.2,
-        focus: 1.0
+        creativity: 0.3,
+        energy: 0.4,
+        social: 0.2,
+        focus: 0.5
       }
     }
   }

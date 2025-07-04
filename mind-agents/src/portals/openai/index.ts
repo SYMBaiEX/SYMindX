@@ -1,17 +1,18 @@
+import { convertUsage } from '../utils.js'
 /**
  * OpenAI Portal Implementation
  * 
- * This portal provides integration with OpenAI's API using the Vercel AI SDK.
- * It supports text generation, chat completion, and embeddings.
+ * This portal provides integration with OpenAI's API using the Vercel AI SDK v5.
+ * It supports text generation, chat completion, embeddings, and image generation.
  */
 
-import { openai, createOpenAI } from '@ai-sdk/openai'
-import { generateText, streamText } from 'ai'
+import { openai } from '@ai-sdk/openai'
+import { generateText, streamText, embed, embedMany, generateObject, type CoreMessage, type LanguageModel } from 'ai'
+import { z } from 'zod'
 import { BasePortal } from '../base-portal.js'
 import { PortalConfig, TextGenerationOptions, TextGenerationResult, 
   ChatMessage, ChatGenerationOptions, ChatGenerationResult, EmbeddingOptions, EmbeddingResult,
-  ImageGenerationOptions, ImageGenerationResult, PortalCapability, MessageRole, FinishReason, PortalType, ModelType,
-  ToolEvaluationOptions, ToolEvaluationResult } from '../../types/portal.js'
+  ImageGenerationOptions, ImageGenerationResult, PortalCapability, MessageRole, FinishReason, PortalType, ModelType } from '../../types/portal.js'
 
 export interface OpenAIConfig extends PortalConfig {
   model?: string
@@ -26,27 +27,64 @@ export interface OpenAIConfig extends PortalConfig {
 export class OpenAIPortal extends BasePortal {
   type: PortalType = PortalType.OPENAI;
   supportedModels: ModelType[] = [ModelType.TEXT_GENERATION, ModelType.CHAT, ModelType.EMBEDDING, ModelType.IMAGE_GENERATION, ModelType.MULTIMODAL, ModelType.CODE_GENERATION];
-  private provider: any
+  private openaiProvider: any
   
   constructor(config: OpenAIConfig) {
     super('openai', 'OpenAI', '1.0.0', config)
     
-    // Create a custom OpenAI provider instance if we have custom settings
-    if (config.organization || config.baseURL) {
-      this.provider = createOpenAI({
-        apiKey: config.apiKey,
-        organization: config.organization,
-        baseURL: config.baseURL,
-        compatibility: 'strict'
-      })
-    } else {
-      // Use the default provider with API key from environment or config
-      this.provider = openai
-      // Set API key in environment if provided in config
-      if (config.apiKey && !process.env.OPENAI_API_KEY) {
-        process.env.OPENAI_API_KEY = config.apiKey
+    // Create OpenAI provider with proper configuration
+    this.openaiProvider = openai
+  }
+
+  /**
+   * Get language model instance
+   */
+  private getLanguageModel(modelId?: string): LanguageModel {
+    const model = modelId || (this.config as OpenAIConfig).model || 'gpt-4o-mini'
+    const config = this.config as OpenAIConfig
+    return this.openaiProvider(model, {
+      apiKey: config.apiKey || process.env.OPENAI_API_KEY,
+      organization: config.organization,
+      baseURL: config.baseURL
+    })
+  }
+
+  /**
+   * Convert ChatMessage array to CoreMessage array
+   */
+  private convertToCoreMessages(messages: ChatMessage[]): CoreMessage[] {
+    return messages.map(msg => {
+      const coreMessage: CoreMessage = {
+        role: msg.role as any,
+        content: msg.content
       }
-    }
+
+      // Handle attachments for multimodal support
+      if (msg.attachments && msg.attachments.length > 0) {
+        const content: any[] = [{ type: 'text', text: msg.content }]
+        
+        for (const attachment of msg.attachments) {
+          if (attachment.type === 'image') {
+            if (attachment.data) {
+              content.push({
+                type: 'image',
+                image: attachment.data,
+                mimeType: attachment.mimeType
+              })
+            } else if (attachment.url) {
+              content.push({
+                type: 'image',
+                image: new URL(attachment.url)
+              })
+            }
+          }
+        }
+        
+        coreMessage.content = content
+      }
+
+      return coreMessage
+    })
   }
 
   /**
@@ -54,13 +92,12 @@ export class OpenAIPortal extends BasePortal {
    */
   async generateText(prompt: string, options?: TextGenerationOptions): Promise<TextGenerationResult> {
     try {
-      // Use the general model for text generation
       const model = options?.model || (this.config as OpenAIConfig).model || 'gpt-4o-mini'
       
       const result = await generateText({
-        model: this.provider(model),
+        model: this.getLanguageModel(model),
         prompt,
-        maxTokens: options?.maxTokens || this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -69,11 +106,7 @@ export class OpenAIPortal extends BasePortal {
 
       return {
         text: result.text,
-        usage: {
-          promptTokens: result.usage?.promptTokens || 0,
-          completionTokens: result.usage?.completionTokens || 0,
-          totalTokens: result.usage?.totalTokens || 0
-        },
+        usage: convertUsage(result.usage),
         metadata: {
           model,
           provider: 'openai'
@@ -104,13 +137,12 @@ export class OpenAIPortal extends BasePortal {
         model = (this.config as OpenAIConfig).chatModel || (this.config as OpenAIConfig).model || 'gpt-4o-mini'
       }
       
+      const coreMessages = this.convertToCoreMessages(messages)
+      
       const result = await generateText({
-        model: this.provider(model),
-        messages: messages.map(msg => ({
-          role: msg.role === 'function' ? 'assistant' : msg.role,
-          content: msg.content
-        })) as any,
-        maxTokens: options?.maxTokens || this.config.maxTokens,
+        model: this.getLanguageModel(model),
+        messages: coreMessages,
+        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -132,12 +164,8 @@ export class OpenAIPortal extends BasePortal {
           role: MessageRole.ASSISTANT,
           content: result.text
         },
-        usage: {
-          promptTokens: result.usage?.promptTokens || 0,
-          completionTokens: result.usage?.completionTokens || 0,
-          totalTokens: result.usage?.totalTokens || 0
-        },
-        finishReason: (result.finishReason as FinishReason) || FinishReason.STOP,
+        usage: convertUsage(result.usage),
+        finishReason: this.mapFinishReason(result.finishReason),
         metadata: {
           model,
           provider: 'openai'
@@ -156,33 +184,18 @@ export class OpenAIPortal extends BasePortal {
     try {
       const model = options?.model || (this.config as OpenAIConfig).embeddingModel || 'text-embedding-3-large'
       
-      const response = await fetch('https://api.openai.com/v1/embeddings', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.config.apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model,
-          input: text,
-          dimensions: options?.dimensions
-        })
+      const { embedding, usage } = await embed({
+        model: this.openaiProvider.embedding(model),
+        value: text
       })
-
-      if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.statusText}`)
-      }
-
-      const data = await response.json()
-      const embedding = data.data[0].embedding
       
       return {
         embedding,
         dimensions: embedding.length,
         model,
         usage: {
-          promptTokens: data.usage?.prompt_tokens || 0,
-          totalTokens: data.usage?.total_tokens || 0
+          promptTokens: usage?.tokens || 0,
+          totalTokens: usage?.tokens || 0
         },
         metadata: {
           provider: 'openai'
@@ -245,17 +258,19 @@ export class OpenAIPortal extends BasePortal {
    */
   async *streamText(prompt: string, options?: TextGenerationOptions): AsyncGenerator<string> {
     try {
-      // Use the general model for text generation
       const model = options?.model || (this.config as OpenAIConfig).model || 'gpt-4o-mini'
       
-      const result = await streamText({
-        model: this.provider(model),
+      const { textStream } = await streamText({
+        model: this.getLanguageModel(model),
         prompt,
-        maxTokens: options?.maxTokens || this.config.maxTokens,
-        temperature: options?.temperature || this.config.temperature
+        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
+        temperature: options?.temperature || this.config.temperature,
+        topP: options?.topP,
+        frequencyPenalty: options?.frequencyPenalty,
+        presencePenalty: options?.presencePenalty
       })
 
-      for await (const delta of result.textStream) {
+      for await (const delta of textStream) {
         yield delta
       }
     } catch (error) {
@@ -280,13 +295,12 @@ export class OpenAIPortal extends BasePortal {
         model = (this.config as OpenAIConfig).chatModel || (this.config as OpenAIConfig).model || 'gpt-4o-mini'
       }
       
-      const result = await streamText({
-        model: this.provider(model),
-        messages: messages.map(msg => ({
-          role: msg.role === 'function' ? 'assistant' : msg.role,
-          content: msg.content
-        })) as any,
-        maxTokens: options?.maxTokens || this.config.maxTokens,
+      const coreMessages = this.convertToCoreMessages(messages)
+      
+      const { textStream } = await streamText({
+        model: this.getLanguageModel(model),
+        messages: coreMessages,
+        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -302,7 +316,7 @@ export class OpenAIPortal extends BasePortal {
         ) : undefined
       })
 
-      for await (const delta of result.textStream) {
+      for await (const delta of textStream) {
         yield delta
       }
     } catch (error) {
@@ -328,6 +342,29 @@ export class OpenAIPortal extends BasePortal {
         return false;
       default:
         return false;
+    }
+  }
+
+  /**
+   * Map finish reason from AI SDK to our internal enum
+   */
+  private mapFinishReason(reason?: string): FinishReason {
+    switch (reason) {
+      case 'stop':
+        return FinishReason.STOP
+      case 'length':
+        return FinishReason.LENGTH
+      case 'content-filter':
+        return FinishReason.CONTENT_FILTER
+      case 'tool-calls':
+      case 'function-call':
+        return FinishReason.FUNCTION_CALL
+      case 'error':
+        return FinishReason.ERROR
+      case 'cancelled':
+        return FinishReason.CANCELLED
+      default:
+        return FinishReason.STOP
     }
   }
 }

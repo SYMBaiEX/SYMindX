@@ -9,7 +9,7 @@ export class CuriousEmotion extends BaseEmotion {
   getDefinition(): EmotionDefinition {
     return {
       name: 'curious',
-      intensity: 0.5,
+      intensity: 0.7,
       triggers: [
         'new_information',
         'mystery',
@@ -26,13 +26,18 @@ export class CuriousEmotion extends BaseEmotion {
         'investigate',
         'research'
       ],
-      color: '#00BCD4',
-      description: 'Feeling interested and inquisitive',
+      color: '#20B2AA',
+      description: 'Feeling eager to know or learn something',
+      coordinates: {
+        valence: 0.5,     // Positive emotion
+        arousal: 0.7,     // High arousal
+        dominance: 0.3    // Moderate control
+      },
       modifiers: {
-        creativity: 1.3,
-        energy: 1.1,
-        social: 1.1,
-        focus: 1.1
+        creativity: 0.8,
+        energy: 0.5,
+        social: 0.2,
+        focus: 0.6
       }
     }
   }

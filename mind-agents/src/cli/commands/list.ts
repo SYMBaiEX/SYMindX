@@ -475,9 +475,9 @@ export class ListCommand {
           uptime: process.uptime()
         },
         agents: {
-          total: capabilities.agents.count,
+          total: capabilities.agents.total,
           autonomous: stats.autonomousAgents,
-          list: capabilities.agents.list
+          list: capabilities.agents.activeList
         },
         modules: capabilities.modules,
         extensions: capabilities.extensions,

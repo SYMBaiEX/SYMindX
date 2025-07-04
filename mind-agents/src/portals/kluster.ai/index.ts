@@ -1,3 +1,4 @@
+import { convertUsage } from '../utils.js'
 /**
  * Kluster.ai Portal Implementation
  * 
@@ -16,7 +17,7 @@ export interface KlusterAiConfig extends PortalConfig {
 }
 
 export class KlusterAiPortal extends BasePortal {
-  type: PortalType = PortalType.CUSTOM;
+  type: PortalType = PortalType.KLUSTER_AI;
   supportedModels: ModelType[] = [ModelType.TEXT_GENERATION, ModelType.CHAT, ModelType.CODE_GENERATION];
   private baseURL: string
   
@@ -271,7 +272,7 @@ export function createKlusterAiPortal(config: KlusterAiConfig): KlusterAiPortal 
 // Export default configuration
 export const defaultKlusterAiConfig: Partial<KlusterAiConfig> = {
   model: 'llama-4-maverick',
-  maxTokens: 1000,
+  maxOutputTokens: 1000,
   temperature: 0.7,
   timeout: 30000,
   baseURL: 'https://api.kluster.ai/v1'

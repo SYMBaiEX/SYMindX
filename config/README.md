@@ -24,11 +24,16 @@ The runtime configuration file (`runtime.json`) controls the behavior of the SYM
 - `extensions.autoLoad`: Whether to automatically load extensions at startup (default: true)
 - `extensions.paths`: Array of directory paths to search for extensions
 
-#### Portals
+#### Portals (AI SDK v5)
 
 - `portals.autoLoad`: Whether to automatically load portals at startup (default: true)
 - `portals.paths`: Array of directory paths to search for custom portals
 - `portals.apiKeys`: Object mapping portal names to their API keys
+- `portals.default`: Default portal to use if not specified (e.g., "openai")
+- `portals.models`: Model configuration for different tasks:
+  - `chat`: Model for general conversations (e.g., "gpt-4o")
+  - `tools`: Model for function calling (e.g., "gpt-4o-mini")
+  - `embedding`: Model for embeddings (e.g., "text-embedding-3-small")
 
 ### API Keys
 
@@ -41,7 +46,15 @@ API keys for portals can be provided in three ways (in order of precedence):
      "portals": {
        "apiKeys": {
          "openai": "sk-...",
-         "anthropic": "sk-ant-..."
+         "anthropic": "sk-ant-...",
+         "groq": "gsk_...",
+         "google": "...",
+         "mistral": "..."
+       },
+       "default": "openai",
+       "models": {
+         "chat": "gpt-4o",
+         "tools": "gpt-4o-mini"
        }
      }
    }
@@ -50,8 +63,15 @@ API keys for portals can be provided in three ways (in order of precedence):
 2. **Environment Variables**: Set as environment variables in the format `{PROVIDER_NAME}_API_KEY`
 
    ```bash
+   # AI SDK v5 Providers
    export OPENAI_API_KEY="sk-..."
    export ANTHROPIC_API_KEY="sk-ant-..."
+   export GROQ_API_KEY="gsk_..."
+   export GOOGLE_GENERATIVE_AI_API_KEY="..."
+   export MISTRAL_API_KEY="..."
+   export COHERE_API_KEY="..."
+   export AZURE_OPENAI_API_KEY="..."
+   export AZURE_OPENAI_ENDPOINT="https://your-resource.openai.azure.com"
    ```
 
 3. **Agent Configuration**: Set in the agent's portal configuration
@@ -60,7 +80,10 @@ API keys for portals can be provided in three ways (in order of precedence):
    {
      "modules": {
        "portal": {
-         "apiKey": "sk-..."
+         "provider": "openai",
+         "apiKey": "sk-...",
+         "model": "gpt-4o-mini",
+         "streaming": true  // AI SDK v5 streaming
        }
      }
    }

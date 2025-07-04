@@ -72,7 +72,7 @@ export interface MemoryConfig {
 }
 
 export interface EmotionConfig {
-  type: 'rune_emotion_stack' | 'basic_emotions' | 'complex_emotions'
+  type: 'composite' | 'unified'
   config: {
     emotional_range?: string
     intensity_multiplier?: number

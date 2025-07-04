@@ -1,5 +1,5 @@
-import { EmotionState, EmotionRecord } from '../../types/agent.js'
-import { EmotionModule } from '../../types/emotion.js'
+import { EmotionState, EmotionRecord, EmotionModuleType } from '../../types/agent.js'
+import { EmotionModule, PersonalityTraits, EmotionBlend, AdvancedEmotionConfig } from '../../types/emotion.js'
 import { BaseEmotion } from './base-emotion.js'
 
 // Import all emotion types
@@ -20,23 +20,40 @@ export class CompositeEmotionModule implements EmotionModule {
   private _current: string = 'neutral'
   private _intensity: number = 0
   private _history: EmotionRecord[] = []
-  private config: any
+  private config: AdvancedEmotionConfig
+  
+  // Continuous emotion space tracking
+  private _currentCoordinates = { valence: 0, arousal: 0, dominance: 0 }
+  private _blendedState: EmotionBlend | null = null
+  private _personalityTraits?: PersonalityTraits
+  private _enableBlending: boolean = false
+  private _blendSmoothing: number = 0.3
+  private _contextSensitivity: number = 0.5
 
-  constructor(config: any = {}) {
+  constructor(config: AdvancedEmotionConfig = {
+    type: EmotionModuleType.COMPOSITE,
+    sensitivity: 0.5,
+    decayRate: 0.1,
+    transitionSpeed: 0.3
+  }) {
     this.config = config
+    this._personalityTraits = config.personalityTraits
+    this._enableBlending = config.enableBlending ?? false
+    this._blendSmoothing = config.blendSmoothing ?? 0.3
+    this._contextSensitivity = config.contextSensitivity ?? 0.5
     
-    // Initialize all emotion modules
-    this.emotions.set('happy', new HappyEmotion(config.happy))
-    this.emotions.set('sad', new SadEmotion(config.sad))
-    this.emotions.set('angry', new AngryEmotion(config.angry))
-    this.emotions.set('anxious', new AnxiousEmotion(config.anxious))
-    this.emotions.set('confident', new ConfidentEmotion(config.confident))
-    this.emotions.set('nostalgic', new NostalgicEmotion(config.nostalgic))
-    this.emotions.set('empathetic', new EmpatheticEmotion(config.empathetic))
-    this.emotions.set('curious', new CuriousEmotion(config.curious))
-    this.emotions.set('proud', new ProudEmotion(config.proud))
-    this.emotions.set('confused', new ConfusedEmotion(config.confused))
-    this.emotions.set('neutral', new NeutralEmotion(config.neutral))
+    // Initialize all emotion modules with default configs
+    this.emotions.set('happy', new HappyEmotion({}))
+    this.emotions.set('sad', new SadEmotion({}))
+    this.emotions.set('angry', new AngryEmotion({}))
+    this.emotions.set('anxious', new AnxiousEmotion({}))
+    this.emotions.set('confident', new ConfidentEmotion({}))
+    this.emotions.set('nostalgic', new NostalgicEmotion({}))
+    this.emotions.set('empathetic', new EmpatheticEmotion({}))
+    this.emotions.set('curious', new CuriousEmotion({}))
+    this.emotions.set('proud', new ProudEmotion({}))
+    this.emotions.set('confused', new ConfusedEmotion({}))
+    this.emotions.set('neutral', new NeutralEmotion({}))
   }
 
   get current(): string {
@@ -60,30 +77,35 @@ export class CompositeEmotionModule implements EmotionModule {
     console.log(`🎭 Processing emotional event: ${eventType}`)
     
     // Process event through all emotions
-    const emotionResponses: Array<{ name: string, intensity: number }> = []
+    const emotionResponses: Array<{ name: string, emotion: BaseEmotion, intensity: number }> = []
     
     for (const [name, emotion] of this.emotions) {
       const state = emotion.processEvent(eventType, context)
       if (state.intensity > 0.1) { // Only consider emotions with meaningful intensity
-        emotionResponses.push({ name, intensity: state.intensity })
+        emotionResponses.push({ name, emotion, intensity: state.intensity })
       }
     }
 
-    // Find the dominant emotion
-    if (emotionResponses.length > 0) {
-      emotionResponses.sort((a, b) => b.intensity - a.intensity)
-      const dominant = emotionResponses[0]
-      
-      // Transition to the dominant emotion
-      if (dominant.name !== this._current || Math.abs(dominant.intensity - this._intensity) > 0.1) {
-        this.transitionToEmotion(dominant.name, dominant.intensity)
-      }
+    if (this._enableBlending && emotionResponses.length > 1) {
+      // Blend multiple emotions in continuous space
+      this.blendEmotions(emotionResponses)
     } else {
-      // No strong emotions, gradually return to neutral
-      if (this._current !== 'neutral') {
-        this._intensity *= 0.9
-        if (this._intensity < 0.1) {
-          this.transitionToEmotion('neutral', 0)
+      // Traditional dominant emotion approach
+      if (emotionResponses.length > 0) {
+        emotionResponses.sort((a, b) => b.intensity - a.intensity)
+        const dominant = emotionResponses[0]
+        
+        // Transition to the dominant emotion
+        if (dominant.name !== this._current || Math.abs(dominant.intensity - this._intensity) > 0.1) {
+          this.transitionToEmotion(dominant.name, dominant.intensity)
+        }
+      } else {
+        // No strong emotions, gradually return to neutral
+        if (this._current !== 'neutral') {
+          this._intensity *= 0.9
+          if (this._intensity < 0.1) {
+            this.transitionToEmotion('neutral', 0)
+          }
         }
       }
     }
@@ -209,5 +231,118 @@ export class CompositeEmotionModule implements EmotionModule {
     }
     
     return states
+  }
+
+  // Blend multiple emotions in continuous space
+  private blendEmotions(emotionResponses: Array<{ name: string, emotion: BaseEmotion, intensity: number }>): void {
+    // Calculate weighted average coordinates
+    let totalWeight = 0
+    let blendedCoords = { valence: 0, arousal: 0, dominance: 0 }
+    const components: Array<{ emotion: string, weight: number }> = []
+    
+    for (const response of emotionResponses) {
+      const weight = response.intensity
+      const coords = response.emotion.getCoordinates()
+      
+      blendedCoords.valence += coords.valence * weight
+      blendedCoords.arousal += coords.arousal * weight
+      blendedCoords.dominance += coords.dominance * weight
+      
+      totalWeight += weight
+      components.push({ emotion: response.name, weight })
+    }
+    
+    // Normalize
+    if (totalWeight > 0) {
+      blendedCoords.valence /= totalWeight
+      blendedCoords.arousal /= totalWeight
+      blendedCoords.dominance /= totalWeight
+    }
+    
+    // Apply smoothing to avoid jittery transitions
+    this._currentCoordinates.valence += (blendedCoords.valence - this._currentCoordinates.valence) * this._blendSmoothing
+    this._currentCoordinates.arousal += (blendedCoords.arousal - this._currentCoordinates.arousal) * this._blendSmoothing
+    this._currentCoordinates.dominance += (blendedCoords.dominance - this._currentCoordinates.dominance) * this._blendSmoothing
+    
+    // Store blended state
+    this._blendedState = {
+      coordinates: this._currentCoordinates,
+      intensity: totalWeight / emotionResponses.length,
+      components
+    }
+    
+    // Find closest named emotion for display
+    const closestEmotion = this.findClosestNamedEmotion(this._currentCoordinates)
+    this._current = closestEmotion.name
+    this._intensity = this._blendedState.intensity
+    
+    // Log blended state
+    if (components.length > 1) {
+      const componentStr = components
+        .sort((a, b) => b.weight - a.weight)
+        .slice(0, 3)
+        .map(c => `${c.emotion}(${(c.weight * 100).toFixed(0)}%)`)
+        .join(' + ')
+      console.log(`🎨 Blended emotion: ${componentStr} → ${this._current}`)
+    }
+  }
+
+  // Find the closest named emotion to given coordinates
+  private findClosestNamedEmotion(coords: { valence: number, arousal: number, dominance: number }): { name: string, distance: number } {
+    let closestEmotion = { name: 'neutral', distance: Infinity }
+    
+    for (const [name, emotion] of this.emotions) {
+      const emotionCoords = emotion.getCoordinates()
+      const distance = Math.sqrt(
+        Math.pow(coords.valence - emotionCoords.valence, 2) +
+        Math.pow(coords.arousal - emotionCoords.arousal, 2) +
+        Math.pow(coords.dominance - emotionCoords.dominance, 2)
+      )
+      
+      if (distance < closestEmotion.distance) {
+        closestEmotion = { name, distance }
+      }
+    }
+    
+    return closestEmotion
+  }
+
+  // Get current emotion coordinates
+  getEmotionCoordinates(): { valence: number, arousal: number, dominance: number } {
+    return { ...this._currentCoordinates }
+  }
+
+  // Get blended state if available
+  getBlendedState(): EmotionBlend | null {
+    return this._blendedState
+  }
+
+  // Set personality traits
+  setPersonalityTraits(traits: PersonalityTraits): void {
+    this._personalityTraits = traits
+    
+    // Update all emotion modules
+    for (const emotion of this.emotions.values()) {
+      emotion.setPersonalityTraits(traits)
+    }
+  }
+
+  // Enable/disable emotion blending
+  setBlendingEnabled(enabled: boolean): void {
+    this._enableBlending = enabled
+  }
+
+  // Get emotional context for other systems
+  getEmotionalContext(): Record<string, any> {
+    const currentEmotion = this.emotions.get(this._current)
+    return {
+      primary: this._current,
+      intensity: this._intensity,
+      coordinates: this._currentCoordinates,
+      blendedState: this._blendedState,
+      modifiers: currentEmotion?.getEmotionModifier() || {},
+      personalityTraits: this._personalityTraits,
+      contextSensitivity: this._contextSensitivity
+    }
   }
 }

@@ -16,6 +16,10 @@ Track the evolution of SYMindX through detailed release notes, breaking changes,
 ## [Unreleased]
 
 ### Added
+- **AI SDK v5 Integration**: Migrated all portals to Vercel AI SDK v5 (alpha/canary)
+- **New AI Providers**: Added support for Google (Generative & Vertex), Mistral, Cohere, and Azure OpenAI
+- **Enhanced Streaming**: All portals now support native streaming with `textStream`
+- **Tool Calling with Zod**: Function calling now uses Zod schema validation
 - Multi-agent conversation system with WebUI
 - Advanced coordination module for agent orchestration
 - Telegram integration for messaging platforms
@@ -23,6 +27,10 @@ Track the evolution of SYMindX through detailed release notes, breaking changes,
 - Conversation-based chat system in WebUI
 
 ### Changed
+- **Unified Portal Interface**: All AI providers now use the same AI SDK v5 interface
+- **Import Patterns**: Changed from `createProvider` to direct imports (e.g., `import { openai } from '@ai-sdk/openai'`)
+- **Message Types**: Now using `CoreMessage` type from AI SDK v5
+- **Model Updates**: Updated to latest models (GPT-4o, Claude 3.5 Sonnet 20241022, Llama 3.3)
 - Refactored to TypeScript-only codebase (removed JavaScript)
 - Improved module factory patterns for consistency
 - Enhanced WebSocket API with better error handling
@@ -32,6 +40,12 @@ Track the evolution of SYMindX through detailed release notes, breaking changes,
 - Memory leak in long-running agent sessions
 - WebSocket reconnection issues
 - Portal rate limiting edge cases
+
+### Breaking Changes
+- Portal packages now require canary versions (e.g., `@ai-sdk/openai@^2.0.0-canary.11`)
+- Changed text generation return type to include both `text` and `textStream`
+- Function definitions must now use Zod schemas
+- Removed deprecated `createProvider` pattern
 
 ## [2.0.0] - 2024-01-15
 

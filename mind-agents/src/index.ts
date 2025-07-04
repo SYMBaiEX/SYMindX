@@ -103,31 +103,7 @@ async function start() {
     runtime.eventBus.on('command:executed', () => commandCount++);
     runtime.eventBus.on('portal:request', () => portalRequestCount++);
     
-    // Update dashboard periodically
-    setInterval(() => {
-      const agents = Array.from(runtime.agents.values()).map(agent => ({
-        id: agent.id,
-        name: agent.name,
-        status: agent.status,
-        emotion: {
-          current: agent.emotion?.getCurrentState?.()?.current || agent.emotion?.current || 'neutral',
-          intensity: agent.emotion?.getCurrentState?.()?.intensity || agent.emotion?.intensity || 0
-        },
-        portal: agent.portal,
-        extensions: agent.extensions
-      }));
-      
-      dashboard.update({
-        agents,
-        metrics: {
-          uptime: Date.now() - startTime,
-          memory: process.memoryUsage().heapUsed,
-          activeAgents: agents.filter(a => a.status === 'active').length,
-          commandsProcessed: commandCount,
-          portalRequests: portalRequestCount
-        }
-      });
-    }, 5000);
+    // Dashboard update removed - now handled by CLI monitor command
     
   } catch (error) {
     logger.error('Failed to start runtime:', error);

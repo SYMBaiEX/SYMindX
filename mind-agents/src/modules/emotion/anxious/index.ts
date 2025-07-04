@@ -9,7 +9,7 @@ export class AnxiousEmotion extends BaseEmotion {
   getDefinition(): EmotionDefinition {
     return {
       name: 'anxious',
-      intensity: 0.6,
+      intensity: 0.7,
       triggers: [
         'uncertainty',
         'pressure',
@@ -26,13 +26,18 @@ export class AnxiousEmotion extends BaseEmotion {
         'danger',
         'unknown'
       ],
-      color: '#FF6B6B',
-      description: 'Feeling worried or nervous',
+      color: '#FFA500',
+      description: 'Feeling worried or uneasy about something with an uncertain outcome',
+      coordinates: {
+        valence: -0.6,    // Negative emotion
+        arousal: 0.8,     // High arousal/excitement
+        dominance: -0.4   // Low sense of control
+      },
       modifiers: {
-        creativity: 0.9,
-        energy: 0.9,
-        social: 0.7,
-        focus: 0.6
+        creativity: -0.2,
+        energy: 0.3,
+        social: -0.3,
+        focus: 0.4
       }
     }
   }

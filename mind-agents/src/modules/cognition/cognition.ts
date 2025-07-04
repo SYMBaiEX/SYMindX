@@ -28,6 +28,7 @@ import {
 } from '../../types/cognition.js'
 import { MemoryType, MemoryDuration } from '../../types/enums.js'
 import { BaseConfig, ActionParameters } from '../../types/common.js'
+import { TheoryOfMind, MentalModel } from './theory-of-mind.js'
 
 export interface UnifiedCognitionConfig extends BaseConfig {
   // When to think
@@ -46,12 +47,41 @@ export interface UnifiedCognitionConfig extends BaseConfig {
   
   // Prompt integration ready
   promptEnhanced?: boolean
+  
+  // Dual-process thinking
+  enableDualProcess?: boolean
+  system1Threshold?: number // Confidence threshold for System 1
+  system2Timeout?: number // Max time for System 2 thinking (ms)
+  
+  // Metacognition
+  enableMetacognition?: boolean
+  uncertaintyThreshold?: number // When to doubt decisions
+  
+  // Goal management
+  enableGoalTracking?: boolean
+  maxActiveGoals?: number
+  goalPersistence?: number // How long to pursue goals (ms)
+  
+  // Theory of mind
+  enableTheoryOfMind?: boolean
+  theoryOfMindConfig?: any
 }
 
 export class UnifiedCognition implements CognitionModule {
   public id: string
   public type: string = 'unified'
   private config: UnifiedCognitionConfig
+  private theoryOfMind?: any  // Theory of Mind module (optional)
+  
+  // Dual-process state
+  private system1Cache: Map<string, { response: any, timestamp: number }> = new Map()
+  private activeGoals: Map<string, { goal: string, priority: number, created: Date }> = new Map()
+  private metacognitiveState = {
+    confidence: 0.5,
+    uncertainty: 0.5,
+    cognitiveLoad: 0,
+    recentErrors: [] as string[]
+  }
   
   constructor(config: UnifiedCognitionConfig = {}) {
     this.id = `unified_${Date.now()}`
@@ -66,7 +96,22 @@ export class UnifiedCognition implements CognitionModule {
       useMemories: true,
       maxMemoryRecall: 10,
       promptEnhanced: false,
+      enableDualProcess: true,
+      system1Threshold: 0.8,
+      system2Timeout: 5000,
+      enableMetacognition: true,
+      uncertaintyThreshold: 0.7,
+      enableGoalTracking: true,
+      maxActiveGoals: 5,
+      goalPersistence: 86400000, // 24 hours
       ...config
+    }
+    
+    // Initialize theory of mind if enabled
+    if (this.config.enableTheoryOfMind) {
+      // Theory of mind would be initialized here if we had the module
+      // For now, we'll leave it undefined
+      // this.theoryOfMind = new TheoryOfMind(this.config.theoryOfMindConfig)
     }
   }
 
@@ -89,23 +134,38 @@ export class UnifiedCognition implements CognitionModule {
   }
 
   /**
-   * Main thinking method - decides whether to actually think or not
+   * Main thinking method - implements dual-process thinking
    */
   async think(agent: Agent, context: ThoughtContext): Promise<ThoughtResult> {
-    // Check if we should skip thinking
+    // Update metacognitive state
+    if (this.config.enableMetacognition) {
+      this.updateMetacognition(context)
+    }
+    
+    // Check if we should skip thinking entirely
     if (this.shouldSkipThinking(context)) {
       return this.getQuickResponse()
     }
 
-    // Determine thinking depth based on context
-    const depth = this.determineThinkingDepth(context)
+    // Dual-process thinking
+    if (this.config.enableDualProcess) {
+      // Try System 1 (fast, intuitive)
+      const system1Result = await this.system1Think(agent, context)
+      
+      // If System 1 is confident enough, use it
+      if (system1Result.confidence >= this.config.system1Threshold!) {
+        return system1Result
+      }
+      
+      // Otherwise, engage System 2 (slow, deliberative)
+      return this.system2Think(agent, context, system1Result)
+    }
     
-    // Shallow thinking for simple cases
+    // Fallback to legacy thinking
+    const depth = this.determineThinkingDepth(context)
     if (depth === 'shallow') {
       return this.shallowThink(agent, context)
     }
-    
-    // Full thinking for complex cases
     return this.deepThink(agent, context)
   }
 
@@ -465,6 +525,277 @@ export class UnifiedCognition implements CognitionModule {
   }
 
   /**
+   * System 1 thinking - fast, intuitive, pattern-based
+   */
+  private async system1Think(agent: Agent, context: ThoughtContext): Promise<ThoughtResult> {
+    const thoughts: string[] = ['[System 1] Quick intuitive response']
+    
+    // Check cache for similar contexts
+    const cacheKey = this.generateContextHash(context)
+    const cached = this.system1Cache.get(cacheKey)
+    
+    if (cached && Date.now() - cached.timestamp < 60000) { // 1 minute cache
+      thoughts.push('Using cached intuitive response')
+      return cached.response
+    }
+    
+    // Pattern matching for common situations
+    const patterns = this.matchPatterns(context)
+    let confidence = 0.5
+    
+    if (patterns.greeting) {
+      confidence = 0.9
+      thoughts.push('Recognized greeting pattern')
+    } else if (patterns.question) {
+      confidence = 0.7
+      thoughts.push('Recognized question pattern')
+    } else if (patterns.command) {
+      confidence = 0.6
+      thoughts.push('Recognized command pattern')
+    }
+    
+    // Quick emotional assessment
+    const emotion = this.assessBasicEmotion(context)
+    
+    const result: ThoughtResult = {
+      thoughts,
+      actions: [],
+      emotions: emotion,
+      memories: [],
+      confidence
+    }
+    
+    // Cache the result
+    this.system1Cache.set(cacheKey, { response: result, timestamp: Date.now() })
+    
+    return result
+  }
+  
+  /**
+   * System 2 thinking - slow, deliberative, analytical
+   */
+  private async system2Think(
+    agent: Agent, 
+    context: ThoughtContext, 
+    system1Result: ThoughtResult
+  ): Promise<ThoughtResult> {
+    const thoughts: string[] = ['[System 2] Engaging deliberative thinking']
+    const startTime = Date.now()
+    
+    // Include System 1 insights
+    thoughts.push(`System 1 confidence: ${system1Result.confidence.toFixed(2)}`)
+    
+    // Deep analysis with timeout
+    const analysisPromise = this.deepAnalysis(agent, context)
+    const timeoutPromise = new Promise<any>((resolve) => 
+      setTimeout(() => resolve({ timedOut: true }), this.config.system2Timeout!)
+    )
+    
+    const analysis = await Promise.race([analysisPromise, timeoutPromise])
+    
+    if (analysis.timedOut) {
+      thoughts.push('System 2 timeout - using best available analysis')
+      return {
+        ...system1Result,
+        thoughts: [...system1Result.thoughts, ...thoughts],
+        confidence: system1Result.confidence * 0.8
+      }
+    }
+    
+    // Goal management
+    if (this.config.enableGoalTracking) {
+      this.updateGoals(context, analysis)
+    }
+    
+    // Metacognitive reflection
+    if (this.config.enableMetacognition) {
+      const reflection = this.reflect(analysis, system1Result)
+      thoughts.push(`Metacognition: ${reflection}`)
+    }
+    
+    return {
+      thoughts: [...thoughts, ...analysis.thoughts],
+      actions: analysis.actions,
+      emotions: analysis.emotions,
+      memories: analysis.memories,
+      confidence: analysis.confidence
+    }
+  }
+  
+  /**
+   * Deep analysis for System 2
+   */
+  private async deepAnalysis(agent: Agent, context: ThoughtContext): Promise<any> {
+    // This is the enhanced version of deepThink
+    const result = await this.deepThink(agent, context)
+    
+    // Add causal reasoning
+    const causalChain = this.traceCausality(context)
+    if (causalChain.length > 0) {
+      result.thoughts.push(`Causal chain: ${causalChain.join(' → ')}`)
+    }
+    
+    // Add counterfactual thinking
+    const alternatives = this.considerAlternatives(context)
+    if (alternatives.length > 0) {
+      result.thoughts.push(`Alternatives considered: ${alternatives.length}`)
+    }
+    
+    return result
+  }
+  
+  /**
+   * Update metacognitive state
+   */
+  private updateMetacognition(context: ThoughtContext): void {
+    // Update cognitive load
+    this.metacognitiveState.cognitiveLoad = context.events.length / 10
+    
+    // Track uncertainty
+    const hasConflicts = context.events.some(e => 
+      e.type.includes('conflict') || e.type.includes('error')
+    )
+    if (hasConflicts) {
+      this.metacognitiveState.uncertainty = Math.min(1, this.metacognitiveState.uncertainty + 0.1)
+    } else {
+      this.metacognitiveState.uncertainty = Math.max(0, this.metacognitiveState.uncertainty - 0.05)
+    }
+    
+    // Update overall confidence
+    this.metacognitiveState.confidence = 1 - this.metacognitiveState.uncertainty
+  }
+  
+  /**
+   * Pattern matching for System 1
+   */
+  private matchPatterns(context: ThoughtContext): any {
+    const patterns = {
+      greeting: false,
+      question: false,
+      command: false,
+      emotion: false,
+      social: false
+    }
+    
+    for (const event of context.events) {
+      const message = event.data?.message
+      if (typeof message === 'string') {
+        const lower = message.toLowerCase()
+        patterns.greeting = patterns.greeting || /^(hi|hello|hey|greetings)/.test(lower)
+        patterns.question = patterns.question || message.includes('?')
+        patterns.command = patterns.command || /^(do|make|create|show|tell)/.test(lower)
+        patterns.emotion = patterns.emotion || /(feel|happy|sad|angry)/.test(lower)
+      }
+      patterns.social = patterns.social || event.type.includes('social')
+    }
+    
+    return patterns
+  }
+  
+  /**
+   * Generate context hash for caching
+   */
+  private generateContextHash(context: ThoughtContext): string {
+    const key = context.events
+      .map(e => `${e.type}:${e.data?.message || ''}`)
+      .join('|')
+    return key.substring(0, 100) // Limit length
+  }
+  
+  /**
+   * Trace causal relationships
+   */
+  private traceCausality(context: ThoughtContext): string[] {
+    const chain: string[] = []
+    
+    // Simple causality detection
+    for (let i = 1; i < context.events.length; i++) {
+      const prev = context.events[i - 1]
+      const curr = context.events[i]
+      
+      if (curr.timestamp.getTime() - prev.timestamp.getTime() < 5000) {
+        chain.push(`${prev.type} → ${curr.type}`)
+      }
+    }
+    
+    return chain
+  }
+  
+  /**
+   * Consider alternative interpretations
+   */
+  private considerAlternatives(context: ThoughtContext): string[] {
+    const alternatives: string[] = []
+    
+    // For questions, consider multiple interpretations
+    const questions = context.events.filter(e => 
+      e.data?.message && typeof e.data.message === 'string' && e.data.message.includes('?')
+    )
+    
+    for (const q of questions) {
+      if (q.data?.message && typeof q.data.message === 'string' && q.data.message.includes('or')) {
+        alternatives.push('Multiple choice detected')
+      }
+      if (q.data?.message && typeof q.data.message === 'string' && q.data.message.includes('why')) {
+        alternatives.push('Causal explanation needed')
+      }
+    }
+    
+    return alternatives
+  }
+  
+  /**
+   * Reflect on thinking process
+   */
+  private reflect(system2Result: any, system1Result: ThoughtResult): string {
+    const disagreement = Math.abs(system2Result.confidence - system1Result.confidence)
+    
+    if (disagreement > 0.3) {
+      return 'Significant disagreement between intuition and analysis'
+    } else if (this.metacognitiveState.uncertainty > this.config.uncertaintyThreshold!) {
+      return 'High uncertainty - recommend gathering more information'
+    } else if (this.metacognitiveState.cognitiveLoad > 0.8) {
+      return 'High cognitive load - may need to simplify approach'
+    }
+    
+    return 'Thinking process appears sound'
+  }
+  
+  /**
+   * Update goal tracking
+   */
+  private updateGoals(context: ThoughtContext, analysis: any): void {
+    // Extract goals from context
+    if (context.goal) {
+      const goalId = `goal_${Date.now()}`
+      this.activeGoals.set(goalId, {
+        goal: context.goal,
+        priority: analysis.significance || 0.5,
+        created: new Date()
+      })
+    }
+    
+    // Clean up old goals
+    const now = Date.now()
+    for (const [id, goal] of this.activeGoals) {
+      if (now - goal.created.getTime() > this.config.goalPersistence!) {
+        this.activeGoals.delete(id)
+      }
+    }
+    
+    // Limit active goals
+    if (this.activeGoals.size > this.config.maxActiveGoals!) {
+      // Remove lowest priority goals
+      const sorted = Array.from(this.activeGoals.entries())
+        .sort((a, b) => b[1].priority - a[1].priority)
+      
+      for (let i = this.config.maxActiveGoals!; i < sorted.length; i++) {
+        this.activeGoals.delete(sorted[i][0])
+      }
+    }
+  }
+  
+  /**
    * Create a simple plan
    */
   private createSimplePlan(situation: any): Plan | null {
@@ -500,6 +831,58 @@ export class UnifiedCognition implements CognitionModule {
       dependencies: [],
       status: PlanStatus.PENDING
     }
+  }
+  
+  /**
+   * Apply theory of mind to understand others
+   */
+  private applyTheoryOfMind(context: ThoughtContext): string[] {
+    if (!this.theoryOfMind) return []
+    
+    const insights: string[] = []
+    
+    // Analyze social interactions
+    const socialEvents = context.events.filter(e => 
+      e.type.includes('social') || 
+      e.type.includes('communication') ||
+      e.data?.fromAgent
+    )
+    
+    for (const event of socialEvents) {
+      const otherAgentId = event.data?.fromAgent || event.source
+      if (!otherAgentId) continue
+      
+      // Update mental model
+      this.theoryOfMind.updateModel(otherAgentId, {
+        message: event.data?.message,
+        action: event.data?.action,
+        emotion: event.data?.emotion,
+        context: event.data
+      })
+      
+      // Get insights
+      const model = this.theoryOfMind.getModel(otherAgentId)
+      
+      // Predict behavior
+      if (event.type.includes('question')) {
+        const prediction = this.theoryOfMind.predict(otherAgentId, 'response_to_question')
+        insights.push(`[ToM] ${otherAgentId} likely to: ${prediction.action} (${(prediction.confidence * 100).toFixed(0)}% confidence)`)
+      }
+      
+      // Empathize
+      const empathy = this.theoryOfMind.empathize(otherAgentId)
+      if (empathy.intensity > 0.5) {
+        insights.push(`[ToM] Sensing ${empathy.emotion} from ${otherAgentId} - ${empathy.understanding}`)
+      }
+      
+      // Relationship assessment
+      const relationship = this.theoryOfMind.getRelationshipSummary(otherAgentId)
+      if (socialEvents.length === 1) { // Only show for single interactions
+        insights.push(`[ToM] Relationship with ${otherAgentId}: ${relationship}`)
+      }
+    }
+    
+    return insights
   }
 
   /**

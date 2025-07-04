@@ -33,6 +33,17 @@ export class SadEmotion extends BaseEmotion {
         energy: 0.7,
         social: 0.6,
         focus: 0.8
+      },
+      coordinates: {
+        valence: -0.7,     // Very negative
+        arousal: -0.4,     // Low arousal
+        dominance: -0.5    // Submissive
+      },
+      personalityInfluence: {
+        neuroticism: 0.7,      // High neuroticism intensifies sadness
+        extraversion: -0.3,    // Low extraversion can deepen sadness
+        agreeableness: 0.2,    // Agreeable people feel others' sadness
+        openness: 0.1          // Open people process sadness differently
       }
     }
   }

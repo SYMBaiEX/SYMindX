@@ -24,6 +24,26 @@
     "docs:build": "cd docs-site && npm run build",
     "docs:serve": "cd docs-site && npm run serve"
   },
+  "workspaces": [
+    "mind-agents",
+    "website",
+    "docs-site",
+    "mind-agents/src/portals/openai",
+    "mind-agents/src/portals/anthropic",
+    "mind-agents/src/portals/groq",
+    "mind-agents/src/portals/ollama",
+    "mind-agents/src/portals/lmstudio",
+    "mind-agents/src/portals/google-vertex",
+    "mind-agents/src/portals/google-generative",
+    "mind-agents/src/portals/mistral",
+    "mind-agents/src/portals/cohere",
+    "mind-agents/src/portals/azure-openai",
+    "mind-agents/src/portals/xai",
+    "mind-agents/src/portals/openrouter",
+    "mind-agents/src/portals/multimodal",
+    "mind-agents/src/portals/kluster.ai",
+    "mind-agents/src/portals/vercel"
+  ],
   "dependencies": {
     "concurrently": "^9.1.0",
     "dotenv": "^16.4.7",

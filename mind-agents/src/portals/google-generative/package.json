@@ -1,0 +1,21 @@
+{
+  "name": "@symindx/portal-google-generative",
+  "version": "1.0.0",
+  "description": "Google Generative AI Portal for SYMindX",
+  "type": "module",
+  "main": "index.js",
+  "dependencies": {
+    "@ai-sdk/google": "^2.0.0-canary.20",
+    "ai": "^5.0.0-canary.24"
+  },
+  "keywords": [
+    "ai",
+    "google",
+    "generative",
+    "symindx",
+    "portal",
+    "llm",
+    "gemini"
+  ],
+  "license": "MIT"
+}

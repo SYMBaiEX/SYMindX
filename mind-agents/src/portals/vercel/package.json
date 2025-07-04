@@ -1,0 +1,33 @@
+{
+  "name": "@symindx/portal-vercel",
+  "version": "1.0.0",
+  "description": "Vercel AI SDK Portal for SYMindX",
+  "type": "module",
+  "main": "index.js",
+  "dependencies": {
+    "ai": "^5.0.0-canary.24",
+    "@ai-sdk/openai": "^2.0.0-canary.20",
+    "@ai-sdk/anthropic": "^2.0.0-canary.19",
+    "@ai-sdk/groq": "^2.0.0-canary.20",
+    "@ai-sdk/cohere": "^2.0.0-canary.20",
+    "@ai-sdk/perplexity": "^2.0.0-canary.19",
+    "@ai-sdk/google": "^2.0.0-canary.20",
+    "@ai-sdk/mistral": "^2.0.0-canary.19",
+    "@ai-sdk/deepinfra": "^1.0.0-canary.19",
+    "zod": "^3.23.8"
+  },
+  "keywords": [
+    "ai",
+    "vercel",
+    "sdk",
+    "symindx",
+    "portal",
+    "llm",
+    "openai",
+    "anthropic",
+    "groq",
+    "cohere",
+    "perplexity"
+  ],
+  "license": "MIT"
+}

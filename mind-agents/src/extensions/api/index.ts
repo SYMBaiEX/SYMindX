@@ -79,6 +79,7 @@ export class ApiExtension implements Extension {
     this.setupRoutes()
   }
 
+
   async init(agent: Agent): Promise<void> {
     this.agent = agent
     
@@ -114,8 +115,8 @@ export class ApiExtension implements Extension {
 
   private getDefaultSettings(): ApiSettings {
     return {
-      port: parseInt(process.env.API_PORT || '8000'),
-      host: '0.0.0.0',
+      port: parseInt(process.env.API_PORT || String(this.config.settings?.port) || '8000'),
+      host: this.config.settings?.host || '0.0.0.0',
       cors: {
         enabled: true,
         origins: ['*'],

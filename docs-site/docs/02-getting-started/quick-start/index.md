@@ -45,8 +45,9 @@ You'll see the SYMindX dashboard with:
    - **Name**: "MyFirstAgent"
    - **Personality**: "Helpful and curious"
    - **Memory Provider**: "sqlite" (default)
-   - **Emotion Module**: "rune-emotion-stack"
+   - **Emotion Module**: "composite" (full emotion system)
    - **Cognition Module**: "reactive"
+   - **AI Portal**: "openai" (requires API key)
 
 3. Click **"Create Agent"** and watch it come to life!
 
@@ -71,9 +72,9 @@ Create a new file at `mind-agents/src/characters/my-first-agent.json`:
     "traits": ["helpful", "curious", "friendly", "eager"],
     "defaults": {
       "memory": "sqlite",
-      "emotion": "rune-emotion-stack",
+      "emotion": "composite",
       "cognition": "reactive",
-      "portal": "openai"
+      "portal": "openai"  // AI SDK v5 portal
     },
     "emotion": {
       "sensitivity": 0.7,
@@ -90,9 +91,12 @@ Create a new file at `mind-agents/src/characters/my-first-agent.json`:
   },
   "modules": {
     "extensions": ["api", "slack"],
-    "tools": {
-      "enabled": true,
-      "system": "dynamic"
+    "portal": {
+      "provider": "openai",
+      "model": "gpt-4o-mini",
+      "apiKey": "${OPENAI_API_KEY}",  // From environment
+      "temperature": 0.7,
+      "streaming": true  // AI SDK v5 streaming
     }
   }
 }

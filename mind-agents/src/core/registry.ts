@@ -7,7 +7,11 @@
 import { 
   ModuleRegistry, 
   MemoryProvider, 
-  Extension
+  Extension,
+  LazyAgent,
+  Agent,
+  AgentConfig,
+  AgentFactory
 } from '../types/agent.js'
 import { Portal, PortalConfig } from '../types/portal.js'
 import { runtimeLogger } from '../utils/logger.js'
@@ -34,6 +38,11 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
   private emotionFactories = new Map<string, EmotionModuleFactory>()
   private cognitionFactories = new Map<string, CognitionModuleFactory>()
   private portalFactories = new Map<string, PortalFactory>()
+  private extensionFactories = new Map<string, any>()
+  private agentFactories = new Map<string, AgentFactory>()
+  
+  // Lazy agent management
+  private lazyAgents = new Map<string, LazyAgent>()
 
   registerMemoryProvider(name: string, provider: any): void {
     this.memoryProviders.set(name, provider)
@@ -52,12 +61,12 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
 
   registerExtension(name: string, extension: any): void {
     this.extensions.set(name, extension)
-    runtimeLogger.factory(`🔌 Registered extension: ${name}`)
+    // Reduced logging for cleaner startup
   }
 
   registerPortal(name: string, portal: Portal): void {
     this.portals.set(name, portal)
-    runtimeLogger.factory(`🔮 Registered portal: ${name}`)
+    // Reduced logging for cleaner startup
   }
 
   getMemoryProvider(name: string): MemoryProvider | undefined {
@@ -121,22 +130,22 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
   // Factory registration methods
   registerMemoryFactory(type: string, factory: any): void {
     this.memoryFactories.set(type, factory)
-    runtimeLogger.factory(`🏭 Registered memory factory: ${type}`)
+    // Silent registration for cleaner startup
   }
 
   registerEmotionFactory(type: string, factory: EmotionModuleFactory): void {
     this.emotionFactories.set(type, factory)
-    runtimeLogger.factory(`🏭 Registered emotion factory: ${type}`)
+    // Silent registration for cleaner startup
   }
 
   registerCognitionFactory(type: string, factory: CognitionModuleFactory): void {
     this.cognitionFactories.set(type, factory)
-    runtimeLogger.factory(`🏭 Registered cognition factory: ${type}`)
+    // Silent registration for cleaner startup
   }
 
   registerPortalFactory(type: string, factory: PortalFactory): void {
     this.portalFactories.set(type, factory)
-    runtimeLogger.factory(`🏭 Registered portal factory: ${type}`)
+    // Silent registration for cleaner startup
   }
 
   // Factory creation methods
@@ -148,7 +157,7 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
     }
     try {
       const provider = factory(config)
-      runtimeLogger.factory(`✅ Created memory provider: ${type}`)
+      // Silent creation for cleaner startup
       return provider
     } catch (error) {
       runtimeLogger.error(`❌ Failed to create memory provider '${type}':`, error)
@@ -164,7 +173,7 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
     }
     try {
       const module = factory(config)
-      runtimeLogger.factory(`✅ Created emotion module: ${type}`)
+      // Silent creation for cleaner startup
       return module
     } catch (error) {
       runtimeLogger.error(`❌ Failed to create emotion module '${type}':`, error)
@@ -236,7 +245,10 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
       streamingInterfaces: this.streamingInterfaces.size,
       emotionFactories: this.emotionFactories.size,
       cognitionFactories: this.cognitionFactories.size,
-      portalFactories: this.portalFactories.size
+      portalFactories: this.portalFactories.size,
+      extensionFactories: this.extensionFactories.size,
+      agentFactories: this.agentFactories.size,
+      lazyAgents: this.lazyAgents.size
     }
   }
 
@@ -252,6 +264,75 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
     this.emotionFactories.clear()
     this.cognitionFactories.clear()
     this.portalFactories.clear()
+    this.extensionFactories.clear()
+    this.agentFactories.clear()
+    this.lazyAgents.clear()
     runtimeLogger.info('🧹 Registry cleared')
+  }
+
+  // New factory registration methods
+  registerExtensionFactory(type: string, factory: any): void {
+    this.extensionFactories.set(type, factory)
+    // Silent registration for cleaner startup
+  }
+
+  registerAgentFactory(type: string, factory: AgentFactory): void {
+    this.agentFactories.set(type, factory)
+    // Silent registration for cleaner startup
+  }
+
+  // New factory creation methods
+  createExtension(type: string, config: any): Extension | undefined {
+    const factory = this.extensionFactories.get(type)
+    if (!factory) {
+      runtimeLogger.warn(`⚠️ Extension factory for type '${type}' not found`)
+      return undefined
+    }
+    try {
+      const extension = factory(config)
+      return extension
+    } catch (error) {
+      runtimeLogger.error(`❌ Failed to create extension '${type}':`, error)
+      return undefined
+    }
+  }
+
+  async createAgent(type: string, config: AgentConfig, characterConfig?: any): Promise<Agent> {
+    const factory = this.agentFactories.get(type)
+    if (!factory) {
+      throw new Error(`Agent factory for type '${type}' not found`)
+    }
+    try {
+      const agent = await factory(config, characterConfig)
+      return agent
+    } catch (error) {
+      runtimeLogger.error(`❌ Failed to create agent '${type}':`, error)
+      throw error
+    }
+  }
+
+  // Lazy agent management methods
+  registerLazyAgent(lazyAgent: LazyAgent): void {
+    this.lazyAgents.set(lazyAgent.id, lazyAgent)
+    runtimeLogger.factory(`🎭 Registered lazy agent: ${lazyAgent.name}`)
+  }
+
+  getLazyAgent(id: string): LazyAgent | undefined {
+    return this.lazyAgents.get(id)
+  }
+
+  listLazyAgents(): LazyAgent[] {
+    return Array.from(this.lazyAgents.values())
+  }
+
+  // Additional listing methods for new factories
+  listExtensions(): string[] {
+    const registeredExtensions = Array.from(this.extensions.keys())
+    const factoryTypes = Array.from(this.extensionFactories.keys())
+    return [...new Set([...registeredExtensions, ...factoryTypes])]
+  }
+
+  listAgentFactories(): string[] {
+    return Array.from(this.agentFactories.keys())
   }
 }

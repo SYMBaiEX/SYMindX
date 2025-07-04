@@ -1,3 +1,4 @@
+import { convertUsage } from '../utils.js'
 /**
  * OpenRouter Portal Implementation
  * 
@@ -17,7 +18,7 @@ export interface OpenRouterConfig extends PortalConfig {
 }
 
 export class OpenRouterPortal extends BasePortal {
-  type: PortalType = PortalType.CUSTOM;
+  type: PortalType = PortalType.OPENROUTER;
   supportedModels: ModelType[] = [ModelType.TEXT_GENERATION, ModelType.CHAT, ModelType.CODE_GENERATION, ModelType.MULTIMODAL];
   private baseURL: string
   

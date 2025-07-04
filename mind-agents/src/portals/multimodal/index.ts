@@ -1,3 +1,4 @@
+import { convertUsage } from '../utils.js'
 /**
  * Multimodal AI Portal System
  * 
@@ -291,7 +292,7 @@ export interface CrossModalReasoningResult {
 }
 
 export const defaultMultimodalConfig: Partial<MultimodalConfig> = {
-  maxTokens: 4096,
+  maxOutputTokens: 4096,
   temperature: 0.7,
   timeout: 120000,
   processingTimeout: 300000, // 5 minutes for complex multimodal processing
@@ -314,7 +315,7 @@ export const defaultMultimodalConfig: Partial<MultimodalConfig> = {
 }
 
 export class MultimodalPortal extends BasePortal {
-  type = PortalType.CUSTOM
+  type = PortalType.MULTIMODAL
   supportedModels = [
     ModelType.MULTIMODAL,
     ModelType.TEXT_GENERATION,

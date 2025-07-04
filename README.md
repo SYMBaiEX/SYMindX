@@ -48,6 +48,7 @@ The CLI package includes:
 - **🎮 Game Ready** - Designed for RuneLite/RuneScape integration
 - **⚡ WebSocket Support** - Real-time communication and updates
 - **🎯 Reactive Design** - Agents only act when prompted (no autonomous behaviors)
+- **🚀 AI SDK v5** - Latest Vercel AI SDK with streaming and unified provider interface
 
 ## 🏗️ Architecture
 
@@ -77,7 +78,8 @@ SYMindX Agent
 ### Prerequisites
 
 - **[Bun](https://bun.sh/)** (recommended) or Node.js 18+
-- At least one AI provider API key (OpenAI, Anthropic, or Groq)
+- At least one AI provider API key (OpenAI, Anthropic, Groq, Google, etc.)
+- **Note**: Using Vercel AI SDK v5 (alpha/canary version)
 
 ### Installation
 
@@ -102,7 +104,14 @@ Edit `config/runtime.json` with your API keys:
   "portals": {
     "apiKeys": {
       "openai": "sk-...",
-      "groq": "gsk_..."
+      "groq": "gsk_...",
+      "anthropic": "sk-ant-...",
+      "google": "your-google-api-key"
+    },
+    "default": "openai",
+    "models": {
+      "chat": "gpt-4o",
+      "tools": "gpt-4o-mini"
     }
   }
 }

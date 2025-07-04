@@ -27,21 +27,21 @@ src/portals/
 ### OpenAI Portal
 - **Provider**: OpenAI
 - **Models**: GPT-4.1, GPT-4o, GPT-4o-mini, o3
-- **Features**: Text generation, chat completion, embeddings
-- **AI SDK**: `@ai-sdk/openai`
+- **Features**: Text generation, chat completion, embeddings, streaming
+- **AI SDK v5**: `@ai-sdk/openai@^2.0.0-canary.11`
 
 ### Groq Portal
 - **Provider**: Groq
-- **Models**: Llama 3.1 (405B, 70B, 8B), Mixtral, Gemma
-- **Features**: Fast inference, text generation, chat completion
-- **AI SDK**: `@ai-sdk/groq`
+- **Models**: Llama 3.3 (70B), Llama 3.1 (405B, 70B, 8B), Mixtral, Gemma
+- **Features**: Fast inference, text generation, chat completion, streaming
+- **AI SDK v5**: `@ai-sdk/groq@^2.0.0-canary.5`
 - **Note**: No embedding support
 
 ### Anthropic Portal
 - **Provider**: Anthropic
-- **Models**: Claude 3.5 Sonnet, Claude 3 Opus/Sonnet/Haiku
-- **Features**: Advanced reasoning, text generation, chat completion
-- **AI SDK**: `@ai-sdk/anthropic`
+- **Models**: Claude 3.5 Sonnet (20241022), Claude 3 Opus/Sonnet/Haiku
+- **Features**: Advanced reasoning, text generation, chat completion, streaming
+- **AI SDK v5**: `@ai-sdk/anthropic@^2.0.0-canary.15`
 - **Note**: No embedding support
 
 ### XAI Portal
@@ -71,7 +71,7 @@ src/portals/
 ```typescript
 import { createPortal } from '../portals'
 
-// Create an OpenAI portal
+// Create an OpenAI portal with AI SDK v5
 const openaiPortal = createPortal('openai', {
   apiKey: 'your-openai-api-key',
   model: 'gpt-4o-mini',
@@ -79,9 +79,14 @@ const openaiPortal = createPortal('openai', {
   temperature: 0.7
 })
 
-// Generate text
-const result = await openaiPortal.generateText('Hello, world!')
-console.log(result.text)
+// Generate text with streaming support
+const { text, textStream } = await openaiPortal.generateText('Hello, world!')
+console.log(text)
+
+// Or use streaming
+for await (const chunk of textStream) {
+  process.stdout.write(chunk)
+}
 ```
 
 ### Agent Integration
@@ -133,31 +138,43 @@ const response = await portal.generateChat(messages, {
 console.log(response.message.content)
 ```
 
-### Streaming Responses
+### Streaming Responses (AI SDK v5)
 
 ```typescript
-for await (const chunk of portal.streamText('Tell me a story')) {
+// All portals now return both text and textStream
+const { text, textStream } = await portal.generateText('Tell me a story')
+
+// Use the stream
+for await (const chunk of textStream) {
   process.stdout.write(chunk)
 }
+
+// Or await the full text
+console.log(await text)
 ```
 
-### Function Calling
+### Function Calling (AI SDK v5)
 
 ```typescript
-const functions = [{
-  name: 'get_weather',
-  description: 'Get current weather for a location',
-  parameters: {
-    type: 'object',
-    properties: {
-      location: { type: 'string', description: 'City name' }
-    },
-    required: ['location']
-  }
-}]
+import { tool } from 'ai';
+import { z } from 'zod';
+
+// Define tools with Zod schema validation
+const tools = {
+  get_weather: tool({
+    description: 'Get current weather for a location',
+    parameters: z.object({
+      location: z.string().describe('City name')
+    }),
+    execute: async ({ location }) => {
+      // Tool implementation
+      return { temperature: 72, condition: 'sunny' };
+    }
+  })
+};
 
 const response = await portal.generateChat(messages, {
-  functions,
+  tools,
   maxTokens: 500
 })
 ```
@@ -210,7 +227,7 @@ KLUSTER_AI_API_KEY=your_kluster_key
 
 ## Adding New Portals
 
-To add a new AI provider:
+To add a new AI provider with AI SDK v5:
 
 1. Create a new folder in `src/portals/`
 2. Implement the portal class extending `BasePortal`
@@ -220,14 +237,30 @@ To add a new AI provider:
 ```typescript
 // src/portals/newprovider/index.ts
 import { BasePortal } from '../base-portal.js'
+import { streamText, generateText, embed } from 'ai'
+import { newprovider } from '@ai-sdk/newprovider' // Import the provider factory
 
 export class NewProviderPortal extends BasePortal {
+  private model: any;
+  
   constructor(config: NewProviderConfig) {
     super('newprovider', 'New Provider', '1.0.0', config)
+    // Initialize AI SDK v5 model
+    this.model = newprovider(config.model || 'default-model', {
+      apiKey: config.apiKey,
+      baseURL: config.baseURL
+    })
   }
 
   async generateText(prompt: string, options?: TextGenerationOptions): Promise<TextGenerationResult> {
-    // Implementation
+    const { text, textStream } = await streamText({
+      model: this.model,
+      prompt,
+      temperature: options?.temperature,
+      maxTokens: options?.maxTokens
+    })
+    
+    return { text: await text, textStream }
   }
 
   // ... other required methods
@@ -267,20 +300,33 @@ try {
 
 ## Dependencies
 
-The portals system requires these packages:
+The portals system uses Vercel AI SDK v5 (alpha/canary version):
 
 ```json
 {
   "dependencies": {
-    "ai": "^3.4.0",
-    "@ai-sdk/openai": "^0.0.66",
-    "@ai-sdk/anthropic": "^0.0.50",
-    "@ai-sdk/groq": "^0.0.56"
+    "ai": "^5.0.0-canary.24",
+    "@ai-sdk/openai": "^2.0.0-canary.11",
+    "@ai-sdk/anthropic": "^2.0.0-canary.15",
+    "@ai-sdk/groq": "^2.0.0-canary.5",
+    "@ai-sdk/google": "^2.0.0-canary.12",
+    "@ai-sdk/google-vertex": "^2.0.0-canary.7",
+    "@ai-sdk/mistral": "^2.0.0-canary.7",
+    "@ai-sdk/cohere": "^2.0.0-canary.7",
+    "@ai-sdk/azure": "^2.0.0-canary.7",
+    "zod": "^3.23.8"
   }
 }
 ```
 
 Install with:
 ```bash
-npm install ai @ai-sdk/openai @ai-sdk/anthropic @ai-sdk/groq
+# Install AI SDK v5 and provider packages
+npm install ai@^5.0.0-canary.24
+npm install @ai-sdk/openai@^2.0.0-canary.11
+npm install @ai-sdk/anthropic@^2.0.0-canary.15
+npm install @ai-sdk/groq@^2.0.0-canary.5
+npm install @ai-sdk/google@^2.0.0-canary.12
+npm install @ai-sdk/google-vertex@^2.0.0-canary.7
+npm install zod@^3.23.8
 ```

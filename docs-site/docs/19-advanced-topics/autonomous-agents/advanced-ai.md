@@ -28,10 +28,10 @@ SYMindX has been enhanced with cutting-edge AI integration capabilities, transfo
 
 ### Configuration
 ```typescript
-import { createGooglePortal } from './portals/google/index.js'
+import { createPortal } from '@symindx/core';
+import { vertex } from '@ai-sdk/google-vertex'; // AI SDK v5
 
-const googlePortal = createGooglePortal({
-  apiKey: process.env.GOOGLE_API_KEY,
+const googleVertexPortal = createPortal('google-vertex', {
   projectId: 'your-project-id',
   location: 'us-central1',
   model: 'gemini-1.5-pro',
@@ -49,25 +49,27 @@ const googlePortal = createGooglePortal({
 
 ### Usage
 ```typescript
-// Text generation
-const result = await googlePortal.generateText('Explain quantum computing')
+// Text generation with AI SDK v5
+const { text, textStream } = await googleVertexPortal.generateText('Explain quantum computing')
 
-// Chat with images
-const chatResult = await googlePortal.generateChat([
+// Chat with images using AI SDK v5 format
+const chatResult = await googleVertexPortal.generateChat([
   {
-    role: MessageRole.USER,
-    content: 'What do you see in this image?',
-    attachments: [{
-      type: MessageType.IMAGE,
-      url: 'https://example.com/image.jpg',
-      mimeType: 'image/jpeg'
-    }]
+    role: 'user',
+    content: [
+      { type: 'text', text: 'What do you see in this image?' },
+      { 
+        type: 'image', 
+        image: 'https://example.com/image.jpg' 
+      }
+    ]
   }
 ])
 
-// Streaming
-for await (const chunk of googlePortal.streamText('Write a story about AI')) {
-  console.log(chunk)
+// Streaming with AI SDK v5
+const { textStream } = await googleVertexPortal.generateText('Write a story about AI')
+for await (const chunk of textStream) {
+  process.stdout.write(chunk)
 }
 ```
 
