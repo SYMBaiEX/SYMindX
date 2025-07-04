@@ -50,7 +50,7 @@ export class XAIPortal extends BasePortal {
       const { text, usage, finishReason } = await aiGenerateText({
         model: this.model,
         messages: [{ role: 'user', content: prompt }],
-        maxTokens: options?.maxTokens || this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -83,7 +83,7 @@ export class XAIPortal extends BasePortal {
       const { text, usage, finishReason } = await aiGenerateText({
         model: this.model,
         messages: coreMessages,
-        maxTokens: options?.maxTokens || this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -134,7 +134,7 @@ export class XAIPortal extends BasePortal {
       const { textStream } = await aiStreamText({
         model: this.model,
         messages: [{ role: 'user', content: prompt }],
-        maxTokens: options?.maxTokens || this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -161,7 +161,7 @@ export class XAIPortal extends BasePortal {
       const { textStream } = await aiStreamText({
         model: this.model,
         messages: coreMessages,
-        maxTokens: options?.maxTokens || this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -225,7 +225,7 @@ export function createXAIPortal(config: XAIConfig): XAIPortal {
 // Export default configuration
 export const defaultXAIConfig: Partial<XAIConfig> = {
   model: 'grok-2',
-  maxTokens: 1000,
+  maxTokens: 1000, // Keep as config property, map to maxOutputTokens in calls
   temperature: 0.7,
   timeout: 30000,
   baseURL: 'https://api.x.ai/v1'

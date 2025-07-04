@@ -127,6 +127,7 @@ export interface PortalConfig {
 export interface TextGenerationOptions {
   model?: string
   maxTokens?: number
+  maxOutputTokens?: number  // AI SDK v5 parameter
   temperature?: number
   topP?: number
   frequencyPenalty?: number

@@ -35,7 +35,7 @@ export interface MistralConfig extends PortalConfig {
 
 export const defaultMistralConfig: Partial<MistralConfig> = {
   model: 'mistral-large-latest',
-  maxTokens: 8192,
+  maxTokens: 8192, // Keep as config property, map to maxOutputTokens in calls
   temperature: 0.7,
   timeout: 30000,
   baseUrl: 'https://api.mistral.ai/v1',
@@ -100,7 +100,7 @@ export class MistralPortal extends BasePortal {
       await aiGenerateText({
         model: this.model,
         messages: [{ role: 'user', content: 'Hello' }],
-        maxTokens: 10
+        maxOutputTokens: 10
       })
       return true
     } catch (error) {
@@ -129,7 +129,7 @@ export class MistralPortal extends BasePortal {
       const { text, usage, finishReason } = await aiGenerateText({
         model: this.model,
         messages: [{ role: 'user', content: prompt }],
-        maxTokens: options?.maxTokens ?? this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -157,7 +157,7 @@ export class MistralPortal extends BasePortal {
       const { text, usage, finishReason } = await aiGenerateText({
         model: this.model,
         messages: coreMessages,
-        maxTokens: options?.maxTokens ?? this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -219,7 +219,7 @@ export class MistralPortal extends BasePortal {
       const { textStream } = await aiStreamText({
         model: this.model,
         messages: [{ role: 'user', content: prompt }],
-        maxTokens: options?.maxTokens ?? this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -243,7 +243,7 @@ export class MistralPortal extends BasePortal {
       const { textStream } = await aiStreamText({
         model: this.model,
         messages: coreMessages,
-        maxTokens: options?.maxTokens ?? this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,

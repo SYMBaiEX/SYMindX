@@ -332,7 +332,7 @@ export function createAnthropicPortal(config: AnthropicConfig): AnthropicPortal 
 // Export default configuration
 export const defaultAnthropicConfig: Partial<AnthropicConfig> = {
   model: 'claude-4-sonnet',
-  maxTokens: 1000,
+  maxTokens: 1000, // Keep as config property, map to maxOutputTokens in calls
   temperature: 0.7,
   timeout: 30000
 }

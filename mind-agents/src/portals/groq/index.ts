@@ -58,7 +58,7 @@ export class GroqPortal extends BasePortal {
           baseURL: (this.config as GroqConfig).baseURL
         }),
         prompt,
-        maxTokens: options?.maxTokens || this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -99,7 +99,7 @@ export class GroqPortal extends BasePortal {
           baseURL: (this.config as GroqConfig).baseURL
         }),
         messages: coreMessages,
-        maxTokens: options?.maxTokens || this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -168,7 +168,7 @@ export class GroqPortal extends BasePortal {
           baseURL: (this.config as GroqConfig).baseURL
         }),
         prompt: evaluationPrompt,
-        maxTokens: options.timeout ? Math.min(4000, options.timeout / 10) : 2000,
+        maxOutputTokens: options.timeout ? Math.min(4000, options.timeout / 10) : 2000,
         temperature: 0.1, // Lower temperature for more consistent evaluations
         topP: 0.9
       })
@@ -294,7 +294,7 @@ export class GroqPortal extends BasePortal {
           baseURL: (this.config as GroqConfig).baseURL
         }),
         prompt,
-        maxTokens: options?.maxTokens || this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature
       })
 
@@ -326,7 +326,7 @@ export class GroqPortal extends BasePortal {
           baseURL: (this.config as GroqConfig).baseURL
         }),
         messages: coreMessages,
-        maxTokens: options?.maxTokens || this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -374,7 +374,7 @@ export function createGroqPortal(config: GroqConfig): GroqPortal {
 export const defaultGroqConfig: Partial<GroqConfig> = {
   model: 'meta-llama/llama-4-scout-17b-16e-instruct',
   toolModel: 'llama-3.1-8b-instant',
-  maxTokens: 1000,
+  maxTokens: 1000, // Keep as config property, map to maxOutputTokens in calls
   temperature: 0.7,
   timeout: 30000
 }

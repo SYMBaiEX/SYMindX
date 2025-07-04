@@ -73,7 +73,7 @@ export interface ToolDefinition {
 }
 
 export const defaultVercelConfig: Partial<VercelAIConfig> = {
-  maxTokens: 4096,
+  maxTokens: 4096, // Keep as config property, map to maxOutputTokens in calls
   temperature: 0.7,
   timeout: 60000,
   maxRetries: 3,
@@ -234,7 +234,7 @@ export class VercelAIPortal extends BasePortal {
       const { text } = await generateText({
         model: this.getLanguageModel(model),
         prompt: 'Hello',
-        maxTokens: 10
+        maxOutputTokens: 10
       })
       return !!text
     } catch (error) {
@@ -293,7 +293,7 @@ export class VercelAIPortal extends BasePortal {
       const { text, usage, finishReason } = await generateText({
         model: this.getLanguageModel(model),
         prompt,
-        maxTokens: options?.maxTokens || this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -324,7 +324,7 @@ export class VercelAIPortal extends BasePortal {
       const { text, usage, finishReason } = await generateText({
         model: this.getLanguageModel(model),
         messages: coreMessages,
-        maxTokens: options?.maxTokens || this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -408,7 +408,7 @@ export class VercelAIPortal extends BasePortal {
       const { textStream } = await streamText({
         model: this.getLanguageModel(model),
         prompt,
-        maxTokens: options?.maxTokens || this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -435,7 +435,7 @@ export class VercelAIPortal extends BasePortal {
       const { textStream } = await streamText({
         model: this.getLanguageModel(model),
         messages: coreMessages,
-        maxTokens: options?.maxTokens || this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,

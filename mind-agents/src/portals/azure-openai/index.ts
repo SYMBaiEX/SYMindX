@@ -29,7 +29,7 @@ export interface AzureOpenAIConfig extends PortalConfig {
 
 export const defaultAzureOpenAIConfig: Partial<AzureOpenAIConfig> = {
   apiVersion: '2024-06-01',
-  maxTokens: 4000,
+  maxTokens: 4000, // Keep as config property, map to maxOutputTokens in calls
   temperature: 0.7,
   timeout: 60000
 }
@@ -125,7 +125,7 @@ export class AzureOpenAIPortal extends BasePortal {
       await aiGenerateText({
         model: this.model,
         messages: [{ role: 'user', content: 'Hello' }],
-        maxTokens: 10
+        maxOutputTokens: 10
       })
       return true
     } catch (error) {
@@ -171,7 +171,7 @@ export class AzureOpenAIPortal extends BasePortal {
       const { text, usage, finishReason } = await aiGenerateText({
         model: this.model,
         messages: [{ role: 'user', content: prompt }],
-        maxTokens: options?.maxTokens ?? this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -198,7 +198,7 @@ export class AzureOpenAIPortal extends BasePortal {
       const { text, usage, finishReason } = await aiGenerateText({
         model: this.model,
         messages: coreMessages,
-        maxTokens: options?.maxTokens ?? this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -286,7 +286,7 @@ export class AzureOpenAIPortal extends BasePortal {
       const { textStream } = await aiStreamText({
         model: this.model,
         messages: [{ role: 'user', content: prompt }],
-        maxTokens: options?.maxTokens ?? this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -309,7 +309,7 @@ export class AzureOpenAIPortal extends BasePortal {
       const { textStream } = await aiStreamText({
         model: this.model,
         messages: coreMessages,
-        maxTokens: options?.maxTokens ?? this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
