@@ -535,3 +535,8 @@ npm run cli multi-agent status
 # Check agent task distribution
 npm run cli multi-agent tasks
 ```
+
+## Special Warnings and Guidelines
+
+### Git and Commit Policies
+- **CRITICAL GUIDELINE**: NEVER MAKE COMMITS AS CLAUDE, ONLY MAKE COMMITS AS THE USERS DEFAULT GITHUB CONFIG
