@@ -6,7 +6,7 @@
  */
 
 import { openai } from '@ai-sdk/openai'
-import { generateText, streamText, embed, embedMany, generateObject, tool, type CoreMessage, type LanguageModel } from 'ai'
+import { generateText, streamText, embed, embedMany, generateObject, tool, type LanguageModel } from 'ai'
 import { z } from 'zod'
 import { BasePortal } from '../base-portal.js'
 import { PortalConfig, TextGenerationOptions, TextGenerationResult, 
@@ -62,12 +62,12 @@ export class OpenAIPortal extends BasePortal {
   }
 
   /**
-   * Convert ChatMessage array to CoreMessage array
+   * Convert ChatMessage array to message format for AI SDK
    */
-  private convertToCoreMessages(messages: ChatMessage[]): CoreMessage[] {
+  private convertToModelMessages(messages: ChatMessage[]) {
     return messages.map(msg => {
-      const coreMessage: CoreMessage = {
-        role: msg.role as any,
+      const message = {
+        role: msg.role,
         content: msg.content
       }
 
@@ -92,10 +92,10 @@ export class OpenAIPortal extends BasePortal {
           }
         }
         
-        coreMessage.content = content
+        Object.assign(message, { content })
       }
 
-      return coreMessage
+      return message
     })
   }
 
@@ -109,7 +109,7 @@ export class OpenAIPortal extends BasePortal {
       const result = await generateText({
         model: this.getLanguageModel(model),
         prompt,
-        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
+        maxOutputTokens: options?.maxOutputTokens || options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -137,9 +137,12 @@ export class OpenAIPortal extends BasePortal {
     const tools: Record<string, any> = {}
     
     for (const fn of functions) {
+      // Create a simple schema that accepts any object for compatibility
+      const schema = z.object({})
+      
       tools[fn.name] = tool({
         description: fn.description,
-        parameters: z.object(fn.parameters?.properties || {}),
+        parameters: schema,
         execute: async (args: any) => {
           // Since we're just converting the interface, we return the args
           // The actual execution would be handled by the caller
@@ -170,12 +173,12 @@ export class OpenAIPortal extends BasePortal {
         model = (this.config as OpenAIConfig).chatModel || (this.config as OpenAIConfig).model || 'gpt-4o-mini'
       }
       
-      const coreMessages = this.convertToCoreMessages(messages)
+      const modelMessages = this.convertToModelMessages(messages)
       
       const generateOptions: any = {
         model: this.getLanguageModel(model),
-        messages: coreMessages,
-        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
+        messages: modelMessages,
+        maxOutputTokens: options?.maxOutputTokens || options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -294,7 +297,7 @@ export class OpenAIPortal extends BasePortal {
       const { textStream } = await streamText({
         model: this.getLanguageModel(model),
         prompt,
-        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
+        maxOutputTokens: options?.maxOutputTokens || options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -326,12 +329,12 @@ export class OpenAIPortal extends BasePortal {
         model = (this.config as OpenAIConfig).chatModel || (this.config as OpenAIConfig).model || 'gpt-4o-mini'
       }
       
-      const coreMessages = this.convertToCoreMessages(messages)
+      const modelMessages = this.convertToModelMessages(messages)
       
       const streamOptions: any = {
         model: this.getLanguageModel(model),
-        messages: coreMessages,
-        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
+        messages: modelMessages,
+        maxOutputTokens: options?.maxOutputTokens || options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,

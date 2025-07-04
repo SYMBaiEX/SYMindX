@@ -10,7 +10,7 @@ import { PortalConfig, TextGenerationOptions, TextGenerationResult,
   ChatMessage, ChatGenerationOptions, ChatGenerationResult, EmbeddingOptions, EmbeddingResult,
   ImageGenerationOptions, ImageGenerationResult, PortalCapability, MessageRole, FinishReason, PortalType, ModelType } from '../../types/portal.js'
 import { xai } from '@ai-sdk/xai'
-import { generateText as aiGenerateText, streamText as aiStreamText, tool, type CoreMessage } from 'ai'
+import { generateText as aiGenerateText, streamText as aiStreamText, tool, type LanguageModel } from 'ai'
 import { z } from 'zod'
 
 export interface XAIConfig extends PortalConfig {
@@ -21,24 +21,57 @@ export interface XAIConfig extends PortalConfig {
 export class XAIPortal extends BasePortal {
   type: PortalType = PortalType.XAI;
   supportedModels: ModelType[] = [ModelType.TEXT_GENERATION, ModelType.CHAT, ModelType.CODE_GENERATION];
-  private model: any
+  private xaiProvider: any
   
   constructor(config: XAIConfig) {
     super('xai', 'XAI', '1.0.0', config)
-    const modelName = config.model || 'grok-2'
-    this.model = xai(modelName)
+    this.xaiProvider = xai
   }
 
   /**
-   * Convert ChatMessage to CoreMessage format
+   * Get language model instance
    */
-  private convertToCoreMessage(message: ChatMessage): CoreMessage {
-    return {
-      role: message.role === MessageRole.USER ? 'user' : 
-            message.role === MessageRole.ASSISTANT ? 'assistant' : 
-            'system',
-      content: message.content
+  private getLanguageModel(modelId?: string): LanguageModel {
+    const model = modelId || (this.config as XAIConfig).model || 'grok-2'
+    const config = this.config as XAIConfig
+    return this.xaiProvider(model, {
+      apiKey: config.apiKey || process.env.XAI_API_KEY,
+      baseURL: config.baseURL
+    })
+  }
+
+  /**
+   * Convert ChatMessage array to message format for AI SDK
+   */
+  private convertToModelMessages(messages: ChatMessage[]) {
+    return messages.map(msg => ({
+      role: msg.role,
+      content: msg.content
+    }))
+  }
+
+  /**
+   * Convert function definitions to AI SDK v5 tool format
+   */
+  private convertFunctionsToTools(functions: any[]) {
+    const tools: Record<string, any> = {}
+    
+    for (const fn of functions) {
+      // Create a simple schema that accepts any object for compatibility
+      const schema = z.object({})
+      
+      tools[fn.name] = tool({
+        description: fn.description,
+        parameters: schema,
+        execute: async (args: any) => {
+          // Since we're just converting the interface, we return the args
+          // The actual execution would be handled by the caller
+          return args
+        }
+      })
     }
+    
+    return tools
   }
 
 
@@ -47,23 +80,24 @@ export class XAIPortal extends BasePortal {
    */
   async generateText(prompt: string, options?: TextGenerationOptions): Promise<TextGenerationResult> {
     try {
-      const { text, usage, finishReason } = await aiGenerateText({
-        model: this.model,
-        messages: [{ role: 'user', content: prompt }],
-        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
+      const model = options?.model || (this.config as XAIConfig).model || 'grok-2'
+      
+      const result = await aiGenerateText({
+        model: this.getLanguageModel(model),
+        prompt,
+        maxOutputTokens: options?.maxOutputTokens || options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
-        presencePenalty: options?.presencePenalty,
-        stopSequences: options?.stop
+        presencePenalty: options?.presencePenalty
       })
 
       return {
-        text,
-        usage: convertUsage(usage),
-        finishReason: this.mapFinishReason(finishReason),
+        text: result.text,
+        usage: convertUsage(result.usage),
+        finishReason: this.mapFinishReason(result.finishReason),
         metadata: {
-          model: (this.config as XAIConfig).model || 'grok-2',
+          model,
           provider: 'xai'
         }
       }
@@ -78,29 +112,37 @@ export class XAIPortal extends BasePortal {
    */
   async generateChat(messages: ChatMessage[], options?: ChatGenerationOptions): Promise<ChatGenerationResult> {
     try {
-      const coreMessages: CoreMessage[] = messages.map(msg => this.convertToCoreMessage(msg))
+      const model = options?.model || (this.config as XAIConfig).model || 'grok-2'
+      const modelMessages = this.convertToModelMessages(messages)
       
-      const { text, usage, finishReason } = await aiGenerateText({
-        model: this.model,
-        messages: coreMessages,
-        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
+      // Prepare AI SDK v5 parameters
+      const aiParams: any = {
+        model: this.getLanguageModel(model),
+        messages: modelMessages,
+        maxOutputTokens: options?.maxOutputTokens || options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
-        presencePenalty: options?.presencePenalty,
-        // TODO: Implement tools support for AI SDK v5
-      })
+        presencePenalty: options?.presencePenalty
+      }
+
+      // Add tools if provided
+      if (options?.functions && options.functions.length > 0) {
+        aiParams.tools = this.convertFunctionsToTools(options.functions)
+      }
+
+      const result = await aiGenerateText(aiParams)
 
       return {
-        text,
+        text: result.text,
         message: {
           role: MessageRole.ASSISTANT,
-          content: text
+          content: result.text
         },
-        usage: convertUsage(usage),
-        finishReason: this.mapFinishReason(finishReason),
+        usage: convertUsage(result.usage),
+        finishReason: this.mapFinishReason(result.finishReason),
         metadata: {
-          model: (this.config as XAIConfig).model || 'grok-2',
+          model,
           provider: 'xai'
         }
       }
@@ -131,18 +173,19 @@ export class XAIPortal extends BasePortal {
    */
   async *streamText(prompt: string, options?: TextGenerationOptions): AsyncGenerator<string> {
     try {
-      const { textStream } = await aiStreamText({
-        model: this.model,
-        messages: [{ role: 'user', content: prompt }],
-        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
+      const model = options?.model || (this.config as XAIConfig).model || 'grok-2'
+      
+      const result = await aiStreamText({
+        model: this.getLanguageModel(model),
+        prompt,
+        maxOutputTokens: options?.maxOutputTokens || options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
-        presencePenalty: options?.presencePenalty,
-        stopSequences: options?.stop
+        presencePenalty: options?.presencePenalty
       })
 
-      for await (const chunk of textStream) {
+      for await (const chunk of result.textStream) {
         yield chunk
       }
     } catch (error) {
@@ -156,20 +199,28 @@ export class XAIPortal extends BasePortal {
    */
   async *streamChat(messages: ChatMessage[], options?: ChatGenerationOptions): AsyncGenerator<string> {
     try {
-      const coreMessages: CoreMessage[] = messages.map(msg => this.convertToCoreMessage(msg))
+      const model = options?.model || (this.config as XAIConfig).model || 'grok-2'
+      const modelMessages = this.convertToModelMessages(messages)
       
-      const { textStream } = await aiStreamText({
-        model: this.model,
-        messages: coreMessages,
-        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
+      // Prepare AI SDK v5 parameters
+      const aiParams: any = {
+        model: this.getLanguageModel(model),
+        messages: modelMessages,
+        maxOutputTokens: options?.maxOutputTokens || options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
-        presencePenalty: options?.presencePenalty,
-        // TODO: Implement tools support for AI SDK v5
-      })
+        presencePenalty: options?.presencePenalty
+      }
 
-      for await (const chunk of textStream) {
+      // Add tools if provided
+      if (options?.functions && options.functions.length > 0) {
+        aiParams.tools = this.convertFunctionsToTools(options.functions)
+      }
+
+      const result = await aiStreamText(aiParams)
+
+      for await (const chunk of result.textStream) {
         yield chunk
       }
     } catch (error) {

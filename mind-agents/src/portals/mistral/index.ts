@@ -19,8 +19,7 @@ import {
   generateText as aiGenerateText, 
   streamText as aiStreamText, 
   embed as aiEmbed, 
-  tool,
-  type CoreMessage 
+  tool
 } from 'ai'
 import { z } from 'zod'
 
@@ -110,17 +109,19 @@ export class MistralPortal extends BasePortal {
   }
 
   /**
-   * Convert ChatMessage to CoreMessage format
+   * Convert ChatMessage array to message format for AI SDK
    */
-  private convertToCoreMessage(message: ChatMessage): CoreMessage {
-    const role = message.role === MessageRole.USER ? 'user' : 
-                 message.role === MessageRole.ASSISTANT ? 'assistant' : 
-                 message.role === MessageRole.SYSTEM ? 'system' : 'user'
-    
-    return {
-      role: role as any,
-      content: message.content
-    }
+  private convertToModelMessages(messages: ChatMessage[]) {
+    return messages.map(msg => {
+      const role = msg.role === MessageRole.USER ? 'user' as const : 
+                   msg.role === MessageRole.ASSISTANT ? 'assistant' as const : 
+                   msg.role === MessageRole.SYSTEM ? 'system' as const : 'user' as const
+      
+      return {
+        role,
+        content: msg.content
+      }
+    })
   }
 
 
@@ -152,11 +153,11 @@ export class MistralPortal extends BasePortal {
 
   async generateChat(messages: ChatMessage[], options?: ChatGenerationOptions): Promise<ChatGenerationResult> {
     try {
-      const coreMessages: CoreMessage[] = messages.map(msg => this.convertToCoreMessage(msg))
+      const modelMessages = this.convertToModelMessages(messages)
       
       const { text, usage, finishReason } = await aiGenerateText({
         model: this.model,
-        messages: coreMessages,
+        messages: modelMessages,
         maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
@@ -238,11 +239,11 @@ export class MistralPortal extends BasePortal {
 
   async *streamChat(messages: ChatMessage[], options?: ChatGenerationOptions): AsyncGenerator<string> {
     try {
-      const coreMessages: CoreMessage[] = messages.map(msg => this.convertToCoreMessage(msg))
+      const modelMessages = this.convertToModelMessages(messages)
       
       const { textStream } = await aiStreamText({
         model: this.model,
-        messages: coreMessages,
+        messages: modelMessages,
         maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
