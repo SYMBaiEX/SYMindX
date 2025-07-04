@@ -120,7 +120,7 @@ export async function registerExtensions(config: RuntimeConfig): Promise<Extensi
         ...(config.extensions as any).mcpServer
       }
       const mcpServerExtension = new MCPServerExtension(mcpServerConfig)
-      extensions.push(mcpServerExtension)
+      extensions.push(mcpServerExtension as any)
       console.log('✅ MCP Server extension registered')
     } catch (error) {
       console.warn('⚠️ Failed to load MCP Server extension:', error)

@@ -5,7 +5,7 @@
  * with the agent through the Model Context Protocol standard.
  */
 
-import { ExtensionConfig, Extension, ExtensionMetadata, Agent } from '../../types/index.js'
+import { ExtensionConfig, Extension, ExtensionMetadata, Agent, ExtensionType } from '../../types/index.js'
 import { runtimeLogger } from '../../utils/logger.js'
 import { MCPServerManager } from './mcp-server-manager.js'
 import { MCPServerConfig, MCPServerTool, MCPServerResource, MCPServerPrompt } from './types.js'
@@ -19,7 +19,7 @@ export class MCPServerExtension implements Extension {
   public readonly id = 'mcp-server'
   public readonly name = 'MCP Server Extension'
   public readonly version = '1.0.0'
-  public readonly type = 'MCP_SERVER' as const
+  public readonly type = 'MCP_SERVER' as ExtensionType.MCP_SERVER
   public enabled = true
   public status = 'stopped'
   

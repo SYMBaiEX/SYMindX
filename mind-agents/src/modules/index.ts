@@ -80,6 +80,10 @@ export async function registerExtensionFactories(registry: ModuleRegistry): Prom
     const { createMCPClientExtension } = await import('../extensions/mcp-client/index.js')
     registry.registerExtensionFactory('mcp-client', createMCPClientExtension)
     
+    // Register MCP Server Extension factory
+    const { createMCPServerExtension } = await import('../extensions/mcp-server/index.js')
+    registry.registerExtensionFactory('mcp-server', createMCPServerExtension)
+    
     // Register other extension factories as needed
     // const { createTelegramExtension } = await import('../extensions/telegram/index.js')
     // registry.registerExtensionFactory('telegram', createTelegramExtension)

@@ -1,4 +1,3 @@
-import { convertUsage } from '../utils.js'
 /**
  * Anthropic Portal Implementation
  * 
@@ -7,7 +6,8 @@ import { convertUsage } from '../utils.js'
  */
 
 import { anthropic } from '@ai-sdk/anthropic'
-import { generateText, streamText, type CoreMessage, type LanguageModel } from 'ai'
+import { generateText, streamText, tool, type CoreMessage, type LanguageModel } from 'ai'
+import { z } from 'zod'
 import { BasePortal } from '../base-portal.js'
 import { PortalConfig, TextGenerationOptions, TextGenerationResult, 
   ChatMessage, ChatGenerationOptions, ChatGenerationResult, EmbeddingOptions, EmbeddingResult,
@@ -16,6 +16,19 @@ import { PortalConfig, TextGenerationOptions, TextGenerationResult,
 export interface AnthropicConfig extends PortalConfig {
   model?: string
   baseURL?: string
+}
+
+/**
+ * Convert AI SDK usage to our internal format
+ */
+function convertUsage(usage: any) {
+  if (!usage) return { promptTokens: 0, completionTokens: 0, totalTokens: 0 }
+  
+  return {
+    promptTokens: usage.promptTokens || 0,
+    completionTokens: usage.completionTokens || 0,
+    totalTokens: usage.totalTokens || (usage.promptTokens || 0) + (usage.completionTokens || 0)
+  }
 }
 
 export class AnthropicPortal extends BasePortal {
@@ -42,6 +55,27 @@ export class AnthropicPortal extends BasePortal {
   }
 
   /**
+   * Convert function definitions to AI SDK v5 tool format
+   */
+  private convertFunctionsToTools(functions: any[]) {
+    const tools: Record<string, any> = {}
+    
+    for (const fn of functions) {
+      tools[fn.name] = tool({
+        description: fn.description,
+        parameters: z.object(fn.parameters?.properties || {}),
+        execute: async (args: any) => {
+          // Since we're just converting the interface, we return the args
+          // The actual execution would be handled by the caller
+          return args
+        }
+      })
+    }
+    
+    return tools
+  }
+
+  /**
    * Generate text using Anthropic's completion API
    */
   async generateText(prompt: string, options?: TextGenerationOptions): Promise<TextGenerationResult> {
@@ -51,7 +85,7 @@ export class AnthropicPortal extends BasePortal {
       const result = await generateText({
         model: this.getLanguageModel(model),
         prompt,
-        maxTokens: options?.maxTokens || this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP
       })
@@ -79,22 +113,20 @@ export class AnthropicPortal extends BasePortal {
       const model = options?.model || (this.config as AnthropicConfig).model || 'claude-4-sonnet'
       const coreMessages = this.convertToCoreMessages(messages)
       
-      const result = await generateText({
+      const generateOptions: any = {
         model: this.getLanguageModel(model),
         messages: coreMessages,
-        maxTokens: options?.maxTokens || this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
-        topP: options?.topP,
-        tools: options?.functions ? Object.fromEntries(
-          options.functions.map(fn => [
-            fn.name,
-            {
-              description: fn.description,
-              parameters: fn.parameters as any
-            }
-          ])
-        ) : undefined
-      })
+        topP: options?.topP
+      }
+
+      // Add tools if functions are provided
+      if (options?.functions && options.functions.length > 0) {
+        generateOptions.tools = this.convertFunctionsToTools(options.functions)
+      }
+
+      const result = await generateText(generateOptions)
 
       const assistantMessage: ChatMessage = {
         role: MessageRole.ASSISTANT,
@@ -146,7 +178,7 @@ export class AnthropicPortal extends BasePortal {
       const result = await streamText({
         model: this.getLanguageModel(model),
         prompt,
-        maxTokens: options?.maxTokens || this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP
       })
@@ -168,22 +200,20 @@ export class AnthropicPortal extends BasePortal {
       const model = options?.model || (this.config as AnthropicConfig).model || 'claude-4-sonnet'
       const coreMessages = this.convertToCoreMessages(messages)
       
-      const result = await streamText({
+      const streamOptions: any = {
         model: this.getLanguageModel(model),
         messages: coreMessages,
-        maxTokens: options?.maxTokens || this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
-        topP: options?.topP,
-        tools: options?.functions ? Object.fromEntries(
-          options.functions.map(fn => [
-            fn.name,
-            {
-              description: fn.description,
-              parameters: fn.parameters as any
-            }
-          ])
-        ) : undefined
-      })
+        topP: options?.topP
+      }
+
+      // Add tools if functions are provided
+      if (options?.functions && options.functions.length > 0) {
+        streamOptions.tools = this.convertFunctionsToTools(options.functions)
+      }
+
+      const result = await streamText(streamOptions)
 
       for await (const textPart of result.textStream) {
         yield textPart

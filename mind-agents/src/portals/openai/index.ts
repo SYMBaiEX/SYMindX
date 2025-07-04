@@ -1,4 +1,3 @@
-import { convertUsage } from '../utils.js'
 /**
  * OpenAI Portal Implementation
  * 
@@ -7,7 +6,7 @@ import { convertUsage } from '../utils.js'
  */
 
 import { openai } from '@ai-sdk/openai'
-import { generateText, streamText, embed, embedMany, generateObject, type CoreMessage, type LanguageModel } from 'ai'
+import { generateText, streamText, embed, embedMany, generateObject, tool, type CoreMessage, type LanguageModel } from 'ai'
 import { z } from 'zod'
 import { BasePortal } from '../base-portal.js'
 import { PortalConfig, TextGenerationOptions, TextGenerationResult, 
@@ -22,6 +21,19 @@ export interface OpenAIConfig extends PortalConfig {
   imageModel?: string
   organization?: string
   baseURL?: string
+}
+
+/**
+ * Convert AI SDK usage to our internal format
+ */
+function convertUsage(usage: any) {
+  if (!usage) return { promptTokens: 0, completionTokens: 0, totalTokens: 0 }
+  
+  return {
+    promptTokens: usage.promptTokens || 0,
+    completionTokens: usage.completionTokens || 0,
+    totalTokens: usage.totalTokens || (usage.promptTokens || 0) + (usage.completionTokens || 0)
+  }
 }
 
 export class OpenAIPortal extends BasePortal {
@@ -97,7 +109,7 @@ export class OpenAIPortal extends BasePortal {
       const result = await generateText({
         model: this.getLanguageModel(model),
         prompt,
-        maxTokens: options?.maxTokens || this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -116,6 +128,27 @@ export class OpenAIPortal extends BasePortal {
       console.error('OpenAI text generation error:', error)
       throw new Error(`OpenAI text generation failed: ${error}`)
     }
+  }
+
+  /**
+   * Convert function definitions to AI SDK v5 tool format
+   */
+  private convertFunctionsToTools(functions: any[]) {
+    const tools: Record<string, any> = {}
+    
+    for (const fn of functions) {
+      tools[fn.name] = tool({
+        description: fn.description,
+        parameters: z.object(fn.parameters?.properties || {}),
+        execute: async (args: any) => {
+          // Since we're just converting the interface, we return the args
+          // The actual execution would be handled by the caller
+          return args
+        }
+      })
+    }
+    
+    return tools
   }
 
   /**
@@ -139,24 +172,22 @@ export class OpenAIPortal extends BasePortal {
       
       const coreMessages = this.convertToCoreMessages(messages)
       
-      const result = await generateText({
+      const generateOptions: any = {
         model: this.getLanguageModel(model),
         messages: coreMessages,
-        maxTokens: options?.maxTokens || this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
-        presencePenalty: options?.presencePenalty,
-        tools: options?.functions ? Object.fromEntries(
-          options.functions.map(fn => [
-            fn.name,
-            {
-              description: fn.description,
-              parameters: fn.parameters
-            }
-          ])
-        ) : undefined
-      })
+        presencePenalty: options?.presencePenalty
+      }
+
+      // Add tools if functions are provided
+      if (options?.functions && options.functions.length > 0) {
+        generateOptions.tools = this.convertFunctionsToTools(options.functions)
+      }
+
+      const result = await generateText(generateOptions)
 
       return {
         text: result.text,
@@ -263,7 +294,7 @@ export class OpenAIPortal extends BasePortal {
       const { textStream } = await streamText({
         model: this.getLanguageModel(model),
         prompt,
-        maxTokens: options?.maxTokens || this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -297,24 +328,22 @@ export class OpenAIPortal extends BasePortal {
       
       const coreMessages = this.convertToCoreMessages(messages)
       
-      const { textStream } = await streamText({
+      const streamOptions: any = {
         model: this.getLanguageModel(model),
         messages: coreMessages,
-        maxTokens: options?.maxTokens || this.config.maxTokens,
+        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
-        presencePenalty: options?.presencePenalty,
-        tools: options?.functions ? Object.fromEntries(
-          options.functions.map(fn => [
-            fn.name,
-            {
-              description: fn.description,
-              parameters: fn.parameters
-            }
-          ])
-        ) : undefined
-      })
+        presencePenalty: options?.presencePenalty
+      }
+
+      // Add tools if functions are provided
+      if (options?.functions && options.functions.length > 0) {
+        streamOptions.tools = this.convertFunctionsToTools(options.functions)
+      }
+
+      const { textStream } = await streamText(streamOptions)
 
       for await (const delta of textStream) {
         yield delta
@@ -378,7 +407,7 @@ export function createOpenAIPortal(config: OpenAIConfig): OpenAIPortal {
 export const defaultOpenAIConfig: Partial<OpenAIConfig> = {
   model: 'gpt-4o-mini',
   chatModel: 'gpt-4o-mini',  // Default for regular chat
-  toolModel: 'gpt-4o-mini',   // Fast model for tools/functions
+  toolModel: 'gpt-4.1-mini',   // Fast model for tools/functions (updated based on user edit)
   embeddingModel: 'text-embedding-3-large',
   imageModel: 'dall-e-3',
   maxTokens: 1000,
