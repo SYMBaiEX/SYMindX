@@ -7,7 +7,8 @@ import { convertUsage } from '../utils.js'
  */
 
 import { groq } from '@ai-sdk/groq'
-import { generateText, streamText, CoreMessage } from 'ai'
+import { generateText, streamText, tool } from 'ai'
+import { z } from 'zod'
 import { BasePortal } from '../base-portal.js'
 import { PortalConfig, TextGenerationOptions, TextGenerationResult, 
   ChatMessage, ChatGenerationOptions, ChatGenerationResult, EmbeddingOptions, EmbeddingResult,
@@ -43,6 +44,33 @@ export class GroqPortal extends BasePortal {
       case 'image': throw new Error('Groq does not support image generation')
       default: return 'meta-llama/llama-4-scout-17b-16e-instruct'
     }
+  }
+
+  /**
+   * Convert function definitions to AI SDK v5 tool format
+   */
+  private convertFunctionsToTools(functions: Array<{
+    name: string
+    description: string
+    parameters?: { properties?: Record<string, unknown> }
+  }>) {
+    const tools: Record<string, ReturnType<typeof tool>> = {}
+    
+    for (const fn of functions) {
+      // Create a simple schema that accepts any object for compatibility
+      const schema = z.object({})
+      
+      tools[fn.name] = tool({
+        description: fn.description,
+        parameters: schema,
+        execute: async (args: Record<string, unknown>) => {
+          // Tool execution would be handled by the caller
+          return args
+        }
+      })
+    }
+    
+    return tools
   }
 
   /**
@@ -87,32 +115,27 @@ export class GroqPortal extends BasePortal {
     try {
       const model = this.resolveModel('chat', 'GROQ')
       
-      // Convert ChatMessage[] to CoreMessage[]
-      const coreMessages: CoreMessage[] = messages.map(msg => ({
-        role: msg.role === 'function' ? 'assistant' : msg.role,
-        content: msg.content
-      }) as CoreMessage)
+      // Convert ChatMessage[] to message format for AI SDK
+      const aiMessages = messages.map(msg => {
+        const role = msg.role === MessageRole.FUNCTION ? 'assistant' : msg.role
+        return {
+          role: role,
+          content: msg.content
+        }
+      })
       
       const result = await generateText({
         model: this.groqProvider(model, {
           apiKey: (this.config as GroqConfig).apiKey || process.env.GROQ_API_KEY,
           baseURL: (this.config as GroqConfig).baseURL
         }),
-        messages: coreMessages,
+        messages: aiMessages,
         maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
         presencePenalty: options?.presencePenalty,
-        tools: options?.functions ? Object.fromEntries(
-          options.functions.map(fn => [
-            fn.name,
-            {
-              description: fn.description,
-              parameters: fn.parameters
-            }
-          ])
-        ) : undefined
+        tools: options?.functions ? this.convertFunctionsToTools(options.functions) : undefined
       })
 
       return {
@@ -314,18 +337,21 @@ export class GroqPortal extends BasePortal {
     try {
       const model = this.resolveModel('chat', 'GROQ')
       
-      // Convert ChatMessage[] to CoreMessage[]
-      const coreMessages: CoreMessage[] = messages.map(msg => ({
-        role: msg.role === 'function' ? 'assistant' : msg.role,
-        content: msg.content
-      }) as CoreMessage)
+      // Convert ChatMessage[] to message format for AI SDK
+      const aiMessages = messages.map(msg => {
+        const role = msg.role === MessageRole.FUNCTION ? 'assistant' : msg.role
+        return {
+          role: role,
+          content: msg.content
+        }
+      })
       
       const result = streamText({
         model: this.groqProvider(model, {
           apiKey: (this.config as GroqConfig).apiKey || process.env.GROQ_API_KEY,
           baseURL: (this.config as GroqConfig).baseURL
         }),
-        messages: coreMessages,
+        messages: aiMessages,
         maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,

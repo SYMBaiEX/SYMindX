@@ -17,7 +17,6 @@ import {
   generateText, 
   streamText, 
   generateObject,
-  type CoreMessage,
   type LanguageModel
 } from 'ai'
 import { google } from '@ai-sdk/google'
@@ -178,11 +177,11 @@ export class GoogleGenerativePortal extends BasePortal {
     
     try {
       const config = this.config as GoogleGenerativeConfig
-      const coreMessages = this.convertToCoreMessages(messages)
+      const modelMessages = this.convertToModelMessages(messages)
       
       const { text, usage, finishReason } = await generateText({
         model: this.getLanguageModel(model),
-        messages: coreMessages,
+        messages: modelMessages,
         maxOutputTokens: options?.maxTokens ?? config.generationConfig?.maxOutputTokens ?? this.config.maxTokens,
         temperature: options?.temperature ?? config.generationConfig?.temperature ?? this.config.temperature,
         topP: options?.topP ?? config.generationConfig?.topP,
@@ -259,11 +258,11 @@ export class GoogleGenerativePortal extends BasePortal {
     
     try {
       const config = this.config as GoogleGenerativeConfig
-      const coreMessages = this.convertToCoreMessages(messages)
+      const modelMessages = this.convertToModelMessages(messages)
       
       const { textStream } = streamText({
         model: this.getLanguageModel(model),
-        messages: coreMessages,
+        messages: modelMessages,
         maxOutputTokens: options?.maxTokens ?? config.generationConfig?.maxOutputTokens ?? this.config.maxTokens,
         temperature: options?.temperature ?? config.generationConfig?.temperature ?? this.config.temperature,
         topP: options?.topP ?? config.generationConfig?.topP,
@@ -300,10 +299,10 @@ export class GoogleGenerativePortal extends BasePortal {
     }
   }
 
-  private convertToCoreMessages(messages: ChatMessage[]): CoreMessage[] {
+  private convertToModelMessages(messages: ChatMessage[]) {
     return messages.map(msg => {
-      const coreMessage: CoreMessage = {
-        role: msg.role as any,
+      const message = {
+        role: msg.role,
         content: msg.content
       }
 
@@ -328,10 +327,11 @@ export class GoogleGenerativePortal extends BasePortal {
           }
         }
         
-        coreMessage.content = content
+        // Override content with multimodal structure
+        Object.assign(message, { content })
       }
 
-      return coreMessage
+      return message
     })
   }
 

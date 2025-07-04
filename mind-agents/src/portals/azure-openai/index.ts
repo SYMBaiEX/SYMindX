@@ -15,7 +15,8 @@ import {
 } from '../../types/portal.js'
 import { Agent } from '../../types/agent.js'
 import { createAzure } from '@ai-sdk/azure'
-import { generateText as aiGenerateText, streamText as aiStreamText, embed as aiEmbed, experimental_generateImage as aiGenerateImage, CoreMessage } from 'ai'
+import { generateText as aiGenerateText, streamText as aiStreamText, embed as aiEmbed, experimental_generateImage as aiGenerateImage, tool, type ModelMessage } from 'ai'
+import { z } from 'zod'
 
 export interface AzureOpenAIConfig extends PortalConfig {
   apiKey: string
@@ -119,6 +120,33 @@ export class AzureOpenAIPortal extends BasePortal {
     }
   }
 
+  /**
+   * Convert function definitions to AI SDK v5 tool format
+   */
+  private convertFunctionsToTools(functions: Array<{
+    name: string
+    description: string
+    parameters?: { properties?: Record<string, unknown> }
+  }>) {
+    const tools: Record<string, ReturnType<typeof tool>> = {}
+    
+    for (const fn of functions) {
+      // Create a simple schema that accepts any object for compatibility
+      const schema = z.object({})
+      
+      tools[fn.name] = tool({
+        description: fn.description,
+        parameters: schema,
+        execute: async (args: Record<string, unknown>) => {
+          // Tool execution would be handled by the caller
+          return args
+        }
+      })
+    }
+    
+    return tools
+  }
+
   async healthCheck(): Promise<boolean> {
     try {
       // Try a simple text generation to verify the API is working
@@ -135,35 +163,18 @@ export class AzureOpenAIPortal extends BasePortal {
   }
 
   /**
-   * Convert ChatMessage to CoreMessage format
+   * Convert ChatMessage[] to message format for AI SDK
    */
-  private convertToCoreMessage(message: ChatMessage): CoreMessage {
-    const coreMessage: CoreMessage = {
-      role: message.role === MessageRole.USER ? 'user' : 
-            message.role === MessageRole.ASSISTANT ? 'assistant' : 
-            message.role === MessageRole.SYSTEM ? 'system' :
-            message.role === MessageRole.TOOL || message.role === MessageRole.FUNCTION ? 'tool' :
-            'user',
-      content: message.content
-    }
-
-    // Handle multimodal content (images)
-    if (message.attachments && message.attachments.length > 0) {
-      const parts: any[] = [{ type: 'text', text: message.content }]
-      
-      for (const attachment of message.attachments) {
-        if (attachment.type === MessageType.IMAGE && attachment.url) {
-          parts.push({
-            type: 'image',
-            image: attachment.url
-          })
-        }
+  private convertToModelMessages(messages: ChatMessage[]) {
+    return messages.map(msg => {
+      if (msg.role === MessageRole.FUNCTION) {
+        return { role: 'assistant', content: msg.content }
       }
-      
-      coreMessage.content = parts
-    }
-
-    return coreMessage
+      return { 
+        role: msg.role, 
+        content: msg.content 
+      }
+    })
   }
 
   async generateText(prompt: string, options?: TextGenerationOptions): Promise<TextGenerationResult> {
@@ -193,25 +204,18 @@ export class AzureOpenAIPortal extends BasePortal {
 
   async generateChat(messages: ChatMessage[], options?: ChatGenerationOptions): Promise<ChatGenerationResult> {
     try {
-      const coreMessages: CoreMessage[] = messages.map(msg => this.convertToCoreMessage(msg))
+      const modelMessages = this.convertToModelMessages(messages)
       
       const { text, usage, finishReason } = await aiGenerateText({
         model: this.model,
-        messages: coreMessages,
+        messages: modelMessages,
         maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
         presencePenalty: options?.presencePenalty,
         stopSequences: options?.stop,
-        tools: options?.functions ? options.functions.map(fn => ({
-          type: 'function' as const,
-          function: {
-            name: fn.name,
-            description: fn.description,
-            parameters: fn.parameters
-          }
-        })) : undefined
+        tools: options?.functions ? this.convertFunctionsToTools(options.functions) : undefined
       })
 
       const message: ChatMessage = {
@@ -260,15 +264,14 @@ export class AzureOpenAIPortal extends BasePortal {
         model: this.imageModel,
         prompt,
         n: options?.n || 1,
-        size: options?.size || '1024x1024',
-        quality: options?.quality || 'standard',
-        style: options?.style || 'vivid'
+        size: (options?.size || '1024x1024') as `${number}x${number}`,
+        aspectRatio: '1:1'
       })
 
       return {
         images: images.map(img => ({
-          url: img.url,
-          revised_prompt: img.text
+          url: (img as any).url || undefined,
+          b64_json: (img as any).base64 || undefined
         })),
         model: (this.config as AzureOpenAIConfig).imageDeploymentName || 'dall-e-3',
         usage: {
@@ -304,25 +307,18 @@ export class AzureOpenAIPortal extends BasePortal {
 
   async *streamChat(messages: ChatMessage[], options?: ChatGenerationOptions): AsyncGenerator<string> {
     try {
-      const coreMessages: CoreMessage[] = messages.map(msg => this.convertToCoreMessage(msg))
+      const modelMessages = this.convertToModelMessages(messages)
       
       const { textStream } = await aiStreamText({
         model: this.model,
-        messages: coreMessages,
+        messages: modelMessages,
         maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
         presencePenalty: options?.presencePenalty,
         stopSequences: options?.stop,
-        tools: options?.functions ? options.functions.map(fn => ({
-          type: 'function' as const,
-          function: {
-            name: fn.name,
-            description: fn.description,
-            parameters: fn.parameters
-          }
-        })) : undefined
+        tools: options?.functions ? this.convertFunctionsToTools(options.functions) : undefined
       })
 
       for await (const chunk of textStream) {

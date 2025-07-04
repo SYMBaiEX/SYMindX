@@ -21,7 +21,6 @@ import {
   experimental_generateImage as generateImage,
   tool,
   createProviderRegistry,
-  type CoreMessage,
   type LanguageModel,
   type EmbeddingModel,
   type ImageModel
@@ -199,7 +198,7 @@ export class VercelAIPortal extends BasePortal {
   private setupProviderRegistry(): void {
     const registryConfig: Record<string, any> = {}
     
-    for (const [name, provider] of this.providers) {
+    for (const [name, provider] of Array.from(this.providers.entries())) {
       registryConfig[name] = provider
     }
     
@@ -318,12 +317,12 @@ export class VercelAIPortal extends BasePortal {
     const model = options?.model || this.resolveModel('chat')
     
     try {
-      const coreMessages = this.convertToCoreMessages(messages)
+      const modelMessages = this.convertToModelMessages(messages)
       const toolsToUse = this.buildTools()
       
       const { text, usage, finishReason } = await generateText({
         model: this.getLanguageModel(model),
-        messages: coreMessages,
+        messages: modelMessages,
         maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
@@ -429,12 +428,12 @@ export class VercelAIPortal extends BasePortal {
     const model = options?.model || this.resolveModel('chat')
     
     try {
-      const coreMessages = this.convertToCoreMessages(messages)
+      const modelMessages = this.convertToModelMessages(messages)
       const toolsToUse = this.buildTools()
       
       const { textStream } = await streamText({
         model: this.getLanguageModel(model),
-        messages: coreMessages,
+        messages: modelMessages,
         maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP,
@@ -473,10 +472,10 @@ export class VercelAIPortal extends BasePortal {
     }
   }
 
-  private convertToCoreMessages(messages: ChatMessage[]): CoreMessage[] {
+  private convertToModelMessages(messages: ChatMessage[]) {
     return messages.map(msg => {
-      const coreMessage: CoreMessage = {
-        role: msg.role as any,
+      const message = {
+        role: msg.role,
         content: msg.content
       }
 
@@ -501,17 +500,17 @@ export class VercelAIPortal extends BasePortal {
           }
         }
         
-        coreMessage.content = content
+        message.content = content
       }
 
-      return coreMessage
+      return message
     })
   }
 
   private buildTools(): Map<string, any> {
     const toolsMap = new Map()
     
-    for (const [name, toolDef] of this.tools) {
+    for (const [name, toolDef] of Array.from(this.tools.entries())) {
       toolsMap.set(name, tool({
         description: toolDef.description,
         parameters: toolDef.parameters,
@@ -556,7 +555,7 @@ export class VercelAIPortal extends BasePortal {
   getAvailableModels(): Record<string, string[]> {
     const models: Record<string, string[]> = {}
     
-    for (const providerName of this.enabledProviders) {
+    for (const providerName of Array.from(this.enabledProviders)) {
       models[providerName] = this.getProviderModels(providerName)
     }
     

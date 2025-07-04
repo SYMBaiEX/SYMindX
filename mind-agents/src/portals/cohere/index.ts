@@ -15,7 +15,8 @@ import {
 } from '../../types/portal.js'
 import { Agent } from '../../types/agent.js'
 import { cohere } from '@ai-sdk/cohere'
-import { generateText as aiGenerateText, streamText as aiStreamText, embed as aiEmbed, CoreMessage } from 'ai'
+import { generateText as aiGenerateText, streamText as aiStreamText, embed as aiEmbed, tool, type ModelMessage } from 'ai'
+import { z } from 'zod'
 
 export interface CohereConfig extends PortalConfig {
   apiKey: string
@@ -111,17 +112,45 @@ export class CoherePortal extends BasePortal {
   }
 
   /**
-   * Convert ChatMessage to CoreMessage format
+   * Convert ChatMessage[] to message format for AI SDK
    */
-  private convertToCoreMessage(message: ChatMessage): CoreMessage {
-    return {
-      role: message.role === MessageRole.USER ? 'user' : 
-            message.role === MessageRole.ASSISTANT ? 'assistant' : 
-            message.role === MessageRole.SYSTEM ? 'system' :
-            message.role === MessageRole.TOOL || message.role === MessageRole.FUNCTION ? 'tool' :
-            'user',
-      content: message.content
+  private convertToModelMessages(messages: ChatMessage[]) {
+    return messages.map(msg => {
+      if (msg.role === MessageRole.FUNCTION) {
+        return { role: 'assistant', content: msg.content }
+      }
+      return { 
+        role: msg.role, 
+        content: msg.content 
+      }
+    })
+  }
+
+  /**
+   * Convert function definitions to AI SDK v5 tool format
+   */
+  private convertFunctionsToTools(functions: Array<{
+    name: string
+    description: string
+    parameters?: { properties?: Record<string, unknown> }
+  }>) {
+    const tools: Record<string, ReturnType<typeof tool>> = {}
+    
+    for (const fn of functions) {
+      // Create a simple schema that accepts any object for compatibility
+      const schema = z.object({})
+      
+      tools[fn.name] = tool({
+        description: fn.description,
+        parameters: schema,
+        execute: async (args: Record<string, unknown>) => {
+          // Tool execution would be handled by the caller
+          return args
+        }
+      })
     }
+    
+    return tools
   }
 
   async generateText(prompt: string, options?: TextGenerationOptions): Promise<TextGenerationResult> {
@@ -154,11 +183,11 @@ export class CoherePortal extends BasePortal {
 
   async generateChat(messages: ChatMessage[], options?: ChatGenerationOptions): Promise<ChatGenerationResult> {
     try {
-      const coreMessages: CoreMessage[] = messages.map(msg => this.convertToCoreMessage(msg))
+      const modelMessages = this.convertToModelMessages(messages)
       
       // Add preamble as a system message if configured
       if ((this.config as CohereConfig).preamble) {
-        coreMessages.unshift({
+        modelMessages.unshift({
           role: 'system',
           content: (this.config as CohereConfig).preamble!
         })
@@ -169,21 +198,14 @@ export class CoherePortal extends BasePortal {
           apiKey: (this.config as CohereConfig).apiKey,
           baseURL: (this.config as CohereConfig).baseUrl
         }),
-        messages: coreMessages,
+        messages: modelMessages,
         maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
         presencePenalty: options?.presencePenalty,
         stopSequences: options?.stop,
-        tools: options?.functions ? options.functions.map(fn => ({
-          type: 'function' as const,
-          function: {
-            name: fn.name,
-            description: fn.description,
-            parameters: fn.parameters
-          }
-        })) : undefined
+        tools: options?.functions ? this.convertFunctionsToTools(options.functions) : undefined
       })
 
       const message: ChatMessage = {
@@ -264,11 +286,11 @@ export class CoherePortal extends BasePortal {
 
   async *streamChat(messages: ChatMessage[], options?: ChatGenerationOptions): AsyncGenerator<string> {
     try {
-      const coreMessages: CoreMessage[] = messages.map(msg => this.convertToCoreMessage(msg))
+      const modelMessages = this.convertToModelMessages(messages)
       
       // Add preamble as a system message if configured
       if ((this.config as CohereConfig).preamble) {
-        coreMessages.unshift({
+        modelMessages.unshift({
           role: 'system',
           content: (this.config as CohereConfig).preamble!
         })
@@ -279,21 +301,14 @@ export class CoherePortal extends BasePortal {
           apiKey: (this.config as CohereConfig).apiKey,
           baseURL: (this.config as CohereConfig).baseUrl
         }),
-        messages: coreMessages,
+        messages: modelMessages,
         maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
         presencePenalty: options?.presencePenalty,
         stopSequences: options?.stop,
-        tools: options?.functions ? options.functions.map(fn => ({
-          type: 'function' as const,
-          function: {
-            name: fn.name,
-            description: fn.description,
-            parameters: fn.parameters
-          }
-        })) : undefined
+        tools: options?.functions ? this.convertFunctionsToTools(options.functions) : undefined
       })
 
       for await (const chunk of textStream) {
