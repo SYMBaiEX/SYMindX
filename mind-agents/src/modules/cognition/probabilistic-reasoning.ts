@@ -17,57 +17,106 @@ import {
   PlanStep,
   PlanStepStatus,
   MemoryRecord
-} from '../../types/agent.js'
+} from '../../types/agent'
 import { 
   CognitionModule,
   CognitionModuleMetadata,
   BayesianNetwork,
   BayesianNode,
+  BayesianEdge,
   ReasoningPerformance,
+  ReasoningParadigm,
   HybridReasoningConfig
-} from '../../types/cognition.js'
-import { Experience } from '../../types/autonomous.js'
-import { BaseConfig } from '../../types/common.js'
-import { MemoryType, MemoryDuration } from '../../types/enums.js'
-import { runtimeLogger } from '../../utils/logger.js'
+} from '../../types/cognition'
+import { Experience } from '../../types/autonomous'
+import { BaseConfig } from '../../types/common'
+import { MemoryType, MemoryDuration } from '../../types/enums'
+import { runtimeLogger } from '../../utils/logger'
 
 /**
  * Simple Bayesian Network implementation
  */
 export class SimpleBayesianNetwork implements BayesianNetwork {
-  nodes: Map<string, BayesianNode> = new Map()
-  edges: Map<string, string[]> = new Map()
+  private nodeMap: Map<string, BayesianNode> = new Map()
+  private edgeMap: Map<string, string[]> = new Map()
+  
+  get nodes(): BayesianNode[] {
+    return Array.from(this.nodeMap.values())
+  }
+  
+  get edges(): BayesianEdge[] {
+    const edgeList: BayesianEdge[] = []
+    for (const from of Array.from(this.edgeMap.keys())) {
+      const toList = this.edgeMap.get(from) || []
+      for (const to of toList) {
+        edgeList.push({ from, to, probability: 1.0 })
+      }
+    }
+    return edgeList
+  }
   
   addNode(node: BayesianNode): void {
-    this.nodes.set(node.id, node)
-    this.edges.set(node.id, [...node.children])
+    this.nodeMap.set(node.id, node)
+    this.edgeMap.set(node.id, [...node.children])
     
     // Update parent-child relationships
     for (const parentId of node.parents) {
-      const parentEdges = this.edges.get(parentId) || []
+      const parentEdges = this.edgeMap.get(parentId) || []
       if (!parentEdges.includes(node.id)) {
         parentEdges.push(node.id)
-        this.edges.set(parentId, parentEdges)
+        this.edgeMap.set(parentId, parentEdges)
       }
     }
     
     runtimeLogger.cognition(`Added Bayesian node: ${node.name}`)
   }
   
+  query(evidence: Record<string, string>): Record<string, number> {
+    // Simple query implementation
+    const results: Record<string, number> = {}
+    for (const node of Array.from(this.nodeMap.values())) {
+      results[node.id] = this.calculateProbability(node, evidence)
+    }
+    return results
+  }
+  
+  learn(data: Record<string, string>[]): void {
+    // Simple learning from data
+    for (const sample of data) {
+      for (const [nodeId, value] of Object.entries(sample)) {
+        const node = this.nodeMap.get(nodeId)
+        if (node && node.conditionalProbabilities) {
+          // Update probabilities based on observation
+          const key = JSON.stringify(sample)
+          node.conditionalProbabilities[key] = (node.conditionalProbabilities[key] || 0) + 1
+        }
+      }
+    }
+  }
+  
+  private calculateProbability(node: BayesianNode, evidence: Record<string, string>): number {
+    // Simple probability calculation
+    if (node.conditionalProbabilities) {
+      const key = JSON.stringify(evidence)
+      return node.conditionalProbabilities[key] || 0.5
+    }
+    return 0.5
+  }
+  
   addEdge(from: string, to: string): void {
-    const edges = this.edges.get(from) || []
+    const edges = this.edgeMap.get(from) || []
     if (!edges.includes(to)) {
       edges.push(to)
-      this.edges.set(from, edges)
+      this.edgeMap.set(from, edges)
       
       // Update child node's parents
-      const toNode = this.nodes.get(to)
+      const toNode = this.nodeMap.get(to)
       if (toNode && !toNode.parents.includes(from)) {
         toNode.parents.push(from)
       }
       
       // Update parent node's children
-      const fromNode = this.nodes.get(from)
+      const fromNode = this.nodeMap.get(from)
       if (fromNode && !fromNode.children.includes(to)) {
         fromNode.children.push(to)
       }
@@ -75,59 +124,16 @@ export class SimpleBayesianNetwork implements BayesianNetwork {
   }
   
   /**
-   * Simple probability query using variable elimination
-   */
-  query(evidence: Record<string, any>): Record<string, number> {
-    const results: Record<string, number> = {}
-    
-    // Simple enumeration for small networks
-    for (const [nodeId, node] of this.nodes) {
-      if (evidence[nodeId] !== undefined) {
-        // Evidence node
-        results[nodeId] = evidence[nodeId] === node.states[0] ? 1.0 : 0.0
-      } else {
-        // Query node - compute probability given evidence
-        results[nodeId] = this.computeProbability(nodeId, evidence)
-      }
-    }
-    
-    return results
-  }
-  
-  /**
-   * Learn from data
-   */
-  learn(data: Record<string, any>[]): void {
-    // Simple frequency counting for learning
-    for (const [nodeId, node] of this.nodes) {
-      const counts = new Map<string, number>()
-      
-      for (const dataPoint of data) {
-        const value = dataPoint[nodeId]
-        if (value !== undefined) {
-          const key = this.generateConditionKey(dataPoint, node)
-          counts.set(key, (counts.get(key) || 0) + 1)
-        }
-      }
-      
-      // Update conditional probabilities
-      this.updateProbabilities(node, counts, data.length)
-    }
-    
-    runtimeLogger.cognition(`Learned from ${data.length} data points`)
-  }
-  
-  /**
    * Compute probability of a node given evidence
    */
   private computeProbability(nodeId: string, evidence: Record<string, any>): number {
-    const node = this.nodes.get(nodeId)
+    const node = this.nodeMap.get(nodeId)
     if (!node) return 0.5
     
     // Simple computation based on parent states
     if (node.parents.length === 0) {
       // Root node - return prior probability
-      return node.conditionalProbabilities[''] || 0.5
+      return node.conditionalProbabilities?.[''] || 0.5
     }
     
     // Generate condition key from parents
@@ -135,7 +141,7 @@ export class SimpleBayesianNetwork implements BayesianNetwork {
       .map(parentId => `${parentId}=${evidence[parentId] || 'unknown'}`)
       .join(',')
     
-    return node.conditionalProbabilities[conditionKey] || 0.5
+    return node.conditionalProbabilities?.[conditionKey] || 0.5
   }
   
   /**
@@ -153,7 +159,11 @@ export class SimpleBayesianNetwork implements BayesianNetwork {
    * Update probabilities from counts
    */
   private updateProbabilities(node: BayesianNode, counts: Map<string, number>, totalData: number): void {
-    for (const [key, count] of counts) {
+    if (!node.conditionalProbabilities) {
+      node.conditionalProbabilities = {}
+    }
+    for (const key of Array.from(counts.keys())) {
+      const count = counts.get(key) || 0
       node.conditionalProbabilities[key] = count / totalData
     }
   }
@@ -317,7 +327,7 @@ export class ProbabilisticReasoning implements CognitionModule {
       version: '1.0.0',
       description: 'Bayesian network-based probabilistic inference',
       author: 'SYMindX',
-      paradigms: ['probabilistic', 'bayesian_network'],
+      paradigms: [ReasoningParadigm.PROBABILISTIC],
       learningCapable: true
     }
   }
