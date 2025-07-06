@@ -14,28 +14,28 @@ SYMindX is a monorepo with multiple components:
 ### Root Level Commands
 ```bash
 # Development (runs both components)
-bun dev                # Starts both website and agent system
-bun dev:website        # Website only (Vite dev server)
-bun dev:agent          # Agent system only (TypeScript watch mode)
+bun run dev            # Starts both website and agent system
+bun run dev:website    # Website only (Vite dev server)
+bun run dev:agent      # Agent system only (TypeScript watch mode)
 
 # Building
-bun build              # Build both components
-bun build:website      # Build website for production
-bun build:agent        # Compile agent TypeScript to dist/
+bun run build          # Build both components
+bun run build:website  # Build website for production
+bun run build:agent    # Compile agent TypeScript to dist/
 
 # Production
-bun start              # Start agent system only
-bun start:all          # Start both components
-bun test               # Run agent system tests
+bun run start          # Start agent system only
+bun run start:all      # Start both components
+bun run test           # Run agent system tests
 ```
 
 ### Mind-Agents Specific Commands
 ```bash
 cd mind-agents
-npm run build          # Compile TypeScript (uses --skipLibCheck)
-npm run start          # Run compiled application from dist/
-npm run dev            # Watch mode: compile & run with hot reload
-npm test               # Run Jest tests
+bun run build          # Compile TypeScript (uses --skipLibCheck)
+bun run start          # Run compiled application from dist/
+bun run dev            # Watch mode: compile & run with hot reload
+bun test               # Run Bun tests
 ```
 
 ### Website Specific Commands
@@ -182,6 +182,13 @@ Web Interface (website/)
 - NyX configured with ethics disabled for unrestricted decision-making
 - Ethics status displayed in CLI and API responses
 
+### 5. AI SDK v5 Integration
+- **CRITICAL**: All portal implementations now use AI SDK v5
+- New imports: `@ai-sdk/openai`, `@ai-sdk/anthropic`, etc.
+- Enhanced streaming with tool call support
+- Improved type safety and performance
+- New multi-step execution with `stopWhen` conditions
+
 ## Key Development Patterns
 
 ### Clean Architecture Principles
@@ -226,6 +233,51 @@ Each emotion module extends BaseEmotion and includes:
 - Emotion-specific modifiers
 - History tracking
 
+## AI SDK v5 Implementation Guidelines
+
+### Core AI SDK v5 Features Used
+```typescript
+// Text generation with multi-step support
+import { generateText, streamText } from 'ai'
+import { openai } from '@ai-sdk/openai'
+
+const result = await generateText({
+  model: openai('gpt-4.1'),
+  messages,
+  tools: { /* tool definitions */ },
+  stopWhen: stepCountIs(5), // New stopping condition
+})
+
+// Enhanced streaming with tool calls
+const stream = streamText({
+  model: openai('gpt-4.1'),
+  messages,
+  tools,
+  toolCallStreaming: true, // Real-time tool execution
+})
+```
+
+### Portal Implementation Pattern
+```typescript
+// Each portal follows this structure:
+export class PortalProvider implements Portal {
+  async generateResponse(messages: Message[]): Promise<Response> {
+    return streamText({
+      model: this.model,
+      messages: convertToModelMessages(messages),
+      tools: this.tools,
+      stopWhen: this.stopConditions,
+    })
+  }
+}
+```
+
+### Tool Integration Best Practices
+- Use `tool()` helper for type inference
+- Implement streaming callbacks: `onInputStart`, `onInputDelta`, `onInputAvailable`
+- Leverage provider-specific tools (OpenAI file_search, web_search_preview)
+- Handle tool errors gracefully with fallback mechanisms
+
 ## Environment Variables
 
 ```bash
@@ -257,6 +309,49 @@ TWITTER_PASSWORD=...
 4. **Develop**: Use `bun dev` to start both components
 5. **Test**: Use `bun test` to run the test suite
 6. **Build**: Use `bun build` for production builds
+
+## TypeScript Configuration
+
+### Strict Type Checking
+- All modules must implement proper interfaces
+- Use `AgentAction[]` for action returns, not `string[]`
+- Emotion methods return `EmotionState` objects, not strings
+- Plan objects require: `id`, `goal`, `steps`, `priority`, `estimatedDuration`, `dependencies`, `status`
+- PlanStep objects require: `id`, `action`, `description`, `status`, `parameters`, `preconditions`, `effects`
+
+### Common Type Fixes
+```typescript
+// ✅ Correct ThoughtResult structure
+return {
+  thoughts: string[],
+  confidence: number,
+  actions: AgentAction[],
+  emotions: EmotionState,
+  memories: MemoryRecord[]
+}
+
+// ✅ Correct AgentAction structure
+{
+  id: string,
+  type: string,
+  extension: string,
+  action: string,
+  parameters: ActionParameters,
+  timestamp: Date,
+  status: ActionStatus
+}
+
+// ✅ Correct Plan structure
+{
+  id: string,
+  goal: string,
+  steps: PlanStep[],
+  priority: number,
+  estimatedDuration: number,
+  dependencies: string[],
+  status: PlanStatus
+}
+```
 
 ## Important Notes
 
@@ -375,21 +470,6 @@ claude "think harder about edge cases and error handling"
 claude "ultrathink this distributed system design"
 ```
 
-#### Thinking Budget Management
-```javascript
-// Configure thinking budget for multi-agent coordination
-const response = await client.messages.create({
-  model: "claude-opus-4-20250514",
-  thinking: {
-    type: "enabled",
-    budget_tokens: 15000  // Higher budget for multi-agent coordination
-  },
-  extra_headers: {
-    "anthropic-beta": "interleaved-thinking-2025-05-14"
-  }
-});
-```
-
 ### Resource Management
 
 #### Token Usage Optimization
@@ -432,82 +512,6 @@ claude --track-usage "complex multi-agent task"
 }
 ```
 
-#### Agent-Specific MCP Tools
-```bash
-# Use scoped MCP tools for different agents
-claude --allowedTools "mcp__coordinator__spawn_agent,mcp__coordinator__monitor_progress"
-claude --allowedTools "mcp__distributor__assign_task,mcp__distributor__check_status"  
-claude --allowedTools "mcp__aggregator__collect_results,mcp__aggregator__synthesize"
-```
-
-### Environment Configuration
-
-#### Repository Setup for Multi-Agent Development
-```bash
-# Create CLAUDE.md with agent-specific guidance
-echo "
-# Agent Coordination Guidelines
-- Use feature branches for parallel development
-- Implement autonomous feedback loops
-- Follow TDD approach for all agents
-- Use git worktrees for isolation
-- Agents should not trample each other's work
-" > CLAUDE.md
-```
-
-#### Branch Management
-```bash
-# Branch naming convention for multi-agent work
-git checkout -b agent/lead-coordinator
-git checkout -b agent/data-processor  
-git checkout -b agent/result-synthesizer
-
-# Merge strategy (prefer rebase for cleaner history)
-git config branch.autosetuprebase always
-```
-
-### Success Metrics & Monitoring
-
-#### Multi-Agent Health Checks
-```typescript
-interface MultiAgentHealth {
-  agentCount: number;
-  activeAgents: number;
-  taskDistribution: Record<string, number>;
-  coordinationEfficiency: number;
-  resourceUtilization: ResourceMetrics;
-}
-```
-
-#### Performance Optimization
-- **Parallel Execution**: Design independent agent tasks
-- **Resource Sharing**: Use shared MCP servers for common tools
-- **Result Caching**: Cache intermediate results between agents
-- **Load Balancing**: Distribute computational load across agents
-
-### Advanced Patterns
-
-#### Claude Squad Integration
-```bash
-# Install Claude Squad for multi-agent terminal management
-npm install -g claude-squad
-
-# Manage multiple agents in parallel workspaces
-claude-squad start --agents 4 --auto-accept
-```
-
-#### Interleaved Thinking for Agent Coordination
-```python
-# Use interleaved thinking for agent decision-making
-response = client.messages.create(
-    model="claude-opus-4-20250514",
-    thinking={"type": "enabled", "budget_tokens": 10000},
-    extra_headers={"anthropic-beta": "interleaved-thinking-2025-05-14"},
-    tools=[coordinator_tool, distributor_tool],
-    messages=[{"role": "user", "content": "Coordinate these 5 agents for the complex task"}]
-)
-```
-
 ## Troubleshooting
 
 ### Common Issues
@@ -517,6 +521,7 @@ response = client.messages.create(
 4. **Build errors**: Run with `--skipLibCheck` flag
 5. **Multi-agent conflicts**: Use git worktrees and clear task boundaries
 6. **Token exhaustion**: Monitor usage and scale appropriately
+7. **AI SDK v5 compatibility**: Update imports and message conversion methods
 
 ### Debug Commands
 ```bash
@@ -539,4 +544,25 @@ npm run cli multi-agent tasks
 ## Special Warnings and Guidelines
 
 ### Git and Commit Policies
-- **CRITICAL GUIDELINE**: NEVER MAKE COMMITS AS CLAUDE, ONLY MAKE COMMITS AS THE USERS DEFAULT GITHUB CONFIG
+- **CRITICAL GUIDELINE**: NEVER MAKE COMMITS AS CLAUDE, ONLY MAKE COMMITS AS THE USER'S DEFAULT GITHUB CONFIG
+- **NEVER MENTION AI ASSISTANCE**: Never include "Co-Authored-By: Claude" or any mention of AI assistance in commits
+- **USER'S CONFIG ONLY**: All commits must use the user's git configuration strictly with no additional Co-Authored-By lines
+- **NO AI ATTRIBUTION**: Never mention AI-assisted development, Claude, or Anthropic in commit messages unless explicitly requested by user for that specific session
+- **CLEAN COMMITS**: Commit messages should appear as if written entirely by the user
+
+### Latest Technology Integration
+- **ALWAYS USE CONTEXT7 MCP TO GET UPDATED DOCUMENTATION** for any tech stack, library, or tool
+- Stay current with AI SDK v5 features and best practices
+- Monitor breaking changes in dependencies
+- Use TypeScript strict mode for all new code
+
+### Performance Optimization
+- Prefer reactive patterns over polling
+- Use streaming for real-time updates
+- Implement proper error boundaries
+- Monitor memory usage in long-running agents
+- Cache expensive computations appropriately
+
+---
+
+*Last updated: 2025-01-07 | AI SDK v5 | TypeScript 5.8 | Node.js 22+ | SYMindX v1.0*

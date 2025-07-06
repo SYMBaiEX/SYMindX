@@ -1,5 +1,5 @@
 {
-  "name": "symindx-website",
+  "name": "@symindx/website",
   "version": "0.1.0",
   "scripts": {
     "dev": "vite",

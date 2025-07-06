@@ -39,16 +39,19 @@ The CLI package includes:
 
 ### 🎯 Key Features
 
-- **🧩 Modular Architecture** - Hot-swappable modules for memory, emotion, and cognition
-- **🎭 Composite Emotion System** - 11 distinct emotions that influence agent behavior
-- **🧠 Advanced Memory** - SQLite, PostgreSQL, Supabase, and Neon support with embeddings
-- **💬 Intelligent Chat** - Context-aware responses with emotion and memory integration  
-- **🤖 Multi-Agent Support** - Run multiple specialized agents simultaneously
-- **🔌 Platform Extensions** - Telegram, Slack, Discord, and API integrations
-- **🎮 Game Ready** - Designed for RuneLite/RuneScape integration
-- **⚡ WebSocket Support** - Real-time communication and updates
+- **🧩 Modular Architecture** - Auto-discovery systems for extensions, emotions, and cognition modules
+- **🎭 Advanced Emotion System** - 11 distinct emotions with auto-discovery and composite management
+- **🧠 Multi-Paradigm Cognition** - Reactive, HTN Planning, Hybrid, Unified, and Theory of Mind systems
+- **💾 Flexible Memory** - SQLite, PostgreSQL, Supabase, and Neon providers with vector embeddings
+- **🤖 AI Portal System** - Unified interface to 15+ AI providers (OpenAI, Anthropic, Groq, etc.)
+- **💬 Smart Communication** - Context-aware responses with emotion and memory integration
+- **🔌 Extension Ecosystem** - Telegram, API server, MCP client/server, enhanced communication
+- **👥 Multi-Agent Coordination** - Run specialized agents with different personalities simultaneously  
+- **🎮 Game Integration** - Built for RuneLite/RuneScape with event-driven responses
+- **⚡ Real-time Features** - WebSocket support, streaming responses, live agent monitoring
 - **🎯 Reactive Design** - Agents only act when prompted (no autonomous behaviors)
 - **🚀 AI SDK v5** - Latest Vercel AI SDK with streaming and unified provider interface
+- **🏭 Zero-Config Extensions** - Add new capabilities without modifying core code
 
 ## 🏗️ Architecture
 
@@ -66,10 +69,12 @@ SYMindX Agent
 │   ├── Emotion: 11 emotions (happy, sad, angry, etc.)
 │   └── Cognition: HTN/Reactive/Hybrid planning
 │
-└── 🔌 Extensions
-    ├── API Server (HTTP/WebSocket)
+└── 🔌 Extensions (Auto-Discovered)
+    ├── API Server (HTTP/WebSocket + WebUI)
     ├── Telegram Bot
-    ├── Web Dashboard
+    ├── MCP Client (Context7 integration)
+    ├── MCP Server (Framework exposure)
+    ├── Communication System
     └── Game Integration (RuneLite ready)
 ```
 
@@ -161,23 +166,107 @@ NyX is a chaotic-empath hacker with full emotional capabilities:
 3. Set `"enabled": true` in the config
 4. Restart the system
 
-## 💭 Emotion System
+## 💭 Modular Emotion System
 
-Agents experience 11 distinct emotions that affect their responses:
+Agents experience 11 distinct emotions organized into 4 categories, with auto-discovery support:
 
+### **Basic Emotions (4)**
 - **Happy** 😊 - Optimistic and energetic responses
-- **Sad** 😢 - Introspective and empathetic
+- **Sad** 😢 - Introspective and empathetic  
 - **Angry** 😠 - Direct and assertive
-- **Anxious** 😰 - Cautious and detailed
-- **Confident** 💪 - Bold and decisive
-- **Nostalgic** 🌅 - Reflective and story-driven
-- **Empathetic** 🤗 - Supportive and understanding
-- **Curious** 🔍 - Questioning and exploratory
-- **Proud** 🏆 - Achievement-focused
-- **Confused** 😕 - Seeking clarification
 - **Neutral** 😐 - Balanced baseline
 
+### **Complex Emotions (2)**
+- **Anxious** 😰 - Cautious and detailed
+- **Nostalgic** 🌅 - Reflective and story-driven
+
+### **Social Emotions (2)**
+- **Empathetic** 🤗 - Supportive and understanding
+- **Proud** 🏆 - Achievement-focused
+
+### **Cognitive Emotions (3)**
+- **Confident** 💪 - Bold and decisive
+- **Curious** 🔍 - Questioning and exploratory
+- **Confused** 😕 - Seeking clarification
+
+### **Adding Custom Emotions**
+
+Create new emotions without modifying core code:
+
+```typescript
+// 1. Create emotion directory
+src/modules/emotion/excited/
+├── package.json    # Include symindx.emotion config
+├── index.ts        # Implement emotion + factory function
+└── types.ts        # Type definitions
+
+// 2. Auto-discovery handles the rest!
+```
+
 Emotions are triggered by message content and decay over time.
+
+## 🔌 Modular Extension System
+
+SYMindX features a zero-configuration extension system with automatic discovery:
+
+### **Built-in Extensions (5)**
+
+#### **API Extension**
+- HTTP REST API server with WebSocket support
+- Real-time WebUI dashboard at `/ui`
+- Multi-agent management endpoints
+- Chat history and analytics
+
+#### **Telegram Extension**  
+- Full Telegram bot integration
+- Personality and emotion-aware responses
+- Rate limiting and group chat support
+- Memory integration for conversations
+
+#### **MCP Client Extension**
+- Model Context Protocol client
+- Context7 integration for up-to-date docs
+- Auto-reconnection and error handling
+- AI SDK integration for tool usage
+
+#### **MCP Server Extension**
+- Exposes SYMindX framework as MCP server
+- Agent state, memory, emotion access
+- Tool execution and system diagnostics
+- Server-sent events support
+
+#### **Communication Extension**
+- Advanced context management
+- Expression engine with personality integration
+- Style adaptation and compression
+- Emotion-aware communication
+
+### **Adding Custom Extensions**
+
+Create new extensions without modifying core code:
+
+```typescript
+// 1. Create extension directory
+src/extensions/my-extension/
+├── package.json    # Include symindx.extension config
+├── index.ts        # Implement Extension interface + factory
+└── types.ts        # Extension-specific types
+
+// 2. Configure auto-discovery
+{
+  "symindx": {
+    "extension": {
+      "type": "my-extension",
+      "factory": "createMyExtension", 
+      "autoRegister": true
+    }
+  }
+}
+
+// 3. System automatically discovers and loads!
+```
+
+Extensions can be built-in, npm packages, or local directories.
 
 ## 🔧 Core Modules
 
@@ -301,15 +390,25 @@ const response = await agent.chat("Hello!");
 
 ```
 symindx/
-├── mind-agents/          # Core agent runtime
+├── mind-agents/              # Core agent runtime
 │   ├── src/
-│   │   ├── core/        # Runtime engine
-│   │   ├── modules/     # Memory, emotion, cognition
-│   │   ├── extensions/  # Platform integrations
-│   │   └── characters/  # Agent configurations
-│   └── dist/           # Compiled JavaScript
-├── website/            # React dashboard
-└── config/            # Configuration files
+│   │   ├── core/            # Runtime engine + discovery systems
+│   │   ├── modules/         # Auto-discovered modules
+│   │   │   ├── memory/      # Memory providers (sqlite, postgres, supabase, neon)
+│   │   │   ├── emotion/     # 11 emotions with auto-discovery
+│   │   │   └── cognition/   # HTN, reactive, hybrid reasoning
+│   │   ├── extensions/      # Auto-discovered extensions
+│   │   │   ├── api/         # HTTP/WebSocket server + WebUI
+│   │   │   ├── telegram/    # Telegram bot integration
+│   │   │   ├── mcp-client/  # Model Context Protocol client
+│   │   │   ├── mcp-server/  # Model Context Protocol server
+│   │   │   └── communication/ # Advanced communication system
+│   │   ├── portals/         # AI provider integrations (OpenAI, Groq, etc.)
+│   │   ├── characters/      # Agent configurations (NyX, etc.)
+│   │   └── types/           # Centralized type system
+│   └── dist/               # Compiled JavaScript
+├── website/                # React dashboard
+└── docs-site/             # Documentation site (Docusaurus)
 ```
 
 ### Building
@@ -332,6 +431,42 @@ bun test
 bun test emotion
 ```
 
+## 🔍 Auto-Discovery Architecture
+
+SYMindX features sophisticated auto-discovery systems that eliminate the need for manual registration:
+
+### **Extension Discovery**
+- **Built-in**: Scans `src/extensions/` for directories with package.json
+- **Node Modules**: Finds npm packages with `symindx.extension` configuration  
+- **Local**: Discovers user extensions in project `extensions/` directory
+- **Zero-Config**: Extensions auto-register without core file modifications
+
+### **Emotion Discovery**  
+- **Categories**: Organizes emotions into basic, complex, social, cognitive
+- **Auto-Registration**: Emotions discovered via package.json configuration
+- **Factory Functions**: Consistent `create[Emotion]Emotion` pattern
+- **Extensible**: Add new emotions without touching framework code
+
+### **Cognition Discovery**
+- **Paradigms**: Reactive, HTN Planning, Hybrid, Unified, Theory of Mind
+- **Modular Thinking**: Each paradigm optimized for different scenarios
+- **Auto-Detection**: Cognition modules discovered and registered automatically  
+- **Intelligent Selection**: Character configs specify which cognition system to use
+
+### **Discovery Process**
+1. **Scan**: System scans all discovery locations on startup
+2. **Validate**: Checks for required package.json configurations
+3. **Register**: Auto-registers components with `autoRegister: true`
+4. **Load**: Components become available throughout the system
+
+### **Developer Benefits**
+- **No Core Changes**: Add functionality without modifying framework
+- **Type Safety**: Full TypeScript support with proper interfaces
+- **Consistent Patterns**: Follow established conventions
+- **Hot-Swappable**: Modules can be added/removed dynamically
+
+This architecture makes SYMindX truly extensible while maintaining clean separation between core framework and user code.
+
 ## 🤝 Contributing
 
 We welcome contributions! Please:
@@ -352,8 +487,8 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 <div align="center">
 
-**Build intelligent agents that feel emotions and remember conversations!**
+**Build intelligent agents with modular emotions, auto-discovered extensions, and persistent memory!**
 
-[Get Started](#-quick-start) • [Documentation](./docs-site/) • [Examples](./mind-agents/src/characters/)
+[Get Started](#-quick-start) • [Documentation](./docs-site/) • [Extensions](#-modular-extension-system) • [Emotions](#-modular-emotion-system)
 
 </div>
