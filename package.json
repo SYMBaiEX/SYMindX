@@ -6,13 +6,22 @@
   "scripts": {
     "build": "bun --cwd mind-agents run build && bun --cwd website run build",
     "build:agent": "bun --cwd mind-agents run build",
+    "build:cli": "bun --cwd mind-agents run build",
     "build:website": "bun --cwd website run build",
     "start": "bun --cwd mind-agents run start",
-    "start:all": "concurrently \"bun run start\" \"bun --cwd website run preview\"",
+    "start:agent": "bun --cwd mind-agents run start",
+    "start:cli": "bun --cwd mind-agents run start:cli",
+    "start:website": "bun --cwd website run preview",
+    "start:all": "concurrently \"bun run start:agent\" \"bun run start:website\"",
     "dev": "concurrently \"bun run dev:agent\" \"bun run dev:website\"",
     "dev:agent": "bun --cwd mind-agents run dev",
+    "dev:cli": "bun --cwd mind-agents run cli",
     "dev:website": "bun --cwd website run dev",
-    "test": "bun --cwd mind-agents test"
+    "test": "bun --cwd mind-agents test",
+    "cli": "bun --cwd mind-agents run cli",
+    "cli:dashboard": "bun --cwd mind-agents run cli:dashboard",
+    "cli:agents": "bun --cwd mind-agents run cli:agents",
+    "cli:status": "bun --cwd mind-agents run cli:status"
   },
   "workspaces": [
     "mind-agents",
