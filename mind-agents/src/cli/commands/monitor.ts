@@ -12,9 +12,9 @@ import { Command } from 'commander'
 import chalk from 'chalk'
 import inquirer from 'inquirer'
 import { WebSocket } from 'ws'
-import { CLIContext } from '../index.js'
-import { AgentEvent } from '../../types/agent.js'
-import { Logger } from '../../utils/logger.js'
+import { CLIContext } from '../index'
+import { AgentEvent } from '../../types/agent'
+import { Logger } from '../../utils/logger'
 
 export class MonitorCommand {
   private logger = new Logger('cli:monitor')

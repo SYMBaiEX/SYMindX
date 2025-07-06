@@ -16,7 +16,7 @@ import {
   ActionResultType,
   MemoryType,
   MemoryDuration
-} from '../types/agent.js'
+} from '../types/agent'
 import {
   AutonomousAgent,
   AutonomousConfig,
@@ -28,11 +28,11 @@ import {
   PerformanceMetrics,
   CuriosityDriver,
   Constraint
-} from '../types/autonomous.js'
-import { EventBus } from '../types/agent.js'
-import { Logger } from '../utils/logger.js'
-import { EthicsEngine, EthicsConfig, createDefaultEthicsConfig } from './ethics-engine.js'
-import { InteractionManager, InteractionConfig, createDefaultInteractionConfig } from './interaction-manager.js'
+} from '../types/autonomous'
+import { EventBus } from '../types/agent'
+import { Logger } from '../utils/logger'
+import { EthicsEngine, EthicsConfig, createDefaultEthicsConfig } from './ethics-engine'
+import { InteractionManager, InteractionConfig, createDefaultInteractionConfig } from './interaction-manager'
 
 export interface AutonomousEngineConfig {
   enabled: boolean
@@ -1088,14 +1088,14 @@ export class AutonomousEngine {
     if (!portal) return { allowed: true, reason: 'No validation portal available' }
     
     try {
-      const { PromptManager } = await import('./prompt-manager.js')
+      const { PromptManager } = await import('./prompt-manager')
       const prompt = PromptManager.format(PromptManager.PROMPTS.ACTION_VALIDATION, {
         action: `${action.action} (${action.type})`,
         context: `Phase: ${this.currentPhase?.name || 'unknown'}, Energy: ${(this.agent as any).energy || 1.0}`,
         ethics: this.agent.config.core.personality.includes('ethical') ? 'high' : 'normal'
       })
       
-      const { PortalIntegration } = await import('./portal-integration.js')
+      const { PortalIntegration } = await import('./portal-integration')
       const response = await PortalIntegration.generateResponse(this.agent, prompt, {
         temperature: 0,
         maxTokens: 100
@@ -1130,13 +1130,13 @@ export class AutonomousEngine {
       }
       
       // Use main model to identify important memories
-      const { PromptManager } = await import('./prompt-manager.js')
+      const { PromptManager } = await import('./prompt-manager')
       const prompt = PromptManager.format(PromptManager.PROMPTS.MEMORY_CONSOLIDATION, {
         memories: recentMemories.map(m => `ID: ${m.id} | ${m.content}`).join('\n')
       })
       
       if (this.agent.portal) {
-        const { PortalIntegration } = await import('./portal-integration.js')
+        const { PortalIntegration } = await import('./portal-integration')
         const analysis = await PortalIntegration.generateResponse(this.agent, prompt)
         this.logger.info(`Memory consolidation complete: ${analysis.substring(0, 100)}...`)
         
@@ -1234,7 +1234,7 @@ export class AutonomousEngine {
    */
   private async performSocialCheckIn(): Promise<any> {
     try {
-      const { PromptManager } = await import('./prompt-manager.js')
+      const { PromptManager } = await import('./prompt-manager')
       
       if (this.agent.portal) {
         const prompt = PromptManager.format(PromptManager.PROMPTS.SOCIAL_CHECKIN, {
@@ -1244,7 +1244,7 @@ export class AutonomousEngine {
           interactions: 'Recent conversations with users'
         })
         
-        const { PortalIntegration } = await import('./portal-integration.js')
+        const { PortalIntegration } = await import('./portal-integration')
         const message = await PortalIntegration.generateResponse(this.agent, prompt)
         this.logger.info(`Social check-in: ${message}`)
         
@@ -1275,7 +1275,7 @@ export class AutonomousEngine {
    */
   private async performReflection(): Promise<any> {
     try {
-      const { PromptManager } = await import('./prompt-manager.js')
+      const { PromptManager } = await import('./prompt-manager')
       
       // Get recent activities from memory
       const recentMemories = this.agent.memory ? 
@@ -1289,7 +1289,7 @@ export class AutonomousEngine {
           learnings: recentMemories.filter(m => m.tags.includes('learning')).length + ' new learnings'
         })
         
-        const { PortalIntegration } = await import('./portal-integration.js')
+        const { PortalIntegration } = await import('./portal-integration')
         const reflection = await PortalIntegration.generateResponse(this.agent, prompt)
         this.logger.info(`Reflection: ${reflection.substring(0, 100)}...`)
         

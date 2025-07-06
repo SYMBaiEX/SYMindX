@@ -9,10 +9,10 @@
  * - Agent collaboration and coordination
  */
 
-import { Agent, AgentStatus, AgentConfig } from '../types/agent.js'
-import { EventBus } from '../types/agent.js'
-import { SYMindXModuleRegistry } from './registry.js'
-import { Logger } from '../utils/logger.js'
+import { Agent, AgentStatus, AgentConfig } from '../types/agent'
+import { EventBus } from '../types/agent'
+import { SYMindXModuleRegistry } from './registry'
+import { Logger } from '../utils/logger'
 import { EventEmitter } from 'events'
 
 export interface AgentHealthStatus {

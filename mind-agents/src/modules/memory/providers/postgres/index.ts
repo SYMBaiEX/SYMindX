@@ -6,8 +6,8 @@
  */
 
 import { Pool, PoolClient } from 'pg'
-import { MemoryRecord, MemoryType, MemoryDuration } from '../../../../types/agent.js'
-import { BaseMemoryProvider, BaseMemoryConfig, MemoryRow, EnhancedMemoryRecord } from '../../base-memory-provider.js'
+import { MemoryRecord, MemoryType, MemoryDuration } from '../../../../types/agent'
+import { BaseMemoryProvider, BaseMemoryConfig, MemoryRow, EnhancedMemoryRecord } from '../../base-memory-provider'
 import { 
   MemoryProviderMetadata, 
   MemoryTierType,
@@ -15,10 +15,10 @@ import {
   SharedMemoryConfig,
   ArchivalStrategy,
   MemoryPermission
-} from '../../../../types/memory.js'
-import { SharedMemoryPool } from './shared-pool.js'
-import { MemoryArchiver } from './archiver.js'
-import { runtimeLogger } from '../../../../utils/logger.js'
+} from '../../../../types/memory'
+import { SharedMemoryPool } from './shared-pool'
+import { MemoryArchiver } from './archiver'
+import { runtimeLogger } from '../../../../utils/logger'
 import { v4 as uuidv4 } from 'uuid'
 
 /**
@@ -1223,15 +1223,15 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
         agentId: group[0].agentId,
         type: MemoryType.EXPERIENCE,
         content: `Summary of ${day}: ${group.map(m => m.content).join('; ')}`,
+        metadata: { compressed: true, source: 'compression' },
         importance: Math.max(...group.map(m => m.importance || 0)),
         timestamp: new Date(day),
         tags: ['compressed', 'summary'],
         duration: MemoryDuration.LONG_TERM,
         tier: MemoryTierType.EPISODIC,
         context: {
-          source: 'compression',
-          originalCount: group.length
-        } as any
+          source: 'compression'
+        }
       })
     }
     

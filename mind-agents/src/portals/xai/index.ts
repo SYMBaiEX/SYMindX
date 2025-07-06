@@ -1,16 +1,16 @@
-import { convertUsage } from '../utils.js'
+import { convertUsage } from '../utils'
 /**
  * XAI Portal Implementation
  * 
  * This portal provides integration with XAI's Grok API using AI SDK v5.
  */
 
-import { BasePortal } from '../base-portal.js'
+import { BasePortal } from '../base-portal'
 import { PortalConfig, TextGenerationOptions, TextGenerationResult, 
   ChatMessage, ChatGenerationOptions, ChatGenerationResult, EmbeddingOptions, EmbeddingResult,
-  ImageGenerationOptions, ImageGenerationResult, PortalCapability, MessageRole, FinishReason, PortalType, ModelType } from '../../types/portal.js'
+  ImageGenerationOptions, ImageGenerationResult, PortalCapability, MessageRole, FinishReason, PortalType, ModelType } from '../../types/portal'
 import { xai } from '@ai-sdk/xai'
-import { generateText as aiGenerateText, streamText as aiStreamText, tool, type LanguageModel } from 'ai'
+import { generateText as aiGenerateText, streamText as aiStreamText, tool, type LanguageModel, type ModelMessage } from 'ai'
 import { z } from 'zod'
 
 export interface XAIConfig extends PortalConfig {
@@ -41,13 +41,34 @@ export class XAIPortal extends BasePortal {
   }
 
   /**
-   * Convert ChatMessage array to message format for AI SDK
+   * Convert ChatMessage array to message format for AI SDK v5
    */
-  private convertToModelMessages(messages: ChatMessage[]) {
-    return messages.map(msg => ({
-      role: msg.role,
-      content: msg.content
-    }))
+  private convertToModelMessages(messages: ChatMessage[]): ModelMessage[] {
+    return messages.map(msg => {
+      switch (msg.role) {
+        case MessageRole.SYSTEM:
+          return { role: 'system', content: msg.content }
+        case MessageRole.USER:
+          return { role: 'user', content: msg.content }
+        case MessageRole.ASSISTANT:
+          return { role: 'assistant', content: msg.content }
+        case MessageRole.TOOL:
+          return { 
+            role: 'tool', 
+            content: [{ 
+              type: 'tool-result', 
+              toolCallId: '', 
+              toolName: '', 
+              result: msg.content 
+            }] 
+          }
+        case MessageRole.FUNCTION:
+          // Convert function messages to assistant messages for compatibility
+          return { role: 'assistant', content: msg.content }
+        default:
+          return { role: 'user', content: msg.content }
+      }
+    })
   }
 
   /**

@@ -3,7 +3,7 @@
  * Provides safe concurrent operation handling with locks and deadlock detection
  */
 
-import { Logger } from '../utils/logger.js'
+import { Logger } from '../utils/logger'
 import { EventEmitter } from 'events'
 
 export interface OperationLock {

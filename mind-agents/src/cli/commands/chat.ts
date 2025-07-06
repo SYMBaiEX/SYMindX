@@ -12,8 +12,8 @@ import { Command } from 'commander'
 import chalk from 'chalk'
 import inquirer from 'inquirer'
 import { WebSocket } from 'ws'
-import { CLIContext } from '../index.js'
-import { Logger } from '../../utils/logger.js'
+import { CLIContext } from '../index'
+import { Logger } from '../../utils/logger'
 
 export class ChatCommand {
   private logger = new Logger('cli:chat')

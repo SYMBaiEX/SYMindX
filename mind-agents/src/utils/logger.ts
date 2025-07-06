@@ -3,7 +3,7 @@
  * Provides clean, uniform formatting for all log messages
  */
 
-import { LogLevel } from '../types/agent.js'
+import { LogLevel } from '../types/agent'
 
 export interface LoggerOptions {
   level?: LogLevel | 'debug' | 'info' | 'warn' | 'error'

@@ -1,0 +1,21 @@
+{
+  "name": "@symindx/cognition-theory-of-mind",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "main": "index.ts",
+  "dependencies": {},
+  "symindx": {
+    "type": "cognition",
+    "displayName": "Theory of Mind",
+    "description": "Social cognition with mental modeling and perspective-taking abilities",
+    "category": "specialized",
+    "cognition": {
+      "type": "theory-of-mind",
+      "factory": "createTheoryOfMindCognition",
+      "autoRegister": true,
+      "paradigms": ["social", "mental-modeling", "perspective-taking", "empathy"],
+      "category": "specialized"
+    }
+  }
+}

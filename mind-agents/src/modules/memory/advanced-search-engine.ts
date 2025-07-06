@@ -5,7 +5,7 @@
  * hybrid search, query expansion, and relational queries.
  */
 
-import { MemoryRecord } from '../../types/agent.js'
+import { MemoryRecord } from '../../types/agent'
 import { 
   SearchQuery, 
   SearchResult, 
@@ -14,8 +14,8 @@ import {
   TimeRange,
   MemoryRelationship,
   MemoryRelationshipType
-} from '../../types/memory.js'
-import { runtimeLogger } from '../../utils/logger.js'
+} from '../../types/memory'
+import { runtimeLogger } from '../../utils/logger'
 
 /**
  * Concept extraction service interface
@@ -166,7 +166,8 @@ export class AdvancedSearchEngine {
 
       if (similarity > 0) {
         results.push({
-          memory,
+          record: memory,
+          memory,  // Backward compatibility
           score: similarity,
           semanticScore: similarity,
           explanations: [`Semantic similarity: ${similarity.toFixed(3)}`]
@@ -221,7 +222,8 @@ export class AdvancedSearchEngine {
 
       if (score > 0) {
         results.push({
-          memory,
+          record: memory,
+          memory,  // Backward compatibility
           score,
           keywordScore: score,
           explanations: [`Keyword matches: ${matchedTerms.join(', ')}`],
@@ -257,7 +259,7 @@ export class AdvancedSearchEngine {
 
     // Add semantic results
     for (const result of semanticResults) {
-      resultMap.set(result.memory.id, {
+      resultMap.set(result.record.id, {
         ...result,
         score: result.score * boostFactors.semantic!
       })
@@ -265,7 +267,7 @@ export class AdvancedSearchEngine {
 
     // Combine with keyword results
     for (const keywordResult of keywordResults) {
-      const existing = resultMap.get(keywordResult.memory.id)
+      const existing = resultMap.get(keywordResult.record.id)
       if (existing) {
         // Combine scores
         existing.score += keywordResult.score * boostFactors.keyword!
@@ -279,7 +281,7 @@ export class AdvancedSearchEngine {
           ...(keywordResult.highlights || [])
         ]
       } else {
-        resultMap.set(keywordResult.memory.id, {
+        resultMap.set(keywordResult.record.id, {
           ...keywordResult,
           score: keywordResult.score * boostFactors.keyword!
         })
@@ -291,12 +293,12 @@ export class AdvancedSearchEngine {
     for (const result of results) {
       // Importance boost
       if (boostFactors.importance) {
-        result.score += result.memory.importance * boostFactors.importance
+        result.score += result.record.importance * boostFactors.importance
       }
 
       // Recency boost
       if (boostFactors.recency) {
-        const age = Date.now() - result.memory.timestamp.getTime()
+        const age = Date.now() - result.record.timestamp.getTime()
         const daysSinceCreated = age / (1000 * 60 * 60 * 24)
         const recencyScore = Math.max(0, 1 - daysSinceCreated / 30) // Decay over 30 days
         result.score += recencyScore * boostFactors.recency
@@ -334,10 +336,10 @@ export class AdvancedSearchEngine {
     // Find related memories through relationships
     const relationshipMap = new Map<string, MemoryRelationship[]>()
     for (const rel of relationships) {
-      if (!relationshipMap.has(rel.sourceMemoryId)) {
-        relationshipMap.set(rel.sourceMemoryId, [])
+      if (!relationshipMap.has(rel.sourceId)) {
+        relationshipMap.set(rel.sourceId, [])
       }
-      relationshipMap.get(rel.sourceMemoryId)!.push(rel)
+      relationshipMap.get(rel.sourceId)!.push(rel)
     }
 
     const depth = query.conceptualDepth || 2
@@ -345,14 +347,14 @@ export class AdvancedSearchEngine {
 
     for (const match of directMatches) {
       this.traverseRelationships(
-        match.memory.id,
+        match.record.id,
         relationshipMap,
         memories,
         results,
         visited,
         depth,
         match.score,
-        [`${match.memory.id} (direct)`]
+        [`${match.record.id} (direct)`]
       )
     }
 
@@ -399,7 +401,8 @@ export class AdvancedSearchEngine {
 
       if (score > 0) {
         results.push({
-          memory,
+          record: memory,
+          memory,  // Backward compatibility
           score,
           explanations: [
             ...explanations,
@@ -467,7 +470,8 @@ export class AdvancedSearchEngine {
 
       if (score > 0) {
         results.push({
-          memory,
+          record: memory,
+          memory,  // Backward compatibility
           score,
           conceptMatches,
           explanations: [`Concept matches: ${conceptMatches.length}`]
@@ -502,7 +506,7 @@ export class AdvancedSearchEngine {
     // Combine all results
     for (const results of allResults) {
       for (const result of results) {
-        const existing = resultMap.get(result.memory.id)
+        const existing = resultMap.get(result.record.id)
         if (existing) {
           // Combine scores (average)
           existing.score = (existing.score + result.score) / 2
@@ -523,7 +527,7 @@ export class AdvancedSearchEngine {
             ...(result.relationshipPaths || [])
           ]
         } else {
-          resultMap.set(result.memory.id, { ...result })
+          resultMap.set(result.record.id, { ...result })
         }
       }
     }
@@ -540,23 +544,17 @@ export class AdvancedSearchEngine {
     let end: Date | undefined
 
     if (timeRange.relative) {
-      switch (timeRange.relative) {
-        case 'last_hour':
-          start = new Date(now.getTime() - 60 * 60 * 1000)
-          break
-        case 'last_day':
-          start = new Date(now.getTime() - 24 * 60 * 60 * 1000)
-          break
-        case 'last_week':
-          start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-          break
-        case 'last_month':
-          start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
-          break
-        case 'last_year':
-          start = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000)
-          break
+      const { value, unit } = timeRange.relative
+      const multipliers = {
+        minutes: 60 * 1000,
+        hours: 60 * 60 * 1000,
+        days: 24 * 60 * 60 * 1000,
+        weeks: 7 * 24 * 60 * 60 * 1000,
+        months: 30 * 24 * 60 * 60 * 1000,
+        years: 365 * 24 * 60 * 60 * 1000
       }
+      const multiplier = multipliers[unit] || multipliers.days
+      start = new Date(now.getTime() - value * multiplier)
     } else {
       start = timeRange.start
       end = timeRange.end
@@ -573,11 +571,16 @@ export class AdvancedSearchEngine {
   /**
    * Apply filters to memories
    */
-  private applyFilters(memories: MemoryRecord[], filters: any[]): MemoryRecord[] {
+  private applyFilters(memories: MemoryRecord[], filters: Record<string, any>): MemoryRecord[] {
     return memories.filter(memory => {
-      for (const filter of filters) {
-        const value = this.getFieldValue(memory, filter.field)
-        if (!this.applyFilter(value, filter.operator, filter.value)) {
+      for (const [field, filterValue] of Object.entries(filters)) {
+        const value = this.getFieldValue(memory, field)
+        // Simple equality check for now - can be extended to support operators
+        if (Array.isArray(filterValue)) {
+          if (!filterValue.includes(value)) {
+            return false
+          }
+        } else if (value !== filterValue) {
           return false
         }
       }
@@ -654,17 +657,18 @@ export class AdvancedSearchEngine {
     const relationships = relationshipMap.get(memoryId) || []
 
     for (const rel of relationships) {
-      const relatedMemory = memories.find(m => m.id === rel.targetMemoryId)
+      const relatedMemory = memories.find(m => m.id === rel.targetId)
       if (!relatedMemory) continue
 
       const relationshipScore = rel.strength * (baseScore / (path.length + 1))
-      const newPath = [...path, `${rel.type}→${rel.targetMemoryId}`]
+      const newPath = [...path, `${rel.type}→${rel.targetId}`]
 
       // Add to results if not already present
-      const existing = results.find(r => r.memory.id === relatedMemory.id)
+      const existing = results.find(r => r.record.id === relatedMemory.id)
       if (!existing) {
         results.push({
-          memory: relatedMemory,
+          record: relatedMemory,
+          memory: relatedMemory,  // Backward compatibility
           score: relationshipScore,
           relationshipPaths: [newPath.join(' → ')],
           explanations: [`Related via ${rel.type} (strength: ${rel.strength})`]
@@ -673,7 +677,7 @@ export class AdvancedSearchEngine {
 
       // Continue traversing
       this.traverseRelationships(
-        rel.targetMemoryId,
+        rel.targetId,
         relationshipMap,
         memories,
         results,

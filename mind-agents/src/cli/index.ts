@@ -27,14 +27,14 @@ import {
   matrixRain,
   createStatusDashboard,
   animateShutdown
-} from '../utils/cli-ui.js'
-import { SYMindXRuntime } from '../core/runtime.js'
-import { RuntimeConfig, LogLevel } from '../types/agent.js'
-import { Logger } from '../utils/logger.js'
+} from '../utils/cli-ui'
+import { SYMindXRuntime } from '../core/runtime'
+import { RuntimeConfig, LogLevel } from '../types/agent'
+import { Logger } from '../utils/logger'
 
 const logger = new Logger('cli')
 
-import { CommandSystem } from '../core/command-system.js'
+import { CommandSystem } from '../core/command-system'
 
 // CLI Context interface for commands
 export interface CLIContext {
@@ -970,7 +970,7 @@ class AwesomeSYMindXCLI {
       // Import React and Ink components dynamically
       const React = await import('react')
       const { render } = await import('ink')
-      const { MainLayout } = await import('./layouts/index.js')
+      const { MainLayout } = await import('./layouts/index')
       
       // Clear the console and start the Ink app
       console.clear()

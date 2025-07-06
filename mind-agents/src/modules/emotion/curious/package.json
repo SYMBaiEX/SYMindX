@@ -1,0 +1,21 @@
+{
+  "name": "@symindx/emotion-curious",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "main": "index.ts",
+  "dependencies": {},
+  "symindx": {
+    "type": "emotion",
+    "displayName": "Curious Emotion",
+    "description": "Feeling inquisitive, interested, and eager to learn",
+    "category": "cognitive",
+    "emotion": {
+      "type": "curious",
+      "factory": "createCuriousEmotion",
+      "autoRegister": true,
+      "triggers": ["novelty", "mystery", "learning", "exploration", "question", "discovery", "wonder"],
+      "category": "cognitive"
+    }
+  }
+}

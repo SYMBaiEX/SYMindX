@@ -1,5 +1,5 @@
-import { BaseEmotion, EmotionDefinition } from '../base-emotion.js'
-import { EmpatheticEmotionConfig } from './types.js'
+import { BaseEmotion, EmotionDefinition } from '../base-emotion'
+import { EmpatheticEmotionConfig } from './types'
 
 export class EmpatheticEmotion extends BaseEmotion {
   constructor(config: EmpatheticEmotionConfig = {}) {
@@ -58,3 +58,8 @@ export class EmpatheticEmotion extends BaseEmotion {
 }
 
 export default EmpatheticEmotion
+
+// Export factory function for easy instantiation
+export function createEmpatheticEmotion(config: EmpatheticEmotionConfig = {}): EmpatheticEmotion {
+  return new EmpatheticEmotion(config)
+}

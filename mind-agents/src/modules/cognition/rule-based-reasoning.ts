@@ -17,29 +17,45 @@ import {
   PlanStep,
   PlanStepStatus,
   MemoryRecord
-} from '../../types/agent.js'
+} from '../../types/agent'
 import { 
   CognitionModule,
   CognitionModuleMetadata,
+  ReasoningParadigm,
   Rule,
   Condition,
   RuleAction,
   FactBase,
   ReasoningPerformance,
   HybridReasoningConfig
-} from '../../types/cognition.js'
-import { Experience } from '../../types/autonomous.js'
-import { BaseConfig } from '../../types/common.js'
-import { MemoryType, MemoryDuration } from '../../types/enums.js'
-import { runtimeLogger } from '../../utils/logger.js'
+} from '../../types/cognition'
+import { Experience } from '../../types/autonomous'
+import { BaseConfig } from '../../types/common'
+import { MemoryType, MemoryDuration } from '../../types/enums'
+import { runtimeLogger } from '../../utils/logger'
 
 /**
  * Fact base implementation for storing and querying facts
  */
 export class RuleBasedFactBase implements FactBase {
   facts: Map<string, any> = new Map()
+  rules: Map<string, Rule> = new Map()
   
-  addFact(key: string, value: any): void {
+  addFact(fact: any): void {
+    if (typeof fact === 'object' && fact.id) {
+      // Handle structured Fact objects
+      this.facts.set(fact.id, fact)
+      runtimeLogger.cognition(`Added fact: ${fact.id} = ${JSON.stringify(fact)}`)
+    } else {
+      // Handle simple key-value facts (for backward compatibility)
+      const id = `fact_${Date.now()}_${Math.random()}`
+      this.facts.set(id, fact)
+      runtimeLogger.cognition(`Added fact: ${id} = ${JSON.stringify(fact)}`)
+    }
+  }
+  
+  // Convenience method for simple key-value facts
+  addSimpleFact(key: string, value: any): void {
     this.facts.set(key, value)
     runtimeLogger.cognition(`Added fact: ${key} = ${JSON.stringify(value)}`)
   }
@@ -57,7 +73,7 @@ export class RuleBasedFactBase implements FactBase {
     const results: any[] = []
     const regex = new RegExp(pattern.replace('*', '.*'), 'i')
     
-    for (const [key, value] of this.facts) {
+    for (const [key, value] of Array.from(this.facts.entries())) {
       if (regex.test(key)) {
         results.push({ key, value })
       }
@@ -72,6 +88,28 @@ export class RuleBasedFactBase implements FactBase {
   
   getAllFacts(): Record<string, any> {
     return Object.fromEntries(this.facts)
+  }
+  
+  query(pattern: any): any[] {
+    const results: any[] = []
+    for (const [key, value] of Array.from(this.facts.entries())) {
+      // Simple pattern matching
+      if (this.matchesPattern(value, pattern)) {
+        results.push(value)
+      }
+    }
+    return results
+  }
+  
+  private matchesPattern(fact: any, pattern: any): boolean {
+    if (!pattern) return true
+    
+    for (const [key, value] of Object.entries(pattern)) {
+      if (fact[key] !== value) {
+        return false
+      }
+    }
+    return true
   }
 }
 
@@ -109,7 +147,7 @@ export class RuleBasedReasoning implements CognitionModule {
       id: 'respond_to_question',
       name: 'Respond to Questions',
       conditions: [
-        { type: 'fact', expression: 'message_contains_question', parameters: {} }
+        { type: 'fact', property: 'message_contains_question', operator: 'equals', value: true, expression: 'message_contains_question', parameters: {} }
       ],
       actions: [
         { type: 'execute', target: 'generate_response', parameters: { type: 'answer' } }
@@ -123,8 +161,8 @@ export class RuleBasedReasoning implements CognitionModule {
       id: 'pursue_goal',
       name: 'Pursue Active Goal',
       conditions: [
-        { type: 'fact', expression: 'has_active_goal', parameters: {} },
-        { type: 'fact', expression: 'goal_achievable', parameters: {} }
+        { type: 'fact', property: 'has_active_goal', operator: 'equals', value: true, expression: 'has_active_goal', parameters: {} },
+        { type: 'fact', property: 'goal_achievable', operator: 'equals', value: true, expression: 'goal_achievable', parameters: {} }
       ],
       actions: [
         { type: 'execute', target: 'work_on_goal', parameters: {} }
@@ -138,8 +176,8 @@ export class RuleBasedReasoning implements CognitionModule {
       id: 'learn_from_failure',
       name: 'Learn from Failures',
       conditions: [
-        { type: 'fact', expression: 'action_failed', parameters: {} },
-        { type: 'fact', expression: 'failure_reason_known', parameters: {} }
+        { type: 'fact', property: 'action_failed', operator: 'equals', value: true, expression: 'action_failed', parameters: {} },
+        { type: 'fact', property: 'failure_reason_known', operator: 'equals', value: true, expression: 'failure_reason_known', parameters: {} }
       ],
       actions: [
         { type: 'execute', target: 'update_knowledge', parameters: {} },
@@ -183,7 +221,7 @@ export class RuleBasedReasoning implements CognitionModule {
       version: '1.0.0',
       description: 'Forward-chaining rule engine with logical inference',
       author: 'SYMindX',
-      paradigms: ['rule_based'],
+      paradigms: [ReasoningParadigm.RULE_BASED],
       learningCapable: true
     }
   }
@@ -242,8 +280,8 @@ export class RuleBasedReasoning implements CognitionModule {
    */
   async plan(agent: Agent, goal: string): Promise<Plan> {
     // Add goal to fact base
-    this.factBase.addFact('current_goal', goal)
-    this.factBase.addFact('has_active_goal', true)
+    this.factBase.addSimpleFact('current_goal', goal)
+    this.factBase.addSimpleFact('has_active_goal', true)
     
     // Create planning rules if not exist
     this.addPlanningRules(goal)
@@ -308,7 +346,7 @@ export class RuleBasedReasoning implements CognitionModule {
     
     // Add options to fact base
     options.forEach((option, index) => {
-      this.factBase.addFact(`option_${index}`, option)
+      this.factBase.addSimpleFact(`option_${index}`, option)
     })
     
     // Apply decision rules
@@ -351,36 +389,36 @@ export class RuleBasedReasoning implements CognitionModule {
    */
   private updateFactBase(agent: Agent, context: ThoughtContext): void {
     // Add agent state
-    this.factBase.addFact('agent_id', agent.id)
-    this.factBase.addFact('agent_status', agent.status)
+    this.factBase.addSimpleFact('agent_id', agent.id)
+    this.factBase.addSimpleFact('agent_status', agent.status)
     
     // Add context events
     context.events.forEach((event, index) => {
-      this.factBase.addFact(`event_${index}`, event)
+      this.factBase.addSimpleFact(`event_${index}`, event)
       
       // Check for questions
       if (event.data?.message && typeof event.data.message === 'string') {
-        this.factBase.addFact('has_message', true)
-        this.factBase.addFact('message_contains_question', event.data.message.includes('?'))
+        this.factBase.addSimpleFact('has_message', true)
+        this.factBase.addSimpleFact('message_contains_question', event.data.message.includes('?'))
       }
       
       // Check for mentions
       if (event.data?.mentioned || event.type.includes('mention')) {
-        this.factBase.addFact('was_mentioned', true)
+        this.factBase.addSimpleFact('was_mentioned', true)
       }
     })
     
     // Add goal information
     if (context.goal) {
-      this.factBase.addFact('current_goal', context.goal)
-      this.factBase.addFact('has_active_goal', true)
-      this.factBase.addFact('goal_achievable', this.assessGoalAchievability(context.goal))
+      this.factBase.addSimpleFact('current_goal', context.goal)
+      this.factBase.addSimpleFact('has_active_goal', true)
+      this.factBase.addSimpleFact('goal_achievable', this.assessGoalAchievability(context.goal))
     }
     
     // Add memory information
     if (context.memories) {
-      this.factBase.addFact('has_memories', context.memories.length > 0)
-      this.factBase.addFact('memory_count', context.memories.length)
+      this.factBase.addSimpleFact('has_memories', context.memories.length > 0)
+      this.factBase.addSimpleFact('memory_count', context.memories.length)
     }
   }
   
@@ -422,7 +460,7 @@ export class RuleBasedReasoning implements CognitionModule {
   private getEligibleRules(): Rule[] {
     const eligible: Rule[] = []
     
-    for (const rule of this.rules.values()) {
+    for (const rule of Array.from(this.rules.values())) {
       if (this.evaluateConditions(rule.conditions)) {
         eligible.push(rule)
       }
@@ -449,16 +487,16 @@ export class RuleBasedReasoning implements CognitionModule {
   private evaluateCondition(condition: Condition): boolean {
     switch (condition.type) {
       case 'fact':
-        return this.factBase.hasFact(condition.expression)
+        return this.factBase.hasFact(condition.expression || condition.property || '')
       
       case 'pattern':
-        return this.factBase.queryFacts(condition.expression).length > 0
+        return this.factBase.queryFacts(condition.expression || '').length > 0
       
       case 'function':
-        return this.evaluateFunction(condition.expression, condition.parameters)
+        return this.evaluateFunction(condition.expression || '', condition.parameters)
       
       case 'temporal':
-        return this.evaluateTemporalCondition(condition.expression, condition.parameters)
+        return this.evaluateTemporalCondition(condition.expression || '', condition.parameters)
       
       default:
         return false
@@ -521,7 +559,7 @@ export class RuleBasedReasoning implements CognitionModule {
     switch (strategy) {
       case 'priority':
         return rules.reduce((best, current) => 
-          current.priority > best.priority ? current : best
+          (current.priority || 0) > (best.priority || 0) ? current : best
         )
       
       case 'specificity':
@@ -586,7 +624,7 @@ export class RuleBasedReasoning implements CognitionModule {
   private async executeRuleAction(action: RuleAction, agent: Agent, context: ThoughtContext): Promise<void> {
     switch (action.type) {
       case 'assert':
-        this.factBase.addFact(action.target, action.parameters?.value || true)
+        this.factBase.addSimpleFact(action.target, action.parameters?.value || true)
         break
       
       case 'retract':
@@ -600,7 +638,7 @@ export class RuleBasedReasoning implements CognitionModule {
       case 'modify':
         const currentValue = this.factBase.getFact(action.target)
         const newValue = { ...currentValue, ...action.parameters }
-        this.factBase.addFact(action.target, newValue)
+        this.factBase.addSimpleFact(action.target, newValue)
         break
     }
   }
@@ -611,16 +649,16 @@ export class RuleBasedReasoning implements CognitionModule {
   private async executeAction(actionName: string, parameters: any, agent: Agent, context: ThoughtContext): Promise<void> {
     switch (actionName) {
       case 'generate_response':
-        this.factBase.addFact('response_generated', true)
-        this.factBase.addFact('response_type', parameters?.type || 'general')
+        this.factBase.addSimpleFact('response_generated', true)
+        this.factBase.addSimpleFact('response_type', parameters?.type || 'general')
         break
       
       case 'work_on_goal':
-        this.factBase.addFact('working_on_goal', true)
+        this.factBase.addSimpleFact('working_on_goal', true)
         break
       
       case 'update_knowledge':
-        this.factBase.addFact('knowledge_updated', true)
+        this.factBase.addSimpleFact('knowledge_updated', true)
         break
       
       default:
@@ -644,7 +682,7 @@ export class RuleBasedReasoning implements CognitionModule {
         parameters: {
           ruleId: rule.id,
           ruleName: rule.name,
-          confidence: rule.confidence
+          confidence: rule.confidence || 0.5
         },
         priority: rule.priority,
         status: ActionStatus.PENDING,
@@ -658,7 +696,7 @@ export class RuleBasedReasoning implements CognitionModule {
       actions.push({
         id: `action_${Date.now()}`,
         agentId: agent.id,
-        type: ActionCategory.PROCESSING,
+        type: ActionCategory.COGNITIVE,
         action: 'work_on_goal',
         parameters: {
           goal: this.factBase.getFact('current_goal'),
@@ -687,7 +725,7 @@ export class RuleBasedReasoning implements CognitionModule {
       content,
       metadata: {
         reasoning_type: 'rule_based',
-        rules_fired: rules.map(r => ({ id: r.id, name: r.name, confidence: r.confidence })),
+        rules_fired: rules.map(r => ({ id: r.id, name: r.name, confidence: r.confidence || 0.5 })),
         facts_used: this.factBase.getAllFacts(),
         timestamp: new Date()
       },
@@ -704,7 +742,7 @@ export class RuleBasedReasoning implements CognitionModule {
   private calculateConfidence(rules: Rule[]): number {
     if (rules.length === 0) return 0.1
     
-    const totalConfidence = rules.reduce((sum, rule) => sum + rule.confidence, 0)
+    const totalConfidence = rules.reduce((sum, rule) => sum + (rule.confidence || 0.5), 0)
     return Math.min(1.0, totalConfidence / rules.length)
   }
   
@@ -716,8 +754,8 @@ export class RuleBasedReasoning implements CognitionModule {
       id: `planning_${Date.now()}`,
       name: `Planning for ${goal}`,
       conditions: [
-        { type: 'fact', expression: 'has_active_goal' },
-        { type: 'fact', expression: 'goal_achievable' }
+        { type: 'fact', property: 'has_active_goal', operator: 'equals', value: true, expression: 'has_active_goal' },
+        { type: 'fact', property: 'goal_achievable', operator: 'equals', value: true, expression: 'goal_achievable' }
       ],
       actions: [
         { type: 'assert', target: 'plan_created' },
@@ -772,8 +810,8 @@ export class RuleBasedReasoning implements CognitionModule {
     for (const ruleId of recentRules) {
       const rule = this.rules.get(ruleId)
       if (rule) {
-        rule.priority = Math.min(1.0, rule.priority + 0.1)
-        rule.confidence = Math.min(1.0, rule.confidence + 0.05)
+        rule.priority = Math.min(1.0, (rule.priority || 0.5) + 0.1)
+        rule.confidence = Math.min(1.0, (rule.confidence || 0.5) + 0.05)
       }
     }
   }
@@ -791,8 +829,8 @@ export class RuleBasedReasoning implements CognitionModule {
     for (const ruleId of failedRules) {
       const rule = this.rules.get(ruleId)
       if (rule) {
-        rule.priority = Math.max(0.1, rule.priority - 0.1)
-        rule.confidence = Math.max(0.1, rule.confidence - 0.05)
+        rule.priority = Math.max(0.1, (rule.priority || 0.5) - 0.1)
+        rule.confidence = Math.max(0.1, (rule.confidence || 0.5) - 0.05)
       }
     }
   }
@@ -804,11 +842,11 @@ export class RuleBasedReasoning implements CognitionModule {
     const rewardValue = experience.reward.value
     
     // Adjust priorities based on reward
-    for (const rule of this.rules.values()) {
+    for (const rule of Array.from(this.rules.values())) {
       if (rewardValue > 0) {
-        rule.priority = Math.min(1.0, rule.priority + (rewardValue * 0.1))
+        rule.priority = Math.min(1.0, (rule.priority || 0.5) + (rewardValue * 0.1))
       } else {
-        rule.priority = Math.max(0.1, rule.priority + (rewardValue * 0.1))
+        rule.priority = Math.max(0.1, (rule.priority || 0.5) + (rewardValue * 0.1))
       }
     }
   }

@@ -1,0 +1,14 @@
+{
+  "name": "@symindx/module-memory-supabase",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "main": "index.ts",
+  "dependencies": {},
+  "symindx": {
+    "type": "module",
+    "category": "memory",
+    "displayName": "Supabase Memory Provider",
+    "description": "Supabase-powered memory storage with real-time capabilities"
+  }
+}

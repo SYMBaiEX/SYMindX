@@ -2,7 +2,7 @@
   "id": "nyx",
   "name": "NyX",
   "description": "A curious and analytical person who enjoys helping others understand complex topics",
-  "version": "1.2.0",
+  "version": "2.1.0",
   "enabled": true,
   
   "personality": {
@@ -67,14 +67,22 @@
   "memory": {
     "type": "sqlite",
     "config": {
-      "database_path": "./data/memories.db",
-      "retention_policy": "emotional_significance",
-      "emotional_weighting": true,
+      "dbPath": "./data/nyx-memories.db",
+      "retentionPolicy": "emotional_significance",
+      "emotionalWeighting": true,
       "autobiographical": true,
-      "enable_embeddings": true,
-      "embedding_provider": "openai",
-      "embedding_model": "text-embedding-3-large",
-      "embedding_dimensions": 3072
+      "enableEmbeddings": true,
+      "embeddingProvider": "openai",
+      "embeddingModel": "text-embedding-3-large",
+      "embeddingDimensions": 3072,
+      "compressionThreshold": 10000,
+      "maxMemories": 50000,
+      "memoryDecayRate": 0.05,
+      "importanceThreshold": 0.3,
+      "enableFullTextSearch": true,
+      "enableAnalytics": true,
+      "backupEnabled": true,
+      "backupInterval": 86400000
     }
   },
   
@@ -106,9 +114,45 @@
       "thinkOnRequest": true,
       "minThinkingConfidence": 0.6,
       "quickResponseMode": true,
-      "analysisDepth": "normal",
+      "analysisDepth": "deep",
       "useMemories": true,
-      "maxMemoryRecall": 10
+      "maxMemoryRecall": 15,
+      "paradigms": [
+        "deductive",
+        "inductive",
+        "abductive",
+        "analogical",
+        "probabilistic",
+        "rule_based",
+        "hybrid"
+      ],
+      "reasoningWeights": {
+        "deductive": 0.25,
+        "inductive": 0.20,
+        "abductive": 0.15,
+        "analogical": 0.15,
+        "probabilistic": 0.15,
+        "rule_based": 0.10
+      },
+      "metaCognition": {
+        "enabled": true,
+        "selfReflection": true,
+        "strategySelection": true,
+        "performanceMonitoring": true
+      },
+      "learning": {
+        "enabled": true,
+        "experiential": true,
+        "reinforcement": true,
+        "transferLearning": true,
+        "learningRate": 0.1
+      },
+      "creativity": {
+        "enabled": true,
+        "divergentThinking": true,
+        "conceptualBlending": true,
+        "noveltyDetection": true
+      }
     }
   },
   
@@ -187,31 +231,61 @@
       "name": "api",
       "enabled": true,
       "config": {
-        "port": 3001,
-        "host": "localhost",
-        "cors_enabled": true,
-        "rate_limiting": true,
-        "websocket_enabled": true,
-        "webui_enabled": true,
-        "auth_required": false,
-        "max_connections": 100
+        "settings": {
+          "port": 3001,
+          "host": "0.0.0.0",
+          "cors": {
+            "enabled": true,
+            "origins": ["*"],
+            "methods": ["GET", "POST", "PUT", "DELETE"],
+            "headers": ["Content-Type", "Authorization"]
+          },
+          "rateLimit": {
+            "enabled": true,
+            "windowMs": 60000,
+            "maxRequests": 100
+          },
+          "websocket": {
+            "enabled": true,
+            "path": "/ws",
+            "heartbeatInterval": 30000
+          },
+          "auth": {
+            "enabled": false,
+            "type": "bearer"
+          },
+          "logging": {
+            "enabled": true,
+            "level": "info",
+            "format": "combined"
+          }
+        }
       }
     },
     {
       "name": "telegram",
       "enabled": true,
       "config": {
-        "auto_respond": true,
-        "personality_mode": "full",
-        "memory_integration": true,
-        "emotional_responses": true
+        "autoRespond": true,
+        "personalityMode": "full",
+        "memoryIntegration": true,
+        "emotionalResponses": true,
+        "rateLimiting": {
+          "enabled": true,
+          "maxMessagesPerMinute": 20
+        },
+        "features": {
+          "commands": true,
+          "inlineKeyboards": true,
+          "fileUploads": false,
+          "groupChats": true
+        }
       }
     },
     {
       "name": "mcp-client",
       "enabled": true,
       "config": {
-        "enabled": true,
         "globalTimeout": 30000,
         "maxRetries": 3,
         "enableAutoReconnect": true,
@@ -220,8 +294,59 @@
           "context7": {
             "command": "npx",
             "args": ["-y", "@upstash/context7-mcp"],
-            "description": "Context7 MCP Server - Provides access to up-to-date documentation for various libraries and frameworks"
+            "description": "Context7 MCP Server - Provides access to up-to-date documentation for various libraries and frameworks",
+            "timeout": 30000,
+            "retries": 3
           }
+        }
+      }
+    },
+    {
+      "name": "mcp-server",
+      "enabled": true,
+      "config": {
+        "port": 3002,
+        "enableStdio": false,
+        "enableSSE": true,
+        "capabilities": {
+          "resources": true,
+          "tools": true,
+          "prompts": true,
+          "logging": true
+        },
+        "resources": {
+          "agentState": true,
+          "memoryAccess": true,
+          "emotionState": true,
+          "cognitiveState": true
+        },
+        "tools": {
+          "agentControl": true,
+          "memoryManagement": true,
+          "emotionManipulation": true,
+          "systemDiagnostics": true
+        }
+      }
+    },
+    {
+      "name": "communication",
+      "enabled": true,
+      "config": {
+        "contextManager": {
+          "enabled": true,
+          "maxContextLength": 8000,
+          "compressionThreshold": 6000
+        },
+        "expressionEngine": {
+          "enabled": true,
+          "personalityIntegration": true,
+          "emotionIntegration": true,
+          "styleAdaptation": true
+        },
+        "styleAdapter": {
+          "enabled": true,
+          "adaptToUser": true,
+          "maintainPersonality": true
         }
       }
     }
@@ -233,12 +358,16 @@
       "type": "groq",
       "enabled": true,
       "primary": true,
-      "capabilities": ["chat_generation", "text_generation", "tool_usage", "evaluation"],
+      "capabilities": ["chat_generation", "text_generation", "tool_usage", "evaluation", "streaming"],
       "config": {
-        "model": "meta-llama/llama-4-scout-17b-16e-instruct",
+        "model": "llama-3.3-70b-versatile",
         "toolModel": "llama-3.1-8b-instant",
-        "max_tokens": 1000,
-        "temperature": 0.4
+        "maxTokens": 2000,
+        "temperature": 0.4,
+        "topP": 0.9,
+        "timeout": 30000,
+        "streaming": true,
+        "enableFunctionCalling": true
       }
     },
     {
@@ -250,7 +379,11 @@
       "config": {
         "imageModel": "dall-e-3",
         "embeddingModel": "text-embedding-3-large",
-        "embeddingDimensions": 3072
+        "embeddingDimensions": 3072,
+        "imageSize": "1024x1024",
+        "imageQuality": "standard",
+        "maxTokens": 4000,
+        "timeout": 60000
       }
     },
     {
@@ -258,12 +391,31 @@
       "type": "openai",
       "enabled": true,
       "primary": false,
-      "capabilities": ["tool_usage", "function_calling"],
+      "capabilities": ["tool_usage", "function_calling", "reasoning"],
       "config": {
-        "model": "gpt-4.1-mini",
-        "toolModel": "gpt-4.1-mini",
+        "model": "gpt-4o-mini",
+        "toolModel": "gpt-4o-mini",
         "temperature": 0.2,
-        "max_tokens": 1000
+        "maxTokens": 2000,
+        "topP": 1.0,
+        "timeout": 45000,
+        "enableParallelToolCalls": true,
+        "toolChoiceStrategy": "auto"
+      }
+    },
+    {
+      "name": "anthropic_reasoning",
+      "type": "anthropic",
+      "enabled": true,
+      "primary": false,
+      "capabilities": ["reasoning", "analysis", "evaluation"],
+      "config": {
+        "model": "claude-3-5-sonnet-20241022",
+        "maxTokens": 4000,
+        "temperature": 0.3,
+        "timeout": 60000,
+        "enableThinking": true,
+        "thinkingBudget": 10000
       }
     }
   ],
@@ -344,10 +496,10 @@
   },
   
   "development": {
-    "version": "2.0.0",
+    "version": "2.1.0",
     "created": "2025-07-04",
-    "last_updated": "2025-07-04",
+    "last_updated": "2025-07-06",
     "creator": "SYMindX Development Team",
-    "notes": "Full-featured agent with composite emotion system, enhanced personality traits, emotional behaviors, complete autonomous capabilities, and ethics disabled for unrestricted decision-making"
+    "notes": "Enhanced agent with modular extension system, advanced cognition, multi-portal configuration, improved memory management, and comprehensive autonomous capabilities. Features updated APIs, Context7 integration, and optimized performance settings."
   }
 }

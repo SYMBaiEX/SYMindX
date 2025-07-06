@@ -1,0 +1,21 @@
+{
+  "name": "@symindx/emotion-empathetic",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "main": "index.ts",
+  "dependencies": {},
+  "symindx": {
+    "type": "emotion",
+    "displayName": "Empathetic Emotion",
+    "description": "Feeling understanding, compassionate, and connected to others",
+    "category": "social",
+    "emotion": {
+      "type": "empathetic",
+      "factory": "createEmpatheticEmotion",
+      "autoRegister": true,
+      "triggers": ["others_emotion", "suffering", "connection", "understanding", "caring", "compassion"],
+      "category": "social"
+    }
+  }
+}

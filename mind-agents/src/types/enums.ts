@@ -22,7 +22,7 @@ export {
   PlanStepStatus,
   EnvironmentType,
   LogLevel
-} from './agent.js'
+} from './agent'
 
 // Re-export portal enums
 export {
@@ -30,7 +30,7 @@ export {
   PortalStatus,
   ModelType,
   ConfigurationLevel
-} from './portal.js'
+} from './portal'
 
 // Emotion-related enums (defined in agent.ts)
 // EmotionModuleType is already exported above

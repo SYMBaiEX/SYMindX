@@ -1,5 +1,5 @@
-import { BaseEmotion, EmotionDefinition } from '../base-emotion.js'
-import { SadEmotionConfig } from './types.js'
+import { BaseEmotion, EmotionDefinition } from '../base-emotion'
+import { SadEmotionConfig } from './types'
 
 export class SadEmotion extends BaseEmotion {
   constructor(config: SadEmotionConfig = {}) {
@@ -65,3 +65,8 @@ export class SadEmotion extends BaseEmotion {
 }
 
 export default SadEmotion
+
+// Export factory function for easy instantiation
+export function createSadEmotion(config: SadEmotionConfig = {}): SadEmotion {
+  return new SadEmotion(config)
+}

@@ -3,8 +3,8 @@
  * Emergency cleanup - basic implementation only
  */
 
-import { Extension } from '../types/agent.js'
-import { ExtensionContext } from '../types/extension.js'
+import { Extension } from '../types/agent'
+import { ExtensionContext } from '../types/extension'
 
 export interface SimplePluginLoader {
   loadExtensions(): Promise<Extension[]>

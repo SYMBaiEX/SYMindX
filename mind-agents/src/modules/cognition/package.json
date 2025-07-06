@@ -1,0 +1,26 @@
+{
+  "name": "@symindx/module-cognition",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "main": "index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./unified": "./cognition.ts",
+    "./theory-of-mind": "./theory-of-mind.ts",
+    "./meta-reasoner": "./meta-reasoner.ts",
+    "./hybrid": "./hybrid-reasoning.ts",
+    "./rule-based": "./rule-based-reasoning.ts",
+    "./probabilistic": "./probabilistic-reasoning.ts",
+    "./reinforcement": "./reinforcement-learning.ts",
+    "./pddl": "./pddl-planner.ts",
+    "./learning": "./learning-persistence.ts"
+  },
+  "dependencies": {},
+  "symindx": {
+    "type": "module",
+    "category": "cognition",
+    "displayName": "Cognition System",
+    "description": "Unified cognitive system with multiple reasoning strategies"
+  }
+}

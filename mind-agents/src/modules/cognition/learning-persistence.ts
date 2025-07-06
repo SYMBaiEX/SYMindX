@@ -8,18 +8,19 @@
 import { 
   Agent,
   MemoryRecord
-} from '../../types/agent.js'
+} from '../../types/agent'
 import { 
   ReasoningParadigm,
   Rule,
   BayesianNetwork,
   LearningCapability,
   ReasoningPerformance
-} from '../../types/cognition.js'
-import { Experience } from '../../types/autonomous.js'
-import { BaseConfig } from '../../types/common.js'
-import { MemoryType, MemoryDuration } from '../../types/enums.js'
-import { runtimeLogger } from '../../utils/logger.js'
+} from '../../types/cognition'
+import { Experience } from '../../types/autonomous'
+import { BaseConfig } from '../../types/common'
+import { MemoryType } from '../../types/index'
+import { MemoryDuration } from '../../types/agent'
+import { runtimeLogger } from '../../utils/logger'
 import * as fs from 'fs/promises'
 import * as path from 'path'
 
@@ -211,8 +212,8 @@ export class LearningPersistence {
         runtimeLogger.cognition(`Invalid learning state format for ${agentId}:${paradigm}`)
         return null
       }
-    } catch (error) {
-      if (error.code !== 'ENOENT') {
+    } catch (error: unknown) {
+      if ((error as any)?.code !== 'ENOENT') {
         runtimeLogger.cognition(`Failed to load learning state: ${error}`)
       }
       return null
@@ -234,8 +235,8 @@ export class LearningPersistence {
     try {
       // Convert Map to serializable format
       const serializable: Record<string, Record<string, number>> = {}
-      for (const [state, actions] of qTable) {
-        serializable[state] = Object.fromEntries(actions)
+      for (const [state, actions] of Array.from(qTable.entries())) {
+        serializable[state] = Object.fromEntries(Array.from(actions.entries()))
       }
       
       const state: Partial<LearningState> = {
@@ -296,16 +297,24 @@ export class LearningPersistence {
     try {
       const serializableRules: SerializableRule[] = []
       
-      for (const [id, rule] of rules) {
+      for (const [id, rule] of Array.from(rules.entries())) {
         const perf = performance.get(id) || { usageCount: 0, successRate: 0.5 }
         
         serializableRules.push({
           id: rule.id,
           name: rule.name,
-          conditions: rule.conditions,
-          actions: rule.actions,
-          priority: rule.priority,
-          confidence: rule.confidence,
+          conditions: rule.conditions.map(c => ({
+            type: c.type,
+            expression: c.expression || `${c.property} ${c.operator} ${c.value}`,
+            parameters: { property: c.property, operator: c.operator, value: c.value }
+          })),
+          actions: rule.actions.map(a => ({
+            type: a.type,
+            target: a.target,
+            parameters: a.parameters
+          })),
+          priority: rule.priority || 1,
+          confidence: (rule as any).confidence || 0.5,
           usageCount: perf.usageCount,
           successRate: perf.successRate,
           metadata: rule.metadata
@@ -342,10 +351,19 @@ export class LearningPersistence {
         const rule: Rule = {
           id: serializableRule.id,
           name: serializableRule.name,
-          conditions: serializableRule.conditions,
-          actions: serializableRule.actions,
+          conditions: serializableRule.conditions.map(c => ({
+            type: c.type as any,
+            property: (c.parameters?.property as string) || 'unknown',
+            operator: (c.parameters?.operator as any) || 'equals',
+            value: c.parameters?.value || '',
+            expression: c.expression
+          })),
+          actions: serializableRule.actions.map(a => ({
+            type: a.type as any,
+            target: a.target,
+            parameters: a.parameters
+          })),
           priority: serializableRule.priority,
-          confidence: serializableRule.confidence,
           metadata: serializableRule.metadata
         }
         
@@ -377,22 +395,20 @@ export class LearningPersistence {
       }
       
       // Serialize nodes
-      for (const [id, node] of network.nodes) {
+      for (const node of network.nodes) {
         serializableNetwork.nodes.push({
           id: node.id,
           name: node.name,
           states: node.states,
-          conditionalProbabilities: node.conditionalProbabilities,
-          parents: node.parents,
-          children: node.children
+          conditionalProbabilities: node.conditionalProbabilities || {},
+          parents: node.parents || [],
+          children: node.children || []
         })
       }
       
       // Serialize edges
-      for (const [from, toList] of network.edges) {
-        for (const to of toList) {
-          serializableNetwork.edges.push({ from, to })
-        }
+      for (const edge of network.edges) {
+        serializableNetwork.edges.push({ from: edge.from, to: edge.to })
       }
       
       const state: Partial<LearningState> = {
@@ -481,7 +497,15 @@ export class LearningPersistence {
           features: exp.state.features,
           context: exp.state.context
         },
-        action: exp.action,
+        action: {
+          id: `action_${exp.timestamp.getTime()}`,
+          type: exp.action.type,
+          extension: 'learning_persistence',
+          action: exp.action.type,
+          parameters: exp.action.parameters || {},
+          timestamp: new Date(exp.timestamp),
+          status: 'completed' as any
+        },
         reward: {
           id: `reward_${exp.timestamp.getTime()}`,
           type: exp.reward.type as any,
@@ -533,7 +557,7 @@ export class LearningPersistence {
       }
       
       const tempAgent = { id: agentId } as Agent
-      await this.saveLearningState(tempAgent, ReasoningParadigm.META_REASONER, state)
+      await this.saveLearningState(tempAgent, ReasoningParadigm.HYBRID, state)
       
     } catch (error) {
       runtimeLogger.cognition(`Failed to save meta-learning data: ${error}`)
@@ -554,7 +578,7 @@ export class LearningPersistence {
     }>
   } | null> {
     try {
-      const state = await this.loadLearningState(agentId, ReasoningParadigm.META_REASONER)
+      const state = await this.loadLearningState(agentId, ReasoningParadigm.HYBRID)
       if (!state) return null
       
       return {

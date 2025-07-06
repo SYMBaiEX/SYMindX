@@ -5,9 +5,9 @@
  */
 
 import { Request, Response, NextFunction } from 'express'
-import { Agent } from '../../types/agent.js'
-import { ExtensionApiError, ExtensionErrorHandler, ExtensionValidator } from './error-handler.js'
-import { runtimeLogger } from '../../utils/logger.js'
+import { Agent } from '../../types/agent'
+import { ExtensionApiError, ExtensionErrorHandler, ExtensionValidator } from './error-handler'
+import { runtimeLogger } from '../../utils/logger'
 
 export interface ExtensionRequest extends Request {
   agent?: Agent

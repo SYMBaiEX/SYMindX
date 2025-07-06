@@ -1,4 +1,4 @@
-export { Dashboard } from './Dashboard.js';
-export { AgentList } from './AgentList.js';
-export { SystemStatus } from './SystemStatus.js';
-export { Chat } from './Chat.js';
+export { Dashboard } from './Dashboard';
+export { AgentList } from './AgentList';
+export { SystemStatus } from './SystemStatus';
+export { Chat } from './Chat';

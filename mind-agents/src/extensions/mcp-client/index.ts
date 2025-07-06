@@ -6,10 +6,10 @@
  * resources, and prompts.
  */
 
-import { ExtensionConfig, Extension, ExtensionMetadata, Agent } from '../../types/index.js'
-import { runtimeLogger } from '../../utils/logger.js'
-import { MCPClientManager } from './mcp-client-manager.js'
-import { MCPServerConfig, MCPTool, MCPResource, MCPPrompt } from './types.js'
+import { ExtensionConfig, Extension, ExtensionMetadata, Agent } from '../../types/index'
+import { runtimeLogger } from '../../utils/logger'
+import { MCPClientManager } from './mcp-client-manager'
+import { MCPServerConfig, MCPTool, MCPResource, MCPPrompt } from './types'
 
 export interface MCPClientExtensionConfig extends ExtensionConfig {
   enabled: boolean

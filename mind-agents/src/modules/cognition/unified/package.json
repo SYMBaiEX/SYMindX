@@ -1,0 +1,21 @@
+{
+  "name": "@symindx/cognition-unified",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "main": "index.ts",
+  "dependencies": {},
+  "symindx": {
+    "type": "cognition",
+    "displayName": "Unified Cognition",
+    "description": "Streamlined cognition that thinks only when necessary for responsive interaction",
+    "category": "basic",
+    "cognition": {
+      "type": "unified",
+      "factory": "createUnifiedCognition",
+      "autoRegister": true,
+      "paradigms": ["adaptive", "multi-modal", "context-aware", "efficient"],
+      "category": "basic"
+    }
+  }
+}

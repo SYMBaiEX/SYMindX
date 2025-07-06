@@ -1,0 +1,19 @@
+{
+  "name": "@symindx/extension-telegram",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "main": "index.ts",
+  "dependencies": {},
+  "symindx": {
+    "type": "extension",
+    "displayName": "Telegram Bot",
+    "description": "Telegram bot integration for agent interaction",
+    "category": "chat",
+    "extension": {
+      "type": "telegram",
+      "factory": "createTelegramExtension",
+      "autoRegister": true
+    }
+  }
+}

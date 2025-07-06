@@ -4,8 +4,8 @@
  * Manages shared memory pools for cross-agent memory sharing
  */
 
-import { MemoryRecord } from '../../../../types/agent.js'
-import { SharedMemoryConfig, MemoryPermission } from '../../../../types/memory.js'
+import { MemoryRecord } from '../../../../types/agent'
+import { SharedMemoryConfig, MemoryPermission } from '../../../../types/memory'
 
 /**
  * Shared memory pool implementation

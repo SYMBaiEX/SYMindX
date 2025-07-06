@@ -3,9 +3,9 @@
  * Handles comprehensive state persistence, checkpoints, and recovery
  */
 
-import { Agent, LazyAgent, AgentStatus, LazyAgentState, MemoryRecord } from '../types/agent.js'
-import { EmotionState } from '../types/emotion.js'
-import { Logger } from '../utils/logger.js'
+import { Agent, LazyAgent, AgentStatus, LazyAgentState, MemoryRecord } from '../types/agent'
+import { EmotionState } from '../types/emotion'
+import { Logger } from '../utils/logger'
 import * as fs from 'fs/promises'
 import * as path from 'path'
 import { createHash } from 'crypto'

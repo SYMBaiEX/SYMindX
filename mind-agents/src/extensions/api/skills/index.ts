@@ -5,12 +5,12 @@
  * Each skill represents a group of related actions that the agent can perform.
  */
 
-import { HttpSkill } from './http.js'
-import { WebSocketServerSkill } from './websocket-server.js'
-import { ChatSkill } from './chat.js'
-import { AuthenticationSkill } from './authentication.js'
-import { SessionManagementSkill } from './session-management.js'
-import { HealthMonitoringSkill } from './health-monitoring.js'
+import { HttpSkill } from './http'
+import { WebSocketServerSkill } from './websocket-server'
+import { ChatSkill } from './chat'
+import { AuthenticationSkill } from './authentication'
+import { SessionManagementSkill } from './session-management'
+import { HealthMonitoringSkill } from './health-monitoring'
 
 export {
   HttpSkill,

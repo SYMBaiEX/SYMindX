@@ -1,4 +1,4 @@
-import { convertUsage } from '../utils.js'
+import { convertUsage } from '../utils'
 /**
  * Multimodal AI Portal System
  * 
@@ -6,14 +6,14 @@ import { convertUsage } from '../utils.js'
  * and cross-modal reasoning for comprehensive AI agent interactions
  */
 
-import { BasePortal } from '../base-portal.js'
+import { BasePortal } from '../base-portal'
 import { 
   Portal, PortalConfig, PortalType, PortalStatus, ModelType, PortalCapability,
   TextGenerationOptions, TextGenerationResult, ChatMessage, ChatGenerationOptions, 
   ChatGenerationResult, EmbeddingOptions, EmbeddingResult, ImageGenerationOptions, 
   ImageGenerationResult, MessageRole, MessageType, FinishReason
-} from '../../types/portal.js'
-import { Agent } from '../../types/agent.js'
+} from '../../types/portal'
+import { Agent } from '../../types/agent'
 
 export enum MultimodalPortalType {
   VISION_ANALYZER = 'vision_analyzer',

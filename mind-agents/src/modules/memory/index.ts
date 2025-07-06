@@ -5,8 +5,8 @@
  * for SQLite, Supabase, Neon, PostgreSQL, and in-memory storage.
  */
 
-export * from './base-memory-provider.js'
-export * from './providers/index.js'
+export * from './base-memory-provider'
+export * from './providers/index'
 
 // Import the real memory provider factories
 import { 
@@ -18,8 +18,8 @@ import {
   createNeonMemoryProvider,
   createPostgresMemoryProvider,
   createDefaultPostgresProvider
-} from './providers/index.js'
-import { MemoryProviderType } from '../../types/agent.js'
+} from './providers/index'
+import { MemoryProviderType } from '../../types/agent'
 
 // Factory function using real implementations
 export function createMemoryProvider(type: string, config?: any) {

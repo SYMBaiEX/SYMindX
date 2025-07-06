@@ -5,11 +5,11 @@
  * personality, and context.
  */
 
-import { EmotionState } from '../../types/agent.js'
-import { PersonalityTraits, EmotionBlend } from '../../types/emotion.js'
-import { BaseConfig } from '../../types/common.js'
-import { Agent } from '../../types/agent.js'
-import { runtimeLogger } from '../../utils/logger.js'
+import { EmotionState } from '../../types/agent'
+import { PersonalityTraits, EmotionBlend } from '../../types/emotion'
+import { BaseConfig } from '../../types/common'
+import { Agent } from '../../types/agent'
+import { runtimeLogger } from '../../utils/logger'
 
 /**
  * Expression template

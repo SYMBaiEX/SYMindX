@@ -1,0 +1,14 @@
+{
+  "name": "@symindx/module-memory-postgres",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "main": "index.ts",
+  "dependencies": {},
+  "symindx": {
+    "type": "module",
+    "category": "memory",
+    "displayName": "PostgreSQL Memory Provider",
+    "description": "PostgreSQL database for scalable agent memory storage"
+  }
+}

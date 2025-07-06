@@ -1,0 +1,21 @@
+{
+  "name": "@symindx/emotion-happy",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "main": "index.ts",
+  "dependencies": {},
+  "symindx": {
+    "type": "emotion",
+    "displayName": "Happy Emotion",
+    "description": "Feeling joyful, content, and positive",
+    "category": "basic",
+    "emotion": {
+      "type": "happy",
+      "factory": "createHappyEmotion",
+      "autoRegister": true,
+      "triggers": ["success", "achievement", "positive_feedback", "praise", "victory", "celebration", "joy", "fun"],
+      "category": "basic"
+    }
+  }
+}

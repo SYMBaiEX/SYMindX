@@ -4,8 +4,8 @@
  * Provides actions related to HTTP request handling and response management.
  */
 
-import { ExtensionAction, Agent, ActionResult, ActionResultType, ActionCategory } from '../../../types/agent.js'
-import { ApiExtension } from '../index.js'
+import { ExtensionAction, Agent, ActionResult, ActionResultType, ActionCategory } from '../../../types/agent'
+import { ApiExtension } from '../index'
 import { Request, Response } from 'express'
 
 export class HttpSkill {

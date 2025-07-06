@@ -3,15 +3,15 @@
  * Extends the existing SYMindXRuntime with robust lifecycle management
  */
 
-import { Agent, LazyAgent, AgentStatus, LazyAgentState, RuntimeConfig } from '../types/agent.js'
-import { SYMindXRuntime } from './runtime.js'
-import { StateManager, StateManagerConfig, CheckpointType } from './state-manager.js'
-import { ResourceManager, ResourceManagerConfig, ResourceType } from './resource-manager.js'
-import { LifecycleManager, LifecycleConfig, ShutdownOptions, StartupOptions } from './lifecycle-manager.js'
-import { CheckpointSystem, CheckpointSystemConfig } from './checkpoint-system.js'
-import { StateRecoverySystem } from './state-recovery.js'
-import { ConcurrentSafetyManager, ConcurrentSafetyConfig, OperationType } from './concurrent-safety.js'
-import { Logger, runtimeLogger } from '../utils/logger.js'
+import { Agent, LazyAgent, AgentStatus, LazyAgentState, RuntimeConfig } from '../types/agent'
+import { SYMindXRuntime } from './runtime'
+import { StateManager, StateManagerConfig, CheckpointType } from './state-manager'
+import { ResourceManager, ResourceManagerConfig, ResourceType } from './resource-manager'
+import { LifecycleManager, LifecycleConfig, ShutdownOptions, StartupOptions } from './lifecycle-manager'
+import { CheckpointSystem, CheckpointSystemConfig } from './checkpoint-system'
+import { StateRecoverySystem } from './state-recovery'
+import { ConcurrentSafetyManager, ConcurrentSafetyConfig, OperationType } from './concurrent-safety'
+import { Logger, runtimeLogger } from '../utils/logger'
 import * as path from 'path'
 
 export interface EnhancedRuntimeConfig extends RuntimeConfig {

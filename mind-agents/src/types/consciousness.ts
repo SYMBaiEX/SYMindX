@@ -5,8 +5,8 @@
  * that creates truly life-like agents with human-level and superhuman consciousness
  */
 
-import { Agent, AgentEvent, MemoryRecord, EmotionState } from './agent.js'
-import { BaseConfig, Context as CommonContext, GenericData, Metadata } from './common.js'
+import { Agent, AgentEvent, MemoryRecord, EmotionState } from './agent'
+import { BaseConfig, Context as CommonContext, GenericData, Metadata } from './common'
 
 // =====================================================
 // CONSCIOUSNESS CORE TYPES

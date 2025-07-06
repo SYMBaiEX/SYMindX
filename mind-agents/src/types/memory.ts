@@ -4,7 +4,7 @@
  * This file defines the interfaces for memory providers and their metadata.
  */
 
-import { MemoryProvider, MemoryRecord } from './agent.js'
+import { MemoryProvider, MemoryRecord } from './agent'
 
 /**
  * Memory tier types for multi-level memory architecture
@@ -60,7 +60,7 @@ export interface MemoryContext {
   relationships?: string[]       // Related memory IDs
   emotionalValence?: number     // -1 to 1 (negative to positive)
   confidence?: number           // 0 to 1 confidence score
-  source?: 'experience' | 'learned' | 'told' | 'inferred'
+  source?: 'experience' | 'learned' | 'told' | 'inferred' | 'compression'
 }
 
 /**
@@ -192,4 +192,149 @@ export interface MemoryProviderConfig {
    * Provider-specific configuration
    */
   [key: string]: any
+}
+
+/**
+ * Search query types for advanced memory search
+ */
+export enum SearchQueryType {
+  SEMANTIC = 'semantic',
+  KEYWORD = 'keyword',
+  HYBRID = 'hybrid',
+  RELATIONAL = 'relational',
+  TEMPORAL = 'temporal',
+  CONCEPTUAL = 'conceptual',
+  MULTI_MODAL = 'multi_modal'
+}
+
+/**
+ * Search query interface
+ */
+export interface SearchQuery {
+  type: SearchQueryType
+  query: string
+  filters?: Record<string, any>
+  boost?: BoostFactors
+  boostFactors?: BoostFactors
+  timeRange?: TimeRange
+  limit?: number
+  offset?: number
+  threshold?: number
+  embedding?: number[]
+  conceptualDepth?: number
+  expandQuery?: boolean
+}
+
+/**
+ * Search result interface
+ */
+export interface SearchResult {
+  record: MemoryRecord
+  memory?: MemoryRecord  // Backward compatibility alias
+  score: number
+  highlights?: string[]
+  reason?: string
+  keywordScore?: number
+  semanticScore?: number
+  explanations?: string[]
+  conceptMatches?: string[]
+  relationshipPaths?: string[]
+}
+
+/**
+ * Boost factors for search ranking
+ */
+export interface BoostFactors {
+  importance?: number
+  recency?: number
+  frequency?: number
+  emotional?: number
+  semantic?: number
+}
+
+/**
+ * Time range for temporal searches
+ */
+export interface TimeRange {
+  start?: Date
+  end?: Date
+  relative?: {
+    value: number
+    unit: 'minutes' | 'hours' | 'days' | 'weeks' | 'months' | 'years'
+  }
+}
+
+/**
+ * Memory relationship types
+ */
+export enum MemoryRelationshipType {
+  CAUSAL = 'causal',
+  TEMPORAL = 'temporal',
+  SEMANTIC = 'semantic',
+  HIERARCHICAL = 'hierarchical',
+  ASSOCIATIVE = 'associative'
+}
+
+/**
+ * Memory relationship interface
+ */
+export interface MemoryRelationship {
+  id: string
+  type: MemoryRelationshipType
+  sourceId: string
+  sourceMemoryId?: string  // Alias for sourceId
+  targetId: string
+  targetMemoryId?: string  // Alias for targetId
+  strength: number
+  metadata?: Record<string, any>
+}
+
+/**
+ * Memory management policy interface
+ */
+export interface MemoryManagementPolicy {
+  id: string
+  type?: string
+  name: string
+  description: string
+  conditions: PolicyCondition[]
+  actions: PolicyAction[]
+  priority: number
+  enabled: boolean
+}
+
+/**
+ * Memory management policy configuration
+ */
+export interface MemoryPolicyConfig {
+  policies: MemoryManagementPolicy[]
+  defaultRetentionDays: number
+  maxMemoriesPerTier: Record<MemoryTierType, number>
+  compressionEnabled: boolean
+  archivalEnabled: boolean
+  decayRate?: number
+  accessBoost?: number
+  importanceThreshold?: number
+  decayFunction?: string
+  priorityFactors?: Record<string, number>
+  summaryMethod?: string
+  preserveOriginal?: boolean
+  priorityThreshold?: number
+}
+
+/**
+ * Policy condition interface
+ */
+export interface PolicyCondition {
+  type: 'age' | 'importance' | 'frequency' | 'tier' | 'size'
+  operator: 'gt' | 'lt' | 'eq' | 'gte' | 'lte'
+  value: number | string
+}
+
+/**
+ * Policy action interface
+ */
+export interface PolicyAction {
+  type: 'archive' | 'compress' | 'delete' | 'move_tier'
+  parameters?: Record<string, any>
 }

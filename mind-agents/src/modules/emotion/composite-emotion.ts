@@ -1,19 +1,19 @@
-import { EmotionState, EmotionRecord, EmotionModuleType } from '../../types/agent.js'
-import { EmotionModule, PersonalityTraits, EmotionBlend, AdvancedEmotionConfig } from '../../types/emotion.js'
-import { BaseEmotion } from './base-emotion.js'
+import { EmotionState, EmotionRecord, EmotionModuleType } from '../../types/agent'
+import { EmotionModule, PersonalityTraits, EmotionBlend, AdvancedEmotionConfig } from '../../types/emotion'
+import { BaseEmotion } from './base-emotion'
 
 // Import all emotion types
-import { HappyEmotion } from './happy/index.js'
-import { SadEmotion } from './sad/index.js'
-import { AngryEmotion } from './angry/index.js'
-import { AnxiousEmotion } from './anxious/index.js'
-import { ConfidentEmotion } from './confident/index.js'
-import { NostalgicEmotion } from './nostalgic/index.js'
-import { EmpatheticEmotion } from './empathetic/index.js'
-import { CuriousEmotion } from './curious/index.js'
-import { ProudEmotion } from './proud/index.js'
-import { ConfusedEmotion } from './confused/index.js'
-import { NeutralEmotion } from './neutral/index.js'
+import { HappyEmotion } from './happy/index'
+import { SadEmotion } from './sad/index'
+import { AngryEmotion } from './angry/index'
+import { AnxiousEmotion } from './anxious/index'
+import { ConfidentEmotion } from './confident/index'
+import { NostalgicEmotion } from './nostalgic/index'
+import { EmpatheticEmotion } from './empathetic/index'
+import { CuriousEmotion } from './curious/index'
+import { ProudEmotion } from './proud/index'
+import { ConfusedEmotion } from './confused/index'
+import { NeutralEmotion } from './neutral/index'
 
 export class CompositeEmotionModule implements EmotionModule {
   private emotions: Map<string, BaseEmotion> = new Map()

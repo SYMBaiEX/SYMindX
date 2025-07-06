@@ -5,9 +5,9 @@
  * persistence options, and performance optimizations for development and testing.
  */
 
-import { MemoryRecord, MemoryType, MemoryDuration } from '../../../../types/agent.js'
-import { BaseMemoryProvider, BaseMemoryConfig } from '../../base-memory-provider.js'
-import { MemoryProviderMetadata } from '../../../../types/memory.js'
+import { MemoryRecord, MemoryType, MemoryDuration } from '../../../../types/agent'
+import { BaseMemoryProvider, BaseMemoryConfig } from '../../base-memory-provider'
+import { MemoryProviderMetadata, MemoryTierType } from '../../../../types/memory'
 import { writeFileSync, readFileSync, existsSync } from 'fs'
 import { join } from 'path'
 
@@ -549,6 +549,67 @@ export class InMemoryProvider extends BaseMemoryProvider {
     } catch (error) {
       console.error('❌ Failed to load memories from disk:', error)
     }
+  }
+
+  /**
+   * Consolidate memory from one tier to another
+   */
+  async consolidateMemory(
+    agentId: string,
+    memoryId: string,
+    fromTier: MemoryTierType,
+    toTier: MemoryTierType
+  ): Promise<void> {
+    // For in-memory provider, this is a no-op as we don't have tier separation
+    console.log(`📝 Consolidating memory ${memoryId} from ${fromTier} to ${toTier} for agent ${agentId}`)
+  }
+
+  /**
+   * Retrieve memories from a specific tier
+   */
+  async retrieveTier(agentId: string, tier: MemoryTierType, limit?: number): Promise<MemoryRecord[]> {
+    // For in-memory provider, return all memories as we don't have tier separation
+    const agentData = this.storage[agentId]
+    if (!agentData?.memories) {
+      return []
+    }
+    const memories = Array.from(agentData.memories.values())
+    return limit ? memories.slice(0, limit) : memories
+  }
+
+  /**
+   * Archive memories for an agent
+   */
+  async archiveMemories(agentId: string): Promise<void> {
+    // For in-memory provider, this could move memories to a separate archive storage
+    console.log(`🗂️ Archiving memories for agent ${agentId}`)
+  }
+
+  /**
+   * Share memories between agents
+   */
+  async shareMemories(agentId: string, memoryIds: string[], poolId: string): Promise<void> {
+    // For in-memory provider, this could copy memories to a shared pool
+    console.log(`🤝 Sharing ${memoryIds.length} memories from agent ${agentId} to pool ${poolId}`)
+  }
+
+  /**
+   * Generate embedding for content
+   */
+  async generateEmbedding(content: string): Promise<number[]> {
+    // Simple hash-based embedding for in-memory provider
+    // In a real implementation, this would call an embedding service
+    const hash = content.split('').reduce((a, b) => {
+      a = ((a << 5) - a) + b.charCodeAt(0)
+      return a & a
+    }, 0)
+    
+    // Generate a simple 384-dimensional embedding
+    const embedding = new Array(384).fill(0).map((_, i) => 
+      Math.sin(hash + i) * 0.1
+    )
+    
+    return embedding
   }
 
   /**

@@ -2,7 +2,7 @@
  * Emotion module types for SYMindX
  */
 
-import { EmotionState, EmotionRecord, EmotionConfig } from './agent.js'
+import { EmotionState, EmotionRecord, EmotionConfig } from './agent'
 
 // Re-export for convenience
 export type { EmotionState, EmotionRecord, EmotionConfig }

@@ -4,13 +4,13 @@
  * Handles chat-related API endpoints and WebSocket messaging
  */
 
-import { ExtensionAction, Agent, ActionResult, ActionResultType, ActionCategory } from '../../../types/agent.js'
-import { runtimeLogger } from '../../../utils/logger.js'
+import { ExtensionAction, Agent, ActionResult, ActionResultType, ActionCategory } from '../../../types/agent'
+import { runtimeLogger } from '../../../utils/logger'
 import { 
   ChatRequest, 
   ChatResponse, 
   WebSocketMessage 
-} from '../types.js'
+} from '../types'
 
 export class ChatSkill {
   private extension: any

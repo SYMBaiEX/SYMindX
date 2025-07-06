@@ -6,7 +6,7 @@
  * vector embeddings, and shared memory pools.
  */
 
-import { MemoryProvider, MemoryRecord, MemoryDuration, MemoryType } from '../../types/agent.js'
+import { MemoryProvider, MemoryRecord, MemoryDuration, MemoryType } from '../../types/agent'
 import { 
   MemoryProviderMetadata, 
   MemoryTier, 
@@ -15,7 +15,7 @@ import {
   ConsolidationRule,
   SharedMemoryConfig,
   ArchivalStrategy
-} from '../../types/memory.js'
+} from '../../types/memory'
 import { v4 as uuidv4 } from 'uuid'
 
 /**

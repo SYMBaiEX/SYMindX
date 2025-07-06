@@ -6,12 +6,12 @@
  */
 
 import { openai } from '@ai-sdk/openai'
-import { generateText, streamText, embed, embedMany, generateObject, tool, type LanguageModel } from 'ai'
+import { generateText, streamText, embed, embedMany, generateObject, tool, type LanguageModel, type ModelMessage } from 'ai'
 import { z } from 'zod'
-import { BasePortal } from '../base-portal.js'
+import { BasePortal } from '../base-portal'
 import { PortalConfig, TextGenerationOptions, TextGenerationResult, 
   ChatMessage, ChatGenerationOptions, ChatGenerationResult, EmbeddingOptions, EmbeddingResult,
-  ImageGenerationOptions, ImageGenerationResult, PortalCapability, MessageRole, FinishReason, PortalType, ModelType } from '../../types/portal.js'
+  ImageGenerationOptions, ImageGenerationResult, PortalCapability, MessageRole, FinishReason, PortalType, ModelType } from '../../types/portal'
 
 export interface OpenAIConfig extends PortalConfig {
   model?: string
@@ -62,40 +62,63 @@ export class OpenAIPortal extends BasePortal {
   }
 
   /**
-   * Convert ChatMessage array to message format for AI SDK
+   * Convert ChatMessage array to message format for AI SDK v5
    */
-  private convertToModelMessages(messages: ChatMessage[]) {
+  private convertToModelMessages(messages: ChatMessage[]): ModelMessage[] {
     return messages.map(msg => {
-      const message = {
-        role: msg.role,
-        content: msg.content
-      }
-
-      // Handle attachments for multimodal support
-      if (msg.attachments && msg.attachments.length > 0) {
-        const content: any[] = [{ type: 'text', text: msg.content }]
+      switch (msg.role) {
+        case MessageRole.SYSTEM:
+          return { role: 'system', content: msg.content }
         
-        for (const attachment of msg.attachments) {
-          if (attachment.type === 'image') {
-            if (attachment.data) {
-              content.push({
-                type: 'image',
-                image: attachment.data,
-                mimeType: attachment.mimeType
-              })
-            } else if (attachment.url) {
-              content.push({
-                type: 'image',
-                image: new URL(attachment.url)
-              })
+        case MessageRole.USER: {
+          // Handle attachments for multimodal support
+          if (msg.attachments && msg.attachments.length > 0) {
+            const content: any[] = [{ type: 'text', text: msg.content }]
+            
+            for (const attachment of msg.attachments) {
+              if (attachment.type === 'image') {
+                if (attachment.data) {
+                  content.push({
+                    type: 'image',
+                    image: attachment.data,
+                    mediaType: attachment.mimeType
+                  })
+                } else if (attachment.url) {
+                  content.push({
+                    type: 'image',
+                    image: new URL(attachment.url)
+                  })
+                }
+              }
             }
+            
+            return { role: 'user', content }
+          } else {
+            return { role: 'user', content: msg.content }
           }
         }
         
-        Object.assign(message, { content })
+        case MessageRole.ASSISTANT:
+          return { role: 'assistant', content: msg.content }
+        
+        case MessageRole.TOOL:
+          return { 
+            role: 'tool', 
+            content: [{ 
+              type: 'tool-result', 
+              toolCallId: '', 
+              toolName: '', 
+              result: msg.content 
+            }] 
+          }
+        
+        case MessageRole.FUNCTION:
+          // Convert function messages to assistant messages for compatibility
+          return { role: 'assistant', content: msg.content }
+        
+        default:
+          return { role: 'user', content: msg.content }
       }
-
-      return message
     })
   }
 

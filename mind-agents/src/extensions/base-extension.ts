@@ -13,9 +13,9 @@ import {
   ExtensionAction, 
   ExtensionEventHandler,
   AgentEvent
-} from '../types/agent.js'
-import { ExtensionConfig } from '../types/common.js'
-import { runtimeLogger } from '../utils/logger.js'
+} from '../types/agent'
+import { ExtensionConfig } from '../types/common'
+import { runtimeLogger } from '../utils/logger'
 
 export interface ExtensionMetrics {
   startTime: Date

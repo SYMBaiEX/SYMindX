@@ -1,0 +1,21 @@
+{
+  "name": "@symindx/emotion-neutral",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "main": "index.ts",
+  "dependencies": {},
+  "symindx": {
+    "type": "emotion",
+    "displayName": "Neutral Emotion",
+    "description": "Feeling balanced, calm, and emotionally stable",
+    "category": "basic",
+    "emotion": {
+      "type": "neutral",
+      "factory": "createNeutralEmotion",
+      "autoRegister": true,
+      "triggers": ["baseline", "calm", "default", "steady", "balanced", "peaceful"],
+      "category": "basic"
+    }
+  }
+}

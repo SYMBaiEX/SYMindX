@@ -1,4 +1,4 @@
-import { convertUsage } from '../utils.js'
+import { convertUsage } from '../utils'
 /**
  * Ollama Edge AI Portal
  * 
@@ -6,13 +6,13 @@ import { convertUsage } from '../utils.js'
  * and support for quantized models for efficient inference
  */
 
-import { BasePortal } from '../base-portal.js'
+import { BasePortal } from '../base-portal'
 import { 
   Portal, PortalConfig, PortalType, PortalStatus, ModelType, PortalCapability,
   TextGenerationOptions, TextGenerationResult, ChatMessage, ChatGenerationOptions, 
   ChatGenerationResult, EmbeddingOptions, EmbeddingResult, MessageRole, FinishReason
-} from '../../types/portal.js'
-import { Agent } from '../../types/agent.js'
+} from '../../types/portal'
+import { Agent } from '../../types/agent'
 
 export interface OllamaConfig extends PortalConfig {
   host?: string

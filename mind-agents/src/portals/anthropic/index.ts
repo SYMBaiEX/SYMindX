@@ -6,12 +6,12 @@
  */
 
 import { anthropic } from '@ai-sdk/anthropic'
-import { generateText, streamText, tool, type CoreMessage, type LanguageModel } from 'ai'
+import { generateText, streamText, tool, type ModelMessage, type LanguageModel } from 'ai'
 import { z } from 'zod'
-import { BasePortal } from '../base-portal.js'
+import { BasePortal } from '../base-portal'
 import { PortalConfig, TextGenerationOptions, TextGenerationResult, 
   ChatMessage, ChatGenerationOptions, ChatGenerationResult, EmbeddingOptions, EmbeddingResult,
-  ImageGenerationOptions, ImageGenerationResult, PortalCapability, MessageRole, FinishReason, PortalType, ModelType } from '../../types/portal.js'
+  ImageGenerationOptions, ImageGenerationResult, PortalCapability, MessageRole, FinishReason, PortalType, ModelType } from '../../types/portal'
 
 export interface AnthropicConfig extends PortalConfig {
   model?: string
@@ -111,11 +111,11 @@ export class AnthropicPortal extends BasePortal {
   async generateChat(messages: ChatMessage[], options?: ChatGenerationOptions): Promise<ChatGenerationResult> {
     try {
       const model = options?.model || (this.config as AnthropicConfig).model || 'claude-4-sonnet'
-      const coreMessages = this.convertToCoreMessages(messages)
+      const modelMessages = this.convertToModelMessages(messages)
       
       const generateOptions: any = {
         model: this.getLanguageModel(model),
-        messages: coreMessages,
+        messages: modelMessages,
         maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP
@@ -198,11 +198,11 @@ export class AnthropicPortal extends BasePortal {
   async *streamChat(messages: ChatMessage[], options?: ChatGenerationOptions): AsyncGenerator<string> {
     try {
       const model = options?.model || (this.config as AnthropicConfig).model || 'claude-4-sonnet'
-      const coreMessages = this.convertToCoreMessages(messages)
+      const modelMessages = this.convertToModelMessages(messages)
       
       const streamOptions: any = {
         model: this.getLanguageModel(model),
-        messages: coreMessages,
+        messages: modelMessages,
         maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         topP: options?.topP
@@ -225,17 +225,17 @@ export class AnthropicPortal extends BasePortal {
   }
   
   /**
-   * Convert ChatMessage[] to CoreMessage[] format
+   * Convert ChatMessage[] to ModelMessage[] format for AI SDK v5
    */
-  private convertToCoreMessages(messages: ChatMessage[]): CoreMessage[] {
-    const coreMessages: CoreMessage[] = []
+  private convertToModelMessages(messages: ChatMessage[]): ModelMessage[] {
+    const modelMessages: ModelMessage[] = []
     
     // Extract system messages and combine them
     const systemMessages = messages.filter(msg => msg.role === MessageRole.SYSTEM)
     if (systemMessages.length > 0) {
       // Anthropic expects a single system message at the beginning
       const systemContent = systemMessages.map(msg => msg.content).join('\n\n')
-      coreMessages.push({
+      modelMessages.push({
         role: 'system',
         content: systemContent
       })
@@ -245,7 +245,7 @@ export class AnthropicPortal extends BasePortal {
     for (const msg of messages) {
       if (msg.role === MessageRole.SYSTEM) continue
       
-      const coreMessage: CoreMessage = {
+      const modelMessage: ModelMessage = {
         role: msg.role === MessageRole.FUNCTION ? 'assistant' : msg.role as any,
         content: msg.content
       }
@@ -271,13 +271,13 @@ export class AnthropicPortal extends BasePortal {
           }
         }
         
-        coreMessage.content = content
+        modelMessage.content = content
       }
 
-      coreMessages.push(coreMessage)
+      modelMessages.push(modelMessage)
     }
 
-    return coreMessages
+    return modelMessages
   }
 
   /**

@@ -4,20 +4,20 @@
  * Simplified module loading with core modules only
  */
 
-import { ModuleRegistry } from '../types/agent.js'
-import { createMemoryProvider } from './memory/index.js'
-import { createEmotionModule } from './emotion/index.js'  
-import { createCognitionModule } from './cognition/index.js'
+import { ModuleRegistry } from '../types/agent'
+import { createMemoryProvider } from './memory/index'
+import { createEmotionModule } from './emotion/index'  
+import { createCognitionModule } from './cognition/index'
 
 // Re-export core module factories
 export { createMemoryProvider, createEmotionModule, createCognitionModule }
 
 // TEMPORARILY DISABLED - behavior and lifecycle modules have type conflicts
 // Export autonomous behavior system
-// export * from './behaviors/index.js'
+// export * from './behaviors/index'
 
 // Export lifecycle management
-// export * from './life-cycle/index.js'
+// export * from './life-cycle/index'
 
 /**
  * Module factory type
@@ -50,15 +50,15 @@ export function createModule(type: 'memory' | 'emotion' | 'cognition', moduleTyp
 export async function registerCoreModules(registry: ModuleRegistry): Promise<void> {
   try {
     // Import and register memory providers
-    const { registerMemoryProviders } = await import('./memory/index.js')
+    const { registerMemoryProviders } = await import('./memory/index')
     await registerMemoryProviders(registry)
     
     // Import and register emotion modules  
-    const { registerEmotionModules } = await import('./emotion/index.js')
+    const { registerEmotionModules } = await import('./emotion/index')
     await registerEmotionModules(registry)
     
     // Import and register cognition modules
-    const { registerCognitionModules } = await import('./cognition/index.js')
+    const { registerCognitionModules } = await import('./cognition/index')
     await registerCognitionModules(registry)
     
     // Register extension factories
@@ -76,20 +76,28 @@ export async function registerCoreModules(registry: ModuleRegistry): Promise<voi
  */
 export async function registerExtensionFactories(registry: ModuleRegistry): Promise<void> {
   try {
-    // Register MCP Client Extension factory
-    const { createMCPClientExtension } = await import('../extensions/mcp-client/index.js')
-    registry.registerExtensionFactory('mcp-client', createMCPClientExtension)
+    // Use the new extension discovery system
+    const { createExtensionDiscovery } = await import('../extensions/extension-discovery')
+    const projectRoot = process.cwd()
+    const discovery = createExtensionDiscovery(projectRoot)
     
-    // Register MCP Server Extension factory
-    const { createMCPServerExtension } = await import('../extensions/mcp-server/index.js')
-    registry.registerExtensionFactory('mcp-server', createMCPServerExtension)
+    // Auto-discover and register all extensions
+    await discovery.autoRegisterExtensions(registry)
     
-    // Register other extension factories as needed
-    // const { createTelegramExtension } = await import('../extensions/telegram/index.js')
-    // registry.registerExtensionFactory('telegram', createTelegramExtension)
+    // Manual registration as fallback for critical extensions
+    try {
+      const { createMCPClientExtension } = await import('../extensions/mcp-client/index')
+      registry.registerExtensionFactory('mcp-client', createMCPClientExtension)
+    } catch (error) {
+      console.warn('⚠️ MCP Client extension not available:', error)
+    }
     
-    // const { ApiExtension } = await import('../extensions/api/index.js')
-    // registry.registerExtensionFactory('api', (config: any) => new ApiExtension(config))
+    try {
+      const { createMCPServerExtension } = await import('../extensions/mcp-server/index')
+      registry.registerExtensionFactory('mcp-server', createMCPServerExtension)
+    } catch (error) {
+      console.warn('⚠️ MCP Server extension not available:', error)
+    }
     
   } catch (error) {
     console.error('❌ Failed to register extension factories:', error)

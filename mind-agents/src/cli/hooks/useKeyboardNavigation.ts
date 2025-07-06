@@ -1,6 +1,6 @@
 import { useInput, Key } from 'ink'
 import { useState, useCallback, useEffect } from 'react'
-import { soundManager, SoundType } from '../utils/sound-effects.js'
+import { soundManager, SoundType } from '../utils/sound-effects'
 
 export interface NavigationConfig {
   views: string[]

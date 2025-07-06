@@ -1,4 +1,4 @@
-import { convertUsage } from './utils.js'
+import { convertUsage } from './utils'
 /**
  * Portals Index
  * 
@@ -6,31 +6,31 @@ import { convertUsage } from './utils.js'
  * for managing AI provider portals in the Symindx agent framework.
  */
 
-import { Portal, PortalConfig, PortalCapability, PortalType, ToolEvaluationOptions, ToolEvaluationResult } from '../types/portal.js'
-import { Agent } from '../types/agent.js'
-import type { GoogleVertexConfig } from './google-vertex/index.js'
-import type { GoogleGenerativeConfig } from './google-generative/index.js'
-import type { VercelAIConfig } from './vercel/index.js'
-import type { MultimodalConfig } from './multimodal/index.js'
-import { MultimodalPortalType } from './multimodal/index.js'
-import type { MistralConfig } from './mistral/index.js'
-import type { CohereConfig } from './cohere/index.js'
-import type { AzureOpenAIConfig } from './azure-openai/index.js'
-import type { OllamaConfig } from './ollama/index.js'
-import type { LMStudioConfig } from './lmstudio/index.js'
+import { Portal, PortalConfig, PortalCapability, PortalType, ToolEvaluationOptions, ToolEvaluationResult } from '../types/portal'
+import { Agent } from '../types/agent'
+import type { GoogleVertexConfig } from './google-vertex/index'
+import type { GoogleGenerativeConfig } from './google-generative/index'
+import type { VercelAIConfig } from './vercel/index'
+import type { MultimodalConfig } from './multimodal/index'
+import { MultimodalPortalType } from './multimodal/index'
+import type { MistralConfig } from './mistral/index'
+import type { CohereConfig } from './cohere/index'
+import type { AzureOpenAIConfig } from './azure-openai/index'
+import type { OllamaConfig } from './ollama/index'
+import type { LMStudioConfig } from './lmstudio/index'
 
 // Import all portal implementations
-export { OpenAIPortal, createOpenAIPortal, defaultOpenAIConfig, type OpenAIConfig } from './openai/index.js'
-export { GroqPortal, createGroqPortal, defaultGroqConfig, groqModels, type GroqConfig } from './groq/index.js'
-export { AnthropicPortal, createAnthropicPortal, defaultAnthropicConfig, anthropicModels, type AnthropicConfig } from './anthropic/index.js'
-export { XAIPortal, createXAIPortal, defaultXAIConfig, xaiModels, type XAIConfig } from './xai/index.js'
-export { OpenRouterPortal, createOpenRouterPortal, defaultOpenRouterConfig, openRouterModels, type OpenRouterConfig } from './openrouter/index.js'
-export { KlusterAiPortal, createKlusterAiPortal, defaultKlusterAiConfig, klusterAiModels, type KlusterAiConfig } from './kluster.ai/index.js'
+export { OpenAIPortal, createOpenAIPortal, defaultOpenAIConfig, type OpenAIConfig } from './openai/index'
+export { GroqPortal, createGroqPortal, defaultGroqConfig, groqModels, type GroqConfig } from './groq/index'
+export { AnthropicPortal, createAnthropicPortal, defaultAnthropicConfig, anthropicModels, type AnthropicConfig } from './anthropic/index'
+export { XAIPortal, createXAIPortal, defaultXAIConfig, xaiModels, type XAIConfig } from './xai/index'
+export { OpenRouterPortal, createOpenRouterPortal, defaultOpenRouterConfig, openRouterModels, type OpenRouterConfig } from './openrouter/index'
+export { KlusterAiPortal, createKlusterAiPortal, defaultKlusterAiConfig, klusterAiModels, type KlusterAiConfig } from './kluster.ai/index'
 
 // Advanced AI Portals
-export { GoogleVertexPortal, createGoogleVertexPortal, defaultVertexConfig, vertexModels, type GoogleVertexConfig } from './google-vertex/index.js'
-export { GoogleGenerativePortal, createGoogleGenerativePortal, defaultGenerativeConfig, generativeModels, type GoogleGenerativeConfig } from './google-generative/index.js'
-export { VercelAIPortal, createVercelAIPortal, defaultVercelConfig, supportedProviders, type VercelAIConfig, type ProviderConfig, type ModelConfig, type ToolDefinition } from './vercel/index.js'
+export { GoogleVertexPortal, createGoogleVertexPortal, defaultVertexConfig, vertexModels, type GoogleVertexConfig } from './google-vertex/index'
+export { GoogleGenerativePortal, createGoogleGenerativePortal, defaultGenerativeConfig, generativeModels, type GoogleGenerativeConfig } from './google-generative/index'
+export { VercelAIPortal, createVercelAIPortal, defaultVercelConfig, supportedProviders, type VercelAIConfig, type ProviderConfig, type ModelConfig, type ToolDefinition } from './vercel/index'
 
 // Multimodal AI Portals
 export { 
@@ -45,7 +45,7 @@ export {
   type SpeechSynthesisResult,
   type MusicGenerationResult,
   type CrossModalReasoningResult
-} from './multimodal/index.js'
+} from './multimodal/index'
 
 // Specialized AI Portals
 export { 
@@ -54,21 +54,21 @@ export {
   defaultMistralConfig, 
   mistralModels,
   type MistralConfig 
-} from './mistral/index.js'
+} from './mistral/index'
 export { 
   CoherePortal, 
   createCoherePortal, 
   defaultCohereConfig, 
   cohereModels,
   type CohereConfig 
-} from './cohere/index.js'
+} from './cohere/index'
 export { 
   AzureOpenAIPortal, 
   createAzureOpenAIPortal, 
   defaultAzureOpenAIConfig, 
   azureOpenAIModels,
   type AzureOpenAIConfig
-} from './azure-openai/index.js'
+} from './azure-openai/index'
 
 // Local AI Portals
 export { 
@@ -78,7 +78,7 @@ export {
   ollamaModels,
   type OllamaConfig,
   type OllamaModelStatus
-} from './ollama/index.js'
+} from './ollama/index'
 export { 
   LMStudioPortal, 
   createLMStudioPortal, 
@@ -87,27 +87,27 @@ export {
   type LMStudioConfig,
   type LMStudioModelInfo,
   type LMStudioServerStatus
-} from './lmstudio/index.js'
+} from './lmstudio/index'
 
 // Import the default configs and portal creators for internal use
-import { defaultOpenAIConfig, createOpenAIPortal } from './openai/index.js'
-import { defaultGroqConfig, createGroqPortal } from './groq/index.js'
-import { defaultAnthropicConfig, createAnthropicPortal } from './anthropic/index.js'
-import { defaultXAIConfig, createXAIPortal } from './xai/index.js'
-import { defaultOpenRouterConfig, createOpenRouterPortal } from './openrouter/index.js'
-import { defaultKlusterAiConfig, createKlusterAiPortal } from './kluster.ai/index.js'
-import { defaultVertexConfig, createGoogleVertexPortal } from './google-vertex/index.js'
-import { defaultGenerativeConfig, createGoogleGenerativePortal } from './google-generative/index.js'
-import { defaultVercelConfig, createVercelAIPortal } from './vercel/index.js'
-import { defaultMultimodalConfig, createMultimodalPortal } from './multimodal/index.js'
-import { defaultMistralConfig, createMistralPortal } from './mistral/index.js'
-import { defaultCohereConfig, createCoherePortal } from './cohere/index.js'
-import { defaultAzureOpenAIConfig, createAzureOpenAIPortal } from './azure-openai/index.js'
-import { defaultOllamaConfig, createOllamaPortal } from './ollama/index.js'
-import { defaultLMStudioConfig, createLMStudioPortal } from './lmstudio/index.js'
+import { defaultOpenAIConfig, createOpenAIPortal } from './openai/index'
+import { defaultGroqConfig, createGroqPortal } from './groq/index'
+import { defaultAnthropicConfig, createAnthropicPortal } from './anthropic/index'
+import { defaultXAIConfig, createXAIPortal } from './xai/index'
+import { defaultOpenRouterConfig, createOpenRouterPortal } from './openrouter/index'
+import { defaultKlusterAiConfig, createKlusterAiPortal } from './kluster.ai/index'
+import { defaultVertexConfig, createGoogleVertexPortal } from './google-vertex/index'
+import { defaultGenerativeConfig, createGoogleGenerativePortal } from './google-generative/index'
+import { defaultVercelConfig, createVercelAIPortal } from './vercel/index'
+import { defaultMultimodalConfig, createMultimodalPortal } from './multimodal/index'
+import { defaultMistralConfig, createMistralPortal } from './mistral/index'
+import { defaultCohereConfig, createCoherePortal } from './cohere/index'
+import { defaultAzureOpenAIConfig, createAzureOpenAIPortal } from './azure-openai/index'
+import { defaultOllamaConfig, createOllamaPortal } from './ollama/index'
+import { defaultLMStudioConfig, createLMStudioPortal } from './lmstudio/index'
 
 // Export base portal
-export { BasePortal } from './base-portal.js'
+export { BasePortal } from './base-portal'
 
 // Portal factory type
 export type PortalFactory = (config: PortalConfig) => Portal
@@ -430,4 +430,4 @@ export type {
   ToolEvaluationOptions,
   ToolEvaluationResult,
   PortalCapability
-} from '../types/portal.js'
+} from '../types/portal'

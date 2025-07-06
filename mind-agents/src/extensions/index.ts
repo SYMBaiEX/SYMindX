@@ -4,12 +4,12 @@
  * Extension loading with modular architecture including API, Telegram, MCP, and Communication extensions
  */
 
-import { Extension } from '../types/agent.js'
-import { RuntimeConfig } from '../types/agent.js'
-import { ApiExtension } from './api/index.js'
-import { TelegramExtension, createTelegramExtension } from './telegram/index.js'
-import { MCPClientExtension } from './mcp-client/index.js'
-import { MCPServerExtension } from './mcp-server/index.js'
+import { Extension } from '../types/agent'
+import { RuntimeConfig } from '../types/agent'
+import { ApiExtension } from './api/index'
+import { TelegramExtension, createTelegramExtension } from './telegram/index'
+import { MCPClientExtension } from './mcp-client/index'
+import { MCPServerExtension } from './mcp-server/index'
 
 export async function registerExtensions(config: RuntimeConfig): Promise<Extension[]> {
   const extensions: Extension[] = []
@@ -134,8 +134,8 @@ export async function registerExtensions(config: RuntimeConfig): Promise<Extensi
 }
 
 // Export extension classes and types
-export { ApiExtension } from './api/index.js'
-export { TelegramExtension, createTelegramExtension, type TelegramConfig } from './telegram/index.js'
-// export { MCPClientExtension, type MCPClientConfig } from './mcp-client/index.js'
-// export { MCPServerExtension, type MCPServerConfig } from './mcp-server/index.js'
-// export { CommunicationExtension, type CommunicationConfig } from './communication/index.js'
+export { ApiExtension } from './api/index'
+export { TelegramExtension, createTelegramExtension, type TelegramConfig } from './telegram/index'
+// export { MCPClientExtension, type MCPClientConfig } from './mcp-client/index'
+// export { MCPServerExtension, type MCPServerConfig } from './mcp-server/index'
+// export { CommunicationExtension, type CommunicationConfig } from './communication/index'

@@ -3,10 +3,10 @@
  * Provides comprehensive state validation and recovery procedures
  */
 
-import { Agent, LazyAgent, AgentConfig } from '../types/agent.js'
-import { StateManager, AgentStateSnapshot, StateValidationResult } from './state-manager.js'
-import { ResourceManager } from './resource-manager.js'
-import { Logger } from '../utils/logger.js'
+import { Agent, LazyAgent, AgentConfig } from '../types/agent'
+import { StateManager, AgentStateSnapshot, StateValidationResult } from './state-manager'
+import { ResourceManager } from './resource-manager'
+import { Logger } from '../utils/logger'
 import { EventEmitter } from 'events'
 
 export interface RecoveryStrategy {

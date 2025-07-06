@@ -1,13 +1,13 @@
-import { convertUsage } from './utils.js'
+import { convertUsage } from './utils'
 /**
  * Portal Integration
  * 
  * This module provides functions to integrate portals with the SYMindX runtime.
  */
 
-import { ModuleRegistry } from '../types/agent.js'
-import { Portal, PortalConfig, PortalCapability, ChatGenerationOptions } from '../types/portal.js'
-import { PortalRegistry, createPortal, getAvailablePortals, getPortalDefaultConfig } from './index.js'
+import { ModuleRegistry } from '../types/agent'
+import { Portal, PortalConfig, PortalCapability, ChatGenerationOptions } from '../types/portal'
+import { PortalRegistry, createPortal, getAvailablePortals, getPortalDefaultConfig } from './index'
 
 /**
  * Register all available portals with the runtime

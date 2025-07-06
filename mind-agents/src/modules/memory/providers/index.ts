@@ -5,28 +5,28 @@
  */
 
 // Export all provider classes and configs
-export { InMemoryProvider, createInMemoryProvider, createDefaultInMemoryProvider } from './memory/index.js'
-export type { InMemoryConfig } from './memory/index.js'
+export { InMemoryProvider, createInMemoryProvider, createDefaultInMemoryProvider } from './memory/index'
+export type { InMemoryConfig } from './memory/index'
 
-export { SQLiteMemoryProvider } from './sqlite/index.js'
-export type { SQLiteMemoryConfig } from './sqlite/index.js'
+export { SQLiteMemoryProvider } from './sqlite/index'
+export type { SQLiteMemoryConfig } from './sqlite/index'
 
-export { SupabaseMemoryProvider, createSupabaseMemoryProvider, SUPABASE_MEMORY_MIGRATION } from './supabase/index.js'
-export type { SupabaseMemoryConfig } from './supabase/index.js'
+export { SupabaseMemoryProvider, createSupabaseMemoryProvider, SUPABASE_MEMORY_MIGRATION } from './supabase/index'
+export type { SupabaseMemoryConfig } from './supabase/index'
 
-export { NeonMemoryProvider, createNeonMemoryProvider, createNeonConnectionString } from './neon/index.js'
-export type { NeonMemoryConfig } from './neon/index.js'
+export { NeonMemoryProvider, createNeonMemoryProvider, createNeonConnectionString } from './neon/index'
+export type { NeonMemoryConfig } from './neon/index'
 
-export { PostgresMemoryProvider, createPostgresMemoryProvider, createDefaultPostgresProvider, createPostgresConnectionString } from './postgres/index.js'
-export type { PostgresMemoryConfig } from './postgres/index.js'
+export { PostgresMemoryProvider, createPostgresMemoryProvider, createDefaultPostgresProvider, createPostgresConnectionString } from './postgres/index'
+export type { PostgresMemoryConfig } from './postgres/index'
 
-import { MemoryProviderType } from '../../../types/agent.js'
-import { BaseMemoryConfig } from '../base-memory-provider.js'
-import { InMemoryProvider, InMemoryConfig } from './memory/index.js'
-import { SQLiteMemoryProvider, SQLiteMemoryConfig } from './sqlite/index.js'
-import { SupabaseMemoryProvider, SupabaseMemoryConfig } from './supabase/index.js'
-import { NeonMemoryProvider, NeonMemoryConfig, createNeonMemoryProvider } from './neon/index.js'
-import { PostgresMemoryProvider, PostgresMemoryConfig, createPostgresMemoryProvider } from './postgres/index.js'
+import { MemoryProviderType } from '../../../types/agent'
+import { BaseMemoryConfig } from '../base-memory-provider'
+import { InMemoryProvider, InMemoryConfig } from './memory/index'
+import { SQLiteMemoryProvider, SQLiteMemoryConfig } from './sqlite/index'
+import { SupabaseMemoryProvider, SupabaseMemoryConfig } from './supabase/index'
+import { NeonMemoryProvider, NeonMemoryConfig, createNeonMemoryProvider } from './neon/index'
+import { PostgresMemoryProvider, PostgresMemoryConfig, createPostgresMemoryProvider } from './postgres/index'
 
 /**
  * Union type for all memory provider configurations

@@ -6,8 +6,8 @@
  */
 
 import { createClient, SupabaseClient, RealtimeChannel } from '@supabase/supabase-js'
-import { MemoryRecord, MemoryType, MemoryDuration } from '../../../../types/agent.js'
-import { BaseMemoryProvider, BaseMemoryConfig, MemoryRow, EnhancedMemoryRecord } from '../../base-memory-provider.js'
+import { MemoryRecord, MemoryType, MemoryDuration } from '../../../../types/agent'
+import { BaseMemoryProvider, BaseMemoryConfig, MemoryRow, EnhancedMemoryRecord } from '../../base-memory-provider'
 import { 
   MemoryProviderMetadata, 
   MemoryTierType,
@@ -15,11 +15,11 @@ import {
   SharedMemoryConfig,
   ArchivalStrategy,
   MemoryPermission
-} from '../../../../types/memory.js'
-import { SharedMemoryPool } from './shared-pool.js'
-import { MemoryArchiver } from './archiver.js'
-import { runtimeLogger } from '../../../../utils/logger.js'
-import { runMigrations } from './migrations.js'
+} from '../../../../types/memory'
+import { SharedMemoryPool } from './shared-pool'
+import { MemoryArchiver } from './archiver'
+import { runtimeLogger } from '../../../../utils/logger'
+import { runMigrations } from './migrations'
 
 /**
  * Configuration for the Supabase memory provider
@@ -127,8 +127,8 @@ export class SupabaseMemoryProvider extends BaseMemoryProvider {
       await runMigrations(this.client)
 
       // Check if pgvector extension is enabled
-      const { data: extensions } = await this.client.rpc('get_extensions').catch(() => ({ data: [] }))
-      const hasVector = extensions?.some((ext: any) => ext.name === 'vector')
+      const { data: extensions, error: extensionsError } = await this.client.rpc('get_extensions')
+      const hasVector = !extensionsError && extensions?.some((ext: any) => ext.name === 'vector')
       
       if (!hasVector) {
         console.warn('⚠️ pgvector extension not detected. Vector search will be limited.')
@@ -216,7 +216,7 @@ export class SupabaseMemoryProvider extends BaseMemoryProvider {
         expires_at: memory.expiresAt?.toISOString(),
         updated_at: new Date().toISOString(),
         tier: enhanced.tier || MemoryTierType.EPISODIC,
-        context: enhanced.context || null
+        context: enhanced.context || undefined
       }
 
       const { error } = await this.client
@@ -644,11 +644,11 @@ export class SupabaseMemoryProvider extends BaseMemoryProvider {
       .select('agent_id')
       .limit(1000)
     
-    const uniqueAgents = [...new Set((agents || []).map(a => a.agent_id))]
+    const uniqueAgents = Array.from(new Set((agents || []).map(a => a.agent_id)))
     
     for (const agentId of uniqueAgents) {
       // Check consolidation rules for each tier
-      for (const [, tier] of this.tiers) {
+      for (const tier of Array.from(this.tiers.values())) {
         if (!tier.consolidationRules) continue
         
         for (const rule of tier.consolidationRules) {
@@ -691,7 +691,7 @@ export class SupabaseMemoryProvider extends BaseMemoryProvider {
       .select('agent_id')
       .limit(1000)
     
-    const uniqueAgents = [...new Set((agents || []).map(a => a.agent_id))]
+    const uniqueAgents = Array.from(new Set((agents || []).map(a => a.agent_id)))
     
     for (const agentId of uniqueAgents) {
       await this.archiveMemories(agentId)
@@ -758,7 +758,7 @@ export class SupabaseMemoryProvider extends BaseMemoryProvider {
     }
     
     const compressed: EnhancedMemoryRecord[] = []
-    for (const [day, group] of grouped) {
+    for (const [day, group] of Array.from(grouped.entries())) {
       compressed.push({
         id: this.generateId(),
         agentId: group[0].agentId,
@@ -770,7 +770,9 @@ export class SupabaseMemoryProvider extends BaseMemoryProvider {
         duration: MemoryDuration.LONG_TERM,
         tier: MemoryTierType.EPISODIC,
         context: {
-          source: 'compression',
+          source: 'compression'
+        } as MemoryContext,
+        metadata: {
           originalCount: group.length
         }
       })

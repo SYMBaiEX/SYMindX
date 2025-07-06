@@ -3,10 +3,10 @@
  * Provides automated checkpointing and state management
  */
 
-import { Agent } from '../types/agent.js'
-import { StateManager, AgentStateSnapshot, CheckpointType, StateManagerConfig } from './state-manager.js'
-import { ResourceManager } from './resource-manager.js'
-import { Logger } from '../utils/logger.js'
+import { Agent } from '../types/agent'
+import { StateManager, AgentStateSnapshot, CheckpointType, StateManagerConfig } from './state-manager'
+import { ResourceManager } from './resource-manager'
+import { Logger } from '../utils/logger'
 import { EventEmitter } from 'events'
 
 export interface CheckpointSchedule {

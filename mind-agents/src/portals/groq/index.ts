@@ -1,4 +1,4 @@
-import { convertUsage } from '../utils.js'
+import { convertUsage } from '../utils'
 /**
  * Groq Portal Implementation
  * 
@@ -9,11 +9,11 @@ import { convertUsage } from '../utils.js'
 import { groq } from '@ai-sdk/groq'
 import { generateText, streamText, tool } from 'ai'
 import { z } from 'zod'
-import { BasePortal } from '../base-portal.js'
+import { BasePortal } from '../base-portal'
 import { PortalConfig, TextGenerationOptions, TextGenerationResult, 
   ChatMessage, ChatGenerationOptions, ChatGenerationResult, EmbeddingOptions, EmbeddingResult,
   ImageGenerationOptions, ImageGenerationResult, PortalCapability, PortalType, ModelType, MessageRole, FinishReason,
-  ToolEvaluationOptions, ToolEvaluationResult } from '../../types/portal.js'
+  ToolEvaluationOptions, ToolEvaluationResult } from '../../types/portal'
 
 export interface GroqConfig extends PortalConfig {
   model?: string
@@ -117,11 +117,19 @@ export class GroqPortal extends BasePortal {
       
       // Convert ChatMessage[] to message format for AI SDK
       const aiMessages = messages.map(msg => {
-        const role = msg.role === MessageRole.FUNCTION ? 'assistant' : msg.role
-        return {
-          role: role,
-          content: msg.content
+        if (msg.role === MessageRole.FUNCTION) {
+          return { role: 'assistant' as const, content: msg.content }
         }
+        if (msg.role === MessageRole.USER) {
+          return { role: 'user' as const, content: msg.content }
+        }
+        if (msg.role === MessageRole.ASSISTANT) {
+          return { role: 'assistant' as const, content: msg.content }
+        }
+        if (msg.role === MessageRole.SYSTEM) {
+          return { role: 'system' as const, content: msg.content }
+        }
+        return { role: 'user' as const, content: msg.content }
       })
       
       const result = await generateText({
@@ -339,11 +347,19 @@ export class GroqPortal extends BasePortal {
       
       // Convert ChatMessage[] to message format for AI SDK
       const aiMessages = messages.map(msg => {
-        const role = msg.role === MessageRole.FUNCTION ? 'assistant' : msg.role
-        return {
-          role: role,
-          content: msg.content
+        if (msg.role === MessageRole.FUNCTION) {
+          return { role: 'assistant' as const, content: msg.content }
         }
+        if (msg.role === MessageRole.USER) {
+          return { role: 'user' as const, content: msg.content }
+        }
+        if (msg.role === MessageRole.ASSISTANT) {
+          return { role: 'assistant' as const, content: msg.content }
+        }
+        if (msg.role === MessageRole.SYSTEM) {
+          return { role: 'system' as const, content: msg.content }
+        }
+        return { role: 'user' as const, content: msg.content }
       })
       
       const result = streamText({

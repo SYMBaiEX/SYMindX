@@ -6,8 +6,8 @@
  */
 
 import { Pool, PoolClient } from 'pg'
-import { MemoryRecord, MemoryType, MemoryDuration } from '../../../../types/agent.js'
-import { BaseMemoryProvider, BaseMemoryConfig, MemoryRow, EnhancedMemoryRecord } from '../../base-memory-provider.js'
+import { MemoryRecord, MemoryType, MemoryDuration } from '../../../../types/agent'
+import { BaseMemoryProvider, BaseMemoryConfig, MemoryRow, EnhancedMemoryRecord } from '../../base-memory-provider'
 import { 
   MemoryProviderMetadata, 
   MemoryTierType,
@@ -15,17 +15,17 @@ import {
   SharedMemoryConfig,
   ArchivalStrategy,
   MemoryPermission
-} from '../../../../types/memory.js'
-import { SharedMemoryPool } from './shared-pool.js'
-import { MemoryArchiver } from './archiver.js'
-import { runtimeLogger } from '../../../../utils/logger.js'
+} from '../../../../types/memory'
+import { SharedMemoryPool } from './shared-pool'
+import { MemoryArchiver } from './archiver'
+import { runtimeLogger } from '../../../../utils/logger'
 import { 
   MIGRATIONS, 
   createMigrationsTable, 
   isMigrationApplied, 
   recordMigration, 
   getCurrentBatch 
-} from './migrations.js'
+} from './migrations'
 
 /**
  * Configuration for the Neon memory provider

@@ -5,23 +5,23 @@
  * has its own module with specific behaviors and triggers.
  */
 
-import { CompositeEmotionModule } from './composite-emotion.js';
-import { EmotionModule } from '../../types/emotion.js';
-import { EmotionConfig } from '../../types/agent.js';
-import { runtimeLogger } from '../../utils/logger.js';
+import { CompositeEmotionModule } from './composite-emotion';
+import { EmotionModule } from '../../types/emotion';
+import { EmotionConfig } from '../../types/agent';
+import { runtimeLogger } from '../../utils/logger';
 
 // Export individual emotions for direct use if needed
-export { HappyEmotion } from './happy/index.js'
-export { SadEmotion } from './sad/index.js'
-export { AngryEmotion } from './angry/index.js'
-export { AnxiousEmotion } from './anxious/index.js'
-export { ConfidentEmotion } from './confident/index.js'
-export { NostalgicEmotion } from './nostalgic/index.js'
-export { EmpatheticEmotion } from './empathetic/index.js'
-export { CuriousEmotion } from './curious/index.js'
-export { ProudEmotion } from './proud/index.js'
-export { ConfusedEmotion } from './confused/index.js'
-export { NeutralEmotion } from './neutral/index.js'
+export { HappyEmotion } from './happy/index'
+export { SadEmotion } from './sad/index'
+export { AngryEmotion } from './angry/index'
+export { AnxiousEmotion } from './anxious/index'
+export { ConfidentEmotion } from './confident/index'
+export { NostalgicEmotion } from './nostalgic/index'
+export { EmpatheticEmotion } from './empathetic/index'
+export { CuriousEmotion } from './curious/index'
+export { ProudEmotion } from './proud/index'
+export { ConfusedEmotion } from './confused/index'
+export { NeutralEmotion } from './neutral/index'
 
 /**
  * Create an emotion module based on configuration
@@ -60,16 +60,35 @@ export function getEmotionTypes(): string[] {
 }
 
 // Export the composite implementation
-export { CompositeEmotionModule } from './composite-emotion.js';
-export { BaseEmotion } from './base-emotion.js';
+export { CompositeEmotionModule } from './composite-emotion';
+export { BaseEmotion } from './base-emotion';
 
-// Registration function
-export function registerEmotionModules(registry: any) {
-  // Register all as using the composite module
-  const emotionTypes = getEmotionModuleTypes();
-  for (const type of emotionTypes) {
-    registry.registerEmotionFactory(type, (config: any) => createEmotionModule(type, config));
+// Registration function with auto-discovery
+export async function registerEmotionModules(registry: any): Promise<void> {
+  try {
+    // Use the new emotion discovery system
+    const { createEmotionDiscovery } = await import('./emotion-discovery')
+    const projectRoot = process.cwd()
+    const discovery = createEmotionDiscovery(projectRoot)
+    
+    // Auto-discover and register all emotions
+    await discovery.autoRegisterEmotions(registry)
+    
+    // Register the main emotion module types as fallback
+    const emotionTypes = getEmotionModuleTypes();
+    for (const type of emotionTypes) {
+      registry.registerEmotionFactory(type, (config: any) => createEmotionModule(type, config));
+    }
+    
+    // Emotion factories registered - logged by runtime
+  } catch (error) {
+    console.error('❌ Failed to register emotion modules:', error)
+    
+    // Fallback to manual registration
+    const emotionTypes = getEmotionModuleTypes();
+    for (const type of emotionTypes) {
+      registry.registerEmotionFactory(type, (config: any) => createEmotionModule(type, config));
+    }
+    throw error
   }
-  
-  // Emotion factories registered - logged by runtime
 }

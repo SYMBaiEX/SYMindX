@@ -1,0 +1,8 @@
+{
+  "name": "@symindx/portal-vercel",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "main": "index.ts",
+  "dependencies": {}
+}

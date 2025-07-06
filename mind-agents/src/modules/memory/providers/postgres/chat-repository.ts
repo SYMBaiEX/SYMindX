@@ -25,7 +25,7 @@ import {
   ChatSession,
   AnalyticsEvent,
   EmotionSnapshot
-} from '../sqlite/chat-types.js'
+} from '../sqlite/chat-types'
 
 export interface PostgresChatConfig extends ChatSystemConfig {
   host: string

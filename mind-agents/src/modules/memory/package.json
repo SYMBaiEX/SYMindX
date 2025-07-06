@@ -1,0 +1,22 @@
+{
+  "name": "@symindx/module-memory",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "main": "index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./base": "./base-memory-provider.ts",
+    "./providers/sqlite": "./providers/sqlite/index.ts",
+    "./providers/postgres": "./providers/postgres/index.ts",
+    "./providers/supabase": "./providers/supabase/index.ts",
+    "./providers/neon": "./providers/neon/index.ts"
+  },
+  "dependencies": {},
+  "symindx": {
+    "type": "module",
+    "category": "memory",
+    "displayName": "Memory System",
+    "description": "Pluggable memory storage system with multiple provider options"
+  }
+}

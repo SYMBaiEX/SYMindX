@@ -12,13 +12,13 @@ import {
   Agent,
   AgentConfig,
   AgentFactory
-} from '../types/agent.js'
-import { Portal, PortalConfig } from '../types/portal.js'
-import { runtimeLogger } from '../utils/logger.js'
-import { EmotionModule, EmotionModuleFactory } from '../types/emotion.js'
-import { CognitionModule, CognitionModuleFactory } from '../types/cognition.js'
-import { PortalFactory } from '../portals/index.js'
-import { BaseConfig } from '../types/common.js'
+} from '../types/agent'
+import { Portal, PortalConfig } from '../types/portal'
+import { runtimeLogger } from '../utils/logger'
+import { EmotionModule, EmotionModuleFactory } from '../types/emotion'
+import { CognitionModule, CognitionModuleFactory } from '../types/cognition'
+import { PortalFactory } from '../portals/index'
+import { BaseConfig } from '../types/common'
 
 /**
  * Main module registry implementation

@@ -5,9 +5,9 @@
  * context, and learned patterns.
  */
 
-import { BaseConfig } from '../types/common.js'
-import { PersonalityTraits } from '../types/emotion.js'
-import { runtimeLogger } from '../utils/logger.js'
+import { BaseConfig } from '../types/common'
+import { PersonalityTraits } from '../types/emotion'
+import { runtimeLogger } from '../utils/logger'
 
 /**
  * Communication style parameters

@@ -1,0 +1,21 @@
+{
+  "name": "@symindx/emotion-confident",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "main": "index.ts",
+  "dependencies": {},
+  "symindx": {
+    "type": "emotion",
+    "displayName": "Confident Emotion",
+    "description": "Feeling self-assured, certain, and capable",
+    "category": "cognitive",
+    "emotion": {
+      "type": "confident",
+      "factory": "createConfidentEmotion",
+      "autoRegister": true,
+      "triggers": ["success", "mastery", "recognition", "accomplishment", "validation", "competence"],
+      "category": "cognitive"
+    }
+  }
+}

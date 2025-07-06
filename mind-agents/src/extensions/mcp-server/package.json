@@ -1,0 +1,19 @@
+{
+  "name": "@symindx/extension-mcp-server",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "main": "index.ts",
+  "dependencies": {},
+  "symindx": {
+    "type": "extension",
+    "displayName": "MCP Server",
+    "description": "Model Context Protocol server to expose SYMindX framework capabilities",
+    "category": "tool",
+    "extension": {
+      "type": "mcp-server",
+      "factory": "createMCPServerExtension",
+      "autoRegister": true
+    }
+  }
+}

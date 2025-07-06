@@ -17,23 +17,24 @@ import {
   PlanStep,
   PlanStepStatus,
   MemoryRecord
-} from '../../types/agent.js'
+} from '../../types/agent'
 import { 
   CognitionModule,
   CognitionModuleMetadata,
   LearningCapability,
   ReasoningPerformance,
-  HybridReasoningConfig
-} from '../../types/cognition.js'
+  HybridReasoningConfig,
+  ReasoningParadigm
+} from '../../types/cognition'
 import { 
   Experience, 
   RewardSignal, 
   AgentStateVector,
   RewardSignalType
-} from '../../types/autonomous.js'
-import { BaseConfig } from '../../types/common.js'
-import { MemoryType, MemoryDuration } from '../../types/enums.js'
-import { runtimeLogger } from '../../utils/logger.js'
+} from '../../types/autonomous'
+import { BaseConfig } from '../../types/common'
+import { MemoryType, MemoryDuration } from '../../types/enums'
+import { runtimeLogger } from '../../utils/logger'
 
 /**
  * Q-Learning implementation
@@ -42,7 +43,7 @@ export class QLearningAgent {
   private qTable: Map<string, Map<string, number>> = new Map()
   private learningRate: number
   private discountFactor: number
-  private explorationRate: number
+  public explorationRate: number  // Make public so it can be accessed
   private minExplorationRate: number = 0.01
   private explorationDecay: number = 0.995
   
@@ -246,7 +247,7 @@ export class ReinforcementLearningCognition implements CognitionModule {
       version: '1.0.0',
       description: 'Q-learning based adaptive cognition with continuous learning',
       author: 'SYMindX',
-      paradigms: ['reinforcement_learning'],
+      paradigms: [ReasoningParadigm.REINFORCEMENT_LEARNING],
       learningCapable: true
     }
   }
@@ -373,7 +374,18 @@ export class ReinforcementLearningCognition implements CognitionModule {
     }
     
     // Evaluate options using Q-values
-    const currentState = StateRepresentation.contextToState(agent, { events: [], memories: [] })
+    const currentState = StateRepresentation.contextToState(agent, { 
+      events: [], 
+      memories: [],
+      currentState: { 
+        stats: { decision_making: 1 },
+        lastAction: 'decision_evaluation'
+      },
+      environment: {
+        type: 'simulation' as any,
+        time: new Date()
+      }
+    })
     const stateKey = StateRepresentation.stateToKey(currentState)
     
     const evaluatedOptions = options.map(option => {
@@ -405,7 +417,7 @@ export class ReinforcementLearningCognition implements CognitionModule {
     this.experienceBuffer.push(experience)
     
     // Limit buffer size
-    const maxBufferSize = this.config.learning?.experienceBufferSize || 1000
+    const maxBufferSize = (this.config.learning as any)?.experienceBufferSize || 1000
     if (this.experienceBuffer.length > maxBufferSize) {
       this.experienceBuffer.shift()
     }
@@ -584,7 +596,12 @@ export class ReinforcementLearningCognition implements CognitionModule {
    * Convert option to action key
    */
   private optionToActionKey(option: Decision): string {
-    return option.id || option.action || 'unknown_option'
+    if (option.id) return option.id
+    if (typeof option.action === 'string') return option.action
+    if (option.action && typeof option.action === 'object') {
+      return (option.action as any).id || (option.action as any).action || 'unknown_option'
+    }
+    return 'unknown_option'
   }
   
   /**
@@ -592,7 +609,10 @@ export class ReinforcementLearningCognition implements CognitionModule {
    */
   private experienceActionToKey(action: any): string {
     if (typeof action === 'string') return action
-    return action.action || action.type || 'unknown_action'
+    if (action && typeof action === 'object') {
+      return action.action || action.type || 'unknown_action'
+    }
+    return 'unknown_action'
   }
   
   /**

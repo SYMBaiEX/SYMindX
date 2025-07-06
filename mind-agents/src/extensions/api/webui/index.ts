@@ -13,9 +13,9 @@ import express from 'express'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import os from 'os'
-import { Agent } from '../../../types/agent.js'
-import { CommandSystem } from '../../../core/command-system.js'
-import { Logger } from '../../../utils/logger.js'
+import { Agent } from '../../../types/agent'
+import { CommandSystem } from '../../../core/command-system'
+import { Logger } from '../../../utils/logger'
 
 // Handle ES module __dirname
 const __filename = fileURLToPath(import.meta.url)

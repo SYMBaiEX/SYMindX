@@ -2,9 +2,9 @@
  * Extension types for SYMindX
  */
 
-import { Logger } from '../utils/logger.js'
-import { ExtensionConfig } from './common.js'
-import { Agent } from './agent.js'
+import { Logger } from '../utils/logger'
+import { ExtensionConfig } from './common'
+import { Agent } from './agent'
 
 /**
  * Extension context provided to extensions during initialization

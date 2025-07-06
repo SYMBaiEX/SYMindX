@@ -1,2 +1,2 @@
-export { CommandPalette } from './CommandPalette.js'
-export { HelpOverlay } from './HelpOverlay.js'
+export { CommandPalette } from './CommandPalette'
+export { HelpOverlay } from './HelpOverlay'

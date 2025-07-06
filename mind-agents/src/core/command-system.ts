@@ -6,11 +6,11 @@
  */
 
 import { EventEmitter } from 'events'
-import { Agent, AgentAction, ActionStatus, MemoryType, MemoryDuration } from '../types/agent.js'
-import { ActionCategory, ActionResultType } from '../types/enums.js'
-import { Logger, runtimeLogger } from '../utils/logger.js'
+import { Agent, AgentAction, ActionStatus, MemoryType, MemoryDuration } from '../types/agent'
+import { ActionCategory, ActionResultType } from '../types/enums'
+import { Logger, runtimeLogger } from '../utils/logger'
 import { WebSocket } from 'ws'
-import { PortalRouter } from '../portals/index.js'
+import { PortalRouter } from '../portals/index'
 
 export interface Command {
   id: string
@@ -513,10 +513,10 @@ export class CommandSystem extends EventEmitter {
 
   private async processChatCommand(agent: Agent, command: Command): Promise<CommandResult> {
     // Import types for memory operations
-    const { MemoryType, MemoryDuration, ActionCategory } = await import('../types/enums.js')
+    const { MemoryType, MemoryDuration, ActionCategory } = await import('../types/enums')
     
     // Import portal integration helper
-    const { PortalIntegration } = await import('./portal-integration.js')
+    const { PortalIntegration } = await import('./portal-integration')
     
     const startTime = Date.now()
     

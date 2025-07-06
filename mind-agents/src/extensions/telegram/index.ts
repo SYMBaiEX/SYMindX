@@ -6,10 +6,10 @@
  */
 
 import { Telegraf, Context } from 'telegraf'
-import { Agent, AgentAction, Extension, ActionStatus, MemoryType, MemoryDuration, ThoughtContext, EnvironmentType } from '../../types/agent.js'
-import { ExtensionConfig, BaseConfig } from '../../types/common.js'
-import { MessageRole } from '../../types/portal.js'
-import { Logger } from '../../utils/logger.js'
+import { Agent, AgentAction, Extension, ActionStatus, MemoryType, MemoryDuration, ThoughtContext, EnvironmentType } from '../../types/agent'
+import { ExtensionConfig, BaseConfig } from '../../types/common'
+import { MessageRole } from '../../types/portal'
+import { Logger } from '../../utils/logger'
 
 export interface TelegramConfig extends ExtensionConfig {
   botToken: string

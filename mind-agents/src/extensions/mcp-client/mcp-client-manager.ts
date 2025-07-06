@@ -9,7 +9,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js'
 import { z } from 'zod'
-import { runtimeLogger } from '../../utils/logger.js'
+import { runtimeLogger } from '../../utils/logger'
 import {
   MCPServerConfig,
   MCPTool,
@@ -20,7 +20,7 @@ import {
   MCPManagerConfig,
   MCPServerHealth,
   MCPToolExecution
-} from './types.js'
+} from './types'
 
 export class MCPClientManager {
   private connections: Map<string, MCPServerConnection> = new Map()

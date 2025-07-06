@@ -9,7 +9,7 @@ import figlet from 'figlet'
 import boxen from 'boxen'
 import ora from 'ora'
 import Table from 'cli-table3'
-import { Extension } from '../types/agent.js'
+import { Extension } from '../types/agent'
 
 // Cool gradients
 const symindxGradient = gradient(['#FF006E', '#8338EC', '#3A86FF'])

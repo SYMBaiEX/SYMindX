@@ -1,4 +1,4 @@
-import { convertUsage } from '../utils.js'
+import { convertUsage } from '../utils'
 /**
  * Vercel AI SDK Portal
  * 
@@ -6,14 +6,14 @@ import { convertUsage } from '../utils.js'
  * the Vercel AI SDK's powerful abstraction layer with advanced features
  */
 
-import { BasePortal } from '../base-portal.js'
+import { BasePortal } from '../base-portal'
 import { 
   PortalConfig, PortalType, PortalStatus, ModelType, PortalCapability,
   TextGenerationOptions, TextGenerationResult, ChatMessage, ChatGenerationOptions, 
   ChatGenerationResult, EmbeddingOptions, EmbeddingResult, ImageGenerationOptions, 
   ImageGenerationResult, FinishReason, MessageRole
-} from '../../types/portal.js'
-import { Agent } from '../../types/agent.js'
+} from '../../types/portal'
+import { Agent } from '../../types/agent'
 import { 
   generateText, 
   streamText, 
@@ -23,7 +23,8 @@ import {
   createProviderRegistry,
   type LanguageModel,
   type EmbeddingModel,
-  type ImageModel
+  type ImageModel,
+  type ModelMessage
 } from 'ai'
 import { createOpenAI } from '@ai-sdk/openai'
 import { createAnthropic } from '@ai-sdk/anthropic'
@@ -472,38 +473,63 @@ export class VercelAIPortal extends BasePortal {
     }
   }
 
-  private convertToModelMessages(messages: ChatMessage[]) {
+  private convertToModelMessages(messages: ChatMessage[]): ModelMessage[] {
     return messages.map(msg => {
-      const message = {
-        role: msg.role,
-        content: msg.content
-      }
-
-      // Handle attachments for multimodal support
-      if (msg.attachments && msg.attachments.length > 0) {
-        const content: any[] = [{ type: 'text', text: msg.content }]
+      switch (msg.role) {
+        case MessageRole.SYSTEM:
+          return { role: 'system', content: msg.content }
         
-        for (const attachment of msg.attachments) {
-          if (attachment.type === 'image') {
-            if (attachment.data) {
-              content.push({
-                type: 'image',
-                image: attachment.data,
-                mimeType: attachment.mimeType
-              })
-            } else if (attachment.url) {
-              content.push({
-                type: 'image',
-                image: new URL(attachment.url)
-              })
+        case MessageRole.USER: {
+          // Handle attachments for multimodal support
+          if (msg.attachments && msg.attachments.length > 0) {
+            const content: Array<{ type: 'text'; text: string } | { type: 'image'; image: string | Uint8Array | URL; mediaType?: string }> = [
+              { type: 'text', text: msg.content }
+            ]
+            
+            for (const attachment of msg.attachments) {
+              if (attachment.type === 'image') {
+                if (attachment.data) {
+                  content.push({
+                    type: 'image',
+                    image: attachment.data,
+                    mediaType: attachment.mimeType
+                  })
+                } else if (attachment.url) {
+                  content.push({
+                    type: 'image',
+                    image: new URL(attachment.url)
+                  })
+                }
+              }
             }
+            
+            return { role: 'user', content }
+          } else {
+            return { role: 'user', content: msg.content }
           }
         }
         
-        message.content = content
+        case MessageRole.ASSISTANT:
+          return { role: 'assistant', content: msg.content }
+        
+        case MessageRole.TOOL:
+          return { 
+            role: 'tool', 
+            content: [{ 
+              type: 'tool-result', 
+              toolCallId: '', 
+              toolName: '', 
+              result: msg.content 
+            }] 
+          }
+        
+        case MessageRole.FUNCTION:
+          // Convert function messages to assistant messages for compatibility
+          return { role: 'assistant', content: msg.content }
+        
+        default:
+          return { role: 'user', content: msg.content }
       }
-
-      return message
     })
   }
 

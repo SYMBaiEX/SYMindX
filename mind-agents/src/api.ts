@@ -7,31 +7,31 @@
  */
 
 // === CORE RUNTIME ===
-export { SYMindXRuntime } from './core/runtime.js';
-export { SYMindXModuleRegistry } from './core/registry.js';
-export type { SimpleEventBus } from './core/event-bus.js';
-export type { SimplePluginLoader } from './core/plugin-loader.js';
-export { createPluginLoader } from './core/plugin-loader.js';
+export { SYMindXRuntime } from './core/runtime';
+export { SYMindXModuleRegistry } from './core/registry';
+export type { SimpleEventBus } from './core/event-bus';
+export type { SimplePluginLoader } from './core/plugin-loader';
+export { createPluginLoader } from './core/plugin-loader';
 
 // === TYPE SYSTEM ===
-export type * from './types/index.js';
+export type * from './types/index';
 
 // === MODULES ===
 export { 
   type ModuleFactories, 
   createModule, 
   registerCoreModules
-} from './modules/index.js';
+} from './modules/index';
 
 // Import module factories
-import { createMemoryProvider } from './modules/memory/providers/index.js';
-import { createEmotionModule } from './modules/emotion/index.js';
-import { createCognitionModule } from './modules/cognition/index.js';
-import { SYMindXRuntime } from './core/runtime.js';
-import { Logger } from './utils/logger.js';
+import { createMemoryProvider } from './modules/memory/providers/index';
+import { createEmotionModule } from './modules/emotion/index';
+import { createCognitionModule } from './modules/cognition/index';
+import { SYMindXRuntime } from './core/runtime';
+import { Logger } from './utils/logger';
 
 // === UTILITIES ===
-export { Logger } from './utils/logger.js';
+export { Logger } from './utils/logger';
 
 /**
  * Quick factory functions for common use cases

@@ -4,10 +4,10 @@
  * Provides utilities for integrating AI portals with cognition and interaction systems
  */
 
-import { Agent } from '../types/agent.js'
-import { ChatMessage, MessageRole, Portal, PortalCapability, PortalType } from '../types/portal.js'
-import { runtimeLogger } from '../utils/logger.js'
-import { PortalRouter } from '../portals/index.js'
+import { Agent } from '../types/agent'
+import { ChatMessage, MessageRole, Portal, PortalCapability, PortalType } from '../types/portal'
+import { runtimeLogger } from '../utils/logger'
+import { PortalRouter } from '../portals/index'
 
 export interface PortalSelectionCriteria {
   capability: PortalCapability

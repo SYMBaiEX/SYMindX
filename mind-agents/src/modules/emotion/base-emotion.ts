@@ -1,5 +1,5 @@
-import { EmotionState, EmotionRecord } from '../../types/agent.js'
-import { EmotionModule, PersonalityTraits, EmotionBlend } from '../../types/emotion.js'
+import { EmotionState, EmotionRecord } from '../../types/agent'
+import { EmotionModule, PersonalityTraits, EmotionBlend } from '../../types/emotion'
 
 export interface EmotionDefinition {
   name: string

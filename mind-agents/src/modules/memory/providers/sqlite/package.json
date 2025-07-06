@@ -1,0 +1,14 @@
+{
+  "name": "@symindx/module-memory-sqlite",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "main": "index.ts",
+  "dependencies": {},
+  "symindx": {
+    "type": "module",
+    "category": "memory",
+    "displayName": "SQLite Memory Provider",
+    "description": "Local SQLite database for agent memory storage"
+  }
+}

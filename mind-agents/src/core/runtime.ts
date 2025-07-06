@@ -20,13 +20,13 @@ import {
          LazyAgent,
          LazyAgentState,
          AgentFactory
-        } from '../types/agent.js'
-import { CharacterConfig } from '../types/character.js'
-import { configResolver } from '../utils/config-resolver.js'
-import { EmotionModule, EmotionModuleFactory } from '../types/emotion.js'
-import { CognitionModule, CognitionModuleFactory } from '../types/cognition.js'
-import { Portal, PortalConfig, PortalRegistry } from '../types/portal.js'
-import { ExtensionConfig } from '../types/common.js'
+        } from '../types/agent'
+import { CharacterConfig } from '../types/character'
+import { configResolver } from '../utils/config-resolver'
+import { EmotionModule, EmotionModuleFactory } from '../types/emotion'
+import { CognitionModule, CognitionModuleFactory } from '../types/cognition'
+import { Portal, PortalConfig, PortalRegistry } from '../types/portal'
+import { ExtensionConfig } from '../types/common'
 import {
   ActionResultType,
   ActionCategory,
@@ -35,19 +35,19 @@ import {
   Result,
   ErrorResult,
   SuccessResult
-} from '../types/enums.js'
+} from '../types/enums'
 import { EventEmitter } from 'events'
-import { SimplePluginLoader, createPluginLoader } from './plugin-loader.js'
-import { SimpleEventBus } from './event-bus.js'
-import { SYMindXModuleRegistry } from './registry.js'
-import { ExtensionContext } from '../types/extension.js'
-import { Logger, runtimeLogger } from '../utils/logger.js'
+import { SimplePluginLoader, createPluginLoader } from './plugin-loader'
+import { SimpleEventBus } from './event-bus'
+import { SYMindXModuleRegistry } from './registry'
+import { ExtensionContext } from '../types/extension'
+import { Logger, runtimeLogger } from '../utils/logger'
 // Autonomous system imports
-import { AutonomousEngine, AutonomousEngineConfig } from './autonomous-engine.js'
-import { DecisionEngine } from './decision-engine.js'
+import { AutonomousEngine, AutonomousEngineConfig } from './autonomous-engine'
+import { DecisionEngine } from './decision-engine'
 // Behaviors and lifecycle systems removed - functionality integrated into autonomous engine
-import { AutonomousAgent, DecisionModuleType } from '../types/autonomous.js'
-import { MultiAgentManager } from './multi-agent-manager.js'
+import { AutonomousAgent, DecisionModuleType } from '../types/autonomous'
+import { MultiAgentManager } from './multi-agent-manager'
 
 export class SYMindXRuntime implements AgentRuntime {
   public agents: Map<string, Agent> = new Map()
@@ -113,9 +113,10 @@ export class SYMindXRuntime implements AgentRuntime {
       const fs = await import('fs/promises')
       const path = await import('path')
       
-      // Get the core directory path
+      // Get the project root directory (go up from dist/core to project root)
       const __dirname = path.dirname(new URL(import.meta.url).pathname)
-      const configPath = path.join(__dirname, 'config', 'runtime.json')
+      const projectRoot = path.resolve(__dirname, '..', '..')
+      const configPath = path.join(projectRoot, 'src', 'core', 'config', 'runtime.json')
       
       // Check if the config file exists
       try {
@@ -627,11 +628,13 @@ export class SYMindXRuntime implements AgentRuntime {
         // Try to create extension dynamically if it has a factory and configuration
         const extensionConfig = characterConfig.extensions?.find((ext: any) => ext.name === extName)
         if (extensionConfig) {
+          console.log(`🔨 Attempting to create extension '${extName}' with config:`, extensionConfig.config)
           extension = this.registry.createExtension(extName, extensionConfig.config)
           if (extension) {
-            // Register the created extension
-            this.registry.registerExtension(extName, extension)
-            console.log(`✅ Created and registered extension: ${extName}`)
+            // Note: Don't register character-specific extensions globally
+            console.log(`✅ Created extension: ${extName}`)
+          } else {
+            console.log(`❌ Failed to create extension: ${extName} - factory might not be registered`)
           }
         }
       }
@@ -852,7 +855,7 @@ export class SYMindXRuntime implements AgentRuntime {
     // Initialize portal if available and not already initialized
     if (agent.portal && !agent.portal.enabled) {
       try {
-        const { initializePortal } = await import('../portals/integration.js')
+        const { initializePortal } = await import('../portals/integration')
         await initializePortal(agent.portal, agent)
       } catch (error) {
         console.error(`❌ Failed to initialize portal for ${agent.name}:`, error)
@@ -1128,12 +1131,12 @@ export class SYMindXRuntime implements AgentRuntime {
   private async registerCoreModules(): Promise<void> {
     try {
       // Import factory functions from modules
-      const { createEmotionModule, createCognitionModule } = await import('../modules/index.js')
-      const { getEmotionModuleTypes } = await import('../modules/emotion/index.js')
-      const { getCognitionModuleTypes } = await import('../modules/cognition/index.js')
+      const { createEmotionModule, createCognitionModule } = await import('../modules/index')
+      const { getEmotionModuleTypes } = await import('../modules/emotion/index')
+      const { getCognitionModuleTypes } = await import('../modules/cognition/index')
       
       // Register core modules
-      const { registerCoreModules } = await import('../modules/index.js')
+      const { registerCoreModules } = await import('../modules/index')
       await registerCoreModules(this.registry)
       
       // Clean summary logging
@@ -1347,7 +1350,7 @@ export class SYMindXRuntime implements AgentRuntime {
     
     try {
       // Import the extensions module
-      const extensionsModule = await import('../extensions/index.js')
+      const extensionsModule = await import('../extensions/index')
       
       // Create extension configs from environment variables
       const extensionConfigs: Record<string, ExtensionConfig> = {}
@@ -1658,7 +1661,7 @@ export class SYMindXRuntime implements AgentRuntime {
   private async loadPortals(): Promise<void> {
     try {
       // Use the new portal integration module
-      const { registerPortals } = await import('../portals/integration.js')
+      const { registerPortals } = await import('../portals/integration')
       
       // Get API keys from environment variables or config
       const apiKeys: Record<string, string> = {}
@@ -1671,7 +1674,7 @@ export class SYMindXRuntime implements AgentRuntime {
       
       // Register portal factories for dynamic creation
       try {
-        const portalsModule = await import('../portals/index.js')
+        const portalsModule = await import('../portals/index')
         if (portalsModule.getAvailablePortalTypes) {
           const portalTypes = portalsModule.getAvailablePortalTypes()
           for (const portalType of portalTypes) {

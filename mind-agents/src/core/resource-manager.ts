@@ -3,8 +3,8 @@
  * Tracks and manages agent resources for proper cleanup and restoration
  */
 
-import { Agent } from '../types/agent.js'
-import { Logger } from '../utils/logger.js'
+import { Agent } from '../types/agent'
+import { Logger } from '../utils/logger'
 import { EventEmitter } from 'events'
 
 export interface ResourceHandle {

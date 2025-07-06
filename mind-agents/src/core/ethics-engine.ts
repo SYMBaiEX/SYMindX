@@ -2,9 +2,9 @@
  * Ethics Engine - Comprehensive ethical constraint checking and safety controls
  */
 
-import { Agent, AgentAction, AgentEvent } from '../types/agent.js'
-import { DecisionContext, Constraint } from '../types/autonomous.js'
-import { Logger } from '../utils/logger.js'
+import { Agent, AgentAction, AgentEvent } from '../types/agent'
+import { DecisionContext, Constraint } from '../types/autonomous'
+import { Logger } from '../utils/logger'
 
 export interface EthicsConfig {
   enabled: boolean

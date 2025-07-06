@@ -5,8 +5,8 @@
  */
 
 import { Request, Response } from 'express'
-import { Agent } from '../../types/agent.js'
-import { BaseConfig, ExtensionConfig } from '../../types/common.js'
+import { Agent } from '../../types/agent'
+import { BaseConfig, ExtensionConfig } from '../../types/common'
 
 export interface ApiSettings extends BaseConfig {
   port: number

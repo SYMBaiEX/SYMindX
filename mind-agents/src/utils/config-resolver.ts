@@ -5,7 +5,7 @@
  * with environment variable resolution and sensible defaults
  */
 
-import { CharacterConfig, EnvironmentConfig, ConfigDefaults } from '../types/character.js'
+import { CharacterConfig, EnvironmentConfig, ConfigDefaults } from '../types/character'
 
 export class ConfigResolver {
   private envConfig: EnvironmentConfig | null = null

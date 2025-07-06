@@ -8,4 +8,4 @@ export {
   type RuntimeStatus,
   type RuntimeCapabilities,
   type ActivityEvent
-} from './runtimeClient.js';
+} from './runtimeClient';

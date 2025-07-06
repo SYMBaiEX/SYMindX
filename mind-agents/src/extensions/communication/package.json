@@ -1,0 +1,19 @@
+{
+  "name": "@symindx/extension-communication",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "main": "index.ts",
+  "dependencies": {},
+  "symindx": {
+    "type": "extension",
+    "displayName": "Communication System",
+    "description": "Context management and expression engine for agent communication",
+    "category": "tool",
+    "extension": {
+      "type": "communication",
+      "factory": "createCommunicationExtension",
+      "autoRegister": true
+    }
+  }
+}

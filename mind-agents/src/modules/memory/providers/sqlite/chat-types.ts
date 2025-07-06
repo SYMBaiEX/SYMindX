@@ -4,7 +4,7 @@
  * Type definitions for the persistent chat storage system
  */
 
-import { AgentStatus } from '../../../../types/agent.js'
+import { AgentStatus } from '../../../../types/agent'
 
 // ===================================================================
 // ENUMS

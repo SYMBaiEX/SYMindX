@@ -1,0 +1,21 @@
+{
+  "name": "@symindx/cognition-reactive",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "main": "index.ts",
+  "dependencies": {},
+  "symindx": {
+    "type": "cognition",
+    "displayName": "Reactive Cognition",
+    "description": "Fast stimulus-response reasoning for immediate reactions",
+    "category": "basic",
+    "cognition": {
+      "type": "reactive",
+      "factory": "createReactiveCognition",
+      "autoRegister": true,
+      "paradigms": ["reactive", "stimulus-response", "fast-response"],
+      "category": "basic"
+    }
+  }
+}

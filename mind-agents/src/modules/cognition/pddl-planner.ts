@@ -17,7 +17,7 @@ import {
   PlanStep,
   PlanStepStatus,
   MemoryRecord
-} from '../../types/agent.js'
+} from '../../types/agent'
 import { 
   CognitionModule,
   CognitionModuleMetadata,
@@ -28,13 +28,15 @@ import {
   PDDLCondition,
   PDDLEffect,
   PDDLProblem,
+  PDDLExpression,
   ReasoningPerformance,
-  HybridReasoningConfig
-} from '../../types/cognition.js'
-import { Experience } from '../../types/autonomous.js'
-import { BaseConfig } from '../../types/common.js'
-import { MemoryType, MemoryDuration } from '../../types/enums.js'
-import { runtimeLogger } from '../../utils/logger.js'
+  HybridReasoningConfig,
+  ReasoningParadigm
+} from '../../types/cognition'
+import { Experience } from '../../types/autonomous'
+import { BaseConfig } from '../../types/common'
+import { MemoryType, MemoryDuration } from '../../types/enums'
+import { runtimeLogger } from '../../utils/logger'
 
 /**
  * PDDL State representation
@@ -61,7 +63,7 @@ interface PDDLPlan {
 interface PDDLActionInstance {
   name: string
   parameters: Record<string, string>
-  preconditions: string[]
+  precondition: string[]
   effects: string[]
   cost: number
 }
@@ -85,7 +87,7 @@ export class PDDLPlanner implements CognitionModule {
   constructor(config: HybridReasoningConfig) {
     this.id = `pddl_planner_${Date.now()}`
     this.config = config
-    this.domain = config.pddlPlanner?.domain || this.createDefaultDomain()
+    this.domain = this.createDefaultDomain()
     this.currentState = this.createInitialState()
   }
   
@@ -95,6 +97,7 @@ export class PDDLPlanner implements CognitionModule {
   private createDefaultDomain(): PDDLDomain {
     return {
       name: 'agent_actions',
+      requirements: [':strips', ':typing'],
       types: ['agent', 'message', 'goal', 'resource', 'location'],
       predicates: [
         { name: 'at', parameters: [{ name: 'agent', type: 'agent' }, { name: 'location', type: 'location' }] },
@@ -112,12 +115,23 @@ export class PDDLPlanner implements CognitionModule {
             { name: 'from', type: 'location' },
             { name: 'to', type: 'location' }
           ],
-          preconditions: [
-            { type: 'and', expressions: ['at(agent, from)', 'connected(from, to)'] }
-          ],
+          precondition: { 
+            type: 'and', 
+            expressions: [
+              { type: 'predicate', predicate: 'at(agent, from)' },
+              { type: 'predicate', predicate: 'connected(from, to)' }
+            ]
+          },
+          effect: { 
+            type: 'and', 
+            expressions: [
+              { type: 'not', expressions: [{ type: 'predicate', predicate: 'at(agent, from)' }] },
+              { type: 'predicate', predicate: 'at(agent, to)' }
+            ]
+          },
           effects: [
-            { type: 'delete', predicate: 'at(agent, from)' },
-            { type: 'add', predicate: 'at(agent, to)' }
+            { type: 'not', predicate: 'at(agent, from)' },
+            { type: 'predicate', predicate: 'at(agent, to)' }
           ]
         },
         {
@@ -126,11 +140,15 @@ export class PDDLPlanner implements CognitionModule {
             { name: 'agent', type: 'agent' },
             { name: 'message', type: 'message' }
           ],
-          preconditions: [
-            { type: 'and', expressions: ['knows(agent, message)'] }
-          ],
+          precondition: { 
+            type: 'and', 
+            expressions: [
+              { type: 'predicate', predicate: 'knows(agent, message)' }
+            ]
+          },
+          effect: { type: 'predicate', predicate: 'communicated(agent, message)' },
           effects: [
-            { type: 'add', predicate: 'communicated(agent, message)' }
+            { type: 'predicate', predicate: 'communicated(agent, message)' }
           ]
         },
         {
@@ -139,12 +157,22 @@ export class PDDLPlanner implements CognitionModule {
             { name: 'agent', type: 'agent' },
             { name: 'resource', type: 'resource' }
           ],
-          preconditions: [
-            { type: 'and', expressions: ['available(resource)'] }
-          ],
+          precondition: { 
+            type: 'and', 
+            expressions: [
+              { type: 'predicate', predicate: 'available(resource)' }
+            ]
+          },
+          effect: { 
+            type: 'and', 
+            expressions: [
+              { type: 'predicate', predicate: 'has(agent, resource)' },
+              { type: 'not', expressions: [{ type: 'predicate', predicate: 'available(resource)' }] }
+            ]
+          },
           effects: [
-            { type: 'add', predicate: 'has(agent, resource)' },
-            { type: 'delete', predicate: 'available(resource)' }
+            { type: 'predicate', predicate: 'has(agent, resource)' },
+            { type: 'not', predicate: 'available(resource)' }
           ]
         },
         {
@@ -153,11 +181,16 @@ export class PDDLPlanner implements CognitionModule {
             { name: 'agent', type: 'agent' },
             { name: 'goal', type: 'goal' }
           ],
-          preconditions: [
-            { type: 'and', expressions: ['has(agent, knowledge)', 'has(agent, tools)'] }
-          ],
+          precondition: { 
+            type: 'and', 
+            expressions: [
+              { type: 'predicate', predicate: 'has(agent, knowledge)' },
+              { type: 'predicate', predicate: 'has(agent, tools)' }
+            ]
+          },
+          effect: { type: 'predicate', predicate: 'achieved(goal)' },
           effects: [
-            { type: 'add', predicate: 'achieved(goal)' }
+            { type: 'predicate', predicate: 'achieved(goal)' }
           ]
         }
       ]
@@ -205,7 +238,7 @@ export class PDDLPlanner implements CognitionModule {
       version: '1.0.0',
       description: 'Automated planning using Planning Domain Definition Language',
       author: 'SYMindX',
-      paradigms: ['pddl_planning'],
+      paradigms: [ReasoningParadigm.PDDL_PLANNING],
       learningCapable: true
     }
   }
@@ -285,7 +318,7 @@ export class PDDLPlanner implements CognitionModule {
       description: this.generateActionDescription(action),
       status: PlanStepStatus.PENDING,
       parameters: action.parameters,
-      preconditions: action.preconditions,
+      preconditions: [],
       effects: action.effects
     }))
     
@@ -380,30 +413,34 @@ export class PDDLPlanner implements CognitionModule {
    * Generate PDDL problem from context
    */
   private generateProblem(agent: Agent, context: ThoughtContext): PDDLProblem {
-    const objects: Record<string, string> = {
-      [agent.id]: 'agent',
-      'current_location': 'location',
-      'target_location': 'location'
-    }
+    const objects = [
+      { name: agent.id, type: 'agent' },
+      { name: 'current_location', type: 'location' },
+      { name: 'target_location', type: 'location' }
+    ]
     
     const initialState = Array.from(this.currentState.predicates)
+    const init = initialState
     
     // Generate goal state
-    const goalState: string[] = []
+    const goalExpressions: PDDLExpression[] = []
     if (context.goal) {
-      goalState.push(`achieved(${context.goal.replace(/\s+/g, '_')})`)
+      goalExpressions.push({ type: 'predicate', predicate: `achieved(${context.goal.replace(/\s+/g, '_')})` })
     }
     
     // Default goal if none specified
-    if (goalState.length === 0) {
-      goalState.push('communicated(agent, response)')
+    if (goalExpressions.length === 0) {
+      goalExpressions.push({ type: 'predicate', predicate: 'communicated(agent, response)' })
     }
     
     return {
+      name: 'thinking_problem',
       domain: this.domain.name,
       objects,
-      initialState,
-      goalState
+      init,
+      initialState: this.currentState.predicates,
+      goal: { type: 'and', expressions: goalExpressions },
+      goalState: new Set(goalExpressions.map(expr => expr.predicate || ''))
     }
   }
   
@@ -411,19 +448,23 @@ export class PDDLPlanner implements CognitionModule {
    * Generate PDDL problem for a specific goal
    */
   private generateGoalProblem(agent: Agent, goal: string): PDDLProblem {
-    const objects: Record<string, string> = {
-      [agent.id]: 'agent',
-      [`goal_${Date.now()}`]: 'goal'
-    }
+    const goalId = `goal_${Date.now()}`
+    const objects = [
+      { name: agent.id, type: 'agent' },
+      { name: goalId, type: 'goal' }
+    ]
     
     const initialState = Array.from(this.currentState.predicates)
-    const goalState = [`achieved(goal_${Date.now()})`]
+    const goalExpressions: PDDLExpression[] = [{ type: 'predicate', predicate: `achieved(${goalId})` }]
     
     return {
+      name: 'goal_problem',
       domain: this.domain.name,
       objects,
-      initialState,
-      goalState
+      init: initialState,
+      initialState: this.currentState.predicates,
+      goal: { type: 'and', expressions: goalExpressions },
+      goalState: new Set(goalExpressions.map(expr => expr.predicate || ''))
     }
   }
   
@@ -431,19 +472,22 @@ export class PDDLPlanner implements CognitionModule {
    * Generate PDDL problem for decision making
    */
   private generateDecisionProblem(agent: Agent, option: Decision): PDDLProblem {
-    const objects: Record<string, string> = {
-      [agent.id]: 'agent',
-      'option': 'goal'
-    }
+    const objects = [
+      { name: agent.id, type: 'agent' },
+      { name: 'option', type: 'goal' }
+    ]
     
     const initialState = Array.from(this.currentState.predicates)
-    const goalState = [`achieved(option)`]
+    const goalExpressions: PDDLExpression[] = [{ type: 'predicate', predicate: 'achieved(option)' }]
     
     return {
+      name: 'decision_problem',
       domain: this.domain.name,
       objects,
-      initialState,
-      goalState
+      init: initialState,
+      initialState: this.currentState.predicates,
+      goal: { type: 'and', expressions: goalExpressions },
+      goalState: new Set(goalExpressions.map(expr => expr.predicate || ''))
     }
   }
   
@@ -471,7 +515,7 @@ export class PDDLPlanner implements CognitionModule {
       const current = queue.shift()!
       
       // Check if goal is achieved
-      if (this.isGoalAchieved(current.state, problem.goalState)) {
+      if (this.isGoalAchieved(current.state, Array.from(problem.goalState || []))) {
         return {
           actions: current.actions,
           cost: current.cost,
@@ -554,8 +598,8 @@ export class PDDLPlanner implements CognitionModule {
     const instance: PDDLActionInstance = {
       name: action.name,
       parameters: {},
-      preconditions: action.preconditions.flatMap(p => p.expressions),
-      effects: action.effects.map(e => e.predicate),
+      precondition: action.precondition.expressions?.map(e => e.predicate || '') || [action.precondition.predicate || ''].filter(Boolean),
+      effects: action.effects ? action.effects.map(e => e.predicate || '') : [],
       cost: 1
     }
     
@@ -567,7 +611,7 @@ export class PDDLPlanner implements CognitionModule {
    * Check if action can be applied
    */
   private canApplyAction(action: PDDLActionInstance, state: Set<string>): boolean {
-    return action.preconditions.every(precondition => {
+    return action.precondition.every(precondition => {
       // Simple check - in practice, this would handle variable binding
       const simplified = precondition.replace(/\([^)]*\)/g, '')
       return Array.from(state).some(s => s.includes(simplified))
@@ -615,7 +659,7 @@ export class PDDLPlanner implements CognitionModule {
       case 'communicate':
         return ActionCategory.COMMUNICATION
       case 'move':
-        return ActionCategory.NAVIGATION
+        return ActionCategory.MOVEMENT
       case 'acquire_resource':
         return ActionCategory.RESOURCE_MANAGEMENT
       case 'work_on_goal':
@@ -638,8 +682,8 @@ export class PDDLPlanner implements CognitionModule {
       content,
       metadata: {
         reasoning_type: 'pddl_planning',
-        problem: problem,
-        plan: plan,
+        problem: problem as any,
+        plan: plan as any,
         timestamp: new Date()
       },
       importance: plan.valid ? 0.8 : 0.5,

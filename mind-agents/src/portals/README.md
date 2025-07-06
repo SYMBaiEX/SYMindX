@@ -1,25 +1,30 @@
-# Portals System
+# AI Portals Development Guide
 
-The Portals system provides a modular framework for integrating AI providers into the Symindx agent framework. Each portal acts as a bridge between the agent and a specific AI provider, offering a unified interface for text generation, chat completion, and embeddings.
+The SYMindX portal system provides a unified, modular framework for integrating AI providers into agents. Each portal acts as a bridge between agents and specific AI providers, offering consistent interfaces for text generation, chat completion, embeddings, and advanced features like tool calling and streaming.
 
 ## Architecture
 
 ```
 src/portals/
-├── index.ts              # Main exports and registry
-├── base-portal.ts        # Base portal implementation
-├── openai/
-│   └── index.ts         # OpenAI portal
-├── groq/
-│   └── index.ts         # Groq portal
-├── anthropic/
-│   └── index.ts         # Anthropic portal
-├── xai/
-│   └── index.ts         # XAI portal
-├── openrouter/
-│   └── index.ts         # OpenRouter portal
-└── kluster.ai/
-    └── index.ts         # Kluster.ai portal
+├── index.ts              # Portal factory and registration
+├── base-portal.ts        # Base portal interface
+├── integration.ts        # Portal integration utilities
+├── utils.ts             # Common utilities
+├── README.md            # This development guide
+└── [provider-folders]/  # Individual provider implementations
+    ├── openai/          # OpenAI GPT models
+    ├── anthropic/       # Claude models
+    ├── groq/            # Ultra-fast inference
+    ├── google-generative/ # Gemini models
+    ├── google-vertex/   # Vertex AI
+    ├── xai/             # Grok models
+    ├── mistral/         # Mistral AI
+    ├── cohere/          # Command models
+    ├── azure-openai/    # Enterprise OpenAI
+    ├── ollama/          # Local models
+    ├── lmstudio/        # Local model serving
+    ├── vercel/          # Multi-provider aggregation
+    └── openrouter/      # Access to 100+ models
 ```
 
 ## Available Portals

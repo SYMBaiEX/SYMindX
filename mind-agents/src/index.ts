@@ -9,21 +9,21 @@ const rootDir = path.resolve(__dirname, '../..');
 const envPath = path.join(rootDir, '.env');
 dotenv.config({ path: envPath });
 
-import { SYMindXRuntime } from './core/runtime.js';
-import type { RuntimeConfig } from './types/agent.js';
-import { LogLevel, MemoryProviderType, EmotionModuleType, CognitionModuleType } from './types/agent.js';
-import { logger } from './utils/logger.js';
-import { displayBanner, createSpinner, animateLoading, displaySuccess, animateShutdown, matrixRain, createStatusDashboard } from './utils/cli-ui.js';
+import { SYMindXRuntime } from './core/runtime';
+import type { RuntimeConfig } from './types/agent';
+import { LogLevel, MemoryProviderType, EmotionModuleType, CognitionModuleType } from './types/agent';
+import { logger } from './utils/logger';
+import { displayBanner, createSpinner, animateLoading, displaySuccess, animateShutdown, matrixRain, createStatusDashboard } from './utils/cli-ui';
 
 // Export autonomous components for external use
-export { AutonomousEngine } from './core/autonomous-engine.js';
-export { DecisionEngine } from './core/decision-engine.js';
-export { EthicsEngine } from './core/ethics-engine.js';
-export { InteractionManager } from './core/interaction-manager.js';
+export { AutonomousEngine } from './core/autonomous-engine';
+export { DecisionEngine } from './core/decision-engine';
+export { EthicsEngine } from './core/ethics-engine';
+export { InteractionManager } from './core/interaction-manager';
 // TEMPORARILY COMMENTED OUT - export conflicts
-// export * from './modules/behaviors/index.js';
-// export * from './modules/life-cycle/index.js';
-export * from './types/autonomous.js';
+// export * from './modules/behaviors/index';
+// export * from './modules/life-cycle/index';
+export * from './types/autonomous';
 
 // Default runtime configuration
 const config: RuntimeConfig = {

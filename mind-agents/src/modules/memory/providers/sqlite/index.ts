@@ -5,8 +5,8 @@
  * vector embeddings, shared memory pools, and archival strategies.
  */
 
-import { MemoryRecord, MemoryType, MemoryDuration } from '../../../../types/agent.js'
-import { BaseMemoryProvider, BaseMemoryConfig, MemoryRow, EnhancedMemoryRecord } from '../../base-memory-provider.js'
+import { MemoryRecord, MemoryType, MemoryDuration } from '../../../../types/agent'
+import { BaseMemoryProvider, BaseMemoryConfig, MemoryRow, EnhancedMemoryRecord } from '../../base-memory-provider'
 import { 
   MemoryProviderMetadata, 
   MemoryTierType,
@@ -14,13 +14,13 @@ import {
   SharedMemoryConfig,
   ArchivalStrategy,
   MemoryPermission
-} from '../../../../types/memory.js'
+} from '../../../../types/memory'
 import Database, { type Database as DatabaseType, type Statement } from 'better-sqlite3'
 import { readFileSync } from 'fs'
 import { join } from 'path'
-import { SharedMemoryPool } from './shared-pool.js'
-import { MemoryArchiver } from './archiver.js'
-import { runtimeLogger } from '../../../../utils/logger.js'
+import { SharedMemoryPool } from './shared-pool'
+import { MemoryArchiver } from './archiver'
+import { runtimeLogger } from '../../../../utils/logger'
 
 /**
  * Configuration for the SQLite memory provider
@@ -501,7 +501,7 @@ export class SQLiteMemoryProvider extends BaseMemoryProvider {
    * @param b Second vector
    * @returns Cosine similarity (0-1, where 1 is most similar)
    */
-  private cosineSimilarity(a: number[], b: number[]): number {
+  protected cosineSimilarity(a: number[], b: number[]): number {
     if (a.length !== b.length) {
       console.warn(`⚠️ Vector dimension mismatch: ${a.length} vs ${b.length}`)
       return 0
@@ -774,14 +774,14 @@ export class SQLiteMemoryProvider extends BaseMemoryProvider {
         agentId: group[0].agentId,
         type: MemoryType.EXPERIENCE,
         content: `Summary of ${day}: ${group.map(m => m.content).join('; ')}`,
+        metadata: { compressed: true, source: 'compression', originalCount: group.length },
         importance: Math.max(...group.map(m => m.importance || 0)),
         timestamp: new Date(day),
         tags: ['compressed', 'summary'],
         duration: MemoryDuration.LONG_TERM,
         tier: MemoryTierType.EPISODIC,
         context: {
-          source: 'compression',
-          originalCount: group.length
+          source: 'compression'
         }
       })
     }

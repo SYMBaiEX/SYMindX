@@ -6,8 +6,8 @@
  * agent development, deployment, and operations.
  */
 
-import { AgentConfig, AgentEvent, Agent } from './agent.js'
-import { BaseConfig, Metadata } from './common.js'
+import { AgentConfig, AgentEvent, Agent } from './agent'
+import { BaseConfig, Metadata } from './common'
 
 // =============================================================================
 // LIFECYCLE ENUMS

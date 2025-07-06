@@ -4,9 +4,9 @@
  * Simplified to use only the unified cognition module
  */
 
-import { UnifiedCognition, createUnifiedCognition } from './cognition.js'
-import { CognitionModuleType } from '../../types/agent.js'
-import { TheoryOfMind, createTheoryOfMind } from './theory-of-mind.js'
+import { UnifiedCognition, createUnifiedCognition } from './cognition'
+import { CognitionModuleType } from '../../types/agent'
+import { TheoryOfMind, createTheoryOfMind } from './theory-of-mind'
 
 /**
  * Create a cognition module based on type and configuration
@@ -43,29 +43,52 @@ export function getCognitionModuleTypes(): string[] {
 // Export the cognition modules
 export { UnifiedCognition, TheoryOfMind }
 
-// Registration function
-export function registerCognitionModules(registry: any) {
-  // Register factory for unified cognition
-  registry.registerCognitionFactory('unified', (config: any) => 
-    createUnifiedCognition(config || {
-      thinkForActions: true,
-      thinkForMentions: true,
-      thinkOnRequest: true,
-      quickResponseMode: true,
-      analysisDepth: 'normal'
-    }))
-  
-  // Register legacy names for compatibility
-  const legacyTypes = ['htn_planner', 'reactive', 'hybrid']
-  for (const type of legacyTypes) {
-    registry.registerCognitionFactory(type, (config: any) => 
-      createUnifiedCognition({
-        ...config,
-        analysisDepth: type === 'htn_planner' ? 'deep' : 
-                      type === 'reactive' ? 'shallow' : 
-                      'normal'
+// Registration function with auto-discovery
+export async function registerCognitionModules(registry: any): Promise<void> {
+  try {
+    // Use the new cognition discovery system
+    const { createCognitionDiscovery } = await import('./cognition-discovery')
+    const projectRoot = process.cwd()
+    const discovery = createCognitionDiscovery(projectRoot)
+    
+    // Auto-discover and register all cognition modules
+    await discovery.autoRegisterCognitions(registry)
+    
+    // Register the main cognition module types as fallback
+    registry.registerCognitionFactory('unified', (config: any) => 
+      createUnifiedCognition(config || {
+        thinkForActions: true,
+        thinkForMentions: true,
+        thinkOnRequest: true,
+        quickResponseMode: true,
+        analysisDepth: 'normal'
       }))
+    
+    // Register legacy names for compatibility
+    const legacyTypes = ['htn_planner', 'reactive', 'hybrid']
+    for (const type of legacyTypes) {
+      registry.registerCognitionFactory(type, (config: any) => 
+        createUnifiedCognition({
+          ...config,
+          analysisDepth: type === 'htn_planner' ? 'deep' : 
+                        type === 'reactive' ? 'shallow' : 
+                        'normal'
+        }))
+    }
+    
+    // Cognition factories registered - logged by runtime
+  } catch (error) {
+    console.error('❌ Failed to register cognition modules:', error)
+    
+    // Fallback to manual registration
+    registry.registerCognitionFactory('unified', (config: any) => 
+      createUnifiedCognition(config || {
+        thinkForActions: true,
+        thinkForMentions: true,
+        thinkOnRequest: true,
+        quickResponseMode: true,
+        analysisDepth: 'normal'
+      }))
+    throw error
   }
-  
-  // Cognition factories registered - logged by runtime
 }

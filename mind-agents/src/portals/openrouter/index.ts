@@ -1,4 +1,4 @@
-import { convertUsage } from '../utils.js'
+import { convertUsage } from '../utils'
 /**
  * OpenRouter Portal Implementation
  * 
@@ -6,9 +6,9 @@ import { convertUsage } from '../utils.js'
  * to multiple AI models from different providers through a unified interface.
  */
 
-import { BasePortal } from '../base-portal.js'
+import { BasePortal } from '../base-portal'
 import { PortalConfig, TextGenerationOptions, TextGenerationResult, 
-  ChatMessage, ChatGenerationOptions, ChatGenerationResult, EmbeddingOptions, EmbeddingResult, MessageRole, FinishReason, PortalType, ModelType } from '../../types/portal.js'
+  ChatMessage, ChatGenerationOptions, ChatGenerationResult, EmbeddingOptions, EmbeddingResult, MessageRole, FinishReason, PortalType, ModelType } from '../../types/portal'
 
 export interface OpenRouterConfig extends PortalConfig {
   model?: string

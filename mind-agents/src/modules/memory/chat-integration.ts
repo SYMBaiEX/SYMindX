@@ -4,11 +4,11 @@
  * Provides factory functions and integration points for all chat repository providers
  */
 
-import { ChatRepository, ChatSystemConfig } from './providers/sqlite/chat-types.js'
-import { createSQLiteChatRepository } from './providers/sqlite/chat-repository.js'
-import { createSupabaseChatRepository, SupabaseChatConfig } from './providers/supabase/chat-repository.js'
-import { createNeonChatRepository, NeonChatConfig } from './providers/neon/chat-repository.js'
-import { createPostgresChatRepository, PostgresChatConfig } from './providers/postgres/chat-repository.js'
+import { ChatRepository, ChatSystemConfig } from './providers/sqlite/chat-types'
+import { createSQLiteChatRepository } from './providers/sqlite/chat-repository'
+import { createSupabaseChatRepository, SupabaseChatConfig } from './providers/supabase/chat-repository'
+import { createNeonChatRepository, NeonChatConfig } from './providers/neon/chat-repository'
+import { createPostgresChatRepository, PostgresChatConfig } from './providers/postgres/chat-repository'
 
 export type ChatProvider = 'sqlite' | 'supabase' | 'neon' | 'postgres'
 
@@ -183,10 +183,10 @@ function getProviderName(repository: ChatRepository): string {
 export type { 
   ChatRepository, 
   ChatSystemConfig
-} from './providers/sqlite/chat-types.js'
+} from './providers/sqlite/chat-types'
 
-export type { SupabaseChatConfig } from './providers/supabase/chat-repository.js'
-export type { NeonChatConfig } from './providers/neon/chat-repository.js'
-export type { PostgresChatConfig } from './providers/postgres/chat-repository.js'
+export type { SupabaseChatConfig } from './providers/supabase/chat-repository'
+export type { NeonChatConfig } from './providers/neon/chat-repository'
+export type { PostgresChatConfig } from './providers/postgres/chat-repository'
 
-export { ConversationStatus, MessageStatus, MessageType, SenderType } from './providers/sqlite/chat-types.js'
+export { ConversationStatus, MessageStatus, MessageType, SenderType } from './providers/sqlite/chat-types'

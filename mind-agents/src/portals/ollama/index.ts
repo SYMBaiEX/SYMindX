@@ -1,4 +1,4 @@
-import { convertUsage } from '../utils.js'
+import { convertUsage } from '../utils'
 /**
  * Ollama Local AI Portal Index
  * 
@@ -14,7 +14,7 @@ export {
   ollamaModels,
   type OllamaConfig,
   type OllamaModelStatus
-} from './ollama.js'
+} from './ollama'
 
 // Export common types
 export type {
@@ -24,4 +24,4 @@ export type {
   PortalStatus,
   ModelType,
   PortalCapability
-} from '../../types/portal.js'
+} from '../../types/portal'

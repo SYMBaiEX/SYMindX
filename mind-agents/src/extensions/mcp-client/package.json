@@ -1,0 +1,23 @@
+{
+  "name": "@symindx/extension-mcp-client",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "main": "index.ts",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "ai": "^5.0.0-canary.24",
+    "zod": "^3.24.0"
+  },
+  "symindx": {
+    "type": "extension",
+    "displayName": "MCP Client",
+    "description": "Model Context Protocol client for connecting to external MCP servers",
+    "category": "tool",
+    "extension": {
+      "type": "mcp-client",
+      "factory": "createMCPClientExtension",
+      "autoRegister": true
+    }
+  }
+}

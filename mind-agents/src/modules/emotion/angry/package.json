@@ -1,0 +1,21 @@
+{
+  "name": "@symindx/emotion-angry",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "main": "index.ts",
+  "dependencies": {},
+  "symindx": {
+    "type": "emotion",
+    "displayName": "Angry Emotion",
+    "description": "Feeling rage, frustration, and hostile",
+    "category": "basic",
+    "emotion": {
+      "type": "angry",
+      "factory": "createAngryEmotion",
+      "autoRegister": true,
+      "triggers": ["frustration", "injustice", "blocking", "insult", "betrayal", "rage", "hostility"],
+      "category": "basic"
+    }
+  }
+}

@@ -2,9 +2,9 @@
  * Interaction Manager - Handles human-agent interactions and interrupts
  */
 
-import { Agent, AgentEvent, AgentAction } from '../types/agent.js'
-import { EventBus } from '../types/agent.js'
-import { Logger } from '../utils/logger.js'
+import { Agent, AgentEvent, AgentAction } from '../types/agent'
+import { EventBus } from '../types/agent'
+import { Logger } from '../utils/logger'
 
 export interface InteractionConfig {
   enabled: boolean

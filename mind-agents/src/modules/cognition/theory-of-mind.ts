@@ -5,10 +5,10 @@
  * including their beliefs, desires, intentions, and emotional states.
  */
 
-import { Agent } from '../../types/agent.js'
-import { BaseConfig } from '../../types/common.js'
-import { EmotionState } from '../../types/agent.js'
-import { runtimeLogger } from '../../utils/logger.js'
+import { Agent } from '../../types/agent'
+import { BaseConfig } from '../../types/common'
+import { EmotionState } from '../../types/agent'
+import { runtimeLogger } from '../../utils/logger'
 
 /**
  * Mental model of another agent

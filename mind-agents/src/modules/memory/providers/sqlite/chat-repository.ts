@@ -27,8 +27,8 @@ import {
   ChatSession,
   AnalyticsEvent,
   EmotionSnapshot
-} from './chat-types.js'
-import { runMigrations } from './migrations.js'
+} from './chat-types'
+import { runMigrations } from './migrations'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)

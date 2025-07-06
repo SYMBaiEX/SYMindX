@@ -5,8 +5,8 @@
  * Portals are modular connectors to different AI providers like OpenAI, Anthropic, etc.
  */
 
-import { Agent } from './agent.js'
-import { BaseConfig, Metadata, ActionParameters } from './common.js'
+import { Agent } from './agent'
+import { BaseConfig, Metadata, ActionParameters } from './common'
 
 export enum PortalType {
   // Core AI Providers

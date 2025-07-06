@@ -31,7 +31,7 @@ async function main() {
       // Import React and Ink components
       const React = await import('react');
       const { render } = await import('ink');
-      const { MainLayout } = await import('./layouts/index.js');
+      const { MainLayout } = await import('./layouts/index');
       
       // Clear the console and start the Ink app
       console.clear();

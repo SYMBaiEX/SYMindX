@@ -8,8 +8,8 @@
 import { EventEmitter } from 'events'
 import { createServer, Server } from 'http'
 import { WebSocketServer } from 'ws'
-import { runtimeLogger } from '../../utils/logger.js'
-import { Agent } from '../../types/agent.js'
+import { runtimeLogger } from '../../utils/logger'
+import { Agent } from '../../types/agent'
 import {
   MCPServerConfig,
   MCPServerTool,
@@ -23,7 +23,7 @@ import {
   MCPInitializeParams,
   MCPServerStats,
   MCPConnectionInfo
-} from './types.js'
+} from './types'
 
 export class MCPServerManager extends EventEmitter {
   private config: MCPServerConfig

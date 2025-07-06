@@ -1,4 +1,4 @@
-import { convertUsage } from '../utils.js'
+import { convertUsage } from '../utils'
 /**
  * Kluster.ai Portal Implementation
  * 
@@ -6,9 +6,9 @@ import { convertUsage } from '../utils.js'
  * Kluster.ai appears to be a specialized AI platform, so we'll use a generic approach.
  */
 
-import { BasePortal } from '../base-portal.js'
+import { BasePortal } from '../base-portal'
 import { PortalConfig, TextGenerationOptions, TextGenerationResult, 
-  ChatMessage, ChatGenerationOptions, ChatGenerationResult, EmbeddingOptions, EmbeddingResult, MessageRole, FinishReason, PortalType, ModelType } from '../../types/portal.js'
+  ChatMessage, ChatGenerationOptions, ChatGenerationResult, EmbeddingOptions, EmbeddingResult, MessageRole, FinishReason, PortalType, ModelType } from '../../types/portal'
 
 export interface KlusterAiConfig extends PortalConfig {
   model?: string

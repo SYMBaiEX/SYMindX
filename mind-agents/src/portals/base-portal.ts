@@ -1,4 +1,4 @@
-import { convertUsage } from './utils.js'
+import { convertUsage } from './utils'
 /**
  * Base Portal Implementation
  * 
@@ -10,8 +10,8 @@ import { convertUsage } from './utils.js'
 import { Portal, PortalConfig, TextGenerationOptions, TextGenerationResult, 
   ChatMessage, ChatGenerationOptions, ChatGenerationResult, EmbeddingOptions, EmbeddingResult,
   ImageGenerationOptions, ImageGenerationResult, PortalCapability, PortalType, PortalStatus, ModelType,
-  ToolEvaluationOptions, ToolEvaluationResult } from '../types/portal.js'
-import { Agent } from '../types/agent.js'
+  ToolEvaluationOptions, ToolEvaluationResult } from '../types/portal'
+import { Agent } from '../types/agent'
 
 export abstract class BasePortal implements Portal {
   id: string

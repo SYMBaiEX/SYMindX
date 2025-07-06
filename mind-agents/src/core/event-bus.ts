@@ -4,7 +4,7 @@
  */
 
 import { EventEmitter } from 'events'
-import { AgentEvent, EventBus } from '../types/agent.js'
+import { AgentEvent, EventBus } from '../types/agent'
 
 export class SimpleEventBus implements EventBus {
   private events: AgentEvent[] = []

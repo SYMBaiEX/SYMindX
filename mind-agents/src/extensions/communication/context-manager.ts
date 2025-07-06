@@ -5,9 +5,9 @@
  * and provides context-aware responses.
  */
 
-import { Agent, MemoryRecord, MemoryType, MemoryDuration } from '../../types/agent.js'
-import { BaseConfig, Metadata, MetadataValue } from '../../types/common.js'
-import { runtimeLogger } from '../../utils/logger.js'
+import { Agent, MemoryRecord, MemoryType, MemoryDuration } from '../../types/agent'
+import { BaseConfig, Metadata, MetadataValue } from '../../types/common'
+import { runtimeLogger } from '../../utils/logger'
 
 /**
  * Conversation context

@@ -13,10 +13,10 @@
 import { WebSocket, WebSocketServer } from 'ws'
 import { createServer, IncomingMessage } from 'http'
 import { parse } from 'url'
-import { ExtensionAction, Agent, ActionResult, ActionResultType, ActionCategory, AgentEvent } from '../../../types/agent.js'
-import { CommandSystem, Command, CommandPriority, CommandType } from '../../../core/command-system.js'
-import { runtimeLogger } from '../../../utils/logger.js'
-import { WebSocketMessage, ConnectionInfo } from '../types.js'
+import { ExtensionAction, Agent, ActionResult, ActionResultType, ActionCategory, AgentEvent } from '../../../types/agent'
+import { CommandSystem, Command, CommandPriority, CommandType } from '../../../core/command-system'
+import { runtimeLogger } from '../../../utils/logger'
+import { WebSocketMessage, ConnectionInfo } from '../types'
 
 export interface WebSocketConnection {
   id: string

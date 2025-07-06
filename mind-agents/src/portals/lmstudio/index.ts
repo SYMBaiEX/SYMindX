@@ -1,4 +1,4 @@
-import { convertUsage } from '../utils.js'
+import { convertUsage } from '../utils'
 /**
  * LM Studio Portal Index
  * 
@@ -15,7 +15,7 @@ export {
   type LMStudioConfig,
   type LMStudioModelInfo,
   type LMStudioServerStatus
-} from './lmstudio.js'
+} from './lmstudio'
 
 // Export common types
 export type {
@@ -25,4 +25,4 @@ export type {
   PortalStatus,
   ModelType,
   PortalCapability
-} from '../../types/portal.js'
+} from '../../types/portal'

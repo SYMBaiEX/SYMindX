@@ -1,0 +1,21 @@
+{
+  "name": "@symindx/cognition-hybrid",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "main": "index.ts",
+  "dependencies": {},
+  "symindx": {
+    "type": "cognition",
+    "displayName": "Hybrid Cognition",
+    "description": "Combines reactive and planning approaches for balanced reasoning",
+    "category": "advanced",
+    "cognition": {
+      "type": "hybrid",
+      "factory": "createHybridCognition",
+      "autoRegister": true,
+      "paradigms": ["reactive", "planning", "multi-paradigm", "adaptive"],
+      "category": "advanced"
+    }
+  }
+}

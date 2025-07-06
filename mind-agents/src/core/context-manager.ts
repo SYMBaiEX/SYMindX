@@ -5,10 +5,10 @@
  * and provides context-aware responses.
  */
 
-import { Agent, MemoryRecord } from '../types/agent.js'
-import { BaseConfig } from '../types/common.js'
-import { MemoryType, MemoryDuration } from '../types/enums.js'
-import { runtimeLogger } from '../utils/logger.js'
+import { Agent, MemoryRecord } from '../types/agent'
+import { BaseConfig } from '../types/common'
+import { MemoryType, MemoryDuration } from '../types/enums'
+import { runtimeLogger } from '../utils/logger'
 
 /**
  * Conversation context

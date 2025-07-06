@@ -4,8 +4,8 @@
  * Provides actions for monitoring API health, performance metrics, and system status.
  */
 
-import { ExtensionAction, Agent, ActionResult, ActionResultType, ActionCategory } from '../../../types/agent.js'
-import { ApiExtension } from '../index.js'
+import { ExtensionAction, Agent, ActionResult, ActionResultType, ActionCategory } from '../../../types/agent'
+import { ApiExtension } from '../index'
 
 interface HealthMetrics {
   uptime: number

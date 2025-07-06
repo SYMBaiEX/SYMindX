@@ -10,8 +10,8 @@ import { WebSocket, WebSocketServer } from 'ws'
 import { createServer } from 'http'
 import * as http from 'http'
 import * as os from 'os'
-import { Extension, ExtensionType, ExtensionStatus, Agent, ExtensionAction, ExtensionEventHandler } from '../../types/agent.js'
-import { ExtensionConfig } from '../../types/common.js'
+import { Extension, ExtensionType, ExtensionStatus, Agent, ExtensionAction, ExtensionEventHandler } from '../../types/agent'
+import { ExtensionConfig } from '../../types/common'
 import {
   ApiConfig,
   ApiSettings,
@@ -25,13 +25,13 @@ import {
   ActionResponse,
   WebSocketMessage,
   ConnectionInfo
-} from './types.js'
+} from './types'
 // WebSocketServerSkill removed - using simple WebSocket server directly
-import { WebUIServer } from './webui/index.js'
-import { runtimeLogger } from '../../utils/logger.js'
-import { CommandSystem } from '../../core/command-system.js'
-import { SQLiteChatRepository, createSQLiteChatRepository } from '../../modules/memory/providers/sqlite/chat-repository.js'
-import { ChatMigrationManager, createChatMigrationManager } from '../../modules/memory/providers/sqlite/chat-migration.js'
+import { WebUIServer } from './webui/index'
+import { runtimeLogger } from '../../utils/logger'
+import { CommandSystem } from '../../core/command-system'
+import { SQLiteChatRepository, createSQLiteChatRepository } from '../../modules/memory/providers/sqlite/chat-repository'
+import { ChatMigrationManager, createChatMigrationManager } from '../../modules/memory/providers/sqlite/chat-migration'
 import { 
   Conversation,
   Message,
@@ -40,7 +40,7 @@ import {
   MessageStatus,
   ConversationStatus,
   ParticipantType
-} from '../../modules/memory/providers/sqlite/chat-types.js'
+} from '../../modules/memory/providers/sqlite/chat-types'
 
 export class ApiExtension implements Extension {
   id = 'api'
@@ -2091,4 +2091,9 @@ export class ApiExtension implements Extension {
       }
     })
   }
+}
+
+// Export factory function for easy instantiation
+export function createAPIExtension(config: ApiConfig): ApiExtension {
+  return new ApiExtension(config)
 }

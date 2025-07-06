@@ -1,0 +1,21 @@
+{
+  "name": "@symindx/emotion-sad",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "main": "index.ts",
+  "dependencies": {},
+  "symindx": {
+    "type": "emotion",
+    "displayName": "Sad Emotion",
+    "description": "Feeling sorrow, melancholy, and emotional pain",
+    "category": "basic",
+    "emotion": {
+      "type": "sad",
+      "factory": "createSadEmotion",
+      "autoRegister": true,
+      "triggers": ["failure", "loss", "rejection", "disappointment", "separation", "grief", "sorrow"],
+      "category": "basic"
+    }
+  }
+}

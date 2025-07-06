@@ -7,7 +7,7 @@
 
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { z } from 'zod'
-import { runtimeLogger } from '../utils/logger.js'
+import { runtimeLogger } from '../utils/logger'
 
 /**
  * MCP Client configuration interface
@@ -86,10 +86,8 @@ export class MCPIntegration {
       
       // Create MCP client for this server
       const client = new Client({
-        name: config.name,
+        name: 'symindx-mcp-client',
         version: '1.0.0'
-      }, {
-        capabilities: {}
       })
 
       // Connect to the server
@@ -107,12 +105,22 @@ export class MCPIntegration {
    */
   private async connectToServer(serverName: string, client: any, config: MCPServerConfig): Promise<void> {
     try {
-      // Start the MCP server process and connect
-      await client.connect({
-        command: config.command,
-        args: config.args || [],
-        env: config.env || {}
-      })
+      // Create transport based on configuration
+      let transport: any
+      if (config.command) {
+        // Import StdioClientTransport dynamically for command-based servers
+        const { StdioClientTransport } = await import('@modelcontextprotocol/sdk/client/stdio.js')
+        transport = new StdioClientTransport({
+          command: config.command,
+          args: config.args || [],
+          env: config.env || {}
+        })
+      } else {
+        throw new Error('Only command-based MCP servers are supported in this integration')
+      }
+
+      // Connect to the server using the transport
+      await client.connect(transport)
 
       this.clients.set(serverName, client)
 
@@ -193,10 +201,7 @@ export class MCPIntegration {
    */
   private async discoverTools(serverName: string, client: any): Promise<void> {
     try {
-      const response = await client.request({
-        method: 'tools/list',
-        params: {}
-      })
+      const response = await client.listTools()
 
       if (response.tools) {
         for (const tool of response.tools) {
@@ -221,10 +226,7 @@ export class MCPIntegration {
    */
   private async discoverResources(serverName: string, client: any): Promise<void> {
     try {
-      const response = await client.request({
-        method: 'resources/list',
-        params: {}
-      })
+      const response = await client.listResources()
 
       if (response.resources) {
         for (const resource of response.resources) {
@@ -249,10 +251,7 @@ export class MCPIntegration {
    */
   private async discoverPrompts(serverName: string, client: any): Promise<void> {
     try {
-      const response = await client.request({
-        method: 'prompts/list',
-        params: {}
-      })
+      const response = await client.listPrompts()
 
       if (response.prompts) {
         for (const prompt of response.prompts) {
@@ -289,12 +288,9 @@ export class MCPIntegration {
       // Validate arguments against schema
       tool.inputSchema.parse(args)
 
-      const response = await client.request({
-        method: 'tools/call',
-        params: {
-          name: tool.name,
-          arguments: args
-        }
+      const response = await client.callTool({
+        name: tool.name,
+        arguments: args
       })
 
       runtimeLogger.debug(`🔧 Executed tool: ${toolName}`)
@@ -327,11 +323,8 @@ export class MCPIntegration {
     }
 
     try {
-      const response = await client.request({
-        method: 'resources/read',
-        params: {
-          uri: resource.uri
-        }
+      const response = await client.readResource({
+        uri: resource.uri
       })
 
       runtimeLogger.debug(`📁 Read resource: ${resourceUri}`)
@@ -363,12 +356,9 @@ export class MCPIntegration {
     }
 
     try {
-      const response = await client.request({
-        method: 'prompts/get',
-        params: {
-          name: prompt.name,
-          arguments: args || {}
-        }
+      const response = await client.getPrompt({
+        name: prompt.name,
+        arguments: args || {}
       })
 
       runtimeLogger.debug(`💭 Retrieved prompt: ${promptName}`)
@@ -415,23 +405,23 @@ export class MCPIntegration {
     const client = this.clients.get(serverName)
     if (client) {
       try {
-        await client.disconnect()
+        await client.close()
         this.clients.delete(serverName)
         
         // Clean up tools, resources, and prompts from this server
-        for (const [key] of this.tools) {
+        for (const key of Array.from(this.tools.keys())) {
           if (key.startsWith(`${serverName}:`)) {
             this.tools.delete(key)
           }
         }
         
-        for (const [key] of this.resources) {
+        for (const key of Array.from(this.resources.keys())) {
           if (key.startsWith(`${serverName}:`)) {
             this.resources.delete(key)
           }
         }
         
-        for (const [key] of this.prompts) {
+        for (const key of Array.from(this.prompts.keys())) {
           if (key.startsWith(`${serverName}:`)) {
             this.prompts.delete(key)
           }
@@ -502,7 +492,7 @@ export class MCPIntegration {
   getAISDKTools(): Record<string, any> {
     const tools: Record<string, any> = {}
     
-    for (const [toolKey, tool] of this.tools) {
+    for (const [toolKey, tool] of Array.from(this.tools.entries())) {
       tools[toolKey] = {
         description: tool.description,
         parameters: tool.inputSchema,

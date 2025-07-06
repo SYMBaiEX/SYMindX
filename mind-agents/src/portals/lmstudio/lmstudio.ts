@@ -1,4 +1,4 @@
-import { convertUsage } from '../utils.js'
+import { convertUsage } from '../utils'
 /**
  * LM Studio Local AI Portal
  * 
@@ -6,13 +6,13 @@ import { convertUsage } from '../utils.js'
  * GPU acceleration, and privacy-first design for local inference
  */
 
-import { BasePortal } from '../base-portal.js'
+import { BasePortal } from '../base-portal'
 import { 
   Portal, PortalConfig, PortalType, PortalStatus, ModelType, PortalCapability,
   TextGenerationOptions, TextGenerationResult, ChatMessage, ChatGenerationOptions, 
   ChatGenerationResult, EmbeddingOptions, EmbeddingResult, MessageRole, FinishReason
-} from '../../types/portal.js'
-import { Agent } from '../../types/agent.js'
+} from '../../types/portal'
+import { Agent } from '../../types/agent'
 
 export interface LMStudioConfig extends PortalConfig {
   /** Base URL for LM Studio server (default: http://localhost:1234) */

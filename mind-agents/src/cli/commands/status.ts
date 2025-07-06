@@ -10,9 +10,9 @@
 
 import { Command } from 'commander'
 import chalk from 'chalk'
-import { CLIContext } from '../index.js'
-import { Logger } from '../../utils/logger.js'
-import { AgentStatus } from '../../types/agent.js'
+import { CLIContext } from '../index'
+import { Logger } from '../../utils/logger'
+import { AgentStatus } from '../../types/agent'
 
 export class StatusCommand {
   private logger = new Logger('cli:status')

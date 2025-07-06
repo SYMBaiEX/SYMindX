@@ -1,0 +1,14 @@
+{
+  "name": "@symindx/module-memory-neon",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "main": "index.ts",
+  "dependencies": {},
+  "symindx": {
+    "type": "module",
+    "category": "memory",
+    "displayName": "Neon Memory Provider",
+    "description": "Serverless Postgres memory storage via Neon"
+  }
+}

@@ -12,11 +12,13 @@ import { SupabaseClient } from '@supabase/supabase-js'
  */
 export async function migration_001_enhanced_memory_schema(client: SupabaseClient): Promise<void> {
   // Enable pgvector extension
-  await client.rpc('exec_sql', {
-    sql: `CREATE EXTENSION IF NOT EXISTS vector;`
-  }).catch(() => {
+  try {
+    await client.rpc('exec_sql', {
+      sql: `CREATE EXTENSION IF NOT EXISTS vector;`
+    })
+  } catch (error) {
     console.log('pgvector extension may already exist or require higher privileges')
-  })
+  }
 
   // Create memories table with enhanced fields
   await client.rpc('exec_sql', {
@@ -56,11 +58,13 @@ export async function migration_001_enhanced_memory_schema(client: SupabaseClien
   })
 
   // Create vector similarity index
-  await client.rpc('exec_sql', {
+  const { error: vectorIndexError } = await client.rpc('exec_sql', {
     sql: `CREATE INDEX IF NOT EXISTS idx_memories_embedding ON memories USING ivfflat (embedding vector_cosine_ops);`
-  }).catch(() => {
-    console.log('Vector index creation failed - ivfflat may not be available')
   })
+  
+  if (vectorIndexError) {
+    console.log('Vector index creation failed - ivfflat may not be available')
+  }
 
   console.log('✅ Created enhanced memories table with tier support')
 }
@@ -355,7 +359,7 @@ export async function migration_005_rpc_helpers(client: SupabaseClient): Promise
   })
 
   // Helper function to execute SQL (for migrations)
-  await client.rpc('exec_sql', {
+  const { error: execSqlError } = await client.rpc('exec_sql', {
     sql: `
       CREATE OR REPLACE FUNCTION exec_sql(sql TEXT)
       RETURNS VOID
@@ -367,9 +371,11 @@ export async function migration_005_rpc_helpers(client: SupabaseClient): Promise
       END;
       $$;
     `
-  }).catch(() => {
-    console.log('exec_sql function may already exist or require higher privileges')
   })
+  
+  if (execSqlError) {
+    console.log('exec_sql function may already exist or require higher privileges')
+  }
 
   console.log('✅ Created RPC helper functions')
 }

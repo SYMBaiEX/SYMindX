@@ -1,0 +1,43 @@
+{
+  "name": "@symindx/module-emotion",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "main": "index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./composite": "./composite-emotion.ts",
+    "./base": "./base-emotion.ts",
+    "./angry": "./angry/index.ts",
+    "./anxious": "./anxious/index.ts",
+    "./confident": "./confident/index.ts",
+    "./confused": "./confused/index.ts",
+    "./curious": "./curious/index.ts",
+    "./empathetic": "./empathetic/index.ts",
+    "./happy": "./happy/index.ts",
+    "./neutral": "./neutral/index.ts",
+    "./nostalgic": "./nostalgic/index.ts",
+    "./proud": "./proud/index.ts",
+    "./sad": "./sad/index.ts"
+  },
+  "dependencies": {},
+  "symindx": {
+    "type": "module",
+    "category": "emotion",
+    "displayName": "Emotion System",
+    "description": "Composite emotion system with multiple emotion states",
+    "submodules": [
+      "angry",
+      "anxious",
+      "confident",
+      "confused",
+      "curious",
+      "empathetic",
+      "happy",
+      "neutral",
+      "nostalgic",
+      "proud",
+      "sad"
+    ]
+  }
+}

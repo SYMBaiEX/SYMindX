@@ -5,10 +5,10 @@
  * with the agent through the Model Context Protocol standard.
  */
 
-import { ExtensionConfig, Extension, ExtensionMetadata, Agent, ExtensionType } from '../../types/index.js'
-import { runtimeLogger } from '../../utils/logger.js'
-import { MCPServerManager } from './mcp-server-manager.js'
-import { MCPServerConfig, MCPServerTool, MCPServerResource, MCPServerPrompt } from './types.js'
+import { ExtensionConfig, Extension, ExtensionMetadata, Agent, ExtensionType } from '../../types/index'
+import { runtimeLogger } from '../../utils/logger'
+import { MCPServerManager } from './mcp-server-manager'
+import { MCPServerConfig, MCPServerTool, MCPServerResource, MCPServerPrompt } from './types'
 
 export interface MCPServerExtensionConfig extends ExtensionConfig {
   enabled: boolean

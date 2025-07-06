@@ -1,4 +1,4 @@
-import { convertUsage } from '../utils.js'
+import { convertUsage } from '../utils'
 /**
  * Cohere AI Portal
  * 
@@ -6,14 +6,14 @@ import { convertUsage } from '../utils.js'
  * embeddings, classification, and semantic search using AI SDK v5
  */
 
-import { BasePortal } from '../base-portal.js'
+import { BasePortal } from '../base-portal'
 import { 
   Portal, PortalConfig, PortalType, PortalStatus, ModelType, PortalCapability,
   TextGenerationOptions, TextGenerationResult, ChatMessage, ChatGenerationOptions, 
   ChatGenerationResult, EmbeddingOptions, EmbeddingResult, MessageRole, FinishReason,
   ImageGenerationOptions, ImageGenerationResult
-} from '../../types/portal.js'
-import { Agent } from '../../types/agent.js'
+} from '../../types/portal'
+import { Agent } from '../../types/agent'
 import { cohere } from '@ai-sdk/cohere'
 import { generateText as aiGenerateText, streamText as aiStreamText, embed as aiEmbed, tool, type ModelMessage } from 'ai'
 import { z } from 'zod'
@@ -112,16 +112,24 @@ export class CoherePortal extends BasePortal {
   }
 
   /**
-   * Convert ChatMessage[] to message format for AI SDK
+   * Convert ChatMessage[] to message format for AI SDK v5
    */
-  private convertToModelMessages(messages: ChatMessage[]) {
+  private convertToModelMessages(messages: ChatMessage[]): ModelMessage[] {
     return messages.map(msg => {
-      if (msg.role === MessageRole.FUNCTION) {
-        return { role: 'assistant', content: msg.content }
-      }
-      return { 
-        role: msg.role, 
-        content: msg.content 
+      switch (msg.role) {
+        case MessageRole.SYSTEM:
+          return { role: 'system', content: msg.content }
+        case MessageRole.USER:
+          return { role: 'user', content: msg.content }
+        case MessageRole.ASSISTANT:
+          return { role: 'assistant', content: msg.content }
+        case MessageRole.TOOL:
+          return { role: 'tool', content: [{ type: 'tool-result', toolCallId: '', toolName: '', result: msg.content }] }
+        case MessageRole.FUNCTION:
+          // Convert function messages to assistant messages for compatibility
+          return { role: 'assistant', content: msg.content }
+        default:
+          return { role: 'user', content: msg.content }
       }
     })
   }

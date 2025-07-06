@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { runtimeClient, type AgentInfo as RuntimeAgentInfo } from '../services/runtimeClient.js';
+import { runtimeClient, type AgentInfo as RuntimeAgentInfo } from '../services/runtimeClient';
 
 export interface AgentInfo {
   id: string;

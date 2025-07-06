@@ -5,15 +5,15 @@
  * summarization strategies, prioritization algorithms, and consolidation rules.
  */
 
-import { MemoryRecord } from '../../types/agent.js'
+import { MemoryRecord } from '../../types/agent'
 import { 
   MemoryManagementPolicy,
   MemoryPolicyConfig,
   MemoryTierType,
   MemoryRelationship,
   MemoryRelationshipType
-} from '../../types/memory.js'
-import { runtimeLogger } from '../../utils/logger.js'
+} from '../../types/memory'
+import { runtimeLogger } from '../../utils/logger'
 
 /**
  * Memory access tracker
@@ -187,7 +187,8 @@ export class MemoryManagementEngine {
       const accessScore = Math.min(1, accesses.length / 10) * (priorityFactors.accessFrequency || 0)
 
       // Calculate emotional valence score
-      const emotionalScore = Math.abs(memory.metadata.emotionalValence || 0) * (priorityFactors.emotionalValence || 0)
+      const emotionalValenceValue = typeof memory.metadata.emotionalValence === 'number' ? memory.metadata.emotionalValence : 0
+      const emotionalScore = Math.abs(emotionalValenceValue) * (priorityFactors.emotionalValence || 0)
 
       // Calculate relationship score
       const relationshipCount = relationshipCounts.get(memory.id) || 0
@@ -384,8 +385,8 @@ export class MemoryManagementEngine {
     const counts = new Map<string, number>()
     
     for (const rel of relationships) {
-      counts.set(rel.sourceMemoryId, (counts.get(rel.sourceMemoryId) || 0) + 1)
-      counts.set(rel.targetMemoryId, (counts.get(rel.targetMemoryId) || 0) + 1)
+      counts.set(rel.sourceId, (counts.get(rel.sourceId) || 0) + 1)
+      counts.set(rel.targetId, (counts.get(rel.targetId) || 0) + 1)
     }
     
     return counts

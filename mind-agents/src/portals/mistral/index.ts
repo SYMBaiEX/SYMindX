@@ -1,4 +1,4 @@
-import { convertUsage } from '../utils.js'
+import { convertUsage } from '../utils'
 /**
  * Mistral AI Portal
  * 
@@ -6,14 +6,14 @@ import { convertUsage } from '../utils.js'
  * code generation, and enterprise compliance features using AI SDK v5
  */
 
-import { BasePortal } from '../base-portal.js'
+import { BasePortal } from '../base-portal'
 import { 
   Portal, PortalConfig, PortalType, PortalStatus, ModelType, PortalCapability,
   TextGenerationOptions, TextGenerationResult, ChatMessage, ChatGenerationOptions, 
   ChatGenerationResult, EmbeddingOptions, EmbeddingResult, MessageRole, FinishReason,
   ImageGenerationOptions, ImageGenerationResult
-} from '../../types/portal.js'
-import { Agent } from '../../types/agent.js'
+} from '../../types/portal'
+import { Agent } from '../../types/agent'
 import { mistral } from '@ai-sdk/mistral'
 import { 
   generateText as aiGenerateText, 

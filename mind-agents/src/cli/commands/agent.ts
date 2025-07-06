@@ -12,15 +12,15 @@ import { Command } from 'commander'
 import chalk from 'chalk'
 import inquirer from 'inquirer'
 import ora from 'ora'
-import { CLIContext } from '../index.js'
+import { CLIContext } from '../index'
 import { 
   AgentConfig, 
   AgentStatus, 
   MemoryProviderType, 
   CognitionModuleType, 
   EmotionModuleType 
-} from '../../types/agent.js'
-import { Logger } from '../../utils/logger.js'
+} from '../../types/agent'
+import { Logger } from '../../utils/logger'
 
 export class AgentCommand {
   private logger = new Logger('cli:agent')

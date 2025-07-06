@@ -1,0 +1,19 @@
+{
+  "name": "@symindx/extension-api",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "main": "index.ts",
+  "dependencies": {},
+  "symindx": {
+    "type": "extension",
+    "displayName": "API Server",
+    "description": "HTTP and WebSocket API server with WebUI for agent interaction",
+    "category": "api",
+    "extension": {
+      "type": "api",
+      "factory": "createAPIExtension",
+      "autoRegister": true
+    }
+  }
+}

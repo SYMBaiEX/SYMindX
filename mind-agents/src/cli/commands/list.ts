@@ -10,8 +10,8 @@
 
 import { Command } from 'commander'
 import chalk from 'chalk'
-import { CLIContext } from '../index.js'
-import { Logger } from '../../utils/logger.js'
+import { CLIContext } from '../index'
+import { Logger } from '../../utils/logger'
 
 export class ListCommand {
   private logger = new Logger('cli:list')

@@ -4,15 +4,15 @@
  */
 
 // Core state management
-export * from '../state-manager.js'
-export * from '../resource-manager.js'
-export * from '../lifecycle-manager.js'
-export * from '../checkpoint-system.js'
-export * from '../state-recovery.js'
-export * from '../concurrent-safety.js'
+export * from '../state-manager'
+export * from '../resource-manager'
+export * from '../lifecycle-manager'
+export * from '../checkpoint-system'
+export * from '../state-recovery'
+export * from '../concurrent-safety'
 
 // Enhanced runtime
-export * from '../enhanced-runtime.js'
+export * from '../enhanced-runtime'
 
 // Re-export types and interfaces from state-manager
 export type {
@@ -20,13 +20,13 @@ export type {
   StateValidationResult,
   StateValidationReport,
   StateManagerConfig
-} from '../state-manager.js'
+} from '../state-manager'
 
 export type {
   ResourceHandle,
   ResourceSnapshot,
   ResourceManagerConfig
-} from '../resource-manager.js'
+} from '../resource-manager'
 
 export type {
   // LifecycleManager types
@@ -34,26 +34,26 @@ export type {
   LifecycleConfig,
   ShutdownOptions,
   StartupOptions
-} from '../lifecycle-manager.js'
+} from '../lifecycle-manager'
 
 // Note: Many types commented out as they may not exist in the actual files
 // Re-add as needed when the files are implemented
 
 // Constants and enums
-export { ResourceType } from '../resource-manager.js'
-export { CheckpointType } from '../state-manager.js'
-export { LifecyclePhase } from '../lifecycle-manager.js'
+export { ResourceType } from '../resource-manager'
+export { CheckpointType } from '../state-manager'
+export { LifecyclePhase } from '../lifecycle-manager'
 
 /**
  * State management system factory function
  * Creates a complete state management system with all components
  */
-import { StateManager, StateManagerConfig } from '../state-manager.js'
-import { ResourceManager, ResourceManagerConfig } from '../resource-manager.js'
-import { LifecycleManager, LifecycleConfig } from '../lifecycle-manager.js'
-import { CheckpointSystem, CheckpointSystemConfig } from '../checkpoint-system.js'
-import { StateRecoverySystem } from '../state-recovery.js'
-import { ConcurrentSafetyManager, ConcurrentSafetyConfig } from '../concurrent-safety.js'
+import { StateManager, StateManagerConfig } from '../state-manager'
+import { ResourceManager, ResourceManagerConfig } from '../resource-manager'
+import { LifecycleManager, LifecycleConfig } from '../lifecycle-manager'
+import { CheckpointSystem, CheckpointSystemConfig } from '../checkpoint-system'
+import { StateRecoverySystem } from '../state-recovery'
+import { ConcurrentSafetyManager, ConcurrentSafetyConfig } from '../concurrent-safety'
 
 export interface StateManagementSystemConfig {
   stateManager: StateManagerConfig

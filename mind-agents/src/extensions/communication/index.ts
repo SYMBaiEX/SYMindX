@@ -5,13 +5,13 @@
  * expression adaptation, and style customization for agent interactions.
  */
 
-import { ExtensionConfig, ExtensionMetadata } from '../../types/common.js'
-import { Extension, ExtensionType, ExtensionStatus } from '../../types/agent.js'
-import { Agent } from '../../types/agent.js'
-import { runtimeLogger } from '../../utils/logger.js'
-import { ContextManager, ContextManagerConfig } from './context-manager.js'
-import { ExpressionEngine, ExpressionEngineConfig } from './expression-engine.js'
-import { StyleAdapter, StyleAdapterConfig } from './style-adapter.js'
+import { ExtensionConfig, ExtensionMetadata } from '../../types/common'
+import { Extension, ExtensionType, ExtensionStatus } from '../../types/agent'
+import { Agent } from '../../types/agent'
+import { runtimeLogger } from '../../utils/logger'
+import { ContextManager, ContextManagerConfig } from './context-manager'
+import { ExpressionEngine, ExpressionEngineConfig } from './expression-engine'
+import { StyleAdapter, StyleAdapterConfig } from './style-adapter'
 
 export interface CommunicationExtensionConfig extends ExtensionConfig {
   contextManager?: ContextManagerConfig

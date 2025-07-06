@@ -1,5 +1,5 @@
-import { BaseEmotion, EmotionDefinition } from '../base-emotion.js'
-import { NeutralEmotionConfig } from './types.js'
+import { BaseEmotion, EmotionDefinition } from '../base-emotion'
+import { NeutralEmotionConfig } from './types'
 
 export class NeutralEmotion extends BaseEmotion {
   constructor(config: NeutralEmotionConfig = {}) {
@@ -60,3 +60,8 @@ export class NeutralEmotion extends BaseEmotion {
 }
 
 export default NeutralEmotion
+
+// Export factory function for easy instantiation
+export function createNeutralEmotion(config: NeutralEmotionConfig = {}): NeutralEmotion {
+  return new NeutralEmotion(config)
+}

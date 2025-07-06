@@ -6,8 +6,8 @@
  */
 
 import { Request, Response, NextFunction } from 'express'
-import { ValidationResult, ValidationError } from '../../types/common.js'
-import { runtimeLogger } from '../../utils/logger.js'
+import { ValidationResult, ValidationError } from '../../types/common'
+import { runtimeLogger } from '../../utils/logger'
 
 export interface ApiError {
   code: string

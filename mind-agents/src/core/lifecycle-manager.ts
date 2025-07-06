@@ -3,10 +3,10 @@
  * Provides robust graceful shutdown and restart with enhanced phases
  */
 
-import { Agent, LazyAgent, AgentStatus, LazyAgentState } from '../types/agent.js'
-import { StateManager, AgentStateSnapshot, CheckpointType } from './state-manager.js'
-import { ResourceManager, ResourceType } from './resource-manager.js'
-import { Logger } from '../utils/logger.js'
+import { Agent, LazyAgent, AgentStatus, LazyAgentState } from '../types/agent'
+import { StateManager, AgentStateSnapshot, CheckpointType } from './state-manager'
+import { ResourceManager, ResourceType } from './resource-manager'
+import { Logger } from '../utils/logger'
 import { EventEmitter } from 'events'
 
 export enum LifecyclePhase {

@@ -2,7 +2,7 @@
  * Agent types for SYMindX
  */
 
-import { EmotionModule } from './emotion.js'
+import { EmotionModule } from './emotion'
 import { 
   BaseConfig, 
   ActionParameters, 
@@ -12,7 +12,7 @@ import {
   SkillParameters,
   ExtensionConfig,
   GameState
-} from './common.js'
+} from './common'
 import {
   LearningModule,
   DecisionModule,
@@ -25,7 +25,7 @@ import {
   GoalSystemConfig,
   MetaCognitiveConfig,
   AutonomousConfig
-} from './autonomous.js'
+} from './autonomous'
 
 export enum AgentStatus {
   ACTIVE = 'active',
@@ -252,7 +252,9 @@ export enum MemoryType {
   GOAL = 'goal',
   CONTEXT = 'context',
   OBSERVATION = 'observation',
-  REFLECTION = 'reflection'
+  REFLECTION = 'reflection',
+  LEARNING = 'learning',
+  REASONING = 'reasoning'
 }
 
 export enum MemoryDuration {
@@ -324,6 +326,7 @@ export interface ThoughtResult {
   actions: AgentAction[]
   memories: MemoryRecord[]
   confidence: number
+  plan?: Plan
 }
 
 export enum PlanStatus {
@@ -341,6 +344,7 @@ export interface Plan {
   estimatedDuration: number
   dependencies: string[]
   status: PlanStatus
+  confidence?: number
 }
 
 export enum PlanStepStatus {
@@ -448,7 +452,8 @@ export enum ActionCategory {
   RESOURCE_MANAGEMENT = 'resource_management',
   AUTONOMOUS = 'autonomous',
   LEARNING = 'learning',
-  MEMORY = 'memory'
+  MEMORY = 'memory',
+  PROCESSING = 'processing'
 }
 
 export interface ExtensionAction {
@@ -739,7 +744,7 @@ export interface RuntimeConfig {
   }
 }
 
-import { Portal, PortalConfig } from './portal.js'
+import { Portal, PortalConfig } from './portal'
 
 // Import superhuman intelligence types
 export interface SuperhumanIntelligenceModule {

@@ -6,16 +6,16 @@
  */
 
 // Core types
-export * from './common.js';
-export * from './enums.js';
+export * from './common';
+export * from './enums';
 
 // Agent system types (selective exports to avoid conflicts)
-export type { Agent, AgentConfig, AgentStatus, AgentState } from './agent.js';
-export type { Extension } from './extension.js';
-export type { Portal, PortalConfig, PortalType } from './portal.js';
+export type { Agent, AgentConfig, AgentStatus, AgentState } from './agent';
+export type { Extension } from './extension';
+export type { Portal, PortalConfig, PortalType } from './portal';
 
-// Export ExtensionMetadata and ExtensionConfig from common.js
-export type { ExtensionMetadata, ExtensionConfig } from './common.js';
+// Export ExtensionMetadata and ExtensionConfig from common
+export type { ExtensionMetadata, ExtensionConfig } from './common';
 
 // Advanced module types (selective exports)
 export type { 
@@ -23,8 +23,35 @@ export type {
   PersonalityTraits, 
   EmotionBlend, 
   AdvancedEmotionConfig 
-} from './emotion.js';
-export type { CognitionModule } from './cognition.js';
+} from './emotion';
+export type { CognitionModule } from './cognition';
+
+// Memory types (selective exports)
+export type {
+  SearchQuery,
+  SearchResult, 
+  SearchQueryType,
+  BoostFactors,
+  TimeRange,
+  MemoryRelationship,
+  MemoryRelationshipType,
+  MemoryManagementPolicy,
+  MemoryPolicyConfig,
+  PolicyCondition,
+  PolicyAction,
+  MemoryProviderMetadata,
+  MemoryProviderFactory,
+  MemoryProviderConfig,
+  ConsolidationRule,
+  MemoryTier,
+  MemoryContext,
+  MemoryPermission,
+  SharedMemoryConfig,
+  ArchivalStrategy
+} from './memory';
+
+// Export enums as values (not types)
+export { MemoryDuration, MemoryTierType } from './memory';
 
 // Character configuration types
 export type { 
@@ -33,11 +60,11 @@ export type {
   PortalConfig as CharacterPortalConfig,
   PortalSpecificConfig,
   PortalCapability
-} from './character.js';
-export { ConfigDefaults } from './character.js';
+} from './character';
+export { ConfigDefaults } from './character';
 
 // Lifecycle and operations (commented out due to conflicts)
-// export * from './lifecycle.js';
+// export * from './lifecycle';
 
 // EventSource types (for server-sent events)
 // Note: eventsource.d.ts is a type declaration file, not exported

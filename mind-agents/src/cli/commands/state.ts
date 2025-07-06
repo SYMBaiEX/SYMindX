@@ -4,9 +4,9 @@
  */
 
 import { Command } from 'commander'
-import { EnhancedSYMindXRuntime, EnhancedRuntimeConfig } from '../../core/enhanced-runtime.js'
-import { CheckpointType } from '../../core/state-manager.js'
-import { Logger } from '../../utils/logger.js'
+import { EnhancedSYMindXRuntime, EnhancedRuntimeConfig } from '../../core/enhanced-runtime'
+import { CheckpointType } from '../../core/state-manager'
+import { Logger } from '../../utils/logger'
 import * as fs from 'fs/promises'
 import * as path from 'path'
 

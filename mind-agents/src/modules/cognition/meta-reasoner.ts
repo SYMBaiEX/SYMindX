@@ -15,24 +15,24 @@ import {
   ActionCategory,
   ActionStatus,
   MemoryRecord
-} from '../../types/agent.js'
+} from '../../types/agent'
 import { 
   CognitionModule,
   CognitionModuleMetadata,
   ReasoningParadigm,
   ReasoningPerformance,
   HybridReasoningConfig
-} from '../../types/cognition.js'
-import { Experience } from '../../types/autonomous.js'
-import { BaseConfig } from '../../types/common.js'
-import { MemoryType, MemoryDuration } from '../../types/enums.js'
-import { runtimeLogger } from '../../utils/logger.js'
+} from '../../types/cognition'
+import { Experience } from '../../types/autonomous'
+import { BaseConfig } from '../../types/common'
+import { MemoryType, MemoryDuration } from '../../types/enums'
+import { runtimeLogger } from '../../utils/logger'
 
 // Import reasoning modules
-import { RuleBasedReasoning } from './rule-based-reasoning.js'
-import { PDDLPlanner } from './pddl-planner.js'
-import { ProbabilisticReasoning } from './probabilistic-reasoning.js'
-import { ReinforcementLearningCognition } from './reinforcement-learning.js'
+import { RuleBasedReasoning } from './rule-based-reasoning'
+import { PDDLPlanner } from './pddl-planner'
+import { ProbabilisticReasoning } from './probabilistic-reasoning'
+import { ReinforcementLearningCognition } from './reinforcement-learning'
 
 /**
  * Context analysis for paradigm selection
@@ -119,7 +119,7 @@ export class MetaReasoner implements CognitionModule {
    * Initialize performance tracking for each paradigm
    */
   private initializePerformanceTracking(): void {
-    for (const paradigm of this.reasoners.keys()) {
+    for (const paradigm of Array.from(this.reasoners.keys())) {
       this.performanceHistory.set(paradigm, {
         paradigm,
         successRate: 0.5, // Start neutral
@@ -140,7 +140,7 @@ export class MetaReasoner implements CognitionModule {
     this.config = { ...this.config, ...config }
     
     // Initialize all sub-reasoners
-    for (const reasoner of this.reasoners.values()) {
+    for (const reasoner of Array.from(this.reasoners.values())) {
       reasoner.initialize(config)
     }
   }
@@ -259,7 +259,7 @@ export class MetaReasoner implements CognitionModule {
    */
   async learn(agent: Agent, experience: Experience): Promise<void> {
     // Learn from the experience with all learning-capable reasoners
-    for (const [paradigm, reasoner] of this.reasoners) {
+    for (const [paradigm, reasoner] of Array.from(this.reasoners.entries())) {
       if (reasoner.learn) {
         await reasoner.learn(agent, experience)
       }
@@ -347,7 +347,7 @@ export class MetaReasoner implements CognitionModule {
     scores.set(ReasoningParadigm.REINFORCEMENT_LEARNING, rlScore)
     
     // Adjust scores based on historical performance
-    for (const [paradigm, score] of scores) {
+    for (const [paradigm, score] of Array.from(scores.entries())) {
       const performance = this.performanceHistory.get(paradigm)!
       const performanceMultiplier = 0.5 + (performance.successRate * 0.5)
       scores.set(paradigm, score * performanceMultiplier)
@@ -545,7 +545,7 @@ export class MetaReasoner implements CognitionModule {
     // Update aggregated metrics
     const recent = performance.recentPerformances
     performance.successRate = recent.reduce((sum, p) => sum + p.accuracy, 0) / recent.length
-    performance.averageTime = recent.reduce((sum, p) => sum + p.reasoningTime, 0) / recent.length
+    performance.averageTime = recent.reduce((sum, p) => sum + (p.reasoningTime || 0), 0) / recent.length
     performance.averageConfidence = recent.reduce((sum, p) => sum + p.confidence, 0) / recent.length
     
     performance.usageCount++
@@ -600,7 +600,7 @@ export class MetaReasoner implements CognitionModule {
         reasoning_type: 'meta_reasoning',
         selected_paradigm: decision.selectedParadigm,
         selection_confidence: decision.confidence,
-        context_analysis: decision.contextAnalysis,
+        context_analysis: JSON.parse(JSON.stringify(decision.contextAnalysis)),
         reasoning: decision.reasoning,
         result_confidence: result.confidence,
         timestamp: new Date()
@@ -623,9 +623,15 @@ export class MetaReasoner implements CognitionModule {
         type: 'planning_request',
         source: 'meta_reasoner',
         timestamp: new Date(),
-        data: { goal }
+        data: { goal },
+        processed: false
       }],
-      memories: []
+      memories: [],
+      currentState: {},
+      environment: {
+        type: 'simulation' as any,
+        time: new Date()
+      }
     }
   }
   
@@ -639,9 +645,15 @@ export class MetaReasoner implements CognitionModule {
         type: 'decision_request',
         source: 'meta_reasoner',
         timestamp: new Date(),
-        data: { options: options.length }
+        data: { options: options.length },
+        processed: false
       }],
-      memories: []
+      memories: [],
+      currentState: {},
+      environment: {
+        type: 'simulation' as any,
+        time: new Date()
+      }
     }
   }
   
@@ -657,7 +669,7 @@ export class MetaReasoner implements CognitionModule {
     const paradigmUsage: Record<string, number> = {}
     const paradigmPerformance: Record<string, number> = {}
     
-    for (const [paradigm, performance] of this.performanceHistory) {
+    for (const [paradigm, performance] of Array.from(this.performanceHistory.entries())) {
       paradigmUsage[paradigm] = performance.usageCount
       paradigmPerformance[paradigm] = performance.successRate
     }

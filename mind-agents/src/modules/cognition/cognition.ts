@@ -21,14 +21,14 @@ import {
   ActionCategory,
   PlanStep,
   PlanStepStatus
-} from '../../types/agent.js'
+} from '../../types/agent'
 import { 
   CognitionModule, 
   CognitionModuleMetadata
-} from '../../types/cognition.js'
-import { MemoryType, MemoryDuration } from '../../types/enums.js'
-import { BaseConfig, ActionParameters } from '../../types/common.js'
-import { TheoryOfMind, MentalModel } from './theory-of-mind.js'
+} from '../../types/cognition'
+import { MemoryType, MemoryDuration } from '../../types/enums'
+import { BaseConfig, ActionParameters } from '../../types/common'
+import { TheoryOfMind, MentalModel } from './theory-of-mind'
 
 export interface UnifiedCognitionConfig extends BaseConfig {
   // When to think
@@ -953,7 +953,7 @@ export class UnifiedCognition implements CognitionModule {
 }
 
 // Add missing import
-import { PlanStatus } from '../../types/agent.js'
+import { PlanStatus } from '../../types/agent'
 
 // Factory function
 export function createUnifiedCognition(config?: UnifiedCognitionConfig): UnifiedCognition {

@@ -4,8 +4,8 @@
  * Handles memory archival and compression strategies
  */
 
-import { MemoryRecord } from '../../../../types/agent.js'
-import { ArchivalStrategy } from '../../../../types/memory.js'
+import { MemoryRecord } from '../../../../types/agent'
+import { ArchivalStrategy } from '../../../../types/memory'
 
 /**
  * Memory archiver implementation

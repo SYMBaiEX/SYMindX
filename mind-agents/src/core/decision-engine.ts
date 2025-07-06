@@ -14,9 +14,9 @@ import {
   Goal,
   DecisionModuleType,
   DecisionConfig
-} from '../types/autonomous.js'
-import { AgentAction, Agent } from '../types/agent.js'
-import { Logger } from '../utils/logger.js'
+} from '../types/autonomous'
+import { AgentAction, Agent } from '../types/agent'
+import { Logger } from '../utils/logger'
 
 export interface DecisionMatrix {
   alternatives: string[]
