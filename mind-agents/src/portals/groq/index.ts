@@ -53,21 +53,39 @@ export class GroqPortal extends BasePortal {
     name: string
     description: string
     parameters?: { properties?: Record<string, unknown> }
-  }>) {
+  }> | Record<string, any>) {
     const tools: Record<string, ReturnType<typeof tool>> = {}
     
-    for (const fn of functions) {
-      // Create a simple schema that accepts any object for compatibility
-      const schema = z.object({})
-      
-      tools[fn.name] = tool({
-        description: fn.description,
-        parameters: schema,
-        execute: async (args: Record<string, unknown>) => {
-          // Tool execution would be handled by the caller
-          return args
+    // Handle both array format and MCP tools object format
+    if (Array.isArray(functions)) {
+      // Original array format
+      for (const fn of functions) {
+        // Create a simple schema that accepts any object for compatibility
+        const schema = z.object({})
+        
+        tools[fn.name] = tool({
+          description: fn.description,
+          parameters: schema,
+          execute: async (args: Record<string, unknown>) => {
+            // Tool execution would be handled by the caller
+            return args
+          }
+        })
+      }
+    } else {
+      // MCP tools object format
+      for (const [toolName, toolDef] of Object.entries(functions)) {
+        // MCP tools already have the AI SDK format with description, parameters, and execute
+        if (toolDef && typeof toolDef === 'object' && 'description' in toolDef) {
+          tools[toolName] = tool({
+            description: toolDef.description || toolName,
+            parameters: toolDef.parameters || z.object({}),
+            execute: toolDef.execute || (async (_args: Record<string, unknown>) => {
+              return { error: 'Tool execution not implemented' }
+            })
+          })
         }
-      })
+      }
     }
     
     return tools

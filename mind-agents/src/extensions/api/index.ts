@@ -316,6 +316,34 @@ export class ApiExtension implements Extension {
       res.json({ agents })
     })
     
+    // Get MCP tools for debugging
+    this.app.get('/api/agent/:agentId/tools', (req, res) => {
+      const { agentId } = req.params
+      const agentsMap = this.getAgentsMap()
+      const agent = agentsMap.get(agentId)
+      
+      if (!agent) {
+        res.status(404).json({ error: 'Agent not found' })
+        return
+      }
+      
+      const tools = agent.toolSystem || {}
+      const toolList = Object.entries(tools).map(([name, def]) => ({
+        name,
+        type: typeof def,
+        hasDescription: !!(def as any).description,
+        hasParameters: !!(def as any).parameters,
+        hasExecute: !!(def as any).execute
+      }))
+      
+      res.json({
+        agentId,
+        agentName: agent.name,
+        toolCount: Object.keys(tools).length,
+        tools: toolList
+      })
+    })
+    
     // Get individual agent details
     this.app.get('/api/agent/:agentId', (req, res) => {
       const { agentId } = req.params

@@ -123,10 +123,21 @@ Your personality traits: ${agent.config.core.personality?.join(', ') || 'helpful
 
       runtimeLogger.portal(`🤖 ${agent.name} is thinking using ${chatPortal.name}...`)
       
+      // Check if agent has MCP tools available
+      const hasMCPTools = agent.toolSystem && Object.keys(agent.toolSystem).length > 0
+      if (hasMCPTools) {
+        runtimeLogger.portal(`🔧 Including ${Object.keys(agent.toolSystem!).length} MCP tools in chat generation`)
+        // Log tool details for debugging
+        for (const [toolName, toolDef] of Object.entries(agent.toolSystem!)) {
+          runtimeLogger.debug(`Tool: ${toolName} - ${JSON.stringify(toolDef).substring(0, 100)}...`)
+        }
+      }
+      
       // Generate response using the portal
       const result = await chatPortal.generateChat(messages, {
         maxTokens: 2048,
-        temperature: 0.4
+        temperature: 0.4,
+        functions: hasMCPTools ? agent.toolSystem : undefined
       })
 
       // Handle different result formats from different portals
@@ -144,6 +155,14 @@ Your personality traits: ${agent.config.core.personality?.join(', ') || 'helpful
 
     } catch (error) {
       console.error('❌ Error generating AI response:', error)
+      // Log more details about the error
+      if (error instanceof Error) {
+        console.error('Error message:', error.message)
+        console.error('Error stack:', error.stack)
+      }
+      // Log the portal and tools info for debugging
+      console.error('Portal used:', chatPortal.name)
+      console.error('Tools available:', agent.toolSystem ? Object.keys(agent.toolSystem).length : 0)
       return this.getFallbackResponse(prompt)
     }
   }

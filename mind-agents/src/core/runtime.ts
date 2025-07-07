@@ -707,7 +707,14 @@ export class SYMindXRuntime implements AgentRuntime {
         if (extension.id === 'mcp-client') {
           // MCP Client Extension has a different initialize method
           const mcpExtension = extension as Extension & { initialize(agent: Agent): Promise<void> }
-          await mcpExtension.initialize(agent)
+          
+          // Add timeout wrapper to prevent hanging
+          const initPromise = mcpExtension.initialize(agent)
+          const timeoutPromise = new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error('MCP extension initialization timeout')), 60000)
+          })
+          
+          await Promise.race([initPromise, timeoutPromise])
         } else {
           // Standard extensions use init method
           const standardExtension = extension as Extension & { init(agent: Agent): Promise<void> }
@@ -1552,13 +1559,30 @@ export class SYMindXRuntime implements AgentRuntime {
     // Agents
     runtimeLogger.info(`🤖 Agents: ${stats.agents} active / ${stats.lazyAgents} registered`)
     
-    // Tool System
-    const toolSystems = this.registry.listToolSystems()
-    if (toolSystems.length > 0) {
-      runtimeLogger.info(`🛠️ Tool Systems: ${toolSystems.length} registered`)
-      runtimeLogger.info(`   └─ Available: ${toolSystems.join(', ')}`)
+    // Tool System - MCP Integration
+    let totalMCPTools = 0
+    const mcpServers: string[] = []
+    
+    // Check all agents for MCP tools
+    for (const agent of this.agents.values()) {
+      if (agent.toolSystem && Object.keys(agent.toolSystem).length > 0) {
+        totalMCPTools += Object.keys(agent.toolSystem).length
+        
+        // Extract unique server names from tool keys (format: "server:toolname")
+        for (const toolKey of Object.keys(agent.toolSystem)) {
+          const serverName = toolKey.split(':')[0]
+          if (!mcpServers.includes(serverName)) {
+            mcpServers.push(serverName)
+          }
+        }
+      }
+    }
+    
+    if (totalMCPTools > 0) {
+      runtimeLogger.info(`🛠️ MCP Tools: ${totalMCPTools} available`)
+      runtimeLogger.info(`   └─ Servers: ${mcpServers.join(', ')}`)
     } else {
-      runtimeLogger.info(`🛠️ Tool Systems: Ready (placeholder implementation)`)
+      runtimeLogger.info(`🛠️ MCP Tools: No tools loaded`)
     }
     
     runtimeLogger.info('═══════════════════════════════════════════════════════')

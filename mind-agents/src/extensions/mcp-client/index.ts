@@ -110,8 +110,13 @@ export class MCPClientExtension implements Extension {
       }
 
       // Expose MCP tools to the agent if AI SDK integration is enabled
-      if (this.config.aiSDKIntegration) {
-        await this.integrateWithAISDK()
+      if (this.config.aiSDKIntegration && this.agent) {
+        const tools = await this.integrateWithAISDK()
+        // Store tools on the agent for use by portals
+        if (Object.keys(tools).length > 0) {
+          this.agent.toolSystem = tools as Record<string, any>
+          runtimeLogger.info(`🔧 Stored ${Object.keys(tools).length} MCP tools on agent ${this.agent.name}`)
+        }
       }
 
       runtimeLogger.info('🔌 MCP Client Extension initialized successfully')
