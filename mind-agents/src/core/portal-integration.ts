@@ -11,6 +11,7 @@ import { PortalRouter } from '../portals/index'
 import { MCPResponseFormatter } from './mcp-response-formatter'
 import { experimental_createMCPClient } from 'ai'
 import { Experimental_StdioMCPTransport } from 'ai/mcp-stdio'
+import { z } from 'zod'
 
 export interface PortalSelectionCriteria {
   capability: PortalCapability
@@ -153,8 +154,11 @@ Tools will be automatically executed and their results will be available for you
               transport
             })
             
+            // Get MCP tools and fix schema for OpenAI compatibility
             const rawTools = await mcpClient.tools()
-            mcpTools = rawTools
+            runtimeLogger.debug('Raw MCP tools:', Object.keys(rawTools))
+            mcpTools = this.fixMCPToolsForOpenAI(rawTools)
+            runtimeLogger.debug('Fixed MCP tools for OpenAI')
           }
         }
       } catch (error) {
@@ -250,6 +254,89 @@ Tools will be automatically executed and their results will be available for you
       console.error('Tools available:', agent.toolSystem ? Object.keys(agent.toolSystem).length : 0)
       return this.getFallbackResponse(prompt)
     }
+  }
+
+  /**
+   * Fix MCP tools schemas for OpenAI compatibility
+   * Convert raw MCP schemas to proper AI SDK v5 tool format
+   */
+  private static fixMCPToolsForOpenAI(tools: any): AISDKToolSet {
+    const fixedTools: any = {}
+    
+    for (const [toolName, tool] of Object.entries(tools)) {
+      try {
+        const toolDef = tool as any
+        
+        runtimeLogger.debug(`Processing MCP tool: ${toolName}`, {
+          hasParameters: !!toolDef.parameters,
+          hasExecute: typeof toolDef.execute === 'function'
+        })
+        
+        // Convert MCP tool to AI SDK v5 format
+        if (toolDef && toolDef.parameters) {
+          // Build a Zod schema from the JSON schema
+          const jsonSchema = toolDef.parameters
+          let zodSchema = z.object({})
+          
+          if (jsonSchema.properties) {
+            const schemaFields: Record<string, any> = {}
+            
+            for (const [propName, propDef] of Object.entries(jsonSchema.properties)) {
+              const prop = propDef as any
+              
+              // Convert JSON Schema to Zod
+              let fieldSchema
+              if (prop.type === 'string') {
+                fieldSchema = z.string()
+              } else if (prop.type === 'number') {
+                fieldSchema = z.number()
+              } else if (prop.type === 'boolean') {
+                fieldSchema = z.boolean()
+              } else {
+                fieldSchema = z.string() // Default to string
+              }
+              
+              // Add description if available
+              if (prop.description) {
+                fieldSchema = fieldSchema.describe(prop.description)
+              }
+              
+              // Make optional if not in required array
+              const required = jsonSchema.required || []
+              if (!required.includes(propName)) {
+                fieldSchema = fieldSchema.optional()
+              }
+              
+              schemaFields[propName] = fieldSchema
+            }
+            
+            zodSchema = z.object(schemaFields)
+          }
+          
+          // Create AI SDK v5 compatible tool
+          fixedTools[toolName] = {
+            description: toolDef.description || toolName,
+            parameters: zodSchema,
+            execute: toolDef.execute || (async (args: any) => {
+              runtimeLogger.warn(`Tool ${toolName} executed without implementation`)
+              return { result: 'Tool executed but no implementation provided' }
+            })
+          }
+          
+          runtimeLogger.debug(`Fixed tool ${toolName} with Zod schema`)
+        } else {
+          // Keep original if it's already in the right format
+          fixedTools[toolName] = tool
+        }
+      } catch (error) {
+        runtimeLogger.warn(`Failed to fix schema for tool ${toolName}: ${error}`)
+        // Skip problematic tools
+        continue
+      }
+    }
+    
+    runtimeLogger.debug(`Fixed ${Object.keys(fixedTools).length} MCP tools for OpenAI`)
+    return fixedTools
   }
 
   /**
