@@ -10,8 +10,8 @@
 export { SYMindXRuntime } from './core/runtime';
 export { SYMindXModuleRegistry } from './core/registry';
 export type { SimpleEventBus } from './core/event-bus';
-export type { SimplePluginLoader } from './core/plugin-loader';
-export { createPluginLoader } from './core/plugin-loader';
+export type { ExtensionLoader } from './core/extension-loader';
+export { createExtensionLoader } from './core/extension-loader';
 
 // === TYPE SYSTEM ===
 export type * from './types/index';

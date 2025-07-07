@@ -6,18 +6,16 @@
 
 import { ModuleRegistry } from '../types/agent'
 import { createMemoryProvider } from './memory/index'
+import { createMemoryProviderByName } from './memory/providers/index'
 import { createEmotionModule } from './emotion/index'  
 import { createCognitionModule } from './cognition/index'
 
 // Re-export core module factories
-export { createMemoryProvider, createEmotionModule, createCognitionModule }
+export { createMemoryProvider, createMemoryProviderByName, createEmotionModule, createCognitionModule }
 
-// TEMPORARILY DISABLED - behavior and lifecycle modules have type conflicts
-// Export autonomous behavior system
-// export * from './behaviors/index'
-
-// Export lifecycle management
-// export * from './life-cycle/index'
+// Future modules - see /TODO.md for details
+// - Behavior system: Pre-programmed behavioral patterns
+// - Lifecycle management: Deployment, versioning, testing
 
 /**
  * Module factory type
@@ -34,7 +32,7 @@ export interface ModuleFactories {
 export function createModule(type: 'memory' | 'emotion' | 'cognition', moduleType: string, config: any) {
   switch (type) {
     case 'memory':
-      return createMemoryProvider(moduleType, config)
+      return createMemoryProviderByName(moduleType, config)
     case 'emotion':
       return createEmotionModule(moduleType, config)
     case 'cognition':
@@ -97,6 +95,13 @@ export async function registerExtensionFactories(registry: ModuleRegistry): Prom
       registry.registerExtensionFactory('mcp-server', createMCPServerExtension)
     } catch (error) {
       console.warn('⚠️ MCP Server extension not available:', error)
+    }
+    
+    try {
+      const { createAPIExtension } = await import('../extensions/api/index')
+      registry.registerExtensionFactory('api', createAPIExtension)
+    } catch (error) {
+      console.warn('⚠️ API extension not available:', error)
     }
     
   } catch (error) {

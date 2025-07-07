@@ -668,12 +668,14 @@ export interface ModuleRegistry {
   getToolSystem(name: string): any
   
   // Listing methods
+  listMemoryProviders(): string[]
   listEmotionModules(): string[]
   listCognitionModules(): string[]
   listPortals(): string[]
   listPortalFactories(): string[]
   listExtensions(): string[]
   listAgentFactories(): string[]
+  listToolSystems(): string[]
   
   // Autonomous AI module registration
   registerLearningModule?(name: string, module: LearningModule): void

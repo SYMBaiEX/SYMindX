@@ -435,11 +435,23 @@ const sidebars: SidebarsConfig = {
   // Examples sidebar with portal-specific examples
   examplesSidebar: [
     {
+      type: 'doc',
+      id: 'examples/index',
+      label: 'Overview',
+    },
+    {
+      type: 'category',
+      label: 'Basic Examples',
+      collapsed: true,
+      items: [
+        'examples/basic/index',
+      ],
+    },
+    {
       type: 'category',
       label: 'Portal Examples',
       collapsed: false,
       items: [
-        'examples/index',
         'examples/portals/anthropic',
         'examples/portals/openai', 
         'examples/portals/groq',
@@ -450,22 +462,7 @@ const sidebars: SidebarsConfig = {
         'examples/portals/azure-openai',
         'examples/portals/ollama',
         'examples/portals/lmstudio',
-        'examples/portals/openrouter',
-        'examples/portals/kluster-ai',
-        'examples/portals/google-vertex',
         'examples/portals/vercel',
-        'examples/portals/multimodal',
-      ],
-    },
-    {
-      type: 'category',
-      label: 'Character Templates',
-      collapsed: true,
-      items: [
-        'examples/characters/overview',
-        'examples/characters/basic-character',
-        'examples/characters/advanced-character',
-        'examples/characters/multi-portal-character',
       ],
     },
     {
@@ -474,23 +471,14 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       items: [
         'examples/use-cases/index',
-        'examples/use-cases/chatbot',
-        'examples/use-cases/content-generation',
-        'examples/use-cases/code-assistant',
-        'examples/use-cases/data-analysis',
-        'examples/use-cases/customer-support',
       ],
     },
     {
       type: 'category',
-      label: 'Integration Examples',
+      label: 'Templates',
       collapsed: true,
       items: [
-        'examples/integrations/telegram-bot',
-        'examples/integrations/slack-bot',
-        'examples/integrations/web-api',
-        'examples/integrations/cli-tool',
-        'examples/integrations/discord-bot',
+        'examples/templates/index',
       ],
     },
     {
@@ -499,10 +487,6 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       items: [
         'examples/advanced/index',
-        'examples/advanced/multi-agent-coordination',
-        'examples/advanced/custom-emotions',
-        'examples/advanced/memory-persistence',
-        'examples/advanced/autonomous-agents',
       ],
     },
   ],

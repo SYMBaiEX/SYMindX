@@ -20,9 +20,7 @@ export { AutonomousEngine } from './core/autonomous-engine';
 export { DecisionEngine } from './core/decision-engine';
 export { EthicsEngine } from './core/ethics-engine';
 export { InteractionManager } from './core/interaction-manager';
-// TEMPORARILY COMMENTED OUT - export conflicts
-// export * from './modules/behaviors/index';
-// export * from './modules/life-cycle/index';
+// Future module exports - see /TODO.md for implementation details
 export * from './types/autonomous';
 
 // Default runtime configuration

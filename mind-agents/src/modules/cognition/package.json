@@ -22,5 +22,8 @@
     "category": "cognition",
     "displayName": "Cognition System",
     "description": "Unified cognitive system with multiple reasoning strategies"
+  },
+  "peerDependencies": {
+    "@symindx/types": "workspace:*"
   }
 }

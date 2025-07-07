@@ -7,7 +7,7 @@
 
 export { SYMindXRuntime } from './runtime'
 export { SYMindXModuleRegistry } from './registry'
-export type { SimplePluginLoader } from './plugin-loader'
+export type { ExtensionLoader } from './extension-loader'
 export { SimpleEventBus } from './event-bus'
 export { MCPIntegration, mcpIntegration } from './mcp-integration'
 export type { 

@@ -229,6 +229,7 @@ export class CognitionDiscovery {
    */
   async autoRegisterCognitions(registry: ModuleRegistry): Promise<void> {
     const cognitions = await this.discoverCognitions()
+    const registeredCognitions: string[] = []
 
     for (const cognition of cognitions) {
       try {
@@ -237,10 +238,15 @@ export class CognitionDiscovery {
 
         if (shouldAutoRegister) {
           await this.registerCognition(registry, cognition)
+          registeredCognitions.push(cognition.name)
         }
       } catch (error) {
         runtimeLogger.warn(`⚠️ Failed to auto-register cognition ${cognition.name}:`, error)
       }
+    }
+    
+    if (registeredCognitions.length > 0) {
+      runtimeLogger.info(`🧠 Cognition modules registered: ${registeredCognitions.join(', ')}`)
     }
   }
 
@@ -264,7 +270,7 @@ export class CognitionDiscovery {
 
       if (typeof factory === 'function') {
         registry.registerCognitionFactory(cognition.name, factory)
-        runtimeLogger.info(`✅ Registered cognition factory: ${cognition.name}`)
+        // Individual registration logs removed - summary logged after all registrations
       } else {
         runtimeLogger.warn(`⚠️ Cognition ${cognition.name} does not export factory function ${cognition.factory}`)
       }

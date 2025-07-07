@@ -14,8 +14,16 @@
       "type": "theory-of-mind",
       "factory": "createTheoryOfMindCognition",
       "autoRegister": true,
-      "paradigms": ["social", "mental-modeling", "perspective-taking", "empathy"],
+      "paradigms": [
+        "social",
+        "mental-modeling",
+        "perspective-taking",
+        "empathy"
+      ],
       "category": "specialized"
     }
+  },
+  "peerDependencies": {
+    "@symindx/types": "workspace:*"
   }
 }

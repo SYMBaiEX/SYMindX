@@ -15,7 +15,9 @@ import {
   ArchivalStrategy,
   MemoryPermission
 } from '../../../../types/memory'
-import Database, { type Database as DatabaseType, type Statement } from 'better-sqlite3'
+import { Database } from 'bun:sqlite'
+import type { Database as DatabaseType, Statement } from 'bun:sqlite'
+const sqliteAvailable = true
 import { readFileSync } from 'fs'
 import { join } from 'path'
 import { SharedMemoryPool } from './shared-pool'

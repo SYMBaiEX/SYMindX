@@ -37,7 +37,7 @@ import {
   SuccessResult
 } from '../types/enums'
 import { EventEmitter } from 'events'
-import { SimplePluginLoader, createPluginLoader } from './plugin-loader'
+import { ExtensionLoader, createExtensionLoader } from './extension-loader'
 import { SimpleEventBus } from './event-bus'
 import { SYMindXModuleRegistry } from './registry'
 import { ExtensionContext } from '../types/extension'
@@ -54,7 +54,7 @@ export class SYMindXRuntime implements AgentRuntime {
   public lazyAgents: Map<string, LazyAgent> = new Map()
   public eventBus: EventBus
   public registry: ModuleRegistry
-  public pluginLoader: SimplePluginLoader
+  public extensionLoader: ExtensionLoader
   public config: RuntimeConfig
   private tickTimer?: NodeJS.Timeout
   private isRunning = false
@@ -85,7 +85,7 @@ export class SYMindXRuntime implements AgentRuntime {
         capabilities: []
       }
     }
-    this.pluginLoader = createPluginLoader(extensionContext)
+    this.extensionLoader = createExtensionLoader()
   }
 
   async initialize(): Promise<void> {
@@ -201,57 +201,67 @@ export class SYMindXRuntime implements AgentRuntime {
       return
     }
 
-    // Quiet mode - UI handles display
-    // runtimeLogger.start('🎯 Starting SYMindX Runtime...')
-    
-    // Register core modules
-    await this.registerCoreModules()
-    
-    // Register default agent factory
-    this.registerDefaultAgentFactory()
-    
-    // Load portals
-    await this.loadPortals()
-    
-    // Load extensions (legacy method for built-in extensions)
-    await this.loadExtensions()
-    
-    // Initialize Multi-Agent Manager
-    this.multiAgentManager = new MultiAgentManager(
-      this.registry as any, 
-      this.eventBus, 
-      this
-    )
-    // Multi-Agent Manager initialized - logged by UI
-    
-    // Initialize tool system
-    await this.initializeToolSystem()
-    
-    // Discover and load dynamic plugins
-    await this.loadDynamicPlugins()
-    
-    // Load agents (now through multi-agent manager for single agent compatibility)
-    await this.loadAgents()
-    
-    this.isRunning = true
-    
-    // Start the main processing loop
-    this.tickTimer = setInterval(() => {
-      this.tick().catch(error => {
-        runtimeLogger.error('❌ Runtime tick error:', error)
-      })
-    }, this.config.tickInterval)
-    
-    runtimeLogger.success('✅ SYMindX Runtime started successfully')
-        runtimeLogger.info('📊 Plugin Stats:', this.pluginLoader.getStats())
-        await this.eventBus.publish({
-          id: `event_${Date.now()}`,
-          type: 'runtime_started',
-          source: 'runtime',
-          data: { timestamp: new Date() },
-          timestamp: new Date(),
-          processed: false
+    try {
+      // Phase 1: Registration - Register all factories
+      runtimeLogger.info('📦 Registering core modules...')
+      
+      // Register module factories
+      await this.registerCoreModules()
+      
+      // Register agent factory
+      this.registerDefaultAgentFactory()
+      
+      // Phase 2: Loading - Load configurations and initialize services
+      runtimeLogger.info('🔌 Loading system components...')
+      
+      // Load AI portals
+      await this.loadPortals()
+      
+      // Load extensions
+      await this.loadExtensions()
+      
+      // Phase 3: Initialization - Initialize runtime services
+      runtimeLogger.info('⚙️ Initializing runtime services...')
+      
+      // Initialize Multi-Agent Manager
+      this.multiAgentManager = new MultiAgentManager(
+        this.registry as any, 
+        this.eventBus, 
+        this
+      )
+      
+      // Initialize tool system
+      await this.initializeToolSystem()
+      
+      // Phase 4: Agent Loading
+      runtimeLogger.info('🤖 Loading agents...')
+      await this.loadAgents()
+      
+      // Phase 5: Start runtime loop
+      this.isRunning = true
+      this.tickTimer = setInterval(() => {
+        this.tick().catch(error => {
+          runtimeLogger.error('❌ Runtime tick error:', error)
         })
+      }, this.config.tickInterval)
+      
+      // Phase 6: Final status report
+      this.logStartupSummary()
+      
+      await this.eventBus.publish({
+        id: `event_${Date.now()}`,
+        type: 'runtime_started',
+        source: 'runtime',
+        data: { timestamp: new Date() },
+        timestamp: new Date(),
+        processed: false
+      })
+      
+      runtimeLogger.success('✅ SYMindX Runtime started successfully')
+    } catch (error) {
+      runtimeLogger.error('❌ Failed to start runtime:', error)
+      throw error
+    }
   }
 
   async stop(): Promise<void> {
@@ -279,8 +289,6 @@ export class SYMindXRuntime implements AgentRuntime {
   }
 
   async loadAgents(): Promise<void> {
-    // Loading agents - logged by UI
-    
     try {
       const fs = await import('fs/promises')
       const path = await import('path')
@@ -297,7 +305,6 @@ export class SYMindXRuntime implements AgentRuntime {
       } catch {
         charactersDir = distCharactersDir
       }
-      // Looking for characters - logged by UI
       
       // Check if the characters directory exists
       try {
@@ -338,6 +345,21 @@ export class SYMindXRuntime implements AgentRuntime {
             
             // Check if agent is enabled
             if (rawConfig.enabled === false) {
+              // Disabled agents become lazy agents (can be enabled via management)
+              let agentConfig: AgentConfig
+              
+              // Process config regardless of format
+              if (this.isCleanCharacterConfig(rawConfig)) {
+                agentConfig = configResolver.resolveCharacterConfig(rawConfig as CharacterConfig)
+              } else {
+                agentConfig = this.processLegacyConfig(rawConfig)
+              }
+              
+              const lazyAgent = this.createLazyAgent(agentConfig, rawConfig, rawConfig.id)
+              this.lazyAgents.set(lazyAgent.id, lazyAgent)
+              this.registry.registerLazyAgent(lazyAgent)
+              
+              runtimeLogger.info(`🏭 💤 Registered disabled agent as lazy: ${rawConfig.name}`)
               disabledCount++
               continue
             }
@@ -359,18 +381,14 @@ export class SYMindXRuntime implements AgentRuntime {
               agentConfig = this.processLegacyConfig(rawConfig)
             }
             
-            // Create lazy agent instead of immediately loading
-            const lazyAgent = this.createLazyAgent(agentConfig, rawConfig, rawConfig.id)
-            this.lazyAgents.set(lazyAgent.id, lazyAgent)
-            this.registry.registerLazyAgent(lazyAgent)
-            
-            // For backward compatibility, still load primary/high-priority agents immediately
-            if (rawConfig.priority === 'high' || rawConfig.primary === true) {
-              try {
-                await this.activateAgent(lazyAgent.id)
-              } catch (error) {
-                runtimeLogger.error(`❌ Failed to activate priority agent ${lazyAgent.id}:`, error)
-              }
+            // Enabled agents should load immediately, not be lazy
+            try {
+              const agent = await this.loadAgent(agentConfig, rawConfig.id)
+              runtimeLogger.info(`🏭 🤖 Loaded enabled agent: ${agent.name}`)
+            } catch (error) {
+              runtimeLogger.error(`❌ Failed to load enabled agent ${rawConfig.id}:`, error)
+              errorCount++
+              continue
             }
             
             enabledCount++
@@ -389,16 +407,17 @@ export class SYMindXRuntime implements AgentRuntime {
         runtimeLogger.success(`✅ Agents: ${summary.join(', ')}`)
       } catch (err) {
         if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
-          console.log('⚠️ Characters directory not found, no agents loaded')
+          runtimeLogger.warn('⚠️ Characters directory not found, no agents loaded')
           // Create the characters directory
           await fs.mkdir(charactersDir, { recursive: true })
-          console.log('📁 Created characters directory')
+          runtimeLogger.info('📁 Created characters directory')
         } else {
           throw err
         }
       }
     } catch (error) {
-      console.error('❌ Error loading agents:', error)
+      runtimeLogger.error('❌ Error loading agents:', error)
+      throw error
     }
   }
 
@@ -507,7 +526,7 @@ export class SYMindXRuntime implements AgentRuntime {
     // Transform character config to expected format
     const agentConfig = this.transformCharacterConfig(config)
     
-    console.log(`🤖 Loading agent: ${agentConfig.core.name} (${agentId})`)
+    runtimeLogger.info(`🤖 Loading agent: ${agentConfig.core.name}`)
     
     // Create memory provider (try factory first, then fallback to registry)
     let memoryProvider = this.registry.getMemoryProvider(agentConfig.psyche.defaults.memory)
@@ -562,7 +581,7 @@ export class SYMindXRuntime implements AgentRuntime {
     if (config.portals && Array.isArray(config.portals)) {
       for (const portalConfig of config.portals) {
         if (portalConfig.enabled === false) {
-          console.log(`⏭️ Skipping disabled portal: ${portalConfig.name}`)
+          // Skip disabled portals silently
           continue
         }
         
@@ -589,20 +608,20 @@ export class SYMindXRuntime implements AgentRuntime {
               } as Agent)
               
               portals.push(portal)
-              console.log(`🔮 Loaded portal: ${portalConfig.name} (${portalConfig.type}) - Capabilities: ${portalConfig.capabilities?.join(', ') || 'default'}`)
+              // Portal loaded - details in startup summary
               
               // Set primary portal
               if (portalConfig.primary === true) {
                 primaryPortal = portal
               }
             } catch (error) {
-              console.warn(`⚠️ Failed to initialize portal '${portalConfig.name}':`, error)
+              runtimeLogger.warn(`⚠️ Failed to initialize portal '${portalConfig.name}':`, error)
             }
           } else {
-            console.warn(`⚠️ Portal '${portalConfig.name}' (${portalConfig.type}) not found and could not be created`)
+            runtimeLogger.warn(`⚠️ Portal '${portalConfig.name}' (${portalConfig.type}) not found and could not be created`)
           }
         } catch (error) {
-          console.warn(`⚠️ Error loading portal '${portalConfig.name}':`, error)
+          runtimeLogger.warn(`⚠️ Error loading portal '${portalConfig.name}':`, error)
         }
       }
     }
@@ -680,7 +699,7 @@ export class SYMindXRuntime implements AgentRuntime {
         await extension.init(agent)
         console.log(`✅ Initialized extension: ${extension.name}`)
       } catch (error) {
-        console.error(`❌ Failed to initialize extension ${extension.name}:`, error)
+        runtimeLogger.error(`❌ Failed to initialize extension ${extension.name}:`, error)
       }
     }
     
@@ -697,7 +716,7 @@ export class SYMindXRuntime implements AgentRuntime {
           console.warn(`⚠️ Tool system '${toolSystemName}' not found`)
         }
       } catch (error) {
-        console.error(`❌ Failed to initialize tool system:`, error)
+        runtimeLogger.error(`❌ Failed to initialize tool system:`, error)
       }
     }
     
@@ -752,7 +771,7 @@ export class SYMindXRuntime implements AgentRuntime {
       processed: false
     })
     
-    console.log(`✅ Agent loaded: ${finalAgent.name} (${agentId}) - Autonomy: ${this.getAutonomyLevel(finalAgent)}`)
+    // Agent loaded - details shown in startup summary
     return finalAgent
   }
 
@@ -766,7 +785,7 @@ export class SYMindXRuntime implements AgentRuntime {
       throw new Error(`Agent '${agentId}' not found`)
     }
     
-    console.log(`🗑️ Unloading agent: ${agent.name} (${agentId})`)
+    runtimeLogger.info(`🗑️ Unloading agent: ${agent.name}`)
     
     await this.shutdownAgent(agent)
     this.agents.delete(agentId)
@@ -782,19 +801,18 @@ export class SYMindXRuntime implements AgentRuntime {
       processed: false
     })
     
-    console.log(`✅ Agent unloaded: ${agent.name}`)
+    runtimeLogger.info(`✅ Agent unloaded: ${agent.name}`)
   }
 
   private async initializeToolSystem(): Promise<void> {
     try {
-      console.log('🔧 Initializing tool system...')
-      
       // Simple tool system placeholder until full implementation
       // TODO: Implement proper tool system when classes are available
       
-      console.log('✅ Tool system initialized (placeholder)')
+      runtimeLogger.info('🛠️ Tool system: Ready (placeholder implementation)')
     } catch (error) {
-      console.error('❌ Failed to initialize tool system:', error)
+      runtimeLogger.error('❌ Failed to initialize tool system:', error)
+      throw error
     }
   }
 
@@ -1139,10 +1157,17 @@ export class SYMindXRuntime implements AgentRuntime {
       const { registerCoreModules } = await import('../modules/index')
       await registerCoreModules(this.registry)
       
-      // Clean summary logging
-      console.log(`✅ Core modules: ${this.registry.listEmotionModules().join(', ')}, ${this.registry.listCognitionModules().join(', ')}`)
+      // Log successful registration summary
+      const memoryProviders = this.registry.listMemoryProviders()
+      const emotionModules = this.registry.listEmotionModules()
+      const cognitionModules = this.registry.listCognitionModules()
+      
+      runtimeLogger.info(`📝 Memory providers: ${memoryProviders.length} registered`)
+      runtimeLogger.info(`🎭 Emotion modules: ${emotionModules.length} registered`)
+      runtimeLogger.info(`🧠 Cognition modules: ${cognitionModules.length} registered`)
     } catch (error) {
-      console.error('❌ Failed to register core modules:', error)
+      runtimeLogger.error('❌ Failed to register core modules:', error)
+      throw error
     }
   }
 
@@ -1205,11 +1230,11 @@ export class SYMindXRuntime implements AgentRuntime {
       // Start autonomous systems
       await this.startAutonomousSystems(agent.id)
 
-      console.log(`✅ Autonomous capabilities initialized for: ${agent.name}`)
+      runtimeLogger.info(`✅ Autonomous capabilities initialized for: ${agent.name}`)
       return autonomousAgent
 
     } catch (error) {
-      console.error(`❌ Failed to initialize autonomous capabilities for ${agent.name}:`, error)
+      runtimeLogger.error(`❌ Failed to initialize autonomous capabilities for ${agent.name}:`, error)
       return agent as AutonomousAgent
     }
   }
@@ -1227,9 +1252,9 @@ export class SYMindXRuntime implements AgentRuntime {
         await autonomousEngine.start()
       }
 
-      console.log(`🚀 Autonomous systems started for agent: ${agentId}`)
+      runtimeLogger.info(`🚀 Autonomous systems started for agent: ${agentId}`)
     } catch (error) {
-      console.error(`❌ Failed to start autonomous systems for ${agentId}:`, error)
+      runtimeLogger.error(`❌ Failed to start autonomous systems for ${agentId}:`, error)
     }
   }
 
@@ -1249,9 +1274,9 @@ export class SYMindXRuntime implements AgentRuntime {
       this.decisionEngines.delete(agentId)
       this.autonomousAgents.delete(agentId)
 
-      console.log(`🛑 Autonomous systems stopped for agent: ${agentId}`)
+      runtimeLogger.info(`🛑 Autonomous systems stopped for agent: ${agentId}`)
     } catch (error) {
-      console.error(`❌ Failed to stop autonomous systems for ${agentId}:`, error)
+      runtimeLogger.error(`❌ Failed to stop autonomous systems for ${agentId}:`, error)
     }
   }
 
@@ -1346,8 +1371,6 @@ export class SYMindXRuntime implements AgentRuntime {
    * Load and register extensions
    */
   private async loadExtensions(): Promise<void> {
-    console.log('🔌 Loading built-in extensions...')
-    
     try {
       // Import the extensions module
       const extensionsModule = await import('../extensions/index')
@@ -1445,8 +1468,10 @@ export class SYMindXRuntime implements AgentRuntime {
       const extensions = await extensionsModule.registerExtensions(tempConfig)
       
       // Register extensions in registry using their ID instead of name
+      const loadedExtensions: string[] = []
       for (const extension of extensions) {
         this.registry.registerExtension(extension.id, extension)
+        loadedExtensions.push(extension.id)
         
         // If this is the API extension, connect it to the runtime and initialize it
         if (extension.id === 'api') {
@@ -1462,16 +1487,17 @@ export class SYMindXRuntime implements AgentRuntime {
               config: {}
             }
             await extension.init(dummyAgent as any)
-            console.log('🚀 API extension initialized at runtime level')
+            runtimeLogger.info('🌐 API extension: Initialized on runtime level')
           } catch (error) {
-            console.error('❌ Failed to initialize API extension at runtime level:', error)
+            runtimeLogger.error('❌ Failed to initialize API extension at runtime level:', error)
           }
         }
       }
       
-      console.log('✅ Built-in extensions loaded successfully')
+      runtimeLogger.info(`🔌 Extensions: ${loadedExtensions.length} loaded (${loadedExtensions.join(', ')})`)
     } catch (error) {
-      console.error('❌ Failed to load built-in extensions:', error)
+      runtimeLogger.error('❌ Failed to load built-in extensions:', error)
+      throw error
     }
   }
 
@@ -1479,17 +1505,59 @@ export class SYMindXRuntime implements AgentRuntime {
    * Load dynamic plugins (simplified for emergency cleanup)
    */
   private async loadDynamicPlugins(): Promise<void> {
-    console.log('🔍 Dynamic plugin loading simplified for emergency cleanup')
+    // This method is kept for backward compatibility but does nothing
+    // Extensions are loaded in the loadExtensions() method
+  }
+
+  /**
+   * Log a clean startup summary
+   */
+  private logStartupSummary(): void {
+    const stats = this.getStats()
+    const capabilities = this.getRuntimeCapabilities()
     
-    try {
-      // Use simple extension loading only
-      const extensions = await this.pluginLoader.loadExtensions()
-      console.log(`✅ Plugins: ${extensions.length} loaded`)
-      
-      console.log('✅ Dynamic plugin loading completed (simplified)')
-    } catch (error) {
-      console.error('❌ Failed to load dynamic plugins:', error)
+    runtimeLogger.info('═══════════════════════════════════════════════════════')
+    runtimeLogger.info('📊 Runtime Status Summary')
+    runtimeLogger.info('═══════════════════════════════════════════════════════')
+    
+    // Memory Providers
+    runtimeLogger.info(`📝 Memory Providers: ${capabilities.modules.memory.available.length} registered`)
+    runtimeLogger.info(`   └─ Available: ${capabilities.modules.memory.available.join(', ')}`)
+    
+    // Emotion Modules
+    runtimeLogger.info(`🎭 Emotion Modules: ${capabilities.modules.emotion.available.length} registered`)
+    runtimeLogger.info(`   └─ Available: ${capabilities.modules.emotion.available.join(', ')}`)
+    
+    // Cognition Modules
+    runtimeLogger.info(`🧠 Cognition Modules: ${capabilities.modules.cognition.available.length} registered`)
+    runtimeLogger.info(`   └─ Available: ${capabilities.modules.cognition.available.join(', ')}`)
+    
+    // Portals
+    const activePortals = this.registry.listPortals().filter(p => {
+      const portal = this.registry.getPortal(p)
+      return portal && portal.enabled
+    })
+    runtimeLogger.info(`🌐 AI Portals: ${activePortals.length} active / ${capabilities.modules.portals.available.length} available`)
+    runtimeLogger.info(`   └─ Active: ${activePortals.join(', ')}`)
+    
+    // Extensions
+    const loadedExtensions = this.registry.listExtensions()
+    runtimeLogger.info(`🔌 Extensions: ${loadedExtensions.length} loaded`)
+    runtimeLogger.info(`   └─ Active: ${loadedExtensions.join(', ')}`)
+    
+    // Agents
+    runtimeLogger.info(`🤖 Agents: ${stats.agents} active / ${stats.lazyAgents} registered`)
+    
+    // Tool System
+    const toolSystems = this.registry.listToolSystems()
+    if (toolSystems.length > 0) {
+      runtimeLogger.info(`🛠️ Tool Systems: ${toolSystems.length} registered`)
+      runtimeLogger.info(`   └─ Available: ${toolSystems.join(', ')}`)
+    } else {
+      runtimeLogger.info(`🛠️ Tool Systems: Ready (placeholder implementation)`)
     }
+    
+    runtimeLogger.info('═══════════════════════════════════════════════════════')
   }
 
   /**
@@ -1506,7 +1574,7 @@ export class SYMindXRuntime implements AgentRuntime {
       lazyAgents: this.lazyAgents.size,
       autonomousAgents: this.autonomousAgents.size,
       isRunning: this.isRunning,
-      plugins: this.pluginLoader.getStats(),
+      extensions: this.extensionLoader.getStats(),
       eventBus: {
         events: this.eventBus.getEvents().length
       },
@@ -1613,8 +1681,8 @@ export class SYMindXRuntime implements AgentRuntime {
           factorySupported: true
         },
         memory: {
-          available: ['memory', 'sqlite'], // TODO: make this dynamic
-          factorySupported: false
+          available: this.registry.listMemoryProviders(),
+          factorySupported: true
         },
         portals: {
           available: this.registry.listPortals(),
@@ -1623,8 +1691,8 @@ export class SYMindXRuntime implements AgentRuntime {
         }
       },
       extensions: {
-        loaded: this.getLoadedPlugins().map(p => p.id || 'unknown'),
-        available: [] // TODO: get from plugin discovery
+        loaded: this.registry.listExtensions(),
+        available: this.registry.listExtensions() // Same as loaded for now
       },
       runtime: {
         isRunning: this.isRunning,
@@ -1691,7 +1759,8 @@ export class SYMindXRuntime implements AgentRuntime {
       
       // Portal information displayed by UI
     } catch (error) {
-      console.error('❌ Failed to load portals:', error)
+      runtimeLogger.error('❌ Failed to load portals:', error)
+      throw error
     }
   }
 

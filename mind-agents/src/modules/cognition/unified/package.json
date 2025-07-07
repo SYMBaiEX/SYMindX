@@ -14,8 +14,16 @@
       "type": "unified",
       "factory": "createUnifiedCognition",
       "autoRegister": true,
-      "paradigms": ["adaptive", "multi-modal", "context-aware", "efficient"],
+      "paradigms": [
+        "adaptive",
+        "multi-modal",
+        "context-aware",
+        "efficient"
+      ],
       "category": "basic"
     }
+  },
+  "peerDependencies": {
+    "@symindx/types": "workspace:*"
   }
 }

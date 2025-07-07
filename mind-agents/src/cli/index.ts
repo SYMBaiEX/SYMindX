@@ -127,13 +127,14 @@ class AwesomeSYMindXCLI {
 
     // Chat command
     this.program
-      .command('chat [message]')
+      .command('chat')
       .alias('c')
       .description('💬 Chat with an agent')
       .option('-a, --agent <id>', 'Agent to chat with')
-      .action(async (message, options) => {
-        if (message) {
-          await this.quickChat(message, options.agent)
+      .option('-m, --message <text>', 'Message to send')
+      .action(async (options) => {
+        if (options.message) {
+          await this.quickChat(options.message, options.agent)
         } else {
           await this.startChatMode(options.agent)
         }
@@ -179,6 +180,13 @@ class AwesomeSYMindXCLI {
       .description('Stop an agent')
       .action(async (id) => {
         await this.stopAgent(id)
+      })
+
+    agent
+      .command('info <id>')
+      .description('Show detailed agent information')
+      .action(async (id) => {
+        await this.showAgentInfo(id)
       })
 
     agent
@@ -331,9 +339,6 @@ class AwesomeSYMindXCLI {
     console.log(chatGradient.multiline(figlet.textSync('Chat Mode', { font: 'Small' })))
     console.log(chalk.gray('\nType your message and press Enter. Type "exit" to leave.\n'))
 
-    // Connect to WebSocket
-    await this.connectWebSocket(agentId)
-
     while (true) {
       const { message } = await inquirer.prompt([{
         type: 'input',
@@ -342,15 +347,31 @@ class AwesomeSYMindXCLI {
       }])
 
       if (message.toLowerCase() === 'exit') {
-        if (this.ws) {
-          this.ws.close()
-        }
         break
       }
 
       if (message.trim()) {
-        await this.sendMessage(agentId, message)
+        await this.sendChatMessage(agentId, message)
       }
+    }
+  }
+
+  private async sendChatMessage(agentId: string, message: string): Promise<void> {
+    try {
+      const response = await fetch(`${this.config.apiUrl}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agentId, message })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log(chalk.green(`${agentId}:`), data.response)
+      } else {
+        console.log(chalk.red('❌ Failed to send message'))
+      }
+    } catch (error) {
+      console.log(chalk.red('❌ Could not connect to agent'))
     }
   }
 
@@ -696,10 +717,10 @@ class AwesomeSYMindXCLI {
     spinner.start()
 
     try {
-      const response = await fetch(`${this.config.apiUrl}/agents/${targetAgent}/chat`, {
+      const response = await fetch(`${this.config.apiUrl}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message })
+        body: JSON.stringify({ agentId: targetAgent, message })
       })
 
       if (response.ok) {
@@ -721,14 +742,19 @@ class AwesomeSYMindXCLI {
     spinner.start()
 
     try {
-      const response = await fetch(`${this.config.apiUrl}/agents/${agentId}/start`, {
+      const response = await fetch(`${this.config.apiUrl}/api/agents/${agentId}/start`, {
         method: 'POST'
       })
 
       if (response.ok) {
+        const data = await response.json()
         spinner.succeed(`Agent ${agentId} started successfully!`)
+        if (data.message) {
+          console.log(chalk.gray(`  → ${data.message}`))
+        }
       } else {
-        spinner.fail(`Failed to start agent ${agentId}`)
+        const errorData = await response.json().catch(() => ({}))
+        spinner.fail(`Failed to start agent ${agentId}: ${errorData.error || response.statusText}`)
       }
     } catch (error) {
       spinner.fail('Could not connect to runtime')
@@ -741,14 +767,19 @@ class AwesomeSYMindXCLI {
     spinner.start()
 
     try {
-      const response = await fetch(`${this.config.apiUrl}/agents/${agentId}/stop`, {
+      const response = await fetch(`${this.config.apiUrl}/api/agents/${agentId}/stop`, {
         method: 'POST'
       })
 
       if (response.ok) {
+        const data = await response.json()
         spinner.succeed(`Agent ${agentId} stopped successfully!`)
+        if (data.message) {
+          console.log(chalk.gray(`  → ${data.message}`))
+        }
       } else {
-        spinner.fail(`Failed to stop agent ${agentId}`)
+        const errorData = await response.json().catch(() => ({}))
+        spinner.fail(`Failed to stop agent ${agentId}: ${errorData.error || response.statusText}`)
       }
     } catch (error) {
       spinner.fail('Could not connect to runtime')
@@ -937,6 +968,41 @@ class AwesomeSYMindXCLI {
     }
     
     await this.waitForEnter()
+  }
+
+  private async showAgentInfo(agentId: string): Promise<void> {
+    const spinner = createSpinner(`Fetching agent info for ${agentId}...`, 'dots')
+    spinner.start()
+
+    try {
+      const response = await fetch(`${this.config.apiUrl}/api/agent/${agentId}`)
+      
+      if (response.ok) {
+        const agent = await response.json()
+        spinner.stop()
+        
+        console.log(chalk.blue.bold(`\n🤖 Agent Information: ${agent.name || agentId}`))
+        console.log(chalk.gray('─'.repeat(50)))
+        console.log(`${chalk.cyan('ID:')} ${agent.id}`)
+        console.log(`${chalk.cyan('Name:')} ${agent.name}`)
+        console.log(`${chalk.cyan('Status:')} ${agent.status === 'active' ? chalk.green('● Active') : chalk.gray('○ Inactive')}`)
+        console.log(`${chalk.cyan('Emotion:')} ${agent.emotion || 'neutral'}`)
+        console.log(`${chalk.cyan('Extensions:')} ${agent.extensionCount || 0}`)
+        console.log(`${chalk.cyan('Portal:')} ${agent.hasPortal ? chalk.green('Connected') : chalk.gray('None')}`)
+        console.log(`${chalk.cyan('Ethics:')} ${agent.ethicsEnabled ? '🛡️ Enabled' : '⚠️ Disabled'}`)
+        if (agent.lastUpdate) {
+          console.log(`${chalk.cyan('Last Update:')} ${new Date(agent.lastUpdate).toLocaleString()}`)
+        }
+        console.log()
+      } else if (response.status === 404) {
+        spinner.fail(`Agent '${agentId}' not found`)
+      } else {
+        spinner.fail(`Failed to fetch agent info`)
+      }
+    } catch (error) {
+      spinner.fail('Could not connect to runtime')
+      displayError(error instanceof Error ? error.message : 'Unknown error')
+    }
   }
 
   private async getAvailableAgents(): Promise<Array<any>> {

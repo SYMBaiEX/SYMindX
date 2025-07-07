@@ -263,6 +263,9 @@ export class ApiExtension implements Extension {
       // Get all agents from the agents map
       const agentsMap = this.getAgentsMap()
       for (const [id, agent] of agentsMap) {
+        // Filter out runtime agent - only show character agents
+        if (id === 'runtime') continue
+        
         agents.push({
           id: agent.id,
           name: agent.name,
@@ -285,6 +288,9 @@ export class ApiExtension implements Extension {
       // Get all agents from the agents map
       const agentsMap = this.getAgentsMap()
       for (const [id, agent] of agentsMap) {
+        // Filter out runtime agent - only show character agents
+        if (id === 'runtime') continue
+        
         agents.push({
           id: agent.id,
           name: agent.name,
@@ -489,13 +495,73 @@ export class ApiExtension implements Extension {
       }
     })
     
+    // Start/Activate agent (works for both lazy and multi-agent manager)
+    this.app.post('/api/agents/:agentId/start', async (req, res) => {
+      try {
+        const { agentId } = req.params
+        
+        // First try to activate lazy agent
+        if (this.runtime && typeof this.runtime.activateAgent === 'function') {
+          try {
+            await this.runtime.activateAgent(agentId)
+            res.json({ 
+              success: true, 
+              agentId,
+              message: `Agent activated successfully` 
+            })
+            return
+          } catch (lazyError) {
+            // If lazy activation fails, continue to multi-agent manager
+            console.log(`Lazy activation failed for ${agentId}, trying multi-agent manager:`, lazyError)
+          }
+        }
+        
+        // Fallback to multi-agent manager
+        if (!this.runtime?.multiAgentManager) {
+          res.status(503).json({ error: 'Agent management not available' })
+          return
+        }
+        
+        await this.runtime.multiAgentManager.startAgent(agentId)
+        
+        res.json({ 
+          success: true, 
+          agentId,
+          message: `Agent started successfully` 
+        })
+      } catch (error) {
+        console.error('Error starting agent:', error)
+        res.status(500).json({ 
+          error: 'Failed to start agent',
+          details: error instanceof Error ? error.message : String(error)
+        })
+      }
+    })
+    
     // Stop agent
     this.app.post('/api/agents/:agentId/stop', async (req, res) => {
       try {
         const { agentId } = req.params
         
+        // First try to deactivate lazy agent
+        if (this.runtime && typeof this.runtime.deactivateAgent === 'function') {
+          try {
+            await this.runtime.deactivateAgent(agentId)
+            res.json({ 
+              success: true, 
+              agentId,
+              message: `Agent deactivated successfully` 
+            })
+            return
+          } catch (lazyError) {
+            // If lazy deactivation fails, continue to multi-agent manager
+            console.log(`Lazy deactivation failed for ${agentId}, trying multi-agent manager:`, lazyError)
+          }
+        }
+        
+        // Fallback to multi-agent manager
         if (!this.runtime?.multiAgentManager) {
-          res.status(503).json({ error: 'Multi-Agent Manager not available' })
+          res.status(503).json({ error: 'Agent management not available' })
           return
         }
         
@@ -1469,8 +1535,27 @@ export class ApiExtension implements Extension {
       }
     }
     
-    // Get the actual agent object
-    const agent = agentsMap.get(agentId) || this.agent || firstAgent
+    // Check if this is a lazy agent that needs activation
+    if (this.runtime?.lazyAgents?.has(agentId)) {
+      const lazyAgent = this.runtime.lazyAgents.get(agentId)
+      if (lazyAgent && lazyAgent.state !== 'active') {
+        runtimeLogger.extension(`🚀 Activating lazy agent: ${agentId}`)
+        try {
+          await this.runtime.activateAgent(agentId)
+          runtimeLogger.extension(`✅ Agent ${agentId} activated successfully`)
+        } catch (error) {
+          runtimeLogger.error(`❌ Failed to activate agent ${agentId}:`, error)
+          return {
+            response: `Failed to activate agent ${agentId}. Please check the configuration and try again.`,
+            timestamp: new Date().toISOString()
+          }
+        }
+      }
+    }
+    
+    // Get the actual agent object (refresh map after potential activation)
+    const updatedAgentsMap = this.getAgentsMap()
+    const agent = updatedAgentsMap.get(agentId) || this.agent || firstAgent
     const userId = request.context?.userId || 'default_user'
     const sessionId = request.context?.sessionId
     
@@ -1881,15 +1966,46 @@ export class ApiExtension implements Extension {
   }
   
   private getAgentsMap(): Map<string, any> {
-    // Return a map with the current agent if available
     const agentsMap = new Map()
-    if (this.agent) {
+    
+    if (this.runtime) {
+      // First add active agents
+      if (this.runtime.agents && typeof this.runtime.agents !== 'undefined') {
+        for (const [id, agent] of this.runtime.agents) {
+          agentsMap.set(id, agent)
+        }
+      }
+      
+      // Then add lazy agents (only if not already in active agents)
+      if (this.runtime.lazyAgents && typeof this.runtime.lazyAgents !== 'undefined') {
+        for (const [id, lazyAgent] of this.runtime.lazyAgents) {
+          // Skip if agent is already active (prevent duplicates)
+          if (agentsMap.has(id)) continue
+          
+          // Convert lazy agent to agent format for API
+          const agentLike = {
+            id: lazyAgent.id,
+            name: lazyAgent.name,
+            status: lazyAgent.state === 'active' ? 'active' : 'inactive',
+            emotion: { current: 'neutral' }, // Default emotion for lazy agents
+            lastUpdate: lazyAgent.lastActivated,
+            extensions: [], // Lazy agents don't have loaded extensions yet
+            portal: null, // Lazy agents don't have active portals yet
+            characterConfig: lazyAgent.characterConfig,
+            config: lazyAgent.config,
+            capabilities: [],
+            personality: lazyAgent.characterConfig?.personality?.traits || 'neutral'
+          }
+          agentsMap.set(id, agentLike)
+        }
+      }
+    }
+    
+    // Add the API extension agent itself if present and not already added
+    if (this.agent && !agentsMap.has(this.agent.id)) {
       agentsMap.set(this.agent.id, this.agent)
     }
-    // If runtime is available, get all agents from it
-    if (this.runtime && typeof this.runtime.agents !== 'undefined') {
-      return this.runtime.agents
-    }
+    
     return agentsMap
   }
   

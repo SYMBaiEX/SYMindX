@@ -4,7 +4,9 @@
   "type": "module",
   "private": true,
   "main": "index.ts",
-  "dependencies": {},
+  "dependencies": {
+    "telegraf": "^4.16.3"
+  },
   "symindx": {
     "type": "extension",
     "displayName": "Telegram Bot",
@@ -15,5 +17,8 @@
       "factory": "createTelegramExtension",
       "autoRegister": true
     }
+  },
+  "peerDependencies": {
+    "@symindx/types": "workspace:*"
   }
 }

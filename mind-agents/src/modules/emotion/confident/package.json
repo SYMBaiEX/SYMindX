@@ -14,8 +14,18 @@
       "type": "confident",
       "factory": "createConfidentEmotion",
       "autoRegister": true,
-      "triggers": ["success", "mastery", "recognition", "accomplishment", "validation", "competence"],
+      "triggers": [
+        "success",
+        "mastery",
+        "recognition",
+        "accomplishment",
+        "validation",
+        "competence"
+      ],
       "category": "cognitive"
     }
+  },
+  "peerDependencies": {
+    "@symindx/types": "workspace:*"
   }
 }

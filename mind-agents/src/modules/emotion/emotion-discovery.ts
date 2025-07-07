@@ -229,6 +229,7 @@ export class EmotionDiscovery {
    */
   async autoRegisterEmotions(registry: ModuleRegistry): Promise<void> {
     const emotions = await this.discoverEmotions()
+    const registeredEmotions: string[] = []
 
     for (const emotion of emotions) {
       try {
@@ -237,10 +238,15 @@ export class EmotionDiscovery {
 
         if (shouldAutoRegister) {
           await this.registerEmotion(registry, emotion)
+          registeredEmotions.push(emotion.name)
         }
       } catch (error) {
         runtimeLogger.warn(`⚠️ Failed to auto-register emotion ${emotion.name}:`, error)
       }
+    }
+    
+    if (registeredEmotions.length > 0) {
+      runtimeLogger.info(`🎭 Emotion modules registered: ${registeredEmotions.join(', ')}`)
     }
   }
 
@@ -264,7 +270,7 @@ export class EmotionDiscovery {
 
       if (typeof factory === 'function') {
         registry.registerEmotionFactory(emotion.name, factory)
-        runtimeLogger.info(`✅ Registered emotion factory: ${emotion.name}`)
+        // Individual registration logs removed - summary logged after all registrations
       } else {
         runtimeLogger.warn(`⚠️ Emotion ${emotion.name} does not export factory function ${emotion.factory}`)
       }

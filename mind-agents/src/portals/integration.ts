@@ -8,6 +8,7 @@ import { convertUsage } from './utils'
 import { ModuleRegistry } from '../types/agent'
 import { Portal, PortalConfig, PortalCapability, ChatGenerationOptions } from '../types/portal'
 import { PortalRegistry, createPortal, getAvailablePortals, getPortalDefaultConfig } from './index'
+import { runtimeLogger } from '../utils/logger'
 
 /**
  * Register all available portals with the runtime
@@ -46,7 +47,7 @@ export async function registerPortals(
     }
   }
   
-  console.log(`✅ Portals: ${registeredCount}/${availablePortals.length} active`)
+  runtimeLogger.info(`🌐 AI Portals registered: ${registeredCount} active / ${availablePortals.length} available`)
 }
 
 /**

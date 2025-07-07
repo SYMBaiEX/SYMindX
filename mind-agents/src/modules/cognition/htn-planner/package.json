@@ -14,8 +14,16 @@
       "type": "htn-planner",
       "factory": "createHtnPlannerCognition",
       "autoRegister": true,
-      "paradigms": ["hierarchical", "planning", "goal-oriented", "decomposition"],
+      "paradigms": [
+        "hierarchical",
+        "planning",
+        "goal-oriented",
+        "decomposition"
+      ],
       "category": "advanced"
     }
+  },
+  "peerDependencies": {
+    "@symindx/types": "workspace:*"
   }
 }

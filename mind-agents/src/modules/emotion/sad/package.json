@@ -14,8 +14,19 @@
       "type": "sad",
       "factory": "createSadEmotion",
       "autoRegister": true,
-      "triggers": ["failure", "loss", "rejection", "disappointment", "separation", "grief", "sorrow"],
+      "triggers": [
+        "failure",
+        "loss",
+        "rejection",
+        "disappointment",
+        "separation",
+        "grief",
+        "sorrow"
+      ],
       "category": "basic"
     }
+  },
+  "peerDependencies": {
+    "@symindx/types": "workspace:*"
   }
 }

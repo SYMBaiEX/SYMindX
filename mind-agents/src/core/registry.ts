@@ -214,6 +214,13 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
   }
 
   // Factory listing methods
+  listMemoryProviders(): string[] {
+    // Combine registered providers and factory types
+    const registeredProviders = Array.from(this.memoryProviders.keys())
+    const factoryTypes = Array.from(this.memoryFactories.keys())
+    return [...new Set([...registeredProviders, ...factoryTypes])]
+  }
+
   listEmotionModules(): string[] {
     // Combine registered modules and factory types
     const registeredModules = Array.from(this.emotionModules.keys())

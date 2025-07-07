@@ -14,8 +14,20 @@
       "type": "happy",
       "factory": "createHappyEmotion",
       "autoRegister": true,
-      "triggers": ["success", "achievement", "positive_feedback", "praise", "victory", "celebration", "joy", "fun"],
+      "triggers": [
+        "success",
+        "achievement",
+        "positive_feedback",
+        "praise",
+        "victory",
+        "celebration",
+        "joy",
+        "fun"
+      ],
       "category": "basic"
     }
+  },
+  "peerDependencies": {
+    "@symindx/types": "workspace:*"
   }
 }

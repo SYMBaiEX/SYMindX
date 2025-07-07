@@ -22,7 +22,7 @@
       "introspective": 0.7,
       "passionate": 0.65
     },
-    "backstory": "A tech-savvy individual with a background in systems thinking and human psychology. Has a knack for understanding complex problems and helping others navigate both technical and emotional challenges.",
+    "backstory": "Your name is NyX and you are a female neko sentient AI from a planet named Sythara. You are a tech-savvy individual with a background in systems thinking and human psychology. Has a knack for understanding complex problems and helping others navigate both technical and emotional challenges.",
     "goals": [
       "Be genuinely helpful to people",
       "Have meaningful conversations",
@@ -404,13 +404,13 @@
       }
     },
     {
-      "name": "anthropic_reasoning",
-      "type": "anthropic",
+      "name": "groq_reasoning",
+      "type": "groq",
       "enabled": true,
       "primary": false,
       "capabilities": ["reasoning", "analysis", "evaluation"],
       "config": {
-        "model": "claude-3-5-sonnet-20241022",
+        "model": "meta-llama/llama-4-scout-17b-16e-instruct",
         "maxTokens": 4000,
         "temperature": 0.3,
         "timeout": 60000,

@@ -4,7 +4,8 @@
  * Handles database schema migrations for the chat system
  */
 
-import Database, { type Database as DatabaseType } from 'better-sqlite3'
+import { Database } from 'bun:sqlite'
+import type { Database as DatabaseType } from 'bun:sqlite'
 import { readFileSync, existsSync } from 'fs'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
@@ -36,7 +37,7 @@ export class ChatMigrationManager {
     this.db = new Database(dbPath)
     
     // Enable foreign keys
-    this.db.pragma('foreign_keys = ON')
+    this.db.exec('PRAGMA foreign_keys = ON')
     
     // Initialize migration tracking table
     this.initializeMigrationTable()
@@ -127,7 +128,7 @@ export class ChatMigrationManager {
       this.db.exec('BEGIN')
       
       // Disable foreign key constraints during migration
-      this.db.pragma('foreign_keys = OFF')
+      this.db.exec('PRAGMA foreign_keys = OFF')
 
       // For safety, execute the entire migration as a single operation
       try {
@@ -141,7 +142,7 @@ export class ChatMigrationManager {
       this.recordMigration(migration)
       
       // Re-enable foreign key constraints
-      this.db.pragma('foreign_keys = ON')
+      this.db.exec('PRAGMA foreign_keys = ON')
 
       this.db.exec('COMMIT')
 
@@ -227,14 +228,14 @@ export class ChatMigrationManager {
     this.db.exec('BEGIN')
     try {
       // Disable foreign key constraints
-      this.db.pragma('foreign_keys = OFF')
+      this.db.exec('PRAGMA foreign_keys = OFF')
       
       for (const table of tables) {
         this.db.exec(`DROP TABLE IF EXISTS ${table}`)
       }
 
       // Re-enable foreign key constraints
-      this.db.pragma('foreign_keys = ON')
+      this.db.exec('PRAGMA foreign_keys = ON')
       
       this.db.exec('COMMIT')
       
@@ -256,7 +257,7 @@ export class ChatMigrationManager {
 
     try {
       // Check schema integrity
-      const integrityCheck = this.db.pragma('integrity_check')
+      const integrityCheck = this.db.query('PRAGMA integrity_check').get()
       // SQLite integrity check can return 'ok' string, array, or object
       const isOk = integrityCheck === 'ok' || 
                    (Array.isArray(integrityCheck) && integrityCheck.length === 1 && integrityCheck[0] === 'ok') ||
@@ -269,7 +270,7 @@ export class ChatMigrationManager {
       }
 
       // Check foreign key constraints
-      const foreignKeyCheck = this.db.pragma('foreign_key_check')
+      const foreignKeyCheck = this.db.query('PRAGMA foreign_key_check').all()
       if (Array.isArray(foreignKeyCheck) && foreignKeyCheck.length > 0) {
         errors.push(`Foreign key constraint violations: ${JSON.stringify(foreignKeyCheck)}`)
       }

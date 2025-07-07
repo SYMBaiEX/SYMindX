@@ -14,8 +14,18 @@
       "type": "neutral",
       "factory": "createNeutralEmotion",
       "autoRegister": true,
-      "triggers": ["baseline", "calm", "default", "steady", "balanced", "peaceful"],
+      "triggers": [
+        "baseline",
+        "calm",
+        "default",
+        "steady",
+        "balanced",
+        "peaceful"
+      ],
       "category": "basic"
     }
+  },
+  "peerDependencies": {
+    "@symindx/types": "workspace:*"
   }
 }

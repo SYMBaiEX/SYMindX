@@ -62,6 +62,29 @@ export function createMemoryProvider(type: MemoryProviderType, config: MemoryPro
 }
 
 /**
+ * Create a memory provider based on string type
+ * @param type The type of memory provider to create as string
+ * @param config Configuration for the memory provider
+ * @returns A memory provider instance
+ */
+export function createMemoryProviderByName(type: string, config: MemoryProviderConfig) {
+  switch (type) {
+    case 'memory':
+      return new InMemoryProvider(config as InMemoryConfig)
+    case 'sqlite':
+      return new SQLiteMemoryProvider(config as SQLiteMemoryConfig)
+    case 'supabase':
+      return new SupabaseMemoryProvider(config as SupabaseMemoryConfig)
+    case 'neon':
+      return createNeonMemoryProvider(config as NeonMemoryConfig)
+    case 'postgres':
+      return createPostgresMemoryProvider(config as PostgresMemoryConfig)
+    default:
+      throw new Error(`Unknown memory provider type: ${type}`)
+  }
+}
+
+/**
  * Get all available memory provider types
  * @returns An array of memory provider types
  */

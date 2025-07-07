@@ -4,7 +4,10 @@
   "type": "module",
   "private": true,
   "main": "index.ts",
-  "dependencies": {},
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "ws": "^8.18.2"
+  },
   "symindx": {
     "type": "extension",
     "displayName": "MCP Server",
@@ -15,5 +18,8 @@
       "factory": "createMCPServerExtension",
       "autoRegister": true
     }
+  },
+  "peerDependencies": {
+    "@symindx/types": "workspace:*"
   }
 }

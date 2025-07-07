@@ -32,7 +32,7 @@ import { runtimeLogger } from '../../utils/logger'
 import { RuleBasedReasoning } from './rule-based-reasoning'
 import { PDDLPlanner } from './pddl-planner'
 import { ProbabilisticReasoning } from './probabilistic-reasoning'
-import { ReinforcementLearningCognition } from './reinforcement-learning'
+// import { ReinforcementLearningCognition } from './reinforcement-learning'
 
 /**
  * Context analysis for paradigm selection
@@ -110,7 +110,7 @@ export class MetaReasoner implements CognitionModule {
     this.reasoners.set(ReasoningParadigm.PROBABILISTIC, new ProbabilisticReasoning(this.config))
     
     // Reinforcement learning
-    this.reasoners.set(ReasoningParadigm.REINFORCEMENT_LEARNING, new ReinforcementLearningCognition(this.config))
+    // this.reasoners.set(ReasoningParadigm.REINFORCEMENT_LEARNING, new ReinforcementLearningCognition(this.config))
     
     runtimeLogger.cognition(`Meta-reasoner initialized with ${this.reasoners.size} reasoning paradigms`)
   }

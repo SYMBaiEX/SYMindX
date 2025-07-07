@@ -4,11 +4,17 @@
   "type": "module",
   "private": true,
   "main": "index.ts",
-  "dependencies": {},
+  "dependencies": {
+    "pg": "^8.16.0",
+    "uuid": "^11.0.0"
+  },
   "symindx": {
     "type": "module",
     "category": "memory",
     "displayName": "PostgreSQL Memory Provider",
     "description": "PostgreSQL database for scalable agent memory storage"
+  },
+  "peerDependencies": {
+    "@symindx/types": "workspace:*"
   }
 }

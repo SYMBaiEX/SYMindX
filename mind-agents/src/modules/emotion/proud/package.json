@@ -14,8 +14,18 @@
       "type": "proud",
       "factory": "createProudEmotion",
       "autoRegister": true,
-      "triggers": ["achievement", "recognition", "success", "accomplishment", "validation", "honor"],
+      "triggers": [
+        "achievement",
+        "recognition",
+        "success",
+        "accomplishment",
+        "validation",
+        "honor"
+      ],
       "category": "social"
     }
+  },
+  "peerDependencies": {
+    "@symindx/types": "workspace:*"
   }
 }

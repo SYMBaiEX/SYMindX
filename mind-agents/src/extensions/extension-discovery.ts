@@ -101,10 +101,16 @@ export class ExtensionDiscovery {
               }
             }
 
+            // Check if package.json specifies a factory name
+            let factoryName = `create${this.toPascalCase(entry.name)}Extension`
+            if (packageInfo.symindx?.extension?.factory) {
+              factoryName = packageInfo.symindx.extension.factory
+            }
+
             extensions.push({
               name: entry.name,
               path: extensionPath,
-              factory: `create${this.toPascalCase(entry.name)}Extension`,
+              factory: factoryName,
               type: 'built-in',
               packageInfo
             })
@@ -219,6 +225,7 @@ export class ExtensionDiscovery {
    */
   async autoRegisterExtensions(registry: ModuleRegistry): Promise<void> {
     const extensions = await this.discoverExtensions()
+    const registeredExtensions: string[] = []
 
     for (const extension of extensions) {
       try {
@@ -227,10 +234,15 @@ export class ExtensionDiscovery {
 
         if (shouldAutoRegister) {
           await this.registerExtension(registry, extension)
+          registeredExtensions.push(extension.name)
         }
       } catch (error) {
         runtimeLogger.warn(`⚠️ Failed to auto-register extension ${extension.name}:`, error)
       }
+    }
+    
+    if (registeredExtensions.length > 0) {
+      runtimeLogger.info(`🔌 Extensions registered: ${registeredExtensions.join(', ')}`)
     }
   }
 
@@ -254,7 +266,7 @@ export class ExtensionDiscovery {
 
       if (typeof factory === 'function') {
         registry.registerExtensionFactory(extension.name, factory)
-        runtimeLogger.info(`✅ Registered extension factory: ${extension.name}`)
+        // Individual registration logs removed - summary logged after all registrations
       } else {
         runtimeLogger.warn(`⚠️ Extension ${extension.name} does not export factory function ${extension.factory}`)
       }

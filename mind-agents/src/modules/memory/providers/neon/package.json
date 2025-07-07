@@ -4,11 +4,17 @@
   "type": "module",
   "private": true,
   "main": "index.ts",
-  "dependencies": {},
+  "dependencies": {
+    "@neondatabase/serverless": "^1.0.0",
+    "pg": "^8.16.0"
+  },
   "symindx": {
     "type": "module",
     "category": "memory",
     "displayName": "Neon Memory Provider",
     "description": "Serverless Postgres memory storage via Neon"
+  },
+  "peerDependencies": {
+    "@symindx/types": "workspace:*"
   }
 }

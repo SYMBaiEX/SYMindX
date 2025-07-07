@@ -14,8 +14,19 @@
       "type": "angry",
       "factory": "createAngryEmotion",
       "autoRegister": true,
-      "triggers": ["frustration", "injustice", "blocking", "insult", "betrayal", "rage", "hostility"],
+      "triggers": [
+        "frustration",
+        "injustice",
+        "blocking",
+        "insult",
+        "betrayal",
+        "rage",
+        "hostility"
+      ],
       "category": "basic"
     }
+  },
+  "peerDependencies": {
+    "@symindx/types": "workspace:*"
   }
 }

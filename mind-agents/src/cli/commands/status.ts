@@ -199,10 +199,10 @@ export class StatusCommand {
         console.log(`  Lifecycle: Integrated into autonomous engines`)
       }
 
-      // Plugin information
-      console.log(chalk.cyan('\nPlugins:'))
-      console.log(`  Loaded: ${stats.plugins?.loaded || 0}`)
-      console.log(`  Active: ${stats.plugins?.active || 0}`)
+      // Extension information
+      console.log(chalk.cyan('\nExtensions:'))
+      console.log(`  Loaded: ${stats.extensions?.loaded || 0}`)
+      console.log(`  Failed: ${stats.extensions?.failed || 0}`)
 
       // Runtime capabilities
       const capabilities = this.context.runtime.getRuntimeCapabilities()

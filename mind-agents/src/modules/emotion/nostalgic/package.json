@@ -14,8 +14,19 @@
       "type": "nostalgic",
       "factory": "createNostalgicEmotion",
       "autoRegister": true,
-      "triggers": ["memory", "past", "reminiscence", "childhood", "tradition", "history", "longing"],
+      "triggers": [
+        "memory",
+        "past",
+        "reminiscence",
+        "childhood",
+        "tradition",
+        "history",
+        "longing"
+      ],
       "category": "complex"
     }
+  },
+  "peerDependencies": {
+    "@symindx/types": "workspace:*"
   }
 }

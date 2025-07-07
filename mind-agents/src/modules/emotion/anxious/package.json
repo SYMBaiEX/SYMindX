@@ -14,8 +14,19 @@
       "type": "anxious",
       "factory": "createAnxiousEmotion",
       "autoRegister": true,
-      "triggers": ["uncertainty", "threat", "pressure", "unknown", "deadline", "worry", "fear"],
+      "triggers": [
+        "uncertainty",
+        "threat",
+        "pressure",
+        "unknown",
+        "deadline",
+        "worry",
+        "fear"
+      ],
       "category": "complex"
     }
+  },
+  "peerDependencies": {
+    "@symindx/types": "workspace:*"
   }
 }

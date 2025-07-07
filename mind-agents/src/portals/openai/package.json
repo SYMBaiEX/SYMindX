@@ -4,5 +4,13 @@
   "type": "module",
   "private": true,
   "main": "index.ts",
-  "dependencies": {}
+  "dependencies": {
+    "@ai-sdk/openai": "^2.0.0-canary.20",
+    "ai": "^5.0.0-canary.24",
+    "openai": "^4.75.0",
+    "zod": "^3.24.0"
+  },
+  "peerDependencies": {
+    "@symindx/types": "workspace:*"
+  }
 }

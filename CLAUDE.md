@@ -14,32 +14,28 @@ SYMindX is a monorepo with multiple components:
 ### Root Level Commands
 ```bash
 # Development
-bun run dev            # Starts both website and agent system
-bun run dev:agent      # Agent system only (TypeScript watch mode)
-bun run dev:cli        # CLI interactive mode
-bun run dev:website    # Website only (Vite dev server)
+bun dev:agent      # Agent system (TypeScript watch mode)
+bun dev:website    # Website (Vite dev server)
+bun dev            # Alias for dev:agent
 
 # Building
-bun run build          # Build both components
-bun run build:agent    # Compile agent TypeScript to dist/
-bun run build:cli      # Compile agent TypeScript (same as build:agent)
-bun run build:website  # Build website for production
+bun build:agent    # Compile agent TypeScript to dist/
+bun build:website  # Build website for production
+bun build          # Alias for build:agent
 
 # Production
-bun run start          # Start agent system only
-bun run start:agent    # Start agent system (same as start)
-bun run start:cli      # Start CLI interface
-bun run start:website  # Start website preview server
-bun run start:all      # Start both agent system and website
-
-# CLI Commands
-bun run cli            # Interactive CLI dashboard
-bun run cli:dashboard  # CLI dashboard view
-bun run cli:agents     # CLI agents management
-bun run cli:status     # CLI system status
+bun start:agent    # Start agent system
+bun start:cli      # Start CLI interface
+bun start          # Alias for start:agent
 
 # Testing
-bun run test           # Run agent system tests
+bun test           # Run agent system tests
+
+# CLI Commands
+bun cli            # Interactive CLI
+bun cli:dashboard  # Dashboard view
+bun cli:agents     # Agent management
+bun cli:status     # System status
 ```
 
 ### Mind-Agents Specific Commands

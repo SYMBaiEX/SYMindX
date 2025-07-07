@@ -1,11 +1,11 @@
 {
-  "name": "@symindx/portal-cohere",
+  "name": "@symindx/portal-perplexity",
   "version": "1.0.0",
   "type": "module",
   "private": true,
   "main": "index.ts",
   "dependencies": {
-    "@ai-sdk/cohere": "^1.2.10",
+    "@ai-sdk/perplexity": "^1.1.9",
     "ai": "^5.0.0-canary.24",
     "zod": "^3.24.0"
   },

@@ -39,5 +39,8 @@
       "proud",
       "sad"
     ]
+  },
+  "peerDependencies": {
+    "@symindx/types": "workspace:*"
   }
 }

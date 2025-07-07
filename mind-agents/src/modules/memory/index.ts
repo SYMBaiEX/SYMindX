@@ -1,57 +1,49 @@
 /**
- * Memory Management Module
+ * Memory Module for SYMindX
  * 
- * This module provides memory management capabilities including various providers
- * for SQLite, Supabase, Neon, PostgreSQL, and in-memory storage.
+ * This module provides memory providers for storing and retrieving agent memories.
  */
 
-export * from './base-memory-provider'
-export * from './providers/index'
+import { ModuleRegistry, MemoryProviderType } from '../../types/agent'
+import { runtimeLogger } from '../../utils/logger'
 
-// Import the real memory provider factories
-import { 
-  createMemoryProvider as createRealMemoryProvider,
-  createInMemoryProvider,
-  createDefaultInMemoryProvider,
-  SQLiteMemoryProvider,
-  createSupabaseMemoryProvider,
-  createNeonMemoryProvider,
-  createPostgresMemoryProvider,
-  createDefaultPostgresProvider
-} from './providers/index'
-import { MemoryProviderType } from '../../types/agent'
+// Re-export the memory provider factory and types
+export { createMemoryProvider, getMemoryProviderTypes } from './providers/index'
+export type { MemoryProviderConfig } from './providers/index'
 
-// Factory function using real implementations
-export function createMemoryProvider(type: string, config?: any) {
-  console.log(`🧠 Creating memory provider: ${type}`)
-  
+// Import provider classes for registration
+import { InMemoryProvider } from './providers/memory/index'
+import { SQLiteMemoryProvider } from './providers/sqlite/index'
+import { SupabaseMemoryProvider } from './providers/supabase/index'
+import { NeonMemoryProvider } from './providers/neon/index'
+import { PostgresMemoryProvider } from './providers/postgres/index'
+
+/**
+ * Register all memory providers with the registry
+ */
+export async function registerMemoryProviders(registry: ModuleRegistry): Promise<void> {
   try {
-    // Use the real factory from providers
-    return createRealMemoryProvider(type as MemoryProviderType, config)
+    // Register memory provider factories
+    registry.registerMemoryFactory('memory', (config: any) => new InMemoryProvider(config))
+    registry.registerMemoryFactory('sqlite', (config: any) => new SQLiteMemoryProvider(config))
+    registry.registerMemoryFactory('supabase', (config: any) => new SupabaseMemoryProvider(config))
+    registry.registerMemoryFactory('neon', (config: any) => new NeonMemoryProvider(config))
+    registry.registerMemoryFactory('postgres', (config: any) => new PostgresMemoryProvider(config))
+    
+    runtimeLogger.info('📝 Memory providers registered: memory, sqlite, supabase, neon, postgres')
+    
+    // Also register the main in-memory provider for backward compatibility
+    const defaultProvider = new InMemoryProvider({})
+    registry.registerMemoryProvider('memory', defaultProvider)
   } catch (error) {
-    console.warn(`⚠️ Failed to create memory provider ${type}, falling back to in-memory:`, error)
-    return createDefaultInMemoryProvider()
+    runtimeLogger.error('❌ Failed to register memory providers:', error)
+    throw error
   }
 }
 
-// Registration function with real providers
-export function registerMemoryProviders(registry: any) {
-  try {
-    // Register memory factories in the registry
-    registry.registerMemoryFactory('memory', (config: any) => createInMemoryProvider(config))
-    registry.registerMemoryFactory('sqlite', (config: any) => new SQLiteMemoryProvider(config))
-    registry.registerMemoryFactory('supabase_pgvector', (config: any) => createSupabaseMemoryProvider(config))
-    registry.registerMemoryFactory('neon', (config: any) => createNeonMemoryProvider(config))
-    registry.registerMemoryFactory('postgres', (config: any) => createPostgresMemoryProvider(config))
-    
-    // Also register some default instances for backward compatibility
-    registry.registerMemoryProvider('memory', createDefaultInMemoryProvider())
-    
-    // Memory providers registered - logged by runtime
-  } catch (error) {
-    console.error('❌ Error registering memory providers:', error)
-    // Fallback registration
-    registry.registerMemoryProvider('memory', createDefaultInMemoryProvider())
-    console.log('⚠️ Registered fallback in-memory provider only')
-  }
+/**
+ * Get available memory provider names
+ */
+export function getAvailableMemoryProviders(): string[] {
+  return ['memory', 'sqlite', 'supabase', 'neon', 'postgres']
 }

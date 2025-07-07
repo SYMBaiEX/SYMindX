@@ -14,8 +14,16 @@
       "type": "hybrid",
       "factory": "createHybridCognition",
       "autoRegister": true,
-      "paradigms": ["reactive", "planning", "multi-paradigm", "adaptive"],
+      "paradigms": [
+        "reactive",
+        "planning",
+        "multi-paradigm",
+        "adaptive"
+      ],
       "category": "advanced"
     }
+  },
+  "peerDependencies": {
+    "@symindx/types": "workspace:*"
   }
 }

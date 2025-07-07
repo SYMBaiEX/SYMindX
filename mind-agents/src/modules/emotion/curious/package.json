@@ -14,8 +14,19 @@
       "type": "curious",
       "factory": "createCuriousEmotion",
       "autoRegister": true,
-      "triggers": ["novelty", "mystery", "learning", "exploration", "question", "discovery", "wonder"],
+      "triggers": [
+        "novelty",
+        "mystery",
+        "learning",
+        "exploration",
+        "question",
+        "discovery",
+        "wonder"
+      ],
       "category": "cognitive"
     }
+  },
+  "peerDependencies": {
+    "@symindx/types": "workspace:*"
   }
 }

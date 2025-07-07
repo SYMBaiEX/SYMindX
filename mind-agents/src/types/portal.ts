@@ -365,5 +365,6 @@ export enum PortalCapability {
   VISION = 'vision',
   AUDIO = 'audio',
   TOOL_USAGE = 'tool_usage',
-  EVALUATION = 'evaluation'
+  EVALUATION = 'evaluation',
+  REASONING = 'reasoning'
 }

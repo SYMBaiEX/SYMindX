@@ -107,7 +107,7 @@ export class InMemoryProvider extends BaseMemoryProvider {
       }, this.config.cleanupInterval)
     }
 
-    console.log('✅ In-memory memory provider initialized')
+    // Silent initialization - logging handled by runtime
   }
 
   /**

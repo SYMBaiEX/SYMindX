@@ -5,12 +5,12 @@
  * instead of reading SQL files at runtime
  */
 
-import Database from 'better-sqlite3'
+import { Database } from 'bun:sqlite'
 
 /**
  * Migration 001: Initial chat system schema
  */
-export async function migration_001_initial_schema(db: Database.Database): Promise<void> {
+export async function migration_001_initial_schema(db: Database): Promise<void> {
   // Conversations table
   db.exec(`
     CREATE TABLE IF NOT EXISTS conversations (
@@ -195,7 +195,7 @@ export const MIGRATIONS = [
 /**
  * Check if the database is already properly initialized
  */
-export async function isDatabaseInitialized(db: Database.Database): Promise<boolean> {
+export async function isDatabaseInitialized(db: Database): Promise<boolean> {
   try {
     // Check if core tables exist
     const tableCheck = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='conversations'").get()
@@ -224,7 +224,7 @@ export async function isDatabaseInitialized(db: Database.Database): Promise<bool
 /**
  * Run all pending migrations
  */
-export async function runMigrations(db: Database.Database): Promise<void> {
+export async function runMigrations(db: Database): Promise<void> {
   // Check if database is already initialized
   const isInitialized = await isDatabaseInitialized(db)
   if (isInitialized) {

@@ -1,45 +1,33 @@
 {
-  "name": "@symindx/root",
+  "name": "symindx",
   "version": "0.1.0",
   "type": "module",
   "private": true,
-  "scripts": {
-    "build": "bun --cwd mind-agents run build && bun --cwd website run build",
-    "build:agent": "bun --cwd mind-agents run build",
-    "build:cli": "bun --cwd mind-agents run build",
-    "build:website": "bun --cwd website run build",
-    "start": "bun --cwd mind-agents run start",
-    "start:agent": "bun --cwd mind-agents run start",
-    "start:cli": "bun --cwd mind-agents run start:cli",
-    "start:website": "bun --cwd website run preview",
-    "start:all": "concurrently \"bun run start:agent\" \"bun run start:website\"",
-    "dev": "concurrently \"bun run dev:agent\" \"bun run dev:website\"",
-    "dev:agent": "bun --cwd mind-agents run dev",
-    "dev:cli": "bun --cwd mind-agents run cli",
-    "dev:website": "bun --cwd website run dev",
-    "test": "bun --cwd mind-agents test",
-    "cli": "bun --cwd mind-agents run cli",
-    "cli:dashboard": "bun --cwd mind-agents run cli:dashboard",
-    "cli:agents": "bun --cwd mind-agents run cli:agents",
-    "cli:status": "bun --cwd mind-agents run cli:status"
-  },
   "workspaces": [
     "mind-agents",
     "website",
-    "docs-site",
-    "mind-agents/src/portals/*",
-    "mind-agents/src/modules/emotion",
-    "mind-agents/src/modules/memory",
-    "mind-agents/src/modules/memory/providers/*",
-    "mind-agents/src/modules/cognition",
-    "mind-agents/src/extensions/*"
+    "docs-site"
   ],
-  "dependencies": {
-    "concurrently": "^9.1.0",
-    "dotenv": "^16.4.7",
-    "telegraf": "^4.16.3"
-  },
-  "devDependencies": {
-    "bun-types": "latest"
+  "scripts": {
+    "build": "bun build:all",
+    "build:all": "bun build:agent && bun build:website && bun build:docs",
+    "build:agent": "cd mind-agents && bun run build",
+    "build:cli": "cd mind-agents && bun run build:cli",
+    "build:website": "cd website && bun run build",
+    "build:docs": "cd docs-site && bun run build",
+    "start": "bun start:agent",
+    "start:agent": "cd mind-agents && bun run start",
+    "start:cli": "cd mind-agents && bun run start:cli",
+    "start:website": "cd website && bun run preview",
+    "start:docs": "cd docs-site && bun run serve",
+    "dev": "bun dev:agent",
+    "dev:agent": "cd mind-agents && bun run dev",
+    "dev:website": "cd website && bun run dev",
+    "dev:docs": "cd docs-site && bun run dev",
+    "test": "cd mind-agents && bun test",
+    "cli": "cd mind-agents && bun run cli",
+    "cli:dashboard": "cd mind-agents && bun run cli:dashboard",
+    "cli:agents": "cd mind-agents && bun run cli:agents",
+    "cli:status": "cd mind-agents && bun run cli:status"
   }
 }

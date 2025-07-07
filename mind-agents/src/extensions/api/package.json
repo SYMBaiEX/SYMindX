@@ -4,7 +4,12 @@
   "type": "module",
   "private": true,
   "main": "index.ts",
-  "dependencies": {},
+  "dependencies": {
+    "express": "^5.0.1",
+    "cors": "^2.8.5",
+    "express-rate-limit": "^7.5.0",
+    "ws": "^8.18.2"
+  },
   "symindx": {
     "type": "extension",
     "displayName": "API Server",
@@ -15,5 +20,8 @@
       "factory": "createAPIExtension",
       "autoRegister": true
     }
+  },
+  "peerDependencies": {
+    "@symindx/types": "workspace:*"
   }
 }

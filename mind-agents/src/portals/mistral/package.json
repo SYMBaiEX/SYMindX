@@ -4,5 +4,12 @@
   "type": "module",
   "private": true,
   "main": "index.ts",
-  "dependencies": {}
+  "dependencies": {
+    "@ai-sdk/mistral": "^1.2.8",
+    "ai": "^5.0.0-canary.24",
+    "zod": "^3.24.0"
+  },
+  "peerDependencies": {
+    "@symindx/types": "workspace:*"
+  }
 }

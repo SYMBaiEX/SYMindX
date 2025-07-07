@@ -4,5 +4,13 @@
   "type": "module",
   "private": true,
   "main": "index.ts",
-  "dependencies": {}
+  "dependencies": {
+    "@ai-sdk/groq": "^2.0.0-canary.20",
+    "groq-sdk": "^0.8.0",
+    "ai": "^5.0.0-canary.24",
+    "zod": "^3.24.0"
+  },
+  "peerDependencies": {
+    "@symindx/types": "workspace:*"
+  }
 }

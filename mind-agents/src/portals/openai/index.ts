@@ -392,6 +392,9 @@ export class OpenAIPortal extends BasePortal {
       case PortalCapability.STREAMING:
       case PortalCapability.FUNCTION_CALLING:
       case PortalCapability.VISION:
+      case PortalCapability.TOOL_USAGE:
+      case PortalCapability.EVALUATION:
+      case PortalCapability.REASONING:
         return true;
       case PortalCapability.AUDIO:
         return false;

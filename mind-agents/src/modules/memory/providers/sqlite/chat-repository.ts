@@ -4,7 +4,8 @@
  * Implements the ChatRepository interface using SQLite for persistent chat storage
  */
 
-import Database, { type Database as DatabaseType, type Statement } from 'better-sqlite3'
+import { Database } from 'bun:sqlite'
+import type { Database as DatabaseType, Statement } from 'bun:sqlite'
 import { dirname } from 'path'
 import { fileURLToPath } from 'url'
 import {
@@ -43,7 +44,7 @@ export class SQLiteChatRepository implements ChatRepository {
     this.db = new Database(config.dbPath)
     
     // Enable foreign keys
-    this.db.pragma('foreign_keys = ON')
+    this.db.exec('PRAGMA foreign_keys = ON')
     
     // Initialize database schema (async but constructor can't be async)
     this.initializeDatabase().catch(error => {
@@ -58,7 +59,7 @@ export class SQLiteChatRepository implements ChatRepository {
   private async initializeDatabase(): Promise<void> {
     try {
       // Enable WAL mode for better concurrency and performance
-      this.db.pragma('journal_mode = WAL')
+      this.db.exec('PRAGMA journal_mode = WAL')
       
       // Run migrations instead of reading SQL files
       await runMigrations(this.db)

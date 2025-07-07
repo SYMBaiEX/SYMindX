@@ -10,5 +10,8 @@
     "category": "memory",
     "displayName": "SQLite Memory Provider",
     "description": "Local SQLite database for agent memory storage"
+  },
+  "peerDependencies": {
+    "@symindx/types": "workspace:*"
   }
 }

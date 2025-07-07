@@ -4,11 +4,16 @@
   "type": "module",
   "private": true,
   "main": "index.ts",
-  "dependencies": {},
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.10"
+  },
   "symindx": {
     "type": "module",
     "category": "memory",
     "displayName": "Supabase Memory Provider",
     "description": "Supabase-powered memory storage with real-time capabilities"
+  },
+  "peerDependencies": {
+    "@symindx/types": "workspace:*"
   }
 }
