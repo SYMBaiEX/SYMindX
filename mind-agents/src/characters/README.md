@@ -173,7 +173,7 @@ characters/
       "priority": 2,
       "config": {
         "apiKey": "${OPENAI_API_KEY}",
-        "model": "gpt-4o-mini",
+        "model": "gpt-4.1-mini",
         "maxTokens": 4096,
         "temperature": 0.7
       }
@@ -244,7 +244,7 @@ characters/
       "priority": 1,
       "config": {
         "apiKey": "${OPENAI_API_KEY}",
-        "model": "gpt-4o-mini",
+        "model": "gpt-4.1-mini",
         "maxTokens": 2048,
         "temperature": 0.7
       }

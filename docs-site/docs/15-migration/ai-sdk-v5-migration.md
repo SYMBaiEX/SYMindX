@@ -179,7 +179,7 @@ Update your `runtime.json`:
     },
     "models": {
       "chat": "gpt-4o",
-      "tools": "gpt-4o-mini",
+      "tools": "gpt-4.1-mini",
       "embedding": "text-embedding-3-small"
     }
   }

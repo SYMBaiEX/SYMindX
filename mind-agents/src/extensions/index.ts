@@ -8,7 +8,6 @@ import { Extension } from '../types/agent'
 import { RuntimeConfig } from '../types/agent'
 import { ApiExtension } from './api/index'
 import { TelegramExtension, createTelegramExtension } from './telegram/index'
-import { MCPClientExtension } from './mcp-client/index'
 import { MCPServerExtension } from './mcp-server/index'
 
 export async function registerExtensions(config: RuntimeConfig): Promise<Extension[]> {
@@ -91,23 +90,7 @@ export async function registerExtensions(config: RuntimeConfig): Promise<Extensi
     }
   }
 
-  // Register MCP Client extension if configured
-  if ((config.extensions as any).mcpClient?.enabled) {
-    try {
-      const mcpClientConfig = {
-        servers: (config.extensions as any).mcpClient.servers || [],
-        autoConnect: (config.extensions as any).mcpClient.autoConnect !== false,
-        reconnectDelay: (config.extensions as any).mcpClient.reconnectDelay || 5000,
-        maxReconnectAttempts: (config.extensions as any).mcpClient.maxReconnectAttempts || 3,
-        ...(config.extensions as any).mcpClient
-      }
-      const mcpClientExtension = new MCPClientExtension(mcpClientConfig)
-      extensions.push(mcpClientExtension as any)
-      console.log('✅ MCP Client extension registered')
-    } catch (error) {
-      console.warn('⚠️ Failed to load MCP Client extension:', error)
-    }
-  }
+  // MCP Client extension removed - MCP tools now handled directly in portal integration
 
   // Register MCP Server extension if configured
   if ((config.extensions as any).mcpServer?.enabled) {

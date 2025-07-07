@@ -80,7 +80,7 @@ export const defaultVercelConfig: Partial<VercelAIConfig> = {
   retryDelay: 1000,
   enabledProviders: ['openai', 'anthropic', 'google'],
   defaultProvider: 'openai',
-  defaultModel: 'gpt-4o-mini'
+  defaultModel: 'gpt-4.1-mini'
 }
 
 export const supportedProviders = [
@@ -125,8 +125,8 @@ export class VercelAIPortal extends BasePortal {
     const defaultProvider = config.defaultProvider || 'openai'
     
     switch (type) {
-      case 'chat': return `${defaultProvider}:${config.defaultModel || 'gpt-4o-mini'}`
-      case 'tool': return `${defaultProvider}:gpt-4o-mini`
+      case 'chat': return `${defaultProvider}:${config.defaultModel || 'gpt-4.1-mini'}`
+      case 'tool': return `${defaultProvider}:gpt-4.1-mini`
       case 'embedding': 
         if (defaultProvider === 'openai') return 'openai:text-embedding-3-small'
         if (defaultProvider === 'cohere') return 'cohere:embed-english-v3.0'
@@ -135,7 +135,7 @@ export class VercelAIPortal extends BasePortal {
         if (defaultProvider === 'openai') return 'openai:dall-e-3'
         if (defaultProvider === 'replicate') return 'replicate:black-forest-labs/flux-schnell'
         return 'openai:dall-e-3'
-      default: return `${defaultProvider}:${config.defaultModel || 'gpt-4o-mini'}`
+      default: return `${defaultProvider}:${config.defaultModel || 'gpt-4.1-mini'}`
     }
   }
 
@@ -592,7 +592,7 @@ export class VercelAIPortal extends BasePortal {
     // This would typically come from the provider's model list
     // For now, returning common models for each provider
     const commonModels: Record<string, string[]> = {
-      openai: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'],
+      openai: ['gpt-4o', 'gpt-4.1-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'],
       anthropic: ['claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022', 'claude-3-opus-20240229'],
       google: ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-pro'],
       mistral: ['mistral-large-latest', 'mistral-medium-latest', 'mistral-small-latest'],

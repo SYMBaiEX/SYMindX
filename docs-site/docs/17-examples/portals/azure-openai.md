@@ -84,8 +84,8 @@ Configure Azure OpenAI with enterprise features:
           "capacity": 240
         },
         "tools": {
-          "name": "gpt-4o-mini-deployment", 
-          "model": "gpt-4o-mini",
+          "name": "gpt-4.1-mini-deployment", 
+          "model": "gpt-4.1-mini",
           "capacity": 450
         },
         "embeddings": {

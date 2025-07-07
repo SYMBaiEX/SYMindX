@@ -215,11 +215,18 @@ export interface MessageAttachment {
 }
 
 /**
+ * AI SDK v5 ToolSet - compatible with generateText/streamText
+ * Using ReturnType<typeof tool> for proper typing
+ */
+export type AISDKToolSet = Record<string, ReturnType<typeof import('ai').tool>>
+
+/**
  * Options for chat generation
  */
 export interface ChatGenerationOptions extends TextGenerationOptions {
   functions?: FunctionDefinition[]
   functionCall?: string | { name: string }
+  tools?: AISDKToolSet // Native AI SDK v5 tools from MCP
 }
 
 /**

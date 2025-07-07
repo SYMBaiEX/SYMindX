@@ -36,7 +36,7 @@ This guide demonstrates how to leverage the Vercel AI SDK's multi-provider capab
     "config": {
       "vercel-ai": {
         "defaultProvider": "openai",
-        "defaultModel": "gpt-4o-mini",
+        "defaultModel": "gpt-4.1-mini",
         "enabledProviders": ["openai", "anthropic", "google", "groq"],
         "temperature": 0.7,
         "max_tokens": 4096
@@ -61,7 +61,7 @@ Configure multiple AI providers with intelligent routing:
           "name": "openai",
           "type": "openai",
           "apiKey": "${OPENAI_API_KEY}",
-          "models": ["gpt-4o", "gpt-4o-mini", "gpt-3.5-turbo"]
+          "models": ["gpt-4o", "gpt-4.1-mini", "gpt-3.5-turbo"]
         },
         {
           "name": "anthropic", 
@@ -90,7 +90,7 @@ Configure multiple AI providers with intelligent routing:
       ],
       "enabledProviders": ["openai", "anthropic", "google", "groq", "mistral"],
       "defaultProvider": "openai",
-      "defaultModel": "gpt-4o-mini",
+      "defaultModel": "gpt-4.1-mini",
       "routingStrategy": "intelligent",
       "costOptimization": true,
       "enableFallbacks": true
@@ -119,7 +119,7 @@ Configure multiple AI providers with intelligent routing:
       ],
       "enabledProviders": ["openai", "anthropic"],
       "defaultProvider": "openai",
-      "defaultModel": "gpt-4o-mini",
+      "defaultModel": "gpt-4.1-mini",
       "routingStrategy": "intelligent",
       "tools": [
         {
@@ -240,7 +240,7 @@ const costOptimizedAgent = await runtime.spawnAgent('vercel-ai', {
     },
     fallbackChain: [
       'groq',            // Cheapest first
-      'openai:gpt-4o-mini',
+      'openai:gpt-4.1-mini',
       'anthropic:claude-3-5-haiku',
       'google:gemini-2.0-flash'
     ]
@@ -456,7 +456,7 @@ const contentPipeline = {
   optimize: async (content) => {
     return await agent.chat(`Optimize for SEO: ${content}`, {
       provider: 'openai',
-      model: 'gpt-4o-mini',
+      model: 'gpt-4.1-mini',
       tools: ['seoAnalysis', 'keywordSuggestion']
     });
   }
@@ -690,7 +690,7 @@ const contentService = {
         Requirements: ${platformRequirements[platform]}
       `, {
         provider: 'openai', // Good for social media content
-        model: 'gpt-4o-mini' // Cost-effective for short content
+        model: 'gpt-4.1-mini' // Cost-effective for short content
       });
     }
     

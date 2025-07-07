@@ -31,7 +31,7 @@ src/portals/
 
 ### OpenAI Portal
 - **Provider**: OpenAI
-- **Models**: GPT-4.1, GPT-4o, GPT-4o-mini, o3
+- **Models**: GPT-4.1, GPT-4o, gpt-4.1-mini, o3
 - **Features**: Text generation, chat completion, embeddings, streaming
 - **AI SDK v5**: `@ai-sdk/openai@^2.0.0-canary.11`
 
@@ -79,7 +79,7 @@ import { createPortal } from '../portals'
 // Create an OpenAI portal with AI SDK v5
 const openaiPortal = createPortal('openai', {
   apiKey: 'your-openai-api-key',
-  model: 'gpt-4o-mini',
+  model: 'gpt-4.1-mini',
   maxTokens: 1000,
   temperature: 0.7
 })
@@ -119,7 +119,7 @@ const agentConfig: AgentConfig = {
     extensions: ['slack', 'twitter'],
     portal: {
       apiKey: process.env.OPENAI_API_KEY,
-      model: 'gpt-4o-mini',
+      model: 'gpt-4.1-mini',
       maxTokens: 2000,
       temperature: 0.8
     }

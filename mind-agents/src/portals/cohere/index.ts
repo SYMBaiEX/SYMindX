@@ -15,8 +15,7 @@ import {
 } from '../../types/portal'
 import { Agent } from '../../types/agent'
 import { cohere } from '@ai-sdk/cohere'
-import { generateText as aiGenerateText, streamText as aiStreamText, embed as aiEmbed, tool, type ModelMessage } from 'ai'
-import { z } from 'zod'
+import { generateText as aiGenerateText, streamText as aiStreamText, embed as aiEmbed, type ModelMessage } from 'ai'
 
 export interface CohereConfig extends PortalConfig {
   apiKey: string
@@ -134,32 +133,6 @@ export class CoherePortal extends BasePortal {
     })
   }
 
-  /**
-   * Convert function definitions to AI SDK v5 tool format
-   */
-  private convertFunctionsToTools(functions: Array<{
-    name: string
-    description: string
-    parameters?: { properties?: Record<string, unknown> }
-  }>) {
-    const tools: Record<string, ReturnType<typeof tool>> = {}
-    
-    for (const fn of functions) {
-      // Create a simple schema that accepts any object for compatibility
-      const schema = z.object({})
-      
-      tools[fn.name] = tool({
-        description: fn.description,
-        parameters: schema,
-        execute: async (args: Record<string, unknown>) => {
-          // Tool execution would be handled by the caller
-          return args
-        }
-      })
-    }
-    
-    return tools
-  }
 
   async generateText(prompt: string, options?: TextGenerationOptions): Promise<TextGenerationResult> {
     try {
@@ -213,7 +186,7 @@ export class CoherePortal extends BasePortal {
         frequencyPenalty: options?.frequencyPenalty,
         presencePenalty: options?.presencePenalty,
         stopSequences: options?.stop,
-        tools: options?.functions ? this.convertFunctionsToTools(options.functions) : undefined
+        tools: options?.tools
       })
 
       const message: ChatMessage = {
@@ -316,7 +289,7 @@ export class CoherePortal extends BasePortal {
         frequencyPenalty: options?.frequencyPenalty,
         presencePenalty: options?.presencePenalty,
         stopSequences: options?.stop,
-        tools: options?.functions ? this.convertFunctionsToTools(options.functions) : undefined
+        tools: options?.tools
       })
 
       for await (const chunk of textStream) {

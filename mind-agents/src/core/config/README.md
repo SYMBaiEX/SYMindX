@@ -32,7 +32,7 @@ The runtime configuration file (`runtime.json`) controls the behavior of the SYM
 - `portals.default`: Default portal to use if not specified (e.g., "openai")
 - `portals.models`: Model configuration for different tasks:
   - `chat`: Model for general conversations (e.g., "gpt-4o")
-  - `tools`: Model for function calling (e.g., "gpt-4o-mini")
+  - `tools`: Model for function calling (e.g., "gpt-4.1-mini")
   - `embedding`: Model for embeddings (e.g., "text-embedding-3-small")
 
 ### API Keys
@@ -54,7 +54,7 @@ API keys for portals can be provided in three ways (in order of precedence):
        "default": "openai",
        "models": {
          "chat": "gpt-4o",
-         "tools": "gpt-4o-mini"
+         "tools": "gpt-4.1-mini"
        }
      }
    }
@@ -82,7 +82,7 @@ API keys for portals can be provided in three ways (in order of precedence):
        "portal": {
          "provider": "openai",
          "apiKey": "sk-...",
-         "model": "gpt-4o-mini",
+         "model": "gpt-4.1-mini",
          "streaming": true  // AI SDK v5 streaming
        }
      }

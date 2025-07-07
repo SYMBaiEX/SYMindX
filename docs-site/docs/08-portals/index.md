@@ -45,7 +45,7 @@ graph TD
 ## Core Portals
 
 ### OpenAI Portal
-**Latest Models**: GPT-4.1, GPT-4o, o3 reasoning models, GPT-4o-mini
+**Latest Models**: GPT-4.1, GPT-4o, o3 reasoning models, gpt-4.1-mini
 
 ```typescript
 // Configuration with dual-model architecture
@@ -54,7 +54,7 @@ graph TD
     "openai": {
       "apiKey": process.env.OPENAI_API_KEY,
       "chatModel": "gpt-4o",           // For conversations
-      "toolModel": "gpt-4o-mini",      // For fast function calls
+      "toolModel": "gpt-4.1-mini",      // For fast function calls
       "embeddingModel": "text-embedding-3-large",
       "imageModel": "dall-e-3",
       "temperature": 0.7,
@@ -258,7 +258,7 @@ const vercelPortal = createPortal('vercel-ai', {
   ],
   enabledProviders: ['openai', 'anthropic', 'google', 'mistral', 'groq'],
   defaultProvider: 'openai',
-  defaultModel: 'gpt-4o-mini',
+  defaultModel: 'gpt-4.1-mini',
   tools: [
     {
       name: 'web_search',

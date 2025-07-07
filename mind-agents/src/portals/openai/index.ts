@@ -6,12 +6,11 @@
  */
 
 import { openai } from '@ai-sdk/openai'
-import { generateText, streamText, embed, embedMany, generateObject, tool, type LanguageModel, type ModelMessage } from 'ai'
-import { z } from 'zod'
+import { generateText, streamText, embed, embedMany, generateObject, type LanguageModel, type ModelMessage } from 'ai'
 import { BasePortal } from '../base-portal'
 import { PortalConfig, TextGenerationOptions, TextGenerationResult, 
   ChatMessage, ChatGenerationOptions, ChatGenerationResult, EmbeddingOptions, EmbeddingResult,
-  ImageGenerationOptions, ImageGenerationResult, PortalCapability, MessageRole, FinishReason, PortalType, ModelType } from '../../types/portal'
+  ImageGenerationOptions, ImageGenerationResult, PortalCapability, MessageRole, FinishReason, PortalType, ModelType, AISDKToolSet } from '../../types/portal'
 
 export interface OpenAIConfig extends PortalConfig {
   model?: string
@@ -52,7 +51,7 @@ export class OpenAIPortal extends BasePortal {
    * Get language model instance
    */
   private getLanguageModel(modelId?: string): LanguageModel {
-    const model = modelId || (this.config as OpenAIConfig).model || 'gpt-4o-mini'
+    const model = modelId || (this.config as OpenAIConfig).model || 'gpt-4.1-mini'
     const config = this.config as OpenAIConfig
     return this.openaiProvider(model, {
       apiKey: config.apiKey || process.env.OPENAI_API_KEY,
@@ -127,7 +126,7 @@ export class OpenAIPortal extends BasePortal {
    */
   async generateText(prompt: string, options?: TextGenerationOptions): Promise<TextGenerationResult> {
     try {
-      const model = options?.model || (this.config as OpenAIConfig).model || 'gpt-4o-mini'
+      const model = options?.model || (this.config as OpenAIConfig).model || 'gpt-4.1-mini'
       
       const result = await generateText({
         model: this.getLanguageModel(model),
@@ -153,29 +152,6 @@ export class OpenAIPortal extends BasePortal {
     }
   }
 
-  /**
-   * Convert function definitions to AI SDK v5 tool format
-   */
-  private convertFunctionsToTools(functions: any[]) {
-    const tools: Record<string, any> = {}
-    
-    for (const fn of functions) {
-      // Create a simple schema that accepts any object for compatibility
-      const schema = z.object({})
-      
-      tools[fn.name] = tool({
-        description: fn.description,
-        parameters: schema,
-        execute: async (args: any) => {
-          // Since we're just converting the interface, we return the args
-          // The actual execution would be handled by the caller
-          return args
-        }
-      })
-    }
-    
-    return tools
-  }
 
   /**
    * Generate chat response using OpenAI's chat completion API
@@ -190,15 +166,25 @@ export class OpenAIPortal extends BasePortal {
         model = options.model
       } else if (options?.functions && options.functions.length > 0) {
         // Use tool model for function calling (faster, cheaper)
-        model = (this.config as OpenAIConfig).toolModel || 'gpt-4o-mini'
+        model = (this.config as OpenAIConfig).toolModel || 'gpt-4.1-mini'
       } else {
         // Use chat model for regular conversations
-        model = (this.config as OpenAIConfig).chatModel || (this.config as OpenAIConfig).model || 'gpt-4o-mini'
+        model = (this.config as OpenAIConfig).chatModel || (this.config as OpenAIConfig).model || 'gpt-4.1-mini'
       }
       
       const modelMessages = this.convertToModelMessages(messages)
       
-      const generateOptions: any = {
+      const generateOptions: {
+        model: LanguageModel
+        messages: ModelMessage[]
+        maxOutputTokens?: number
+        temperature?: number
+        topP?: number
+        frequencyPenalty?: number
+        presencePenalty?: number
+        tools?: AISDKToolSet
+        maxSteps?: number
+      } = {
         model: this.getLanguageModel(model),
         messages: modelMessages,
         maxOutputTokens: options?.maxOutputTokens || options?.maxTokens || this.config.maxTokens,
@@ -208,9 +194,11 @@ export class OpenAIPortal extends BasePortal {
         presencePenalty: options?.presencePenalty
       }
 
-      // Add tools if functions are provided
-      if (options?.functions && options.functions.length > 0) {
-        generateOptions.tools = this.convertFunctionsToTools(options.functions)
+      // Add tools if provided (native AI SDK v5 tools)
+      if (options?.tools) {
+        // Native AI SDK v5 MCP tools - pass directly
+        generateOptions.tools = options.tools
+        generateOptions.maxSteps = 5 // Enable multi-step tool execution
       }
 
       const result = await generateText(generateOptions)
@@ -237,13 +225,13 @@ export class OpenAIPortal extends BasePortal {
   /**
    * Generate embeddings using OpenAI's embedding API
    */
-  async generateEmbedding(text: string, options?: EmbeddingOptions): Promise<EmbeddingResult> {
+  async generateEmbedding(_text: string, _options?: EmbeddingOptions): Promise<EmbeddingResult> {
     try {
-      const model = options?.model || (this.config as OpenAIConfig).embeddingModel || 'text-embedding-3-large'
+      const model = _options?.model || (this.config as OpenAIConfig).embeddingModel || 'text-embedding-3-large'
       
       const { embedding, usage } = await embed({
         model: this.openaiProvider.embedding(model),
-        value: text
+        value: _text
       })
       
       return {
@@ -267,9 +255,9 @@ export class OpenAIPortal extends BasePortal {
   /**
    * Generate images using OpenAI's DALL-E API
    */
-  async generateImage(prompt: string, options?: ImageGenerationOptions): Promise<ImageGenerationResult> {
+  async generateImage(_prompt: string, _options?: ImageGenerationOptions): Promise<ImageGenerationResult> {
     try {
-      const model = options?.model || (this.config as OpenAIConfig).imageModel || 'dall-e-3'
+      const model = _options?.model || (this.config as OpenAIConfig).imageModel || 'dall-e-3'
       
       const response = await fetch('https://api.openai.com/v1/images/generations', {
         method: 'POST',
@@ -279,11 +267,11 @@ export class OpenAIPortal extends BasePortal {
         },
         body: JSON.stringify({
           model,
-          prompt,
-          size: options?.size || '1024x1024',
-          quality: options?.quality || 'standard',
-          response_format: options?.responseFormat || 'url',
-          n: options?.n || 1
+          prompt: _prompt,
+          size: _options?.size || '1024x1024',
+          quality: _options?.quality || 'standard',
+          response_format: _options?.responseFormat || 'url',
+          n: _options?.n || 1
         })
       })
 
@@ -315,7 +303,7 @@ export class OpenAIPortal extends BasePortal {
    */
   async *streamText(prompt: string, options?: TextGenerationOptions): AsyncGenerator<string> {
     try {
-      const model = options?.model || (this.config as OpenAIConfig).model || 'gpt-4o-mini'
+      const model = options?.model || (this.config as OpenAIConfig).model || 'gpt-4.1-mini'
       
       const { textStream } = await streamText({
         model: this.getLanguageModel(model),
@@ -347,9 +335,9 @@ export class OpenAIPortal extends BasePortal {
       if (options?.model) {
         model = options.model
       } else if (options?.functions && options.functions.length > 0) {
-        model = (this.config as OpenAIConfig).toolModel || 'gpt-4o-mini'
+        model = (this.config as OpenAIConfig).toolModel || 'gpt-4.1-mini'
       } else {
-        model = (this.config as OpenAIConfig).chatModel || (this.config as OpenAIConfig).model || 'gpt-4o-mini'
+        model = (this.config as OpenAIConfig).chatModel || (this.config as OpenAIConfig).model || 'gpt-4.1-mini'
       }
       
       const modelMessages = this.convertToModelMessages(messages)
@@ -364,9 +352,10 @@ export class OpenAIPortal extends BasePortal {
         presencePenalty: options?.presencePenalty
       }
 
-      // Add tools if functions are provided
-      if (options?.functions && options.functions.length > 0) {
-        streamOptions.tools = this.convertFunctionsToTools(options.functions)
+      // Add tools if provided
+      if (options?.tools) {
+        streamOptions.tools = options.tools
+        streamOptions.maxSteps = 5 // Enable multi-step tool execution for streaming
       }
 
       const { textStream } = await streamText(streamOptions)
@@ -434,8 +423,8 @@ export function createOpenAIPortal(config: OpenAIConfig): OpenAIPortal {
 
 // Export default configuration
 export const defaultOpenAIConfig: Partial<OpenAIConfig> = {
-  model: 'gpt-4o-mini',
-  chatModel: 'gpt-4o-mini',  // Default for regular chat
+  model: 'gpt-4.1-mini',
+  chatModel: 'gpt-4.1-mini',  // Default for regular chat
   toolModel: 'gpt-4.1-mini',   // Fast model for tools/functions (updated based on user edit)
   embeddingModel: 'text-embedding-3-large',
   imageModel: 'dall-e-3',
@@ -449,7 +438,7 @@ export const openAIModels = {
   // Latest GPT-4 Series
   'gpt-4.1': 'GPT-4.1 - Latest flagship model with enhanced capabilities',
   'gpt-4o': 'GPT-4o - Advanced multimodal model',
-  'gpt-4o-mini': 'GPT-4o Mini - Fast and cost-effective',
+  'gpt-4.1-mini': 'GPT-4o Mini - Fast and cost-effective',
   'gpt-4-turbo': 'GPT-4 Turbo - Enhanced performance',
   'gpt-4': 'GPT-4 - Original flagship model',
   

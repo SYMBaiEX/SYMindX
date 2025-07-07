@@ -63,7 +63,7 @@
       "enabled": true,
       "capabilities": ["chat_generation", "text_generation", "image_generation", "embedding_generation", "tool_usage"],
       "config": {
-        "model": "gpt-4o-mini",
+        "model": "gpt-4.1-mini",
         "imageModel": "dall-e-3",
         "embeddingModel": "text-embedding-3-small",
         "temperature": 0.9,

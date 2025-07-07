@@ -33,7 +33,7 @@ const models = {
     cost: { input: 0.005, output: 0.015 }, // per 1K tokens
     capabilities: ["chat", "functions", "vision", "streaming"]
   },
-  "gpt-4o-mini": {
+  "gpt-4.1-mini": {
     maxTokens: 16384,
     contextWindow: 128000,
     cost: { input: 0.00015, output: 0.0006 },

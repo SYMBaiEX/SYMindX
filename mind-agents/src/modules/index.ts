@@ -91,12 +91,7 @@ export async function registerExtensionFactories(registry: ModuleRegistry): Prom
     await discovery.autoRegisterExtensions(registry)
     
     // Manual registration as fallback for critical extensions
-    try {
-      const { createMCPClientExtension } = await import('../extensions/mcp-client/index')
-      registry.registerExtensionFactory('mcp-client', createMCPClientExtension)
-    } catch (error) {
-      console.warn('⚠️ MCP Client extension not available:', error)
-    }
+    // MCP Client extension removed - handled directly in portal integration
     
     try {
       const { createMCPServerExtension } = await import('../extensions/mcp-server/index')

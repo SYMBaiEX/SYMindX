@@ -410,10 +410,10 @@ export const ConfigDefaults = {
   GROQ_TOOL_MODEL: 'llama-3.1-70b-versatile',
   
   // OpenAI
-  OPENAI_CHAT_MODEL: 'gpt-4o-mini',
+  OPENAI_CHAT_MODEL: 'gpt-4.1-mini',
   OPENAI_EMBEDDING_MODEL: 'text-embedding-3-large',
   OPENAI_IMAGE_MODEL: 'dall-e-3',
-  OPENAI_TOOL_MODEL: 'gpt-4o-mini',
+  OPENAI_TOOL_MODEL: 'gpt-4.1-mini',
   
   // Anthropic
   ANTHROPIC_MODEL: 'claude-3-haiku-20240307', // Deprecated, use specific model settings

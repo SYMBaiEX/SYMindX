@@ -79,7 +79,7 @@ In your character JSON files, you can specify different portals for different ca
 ### Supported Models by Provider
 
 #### OpenAI
-- **Chat**: gpt-4o, gpt-4o-mini, gpt-4-turbo, gpt-3.5-turbo
+- **Chat**: gpt-4o, gpt-4.1-mini, gpt-4-turbo, gpt-3.5-turbo
 - **Embeddings**: text-embedding-3-large, text-embedding-3-small, text-embedding-ada-002
 - **Images**: dall-e-3, dall-e-2
 - **Tools**: Same as chat models
@@ -150,8 +150,8 @@ const result = await executeToolInteraction(portal, messages, {
 ### Best Practices
 
 1. **Configure Model Hierarchy**: Set up your models from fastest to most capable
-   - `toolModel`: Fast model for function calling (e.g., gpt-4o-mini)
-   - `chatModel`: Balanced model for conversations (e.g., gpt-4o-mini or gpt-4o)
+   - `toolModel`: Fast model for function calling (e.g., gpt-4.1-mini)
+   - `chatModel`: Balanced model for conversations (e.g., gpt-4.1-mini or gpt-4o)
    - `model`: Fallback general-purpose model
 
 2. **Use specialized models**: Different tasks benefit from different models

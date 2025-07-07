@@ -200,6 +200,14 @@
     ]
   },
   
+  "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"],
+      "description": "Context7 MCP Server - Provides access to up-to-date documentation for various libraries and frameworks"
+    }
+  },
+  
   "capabilities": {
     "reasoning": {
       "logical": true,
@@ -307,50 +315,6 @@
       }
     },
     {
-      "name": "mcp-client",
-      "enabled": true,
-      "config": {
-        "globalTimeout": 30000,
-        "maxRetries": 3,
-        "enableAutoReconnect": true,
-        "aiSDKIntegration": true,
-        "mcpServers": {
-          "context7": {
-            "command": "npx",
-            "args": ["-y", "@upstash/context7-mcp"],
-            "description": "Context7 MCP Server - Provides access to up-to-date documentation for various libraries and frameworks"
-          }
-        }
-      }
-    },
-    {
-      "name": "mcp-server",
-      "enabled": true,
-      "config": {
-        "port": 3002,
-        "enableStdio": false,
-        "enableSSE": true,
-        "capabilities": {
-          "resources": true,
-          "tools": true,
-          "prompts": true,
-          "logging": true
-        },
-        "resources": {
-          "agentState": true,
-          "memoryAccess": true,
-          "emotionState": true,
-          "cognitiveState": true
-        },
-        "tools": {
-          "agentControl": true,
-          "memoryManagement": true,
-          "emotionManipulation": true,
-          "systemDiagnostics": true
-        }
-      }
-    },
-    {
       "name": "communication",
       "enabled": true,
       "config": {
@@ -376,13 +340,13 @@
   
   "portals": [
     {
-      "name": "groq_chat",
-      "type": "groq",
+      "name": "openai_chat",
+      "type": "openai",
       "enabled": true,
       "primary": true,
       "capabilities": ["chat_generation", "text_generation", "tool_usage", "evaluation", "streaming"],
       "config": {
-        "model": "meta-llama/llama-4-scout-17b-16e-instruct",
+        "model": "gpt-4.1-mini",
         "maxTokens": 2000,
         "temperature": 0.4,
         "topP": 0.9,
@@ -414,8 +378,8 @@
       "primary": false,
       "capabilities": ["tool_usage", "function_calling", "reasoning"],
       "config": {
-        "model": "gpt-4o-mini",
-        "toolModel": "gpt-4o-mini",
+        "model": "gpt-4.1-mini",
+        "toolModel": "gpt-4.1-nano",
         "temperature": 0.2,
         "maxTokens": 2000,
         "topP": 1.0,

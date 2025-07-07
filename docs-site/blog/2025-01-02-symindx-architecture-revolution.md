@@ -238,7 +238,7 @@ SYMindX provides **seamless integration** with multiple AI providers:
 ```typescript
 portalCapabilities: {
   openai: {
-    models: ["gpt-4o", "gpt-4o-mini", "o3"],
+    models: ["gpt-4o", "gpt-4.1-mini", "o3"],
     capabilities: ["text", "vision", "tools", "embeddings"],
     strengths: ["reasoning", "code_generation", "analysis"]
   },

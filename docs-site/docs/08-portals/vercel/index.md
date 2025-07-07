@@ -18,7 +18,7 @@ The Vercel AI SDK Portal provides unified access to 20+ AI providers through the
 ## Supported Providers
 
 ### Core AI Providers
-- **OpenAI**: GPT-4o, GPT-4o-mini, GPT-3.5-turbo
+- **OpenAI**: GPT-4o, gpt-4.1-mini, GPT-3.5-turbo
 - **Anthropic**: Claude 3.5 Sonnet, Claude 3 Haiku
 - **Google**: Gemini 1.5 Pro, Gemini 1.5 Flash
 - **Mistral**: Mistral Large, Mistral Medium
@@ -66,7 +66,7 @@ const vercelPortal = createPortal('vercel-ai', {
   ],
   enabledProviders: ['openai', 'anthropic', 'google'],
   defaultProvider: 'openai',
-  defaultModel: 'gpt-4o-mini'
+  defaultModel: 'gpt-4.1-mini'
 });
 ```
 
@@ -82,7 +82,7 @@ const vercelPortal = createPortal('vercel-ai', {
       apiKey: process.env.OPENAI_API_KEY,
       models: [
         { id: 'gpt-4o', type: 'chat', capabilities: ['text', 'vision', 'tools'] },
-        { id: 'gpt-4o-mini', type: 'chat', capabilities: ['text', 'tools'] },
+        { id: 'gpt-4.1-mini', type: 'chat', capabilities: ['text', 'tools'] },
         { id: 'text-embedding-3-small', type: 'embedding' },
         { id: 'dall-e-3', type: 'image' }
       ]
@@ -491,7 +491,7 @@ const availableModels = vercelPortal.getAvailableModels();
 console.log('All available models:', availableModels);
 /*
 {
-  openai: ['gpt-4o', 'gpt-4o-mini', 'gpt-3.5-turbo'],
+  openai: ['gpt-4o', 'gpt-4.1-mini', 'gpt-3.5-turbo'],
   anthropic: ['claude-3-5-sonnet-20241022', 'claude-3-haiku-20240307'],
   groq: ['llama-3.1-8b-instant', 'mixtral-8x7b-32768'],
   google: ['gemini-1.5-pro', 'gemini-1.5-flash'],

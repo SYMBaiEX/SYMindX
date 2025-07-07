@@ -5,10 +5,12 @@
  */
 
 import { Agent } from '../types/agent'
-import { ChatMessage, MessageRole, Portal, PortalCapability, PortalType } from '../types/portal'
+import { ChatMessage, MessageRole, Portal, PortalCapability, PortalType, AISDKToolSet } from '../types/portal'
 import { runtimeLogger } from '../utils/logger'
 import { PortalRouter } from '../portals/index'
 import { MCPResponseFormatter } from './mcp-response-formatter'
+import { experimental_createMCPClient } from 'ai'
+import { Experimental_StdioMCPTransport } from 'ai/mcp-stdio'
 
 export interface PortalSelectionCriteria {
   capability: PortalCapability
@@ -55,6 +57,8 @@ export class PortalIntegration {
     }
 
     try {
+      // MCP tools will be created dynamically below
+      
       // Build conversation context
       const messages: ChatMessage[] = []
       
@@ -62,6 +66,10 @@ export class PortalIntegration {
       if (agent.config?.core) {
         let systemContent = `You are ${agent.name}${agent.config.lore?.origin ? `, ${agent.config.lore.origin}` : ''}. 
 Your personality traits: ${agent.config.core.personality?.join(', ') || 'helpful, friendly'}.`
+        
+        // Add tool usage instructions (tools will be added dynamically)
+        systemContent += `\n\nYou may have access to tools. When you need to use a tool, use the tool calling mechanism provided by the model, not JSON in your response text.
+Tools will be automatically executed and their results will be available for you to use in your response.`
 
         // Add communication style and guidelines from character config
         if (agent.characterConfig?.communication) {
@@ -124,22 +132,51 @@ Your personality traits: ${agent.config.core.personality?.join(', ') || 'helpful
 
       runtimeLogger.portal(`🤖 ${agent.name} is thinking using ${chatPortal.name}...`)
       
-      // Check if agent has MCP tools available
-      const hasMCPTools = agent.toolSystem && Object.keys(agent.toolSystem).length > 0
-      if (hasMCPTools) {
-        runtimeLogger.portal(`🔧 Including ${Object.keys(agent.toolSystem!).length} MCP tools in chat generation`)
-        // Log tool details for debugging
-        for (const [toolName, toolDef] of Object.entries(agent.toolSystem!)) {
-          runtimeLogger.debug(`Tool: ${toolName} - ${JSON.stringify(toolDef).substring(0, 100)}...`)
+      // Create MCP tools directly using AI SDK v5 approach
+      let mcpTools: AISDKToolSet | undefined = undefined
+      let mcpClient: { 
+        tools: () => Promise<AISDKToolSet>
+        close: () => Promise<void> 
+      } | undefined = undefined
+      
+      try {
+        // Check if agent has MCP server configuration
+        const mcpServers = (agent.characterConfig as any)?.mcpServers
+        if (mcpServers) {
+          // Create MCP client for Context7
+          if (mcpServers.context7) {
+            const transport = new Experimental_StdioMCPTransport({
+              command: 'npx',
+              args: ['-y', '@upstash/context7-mcp']
+            })
+            mcpClient = await experimental_createMCPClient({
+              transport
+            })
+            
+            const rawTools = await mcpClient.tools()
+            mcpTools = rawTools
+          }
         }
+      } catch (error) {
+        runtimeLogger.error(`Failed to create MCP tools: ${error}`)
+        mcpTools = undefined
       }
       
-      // Generate response using the portal
+      // Generate response using the portal with MCP tools (pass directly without conversion)
       const result = await chatPortal.generateChat(messages, {
         maxTokens: 2048,
         temperature: 0.4,
-        functions: hasMCPTools ? agent.toolSystem : undefined
+        tools: mcpTools  // Use 'tools' instead of 'functions' for AI SDK v5
       })
+      
+      // Clean up MCP client
+      if (mcpClient) {
+        try {
+          await mcpClient.close()
+        } catch (error) {
+          runtimeLogger.warn(`Failed to close MCP client: ${error}`)
+        }
+      }
 
       // Log conversation flow stages as per AI SDK v5 best practices
       MCPResponseFormatter.logConversationFlow('portal-response-received', {

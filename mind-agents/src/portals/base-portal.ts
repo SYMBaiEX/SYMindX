@@ -76,11 +76,11 @@ export abstract class BasePortal implements Portal {
    */
   protected getDefaultModel(type: 'chat' | 'tool' | 'embedding' | 'image'): string {
     switch (type) {
-      case 'chat': return 'gpt-4o-mini'
-      case 'tool': return 'gpt-4o-mini'
+      case 'chat': return 'gpt-4.1-mini'
+      case 'tool': return 'gpt-4.1-mini'
       case 'embedding': return 'text-embedding-3-small'
       case 'image': return 'dall-e-3'
-      default: return 'gpt-4o-mini'
+      default: return 'gpt-4.1-mini'
     }
   }
 

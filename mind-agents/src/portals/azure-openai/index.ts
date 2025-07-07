@@ -15,8 +15,7 @@ import {
 } from '../../types/portal'
 import { Agent } from '../../types/agent'
 import { createAzure } from '@ai-sdk/azure'
-import { generateText as aiGenerateText, streamText as aiStreamText, embed as aiEmbed, experimental_generateImage as aiGenerateImage, tool, type ModelMessage } from 'ai'
-import { z } from 'zod'
+import { generateText as aiGenerateText, streamText as aiStreamText, embed as aiEmbed, experimental_generateImage as aiGenerateImage, type ModelMessage } from 'ai'
 
 export interface AzureOpenAIConfig extends PortalConfig {
   apiKey: string
@@ -37,7 +36,7 @@ export const defaultAzureOpenAIConfig: Partial<AzureOpenAIConfig> = {
 
 export const azureOpenAIModels = [
   'gpt-4o',
-  'gpt-4o-mini',
+  'gpt-4.1-mini',
   'gpt-4',
   'gpt-4-32k',
   'gpt-4-vision-preview',
@@ -120,32 +119,6 @@ export class AzureOpenAIPortal extends BasePortal {
     }
   }
 
-  /**
-   * Convert function definitions to AI SDK v5 tool format
-   */
-  private convertFunctionsToTools(functions: Array<{
-    name: string
-    description: string
-    parameters?: { properties?: Record<string, unknown> }
-  }>) {
-    const tools: Record<string, ReturnType<typeof tool>> = {}
-    
-    for (const fn of functions) {
-      // Create a simple schema that accepts any object for compatibility
-      const schema = z.object({})
-      
-      tools[fn.name] = tool({
-        description: fn.description,
-        parameters: schema,
-        execute: async (args: Record<string, unknown>) => {
-          // Tool execution would be handled by the caller
-          return args
-        }
-      })
-    }
-    
-    return tools
-  }
 
   async healthCheck(): Promise<boolean> {
     try {
@@ -223,7 +196,7 @@ export class AzureOpenAIPortal extends BasePortal {
         frequencyPenalty: options?.frequencyPenalty,
         presencePenalty: options?.presencePenalty,
         stopSequences: options?.stop,
-        tools: options?.functions ? this.convertFunctionsToTools(options.functions) : undefined
+        tools: options?.tools
       })
 
       const message: ChatMessage = {
@@ -326,7 +299,7 @@ export class AzureOpenAIPortal extends BasePortal {
         frequencyPenalty: options?.frequencyPenalty,
         presencePenalty: options?.presencePenalty,
         stopSequences: options?.stop,
-        tools: options?.functions ? this.convertFunctionsToTools(options.functions) : undefined
+        tools: options?.tools
       })
 
       for await (const chunk of textStream) {

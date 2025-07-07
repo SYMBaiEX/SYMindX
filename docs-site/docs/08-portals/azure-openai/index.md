@@ -150,7 +150,7 @@ const gpt4oModels = {
     outputTokens: 4096,
     training: '2024-04'
   },
-  'gpt-4o-mini': {
+  'gpt-4.1-mini': {
     features: ['text', 'vision', 'function_calling', 'json_mode'],
     contextWindow: 128000,
     outputTokens: 16384,
@@ -730,7 +730,7 @@ const costManagedPortal = createPortal('azure-openai', {
       // Model selection based on cost
       modelSelection: {
         simple: 'gpt-35-turbo',
-        moderate: 'gpt-4o-mini',
+        moderate: 'gpt-4.1-mini',
         complex: 'gpt-4o'
       },
       

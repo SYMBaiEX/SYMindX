@@ -75,8 +75,6 @@ export class GroqPortal extends BasePortal {
         if (toolDef && typeof toolDef === 'object') {
           const def = toolDef as any
           
-          // Debug logging
-          console.log(`🔧 Converting tool ${toolName}: has execute: ${typeof def.execute === 'function'}`)
           
           tools[toolName] = tool({
             description: def.description || toolName,
@@ -154,13 +152,6 @@ export class GroqPortal extends BasePortal {
       
       const hasTools = options?.functions && Object.keys(options.functions).length > 0
       
-      // Debug: Log the tools being passed
-      if (hasTools) {
-        console.log(`🔍 Debug: Passing ${Object.keys(options.functions!).length} tools to Groq`)
-        for (const [toolName, toolDef] of Object.entries(options.functions!)) {
-          console.log(`  - ${toolName}: has execute function: ${typeof (toolDef as any).execute === 'function'}`)
-        }
-      }
       
       // Convert tools for AI SDK v5 compatibility
       const tools = hasTools ? this.convertFunctionsToTools(options.functions!) : undefined
@@ -186,43 +177,9 @@ export class GroqPortal extends BasePortal {
       
       const result = await generateText(generateOptions)
 
-      // Debug: Log the complete result structure
-      console.log(`🔍 AI SDK Result:`, {
-        hasText: !!result.text,
-        textLength: result.text?.length || 0,
-        finishReason: result.finishReason,
-        toolCallsCount: result.toolCalls?.length || 0,
-        toolResultsCount: result.toolResults?.length || 0,
-        stepsCount: result.steps?.length || 0,
-        usage: result.usage
-      })
-
-      // Log tool execution details for debugging
-      if (result.toolCalls && result.toolCalls.length > 0) {
-        console.log(`🔧 Model called ${result.toolCalls.length} tools:`)
-        result.toolCalls.forEach(tc => {
-          console.log(`  - ${tc.toolName}(${JSON.stringify(tc.args)})`)
-        })
-      }
-
-      if (result.toolResults && result.toolResults.length > 0) {
-        console.log(`✅ Tool execution results:`)
-        result.toolResults.forEach(tr => {
-          console.log(`  - ${tr.toolName}: ${JSON.stringify(tr.result).substring(0, 100)}...`)
-        })
-      }
-
-      // Log the steps if multi-step execution occurred
-      if (result.steps && result.steps.length > 1) {
-        console.log(`🔄 Multi-step execution completed with ${result.steps.length} steps`)
-        result.steps.forEach((step, index) => {
-          console.log(`  Step ${index + 1}: ${step.toolCalls?.length || 0} tool calls, finish reason: ${step.finishReason}`)
-        })
-      }
 
       // Handle the case where the model wants to use tools but hasn't generated final text yet
       if ((result.finishReason === 'tool-calls' || result.finishReason === 'length') && (!result.text || result.text === '')) {
-        console.warn(`⚠️ Model returned with ${result.finishReason} but no final text.`)
         
         // If we have tool results, combine them into a response
         if (result.toolResults && result.toolResults.length > 0) {

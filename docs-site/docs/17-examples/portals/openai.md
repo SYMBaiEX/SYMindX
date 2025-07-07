@@ -56,7 +56,7 @@ Use different models for different tasks to optimize performance and cost:
     "openai": {
       "apiKey": "${OPENAI_API_KEY}",
       "chatModel": "gpt-4o",
-      "toolModel": "gpt-4o-mini", 
+      "toolModel": "gpt-4.1-mini", 
       "embeddingModel": "text-embedding-3-large",
       "imageModel": "dall-e-3",
       "temperature": 0.7,
@@ -317,7 +317,7 @@ console.log('Best match:', bestMatch);
 ```typescript
 // Intelligent model routing
 const selectModel = (task) => {
-  if (task.type === 'simple_qa') return 'gpt-4o-mini';
+  if (task.type === 'simple_qa') return 'gpt-4.1-mini';
   if (task.type === 'creative_writing') return 'gpt-4o';
   if (task.type === 'complex_reasoning') return 'o3-mini';
   if (task.type === 'critical_reasoning') return 'o3';

@@ -23,9 +23,9 @@
     },
     "modelConfig": {
       "openai": {
-        "model": "gpt-4o-mini",
-        "chatModel": "gpt-4o-mini",
-        "toolModel": "gpt-4o-mini",
+        "model": "gpt-4.1-mini",
+        "chatModel": "gpt-4.1-mini",
+        "toolModel": "gpt-4.1-mini",
         "embeddingModel": "text-embedding-3-large",
         "imageModel": "dall-e-3"
       }

@@ -93,7 +93,7 @@ Create a new file at `mind-agents/src/characters/my-first-agent.json`:
     "extensions": ["api", "slack"],
     "portal": {
       "provider": "openai",
-      "model": "gpt-4o-mini",
+      "model": "gpt-4.1-mini",
       "apiKey": "${OPENAI_API_KEY}",  // From environment
       "temperature": 0.7,
       "streaming": true  // AI SDK v5 streaming

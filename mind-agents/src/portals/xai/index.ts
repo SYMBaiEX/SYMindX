@@ -10,8 +10,7 @@ import { PortalConfig, TextGenerationOptions, TextGenerationResult,
   ChatMessage, ChatGenerationOptions, ChatGenerationResult, EmbeddingOptions, EmbeddingResult,
   ImageGenerationOptions, ImageGenerationResult, PortalCapability, MessageRole, FinishReason, PortalType, ModelType } from '../../types/portal'
 import { xai } from '@ai-sdk/xai'
-import { generateText as aiGenerateText, streamText as aiStreamText, tool, type LanguageModel, type ModelMessage } from 'ai'
-import { z } from 'zod'
+import { generateText as aiGenerateText, streamText as aiStreamText, type LanguageModel, type ModelMessage } from 'ai'
 
 export interface XAIConfig extends PortalConfig {
   model?: string
@@ -71,29 +70,6 @@ export class XAIPortal extends BasePortal {
     })
   }
 
-  /**
-   * Convert function definitions to AI SDK v5 tool format
-   */
-  private convertFunctionsToTools(functions: any[]) {
-    const tools: Record<string, any> = {}
-    
-    for (const fn of functions) {
-      // Create a simple schema that accepts any object for compatibility
-      const schema = z.object({})
-      
-      tools[fn.name] = tool({
-        description: fn.description,
-        parameters: schema,
-        execute: async (args: any) => {
-          // Since we're just converting the interface, we return the args
-          // The actual execution would be handled by the caller
-          return args
-        }
-      })
-    }
-    
-    return tools
-  }
 
 
   /**
@@ -148,8 +124,9 @@ export class XAIPortal extends BasePortal {
       }
 
       // Add tools if provided
-      if (options?.functions && options.functions.length > 0) {
-        aiParams.tools = this.convertFunctionsToTools(options.functions)
+      if (options?.tools) {
+        aiParams.tools = options.tools
+        aiParams.maxSteps = 5 // Enable multi-step tool execution
       }
 
       const result = await aiGenerateText(aiParams)
@@ -235,8 +212,9 @@ export class XAIPortal extends BasePortal {
       }
 
       // Add tools if provided
-      if (options?.functions && options.functions.length > 0) {
-        aiParams.tools = this.convertFunctionsToTools(options.functions)
+      if (options?.tools) {
+        aiParams.tools = options.tools
+        aiParams.maxSteps = 5 // Enable multi-step tool execution
       }
 
       const result = await aiStreamText(aiParams)

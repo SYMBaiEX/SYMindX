@@ -116,7 +116,7 @@ Edit `mind-agents/src/core/config/runtime.json` with your API keys:
     "default": "openai",
     "models": {
       "chat": "gpt-4o",
-      "tools": "gpt-4o-mini"
+      "tools": "gpt-4.1-mini"
     }
   }
 }

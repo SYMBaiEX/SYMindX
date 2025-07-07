@@ -6,8 +6,7 @@
  */
 
 import { anthropic } from '@ai-sdk/anthropic'
-import { generateText, streamText, tool, type ModelMessage, type LanguageModel } from 'ai'
-import { z } from 'zod'
+import { generateText, streamText, type ModelMessage, type LanguageModel } from 'ai'
 import { BasePortal } from '../base-portal'
 import { PortalConfig, TextGenerationOptions, TextGenerationResult, 
   ChatMessage, ChatGenerationOptions, ChatGenerationResult, EmbeddingOptions, EmbeddingResult,
@@ -54,26 +53,6 @@ export class AnthropicPortal extends BasePortal {
     })
   }
 
-  /**
-   * Convert function definitions to AI SDK v5 tool format
-   */
-  private convertFunctionsToTools(functions: any[]) {
-    const tools: Record<string, any> = {}
-    
-    for (const fn of functions) {
-      tools[fn.name] = tool({
-        description: fn.description,
-        parameters: z.object(fn.parameters?.properties || {}),
-        execute: async (args: any) => {
-          // Since we're just converting the interface, we return the args
-          // The actual execution would be handled by the caller
-          return args
-        }
-      })
-    }
-    
-    return tools
-  }
 
   /**
    * Generate text using Anthropic's completion API
@@ -121,9 +100,10 @@ export class AnthropicPortal extends BasePortal {
         topP: options?.topP
       }
 
-      // Add tools if functions are provided
-      if (options?.functions && options.functions.length > 0) {
-        generateOptions.tools = this.convertFunctionsToTools(options.functions)
+      // Add tools if provided (native AI SDK v5 tools)
+      if (options?.tools) {
+        generateOptions.tools = options.tools
+        generateOptions.maxSteps = 5 // Enable multi-step tool execution
       }
 
       const result = await generateText(generateOptions)
@@ -208,9 +188,10 @@ export class AnthropicPortal extends BasePortal {
         topP: options?.topP
       }
 
-      // Add tools if functions are provided
-      if (options?.functions && options.functions.length > 0) {
-        streamOptions.tools = this.convertFunctionsToTools(options.functions)
+      // Add tools if provided (native AI SDK v5 tools)
+      if (options?.tools) {
+        streamOptions.tools = options.tools
+        streamOptions.maxSteps = 5 // Enable multi-step tool execution
       }
 
       const result = await streamText(streamOptions)
