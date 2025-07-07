@@ -156,6 +156,30 @@
     }
   },
   
+  "modules": {
+    "tools": {
+      "enabled": true,
+      "system": "dynamic",
+      "config": {
+        "autoDiscovery": true,
+        "validationEnabled": true,
+        "executionTimeout": 30000,
+        "maxConcurrentExecutions": 5,
+        "errorHandling": {
+          "retryAttempts": 3,
+          "retryDelay": 1000,
+          "fallbackEnabled": true
+        },
+        "logging": {
+          "enabled": true,
+          "level": "info",
+          "logExecutions": true,
+          "logErrors": true
+        }
+      }
+    }
+  },
+  
   "communication": {
     "style": "casual-conversational",
     "tone": "friendly and down-to-earth",
@@ -292,11 +316,8 @@
         "aiSDKIntegration": true,
         "mcpServers": {
           "context7": {
-            "command": "npx",
-            "args": ["-y", "@upstash/context7-mcp"],
-            "description": "Context7 MCP Server - Provides access to up-to-date documentation for various libraries and frameworks",
-            "timeout": 30000,
-            "retries": 3
+            "url": "https://mcp.context7.com/mcp",
+            "description": "Context7 MCP Server - Provides access to up-to-date documentation for various libraries and frameworks"
           }
         }
       }

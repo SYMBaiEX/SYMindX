@@ -287,9 +287,17 @@ export class ApiExtension implements Extension {
       
       // Get all agents from the agents map
       const agentsMap = this.getAgentsMap()
+      
+      // Debug: Log the Map contents
+      const mapContents = Array.from(agentsMap.entries()).map(([id, agent]) => ({ id, name: agent.name }))
+      console.log('DEBUG: agentsMap contents:', JSON.stringify(mapContents, null, 2))
+      console.log('DEBUG: agentsMap size:', agentsMap.size)
+      
       for (const [id, agent] of agentsMap) {
         // Filter out runtime agent - only show character agents
         if (id === 'runtime') continue
+        
+        console.log(`DEBUG: Processing agent ${id} (${agent.name})`)
         
         agents.push({
           id: agent.id,
@@ -302,6 +310,8 @@ export class ApiExtension implements Extension {
           ethicsEnabled: agent.characterConfig?.ethics?.enabled !== false
         })
       }
+      
+      console.log('DEBUG: Final agents array length:', agents.length)
       
       res.json({ agents })
     })
@@ -1971,16 +1981,24 @@ export class ApiExtension implements Extension {
     if (this.runtime) {
       // First add active agents
       if (this.runtime.agents && typeof this.runtime.agents !== 'undefined') {
+        console.log('DEBUG: Active agents:', Array.from(this.runtime.agents.keys()))
         for (const [id, agent] of this.runtime.agents) {
+          console.log(`DEBUG: Adding active agent ${id} (${agent.name})`)
           agentsMap.set(id, agent)
         }
       }
       
       // Then add lazy agents (only if not already in active agents)
       if (this.runtime.lazyAgents && typeof this.runtime.lazyAgents !== 'undefined') {
+        console.log('DEBUG: Lazy agents:', Array.from(this.runtime.lazyAgents.keys()))
         for (const [id, lazyAgent] of this.runtime.lazyAgents) {
           // Skip if agent is already active (prevent duplicates)
-          if (agentsMap.has(id)) continue
+          if (agentsMap.has(id)) {
+            console.log(`DEBUG: Skipping lazy agent ${id} - already in active agents`)
+            continue
+          }
+          
+          console.log(`DEBUG: Adding lazy agent ${id} (${lazyAgent.name})`)
           
           // Convert lazy agent to agent format for API
           const agentLike = {
@@ -2003,9 +2021,11 @@ export class ApiExtension implements Extension {
     
     // Add the API extension agent itself if present and not already added
     if (this.agent && !agentsMap.has(this.agent.id)) {
+      console.log(`DEBUG: Adding API extension agent ${this.agent.id}`)
       agentsMap.set(this.agent.id, this.agent)
     }
     
+    console.log('DEBUG: Final agentsMap keys:', Array.from(agentsMap.keys()))
     return agentsMap
   }
   

@@ -25,7 +25,7 @@ import { CharacterConfig } from '../types/character'
 import { configResolver } from '../utils/config-resolver'
 import { EmotionModule, EmotionModuleFactory } from '../types/emotion'
 import { CognitionModule, CognitionModuleFactory } from '../types/cognition'
-import { Portal, PortalConfig, PortalRegistry } from '../types/portal'
+import { Portal, PortalConfig, PortalRegistry, PortalCapability } from '../types/portal'
 import { ExtensionConfig } from '../types/common'
 import {
   ActionResultType,
@@ -383,7 +383,7 @@ export class SYMindXRuntime implements AgentRuntime {
             
             // Enabled agents should load immediately, not be lazy
             try {
-              const agent = await this.loadAgent(agentConfig, rawConfig.id)
+              const agent = await this.loadAgent(rawConfig, rawConfig.id)
               runtimeLogger.info(`🏭 🤖 Loaded enabled agent: ${agent.name}`)
             } catch (error) {
               runtimeLogger.error(`❌ Failed to load enabled agent ${rawConfig.id}:`, error)
@@ -512,13 +512,14 @@ export class SYMindXRuntime implements AgentRuntime {
         memory: characterConfig.memory?.config,
         emotion: characterConfig.emotion?.config,
         cognition: characterConfig.cognition?.config,
-        portal: characterConfig.portals?.[0]?.config
+        portal: characterConfig.portals?.[0]?.config,
+        tools: characterConfig.modules?.tools
       }
     }
   }
 
   async loadAgent(config: any, characterId?: string): Promise<Agent> {
-    const agentId = `agent_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    const agentId = characterId || `agent_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     
     // Store original character config for extension creation
     const characterConfig = config
@@ -648,7 +649,12 @@ export class SYMindXRuntime implements AgentRuntime {
         const extensionConfig = characterConfig.extensions?.find((ext: any) => ext.name === extName)
         if (extensionConfig) {
           console.log(`🔨 Attempting to create extension '${extName}' with config:`, extensionConfig.config)
-          extension = this.registry.createExtension(extName, extensionConfig.config)
+          // Pass the full extension config including enabled flag
+          const fullConfig = {
+            enabled: extensionConfig.enabled,
+            ...extensionConfig.config
+          }
+          extension = this.registry.createExtension(extName, fullConfig)
           if (extension) {
             // Note: Don't register character-specific extensions globally
             console.log(`✅ Created extension: ${extName}`)
@@ -689,46 +695,46 @@ export class SYMindXRuntime implements AgentRuntime {
         if (extension.id === 'api') {
           console.log(`🔗 API extension shared with agent: ${agent.name}`)
           // Register agent with the shared API extension's command system
-          if ((extension as any).commandSystem) {
-            (extension as any).commandSystem.registerAgent(agent)
+          const apiExtension = extension as Extension & { commandSystem?: { registerAgent(agent: Agent): void } }
+          if (apiExtension.commandSystem) {
+            apiExtension.commandSystem.registerAgent(agent)
             console.log(`📝 Registered agent ${agent.name} with command system`)
           }
           continue
         }
         
-        await extension.init(agent)
+        // Call appropriate initialization method based on extension type
+        if (extension.id === 'mcp-client') {
+          // MCP Client Extension has a different initialize method
+          const mcpExtension = extension as Extension & { initialize(agent: Agent): Promise<void> }
+          await mcpExtension.initialize(agent)
+        } else {
+          // Standard extensions use init method
+          const standardExtension = extension as Extension & { init(agent: Agent): Promise<void> }
+          await standardExtension.init(agent)
+        }
         console.log(`✅ Initialized extension: ${extension.name}`)
       } catch (error) {
         runtimeLogger.error(`❌ Failed to initialize extension ${extension.name}:`, error)
       }
     }
     
-    // Initialize tools system if configured
-    if (config.modules?.tools?.enabled) {
-      try {
-        const toolSystemName = config.modules.tools.system || 'dynamic'
-        const toolSystem = this.getToolSystem(toolSystemName)
-        if (toolSystem) {
-          // Add tools system to agent (extend Agent interface as needed)
-          agent.toolSystem = toolSystem
-          console.log(`🔧 Initialized tool system: ${toolSystemName}`)
-        } else {
-          console.warn(`⚠️ Tool system '${toolSystemName}' not found`)
-        }
-      } catch (error) {
-        runtimeLogger.error(`❌ Failed to initialize tool system:`, error)
-      }
-    }
+    // MCP tools are now automatically integrated by the MCP Client Extension
+    console.log(`🔧 MCP tools integration handled by MCP Client Extension`)
     
     // Add utility method to find portals by capability
-    (agent as any).findPortalByCapability = (capability: string) => {
+    const agentWithUtility = agent as Agent & { 
+      findPortalByCapability(capability: string): Portal | undefined 
+    }
+    agentWithUtility.findPortalByCapability = (capability: string) => {
       if (!agent.portals) return agent.portal
       return agent.portals.find(p => {
         if (typeof p.hasCapability === 'function') {
-          return p.hasCapability(capability as any)
+          return p.hasCapability(capability as PortalCapability)
         }
         // Fallback to checking config capabilities
-        return (p as any).capabilities?.includes(capability)
+        const portalWithCapabilities = p as Portal & { capabilities?: string[] }
+        return portalWithCapabilities.capabilities?.includes(capability)
       }) || agent.portal
     }
     
@@ -806,10 +812,8 @@ export class SYMindXRuntime implements AgentRuntime {
 
   private async initializeToolSystem(): Promise<void> {
     try {
-      // Simple tool system placeholder until full implementation
-      // TODO: Implement proper tool system when classes are available
-      
-      runtimeLogger.info('🛠️ Tool system: Ready (placeholder implementation)')
+      // Direct MCP tool integration - no separate tool system needed
+      runtimeLogger.info('🛠️ Tool system: Direct MCP integration ready')
     } catch (error) {
       runtimeLogger.error('❌ Failed to initialize tool system:', error)
       throw error
@@ -1956,8 +1960,10 @@ export class SYMindXRuntime implements AgentRuntime {
       lazyAgent.lastActivated = new Date()
       lazyAgent.agent = agent
       
-      // Store in active agents
-      this.agents.set(agentId, agent)
+      // Remove from lazy agents map since it's now active
+      this.lazyAgents.delete(agentId)
+      
+      // Note: No need to call this.agents.set() here as loadAgent already does it
       
       runtimeLogger.success(`✅ Activated agent: ${lazyAgent.name}`)
       return agent
@@ -1973,30 +1979,26 @@ export class SYMindXRuntime implements AgentRuntime {
    * Deactivate an agent and return it to lazy state
    */
   async deactivateAgent(agentId: string): Promise<void> {
-    const lazyAgent = this.lazyAgents.get(agentId)
     const agent = this.agents.get(agentId)
     
-    if (!lazyAgent || !agent) {
+    if (!agent) {
       return
     }
 
     try {
-      lazyAgent.state = LazyAgentState.DEACTIVATING
-      
       // Shutdown agent resources
       await this.shutdownAgent(agent)
       
       // Remove from active agents
       this.agents.delete(agentId)
       
-      // Update lazy agent state
-      lazyAgent.state = LazyAgentState.UNLOADED
-      lazyAgent.agent = undefined
+      // Create lazy agent entry for future activation
+      const lazyAgent = this.createLazyAgent(agent.config, agent.characterConfig, agentId)
+      this.lazyAgents.set(agentId, lazyAgent)
+      this.registry.registerLazyAgent(lazyAgent)
       
-      runtimeLogger.info(`💤 Deactivated agent: ${lazyAgent.name}`)
+      runtimeLogger.info(`💤 Deactivated agent: ${agent.name}`)
     } catch (error) {
-      lazyAgent.state = LazyAgentState.ERROR
-      lazyAgent.lazyMetrics.lastError = (error as Error).message
       runtimeLogger.error(`❌ Failed to deactivate agent ${agentId}:`, error)
     }
   }

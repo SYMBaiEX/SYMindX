@@ -3,6 +3,7 @@
  */
 
 import { EmotionModule } from './emotion'
+import { ToolSystem, ToolDefinition } from '../modules/tools/index'
 import { 
   BaseConfig, 
   ActionParameters, 
@@ -57,7 +58,7 @@ export interface Agent {
   extensions: Extension[]
   portal?: Portal // Primary portal (for backward compatibility)
   portals?: Portal[] // Multiple portals with different capabilities
-  toolSystem?: any // Dynamic tools system for Agent Zero-style capabilities
+  toolSystem?: Record<string, ToolDefinition> // Dynamic tools system for Agent Zero-style capabilities
   config: AgentConfig
   characterConfig?: any // Original character configuration (preserves communication settings)
   lastUpdate: Date
@@ -665,7 +666,8 @@ export interface ModuleRegistry {
   getCognitionModule(name: string): CognitionModule | undefined
   getExtension(name: string): Extension | undefined
   getPortal(name: string): Portal | undefined
-  getToolSystem(name: string): any
+  registerToolSystem(name: string, toolSystem: ToolSystem): void
+  getToolSystem(name: string): ToolSystem | undefined
   
   // Listing methods
   listMemoryProviders(): string[]

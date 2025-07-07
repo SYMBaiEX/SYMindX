@@ -9,9 +9,10 @@ import { createMemoryProvider } from './memory/index'
 import { createMemoryProviderByName } from './memory/providers/index'
 import { createEmotionModule } from './emotion/index'  
 import { createCognitionModule } from './cognition/index'
+import { createToolSystem } from './tools/factory'
 
 // Re-export core module factories
-export { createMemoryProvider, createMemoryProviderByName, createEmotionModule, createCognitionModule }
+export { createMemoryProvider, createMemoryProviderByName, createEmotionModule, createCognitionModule, createToolSystem }
 
 // Future modules - see /TODO.md for details
 // - Behavior system: Pre-programmed behavioral patterns
@@ -24,12 +25,13 @@ export interface ModuleFactories {
   memory: typeof createMemoryProvider
   emotion: typeof createEmotionModule
   cognition: typeof createCognitionModule
+  tools: typeof createToolSystem
 }
 
 /**
  * Create a module of the specified type
  */
-export function createModule(type: 'memory' | 'emotion' | 'cognition', moduleType: string, config: any) {
+export function createModule(type: 'memory' | 'emotion' | 'cognition' | 'tools', moduleType: string, config: any) {
   switch (type) {
     case 'memory':
       return createMemoryProviderByName(moduleType, config)
@@ -37,6 +39,8 @@ export function createModule(type: 'memory' | 'emotion' | 'cognition', moduleTyp
       return createEmotionModule(moduleType, config)
     case 'cognition':
       return createCognitionModule(moduleType, config)
+    case 'tools':
+      return createToolSystem(moduleType, config)
     default:
       throw new Error(`Unknown module type: ${type}`)
   }
@@ -58,6 +62,10 @@ export async function registerCoreModules(registry: ModuleRegistry): Promise<voi
     // Import and register cognition modules
     const { registerCognitionModules } = await import('./cognition/index')
     await registerCognitionModules(registry)
+    
+    // Import and register tool systems
+    const { registerToolSystemFactory } = await import('./tools/factory')
+    registerToolSystemFactory('dynamic', (config) => createToolSystem('dynamic', config))
     
     // Register extension factories
     await registerExtensionFactories(registry)

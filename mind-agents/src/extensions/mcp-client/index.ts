@@ -9,7 +9,7 @@
 import { ExtensionConfig, Extension, ExtensionMetadata, Agent } from '../../types/index'
 import { runtimeLogger } from '../../utils/logger'
 import { MCPClientManager } from './mcp-client-manager'
-import { MCPServerConfig, MCPTool, MCPResource, MCPPrompt } from './types'
+import { MCPServerConfig } from './types'
 
 export interface MCPClientExtensionConfig extends ExtensionConfig {
   enabled: boolean
@@ -94,10 +94,18 @@ export class MCPClientExtension implements Extension {
         try {
           // Ensure the server has a name
           const configWithName = { ...serverConfig, name: serverName }
-          await this.mcpManager.addServer(configWithName)
+          
+          // Add timeout wrapper for server connection
+          const connectionPromise = this.mcpManager.addServer(configWithName)
+          const timeoutPromise = new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error('Server connection timeout')), 30000)
+          })
+          
+          await Promise.race([connectionPromise, timeoutPromise])
           runtimeLogger.info(`✅ Connected to MCP server: ${serverName}`)
         } catch (error) {
           runtimeLogger.error(`❌ Failed to connect to MCP server ${serverName}:`, error)
+          // Continue with other servers even if one fails
         }
       }
 
@@ -139,51 +147,17 @@ export class MCPClientExtension implements Extension {
    * Remove an MCP server
    */
   async removeServer(serverName: string): Promise<void> {
-    await this.mcpManager.disconnectServer(serverName)
+    await this.mcpManager.removeServer(serverName)
     delete this.config.mcpServers[serverName]
   }
 
   /**
    * Get all available tools from connected MCP servers
    */
-  getAvailableTools(): Map<string, MCPTool> {
+  getAvailableTools(): Record<string, unknown> {
     return this.mcpManager.getAvailableTools()
   }
 
-  /**
-   * Get all available resources from connected MCP servers
-   */
-  getAvailableResources(): Map<string, MCPResource> {
-    return this.mcpManager.getAvailableResources()
-  }
-
-  /**
-   * Get all available prompts from connected MCP servers
-   */
-  getAvailablePrompts(): Map<string, MCPPrompt> {
-    return this.mcpManager.getAvailablePrompts()
-  }
-
-  /**
-   * Execute a tool from an MCP server
-   */
-  async executeTool(toolName: string, args: Record<string, any>): Promise<any> {
-    return await this.mcpManager.executeTool(toolName, args)
-  }
-
-  /**
-   * Read a resource from an MCP server
-   */
-  async readResource(resourceUri: string): Promise<any> {
-    return await this.mcpManager.readResource(resourceUri)
-  }
-
-  /**
-   * Get a prompt from an MCP server
-   */
-  async getPrompt(promptName: string, args?: Record<string, any>): Promise<string> {
-    return await this.mcpManager.getPrompt(promptName, args)
-  }
 
   /**
    * Get status of all connected servers
@@ -192,26 +166,18 @@ export class MCPClientExtension implements Extension {
     name: string
     connected: boolean
     toolCount: number
-    resourceCount: number
-    promptCount: number
   }> {
     const connectedServers = this.mcpManager.getConnectedServers()
     const tools = this.mcpManager.getAvailableTools()
-    const resources = this.mcpManager.getAvailableResources()
-    const prompts = this.mcpManager.getAvailablePrompts()
 
     return Object.entries(this.config.mcpServers).map(([serverName, server]) => {
       const connected = connectedServers.includes(serverName)
-      const toolCount = Array.from(tools.keys()).filter(key => key.startsWith(`${serverName}:`)).length
-      const resourceCount = Array.from(resources.keys()).filter(key => key.startsWith(`${serverName}:`)).length
-      const promptCount = Array.from(prompts.keys()).filter(key => key.startsWith(`${serverName}:`)).length
+      const toolCount = Object.keys(tools).filter(key => key.startsWith(`${serverName}:`)).length
 
       return {
         name: serverName,
         connected,
-        toolCount,
-        resourceCount,
-        promptCount
+        toolCount
       }
     })
   }
@@ -219,22 +185,14 @@ export class MCPClientExtension implements Extension {
   /**
    * Integrate MCP tools with AI SDK for automatic tool calling
    */
-  private async integrateWithAISDK(): Promise<void> {
-    if (!this.agent) return
-
+  async integrateWithAISDK(): Promise<Record<string, unknown>> {
     try {
       const aiSDKTools = this.mcpManager.getAISDKTools()
-      
-      // Add MCP tools to the agent's toolSystem if available
-      if (this.agent.toolSystem) {
-        Object.assign(this.agent.toolSystem, aiSDKTools)
-      } else {
-        this.agent.toolSystem = aiSDKTools
-      }
-
       runtimeLogger.info(`🔧 Integrated ${Object.keys(aiSDKTools).length} MCP tools with AI SDK`)
+      return aiSDKTools
     } catch (error) {
       runtimeLogger.error('❌ Failed to integrate MCP tools with AI SDK:', error)
+      return {}
     }
   }
 

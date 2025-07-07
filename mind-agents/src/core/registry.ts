@@ -29,7 +29,7 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
   private cognitionModules = new Map<string, any>()
   private extensions = new Map<string, any>()
   private portals = new Map<string, Portal>()
-  private toolSystems = new Map<string, any>()
+  private toolSystems = new Map<string, import('../modules/tools/index').ToolSystem>()
   private observabilityModules = new Map<string, any>()
   private streamingInterfaces = new Map<string, any>()
 
@@ -94,12 +94,12 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
   }
 
   // Tool system methods
-  registerToolSystem(name: string, toolSystem: any): void {
+  registerToolSystem(name: string, toolSystem: import('../modules/tools/index').ToolSystem): void {
     this.toolSystems.set(name, toolSystem)
     runtimeLogger.factory(`🔧 Registered tool system: ${name}`)
   }
 
-  getToolSystem(name: string): any {
+  getToolSystem(name: string): import('../modules/tools/index').ToolSystem | undefined {
     return this.toolSystems.get(name)
   }
 
