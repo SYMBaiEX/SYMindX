@@ -8,6 +8,7 @@ import { Agent } from '../types/agent'
 import { ChatMessage, MessageRole, Portal, PortalCapability, PortalType } from '../types/portal'
 import { runtimeLogger } from '../utils/logger'
 import { PortalRouter } from '../portals/index'
+import { MCPResponseFormatter } from './mcp-response-formatter'
 
 export interface PortalSelectionCriteria {
   capability: PortalCapability
@@ -140,7 +141,54 @@ Your personality traits: ${agent.config.core.personality?.join(', ') || 'helpful
         functions: hasMCPTools ? agent.toolSystem : undefined
       })
 
-      // Handle different result formats from different portals
+      // Log conversation flow stages as per AI SDK v5 best practices
+      MCPResponseFormatter.logConversationFlow('portal-response-received', {
+        hasText: !!result.text,
+        hasToolResults: !!(result as any).toolResults?.length,
+        model: (result as any).metadata?.model || chatPortal.name
+      })
+
+      // Handle tool results if present (AI SDK v5 pattern)
+      if ((result as any).toolResults && (result as any).toolResults.length > 0) {
+        const toolResults = (result as any).toolResults
+        
+        // Format tool results naturally
+        const formattedToolResults = MCPResponseFormatter.formatToolResults(
+          toolResults.map((tr: any) => ({
+            toolName: tr.toolName,
+            args: tr.args,
+            result: tr.result,
+            error: tr.error,
+            timestamp: new Date()
+          })),
+          {
+            userQuery: prompt,
+            agentPersonality: agent.name,
+            responseStyle: 'conversational',
+            previousMessages: messages
+          }
+        )
+
+        // Log tool execution completion
+        MCPResponseFormatter.logConversationFlow('tool-results-integrated', {
+          toolCount: toolResults.length,
+          formattedLength: formattedToolResults.length
+        })
+
+        // Combine AI response with formatted tool results
+        const aiText = result.text || result.message?.content || ''
+        
+        // AI SDK v5 pattern: Let the model's response lead, augmented by tool results
+        if (aiText) {
+          // Model already incorporated tool results in its response
+          return aiText
+        } else {
+          // Model didn't provide text, use formatted tool results
+          return formattedToolResults
+        }
+      }
+
+      // Handle regular responses (no tool results)
       if (result.text) {
         return result.text
       } else if (result.message?.content) {
@@ -464,6 +512,116 @@ What are your current thoughts? Respond with 2-3 brief thoughts.`
     )
     
     return decision
+  }
+
+  /**
+   * Generate a streaming response with MCP tool support (AI SDK v5 pattern)
+   * @param agent The agent with portal and MCP tools
+   * @param prompt The prompt to respond to
+   * @param context Additional context
+   * @param onChunk Callback for streaming chunks
+   * @returns Async iterator of response chunks
+   */
+  static async *generateStreamingResponse(
+    agent: Agent,
+    prompt: string,
+    context?: Record<string, any>,
+    onChunk?: (chunk: string) => void
+  ): AsyncGenerator<string, void, unknown> {
+    const chatPortal = (agent as any).findPortalByCapability?.('chat_generation') || agent.portal
+    
+    if (!chatPortal || !(chatPortal as any).generateChatStream) {
+      // Fallback to non-streaming
+      const response = await this.generateResponse(agent, prompt, context)
+      yield response
+      return
+    }
+
+    try {
+      const messages: ChatMessage[] = []
+      
+      // Build messages array (same as generateResponse)
+      if (agent.config?.core) {
+        let systemContent = `You are ${agent.name}. `
+        if (agent.characterConfig?.communication) {
+          const comm = agent.characterConfig.communication
+          if (comm.style) systemContent += `Communication style: ${comm.style}. `
+          if (comm.tone) systemContent += `Tone: ${comm.tone}. `
+        }
+        
+        messages.push({
+          role: MessageRole.SYSTEM,
+          content: systemContent
+        })
+      }
+      
+      messages.push({
+        role: MessageRole.USER,
+        content: prompt
+      })
+
+      // Check for MCP tools
+      const hasMCPTools = agent.toolSystem && Object.keys(agent.toolSystem).length > 0
+      
+      // Stream the response
+      const stream = await (chatPortal as any).generateChatStream(messages, {
+        maxTokens: 2048,
+        temperature: 0.4,
+        functions: hasMCPTools ? agent.toolSystem : undefined
+      })
+
+      let buffer = ''
+      const toolResults: any[] = []
+
+      // Process the stream following AI SDK v5 patterns
+      for await (const chunk of stream) {
+        // Handle different chunk types
+        if (chunk.type === 'text-delta') {
+          buffer += chunk.text
+          if (onChunk) onChunk(chunk.text)
+          yield chunk.text
+        } else if (chunk.type === 'tool-call') {
+          // Log tool call initiation
+          MCPResponseFormatter.logConversationFlow('tool-call-initiated', {
+            toolName: chunk.toolName,
+            args: chunk.args
+          })
+        } else if (chunk.type === 'tool-result') {
+          // Collect tool results
+          toolResults.push({
+            toolName: chunk.toolName,
+            args: chunk.args,
+            result: chunk.result,
+            error: chunk.error,
+            timestamp: new Date()
+          })
+        }
+      }
+
+      // If we have tool results, format and yield them
+      if (toolResults.length > 0) {
+        const formattedResults = MCPResponseFormatter.formatToolResults(
+          toolResults,
+          {
+            userQuery: prompt,
+            agentPersonality: agent.name,
+            responseStyle: 'conversational'
+          }
+        )
+        
+        // Only yield tool results if no text was generated
+        if (!buffer.trim()) {
+          if (onChunk) onChunk(formattedResults)
+          yield formattedResults
+        }
+      }
+
+    } catch (error) {
+      console.error('❌ Error in streaming generation:', error)
+      const fallback = this.getFallbackResponse(prompt)
+      if (onChunk) onChunk(fallback)
+      yield fallback
+    }
   }
 
   /**

@@ -38,8 +38,8 @@ export class GroqPortal extends BasePortal {
    */
   protected getDefaultModel(type: 'chat' | 'tool' | 'embedding' | 'image'): string {
     switch (type) {
-      case 'chat': return 'meta-llama/llama-4-scout-17b-16e-instruct'
-      case 'tool': return 'llama-3.1-8b-instant'
+      case 'chat': return 'llama-3-groq-70b-8192-tool-use-preview'  // Use tool-enabled model
+      case 'tool': return 'llama-3-groq-8b-8192-tool-use-preview'   // Use tool-enabled model
       case 'embedding': throw new Error('Groq does not support embeddings')
       case 'image': throw new Error('Groq does not support image generation')
       default: return 'meta-llama/llama-4-scout-17b-16e-instruct'
@@ -49,16 +49,12 @@ export class GroqPortal extends BasePortal {
   /**
    * Convert function definitions to AI SDK v5 tool format
    */
-  private convertFunctionsToTools(functions: Array<{
-    name: string
-    description: string
-    parameters?: { properties?: Record<string, unknown> }
-  }> | Record<string, any>) {
+  private convertFunctionsToTools(functions: any) {
     const tools: Record<string, ReturnType<typeof tool>> = {}
     
     // Handle both array format and MCP tools object format
     if (Array.isArray(functions)) {
-      // Original array format
+      // Original array format - these are FunctionDefinition objects
       for (const fn of functions) {
         // Create a simple schema that accepts any object for compatibility
         const schema = z.object({})
@@ -73,14 +69,20 @@ export class GroqPortal extends BasePortal {
         })
       }
     } else {
-      // MCP tools object format
+      // MCP tools object format - these have execute functions
       for (const [toolName, toolDef] of Object.entries(functions)) {
-        // MCP tools already have the AI SDK format with description, parameters, and execute
-        if (toolDef && typeof toolDef === 'object' && 'description' in toolDef) {
+        // Type guard to ensure toolDef is an object
+        if (toolDef && typeof toolDef === 'object') {
+          const def = toolDef as any
+          
+          // Debug logging
+          console.log(`🔧 Converting tool ${toolName}: has execute: ${typeof def.execute === 'function'}`)
+          
           tools[toolName] = tool({
-            description: toolDef.description || toolName,
-            parameters: toolDef.parameters || z.object({}),
-            execute: toolDef.execute || (async (_args: Record<string, unknown>) => {
+            description: def.description || toolName,
+            parameters: def.parameters || z.object({}),
+            execute: def.execute || (async (_args: Record<string, unknown>) => {
+              console.warn(`⚠️ Tool ${toolName} has no execute function`)
               return { error: 'Tool execution not implemented' }
             })
           })
@@ -152,7 +154,18 @@ export class GroqPortal extends BasePortal {
       
       const hasTools = options?.functions && Object.keys(options.functions).length > 0
       
-      const result = await generateText({
+      // Debug: Log the tools being passed
+      if (hasTools) {
+        console.log(`🔍 Debug: Passing ${Object.keys(options.functions!).length} tools to Groq`)
+        for (const [toolName, toolDef] of Object.entries(options.functions!)) {
+          console.log(`  - ${toolName}: has execute function: ${typeof (toolDef as any).execute === 'function'}`)
+        }
+      }
+      
+      // Convert tools for AI SDK v5 compatibility
+      const tools = hasTools ? this.convertFunctionsToTools(options.functions!) : undefined
+      
+      const generateOptions: any = {
         model: this.groqProvider(model, {
           apiKey: (this.config as GroqConfig).apiKey || process.env.GROQ_API_KEY,
           baseURL: (this.config as GroqConfig).baseURL
@@ -163,7 +176,25 @@ export class GroqPortal extends BasePortal {
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
         presencePenalty: options?.presencePenalty,
-        tools: hasTools ? this.convertFunctionsToTools(options.functions!) : undefined
+        tools
+      }
+      
+      // Add maxSteps only if tools are present
+      if (hasTools) {
+        generateOptions.maxSteps = 5
+      }
+      
+      const result = await generateText(generateOptions)
+
+      // Debug: Log the complete result structure
+      console.log(`🔍 AI SDK Result:`, {
+        hasText: !!result.text,
+        textLength: result.text?.length || 0,
+        finishReason: result.finishReason,
+        toolCallsCount: result.toolCalls?.length || 0,
+        toolResultsCount: result.toolResults?.length || 0,
+        stepsCount: result.steps?.length || 0,
+        usage: result.usage
       })
 
       // Log tool execution details for debugging
@@ -181,9 +212,17 @@ export class GroqPortal extends BasePortal {
         })
       }
 
-      // Check if there are tool calls that weren't executed
-      if (result.finishReason === 'tool-calls' && (!result.text || result.text === '')) {
-        console.warn(`⚠️ Model returned with tool-calls but no final text. This may indicate the tools need manual execution.`)
+      // Log the steps if multi-step execution occurred
+      if (result.steps && result.steps.length > 1) {
+        console.log(`🔄 Multi-step execution completed with ${result.steps.length} steps`)
+        result.steps.forEach((step, index) => {
+          console.log(`  Step ${index + 1}: ${step.toolCalls?.length || 0} tool calls, finish reason: ${step.finishReason}`)
+        })
+      }
+
+      // Handle the case where the model wants to use tools but hasn't generated final text yet
+      if ((result.finishReason === 'tool-calls' || result.finishReason === 'length') && (!result.text || result.text === '')) {
+        console.warn(`⚠️ Model returned with ${result.finishReason} but no final text.`)
         
         // If we have tool results, combine them into a response
         if (result.toolResults && result.toolResults.length > 0) {
@@ -475,8 +514,8 @@ export function createGroqPortal(config: GroqConfig): GroqPortal {
 
 // Export default configuration
 export const defaultGroqConfig: Partial<GroqConfig> = {
-  model: 'meta-llama/llama-4-scout-17b-16e-instruct',
-  toolModel: 'llama-3.1-8b-instant',
+  model: 'llama-3-groq-70b-8192-tool-use-preview',  // Use tool-enabled model by default
+  toolModel: 'llama-3-groq-8b-8192-tool-use-preview',
   maxTokens: 1000, // Keep as config property, map to maxOutputTokens in calls
   temperature: 0.7,
   timeout: 30000

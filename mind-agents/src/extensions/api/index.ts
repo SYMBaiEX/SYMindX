@@ -378,8 +378,14 @@ export class ApiExtension implements Extension {
       })
     })
 
-    // Chat endpoint
+    // Redirect old chat endpoint to new API
     this.app.post('/chat', async (req, res) => {
+      res.redirect(307, '/api/chat')
+    })
+
+    // New API chat endpoints
+    // General chat endpoint
+    this.app.post('/api/chat', async (req, res) => {
       try {
         const chatRequest: ChatRequest = req.body
         if (!chatRequest.message) {
@@ -388,6 +394,35 @@ export class ApiExtension implements Extension {
         }
 
         // Process chat message through agent
+        const response = await this.processChatMessage(chatRequest)
+        res.json(response)
+      } catch (error) {
+        res.status(500).json({ error: 'Internal server error' })
+      }
+    })
+
+    // Agent-specific chat endpoint
+    this.app.post('/api/chat/:agentId', async (req, res) => {
+      try {
+        const { agentId } = req.params
+        const chatRequest: ChatRequest = {
+          ...req.body,
+          agentId // Override any agentId in body with URL param
+        }
+        
+        if (!chatRequest.message) {
+          res.status(400).json({ error: 'Message is required' })
+          return
+        }
+
+        // Validate agent exists
+        const agentsMap = this.getAgentsMap()
+        if (!agentsMap.has(agentId) && !this.runtime?.lazyAgents?.has(agentId)) {
+          res.status(404).json({ error: `Agent '${agentId}' not found` })
+          return
+        }
+
+        // Process chat message through specific agent
         const response = await this.processChatMessage(chatRequest)
         res.json(response)
       } catch (error) {
