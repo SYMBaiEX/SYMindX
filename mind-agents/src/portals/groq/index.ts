@@ -150,6 +150,8 @@ export class GroqPortal extends BasePortal {
         return { role: 'user' as const, content: msg.content }
       })
       
+      const hasTools = options?.functions && Object.keys(options.functions).length > 0
+      
       const result = await generateText({
         model: this.groqProvider(model, {
           apiKey: (this.config as GroqConfig).apiKey || process.env.GROQ_API_KEY,
@@ -161,15 +163,55 @@ export class GroqPortal extends BasePortal {
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
         presencePenalty: options?.presencePenalty,
-        tools: options?.functions ? this.convertFunctionsToTools(options.functions) : undefined
+        tools: hasTools ? this.convertFunctionsToTools(options.functions!) : undefined
       })
+
+      // Log tool execution details for debugging
+      if (result.toolCalls && result.toolCalls.length > 0) {
+        console.log(`🔧 Model called ${result.toolCalls.length} tools:`)
+        result.toolCalls.forEach(tc => {
+          console.log(`  - ${tc.toolName}(${JSON.stringify(tc.args)})`)
+        })
+      }
+
+      if (result.toolResults && result.toolResults.length > 0) {
+        console.log(`✅ Tool execution results:`)
+        result.toolResults.forEach(tr => {
+          console.log(`  - ${tr.toolName}: ${JSON.stringify(tr.result).substring(0, 100)}...`)
+        })
+      }
+
+      // Check if there are tool calls that weren't executed
+      if (result.finishReason === 'tool-calls' && (!result.text || result.text === '')) {
+        console.warn(`⚠️ Model returned with tool-calls but no final text. This may indicate the tools need manual execution.`)
+        
+        // If we have tool results, combine them into a response
+        if (result.toolResults && result.toolResults.length > 0) {
+          const toolResultsText = result.toolResults
+            .map(tr => `Tool ${tr.toolName} returned: ${JSON.stringify(tr.result)}`)
+            .join('\n')
+          return {
+            message: {
+              role: MessageRole.ASSISTANT,
+              content: toolResultsText
+            },
+            text: toolResultsText,
+            usage: convertUsage(result.usage),
+            finishReason: (result.finishReason as FinishReason) || FinishReason.STOP,
+            metadata: {
+              model,
+              provider: 'groq'
+            }
+          }
+        }
+      }
 
       return {
         message: {
           role: MessageRole.ASSISTANT,
-          content: result.text
+          content: result.text || ''
         },
-        text: result.text,
+        text: result.text || '',
         usage: convertUsage(result.usage),
         finishReason: (result.finishReason as FinishReason) || FinishReason.STOP,
         metadata: {
