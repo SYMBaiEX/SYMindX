@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react'
-import { Box, Text } from 'ink'
-import gradient from 'gradient-string'
 import figlet from 'figlet'
+import gradient from 'gradient-string'
+import { Box, Text } from 'ink'
+import React, { useState, useEffect } from 'react'
+
 import { cyberpunkTheme } from '../../themes/cyberpunk.js'
 import { GlitchText } from '../effects/GlitchText.js'
 
@@ -57,7 +58,7 @@ export const Header: React.FC<HeaderProps> = ({
     const interval = setInterval(() => {
       if (index < statuses.length - 1) {
         index++
-        setSystemStatus(statuses[index])
+        setSystemStatus(statuses[index] ?? 'INITIALIZING')
       } else {
         clearInterval(interval)
       }

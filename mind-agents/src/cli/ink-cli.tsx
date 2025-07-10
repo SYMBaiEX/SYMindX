@@ -1,9 +1,12 @@
 #!/usr/bin/env node
 
-import React from 'react';
-import { render } from 'ink';
-import { MainLayout } from './layouts/index.js';
 import { fileURLToPath } from 'url';
+
+import { render } from 'ink';
+import React from 'react';
+
+import { MainLayout } from './layouts/index.js';
+
 
 interface AppProps {
   command?: string;
@@ -12,7 +15,7 @@ interface AppProps {
 
 const App: React.FC<AppProps> = ({ command, args }) => {
   return (
-    <MainLayout command={command} args={args} />
+    <MainLayout {...(command && { command })} {...(args && { args })} />
   );
 };
 

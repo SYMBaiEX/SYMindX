@@ -1,21 +1,22 @@
-import { BaseEmotion, EmotionDefinition } from '../base-emotion'
-import { HappyEmotionConfig } from './types'
+import { BaseEmotion, EmotionDefinition } from '../base-emotion';
+
+import { HappyEmotionConfig } from './types';
 
 export class HappyEmotion extends BaseEmotion {
   constructor(config: HappyEmotionConfig = {}) {
-    super(config)
+    super(config);
   }
 
-  getDefinition(): EmotionDefinition {
+  override getDefinition(): EmotionDefinition {
     return {
       name: 'happy',
       intensity: 0.7,
       triggers: [
-        'success', 
-        'achievement', 
-        'positive_feedback', 
-        'compliment', 
-        'goal_reached', 
+        'success',
+        'achievement',
+        'positive_feedback',
+        'compliment',
+        'goal_reached',
         'good_news',
         'praise',
         'reward',
@@ -25,7 +26,7 @@ export class HappyEmotion extends BaseEmotion {
         'love',
         'joy',
         'excitement',
-        'fun'
+        'fun',
       ],
       color: '#FFD700',
       description: 'Feeling joyful and content',
@@ -33,37 +34,39 @@ export class HappyEmotion extends BaseEmotion {
         creativity: 1.2,
         energy: 1.1,
         social: 1.3,
-        focus: 1.0
+        focus: 1.0,
       },
       coordinates: {
-        valence: 0.8,      // Very positive
-        arousal: 0.6,      // Moderately high arousal
-        dominance: 0.4     // Slightly dominant
+        valence: 0.8, // Very positive
+        arousal: 0.6, // Moderately high arousal
+        dominance: 0.4, // Slightly dominant
       },
       personalityInfluence: {
-        extraversion: 0.6,     // Extraverts experience happiness more intensely
-        neuroticism: -0.4,     // High neuroticism dampens happiness
-        agreeableness: 0.3,    // Agreeable people find joy in social harmony
-        openness: 0.2          // Open people find joy in new experiences
-      }
-    }
+        extraversion: 0.6, // Extraverts experience happiness more intensely
+        neuroticism: -0.4, // High neuroticism dampens happiness
+        agreeableness: 0.3, // Agreeable people find joy in social harmony
+        openness: 0.2, // Open people find joy in new experiences
+      },
+    };
   }
 
-  processEvent(eventType: string, context?: any): any {
+  override processEvent(eventType: string, context?: any): any {
     // Special processing for happy-specific events
     if (context?.outcome?.success === true) {
-      this._intensity = Math.min(1.0, this._intensity + 0.2)
-      this.recordHistory('successful_outcome')
+      this._intensity = Math.min(1.0, this._intensity + 0.2);
+      this.recordHistory('successful_outcome');
     }
-    
+
     // Call parent processing
-    return super.processEvent(eventType, context)
+    return super.processEvent(eventType, context);
   }
 }
 
-export default HappyEmotion
+export default HappyEmotion;
 
 // Export factory function for easy instantiation
-export function createHappyEmotion(config: HappyEmotionConfig = {}): HappyEmotion {
-  return new HappyEmotion(config)
+export function createHappyEmotion(
+  config: HappyEmotionConfig = {}
+): HappyEmotion {
+  return new HappyEmotion(config);
 }

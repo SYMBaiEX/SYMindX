@@ -34,7 +34,7 @@ export async function generateAsciiText(
         reject(err)
         return
       }
-      const coloredText = GRADIENTS[gradientType](data || '')
+      const coloredText = GRADIENTS[gradientType]?.(data || '') ?? data || ''
       resolve(coloredText)
     })
   })
@@ -108,8 +108,8 @@ export function generateMatrixRain(width: number, height: number): string[][] {
   for (let y = 0; y < height; y++) {
     matrix[y] = []
     for (let x = 0; x < width; x++) {
-      matrix[y][x] = Math.random() > 0.8 
-        ? chars[Math.floor(Math.random() * chars.length)]
+      matrix[y]![x] = Math.random() > 0.8 
+        ? chars[Math.floor(Math.random() * chars.length)] ?? ' '
         : ' '
     }
   }

@@ -1,9 +1,9 @@
 import { exec, spawn, ChildProcess } from 'child_process'
-import { promisify } from 'util'
-import * as path from 'path'
 import * as fs from 'fs'
-import { fileURLToPath } from 'url'
+import * as path from 'path'
 import { dirname } from 'path'
+import { fileURLToPath } from 'url'
+import { promisify } from 'util'
 
 const execAsync = promisify(exec)
 

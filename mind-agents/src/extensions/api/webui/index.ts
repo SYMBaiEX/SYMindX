@@ -1,6 +1,6 @@
 /**
  * WebUI Server for SYMindX
- * 
+ *
  * Provides a comprehensive web interface for agent interaction:
  * - Real-time chat interface
  * - Agent dashboard and monitoring
@@ -9,21 +9,23 @@
  * - Agent configuration management
  */
 
-import express from 'express'
-import path from 'path'
-import { fileURLToPath } from 'url'
-import os from 'os'
-import { Agent } from '../../../types/agent'
-import { CommandSystem } from '../../../core/command-system'
-import { Logger } from '../../../utils/logger'
+import os from 'os';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+import express from 'express';
+
+import { CommandSystem } from '../../../core/command-system';
+import { Agent } from '../../../types/agent';
+import { Logger } from '../../../utils/logger';
 
 // Handle ES module __dirname
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export class WebUIServer {
-  private logger = new Logger('webui')
-  private app: express.Application
+  private logger = new Logger('webui');
+  private app: express.Application;
 
   constructor(
     private commandSystem: CommandSystem,
@@ -31,66 +33,66 @@ export class WebUIServer {
     private getRuntimeStats: () => any,
     private runtime?: any
   ) {
-    this.app = express()
-    this.setupMiddleware()
-    this.setupRoutes()
+    this.app = express();
+    this.setupMiddleware();
+    this.setupRoutes();
   }
 
   private setupMiddleware(): void {
-    this.app.use(express.json())
-    this.app.use(express.static(path.join(__dirname, 'static')))
+    this.app.use(express.json());
+    this.app.use(express.static(path.join(__dirname, 'static')));
   }
 
   private setupRoutes(): void {
     // Serve main dashboard
     this.app.get('/', (req, res) => {
-      res.send(this.generateDashboardHTML())
-    })
+      res.send(this.generateDashboardHTML());
+    });
 
     // Chat interface
     this.app.get('/chat', (req, res) => {
-      res.send(this.generateChatHTML())
-    })
+      res.send(this.generateChatHTML());
+    });
 
     // Agent management interface
     this.app.get('/agents', (req, res) => {
-      res.send(this.generateAgentsHTML())
-    })
+      res.send(this.generateAgentsHTML());
+    });
 
     // System monitoring interface
     this.app.get('/monitor', (req, res) => {
-      res.send(this.generateMonitorHTML())
-    })
+      res.send(this.generateMonitorHTML());
+    });
 
     // Multi-Agent Manager interface
     this.app.get('/multi-agent', (req, res) => {
-      res.send(this.generateMultiAgentHTML())
-    })
-    
+      res.send(this.generateMultiAgentHTML());
+    });
+
     // Alternative route for UI namespace consistency
     this.app.get('/ui/multi-agent', (req, res) => {
-      res.send(this.generateMultiAgentHTML())
-    })
+      res.send(this.generateMultiAgentHTML());
+    });
 
     // API endpoints for dynamic content
     this.app.get('/api/agents', (req, res) => {
-      const agents = Array.from(this.getAgents().values()).map(agent => ({
+      const agents = Array.from(this.getAgents().values()).map((agent) => ({
         id: agent.id,
         name: agent.name,
         status: agent.status,
         emotion: agent.emotion?.current,
         lastUpdate: agent.lastUpdate,
         extensionCount: agent.extensions.length,
-        hasPortal: !!agent.portal
-      }))
-      res.json({ agents })
-    })
+        hasPortal: !!agent.portal,
+      }));
+      res.json({ agents });
+    });
 
     this.app.get('/api/agent/:id', (req, res) => {
-      const agent = this.getAgents().get(req.params.id)
+      const agent = this.getAgents().get(req.params.id);
       if (!agent) {
-        res.status(404).json({ error: 'Agent not found' })
-        return
+        res.status(404).json({ error: 'Agent not found' });
+        return;
       }
 
       res.json({
@@ -99,23 +101,25 @@ export class WebUIServer {
         status: agent.status,
         emotion: agent.emotion?.current,
         lastUpdate: agent.lastUpdate,
-        extensions: agent.extensions.map(ext => ({
+        extensions: agent.extensions.map((ext) => ({
           id: ext.id,
           name: ext.name,
           enabled: ext.enabled,
-          status: ext.status
+          status: ext.status,
         })),
-        portal: agent.portal ? {
-          name: agent.portal.name,
-          enabled: agent.portal.enabled
-        } : null
-      })
-    })
+        portal: agent.portal
+          ? {
+              name: agent.portal.name,
+              enabled: agent.portal.enabled,
+            }
+          : null,
+      });
+    });
 
     this.app.get('/api/stats', (req, res) => {
-      const runtimeStats = this.getRuntimeStats()
-      const commandStats = this.commandSystem.getStats()
-      
+      const runtimeStats = this.getRuntimeStats();
+      const commandStats = this.commandSystem.getStats();
+
       res.json({
         runtime: runtimeStats,
         commands: commandStats,
@@ -128,106 +132,113 @@ export class WebUIServer {
           platform: process.platform,
           nodeVersion: process.version,
           cpus: os.cpus().length,
-          loadAverage: os.loadavg()
-        }
-      })
-    })
+          loadAverage: os.loadavg(),
+        },
+      });
+    });
 
     this.app.get('/api/commands', (req, res) => {
-      const agentId = req.query.agent as string
-      const limit = parseInt(req.query.limit as string) || 20
-      
-      let commands = this.commandSystem.getAllCommands()
-      
+      const agentId = req.query.agent as string;
+      const limit = parseInt(req.query.limit as string) || 20;
+
+      let commands = this.commandSystem.getAllCommands();
+
       if (agentId) {
-        commands = commands.filter(cmd => cmd.agentId === agentId)
+        commands = commands.filter((cmd) => cmd.agentId === agentId);
       }
-      
+
       commands = commands
         .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
-        .slice(0, limit)
-      
-      res.json(commands.map(cmd => ({
-        id: cmd.id,
-        agentId: cmd.agentId,
-        instruction: cmd.instruction,
-        type: cmd.type,
-        status: cmd.status,
-        timestamp: cmd.timestamp,
-        result: cmd.result,
-        executionTime: cmd.result?.executionTime
-      })))
-    })
+        .slice(0, limit);
+
+      res.json(
+        commands.map((cmd) => ({
+          id: cmd.id,
+          agentId: cmd.agentId,
+          instruction: cmd.instruction,
+          type: cmd.type,
+          status: cmd.status,
+          timestamp: cmd.timestamp,
+          result: cmd.result,
+          executionTime: cmd.result?.executionTime,
+        }))
+      );
+    });
 
     // Chat API
     this.app.post('/api/chat', async (req, res) => {
       try {
-        const { agentId, message } = req.body
-        
+        const { agentId, message } = req.body;
+
         if (!agentId || !message) {
-          res.status(400).json({ error: 'Agent ID and message required' })
-          return
+          res.status(400).json({ error: 'Agent ID and message required' });
+          return;
         }
 
-        const response = await this.commandSystem.sendMessage(agentId, message)
-        res.json({ response, timestamp: new Date().toISOString() })
+        const response = await this.commandSystem.sendMessage(agentId, message);
+        res.json({ response, timestamp: new Date().toISOString() });
       } catch (error) {
-        res.status(500).json({ 
+        res.status(500).json({
           error: 'Chat failed',
-          details: error instanceof Error ? error.message : String(error)
-        })
+          details: error instanceof Error ? error.message : String(error),
+        });
       }
-    })
+    });
 
     // Command execution API
     this.app.post('/api/command', async (req, res) => {
       try {
-        const { agentId, command, priority = 'normal', async = false } = req.body
-        
+        const {
+          agentId,
+          command,
+          priority = 'normal',
+          async = false,
+        } = req.body;
+
         if (!agentId || !command) {
-          res.status(400).json({ error: 'Agent ID and command required' })
-          return
+          res.status(400).json({ error: 'Agent ID and command required' });
+          return;
         }
 
         const cmd = await this.commandSystem.sendCommand(agentId, command, {
           priority: this.mapPriority(priority),
-          async
-        })
+          async,
+        });
 
         res.json({
           commandId: cmd.id,
           status: cmd.status,
           result: cmd.result,
-          async
-        })
+          async,
+        });
       } catch (error) {
-        res.status(500).json({ 
+        res.status(500).json({
           error: 'Command execution failed',
-          details: error instanceof Error ? error.message : String(error)
-        })
+          details: error instanceof Error ? error.message : String(error),
+        });
       }
-    })
+    });
 
     // Characters API endpoint
     this.app.get('/api/characters', async (req, res) => {
       try {
-        const fs = await import('fs')
-        const path = await import('path')
-        const { fileURLToPath } = await import('url')
-        
-        const __dirname = path.dirname(fileURLToPath(import.meta.url))
-        const charactersDir = path.join(__dirname, '../../../characters')
-        
-        const files = fs.readdirSync(charactersDir)
-        const characters = []
-        
+        const fs = await import('fs');
+        const path = await import('path');
+        const { fileURLToPath } = await import('url');
+
+        const __dirname = path.dirname(fileURLToPath(import.meta.url));
+        const charactersDir = path.join(__dirname, '../../../characters');
+
+        const files = fs.readdirSync(charactersDir);
+        const characters = [];
+
         for (const file of files) {
           if (file.endsWith('.json') && !file.includes('example')) {
             try {
-              const filePath = path.join(charactersDir, file)
-              const data = fs.readFileSync(filePath, 'utf-8')
-              const character = JSON.parse(data)
-              
+              const filePath = path.join(charactersDir, file);
+              const data = fs.readFileSync(filePath, 'utf-8');
+              const character = JSON.parse(data);
+
               characters.push({
                 id: character.id,
                 name: character.name,
@@ -236,51 +247,51 @@ export class WebUIServer {
                 personality: character.personality?.traits || {},
                 capabilities: character.capabilities || {},
                 communication: character.communication || {},
-                file: file
-              })
+                file: file,
+              });
             } catch (error) {
-              console.warn(`Failed to parse character file ${file}:`, error)
+              console.warn(`Failed to parse character file ${file}:`, error);
             }
           }
         }
-        
-        res.json({ characters })
+
+        res.json({ characters });
       } catch (error) {
-        res.status(500).json({ 
+        res.status(500).json({
           error: 'Failed to load characters',
-          details: error instanceof Error ? error.message : String(error)
-        })
+          details: error instanceof Error ? error.message : String(error),
+        });
       }
-    })
+    });
 
     // API endpoint to get all agents (from character files) with their running status
     this.app.get('/api/agents/all', async (req, res) => {
       try {
-        const fs = await import('fs')
-        const path = await import('path')
-        const { fileURLToPath } = await import('url')
-        
-        const __dirname = path.dirname(fileURLToPath(import.meta.url))
-        const charactersDir = path.join(__dirname, '../../../characters')
-        
+        const fs = await import('fs');
+        const path = await import('path');
+        const { fileURLToPath } = await import('url');
+
+        const __dirname = path.dirname(fileURLToPath(import.meta.url));
+        const charactersDir = path.join(__dirname, '../../../characters');
+
         // Get all character files
-        const files = fs.readdirSync(charactersDir)
-        const allAgents = []
-        
+        const files = fs.readdirSync(charactersDir);
+        const allAgents = [];
+
         // Get currently running agents
-        const runningAgents = this.getAgents()
-        
+        const runningAgents = this.getAgents();
+
         for (const file of files) {
           if (file.endsWith('.json') && !file.includes('example')) {
             try {
-              const filePath = path.join(charactersDir, file)
-              const data = fs.readFileSync(filePath, 'utf-8')
-              const character = JSON.parse(data)
-              
+              const filePath = path.join(charactersDir, file);
+              const data = fs.readFileSync(filePath, 'utf-8');
+              const character = JSON.parse(data);
+
               // Check if this agent is currently running
-              const runningAgent = runningAgents.get(character.id)
-              const isRunning = !!runningAgent
-              
+              const runningAgent = runningAgents.get(character.id);
+              const isRunning = !!runningAgent;
+
               allAgents.push({
                 id: character.id,
                 name: character.name,
@@ -297,102 +308,108 @@ export class WebUIServer {
                   emotion: runningAgent.emotion?.current,
                   lastUpdate: runningAgent.lastUpdate,
                   extensionCount: runningAgent.extensions?.length || 0,
-                  hasPortal: !!runningAgent.portal
+                  hasPortal: !!runningAgent.portal,
                 }),
-                file: file
-              })
+                file: file,
+              });
             } catch (error) {
-              console.warn(`Failed to parse character file ${file}:`, error)
+              console.warn(`Failed to parse character file ${file}:`, error);
             }
           }
         }
-        
-        res.json({ agents: allAgents })
+
+        res.json({ agents: allAgents });
       } catch (error) {
-        res.status(500).json({ 
+        res.status(500).json({
           error: 'Failed to load all agents',
-          details: error instanceof Error ? error.message : String(error)
-        })
+          details: error instanceof Error ? error.message : String(error),
+        });
       }
-    })
+    });
 
     // API endpoint to start an agent
     this.app.post('/api/agents/:id/start', async (req, res) => {
       try {
-        const { id } = req.params
-        
+        const { id } = req.params;
+
         if (!this.runtime) {
-          res.status(500).json({ error: 'Runtime not available' })
-          return
+          res.status(500).json({ error: 'Runtime not available' });
+          return;
         }
 
         // Check if agent is already running
-        const runningAgents = this.getAgents()
+        const runningAgents = this.getAgents();
         if (runningAgents.has(id)) {
-          res.status(400).json({ error: 'Agent is already running' })
-          return
+          res.status(400).json({ error: 'Agent is already running' });
+          return;
         }
 
         // Load character configuration
-        const fs = await import('fs')
-        const path = await import('path')
-        const { fileURLToPath } = await import('url')
-        
-        const __dirname = path.dirname(fileURLToPath(import.meta.url))
-        const charactersDir = path.join(__dirname, '../../../characters')
-        const characterFile = path.join(charactersDir, `${id}.json`)
-        
+        const fs = await import('fs');
+        const path = await import('path');
+        const { fileURLToPath } = await import('url');
+
+        const __dirname = path.dirname(fileURLToPath(import.meta.url));
+        const charactersDir = path.join(__dirname, '../../../characters');
+        const characterFile = path.join(charactersDir, `${id}.json`);
+
         if (!fs.existsSync(characterFile)) {
-          res.status(404).json({ error: 'Character configuration not found' })
-          return
+          res.status(404).json({ error: 'Character configuration not found' });
+          return;
         }
 
         // Read and parse character config
-        const configData = fs.readFileSync(characterFile, 'utf-8')
-        const config = JSON.parse(configData)
-        
+        const configData = fs.readFileSync(characterFile, 'utf-8');
+        const config = JSON.parse(configData);
+
         // Create agent using runtime
-        await this.runtime.createAgent(config)
-        
-        res.json({ success: true, message: `Agent ${id} started successfully` })
+        await this.runtime.createAgent(config);
+
+        res.json({
+          success: true,
+          message: `Agent ${id} started successfully`,
+        });
       } catch (error) {
-        console.error('Failed to start agent:', error)
-        res.status(500).json({ 
+        console.error('Failed to start agent:', error);
+        res.status(500).json({
           error: 'Failed to start agent',
-          details: error instanceof Error ? error.message : String(error)
-        })
+          details: error instanceof Error ? error.message : String(error),
+        });
       }
-    })
+    });
 
     // API endpoint to stop an agent
     this.app.post('/api/agents/:id/stop', async (req, res) => {
       try {
-        const { id } = req.params
-        
+        const { id } = req.params;
+
         if (!this.runtime) {
-          res.status(500).json({ error: 'Runtime not available' })
-          return
+          res.status(500).json({ error: 'Runtime not available' });
+          return;
         }
 
         // Check if agent is running
-        const runningAgents = this.getAgents()
+        const runningAgents = this.getAgents();
         if (!runningAgents.has(id)) {
-          res.status(400).json({ error: 'Agent is not running' })
-          return
+          res.status(400).json({ error: 'Agent is not running' });
+          return;
         }
 
         // Stop agent using runtime
-        await this.runtime.removeAgent(id)
-        
-        res.json({ success: true, message: `Agent ${id} stopped successfully` })
+        await this.runtime.removeAgent(id);
+
+        res.json({
+          success: true,
+          message: `Agent ${id} stopped successfully`,
+        });
       } catch (error) {
-        console.error('Failed to stop agent:', error)
-        res.status(500).json({ 
+        console.error('Failed to stop agent:', error);
+        res.status(500).json({
           error: 'Failed to stop agent',
-          details: error instanceof Error ? error.message : String(error)
-        })
+          details: error instanceof Error ? error.message : String(error),
+        });
       }
-    })
+    });
   }
 
   private generateDashboardHTML(): string {
@@ -569,7 +586,7 @@ export class WebUIServer {
         ${this.getDashboardJavaScript()}
     </script>
 </body>
-</html>`
+</html>`;
   }
 
   private generateChatHTML(): string {
@@ -908,7 +925,7 @@ export class WebUIServer {
         ${this.getChatJavaScript()}
     </script>
 </body>
-</html>`
+</html>`;
   }
 
   private generateAgentsHTML(): string {
@@ -1055,7 +1072,7 @@ export class WebUIServer {
         ${this.getAgentsJavaScript()}
     </script>
 </body>
-</html>`
+</html>`;
   }
 
   private generateMonitorHTML(): string {
@@ -1166,7 +1183,7 @@ export class WebUIServer {
         ${this.getMonitorJavaScript()}
     </script>
 </body>
-</html>`
+</html>`;
   }
 
   private generateMultiAgentHTML(): string {
@@ -1548,7 +1565,7 @@ export class WebUIServer {
         ${this.getMultiAgentJavaScript()}
     </script>
 </body>
-</html>`
+</html>`;
   }
 
   private getCommonStyles(): string {
@@ -1619,7 +1636,7 @@ export class WebUIServer {
         h1, h2, h3 {
             color: #1f2937;
         }
-    `
+    `;
   }
 
   private getNavigationHTML(): string {
@@ -1632,7 +1649,7 @@ export class WebUIServer {
         <a href="/ui/multi-agent">Multi-Agent Manager</a>
         <a href="/ui/monitor">Monitor</a>
     </nav>
-    `
+    `;
   }
 
   private getDashboardJavaScript(): string {
@@ -1770,7 +1787,7 @@ export class WebUIServer {
         ws.onerror = (error) => {
             console.error('WebSocket error:', error);
         };
-    `
+    `;
   }
 
   private getChatJavaScript(): string {
@@ -2263,7 +2280,7 @@ export class WebUIServer {
                 console.error('WebSocket error:', error);
             }
         };
-    `
+    `;
   }
 
   private getAgentsJavaScript(): string {
@@ -2647,7 +2664,7 @@ export class WebUIServer {
                 console.error('WebSocket error:', err);
             }
         };
-    `
+    `;
   }
 
   private getMonitorJavaScript(): string {
@@ -2936,7 +2953,7 @@ export class WebUIServer {
                 console.error('WebSocket error:', err);
             }
         };
-    `
+    `;
   }
 
   private getMultiAgentJavaScript(): string {
@@ -3613,7 +3630,7 @@ export class WebUIServer {
         window.viewAgentHealth = viewAgentHealth;
         window.chatWithAgent = chatWithAgent;
         window.refreshAgents = refreshAgents;
-    `
+    `;
   }
 
   private mapPriority(priority: string): any {
@@ -3621,12 +3638,12 @@ export class WebUIServer {
       low: 1,
       normal: 2,
       high: 3,
-      urgent: 4
-    }
-    return priorities[priority.toLowerCase()] || 2
+      urgent: 4,
+    };
+    return priorities[priority.toLowerCase()] || 2;
   }
 
   public getExpressApp(): express.Application {
-    return this.app
+    return this.app;
   }
 }

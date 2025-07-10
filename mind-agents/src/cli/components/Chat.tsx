@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
 import { Box, Text, useInput } from 'ink';
+import React, { useState } from 'react';
+
 import { useAgentData } from '../hooks/useAgentData.js';
 
 interface ChatProps {

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+
 import { runtimeClient, type AgentInfo as RuntimeAgentInfo } from '../services/runtimeClient';
 
 export interface AgentInfo {
@@ -91,7 +92,7 @@ export const useAgentData = (): AgentData => {
           autonomousEnabled: false, // Runtime doesn't expose this directly
           emotion: agent.emotion || 'neutral',
           extensionCount: agent.extensionCount,
-          portal: agent.hasPortal ? 'connected' : undefined
+          portal: agent.hasPortal ? 'connected' : 'none'
         }));
 
         // Convert events to activity entries
@@ -120,14 +121,13 @@ export const useAgentData = (): AgentData => {
           extensionsCount,
           recentActivity,
           isConnected: true,
-          error: undefined,
-          activeAgents: activeCount,
-          totalAgents: totalCount
+          ...(activeCount !== undefined && { activeAgents: activeCount }),
+          ...(totalCount !== undefined && { totalAgents: totalCount })
         });
 
       } catch (error) {
         console.error('Error fetching agent data:', error);
-        const connectionStatus = runtimeClient.getConnectionStatus();
+        // const _connectionStatus: any = runtimeClient.getConnectionStatus(); // Unused in current implementation
         setAgentData(prev => ({
           ...prev,
           isConnected: false,

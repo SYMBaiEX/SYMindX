@@ -1,29 +1,29 @@
 /**
  * Extension Loader
- * 
+ *
  * Manages dynamic extension loading for the SYMindX runtime
  */
 
-import { runtimeLogger } from '../utils/logger'
+import { runtimeLogger } from '../utils/logger';
 
 export interface ExtensionStats {
-  loaded: number
-  failed: number
-  total: number
-  extensions: string[]
+  loaded: number;
+  failed: number;
+  total: number;
+  extensions: string[];
 }
 
 export interface ExtensionInfo {
-  name: string
-  version: string
-  init?: () => Promise<void>
-  enabled: boolean
+  name: string;
+  version: string;
+  init?: () => Promise<void>;
+  enabled: boolean;
 }
 
 export class ExtensionLoader {
-  private extensions: Map<string, ExtensionInfo> = new Map()
-  private loadedCount = 0
-  private failedCount = 0
+  private extensions: Map<string, ExtensionInfo> = new Map();
+  private loadedCount = 0;
+  private failedCount = 0;
 
   constructor() {
     // Initialize with empty extension registry
@@ -35,15 +35,15 @@ export class ExtensionLoader {
   async loadExtension(name: string, extension: ExtensionInfo): Promise<void> {
     try {
       if (extension.init) {
-        await extension.init()
+        await extension.init();
       }
-      this.extensions.set(name, extension)
-      this.loadedCount++
-      runtimeLogger.info(`✅ Extension loaded: ${name} v${extension.version}`)
+      this.extensions.set(name, extension);
+      this.loadedCount++;
+      runtimeLogger.info(`✅ Extension loaded: ${name} v${extension.version}`);
     } catch (error) {
-      this.failedCount++
-      runtimeLogger.error(`❌ Failed to load extension ${name}:`, error)
-      throw error
+      this.failedCount++;
+      runtimeLogger.error(`❌ Failed to load extension ${name}:`, error);
+      throw error;
     }
   }
 
@@ -51,14 +51,14 @@ export class ExtensionLoader {
    * Get extension by name
    */
   getExtension(name: string): ExtensionInfo | undefined {
-    return this.extensions.get(name)
+    return this.extensions.get(name);
   }
 
   /**
    * Get all loaded extensions
    */
   getExtensions(): Map<string, ExtensionInfo> {
-    return this.extensions
+    return this.extensions;
   }
 
   /**
@@ -69,15 +69,15 @@ export class ExtensionLoader {
       loaded: this.loadedCount,
       failed: this.failedCount,
       total: this.loadedCount + this.failedCount,
-      extensions: Array.from(this.extensions.keys())
-    }
+      extensions: Array.from(this.extensions.keys()),
+    };
   }
 
   /**
    * Check if an extension is loaded
    */
   isLoaded(name: string): boolean {
-    return this.extensions.has(name)
+    return this.extensions.has(name);
   }
 
   /**
@@ -85,20 +85,20 @@ export class ExtensionLoader {
    */
   unloadExtension(name: string): boolean {
     if (this.extensions.delete(name)) {
-      this.loadedCount--
-      runtimeLogger.info(`🗑️ Extension unloaded: ${name}`)
-      return true
+      this.loadedCount--;
+      runtimeLogger.info(`🗑️ Extension unloaded: ${name}`);
+      return true;
     }
-    return false
+    return false;
   }
 
   /**
    * Clear all extensions
    */
   clear(): void {
-    this.extensions.clear()
-    this.loadedCount = 0
-    this.failedCount = 0
+    this.extensions.clear();
+    this.loadedCount = 0;
+    this.failedCount = 0;
   }
 }
 
@@ -106,5 +106,5 @@ export class ExtensionLoader {
  * Factory function to create an extension loader
  */
 export function createExtensionLoader(): ExtensionLoader {
-  return new ExtensionLoader()
+  return new ExtensionLoader();
 }

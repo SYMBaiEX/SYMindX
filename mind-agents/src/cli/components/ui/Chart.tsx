@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react'
 import { Box, Text } from 'ink'
+import React, { useState, useEffect } from 'react'
+
 import { cyberpunkTheme } from '../../themes/cyberpunk.js'
 
 interface ChartProps {
@@ -69,14 +70,20 @@ export const Chart: React.FC<ChartProps> = ({
     if (showAxes) {
       // Y-axis
       for (let y = 0; y < height; y++) {
-        grid[y][0] = '│'
+        const row = grid[y]
+        if (row && row.length > 0) {
+          row[0] = '│'
+        }
       }
       // X-axis
-      for (let x = 0; x < width; x++) {
-        grid[height - 1][x] = '─'
+      const lastRow = grid[height - 1]
+      if (lastRow && lastRow.length >= width) {
+        for (let x = 0; x < width; x++) {
+          lastRow[x] = '─'
+        }
+        // Origin
+        lastRow[0] = '└'
       }
-      // Origin
-      grid[height - 1][0] = '└'
     }
     
     return grid
@@ -90,30 +97,45 @@ export const Chart: React.FC<ChartProps> = ({
     
     for (let i = 0; i < displayData.length && (i / step) < availableWidth; i += step) {
       const x = startX + Math.floor(i / step)
-      const y = height - 1 - normalizeValue(displayData[i])
+      const dataValue = displayData[i]
+      if (dataValue === undefined) continue
+      const y = height - 1 - normalizeValue(dataValue)
       
       if (x < width && y >= 0 && y < height) {
         switch (type) {
           case 'line':
             // Connect points with line characters
             if (i > 0 && i - step < displayData.length) {
-              const prevY = height - 1 - normalizeValue(displayData[i - step])
-              if (prevY === y) {
-                grid[y][x] = '─'
-              } else if (prevY < y) {
-                grid[y][x] = '╱'
-              } else {
-                grid[y][x] = '╲'
+              const prevValue = displayData[i - step]
+              if (prevValue === undefined) continue
+              if (prevValue !== undefined) {
+                const prevY = height - 1 - normalizeValue(prevValue)
+                const currentRow = grid[y]
+                if (currentRow && currentRow.length > x) {
+                  if (prevY === y) {
+                    currentRow[x] = '─'
+                  } else if (prevY < y) {
+                    currentRow[x] = '╱'
+                  } else {
+                    currentRow[x] = '╲'
+                  }
+                }
               }
             }
-            grid[y][x] = '●'
+            const currentRow = grid[y]
+            if (currentRow && currentRow.length > x) {
+              currentRow[x] = '●'
+            }
             break
             
           case 'bar':
             // Draw vertical bars
             for (let barY = height - 1; barY >= y; barY--) {
               if (barY === height - 1 && showAxes) continue
-              grid[barY][x] = '█'
+              const barRow = grid[barY]
+              if (barRow && barRow.length > x) {
+                barRow[x] = '█'
+              }
             }
             break
             
@@ -121,11 +143,14 @@ export const Chart: React.FC<ChartProps> = ({
             // Fill area under the line
             for (let fillY = height - 1; fillY >= y; fillY--) {
               if (fillY === height - 1 && showAxes) continue
-              const intensity = (height - 1 - fillY) / (height - 1 - y)
-              if (intensity < 0.3) grid[fillY][x] = '░'
-              else if (intensity < 0.6) grid[fillY][x] = '▒'
-              else if (intensity < 0.9) grid[fillY][x] = '▓'
-              else grid[fillY][x] = '█'
+              const fillRow = grid[fillY]
+              if (fillRow && fillRow.length > x) {
+                const intensity = (height - 1 - fillY) / (height - 1 - y)
+                if (intensity < 0.3) fillRow[x] = '░'
+                else if (intensity < 0.6) fillRow[x] = '▒'
+                else if (intensity < 0.9) fillRow[x] = '▓'
+                else fillRow[x] = '█'
+              }
             }
             break
         }

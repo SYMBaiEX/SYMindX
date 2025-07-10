@@ -1,8 +1,9 @@
-import React, { useState } from 'react'
 import { Box, Text, useInput } from 'ink'
+import React, { useState } from 'react'
+
+import { cyberpunkTheme } from '../../../themes/cyberpunk.js'
 import { Card3D } from '../../ui/Card3D.js'
 import { Chart } from '../../ui/Chart.js'
-import { cyberpunkTheme } from '../../../themes/cyberpunk.js'
 
 interface CognitionDetailData {
   type: string
@@ -88,7 +89,10 @@ export const CognitionPanel: React.FC<CognitionPanelProps> = ({ agentData }) => 
     } else if (input === 'v') {
       const modes: ('thoughts' | 'goals' | 'decisions')[] = ['thoughts', 'goals', 'decisions']
       const currentIndex = modes.indexOf(viewMode)
-      setViewMode(modes[(currentIndex + 1) % modes.length])
+      const nextMode = modes[(currentIndex + 1) % modes.length]
+      if (nextMode) {
+        setViewMode(nextMode)
+      }
     }
   })
 
@@ -128,7 +132,7 @@ export const CognitionPanel: React.FC<CognitionPanelProps> = ({ agentData }) => 
     .map(decision => decision.confidence)
 
   // Calculate planning efficiency over time
-  const planningEfficiencyData = Array.from({ length: 20 }, (_, i) => 
+  const planningEfficiencyData = Array.from({ length: 20 }, (_) => 
     cognition.planningEfficiency + (Math.random() - 0.5) * 0.2
   )
 
@@ -404,7 +408,7 @@ export const CognitionPanel: React.FC<CognitionPanelProps> = ({ agentData }) => 
               <Box gap={2}>
                 <Text color={cyberpunkTheme.colors.textDim}>Trend:</Text>
                 <Text color={cyberpunkTheme.colors.primary}>
-                  {planningEfficiencyData[planningEfficiencyData.length - 1] > planningEfficiencyData[0] ? '↗' : '↘'}
+                  {(planningEfficiencyData[planningEfficiencyData.length - 1] ?? 0) > (planningEfficiencyData[0] ?? 0) ? '↗' : '↘'}
                 </Text>
               </Box>
               <Box gap={2}>
@@ -450,7 +454,7 @@ export const CognitionPanel: React.FC<CognitionPanelProps> = ({ agentData }) => 
               <Box gap={2}>
                 <Text color={cyberpunkTheme.colors.textDim}>Last Decision:</Text>
                 <Text color={cyberpunkTheme.colors.primary}>
-                  {Math.round(decisionConfidenceData[decisionConfidenceData.length - 1] * 100)}%
+                  {Math.round((decisionConfidenceData[decisionConfidenceData.length - 1] ?? 0) * 100)}%
                 </Text>
               </Box>
             </Box>
@@ -588,42 +592,42 @@ export const CognitionPanel: React.FC<CognitionPanelProps> = ({ agentData }) => 
               <Box gap={2}>
                 <Text color={cyberpunkTheme.colors.textDim}>ID:</Text>
                 <Text color={cyberpunkTheme.colors.text}>
-                  {cognition.decisionHistory[selectedDecision].id}
+                  {cognition.decisionHistory[selectedDecision]?.id ?? 'Unknown'}
                 </Text>
                 <Text color={cyberpunkTheme.colors.textDim}>Confidence:</Text>
                 <Text color={cyberpunkTheme.colors.accent}>
-                  {Math.round(cognition.decisionHistory[selectedDecision].confidence * 100)}%
+                  {Math.round((cognition.decisionHistory[selectedDecision]?.confidence ?? 0) * 100)}%
                 </Text>
                 <Text color={cyberpunkTheme.colors.textDim}>Outcome:</Text>
                 <Text color={
-                  cognition.decisionHistory[selectedDecision].outcome === 'positive' 
+                  cognition.decisionHistory[selectedDecision]?.outcome === 'positive' 
                     ? cyberpunkTheme.colors.success 
                     : cyberpunkTheme.colors.warning
                 }>
-                  {cognition.decisionHistory[selectedDecision].outcome?.toUpperCase() || 'PENDING'}
+                  {cognition.decisionHistory[selectedDecision]?.outcome?.toUpperCase() || 'PENDING'}
                 </Text>
               </Box>
               
               <Box flexDirection="column" marginTop={1}>
                 <Text color={cyberpunkTheme.colors.textDim}>Context:</Text>
                 <Text color={cyberpunkTheme.colors.text}>
-                  {cognition.decisionHistory[selectedDecision].context}
+                  {cognition.decisionHistory[selectedDecision]?.context ?? 'No context available'}
                 </Text>
               </Box>
               
               <Box flexDirection="column" marginTop={1}>
                 <Text color={cyberpunkTheme.colors.textDim}>Options Considered:</Text>
-                {cognition.decisionHistory[selectedDecision].options.map((option, i) => (
+                {cognition.decisionHistory[selectedDecision]?.options?.map((option, i) => (
                   <Box key={i} gap={1}>
                     <Text color={
-                      option === cognition.decisionHistory[selectedDecision].chosen 
+                      option === cognition.decisionHistory[selectedDecision]?.chosen 
                         ? cyberpunkTheme.colors.success 
                         : cyberpunkTheme.colors.textDim
                     }>
-                      {option === cognition.decisionHistory[selectedDecision].chosen ? '✓' : '○'}
+                      {option === cognition.decisionHistory[selectedDecision]?.chosen ? '✓' : '○'}
                     </Text>
                     <Text color={
-                      option === cognition.decisionHistory[selectedDecision].chosen 
+                      option === cognition.decisionHistory[selectedDecision]?.chosen 
                         ? cyberpunkTheme.colors.text 
                         : cyberpunkTheme.colors.textDim
                     }>

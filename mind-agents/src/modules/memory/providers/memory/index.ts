@@ -1,32 +1,43 @@
 /**
  * In-Memory Provider for SYMindX
- * 
+ *
  * A comprehensive in-memory memory provider with vector similarity search,
  * persistence options, and performance optimizations for development and testing.
  */
 
-import { MemoryRecord, MemoryType, MemoryDuration } from '../../../../types/agent'
-import { BaseMemoryProvider, BaseMemoryConfig } from '../../base-memory-provider'
-import { MemoryProviderMetadata, MemoryTierType } from '../../../../types/memory'
-import { writeFileSync, readFileSync, existsSync } from 'fs'
-import { join } from 'path'
+import { writeFileSync, readFileSync, existsSync } from 'fs';
+import { join } from 'path';
+
+import {
+  MemoryRecord,
+  MemoryType,
+  MemoryDuration,
+} from '../../../../types/agent';
+import {
+  MemoryProviderMetadata,
+  MemoryTierType,
+} from '../../../../types/memory';
+import {
+  BaseMemoryProvider,
+  BaseMemoryConfig,
+} from '../../base-memory-provider';
 
 /**
  * Configuration for the in-memory memory provider
  */
 export interface InMemoryConfig extends BaseMemoryConfig {
   /** Maximum number of memories to store per agent */
-  maxMemoriesPerAgent?: number
+  maxMemoriesPerAgent?: number;
   /** Enable persistence to disk */
-  enablePersistence?: boolean
+  enablePersistence?: boolean;
   /** Path to save memories when persistence is enabled */
-  persistencePath?: string
+  persistencePath?: string;
   /** Auto-save interval in milliseconds */
-  autoSaveInterval?: number
+  autoSaveInterval?: number;
   /** Enable automatic cleanup of expired memories */
-  enableAutoCleanup?: boolean
+  enableAutoCleanup?: boolean;
   /** Cleanup interval in milliseconds */
-  cleanupInterval?: number
+  cleanupInterval?: number;
 }
 
 /**
@@ -34,27 +45,27 @@ export interface InMemoryConfig extends BaseMemoryConfig {
  */
 interface MemoryStorage {
   [agentId: string]: {
-    memories: Map<string, MemoryRecord>
-    lastAccessed: number
-  }
+    memories: Map<string, MemoryRecord>;
+    lastAccessed: number;
+  };
 }
 
 /**
  * Vector similarity result
  */
 interface SimilarityResult {
-  memory: MemoryRecord
-  similarity: number
+  memory: MemoryRecord;
+  similarity: number;
 }
 
 /**
  * In-memory memory provider with vector search and persistence
  */
 export class InMemoryProvider extends BaseMemoryProvider {
-  private storage: MemoryStorage = {}
-  protected declare config: InMemoryConfig
-  private autoSaveTimer?: NodeJS.Timeout
-  private cleanupTimer?: NodeJS.Timeout
+  private storage: MemoryStorage = {};
+  declare protected config: InMemoryConfig;
+  private autoSaveTimer?: NodeJS.Timeout;
+  private cleanupTimer?: NodeJS.Timeout;
 
   /**
    * Constructor for the in-memory memory provider
@@ -63,14 +74,15 @@ export class InMemoryProvider extends BaseMemoryProvider {
     const metadata: MemoryProviderMetadata = {
       id: 'memory',
       name: 'In-Memory Provider',
-      description: 'A fast in-memory provider with vector search and optional persistence',
+      description:
+        'A fast in-memory provider with vector search and optional persistence',
       version: '1.0.0',
       author: 'SYMindX Team',
       supportsVectorSearch: true,
-      isPersistent: config.enablePersistence || false
-    }
+      isPersistent: config.enablePersistence || false,
+    };
 
-    super(config, metadata)
+    super(config, metadata);
     this.config = {
       maxMemoriesPerAgent: 10000,
       enablePersistence: false,
@@ -78,10 +90,10 @@ export class InMemoryProvider extends BaseMemoryProvider {
       autoSaveInterval: 30000, // 30 seconds
       enableAutoCleanup: true,
       cleanupInterval: 300000, // 5 minutes
-      ...config
-    }
+      ...config,
+    };
 
-    this.initialize()
+    this.initialize();
   }
 
   /**
@@ -90,21 +102,21 @@ export class InMemoryProvider extends BaseMemoryProvider {
   private initialize(): void {
     // Load persisted memories if enabled
     if (this.config.enablePersistence) {
-      this.loadFromDisk()
+      this.loadFromDisk();
 
       // Setup auto-save timer
       if (this.config.autoSaveInterval) {
         this.autoSaveTimer = setInterval(() => {
-          this.saveToDisk()
-        }, this.config.autoSaveInterval)
+          this.saveToDisk();
+        }, this.config.autoSaveInterval);
       }
     }
 
     // Setup cleanup timer
     if (this.config.enableAutoCleanup && this.config.cleanupInterval) {
       this.cleanupTimer = setInterval(() => {
-        this.performAutoCleanup()
-      }, this.config.cleanupInterval)
+        this.performAutoCleanup();
+      }, this.config.cleanupInterval);
     }
 
     // Silent initialization - logging handled by runtime
@@ -117,240 +129,266 @@ export class InMemoryProvider extends BaseMemoryProvider {
     if (!this.storage[agentId]) {
       this.storage[agentId] = {
         memories: new Map(),
-        lastAccessed: Date.now()
-      }
+        lastAccessed: Date.now(),
+      };
     }
 
-    const agentStorage = this.storage[agentId]
-    
+    const agentStorage = this.storage[agentId];
+
     // Check memory limit
-    if (agentStorage.memories.size >= (this.config.maxMemoriesPerAgent || 10000)) {
-      await this.evictOldMemories(agentId)
+    if (
+      agentStorage.memories.size >= (this.config.maxMemoriesPerAgent || 10000)
+    ) {
+      await this.evictOldMemories(agentId);
     }
 
-    agentStorage.memories.set(memory.id, { ...memory })
-    agentStorage.lastAccessed = Date.now()
+    agentStorage.memories.set(memory.id, { ...memory });
+    agentStorage.lastAccessed = Date.now();
 
     // Only log significant memories
     if (memory.importance > 0.7 || memory.type === MemoryType.GOAL) {
-      console.log(`💾 Stored significant memory: ${memory.type} for agent ${agentId}`)
+      console.log(
+        `💾 Stored significant memory: ${memory.type} for agent ${agentId}`
+      );
     }
   }
 
   /**
    * Retrieve memories for an agent based on a query
    */
-  async retrieve(agentId: string, query: string, limit = 10): Promise<MemoryRecord[]> {
-    const agentStorage = this.storage[agentId]
+  async retrieve(
+    agentId: string,
+    query: string,
+    limit = 10
+  ): Promise<MemoryRecord[]> {
+    const agentStorage = this.storage[agentId];
     if (!agentStorage) {
-      return []
+      return [];
     }
 
-    agentStorage.lastAccessed = Date.now()
-    const memories = Array.from(agentStorage.memories.values())
+    agentStorage.lastAccessed = Date.now();
+    const memories = Array.from(agentStorage.memories.values());
 
     // Filter out expired short-term memories
-    const validMemories = memories.filter(memory => {
+    const validMemories = memories.filter((memory) => {
       if (memory.duration === MemoryDuration.SHORT_TERM && memory.expiresAt) {
-        return memory.expiresAt.getTime() > Date.now()
+        return memory.expiresAt.getTime() > Date.now();
       }
-      return true
-    })
+      return true;
+    });
 
-    let results: MemoryRecord[]
+    let results: MemoryRecord[];
 
     if (query === 'recent') {
       results = validMemories
         .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
-        .slice(0, limit)
+        .slice(0, limit);
     } else if (query === 'important') {
       results = validMemories
         .sort((a, b) => b.importance - a.importance)
-        .slice(0, limit)
+        .slice(0, limit);
     } else if (query === 'short_term') {
       results = validMemories
-        .filter(m => m.duration === MemoryDuration.SHORT_TERM)
+        .filter((m) => m.duration === MemoryDuration.SHORT_TERM)
         .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
-        .slice(0, limit)
+        .slice(0, limit);
     } else if (query === 'long_term') {
       results = validMemories
-        .filter(m => m.duration === MemoryDuration.LONG_TERM)
+        .filter((m) => m.duration === MemoryDuration.LONG_TERM)
         .sort((a, b) => b.importance - a.importance)
-        .slice(0, limit)
+        .slice(0, limit);
     } else {
       // Text search
       const searchResults = validMemories
-        .map(memory => ({
+        .map((memory) => ({
           memory,
-          score: this.calculateTextSimilarity(query.toLowerCase(), memory.content.toLowerCase())
+          score: this.calculateTextSimilarity(
+            query.toLowerCase(),
+            memory.content.toLowerCase()
+          ),
         }))
-        .filter(result => result.score > 0)
-        .sort((a, b) => b.score - a.score || b.memory.importance - a.memory.importance)
-        .slice(0, limit)
+        .filter((result) => result.score > 0)
+        .sort(
+          (a, b) =>
+            b.score - a.score || b.memory.importance - a.memory.importance
+        )
+        .slice(0, limit);
 
-      results = searchResults.map(result => result.memory)
+      results = searchResults.map((result) => result.memory);
     }
 
-    return results.map(memory => ({ ...memory })) // Return copies
+    return results.map((memory) => ({ ...memory })); // Return copies
   }
 
   /**
    * Search for memories using vector similarity
    */
-  async search(agentId: string, embedding: number[], limit = 10): Promise<MemoryRecord[]> {
-    const agentStorage = this.storage[agentId]
+  async search(
+    agentId: string,
+    embedding: number[],
+    limit = 10
+  ): Promise<MemoryRecord[]> {
+    const agentStorage = this.storage[agentId];
     if (!agentStorage) {
-      return []
+      return [];
     }
 
-    agentStorage.lastAccessed = Date.now()
-    const memories = Array.from(agentStorage.memories.values())
+    agentStorage.lastAccessed = Date.now();
+    const memories = Array.from(agentStorage.memories.values());
 
     // Filter memories with embeddings and not expired
-    const embeddedMemories = memories.filter(memory => {
+    const embeddedMemories = memories.filter((memory) => {
       if (memory.duration === MemoryDuration.SHORT_TERM && memory.expiresAt) {
-        if (memory.expiresAt.getTime() <= Date.now()) return false
+        if (memory.expiresAt.getTime() <= Date.now()) return false;
       }
-      return memory.embedding && memory.embedding.length > 0
-    })
+      return memory.embedding && memory.embedding.length > 0;
+    });
 
     if (embeddedMemories.length === 0) {
-      console.warn('⚠️ No memories with embeddings found, falling back to recent memories')
-      return this.retrieve(agentId, 'recent', limit)
+      console.warn(
+        '⚠️ No memories with embeddings found, falling back to recent memories'
+      );
+      return this.retrieve(agentId, 'recent', limit);
     }
 
     // Calculate cosine similarity for each memory
-    const similarities: SimilarityResult[] = embeddedMemories.map(memory => ({
+    const similarities: SimilarityResult[] = embeddedMemories.map((memory) => ({
       memory,
-      similarity: this.calculateCosineSimilarity(embedding, memory.embedding!)
-    }))
+      similarity: this.calculateCosineSimilarity(embedding, memory.embedding!),
+    }));
 
     // Sort by similarity and return top results
     const results = similarities
-      .filter(result => result.similarity > 0.3) // Threshold for relevance
+      .filter((result) => result.similarity > 0.3) // Threshold for relevance
       .sort((a, b) => b.similarity - a.similarity)
       .slice(0, limit)
-      .map(result => ({ ...result.memory })) // Return copies
+      .map((result) => ({ ...result.memory })); // Return copies
 
-    return results
+    return results;
   }
 
   /**
    * Delete a memory for an agent
    */
   async delete(agentId: string, memoryId: string): Promise<void> {
-    const agentStorage = this.storage[agentId]
+    const agentStorage = this.storage[agentId];
     if (!agentStorage) {
-      throw new Error(`Agent ${agentId} not found`)
+      throw new Error(`Agent ${agentId} not found`);
     }
 
     if (!agentStorage.memories.has(memoryId)) {
-      throw new Error(`Memory ${memoryId} not found for agent ${agentId}`)
+      throw new Error(`Memory ${memoryId} not found for agent ${agentId}`);
     }
 
-    agentStorage.memories.delete(memoryId)
-    agentStorage.lastAccessed = Date.now()
+    agentStorage.memories.delete(memoryId);
+    agentStorage.lastAccessed = Date.now();
 
-    console.log(`🗑️ Deleted memory: ${memoryId} for agent ${agentId}`)
+    console.log(`🗑️ Deleted memory: ${memoryId} for agent ${agentId}`);
   }
 
   /**
    * Clear all memories for an agent
    */
   async clear(agentId: string): Promise<void> {
-    const agentStorage = this.storage[agentId]
+    const agentStorage = this.storage[agentId];
     if (!agentStorage) {
-      return
+      return;
     }
 
-    const count = agentStorage.memories.size
-    agentStorage.memories.clear()
-    agentStorage.lastAccessed = Date.now()
+    const count = agentStorage.memories.size;
+    agentStorage.memories.clear();
+    agentStorage.lastAccessed = Date.now();
 
-    console.log(`🧹 Cleared ${count} memories for agent ${agentId}`)
+    console.log(`🧹 Cleared ${count} memories for agent ${agentId}`);
   }
 
   /**
    * Get statistics about an agent's memories
    */
-  async getStats(agentId: string): Promise<{ total: number; byType: Record<string, number> }> {
-    const agentStorage = this.storage[agentId]
+  async getStats(
+    agentId: string
+  ): Promise<{ total: number; byType: Record<string, number> }> {
+    const agentStorage = this.storage[agentId];
     if (!agentStorage) {
-      return { total: 0, byType: {} }
+      return { total: 0, byType: {} };
     }
 
-    const memories = Array.from(agentStorage.memories.values())
-    const total = memories.length
+    const memories = Array.from(agentStorage.memories.values());
+    const total = memories.length;
 
-    const byType: Record<string, number> = {}
-    memories.forEach(memory => {
-      const type = memory.type
-      byType[type] = (byType[type] || 0) + 1
-    })
+    const byType: Record<string, number> = {};
+    memories.forEach((memory) => {
+      const type = memory.type;
+      byType[type] = (byType[type] || 0) + 1;
+    });
 
-    return { total, byType }
+    return { total, byType };
   }
 
   /**
    * Clean up old and expired memories for an agent
    */
   async cleanup(agentId: string, retentionDays: number): Promise<void> {
-    const agentStorage = this.storage[agentId]
+    const agentStorage = this.storage[agentId];
     if (!agentStorage) {
-      return
+      return;
     }
 
-    const now = Date.now()
-    const cutoffTime = now - (retentionDays * 24 * 60 * 60 * 1000)
-    let expiredCount = 0
-    let oldCount = 0
+    const now = Date.now();
+    const cutoffTime = now - retentionDays * 24 * 60 * 60 * 1000;
+    let expiredCount = 0;
+    let oldCount = 0;
 
     // Clean up expired short-term memories and old memories
     for (const [id, memory] of agentStorage.memories) {
-      let shouldDelete = false
+      let shouldDelete = false;
 
       // Check for expired short-term memories
       if (memory.duration === MemoryDuration.SHORT_TERM && memory.expiresAt) {
         if (memory.expiresAt.getTime() <= now) {
-          shouldDelete = true
-          expiredCount++
+          shouldDelete = true;
+          expiredCount++;
         }
       }
 
       // Check for old memories beyond retention period
       if (!shouldDelete && memory.timestamp.getTime() < cutoffTime) {
-        shouldDelete = true
-        oldCount++
+        shouldDelete = true;
+        oldCount++;
       }
 
       if (shouldDelete) {
-        agentStorage.memories.delete(id)
+        agentStorage.memories.delete(id);
       }
     }
 
-    agentStorage.lastAccessed = now
+    agentStorage.lastAccessed = now;
 
-    console.log(`🧹 Cleaned up ${expiredCount} expired and ${oldCount} old memories for agent ${agentId}`)
+    console.log(
+      `🧹 Cleaned up ${expiredCount} expired and ${oldCount} old memories for agent ${agentId}`
+    );
   }
 
   /**
    * Export memories to JSON format
    */
-  async exportMemories(agentId?: string): Promise<Record<string, MemoryRecord[]>> {
-    const exported: Record<string, MemoryRecord[]> = {}
+  async exportMemories(
+    agentId?: string
+  ): Promise<Record<string, MemoryRecord[]>> {
+    const exported: Record<string, MemoryRecord[]> = {};
 
     if (agentId) {
-      const agentStorage = this.storage[agentId]
+      const agentStorage = this.storage[agentId];
       if (agentStorage) {
-        exported[agentId] = Array.from(agentStorage.memories.values())
+        exported[agentId] = Array.from(agentStorage.memories.values());
       }
     } else {
       for (const [id, storage] of Object.entries(this.storage)) {
-        exported[id] = Array.from(storage.memories.values())
+        exported[id] = Array.from(storage.memories.values());
       }
     }
 
-    return exported
+    return exported;
   }
 
   /**
@@ -361,55 +399,55 @@ export class InMemoryProvider extends BaseMemoryProvider {
       if (!this.storage[agentId]) {
         this.storage[agentId] = {
           memories: new Map(),
-          lastAccessed: Date.now()
-        }
+          lastAccessed: Date.now(),
+        };
       }
 
       for (const memory of memories) {
-        this.storage[agentId].memories.set(memory.id, memory)
+        this.storage[agentId].memories.set(memory.id, memory);
       }
     }
 
-    console.log(`📥 Imported memories for ${Object.keys(data).length} agents`)
+    console.log(`📥 Imported memories for ${Object.keys(data).length} agents`);
   }
 
   /**
    * Get provider statistics
    */
   getProviderStats(): {
-    totalAgents: number
-    totalMemories: number
-    memoryUsage: number
-    oldestMemory?: Date
-    newestMemory?: Date
+    totalAgents: number;
+    totalMemories: number;
+    memoryUsage: number;
+    oldestMemory?: Date;
+    newestMemory?: Date;
   } {
-    let totalMemories = 0
-    let oldestMemory: Date | undefined
-    let newestMemory: Date | undefined
+    let totalMemories = 0;
+    let oldestMemory: Date | undefined;
+    let newestMemory: Date | undefined;
 
     for (const storage of Object.values(this.storage)) {
-      totalMemories += storage.memories.size
+      totalMemories += storage.memories.size;
 
       for (const memory of storage.memories.values()) {
         if (!oldestMemory || memory.timestamp < oldestMemory) {
-          oldestMemory = memory.timestamp
+          oldestMemory = memory.timestamp;
         }
         if (!newestMemory || memory.timestamp > newestMemory) {
-          newestMemory = memory.timestamp
+          newestMemory = memory.timestamp;
         }
       }
     }
 
     // Rough memory usage calculation
-    const memoryUsage = totalMemories * 1000 // Estimate 1KB per memory
+    const memoryUsage = totalMemories * 1000; // Estimate 1KB per memory
 
     return {
       totalAgents: Object.keys(this.storage).length,
       totalMemories,
       memoryUsage,
       oldestMemory,
-      newestMemory
-    }
+      newestMemory,
+    };
   }
 
   /**
@@ -417,88 +455,96 @@ export class InMemoryProvider extends BaseMemoryProvider {
    */
   private calculateCosineSimilarity(a: number[], b: number[]): number {
     if (a.length !== b.length) {
-      return 0
+      return 0;
     }
 
-    let dotProduct = 0
-    let normA = 0
-    let normB = 0
+    let dotProduct = 0;
+    let normA = 0;
+    let normB = 0;
 
     for (let i = 0; i < a.length; i++) {
-      dotProduct += a[i] * b[i]
-      normA += a[i] * a[i]
-      normB += b[i] * b[i]
+      dotProduct += a[i] * b[i];
+      normA += a[i] * a[i];
+      normB += b[i] * b[i];
     }
 
-    const magnitude = Math.sqrt(normA) * Math.sqrt(normB)
-    return magnitude === 0 ? 0 : dotProduct / magnitude
+    const magnitude = Math.sqrt(normA) * Math.sqrt(normB);
+    return magnitude === 0 ? 0 : dotProduct / magnitude;
   }
 
   /**
    * Calculate text similarity using simple word matching
    */
   private calculateTextSimilarity(query: string, content: string): number {
-    const queryWords = query.split(/\s+/).filter(word => word.length > 2)
-    const contentWords = content.split(/\s+/)
+    const queryWords = query.split(/\s+/).filter((word) => word.length > 2);
+    const contentWords = content.split(/\s+/);
 
-    if (queryWords.length === 0) return 0
+    if (queryWords.length === 0) return 0;
 
-    let matches = 0
+    let matches = 0;
     for (const queryWord of queryWords) {
-      if (contentWords.some(word => word.includes(queryWord) || queryWord.includes(word))) {
-        matches++
+      if (
+        contentWords.some(
+          (word) => word.includes(queryWord) || queryWord.includes(word)
+        )
+      ) {
+        matches++;
       }
     }
 
-    return matches / queryWords.length
+    return matches / queryWords.length;
   }
 
   /**
    * Evict old memories when limit is reached
    */
   private async evictOldMemories(agentId: string): Promise<void> {
-    const agentStorage = this.storage[agentId]
-    if (!agentStorage) return
+    const agentStorage = this.storage[agentId];
+    if (!agentStorage) return;
 
-    const memories = Array.from(agentStorage.memories.entries())
-    
+    const memories = Array.from(agentStorage.memories.entries());
+
     // Sort by importance and timestamp, remove least important/oldest
     memories.sort(([, a], [, b]) => {
       if (a.importance !== b.importance) {
-        return a.importance - b.importance // Ascending (least important first)
+        return a.importance - b.importance; // Ascending (least important first)
       }
-      return a.timestamp.getTime() - b.timestamp.getTime() // Ascending (oldest first)
-    })
+      return a.timestamp.getTime() - b.timestamp.getTime(); // Ascending (oldest first)
+    });
 
     // Remove 10% of memories to make room
-    const toRemove = Math.floor(memories.length * 0.1)
+    const toRemove = Math.floor(memories.length * 0.1);
     for (let i = 0; i < toRemove; i++) {
-      agentStorage.memories.delete(memories[i][0])
+      agentStorage.memories.delete(memories[i][0]);
     }
 
-    console.log(`🧹 Evicted ${toRemove} memories for agent ${agentId} due to limit`)
+    console.log(
+      `🧹 Evicted ${toRemove} memories for agent ${agentId} due to limit`
+    );
   }
 
   /**
    * Perform automatic cleanup of expired memories
    */
   private performAutoCleanup(): void {
-    const now = Date.now()
+    const now = Date.now();
 
     for (const [agentId, storage] of Object.entries(this.storage)) {
-      let cleanedCount = 0
+      let cleanedCount = 0;
 
       for (const [id, memory] of storage.memories) {
         if (memory.duration === MemoryDuration.SHORT_TERM && memory.expiresAt) {
           if (memory.expiresAt.getTime() <= now) {
-            storage.memories.delete(id)
-            cleanedCount++
+            storage.memories.delete(id);
+            cleanedCount++;
           }
         }
       }
 
       if (cleanedCount > 0) {
-        console.log(`🧹 Auto-cleaned ${cleanedCount} expired memories for agent ${agentId}`)
+        console.log(
+          `🧹 Auto-cleaned ${cleanedCount} expired memories for agent ${agentId}`
+        );
       }
     }
   }
@@ -508,15 +554,15 @@ export class InMemoryProvider extends BaseMemoryProvider {
    */
   private saveToDisk(): void {
     if (!this.config.enablePersistence || !this.config.persistencePath) {
-      return
+      return;
     }
 
     try {
-      const data = this.exportMemories()
-      writeFileSync(this.config.persistencePath, JSON.stringify(data, null, 2))
-      console.log(`💾 Saved memories to ${this.config.persistencePath}`)
+      const data = this.exportMemories();
+      writeFileSync(this.config.persistencePath, JSON.stringify(data, null, 2));
+      console.log(`💾 Saved memories to ${this.config.persistencePath}`);
     } catch (error) {
-      console.error('❌ Failed to save memories to disk:', error)
+      console.error('❌ Failed to save memories to disk:', error);
     }
   }
 
@@ -525,29 +571,29 @@ export class InMemoryProvider extends BaseMemoryProvider {
    */
   private loadFromDisk(): void {
     if (!this.config.enablePersistence || !this.config.persistencePath) {
-      return
+      return;
     }
 
     try {
       if (existsSync(this.config.persistencePath)) {
-        const data = readFileSync(this.config.persistencePath, 'utf-8')
-        const parsed = JSON.parse(data)
-        
+        const data = readFileSync(this.config.persistencePath, 'utf-8');
+        const parsed = JSON.parse(data);
+
         // Convert timestamp strings back to Date objects
         for (const memories of Object.values(parsed) as MemoryRecord[][]) {
           for (const memory of memories) {
-            memory.timestamp = new Date(memory.timestamp)
+            memory.timestamp = new Date(memory.timestamp);
             if (memory.expiresAt) {
-              memory.expiresAt = new Date(memory.expiresAt)
+              memory.expiresAt = new Date(memory.expiresAt);
             }
           }
         }
 
-        this.importMemories(parsed)
-        console.log(`📥 Loaded memories from ${this.config.persistencePath}`)
+        this.importMemories(parsed);
+        console.log(`📥 Loaded memories from ${this.config.persistencePath}`);
       }
     } catch (error) {
-      console.error('❌ Failed to load memories from disk:', error)
+      console.error('❌ Failed to load memories from disk:', error);
     }
   }
 
@@ -561,20 +607,26 @@ export class InMemoryProvider extends BaseMemoryProvider {
     toTier: MemoryTierType
   ): Promise<void> {
     // For in-memory provider, this is a no-op as we don't have tier separation
-    console.log(`📝 Consolidating memory ${memoryId} from ${fromTier} to ${toTier} for agent ${agentId}`)
+    console.log(
+      `📝 Consolidating memory ${memoryId} from ${fromTier} to ${toTier} for agent ${agentId}`
+    );
   }
 
   /**
    * Retrieve memories from a specific tier
    */
-  async retrieveTier(agentId: string, tier: MemoryTierType, limit?: number): Promise<MemoryRecord[]> {
+  async retrieveTier(
+    agentId: string,
+    tier: MemoryTierType,
+    limit?: number
+  ): Promise<MemoryRecord[]> {
     // For in-memory provider, return all memories as we don't have tier separation
-    const agentData = this.storage[agentId]
+    const agentData = this.storage[agentId];
     if (!agentData?.memories) {
-      return []
+      return [];
     }
-    const memories = Array.from(agentData.memories.values())
-    return limit ? memories.slice(0, limit) : memories
+    const memories = Array.from(agentData.memories.values());
+    return limit ? memories.slice(0, limit) : memories;
   }
 
   /**
@@ -582,15 +634,21 @@ export class InMemoryProvider extends BaseMemoryProvider {
    */
   async archiveMemories(agentId: string): Promise<void> {
     // For in-memory provider, this could move memories to a separate archive storage
-    console.log(`🗂️ Archiving memories for agent ${agentId}`)
+    console.log(`🗂️ Archiving memories for agent ${agentId}`);
   }
 
   /**
    * Share memories between agents
    */
-  async shareMemories(agentId: string, memoryIds: string[], poolId: string): Promise<void> {
+  async shareMemories(
+    agentId: string,
+    memoryIds: string[],
+    poolId: string
+  ): Promise<void> {
     // For in-memory provider, this could copy memories to a shared pool
-    console.log(`🤝 Sharing ${memoryIds.length} memories from agent ${agentId} to pool ${poolId}`)
+    console.log(
+      `🤝 Sharing ${memoryIds.length} memories from agent ${agentId} to pool ${poolId}`
+    );
   }
 
   /**
@@ -600,16 +658,16 @@ export class InMemoryProvider extends BaseMemoryProvider {
     // Simple hash-based embedding for in-memory provider
     // In a real implementation, this would call an embedding service
     const hash = content.split('').reduce((a, b) => {
-      a = ((a << 5) - a) + b.charCodeAt(0)
-      return a & a
-    }, 0)
-    
+      a = (a << 5) - a + b.charCodeAt(0);
+      return a & a;
+    }, 0);
+
     // Generate a simple 384-dimensional embedding
-    const embedding = new Array(384).fill(0).map((_, i) => 
-      Math.sin(hash + i) * 0.1
-    )
-    
-    return embedding
+    const embedding = new Array(384)
+      .fill(0)
+      .map((_, i) => Math.sin(hash + i) * 0.1);
+
+    return embedding;
   }
 
   /**
@@ -617,25 +675,27 @@ export class InMemoryProvider extends BaseMemoryProvider {
    */
   async disconnect(): Promise<void> {
     if (this.autoSaveTimer) {
-      clearInterval(this.autoSaveTimer)
+      clearInterval(this.autoSaveTimer);
     }
     if (this.cleanupTimer) {
-      clearInterval(this.cleanupTimer)
+      clearInterval(this.cleanupTimer);
     }
 
     if (this.config.enablePersistence) {
-      this.saveToDisk()
+      this.saveToDisk();
     }
 
-    console.log('🔌 In-memory memory provider disconnected')
+    console.log('🔌 In-memory memory provider disconnected');
   }
 }
 
 /**
  * Create an in-memory memory provider
  */
-export function createInMemoryProvider(config: InMemoryConfig = {}): InMemoryProvider {
-  return new InMemoryProvider(config)
+export function createInMemoryProvider(
+  config: InMemoryConfig = {}
+): InMemoryProvider {
+  return new InMemoryProvider(config);
 }
 
 /**
@@ -646,6 +706,6 @@ export function createDefaultInMemoryProvider(): InMemoryProvider {
     maxMemoriesPerAgent: 1000,
     enablePersistence: false,
     enableAutoCleanup: true,
-    cleanupInterval: 60000 // 1 minute
-  })
+    cleanupInterval: 60000, // 1 minute
+  });
 }

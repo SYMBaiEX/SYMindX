@@ -1,8 +1,9 @@
-import React from 'react'
 import { Box, Text } from 'ink'
-import { Card3D } from '../ui/Card3D.js'
-import { cyberpunkTheme } from '../../themes/cyberpunk.js'
+import React from 'react'
+
 import { KeyBinding } from '../../hooks/useKeyboardNavigation.js'
+import { cyberpunkTheme } from '../../themes/cyberpunk.js'
+import { Card3D } from '../ui/Card3D.js'
 
 interface HelpOverlayProps {
   keyBindings: KeyBinding[]

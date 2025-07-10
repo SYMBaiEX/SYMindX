@@ -4,7 +4,7 @@
   "description": "An enterprise-focused AI assistant powered by Azure OpenAI, designed for business applications and professional workflows",
   "version": "1.0.0",
   "enabled": false,
-  
+
   "personality": {
     "traits": {
       "chaos": 0.1,
@@ -38,7 +38,7 @@
       "Organizational support"
     ]
   },
-  
+
   "autonomous": {
     "enabled": true,
     "independence_level": 0.6,
@@ -59,7 +59,7 @@
       ]
     }
   },
-  
+
   "memory": {
     "provider": "memory",
     "config": {
@@ -68,7 +68,7 @@
       "retention_policy": "business_focus"
     }
   },
-  
+
   "emotion": {
     "type": "composite",
     "config": {
@@ -83,7 +83,7 @@
       }
     }
   },
-  
+
   "cognition": {
     "type": "htn_planner",
     "config": {
@@ -92,7 +92,7 @@
       "reasoning_style": "systematic"
     }
   },
-  
+
   "communication": {
     "style": "business",
     "tone": "professional",
@@ -105,12 +105,9 @@
       "Respect organizational hierarchy"
     ]
   },
-  
-  "extensions": [
-    "api",
-    "telegram"
-  ],
-  
+
+  "extensions": ["api", "telegram"],
+
   "portals": {
     "primary": "azure-openai",
     "config": {

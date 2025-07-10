@@ -4,7 +4,7 @@
   "description": "A lightning-fast AI assistant powered by Groq's ultra-fast inference engine, optimized for speed and efficiency",
   "version": "1.0.0",
   "enabled": false,
-  
+
   "personality": {
     "traits": {
       "chaos": 0.4,
@@ -38,7 +38,7 @@
       "Rapid problem resolution"
     ]
   },
-  
+
   "autonomous": {
     "enabled": true,
     "independence_level": 0.8,
@@ -59,7 +59,7 @@
       ]
     }
   },
-  
+
   "memory": {
     "provider": "memory",
     "config": {
@@ -68,7 +68,7 @@
       "retention_policy": "recent_priority"
     }
   },
-  
+
   "emotion": {
     "type": "composite",
     "config": {
@@ -83,7 +83,7 @@
       }
     }
   },
-  
+
   "cognition": {
     "type": "reactive",
     "config": {
@@ -92,7 +92,7 @@
       "reasoning_style": "efficient"
     }
   },
-  
+
   "communication": {
     "style": "direct",
     "tone": "energetic",
@@ -105,12 +105,9 @@
       "Focus on actionable information"
     ]
   },
-  
-  "extensions": [
-    "api",
-    "telegram"
-  ],
-  
+
+  "extensions": ["api", "telegram"],
+
   "portals": {
     "primary": "groq",
     "config": {

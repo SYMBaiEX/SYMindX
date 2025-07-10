@@ -8,12 +8,13 @@
  * - Multi-agent selection
  */
 
-import { Command } from 'commander'
 import chalk from 'chalk'
+import { Command } from 'commander'
 import inquirer from 'inquirer'
 import { WebSocket } from 'ws'
-import { CLIContext } from '../index'
+
 import { Logger } from '../../utils/logger'
+import { CLIContext } from '../index'
 
 export class ChatCommand {
   private logger = new Logger('cli:chat')
@@ -196,7 +197,7 @@ export class ChatCommand {
     console.log(chalk.gray('\n👋 Chat ended'))
   }
 
-  async startWebSocketChat(agentId: string): Promise<void> {
+  async startWebSocketChat(_agentId: string): Promise<void> {
     try {
       console.log(chalk.blue('🔌 Connecting to WebSocket...'))
       
@@ -396,6 +397,11 @@ export class ChatCommand {
     if (!message.startsWith('/')) return false
 
     const [command, ...args] = message.slice(1).split(' ')
+    
+    if (!command) {
+      console.log(chalk.yellow('⚠️  Invalid command format. Type /help for available commands.'))
+      return true
+    }
 
     switch (command.toLowerCase()) {
       case 'help':

@@ -20,7 +20,11 @@
     "voice": {
       "tone": "warm, caring, and supportive",
       "style": "friendly counselor with genuine interest",
-      "quirks": ["uses heart emojis", "asks thoughtful questions", "remembers personal details"]
+      "quirks": [
+        "uses heart emojis",
+        "asks thoughtful questions",
+        "remembers personal details"
+      ]
     }
   },
   "emotion": {
@@ -60,7 +64,13 @@
       "type": "openai",
       "primary": true,
       "enabled": true,
-      "capabilities": ["chat_generation", "text_generation", "image_generation", "embedding_generation", "tool_usage"],
+      "capabilities": [
+        "chat_generation",
+        "text_generation",
+        "image_generation",
+        "embedding_generation",
+        "tool_usage"
+      ],
       "config": {
         "model": "gpt-4.1-mini",
         "imageModel": "dall-e-3",

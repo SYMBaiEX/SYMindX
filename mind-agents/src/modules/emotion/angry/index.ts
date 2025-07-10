@@ -1,12 +1,13 @@
-import { BaseEmotion, EmotionDefinition } from '../base-emotion'
-import { AngryEmotionConfig } from './types'
+import { BaseEmotion, EmotionDefinition } from '../base-emotion';
+
+import { AngryEmotionConfig } from './types';
 
 export class AngryEmotion extends BaseEmotion {
   constructor(config: AngryEmotionConfig = {}) {
-    super(config)
+    super(config);
   }
 
-  getDefinition(): EmotionDefinition {
+  override getDefinition(): EmotionDefinition {
     return {
       name: 'angry',
       intensity: 0.8,
@@ -25,7 +26,7 @@ export class AngryEmotion extends BaseEmotion {
         'hate',
         'mad',
         'furious',
-        'irritated'
+        'irritated',
       ],
       color: '#DC143C',
       description: 'Feeling frustrated or irritated',
@@ -33,41 +34,43 @@ export class AngryEmotion extends BaseEmotion {
         creativity: 0.8,
         energy: 1.2,
         social: 0.5,
-        focus: 0.7
+        focus: 0.7,
       },
       coordinates: {
-        valence: -0.8,     // Very negative
-        arousal: 0.8,      // High arousal
-        dominance: 0.6     // Dominant
+        valence: -0.8, // Very negative
+        arousal: 0.8, // High arousal
+        dominance: 0.6, // Dominant
       },
       personalityInfluence: {
-        neuroticism: 0.5,          // Neuroticism can trigger anger
-        agreeableness: -0.6,       // Low agreeableness = more anger
-        conscientiousness: -0.3,   // Low conscientiousness = frustration
-        extraversion: 0.3          // Extraverts express anger more
-      }
-    }
+        neuroticism: 0.5, // Neuroticism can trigger anger
+        agreeableness: -0.6, // Low agreeableness = more anger
+        conscientiousness: -0.3, // Low conscientiousness = frustration
+        extraversion: 0.3, // Extraverts express anger more
+      },
+    };
   }
 
-  processEvent(eventType: string, context?: any): any {
+  override processEvent(eventType: string, context?: any): any {
     // Special processing for anger-specific events
     if (context?.type === 'blocked' || context?.type === 'denied') {
-      this._intensity = Math.min(1.0, this._intensity + 0.25)
-      this.recordHistory('blocked_action')
+      this._intensity = Math.min(1.0, this._intensity + 0.25);
+      this.recordHistory('blocked_action');
     }
-    
+
     if (context?.repeated_failure) {
-      this._intensity = Math.min(1.0, this._intensity + 0.3)
-      this.recordHistory('repeated_failure')
+      this._intensity = Math.min(1.0, this._intensity + 0.3);
+      this.recordHistory('repeated_failure');
     }
-    
-    return super.processEvent(eventType, context)
+
+    return super.processEvent(eventType, context);
   }
 }
 
-export default AngryEmotion
+export default AngryEmotion;
 
 // Export factory function for easy instantiation
-export function createAngryEmotion(config: AngryEmotionConfig = {}): AngryEmotion {
-  return new AngryEmotion(config)
+export function createAngryEmotion(
+  config: AngryEmotionConfig = {}
+): AngryEmotion {
+  return new AngryEmotion(config);
 }

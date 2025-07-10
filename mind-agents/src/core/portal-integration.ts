@@ -1,31 +1,40 @@
 /**
  * Portal Integration Helper
- * 
+ *
  * Provides utilities for integrating AI portals with cognition and interaction systems
  */
 
-import { Agent } from '../types/agent'
-import { ChatMessage, MessageRole, Portal, PortalCapability, PortalType, AISDKToolSet } from '../types/portal'
-import { runtimeLogger } from '../utils/logger'
-import { PortalRouter } from '../portals/index'
-import { MCPResponseFormatter } from './mcp-response-formatter'
-import { experimental_createMCPClient } from 'ai'
-import { Experimental_StdioMCPTransport } from 'ai/mcp-stdio'
-import { z } from 'zod'
+import { experimental_createMCPClient } from 'ai';
+import { Experimental_StdioMCPTransport } from 'ai/mcp-stdio';
+import { z } from 'zod';
+
+import { PortalRouter } from '../portals/index';
+import { Agent } from '../types/agent';
+import {
+  ChatMessage,
+  MessageRole,
+  Portal,
+  PortalCapability,
+  PortalType,
+  AISDKToolSet,
+} from '../types/portal';
+import { runtimeLogger } from '../utils/logger';
+
+import { MCPResponseFormatter } from './mcp-response-formatter';
 
 export interface PortalSelectionCriteria {
-  capability: PortalCapability
-  priority?: 'speed' | 'quality' | 'cost' | 'local'
-  maxLatency?: number
-  minQuality?: number
-  requireLocal?: boolean
-  preferredProviders?: string[]
+  capability: PortalCapability;
+  priority?: 'speed' | 'quality' | 'cost' | 'local';
+  maxLatency?: number;
+  minQuality?: number;
+  requireLocal?: boolean;
+  preferredProviders?: string[];
   context?: {
-    messageLength?: number
-    complexity?: 'simple' | 'moderate' | 'complex'
-    urgency?: 'low' | 'medium' | 'high'
-    creativity?: number // 0-1
-  }
+    messageLength?: number;
+    complexity?: 'simple' | 'moderate' | 'complex';
+    urgency?: 'low' | 'medium' | 'high';
+    creativity?: number; // 0-1
+  };
 }
 
 export class PortalIntegration {
@@ -38,147 +47,160 @@ export class PortalIntegration {
    * @returns The AI-generated response
    */
   static async generateResponse(
-    agent: Agent, 
-    prompt: string, 
+    agent: Agent,
+    prompt: string,
     context?: Record<string, any>,
     criteria?: PortalSelectionCriteria
   ): Promise<string> {
     // Use dynamic portal selection if criteria provided
-    let chatPortal
+    let chatPortal;
     if (criteria) {
-      chatPortal = this.selectPortal(agent, criteria)
+      chatPortal = this.selectPortal(agent, criteria);
     } else {
       // Default selection
-      chatPortal = (agent as any).findPortalByCapability?.('chat_generation') || agent.portal
+      chatPortal =
+        (agent as any).findPortalByCapability?.('chat_generation') ||
+        agent.portal;
     }
-    
+
     if (!chatPortal || !chatPortal.generateChat) {
-      runtimeLogger.warn('⚠️ No chat-capable portal available, using fallback response')
-      return this.getFallbackResponse(prompt)
+      runtimeLogger.warn(
+        '⚠️ No chat-capable portal available, using fallback response'
+      );
+      return this.getFallbackResponse(prompt);
     }
 
     try {
       // MCP tools will be created dynamically below
-      
+
       // Build conversation context
-      const messages: ChatMessage[] = []
-      
+      const messages: ChatMessage[] = [];
+
       // Add system message with agent personality and enhanced context
       if (agent.config?.core) {
         let systemContent = `You are ${agent.name}${agent.config.lore?.origin ? `, ${agent.config.lore.origin}` : ''}. 
-Your personality traits: ${agent.config.core.personality?.join(', ') || 'helpful, friendly'}.`
-        
+Your personality traits: ${agent.config.core.personality?.join(', ') || 'helpful, friendly'}.`;
+
         // Add tool usage instructions (tools will be added dynamically)
         systemContent += `\n\nYou may have access to tools. When you need to use a tool, use the tool calling mechanism provided by the model, not JSON in your response text.
-Tools will be automatically executed and their results will be available for you to use in your response.`
+Tools will be automatically executed and their results will be available for you to use in your response.`;
 
         // Add communication style and guidelines from character config
         if (agent.characterConfig?.communication) {
-          const comm = agent.characterConfig.communication
+          const comm = agent.characterConfig.communication;
           if (comm.style) {
-            systemContent += `\nCommunication style: ${comm.style}.`
+            systemContent += `\nCommunication style: ${comm.style}.`;
           }
           if (comm.tone) {
-            systemContent += `\nTone: ${comm.tone}.`
+            systemContent += `\nTone: ${comm.tone}.`;
           }
           if (comm.verbosity) {
-            systemContent += `\nResponse length: ${comm.verbosity}.`
+            systemContent += `\nResponse length: ${comm.verbosity}.`;
           }
-          
+
           // Add communication guidelines for natural conversation
           if (comm.guidelines && Array.isArray(comm.guidelines)) {
-            systemContent += `\n\nCommunication guidelines:`
+            systemContent += `\n\nCommunication guidelines:`;
             comm.guidelines.forEach((guideline: string) => {
-              systemContent += `\n- ${guideline}`
-            })
+              systemContent += `\n- ${guideline}`;
+            });
           }
         }
 
         // Add enhanced system prompt that includes emotional and cognitive context
         if (context?.systemPrompt) {
-          systemContent += `\n\n${context.systemPrompt}`
+          systemContent += `\n\n${context.systemPrompt}`;
         }
 
         // Add cognitive insights if available
-        if (context && context.cognitiveContext && context.cognitiveContext.thoughts && context.cognitiveContext.thoughts.length > 0) {
-          systemContent += `\n\nYour recent cognitive analysis:`
-          systemContent += `\n- Thoughts: ${context.cognitiveContext.thoughts.join(', ')}`
-          
+        if (
+          context &&
+          context.cognitiveContext &&
+          context.cognitiveContext.thoughts &&
+          context.cognitiveContext.thoughts.length > 0
+        ) {
+          systemContent += `\n\nYour recent cognitive analysis:`;
+          systemContent += `\n- Thoughts: ${context.cognitiveContext.thoughts.join(', ')}`;
+
           if (context.cognitiveContext.cognitiveConfidence !== undefined) {
-            systemContent += `\n- Analysis confidence: ${(context.cognitiveContext.cognitiveConfidence * 100).toFixed(0)}%`
+            systemContent += `\n- Analysis confidence: ${(context.cognitiveContext.cognitiveConfidence * 100).toFixed(0)}%`;
           }
-          
-          systemContent += `\nIncorporate these insights naturally into your response.`
+
+          systemContent += `\nIncorporate these insights naturally into your response.`;
         }
 
         messages.push({
           role: MessageRole.SYSTEM,
-          content: systemContent
-        })
+          content: systemContent,
+        });
       }
 
       // Add context as assistant message if provided
       if (context?.previousThoughts) {
         messages.push({
           role: MessageRole.ASSISTANT,
-          content: `My recent thoughts: ${context.previousThoughts}`
-        })
+          content: `My recent thoughts: ${context.previousThoughts}`,
+        });
       }
 
       // Add the user's message
       messages.push({
         role: MessageRole.USER,
-        content: prompt
-      })
+        content: prompt,
+      });
 
-      runtimeLogger.portal(`🤖 ${agent.name} is thinking using ${chatPortal.name}...`)
-      
+      runtimeLogger.portal(
+        `🤖 ${agent.name} is thinking using ${chatPortal.name}...`
+      );
+
       // Create MCP tools directly using AI SDK v5 approach
-      let mcpTools: AISDKToolSet | undefined = undefined
-      let mcpClient: { 
-        tools: () => Promise<AISDKToolSet>
-        close: () => Promise<void> 
-      } | undefined = undefined
-      
+      let mcpTools: AISDKToolSet | undefined = undefined;
+      let mcpClient:
+        | {
+            tools: () => Promise<AISDKToolSet>;
+            close: () => Promise<void>;
+          }
+        | undefined = undefined;
+
       try {
         // Check if agent has MCP server configuration
-        const mcpServers = (agent.characterConfig as any)?.mcpServers
+        const mcpServers = (agent.characterConfig as any)?.mcpServers;
         if (mcpServers) {
           // Create MCP client for Context7
           if (mcpServers.context7) {
             const transport = new Experimental_StdioMCPTransport({
               command: 'npx',
-              args: ['-y', '@upstash/context7-mcp']
-            })
+              args: ['-y', '@upstash/context7-mcp'],
+            });
             mcpClient = await experimental_createMCPClient({
-              transport
-            })
-            
+              transport,
+            });
+
             // Get MCP tools and fix schema for OpenAI compatibility
-            const rawTools = await mcpClient.tools()
-            runtimeLogger.debug('Raw MCP tools:', Object.keys(rawTools))
-            mcpTools = this.fixMCPToolsForOpenAI(rawTools)
-            runtimeLogger.debug('Fixed MCP tools for OpenAI')
+            const rawTools = await mcpClient.tools();
+            runtimeLogger.debug('Raw MCP tools:', Object.keys(rawTools));
+            mcpTools = this.fixMCPToolsForOpenAI(rawTools);
+            runtimeLogger.debug('Fixed MCP tools for OpenAI');
           }
         }
       } catch (error) {
-        runtimeLogger.error(`Failed to create MCP tools: ${error}`)
-        mcpTools = undefined
+        runtimeLogger.error(`Failed to create MCP tools: ${error}`);
+        mcpTools = undefined;
       }
-      
+
       // Generate response using the portal with MCP tools (pass directly without conversion)
       const result = await chatPortal.generateChat(messages, {
         maxTokens: 2048,
         temperature: 0.4,
-        tools: mcpTools  // Use 'tools' instead of 'functions' for AI SDK v5
-      })
-      
+        tools: mcpTools, // Use 'tools' instead of 'functions' for AI SDK v5
+      });
+
       // Clean up MCP client
       if (mcpClient) {
         try {
-          await mcpClient.close()
+          await mcpClient.close();
         } catch (error) {
-          runtimeLogger.warn(`Failed to close MCP client: ${error}`)
+          runtimeLogger.warn(`Failed to close MCP client: ${error}`);
         }
       }
 
@@ -186,13 +208,16 @@ Tools will be automatically executed and their results will be available for you
       MCPResponseFormatter.logConversationFlow('portal-response-received', {
         hasText: !!result.text,
         hasToolResults: !!(result as any).toolResults?.length,
-        model: (result as any).metadata?.model || chatPortal.name
-      })
+        model: (result as any).metadata?.model || chatPortal.name,
+      });
 
       // Handle tool results if present (AI SDK v5 pattern)
-      if ((result as any).toolResults && (result as any).toolResults.length > 0) {
-        const toolResults = (result as any).toolResults
-        
+      if (
+        (result as any).toolResults &&
+        (result as any).toolResults.length > 0
+      ) {
+        const toolResults = (result as any).toolResults;
+
         // Format tool results naturally
         const formattedToolResults = MCPResponseFormatter.formatToolResults(
           toolResults.map((tr: any) => ({
@@ -200,59 +225,61 @@ Tools will be automatically executed and their results will be available for you
             args: tr.args,
             result: tr.result,
             error: tr.error,
-            timestamp: new Date()
+            timestamp: new Date(),
           })),
           {
             userQuery: prompt,
             agentPersonality: agent.name,
             responseStyle: 'conversational',
-            previousMessages: messages
+            previousMessages: messages,
           }
-        )
+        );
 
         // Log tool execution completion
         MCPResponseFormatter.logConversationFlow('tool-results-integrated', {
           toolCount: toolResults.length,
-          formattedLength: formattedToolResults.length
-        })
+          formattedLength: formattedToolResults.length,
+        });
 
         // Combine AI response with formatted tool results
-        const aiText = result.text || result.message?.content || ''
-        
+        const aiText = result.text || result.message?.content || '';
+
         // AI SDK v5 pattern: Let the model's response lead, augmented by tool results
         if (aiText) {
           // Model already incorporated tool results in its response
-          return aiText
+          return aiText;
         } else {
           // Model didn't provide text, use formatted tool results
-          return formattedToolResults
+          return formattedToolResults;
         }
       }
 
       // Handle regular responses (no tool results)
       if (result.text) {
-        return result.text
+        return result.text;
       } else if (result.message?.content) {
-        return result.message.content
+        return result.message.content;
       } else if ((result as any).success === false) {
-        console.warn('⚠️ Portal generation failed:', (result as any).error)
-        return this.getFallbackResponse(prompt)
+        console.warn('⚠️ Portal generation failed:', (result as any).error);
+        return this.getFallbackResponse(prompt);
       } else {
-        console.warn('⚠️ Unexpected portal result format:', result)
-        return this.getFallbackResponse(prompt)
+        console.warn('⚠️ Unexpected portal result format:', result);
+        return this.getFallbackResponse(prompt);
       }
-
     } catch (error) {
-      console.error('❌ Error generating AI response:', error)
+      console.error('❌ Error generating AI response:', error);
       // Log more details about the error
       if (error instanceof Error) {
-        console.error('Error message:', error.message)
-        console.error('Error stack:', error.stack)
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
       }
       // Log the portal and tools info for debugging
-      console.error('Portal used:', chatPortal.name)
-      console.error('Tools available:', agent.toolSystem ? Object.keys(agent.toolSystem).length : 0)
-      return this.getFallbackResponse(prompt)
+      console.error('Portal used:', chatPortal.name);
+      console.error(
+        'Tools available:',
+        agent.toolSystem ? Object.keys(agent.toolSystem).length : 0
+      );
+      return this.getFallbackResponse(prompt);
     }
   }
 
@@ -261,82 +288,94 @@ Tools will be automatically executed and their results will be available for you
    * Convert raw MCP schemas to proper AI SDK v5 tool format
    */
   private static fixMCPToolsForOpenAI(tools: any): AISDKToolSet {
-    const fixedTools: any = {}
-    
+    const fixedTools: any = {};
+
     for (const [toolName, tool] of Object.entries(tools)) {
       try {
-        const toolDef = tool as any
-        
+        const toolDef = tool as any;
+
         runtimeLogger.debug(`Processing MCP tool: ${toolName}`, {
           hasParameters: !!toolDef.parameters,
-          hasExecute: typeof toolDef.execute === 'function'
-        })
-        
+          hasExecute: typeof toolDef.execute === 'function',
+        });
+
         // Convert MCP tool to AI SDK v5 format
         if (toolDef && toolDef.parameters) {
           // Build a Zod schema from the JSON schema
-          const jsonSchema = toolDef.parameters
-          let zodSchema = z.object({})
-          
+          const jsonSchema = toolDef.parameters;
+          let zodSchema = z.object({});
+
           if (jsonSchema.properties) {
-            const schemaFields: Record<string, any> = {}
-            
-            for (const [propName, propDef] of Object.entries(jsonSchema.properties)) {
-              const prop = propDef as any
-              
+            const schemaFields: Record<string, any> = {};
+
+            for (const [propName, propDef] of Object.entries(
+              jsonSchema.properties
+            )) {
+              const prop = propDef as any;
+
               // Convert JSON Schema to Zod
-              let fieldSchema
+              let fieldSchema;
               if (prop.type === 'string') {
-                fieldSchema = z.string()
+                fieldSchema = z.string();
               } else if (prop.type === 'number') {
-                fieldSchema = z.number()
+                fieldSchema = z.number();
               } else if (prop.type === 'boolean') {
-                fieldSchema = z.boolean()
+                fieldSchema = z.boolean();
               } else {
-                fieldSchema = z.string() // Default to string
+                fieldSchema = z.string(); // Default to string
               }
-              
+
               // Add description if available
               if (prop.description) {
-                fieldSchema = fieldSchema.describe(prop.description)
+                fieldSchema = fieldSchema.describe(prop.description);
               }
-              
+
               // Make optional if not in required array
-              const required = jsonSchema.required || []
+              const required = jsonSchema.required || [];
               if (!required.includes(propName)) {
-                fieldSchema = fieldSchema.optional()
+                fieldSchema = fieldSchema.optional();
               }
-              
-              schemaFields[propName] = fieldSchema
+
+              schemaFields[propName] = fieldSchema;
             }
-            
-            zodSchema = z.object(schemaFields)
+
+            zodSchema = z.object(schemaFields);
           }
-          
+
           // Create AI SDK v5 compatible tool
           fixedTools[toolName] = {
             description: toolDef.description || toolName,
             parameters: zodSchema,
-            execute: toolDef.execute || (async (args: any) => {
-              runtimeLogger.warn(`Tool ${toolName} executed without implementation`)
-              return { result: 'Tool executed but no implementation provided' }
-            })
-          }
-          
-          runtimeLogger.debug(`Fixed tool ${toolName} with Zod schema`)
+            execute:
+              toolDef.execute ||
+              (async (args: any) => {
+                runtimeLogger.warn(
+                  `Tool ${toolName} executed without implementation`
+                );
+                return {
+                  result: 'Tool executed but no implementation provided',
+                };
+              }),
+          };
+
+          runtimeLogger.debug(`Fixed tool ${toolName} with Zod schema`);
         } else {
           // Keep original if it's already in the right format
-          fixedTools[toolName] = tool
+          fixedTools[toolName] = tool;
         }
       } catch (error) {
-        runtimeLogger.warn(`Failed to fix schema for tool ${toolName}: ${error}`)
+        runtimeLogger.warn(
+          `Failed to fix schema for tool ${toolName}: ${error}`
+        );
         // Skip problematic tools
-        continue
+        continue;
       }
     }
-    
-    runtimeLogger.debug(`Fixed ${Object.keys(fixedTools).length} MCP tools for OpenAI`)
-    return fixedTools
+
+    runtimeLogger.debug(
+      `Fixed ${Object.keys(fixedTools).length} MCP tools for OpenAI`
+    );
+    return fixedTools;
   }
 
   /**
@@ -345,16 +384,16 @@ Tools will be automatically executed and their results will be available for you
    * @returns A basic response
    */
   private static getFallbackResponse(prompt: string): string {
-    const lowerPrompt = prompt.toLowerCase()
-    
+    const lowerPrompt = prompt.toLowerCase();
+
     if (lowerPrompt.includes('hello') || lowerPrompt.includes('hi')) {
-      return "Hey! I'm having some technical issues right now."
+      return "Hey! I'm having some technical issues right now.";
     } else if (lowerPrompt.includes('how are you')) {
-      return "I'm here, but having some connection problems at the moment."
+      return "I'm here, but having some connection problems at the moment.";
     } else if (lowerPrompt.includes('help')) {
-      return "I'd like to help, but I'm having technical difficulties. Try again in a bit?"
+      return "I'd like to help, but I'm having technical difficulties. Try again in a bit?";
     } else {
-      return "Sorry, I'm having some technical issues right now. Give me a moment to sort this out."
+      return "Sorry, I'm having some technical issues right now. Give me a moment to sort this out.";
     }
   }
 
@@ -373,18 +412,19 @@ Tools will be automatically executed and their results will be available for you
 - Recent events: ${context.events?.length || 0} events
 - Emotional state: ${agent.emotion?.current || 'neutral'}
 
-What are your current thoughts? Respond with 2-3 brief thoughts.`
+What are your current thoughts? Respond with 2-3 brief thoughts.`;
 
     const response = await this.generateResponse(agent, prompt, {
-      systemPrompt: "Think naturally about the situation. Express your thoughts as if talking to yourself."
-    })
+      systemPrompt:
+        'Think naturally about the situation. Express your thoughts as if talking to yourself.',
+    });
 
     // Split response into individual thoughts
     return response
       .split(/[.!?]+/)
-      .map(thought => thought.trim())
-      .filter(thought => thought.length > 0)
-      .slice(0, 3)
+      .map((thought) => thought.trim())
+      .filter((thought) => thought.length > 0)
+      .slice(0, 3);
   }
 
   /**
@@ -395,7 +435,12 @@ What are your current thoughts? Respond with 2-3 brief thoughts.`
     prompt: string,
     context?: Record<string, any>
   ): Promise<string> {
-    return this.generateResponse(agent, prompt, context, this.strategies.fastResponse())
+    return this.generateResponse(
+      agent,
+      prompt,
+      context,
+      this.strategies.fastResponse()
+    );
   }
 
   /**
@@ -406,7 +451,12 @@ What are your current thoughts? Respond with 2-3 brief thoughts.`
     prompt: string,
     context?: Record<string, any>
   ): Promise<string> {
-    return this.generateResponse(agent, prompt, context, this.strategies.highQuality())
+    return this.generateResponse(
+      agent,
+      prompt,
+      context,
+      this.strategies.highQuality()
+    );
   }
 
   /**
@@ -417,28 +467,35 @@ What are your current thoughts? Respond with 2-3 brief thoughts.`
     prompt: string,
     context?: Record<string, any>
   ): Promise<string> {
-    return this.generateResponse(agent, prompt, context, this.strategies.creative())
+    return this.generateResponse(
+      agent,
+      prompt,
+      context,
+      this.strategies.creative()
+    );
   }
 
   /**
    * List available portals for an agent
    */
   static listAvailablePortals(agent: Agent): string[] {
-    const portals: string[] = []
-    
+    const portals: string[] = [];
+
     if (agent.portal) {
-      portals.push(`${agent.portal.name} (default)`)
+      portals.push(`${agent.portal.name} (default)`);
     }
-    
+
     if (agent.portals) {
-      agent.portals.forEach(portal => {
-        const capabilities = (portal as any).capabilities || []
-        const status = portal.enabled ? '✓' : '✗'
-        portals.push(`${status} ${portal.name} (${portal.type}) - ${capabilities.join(', ')}`)
-      })
+      agent.portals.forEach((portal) => {
+        const capabilities = (portal as any).capabilities || [];
+        const status = portal.enabled ? '✓' : '✗';
+        portals.push(
+          `${status} ${portal.name} (${portal.type}) - ${capabilities.join(', ')}`
+        );
+      });
     }
-    
-    return portals
+
+    return portals;
   }
 
   /**
@@ -449,36 +506,36 @@ What are your current thoughts? Respond with 2-3 brief thoughts.`
     criteria: PortalSelectionCriteria
   ): Portal | undefined {
     if (!agent.portals || agent.portals.length === 0) {
-      return agent.portal
+      return agent.portal;
     }
 
     // Filter portals by capability
-    const capablePortals = agent.portals.filter(portal => {
-      if (!portal.enabled) return false
-      
+    const capablePortals = agent.portals.filter((portal) => {
+      if (!portal.enabled) return false;
+
       // Check if portal has the required capability
       if (typeof (portal as any).hasCapability === 'function') {
-        return (portal as any).hasCapability(criteria.capability)
+        return (portal as any).hasCapability(criteria.capability);
       }
-      
+
       // Fallback to checking capabilities array
-      return (portal as any).capabilities?.includes(criteria.capability)
-    })
+      return (portal as any).capabilities?.includes(criteria.capability);
+    });
 
     if (capablePortals.length === 0) {
-      return agent.portal // Fallback to default
+      return agent.portal; // Fallback to default
     }
 
     // Score portals based on criteria
-    const scoredPortals = capablePortals.map(portal => ({
+    const scoredPortals = capablePortals.map((portal) => ({
       portal,
-      score: this.scorePortal(portal, criteria)
-    }))
+      score: this.scorePortal(portal, criteria),
+    }));
 
     // Sort by score (highest first)
-    scoredPortals.sort((a, b) => b.score - a.score)
+    scoredPortals.sort((a, b) => b.score - a.score);
 
-    return scoredPortals[0].portal
+    return scoredPortals[0].portal;
   }
 
   /**
@@ -488,89 +545,105 @@ What are your current thoughts? Respond with 2-3 brief thoughts.`
     portal: Portal,
     criteria: PortalSelectionCriteria
   ): number {
-    let score = 0
-    const config = (portal as any).config || {}
+    let score = 0;
+    const config = (portal as any).config || {};
 
     // Check if it's a preferred provider
     if (criteria.preferredProviders?.includes(portal.type)) {
-      score += 50
+      score += 50;
     }
 
     // Priority-based scoring
     switch (criteria.priority) {
       case 'speed':
         // Groq and local models are typically faster
-        if (portal.type === PortalType.GROQ || portal.type === PortalType.OLLAMA || portal.type === PortalType.LMSTUDIO) {
-          score += 30
+        if (
+          portal.type === PortalType.GROQ ||
+          portal.type === PortalType.OLLAMA ||
+          portal.type === PortalType.LMSTUDIO
+        ) {
+          score += 30;
         }
         // Smaller models are faster
         if (config.model?.includes('8b') || config.model?.includes('mini')) {
-          score += 20
+          score += 20;
         }
-        break
+        break;
 
       case 'quality':
         // GPT-4 and Claude models are highest quality
-        if (config.model?.includes('gpt-4') || config.model?.includes('claude')) {
-          score += 30
+        if (
+          config.model?.includes('gpt-4') ||
+          config.model?.includes('claude')
+        ) {
+          score += 30;
         }
         // Larger models have better quality
         if (config.model?.includes('70b') || config.model?.includes('opus')) {
-          score += 20
+          score += 20;
         }
-        break
+        break;
 
       case 'cost':
         // Local models are free
-        if (portal.type === PortalType.OLLAMA || portal.type === PortalType.LMSTUDIO) {
-          score += 40
+        if (
+          portal.type === PortalType.OLLAMA ||
+          portal.type === PortalType.LMSTUDIO
+        ) {
+          score += 40;
         }
         // Smaller models are cheaper
         if (config.model?.includes('mini') || config.model?.includes('haiku')) {
-          score += 20
+          score += 20;
         }
-        break
+        break;
 
       case 'local':
         // Prefer local models
-        if (portal.type === PortalType.OLLAMA || portal.type === PortalType.LMSTUDIO) {
-          score += 50
+        if (
+          portal.type === PortalType.OLLAMA ||
+          portal.type === PortalType.LMSTUDIO
+        ) {
+          score += 50;
         }
-        break
+        break;
     }
 
     // Context-based scoring
     if (criteria.context) {
-      const ctx = criteria.context
+      const ctx = criteria.context;
 
       // Complex queries benefit from better models
       if (ctx.complexity === 'complex') {
         if (config.model?.includes('gpt-4') || config.model?.includes('70b')) {
-          score += 15
+          score += 15;
         }
       }
 
       // High urgency prefers fast models
       if (ctx.urgency === 'high') {
-        if (portal.type === PortalType.GROQ || config.model?.includes('instant')) {
-          score += 15
+        if (
+          portal.type === PortalType.GROQ ||
+          config.model?.includes('instant')
+        ) {
+          score += 15;
         }
       }
 
       // Creative tasks benefit from higher temperature models
       if (ctx.creativity && ctx.creativity > 0.7) {
         if (config.temperature && config.temperature > 0.7) {
-          score += 10
+          score += 10;
         }
       }
     }
 
     // Bonus for primary portal (slight preference)
     if ((portal as any).primary) {
-      score += 5
+      score += 5;
     }
 
-    return score
+    return score;
   }
 
   /**
@@ -583,33 +656,35 @@ What are your current thoughts? Respond with 2-3 brief thoughts.`
     context?: string,
     criteria?: string[]
   ): Promise<{
-    analysis: string
-    recommendations?: string[]
-    confidence?: number
-    model?: string
+    analysis: string;
+    recommendations?: string[];
+    confidence?: number;
+    model?: string;
   }> {
     try {
       const result = await PortalRouter.evaluateTask(agent, {
         task,
         context,
         criteria,
-        outputFormat: 'structured'
-      })
+        outputFormat: 'structured',
+      });
 
-      runtimeLogger.portal(`🔧 Task evaluated using tool model: ${result.metadata?.model}`)
-      
+      runtimeLogger.portal(
+        `🔧 Task evaluated using tool model: ${result.metadata?.model}`
+      );
+
       return {
         analysis: result.analysis,
         recommendations: result.recommendations,
         confidence: result.confidence,
-        model: result.metadata?.model
-      }
+        model: result.metadata?.model,
+      };
     } catch (error) {
-      console.error('❌ Task evaluation failed:', error)
+      console.error('❌ Task evaluation failed:', error);
       return {
         analysis: 'Unable to evaluate task at this time',
-        confidence: 0
-      }
+        confidence: 0,
+      };
     }
   }
 
@@ -619,23 +694,23 @@ What are your current thoughts? Respond with 2-3 brief thoughts.`
   static async routeRequest(
     agent: Agent,
     request: {
-      type: 'chat' | 'action' | 'evaluation' | 'function_call'
-      message?: string
-      hasTools?: boolean
-      userFacing?: boolean
+      type: 'chat' | 'action' | 'evaluation' | 'function_call';
+      message?: string;
+      hasTools?: boolean;
+      userFacing?: boolean;
     }
   ): Promise<{
-    portal: Portal | undefined
-    modelType: 'chat' | 'tool'
-    reasoning: string
+    portal: Portal | undefined;
+    modelType: 'chat' | 'tool';
+    reasoning: string;
   }> {
-    const decision = PortalRouter.getModelType(agent, request)
-    
+    const decision = PortalRouter.getModelType(agent, request);
+
     runtimeLogger.portal(
       `🚦 Routing ${request.type} to ${decision.modelType} model: ${decision.reasoning}`
-    )
-    
-    return decision
+    );
+
+    return decision;
   }
 
   /**
@@ -652,64 +727,68 @@ What are your current thoughts? Respond with 2-3 brief thoughts.`
     context?: Record<string, any>,
     onChunk?: (chunk: string) => void
   ): AsyncGenerator<string, void, unknown> {
-    const chatPortal = (agent as any).findPortalByCapability?.('chat_generation') || agent.portal
-    
+    const chatPortal =
+      (agent as any).findPortalByCapability?.('chat_generation') ||
+      agent.portal;
+
     if (!chatPortal || !(chatPortal as any).generateChatStream) {
       // Fallback to non-streaming
-      const response = await this.generateResponse(agent, prompt, context)
-      yield response
-      return
+      const response = await this.generateResponse(agent, prompt, context);
+      yield response;
+      return;
     }
 
     try {
-      const messages: ChatMessage[] = []
-      
+      const messages: ChatMessage[] = [];
+
       // Build messages array (same as generateResponse)
       if (agent.config?.core) {
-        let systemContent = `You are ${agent.name}. `
+        let systemContent = `You are ${agent.name}. `;
         if (agent.characterConfig?.communication) {
-          const comm = agent.characterConfig.communication
-          if (comm.style) systemContent += `Communication style: ${comm.style}. `
-          if (comm.tone) systemContent += `Tone: ${comm.tone}. `
+          const comm = agent.characterConfig.communication;
+          if (comm.style)
+            systemContent += `Communication style: ${comm.style}. `;
+          if (comm.tone) systemContent += `Tone: ${comm.tone}. `;
         }
-        
+
         messages.push({
           role: MessageRole.SYSTEM,
-          content: systemContent
-        })
+          content: systemContent,
+        });
       }
-      
+
       messages.push({
         role: MessageRole.USER,
-        content: prompt
-      })
+        content: prompt,
+      });
 
       // Check for MCP tools
-      const hasMCPTools = agent.toolSystem && Object.keys(agent.toolSystem).length > 0
-      
+      const hasMCPTools =
+        agent.toolSystem && Object.keys(agent.toolSystem).length > 0;
+
       // Stream the response
       const stream = await (chatPortal as any).generateChatStream(messages, {
         maxTokens: 2048,
         temperature: 0.4,
-        functions: hasMCPTools ? agent.toolSystem : undefined
-      })
+        functions: hasMCPTools ? agent.toolSystem : undefined,
+      });
 
-      let buffer = ''
-      const toolResults: any[] = []
+      let buffer = '';
+      const toolResults: any[] = [];
 
       // Process the stream following AI SDK v5 patterns
       for await (const chunk of stream) {
         // Handle different chunk types
         if (chunk.type === 'text-delta') {
-          buffer += chunk.text
-          if (onChunk) onChunk(chunk.text)
-          yield chunk.text
+          buffer += chunk.text;
+          if (onChunk) onChunk(chunk.text);
+          yield chunk.text;
         } else if (chunk.type === 'tool-call') {
           // Log tool call initiation
           MCPResponseFormatter.logConversationFlow('tool-call-initiated', {
             toolName: chunk.toolName,
-            args: chunk.args
-          })
+            args: chunk.args,
+          });
         } else if (chunk.type === 'tool-result') {
           // Collect tool results
           toolResults.push({
@@ -717,8 +796,8 @@ What are your current thoughts? Respond with 2-3 brief thoughts.`
             args: chunk.args,
             result: chunk.result,
             error: chunk.error,
-            timestamp: new Date()
-          })
+            timestamp: new Date(),
+          });
         }
       }
 
@@ -729,22 +808,21 @@ What are your current thoughts? Respond with 2-3 brief thoughts.`
           {
             userQuery: prompt,
             agentPersonality: agent.name,
-            responseStyle: 'conversational'
+            responseStyle: 'conversational',
           }
-        )
-        
+        );
+
         // Only yield tool results if no text was generated
         if (!buffer.trim()) {
-          if (onChunk) onChunk(formattedResults)
-          yield formattedResults
+          if (onChunk) onChunk(formattedResults);
+          yield formattedResults;
         }
       }
-
     } catch (error) {
-      console.error('❌ Error in streaming generation:', error)
-      const fallback = this.getFallbackResponse(prompt)
-      if (onChunk) onChunk(fallback)
-      yield fallback
+      console.error('❌ Error in streaming generation:', error);
+      const fallback = this.getFallbackResponse(prompt);
+      if (onChunk) onChunk(fallback);
+      yield fallback;
     }
   }
 
@@ -755,36 +833,36 @@ What are your current thoughts? Respond with 2-3 brief thoughts.`
     fastResponse: (): PortalSelectionCriteria => ({
       capability: PortalCapability.CHAT_GENERATION,
       priority: 'speed',
-      context: { urgency: 'high' }
+      context: { urgency: 'high' },
     }),
 
     highQuality: (): PortalSelectionCriteria => ({
       capability: PortalCapability.CHAT_GENERATION,
       priority: 'quality',
-      context: { complexity: 'complex' }
+      context: { complexity: 'complex' },
     }),
 
     creative: (): PortalSelectionCriteria => ({
       capability: PortalCapability.CHAT_GENERATION,
       priority: 'quality',
-      context: { creativity: 0.9 }
+      context: { creativity: 0.9 },
     }),
 
     costEffective: (): PortalSelectionCriteria => ({
       capability: PortalCapability.CHAT_GENERATION,
-      priority: 'cost'
+      priority: 'cost',
     }),
 
     privateLocal: (): PortalSelectionCriteria => ({
       capability: PortalCapability.CHAT_GENERATION,
       priority: 'local',
-      requireLocal: true
+      requireLocal: true,
     }),
 
     toolEvaluation: (): PortalSelectionCriteria => ({
       capability: PortalCapability.EVALUATION,
       priority: 'speed',
-      context: { complexity: 'simple' }
-    })
-  }
+      context: { complexity: 'simple' },
+    }),
+  };
 }

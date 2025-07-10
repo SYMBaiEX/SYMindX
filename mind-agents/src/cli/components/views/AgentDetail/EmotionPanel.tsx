@@ -1,8 +1,9 @@
-import React from 'react'
 import { Box, Text } from 'ink'
+import React from 'react'
+
+import { cyberpunkTheme } from '../../../themes/cyberpunk.js'
 import { Card3D } from '../../ui/Card3D.js'
 import { Chart } from '../../ui/Chart.js'
-import { cyberpunkTheme } from '../../../themes/cyberpunk.js'
 
 interface EmotionDetailData {
   current: string
@@ -84,7 +85,7 @@ export const EmotionPanel: React.FC<EmotionPanelProps> = ({ agentData }) => {
   const emotionVariability = recentEmotions.length > 1 
     ? recentEmotions.reduce((acc, curr, i) => {
         if (i === 0) return acc
-        return acc + Math.abs(curr.intensity - recentEmotions[i-1].intensity)
+        return acc + Math.abs(curr.intensity - (recentEmotions[i-1]?.intensity ?? 0))
       }, 0) / (recentEmotions.length - 1)
     : 0
 

@@ -1,0 +1,50 @@
+# Dependencies
+node_modules/
+bun.lockb
+
+# Build outputs
+dist/
+build/
+cli/
+*.min.js
+*.map
+
+# Database files
+data/
+*.db
+*.db-shm
+*.db-wal
+
+# Logs
+*.log
+logs/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Cache
+.cache/
+.temp/
+
+# Generated files
+coverage/
+.nyc_output/
+
+# Version control
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+
+# Documentation assets
+docs/images/
+docs/assets/
+
+# Specific files to ignore
+CHANGELOG.md
+LICENSE
+*.md

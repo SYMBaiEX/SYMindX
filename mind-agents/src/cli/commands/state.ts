@@ -4,13 +4,9 @@
  */
 
 import { Command } from 'commander'
+
 import { EnhancedSYMindXRuntime, EnhancedRuntimeConfig } from '../../core/enhanced-runtime'
 import { CheckpointType } from '../../core/state-manager'
-import { Logger } from '../../utils/logger'
-import * as fs from 'fs/promises'
-import * as path from 'path'
-
-const logger = new Logger('StateCLI')
 
 // Global runtime instance
 let runtime: EnhancedSYMindXRuntime | null = null
@@ -130,9 +126,9 @@ export function createStateCommand(): Command {
     .description('List checkpoints for an agent')
     .argument('<agentId>', 'Agent ID')
     .option('-j, --json', 'Output as JSON')
-    .action(async (agentId, options) => {
+    .action(async (agentId, _options) => {
       try {
-        const rt = await initializeRuntime()
+        await initializeRuntime()
         
         // This would require exposing state manager through runtime
         console.log(`📋 Checkpoints for agent ${agentId}:`)

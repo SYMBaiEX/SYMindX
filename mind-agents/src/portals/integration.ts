@@ -1,14 +1,26 @@
-import { convertUsage } from './utils'
 /**
  * Portal Integration
- * 
+ *
  * This module provides functions to integrate portals with the SYMindX runtime.
  */
 
-import { ModuleRegistry } from '../types/agent'
-import { Portal, PortalConfig, PortalCapability, ChatGenerationOptions } from '../types/portal'
-import { PortalRegistry, createPortal, getAvailablePortals, getPortalDefaultConfig } from './index'
-import { runtimeLogger } from '../utils/logger'
+import { ModuleRegistry } from '../types/agent';
+import {
+  Portal,
+  PortalConfig,
+  PortalCapability,
+  ChatGenerationOptions,
+} from '../types/portal';
+import { runtimeLogger } from '../utils/logger';
+
+import { convertUsage } from './utils';
+
+import {
+  PortalRegistry,
+  createPortal,
+  getAvailablePortals,
+  getPortalDefaultConfig,
+} from './index';
 
 /**
  * Register all available portals with the runtime
@@ -19,35 +31,43 @@ export async function registerPortals(
   registry: ModuleRegistry,
   apiKeys: Record<string, string> = {}
 ): Promise<void> {
-  const portalRegistry = PortalRegistry.getInstance()
-  const availablePortals = getAvailablePortals()
-  
-  let registeredCount = 0
-  
+  const portalRegistry = PortalRegistry.getInstance();
+  const availablePortals = getAvailablePortals();
+
+  let registeredCount = 0;
+
   for (const portalName of availablePortals) {
     try {
       // Get default config and override with provided API key if available
-      const defaultConfig = getPortalDefaultConfig(portalName)
+      const defaultConfig = getPortalDefaultConfig(portalName);
       const config: PortalConfig = {
         ...defaultConfig,
-        apiKey: apiKeys[portalName] || process.env[`${portalName.toUpperCase()}_API_KEY`] || defaultConfig.apiKey
-      }
-      
+        apiKey:
+          apiKeys[portalName] ||
+          process.env[`${portalName.toUpperCase()}_API_KEY`] ||
+          defaultConfig.apiKey,
+      };
+
       // Skip if no API key is available (silently)
       if (!config.apiKey) {
-        continue
+        continue;
       }
-      
+
       // Create and register the portal
-      const portal = createPortal(portalName, config)
-      registry.registerPortal(portalName, portal)
-      registeredCount++
+      const portal = createPortal(portalName, config);
+      registry.registerPortal(portalName, portal);
+      registeredCount++;
     } catch (error) {
-      console.warn(`⚠️ Failed to register portal ${portalName}:`, (error as Error).message)
+      console.warn(
+        `⚠️ Failed to register portal ${portalName}:`,
+        (error as Error).message
+      );
     }
   }
-  
-  runtimeLogger.info(`🌐 AI Portals registered: ${registeredCount} active / ${availablePortals.length} available`)
+
+  runtimeLogger.info(
+    `🌐 AI Portals registered: ${registeredCount} active / ${availablePortals.length} available`
+  );
 }
 
 /**
@@ -61,12 +81,15 @@ export async function initializePortal(
 ): Promise<void> {
   if (!portal.enabled) {
     try {
-      await portal.init(agent)
-      portal.enabled = true
+      await portal.init(agent);
+      portal.enabled = true;
       // Portal initialized - logged by runtime
     } catch (error) {
-      console.error(`❌ Failed to initialize portal for ${agent.name}:`, (error as Error).message)
-      throw error
+      console.error(
+        `❌ Failed to initialize portal for ${agent.name}:`,
+        (error as Error).message
+      );
+      throw error;
     }
   }
 }
@@ -74,32 +97,45 @@ export async function initializePortal(
 /**
  * Get a list of available portals with their capabilities
  */
-export function getPortalCapabilities(): Array<{ name: string, capabilities: string[] }> {
-  const portalRegistry = PortalRegistry.getInstance()
-  const availablePortals = getAvailablePortals()
-  
-  return availablePortals.map(name => {
+export function getPortalCapabilities(): Array<{
+  name: string;
+  capabilities: string[];
+}> {
+  const portalRegistry = PortalRegistry.getInstance();
+  const availablePortals = getAvailablePortals();
+
+  return availablePortals.map((name) => {
     try {
-      const config = getPortalDefaultConfig(name)
-      const portal = createPortal(name, config)
-      
+      const config = getPortalDefaultConfig(name);
+      const portal = createPortal(name, config);
+
       // Get capabilities
       const capabilities = [
-        portal.hasCapability(PortalCapability.TEXT_GENERATION) ? 'text_generation' : null,
-        portal.hasCapability(PortalCapability.CHAT_GENERATION) ? 'chat_generation' : null,
-        portal.hasCapability(PortalCapability.EMBEDDING_GENERATION) ? 'embedding_generation' : null,
-        portal.hasCapability(PortalCapability.IMAGE_GENERATION) ? 'image_generation' : null,
+        portal.hasCapability(PortalCapability.TEXT_GENERATION)
+          ? 'text_generation'
+          : null,
+        portal.hasCapability(PortalCapability.CHAT_GENERATION)
+          ? 'chat_generation'
+          : null,
+        portal.hasCapability(PortalCapability.EMBEDDING_GENERATION)
+          ? 'embedding_generation'
+          : null,
+        portal.hasCapability(PortalCapability.IMAGE_GENERATION)
+          ? 'image_generation'
+          : null,
         portal.hasCapability(PortalCapability.STREAMING) ? 'streaming' : null,
-        portal.hasCapability(PortalCapability.FUNCTION_CALLING) ? 'function_calling' : null,
+        portal.hasCapability(PortalCapability.FUNCTION_CALLING)
+          ? 'function_calling'
+          : null,
         portal.hasCapability(PortalCapability.VISION) ? 'vision' : null,
-        portal.hasCapability(PortalCapability.AUDIO) ? 'audio' : null
-      ].filter(Boolean) as string[]
-      
-      return { name, capabilities }
+        portal.hasCapability(PortalCapability.AUDIO) ? 'audio' : null,
+      ].filter(Boolean) as string[];
+
+      return { name, capabilities };
     } catch (error) {
-      return { name, capabilities: [] }
+      return { name, capabilities: [] };
     }
-  })
+  });
 }
 
 /**
@@ -112,21 +148,21 @@ export function getPortalCapabilities(): Array<{ name: string, capabilities: str
  */
 export async function executeToolInteraction(
   portal: Portal,
-  messages: Array<{ role: string, content: string }>,
+  messages: Array<{ role: string; content: string }>,
   options?: ChatGenerationOptions
 ): Promise<any> {
   // Check if the portal supports function calling
   if (!portal.hasCapability(PortalCapability.FUNCTION_CALLING)) {
-    throw new Error(`Portal ${portal.name} does not support function calling`)
+    throw new Error(`Portal ${portal.name} does not support function calling`);
   }
-  
+
   try {
     // The portal will automatically use the tool model if functions are provided
-    const result = await portal.generateChat(messages as any, options)
-    return result
+    const result = await portal.generateChat(messages as any, options);
+    return result;
   } catch (error) {
-    console.error(`Tool interaction failed for portal ${portal.name}:`, error)
-    throw error
+    console.error(`Tool interaction failed for portal ${portal.name}:`, error);
+    throw error;
   }
 }
 
@@ -139,39 +175,39 @@ export async function executeToolInteraction(
 export function getRecommendedModelConfig(
   portal: Portal,
   useCase: 'chat' | 'tool' | 'embedding' | 'image'
-): { model?: string, temperature?: number, maxTokens?: number } {
-  const config = portal.config
-  
+): { model?: string; temperature?: number; maxTokens?: number } {
+  const config = portal.config;
+
   switch (useCase) {
     case 'chat':
       return {
         model: (config as any).chatModel || config.defaultModel,
         temperature: 0.7,
-        maxTokens: 2000
-      }
-    
+        maxTokens: 2000,
+      };
+
     case 'tool':
       return {
         model: (config as any).toolModel || config.defaultModel,
-        temperature: 0.3,  // Lower temperature for more deterministic tool use
-        maxTokens: 1000    // Usually tools need less tokens
-      }
-    
+        temperature: 0.3, // Lower temperature for more deterministic tool use
+        maxTokens: 1000, // Usually tools need less tokens
+      };
+
     case 'embedding':
       return {
-        model: config.embeddingModel || 'text-embedding-3-large'
-      }
-    
+        model: config.embeddingModel || 'text-embedding-3-large',
+      };
+
     case 'image':
       return {
-        model: config.imageModel || 'dall-e-3'
-      }
-    
+        model: config.imageModel || 'dall-e-3',
+      };
+
     default:
       return {
         model: config.defaultModel,
         temperature: config.temperature,
-        maxTokens: config.maxTokens
-      }
+        maxTokens: config.maxTokens,
+      };
   }
 }

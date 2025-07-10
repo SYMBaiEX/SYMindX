@@ -2,9 +2,9 @@
  * Cognition module types for SYMindX
  */
 
-import { Agent, ThoughtContext, ThoughtResult, Plan, Decision } from './agent'
-import { BaseConfig } from './common'
-import { Experience } from './autonomous'
+import { Agent, ThoughtContext, ThoughtResult, Plan, Decision } from './agent';
+import { Experience } from './autonomous';
+import { BaseConfig } from './common';
 
 /**
  * Base interface for all cognition modules
@@ -14,7 +14,7 @@ export interface CognitionModule {
    * Unique identifier for the module instance
    */
   id: string;
-  
+
   /**
    * Type of cognition module
    */
@@ -26,7 +26,7 @@ export interface CognitionModule {
    * @returns The result of thinking
    */
   think(agent: Agent, context: ThoughtContext): Promise<ThoughtResult>;
-  
+
   /**
    * Create a plan for achieving a specific goal
    * @param agent The agent that is planning
@@ -34,7 +34,7 @@ export interface CognitionModule {
    * @returns A plan for achieving the goal
    */
   plan(agent: Agent, goal: string): Promise<Plan>;
-  
+
   /**
    * Make a decision between multiple options
    * @param agent The agent that is deciding
@@ -42,7 +42,7 @@ export interface CognitionModule {
    * @returns The chosen decision
    */
   decide(agent: Agent, options: Decision[]): Promise<Decision>;
-  
+
   /**
    * Initialize the cognition module with configuration
    * @param config Configuration for the cognition module
@@ -71,22 +71,22 @@ export interface CognitionModuleMetadata {
    * Unique identifier for the cognition module
    */
   id: string;
-  
+
   /**
    * Display name of the cognition module
    */
   name: string;
-  
+
   /**
    * Description of the cognition module
    */
   description: string;
-  
+
   /**
    * Version of the cognition module
    */
   version: string;
-  
+
   /**
    * Author of the cognition module
    */
@@ -96,7 +96,7 @@ export interface CognitionModuleMetadata {
    * Supported reasoning paradigms
    */
   paradigms?: ReasoningParadigm[];
-  
+
   /**
    * Whether this module is capable of learning
    */
@@ -125,7 +125,7 @@ export enum ReasoningParadigm {
   REINFORCEMENT = 'reinforcement',
   REINFORCEMENT_LEARNING = 'reinforcement_learning',
   PDDL_PLANNING = 'pddl_planning',
-  HYBRID = 'hybrid'
+  HYBRID = 'hybrid',
 }
 
 /**
@@ -147,7 +147,15 @@ export interface Rule {
 export interface Condition {
   type: 'fact' | 'comparison' | 'logical' | 'pattern' | 'function' | 'temporal';
   property: string;
-  operator: 'equals' | 'not_equals' | 'greater_than' | 'less_than' | 'contains' | 'and' | 'or' | 'not';
+  operator:
+    | 'equals'
+    | 'not_equals'
+    | 'greater_than'
+    | 'less_than'
+    | 'contains'
+    | 'and'
+    | 'or'
+    | 'not';
   value: string | number | boolean;
   negate?: boolean;
   expression?: string;
@@ -212,7 +220,6 @@ export interface LearningCapability {
   getKnowledge(): Promise<Knowledge>;
   forgetOld(threshold: Date): Promise<void>;
 }
-
 
 export interface Knowledge {
   facts: Fact[];

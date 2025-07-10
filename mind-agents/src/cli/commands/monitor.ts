@@ -8,16 +8,15 @@
  * - Log tailing
  */
 
-import { Command } from 'commander'
 import chalk from 'chalk'
+import { Command } from 'commander'
 import inquirer from 'inquirer'
 import { WebSocket } from 'ws'
-import { CLIContext } from '../index'
+
 import { AgentEvent } from '../../types/agent'
-import { Logger } from '../../utils/logger'
+import { CLIContext } from '../index'
 
 export class MonitorCommand {
-  private logger = new Logger('cli:monitor')
   private monitoring = false
   private ws?: WebSocket
   private eventSubscriptions = new Set<string>()

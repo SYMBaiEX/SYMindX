@@ -1,21 +1,21 @@
-import { convertUsage } from '../utils'
+import { convertUsage } from '../utils';
 /**
  * LM Studio Portal Index
- * 
+ *
  * Exports LM Studio portal implementation for local model serving with OpenAI-compatible API
  * and advanced model management capabilities
  */
 
 // LM Studio Local AI Portal
-export { 
-  LMStudioPortal, 
-  createLMStudioPortal, 
+export {
+  LMStudioPortal,
+  createLMStudioPortal,
   defaultLMStudioConfig,
   lmStudioModels,
   type LMStudioConfig,
   type LMStudioModelInfo,
-  type LMStudioServerStatus
-} from './lmstudio'
+  type LMStudioServerStatus,
+} from './lmstudio';
 
 // Export common types
 export type {
@@ -24,5 +24,5 @@ export type {
   PortalType,
   PortalStatus,
   ModelType,
-  PortalCapability
-} from '../../types/portal'
+  PortalCapability,
+} from '../../types/portal';

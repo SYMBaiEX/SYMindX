@@ -1,125 +1,146 @@
-import { convertUsage } from '../utils'
 /**
  * Google Vertex AI Portal
- * 
+ *
  * Advanced AI portal supporting Google's Vertex AI platform with comprehensive
  * multimodal capabilities using AI SDK v5
  */
 
-import { BasePortal } from '../base-portal'
-import { 
-  Portal, PortalConfig, PortalType, PortalStatus, ModelType, PortalCapability,
-  TextGenerationOptions, TextGenerationResult, ChatMessage, ChatGenerationOptions, 
-  ChatGenerationResult, EmbeddingOptions, EmbeddingResult, ImageGenerationOptions, 
-  ImageGenerationResult, MessageRole, MessageType, FinishReason
-} from '../../types/portal'
-import { Agent } from '../../types/agent'
-import { vertex } from '@ai-sdk/google-vertex'
-import { generateText, streamText, embed, embedMany, type LanguageModel } from 'ai'
+import { vertex } from '@ai-sdk/google-vertex';
+import {
+  generateText,
+  streamText,
+  embed,
+  embedMany,
+  type LanguageModel,
+} from 'ai';
+
+import { Agent } from '../../types/agent';
+import {
+  Portal,
+  PortalConfig,
+  PortalType,
+  PortalStatus,
+  ModelType,
+  PortalCapability,
+  TextGenerationOptions,
+  TextGenerationResult,
+  ChatMessage,
+  ChatGenerationOptions,
+  ChatGenerationResult,
+  EmbeddingOptions,
+  EmbeddingResult,
+  ImageGenerationOptions,
+  ImageGenerationResult,
+  MessageRole,
+  MessageType,
+  FinishReason,
+} from '../../types/portal';
+import { BasePortal } from '../base-portal';
+import { convertUsage } from '../utils';
 
 // AI SDK v5 compatible types - removed old Vertex AI SDK types
 // All functionality now uses AI SDK v5 through the vertex provider
 
 export interface GoogleVertexConfig extends PortalConfig {
-  projectId: string
-  location?: string
-  model?: string
-  maxOutputTokens?: number
-  safetySettings?: SafetySetting[]
-  generationConfig?: GenerationConfig
-  systemInstruction?: string
-  tools?: Tool[]
-  googleAuthOptions?: any
+  projectId: string;
+  location?: string;
+  model?: string;
+  maxOutputTokens?: number;
+  safetySettings?: SafetySetting[];
+  generationConfig?: GenerationConfig;
+  systemInstruction?: string;
+  tools?: Tool[];
+  googleAuthOptions?: any;
 }
 
 export interface SafetySetting {
-  category: string
-  threshold: string
+  category: string;
+  threshold: string;
 }
 
 export interface GenerationConfig {
-  temperature?: number
-  topP?: number
-  topK?: number
-  maxOutputTokens?: number
-  candidateCount?: number
-  stopSequences?: string[]
+  temperature?: number;
+  topP?: number;
+  topK?: number;
+  maxOutputTokens?: number;
+  candidateCount?: number;
+  stopSequences?: string[];
 }
 
 export interface Tool {
-  functionDeclarations?: FunctionDeclaration[]
-  codeExecution?: CodeExecutionTool
-  googleSearchRetrieval?: GoogleSearchRetrievalTool
+  functionDeclarations?: FunctionDeclaration[];
+  codeExecution?: CodeExecutionTool;
+  googleSearchRetrieval?: GoogleSearchRetrievalTool;
 }
 
 export interface FunctionDeclaration {
-  name: string
-  description: string
+  name: string;
+  description: string;
   parameters?: {
-    type: string
-    properties: Record<string, any>
-    required?: string[]
-  }
+    type: string;
+    properties: Record<string, any>;
+    required?: string[];
+  };
 }
 
 export interface CodeExecutionTool {
-  enabled: boolean
+  enabled: boolean;
 }
 
 export interface GoogleSearchRetrievalTool {
-  enabled: boolean
+  enabled: boolean;
 }
 
 export interface VertexPart {
-  text?: string
+  text?: string;
   inlineData?: {
-    mimeType: string
-    data: string
-  }
+    mimeType: string;
+    data: string;
+  };
   fileData?: {
-    mimeType: string
-    fileUri: string
-  }
+    mimeType: string;
+    fileUri: string;
+  };
   functionCall?: {
-    name: string
-    args: Record<string, any>
-  }
+    name: string;
+    args: Record<string, any>;
+  };
   functionResponse?: {
-    name: string
-    response: Record<string, any>
-  }
+    name: string;
+    response: Record<string, any>;
+  };
 }
 
 export interface VertexContent {
-  role: 'user' | 'model'
-  parts: VertexPart[]
+  role: 'user' | 'model';
+  parts: VertexPart[];
 }
 
 export interface VertexResponse {
   candidates: Array<{
     content: {
-      parts: VertexPart[]
-      role: string
-    }
-    finishReason?: string
-    index: number
+      parts: VertexPart[];
+      role: string;
+    };
+    finishReason?: string;
+    index: number;
     safetyRatings?: Array<{
-      category: string
-      probability: string
-    }>
-  }>
+      category: string;
+      probability: string;
+    }>;
+  }>;
   promptFeedback?: {
     safetyRatings: Array<{
-      category: string
-      probability: string
-    }>
-    blockReason?: string
-  }
+      category: string;
+      probability: string;
+    }>;
+    blockReason?: string;
+  };
   usageMetadata?: {
-    promptTokenCount: number
-    candidatesTokenCount: number
-    totalTokenCount: number
-  }
+    promptTokenCount: number;
+    candidatesTokenCount: number;
+    totalTokenCount: number;
+  };
 }
 
 export const defaultVertexConfig: Partial<GoogleVertexConfig> = {
@@ -129,18 +150,30 @@ export const defaultVertexConfig: Partial<GoogleVertexConfig> = {
   temperature: 0.7,
   timeout: 60000,
   safetySettings: [
-    { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-    { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-    { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-    { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' }
+    {
+      category: 'HARM_CATEGORY_HARASSMENT',
+      threshold: 'BLOCK_MEDIUM_AND_ABOVE',
+    },
+    {
+      category: 'HARM_CATEGORY_HATE_SPEECH',
+      threshold: 'BLOCK_MEDIUM_AND_ABOVE',
+    },
+    {
+      category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+      threshold: 'BLOCK_MEDIUM_AND_ABOVE',
+    },
+    {
+      category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
+      threshold: 'BLOCK_MEDIUM_AND_ABOVE',
+    },
   ],
   generationConfig: {
     temperature: 0.7,
     topP: 0.8,
     topK: 40,
-    maxOutputTokens: 8192
-  }
-}
+    maxOutputTokens: 8192,
+  },
+};
 
 export const vertexModels = [
   'gemini-1.5-pro',
@@ -155,75 +188,86 @@ export const vertexModels = [
   'text-embedding-004',
   'text-multilingual-embedding-002',
   'imagen-3.0-generate-001',
-  'imagen-3.0-fast-generate-001'
-]
+  'imagen-3.0-fast-generate-001',
+];
 
 export class GoogleVertexPortal extends BasePortal {
-  type = PortalType.GOOGLE_VERTEX
+  type = PortalType.GOOGLE_VERTEX;
   supportedModels = [
     ModelType.TEXT_GENERATION,
-    ModelType.CHAT, 
+    ModelType.CHAT,
     ModelType.MULTIMODAL,
     ModelType.EMBEDDING,
     ModelType.CODE_GENERATION,
-    ModelType.IMAGE_GENERATION
-  ]
+    ModelType.IMAGE_GENERATION,
+  ];
 
-  private vertexProvider: any
-  private projectId: string
-  private location: string
+  private vertexProvider: any;
+  private projectId: string;
+  private location: string;
 
   constructor(config: GoogleVertexConfig) {
-    super('google-vertex', 'Google Vertex AI', '1.0.0', config)
-    this.projectId = config.projectId || process.env.GOOGLE_VERTEX_PROJECT || ''
-    this.location = config.location || process.env.GOOGLE_VERTEX_LOCATION || 'us-central1'
-    this.vertexProvider = vertex
+    super('google-vertex', 'Google Vertex AI', '1.0.0', config);
+    this.projectId =
+      config.projectId || process.env.GOOGLE_VERTEX_PROJECT || '';
+    this.location =
+      config.location || process.env.GOOGLE_VERTEX_LOCATION || 'us-central1';
+    this.vertexProvider = vertex;
   }
 
-  protected getDefaultModel(type: 'chat' | 'tool' | 'embedding' | 'image'): string {
+  protected getDefaultModel(
+    type: 'chat' | 'tool' | 'embedding' | 'image'
+  ): string {
     switch (type) {
-      case 'chat': return 'gemini-1.5-pro'
-      case 'tool': return 'gemini-1.5-flash'
-      case 'embedding': return 'text-embedding-004'
-      case 'image': return 'imagen-3.0-generate-001'
-      default: return 'gemini-1.5-pro'
+      case 'chat':
+        return 'gemini-1.5-pro';
+      case 'tool':
+        return 'gemini-1.5-flash';
+      case 'embedding':
+        return 'text-embedding-004';
+      case 'image':
+        return 'imagen-3.0-generate-001';
+      default:
+        return 'gemini-1.5-pro';
     }
   }
 
   async init(agent: Agent): Promise<void> {
-    this.status = PortalStatus.INITIALIZING
-    console.log(`🔮 Initializing Google Vertex AI portal for agent ${agent.name}`)
-    
+    this.status = PortalStatus.INITIALIZING;
+    console.log(
+      `🔮 Initializing Google Vertex AI portal for agent ${agent.name}`
+    );
+
     try {
-      await this.validateConfig()
-      await this.healthCheck()
-      this.status = PortalStatus.ACTIVE
-      console.log(`✅ Google Vertex AI portal initialized for ${agent.name}`)
+      await this.validateConfig();
+      await this.healthCheck();
+      this.status = PortalStatus.ACTIVE;
+      console.log(`✅ Google Vertex AI portal initialized for ${agent.name}`);
     } catch (error) {
-      this.status = PortalStatus.ERROR
-      console.error(`❌ Failed to initialize Google Vertex AI portal:`, error)
-      throw error
+      this.status = PortalStatus.ERROR;
+      console.error(`❌ Failed to initialize Google Vertex AI portal:`, error);
+      throw error;
     }
   }
 
   protected async validateConfig(): Promise<void> {
     if (!this.projectId) {
-      throw new Error('Project ID is required for Google Vertex AI portal')
+      throw new Error('Project ID is required for Google Vertex AI portal');
     }
   }
 
   async healthCheck(): Promise<boolean> {
     try {
-      const model = this.getLanguageModel('gemini-1.5-flash')
+      const model = this.getLanguageModel('gemini-1.5-flash');
       const { text } = await generateText({
         model,
         prompt: 'Hello',
-        maxOutputTokens: 10
-      })
-      return text.length > 0
+        maxOutputTokens: 10,
+      });
+      return text.length > 0;
     } catch (error) {
-      console.error('Google Vertex AI health check failed:', error)
-      return false
+      console.error('Google Vertex AI health check failed:', error);
+      return false;
     }
   }
 
@@ -231,21 +275,27 @@ export class GoogleVertexPortal extends BasePortal {
    * Get language model instance for AI SDK v5
    */
   private getLanguageModel(modelId?: string): LanguageModel {
-    const model = modelId || (this.config as GoogleVertexConfig).model || 'gemini-1.5-pro'
-    const config = this.config as GoogleVertexConfig
+    const model =
+      modelId || (this.config as GoogleVertexConfig).model || 'gemini-1.5-pro';
+    const config = this.config as GoogleVertexConfig;
     return this.vertexProvider(model, {
       projectId: this.projectId,
       location: this.location,
       safetySettings: config.safetySettings,
       generationConfig: config.generationConfig,
-      structuredOutputs: true
-    })
+      structuredOutputs: true,
+    });
   }
 
-  async generateText(prompt: string, options?: TextGenerationOptions): Promise<TextGenerationResult> {
-    const model = this.getLanguageModel(options?.model || this.resolveModel('chat'))
-    const config = this.config as GoogleVertexConfig
-    
+  async generateText(
+    prompt: string,
+    options?: TextGenerationOptions
+  ): Promise<TextGenerationResult> {
+    const model = this.getLanguageModel(
+      options?.model || this.resolveModel('chat')
+    );
+    const config = this.config as GoogleVertexConfig;
+
     try {
       const { text, usage, finishReason } = await generateText({
         model,
@@ -253,27 +303,32 @@ export class GoogleVertexPortal extends BasePortal {
         maxOutputTokens: config.maxOutputTokens || 8192,
         temperature: options?.temperature || config.temperature || 0.7,
         topP: options?.topP || config.generationConfig?.topP,
-        topK: config.generationConfig?.topK
-      })
-      
+        topK: config.generationConfig?.topK,
+      });
+
       return {
         text,
         model: options?.model || this.resolveModel('chat'),
         usage: convertUsage(usage),
         finishReason: this.mapFinishReason(finishReason),
-        timestamp: new Date()
-      }
+        timestamp: new Date(),
+      };
     } catch (error) {
-      throw new Error(`Google Vertex AI text generation failed: ${error}`)
+      throw new Error(`Google Vertex AI text generation failed: ${error}`);
     }
   }
 
-  async generateChat(messages: ChatMessage[], options?: ChatGenerationOptions): Promise<ChatGenerationResult> {
-    const model = this.getLanguageModel(options?.model || this.resolveModel('chat'))
-    const config = this.config as GoogleVertexConfig
-    
-    const convertedMessages = this.convertToModelMessages(messages)
-    
+  async generateChat(
+    messages: ChatMessage[],
+    options?: ChatGenerationOptions
+  ): Promise<ChatGenerationResult> {
+    const model = this.getLanguageModel(
+      options?.model || this.resolveModel('chat')
+    );
+    const config = this.config as GoogleVertexConfig;
+
+    const convertedMessages = this.convertToModelMessages(messages);
+
     try {
       const { text, usage, finishReason } = await generateText({
         model,
@@ -281,33 +336,38 @@ export class GoogleVertexPortal extends BasePortal {
         maxOutputTokens: config.maxOutputTokens || 8192,
         temperature: options?.temperature || config.temperature || 0.7,
         topP: options?.topP || config.generationConfig?.topP,
-        topK: config.generationConfig?.topK
-      })
-      
+        topK: config.generationConfig?.topK,
+      });
+
       const message: ChatMessage = {
         role: MessageRole.ASSISTANT,
         content: text,
-        timestamp: new Date()
-      }
-      
+        timestamp: new Date(),
+      };
+
       return {
         text,
         model: options?.model || this.resolveModel('chat'),
         message,
         usage: convertUsage(usage),
         finishReason: this.mapFinishReason(finishReason),
-        timestamp: new Date()
-      }
+        timestamp: new Date(),
+      };
     } catch (error) {
-      throw new Error(`Google Vertex AI chat generation failed: ${error}`)
+      throw new Error(`Google Vertex AI chat generation failed: ${error}`);
     }
   }
 
-  async generateEmbedding(text: string, options?: EmbeddingOptions): Promise<EmbeddingResult> {
+  async generateEmbedding(
+    text: string,
+    options?: EmbeddingOptions
+  ): Promise<EmbeddingResult> {
     try {
       // Google Vertex AI doesn't have a direct embedding model through AI SDK v5
       // For now, use a placeholder implementation
-      console.warn('Google Vertex AI embedding not directly supported through AI SDK v5, using placeholder')
+      console.warn(
+        'Google Vertex AI embedding not directly supported through AI SDK v5, using placeholder'
+      );
       return {
         embedding: new Array(768).fill(0).map(() => Math.random() * 2 - 1),
         dimensions: 768,
@@ -315,17 +375,20 @@ export class GoogleVertexPortal extends BasePortal {
         usage: convertUsage({
           promptTokens: text.length,
           completionTokens: 0,
-          totalTokens: text.length
-        })
-      }
+          totalTokens: text.length,
+        }),
+      };
     } catch (error) {
-      throw new Error(`Google Vertex AI embedding generation failed: ${error}`)
+      throw new Error(`Google Vertex AI embedding generation failed: ${error}`);
     }
   }
 
-  async generateImage(prompt: string, options?: ImageGenerationOptions): Promise<ImageGenerationResult> {
-    const model = options?.model || this.resolveModel('image')
-    
+  async generateImage(
+    prompt: string,
+    options?: ImageGenerationOptions
+  ): Promise<ImageGenerationResult> {
+    const model = options?.model || this.resolveModel('image');
+
     try {
       // Note: This would use the Imagen API
       // For now, returning a placeholder response
@@ -334,18 +397,23 @@ export class GoogleVertexPortal extends BasePortal {
         model,
         usage: {
           promptTokens: prompt.length,
-          totalTokens: prompt.length
-        }
-      }
+          totalTokens: prompt.length,
+        },
+      };
     } catch (error) {
-      throw new Error(`Google Vertex AI image generation failed: ${error}`)
+      throw new Error(`Google Vertex AI image generation failed: ${error}`);
     }
   }
 
-  async *streamText(prompt: string, options?: TextGenerationOptions): AsyncGenerator<string> {
-    const model = this.getLanguageModel(options?.model || this.resolveModel('chat'))
-    const config = this.config as GoogleVertexConfig
-    
+  async *streamText(
+    prompt: string,
+    options?: TextGenerationOptions
+  ): AsyncGenerator<string> {
+    const model = this.getLanguageModel(
+      options?.model || this.resolveModel('chat')
+    );
+    const config = this.config as GoogleVertexConfig;
+
     try {
       const { textStream } = await streamText({
         model,
@@ -353,23 +421,28 @@ export class GoogleVertexPortal extends BasePortal {
         maxOutputTokens: config.maxOutputTokens || 8192,
         temperature: options?.temperature || config.temperature || 0.7,
         topP: options?.topP || config.generationConfig?.topP,
-        topK: config.generationConfig?.topK
-      })
-      
+        topK: config.generationConfig?.topK,
+      });
+
       for await (const delta of textStream) {
-        yield delta
+        yield delta;
       }
     } catch (error) {
-      throw new Error(`Google Vertex AI text streaming failed: ${error}`)
+      throw new Error(`Google Vertex AI text streaming failed: ${error}`);
     }
   }
 
-  async *streamChat(messages: ChatMessage[], options?: ChatGenerationOptions): AsyncGenerator<string> {
-    const model = this.getLanguageModel(options?.model || this.resolveModel('chat'))
-    const config = this.config as GoogleVertexConfig
-    
-    const convertedMessages = this.convertToModelMessages(messages)
-    
+  async *streamChat(
+    messages: ChatMessage[],
+    options?: ChatGenerationOptions
+  ): AsyncGenerator<string> {
+    const model = this.getLanguageModel(
+      options?.model || this.resolveModel('chat')
+    );
+    const config = this.config as GoogleVertexConfig;
+
+    const convertedMessages = this.convertToModelMessages(messages);
+
     try {
       const { textStream } = await streamText({
         model,
@@ -377,14 +450,14 @@ export class GoogleVertexPortal extends BasePortal {
         maxOutputTokens: config.maxOutputTokens || 8192,
         temperature: options?.temperature || config.temperature || 0.7,
         topP: options?.topP || config.generationConfig?.topP,
-        topK: config.generationConfig?.topK
-      })
-      
+        topK: config.generationConfig?.topK,
+      });
+
       for await (const delta of textStream) {
-        yield delta
+        yield delta;
       }
     } catch (error) {
-      throw new Error(`Google Vertex AI chat streaming failed: ${error}`)
+      throw new Error(`Google Vertex AI chat streaming failed: ${error}`);
     }
   }
 
@@ -398,11 +471,11 @@ export class GoogleVertexPortal extends BasePortal {
       case PortalCapability.FUNCTION_CALLING:
       case PortalCapability.VISION:
       case PortalCapability.EVALUATION:
-        return true
+        return true;
       case PortalCapability.AUDIO:
-        return false // Not yet supported
+        return false; // Not yet supported
       default:
-        return false
+        return false;
     }
   }
 
@@ -410,47 +483,49 @@ export class GoogleVertexPortal extends BasePortal {
    * Convert ChatMessage array to message format for AI SDK v5
    */
   private convertToModelMessages(messages: ChatMessage[]) {
-    return messages.map(msg => {
+    return messages.map((msg) => {
       const message: any = {
         role: msg.role,
-        content: msg.content
-      }
+        content: msg.content,
+      };
 
       // Handle attachments for multimodal support
       if (msg.attachments && msg.attachments.length > 0) {
-        const content: any[] = [{ type: 'text', text: msg.content }]
-        
+        const content: any[] = [{ type: 'text', text: msg.content }];
+
         for (const attachment of msg.attachments) {
           if (attachment.type === MessageType.IMAGE) {
             if (attachment.data) {
               content.push({
                 type: 'image',
                 image: attachment.data,
-                mimeType: attachment.mimeType
-              })
+                mimeType: attachment.mimeType,
+              });
             } else if (attachment.url) {
               content.push({
                 type: 'image',
-                image: new URL(attachment.url)
-              })
+                image: new URL(attachment.url),
+              });
             }
           }
         }
-        
-        message.content = content
+
+        message.content = content;
       }
 
       // Handle function calls
       if (msg.functionCall) {
-        message.toolInvocations = [{
-          toolCallId: msg.functionCall.name, // Use name as ID if no ID provided
-          toolName: msg.functionCall.name,
-          args: JSON.parse(msg.functionCall.arguments)
-        }]
+        message.toolInvocations = [
+          {
+            toolCallId: msg.functionCall.name, // Use name as ID if no ID provided
+            toolName: msg.functionCall.name,
+            args: JSON.parse(msg.functionCall.arguments),
+          },
+        ];
       }
 
-      return message
-    })
+      return message;
+    });
   }
 
   // Removed old response parsing methods - now handled by AI SDK v5 directly
@@ -458,22 +533,24 @@ export class GoogleVertexPortal extends BasePortal {
   private mapFinishReason(reason?: string): FinishReason {
     switch (reason) {
       case 'stop':
-        return FinishReason.STOP
+        return FinishReason.STOP;
       case 'length':
-        return FinishReason.LENGTH
+        return FinishReason.LENGTH;
       case 'content-filter':
-        return FinishReason.CONTENT_FILTER
+        return FinishReason.CONTENT_FILTER;
       case 'tool-calls':
-        return FinishReason.STOP // Map to STOP since TOOL_CALLS might not exist
+        return FinishReason.STOP; // Map to STOP since TOOL_CALLS might not exist
       default:
-        return FinishReason.STOP
+        return FinishReason.STOP;
     }
   }
 }
 
-export function createGoogleVertexPortal(config: GoogleVertexConfig): GoogleVertexPortal {
+export function createGoogleVertexPortal(
+  config: GoogleVertexConfig
+): GoogleVertexPortal {
   return new GoogleVertexPortal({
     ...defaultVertexConfig,
-    ...config
-  })
+    ...config,
+  });
 }

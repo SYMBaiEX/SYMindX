@@ -1,136 +1,98 @@
 /**
  * Configuration Resolver
- * 
+ *
  * Transforms clean TypeScript character configuration to runtime configuration
  * with environment variable resolution and sensible defaults
  */
 
-import { CharacterConfig, EnvironmentConfig, ConfigDefaults } from '../types/character'
+import {
+  CharacterConfig,
+  EnvironmentConfig,
+  ConfigDefaults,
+} from '../types/character.js';
+import { validateEnvironmentConfig, ValidatedEnvironmentConfig } from './config-validator.js';
 
 export class ConfigResolver {
-  private envConfig: EnvironmentConfig | null = null
+  private envConfig: EnvironmentConfig | null = null;
+  private validatedConfig: ValidatedEnvironmentConfig | null = null;
 
   constructor() {
     // Don't load environment config immediately - wait until first use
   }
 
   /**
-   * Load environment variables with defaults
+   * Load environment variables with defaults using the new validator
    */
   private loadEnvironmentConfig(): EnvironmentConfig {
-    return {
-      // Portal API Keys
-      GROQ_API_KEY: process.env.GROQ_API_KEY,
-      OPENAI_API_KEY: process.env.OPENAI_API_KEY,
-      ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
-      XAI_API_KEY: process.env.XAI_API_KEY,
-      OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
-      KLUSTERAI_API_KEY: process.env.KLUSTERAI_API_KEY,
-      GOOGLE_API_KEY: process.env.GOOGLE_API_KEY,
-      MISTRAL_API_KEY: process.env.MISTRAL_API_KEY,
-      COHERE_API_KEY: process.env.COHERE_API_KEY,
-      AZURE_OPENAI_API_KEY: process.env.AZURE_OPENAI_API_KEY,
-      
-      // Portal Models - Legacy support
-      GROQ_MODEL: process.env.GROQ_MODEL || ConfigDefaults.GROQ_MODEL,
-      OLLAMA_MODEL: process.env.OLLAMA_MODEL || ConfigDefaults.OLLAMA_MODEL,
-      ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL || ConfigDefaults.ANTHROPIC_MODEL,
-      
-      // Portal Models - Granular control
-      ...this.loadPortalModels(),
-      
-      // Portal Settings - Granular capability control
-      ...this.loadPortalSettings(),
-      
-      // Ollama Settings
-      OLLAMA_BASE_URL: process.env.OLLAMA_BASE_URL || ConfigDefaults.OLLAMA_BASE_URL,
-      
-      // Embedding Settings
-      ENABLE_OPENAI_EMBEDDINGS: this.parseBoolean(process.env.ENABLE_OPENAI_EMBEDDINGS, ConfigDefaults.ENABLE_OPENAI_EMBEDDINGS),
-      EMBEDDING_PROVIDER: (process.env.EMBEDDING_PROVIDER as 'openai' | 'ollama') || ConfigDefaults.EMBEDDING_PROVIDER,
-      EMBEDDING_DIMENSIONS: parseInt(process.env.EMBEDDING_DIMENSIONS || '') || ConfigDefaults.EMBEDDING_DIMENSIONS,
-      
-      // Extension Settings
-      TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN
-    }
-  }
-
-  /**
-   * Parse boolean environment variables with defaults
-   */
-  private parseBoolean(value: string | undefined, defaultValue: boolean): boolean {
-    if (value === undefined) return defaultValue
-    return value.toLowerCase() === 'true' || value === '1'
-  }
-
-  /**
-   * Load portal models with granular control
-   */
-  private loadPortalModels(): Record<string, string | undefined> {
-    const portals = ['GROQ', 'OPENAI', 'ANTHROPIC', 'XAI', 'OLLAMA', 'OPENROUTER', 
-                     'KLUSTERAI', 'GOOGLE', 'MISTRAL', 'COHERE', 'AZURE_OPENAI']
-    const modelTypes = ['CHAT_MODEL', 'EMBEDDING_MODEL', 'IMAGE_MODEL', 'TOOL_MODEL']
-    const models: Record<string, string | undefined> = {}
-
-    // For each portal and model type
-    for (const portal of portals) {
-      for (const modelType of modelTypes) {
-        const key = `${portal}_${modelType}`
-        const defaultKey = key as keyof typeof ConfigDefaults
-        
-        // Use environment variable if set, otherwise use default
-        const envValue = process.env[key]
-        const defaultValue = ConfigDefaults[defaultKey]
-        
-        // Only set if there's a string value (env or default that's not undefined and not boolean)
-        if (envValue !== undefined) {
-          models[key] = envValue
-        } else if (defaultValue !== undefined && typeof defaultValue === 'string') {
-          models[key] = defaultValue
-        }
-      }
+    // Use the new validator to get a safe configuration
+    const validationResult = validateEnvironmentConfig();
+    
+    // Store the validated config for later use
+    this.validatedConfig = validationResult.config;
+    
+    // Log validation results
+    if (validationResult.warnings.length > 0) {
+      console.warn('Configuration warnings:', validationResult.warnings);
     }
     
-    // Handle legacy OpenAI model names for backward compatibility
-    models.OPENAI_CHAT_MODEL = process.env.OPENAI_CHAT_MODEL || ConfigDefaults.OPENAI_CHAT_MODEL
-    models.OPENAI_EMBEDDING_MODEL = process.env.OPENAI_EMBEDDING_MODEL || ConfigDefaults.OPENAI_EMBEDDING_MODEL
+    if (!validationResult.isValid) {
+      console.error('Configuration errors:', validationResult.errors);
+      throw new Error('Invalid environment configuration. Please check your environment variables.');
+    }
 
-    return models
+    // Convert validated config to EnvironmentConfig format
+    return this.convertToEnvironmentConfig(validationResult.config);
   }
 
   /**
-   * Load portal settings with granular capability control
+   * Convert ValidatedEnvironmentConfig to EnvironmentConfig
    */
-  private loadPortalSettings(): Record<string, boolean> {
-    const portals = ['GROQ', 'OPENAI', 'ANTHROPIC', 'XAI', 'OLLAMA', 'OPENROUTER', 
-                     'KLUSTERAI', 'GOOGLE', 'MISTRAL', 'COHERE', 'AZURE_OPENAI']
-    const capabilities = ['CHAT', 'EMBEDDING', 'IMAGE']
-    const settings: Record<string, boolean> = {}
-
-    // For each portal
-    for (const portal of portals) {
-      // Main toggle
-      const mainKey = `${portal}_ENABLED`
-      settings[mainKey] = this.parseBoolean(process.env[mainKey], ConfigDefaults[mainKey as keyof typeof ConfigDefaults] as boolean ?? false)
+  private convertToEnvironmentConfig(validated: ValidatedEnvironmentConfig): EnvironmentConfig {
+    const config: EnvironmentConfig = {
+      // Core settings
+      OLLAMA_BASE_URL: validated.OLLAMA_BASE_URL,
+      ENABLE_OPENAI_EMBEDDINGS: validated.ENABLE_OPENAI_EMBEDDINGS,
+      EMBEDDING_PROVIDER: validated.EMBEDDING_PROVIDER,
+      EMBEDDING_DIMENSIONS: validated.EMBEDDING_DIMENSIONS,
       
-      // Capability toggles
-      for (const capability of capabilities) {
-        const key = `${portal}_${capability}_ENABLED`
-        // Default to true if main toggle is true and not explicitly disabled
-        const defaultValue = settings[mainKey] && process.env[key] !== 'false'
-        settings[key] = this.parseBoolean(process.env[key], defaultValue)
+      // Legacy models
+      GROQ_MODEL: validated.GROQ_MODEL,
+      OLLAMA_MODEL: validated.OLLAMA_MODEL,
+      ANTHROPIC_MODEL: validated.ANTHROPIC_MODEL,
+    };
+
+    // Add API keys if they exist
+    Object.entries(validated.apiKeys).forEach(([key, value]) => {
+      if (value) {
+        (config as any)[key] = value;
       }
-    }
+    });
 
-    // Handle OpenAI's special case (EMBEDDINGS vs EMBEDDING)
-    if ('OPENAI_EMBEDDINGS_ENABLED' in settings) {
-      settings.OPENAI_EMBEDDINGS_ENABLED = this.parseBoolean(
-        process.env.OPENAI_EMBEDDINGS_ENABLED, 
-        settings.OPENAI_ENABLED
-      )
-    }
+    // Add portal models if they exist
+    Object.entries(validated.portalModels).forEach(([key, value]) => {
+      if (value) {
+        (config as any)[key] = value;
+      }
+    });
 
-    return settings
+    // Add portal settings
+    Object.entries(validated.portalSettings).forEach(([key, value]) => {
+      (config as any)[key] = value;
+    });
+
+    return config;
+  }
+
+
+  /**
+   * Get validated configuration (lazily loaded)
+   */
+  private getValidatedConfig(): ValidatedEnvironmentConfig {
+    if (!this.validatedConfig) {
+      // This will trigger loadEnvironmentConfig if needed
+      this.ensureEnvConfig();
+    }
+    return this.validatedConfig!;
   }
 
   /**
@@ -138,9 +100,9 @@ export class ConfigResolver {
    */
   private ensureEnvConfig(): EnvironmentConfig {
     if (!this.envConfig) {
-      this.envConfig = this.loadEnvironmentConfig()
+      this.envConfig = this.loadEnvironmentConfig();
     }
-    return this.envConfig
+    return this.envConfig;
   }
 
   /**
@@ -148,34 +110,34 @@ export class ConfigResolver {
    */
   public resolveCharacterConfig(config: CharacterConfig): any {
     // Ensure environment is loaded first
-    this.ensureEnvConfig()
+    this.ensureEnvConfig();
     return {
       id: config.id,
       name: config.name,
       description: config.description,
       version: config.version,
-      
+
       personality: config.personality,
-      
+
       autonomous: this.resolveAutonomousConfig(config.autonomous),
-      
+
       modules: {
         memory: this.resolveMemoryConfig(config.memory),
         emotion: this.resolveEmotionConfig(config.emotion),
-        cognition: this.resolveCognitionConfig(config.cognition)
+        cognition: this.resolveCognitionConfig(config.cognition),
       },
-      
+
       communication: config.communication,
       capabilities: config.capabilities,
-      
+
       extensions: this.resolveExtensionsConfig(config.extensions),
       portals: this.resolvePortalsConfig(config.portals),
-      
+
       autonomous_behaviors: config.autonomous_behaviors,
       human_interaction: config.human_interaction,
       ethics: config.ethics,
-      development: config.development
-    }
+      development: config.development,
+    };
   }
 
   /**
@@ -184,55 +146,68 @@ export class ConfigResolver {
   private resolveAutonomousConfig(config: any): any {
     return {
       ...config,
-      enabled: config.enabled ?? true
-    }
+      enabled: config.enabled ?? true,
+    };
   }
 
   /**
    * Resolve memory configuration with environment variables
    */
   private resolveMemoryConfig(config: any): any {
-    const envConfig = this.ensureEnvConfig()
+    const validatedConfig = this.getValidatedConfig();
     const resolved = {
       type: config.type,
       config: {
         ...config.config,
-        enable_embeddings: envConfig.ENABLE_OPENAI_EMBEDDINGS ? 'true' : 'false',
-        embedding_provider: envConfig.EMBEDDING_PROVIDER,
+        enable_embeddings: validatedConfig.ENABLE_OPENAI_EMBEDDINGS
+          ? 'true'
+          : 'false',
+        embedding_provider: validatedConfig.EMBEDDING_PROVIDER,
         embedding_model: this.getEmbeddingModel(),
-        embedding_dimensions: this.getEmbeddingDimensions()
-      }
-    }
+        embedding_dimensions: this.getEmbeddingDimensions(),
+      },
+    };
 
     // Add provider-specific configuration
     if (config.type === 'sqlite') {
-      resolved.config.database_path = config.config.database_path || './data/memories.db'
+      resolved.config.database_path =
+        config.config.database_path || './data/memories.db';
     }
 
-    return resolved
+    return resolved;
   }
 
   /**
    * Get embedding model based on provider
    */
   private getEmbeddingModel(): string {
-    const envConfig = this.ensureEnvConfig()
-    if (envConfig.EMBEDDING_PROVIDER === 'ollama') {
+    const validatedConfig = this.getValidatedConfig();
+    if (validatedConfig.EMBEDDING_PROVIDER === 'ollama') {
       // Use granular model control, fallback to legacy
-      return envConfig.OLLAMA_EMBEDDING_MODEL || envConfig.OLLAMA_MODEL || ConfigDefaults.OLLAMA_EMBEDDING_MODEL!
+      return (
+        validatedConfig.portalModels.OLLAMA_EMBEDDING_MODEL ||
+        validatedConfig.OLLAMA_MODEL ||
+        ConfigDefaults.OLLAMA_EMBEDDING_MODEL!
+      );
     }
     // Use granular model control for OpenAI
-    return envConfig.OPENAI_EMBEDDING_MODEL || ConfigDefaults.OPENAI_EMBEDDING_MODEL!
+    return (
+      validatedConfig.portalModels.OPENAI_EMBEDDING_MODEL || 
+      ConfigDefaults.OPENAI_EMBEDDING_MODEL!
+    );
   }
 
   /**
    * Get embedding dimensions based on model
    */
   private getEmbeddingDimensions(): number {
-    const envConfig = this.ensureEnvConfig()
-    const model = this.getEmbeddingModel()
-    return ConfigDefaults.EMBEDDING_DIMENSIONS_MAP[model as keyof typeof ConfigDefaults.EMBEDDING_DIMENSIONS_MAP] || 
-           envConfig.EMBEDDING_DIMENSIONS!
+    const validatedConfig = this.getValidatedConfig();
+    const model = this.getEmbeddingModel();
+    return (
+      ConfigDefaults.EMBEDDING_DIMENSIONS_MAP[
+        model as keyof typeof ConfigDefaults.EMBEDDING_DIMENSIONS_MAP
+      ] || validatedConfig.EMBEDDING_DIMENSIONS
+    );
   }
 
   /**
@@ -242,9 +217,9 @@ export class ConfigResolver {
     return {
       type: config.type,
       config: {
-        ...config.config
-      }
-    }
+        ...config.config,
+      },
+    };
   }
 
   /**
@@ -254,34 +229,34 @@ export class ConfigResolver {
     return {
       type: config.type,
       config: {
-        ...config.config
-      }
-    }
+        ...config.config,
+      },
+    };
   }
 
   /**
    * Resolve extensions configuration
    */
   private resolveExtensionsConfig(extensions: any[]): any[] {
-    return extensions.map(ext => ({
+    return extensions.map((ext) => ({
       ...ext,
-      config: this.resolveExtensionConfig(ext.name, ext.config)
-    }))
+      config: this.resolveExtensionConfig(ext.name, ext.config),
+    }));
   }
 
   /**
    * Resolve individual extension configuration
    */
   private resolveExtensionConfig(name: string, config: any): any {
-    const envConfig = this.ensureEnvConfig()
+    const validatedConfig = this.getValidatedConfig();
     switch (name) {
       case 'telegram':
         return {
           ...config,
-          bot_token: envConfig.TELEGRAM_BOT_TOKEN
-        }
+          bot_token: validatedConfig.apiKeys.TELEGRAM_BOT_TOKEN,
+        };
       default:
-        return config
+        return config;
     }
   }
 
@@ -290,8 +265,8 @@ export class ConfigResolver {
    */
   private resolvePortalsConfig(portals: any[]): any[] {
     return portals
-      .map(portal => this.resolvePortalConfig(portal))
-      .filter(portal => portal.enabled !== false)
+      .map((portal) => this.resolvePortalConfig(portal))
+      .filter((portal) => portal.enabled !== false);
   }
 
   /**
@@ -301,190 +276,203 @@ export class ConfigResolver {
     const resolved = {
       name: portal.name,
       type: portal.type,
-      enabled: this.getPortalEnabled(portal.type, portal.enabled, portal.capabilities),
+      enabled: this.getPortalEnabled(
+        portal.type,
+        portal.enabled,
+        portal.capabilities
+      ),
       primary: portal.primary || false,
       capabilities: portal.capabilities,
-      config: this.resolvePortalSpecificConfig(portal.type, portal.config)
-    }
+      config: this.resolvePortalSpecificConfig(portal.type, portal.config),
+    };
 
-    return resolved
+    return resolved;
   }
 
   /**
    * Get portal enabled status from environment based on capabilities
    */
-  private getPortalEnabled(type: string, defaultEnabled: boolean, capabilities: string[] = []): boolean {
-    const envConfig = this.ensureEnvConfig()
-    
+  private getPortalEnabled(
+    type: string,
+    _defaultEnabled: boolean,
+    capabilities: string[] = []
+  ): boolean {
+    const validatedConfig = this.getValidatedConfig();
+
     // Special handling for OpenAI (backward compatibility)
     if (type === 'openai') {
-      if (!envConfig.OPENAI_API_KEY) return false
-      
-      const hasChatCapability = capabilities.includes('chat_generation') || capabilities.includes('text_generation')
-      const hasEmbeddingCapability = capabilities.includes('embedding_generation')
-      const hasImageCapability = capabilities.includes('image_generation')
-      
+      if (!validatedConfig.apiKeys.OPENAI_API_KEY) return false;
+
+      const hasChatCapability =
+        capabilities.includes('chat_generation') ||
+        capabilities.includes('text_generation');
+      const hasEmbeddingCapability = capabilities.includes(
+        'embedding_generation'
+      );
+      const hasImageCapability = capabilities.includes('image_generation');
+
       // Enable based on specific capability flags
-      if (hasChatCapability && envConfig.OPENAI_CHAT_ENABLED) return true
-      if (hasEmbeddingCapability && envConfig.OPENAI_EMBEDDINGS_ENABLED) return true
-      if (hasImageCapability && envConfig.OPENAI_IMAGE_ENABLED) return true
-      
+      if (hasChatCapability && (validatedConfig.portalSettings.OPENAI_CHAT_ENABLED ?? false)) return true;
+      if (hasEmbeddingCapability && (validatedConfig.portalSettings.OPENAI_EMBEDDINGS_ENABLED ?? false))
+        return true;
+      if (hasImageCapability && (validatedConfig.portalSettings.OPENAI_IMAGE_ENABLED ?? false)) return true;
+
       // If no specific capabilities defined, use legacy logic
       if (capabilities.length === 0) {
-        return envConfig.OPENAI_CHAT_ENABLED! || envConfig.OPENAI_EMBEDDINGS_ENABLED! || envConfig.OPENAI_IMAGE_ENABLED!
+        return (
+          (validatedConfig.portalSettings.OPENAI_CHAT_ENABLED ?? false) ||
+          (validatedConfig.portalSettings.OPENAI_EMBEDDINGS_ENABLED ?? false) ||
+          (validatedConfig.portalSettings.OPENAI_IMAGE_ENABLED ?? false)
+        );
       }
-      
-      return false
+
+      return false;
     }
-    
+
     // Generic handling for all other portals
-    const portalName = type.toUpperCase().replace('.', '').replace('-', '_')
-    const mainEnabled = envConfig[`${portalName}_ENABLED` as keyof EnvironmentConfig] as boolean
-    const apiKey = envConfig[`${portalName}_API_KEY` as keyof EnvironmentConfig] as string
-    
+    const portalName = type.toUpperCase().replace('.', '').replace('-', '_');
+    const mainEnabled = validatedConfig.portalSettings[`${portalName}_ENABLED`] ?? false;
+    const apiKey = validatedConfig.apiKeys[`${portalName}_API_KEY` as keyof typeof validatedConfig.apiKeys];
+
     // Check main toggle and API key (except Ollama which doesn't need API key)
     if (!mainEnabled || (type !== 'ollama' && !apiKey)) {
-      return false
+      return false;
     }
-    
+
     // Check capability-specific toggles
-    const hasChatCapability = capabilities.includes('chat_generation') || capabilities.includes('text_generation')
-    const hasEmbeddingCapability = capabilities.includes('embedding_generation')
-    const hasImageCapability = capabilities.includes('image_generation')
-    
+    const hasChatCapability =
+      capabilities.includes('chat_generation') ||
+      capabilities.includes('text_generation');
+    const hasEmbeddingCapability = capabilities.includes(
+      'embedding_generation'
+    );
+    const hasImageCapability = capabilities.includes('image_generation');
+
     if (hasChatCapability) {
-      const chatEnabled = envConfig[`${portalName}_CHAT_ENABLED` as keyof EnvironmentConfig] as boolean
-      if (chatEnabled === false) return false
+      const chatEnabled = validatedConfig.portalSettings[`${portalName}_CHAT_ENABLED`] ?? false;
+      if (chatEnabled === false) return false;
     }
-    
+
     if (hasEmbeddingCapability) {
-      const embeddingEnabled = envConfig[`${portalName}_EMBEDDING_ENABLED` as keyof EnvironmentConfig] as boolean
-      if (embeddingEnabled === false) return false
+      const embeddingEnabled = validatedConfig.portalSettings[`${portalName}_EMBEDDING_ENABLED`] ?? false;
+      if (embeddingEnabled === false) return false;
     }
-    
+
     if (hasImageCapability) {
-      const imageEnabled = envConfig[`${portalName}_IMAGE_ENABLED` as keyof EnvironmentConfig] as boolean
-      if (imageEnabled === false) return false
+      const imageEnabled = validatedConfig.portalSettings[`${portalName}_IMAGE_ENABLED`] ?? false;
+      if (imageEnabled === false) return false;
     }
-    
-    return true
+
+    return true;
   }
 
   /**
    * Resolve portal-specific configuration
    */
   private resolvePortalSpecificConfig(type: string, config: any): any {
-    const envConfig = this.ensureEnvConfig()
+    const validatedConfig = this.getValidatedConfig();
     const baseConfig = {
       max_tokens: config.max_tokens || ConfigDefaults.MAX_TOKENS,
-      temperature: config.temperature || ConfigDefaults.TEMPERATURE
-    }
+      temperature: config.temperature || ConfigDefaults.TEMPERATURE,
+    };
 
     // Get the portal name in uppercase for environment variable lookup
-    const portalName = type.toUpperCase().replace('.', '').replace('-', '_')
-    
+    const portalName = type.toUpperCase().replace('.', '').replace('-', '_');
+
     // Build configuration with granular model controls
     const portalConfig: any = {
       ...baseConfig,
-      apiKey: envConfig[`${portalName}_API_KEY` as keyof EnvironmentConfig]
-    }
-    
+      apiKey: validatedConfig.apiKeys[`${portalName}_API_KEY` as keyof typeof validatedConfig.apiKeys],
+    };
+
     // Add granular model configurations
-    const chatModel = envConfig[`${portalName}_CHAT_MODEL` as keyof EnvironmentConfig]
-    const embeddingModel = envConfig[`${portalName}_EMBEDDING_MODEL` as keyof EnvironmentConfig]
-    const imageModel = envConfig[`${portalName}_IMAGE_MODEL` as keyof EnvironmentConfig]
-    const toolModel = envConfig[`${portalName}_TOOL_MODEL` as keyof EnvironmentConfig]
-    
+    const chatModel = validatedConfig.portalModels[`${portalName}_CHAT_MODEL`];
+    const embeddingModel = validatedConfig.portalModels[`${portalName}_EMBEDDING_MODEL`];
+    const imageModel = validatedConfig.portalModels[`${portalName}_IMAGE_MODEL`];
+    const toolModel = validatedConfig.portalModels[`${portalName}_TOOL_MODEL`];
+
     // Set models based on what's available
     if (chatModel) {
-      portalConfig.chatModel = chatModel
+      portalConfig.chatModel = chatModel;
       // Keep legacy 'model' for backward compatibility
-      portalConfig.model = chatModel
+      portalConfig.model = chatModel;
     }
-    
+
     if (embeddingModel) {
-      portalConfig.embeddingModel = embeddingModel
+      portalConfig.embeddingModel = embeddingModel;
       // Add dimensions if it's a known model
-      const dimensions = ConfigDefaults.EMBEDDING_DIMENSIONS_MAP[embeddingModel as keyof typeof ConfigDefaults.EMBEDDING_DIMENSIONS_MAP]
+      const dimensions =
+        ConfigDefaults.EMBEDDING_DIMENSIONS_MAP[
+          embeddingModel as keyof typeof ConfigDefaults.EMBEDDING_DIMENSIONS_MAP
+        ];
       if (dimensions) {
-        portalConfig.embeddingDimensions = dimensions
+        portalConfig.embeddingDimensions = dimensions;
       }
     }
-    
+
     if (imageModel) {
-      portalConfig.imageModel = imageModel
+      portalConfig.imageModel = imageModel;
     }
-    
+
     if (toolModel) {
-      portalConfig.toolModel = toolModel
+      portalConfig.toolModel = toolModel;
     }
-    
+
     // Portal-specific overrides
     switch (type) {
       case 'ollama':
-        portalConfig.baseUrl = envConfig.OLLAMA_BASE_URL
-        break
-        
+        portalConfig.baseUrl = validatedConfig.OLLAMA_BASE_URL;
+        break;
+
       case 'openai':
         // Ensure backward compatibility with legacy model names
-        if (!portalConfig.chatModel && envConfig.OPENAI_CHAT_MODEL) {
-          portalConfig.chatModel = envConfig.OPENAI_CHAT_MODEL
-          portalConfig.model = envConfig.OPENAI_CHAT_MODEL
+        if (!portalConfig.chatModel && validatedConfig.portalModels.OPENAI_CHAT_MODEL) {
+          portalConfig.chatModel = validatedConfig.portalModels.OPENAI_CHAT_MODEL;
+          portalConfig.model = validatedConfig.portalModels.OPENAI_CHAT_MODEL;
         }
-        if (!portalConfig.embeddingModel && envConfig.OPENAI_EMBEDDING_MODEL) {
-          portalConfig.embeddingModel = envConfig.OPENAI_EMBEDDING_MODEL
-          portalConfig.embeddingDimensions = this.getEmbeddingDimensions()
+        if (!portalConfig.embeddingModel && validatedConfig.portalModels.OPENAI_EMBEDDING_MODEL) {
+          portalConfig.embeddingModel = validatedConfig.portalModels.OPENAI_EMBEDDING_MODEL;
+          portalConfig.embeddingDimensions = this.getEmbeddingDimensions();
         }
-        break
-        
+        break;
+
       case 'groq':
         // Fallback to legacy GROQ_MODEL if specific models not set
-        if (!portalConfig.chatModel && envConfig.GROQ_MODEL) {
-          portalConfig.chatModel = envConfig.GROQ_MODEL
-          portalConfig.model = envConfig.GROQ_MODEL
+        if (!portalConfig.chatModel && validatedConfig.GROQ_MODEL) {
+          portalConfig.chatModel = validatedConfig.GROQ_MODEL;
+          portalConfig.model = validatedConfig.GROQ_MODEL;
         }
-        break
-        
+        break;
+
       case 'anthropic':
         // Fallback to legacy ANTHROPIC_MODEL if specific models not set
-        if (!portalConfig.chatModel && envConfig.ANTHROPIC_MODEL) {
-          portalConfig.chatModel = envConfig.ANTHROPIC_MODEL
-          portalConfig.model = envConfig.ANTHROPIC_MODEL
+        if (!portalConfig.chatModel && validatedConfig.ANTHROPIC_MODEL) {
+          portalConfig.chatModel = validatedConfig.ANTHROPIC_MODEL;
+          portalConfig.model = validatedConfig.ANTHROPIC_MODEL;
         }
-        break
+        break;
     }
-    
-    return portalConfig
+
+    return portalConfig;
   }
 
   /**
    * Validate required environment variables
    */
   public validateEnvironment(): { valid: boolean; missing: string[] } {
-    // Ensure environment is loaded first
-    const envConfig = this.ensureEnvConfig()
-    const missing: string[] = []
-
-    // Check for at least one chat provider
-    const hasGroq = envConfig.GROQ_ENABLED && envConfig.GROQ_API_KEY
-    const hasOpenAIChat = envConfig.OPENAI_CHAT_ENABLED && envConfig.OPENAI_API_KEY
-    const hasAnthropic = envConfig.ANTHROPIC_ENABLED && envConfig.ANTHROPIC_API_KEY
-    const hasOllama = envConfig.OLLAMA_ENABLED
-
-    if (!hasGroq && !hasOpenAIChat && !hasAnthropic && !hasOllama) {
-      missing.push('At least one chat provider (GROQ_API_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY, or OLLAMA_ENABLED=true)')
-    }
-
-    // Check for embedding provider if embeddings are enabled
-    if (envConfig.ENABLE_OPENAI_EMBEDDINGS) {
-      if (envConfig.EMBEDDING_PROVIDER === 'openai' && !envConfig.OPENAI_API_KEY) {
-        missing.push('OPENAI_API_KEY (required for OpenAI embeddings)')
-      }
-    }
-
-    return {
-      valid: missing.length === 0,
-      missing
+    try {
+      // Use the new validation system
+      const validationResult = validateEnvironmentConfig();
+      
+      return {
+        valid: validationResult.isValid,
+        missing: validationResult.errors,
+      };
+    } catch (error) {
+      return {
+        valid: false,
+        missing: [error instanceof Error ? error.message : 'Unknown validation error'],
+      };
     }
   }
 }
@@ -492,4 +480,4 @@ export class ConfigResolver {
 /**
  * Singleton instance for global access
  */
-export const configResolver = new ConfigResolver()
+export const configResolver = new ConfigResolver();

@@ -1,93 +1,194 @@
-import { convertUsage } from '../utils'
 /**
  * XAI Portal Implementation
- * 
+ *
  * This portal provides integration with XAI's Grok API using AI SDK v5.
  */
 
-import { BasePortal } from '../base-portal'
-import { PortalConfig, TextGenerationOptions, TextGenerationResult, 
-  ChatMessage, ChatGenerationOptions, ChatGenerationResult, EmbeddingOptions, EmbeddingResult,
-  ImageGenerationOptions, ImageGenerationResult, PortalCapability, MessageRole, FinishReason, PortalType, ModelType } from '../../types/portal'
-import { xai } from '@ai-sdk/xai'
-import { generateText as aiGenerateText, streamText as aiStreamText, type LanguageModel, type ModelMessage } from 'ai'
+import { xai } from '@ai-sdk/xai';
+import {
+  generateText as aiGenerateText,
+  streamText as aiStreamText,
+  type LanguageModel,
+  type ModelMessage,
+} from 'ai';
+
+import {
+  PortalConfig,
+  TextGenerationOptions,
+  TextGenerationResult,
+  ChatMessage,
+  ChatGenerationOptions,
+  ChatGenerationResult,
+  EmbeddingOptions,
+  EmbeddingResult,
+  ImageGenerationOptions,
+  ImageGenerationResult,
+  PortalCapability,
+  MessageRole,
+  FinishReason,
+  PortalType,
+  ModelType,
+} from '../../types/portal';
+import { BasePortal } from '../base-portal';
+import { convertUsage } from '../utils';
+import { AISDKParameterBuilder, handleAISDKError, validateGenerationOptions } from '../ai-sdk-utils';
 
 export interface XAIConfig extends PortalConfig {
-  model?: string
-  baseURL?: string
+  model?: string;
+  baseURL?: string;
 }
 
 export class XAIPortal extends BasePortal {
   type: PortalType = PortalType.XAI;
-  supportedModels: ModelType[] = [ModelType.TEXT_GENERATION, ModelType.CHAT, ModelType.CODE_GENERATION];
-  private xaiProvider: any
-  
+  supportedModels: ModelType[] = [
+    ModelType.TEXT_GENERATION,
+    ModelType.CHAT,
+    ModelType.CODE_GENERATION,
+  ];
+  private xaiProvider: any;
+
   constructor(config: XAIConfig) {
-    super('xai', 'XAI', '1.0.0', config)
-    this.xaiProvider = xai
+    super('xai', 'XAI', '1.0.0', config);
+    this.xaiProvider = xai;
   }
 
   /**
    * Get language model instance
    */
   private getLanguageModel(modelId?: string): LanguageModel {
-    const model = modelId || (this.config as XAIConfig).model || 'grok-2'
-    const config = this.config as XAIConfig
+    const model = modelId || (this.config as XAIConfig).model || 'grok-2';
+    const config = this.config as XAIConfig;
     return this.xaiProvider(model, {
       apiKey: config.apiKey || process.env.XAI_API_KEY,
-      baseURL: config.baseURL
-    })
+      baseURL: config.baseURL,
+    });
   }
 
   /**
    * Convert ChatMessage array to message format for AI SDK v5
    */
   private convertToModelMessages(messages: ChatMessage[]): ModelMessage[] {
-    return messages.map(msg => {
+    return messages.map((msg) => {
       switch (msg.role) {
         case MessageRole.SYSTEM:
-          return { role: 'system', content: msg.content }
+          return { role: 'system', content: msg.content };
         case MessageRole.USER:
-          return { role: 'user', content: msg.content }
+          return { role: 'user', content: msg.content };
         case MessageRole.ASSISTANT:
-          return { role: 'assistant', content: msg.content }
+          return { role: 'assistant', content: msg.content };
         case MessageRole.TOOL:
-          return { 
-            role: 'tool', 
-            content: [{ 
-              type: 'tool-result', 
-              toolCallId: '', 
-              toolName: '', 
-              result: msg.content 
-            }] 
-          }
+          return {
+            role: 'tool',
+            content: [
+              {
+                type: 'tool-result',
+                toolCallId: '',
+                toolName: '',
+                result: msg.content,
+              },
+            ],
+          };
         case MessageRole.FUNCTION:
           // Convert function messages to assistant messages for compatibility
-          return { role: 'assistant', content: msg.content }
+          return { role: 'assistant', content: msg.content };
         default:
-          return { role: 'user', content: msg.content }
+          return { role: 'user', content: msg.content };
       }
-    })
+    });
   }
 
+  /**
+   * Get default parameters for XAI/Grok
+   */
+  private getGrokDefaults() {
+    return {
+      maxOutputTokens: this.config.maxTokens ?? 2000, // Grok supports larger contexts
+      temperature: this.config.temperature ?? 0.8, // Grok performs well with slightly higher temperature
+      topP: 1.0,
+      frequencyPenalty: 0,
+      presencePenalty: 0,
+    };
+  }
 
+  /**
+   * Build XAI-specific parameters with context limits
+   */
+  private buildXAIParams<T extends Record<string, any>>(
+    baseParams: T,
+    options?: TextGenerationOptions | ChatGenerationOptions
+  ): T & Record<string, any> {
+    const params = AISDKParameterBuilder.buildTextGenerationParams(
+      baseParams,
+      options,
+      this.getGrokDefaults()
+    );
+    
+    // Apply Grok-specific optimizations
+    if ((params as any).maxOutputTokens !== undefined) {
+      // Grok supports large contexts, cap at 8192 for safety
+      (params as any).maxOutputTokens = Math.min((params as any).maxOutputTokens, 8192);
+    }
+    
+    if ((params as any).topP !== undefined && (params as any).topP < 0.1) {
+      // Grok performs better with topP >= 0.1
+      (params as any).topP = Math.max((params as any).topP, 0.1);
+    }
+    
+    return params;
+  }
+
+  /**
+   * Build XAI-specific chat parameters with tool support
+   */
+  private buildXAIChatParams<T extends Record<string, any>>(
+    baseParams: T,
+    options?: ChatGenerationOptions
+  ): T & Record<string, any> {
+    const params = AISDKParameterBuilder.buildChatGenerationParams(
+      baseParams,
+      options,
+      this.getGrokDefaults()
+    );
+    
+    // Apply Grok-specific optimizations
+    if ((params as any).maxOutputTokens !== undefined) {
+      // Grok supports large contexts, cap at 8192 for safety
+      (params as any).maxOutputTokens = Math.min((params as any).maxOutputTokens, 8192);
+    }
+    
+    if ((params as any).topP !== undefined && (params as any).topP < 0.1) {
+      // Grok performs better with topP >= 0.1
+      (params as any).topP = Math.max((params as any).topP, 0.1);
+    }
+    
+    return params;
+  }
 
   /**
    * Generate text using XAI's completion API
    */
-  async generateText(prompt: string, options?: TextGenerationOptions): Promise<TextGenerationResult> {
+  override async generateText(
+    prompt: string,
+    options?: TextGenerationOptions
+  ): Promise<TextGenerationResult> {
     try {
-      const model = options?.model || (this.config as XAIConfig).model || 'grok-2'
+      // Validate options
+      if (options) {
+        validateGenerationOptions(options, 'XAI');
+      }
       
-      const result = await aiGenerateText({
+      const model =
+        options?.model || (this.config as XAIConfig).model || 'grok-2';
+
+      const baseParams = {
         model: this.getLanguageModel(model),
         prompt,
-        maxOutputTokens: options?.maxOutputTokens || options?.maxTokens || this.config.maxTokens,
-        temperature: options?.temperature || this.config.temperature,
-        topP: options?.topP,
-        frequencyPenalty: options?.frequencyPenalty,
-        presencePenalty: options?.presencePenalty
-      })
+      };
+      
+      // Build parameters conditionally to satisfy exactOptionalPropertyTypes
+      const generateParams = this.buildXAIParams(baseParams, options);
+      
+      const result = await aiGenerateText(generateParams);
 
       return {
         text: result.text,
@@ -95,58 +196,56 @@ export class XAIPortal extends BasePortal {
         finishReason: this.mapFinishReason(result.finishReason),
         metadata: {
           model,
-          provider: 'xai'
-        }
-      }
+          provider: 'xai',
+        },
+      };
     } catch (error) {
-      console.error('XAI text generation error:', error)
-      throw new Error(`XAI text generation failed: ${error}`)
+      throw handleAISDKError(error, 'XAI');
     }
   }
 
   /**
    * Generate chat response using XAI's chat completion API
    */
-  async generateChat(messages: ChatMessage[], options?: ChatGenerationOptions): Promise<ChatGenerationResult> {
+  override async generateChat(
+    messages: ChatMessage[],
+    options?: ChatGenerationOptions
+  ): Promise<ChatGenerationResult> {
     try {
-      const model = options?.model || (this.config as XAIConfig).model || 'grok-2'
-      const modelMessages = this.convertToModelMessages(messages)
+      // Validate options
+      if (options) {
+        validateGenerationOptions(options, 'XAI');
+      }
       
-      // Prepare AI SDK v5 parameters
-      const aiParams: any = {
+      const model =
+        options?.model || (this.config as XAIConfig).model || 'grok-2';
+      const modelMessages = this.convertToModelMessages(messages);
+
+      const baseParams = {
         model: this.getLanguageModel(model),
         messages: modelMessages,
-        maxOutputTokens: options?.maxOutputTokens || options?.maxTokens || this.config.maxTokens,
-        temperature: options?.temperature || this.config.temperature,
-        topP: options?.topP,
-        frequencyPenalty: options?.frequencyPenalty,
-        presencePenalty: options?.presencePenalty
-      }
-
-      // Add tools if provided
-      if (options?.tools) {
-        aiParams.tools = options.tools
-        aiParams.maxSteps = 5 // Enable multi-step tool execution
-      }
-
-      const result = await aiGenerateText(aiParams)
+      };
+      
+      // Build parameters conditionally to satisfy exactOptionalPropertyTypes
+      const generateParams = this.buildXAIChatParams(baseParams, options);
+      
+      const result = await aiGenerateText(generateParams);
 
       return {
         text: result.text,
         message: {
           role: MessageRole.ASSISTANT,
-          content: result.text
+          content: result.text,
         },
         usage: convertUsage(result.usage),
         finishReason: this.mapFinishReason(result.finishReason),
         metadata: {
           model,
-          provider: 'xai'
-        }
-      }
+          provider: 'xai',
+        },
+      };
     } catch (error) {
-      console.error('XAI chat generation error:', error)
-      throw new Error(`XAI chat generation failed: ${error}`)
+      throw handleAISDKError(error, 'XAI');
     }
   }
 
@@ -154,77 +253,94 @@ export class XAIPortal extends BasePortal {
    * Generate embeddings - Note: XAI doesn't provide embedding models
    * This is a placeholder that throws an error
    */
-  async generateEmbedding(text: string, options?: EmbeddingOptions): Promise<EmbeddingResult> {
-    throw new Error('XAI does not provide embedding models. Consider using OpenAI or another provider for embeddings.')
+  override async generateEmbedding(
+    _text: string,
+    _options?: EmbeddingOptions
+  ): Promise<EmbeddingResult> {
+    throw new Error(
+      'XAI does not provide embedding models. Consider using OpenAI or another provider for embeddings.'
+    );
   }
-  
+
   /**
    * Generate images - Note: XAI doesn't provide image generation models
    * This is a placeholder that throws an error
    */
-  async generateImage(prompt: string, options?: ImageGenerationOptions): Promise<ImageGenerationResult> {
-    throw new Error('XAI does not provide image generation models. Consider using OpenAI or another provider for image generation.')
+  override async generateImage(
+    _prompt: string,
+    _options?: ImageGenerationOptions
+  ): Promise<ImageGenerationResult> {
+    throw new Error(
+      'XAI does not provide image generation models. Consider using OpenAI or another provider for image generation.'
+    );
   }
 
   /**
    * Stream text generation for real-time responses
    */
-  async *streamText(prompt: string, options?: TextGenerationOptions): AsyncGenerator<string> {
+  override async *streamText(
+    prompt: string,
+    options?: TextGenerationOptions
+  ): AsyncGenerator<string> {
     try {
-      const model = options?.model || (this.config as XAIConfig).model || 'grok-2'
+      // Validate options
+      if (options) {
+        validateGenerationOptions(options, 'XAI');
+      }
       
-      const result = await aiStreamText({
+      const model =
+        options?.model || (this.config as XAIConfig).model || 'grok-2';
+
+      const baseParams = {
         model: this.getLanguageModel(model),
         prompt,
-        maxOutputTokens: options?.maxOutputTokens || options?.maxTokens || this.config.maxTokens,
-        temperature: options?.temperature || this.config.temperature,
-        topP: options?.topP,
-        frequencyPenalty: options?.frequencyPenalty,
-        presencePenalty: options?.presencePenalty
-      })
+      };
+      
+      // Build parameters conditionally to satisfy exactOptionalPropertyTypes
+      const streamParams = this.buildXAIParams(baseParams, options);
+      
+      const result = await aiStreamText(streamParams);
 
       for await (const chunk of result.textStream) {
-        yield chunk
+        yield chunk;
       }
     } catch (error) {
-      console.error('XAI stream text error:', error)
-      throw new Error(`XAI stream text failed: ${error}`)
+      throw handleAISDKError(error, 'XAI');
     }
   }
-  
+
   /**
    * Stream chat generation for real-time responses
    */
-  async *streamChat(messages: ChatMessage[], options?: ChatGenerationOptions): AsyncGenerator<string> {
+  override async *streamChat(
+    messages: ChatMessage[],
+    options?: ChatGenerationOptions
+  ): AsyncGenerator<string> {
     try {
-      const model = options?.model || (this.config as XAIConfig).model || 'grok-2'
-      const modelMessages = this.convertToModelMessages(messages)
+      // Validate options
+      if (options) {
+        validateGenerationOptions(options, 'XAI');
+      }
       
-      // Prepare AI SDK v5 parameters
-      const aiParams: any = {
+      const model =
+        options?.model || (this.config as XAIConfig).model || 'grok-2';
+      const modelMessages = this.convertToModelMessages(messages);
+
+      const baseParams = {
         model: this.getLanguageModel(model),
         messages: modelMessages,
-        maxOutputTokens: options?.maxOutputTokens || options?.maxTokens || this.config.maxTokens,
-        temperature: options?.temperature || this.config.temperature,
-        topP: options?.topP,
-        frequencyPenalty: options?.frequencyPenalty,
-        presencePenalty: options?.presencePenalty
-      }
-
-      // Add tools if provided
-      if (options?.tools) {
-        aiParams.tools = options.tools
-        aiParams.maxSteps = 5 // Enable multi-step tool execution
-      }
-
-      const result = await aiStreamText(aiParams)
+      };
+      
+      // Build parameters conditionally to satisfy exactOptionalPropertyTypes
+      const streamParams = this.buildXAIChatParams(baseParams, options);
+      
+      const result = await aiStreamText(streamParams);
 
       for await (const chunk of result.textStream) {
-        yield chunk
+        yield chunk;
       }
     } catch (error) {
-      console.error('XAI stream chat error:', error)
-      throw new Error(`XAI stream chat failed: ${error}`)
+      throw handleAISDKError(error, 'XAI');
     }
   }
 
@@ -234,22 +350,22 @@ export class XAIPortal extends BasePortal {
   private mapFinishReason(reason?: string): FinishReason {
     switch (reason) {
       case 'stop':
-        return FinishReason.STOP
+        return FinishReason.STOP;
       case 'length':
-        return FinishReason.LENGTH
+        return FinishReason.LENGTH;
       case 'content-filter':
-        return FinishReason.CONTENT_FILTER
+        return FinishReason.CONTENT_FILTER;
       case 'tool-calls':
-        return FinishReason.FUNCTION_CALL
+        return FinishReason.FUNCTION_CALL;
       default:
-        return FinishReason.STOP
+        return FinishReason.STOP;
     }
   }
-  
+
   /**
    * Check if the portal supports a specific capability
    */
-  hasCapability(capability: PortalCapability): boolean {
+  override hasCapability(capability: PortalCapability): boolean {
     switch (capability) {
       case PortalCapability.TEXT_GENERATION:
       case PortalCapability.CHAT_GENERATION:
@@ -269,7 +385,7 @@ export class XAIPortal extends BasePortal {
 
 // Export factory function for easy instantiation
 export function createXAIPortal(config: XAIConfig): XAIPortal {
-  return new XAIPortal(config)
+  return new XAIPortal(config);
 }
 
 // Export default configuration
@@ -278,19 +394,20 @@ export const defaultXAIConfig: Partial<XAIConfig> = {
   maxTokens: 1000, // Keep as config property, map to maxOutputTokens in calls
   temperature: 0.7,
   timeout: 30000,
-  baseURL: 'https://api.x.ai/v1'
-}
+  baseURL: 'https://api.x.ai/v1',
+};
 
 // Available XAI models (Updated February 2025)
 export const xaiModels = {
   // Grok 3 Series (Latest)
-  'grok-3': 'Grok 3 - Latest flagship model with advanced reasoning and multimodal capabilities',
-  
+  'grok-3':
+    'Grok 3 - Latest flagship model with advanced reasoning and multimodal capabilities',
+
   // Grok 2 Series
   'grok-2': 'Grok 2 - Enhanced model with vision, reasoning, and tool calling',
   'grok-2-mini': 'Grok 2 Mini - Faster and more efficient version',
-  
+
   // Legacy Models
   'grok-beta': 'Grok Beta - Experimental model',
-  'grok-1': 'Grok 1 - First generation model'
-}
+  'grok-1': 'Grok 1 - First generation model',
+};

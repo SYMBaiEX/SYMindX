@@ -1,91 +1,88 @@
 /**
  * Learning State Persistence System for SYMindX
- * 
+ *
  * Handles saving and loading of learned knowledge, Q-tables,
  * rules, and other cognitive adaptations across sessions.
  */
 
-import { 
-  Agent,
-  MemoryRecord
-} from '../../types/agent'
-import { 
+import * as fs from 'fs/promises';
+import * as path from 'path';
+
+import { Agent, MemoryRecord, MemoryDuration } from '../../types/agent';
+import { Experience } from '../../types/autonomous';
+import {
   ReasoningParadigm,
   Rule,
   BayesianNetwork,
   LearningCapability,
-  ReasoningPerformance
-} from '../../types/cognition'
-import { Experience } from '../../types/autonomous'
-import { BaseConfig } from '../../types/common'
-import { MemoryType } from '../../types/index'
-import { MemoryDuration } from '../../types/agent'
-import { runtimeLogger } from '../../utils/logger'
-import * as fs from 'fs/promises'
-import * as path from 'path'
+  ReasoningPerformance,
+} from '../../types/cognition';
+import { BaseConfig } from '../../types/common';
+import { MemoryType } from '../../types/index';
+import { runtimeLogger } from '../../utils/logger';
 
 /**
  * Serializable learning state
  */
 export interface LearningState {
-  agentId: string
-  paradigm: ReasoningParadigm
-  version: string
-  timestamp: Date
-  
+  agentId: string;
+  paradigm: ReasoningParadigm;
+  version: string;
+  timestamp: Date;
+
   // Rule-based learning state
-  rules?: SerializableRule[]
-  factPatterns?: Record<string, number>
-  rulePerformance?: Record<string, number>
-  
+  rules?: SerializableRule[];
+  factPatterns?: Record<string, number>;
+  rulePerformance?: Record<string, number>;
+
   // Q-learning state
-  qTable?: Record<string, Record<string, number>>
-  explorationRate?: number
-  learningRate?: number
-  episodeCount?: number
-  
+  qTable?: Record<string, Record<string, number>>;
+  explorationRate?: number;
+  learningRate?: number;
+  episodeCount?: number;
+
   // Probabilistic learning state
-  bayesianNetwork?: SerializableBayesianNetwork
-  probabilityUpdates?: Record<string, number>
-  
+  bayesianNetwork?: SerializableBayesianNetwork;
+  probabilityUpdates?: Record<string, number>;
+
   // Performance tracking
-  performanceHistory?: ReasoningPerformance[]
-  paradigmPerformance?: Record<string, number>
-  
+  performanceHistory?: ReasoningPerformance[];
+  paradigmPerformance?: Record<string, number>;
+
   // Experience buffer (recent experiences)
-  recentExperiences?: SerializableExperience[]
-  
+  recentExperiences?: SerializableExperience[];
+
   // Meta-learning
-  contextPatterns?: Record<string, string>
+  contextPatterns?: Record<string, string>;
   paradigmSelections?: Array<{
-    context: string
-    paradigm: ReasoningParadigm
-    success: boolean
-    timestamp: Date
-  }>
+    context: string;
+    paradigm: ReasoningParadigm;
+    success: boolean;
+    timestamp: Date;
+  }>;
 }
 
 /**
  * Serializable rule format
  */
 export interface SerializableRule {
-  id: string
-  name: string
+  id: string;
+  name: string;
   conditions: Array<{
-    type: string
-    expression: string
-    parameters?: Record<string, any>
-  }>
+    type: string;
+    expression: string;
+    parameters?: Record<string, any>;
+  }>;
   actions: Array<{
-    type: string
-    target: string
-    parameters?: Record<string, any>
-  }>
-  priority: number
-  confidence: number
-  usageCount: number
-  successRate: number
-  metadata?: Record<string, any>
+    type: string;
+    target: string;
+    parameters?: Record<string, any>;
+  }>;
+  priority: number;
+  confidence: number;
+  usageCount: number;
+  successRate: number;
+  metadata?: Record<string, any>;
 }
 
 /**
@@ -93,76 +90,78 @@ export interface SerializableRule {
  */
 export interface SerializableBayesianNetwork {
   nodes: Array<{
-    id: string
-    name: string
-    states: string[]
-    conditionalProbabilities: Record<string, number>
-    parents: string[]
-    children: string[]
-  }>
+    id: string;
+    name: string;
+    states: string[];
+    conditionalProbabilities: Record<string, number>;
+    parents: string[];
+    children: string[];
+  }>;
   edges: Array<{
-    from: string
-    to: string
-  }>
+    from: string;
+    to: string;
+  }>;
 }
 
 /**
  * Serializable experience
  */
 export interface SerializableExperience {
-  id: string
-  agentId: string
+  id: string;
+  agentId: string;
   state: {
-    features: Record<string, number>
-    context: any
-  }
+    features: Record<string, number>;
+    context: any;
+  };
   action: {
-    type: string
-    parameters?: Record<string, any>
-  }
+    type: string;
+    parameters?: Record<string, any>;
+  };
   reward: {
-    type: string
-    value: number
-    source: string
-  }
+    type: string;
+    value: number;
+    source: string;
+  };
   nextState: {
-    features: Record<string, number>
-    context: any
-  }
-  timestamp: Date
+    features: Record<string, number>;
+    context: any;
+  };
+  timestamp: Date;
 }
 
 /**
  * Learning persistence manager
  */
 export class LearningPersistence {
-  private dataDirectory: string
-  private saveInterval: number = 300000 // 5 minutes
-  private maxBackups: number = 10
-  private compressionEnabled: boolean = true
-  
+  private dataDirectory: string;
+  private saveInterval: number = 300000; // 5 minutes
+  private maxBackups: number = 10;
+  private compressionEnabled: boolean = true;
+
   constructor(dataDirectory: string = './data/learning') {
-    this.dataDirectory = dataDirectory
-    this.ensureDirectoryExists()
+    this.dataDirectory = dataDirectory;
+    this.ensureDirectoryExists();
   }
-  
+
   /**
    * Ensure data directory exists
    */
   private async ensureDirectoryExists(): Promise<void> {
     try {
-      await fs.mkdir(this.dataDirectory, { recursive: true })
+      await fs.mkdir(this.dataDirectory, { recursive: true });
     } catch (error) {
-      runtimeLogger.cognition(`Failed to create learning data directory: ${error}`)
+      runtimeLogger.cognition(
+        `Failed to create learning data directory: ${error}`
+      );
     }
   }
-  
+
   /**
    * Save learning state for an agent
    */
   async saveLearningState(
-    agent: Agent, 
-    paradigm: ReasoningParadigm, 
+    agent: Agent,
+    paradigm: ReasoningParadigm,
     state: Partial<LearningState>
   ): Promise<void> {
     try {
@@ -171,121 +170,133 @@ export class LearningPersistence {
         paradigm,
         version: '1.0.0',
         timestamp: new Date(),
-        ...state
-      }
-      
-      const filename = this.getLearningStateFilename(agent.id, paradigm)
-      const filepath = path.join(this.dataDirectory, filename)
-      
+        ...state,
+      };
+
+      const filename = this.getLearningStateFilename(agent.id, paradigm);
+      const filepath = path.join(this.dataDirectory, filename);
+
       // Create backup of existing state
-      await this.createBackup(filepath)
-      
+      await this.createBackup(filepath);
+
       // Save new state
-      const serialized = JSON.stringify(learningState, null, 2)
-      await fs.writeFile(filepath, serialized, 'utf8')
-      
-      runtimeLogger.cognition(`Saved learning state for ${agent.id}:${paradigm} to ${filename}`)
+      const serialized = JSON.stringify(learningState, null, 2);
+      await fs.writeFile(filepath, serialized, 'utf8');
+
+      runtimeLogger.cognition(
+        `Saved learning state for ${agent.id}:${paradigm} to ${filename}`
+      );
     } catch (error) {
-      runtimeLogger.cognition(`Failed to save learning state: ${error}`)
+      runtimeLogger.cognition(`Failed to save learning state: ${error}`);
     }
   }
-  
+
   /**
    * Load learning state for an agent
    */
   async loadLearningState(
-    agentId: string, 
+    agentId: string,
     paradigm: ReasoningParadigm
   ): Promise<LearningState | null> {
     try {
-      const filename = this.getLearningStateFilename(agentId, paradigm)
-      const filepath = path.join(this.dataDirectory, filename)
-      
-      const data = await fs.readFile(filepath, 'utf8')
-      const learningState: LearningState = JSON.parse(data)
-      
+      const filename = this.getLearningStateFilename(agentId, paradigm);
+      const filepath = path.join(this.dataDirectory, filename);
+
+      const data = await fs.readFile(filepath, 'utf8');
+      const learningState: LearningState = JSON.parse(data);
+
       // Validate loaded state
       if (this.validateLearningState(learningState)) {
-        runtimeLogger.cognition(`Loaded learning state for ${agentId}:${paradigm}`)
-        return learningState
+        runtimeLogger.cognition(
+          `Loaded learning state for ${agentId}:${paradigm}`
+        );
+        return learningState;
       } else {
-        runtimeLogger.cognition(`Invalid learning state format for ${agentId}:${paradigm}`)
-        return null
+        runtimeLogger.cognition(
+          `Invalid learning state format for ${agentId}:${paradigm}`
+        );
+        return null;
       }
     } catch (error: unknown) {
       if ((error as any)?.code !== 'ENOENT') {
-        runtimeLogger.cognition(`Failed to load learning state: ${error}`)
+        runtimeLogger.cognition(`Failed to load learning state: ${error}`);
       }
-      return null
+      return null;
     }
   }
-  
+
   /**
    * Save Q-learning table
    */
   async saveQTable(
-    agentId: string, 
+    agentId: string,
     qTable: Map<string, Map<string, number>>,
     metadata: {
-      explorationRate: number
-      learningRate: number
-      episodeCount: number
+      explorationRate: number;
+      learningRate: number;
+      episodeCount: number;
     }
   ): Promise<void> {
     try {
       // Convert Map to serializable format
-      const serializable: Record<string, Record<string, number>> = {}
+      const serializable: Record<string, Record<string, number>> = {};
       for (const [state, actions] of Array.from(qTable.entries())) {
-        serializable[state] = Object.fromEntries(Array.from(actions.entries()))
+        serializable[state] = Object.fromEntries(Array.from(actions.entries()));
       }
-      
+
       const state: Partial<LearningState> = {
         qTable: serializable,
         explorationRate: metadata.explorationRate,
         learningRate: metadata.learningRate,
-        episodeCount: metadata.episodeCount
-      }
-      
+        episodeCount: metadata.episodeCount,
+      };
+
       // Create temporary agent object for save
-      const tempAgent = { id: agentId } as Agent
-      await this.saveLearningState(tempAgent, ReasoningParadigm.REINFORCEMENT_LEARNING, state)
-      
+      const tempAgent = { id: agentId } as Agent;
+      await this.saveLearningState(
+        tempAgent,
+        ReasoningParadigm.REINFORCEMENT_LEARNING,
+        state
+      );
     } catch (error) {
-      runtimeLogger.cognition(`Failed to save Q-table: ${error}`)
+      runtimeLogger.cognition(`Failed to save Q-table: ${error}`);
     }
   }
-  
+
   /**
    * Load Q-learning table
    */
   async loadQTable(agentId: string): Promise<{
-    qTable: Map<string, Map<string, number>>
-    explorationRate: number
-    learningRate: number
-    episodeCount: number
+    qTable: Map<string, Map<string, number>>;
+    explorationRate: number;
+    learningRate: number;
+    episodeCount: number;
   } | null> {
     try {
-      const state = await this.loadLearningState(agentId, ReasoningParadigm.REINFORCEMENT_LEARNING)
-      if (!state || !state.qTable) return null
-      
+      const state = await this.loadLearningState(
+        agentId,
+        ReasoningParadigm.REINFORCEMENT_LEARNING
+      );
+      if (!state || !state.qTable) return null;
+
       // Convert back to Map format
-      const qTable = new Map<string, Map<string, number>>()
+      const qTable = new Map<string, Map<string, number>>();
       for (const [stateKey, actions] of Object.entries(state.qTable)) {
-        qTable.set(stateKey, new Map(Object.entries(actions)))
+        qTable.set(stateKey, new Map(Object.entries(actions)));
       }
-      
+
       return {
         qTable,
         explorationRate: state.explorationRate || 0.1,
         learningRate: state.learningRate || 0.1,
-        episodeCount: state.episodeCount || 0
-      }
+        episodeCount: state.episodeCount || 0,
+      };
     } catch (error) {
-      runtimeLogger.cognition(`Failed to load Q-table: ${error}`)
-      return null
+      runtimeLogger.cognition(`Failed to load Q-table: ${error}`);
+      return null;
     }
   }
-  
+
   /**
    * Save rules with performance data
    */
@@ -295,92 +306,106 @@ export class LearningPersistence {
     performance: Map<string, { usageCount: number; successRate: number }>
   ): Promise<void> {
     try {
-      const serializableRules: SerializableRule[] = []
-      
+      const serializableRules: SerializableRule[] = [];
+
       for (const [id, rule] of Array.from(rules.entries())) {
-        const perf = performance.get(id) || { usageCount: 0, successRate: 0.5 }
-        
+        const perf = performance.get(id) || { usageCount: 0, successRate: 0.5 };
+
         serializableRules.push({
           id: rule.id,
           name: rule.name,
-          conditions: rule.conditions.map(c => ({
+          conditions: rule.conditions.map((c) => ({
             type: c.type,
-            expression: c.expression || `${c.property} ${c.operator} ${c.value}`,
-            parameters: { property: c.property, operator: c.operator, value: c.value }
+            expression:
+              c.expression || `${c.property} ${c.operator} ${c.value}`,
+            parameters: {
+              property: c.property,
+              operator: c.operator,
+              value: c.value,
+            },
           })),
-          actions: rule.actions.map(a => ({
+          actions: rule.actions.map((a) => ({
             type: a.type,
             target: a.target,
-            parameters: a.parameters
+            parameters: a.parameters,
           })),
           priority: rule.priority || 1,
           confidence: (rule as any).confidence || 0.5,
           usageCount: perf.usageCount,
           successRate: perf.successRate,
-          metadata: rule.metadata
-        })
+          metadata: rule.metadata,
+        });
       }
-      
+
       const state: Partial<LearningState> = {
-        rules: serializableRules
-      }
-      
-      const tempAgent = { id: agentId } as Agent
-      await this.saveLearningState(tempAgent, ReasoningParadigm.RULE_BASED, state)
-      
+        rules: serializableRules,
+      };
+
+      const tempAgent = { id: agentId } as Agent;
+      await this.saveLearningState(
+        tempAgent,
+        ReasoningParadigm.RULE_BASED,
+        state
+      );
     } catch (error) {
-      runtimeLogger.cognition(`Failed to save rules: ${error}`)
+      runtimeLogger.cognition(`Failed to save rules: ${error}`);
     }
   }
-  
+
   /**
    * Load rules with performance data
    */
   async loadRules(agentId: string): Promise<{
-    rules: Map<string, Rule>
-    performance: Map<string, { usageCount: number; successRate: number }>
+    rules: Map<string, Rule>;
+    performance: Map<string, { usageCount: number; successRate: number }>;
   } | null> {
     try {
-      const state = await this.loadLearningState(agentId, ReasoningParadigm.RULE_BASED)
-      if (!state || !state.rules) return null
-      
-      const rules = new Map<string, Rule>()
-      const performance = new Map<string, { usageCount: number; successRate: number }>()
-      
+      const state = await this.loadLearningState(
+        agentId,
+        ReasoningParadigm.RULE_BASED
+      );
+      if (!state || !state.rules) return null;
+
+      const rules = new Map<string, Rule>();
+      const performance = new Map<
+        string,
+        { usageCount: number; successRate: number }
+      >();
+
       for (const serializableRule of state.rules) {
         const rule: Rule = {
           id: serializableRule.id,
           name: serializableRule.name,
-          conditions: serializableRule.conditions.map(c => ({
+          conditions: serializableRule.conditions.map((c) => ({
             type: c.type as any,
             property: (c.parameters?.property as string) || 'unknown',
             operator: (c.parameters?.operator as any) || 'equals',
             value: c.parameters?.value || '',
-            expression: c.expression
+            expression: c.expression,
           })),
-          actions: serializableRule.actions.map(a => ({
+          actions: serializableRule.actions.map((a) => ({
             type: a.type as any,
             target: a.target,
-            parameters: a.parameters
+            parameters: a.parameters,
           })),
           priority: serializableRule.priority,
-          metadata: serializableRule.metadata
-        }
-        
-        rules.set(rule.id, rule)
+          metadata: serializableRule.metadata,
+        };
+
+        rules.set(rule.id, rule);
         performance.set(rule.id, {
           usageCount: serializableRule.usageCount,
-          successRate: serializableRule.successRate
-        })
+          successRate: serializableRule.successRate,
+        });
       }
-      
-      return { rules, performance }
+
+      return { rules, performance };
     } catch (error) {
-      runtimeLogger.cognition(`Failed to load rules: ${error}`)
-      return null
+      runtimeLogger.cognition(`Failed to load rules: ${error}`);
+      return null;
     }
   }
-  
+
   /**
    * Save Bayesian network
    */
@@ -391,9 +416,9 @@ export class LearningPersistence {
     try {
       const serializableNetwork: SerializableBayesianNetwork = {
         nodes: [],
-        edges: []
-      }
-      
+        edges: [],
+      };
+
       // Serialize nodes
       for (const node of network.nodes) {
         serializableNetwork.nodes.push({
@@ -402,40 +427,48 @@ export class LearningPersistence {
           states: node.states,
           conditionalProbabilities: node.conditionalProbabilities || {},
           parents: node.parents || [],
-          children: node.children || []
-        })
+          children: node.children || [],
+        });
       }
-      
+
       // Serialize edges
       for (const edge of network.edges) {
-        serializableNetwork.edges.push({ from: edge.from, to: edge.to })
+        serializableNetwork.edges.push({ from: edge.from, to: edge.to });
       }
-      
+
       const state: Partial<LearningState> = {
-        bayesianNetwork: serializableNetwork
-      }
-      
-      const tempAgent = { id: agentId } as Agent
-      await this.saveLearningState(tempAgent, ReasoningParadigm.PROBABILISTIC, state)
-      
+        bayesianNetwork: serializableNetwork,
+      };
+
+      const tempAgent = { id: agentId } as Agent;
+      await this.saveLearningState(
+        tempAgent,
+        ReasoningParadigm.PROBABILISTIC,
+        state
+      );
     } catch (error) {
-      runtimeLogger.cognition(`Failed to save Bayesian network: ${error}`)
+      runtimeLogger.cognition(`Failed to save Bayesian network: ${error}`);
     }
   }
-  
+
   /**
    * Load Bayesian network
    */
-  async loadBayesianNetwork(agentId: string): Promise<SerializableBayesianNetwork | null> {
+  async loadBayesianNetwork(
+    agentId: string
+  ): Promise<SerializableBayesianNetwork | null> {
     try {
-      const state = await this.loadLearningState(agentId, ReasoningParadigm.PROBABILISTIC)
-      return state?.bayesianNetwork || null
+      const state = await this.loadLearningState(
+        agentId,
+        ReasoningParadigm.PROBABILISTIC
+      );
+      return state?.bayesianNetwork || null;
     } catch (error) {
-      runtimeLogger.cognition(`Failed to load Bayesian network: ${error}`)
-      return null
+      runtimeLogger.cognition(`Failed to load Bayesian network: ${error}`);
+      return null;
     }
   }
-  
+
   /**
    * Save experiences buffer
    */
@@ -444,50 +477,58 @@ export class LearningPersistence {
     experiences: Experience[]
   ): Promise<void> {
     try {
-      const serializableExperiences: SerializableExperience[] = experiences.map(exp => ({
-        id: exp.id,
-        agentId: exp.agentId,
-        state: {
-          features: exp.state.features,
-          context: exp.state.context
-        },
-        action: {
-          type: exp.action.type || 'unknown',
-          parameters: exp.action.parameters
-        },
-        reward: {
-          type: exp.reward.type,
-          value: exp.reward.value,
-          source: exp.reward.source
-        },
-        nextState: {
-          features: exp.nextState.features,
-          context: exp.nextState.context
-        },
-        timestamp: exp.timestamp
-      }))
-      
+      const serializableExperiences: SerializableExperience[] = experiences.map(
+        (exp) => ({
+          id: exp.id,
+          agentId: exp.agentId,
+          state: {
+            features: exp.state.features,
+            context: exp.state.context,
+          },
+          action: {
+            type: exp.action.type || 'unknown',
+            parameters: exp.action.parameters,
+          },
+          reward: {
+            type: exp.reward.type,
+            value: exp.reward.value,
+            source: exp.reward.source,
+          },
+          nextState: {
+            features: exp.nextState.features,
+            context: exp.nextState.context,
+          },
+          timestamp: exp.timestamp,
+        })
+      );
+
       const state: Partial<LearningState> = {
-        recentExperiences: serializableExperiences.slice(-1000) // Keep last 1000
-      }
-      
-      const tempAgent = { id: agentId } as Agent
-      await this.saveLearningState(tempAgent, ReasoningParadigm.REINFORCEMENT_LEARNING, state)
-      
+        recentExperiences: serializableExperiences.slice(-1000), // Keep last 1000
+      };
+
+      const tempAgent = { id: agentId } as Agent;
+      await this.saveLearningState(
+        tempAgent,
+        ReasoningParadigm.REINFORCEMENT_LEARNING,
+        state
+      );
     } catch (error) {
-      runtimeLogger.cognition(`Failed to save experiences: ${error}`)
+      runtimeLogger.cognition(`Failed to save experiences: ${error}`);
     }
   }
-  
+
   /**
    * Load experiences buffer
    */
   async loadExperiences(agentId: string): Promise<Experience[]> {
     try {
-      const state = await this.loadLearningState(agentId, ReasoningParadigm.REINFORCEMENT_LEARNING)
-      if (!state?.recentExperiences) return []
-      
-      return state.recentExperiences.map(exp => ({
+      const state = await this.loadLearningState(
+        agentId,
+        ReasoningParadigm.REINFORCEMENT_LEARNING
+      );
+      if (!state?.recentExperiences) return [];
+
+      return state.recentExperiences.map((exp) => ({
         id: exp.id,
         agentId: exp.agentId,
         state: {
@@ -495,7 +536,7 @@ export class LearningPersistence {
           agentId: exp.agentId,
           timestamp: new Date(exp.timestamp),
           features: exp.state.features,
-          context: exp.state.context
+          context: exp.state.context,
         },
         action: {
           id: `action_${exp.timestamp.getTime()}`,
@@ -504,7 +545,7 @@ export class LearningPersistence {
           action: exp.action.type,
           parameters: exp.action.parameters || {},
           timestamp: new Date(exp.timestamp),
-          status: 'completed' as any
+          status: 'completed' as any,
         },
         reward: {
           id: `reward_${exp.timestamp.getTime()}`,
@@ -513,85 +554,87 @@ export class LearningPersistence {
           source: exp.reward.source,
           context: {},
           timestamp: new Date(exp.timestamp),
-          agentId: exp.agentId
+          agentId: exp.agentId,
         },
         nextState: {
           id: `next_state_${exp.timestamp.getTime()}`,
           agentId: exp.agentId,
           timestamp: new Date(exp.timestamp),
           features: exp.nextState.features,
-          context: exp.nextState.context
+          context: exp.nextState.context,
         },
         done: false,
         timestamp: new Date(exp.timestamp),
         importance: 0.5,
-        tags: ['loaded_experience']
-      }))
+        tags: ['loaded_experience'],
+      }));
     } catch (error) {
-      runtimeLogger.cognition(`Failed to load experiences: ${error}`)
-      return []
+      runtimeLogger.cognition(`Failed to load experiences: ${error}`);
+      return [];
     }
   }
-  
+
   /**
    * Save meta-learning data
    */
   async saveMetaLearning(
     agentId: string,
     data: {
-      paradigmPerformance: Record<string, number>
-      contextPatterns: Record<string, string>
+      paradigmPerformance: Record<string, number>;
+      contextPatterns: Record<string, string>;
       paradigmSelections: Array<{
-        context: string
-        paradigm: ReasoningParadigm
-        success: boolean
-        timestamp: Date
-      }>
+        context: string;
+        paradigm: ReasoningParadigm;
+        success: boolean;
+        timestamp: Date;
+      }>;
     }
   ): Promise<void> {
     try {
       const state: Partial<LearningState> = {
         paradigmPerformance: data.paradigmPerformance,
         contextPatterns: data.contextPatterns,
-        paradigmSelections: data.paradigmSelections
-      }
-      
-      const tempAgent = { id: agentId } as Agent
-      await this.saveLearningState(tempAgent, ReasoningParadigm.HYBRID, state)
-      
+        paradigmSelections: data.paradigmSelections,
+      };
+
+      const tempAgent = { id: agentId } as Agent;
+      await this.saveLearningState(tempAgent, ReasoningParadigm.HYBRID, state);
     } catch (error) {
-      runtimeLogger.cognition(`Failed to save meta-learning data: ${error}`)
+      runtimeLogger.cognition(`Failed to save meta-learning data: ${error}`);
     }
   }
-  
+
   /**
    * Load meta-learning data
    */
   async loadMetaLearning(agentId: string): Promise<{
-    paradigmPerformance: Record<string, number>
-    contextPatterns: Record<string, string>
+    paradigmPerformance: Record<string, number>;
+    contextPatterns: Record<string, string>;
     paradigmSelections: Array<{
-      context: string
-      paradigm: ReasoningParadigm
-      success: boolean
-      timestamp: Date
-    }>
+      context: string;
+      paradigm: ReasoningParadigm;
+      success: boolean;
+      timestamp: Date;
+    }>;
   } | null> {
     try {
-      const state = await this.loadLearningState(agentId, ReasoningParadigm.HYBRID)
-      if (!state) return null
-      
+      const state = await this.loadLearningState(
+        agentId,
+        ReasoningParadigm.HYBRID
+      );
+      if (!state) return null;
+
       return {
         paradigmPerformance: state.paradigmPerformance || {},
         contextPatterns: state.contextPatterns || {},
-        paradigmSelections: state.paradigmSelections || []
-      }
+        paradigmSelections: state.paradigmSelections || [],
+      };
     } catch (error) {
-      runtimeLogger.cognition(`Failed to load meta-learning data: ${error}`)
-      return null
+      runtimeLogger.cognition(`Failed to load meta-learning data: ${error}`);
+      return null;
     }
   }
-  
+
   /**
    * Create learning memory record
    */
@@ -609,68 +652,74 @@ export class LearningPersistence {
       metadata: {
         paradigm,
         action,
-        timestamp: new Date()
+        timestamp: new Date(),
       },
       importance: 0.6,
       timestamp: new Date(),
       tags: ['learning', 'persistence', paradigm],
-      duration: MemoryDuration.LONG_TERM
-    }
+      duration: MemoryDuration.LONG_TERM,
+    };
   }
-  
+
   /**
    * Get learning state filename
    */
-  private getLearningStateFilename(agentId: string, paradigm: ReasoningParadigm): string {
-    return `${agentId}_${paradigm}_learning.json`
+  private getLearningStateFilename(
+    agentId: string,
+    paradigm: ReasoningParadigm
+  ): string {
+    return `${agentId}_${paradigm}_learning.json`;
   }
-  
+
   /**
    * Create backup of existing file
    */
   private async createBackup(filepath: string): Promise<void> {
     try {
-      const exists = await fs.access(filepath).then(() => true).catch(() => false)
-      if (!exists) return
-      
-      const backupPath = `${filepath}.backup.${Date.now()}`
-      await fs.copyFile(filepath, backupPath)
-      
+      const exists = await fs
+        .access(filepath)
+        .then(() => true)
+        .catch(() => false);
+      if (!exists) return;
+
+      const backupPath = `${filepath}.backup.${Date.now()}`;
+      await fs.copyFile(filepath, backupPath);
+
       // Clean up old backups
-      await this.cleanupOldBackups(filepath)
+      await this.cleanupOldBackups(filepath);
     } catch (error) {
       // Backup failure is not critical
     }
   }
-  
+
   /**
    * Clean up old backup files
    */
   private async cleanupOldBackups(originalPath: string): Promise<void> {
     try {
-      const dir = path.dirname(originalPath)
-      const basename = path.basename(originalPath)
-      const files = await fs.readdir(dir)
-      
+      const dir = path.dirname(originalPath);
+      const basename = path.basename(originalPath);
+      const files = await fs.readdir(dir);
+
       const backupFiles = files
-        .filter(f => f.startsWith(`${basename}.backup.`))
-        .map(f => ({
+        .filter((f) => f.startsWith(`${basename}.backup.`))
+        .map((f) => ({
           name: f,
           path: path.join(dir, f),
-          timestamp: parseInt(f.split('.backup.')[1])
+          timestamp: parseInt(f.split('.backup.')[1]),
         }))
-        .sort((a, b) => b.timestamp - a.timestamp)
-      
+        .sort((a, b) => b.timestamp - a.timestamp);
+
       // Keep only the most recent backups
-      const toDelete = backupFiles.slice(this.maxBackups)
+      const toDelete = backupFiles.slice(this.maxBackups);
       for (const file of toDelete) {
-        await fs.unlink(file.path)
+        await fs.unlink(file.path);
       }
     } catch (error) {
       // Cleanup failure is not critical
     }
   }
-  
+
   /**
    * Validate learning state format
    */
@@ -680,57 +729,57 @@ export class LearningPersistence {
       state.paradigm &&
       state.version &&
       state.timestamp
-    )
+    );
   }
-  
+
   /**
    * Get storage statistics
    */
   async getStorageStats(): Promise<{
-    totalFiles: number
-    totalSize: number
-    lastModified: Date | null
-    paradigmCounts: Record<string, number>
+    totalFiles: number;
+    totalSize: number;
+    lastModified: Date | null;
+    paradigmCounts: Record<string, number>;
   }> {
     try {
-      const files = await fs.readdir(this.dataDirectory)
-      const learningFiles = files.filter(f => f.endsWith('_learning.json'))
-      
-      let totalSize = 0
-      let lastModified: Date | null = null
-      const paradigmCounts: Record<string, number> = {}
-      
+      const files = await fs.readdir(this.dataDirectory);
+      const learningFiles = files.filter((f) => f.endsWith('_learning.json'));
+
+      let totalSize = 0;
+      let lastModified: Date | null = null;
+      const paradigmCounts: Record<string, number> = {};
+
       for (const file of learningFiles) {
-        const filepath = path.join(this.dataDirectory, file)
-        const stats = await fs.stat(filepath)
-        
-        totalSize += stats.size
+        const filepath = path.join(this.dataDirectory, file);
+        const stats = await fs.stat(filepath);
+
+        totalSize += stats.size;
         if (!lastModified || stats.mtime > lastModified) {
-          lastModified = stats.mtime
+          lastModified = stats.mtime;
         }
-        
+
         // Extract paradigm from filename
-        const parts = file.split('_')
+        const parts = file.split('_');
         if (parts.length >= 3) {
-          const paradigm = parts[1]
-          paradigmCounts[paradigm] = (paradigmCounts[paradigm] || 0) + 1
+          const paradigm = parts[1];
+          paradigmCounts[paradigm] = (paradigmCounts[paradigm] || 0) + 1;
         }
       }
-      
+
       return {
         totalFiles: learningFiles.length,
         totalSize,
         lastModified,
-        paradigmCounts
-      }
+        paradigmCounts,
+      };
     } catch (error) {
-      runtimeLogger.cognition(`Failed to get storage stats: ${error}`)
+      runtimeLogger.cognition(`Failed to get storage stats: ${error}`);
       return {
         totalFiles: 0,
         totalSize: 0,
         lastModified: null,
-        paradigmCounts: {}
-      }
+        paradigmCounts: {},
+      };
     }
   }
 }
@@ -738,7 +787,7 @@ export class LearningPersistence {
 /**
  * Global learning persistence instance
  */
-export const learningPersistence = new LearningPersistence()
+export const learningPersistence = new LearningPersistence();
 
 /**
  * Convenience functions
@@ -748,12 +797,12 @@ export async function saveLearningState(
   paradigm: ReasoningParadigm,
   state: Partial<LearningState>
 ): Promise<void> {
-  return learningPersistence.saveLearningState(agent, paradigm, state)
+  return learningPersistence.saveLearningState(agent, paradigm, state);
 }
 
 export async function loadLearningState(
   agentId: string,
   paradigm: ReasoningParadigm
 ): Promise<LearningState | null> {
-  return learningPersistence.loadLearningState(agentId, paradigm)
+  return learningPersistence.loadLearningState(agentId, paradigm);
 }

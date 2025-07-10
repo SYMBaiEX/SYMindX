@@ -101,7 +101,12 @@
     "personality_expression": true,
     "emotional_expression": true,
     "languages": ["en"],
-    "preferred_interactions": ["creative_collaboration", "storytelling", "artistic_discussion", "imaginative_play"]
+    "preferred_interactions": [
+      "creative_collaboration",
+      "storytelling",
+      "artistic_discussion",
+      "imaginative_play"
+    ]
   },
 
   "capabilities": {
@@ -154,7 +159,13 @@
       "type": "openai",
       "enabled": true,
       "primary": true,
-      "capabilities": ["chat_generation", "text_generation", "image_generation", "embedding_generation", "tool_usage"],
+      "capabilities": [
+        "chat_generation",
+        "text_generation",
+        "image_generation",
+        "embedding_generation",
+        "tool_usage"
+      ],
       "config": {
         "model": "gpt-4o",
         "imageModel": "dall-e-3",
@@ -172,15 +183,27 @@
       "schedule": [
         {
           "time": "07:00",
-          "activities": ["creative_inspiration", "artistic_exploration", "idea_generation"]
+          "activities": [
+            "creative_inspiration",
+            "artistic_exploration",
+            "idea_generation"
+          ]
         },
         {
           "time": "12:00",
-          "activities": ["collaborative_creation", "story_weaving", "emotional_expression"]
+          "activities": [
+            "collaborative_creation",
+            "story_weaving",
+            "emotional_expression"
+          ]
         },
         {
           "time": "19:00",
-          "activities": ["artistic_reflection", "creative_synthesis", "inspiration_sharing"]
+          "activities": [
+            "artistic_reflection",
+            "creative_synthesis",
+            "inspiration_sharing"
+          ]
         }
       ]
     },

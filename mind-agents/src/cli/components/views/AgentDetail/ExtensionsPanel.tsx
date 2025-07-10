@@ -1,8 +1,9 @@
-import React, { useState } from 'react'
 import { Box, Text, useInput } from 'ink'
+import React, { useState } from 'react'
+
+import { cyberpunkTheme } from '../../../themes/cyberpunk.js'
 import { Card3D } from '../../ui/Card3D.js'
 import { Chart } from '../../ui/Chart.js'
-import { cyberpunkTheme } from '../../../themes/cyberpunk.js'
 
 interface ExtensionDetailData {
   name: string
@@ -49,7 +50,10 @@ export const ExtensionsPanel: React.FC<ExtensionsPanelProps> = ({ agentData }) =
     } else if (input === 'v') {
       const modes: ('overview' | 'usage' | 'errors' | 'performance')[] = ['overview', 'usage', 'errors', 'performance']
       const currentIndex = modes.indexOf(viewMode)
-      setViewMode(modes[(currentIndex + 1) % modes.length])
+      const nextMode = modes[(currentIndex + 1) % modes.length]
+      if (nextMode) {
+        setViewMode(nextMode)
+      }
     }
   })
 
@@ -99,7 +103,7 @@ export const ExtensionsPanel: React.FC<ExtensionsPanelProps> = ({ agentData }) =
 
   // Generate extension activity data
   const generateActivityData = (extension: ExtensionDetailData) => {
-    return Array.from({ length: 20 }, (_, i) => {
+    return Array.from({ length: 20 }, (_) => {
       const baseActivity = extension.usage.actionsTriggered / 20
       const variance = (Math.random() - 0.5) * baseActivity * 0.5
       return Math.max(0, baseActivity + variance)
@@ -579,7 +583,7 @@ export const ExtensionsPanel: React.FC<ExtensionsPanelProps> = ({ agentData }) =
                   <Text color={cyberpunkTheme.colors.textDim}>
                     Context: {error.context}
                   </Text>
-                  {i < extensions[selectedExtension].errors.slice(0, 3).length - 1 && (
+                  {i < (extensions[selectedExtension]?.errors?.slice(0, 3).length ?? 0) - 1 && (
                     <Box marginTop={1}>
                       <Text color={cyberpunkTheme.colors.borderDim}>
                         {'─'.repeat(80)}

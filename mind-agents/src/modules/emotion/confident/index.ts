@@ -1,12 +1,13 @@
-import { BaseEmotion, EmotionDefinition } from '../base-emotion'
-import { ConfidentEmotionConfig } from './types'
+import { BaseEmotion, EmotionDefinition } from '../base-emotion';
+
+import { ConfidentEmotionConfig } from './types';
 
 export class ConfidentEmotion extends BaseEmotion {
   constructor(config: ConfidentEmotionConfig = {}) {
-    super(config)
+    super(config);
   }
 
-  getDefinition(): EmotionDefinition {
+  override getDefinition(): EmotionDefinition {
     return {
       name: 'confident',
       intensity: 0.8,
@@ -24,43 +25,45 @@ export class ConfidentEmotion extends BaseEmotion {
         'skilled',
         'competent',
         'assured',
-        'certain'
+        'certain',
       ],
       color: '#FFD700',
-      description: 'Feeling certain of one\'s ability to succeed',
+      description: "Feeling certain of one's ability to succeed",
       coordinates: {
-        valence: 0.7,     // Positive emotion
-        arousal: 0.6,     // Moderately high arousal
-        dominance: 0.8    // High sense of control
+        valence: 0.7, // Positive emotion
+        arousal: 0.6, // Moderately high arousal
+        dominance: 0.8, // High sense of control
       },
       modifiers: {
         creativity: 0.4,
         energy: 0.6,
         social: 0.5,
-        focus: 0.7
-      }
-    }
+        focus: 0.7,
+      },
+    };
   }
 
-  processEvent(eventType: string, context?: any): any {
+  override processEvent(eventType: string, context?: any): any {
     // Special processing for confidence-specific events
     if (context?.skill_improvement) {
-      this._intensity = Math.min(1.0, this._intensity + 0.15)
-      this.recordHistory('skill_improved')
+      this._intensity = Math.min(1.0, this._intensity + 0.15);
+      this.recordHistory('skill_improved');
     }
-    
+
     if (context?.challenge_overcome) {
-      this._intensity = Math.min(1.0, this._intensity + 0.25)
-      this.recordHistory('challenge_overcome')
+      this._intensity = Math.min(1.0, this._intensity + 0.25);
+      this.recordHistory('challenge_overcome');
     }
-    
-    return super.processEvent(eventType, context)
+
+    return super.processEvent(eventType, context);
   }
 }
 
-export default ConfidentEmotion
+export default ConfidentEmotion;
 
 // Export factory function for easy instantiation
-export function createConfidentEmotion(config: ConfidentEmotionConfig = {}): ConfidentEmotion {
-  return new ConfidentEmotion(config)
+export function createConfidentEmotion(
+  config: ConfidentEmotionConfig = {}
+): ConfidentEmotion {
+  return new ConfidentEmotion(config);
 }

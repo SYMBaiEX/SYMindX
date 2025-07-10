@@ -1,35 +1,53 @@
-import { convertUsage } from '../utils'
 /**
  * Mistral AI Portal
- * 
+ *
  * European-based AI provider with strong capabilities in multilingual processing,
  * code generation, and enterprise compliance features using AI SDK v5
  */
 
-import { BasePortal } from '../base-portal'
-import { 
-  Portal, PortalConfig, PortalType, PortalStatus, ModelType, PortalCapability,
-  TextGenerationOptions, TextGenerationResult, ChatMessage, ChatGenerationOptions, 
-  ChatGenerationResult, EmbeddingOptions, EmbeddingResult, MessageRole, FinishReason,
-  ImageGenerationOptions, ImageGenerationResult
-} from '../../types/portal'
-import { Agent } from '../../types/agent'
-import { mistral } from '@ai-sdk/mistral'
-import { 
-  generateText as aiGenerateText, 
-  streamText as aiStreamText, 
-  embed as aiEmbed, 
-  tool
-} from 'ai'
-import { z } from 'zod'
+import { mistral } from '@ai-sdk/mistral';
+import {
+  generateText as aiGenerateText,
+  streamText as aiStreamText,
+  embed as aiEmbed,
+  tool,
+} from 'ai';
+import { z } from 'zod';
+
+import { Agent } from '../../types/agent';
+import {
+  Portal,
+  PortalConfig,
+  PortalType,
+  PortalStatus,
+  ModelType,
+  PortalCapability,
+  TextGenerationOptions,
+  TextGenerationResult,
+  ChatMessage,
+  ChatGenerationOptions,
+  ChatGenerationResult,
+  EmbeddingOptions,
+  EmbeddingResult,
+  MessageRole,
+  FinishReason,
+  ImageGenerationOptions,
+  ImageGenerationResult,
+} from '../../types/portal';
+import { BasePortal } from '../base-portal';
+import { convertUsage } from '../utils';
+import { AISDKParameterBuilder, handleAISDKError, validateGenerationOptions } from '../ai-sdk-utils';
 
 export interface MistralConfig extends PortalConfig {
-  apiKey: string
-  model?: string
-  safeMode?: boolean
-  randomSeed?: number
-  responseFormat?: { type: 'json_object' | 'text' }
-  toolChoice?: 'auto' | 'none' | { type: 'function', function: { name: string } }
+  apiKey: string;
+  model?: string;
+  safeMode?: boolean;
+  randomSeed?: number;
+  responseFormat?: { type: 'json_object' | 'text' };
+  toolChoice?:
+    | 'auto'
+    | 'none'
+    | { type: 'function'; function: { name: string } };
 }
 
 export const defaultMistralConfig: Partial<MistralConfig> = {
@@ -38,8 +56,8 @@ export const defaultMistralConfig: Partial<MistralConfig> = {
   temperature: 0.7,
   timeout: 30000,
   baseUrl: 'https://api.mistral.ai/v1',
-  safeMode: false
-}
+  safeMode: false,
+};
 
 export const mistralModels = [
   'mistral-large-latest',
@@ -54,42 +72,42 @@ export const mistralModels = [
   'open-mixtral-8x22b',
   'mistral-embed',
   'codestral-latest',
-  'codestral-2405'
-]
+  'codestral-2405',
+];
 
 export class MistralPortal extends BasePortal {
-  type = PortalType.MISTRAL
+  type = PortalType.MISTRAL;
   supportedModels = [
     ModelType.TEXT_GENERATION,
     ModelType.CHAT,
     ModelType.CODE_GENERATION,
-    ModelType.EMBEDDING
-  ]
+    ModelType.EMBEDDING,
+  ];
 
-  private model: any
-  private embedModel: any
+  private model: any;
+  private embedModel: any;
 
   constructor(config: MistralConfig) {
-    super('mistral-ai', 'Mistral AI', '1.0.0', config)
-    const modelName = config.model || 'mistral-large-latest'
-    this.model = mistral(modelName)
+    super('mistral-ai', 'Mistral AI', '1.0.0', config);
+    const modelName = config.model || 'mistral-large-latest';
+    this.model = mistral(modelName);
     // For embeddings, use mistral-embed model
-    this.embedModel = mistral('mistral-embed')
+    this.embedModel = mistral('mistral-embed');
   }
 
   async init(agent: Agent): Promise<void> {
-    this.status = PortalStatus.INITIALIZING
-    console.log(`🔮 Initializing Mistral AI portal for agent ${agent.name}`)
-    
+    this.status = PortalStatus.INITIALIZING;
+    console.log(`🔮 Initializing Mistral AI portal for agent ${agent.name}`);
+
     try {
-      await this.validateConfig()
-      await this.healthCheck()
-      this.status = PortalStatus.ACTIVE
-      console.log(`✅ Mistral AI portal initialized for ${agent.name}`)
+      await this.validateConfig();
+      await this.healthCheck();
+      this.status = PortalStatus.ACTIVE;
+      console.log(`✅ Mistral AI portal initialized for ${agent.name}`);
     } catch (error) {
-      this.status = PortalStatus.ERROR
-      console.error(`❌ Failed to initialize Mistral AI portal:`, error)
-      throw error
+      this.status = PortalStatus.ERROR;
+      console.error(`❌ Failed to initialize Mistral AI portal:`, error);
+      throw error;
     }
   }
 
@@ -99,12 +117,12 @@ export class MistralPortal extends BasePortal {
       await aiGenerateText({
         model: this.model,
         messages: [{ role: 'user', content: 'Hello' }],
-        maxOutputTokens: 10
-      })
-      return true
+        maxOutputTokens: 10,
+      });
+      return true;
     } catch (error) {
-      console.error('Mistral AI health check failed:', error)
-      return false
+      console.error('Mistral AI health check failed:', error);
+      return false;
     }
   }
 
@@ -112,66 +130,139 @@ export class MistralPortal extends BasePortal {
    * Convert ChatMessage array to message format for AI SDK
    */
   private convertToModelMessages(messages: ChatMessage[]) {
-    return messages.map(msg => {
-      const role = msg.role === MessageRole.USER ? 'user' as const : 
-                   msg.role === MessageRole.ASSISTANT ? 'assistant' as const : 
-                   msg.role === MessageRole.SYSTEM ? 'system' as const : 'user' as const
-      
+    return messages.map((msg) => {
+      const role =
+        msg.role === MessageRole.USER
+          ? ('user' as const)
+          : msg.role === MessageRole.ASSISTANT
+            ? ('assistant' as const)
+            : msg.role === MessageRole.SYSTEM
+              ? ('system' as const)
+              : ('user' as const);
+
       return {
         role,
-        content: msg.content
-      }
-    })
+        content: msg.content,
+      };
+    });
   }
 
+  /**
+   * Get default parameters for Mistral AI
+   */
+  private getMistralDefaults() {
+    return {
+      maxOutputTokens: this.config.maxTokens ?? 8192,
+      temperature: this.config.temperature ?? 0.7,
+      topP: 1.0,
+      frequencyPenalty: 0,
+      presencePenalty: 0,
+    };
+  }
 
-  async generateText(prompt: string, options?: TextGenerationOptions): Promise<TextGenerationResult> {
+  /**
+   * Build Mistral-specific parameters with seed support
+   */
+  private buildMistralParams<T extends Record<string, any>>(
+    baseParams: T,
+    options?: TextGenerationOptions | ChatGenerationOptions
+  ): T & Record<string, any> {
+    const params = AISDKParameterBuilder.buildTextGenerationParams(
+      baseParams,
+      options,
+      this.getMistralDefaults()
+    );
+    
+    // Add Mistral-specific seed parameter
+    const randomSeed = (this.config as MistralConfig).randomSeed;
+    if (randomSeed !== undefined) {
+      (params as any).seed = randomSeed;
+    }
+    
+    return params;
+  }
+
+  override async generateText(
+    prompt: string,
+    options?: TextGenerationOptions
+  ): Promise<TextGenerationResult> {
     try {
-      const { text, usage, finishReason } = await aiGenerateText({
+      // Validate options
+      if (options) {
+        validateGenerationOptions(options, 'Mistral');
+      }
+      
+      const baseParams = {
         model: this.model,
         messages: [{ role: 'user', content: prompt }],
-        maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
-        temperature: options?.temperature ?? this.config.temperature,
-        topP: options?.topP,
-        frequencyPenalty: options?.frequencyPenalty,
-        presencePenalty: options?.presencePenalty,
-        seed: (this.config as MistralConfig).randomSeed,
-        stopSequences: options?.stop
-      })
+      };
+      
+      // Build parameters conditionally to satisfy exactOptionalPropertyTypes
+      const generateParams = this.buildMistralParams(baseParams, options);
+      
+      const { text, usage, finishReason } = await aiGenerateText(generateParams);
 
       return {
         text,
         model: (this.config as MistralConfig).model || 'mistral-large-latest',
         usage: convertUsage(usage),
         finishReason: this.mapFinishReason(finishReason),
-        timestamp: new Date()
-      }
+        timestamp: new Date(),
+      };
     } catch (error) {
-      throw new Error(`Mistral AI text generation failed: ${error}`)
+      throw handleAISDKError(error, 'Mistral');
     }
   }
 
-  async generateChat(messages: ChatMessage[], options?: ChatGenerationOptions): Promise<ChatGenerationResult> {
+  /**
+   * Build Mistral-specific chat parameters with tool support
+   */
+  private buildMistralChatParams<T extends Record<string, any>>(
+    baseParams: T,
+    options?: ChatGenerationOptions
+  ): T & Record<string, any> {
+    const params = AISDKParameterBuilder.buildChatGenerationParams(
+      baseParams,
+      options,
+      this.getMistralDefaults()
+    );
+    
+    // Add Mistral-specific seed parameter
+    const randomSeed = (this.config as MistralConfig).randomSeed;
+    if (randomSeed !== undefined) {
+      (params as any).seed = randomSeed;
+    }
+    
+    return params;
+  }
+
+  override async generateChat(
+    messages: ChatMessage[],
+    options?: ChatGenerationOptions
+  ): Promise<ChatGenerationResult> {
     try {
-      const modelMessages = this.convertToModelMessages(messages)
+      // Validate options
+      if (options) {
+        validateGenerationOptions(options, 'Mistral');
+      }
       
-      const { text, usage, finishReason } = await aiGenerateText({
+      const modelMessages = this.convertToModelMessages(messages);
+
+      const baseParams = {
         model: this.model,
         messages: modelMessages,
-        maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
-        temperature: options?.temperature ?? this.config.temperature,
-        topP: options?.topP,
-        frequencyPenalty: options?.frequencyPenalty,
-        presencePenalty: options?.presencePenalty,
-        seed: (this.config as MistralConfig).randomSeed,
-        // TODO: Implement tools support for AI SDK v5
-      })
+      };
+      
+      // Build parameters conditionally to satisfy exactOptionalPropertyTypes
+      const generateParams = this.buildMistralChatParams(baseParams, options);
+      
+      const { text, usage, finishReason } = await aiGenerateText(generateParams);
 
       const message: ChatMessage = {
         role: MessageRole.ASSISTANT,
         content: text,
-        timestamp: new Date()
-      }
+        timestamp: new Date(),
+      };
 
       return {
         text,
@@ -179,19 +270,22 @@ export class MistralPortal extends BasePortal {
         message,
         usage: convertUsage(usage),
         finishReason: this.mapFinishReason(finishReason),
-        timestamp: new Date()
-      }
+        timestamp: new Date(),
+      };
     } catch (error) {
-      throw new Error(`Mistral AI chat generation failed: ${error}`)
+      throw handleAISDKError(error, 'Mistral');
     }
   }
 
-  async generateEmbedding(text: string, options?: EmbeddingOptions): Promise<EmbeddingResult> {
+  override async generateEmbedding(
+    text: string,
+    options?: EmbeddingOptions
+  ): Promise<EmbeddingResult> {
     try {
       const { embedding, usage } = await aiEmbed({
         model: this.embedModel,
-        value: text
-      })
+        value: text,
+      });
 
       return {
         embedding,
@@ -199,11 +293,11 @@ export class MistralPortal extends BasePortal {
         model: 'mistral-embed',
         usage: {
           promptTokens: usage?.tokens || 0,
-          totalTokens: usage?.tokens || 0
-        }
-      }
+          totalTokens: usage?.tokens || 0,
+        },
+      };
     } catch (error) {
-      throw new Error(`Mistral AI embedding generation failed: ${error}`)
+      throw new Error(`Mistral AI embedding generation failed: ${error}`);
     }
   }
 
@@ -211,70 +305,87 @@ export class MistralPortal extends BasePortal {
    * Generate images - Note: Mistral doesn't provide image generation models
    * This is a placeholder that throws an error
    */
-  async generateImage(prompt: string, options?: ImageGenerationOptions): Promise<ImageGenerationResult> {
-    throw new Error('Mistral AI does not provide image generation models. Consider using OpenAI or another provider for image generation.')
+  override async generateImage(
+    prompt: string,
+    options?: ImageGenerationOptions
+  ): Promise<ImageGenerationResult> {
+    throw new Error(
+      'Mistral AI does not provide image generation models. Consider using OpenAI or another provider for image generation.'
+    );
   }
 
-  async *streamText(prompt: string, options?: TextGenerationOptions): AsyncGenerator<string> {
+  override async *streamText(
+    prompt: string,
+    options?: TextGenerationOptions
+  ): AsyncGenerator<string> {
     try {
-      const { textStream } = await aiStreamText({
+      // Validate options
+      if (options) {
+        validateGenerationOptions(options, 'Mistral');
+      }
+      
+      const baseParams = {
         model: this.model,
         messages: [{ role: 'user', content: prompt }],
-        maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
-        temperature: options?.temperature ?? this.config.temperature,
-        topP: options?.topP,
-        frequencyPenalty: options?.frequencyPenalty,
-        presencePenalty: options?.presencePenalty,
-        seed: (this.config as MistralConfig).randomSeed,
-        stopSequences: options?.stop
-      })
+      };
+      
+      // Build parameters conditionally to satisfy exactOptionalPropertyTypes
+      const streamParams = this.buildMistralParams(baseParams, options);
+      
+      const { textStream } = await aiStreamText(streamParams);
 
       for await (const chunk of textStream) {
-        yield chunk
+        yield chunk;
       }
     } catch (error) {
-      throw new Error(`Mistral AI text streaming failed: ${error}`)
+      throw handleAISDKError(error, 'Mistral');
     }
   }
 
-  async *streamChat(messages: ChatMessage[], options?: ChatGenerationOptions): AsyncGenerator<string> {
+  override async *streamChat(
+    messages: ChatMessage[],
+    options?: ChatGenerationOptions
+  ): AsyncGenerator<string> {
     try {
-      const modelMessages = this.convertToModelMessages(messages)
+      // Validate options
+      if (options) {
+        validateGenerationOptions(options, 'Mistral');
+      }
       
-      const { textStream } = await aiStreamText({
+      const modelMessages = this.convertToModelMessages(messages);
+
+      const baseParams = {
         model: this.model,
         messages: modelMessages,
-        maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
-        temperature: options?.temperature ?? this.config.temperature,
-        topP: options?.topP,
-        frequencyPenalty: options?.frequencyPenalty,
-        presencePenalty: options?.presencePenalty,
-        seed: (this.config as MistralConfig).randomSeed,
-        // TODO: Implement tools support for AI SDK v5
-      })
+      };
+      
+      // Build parameters conditionally to satisfy exactOptionalPropertyTypes
+      const streamParams = this.buildMistralChatParams(baseParams, options);
+      
+      const { textStream } = await aiStreamText(streamParams);
 
       for await (const chunk of textStream) {
-        yield chunk
+        yield chunk;
       }
     } catch (error) {
-      throw new Error(`Mistral AI chat streaming failed: ${error}`)
+      throw handleAISDKError(error, 'Mistral');
     }
   }
 
-  hasCapability(capability: PortalCapability): boolean {
+  override hasCapability(capability: PortalCapability): boolean {
     switch (capability) {
       case PortalCapability.TEXT_GENERATION:
       case PortalCapability.CHAT_GENERATION:
       case PortalCapability.EMBEDDING_GENERATION:
       case PortalCapability.STREAMING:
       case PortalCapability.FUNCTION_CALLING:
-        return true
+        return true;
       case PortalCapability.IMAGE_GENERATION:
       case PortalCapability.VISION:
       case PortalCapability.AUDIO:
-        return false
+        return false;
       default:
-        return false
+        return false;
     }
   }
 
@@ -284,15 +395,15 @@ export class MistralPortal extends BasePortal {
   private mapFinishReason(reason?: string): FinishReason {
     switch (reason) {
       case 'stop':
-        return FinishReason.STOP
+        return FinishReason.STOP;
       case 'length':
-        return FinishReason.LENGTH
+        return FinishReason.LENGTH;
       case 'content-filter':
-        return FinishReason.CONTENT_FILTER
+        return FinishReason.CONTENT_FILTER;
       case 'tool-calls':
-        return FinishReason.FUNCTION_CALL
+        return FinishReason.FUNCTION_CALL;
       default:
-        return FinishReason.STOP
+        return FinishReason.STOP;
     }
   }
 }
@@ -300,6 +411,6 @@ export class MistralPortal extends BasePortal {
 export function createMistralPortal(config: MistralConfig): MistralPortal {
   return new MistralPortal({
     ...defaultMistralConfig,
-    ...config
-  })
+    ...config,
+  });
 }

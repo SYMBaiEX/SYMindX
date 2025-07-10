@@ -1,8 +1,9 @@
-import React from 'react'
 import { Box, Text } from 'ink'
+import React from 'react'
+
+import { cyberpunkTheme } from '../../../themes/cyberpunk.js'
 import { Card3D } from '../../ui/Card3D.js'
 import { Chart } from '../../ui/Chart.js'
-import { cyberpunkTheme } from '../../../themes/cyberpunk.js'
 
 interface PerformanceDetailData {
   uptime: number
@@ -37,7 +38,7 @@ interface PerformancePanelProps {
 export const PerformancePanel: React.FC<PerformancePanelProps> = ({ 
   agentData, 
   formatUptime, 
-  formatBytes 
+  formatBytes: _formatBytes 
 }) => {
   const { performance } = agentData
 

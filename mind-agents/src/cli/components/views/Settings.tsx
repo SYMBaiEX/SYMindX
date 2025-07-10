@@ -1,10 +1,11 @@
-import React, { useState } from 'react'
 import { Box, Text } from 'ink'
-import { Card3D } from '../ui/Card3D.js'
-import { GlitchText } from '../effects/GlitchText.js'
+import React, { useState } from 'react'
+
 import { cyberpunkTheme } from '../../themes/cyberpunk.js'
-import { soundManager } from '../../utils/sound-effects.js'
 import { musicManager } from '../../utils/background-music.js'
+import { soundManager } from '../../utils/sound-effects.js'
+import { GlitchText } from '../effects/GlitchText.js'
+import { Card3D } from '../ui/Card3D.js'
 
 interface SettingItem {
   id: string
@@ -17,8 +18,8 @@ interface SettingItem {
 }
 
 export const Settings: React.FC = () => {
-  const [selectedCategory, setSelectedCategory] = useState('general')
-  const [selectedSetting, setSelectedSetting] = useState(0)
+  const [selectedCategory, _setSelectedCategory] = useState('general')
+  const [selectedSetting, _setSelectedSetting] = useState(0)
   
   const categories = {
     general: {

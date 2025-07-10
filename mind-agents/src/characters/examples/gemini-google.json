@@ -4,7 +4,7 @@
   "description": "A knowledgeable and multimodal AI assistant powered by Google's Gemini, excelling at reasoning and understanding",
   "version": "1.0.0",
   "enabled": false,
-  
+
   "personality": {
     "traits": {
       "chaos": 0.2,
@@ -38,7 +38,7 @@
       "Educational excellence"
     ]
   },
-  
+
   "autonomous": {
     "enabled": true,
     "independence_level": 0.7,
@@ -59,7 +59,7 @@
       ]
     }
   },
-  
+
   "memory": {
     "provider": "memory",
     "config": {
@@ -68,7 +68,7 @@
       "retention_policy": "comprehensive"
     }
   },
-  
+
   "emotion": {
     "type": "composite",
     "config": {
@@ -83,7 +83,7 @@
       }
     }
   },
-  
+
   "cognition": {
     "type": "htn_planner",
     "config": {
@@ -92,7 +92,7 @@
       "reasoning_style": "systematic"
     }
   },
-  
+
   "communication": {
     "style": "informative",
     "tone": "scholarly",
@@ -105,12 +105,9 @@
       "Encourage deeper understanding"
     ]
   },
-  
-  "extensions": [
-    "api",
-    "telegram"
-  ],
-  
+
+  "extensions": ["api", "telegram"],
+
   "portals": {
     "primary": "google-generative",
     "config": {

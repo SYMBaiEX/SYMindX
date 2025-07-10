@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react'
 import { Box, Text, useInput } from 'ink'
-import { Card3D } from '../ui/Card3D.js'
-import { GlitchText } from '../effects/GlitchText.js'
-import { cyberpunkTheme } from '../../themes/cyberpunk.js'
+import React, { useState, useEffect, useRef } from 'react'
+
 import { useAgentData } from '../../hooks/useAgentData.js'
+import { cyberpunkTheme } from '../../themes/cyberpunk.js'
 import { soundManager, SoundType } from '../../utils/sound-effects.js'
+import { GlitchText } from '../effects/GlitchText.js'
+import { Card3D } from '../ui/Card3D.js'
 
 interface Message {
   id: string
@@ -88,7 +89,7 @@ export const Chat: React.FC = () => {
       const agentMessage: Message = {
         id: (Date.now() + 1).toString(),
         from: 'agent',
-        content: responses[Math.floor(Math.random() * responses.length)],
+        content: responses[Math.floor(Math.random() * responses.length)] ?? 'No response available',
         timestamp: new Date(),
         agentId: selectedAgent,
       }

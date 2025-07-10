@@ -1,12 +1,13 @@
-import { BaseEmotion, EmotionDefinition } from '../base-emotion'
-import { ConfusedEmotionConfig } from './types'
+import { BaseEmotion, EmotionDefinition } from '../base-emotion';
+
+import { ConfusedEmotionConfig } from './types';
 
 export class ConfusedEmotion extends BaseEmotion {
   constructor(config: ConfusedEmotionConfig = {}) {
-    super(config)
+    super(config);
   }
 
-  getDefinition(): EmotionDefinition {
+  override getDefinition(): EmotionDefinition {
     return {
       name: 'confused',
       intensity: 0.6,
@@ -22,43 +23,45 @@ export class ConfusedEmotion extends BaseEmotion {
         'what',
         'dont_understand',
         'mixed_signals',
-        'paradox'
+        'paradox',
       ],
       color: '#9370DB',
       description: 'Feeling uncertain or unable to understand something',
       coordinates: {
-        valence: -0.3,    // Slightly negative
-        arousal: 0.4,     // Moderate arousal
-        dominance: -0.5   // Low sense of control
+        valence: -0.3, // Slightly negative
+        arousal: 0.4, // Moderate arousal
+        dominance: -0.5, // Low sense of control
       },
       modifiers: {
         creativity: 0.3,
         energy: -0.2,
         social: -0.1,
-        focus: -0.4
-      }
-    }
+        focus: -0.4,
+      },
+    };
   }
 
-  processEvent(eventType: string, context?: any): any {
+  override processEvent(eventType: string, context?: any): any {
     // Special processing for confusion-specific events
     if (context?.contradiction_detected) {
-      this._intensity = Math.min(1.0, this._intensity + 0.2)
-      this.recordHistory('contradiction')
+      this._intensity = Math.min(1.0, this._intensity + 0.2);
+      this.recordHistory('contradiction');
     }
-    
+
     if (context?.clarity_level && context.clarity_level < 0.3) {
-      this._intensity = Math.min(1.0, this._intensity + 0.15)
-      this.recordHistory('low_clarity')
+      this._intensity = Math.min(1.0, this._intensity + 0.15);
+      this.recordHistory('low_clarity');
     }
-    
-    return super.processEvent(eventType, context)
+
+    return super.processEvent(eventType, context);
   }
 }
 
-export default ConfusedEmotion
+export default ConfusedEmotion;
 
 // Export factory function for easy instantiation
-export function createConfusedEmotion(config: ConfusedEmotionConfig = {}): ConfusedEmotion {
-  return new ConfusedEmotion(config)
+export function createConfusedEmotion(
+  config: ConfusedEmotionConfig = {}
+): ConfusedEmotion {
+  return new ConfusedEmotion(config);
 }

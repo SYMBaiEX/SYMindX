@@ -1,8 +1,9 @@
-import React, { useState } from 'react'
 import { Box, Text, useInput } from 'ink'
+import React, { useState } from 'react'
+
+import { cyberpunkTheme } from '../../../themes/cyberpunk.js'
 import { Card3D } from '../../ui/Card3D.js'
 import { Chart } from '../../ui/Chart.js'
-import { cyberpunkTheme } from '../../../themes/cyberpunk.js'
 
 interface AutonomyDetailData {
   enabled: boolean
@@ -60,7 +61,10 @@ export const AutonomyPanel: React.FC<AutonomyPanelProps> = ({ agentData }) => {
     } else if (input === 'v') {
       const modes: ('actions' | 'routine' | 'social' | 'curiosity')[] = ['actions', 'routine', 'social', 'curiosity']
       const currentIndex = modes.indexOf(viewMode)
-      setViewMode(modes[(currentIndex + 1) % modes.length])
+      const nextMode = modes[(currentIndex + 1) % modes.length]
+      if (nextMode) {
+        setViewMode(nextMode)
+      }
     }
   })
 
@@ -82,7 +86,7 @@ export const AutonomyPanel: React.FC<AutonomyPanelProps> = ({ agentData }) => {
     : 0
 
   // Generate autonomy score over time
-  const autonomyScoreData = Array.from({ length: 20 }, (_, i) => {
+  const autonomyScoreData = Array.from({ length: 20 }, (_) => {
     const baseScore = autonomy.independenceLevel
     const variance = (Math.random() - 0.5) * 0.3
     return Math.max(0, Math.min(1, baseScore + variance))

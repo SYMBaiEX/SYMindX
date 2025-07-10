@@ -1,12 +1,13 @@
-import { BaseEmotion, EmotionDefinition } from '../base-emotion'
-import { NostalgicEmotionConfig } from './types'
+import { BaseEmotion, EmotionDefinition } from '../base-emotion';
+
+import { NostalgicEmotionConfig } from './types';
 
 export class NostalgicEmotion extends BaseEmotion {
   constructor(config: NostalgicEmotionConfig = {}) {
-    super(config)
+    super(config);
   }
 
-  getDefinition(): EmotionDefinition {
+  override getDefinition(): EmotionDefinition {
     return {
       name: 'nostalgic',
       intensity: 0.6,
@@ -24,43 +25,45 @@ export class NostalgicEmotion extends BaseEmotion {
         'memories',
         'reminisce',
         'throwback',
-        'history'
+        'history',
       ],
       color: '#DDA0DD',
       description: 'Feeling a sentimental longing for the past',
       coordinates: {
-        valence: 0.2,     // Bittersweet (mildly positive)
-        arousal: -0.3,    // Low arousal
-        dominance: -0.2   // Low control (swept by memories)
+        valence: 0.2, // Bittersweet (mildly positive)
+        arousal: -0.3, // Low arousal
+        dominance: -0.2, // Low control (swept by memories)
       },
       modifiers: {
         creativity: 0.5,
         energy: -0.3,
         social: 0.1,
-        focus: -0.2
-      }
-    }
+        focus: -0.2,
+      },
+    };
   }
 
-  processEvent(eventType: string, context?: any): any {
+  override processEvent(eventType: string, context?: any): any {
     // Special processing for nostalgia-specific events
     if (context?.memory_type === 'personal' || context?.memory_age > 30) {
-      this._intensity = Math.min(1.0, this._intensity + 0.2)
-      this.recordHistory('personal_memory')
+      this._intensity = Math.min(1.0, this._intensity + 0.2);
+      this.recordHistory('personal_memory');
     }
-    
+
     if (context?.anniversary || context?.milestone) {
-      this._intensity = Math.min(1.0, this._intensity + 0.25)
-      this.recordHistory('milestone_reached')
+      this._intensity = Math.min(1.0, this._intensity + 0.25);
+      this.recordHistory('milestone_reached');
     }
-    
-    return super.processEvent(eventType, context)
+
+    return super.processEvent(eventType, context);
   }
 }
 
-export default NostalgicEmotion
+export default NostalgicEmotion;
 
 // Export factory function for easy instantiation
-export function createNostalgicEmotion(config: NostalgicEmotionConfig = {}): NostalgicEmotion {
-  return new NostalgicEmotion(config)
+export function createNostalgicEmotion(
+  config: NostalgicEmotionConfig = {}
+): NostalgicEmotion {
+  return new NostalgicEmotion(config);
 }

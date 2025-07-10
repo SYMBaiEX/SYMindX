@@ -1,12 +1,13 @@
-import { BaseEmotion, EmotionDefinition } from '../base-emotion'
-import { AnxiousEmotionConfig } from './types'
+import { BaseEmotion, EmotionDefinition } from '../base-emotion';
+
+import { AnxiousEmotionConfig } from './types';
 
 export class AnxiousEmotion extends BaseEmotion {
   constructor(config: AnxiousEmotionConfig = {}) {
-    super(config)
+    super(config);
   }
 
-  getDefinition(): EmotionDefinition {
+  override getDefinition(): EmotionDefinition {
     return {
       name: 'anxious',
       intensity: 0.7,
@@ -24,43 +25,46 @@ export class AnxiousEmotion extends BaseEmotion {
         'concern',
         'risk',
         'danger',
-        'unknown'
+        'unknown',
       ],
       color: '#FFA500',
-      description: 'Feeling worried or uneasy about something with an uncertain outcome',
+      description:
+        'Feeling worried or uneasy about something with an uncertain outcome',
       coordinates: {
-        valence: -0.6,    // Negative emotion
-        arousal: 0.8,     // High arousal/excitement
-        dominance: -0.4   // Low sense of control
+        valence: -0.6, // Negative emotion
+        arousal: 0.8, // High arousal/excitement
+        dominance: -0.4, // Low sense of control
       },
       modifiers: {
         creativity: -0.2,
         energy: 0.3,
         social: -0.3,
-        focus: 0.4
-      }
-    }
+        focus: 0.4,
+      },
+    };
   }
 
-  processEvent(eventType: string, context?: any): any {
+  override processEvent(eventType: string, context?: any): any {
     // Special processing for anxiety-specific events
     if (context?.uncertainty_level && context.uncertainty_level > 0.5) {
-      this._intensity = Math.min(1.0, this._intensity + 0.2)
-      this.recordHistory('high_uncertainty')
+      this._intensity = Math.min(1.0, this._intensity + 0.2);
+      this.recordHistory('high_uncertainty');
     }
-    
+
     if (context?.time_pressure) {
-      this._intensity = Math.min(1.0, this._intensity + 0.15)
-      this.recordHistory('time_pressure')
+      this._intensity = Math.min(1.0, this._intensity + 0.15);
+      this.recordHistory('time_pressure');
     }
-    
-    return super.processEvent(eventType, context)
+
+    return super.processEvent(eventType, context);
   }
 }
 
-export default AnxiousEmotion
+export default AnxiousEmotion;
 
 // Export factory function for easy instantiation
-export function createAnxiousEmotion(config: AnxiousEmotionConfig = {}): AnxiousEmotion {
-  return new AnxiousEmotion(config)
+export function createAnxiousEmotion(
+  config: AnxiousEmotionConfig = {}
+): AnxiousEmotion {
+  return new AnxiousEmotion(config);
 }

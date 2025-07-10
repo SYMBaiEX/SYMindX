@@ -1,8 +1,9 @@
-import React, { useState } from 'react'
 import { Box, Text, useInput } from 'ink'
+import React, { useState } from 'react'
+
+import { cyberpunkTheme } from '../../../themes/cyberpunk.js'
 import { Card3D } from '../../ui/Card3D.js'
 import { Chart } from '../../ui/Chart.js'
-import { cyberpunkTheme } from '../../../themes/cyberpunk.js'
 
 interface PortalDetailData {
   name: string
@@ -51,7 +52,10 @@ export const PortalsPanel: React.FC<PortalsPanelProps> = ({ agentData }) => {
     } else if (input === 'v') {
       const modes: ('overview' | 'performance' | 'usage' | 'costs')[] = ['overview', 'performance', 'usage', 'costs']
       const currentIndex = modes.indexOf(viewMode)
-      setViewMode(modes[(currentIndex + 1) % modes.length])
+      const nextMode = modes[(currentIndex + 1) % modes.length]
+      if (nextMode) {
+        setViewMode(nextMode)
+      }
     }
   })
 

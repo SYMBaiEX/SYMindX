@@ -1,6 +1,6 @@
 /**
  * Centralized Type System for SYMindX
- * 
+ *
  * This file exports all types used throughout the SYMindX system,
  * providing a single point of access for all type definitions.
  */
@@ -18,18 +18,18 @@ export type { Portal, PortalConfig, PortalType } from './portal';
 export type { ExtensionMetadata, ExtensionConfig } from './common';
 
 // Advanced module types (selective exports)
-export type { 
-  EmotionModule, 
-  PersonalityTraits, 
-  EmotionBlend, 
-  AdvancedEmotionConfig 
+export type {
+  EmotionModule,
+  PersonalityTraits,
+  EmotionBlend,
+  AdvancedEmotionConfig,
 } from './emotion';
 export type { CognitionModule } from './cognition';
 
 // Memory types (selective exports)
 export type {
   SearchQuery,
-  SearchResult, 
+  SearchResult,
   SearchQueryType,
   BoostFactors,
   TimeRange,
@@ -47,19 +47,19 @@ export type {
   MemoryContext,
   MemoryPermission,
   SharedMemoryConfig,
-  ArchivalStrategy
+  ArchivalStrategy,
 } from './memory';
 
 // Export enums as values (not types)
 export { MemoryDuration, MemoryTierType } from './memory';
 
 // Character configuration types
-export type { 
+export type {
   CharacterConfig,
   EnvironmentConfig,
   PortalConfig as CharacterPortalConfig,
   PortalSpecificConfig,
-  PortalCapability
+  PortalCapability,
 } from './character';
 export { ConfigDefaults } from './character';
 
@@ -259,7 +259,7 @@ export interface FactoryRegistry {
   registerCognitionFactory(name: string, factory: ModuleFactory<any>): void;
   registerExtensionFactory(name: string, factory: ModuleFactory<any>): void;
   registerPortalFactory(name: string, factory: ModuleFactory<any>): void;
-  
+
   getMemoryFactory(name: string): ModuleFactory<any> | undefined;
   getEmotionFactory(name: string): ModuleFactory<any> | undefined;
   getCognitionFactory(name: string): ModuleFactory<any> | undefined;

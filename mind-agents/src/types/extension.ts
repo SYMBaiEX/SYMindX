@@ -2,20 +2,21 @@
  * Extension types for SYMindX
  */
 
-import { Logger } from '../utils/logger'
-import { ExtensionConfig } from './common'
-import { Agent } from './agent'
+import { Logger } from '../utils/logger';
+
+import { Agent } from './agent';
+import { ExtensionConfig } from './common';
 
 /**
  * Extension context provided to extensions during initialization
  */
 export interface ExtensionContext {
   /** Logger instance for the extension */
-  logger: Logger
+  logger: Logger;
   /** Extension configuration */
-  config: ExtensionConfig
+  config: ExtensionConfig;
   /** Agent instance */
-  agent?: Agent
+  agent?: Agent;
 }
 
 /**
@@ -23,26 +24,26 @@ export interface ExtensionContext {
  */
 export interface Extension {
   /** Unique extension identifier */
-  id: string
+  id: string;
   /** Human-readable extension name */
-  name: string
+  name: string;
   /** Extension version */
-  version: string
+  version: string;
   /** Extension type */
-  type: string
+  type: string;
   /** Whether the extension is enabled */
-  enabled: boolean
+  enabled: boolean;
   /** Current extension status */
-  status: string
+  status: string;
   /** Extension configuration */
-  config: ExtensionConfig
+  config: ExtensionConfig;
   /** Available actions */
-  actions: Record<string, any>
+  actions: Record<string, any>;
   /** Event handlers */
-  events: Record<string, any>
-  
+  events: Record<string, any>;
+
   /** Initialize the extension */
-  init(): Promise<void>
+  init(): Promise<void>;
   /** Cleanup the extension */
-  cleanup?(): Promise<void>
+  cleanup?(): Promise<void>;
 }

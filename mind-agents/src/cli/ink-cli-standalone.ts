@@ -7,8 +7,8 @@
  * that connects to the actual SYMindX runtime system.
  */
 
-import { Command } from 'commander';
 import chalk from 'chalk';
+import { Command } from 'commander';
 
 async function main() {
   const program = new Command();

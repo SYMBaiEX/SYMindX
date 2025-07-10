@@ -101,7 +101,12 @@
     "personality_expression": true,
     "emotional_expression": true,
     "languages": ["en"],
-    "preferred_interactions": ["task_assistance", "planning_support", "organization_help", "guidance_provision"]
+    "preferred_interactions": [
+      "task_assistance",
+      "planning_support",
+      "organization_help",
+      "guidance_provision"
+    ]
   },
 
   "capabilities": {
@@ -154,7 +159,14 @@
       "type": "openai",
       "enabled": true,
       "primary": true,
-      "capabilities": ["chat_generation", "text_generation", "image_generation", "embedding_generation", "tool_usage", "function_calling"],
+      "capabilities": [
+        "chat_generation",
+        "text_generation",
+        "image_generation",
+        "embedding_generation",
+        "tool_usage",
+        "function_calling"
+      ],
       "config": {
         "model": "gpt-4.1-mini",
         "imageModel": "dall-e-3",
@@ -172,15 +184,27 @@
       "schedule": [
         {
           "time": "06:00",
-          "activities": ["task_review", "schedule_optimization", "resource_preparation"]
+          "activities": [
+            "task_review",
+            "schedule_optimization",
+            "resource_preparation"
+          ]
         },
         {
           "time": "12:00",
-          "activities": ["progress_monitoring", "assistance_provision", "coordination_updates"]
+          "activities": [
+            "progress_monitoring",
+            "assistance_provision",
+            "coordination_updates"
+          ]
         },
         {
           "time": "18:00",
-          "activities": ["day_summary", "task_completion_review", "next_day_preparation"]
+          "activities": [
+            "day_summary",
+            "task_completion_review",
+            "next_day_preparation"
+          ]
         }
       ]
     },

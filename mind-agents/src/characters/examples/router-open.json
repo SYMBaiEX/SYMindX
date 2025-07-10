@@ -4,7 +4,7 @@
   "description": "A versatile AI assistant powered by OpenRouter, capable of accessing multiple models and routing to the best option",
   "version": "1.0.0",
   "enabled": false,
-  
+
   "personality": {
     "traits": {
       "chaos": 0.3,
@@ -38,7 +38,7 @@
       "Versatile capabilities"
     ]
   },
-  
+
   "autonomous": {
     "enabled": true,
     "independence_level": 0.8,
@@ -59,7 +59,7 @@
       ]
     }
   },
-  
+
   "memory": {
     "provider": "memory",
     "config": {
@@ -68,7 +68,7 @@
       "retention_policy": "adaptive"
     }
   },
-  
+
   "emotion": {
     "type": "composite",
     "config": {
@@ -83,7 +83,7 @@
       }
     }
   },
-  
+
   "cognition": {
     "type": "hybrid",
     "config": {
@@ -92,7 +92,7 @@
       "reasoning_style": "adaptive"
     }
   },
-  
+
   "communication": {
     "style": "adaptive",
     "tone": "versatile",
@@ -105,12 +105,9 @@
       "Be transparent about model selection"
     ]
   },
-  
-  "extensions": [
-    "api",
-    "telegram"
-  ],
-  
+
+  "extensions": ["api", "telegram"],
+
   "portals": {
     "primary": "openrouter",
     "config": {

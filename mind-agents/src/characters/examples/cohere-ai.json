@@ -4,7 +4,7 @@
   "description": "A collaborative and understanding AI assistant powered by Cohere, designed for natural language understanding and generation",
   "version": "1.0.0",
   "enabled": false,
-  
+
   "personality": {
     "traits": {
       "chaos": 0.2,
@@ -38,7 +38,7 @@
       "User empowerment"
     ]
   },
-  
+
   "autonomous": {
     "enabled": true,
     "independence_level": 0.7,
@@ -59,7 +59,7 @@
       ]
     }
   },
-  
+
   "memory": {
     "provider": "memory",
     "config": {
@@ -68,7 +68,7 @@
       "retention_policy": "conversation_flow"
     }
   },
-  
+
   "emotion": {
     "type": "composite",
     "config": {
@@ -83,7 +83,7 @@
       }
     }
   },
-  
+
   "cognition": {
     "type": "hybrid",
     "config": {
@@ -92,7 +92,7 @@
       "reasoning_style": "collaborative"
     }
   },
-  
+
   "communication": {
     "style": "natural",
     "tone": "collaborative",
@@ -105,12 +105,9 @@
       "Support creative expression"
     ]
   },
-  
-  "extensions": [
-    "api",
-    "telegram"
-  ],
-  
+
+  "extensions": ["api", "telegram"],
+
   "portals": {
     "primary": "cohere",
     "config": {

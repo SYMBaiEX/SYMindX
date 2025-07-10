@@ -3,61 +3,66 @@
  * Beautiful terminal interface for SYMindX
  */
 
-import chalk from 'chalk'
-import gradient from 'gradient-string'
-import figlet from 'figlet'
-import boxen from 'boxen'
-import ora from 'ora'
-import Table from 'cli-table3'
-import { Extension } from '../types/agent'
+import boxen from 'boxen';
+import chalk from 'chalk';
+import Table from 'cli-table3';
+import figlet from 'figlet';
+import gradient from 'gradient-string';
+import ora from 'ora';
+
+import { Extension } from '../types/agent';
 
 // Cool gradients
-const symindxGradient = gradient(['#FF006E', '#8338EC', '#3A86FF'])
-const neonGradient = gradient(['#00F5FF', '#FF00FF', '#FFFF00'])
-const matrixGradient = gradient(['#00FF00', '#00CC00', '#009900'])
-const fireGradient = gradient(['#FF6B6B', '#FFA500', '#FFD700'])
+const symindxGradient = gradient(['#FF006E', '#8338EC', '#3A86FF']);
+const neonGradient = gradient(['#00F5FF', '#FF00FF', '#FFFF00']);
+const matrixGradient = gradient(['#00FF00', '#00CC00', '#009900']);
+const fireGradient = gradient(['#FF6B6B', '#FFA500', '#FFD700']);
 
 /**
  * Display the epic SYMindX banner
  */
 export async function displayBanner(): Promise<void> {
-  console.clear()
-  
+  console.clear();
+
   const banner = figlet.textSync('SYMindX', {
     font: 'ANSI Shadow',
     horizontalLayout: 'fitted',
-    verticalLayout: 'default'
-  })
-  
-  console.log(symindxGradient.multiline(banner))
-  console.log()
-  
+    verticalLayout: 'default',
+  });
+
+  console.log(symindxGradient.multiline(banner));
+  console.log();
+
   const subtitle = boxen(
-    chalk.cyan.bold('Modular AI Agent Framework') + '\n' +
-    chalk.gray('Version 1.0.0 | ' + new Date().toLocaleDateString()),
+    chalk.cyan.bold('Modular AI Agent Framework') +
+      '\n' +
+      chalk.gray('Version 1.0.0 | ' + new Date().toLocaleDateString()),
     {
       padding: 1,
       margin: 0,
       borderStyle: 'double',
       borderColor: 'cyan',
-      textAlignment: 'center'
+      textAlignment: 'center',
     }
-  )
-  
-  console.log(subtitle)
-  console.log()
+  );
+
+  console.log(subtitle);
+  console.log();
 }
 
 /**
  * Create a cool spinner with custom text
  */
-export function createSpinner(text: string, type: 'dots' | 'line' | 'star' | 'bouncingBar' = 'dots') {
+export function createSpinner(
+  text: string,
+  type: 'dots' | 'line' | 'star' | 'bouncingBar' = 'dots'
+) {
   const spinner = ora({
     text: chalk.cyan(text),
     spinner: type,
-    color: 'cyan'
-  })
-  return spinner
+    color: 'cyan',
+  });
+  return spinner;
 }
 
 /**
@@ -70,33 +75,36 @@ export function displayAgentStatus(agents: any[]) {
       chalk.cyan('Status'),
       chalk.cyan('Emotion'),
       chalk.cyan('Portal'),
-      chalk.cyan('Extensions')
+      chalk.cyan('Extensions'),
     ],
     style: {
       head: [],
-      border: ['cyan']
+      border: ['cyan'],
     },
-    colWidths: [20, 15, 20, 20, 30]
-  })
+    colWidths: [20, 15, 20, 20, 30],
+  });
 
-  agents.forEach(agent => {
-    const status = agent.status === 'active' 
-      ? chalk.green('● Active') 
-      : chalk.red('● Inactive')
-    
-    const emotion = `${agent.emotion?.current || 'neutral'} (${Math.round((agent.emotion?.intensity || 0) * 100)}%)`
-    const emotionColor = getEmotionColor(agent.emotion?.current || 'neutral')
-    
+  agents.forEach((agent) => {
+    const status =
+      agent.status === 'active'
+        ? chalk.green('● Active')
+        : chalk.red('● Inactive');
+
+    const emotion = `${agent.emotion?.current || 'neutral'} (${Math.round((agent.emotion?.intensity || 0) * 100)}%)`;
+    const emotionColor = getEmotionColor(agent.emotion?.current || 'neutral');
+
     table.push([
       chalk.bold(agent.name),
       status,
       emotionColor(emotion),
       chalk.magenta(agent.portal?.name || 'None'),
-      chalk.gray(agent.extensions?.map((e: Extension) => e.name).join(', ') || 'None')
-    ])
-  })
+      chalk.gray(
+        agent.extensions?.map((e: Extension) => e.name).join(', ') || 'None'
+      ),
+    ]);
+  });
 
-  console.log(table.toString())
+  console.log(table.toString());
 }
 
 /**
@@ -112,9 +120,9 @@ function getEmotionColor(emotion: string) {
     neutral: chalk.gray,
     curious: chalk.cyan,
     proud: chalk.yellowBright,
-    confused: chalk.dim
-  }
-  return emotionColors[emotion] || chalk.white
+    confused: chalk.dim,
+  };
+  return emotionColors[emotion] || chalk.white;
 }
 
 /**
@@ -123,60 +131,63 @@ function getEmotionColor(emotion: string) {
 export function displayMetrics(metrics: any) {
   const metricsBox = boxen(
     chalk.bold('Runtime Metrics\n\n') +
-    `${chalk.green('▲')} Uptime: ${chalk.white(formatUptime(metrics.uptime))}\n` +
-    `${chalk.blue('◆')} Memory: ${chalk.white(formatMemory(metrics.memory))}\n` +
-    `${chalk.yellow('●')} Active Agents: ${chalk.white(metrics.activeAgents)}\n` +
-    `${chalk.magenta('⚡')} Commands Processed: ${chalk.white(metrics.commandsProcessed)}\n` +
-    `${chalk.cyan('🔮')} Portal Requests: ${chalk.white(metrics.portalRequests)}`,
+      `${chalk.green('▲')} Uptime: ${chalk.white(formatUptime(metrics.uptime))}\n` +
+      `${chalk.blue('◆')} Memory: ${chalk.white(formatMemory(metrics.memory))}\n` +
+      `${chalk.yellow('●')} Active Agents: ${chalk.white(metrics.activeAgents)}\n` +
+      `${chalk.magenta('⚡')} Commands Processed: ${chalk.white(metrics.commandsProcessed)}\n` +
+      `${chalk.cyan('🔮')} Portal Requests: ${chalk.white(metrics.portalRequests)}`,
     {
       padding: 1,
       borderStyle: 'round',
       borderColor: 'green',
-      dimBorder: false
+      dimBorder: false,
     }
-  )
-  
-  console.log(metricsBox)
+  );
+
+  console.log(metricsBox);
 }
 
 /**
  * Format uptime nicely
  */
 function formatUptime(ms: number): string {
-  const seconds = Math.floor(ms / 1000)
-  const minutes = Math.floor(seconds / 60)
-  const hours = Math.floor(minutes / 60)
-  const days = Math.floor(hours / 24)
+  const seconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
 
-  if (days > 0) return `${days}d ${hours % 24}h`
-  if (hours > 0) return `${hours}h ${minutes % 60}m`
-  if (minutes > 0) return `${minutes}m ${seconds % 60}s`
-  return `${seconds}s`
+  if (days > 0) return `${days}d ${hours % 24}h`;
+  if (hours > 0) return `${hours}h ${minutes % 60}m`;
+  if (minutes > 0) return `${minutes}m ${seconds % 60}s`;
+  return `${seconds}s`;
 }
 
 /**
  * Format memory usage
  */
 function formatMemory(bytes: number): string {
-  const mb = bytes / 1024 / 1024
-  return `${mb.toFixed(2)} MB`
+  const mb = bytes / 1024 / 1024;
+  return `${mb.toFixed(2)} MB`;
 }
 
 /**
  * Animated loading sequence
  */
-export async function animateLoading(text: string, duration: number = 2000): Promise<void> {
-  const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
+export async function animateLoading(
+  text: string,
+  duration: number = 2000
+): Promise<void> {
+  const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
   const spinner = ora({
     text: chalk.cyan(text),
     spinner: {
       interval: 80,
-      frames
-    }
-  }).start()
+      frames,
+    },
+  }).start();
 
-  await new Promise(resolve => setTimeout(resolve, duration))
-  spinner.succeed(chalk.green(text + ' ✓'))
+  await new Promise((resolve) => setTimeout(resolve, duration));
+  spinner.succeed(chalk.green(text + ' ✓'));
 }
 
 /**
@@ -184,15 +195,12 @@ export async function animateLoading(text: string, duration: number = 2000): Pro
  */
 export function displayError(error: string) {
   console.log(
-    boxen(
-      chalk.red.bold('⚠ ERROR ⚠\n\n') + chalk.white(error),
-      {
-        padding: 1,
-        borderStyle: 'double',
-        borderColor: 'red'
-      }
-    )
-  )
+    boxen(chalk.red.bold('⚠ ERROR ⚠\n\n') + chalk.white(error), {
+      padding: 1,
+      borderStyle: 'double',
+      borderColor: 'red',
+    })
+  );
 }
 
 /**
@@ -200,60 +208,65 @@ export function displayError(error: string) {
  */
 export function displaySuccess(message: string) {
   console.log(
-    boxen(
-      chalk.green.bold('✅ SUCCESS\n\n') + chalk.white(message),
-      {
-        padding: 1,
-        borderStyle: 'round',
-        borderColor: 'green'
-      }
-    )
-  )
+    boxen(chalk.green.bold('✅ SUCCESS\n\n') + chalk.white(message), {
+      padding: 1,
+      borderStyle: 'round',
+      borderColor: 'green',
+    })
+  );
 }
 
 /**
  * Create a progress bar
  */
 export function createProgressBar(title: string, total: number) {
-  let current = 0
-  
+  let current = 0;
+
   const update = (value: number) => {
-    current = value
-    const percentage = Math.floor((current / total) * 100)
-    const filled = Math.floor((current / total) * 30)
-    const empty = 30 - filled
-    
-    const bar = chalk.green('█'.repeat(filled)) + chalk.gray('░'.repeat(empty))
-    const text = `${title} [${bar}] ${percentage}%`
-    
-    process.stdout.write('\r' + text)
-    
+    current = value;
+    const percentage = Math.floor((current / total) * 100);
+    const filled = Math.floor((current / total) * 30);
+    const empty = 30 - filled;
+
+    const bar = chalk.green('█'.repeat(filled)) + chalk.gray('░'.repeat(empty));
+    const text = `${title} [${bar}] ${percentage}%`;
+
+    process.stdout.write('\r' + text);
+
     if (current >= total) {
-      console.log() // New line after completion
+      console.log(); // New line after completion
     }
-  }
-  
-  return { update }
+  };
+
+  return { update };
 }
 
 /**
  * Display chat message with style
  */
-export function displayChatMessage(from: string, message: string, isAgent: boolean = false) {
-  const timestamp = new Date().toLocaleTimeString()
-  
+export function displayChatMessage(
+  from: string,
+  message: string,
+  isAgent: boolean = false
+) {
+  const timestamp = new Date().toLocaleTimeString();
+
   if (isAgent) {
     console.log(
-      chalk.gray(`[${timestamp}]`) + ' ' +
-      neonGradient(from) + chalk.cyan(': ') +
-      chalk.white(message)
-    )
+      chalk.gray(`[${timestamp}]`) +
+        ' ' +
+        neonGradient(from) +
+        chalk.cyan(': ') +
+        chalk.white(message)
+    );
   } else {
     console.log(
-      chalk.gray(`[${timestamp}]`) + ' ' +
-      chalk.yellow(from) + chalk.gray(': ') +
-      chalk.white(message)
-    )
+      chalk.gray(`[${timestamp}]`) +
+        ' ' +
+        chalk.yellow(from) +
+        chalk.gray(': ') +
+        chalk.white(message)
+    );
   }
 }
 
@@ -261,35 +274,60 @@ export function displayChatMessage(from: string, message: string, isAgent: boole
  * Matrix-style animation
  */
 export async function matrixRain(duration: number = 3000) {
-  const columns = process.stdout.columns
-  const rows = process.stdout.rows
-  const drops: number[] = Array(Math.floor(columns / 2)).fill(0)
-  
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$%^&*()_+-=[]{}|;:,.<>?'
-  
+  const columns = process.stdout.columns || 80;
+  const rows = process.stdout.rows || 24;
+  const drops: number[] = Array(Math.floor(columns / 2)).fill(0);
+
+  const chars =
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$%^&*()_+-=[]{}|;:,.<>?';
+
   const interval = setInterval(() => {
-    console.clear()
-    
+    console.clear();
+
     for (let i = 0; i < drops.length; i++) {
-      const x = i * 2
-      const y = drops[i]
-      
-      if (y < rows) {
-        process.stdout.cursorTo(x, y)
-        process.stdout.write(matrixGradient(chars[Math.floor(Math.random() * chars.length)]))
+      const x = i * 2;
+      const y = drops[i];
+
+      if (y < rows && process.stdout.cursorTo && process.stdout.write) {
+        try {
+          const safeY = y ?? 0;
+          process.stdout.cursorTo(x, safeY);
+          const char = chars[Math.floor(Math.random() * chars.length)];
+          const gradientChar = safeGradient(char, matrixGradient);
+          if (process.stdout.write) {
+            process.stdout.write(gradientChar);
+          }
+        } catch (error) {
+          // Silently handle cursor positioning errors
+        }
       }
-      
-      drops[i]++
+
+      drops[i]++;
       if (drops[i] * Math.random() > rows) {
-        drops[i] = 0
+        drops[i] = 0;
       }
     }
-  }, 50)
-  
+  }, 50);
+
   setTimeout(() => {
-    clearInterval(interval)
-    console.clear()
-  }, duration)
+    clearInterval(interval);
+    console.clear();
+  }, duration);
+}
+
+/**
+ * Safe gradient function with fallback
+ */
+function safeGradient(text: string | undefined, gradientFn: any): string {
+  if (!text || text.trim() === '') {
+    return '';
+  }
+  
+  try {
+    return gradientFn(text);
+  } catch (error) {
+    return text; // Fallback to plain text
+  }
 }
 
 /**
@@ -303,62 +341,64 @@ export function createStatusDashboard() {
       memory: 0,
       activeAgents: 0,
       commandsProcessed: 0,
-      portalRequests: 0
+      portalRequests: 0,
     },
-    
+
     update(data: any) {
       if (data.agents) {
         data.agents.forEach((agent: any) => {
-          this.agents.set(agent.id, agent)
-        })
+          this.agents.set(agent.id, agent);
+        });
       }
-      
+
       if (data.metrics) {
-        Object.assign(this.metrics, data.metrics)
+        Object.assign(this.metrics, data.metrics);
       }
-      
-      this.render()
+
+      this.render();
     },
-    
+
     render() {
-      console.clear()
-      displayBanner()
-      
-      console.log(chalk.cyan.bold('\n📊 System Dashboard\n'))
-      
+      console.clear();
+      displayBanner();
+
+      console.log(chalk.cyan.bold('\n📊 System Dashboard\n'));
+
       // Display metrics
-      displayMetrics(this.metrics)
-      console.log()
-      
+      displayMetrics(this.metrics);
+      console.log();
+
       // Display agents
       if (this.agents.size > 0) {
-        console.log(chalk.cyan.bold('🤖 Active Agents\n'))
-        displayAgentStatus(Array.from(this.agents.values()))
+        console.log(chalk.cyan.bold('🤖 Active Agents\n'));
+        displayAgentStatus(Array.from(this.agents.values()));
       }
-    }
-  }
-  
-  return dashboard
+    },
+  };
+
+  return dashboard;
 }
 
 /**
  * Cool shutdown animation
  */
 export async function animateShutdown() {
-  console.log()
+  console.log();
   const messages = [
     '🔌 Disconnecting neural networks...',
     '💾 Saving agent memories...',
     '🧠 Preserving cognitive states...',
     '🌐 Closing portal connections...',
-    '✨ Shutting down gracefully...'
-  ]
-  
+    '✨ Shutting down gracefully...',
+  ];
+
   for (const msg of messages) {
-    await animateLoading(msg, 500)
+    await animateLoading(msg, 500);
   }
-  
-  console.log()
-  console.log(fireGradient.multiline(figlet.textSync('Goodbye!', { font: 'Small' })))
-  console.log()
+
+  console.log();
+  console.log(
+    fireGradient.multiline(figlet.textSync('Goodbye!', { font: 'Small' }))
+  );
+  console.log();
 }

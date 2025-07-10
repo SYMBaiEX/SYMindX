@@ -1,5 +1,6 @@
-import React from 'react'
 import { Box, Text } from 'ink'
+import React from 'react'
+
 import { cyberpunkTheme } from '../../themes/cyberpunk.js'
 import { GlitchText } from '../effects/GlitchText.js'
 
@@ -11,8 +12,8 @@ interface CommandPaletteProps {
 
 export const CommandPalette: React.FC<CommandPaletteProps> = ({
   value,
-  onSubmit,
-  onCancel,
+  onSubmit: _onSubmit,
+  onCancel: _onCancel,
 }) => {
   return (
     <Box

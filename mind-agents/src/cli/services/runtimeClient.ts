@@ -94,6 +94,12 @@ export class RuntimeClient {
   private config: RuntimeClientConfig;
   private isConnected: boolean = false;
   private lastError: string | null = null;
+  private connectionAttempts: number = 0;
+  private lastHealthCheck: Date | null = null;
+  private healthCheckCache: boolean | null = null;
+  private healthCheckCacheDuration: number = 5000; // 5 seconds
+  private requestsInFlight: Map<string, AbortController> = new Map();
+  private retryBackoff: Map<string, number> = new Map();
 
   constructor(config: Partial<RuntimeClientConfig> = {}) {
     this.config = {
@@ -106,30 +112,54 @@ export class RuntimeClient {
   }
 
   /**
-   * Check if the runtime is available
+   * Check if the runtime is available with caching
    */
-  async isRuntimeAvailable(): Promise<boolean> {
+  async isRuntimeAvailable(forceCheck: boolean = false): Promise<boolean> {
+    // Use cached result if available and not forcing
+    if (!forceCheck && this.lastHealthCheck && this.healthCheckCache !== null) {
+      const elapsed = Date.now() - this.lastHealthCheck.getTime();
+      if (elapsed < this.healthCheckCacheDuration) {
+        return this.healthCheckCache;
+      }
+    }
+
     try {
-      const response = await this.makeRequest('/health');
+      const response = await this.makeRequest('/health', 'GET', undefined, {
+        skipRetry: true, // Health checks should be fast
+        timeout: 2000    // Shorter timeout for health checks
+      });
       this.isConnected = response.status === 'healthy';
       this.lastError = null;
+      this.connectionAttempts = 0;
+      this.healthCheckCache = this.isConnected;
+      this.lastHealthCheck = new Date();
       return this.isConnected;
     } catch (error) {
       this.isConnected = false;
       this.lastError = error instanceof Error ? error.message : 'Unknown error';
+      this.connectionAttempts++;
+      this.healthCheckCache = false;
+      this.lastHealthCheck = new Date();
       return false;
     }
   }
 
   /**
-   * Get all agents
+   * Get all agents with enhanced error handling
    */
   async getAgents(): Promise<AgentInfo[]> {
     try {
       const response = await this.makeRequest('/agents');
       return response.agents || [];
     } catch (error) {
-      console.warn('Failed to fetch agents:', error);
+      // Log detailed error for debugging
+      if (this.connectionAttempts > 2) {
+        console.error('Failed to fetch agents after multiple attempts:', error);
+      } else {
+        console.warn('Failed to fetch agents:', error);
+      }
+      
+      // Return empty array to prevent UI crashes
       return [];
     }
   }
@@ -338,57 +368,193 @@ export class RuntimeClient {
   }
 
   /**
-   * Make an HTTP request to the runtime API
+   * Make an HTTP request to the runtime API with enhanced retry and error handling
    */
-  private async makeRequest(endpoint: string, method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET', body?: any): Promise<any> {
+  private async makeRequest(
+    endpoint: string, 
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET', 
+    body?: any,
+    options?: {
+      skipRetry?: boolean;
+      timeout?: number;
+      priority?: 'high' | 'normal' | 'low';
+    }
+  ): Promise<any> {
     const url = `${this.config.apiUrl}${endpoint}`;
+    const requestKey = `${method}:${endpoint}`;
+    const timeout = options?.timeout || this.config.timeout;
+    const maxAttempts = options?.skipRetry ? 1 : this.config.retryAttempts;
     
-    for (let attempt = 1; attempt <= this.config.retryAttempts; attempt++) {
+    // Cancel any existing request to the same endpoint
+    const existingController = this.requestsInFlight.get(requestKey);
+    if (existingController) {
+      existingController.abort();
+    }
+    
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      const controller = new AbortController();
+      this.requestsInFlight.set(requestKey, controller);
+      
       try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), this.config.timeout);
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
         
         const response = await fetch(url, {
           method,
           headers: {
             'Content-Type': 'application/json',
-            'User-Agent': 'SYMindX-CLI/1.0.0'
+            'User-Agent': 'SYMindX-CLI/1.0.0',
+            'X-Request-Priority': options?.priority || 'normal',
+            'X-Request-ID': this.generateRequestId()
           },
           body: body ? JSON.stringify(body) : undefined,
           signal: controller.signal
         });
         
         clearTimeout(timeoutId);
+        this.requestsInFlight.delete(requestKey);
         
+        // Handle different response codes
         if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          const errorBody = await this.parseErrorResponse(response);
+          const error = new Error(`HTTP ${response.status}: ${errorBody.message || response.statusText}`);
+          (error as any).status = response.status;
+          (error as any).details = errorBody;
+          
+          // Don't retry on client errors (4xx)
+          if (response.status >= 400 && response.status < 500) {
+            this.lastError = error.message;
+            throw error;
+          }
+          
+          // Server error - will retry
+          throw error;
         }
         
         const data = await response.json();
         this.isConnected = true;
         this.lastError = null;
+        this.resetRetryBackoff(requestKey);
         return data;
         
       } catch (error) {
+        this.requestsInFlight.delete(requestKey);
         this.isConnected = false;
         
-        if (attempt === this.config.retryAttempts) {
+        // Check if this is the last attempt
+        if (attempt === maxAttempts) {
           if (error instanceof Error) {
             if (error.name === 'AbortError') {
-              this.lastError = `Request timeout (${this.config.timeout}ms)`;
-              throw new Error(this.lastError);
+              this.lastError = `Request timeout after ${timeout}ms (${endpoint})`;
+              const timeoutError = new Error(this.lastError);
+              (timeoutError as any).code = 'ETIMEDOUT';
+              throw timeoutError;
             }
+            
+            // Check for network errors
+            if (error.message.includes('fetch')) {
+              this.lastError = `Network error: Unable to connect to ${this.config.apiUrl}`;
+              const networkError = new Error(this.lastError);
+              (networkError as any).code = 'ENETWORK';
+              throw networkError;
+            }
+            
             this.lastError = error.message;
             throw error;
           }
-          this.lastError = 'Unknown error';
+          this.lastError = 'Unknown error occurred';
           throw new Error(this.lastError);
         }
         
+        // Calculate retry delay with exponential backoff
+        const baseDelay = this.config.retryDelay;
+        const backoffMultiplier = this.getRetryBackoff(requestKey);
+        const jitter = Math.random() * 200; // 0-200ms jitter
+        const delay = Math.min(baseDelay * backoffMultiplier + jitter, 10000); // Max 10s
+        
+        console.debug(`Retrying ${requestKey} in ${Math.round(delay)}ms (attempt ${attempt}/${maxAttempts})`);
+        
         // Wait before retrying
-        await new Promise(resolve => setTimeout(resolve, this.config.retryDelay * attempt));
+        await new Promise(resolve => setTimeout(resolve, delay));
+        this.incrementRetryBackoff(requestKey);
       }
     }
+    
+    // This should never be reached, but TypeScript needs it
+    throw new Error('Max retry attempts exceeded');
+  }
+  
+  /**
+   * Parse error response body safely
+   */
+  private async parseErrorResponse(response: Response): Promise<any> {
+    try {
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        return await response.json();
+      }
+      const text = await response.text();
+      return { message: text || response.statusText };
+    } catch {
+      return { message: response.statusText };
+    }
+  }
+  
+  /**
+   * Generate unique request ID for tracking
+   */
+  private generateRequestId(): string {
+    return `cli-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  }
+  
+  /**
+   * Get retry backoff multiplier for exponential backoff
+   */
+  private getRetryBackoff(key: string): number {
+    return this.retryBackoff.get(key) || 1;
+  }
+  
+  /**
+   * Increment retry backoff for a request
+   */
+  private incrementRetryBackoff(key: string): void {
+    const current = this.retryBackoff.get(key) || 1;
+    this.retryBackoff.set(key, Math.min(current * 2, 8)); // Max 8x backoff
+  }
+  
+  /**
+   * Reset retry backoff on successful request
+   */
+  private resetRetryBackoff(key: string): void {
+    this.retryBackoff.delete(key);
+  }
+  
+  /**
+   * Cancel all in-flight requests
+   */
+  public cancelAllRequests(): void {
+    for (const [key, controller] of this.requestsInFlight) {
+      controller.abort();
+    }
+    this.requestsInFlight.clear();
+  }
+  
+  /**
+   * Get runtime statistics with caching
+   */
+  public getStats(): {
+    isConnected: boolean;
+    lastError: string | null;
+    connectionAttempts: number;
+    requestsInFlight: number;
+    lastHealthCheck: Date | null;
+  } {
+    return {
+      isConnected: this.isConnected,
+      lastError: this.lastError,
+      connectionAttempts: this.connectionAttempts,
+      requestsInFlight: this.requestsInFlight.size,
+      lastHealthCheck: this.lastHealthCheck
+    };
   }
 }
 

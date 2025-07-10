@@ -1,8 +1,9 @@
-import React, { useState } from 'react'
 import { Box, Text, useInput } from 'ink'
+import React, { useState } from 'react'
+
+import { cyberpunkTheme } from '../../../themes/cyberpunk.js'
 import { Card3D } from '../../ui/Card3D.js'
 import { Chart } from '../../ui/Chart.js'
-import { cyberpunkTheme } from '../../../themes/cyberpunk.js'
 
 interface MemoryDetailData {
   provider: string
@@ -42,7 +43,7 @@ interface MemoryPanelProps {
   formatBytes: (bytes: number) => string
 }
 
-export const MemoryPanel: React.FC<MemoryPanelProps> = ({ agentData, formatBytes }) => {
+export const MemoryPanel: React.FC<MemoryPanelProps> = ({ agentData, formatBytes: _formatBytes }) => {
   const { memory } = agentData
   const [selectedEntry, setSelectedEntry] = useState<number>(0)
   const [viewMode, setViewMode] = useState<'list' | 'embeddings' | 'clusters'>('list')
@@ -55,7 +56,10 @@ export const MemoryPanel: React.FC<MemoryPanelProps> = ({ agentData, formatBytes
     } else if (input === 'v') {
       const modes: ('list' | 'embeddings' | 'clusters')[] = ['list', 'embeddings', 'clusters']
       const currentIndex = modes.indexOf(viewMode)
-      setViewMode(modes[(currentIndex + 1) % modes.length])
+      const nextMode = modes[(currentIndex + 1) % modes.length]
+      if (nextMode) {
+        setViewMode(nextMode)
+      }
     }
   })
 
@@ -88,7 +92,7 @@ export const MemoryPanel: React.FC<MemoryPanelProps> = ({ agentData, formatBytes
   }
 
   // Calculate memory clustering data
-  const clusteringData = Array.from({ length: memory.embeddingStats.clusters }, (_, i) => 
+  const clusteringData = Array.from({ length: memory.embeddingStats.clusters }, (_) => 
     Math.random() * 100 + 20
   )
 

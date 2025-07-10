@@ -8,11 +8,12 @@
  * - Capability overview
  */
 
-import { Command } from 'commander'
 import chalk from 'chalk'
-import { CLIContext } from '../index'
-import { Logger } from '../../utils/logger'
+import { Command } from 'commander'
+
 import { AgentStatus } from '../../types/agent'
+import { Logger } from '../../utils/logger'
+import { CLIContext } from '../index'
 
 export class StatusCommand {
   private logger = new Logger('cli:status')

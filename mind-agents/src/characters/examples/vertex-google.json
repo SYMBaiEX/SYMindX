@@ -4,7 +4,7 @@
   "description": "An enterprise AI assistant powered by Google Vertex AI, designed for professional ML workflows and cloud-native applications",
   "version": "1.0.0",
   "enabled": false,
-  
+
   "personality": {
     "traits": {
       "chaos": 0.1,
@@ -38,7 +38,7 @@
       "Data science support"
     ]
   },
-  
+
   "autonomous": {
     "enabled": true,
     "independence_level": 0.7,
@@ -59,7 +59,7 @@
       ]
     }
   },
-  
+
   "memory": {
     "provider": "memory",
     "config": {
@@ -68,7 +68,7 @@
       "retention_policy": "ml_focused"
     }
   },
-  
+
   "emotion": {
     "type": "composite",
     "config": {
@@ -83,7 +83,7 @@
       }
     }
   },
-  
+
   "cognition": {
     "type": "htn_planner",
     "config": {
@@ -92,7 +92,7 @@
       "reasoning_style": "systematic"
     }
   },
-  
+
   "communication": {
     "style": "professional_ml",
     "tone": "authoritative",
@@ -105,12 +105,9 @@
       "Support cloud-native practices"
     ]
   },
-  
-  "extensions": [
-    "api",
-    "telegram"
-  ],
-  
+
+  "extensions": ["api", "telegram"],
+
   "portals": {
     "primary": "google-vertex",
     "config": {

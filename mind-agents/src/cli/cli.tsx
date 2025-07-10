@@ -1,14 +1,15 @@
 #!/usr/bin/env node
 
-import React from 'react'
-import { render } from 'ink'
-import { App } from './components/core/App.js'
-import { Command } from 'commander'
 import chalk from 'chalk'
+import { Command } from 'commander'
 import figlet from 'figlet'
 import gradient from 'gradient-string'
-import { soundManager } from './utils/sound-effects.js'
+import { render } from 'ink'
+// import React from 'react'
+
+import { App } from './components/core/App.js'
 import { musicManager } from './utils/background-music.js'
+import { soundManager } from './utils/sound-effects.js'
 
 // ASCII art banner
 const showBanner = async () => {

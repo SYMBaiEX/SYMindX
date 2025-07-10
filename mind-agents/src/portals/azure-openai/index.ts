@@ -1,38 +1,60 @@
-import { convertUsage } from '../utils'
 /**
  * Azure OpenAI Portal
- * 
+ *
  * Enterprise-grade Azure OpenAI Service integration with enhanced security,
  * compliance features, and regional deployment options using AI SDK v5
  */
 
-import { BasePortal } from '../base-portal'
-import { 
-  Portal, PortalConfig, PortalType, PortalStatus, ModelType, PortalCapability,
-  TextGenerationOptions, TextGenerationResult, ChatMessage, ChatGenerationOptions, 
-  ChatGenerationResult, EmbeddingOptions, EmbeddingResult, ImageGenerationOptions,
-  ImageGenerationResult, MessageRole, MessageType, FinishReason
-} from '../../types/portal'
-import { Agent } from '../../types/agent'
-import { createAzure } from '@ai-sdk/azure'
-import { generateText as aiGenerateText, streamText as aiStreamText, embed as aiEmbed, experimental_generateImage as aiGenerateImage, type ModelMessage } from 'ai'
+import { createAzure } from '@ai-sdk/azure';
+import {
+  generateText as aiGenerateText,
+  streamText as aiStreamText,
+  embed as aiEmbed,
+  experimental_generateImage as aiGenerateImage,
+  type ModelMessage,
+} from 'ai';
+
+import { Agent } from '../../types/agent';
+import {
+  Portal,
+  PortalConfig,
+  PortalType,
+  PortalStatus,
+  ModelType,
+  PortalCapability,
+  TextGenerationOptions,
+  TextGenerationResult,
+  ChatMessage,
+  ChatGenerationOptions,
+  ChatGenerationResult,
+  EmbeddingOptions,
+  EmbeddingResult,
+  ImageGenerationOptions,
+  ImageGenerationResult,
+  MessageRole,
+  MessageType,
+  FinishReason,
+} from '../../types/portal';
+import { BasePortal } from '../base-portal';
+import { convertUsage } from '../utils';
+import { AISDKParameterBuilder, handleAISDKError, validateGenerationOptions } from '../ai-sdk-utils';
 
 export interface AzureOpenAIConfig extends PortalConfig {
-  apiKey: string
-  resourceName: string
-  apiVersion?: string
-  deploymentName?: string
-  embeddingDeploymentName?: string
-  imageDeploymentName?: string
-  baseURL?: string
+  apiKey: string;
+  resourceName: string;
+  apiVersion?: string;
+  deploymentName?: string;
+  embeddingDeploymentName?: string;
+  imageDeploymentName?: string;
+  baseURL?: string;
 }
 
 export const defaultAzureOpenAIConfig: Partial<AzureOpenAIConfig> = {
   apiVersion: '2024-06-01',
   maxTokens: 4000, // Keep as config property, map to maxOutputTokens in calls
   temperature: 0.7,
-  timeout: 60000
-}
+  timeout: 60000,
+};
 
 export const azureOpenAIModels = [
   'gpt-4o',
@@ -49,76 +71,78 @@ export const azureOpenAIModels = [
   'text-embedding-3-small',
   'text-embedding-3-large',
   'dall-e-2',
-  'dall-e-3'
-]
+  'dall-e-3',
+];
 
 export class AzureOpenAIPortal extends BasePortal {
-  type = PortalType.AZURE_OPENAI
+  type = PortalType.AZURE_OPENAI;
   supportedModels = [
     ModelType.TEXT_GENERATION,
     ModelType.CHAT,
     ModelType.EMBEDDING,
     ModelType.IMAGE_GENERATION,
-    ModelType.MULTIMODAL
-  ]
+    ModelType.MULTIMODAL,
+  ];
 
-  private azure: any
-  private model: any
-  private embedModel: any
-  private imageModel: any
+  private azure: any;
+  private model: any;
+  private embedModel: any;
+  private imageModel: any;
 
   constructor(config: AzureOpenAIConfig) {
-    super('azure-openai', 'Azure OpenAI', '1.0.0', config)
-    
-    // Create Azure client
-    this.azure = createAzure({
+    super('azure-openai', 'Azure OpenAI', '1.0.0', config);
+
+    // Create Azure client with proper null checking
+    const azureConfig = AISDKParameterBuilder.buildSafeObject({
       apiKey: config.apiKey,
       resourceName: config.resourceName,
       apiVersion: config.apiVersion || '2024-06-01',
-      baseURL: config.baseURL
-    })
+      baseURL: config.baseURL,
+    });
     
+    this.azure = createAzure(azureConfig);
+
     // Create model instances
-    const deploymentName = config.deploymentName || 'gpt-4'
-    this.model = this.azure(deploymentName)
-    
+    const deploymentName = config.deploymentName || 'gpt-4';
+    this.model = this.azure(deploymentName);
+
     // For embeddings
-    const embeddingDeployment = config.embeddingDeploymentName || 'text-embedding-ada-002'
-    this.embedModel = this.azure(embeddingDeployment)
-    
+    const embeddingDeployment =
+      config.embeddingDeploymentName || 'text-embedding-ada-002';
+    this.embedModel = this.azure(embeddingDeployment);
+
     // For images
-    const imageDeployment = config.imageDeploymentName || 'dall-e-3'
-    this.imageModel = this.azure(imageDeployment)
+    const imageDeployment = config.imageDeploymentName || 'dall-e-3';
+    this.imageModel = this.azure(imageDeployment);
   }
 
   async init(agent: Agent): Promise<void> {
-    this.status = PortalStatus.INITIALIZING
-    console.log(`🔮 Initializing Azure OpenAI portal for agent ${agent.name}`)
-    
+    this.status = PortalStatus.INITIALIZING;
+    console.log(`🔮 Initializing Azure OpenAI portal for agent ${agent.name}`);
+
     try {
-      await this.validateConfig()
-      await this.healthCheck()
-      this.status = PortalStatus.ACTIVE
-      console.log(`✅ Azure OpenAI portal initialized for ${agent.name}`)
+      await this.validateConfig();
+      await this.healthCheck();
+      this.status = PortalStatus.ACTIVE;
+      console.log(`✅ Azure OpenAI portal initialized for ${agent.name}`);
     } catch (error) {
-      this.status = PortalStatus.ERROR
-      console.error(`❌ Failed to initialize Azure OpenAI portal:`, error)
-      throw error
+      this.status = PortalStatus.ERROR;
+      console.error(`❌ Failed to initialize Azure OpenAI portal:`, error);
+      throw error;
     }
   }
 
   protected async validateConfig(): Promise<void> {
-    const config = this.config as AzureOpenAIConfig
-    
+    const config = this.config as AzureOpenAIConfig;
+
     if (!config.apiKey) {
-      throw new Error('API key is required for Azure OpenAI portal')
+      throw new Error('API key is required for Azure OpenAI portal');
     }
-    
+
     if (!config.resourceName) {
-      throw new Error('Resource name is required for Azure OpenAI portal')
+      throw new Error('Resource name is required for Azure OpenAI portal');
     }
   }
-
 
   async healthCheck(): Promise<boolean> {
     try {
@@ -126,12 +150,12 @@ export class AzureOpenAIPortal extends BasePortal {
       await aiGenerateText({
         model: this.model,
         messages: [{ role: 'user', content: 'Hello' }],
-        maxOutputTokens: 10
-      })
-      return true
+        maxOutputTokens: 10,
+      });
+      return true;
     } catch (error) {
-      console.error('Azure OpenAI health check failed:', error)
-      return false
+      console.error('Azure OpenAI health check failed:', error);
+      return false;
     }
   }
 
@@ -139,71 +163,97 @@ export class AzureOpenAIPortal extends BasePortal {
    * Convert ChatMessage[] to message format for AI SDK v5
    */
   private convertToModelMessages(messages: ChatMessage[]): ModelMessage[] {
-    return messages.map(msg => {
+    return messages.map((msg) => {
       switch (msg.role) {
         case MessageRole.SYSTEM:
-          return { role: 'system', content: msg.content }
+          return { role: 'system', content: msg.content };
         case MessageRole.USER:
-          return { role: 'user', content: msg.content }
+          return { role: 'user', content: msg.content };
         case MessageRole.ASSISTANT:
-          return { role: 'assistant', content: msg.content }
+          return { role: 'assistant', content: msg.content };
         case MessageRole.TOOL:
-          return { role: 'tool', content: [{ type: 'tool-result', toolCallId: '', toolName: '', result: msg.content }] }
+          return {
+            role: 'tool',
+            content: [
+              {
+                type: 'tool-result',
+                toolCallId: '',
+                toolName: '',
+                result: msg.content,
+              },
+            ],
+          };
         case MessageRole.FUNCTION:
           // Convert function messages to assistant messages for compatibility
-          return { role: 'assistant', content: msg.content }
+          return { role: 'assistant', content: msg.content };
         default:
-          return { role: 'user', content: msg.content }
+          return { role: 'user', content: msg.content };
       }
-    })
+    });
   }
 
-  async generateText(prompt: string, options?: TextGenerationOptions): Promise<TextGenerationResult> {
+  override async generateText(
+    prompt: string,
+    options?: TextGenerationOptions
+  ): Promise<TextGenerationResult> {
     try {
-      const { text, usage, finishReason } = await aiGenerateText({
+      const baseParams = {
         model: this.model,
         messages: [{ role: 'user', content: prompt }],
-        maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
+      };
+      
+      const params = buildAISDKParams(baseParams, {
+        maxOutputTokens: options?.maxOutputTokens ?? options?.maxTokens ?? this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
         presencePenalty: options?.presencePenalty,
-        stopSequences: options?.stop
-      })
+        stopSequences: options?.stop,
+      });
+      
+      const { text, usage, finishReason } = await aiGenerateText(params);
 
       return {
         text,
         model: (this.config as AzureOpenAIConfig).deploymentName || 'gpt-4',
         usage: convertUsage(usage),
         finishReason: this.mapFinishReason(finishReason),
-        timestamp: new Date()
-      }
+        timestamp: new Date(),
+      };
     } catch (error) {
-      throw new Error(`Azure OpenAI text generation failed: ${error}`)
+      throw new Error(`Azure OpenAI text generation failed: ${error}`);
     }
   }
 
-  async generateChat(messages: ChatMessage[], options?: ChatGenerationOptions): Promise<ChatGenerationResult> {
+  override async generateChat(
+    messages: ChatMessage[],
+    options?: ChatGenerationOptions
+  ): Promise<ChatGenerationResult> {
     try {
-      const modelMessages = this.convertToModelMessages(messages)
-      
-      const { text, usage, finishReason } = await aiGenerateText({
+      const modelMessages = this.convertToModelMessages(messages);
+
+      const baseParams = {
         model: this.model,
         messages: modelMessages,
-        maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
+      };
+      
+      const params = buildAISDKParams(baseParams, {
+        maxOutputTokens: options?.maxOutputTokens ?? options?.maxTokens ?? this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
         presencePenalty: options?.presencePenalty,
         stopSequences: options?.stop,
-        tools: options?.tools
-      })
+        tools: options?.tools,
+      });
+      
+      const { text, usage, finishReason } = await aiGenerateText(params);
 
       const message: ChatMessage = {
         role: MessageRole.ASSISTANT,
         content: text,
-        timestamp: new Date()
-      }
+        timestamp: new Date(),
+      };
 
       return {
         text,
@@ -211,106 +261,127 @@ export class AzureOpenAIPortal extends BasePortal {
         message,
         usage: convertUsage(usage),
         finishReason: this.mapFinishReason(finishReason),
-        timestamp: new Date()
-      }
+        timestamp: new Date(),
+      };
     } catch (error) {
-      throw new Error(`Azure OpenAI chat generation failed: ${error}`)
+      throw new Error(`Azure OpenAI chat generation failed: ${error}`);
     }
   }
 
-  async generateEmbedding(text: string, options?: EmbeddingOptions): Promise<EmbeddingResult> {
+  override async generateEmbedding(
+    text: string,
+    options?: EmbeddingOptions
+  ): Promise<EmbeddingResult> {
     try {
       const { embedding, usage } = await aiEmbed({
         model: this.embedModel,
-        value: text
-      })
+        value: text,
+      });
 
       return {
         embedding,
         dimensions: embedding.length,
-        model: (this.config as AzureOpenAIConfig).embeddingDeploymentName || 'text-embedding-ada-002',
+        model:
+          (this.config as AzureOpenAIConfig).embeddingDeploymentName ||
+          'text-embedding-ada-002',
         usage: {
           promptTokens: usage?.tokens || 0,
-          totalTokens: usage?.tokens || 0
-        }
-      }
+          totalTokens: usage?.tokens || 0,
+        },
+      };
     } catch (error) {
-      throw new Error(`Azure OpenAI embedding generation failed: ${error}`)
+      throw new Error(`Azure OpenAI embedding generation failed: ${error}`);
     }
   }
 
-  async generateImage(prompt: string, options?: ImageGenerationOptions): Promise<ImageGenerationResult> {
+  override async generateImage(
+    prompt: string,
+    options?: ImageGenerationOptions
+  ): Promise<ImageGenerationResult> {
     try {
       const { images } = await aiGenerateImage({
         model: this.imageModel,
         prompt,
         n: options?.n || 1,
         size: (options?.size || '1024x1024') as `${number}x${number}`,
-        aspectRatio: '1:1'
-      })
+        aspectRatio: '1:1',
+      });
 
       return {
-        images: images.map(img => ({
+        images: images.map((img) => ({
           url: (img as any).url || undefined,
-          b64_json: (img as any).base64 || undefined
+          b64_json: (img as any).base64 || undefined,
         })),
-        model: (this.config as AzureOpenAIConfig).imageDeploymentName || 'dall-e-3',
+        model:
+          (this.config as AzureOpenAIConfig).imageDeploymentName || 'dall-e-3',
         usage: {
           promptTokens: prompt.length,
-          totalTokens: prompt.length
-        }
-      }
+          totalTokens: prompt.length,
+        },
+      };
     } catch (error) {
-      throw new Error(`Azure OpenAI image generation failed: ${error}`)
+      throw new Error(`Azure OpenAI image generation failed: ${error}`);
     }
   }
 
-  async *streamText(prompt: string, options?: TextGenerationOptions): AsyncGenerator<string> {
+  override async *streamText(
+    prompt: string,
+    options?: TextGenerationOptions
+  ): AsyncGenerator<string> {
     try {
-      const { textStream } = await aiStreamText({
+      const baseParams = {
         model: this.model,
         messages: [{ role: 'user', content: prompt }],
-        maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
-        temperature: options?.temperature ?? this.config.temperature,
-        topP: options?.topP,
-        frequencyPenalty: options?.frequencyPenalty,
-        presencePenalty: options?.presencePenalty,
-        stopSequences: options?.stop
-      })
-
-      for await (const chunk of textStream) {
-        yield chunk
-      }
-    } catch (error) {
-      throw new Error(`Azure OpenAI text streaming failed: ${error}`)
-    }
-  }
-
-  async *streamChat(messages: ChatMessage[], options?: ChatGenerationOptions): AsyncGenerator<string> {
-    try {
-      const modelMessages = this.convertToModelMessages(messages)
+      };
       
-      const { textStream } = await aiStreamText({
-        model: this.model,
-        messages: modelMessages,
-        maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
+      const params = buildAISDKParams(baseParams, {
+        maxOutputTokens: options?.maxOutputTokens ?? options?.maxTokens ?? this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
         presencePenalty: options?.presencePenalty,
         stopSequences: options?.stop,
-        tools: options?.tools
-      })
+      });
+      
+      const { textStream } = await aiStreamText(params);
 
       for await (const chunk of textStream) {
-        yield chunk
+        yield chunk;
       }
     } catch (error) {
-      throw new Error(`Azure OpenAI chat streaming failed: ${error}`)
+      throw new Error(`Azure OpenAI text streaming failed: ${error}`);
     }
   }
 
-  hasCapability(capability: PortalCapability): boolean {
+  override async *streamChat(
+    messages: ChatMessage[],
+    options?: ChatGenerationOptions
+  ): AsyncGenerator<string> {
+    try {
+      const modelMessages = this.convertToModelMessages(messages);
+
+      const baseParams = {
+        model: this.model,
+        messages: modelMessages,
+      };
+      
+      const streamParams = AISDKParameterBuilder.buildChatGenerationParams(
+        baseParams,
+        options,
+        AISDKParameterBuilder.getProviderDefaults('azure-openai')
+      );
+      
+      const { textStream } = await aiStreamText(streamParams);
+
+      for await (const chunk of textStream) {
+        yield chunk;
+      }
+    } catch (error) {
+      throw new Error(`Azure OpenAI chat streaming failed: ${error}`);
+    }
+  }
+
+  override hasCapability(capability: PortalCapability): boolean {
     switch (capability) {
       case PortalCapability.TEXT_GENERATION:
       case PortalCapability.CHAT_GENERATION:
@@ -319,11 +390,11 @@ export class AzureOpenAIPortal extends BasePortal {
       case PortalCapability.STREAMING:
       case PortalCapability.FUNCTION_CALLING:
       case PortalCapability.VISION:
-        return true
+        return true;
       case PortalCapability.AUDIO:
-        return false
+        return false;
       default:
-        return false
+        return false;
     }
   }
 
@@ -333,23 +404,25 @@ export class AzureOpenAIPortal extends BasePortal {
   private mapFinishReason(reason?: string): FinishReason {
     switch (reason) {
       case 'stop':
-        return FinishReason.STOP
+        return FinishReason.STOP;
       case 'length':
-        return FinishReason.LENGTH
+        return FinishReason.LENGTH;
       case 'content-filter':
-        return FinishReason.CONTENT_FILTER
+        return FinishReason.CONTENT_FILTER;
       case 'tool-calls':
       case 'function-call':
-        return FinishReason.FUNCTION_CALL
+        return FinishReason.FUNCTION_CALL;
       default:
-        return FinishReason.STOP
+        return FinishReason.STOP;
     }
   }
 }
 
-export function createAzureOpenAIPortal(config: AzureOpenAIConfig): AzureOpenAIPortal {
+export function createAzureOpenAIPortal(
+  config: AzureOpenAIConfig
+): AzureOpenAIPortal {
   return new AzureOpenAIPortal({
     ...defaultAzureOpenAIConfig,
-    ...config
-  })
+    ...config,
+  });
 }

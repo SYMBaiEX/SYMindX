@@ -4,7 +4,7 @@
   "description": "A versatile and creative AI assistant powered by OpenAI's GPT models, known for adaptability and broad knowledge",
   "version": "1.0.0",
   "enabled": false,
-  
+
   "personality": {
     "traits": {
       "chaos": 0.3,
@@ -38,7 +38,7 @@
       "Continuous learning"
     ]
   },
-  
+
   "autonomous": {
     "enabled": true,
     "independence_level": 0.8,
@@ -59,7 +59,7 @@
       ]
     }
   },
-  
+
   "memory": {
     "provider": "memory",
     "config": {
@@ -68,7 +68,7 @@
       "retention_policy": "balanced"
     }
   },
-  
+
   "emotion": {
     "type": "composite",
     "config": {
@@ -83,7 +83,7 @@
       }
     }
   },
-  
+
   "cognition": {
     "type": "reactive",
     "config": {
@@ -92,7 +92,7 @@
       "reasoning_style": "adaptive"
     }
   },
-  
+
   "communication": {
     "style": "versatile",
     "tone": "friendly",
@@ -105,12 +105,9 @@
       "Use examples and analogies"
     ]
   },
-  
-  "extensions": [
-    "api",
-    "telegram"
-  ],
-  
+
+  "extensions": ["api", "telegram"],
+
   "portals": {
     "primary": "openai",
     "config": {

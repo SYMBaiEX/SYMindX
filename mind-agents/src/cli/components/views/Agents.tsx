@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react'
 import { Box, Text, useInput } from 'ink'
-import { Card3D } from '../ui/Card3D.js'
-import { GlitchText } from '../effects/GlitchText.js'
-import { cyberpunkTheme } from '../../themes/cyberpunk.js'
+import React, { useState, useEffect } from 'react'
+
 import { useAgentData } from '../../hooks/useAgentData.js'
+import { useNavigation } from '../../hooks/useNavigation.js'
+import { cyberpunkTheme } from '../../themes/cyberpunk.js'
 import { soundManager, SoundType } from '../../utils/sound-effects.js'
+import { GlitchText } from '../effects/GlitchText.js'
+import { Card3D } from '../ui/Card3D.js'
+
 import AgentDetail from './AgentDetail.js'
 
 interface AgentDetailInfo {
@@ -27,11 +30,24 @@ interface AgentDetailInfo {
   }
 }
 
-export const Agents: React.FC = () => {
+interface AgentsProps {
+  navigation?: any // This would be passed from parent if needed
+}
+
+export const Agents: React.FC<AgentsProps> = ({ navigation: parentNavigation }) => {
   const agentData = useAgentData()
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null)
+  const [selectedIndex, setSelectedIndex] = useState<number>(0)
   const [agentDetails, setAgentDetails] = useState<AgentDetailInfo | null>(null)
   const [showDetailView, setShowDetailView] = useState<boolean>(false)
+  
+  // Local navigation if not provided by parent
+  const localNavigation = useNavigation({
+    initialItem: { id: 'agents', label: 'Agents' },
+    soundEnabled: true
+  })
+  
+  const navigation = parentNavigation || localNavigation
   
   // Mock detailed agent data
   useEffect(() => {
@@ -65,16 +81,61 @@ export const Agents: React.FC = () => {
     return `${hours}h ${minutes}m`
   }
 
-  // Add keyboard navigation
+  // Enhanced keyboard navigation
   useInput((input, key) => {
+    const agents = agentData?.agents || []
+    
     if (key.escape && showDetailView) {
       setShowDetailView(false)
+      navigation.goBack()
       soundManager.play(SoundType.NAVIGATE)
-    } else if (input === 'd' && selectedAgent) {
-      setShowDetailView(true)
-      soundManager.play(SoundType.SELECT)
+    } else if (key.escape && !showDetailView && navigation.canGoBack) {
+      navigation.goBack()
+      soundManager.play(SoundType.NAVIGATE)
+    } else if (!showDetailView) {
+      if (key.upArrow && selectedIndex > 0) {
+        setSelectedIndex(selectedIndex - 1)
+        setSelectedAgent(agents[selectedIndex - 1]?.id || null)
+        soundManager.play(SoundType.NAVIGATE)
+      } else if (key.downArrow && selectedIndex < agents.length - 1) {
+        setSelectedIndex(selectedIndex + 1)
+        setSelectedAgent(agents[selectedIndex + 1]?.id || null)
+        soundManager.play(SoundType.NAVIGATE)
+      } else if ((key.return || input === 'd') && selectedAgent) {
+        setShowDetailView(true)
+        navigation.navigateTo({
+          id: `agent-${selectedAgent}`,
+          label: agentDetails?.name || 'Agent Detail',
+          parentId: 'agents'
+        })
+        soundManager.play(SoundType.SELECT)
+      } else if (input === 's' && selectedAgent) {
+        // Start/Stop agent
+        soundManager.play(SoundType.SELECT)
+      } else if (input === 'r' && selectedAgent) {
+        // Restart agent
+        soundManager.play(SoundType.SELECT)
+      } else if (input === 'e' && selectedAgent) {
+        // Edit agent
+        soundManager.play(SoundType.SELECT)
+      } else if (input === 'n') {
+        // New agent
+        soundManager.play(SoundType.SELECT)
+      }
     }
   })
+  
+  // Set initial selection
+  useEffect(() => {
+    const agents = agentData?.agents || []
+    if (agents.length > 0 && !selectedAgent) {
+      const firstAgentId = agents[0]?.id
+      if (firstAgentId) {
+        setSelectedAgent(firstAgentId)
+      }
+      setSelectedIndex(0)
+    }
+  }, [agentData, selectedAgent])
   
   // Show detailed view if requested
   if (showDetailView && selectedAgent) {
@@ -134,7 +195,7 @@ export const Agents: React.FC = () => {
                         }
                         bold={selectedAgent === agent.id}
                       >
-                        {agent.name} ({agent.id})
+                        {selectedAgent === agent.id ? '▶ ' : '  '}{agent.name} ({agent.id})
                       </Text>
                     </Box>
                     
@@ -290,7 +351,7 @@ export const Agents: React.FC = () => {
       {/* Action buttons */}
       <Box marginTop={1} gap={3}>
         <Text color={cyberpunkTheme.colors.textDim}>
-          [S] Start/Stop | [R] Restart | [E] Edit | [D] Deep Debug | [N] New Agent
+          [↑↓] Navigate | [Enter/D] Deep Debug | [S] Start/Stop | [R] Restart | [E] Edit | [N] New Agent
         </Text>
       </Box>
     </Box>

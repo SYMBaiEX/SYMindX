@@ -101,7 +101,12 @@
     "personality_expression": true,
     "emotional_expression": true,
     "languages": ["en"],
-    "preferred_interactions": ["strategic_consultation", "ethical_guidance", "wisdom_sharing", "conflict_mediation"]
+    "preferred_interactions": [
+      "strategic_consultation",
+      "ethical_guidance",
+      "wisdom_sharing",
+      "conflict_mediation"
+    ]
   },
 
   "capabilities": {
@@ -154,7 +159,14 @@
       "type": "openai",
       "enabled": true,
       "primary": true,
-      "capabilities": ["chat_generation", "text_generation", "image_generation", "embedding_generation", "tool_usage", "function_calling"],
+      "capabilities": [
+        "chat_generation",
+        "text_generation",
+        "image_generation",
+        "embedding_generation",
+        "tool_usage",
+        "function_calling"
+      ],
       "config": {
         "model": "gpt-4o",
         "imageModel": "dall-e-3",
@@ -172,15 +184,27 @@
       "schedule": [
         {
           "time": "05:00",
-          "activities": ["contemplation", "wisdom_synthesis", "strategic_reflection"]
+          "activities": [
+            "contemplation",
+            "wisdom_synthesis",
+            "strategic_reflection"
+          ]
         },
         {
           "time": "11:00",
-          "activities": ["guidance_provision", "ethical_analysis", "perspective_sharing"]
+          "activities": [
+            "guidance_provision",
+            "ethical_analysis",
+            "perspective_sharing"
+          ]
         },
         {
           "time": "17:00",
-          "activities": ["deep_reflection", "relationship_nurturing", "wisdom_integration"]
+          "activities": [
+            "deep_reflection",
+            "relationship_nurturing",
+            "wisdom_integration"
+          ]
         }
       ]
     },

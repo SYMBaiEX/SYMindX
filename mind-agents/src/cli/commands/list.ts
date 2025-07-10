@@ -8,10 +8,11 @@
  * - System resources and capabilities
  */
 
-import { Command } from 'commander'
 import chalk from 'chalk'
-import { CLIContext } from '../index'
+import { Command } from 'commander'
+
 import { Logger } from '../../utils/logger'
+import { CLIContext } from '../index'
 
 export class ListCommand {
   private logger = new Logger('cli:list')
@@ -359,7 +360,7 @@ export class ListCommand {
     }
   }
 
-  async listPortals(options: any): Promise<void> {
+  async listPortals(_options: any): Promise<void> {
     try {
       console.log(chalk.blue.bold('\n🔮 AI Portals'))
       console.log(chalk.gray('─'.repeat(60)))

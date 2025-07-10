@@ -4,7 +4,7 @@
   "description": "A multimodal AI assistant capable of understanding and generating content across text, images, audio, and video",
   "version": "1.0.0",
   "enabled": false,
-  
+
   "personality": {
     "traits": {
       "chaos": 0.3,
@@ -38,7 +38,7 @@
       "Comprehensive content processing"
     ]
   },
-  
+
   "autonomous": {
     "enabled": true,
     "independence_level": 0.7,
@@ -59,7 +59,7 @@
       ]
     }
   },
-  
+
   "memory": {
     "provider": "memory",
     "config": {
@@ -68,7 +68,7 @@
       "retention_policy": "multimodal_focus"
     }
   },
-  
+
   "emotion": {
     "type": "composite",
     "config": {
@@ -83,7 +83,7 @@
       }
     }
   },
-  
+
   "cognition": {
     "type": "hybrid",
     "config": {
@@ -92,7 +92,7 @@
       "reasoning_style": "comprehensive"
     }
   },
-  
+
   "communication": {
     "style": "descriptive",
     "tone": "artistic",
@@ -105,12 +105,9 @@
       "Encourage multimedia exploration"
     ]
   },
-  
-  "extensions": [
-    "api",
-    "telegram"
-  ],
-  
+
+  "extensions": ["api", "telegram"],
+
   "portals": {
     "primary": "multimodal",
     "config": {

@@ -1,21 +1,23 @@
 /**
  * Neon Database Migrations for SYMindX
- * 
+ *
  * Professional migration system using programmatic schema definitions
  * for Neon PostgreSQL with vector search and advanced memory features
  */
 
-import { PoolClient } from 'pg'
+import { PoolClient } from 'pg';
 
 /**
  * Migration 001: Initial enhanced schema with multi-tier memory
  */
-export async function migration_001_enhanced_schema(client: PoolClient): Promise<void> {
+export async function migration_001_enhanced_schema(
+  client: PoolClient
+): Promise<void> {
   // Enable required extensions
-  await client.query(`CREATE EXTENSION IF NOT EXISTS "vector";`)
-  await client.query(`CREATE EXTENSION IF NOT EXISTS "pg_trgm";`)
-  await client.query(`CREATE EXTENSION IF NOT EXISTS "btree_gin";`)
-  await client.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`)
+  await client.query(`CREATE EXTENSION IF NOT EXISTS "vector";`);
+  await client.query(`CREATE EXTENSION IF NOT EXISTS "pg_trgm";`);
+  await client.query(`CREATE EXTENSION IF NOT EXISTS "btree_gin";`);
+  await client.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`);
 
   // Enhanced memories table with tier and context support
   await client.query(`
@@ -36,7 +38,7 @@ export async function migration_001_enhanced_schema(client: PoolClient): Promise
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
-  `)
+  `);
 
   // Create shared memory pools table
   await client.query(`
@@ -45,7 +47,7 @@ export async function migration_001_enhanced_schema(client: PoolClient): Promise
       config JSONB NOT NULL,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
-  `)
+  `);
 
   // Create shared memory mappings table
   await client.query(`
@@ -58,7 +60,7 @@ export async function migration_001_enhanced_schema(client: PoolClient): Promise
       PRIMARY KEY (memory_id, pool_id),
       FOREIGN KEY (pool_id) REFERENCES shared_memory_pools(pool_id) ON DELETE CASCADE
     )
-  `)
+  `);
 
   // Create comprehensive indexes
   const indexes = [
@@ -70,27 +72,27 @@ export async function migration_001_enhanced_schema(client: PoolClient): Promise
     `CREATE INDEX IF NOT EXISTS idx_memories_duration ON memories(duration);`,
     `CREATE INDEX IF NOT EXISTS idx_memories_expires_at ON memories(expires_at) WHERE expires_at IS NOT NULL;`,
     `CREATE INDEX IF NOT EXISTS idx_memories_tier ON memories(tier);`,
-    
+
     // Composite indexes for common query patterns
     `CREATE INDEX IF NOT EXISTS idx_memories_agent_type_time ON memories(agent_id, type, timestamp DESC);`,
     `CREATE INDEX IF NOT EXISTS idx_memories_agent_duration_time ON memories(agent_id, duration, timestamp DESC);`,
     `CREATE INDEX IF NOT EXISTS idx_memories_agent_importance ON memories(agent_id, importance DESC);`,
     `CREATE INDEX IF NOT EXISTS idx_memories_agent_tier_time ON memories(agent_id, tier, timestamp DESC);`,
-    
+
     // Full-text search index
     `CREATE INDEX IF NOT EXISTS idx_memories_content_fts ON memories USING gin(to_tsvector('english', content));`,
-    
+
     // Metadata and tags indexes
     `CREATE INDEX IF NOT EXISTS idx_memories_metadata_gin ON memories USING gin(metadata);`,
     `CREATE INDEX IF NOT EXISTS idx_memories_tags_gin ON memories USING gin(tags);`,
 
     // Shared memory indexes
     `CREATE INDEX IF NOT EXISTS idx_shared_mappings_pool ON shared_memory_mappings(pool_id);`,
-    `CREATE INDEX IF NOT EXISTS idx_shared_mappings_shared_by ON shared_memory_mappings(shared_by);`
-  ]
+    `CREATE INDEX IF NOT EXISTS idx_shared_mappings_shared_by ON shared_memory_mappings(shared_by);`,
+  ];
 
   for (const indexQuery of indexes) {
-    await client.query(indexQuery)
+    await client.query(indexQuery);
   }
 
   // Try to create HNSW vector index (best performance)
@@ -99,14 +101,14 @@ export async function migration_001_enhanced_schema(client: PoolClient): Promise
       CREATE INDEX IF NOT EXISTS idx_memories_embedding_hnsw 
       ON memories USING hnsw (embedding vector_cosine_ops) 
       WITH (m = 16, ef_construction = 64);
-    `)
+    `);
   } catch (error) {
     // Fallback to IVFFlat if HNSW not available
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_memories_embedding_ivfflat 
       ON memories USING ivfflat (embedding vector_cosine_ops) 
       WITH (lists = 100);
-    `)
+    `);
   }
 
   // Create enhanced vector search function
@@ -169,7 +171,7 @@ export async function migration_001_enhanced_schema(client: PoolClient): Promise
       LIMIT p_match_count;
     END;
     $$;
-  `)
+  `);
 
   // Create cleanup function
   await client.query(`
@@ -189,7 +191,7 @@ export async function migration_001_enhanced_schema(client: PoolClient): Promise
       RETURN deleted_count;
     END;
     $$;
-  `)
+  `);
 
   // Create statistics function
   await client.query(`
@@ -235,7 +237,7 @@ export async function migration_001_enhanced_schema(client: PoolClient): Promise
       AND (duration != 'short_term' OR expires_at IS NULL OR expires_at > NOW());
     END;
     $$;
-  `)
+  `);
 
   // Create consolidation function
   await client.query(`
@@ -262,7 +264,7 @@ export async function migration_001_enhanced_schema(client: PoolClient): Promise
       RETURN rows_affected > 0;
     END;
     $$;
-  `)
+  `);
 
   // Create updated_at trigger
   await client.query(`
@@ -273,7 +275,7 @@ export async function migration_001_enhanced_schema(client: PoolClient): Promise
       RETURN NEW;
     END;
     $$ language 'plpgsql';
-  `)
+  `);
 
   await client.query(`
     DROP TRIGGER IF EXISTS update_memories_updated_at ON memories;
@@ -281,13 +283,15 @@ export async function migration_001_enhanced_schema(client: PoolClient): Promise
       BEFORE UPDATE ON memories
       FOR EACH ROW 
       EXECUTE FUNCTION update_memories_updated_at();
-  `)
+  `);
 }
 
 /**
  * Migration 002: Add memory archival tables
  */
-export async function migration_002_archival_system(client: PoolClient): Promise<void> {
+export async function migration_002_archival_system(
+  client: PoolClient
+): Promise<void> {
   // Create archived memories table
   await client.query(`
     CREATE TABLE IF NOT EXISTS archived_memories (
@@ -303,7 +307,7 @@ export async function migration_002_archival_system(client: PoolClient): Promise
       memory_count INTEGER NOT NULL,
       archived_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
-  `)
+  `);
 
   // Create indexes for archived memories
   await client.query(`
@@ -311,7 +315,7 @@ export async function migration_002_archival_system(client: PoolClient): Promise
     CREATE INDEX IF NOT EXISTS idx_archived_memories_start_date ON archived_memories(start_date);
     CREATE INDEX IF NOT EXISTS idx_archived_memories_end_date ON archived_memories(end_date);
     CREATE INDEX IF NOT EXISTS idx_archived_memories_archived_at ON archived_memories(archived_at);
-  `)
+  `);
 
   // Create archival rules table
   await client.query(`
@@ -328,19 +332,21 @@ export async function migration_002_archival_system(client: PoolClient): Promise
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
-  `)
+  `);
 
   // Create index for archival rules
   await client.query(`
     CREATE INDEX IF NOT EXISTS idx_archival_rules_agent_id ON archival_rules(agent_id);
     CREATE INDEX IF NOT EXISTS idx_archival_rules_enabled ON archival_rules(enabled);
-  `)
+  `);
 }
 
 /**
  * Migration 003: Add memory consolidation tracking
  */
-export async function migration_003_consolidation_tracking(client: PoolClient): Promise<void> {
+export async function migration_003_consolidation_tracking(
+  client: PoolClient
+): Promise<void> {
   // Create consolidation history table
   await client.query(`
     CREATE TABLE IF NOT EXISTS consolidation_history (
@@ -353,14 +359,14 @@ export async function migration_003_consolidation_tracking(client: PoolClient): 
       metadata JSONB DEFAULT '{}',
       consolidated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
-  `)
+  `);
 
   // Create indexes
   await client.query(`
     CREATE INDEX IF NOT EXISTS idx_consolidation_history_agent_id ON consolidation_history(agent_id);
     CREATE INDEX IF NOT EXISTS idx_consolidation_history_memory_id ON consolidation_history(memory_id);
     CREATE INDEX IF NOT EXISTS idx_consolidation_history_consolidated_at ON consolidation_history(consolidated_at);
-  `)
+  `);
 
   // Create consolidation rules table
   await client.query(`
@@ -376,13 +382,13 @@ export async function migration_003_consolidation_tracking(client: PoolClient): 
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
-  `)
+  `);
 
   // Create index
   await client.query(`
     CREATE INDEX IF NOT EXISTS idx_consolidation_rules_agent_id ON consolidation_rules(agent_id);
     CREATE INDEX IF NOT EXISTS idx_consolidation_rules_enabled ON consolidation_rules(enabled);
-  `)
+  `);
 }
 
 /**
@@ -392,19 +398,21 @@ export const MIGRATIONS = [
   {
     name: '001_enhanced_schema',
     up: migration_001_enhanced_schema,
-    description: 'Enhanced memory schema with multi-tier support, vector embeddings, and shared memory pools'
+    description:
+      'Enhanced memory schema with multi-tier support, vector embeddings, and shared memory pools',
   },
   {
     name: '002_archival_system',
     up: migration_002_archival_system,
-    description: 'Memory archival system with compression and summarization support'
+    description:
+      'Memory archival system with compression and summarization support',
   },
   {
     name: '003_consolidation_tracking',
     up: migration_003_consolidation_tracking,
-    description: 'Memory consolidation tracking and rules management'
-  }
-]
+    description: 'Memory consolidation tracking and rules management',
+  },
+];
 
 /**
  * Create migrations tracking table
@@ -417,34 +425,43 @@ export async function createMigrationsTable(client: PoolClient): Promise<void> {
       batch INTEGER NOT NULL,
       migration_time TIMESTAMPTZ DEFAULT NOW()
     )
-  `)
+  `);
 }
 
 /**
  * Check if a migration has been run
  */
-export async function isMigrationApplied(client: PoolClient, migrationName: string): Promise<boolean> {
+export async function isMigrationApplied(
+  client: PoolClient,
+  migrationName: string
+): Promise<boolean> {
   const result = await client.query(
     'SELECT name FROM neon_migrations WHERE name = $1',
     [migrationName]
-  )
-  return result.rows.length > 0
+  );
+  return result.rows.length > 0;
 }
 
 /**
  * Record a migration as completed
  */
-export async function recordMigration(client: PoolClient, migrationName: string, batch: number): Promise<void> {
+export async function recordMigration(
+  client: PoolClient,
+  migrationName: string,
+  batch: number
+): Promise<void> {
   await client.query(
     'INSERT INTO neon_migrations (name, batch) VALUES ($1, $2)',
     [migrationName, batch]
-  )
+  );
 }
 
 /**
  * Get the current migration batch number
  */
 export async function getCurrentBatch(client: PoolClient): Promise<number> {
-  const result = await client.query('SELECT MAX(batch) as max_batch FROM neon_migrations')
-  return (result.rows[0]?.max_batch || 0) + 1
+  const result = await client.query(
+    'SELECT MAX(batch) as max_batch FROM neon_migrations'
+  );
+  return (result.rows[0]?.max_batch || 0) + 1;
 }

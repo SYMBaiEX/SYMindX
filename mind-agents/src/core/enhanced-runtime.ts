@@ -3,83 +3,108 @@
  * Extends the existing SYMindXRuntime with robust lifecycle management
  */
 
-import { Agent, LazyAgent, AgentStatus, LazyAgentState, RuntimeConfig } from '../types/agent'
-import { SYMindXRuntime } from './runtime'
-import { StateManager, StateManagerConfig, CheckpointType } from './state-manager'
-import { ResourceManager, ResourceManagerConfig, ResourceType } from './resource-manager'
-import { LifecycleManager, LifecycleConfig, ShutdownOptions, StartupOptions } from './lifecycle-manager'
-import { CheckpointSystem, CheckpointSystemConfig } from './checkpoint-system'
-import { StateRecoverySystem } from './state-recovery'
-import { ConcurrentSafetyManager, ConcurrentSafetyConfig, OperationType } from './concurrent-safety'
-import { Logger, runtimeLogger } from '../utils/logger'
-import * as path from 'path'
+import * as path from 'path';
+
+import {
+  Agent,
+  LazyAgent,
+  AgentStatus,
+  LazyAgentState,
+  RuntimeConfig,
+} from '../types/agent';
+import { Logger, runtimeLogger } from '../utils/logger';
+
+import { CheckpointSystem, CheckpointSystemConfig } from './checkpoint-system';
+import {
+  ConcurrentSafetyManager,
+  ConcurrentSafetyConfig,
+  OperationType,
+} from './concurrent-safety';
+import {
+  LifecycleManager,
+  LifecycleConfig,
+  ShutdownOptions,
+  StartupOptions,
+} from './lifecycle-manager';
+import {
+  ResourceManager,
+  ResourceManagerConfig,
+  ResourceType,
+} from './resource-manager';
+import { SYMindXRuntime } from './runtime';
+import {
+  StateManager,
+  StateManagerConfig,
+  CheckpointType,
+} from './state-manager';
+import { StateRecoverySystem } from './state-recovery';
 
 export interface EnhancedRuntimeConfig extends RuntimeConfig {
   stateManagement: {
-    enabled: boolean
-    stateDirectory: string
-    enableCheckpoints: boolean
-    checkpointInterval: number
-    maxCheckpoints: number
-    enableStateRecovery: boolean
-    enableConcurrentSafety: boolean
-    enableAutoCleanup: boolean
-  }
+    enabled: boolean;
+    stateDirectory: string;
+    enableCheckpoints: boolean;
+    checkpointInterval: number;
+    maxCheckpoints: number;
+    enableStateRecovery: boolean;
+    enableConcurrentSafety: boolean;
+    enableAutoCleanup: boolean;
+  };
 }
 
 export class EnhancedSYMindXRuntime extends SYMindXRuntime {
   // State management components
-  private stateManager?: StateManager
-  private resourceManager?: ResourceManager
-  private lifecycleManager?: LifecycleManager
-  private checkpointSystem?: CheckpointSystem
-  private stateRecoverySystem?: StateRecoverySystem
-  private concurrentSafetyManager?: ConcurrentSafetyManager
-  
-  private enhancedConfig: EnhancedRuntimeConfig
-  private stateManagementEnabled = false
+  private stateManager?: StateManager;
+  private resourceManager?: ResourceManager;
+  private lifecycleManager?: LifecycleManager;
+  private checkpointSystem?: CheckpointSystem;
+  private stateRecoverySystem?: StateRecoverySystem;
+  private concurrentSafetyManager?: ConcurrentSafetyManager;
+
+  private enhancedConfig: EnhancedRuntimeConfig;
+  private stateManagementEnabled = false;
 
   constructor(config: EnhancedRuntimeConfig) {
-    super(config)
-    this.enhancedConfig = config
-    
+    super(config);
+    this.enhancedConfig = config;
+
     if (config.stateManagement?.enabled) {
-      this.initializeStateManagement()
+      this.initializeStateManagement();
     }
   }
 
   /**
    * Enhanced initialization with state management
    */
-  async initialize(): Promise<void> {
-    await super.initialize()
-    
+  override async initialize(): Promise<void> {
+    await super.initialize();
+
     if (this.stateManagementEnabled) {
-      runtimeLogger.info('🔄 Initializing state management system...')
-      
+      runtimeLogger.info('🔄 Initializing state management system...');
+
       if (this.stateManager) {
-        await this.stateManager.initialize()
+        await this.stateManager.initialize();
       }
-      
-      runtimeLogger.success('✅ State management system initialized')
+
+      runtimeLogger.success('✅ State management system initialized');
     }
   }
 
   /**
    * Enhanced start with state management
    */
-  async start(): Promise<void> {
+  override async start(): Promise<void> {
     if (this.stateManagementEnabled && this.checkpointSystem) {
       // Check for existing agent states to restore
-      await this.restoreAgentsFromState()
+      await this.restoreAgentsFromState();
     }
-    
-    await super.start()
-    
+
+    await super.start();
+
     if (this.stateManagementEnabled) {
       // Start checkpoint system
       if (this.checkpointSystem) {
-        this.startAutomaticCheckpoints()
+        this.startAutomaticCheckpoints();
       }
     }
   }
@@ -87,127 +112,140 @@ export class EnhancedSYMindXRuntime extends SYMindXRuntime {
   /**
    * Enhanced stop with graceful shutdown
    */
-  async stop(): Promise<void> {
+  override async stop(): Promise<void> {
     if (this.stateManagementEnabled) {
-      runtimeLogger.info('🛑 Performing graceful runtime shutdown...')
-      
+      runtimeLogger.info('🛑 Performing graceful runtime shutdown...');
+
       // Create final checkpoints for all active agents
-      await this.createFinalCheckpoints()
-      
+      await this.createFinalCheckpoints();
+
       // Shutdown state management systems
-      await this.shutdownStateManagement()
+      await this.shutdownStateManagement();
     }
-    
-    await super.stop()
+
+    await super.stop();
   }
 
   /**
    * Enhanced agent activation with state restoration
    */
-  async activateAgent(agentId: string): Promise<Agent> {
+  override async activateAgent(agentId: string): Promise<Agent> {
     if (!this.stateManagementEnabled) {
-      return super.activateAgent(agentId)
+      return super.activateAgent(agentId);
     }
-    
-    const lazyAgent = this.lazyAgents.get(agentId)
+
+    const lazyAgent = this.lazyAgents.get(agentId);
     if (!lazyAgent) {
-      throw new Error(`Lazy agent ${agentId} not found`)
+      throw new Error(`Lazy agent ${agentId} not found`);
     }
-    
+
     // Use lifecycle manager for robust startup
     if (this.lifecycleManager) {
       const startupOptions: StartupOptions = {
         restoreFromCheckpoint: true,
         validateState: true,
-        fallbackToDefaults: true
-      }
-      
-      return await this.lifecycleManager.robustStartup(lazyAgent, startupOptions)
+        fallbackToDefaults: true,
+      };
+
+      return await this.lifecycleManager.robustStartup(
+        lazyAgent,
+        startupOptions
+      );
     }
-    
-    return super.activateAgent(agentId)
+
+    return super.activateAgent(agentId);
   }
 
   /**
    * Enhanced agent deactivation with state preservation
    */
-  async deactivateAgent(agentId: string): Promise<void> {
+  override async deactivateAgent(agentId: string): Promise<void> {
     if (!this.stateManagementEnabled) {
-      return super.deactivateAgent(agentId)
+      return super.deactivateAgent(agentId);
     }
-    
-    const agent = this.agents.get(agentId)
+
+    const agent = this.agents.get(agentId);
     if (!agent) {
-      return
+      return;
     }
-    
+
     // Use lifecycle manager for graceful shutdown
     if (this.lifecycleManager) {
       const shutdownOptions: ShutdownOptions = {
         createCheckpoint: true,
         checkpointType: CheckpointType.FULL,
-        saveMemories: true
-      }
-      
-      await this.lifecycleManager.gracefulShutdown(agent, shutdownOptions)
-      
+        saveMemories: true,
+      };
+
+      await this.lifecycleManager.gracefulShutdown(agent, shutdownOptions);
+
       // Update lazy agent state
-      const lazyAgent = this.lazyAgents.get(agentId)
+      const lazyAgent = this.lazyAgents.get(agentId);
       if (lazyAgent) {
-        lazyAgent.state = LazyAgentState.UNLOADED
-        lazyAgent.agent = undefined
+        lazyAgent.state = LazyAgentState.UNLOADED;
+        lazyAgent.agent = undefined;
       }
-      
+
       // Remove from active agents
-      this.agents.delete(agentId)
-      
-      return
+      this.agents.delete(agentId);
+
+      return;
     }
-    
-    return super.deactivateAgent(agentId)
+
+    return super.deactivateAgent(agentId);
   }
 
   /**
    * Create manual checkpoint for an agent
    */
-  async createAgentCheckpoint(agentId: string, type: CheckpointType = CheckpointType.FULL): Promise<string> {
+  async createAgentCheckpoint(
+    agentId: string,
+    type: CheckpointType = CheckpointType.FULL
+  ): Promise<string> {
     if (!this.stateManagementEnabled || !this.checkpointSystem) {
-      throw new Error('State management not enabled')
+      throw new Error('State management not enabled');
     }
-    
-    const agent = this.agents.get(agentId)
+
+    const agent = this.agents.get(agentId);
     if (!agent) {
-      throw new Error(`Agent ${agentId} not found or not active`)
+      throw new Error(`Agent ${agentId} not found or not active`);
     }
-    
-    return await this.checkpointSystem.createCheckpoint(agent, type, 'manual_request')
+
+    return await this.checkpointSystem.createCheckpoint(
+      agent,
+      type,
+      'manual_request'
+    );
   }
 
   /**
    * Restore agent from specific checkpoint
    */
-  async restoreAgentFromCheckpoint(agentId: string, checkpointFile?: string): Promise<Agent> {
+  async restoreAgentFromCheckpoint(
+    agentId: string,
+    checkpointFile?: string
+  ): Promise<Agent> {
     if (!this.stateManagementEnabled || !this.lifecycleManager) {
-      throw new Error('State management not enabled')
+      throw new Error('State management not enabled');
     }
-    
-    const lazyAgent = this.lazyAgents.get(agentId)
+
+    const lazyAgent = this.lazyAgents.get(agentId);
     if (!lazyAgent) {
-      throw new Error(`Lazy agent ${agentId} not found`)
+      throw new Error(`Lazy agent ${agentId} not found`);
     }
-    
+
     // Deactivate if currently active
     if (this.agents.has(agentId)) {
-      await this.deactivateAgent(agentId)
+      await this.deactivateAgent(agentId);
     }
-    
+
     const startupOptions: StartupOptions = {
       restoreFromCheckpoint: true,
       specificCheckpoint: checkpointFile,
-      validateState: true
-    }
-    
-    return await this.lifecycleManager.robustStartup(lazyAgent, startupOptions)
+      validateState: true,
+    };
+
+    return await this.lifecycleManager.robustStartup(lazyAgent, startupOptions);
   }
 
   /**
@@ -215,20 +253,24 @@ export class EnhancedSYMindXRuntime extends SYMindXRuntime {
    */
   getAgentStateStatus(agentId: string): AgentStateStatus {
     if (!this.stateManagementEnabled) {
-      return { enabled: false }
+      return { enabled: false };
     }
-    
-    const resourceSnapshot = this.resourceManager?.getAgentResourceSnapshot(agentId)
-    const lockStatus = this.concurrentSafetyManager?.getAgentLockStatus(agentId)
-    const checkpointMetrics = this.checkpointSystem?.getMetrics(agentId)
-    
+
+    const resourceSnapshot =
+      this.resourceManager?.getAgentResourceSnapshot(agentId);
+    const lockStatus =
+      this.concurrentSafetyManager?.getAgentLockStatus(agentId);
+    const checkpointMetrics = this.checkpointSystem?.getMetrics(agentId);
+
     return {
       enabled: true,
       resourceSnapshot,
       lockStatus,
       checkpointMetrics,
-      lastCheckpoint: checkpointMetrics?.lastCheckpointSize ? new Date() : undefined
-    }
+      lastCheckpoint: checkpointMetrics?.lastCheckpointSize
+        ? new Date()
+        : undefined,
+    };
   }
 
   /**
@@ -236,59 +278,61 @@ export class EnhancedSYMindXRuntime extends SYMindXRuntime {
    */
   getStateManagementStatus(): StateManagementStatus {
     if (!this.stateManagementEnabled) {
-      return { enabled: false }
+      return { enabled: false };
     }
-    
+
     return {
       enabled: true,
       stateDirectory: this.enhancedConfig.stateManagement.stateDirectory,
       checkpointSystem: this.checkpointSystem?.getSystemStatus(),
       resourceManager: this.resourceManager?.getHealthReport(),
       concurrentSafety: this.concurrentSafetyManager?.getSafetyStatus(),
-      activeOperations: this.lifecycleManager?.getActiveOperations() || []
-    }
+      activeOperations: this.lifecycleManager?.getActiveOperations() || [],
+    };
   }
 
   /**
    * Perform emergency cleanup for an agent
    */
   async emergencyCleanupAgent(agentId: string): Promise<void> {
-    runtimeLogger.warn(`🚨 Performing emergency cleanup for agent ${agentId}`)
-    
+    runtimeLogger.warn(`🚨 Performing emergency cleanup for agent ${agentId}`);
+
     try {
       // Force release any locks
       if (this.concurrentSafetyManager) {
-        await this.concurrentSafetyManager.forceReleaseAgentLocks(agentId)
+        await this.concurrentSafetyManager.forceReleaseAgentLocks(agentId);
       }
-      
+
       // Cleanup resources
       if (this.resourceManager) {
-        await this.resourceManager.cleanupAgentResources(agentId)
+        await this.resourceManager.cleanupAgentResources(agentId);
       }
-      
+
       // Remove from active agents
-      this.agents.delete(agentId)
-      
+      this.agents.delete(agentId);
+
       // Update lazy agent state
-      const lazyAgent = this.lazyAgents.get(agentId)
+      const lazyAgent = this.lazyAgents.get(agentId);
       if (lazyAgent) {
-        lazyAgent.state = LazyAgentState.ERROR
-        lazyAgent.agent = undefined
+        lazyAgent.state = LazyAgentState.ERROR;
+        lazyAgent.agent = undefined;
       }
-      
-      runtimeLogger.info(`✅ Emergency cleanup completed for agent ${agentId}`)
-      
+
+      runtimeLogger.info(`✅ Emergency cleanup completed for agent ${agentId}`);
     } catch (error) {
-      runtimeLogger.error(`❌ Emergency cleanup failed for agent ${agentId}:`, error)
-      throw error
+      runtimeLogger.error(
+        `❌ Emergency cleanup failed for agent ${agentId}:`,
+        error
+      );
+      throw error;
     }
   }
 
   // Private methods
 
   private initializeStateManagement(): void {
-    const config = this.enhancedConfig.stateManagement
-    
+    const config = this.enhancedConfig.stateManagement;
+
     try {
       // Initialize StateManager
       const stateManagerConfig: StateManagerConfig = {
@@ -297,20 +341,20 @@ export class EnhancedSYMindXRuntime extends SYMindXRuntime {
         checkpointInterval: config.checkpointInterval,
         compressionEnabled: false,
         encryptionEnabled: false,
-        validationLevel: 'full'
-      }
-      this.stateManager = new StateManager(stateManagerConfig)
-      
+        validationLevel: 'full',
+      };
+      this.stateManager = new StateManager(stateManagerConfig);
+
       // Initialize ResourceManager
       const resourceManagerConfig: ResourceManagerConfig = {
         maxResourcesPerAgent: 100,
         resourceTimeoutMs: 30 * 60 * 1000, // 30 minutes
-        cleanupIntervalMs: 5 * 60 * 1000,  // 5 minutes
+        cleanupIntervalMs: 5 * 60 * 1000, // 5 minutes
         trackMemoryUsage: true,
-        enableResourceLogging: true
-      }
-      this.resourceManager = new ResourceManager(resourceManagerConfig)
-      
+        enableResourceLogging: true,
+      };
+      this.resourceManager = new ResourceManager(resourceManagerConfig);
+
       // Initialize ConcurrentSafetyManager
       if (config.enableConcurrentSafety !== false) {
         const concurrentSafetyConfig: ConcurrentSafetyConfig = {
@@ -319,11 +363,13 @@ export class EnhancedSYMindXRuntime extends SYMindXRuntime {
           deadlockDetectionInterval: 10000,
           maxQueueSize: 10,
           enablePriorityQueue: true,
-          enableDeadlockDetection: true
-        }
-        this.concurrentSafetyManager = new ConcurrentSafetyManager(concurrentSafetyConfig)
+          enableDeadlockDetection: true,
+        };
+        this.concurrentSafetyManager = new ConcurrentSafetyManager(
+          concurrentSafetyConfig
+        );
       }
-      
+
       // Initialize LifecycleManager
       const lifecycleConfig: LifecycleConfig = {
         shutdownTimeoutMs: 30000,
@@ -332,14 +378,14 @@ export class EnhancedSYMindXRuntime extends SYMindXRuntime {
         enableRollback: true,
         maxRetries: 3,
         validateStateOnStartup: true,
-        cleanupOnShutdownFailure: true
-      }
+        cleanupOnShutdownFailure: true,
+      };
       this.lifecycleManager = new LifecycleManager(
         lifecycleConfig,
         this.stateManager,
         this.resourceManager
-      )
-      
+      );
+
       // Initialize CheckpointSystem
       if (config.enableCheckpoints) {
         const checkpointSystemConfig: CheckpointSystemConfig = {
@@ -351,97 +397,103 @@ export class EnhancedSYMindXRuntime extends SYMindXRuntime {
           incrementalThreshold: 10,
           enableEventBasedCheckpoints: true,
           stateChangeThreshold: 5,
-          cleanupInterval: 24 * 60 * 60 * 1000 // 24 hours
-        }
+          cleanupInterval: 24 * 60 * 60 * 1000, // 24 hours
+        };
         this.checkpointSystem = new CheckpointSystem(
           checkpointSystemConfig,
           this.stateManager,
           this.resourceManager
-        )
+        );
       }
-      
+
       // Initialize StateRecoverySystem
       if (config.enableStateRecovery !== false) {
         this.stateRecoverySystem = new StateRecoverySystem(
           this.stateManager,
           this.resourceManager
-        )
+        );
       }
-      
-      this.stateManagementEnabled = true
-      runtimeLogger.info('🔄 State management components initialized')
-      
+
+      this.stateManagementEnabled = true;
+      runtimeLogger.info('🔄 State management components initialized');
     } catch (error) {
-      runtimeLogger.error('❌ Failed to initialize state management:', error)
-      this.stateManagementEnabled = false
+      runtimeLogger.error('❌ Failed to initialize state management:', error);
+      this.stateManagementEnabled = false;
     }
   }
 
   private async restoreAgentsFromState(): Promise<void> {
-    if (!this.stateManager) return
-    
+    if (!this.stateManager) return;
+
     try {
       // Look for existing state files
       // This would scan the state directory for agent snapshots
-      runtimeLogger.info('🔍 Checking for existing agent states to restore...')
-      
+      runtimeLogger.info('🔍 Checking for existing agent states to restore...');
+
       // Implementation would scan state directory and restore agents
       // For now, this is a placeholder
-      
     } catch (error) {
-      runtimeLogger.error('❌ Failed to restore agents from state:', error)
+      runtimeLogger.error('❌ Failed to restore agents from state:', error);
     }
   }
 
   private startAutomaticCheckpoints(): void {
-    if (!this.checkpointSystem) return
-    
+    if (!this.checkpointSystem) return;
+
     // Schedule checkpoints for all active agents
     for (const [agentId, agent] of this.agents) {
-      this.checkpointSystem.scheduleCheckpoints(agentId)
-      this.checkpointSystem.monitorAgent(agent)
+      this.checkpointSystem.scheduleCheckpoints(agentId);
+      this.checkpointSystem.monitorAgent(agent);
     }
-    
-    runtimeLogger.info('📅 Automatic checkpoints started for active agents')
+
+    runtimeLogger.info('📅 Automatic checkpoints started for active agents');
   }
 
   private async createFinalCheckpoints(): Promise<void> {
-    if (!this.checkpointSystem) return
-    
-    runtimeLogger.info('💾 Creating final checkpoints for active agents...')
-    
-    const checkpointPromises = Array.from(this.agents.values()).map(async (agent) => {
-      try {
-        await this.checkpointSystem!.createCheckpoint(agent, CheckpointType.FULL, 'runtime_shutdown')
-      } catch (error) {
-        runtimeLogger.error(`Failed to create final checkpoint for agent ${agent.id}:`, error)
+    if (!this.checkpointSystem) return;
+
+    runtimeLogger.info('💾 Creating final checkpoints for active agents...');
+
+    const checkpointPromises = Array.from(this.agents.values()).map(
+      async (agent) => {
+        try {
+          await this.checkpointSystem!.createCheckpoint(
+            agent,
+            CheckpointType.FULL,
+            'runtime_shutdown'
+          );
+        } catch (error) {
+          runtimeLogger.error(
+            `Failed to create final checkpoint for agent ${agent.id}:`,
+            error
+          );
+        }
       }
-    })
-    
-    await Promise.allSettled(checkpointPromises)
-    runtimeLogger.info('✅ Final checkpoints completed')
+    );
+
+    await Promise.allSettled(checkpointPromises);
+    runtimeLogger.info('✅ Final checkpoints completed');
   }
 
   private async shutdownStateManagement(): Promise<void> {
-    runtimeLogger.info('🛑 Shutting down state management systems...')
-    
+    runtimeLogger.info('🛑 Shutting down state management systems...');
+
     try {
       if (this.checkpointSystem) {
-        await this.checkpointSystem.shutdown()
+        await this.checkpointSystem.shutdown();
       }
-      
+
       if (this.concurrentSafetyManager) {
-        await this.concurrentSafetyManager.shutdown()
+        await this.concurrentSafetyManager.shutdown();
       }
-      
+
       if (this.resourceManager) {
-        await this.resourceManager.shutdown()
+        await this.resourceManager.shutdown();
       }
-      
-      runtimeLogger.success('✅ State management systems shutdown complete')
-      
+
+      runtimeLogger.success('✅ State management systems shutdown complete');
     } catch (error) {
-      runtimeLogger.error('❌ Error during state management shutdown:', error)
+      runtimeLogger.error('❌ Error during state management shutdown:', error);
     }
   }
 }
@@ -449,18 +501,18 @@ export class EnhancedSYMindXRuntime extends SYMindXRuntime {
 // Type definitions
 
 export interface AgentStateStatus {
-  enabled: boolean
-  resourceSnapshot?: any
-  lockStatus?: any
-  checkpointMetrics?: any
-  lastCheckpoint?: Date
+  enabled: boolean;
+  resourceSnapshot?: any;
+  lockStatus?: any;
+  checkpointMetrics?: any;
+  lastCheckpoint?: Date;
 }
 
 export interface StateManagementStatus {
-  enabled: boolean
-  stateDirectory?: string
-  checkpointSystem?: any
-  resourceManager?: any
-  concurrentSafety?: any
-  activeOperations?: any[]
+  enabled: boolean;
+  stateDirectory?: string;
+  checkpointSystem?: any;
+  resourceManager?: any;
+  concurrentSafety?: any;
+  activeOperations?: any[];
 }

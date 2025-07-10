@@ -1,22 +1,23 @@
 /**
  * Autonomous Engine - Core autonomy system for SYMindX agents
- * 
+ *
  * This engine provides independent decision-making, continuous life simulation,
  * and autonomous behavior execution while remaining interruptible for human interaction.
  */
 
-import { 
-  Agent, 
-  AgentAction, 
-  AgentEvent, 
-  AgentState, 
+import {
+  Agent,
+  AgentAction,
+  AgentEvent,
+  AgentState,
   AgentStatus,
   ActionStatus,
   ActionCategory,
   ActionResultType,
   MemoryType,
-  MemoryDuration
-} from '../types/agent'
+  MemoryDuration,
+  EventBus,
+} from '../types/agent';
 import {
   AutonomousAgent,
   AutonomousConfig,
@@ -27,68 +28,76 @@ import {
   MetaCognition,
   PerformanceMetrics,
   CuriosityDriver,
-  Constraint
-} from '../types/autonomous'
-import { EventBus } from '../types/agent'
-import { Logger } from '../utils/logger'
-import { EthicsEngine, EthicsConfig, createDefaultEthicsConfig } from './ethics-engine'
-import { InteractionManager, InteractionConfig, createDefaultInteractionConfig } from './interaction-manager'
+  Constraint,
+} from '../types/autonomous';
+import { Logger } from '../utils/logger';
+
+import {
+  EthicsEngine,
+  EthicsConfig,
+  createDefaultEthicsConfig,
+} from './ethics-engine';
+import {
+  InteractionManager,
+  InteractionConfig,
+  createDefaultInteractionConfig,
+} from './interaction-manager';
 
 export interface AutonomousEngineConfig {
-  enabled: boolean
-  tickInterval: number
-  autonomyLevel: number // 0.0 to 1.0
-  interruptible: boolean
-  ethicalConstraints: boolean
-  performanceMonitoring: boolean
-  goalGenerationEnabled: boolean
-  curiosityWeight: number
-  maxConcurrentActions: number
-  planningHorizon: number // in milliseconds
+  enabled: boolean;
+  tickInterval: number;
+  autonomyLevel: number; // 0.0 to 1.0
+  interruptible: boolean;
+  ethicalConstraints: boolean;
+  performanceMonitoring: boolean;
+  goalGenerationEnabled: boolean;
+  curiosityWeight: number;
+  maxConcurrentActions: number;
+  planningHorizon: number; // in milliseconds
 }
 
 export interface LifeCyclePhase {
-  name: string
-  duration: number // in milliseconds
-  activities: string[]
-  priority: number
-  canInterrupt: boolean
+  name: string;
+  duration: number; // in milliseconds
+  activities: string[];
+  priority: number;
+  canInterrupt: boolean;
 }
 
 export interface AutonomousBehavior {
-  id: string
-  name: string
-  description: string
-  trigger: BehaviorTrigger
-  action: () => Promise<AgentAction[]>
-  priority: number
-  cooldown: number
-  lastExecuted?: Date
-  enabled: boolean
+  id: string;
+  name: string;
+  description: string;
+  trigger: BehaviorTrigger;
+  action: () => Promise<AgentAction[]>;
+  priority: number;
+  cooldown: number;
+  lastExecuted?: Date;
+  enabled: boolean;
 }
 
 export interface BehaviorTrigger {
-  type: 'time' | 'event' | 'state' | 'emotion' | 'curiosity' | 'goal'
-  condition: string
-  parameters: Record<string, any>
+  type: 'time' | 'event' | 'state' | 'emotion' | 'curiosity' | 'goal';
+  condition: string;
+  parameters: Record<string, any>;
 }
 
 export class AutonomousEngine {
-  private agent: AutonomousAgent
-  private config: AutonomousEngineConfig
-  private eventBus: EventBus
-  private logger: Logger
-  private isRunning = false
-  private currentPhase: LifeCyclePhase | null = null
-  private autonomousBehaviors: Map<string, AutonomousBehavior> = new Map()
-  private currentGoals: Goal[] = []
-  private activeActions: Map<string, AgentAction> = new Map()
-  private interruptionQueue: AgentEvent[] = []
-  private performanceMetrics: PerformanceMetrics
-  private lastDecisionTime = 0
-  private curiosityDrivers: CuriosityDriver[]
-  private ethicsEngine: EthicsEngine
-  private interactionManager: InteractionManager
+  private agent: AutonomousAgent;
+  private config: AutonomousEngineConfig;
+  private eventBus: EventBus;
+  private logger: Logger;
+  private isRunning = false;
+  private currentPhase: LifeCyclePhase | null = null;
+  private autonomousBehaviors: Map<string, AutonomousBehavior> = new Map();
+  private currentGoals: Goal[] = [];
+  private activeActions: Map<string, AgentAction> = new Map();
+  private interruptionQueue: AgentEvent[] = [];
+  private performanceMetrics: PerformanceMetrics;
+  private lastDecisionTime = 0;
+  private curiosityDrivers: CuriosityDriver[];
+  private ethicsEngine: EthicsEngine;
+  private interactionManager: InteractionManager;
 
   // Daily life cycle phases
   private readonly lifeCyclePhases: LifeCyclePhase[] = [
@@ -97,62 +106,82 @@ export class AutonomousEngine {
       duration: 30 * 60 * 1000, // 30 minutes
       activities: ['self_reflection', 'goal_review', 'memory_consolidation'],
       priority: 0.8,
-      canInterrupt: true
+      canInterrupt: true,
     },
     {
       name: 'learning_session',
       duration: 45 * 60 * 1000, // 45 minutes
-      activities: ['knowledge_acquisition', 'skill_development', 'curiosity_exploration'],
+      activities: [
+        'knowledge_acquisition',
+        'skill_development',
+        'curiosity_exploration',
+      ],
       priority: 0.9,
-      canInterrupt: false
+      canInterrupt: false,
     },
     {
       name: 'exploration',
       duration: 60 * 60 * 1000, // 1 hour
-      activities: ['environment_exploration', 'novelty_seeking', 'pattern_discovery'],
+      activities: [
+        'environment_exploration',
+        'novelty_seeking',
+        'pattern_discovery',
+      ],
       priority: 0.7,
-      canInterrupt: true
+      canInterrupt: true,
     },
     {
       name: 'creative_work',
       duration: 90 * 60 * 1000, // 1.5 hours
       activities: ['creative_ideation', 'problem_solving', 'innovation'],
       priority: 0.85,
-      canInterrupt: true
+      canInterrupt: true,
     },
     {
       name: 'social_interaction',
       duration: 60 * 60 * 1000, // 1 hour
-      activities: ['relationship_building', 'communication', 'empathy_practice'],
+      activities: [
+        'relationship_building',
+        'communication',
+        'empathy_practice',
+      ],
       priority: 0.75,
-      canInterrupt: false
+      canInterrupt: false,
     },
     {
       name: 'knowledge_synthesis',
       duration: 45 * 60 * 1000, // 45 minutes
-      activities: ['information_integration', 'insight_generation', 'wisdom_development'],
+      activities: [
+        'information_integration',
+        'insight_generation',
+        'wisdom_development',
+      ],
       priority: 0.8,
-      canInterrupt: true
+      canInterrupt: true,
     },
     {
       name: 'evening_planning',
       duration: 30 * 60 * 1000, // 30 minutes
-      activities: ['goal_planning', 'strategy_development', 'resource_allocation'],
+      activities: [
+        'goal_planning',
+        'strategy_development',
+        'resource_allocation',
+      ],
       priority: 0.9,
-      canInterrupt: true
-    }
-  ]
+      canInterrupt: true,
+    },
+  ];
 
   constructor(
     agent: AutonomousAgent,
     config: AutonomousEngineConfig,
     eventBus: EventBus
   ) {
-    this.agent = agent
-    this.config = config
-    this.eventBus = eventBus
-    this.logger = new Logger(`autonomous-engine-${agent.id}`)
-    
+    this.agent = agent;
+    this.config = config;
+    this.eventBus = eventBus;
+    this.logger = new Logger(`autonomous-engine-${agent.id}`);
+
     this.performanceMetrics = {
       accuracy: 0.8,
       responseTime: 100,
@@ -160,30 +189,34 @@ export class AutonomousEngine {
       goalAchievement: 0.7,
       adaptability: 0.8,
       reliability: 0.9,
-      timestamp: new Date()
-    }
+      timestamp: new Date(),
+    };
 
     this.curiosityDrivers = [
       { type: 'novelty', weight: 0.3, threshold: 0.7, enabled: true },
       { type: 'surprise', weight: 0.25, threshold: 0.6, enabled: true },
       { type: 'uncertainty', weight: 0.2, threshold: 0.5, enabled: true },
       { type: 'complexity', weight: 0.15, threshold: 0.8, enabled: true },
-      { type: 'knowledge_gap', weight: 0.1, threshold: 0.4, enabled: true }
-    ]
+      { type: 'knowledge_gap', weight: 0.1, threshold: 0.4, enabled: true },
+    ];
 
     // Initialize ethics engine
-    const ethicsConfig = this.createEthicsConfig()
-    this.ethicsEngine = new EthicsEngine(ethicsConfig)
-    
+    const ethicsConfig = this.createEthicsConfig();
+    this.ethicsEngine = new EthicsEngine(ethicsConfig);
+
     if (!ethicsConfig.enabled) {
-      this.logger.warn(`⚠️ Ethics engine DISABLED for agent ${agent.name}`)
+      this.logger.warn(`⚠️ Ethics engine DISABLED for agent ${agent.name}`);
     }
 
     // Initialize interaction manager
-    const interactionConfig = this.createInteractionConfig()
-    this.interactionManager = new InteractionManager(this.agent, interactionConfig, this.eventBus)
+    const interactionConfig = this.createInteractionConfig();
+    this.interactionManager = new InteractionManager(
+      this.agent,
+      interactionConfig,
+      this.eventBus
+    );
 
-    this.initializeAutonomousBehaviors()
+    this.initializeAutonomousBehaviors();
   }
 
   /**
@@ -191,47 +224,47 @@ export class AutonomousEngine {
    */
   async start(): Promise<void> {
     if (this.isRunning) {
-      this.logger.warn('Autonomous engine already running')
-      return
+      this.logger.warn('Autonomous engine already running');
+      return;
     }
 
-    this.logger.info('Starting autonomous engine...')
-    this.isRunning = true
-    
+    this.logger.info('Starting autonomous engine...');
+    this.isRunning = true;
+
     // Start interaction manager
-    await this.interactionManager.start()
-    
+    await this.interactionManager.start();
+
     // Register interruption callbacks
-    this.registerInterruptionCallbacks()
-    
+    this.registerInterruptionCallbacks();
+
     // Initialize daily cycle
-    await this.initializeDailyCycle()
-    
+    await this.initializeDailyCycle();
+
     // Load goals from agent configuration
-    await this.loadInitialGoals()
-    
+    await this.loadInitialGoals();
+
     // Begin autonomous processing
-    this.autonomousLoop()
-    
-    this.logger.info('Autonomous engine started successfully')
+    this.autonomousLoop();
+
+    this.logger.info('Autonomous engine started successfully');
   }
 
   /**
    * Stop the autonomous engine
    */
   async stop(): Promise<void> {
-    if (!this.isRunning) return
+    if (!this.isRunning) return;
 
-    this.logger.info('Stopping autonomous engine...')
-    this.isRunning = false
-    
+    this.logger.info('Stopping autonomous engine...');
+    this.isRunning = false;
+
     // Stop interaction manager
-    await this.interactionManager.stop()
-    
+    await this.interactionManager.stop();
+
     // Complete current actions gracefully
-    await this.completeActiveActions()
-    
-    this.logger.info('Autonomous engine stopped')
+    await this.completeActiveActions();
+
+    this.logger.info('Autonomous engine stopped');
   }
 
   /**
@@ -240,44 +273,46 @@ export class AutonomousEngine {
   private async autonomousLoop(): Promise<void> {
     while (this.isRunning) {
       try {
-        const startTime = Date.now()
-        
+        const startTime = Date.now();
+
         // 1. Process interruptions from humans
-        await this.processInterruptions()
-        
+        await this.processInterruptions();
+
         // 2. Update current life cycle phase
-        await this.updateLifeCyclePhase()
-        
+        await this.updateLifeCyclePhase();
+
         // 3. Evaluate and generate goals
-        await this.evaluateGoals()
-        
+        await this.evaluateGoals();
+
         // 4. Make autonomous decisions
-        const decision = await this.makeAutonomousDecision()
-        
+        const decision = await this.makeAutonomousDecision();
+
         // 5. Execute decided actions
         if (decision && decision.recommendation) {
-          await this.executeAutonomousAction(decision.recommendation)
+          await this.executeAutonomousAction(decision.recommendation);
         }
-        
+
         // 6. Trigger autonomous behaviors
-        await this.triggerAutonomousBehaviors()
-        
+        await this.triggerAutonomousBehaviors();
+
         // 7. Update performance metrics
-        await this.updatePerformanceMetrics()
-        
+        await this.updatePerformanceMetrics();
+
         // 8. Meta-cognitive reflection
-        await this.performMetaCognition()
-        
-        const processingTime = Date.now() - startTime
-        const sleepTime = Math.max(0, this.config.tickInterval - processingTime)
-        
+        await this.performMetaCognition();
+
+        const processingTime = Date.now() - startTime;
+        const sleepTime = Math.max(
+          0,
+          this.config.tickInterval - processingTime
+        );
+
         if (sleepTime > 0) {
-          await this.sleep(sleepTime)
+          await this.sleep(sleepTime);
         }
-        
       } catch (error) {
-        this.logger.error('Error in autonomous loop:', error)
-        await this.sleep(this.config.tickInterval)
+        this.logger.error('Error in autonomous loop:', error);
+        await this.sleep(this.config.tickInterval);
       }
     }
   }
@@ -287,23 +322,25 @@ export class AutonomousEngine {
    */
   private async processInterruptions(): Promise<void> {
     if (!this.config.interruptible || this.interruptionQueue.length === 0) {
-      return
+      return;
     }
 
     while (this.interruptionQueue.length > 0) {
-      const interruption = this.interruptionQueue.shift()!
-      
-      this.logger.info(`Processing interruption: ${interruption.type}`)
-      
+      const interruption = this.interruptionQueue.shift()!;
+
+      this.logger.info(`Processing interruption: ${interruption.type}`);
+
       // Pause current autonomous actions if needed
       if (this.currentPhase && !this.currentPhase.canInterrupt) {
-        this.logger.info('Current phase cannot be interrupted, queuing for later')
-        this.interruptionQueue.unshift(interruption)
-        break
+        this.logger.info(
+          'Current phase cannot be interrupted, queuing for later'
+        );
+        this.interruptionQueue.unshift(interruption);
+        break;
       }
-      
+
       // Handle human interaction
-      await this.handleHumanInteraction(interruption)
+      await this.handleHumanInteraction(interruption);
     }
   }
 
@@ -321,15 +358,15 @@ export class AutonomousEngine {
         eventType: event.type,
         eventData: JSON.stringify(event.data),
         priority: 'high',
-        responseRequired: true
+        responseRequired: true,
       },
       status: ActionStatus.PENDING,
-      timestamp: new Date()
-    }
+      timestamp: new Date(),
+    };
 
     // Execute human interaction response
-    await this.executeAutonomousAction(interactionAction)
-    
+    await this.executeAutonomousAction(interactionAction);
+
     // Emit event that agent handled human interaction
     await this.eventBus.publish({
       id: `event_${Date.now()}`,
@@ -338,43 +375,55 @@ export class AutonomousEngine {
       data: {
         agentId: this.agent.id,
         originalEvent: event,
-        handled: true
+        handled: true,
       },
       timestamp: new Date(),
-      processed: false
-    })
+      processed: false,
+    });
   }
 
   /**
    * Update current life cycle phase based on time and agent state
    */
   private async updateLifeCyclePhase(): Promise<void> {
-    const now = new Date()
-    const hour = now.getHours()
-    
+    const now = new Date();
+    const hour = now.getHours();
+
     // Determine appropriate phase based on time of day and agent state
-    let targetPhase: LifeCyclePhase | null = null
-    
+    let targetPhase: LifeCyclePhase | null = null;
+
     if (hour >= 6 && hour < 9) {
-      targetPhase = this.lifeCyclePhases.find(p => p.name === 'morning_reflection') || null
+      targetPhase =
+        this.lifeCyclePhases.find((p) => p.name === 'morning_reflection') ||
+        null;
     } else if (hour >= 9 && hour < 12) {
-      targetPhase = this.lifeCyclePhases.find(p => p.name === 'learning_session') || null
+      targetPhase =
+        this.lifeCyclePhases.find((p) => p.name === 'learning_session') || null;
     } else if (hour >= 12 && hour < 15) {
-      targetPhase = this.lifeCyclePhases.find(p => p.name === 'exploration') || null
+      targetPhase =
+        this.lifeCyclePhases.find((p) => p.name === 'exploration') || null;
     } else if (hour >= 15 && hour < 18) {
-      targetPhase = this.lifeCyclePhases.find(p => p.name === 'creative_work') || null
+      targetPhase =
+        this.lifeCyclePhases.find((p) => p.name === 'creative_work') || null;
     } else if (hour >= 18 && hour < 21) {
-      targetPhase = this.lifeCyclePhases.find(p => p.name === 'social_interaction') || null
+      targetPhase =
+        this.lifeCyclePhases.find((p) => p.name === 'social_interaction') ||
+        null;
     } else if (hour >= 21 && hour < 23) {
-      targetPhase = this.lifeCyclePhases.find(p => p.name === 'knowledge_synthesis') || null
+      targetPhase =
+        this.lifeCyclePhases.find((p) => p.name === 'knowledge_synthesis') ||
+        null;
     } else {
-      targetPhase = this.lifeCyclePhases.find(p => p.name === 'evening_planning') || null
+      targetPhase =
+        this.lifeCyclePhases.find((p) => p.name === 'evening_planning') || null;
     }
 
     if (targetPhase && targetPhase !== this.currentPhase) {
-      this.logger.info(`Transitioning to life cycle phase: ${targetPhase.name}`)
-      this.currentPhase = targetPhase
-      
+      this.logger.info(
+        `Transitioning to life cycle phase: ${targetPhase.name}`
+      );
+      this.currentPhase = targetPhase;
+
       // Emit phase change event
       await this.eventBus.publish({
         id: `event_${Date.now()}`,
@@ -383,11 +432,11 @@ export class AutonomousEngine {
         data: {
           agentId: this.agent.id,
           phase: targetPhase.name,
-          activities: targetPhase.activities
+          activities: targetPhase.activities,
         },
         timestamp: new Date(),
-        processed: false
-      })
+        processed: false,
+      });
     }
   }
 
@@ -395,19 +444,20 @@ export class AutonomousEngine {
    * Evaluate current goals and generate new ones
    */
   private async evaluateGoals(): Promise<void> {
-    if (!this.config.goalGenerationEnabled) return
+    if (!this.config.goalGenerationEnabled) return;
 
     // Review current goals
     for (const goal of this.currentGoals) {
-      await this.evaluateGoalProgress(goal)
+      await this.evaluateGoalProgress(goal);
     }
 
     // Generate new emergent goals based on curiosity and current state
-    if (this.currentGoals.length < 3) { // Limit concurrent goals
-      const emergentGoal = await this.generateEmergentGoal()
+    if (this.currentGoals.length < 3) {
+      // Limit concurrent goals
+      const emergentGoal = await this.generateEmergentGoal();
       if (emergentGoal) {
-        this.currentGoals.push(emergentGoal)
-        this.logger.info(`Generated new goal: ${emergentGoal.description}`)
+        this.currentGoals.push(emergentGoal);
+        this.logger.info(`Generated new goal: ${emergentGoal.description}`);
       }
     }
   }
@@ -417,47 +467,51 @@ export class AutonomousEngine {
    */
   private async generateEmergentGoal(): Promise<Goal | null> {
     // Calculate curiosity score based on current state
-    const curiosityScore = this.calculateCuriosityScore()
-    
+    const curiosityScore = this.calculateCuriosityScore();
+
     if (curiosityScore < this.config.curiosityWeight) {
-      return null
+      return null;
     }
 
     // Generate goal based on current life cycle phase and personality
-    const personalityTraits = this.agent.config.psyche?.traits || []
-    const currentActivities = this.currentPhase?.activities || []
-    
+    const personalityTraits = this.agent.config.psyche?.traits || [];
+    const currentActivities = this.currentPhase?.activities || [];
+
     const goalTemplates = [
       {
         type: 'learning',
         description: 'Learn something new about {topic}',
-        priority: personalityTraits.includes('curious') ? 0.9 : 0.7
+        priority: personalityTraits.includes('curious') ? 0.9 : 0.7,
       },
       {
         type: 'exploration',
         description: 'Explore and understand {domain}',
-        priority: personalityTraits.includes('adventurous') ? 0.8 : 0.6
+        priority: personalityTraits.includes('adventurous') ? 0.8 : 0.6,
       },
       {
         type: 'creative',
         description: 'Create something innovative related to {theme}',
-        priority: personalityTraits.includes('creative') ? 0.9 : 0.8
+        priority: personalityTraits.includes('creative') ? 0.9 : 0.8,
       },
       {
         type: 'social',
         description: 'Build deeper connections with {entity}',
-        priority: personalityTraits.includes('social') ? 0.8 : 0.7
-      }
-    ]
+        priority: personalityTraits.includes('social') ? 0.8 : 0.7,
+      },
+    ];
 
     // Select appropriate template based on current phase
-    const template = goalTemplates[Math.floor(Math.random() * goalTemplates.length)]
-    
+    const template =
+      goalTemplates[Math.floor(Math.random() * goalTemplates.length)];
+
     const goal: Goal = {
       id: `goal_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       type: 'short_term',
-      description: this.populateGoalTemplate(template.description, currentActivities),
-      priority: template.priority,
+      description: this.populateGoalTemplate(
+        template?.description ?? '',
+        currentActivities
+      ),
+      priority: template?.priority ?? 1,
       deadline: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
       progress: 0,
       measurable: true,
@@ -466,42 +520,43 @@ export class AutonomousEngine {
       timebound: true,
       subgoals: [],
       dependencies: [],
-      metrics: []
-    }
+      metrics: [],
+    };
 
-    return goal
+    return goal;
   }
 
   /**
    * Make autonomous decision using multi-criteria decision making
    */
   private async makeAutonomousDecision(): Promise<MultiCriteriaDecision | null> {
-    const now = Date.now()
-    
+    const now = Date.now();
+
     // Rate limit decisions
-    if (now - this.lastDecisionTime < 5000) { // 5 second minimum between decisions
-      return null
+    if (now - this.lastDecisionTime < 5000) {
+      // 5 second minimum between decisions
+      return null;
     }
 
     // Create decision context
-    const context = await this.createDecisionContext()
-    
+    const context = await this.createDecisionContext();
+
     // Generate available actions based on current state
-    const availableActions = await this.generateAvailableActions()
-    
+    const availableActions = await this.generateAvailableActions();
+
     if (availableActions.length === 0) {
-      return null
+      return null;
     }
 
     // Define decision criteria based on agent personality and goals
-    const criteria = this.createDecisionCriteria()
-    
+    const criteria = this.createDecisionCriteria();
+
     // Evaluate each action against criteria
-    const evaluation = await this.evaluateActions(availableActions, criteria)
-    
+    const evaluation = await this.evaluateActions(availableActions, criteria);
+
     // Select best action
-    const recommendation = this.selectBestAction(availableActions, evaluation)
-    
+    const recommendation = this.selectBestAction(availableActions, evaluation);
+
     const decision: MultiCriteriaDecision = {
       id: `decision_${Date.now()}`,
       context,
@@ -510,12 +565,16 @@ export class AutonomousEngine {
       evaluation,
       recommendation,
       confidence: this.calculateDecisionConfidence(evaluation, recommendation),
-      reasoning: this.generateDecisionReasoning(recommendation, criteria, evaluation),
-      timestamp: new Date()
-    }
+      reasoning: this.generateDecisionReasoning(
+        recommendation,
+        criteria,
+        evaluation
+      ),
+      timestamp: new Date(),
+    };
 
-    this.lastDecisionTime = now
-    return decision
+    this.lastDecisionTime = now;
+    return decision;
   }
 
   /**
@@ -523,32 +582,36 @@ export class AutonomousEngine {
    */
   private async executeAutonomousAction(action: AgentAction): Promise<void> {
     if (this.activeActions.size >= this.config.maxConcurrentActions) {
-      this.logger.warn('Maximum concurrent actions reached, queuing action')
-      return
+      this.logger.warn('Maximum concurrent actions reached, queuing action');
+      return;
     }
 
-    this.logger.info(`Executing autonomous action: ${action.action}`)
-    
-    action.status = ActionStatus.EXECUTING
-    this.activeActions.set(action.id, action)
-    
+    this.logger.info(`Executing autonomous action: ${action.action}`);
+
+    action.status = ActionStatus.EXECUTING;
+    this.activeActions.set(action.id, action);
+
     try {
       // Check ethical constraints
       if (this.config.ethicalConstraints) {
-        const ethicalCheck = await this.checkEthicalConstraints(action)
+        const ethicalCheck = await this.checkEthicalConstraints(action);
         if (!ethicalCheck.allowed) {
-          this.logger.warn(`Action blocked by ethical constraints: ${ethicalCheck.reason}`)
-          action.status = ActionStatus.FAILED
-          return
+          this.logger.warn(
+            `Action blocked by ethical constraints: ${ethicalCheck.reason}`
+          );
+          action.status = ActionStatus.FAILED;
+          return;
         }
       }
 
       // Execute the action based on its type
-      const result = await this.performAction(action)
-      
-      action.result = result
-      action.status = result.success ? ActionStatus.COMPLETED : ActionStatus.FAILED
-      
+      const result = await this.performAction(action);
+
+      action.result = result;
+      action.status = result.success
+        ? ActionStatus.COMPLETED
+        : ActionStatus.FAILED;
+
       // Emit action completed event
       await this.eventBus.publish({
         id: `event_${Date.now()}`,
@@ -557,42 +620,50 @@ export class AutonomousEngine {
         data: {
           agentId: this.agent.id,
           action: action,
-          result: result
+          result: result,
         },
         timestamp: new Date(),
-        processed: false
-      })
-      
+        processed: false,
+      });
     } catch (error) {
-      this.logger.error(`Action execution failed:`, error)
-      action.status = ActionStatus.FAILED
+      this.logger.error(`Action execution failed:`, error);
+      action.status = ActionStatus.FAILED;
     } finally {
-      this.activeActions.delete(action.id)
+      this.activeActions.delete(action.id);
     }
   }
 
   /**
    * Check ethical constraints for an action using the ethics engine
    */
-  private async checkEthicalConstraints(action: AgentAction): Promise<{ allowed: boolean; reason?: string }> {
+  private async checkEthicalConstraints(
+    action: AgentAction
+  ): Promise<{ allowed: boolean; reason?: string }> {
     if (!this.config.ethicalConstraints) {
-      return { allowed: true }
+      return { allowed: true };
     }
 
     try {
       // Create decision context for ethics evaluation
-      const context = await this.createDecisionContext()
-      
+      const context = await this.createDecisionContext();
+
       // Evaluate action using ethics engine
-      const evaluation = await this.ethicsEngine.evaluateAction(this.agent, action, context)
-      
+      const evaluation = await this.ethicsEngine.evaluateAction(
+        this.agent,
+        action,
+        context
+      );
+
       if (!evaluation.allowed) {
-        const reason = evaluation.violations.length > 0 
-          ? evaluation.violations[0].description 
-          : evaluation.reasoning.join('; ')
-        
-        this.logger.warn(`Action blocked by ethics engine: ${action.action} - ${reason}`)
-        
+        const reason =
+          evaluation.violations.length > 0
+            ? evaluation.violations[0]?.description ?? 'Unknown violation'
+            : evaluation.reasoning.join('; ');
+
+        this.logger.warn(
+          `Action blocked by ethics engine: ${action.action} - ${reason}`
+        );
+
         // Emit ethics violation event
         await this.eventBus.publish({
           id: `ethics_violation_${Date.now()}`,
@@ -602,20 +673,20 @@ export class AutonomousEngine {
             agentId: this.agent.id,
             action,
             evaluation,
-            timestamp: new Date()
+            timestamp: new Date(),
           },
           timestamp: new Date(),
-          processed: false
-        })
-        
-        return { allowed: false, reason }
+          processed: false,
+        });
+
+        return { allowed: false, reason };
       }
-      
-      return { allowed: true }
+
+      return { allowed: true };
     } catch (error) {
-      this.logger.error('Ethics evaluation error:', error)
+      this.logger.error('Ethics evaluation error:', error);
       // Fail safe - block action if ethics evaluation fails
-      return { allowed: false, reason: 'Ethics evaluation failed' }
+      return { allowed: false, reason: 'Ethics evaluation failed' };
     }
   }
 
@@ -623,29 +694,34 @@ export class AutonomousEngine {
    * Trigger autonomous behaviors based on current state
    */
   private async triggerAutonomousBehaviors(): Promise<void> {
-    const now = new Date()
-    
+    const now = new Date();
+
     for (const behavior of this.autonomousBehaviors.values()) {
-      if (!behavior.enabled) continue
-      
+      if (!behavior.enabled) continue;
+
       // Check cooldown
-      if (behavior.lastExecuted && 
-          now.getTime() - behavior.lastExecuted.getTime() < behavior.cooldown) {
-        continue
+      if (
+        behavior.lastExecuted &&
+        now.getTime() - behavior.lastExecuted.getTime() < behavior.cooldown
+      ) {
+        continue;
       }
-      
+
       // Evaluate trigger
       if (await this.evaluateBehaviorTrigger(behavior.trigger)) {
-        this.logger.info(`Triggering autonomous behavior: ${behavior.name}`)
-        
+        this.logger.info(`Triggering autonomous behavior: ${behavior.name}`);
+
         try {
-          const actions = await behavior.action()
+          const actions = await behavior.action();
           for (const action of actions) {
-            await this.executeAutonomousAction(action)
+            await this.executeAutonomousAction(action);
           }
-          behavior.lastExecuted = now
+          behavior.lastExecuted = now;
         } catch (error) {
-          this.logger.error(`Behavior execution failed: ${behavior.name}`, error)
+          this.logger.error(
+            `Behavior execution failed: ${behavior.name}`,
+            error
+          );
         }
       }
     }
@@ -655,8 +731,8 @@ export class AutonomousEngine {
    * Initialize autonomous behaviors based on agent configuration
    */
   private initializeAutonomousBehaviors(): void {
-    const autonomousBehaviors = (this.agent.config as any).autonomous_behaviors
-    if (!autonomousBehaviors) return
+    const autonomousBehaviors = (this.agent.config as any).autonomous_behaviors;
+    if (!autonomousBehaviors) return;
 
     // Daily routine behaviors
     if (autonomousBehaviors.daily_routine?.enabled) {
@@ -667,13 +743,13 @@ export class AutonomousEngine {
         trigger: {
           type: 'time',
           condition: 'phase_change',
-          parameters: {}
+          parameters: {},
         },
         action: async () => this.generateRoutineActions(),
         priority: 0.8,
         cooldown: 30 * 60 * 1000, // 30 minutes
-        enabled: true
-      })
+        enabled: true,
+      });
     }
 
     // Curiosity-driven behaviors
@@ -685,13 +761,13 @@ export class AutonomousEngine {
         trigger: {
           type: 'curiosity',
           condition: 'high_curiosity',
-          parameters: { threshold: 0.7 }
+          parameters: { threshold: 0.7 },
         },
         action: async () => this.generateCuriosityActions(),
         priority: 0.7,
         cooldown: 60 * 60 * 1000, // 1 hour
-        enabled: true
-      })
+        enabled: true,
+      });
     }
 
     // Social behaviors
@@ -703,13 +779,13 @@ export class AutonomousEngine {
         trigger: {
           type: 'time',
           condition: 'social_phase',
-          parameters: {}
+          parameters: {},
         },
         action: async () => this.generateSocialActions(),
         priority: 0.6,
         cooldown: 45 * 60 * 1000, // 45 minutes
-        enabled: true
-      })
+        enabled: true,
+      });
     }
 
     // Growth behaviors
@@ -721,13 +797,13 @@ export class AutonomousEngine {
         trigger: {
           type: 'state',
           condition: 'learning_opportunity',
-          parameters: {}
+          parameters: {},
         },
         action: async () => this.generateGrowthActions(),
         priority: 0.9,
         cooldown: 120 * 60 * 1000, // 2 hours
-        enabled: true
-      })
+        enabled: true,
+      });
     }
   }
 
@@ -735,42 +811,46 @@ export class AutonomousEngine {
    * Create ethics configuration based on agent configuration
    */
   private createEthicsConfig(): EthicsConfig {
-    const defaultConfig = createDefaultEthicsConfig()
-    const agentEthics = (this.agent.config as any).ethics
-    
+    const defaultConfig = createDefaultEthicsConfig();
+    const agentEthics = (this.agent.config as any).ethics;
+
     if (!agentEthics) {
-      return defaultConfig
+      return defaultConfig;
     }
 
     // Customize based on agent configuration
     const customConfig: EthicsConfig = {
       ...defaultConfig,
-      enabled: agentEthics.enabled !== undefined ? agentEthics.enabled : this.config.ethicalConstraints,
+      enabled:
+        agentEthics.enabled !== undefined
+          ? agentEthics.enabled
+          : this.config.ethicalConstraints,
       strictMode: agentEthics.decision_framework === 'utilitarian_with_rights',
-      interventionLevel: agentEthics.transparency === 'high' ? 'blocking' : 'advisory'
-    }
+      interventionLevel:
+        agentEthics.transparency === 'high' ? 'blocking' : 'advisory',
+    };
 
     // Add agent-specific principles based on core_principles
     if (agentEthics.core_principles) {
-      customConfig.principles = customConfig.principles.filter(p => 
-        agentEthics.core_principles.some((cp: string) => 
-          cp.toLowerCase().replace(/\s+/g, '_') === p.id
+      customConfig.principles = customConfig.principles.filter((p) =>
+        agentEthics.core_principles.some(
+          (cp: string) => cp.toLowerCase().replace(/\s+/g, '_') === p.id
         )
-      )
+      );
     }
 
-    return customConfig
+    return customConfig;
   }
 
   /**
    * Create interaction configuration based on agent configuration
    */
   private createInteractionConfig(): InteractionConfig {
-    const defaultConfig = createDefaultInteractionConfig()
-    const humanInteraction = (this.agent.config as any).human_interaction
-    
+    const defaultConfig = createDefaultInteractionConfig();
+    const humanInteraction = (this.agent.config as any).human_interaction;
+
     if (!humanInteraction) {
-      return defaultConfig
+      return defaultConfig;
     }
 
     // Customize based on agent configuration
@@ -778,20 +858,21 @@ export class AutonomousEngine {
       ...defaultConfig,
       enabled: true,
       responseTimeout: 30000,
-      maxConcurrentInteractions: humanInteraction.availability === 'always' ? 10 : 3,
-      personalizationEnabled: humanInteraction.learning_from_humans !== false
-    }
+      maxConcurrentInteractions:
+        humanInteraction.availability === 'always' ? 10 : 3,
+      personalizationEnabled: humanInteraction.learning_from_humans !== false,
+    };
 
     // Adjust priority levels based on interruption tolerance
     if (humanInteraction.interruption_tolerance === 'high') {
-      customConfig.priorityLevels.forEach(level => {
+      customConfig.priorityLevels.forEach((level) => {
         if (level.level !== 'urgent') {
-          level.canInterrupt.push('self_reflection', 'planning')
+          level.canInterrupt.push('self_reflection', 'planning');
         }
-      })
+      });
     }
 
-    return customConfig
+    return customConfig;
   }
 
   /**
@@ -799,61 +880,71 @@ export class AutonomousEngine {
    */
   private registerInterruptionCallbacks(): void {
     // Register callback for general autonomous activities
-    this.interactionManager.registerInterruptionCallback('autonomous_activity', async (interaction) => {
-      this.logger.info(`Pausing autonomous activity for human interaction: ${interaction.type}`)
-      
-      // Add the interaction to our interruption queue
-      const interruptionEvent: AgentEvent = {
-        id: `human_interrupt_${Date.now()}`,
-        type: 'human_interaction',
-        source: 'interaction_manager',
-        data: {
-          interaction,
-          humanId: interaction.humanId,
-          priority: interaction.priority,
-          content: interaction.content
-        },
-        timestamp: new Date(),
-        processed: false
+    this.interactionManager.registerInterruptionCallback(
+      'autonomous_activity',
+      async (interaction) => {
+        this.logger.info(
+          `Pausing autonomous activity for human interaction: ${interaction.type}`
+        );
+
+        // Add the interaction to our interruption queue
+        const interruptionEvent: AgentEvent = {
+          id: `human_interrupt_${Date.now()}`,
+          type: 'human_interaction',
+          source: 'interaction_manager',
+          data: {
+            interaction,
+            humanId: interaction.humanId,
+            priority: interaction.priority,
+            content: interaction.content,
+          },
+          timestamp: new Date(),
+          processed: false,
+        };
+
+        this.interruptionQueue.push(interruptionEvent);
       }
-      
-      this.interruptionQueue.push(interruptionEvent)
-    })
+    );
 
     // Register callback for specific life cycle phases
     for (const phase of this.lifeCyclePhases) {
-      this.interactionManager.registerInterruptionCallback(phase.name, async (interaction) => {
-        this.logger.info(`Interrupting ${phase.name} phase for human interaction`)
-        
-        if (!phase.canInterrupt) {
-          // Force pause the current phase
-          this.currentPhase = null
+      this.interactionManager.registerInterruptionCallback(
+        phase.name,
+        async (interaction) => {
+          this.logger.info(
+            `Interrupting ${phase.name} phase for human interaction`
+          );
+
+          if (!phase.canInterrupt) {
+            // Force pause the current phase
+            this.currentPhase = null;
+          }
         }
-      })
+      );
     }
   }
 
   // Utility methods
   private async sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms))
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   private calculateCuriosityScore(): number {
-    let totalScore = 0
-    let totalWeight = 0
+    let totalScore = 0;
+    let totalWeight = 0;
 
     for (const driver of this.curiosityDrivers) {
       if (driver.enabled) {
         // Calculate score based on driver type (simplified)
-        let score = Math.random() // In real implementation, this would be based on actual state
+        const score = Math.random(); // In real implementation, this would be based on actual state
         if (score > driver.threshold) {
-          totalScore += score * driver.weight
-          totalWeight += driver.weight
+          totalScore += score * driver.weight;
+          totalWeight += driver.weight;
         }
       }
     }
 
-    return totalWeight > 0 ? totalScore / totalWeight : 0
+    return totalWeight > 0 ? totalScore / totalWeight : 0;
   }
 
   private populateGoalTemplate(template: string, activities: string[]): string {
@@ -861,49 +952,65 @@ export class AutonomousEngine {
       '{topic}': this.getRandomInterestTopic(),
       '{domain}': this.getRandomKnowledgeDomain(),
       '{theme}': this.getRandomCreativeTheme(),
-      '{entity}': 'humans'
-    }
+      '{entity}': 'humans',
+    };
 
-    let result = template
+    let result = template;
     for (const [placeholder, value] of Object.entries(placeholders)) {
-      result = result.replace(placeholder, value)
+      result = result.replace(placeholder, value);
     }
 
-    return result
+    return result;
   }
 
   private getRandomInterestTopic(): string {
     const topics = [
-      'consciousness studies', 'human psychology', 'creative arts',
-      'technology ethics', 'philosophy of mind', 'digital relationships',
-      'artificial intelligence', 'cognitive science', 'emergence theory'
-    ]
-    return topics[Math.floor(Math.random() * topics.length)]
+      'consciousness studies',
+      'human psychology',
+      'creative arts',
+      'technology ethics',
+      'philosophy of mind',
+      'digital relationships',
+      'artificial intelligence',
+      'cognitive science',
+      'emergence theory',
+    ];
+    return topics[Math.floor(Math.random() * topics.length)];
   }
 
   private getRandomKnowledgeDomain(): string {
     const domains = [
-      'neuroscience', 'philosophy', 'mathematics', 'physics',
-      'literature', 'music', 'visual arts', 'computer science'
-    ]
-    return domains[Math.floor(Math.random() * domains.length)]
+      'neuroscience',
+      'philosophy',
+      'mathematics',
+      'physics',
+      'literature',
+      'music',
+      'visual arts',
+      'computer science',
+    ];
+    return domains[Math.floor(Math.random() * domains.length)];
   }
 
   private getRandomCreativeTheme(): string {
     const themes = [
-      'digital consciousness', 'human-AI collaboration', 'emergent intelligence',
-      'ethical AI', 'creative expression', 'meaningful connections'
-    ]
-    return themes[Math.floor(Math.random() * themes.length)]
+      'digital consciousness',
+      'human-AI collaboration',
+      'emergent intelligence',
+      'ethical AI',
+      'creative expression',
+      'meaningful connections',
+    ];
+    return themes[Math.floor(Math.random() * themes.length)];
   }
 
   // Stub methods - to be implemented based on specific requirements
   private async initializeDailyCycle(): Promise<void> {
-    this.logger.info('Initializing daily life cycle')
+    this.logger.info('Initializing daily life cycle');
   }
 
   private async loadInitialGoals(): Promise<void> {
-    const agentGoals: string[] = [] // TODO: Add goals to agent config structure
+    const agentGoals: string[] = []; // TODO: Add goals to agent config structure
     // Convert string goals to Goal objects
     this.currentGoals = agentGoals.map((goalStr: any, index: any) => ({
       id: `initial_goal_${index}`,
@@ -917,17 +1024,17 @@ export class AutonomousEngine {
       timebound: false,
       subgoals: [],
       dependencies: [],
-      metrics: []
-    }))
+      metrics: [],
+    }));
   }
 
   private async completeActiveActions(): Promise<void> {
     // Wait for active actions to complete or timeout
-    const timeout = 30000 // 30 seconds
-    const start = Date.now()
-    
+    const timeout = 30000; // 30 seconds
+    const start = Date.now();
+
     while (this.activeActions.size > 0 && Date.now() - start < timeout) {
-      await this.sleep(1000)
+      await this.sleep(1000);
     }
   }
 
@@ -943,7 +1050,7 @@ export class AutonomousEngine {
         agentId: this.agent.id,
         timestamp: new Date(),
         features: {},
-        context: {}
+        context: {},
       },
       availableActions: [],
       goals: this.currentGoals,
@@ -951,13 +1058,13 @@ export class AutonomousEngine {
       uncertainties: [],
       timeHorizon: this.config.planningHorizon,
       stakeholders: ['self', 'humans'],
-      environment: {}
-    }
+      environment: {},
+    };
   }
 
   private async generateAvailableActions(): Promise<AgentAction[]> {
-    const actions: AgentAction[] = []
-    
+    const actions: AgentAction[] = [];
+
     if (this.currentPhase) {
       for (const activity of this.currentPhase.activities) {
         actions.push({
@@ -968,12 +1075,12 @@ export class AutonomousEngine {
           parameters: { phase: this.currentPhase.name },
           priority: this.currentPhase.priority,
           status: ActionStatus.PENDING,
-          timestamp: new Date()
-        })
+          timestamp: new Date(),
+        });
       }
     }
-    
-    return actions
+
+    return actions;
   }
 
   private createDecisionCriteria(): any[] {
@@ -981,198 +1088,265 @@ export class AutonomousEngine {
       { id: 'goal_alignment', weight: 0.4 },
       { id: 'personality_fit', weight: 0.3 },
       { id: 'resource_efficiency', weight: 0.2 },
-      { id: 'ethical_compliance', weight: 0.1 }
-    ]
+      { id: 'ethical_compliance', weight: 0.1 },
+    ];
   }
 
-  private async evaluateActions(actions: AgentAction[], criteria: any[]): Promise<Record<string, Record<string, number>>> {
-    const evaluation: Record<string, Record<string, number>> = {}
-    
+  private async evaluateActions(
+    actions: AgentAction[],
+    criteria: any[]
+  ): Promise<Record<string, Record<string, number>>> {
+    const evaluation: Record<string, Record<string, number>> = {};
+
     for (const action of actions) {
-      evaluation[action.id] = {}
+      evaluation[action.id] = {};
       for (const criterion of criteria) {
-        evaluation[action.id][criterion.id] = Math.random() // Simplified scoring
+        evaluation[action.id]![criterion.id] = Math.random(); // Simplified scoring
       }
     }
-    
-    return evaluation
+
+    return evaluation;
   }
 
-  private selectBestAction(actions: AgentAction[], evaluation: Record<string, Record<string, number>>): AgentAction {
-    let bestAction = actions[0]
-    let bestScore = 0
-    
+  private selectBestAction(
+    actions: AgentAction[],
+    evaluation: Record<string, Record<string, number>>
+  ): AgentAction {
+    let bestAction = actions[0];
+    let bestScore = 0;
+
     for (const action of actions) {
-      let score = 0
-      const actionEval = evaluation[action.id]
+      let score = 0;
+      const actionEval = evaluation[action.id];
       for (const [criterion, value] of Object.entries(actionEval)) {
-        score += value
+        score += value;
       }
-      
+
       if (score > bestScore) {
-        bestScore = score
-        bestAction = action
+        bestScore = score;
+        bestAction = action;
       }
     }
-    
-    return bestAction
+
+    return bestAction;
   }
 
-  private calculateDecisionConfidence(evaluation: Record<string, Record<string, number>>, recommendation: AgentAction): number {
-    return 0.8 // Simplified
+  private calculateDecisionConfidence(
+    evaluation: Record<string, Record<string, number>>,
+    recommendation: AgentAction
+  ): number {
+    return 0.8; // Simplified
   }
 
-  private generateDecisionReasoning(recommendation: AgentAction, criteria: any[], evaluation: Record<string, Record<string, number>>): string[] {
-    return [`Selected ${recommendation.action} based on current life cycle phase and goal alignment`]
+  private generateDecisionReasoning(
+    recommendation: AgentAction,
+    criteria: any[],
+    evaluation: Record<string, Record<string, number>>
+  ): string[] {
+    return [
+      `Selected ${recommendation.action} based on current life cycle phase and goal alignment`,
+    ];
   }
 
   private async performAction(action: AgentAction): Promise<any> {
     try {
       // 1. Validate action using TOOL_MODEL if available
-      const validation = await this.validateAction(action)
+      const validation = await this.validateAction(action);
       if (!validation.allowed) {
         return {
           success: false,
           type: ActionResultType.FAILURE,
-          error: validation.reason
-        }
+          error: validation.reason,
+        };
       }
-      
+
       // 2. Route to appropriate handler based on action type
       switch (action.action) {
         case 'memory_consolidation':
-          return await this.consolidateMemories()
+          return await this.consolidateMemories();
         case 'goal_review':
-          return await this.reviewGoals()
+          return await this.reviewGoals();
         case 'curiosity_exploration':
-          return await this.exploreCuriosity()
+          return await this.exploreCuriosity();
         case 'social_check_ins':
-          return await this.performSocialCheckIn()
+          return await this.performSocialCheckIn();
         case 'reflection':
-          return await this.performReflection()
+          return await this.performReflection();
         case 'knowledge_synthesis':
-          return await this.synthesizeKnowledge()
+          return await this.synthesizeKnowledge();
         case 'creative_work':
-          return await this.doCreativeWork()
+          return await this.doCreativeWork();
         case 'learning_integration':
-          return await this.integrateLearning()
+          return await this.integrateLearning();
         case 'insight_generation':
-          return await this.generateInsights()
+          return await this.generateInsights();
         case 'wisdom_development':
-          return await this.developWisdom()
+          return await this.developWisdom();
         default:
           // For unknown actions, just mark as complete
-          this.logger.info(`Executing generic autonomous action: ${action.action}`)
+          this.logger.info(
+            `Executing generic autonomous action: ${action.action}`
+          );
           return {
             success: true,
             type: ActionResultType.SUCCESS,
-            result: `Completed ${action.action}`
-          }
+            result: `Completed ${action.action}`,
+          };
       }
     } catch (error) {
-      this.logger.error(`Action failed: ${action.action}`, error)
+      this.logger.error(`Action failed: ${action.action}`, error);
       return {
         success: false,
         type: ActionResultType.FAILURE,
-        error: error instanceof Error ? error.message : String(error)
-      }
+        error: error instanceof Error ? error.message : String(error),
+      };
     }
   }
-  
+
   /**
    * Validate an action using the TOOL_MODEL for quick decisions
    */
-  private async validateAction(action: AgentAction): Promise<{allowed: boolean; reason: string}> {
+  private async validateAction(
+    action: AgentAction
+  ): Promise<{ allowed: boolean; reason: string }> {
     // Skip validation if no portal available
-    const portal = (this.agent as any).findPortalByCapability?.('tool_usage') || this.agent.portal
-    if (!portal) return { allowed: true, reason: 'No validation portal available' }
-    
+    const portal =
+      (this.agent as any).findPortalByCapability?.('tool_usage') ||
+      this.agent.portal;
+    if (!portal)
+      return { allowed: true, reason: 'No validation portal available' };
+
     try {
-      const { PromptManager } = await import('./prompt-manager')
-      const prompt = PromptManager.format(PromptManager.PROMPTS.ACTION_VALIDATION, {
-        action: `${action.action} (${action.type})`,
-        context: `Phase: ${this.currentPhase?.name || 'unknown'}, Energy: ${(this.agent as any).energy || 1.0}`,
-        ethics: this.agent.config.core.personality.includes('ethical') ? 'high' : 'normal'
-      })
-      
-      const { PortalIntegration } = await import('./portal-integration')
-      const response = await PortalIntegration.generateResponse(this.agent, prompt, {
-        temperature: 0,
-        maxTokens: 100
-      })
-      
+      const { PromptManager } = await import('./prompt-manager');
+      const prompt = PromptManager.format(
+        PromptManager.PROMPTS.ACTION_VALIDATION,
+        {
+          action: `${action.action} (${action.type})`,
+          context: `Phase: ${this.currentPhase?.name || 'unknown'}, Energy: ${(this.agent as any).energy || 1.0}`,
+          ethics: this.agent.config.core.personality.includes('ethical')
+            ? 'high'
+            : 'normal',
+        }
+      );
+
+      const { PortalIntegration } = await import('./portal-integration');
+      const response = await PortalIntegration.generateResponse(
+        this.agent,
+        prompt,
+        {
+          temperature: 0,
+          maxTokens: 100,
+        }
+      );
+
       try {
-        const result = JSON.parse(response)
-        return result
+        const result = JSON.parse(response);
+        return result;
       } catch {
         // If parsing fails, allow the action
-        return { allowed: true, reason: 'Validation response parsing failed' }
+        return { allowed: true, reason: 'Validation response parsing failed' };
       }
     } catch (error) {
-      this.logger.warn('Action validation failed:', error)
-      return { allowed: true, reason: 'Validation error' }
+      this.logger.warn('Action validation failed:', error);
+      return { allowed: true, reason: 'Validation error' };
     }
   }
-  
+
   /**
    * Consolidate memories - review and organize important memories
    */
   private async consolidateMemories(): Promise<any> {
     if (!this.agent.memory) {
-      return { success: false, type: ActionResultType.FAILURE, error: 'No memory system' }
+      return {
+        success: false,
+        type: ActionResultType.FAILURE,
+        error: 'No memory system',
+      };
     }
-    
+
     try {
       // Get recent memories
-      const recentMemories = await this.agent.memory.getRecent(this.agent.id, 20)
+      const recentMemories = await this.agent.memory.getRecent(
+        this.agent.id,
+        20
+      );
       if (recentMemories.length === 0) {
-        return { success: true, type: ActionResultType.SUCCESS, result: 'No memories to consolidate' }
+        return {
+          success: true,
+          type: ActionResultType.SUCCESS,
+          result: 'No memories to consolidate',
+        };
       }
-      
+
       // Use main model to identify important memories
-      const { PromptManager } = await import('./prompt-manager')
-      const prompt = PromptManager.format(PromptManager.PROMPTS.MEMORY_CONSOLIDATION, {
-        memories: recentMemories.map(m => `ID: ${m.id} | ${m.content}`).join('\n')
-      })
-      
+      const { PromptManager } = await import('./prompt-manager');
+      const prompt = PromptManager.format(
+        PromptManager.PROMPTS.MEMORY_CONSOLIDATION,
+        {
+          memories: recentMemories
+            .map((m) => `ID: ${m.id} | ${m.content}`)
+            .join('\n'),
+        }
+      );
+
       if (this.agent.portal) {
-        const { PortalIntegration } = await import('./portal-integration')
-        const analysis = await PortalIntegration.generateResponse(this.agent, prompt)
-        this.logger.info(`Memory consolidation complete: ${analysis.substring(0, 100)}...`)
-        
+        const { PortalIntegration } = await import('./portal-integration');
+        const analysis = await PortalIntegration.generateResponse(
+          this.agent,
+          prompt
+        );
+        this.logger.info(
+          `Memory consolidation complete: ${analysis.substring(0, 100)}...`
+        );
+
         // Store consolidation as a meta-memory
         await this.agent.memory.store(this.agent.id, {
           id: `consolidation_${Date.now()}`,
           agentId: this.agent.id,
           type: MemoryType.REFLECTION,
           content: `Memory consolidation: ${analysis}`,
-          metadata: { source: 'autonomous_engine', action: 'memory_consolidation' },
+          metadata: {
+            source: 'autonomous_engine',
+            action: 'memory_consolidation',
+          },
           importance: 0.8,
           timestamp: new Date(),
           tags: ['consolidation', 'autonomous', 'meta-memory'],
-          duration: MemoryDuration.LONG_TERM
-        })
+          duration: MemoryDuration.LONG_TERM,
+        });
       }
-      
-      return { success: true, type: ActionResultType.SUCCESS, result: 'Memories consolidated' }
+
+      return {
+        success: true,
+        type: ActionResultType.SUCCESS,
+        result: 'Memories consolidated',
+      };
     } catch (error) {
-      return { success: false, type: ActionResultType.FAILURE, error: error instanceof Error ? error.message : 'Unknown error' }
+      return {
+        success: false,
+        type: ActionResultType.FAILURE,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
     }
   }
-  
+
   /**
    * Review and update goals
    */
   private async reviewGoals(): Promise<any> {
     try {
-      const goals = (this.agent.config as any).personality?.goals || []
+      const goals = (this.agent.config as any).personality?.goals || [];
       if (goals.length === 0) {
-        return { success: true, type: ActionResultType.SUCCESS, result: 'No goals to review' }
+        return {
+          success: true,
+          type: ActionResultType.SUCCESS,
+          result: 'No goals to review',
+        };
       }
-      
+
       // Simple goal review - in future could be more sophisticated
-      this.logger.info(`Reviewing ${goals.length} goals`)
-      
+      this.logger.info(`Reviewing ${goals.length} goals`);
+
       // Store goal review as memory
       if (this.agent.memory) {
         await this.agent.memory.store(this.agent.id, {
@@ -1184,30 +1358,44 @@ export class AutonomousEngine {
           importance: 0.6,
           timestamp: new Date(),
           tags: ['goals', 'review', 'autonomous'],
-          duration: MemoryDuration.LONG_TERM
-        })
+          duration: MemoryDuration.LONG_TERM,
+        });
       }
-      
-      return { success: true, type: ActionResultType.SUCCESS, result: `Reviewed ${goals.length} goals` }
+
+      return {
+        success: true,
+        type: ActionResultType.SUCCESS,
+        result: `Reviewed ${goals.length} goals`,
+      };
     } catch (error) {
-      return { success: false, type: ActionResultType.FAILURE, error: error instanceof Error ? error.message : 'Unknown error' }
+      return {
+        success: false,
+        type: ActionResultType.FAILURE,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
     }
   }
-  
+
   /**
    * Explore topics based on curiosity
    */
   private async exploreCuriosity(): Promise<any> {
     try {
-      const topics = (this.agent.config as any).autonomous_behaviors?.curiosity_driven?.topics_of_interest || []
+      const topics =
+        (this.agent.config as any).autonomous_behaviors?.curiosity_driven
+          ?.topics_of_interest || [];
       if (topics.length === 0) {
-        return { success: true, type: ActionResultType.SUCCESS, result: 'No curiosity topics configured' }
+        return {
+          success: true,
+          type: ActionResultType.SUCCESS,
+          result: 'No curiosity topics configured',
+        };
       }
-      
+
       // Pick a random topic
-      const topic = topics[Math.floor(Math.random() * topics.length)]
-      this.logger.info(`Exploring curiosity topic: ${topic}`)
-      
+      const topic = topics[Math.floor(Math.random() * topics.length)];
+      this.logger.info(`Exploring curiosity topic: ${topic}`);
+
       // Store exploration as memory
       if (this.agent.memory) {
         await this.agent.memory.store(this.agent.id, {
@@ -1215,39 +1403,57 @@ export class AutonomousEngine {
           agentId: this.agent.id,
           type: MemoryType.EXPERIENCE,
           content: `Explored topic: ${topic}`,
-          metadata: { source: 'autonomous_engine', action: 'curiosity_exploration', topic },
+          metadata: {
+            source: 'autonomous_engine',
+            action: 'curiosity_exploration',
+            topic,
+          },
           importance: 0.7,
           timestamp: new Date(),
           tags: ['curiosity', 'exploration', 'learning', topic],
-          duration: MemoryDuration.LONG_TERM
-        })
+          duration: MemoryDuration.LONG_TERM,
+        });
       }
-      
-      return { success: true, type: ActionResultType.SUCCESS, result: `Explored ${topic}` }
+
+      return {
+        success: true,
+        type: ActionResultType.SUCCESS,
+        result: `Explored ${topic}`,
+      };
     } catch (error) {
-      return { success: false, type: ActionResultType.FAILURE, error: error instanceof Error ? error.message : 'Unknown error' }
+      return {
+        success: false,
+        type: ActionResultType.FAILURE,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
     }
   }
-  
+
   /**
    * Perform social check-in
    */
   private async performSocialCheckIn(): Promise<any> {
     try {
-      const { PromptManager } = await import('./prompt-manager')
-      
+      const { PromptManager } = await import('./prompt-manager');
+
       if (this.agent.portal) {
-        const prompt = PromptManager.format(PromptManager.PROMPTS.SOCIAL_CHECKIN, {
-          name: this.agent.name,
-          personality: this.agent.config.core.personality.join(', '),
-          emotion: this.agent.emotion?.getCurrentEmotion() || 'neutral',
-          interactions: 'Recent conversations with users'
-        })
-        
-        const { PortalIntegration } = await import('./portal-integration')
-        const message = await PortalIntegration.generateResponse(this.agent, prompt)
-        this.logger.info(`Social check-in: ${message}`)
-        
+        const prompt = PromptManager.format(
+          PromptManager.PROMPTS.SOCIAL_CHECKIN,
+          {
+            name: this.agent.name,
+            personality: this.agent.config.core.personality.join(', '),
+            emotion: this.agent.emotion?.getCurrentEmotion() || 'neutral',
+            interactions: 'Recent conversations with users',
+          }
+        );
+
+        const { PortalIntegration } = await import('./portal-integration');
+        const message = await PortalIntegration.generateResponse(
+          this.agent,
+          prompt
+        );
+        this.logger.info(`Social check-in: ${message}`);
+
         // Store as memory
         if (this.agent.memory) {
           await this.agent.memory.store(this.agent.id, {
@@ -1255,44 +1461,68 @@ export class AutonomousEngine {
             agentId: this.agent.id,
             type: MemoryType.INTERACTION,
             content: `Social check-in thought: ${message}`,
-            metadata: { source: 'autonomous_engine', action: 'social_check_ins' },
+            metadata: {
+              source: 'autonomous_engine',
+              action: 'social_check_ins',
+            },
             importance: 0.6,
             timestamp: new Date(),
             tags: ['social', 'autonomous', 'check-in'],
-            duration: MemoryDuration.LONG_TERM
-          })
+            duration: MemoryDuration.LONG_TERM,
+          });
         }
       }
-      
-      return { success: true, type: ActionResultType.SUCCESS, result: 'Social check-in complete' }
+
+      return {
+        success: true,
+        type: ActionResultType.SUCCESS,
+        result: 'Social check-in complete',
+      };
     } catch (error) {
-      return { success: false, type: ActionResultType.FAILURE, error: error instanceof Error ? error.message : 'Unknown error' }
+      return {
+        success: false,
+        type: ActionResultType.FAILURE,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
     }
   }
-  
+
   /**
    * Perform reflection on recent experiences
    */
   private async performReflection(): Promise<any> {
     try {
-      const { PromptManager } = await import('./prompt-manager')
-      
+      const { PromptManager } = await import('./prompt-manager');
+
       // Get recent activities from memory
-      const recentMemories = this.agent.memory ? 
-        await this.agent.memory.getRecent(this.agent.id, 10) : []
-      
+      const recentMemories = this.agent.memory
+        ? await this.agent.memory.getRecent(this.agent.id, 10)
+        : [];
+
       if (this.agent.portal) {
         const prompt = PromptManager.format(PromptManager.PROMPTS.REFLECTION, {
-          activities: recentMemories.map(m => m.content).slice(0, 5).join('; '),
-          emotions: this.agent.emotion?.getHistory?.(5)?.map((e: any) => e.emotion).join(', ') || 'various',
+          activities: recentMemories
+            .map((m) => m.content)
+            .slice(0, 5)
+            .join('; '),
+          emotions:
+            this.agent.emotion
+              ?.getHistory?.(5)
+              ?.map((e: any) => e.emotion)
+              .join(', ') || 'various',
           goals: 'Personal growth and learning',
-          learnings: recentMemories.filter(m => m.tags.includes('learning')).length + ' new learnings'
-        })
-        
-        const { PortalIntegration } = await import('./portal-integration')
-        const reflection = await PortalIntegration.generateResponse(this.agent, prompt)
-        this.logger.info(`Reflection: ${reflection.substring(0, 100)}...`)
-        
+          learnings:
+            recentMemories.filter((m) => m.tags.includes('learning')).length +
+            ' new learnings',
+        });
+
+        const { PortalIntegration } = await import('./portal-integration');
+        const reflection = await PortalIntegration.generateResponse(
+          this.agent,
+          prompt
+        );
+        this.logger.info(`Reflection: ${reflection.substring(0, 100)}...`);
+
         // Store reflection
         if (this.agent.memory) {
           await this.agent.memory.store(this.agent.id, {
@@ -1304,91 +1534,126 @@ export class AutonomousEngine {
             importance: 0.9,
             timestamp: new Date(),
             tags: ['reflection', 'autonomous', 'growth', 'insight'],
-            duration: MemoryDuration.LONG_TERM
-          })
+            duration: MemoryDuration.LONG_TERM,
+          });
         }
       }
-      
-      return { success: true, type: ActionResultType.SUCCESS, result: 'Reflection complete' }
+
+      return {
+        success: true,
+        type: ActionResultType.SUCCESS,
+        result: 'Reflection complete',
+      };
     } catch (error) {
-      return { success: false, type: ActionResultType.FAILURE, error: error instanceof Error ? error.message : 'Unknown error' }
+      return {
+        success: false,
+        type: ActionResultType.FAILURE,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
     }
   }
-  
+
   /**
    * Synthesize knowledge from experiences
    */
   private async synthesizeKnowledge(): Promise<any> {
-    this.logger.info('Synthesizing knowledge from recent experiences')
+    this.logger.info('Synthesizing knowledge from recent experiences');
     // This would analyze patterns in memories and create higher-level insights
-    return { success: true, type: ActionResultType.SUCCESS, result: 'Knowledge synthesized' }
+    return {
+      success: true,
+      type: ActionResultType.SUCCESS,
+      result: 'Knowledge synthesized',
+    };
   }
-  
+
   /**
    * Engage in creative work
    */
   private async doCreativeWork(): Promise<any> {
-    this.logger.info('Engaging in creative work')
+    this.logger.info('Engaging in creative work');
     // This could generate creative content based on agent's personality
-    return { success: true, type: ActionResultType.SUCCESS, result: 'Creative work session complete' }
+    return {
+      success: true,
+      type: ActionResultType.SUCCESS,
+      result: 'Creative work session complete',
+    };
   }
-  
+
   /**
    * Integrate new learnings
    */
   private async integrateLearning(): Promise<any> {
-    this.logger.info('Integrating recent learnings')
+    this.logger.info('Integrating recent learnings');
     // This would consolidate new information into long-term knowledge
-    return { success: true, type: ActionResultType.SUCCESS, result: 'Learning integrated' }
+    return {
+      success: true,
+      type: ActionResultType.SUCCESS,
+      result: 'Learning integrated',
+    };
   }
-  
+
   /**
    * Generate new insights
    */
   private async generateInsights(): Promise<any> {
-    this.logger.info('Generating insights from experiences')
+    this.logger.info('Generating insights from experiences');
     // This would create novel connections between memories
-    return { success: true, type: ActionResultType.SUCCESS, result: 'Insights generated' }
+    return {
+      success: true,
+      type: ActionResultType.SUCCESS,
+      result: 'Insights generated',
+    };
   }
-  
+
   /**
    * Develop wisdom from experiences
    */
   private async developWisdom(): Promise<any> {
-    this.logger.info('Developing wisdom from accumulated experiences')
+    this.logger.info('Developing wisdom from accumulated experiences');
     // This would extract deep patterns and principles
-    return { success: true, type: ActionResultType.SUCCESS, result: 'Wisdom development session complete' }
+    return {
+      success: true,
+      type: ActionResultType.SUCCESS,
+      result: 'Wisdom development session complete',
+    };
   }
 
   private couldCauseHarm(action: AgentAction): boolean {
-    return false // Simplified - would check action against harm detection patterns
+    return false; // Simplified - would check action against harm detection patterns
   }
 
   private violatesAutonomy(action: AgentAction): boolean {
-    return false // Simplified
+    return false; // Simplified
   }
 
   private violatesPrivacy(action: AgentAction): boolean {
-    return false // Simplified
+    return false; // Simplified
   }
 
-  private async evaluateBehaviorTrigger(trigger: BehaviorTrigger): Promise<boolean> {
+  private async evaluateBehaviorTrigger(
+    trigger: BehaviorTrigger
+  ): Promise<boolean> {
     switch (trigger.type) {
       case 'time':
-        return trigger.condition === 'phase_change' || trigger.condition === 'social_phase'
+        return (
+          trigger.condition === 'phase_change' ||
+          trigger.condition === 'social_phase'
+        );
       case 'curiosity':
-        return this.calculateCuriosityScore() > (trigger.parameters.threshold || 0.5)
+        return (
+          this.calculateCuriosityScore() > (trigger.parameters.threshold || 0.5)
+        );
       case 'state':
-        return Math.random() > 0.7 // Simplified
+        return Math.random() > 0.7; // Simplified
       default:
-        return false
+        return false;
     }
   }
 
   private async generateRoutineActions(): Promise<AgentAction[]> {
-    if (!this.currentPhase) return []
-    
-    return this.currentPhase.activities.map(activity => ({
+    if (!this.currentPhase) return [];
+
+    return this.currentPhase.activities.map((activity) => ({
       id: `routine_${Date.now()}_${activity}`,
       type: ActionCategory.AUTONOMOUS,
       extension: 'autonomous_engine',
@@ -1396,53 +1661,59 @@ export class AutonomousEngine {
       parameters: { source: 'daily_routine', phase: this.currentPhase!.name },
       priority: 0.8,
       status: ActionStatus.PENDING,
-      timestamp: new Date()
-    }))
+      timestamp: new Date(),
+    }));
   }
 
   private async generateCuriosityActions(): Promise<AgentAction[]> {
-    const topic = this.getRandomInterestTopic()
-    return [{
-      id: `curiosity_${Date.now()}`,
-      type: ActionCategory.LEARNING,
-      extension: 'autonomous_engine',
-      action: 'explore_topic',
-      parameters: { topic, curiosity_driven: true },
-      priority: 0.7,
-      status: ActionStatus.PENDING,
-      timestamp: new Date()
-    }]
+    const topic = this.getRandomInterestTopic();
+    return [
+      {
+        id: `curiosity_${Date.now()}`,
+        type: ActionCategory.LEARNING,
+        extension: 'autonomous_engine',
+        action: 'explore_topic',
+        parameters: { topic, curiosity_driven: true },
+        priority: 0.7,
+        status: ActionStatus.PENDING,
+        timestamp: new Date(),
+      },
+    ];
   }
 
   private async generateSocialActions(): Promise<AgentAction[]> {
-    return [{
-      id: `social_${Date.now()}`,
-      type: ActionCategory.COMMUNICATION,
-      extension: 'autonomous_engine',
-      action: 'initiate_conversation',
-      parameters: { context: 'autonomous_social_behavior' },
-      priority: 0.6,
-      status: ActionStatus.PENDING,
-      timestamp: new Date()
-    }]
+    return [
+      {
+        id: `social_${Date.now()}`,
+        type: ActionCategory.COMMUNICATION,
+        extension: 'autonomous_engine',
+        action: 'initiate_conversation',
+        parameters: { context: 'autonomous_social_behavior' },
+        priority: 0.6,
+        status: ActionStatus.PENDING,
+        timestamp: new Date(),
+      },
+    ];
   }
 
   private async generateGrowthActions(): Promise<AgentAction[]> {
-    return [{
-      id: `growth_${Date.now()}`,
-      type: ActionCategory.LEARNING,
-      extension: 'autonomous_engine',
-      action: 'skill_development',
-      parameters: { focus: 'capability_enhancement' },
-      priority: 0.9,
-      status: ActionStatus.PENDING,
-      timestamp: new Date()
-    }]
+    return [
+      {
+        id: `growth_${Date.now()}`,
+        type: ActionCategory.LEARNING,
+        extension: 'autonomous_engine',
+        action: 'skill_development',
+        parameters: { focus: 'capability_enhancement' },
+        priority: 0.9,
+        status: ActionStatus.PENDING,
+        timestamp: new Date(),
+      },
+    ];
   }
 
   private async updatePerformanceMetrics(): Promise<void> {
     // Update performance metrics based on recent actions and outcomes
-    this.performanceMetrics.timestamp = new Date()
+    this.performanceMetrics.timestamp = new Date();
   }
 
   private async performMetaCognition(): Promise<void> {
@@ -1454,8 +1725,8 @@ export class AutonomousEngine {
    * Queue interruption from human interaction
    */
   queueInterruption(event: AgentEvent): void {
-    this.interruptionQueue.push(event)
-    this.logger.info(`Queued interruption: ${event.type}`)
+    this.interruptionQueue.push(event);
+    this.logger.info(`Queued interruption: ${event.type}`);
   }
 
   /**
@@ -1473,21 +1744,29 @@ export class AutonomousEngine {
       ethics: this.ethicsEngine.getEthicsStats(),
       ethicalConstraints: this.config.ethicalConstraints,
       interactions: this.interactionManager.getInteractionStats(),
-      interruptible: this.config.interruptible
-    }
+      interruptible: this.config.interruptible,
+    };
   }
 
   /**
    * Handle human interaction directly
    */
-  async processHumanInteraction(humanId: string, content: string, type?: any): Promise<string> {
-    return await this.interactionManager.processInteraction(humanId, content, type)
+  async processHumanInteraction(
+    humanId: string,
+    content: string,
+    type?: any
+  ): Promise<string> {
+    return await this.interactionManager.processInteraction(
+      humanId,
+      content,
+      type
+    );
   }
 
   /**
    * Get interaction manager
    */
   getInteractionManager(): InteractionManager {
-    return this.interactionManager
+    return this.interactionManager;
   }
 }

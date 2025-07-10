@@ -1,107 +1,116 @@
 /**
  * Cognition Discovery System for SYMindX
- * 
+ *
  * This module provides automatic discovery and registration of cognition modules,
  * making it easy for users to add new reasoning approaches without modifying core files.
  */
 
-import { ModuleRegistry } from '../../types/agent'
-import { runtimeLogger } from '../../utils/logger'
-import * as fs from 'fs'
-import * as path from 'path'
+import * as fs from 'fs';
+import * as path from 'path';
+
+import { ModuleRegistry } from '../../types/agent';
+import { runtimeLogger } from '../../utils/logger';
 
 export interface CognitionPackage {
-  name: string
-  version: string
-  main: string
+  name: string;
+  version: string;
+  main: string;
   symindx?: {
     cognition: {
-      type: string
-      factory: string
-      autoRegister?: boolean
-      paradigms?: string[]
-      category?: 'basic' | 'advanced' | 'specialized' | 'experimental'
-    }
-  }
+      type: string;
+      factory: string;
+      autoRegister?: boolean;
+      paradigms?: string[];
+      category?: 'basic' | 'advanced' | 'specialized' | 'experimental';
+    };
+  };
 }
 
 export interface DiscoveredCognition {
-  name: string
-  path: string
-  factory: string
-  type: string
-  category: string
-  paradigms: string[]
-  packageInfo: CognitionPackage
+  name: string;
+  path: string;
+  factory: string;
+  type: string;
+  category: string;
+  paradigms: string[];
+  packageInfo: CognitionPackage;
 }
 
 /**
  * Cognition Discovery Manager
  */
 export class CognitionDiscovery {
-  private cognitionDir: string
-  private nodeModulesDir: string
+  private cognitionDir: string;
+  private nodeModulesDir: string;
 
   constructor(projectRoot: string) {
-    this.cognitionDir = path.join(projectRoot, 'src', 'modules', 'cognition')
-    this.nodeModulesDir = path.join(projectRoot, 'node_modules')
+    this.cognitionDir = path.join(projectRoot, 'src', 'modules', 'cognition');
+    this.nodeModulesDir = path.join(projectRoot, 'node_modules');
   }
 
   /**
    * Discover all available cognition modules
    */
   async discoverCognitions(): Promise<DiscoveredCognition[]> {
-    const cognitions: DiscoveredCognition[] = []
+    const cognitions: DiscoveredCognition[] = [];
 
     // 1. Discover built-in cognition modules (in src/modules/cognition/)
-    const builtInCognitions = await this.discoverBuiltInCognitions()
-    cognitions.push(...builtInCognitions)
+    const builtInCognitions = await this.discoverBuiltInCognitions();
+    cognitions.push(...builtInCognitions);
 
     // 2. Discover node_modules cognition modules (packages with symindx.cognition config)
-    const nodeModuleCognitions = await this.discoverNodeModuleCognitions()
-    cognitions.push(...nodeModuleCognitions)
+    const nodeModuleCognitions = await this.discoverNodeModuleCognitions();
+    cognitions.push(...nodeModuleCognitions);
 
     // 3. Discover local cognition packages (in cognitions/ directory if it exists)
-    const localCognitions = await this.discoverLocalCognitions()
-    cognitions.push(...localCognitions)
+    const localCognitions = await this.discoverLocalCognitions();
+    cognitions.push(...localCognitions);
 
-    runtimeLogger.info(`🔍 Discovered ${cognitions.length} cognition modules`)
-    return cognitions
+    runtimeLogger.info(`🔍 Discovered ${cognitions.length} cognition modules`);
+    return cognitions;
   }
 
   /**
    * Discover built-in cognition modules in src/modules/cognition/
    */
   private async discoverBuiltInCognitions(): Promise<DiscoveredCognition[]> {
-    const cognitions: DiscoveredCognition[] = []
+    const cognitions: DiscoveredCognition[] = [];
 
     try {
       if (!fs.existsSync(this.cognitionDir)) {
-        return cognitions
+        return cognitions;
       }
 
-      const entries = fs.readdirSync(this.cognitionDir, { withFileTypes: true })
+      const entries = fs.readdirSync(this.cognitionDir, {
+        withFileTypes: true,
+      });
 
       for (const entry of entries) {
         if (entry.isDirectory() && !this.isSystemFile(entry.name)) {
-          const cognitionPath = path.join(this.cognitionDir, entry.name)
-          const indexPath = path.join(cognitionPath, 'index.ts')
-          const packageJsonPath = path.join(cognitionPath, 'package.json')
+          const cognitionPath = path.join(this.cognitionDir, entry.name);
+          const indexPath = path.join(cognitionPath, 'index.ts');
+          const packageJsonPath = path.join(cognitionPath, 'package.json');
 
           if (fs.existsSync(indexPath)) {
             let packageInfo: CognitionPackage = {
               name: entry.name,
               version: '1.0.0',
-              main: 'index.ts'
-            }
+              main: 'index.ts',
+            };
 
             // Try to load package.json if it exists
             if (fs.existsSync(packageJsonPath)) {
               try {
-                const packageContent = fs.readFileSync(packageJsonPath, 'utf-8')
-                packageInfo = JSON.parse(packageContent)
+                const packageContent = fs.readFileSync(
+                  packageJsonPath,
+                  'utf-8'
+                );
+                packageInfo = JSON.parse(packageContent);
               } catch (error) {
-                runtimeLogger.warn(`⚠️ Failed to parse package.json for ${entry.name}:`, error)
+                runtimeLogger.warn(
+                  `⚠️ Failed to parse package.json for ${entry.name}:`,
+                  error
+                );
               }
             }
 
@@ -112,44 +121,49 @@ export class CognitionDiscovery {
               type: 'built-in',
               category: this.inferCognitionCategory(entry.name),
               paradigms: this.getDefaultParadigms(entry.name),
-              packageInfo
-            })
+              packageInfo,
+            });
           }
         }
       }
     } catch (error) {
-      runtimeLogger.warn('⚠️ Failed to discover built-in cognition modules:', error)
+      runtimeLogger.warn(
+        '⚠️ Failed to discover built-in cognition modules:',
+        error
+      );
     }
 
-    return cognitions
+    return cognitions;
   }
 
   /**
    * Discover cognition modules in node_modules (packages with symindx.cognition config)
    */
   private async discoverNodeModuleCognitions(): Promise<DiscoveredCognition[]> {
-    const cognitions: DiscoveredCognition[] = []
+    const cognitions: DiscoveredCognition[] = [];
 
     try {
       if (!fs.existsSync(this.nodeModulesDir)) {
-        return cognitions
+        return cognitions;
       }
 
-      const entries = fs.readdirSync(this.nodeModulesDir, { withFileTypes: true })
+      const entries = fs.readdirSync(this.nodeModulesDir, {
+        withFileTypes: true,
+      });
 
       for (const entry of entries) {
         if (entry.isDirectory()) {
-          const packagePath = path.join(this.nodeModulesDir, entry.name)
-          const packageJsonPath = path.join(packagePath, 'package.json')
+          const packagePath = path.join(this.nodeModulesDir, entry.name);
+          const packageJsonPath = path.join(packagePath, 'package.json');
 
           if (fs.existsSync(packageJsonPath)) {
             try {
-              const packageContent = fs.readFileSync(packageJsonPath, 'utf-8')
-              const packageInfo: CognitionPackage = JSON.parse(packageContent)
+              const packageContent = fs.readFileSync(packageJsonPath, 'utf-8');
+              const packageInfo: CognitionPackage = JSON.parse(packageContent);
 
               // Check if this is a SYMindX cognition module
               if (packageInfo.symindx?.cognition) {
-                const cognitionConfig = packageInfo.symindx.cognition
+                const cognitionConfig = packageInfo.symindx.cognition;
 
                 cognitions.push({
                   name: packageInfo.name,
@@ -158,8 +172,8 @@ export class CognitionDiscovery {
                   type: cognitionConfig.type,
                   category: cognitionConfig.category || 'basic',
                   paradigms: cognitionConfig.paradigms || [],
-                  packageInfo
-                })
+                  packageInfo,
+                });
               }
             } catch (error) {
               // Ignore packages with invalid package.json
@@ -168,38 +182,48 @@ export class CognitionDiscovery {
         }
       }
     } catch (error) {
-      runtimeLogger.warn('⚠️ Failed to discover node_modules cognition modules:', error)
+      runtimeLogger.warn(
+        '⚠️ Failed to discover node_modules cognition modules:',
+        error
+      );
     }
 
-    return cognitions
+    return cognitions;
   }
 
   /**
    * Discover local cognition packages (in project cognitions/ directory)
    */
   private async discoverLocalCognitions(): Promise<DiscoveredCognition[]> {
-    const cognitions: DiscoveredCognition[] = []
-    const localCognitionsDir = path.join(path.dirname(this.cognitionDir), '..', '..', 'cognitions')
+    const cognitions: DiscoveredCognition[] = [];
+    const localCognitionsDir = path.join(
+      path.dirname(this.cognitionDir),
+      '..',
+      '..',
+      'cognitions'
+    );
 
     try {
       if (!fs.existsSync(localCognitionsDir)) {
-        return cognitions
+        return cognitions;
       }
 
-      const entries = fs.readdirSync(localCognitionsDir, { withFileTypes: true })
+      const entries = fs.readdirSync(localCognitionsDir, {
+        withFileTypes: true,
+      });
 
       for (const entry of entries) {
         if (entry.isDirectory()) {
-          const cognitionPath = path.join(localCognitionsDir, entry.name)
-          const packageJsonPath = path.join(cognitionPath, 'package.json')
+          const cognitionPath = path.join(localCognitionsDir, entry.name);
+          const packageJsonPath = path.join(cognitionPath, 'package.json');
 
           if (fs.existsSync(packageJsonPath)) {
             try {
-              const packageContent = fs.readFileSync(packageJsonPath, 'utf-8')
-              const packageInfo: CognitionPackage = JSON.parse(packageContent)
+              const packageContent = fs.readFileSync(packageJsonPath, 'utf-8');
+              const packageInfo: CognitionPackage = JSON.parse(packageContent);
 
               if (packageInfo.symindx?.cognition) {
-                const cognitionConfig = packageInfo.symindx.cognition
+                const cognitionConfig = packageInfo.symindx.cognition;
 
                 cognitions.push({
                   name: packageInfo.name,
@@ -208,75 +232,98 @@ export class CognitionDiscovery {
                   type: cognitionConfig.type,
                   category: cognitionConfig.category || 'basic',
                   paradigms: cognitionConfig.paradigms || [],
-                  packageInfo
-                })
+                  packageInfo,
+                });
               }
             } catch (error) {
-              runtimeLogger.warn(`⚠️ Failed to parse package.json for local cognition ${entry.name}:`, error)
+              runtimeLogger.warn(
+                `⚠️ Failed to parse package.json for local cognition ${entry.name}:`,
+                error
+              );
             }
           }
         }
       }
     } catch (error) {
-      runtimeLogger.warn('⚠️ Failed to discover local cognition modules:', error)
+      runtimeLogger.warn(
+        '⚠️ Failed to discover local cognition modules:',
+        error
+      );
     }
 
-    return cognitions
+    return cognitions;
   }
 
   /**
    * Auto-register discovered cognition modules with the registry
    */
   async autoRegisterCognitions(registry: ModuleRegistry): Promise<void> {
-    const cognitions = await this.discoverCognitions()
-    const registeredCognitions: string[] = []
+    const cognitions = await this.discoverCognitions();
+    const registeredCognitions: string[] = [];
 
     for (const cognition of cognitions) {
       try {
         // Only auto-register if explicitly enabled or it's a built-in cognition
-        const shouldAutoRegister = cognition.packageInfo.symindx?.cognition?.autoRegister !== false
+        const shouldAutoRegister =
+          cognition.packageInfo.symindx?.cognition?.autoRegister !== false;
 
         if (shouldAutoRegister) {
-          await this.registerCognition(registry, cognition)
-          registeredCognitions.push(cognition.name)
+          await this.registerCognition(registry, cognition);
+          registeredCognitions.push(cognition.name);
         }
       } catch (error) {
-        runtimeLogger.warn(`⚠️ Failed to auto-register cognition ${cognition.name}:`, error)
+        runtimeLogger.warn(
+          `⚠️ Failed to auto-register cognition ${cognition.name}:`,
+          error
+        );
       }
     }
-    
+
     if (registeredCognitions.length > 0) {
-      runtimeLogger.info(`🧠 Cognition modules registered: ${registeredCognitions.join(', ')}`)
+      runtimeLogger.info(
+        `🧠 Cognition modules registered: ${registeredCognitions.join(', ')}`
+      );
     }
   }
 
   /**
    * Register a specific cognition module with the registry
    */
-  async registerCognition(registry: ModuleRegistry, cognition: DiscoveredCognition): Promise<void> {
+  async registerCognition(
+    registry: ModuleRegistry,
+    cognition: DiscoveredCognition
+  ): Promise<void> {
     try {
-      let modulePath: string
+      let modulePath: string;
 
       if (cognition.type === 'built-in') {
         // Built-in cognition - use relative import
-        modulePath = path.join(cognition.path, 'index')
+        modulePath = path.join(cognition.path, 'index');
       } else {
         // External cognition - use the main field from package.json
-        modulePath = path.join(cognition.path, cognition.packageInfo.main || 'index')
+        modulePath = path.join(
+          cognition.path,
+          cognition.packageInfo.main || 'index'
+        );
       }
 
-      const cognitionModule = await import(modulePath)
-      const factory = cognitionModule[cognition.factory]
+      const cognitionModule = await import(modulePath);
+      const factory = cognitionModule[cognition.factory];
 
       if (typeof factory === 'function') {
-        registry.registerCognitionFactory(cognition.name, factory)
+        registry.registerCognitionFactory(cognition.name, factory);
         // Individual registration logs removed - summary logged after all registrations
       } else {
-        runtimeLogger.warn(`⚠️ Cognition ${cognition.name} does not export factory function ${cognition.factory}`)
+        runtimeLogger.warn(
+          `⚠️ Cognition ${cognition.name} does not export factory function ${cognition.factory}`
+        );
       }
     } catch (error) {
-      runtimeLogger.error(`❌ Failed to register cognition ${cognition.name}:`, error)
-      throw error
+      runtimeLogger.error(
+        `❌ Failed to register cognition ${cognition.name}:`,
+        error
+      );
+      throw error;
     }
   }
 
@@ -284,17 +331,21 @@ export class CognitionDiscovery {
    * Get all discovered cognition categories
    */
   async getCognitionCategories(): Promise<string[]> {
-    const cognitions = await this.discoverCognitions()
-    const categories = new Set(cognitions.map(cognition => cognition.category))
-    return Array.from(categories).sort()
+    const cognitions = await this.discoverCognitions();
+    const categories = new Set(
+      cognitions.map((cognition) => cognition.category)
+    );
+    return Array.from(categories).sort();
   }
 
   /**
    * Get cognition modules by category
    */
-  async getCognitionsByCategory(category: string): Promise<DiscoveredCognition[]> {
-    const cognitions = await this.discoverCognitions()
-    return cognitions.filter(cognition => cognition.category === category)
+  async getCognitionsByCategory(
+    category: string
+  ): Promise<DiscoveredCognition[]> {
+    const cognitions = await this.discoverCognitions();
+    return cognitions.filter((cognition) => cognition.category === category);
   }
 
   /**
@@ -303,8 +354,8 @@ export class CognitionDiscovery {
   private toPascalCase(str: string): string {
     return str
       .split('-')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join('')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join('');
   }
 
   /**
@@ -313,7 +364,7 @@ export class CognitionDiscovery {
   private isSystemFile(name: string): boolean {
     const systemFiles = [
       'cognition.ts',
-      'cognition-discovery.ts', 
+      'cognition-discovery.ts',
       'index.ts',
       'package.json',
       'hybrid-reasoning.ts',
@@ -323,26 +374,30 @@ export class CognitionDiscovery {
       'probabilistic-reasoning.ts',
       'reinforcement-learning.ts',
       'rule-based-reasoning.ts',
-      'theory-of-mind.ts'
-    ]
-    return systemFiles.includes(name)
+      'theory-of-mind.ts',
+    ];
+    return systemFiles.includes(name);
   }
 
   /**
    * Infer cognition category from name
    */
   private inferCognitionCategory(cognitionName: string): string {
-    const basicCognitions = ['reactive', 'unified', 'simple']
-    const advancedCognitions = ['htn-planner', 'hybrid', 'meta-reasoner']
-    const specializedCognitions = ['theory-of-mind', 'probabilistic', 'rule-based']
-    const experimentalCognitions = ['quantum', 'neural', 'evolutionary']
+    const basicCognitions = ['reactive', 'unified', 'simple'];
+    const advancedCognitions = ['htn-planner', 'hybrid', 'meta-reasoner'];
+    const specializedCognitions = [
+      'theory-of-mind',
+      'probabilistic',
+      'rule-based',
+    ];
+    const experimentalCognitions = ['quantum', 'neural', 'evolutionary'];
 
-    if (basicCognitions.includes(cognitionName)) return 'basic'
-    if (advancedCognitions.includes(cognitionName)) return 'advanced'
-    if (specializedCognitions.includes(cognitionName)) return 'specialized'
-    if (experimentalCognitions.includes(cognitionName)) return 'experimental'
-    
-    return 'basic' // default
+    if (basicCognitions.includes(cognitionName)) return 'basic';
+    if (advancedCognitions.includes(cognitionName)) return 'advanced';
+    if (specializedCognitions.includes(cognitionName)) return 'specialized';
+    if (experimentalCognitions.includes(cognitionName)) return 'experimental';
+
+    return 'basic'; // default
   }
 
   /**
@@ -350,22 +405,24 @@ export class CognitionDiscovery {
    */
   private getDefaultParadigms(cognitionName: string): string[] {
     const paradigmMap: Record<string, string[]> = {
-      'reactive': ['reactive', 'stimulus-response'],
+      reactive: ['reactive', 'stimulus-response'],
       'htn-planner': ['hierarchical', 'planning', 'goal-oriented'],
-      'hybrid': ['reactive', 'planning', 'multi-paradigm'],
-      'unified': ['adaptive', 'multi-modal', 'context-aware'],
+      hybrid: ['reactive', 'planning', 'multi-paradigm'],
+      unified: ['adaptive', 'multi-modal', 'context-aware'],
       'theory-of-mind': ['social', 'mental-modeling', 'perspective-taking'],
-      'probabilistic': ['bayesian', 'uncertainty', 'statistical'],
-      'rule-based': ['logical', 'rule-driven', 'expert-system']
-    }
+      probabilistic: ['bayesian', 'uncertainty', 'statistical'],
+      'rule-based': ['logical', 'rule-driven', 'expert-system'],
+    };
 
-    return paradigmMap[cognitionName] || ['general']
+    return paradigmMap[cognitionName] || ['general'];
   }
 }
 
 /**
  * Create cognition discovery instance
  */
-export function createCognitionDiscovery(projectRoot: string): CognitionDiscovery {
-  return new CognitionDiscovery(projectRoot)
+export function createCognitionDiscovery(
+  projectRoot: string
+): CognitionDiscovery {
+  return new CognitionDiscovery(projectRoot);
 }

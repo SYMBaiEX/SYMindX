@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
 import { Box, Text, useInput } from 'ink';
+import React, { useState } from 'react';
+
 import { useAgentData } from '../hooks/useAgentData.js';
 
 export const AgentList: React.FC = () => {
@@ -7,7 +8,7 @@ export const AgentList: React.FC = () => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [showDetails, setShowDetails] = useState(false);
 
-  useInput((input, key) => {
+  useInput((_input, key) => {
     if (agentData.agents.length === 0) return;
     
     if (key.upArrow && selectedIndex > 0) {

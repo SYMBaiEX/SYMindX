@@ -5,16 +5,19 @@
  * Make this look cool as fuck!
  */
 
-import { Command } from 'commander'
-import inquirer from 'inquirer'
-import chalk from 'chalk'
-import gradient from 'gradient-string'
-import figlet from 'figlet'
-import boxen from 'boxen'
-import ora from 'ora'
 import blessed from 'blessed'
 import contrib from 'blessed-contrib'
+import boxen from 'boxen'
+import chalk from 'chalk'
+import { Command } from 'commander'
+import figlet from 'figlet'
+import gradient from 'gradient-string'
+import inquirer from 'inquirer'
+import ora from 'ora'
 import WebSocket from 'ws'
+
+import { SYMindXRuntime } from '../core/runtime'
+import { RuntimeConfig, LogLevel } from '../types/agent'
 import { 
   displayBanner, 
   createSpinner, 
@@ -28,8 +31,6 @@ import {
   createStatusDashboard,
   animateShutdown
 } from '../utils/cli-ui'
-import { SYMindXRuntime } from '../core/runtime'
-import { RuntimeConfig, LogLevel } from '../types/agent'
 import { Logger } from '../utils/logger'
 
 const logger = new Logger('cli')
@@ -78,7 +79,7 @@ class AwesomeSYMindXCLI {
       apiUrl: process.env.SYMINDX_API_URL || `http://localhost:${port}`,
       wsUrl: process.env.SYMINDX_WS_URL || `ws://localhost:${port}/ws`,
       autoConnect: process.env.SYMINDX_AUTO_CONNECT === 'true',
-      defaultAgent: process.env.SYMINDX_DEFAULT_AGENT,
+      ...(process.env.SYMINDX_DEFAULT_AGENT && { defaultAgent: process.env.SYMINDX_DEFAULT_AGENT }),
       colors: process.env.NO_COLOR !== 'true',
       verbose: process.env.SYMINDX_VERBOSE === 'true'
     }

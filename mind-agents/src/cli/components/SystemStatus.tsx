@@ -1,5 +1,6 @@
-import React from 'react';
 import { Box, Text } from 'ink';
+import React from 'react';
+
 import { useSystemStats } from '../hooks/useSystemStats.js';
 
 export const SystemStatus: React.FC = () => {

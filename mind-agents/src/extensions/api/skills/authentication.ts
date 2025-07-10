@@ -1,18 +1,25 @@
 /**
  * Authentication Skill for API Extension
- * 
+ *
  * Provides actions related to authentication and authorization.
  */
 
-import { ExtensionAction, Agent, ActionResult, ActionResultType, ActionCategory } from '../../../types/agent'
-import { ApiExtension } from '../index'
-import { Request } from 'express'
+import { Request } from 'express';
+
+import {
+  ExtensionAction,
+  Agent,
+  ActionResult,
+  ActionResultType,
+  ActionCategory,
+} from '../../../types/agent';
+import { ApiExtension } from '../index';
 
 export class AuthenticationSkill {
-  private extension: ApiExtension
+  private extension: ApiExtension;
 
   constructor(extension: ApiExtension) {
-    this.extension = extension
+    this.extension = extension;
   }
 
   /**
@@ -26,59 +33,62 @@ export class AuthenticationSkill {
         category: ActionCategory.SYSTEM,
         parameters: { token: 'string', type: 'string' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
-          return this.validateToken(agent, params)
-        }
+          return this.validateToken(agent, params);
+        },
       },
-      
+
       validate_api_key: {
         name: 'validate_api_key',
         description: 'Validate API key',
         category: ActionCategory.SYSTEM,
         parameters: { apiKey: 'string', permissions: 'array' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
-          return this.validateApiKey(agent, params)
-        }
+          return this.validateApiKey(agent, params);
+        },
       },
-      
+
       check_permissions: {
         name: 'check_permissions',
         description: 'Check user permissions for specific action',
         category: ActionCategory.SYSTEM,
         parameters: { userId: 'string', action: 'string', resource: 'string' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
-          return this.checkPermissions(agent, params)
-        }
+          return this.checkPermissions(agent, params);
+        },
       },
-      
+
       generate_session: {
         name: 'generate_session',
         description: 'Generate new session for authenticated user',
         category: ActionCategory.SYSTEM,
         parameters: { userId: 'string', metadata: 'object' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
-          return this.generateSession(agent, params)
-        }
+          return this.generateSession(agent, params);
+        },
       },
-      
+
       revoke_session: {
         name: 'revoke_session',
         description: 'Revoke user session',
         category: ActionCategory.SYSTEM,
         parameters: { sessionId: 'string', reason: 'string' },
         execute: async (agent: Agent, params: any): Promise<ActionResult> => {
-          return this.revokeSession(agent, params)
-        }
-      }
-    }
+          return this.revokeSession(agent, params);
+        },
+      },
+    };
   }
 
   /**
    * Validate authentication token
    */
-  private async validateToken(agent: Agent, params: any): Promise<ActionResult> {
+  private async validateToken(
+    agent: Agent,
+    params: any
+  ): Promise<ActionResult> {
     try {
-      const { token, type = 'bearer' } = params
-      
+      const { token, type = 'bearer' } = params;
+
       if (!token) {
         return {
           type: ActionResultType.FAILURE,
@@ -86,15 +96,15 @@ export class AuthenticationSkill {
           error: 'Token is required',
           metadata: {
             action: 'validate_token',
-            timestamp: new Date().toISOString()
-          }
-        }
+            timestamp: new Date().toISOString(),
+          },
+        };
       }
-      
+
       // Basic token validation logic
-      const isValid = await this.performTokenValidation(token, type)
-      const decoded = isValid ? this.decodeToken(token) : null
-      
+      const isValid = await this.performTokenValidation(token, type);
+      const decoded = isValid ? this.decodeToken(token) : null;
+
       return {
         type: ActionResultType.SUCCESS,
         success: true,
@@ -102,14 +112,14 @@ export class AuthenticationSkill {
           isValid,
           decoded,
           tokenType: type,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         },
         metadata: {
           action: 'validate_token',
           tokenType: type,
-          isValid
-        }
-      }
+          isValid,
+        },
+      };
     } catch (error) {
       return {
         type: ActionResultType.FAILURE,
@@ -117,19 +127,22 @@ export class AuthenticationSkill {
         error: `Failed to validate token: ${error instanceof Error ? error.message : String(error)}`,
         metadata: {
           action: 'validate_token',
-          timestamp: new Date().toISOString()
-        }
-      }
+          timestamp: new Date().toISOString(),
+        },
+      };
     }
   }
 
   /**
    * Validate API key
    */
-  private async validateApiKey(agent: Agent, params: any): Promise<ActionResult> {
+  private async validateApiKey(
+    agent: Agent,
+    params: any
+  ): Promise<ActionResult> {
     try {
-      const { apiKey, permissions = [] } = params
-      
+      const { apiKey, permissions = [] } = params;
+
       if (!apiKey) {
         return {
           type: ActionResultType.FAILURE,
@@ -137,28 +150,28 @@ export class AuthenticationSkill {
           error: 'API key is required',
           metadata: {
             action: 'validate_api_key',
-            timestamp: new Date().toISOString()
-          }
-        }
+            timestamp: new Date().toISOString(),
+          },
+        };
       }
-      
+
       // Check if API key exists in configuration
-      const config = this.extension.config
-      const isValid = config.settings.auth?.apiKeys?.includes(apiKey) || false
-      
+      const config = this.extension.config;
+      const isValid = config.settings.auth?.apiKeys?.includes(apiKey) || false;
+
       return {
         type: ActionResultType.SUCCESS,
         success: true,
         result: {
           isValid,
           permissions: isValid ? permissions : [],
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         },
         metadata: {
           action: 'validate_api_key',
-          isValid
-        }
-      }
+          isValid,
+        },
+      };
     } catch (error) {
       return {
         type: ActionResultType.FAILURE,
@@ -166,22 +179,29 @@ export class AuthenticationSkill {
         error: `Failed to validate API key: ${error instanceof Error ? error.message : String(error)}`,
         metadata: {
           action: 'validate_api_key',
-          timestamp: new Date().toISOString()
-        }
-      }
+          timestamp: new Date().toISOString(),
+        },
+      };
     }
   }
 
   /**
    * Check user permissions
    */
-  private async checkPermissions(agent: Agent, params: any): Promise<ActionResult> {
+  private async checkPermissions(
+    agent: Agent,
+    params: any
+  ): Promise<ActionResult> {
     try {
-      const { userId, action, resource } = params
-      
+      const { userId, action, resource } = params;
+
       // Basic permission checking logic
-      const hasPermission = await this.performPermissionCheck(userId, action, resource)
-      
+      const hasPermission = await this.performPermissionCheck(
+        userId,
+        action,
+        resource
+      );
+
       return {
         type: ActionResultType.SUCCESS,
         success: true,
@@ -190,14 +210,14 @@ export class AuthenticationSkill {
           userId,
           action,
           resource,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         },
         metadata: {
           action: 'check_permissions',
           userId,
-          hasPermission
-        }
-      }
+          hasPermission,
+        },
+      };
     } catch (error) {
       return {
         type: ActionResultType.FAILURE,
@@ -205,45 +225,48 @@ export class AuthenticationSkill {
         error: `Failed to check permissions: ${error instanceof Error ? error.message : String(error)}`,
         metadata: {
           action: 'check_permissions',
-          timestamp: new Date().toISOString()
-        }
-      }
+          timestamp: new Date().toISOString(),
+        },
+      };
     }
   }
 
   /**
    * Generate new session
    */
-  private async generateSession(agent: Agent, params: any): Promise<ActionResult> {
+  private async generateSession(
+    agent: Agent,
+    params: any
+  ): Promise<ActionResult> {
     try {
-      const { userId, metadata = {} } = params
-      
-      const sessionId = this.generateSessionId()
-      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
-      
+      const { userId, metadata = {} } = params;
+
+      const sessionId = this.generateSessionId();
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
       const session = {
         sessionId,
         userId,
         createdAt: new Date().toISOString(),
         expiresAt: expiresAt.toISOString(),
-        metadata
-      }
-      
+        metadata,
+      };
+
       // Store session (in practice, this would be stored in a database)
-      
+
       return {
         type: ActionResultType.SUCCESS,
         success: true,
         result: {
           session,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         },
         metadata: {
           action: 'generate_session',
           userId,
-          sessionId
-        }
-      }
+          sessionId,
+        },
+      };
     } catch (error) {
       return {
         type: ActionResultType.FAILURE,
@@ -251,39 +274,42 @@ export class AuthenticationSkill {
         error: `Failed to generate session: ${error instanceof Error ? error.message : String(error)}`,
         metadata: {
           action: 'generate_session',
-          timestamp: new Date().toISOString()
-        }
-      }
+          timestamp: new Date().toISOString(),
+        },
+      };
     }
   }
 
   /**
    * Revoke session
    */
-  private async revokeSession(agent: Agent, params: any): Promise<ActionResult> {
+  private async revokeSession(
+    agent: Agent,
+    params: any
+  ): Promise<ActionResult> {
     try {
-      const { sessionId, reason = 'manual_revocation' } = params
-      
+      const { sessionId, reason = 'manual_revocation' } = params;
+
       // Revoke session (in practice, this would update the database)
       const revoked = {
         sessionId,
         revokedAt: new Date().toISOString(),
-        reason
-      }
-      
+        reason,
+      };
+
       return {
         type: ActionResultType.SUCCESS,
         success: true,
         result: {
           revoked,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         },
         metadata: {
           action: 'revoke_session',
           sessionId,
-          reason
-        }
-      }
+          reason,
+        },
+      };
     } catch (error) {
       return {
         type: ActionResultType.FAILURE,
@@ -291,21 +317,24 @@ export class AuthenticationSkill {
         error: `Failed to revoke session: ${error instanceof Error ? error.message : String(error)}`,
         metadata: {
           action: 'revoke_session',
-          timestamp: new Date().toISOString()
-        }
-      }
+          timestamp: new Date().toISOString(),
+        },
+      };
     }
   }
 
   /**
    * Perform token validation
    */
-  private async performTokenValidation(token: string, type: string): Promise<boolean> {
+  private async performTokenValidation(
+    token: string,
+    type: string
+  ): Promise<boolean> {
     // Basic validation - in practice this would use JWT verification or similar
     if (type === 'bearer') {
-      return token.length > 10 && token.startsWith('sk-')
+      return token.length > 10 && token.startsWith('sk-');
     }
-    return false
+    return false;
   }
 
   /**
@@ -316,22 +345,30 @@ export class AuthenticationSkill {
     return {
       sub: 'user123',
       iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + 3600
-    }
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    };
   }
 
   /**
    * Perform permission check
    */
-  private async performPermissionCheck(userId: string, action: string, resource: string): Promise<boolean> {
+  private async performPermissionCheck(
+    userId: string,
+    action: string,
+    resource: string
+  ): Promise<boolean> {
     // Basic permission logic - in practice this would check against a proper RBAC system
-    return true // Placeholder
+    return true; // Placeholder
   }
 
   /**
    * Generate session ID
    */
   private generateSessionId(): string {
-    return 'sess_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+    return (
+      'sess_' +
+      Math.random().toString(36).substring(2, 15) +
+      Math.random().toString(36).substring(2, 15)
+    );
   }
 }

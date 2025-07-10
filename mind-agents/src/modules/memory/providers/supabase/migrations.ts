@@ -1,23 +1,27 @@
 /**
  * Supabase Memory Database Migrations for SYMindX
- * 
+ *
  * Enhanced migration system for Supabase with multi-tier memory support,
  * vector embeddings, and shared memory pools
  */
 
-import { SupabaseClient } from '@supabase/supabase-js'
+import { SupabaseClient } from '@supabase/supabase-js';
 
 /**
  * Migration 001: Enhanced memory schema with tiers and vector support
  */
-export async function migration_001_enhanced_memory_schema(client: SupabaseClient): Promise<void> {
+export async function migration_001_enhanced_memory_schema(
+  client: SupabaseClient
+): Promise<void> {
   // Enable pgvector extension
   try {
     await client.rpc('exec_sql', {
-      sql: `CREATE EXTENSION IF NOT EXISTS vector;`
-    })
+      sql: `CREATE EXTENSION IF NOT EXISTS vector;`,
+    });
   } catch (error) {
-    console.log('pgvector extension may already exist or require higher privileges')
+    console.log(
+      'pgvector extension may already exist or require higher privileges'
+    );
   }
 
   // Create memories table with enhanced fields
@@ -40,8 +44,8 @@ export async function migration_001_enhanced_memory_schema(client: SupabaseClien
         created_at TIMESTAMPTZ DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW()
       )
-    `
-  })
+    `,
+  });
 
   // Create indexes for performance
   await client.rpc('exec_sql', {
@@ -54,25 +58,27 @@ export async function migration_001_enhanced_memory_schema(client: SupabaseClien
       CREATE INDEX IF NOT EXISTS idx_memories_expires_at ON memories(expires_at);
       CREATE INDEX IF NOT EXISTS idx_memories_tier ON memories(tier);
       CREATE INDEX IF NOT EXISTS idx_memories_tags ON memories USING GIN (tags);
-    `
-  })
+    `,
+  });
 
   // Create vector similarity index
   const { error: vectorIndexError } = await client.rpc('exec_sql', {
-    sql: `CREATE INDEX IF NOT EXISTS idx_memories_embedding ON memories USING ivfflat (embedding vector_cosine_ops);`
-  })
-  
+    sql: `CREATE INDEX IF NOT EXISTS idx_memories_embedding ON memories USING ivfflat (embedding vector_cosine_ops);`,
+  });
+
   if (vectorIndexError) {
-    console.log('Vector index creation failed - ivfflat may not be available')
+    console.log('Vector index creation failed - ivfflat may not be available');
   }
 
-  console.log('✅ Created enhanced memories table with tier support')
+  console.log('✅ Created enhanced memories table with tier support');
 }
 
 /**
  * Migration 002: Shared memory pools and mappings
  */
-export async function migration_002_shared_memory_pools(client: SupabaseClient): Promise<void> {
+export async function migration_002_shared_memory_pools(
+  client: SupabaseClient
+): Promise<void> {
   // Create shared memory pools table
   await client.rpc('exec_sql', {
     sql: `
@@ -82,8 +88,8 @@ export async function migration_002_shared_memory_pools(client: SupabaseClient):
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW()
       )
-    `
-  })
+    `,
+  });
 
   // Create shared memory mappings table
   await client.rpc('exec_sql', {
@@ -98,8 +104,8 @@ export async function migration_002_shared_memory_pools(client: SupabaseClient):
         PRIMARY KEY (memory_id, pool_id),
         FOREIGN KEY (pool_id) REFERENCES shared_memory_pools(pool_id) ON DELETE CASCADE
       )
-    `
-  })
+    `,
+  });
 
   // Create indexes
   await client.rpc('exec_sql', {
@@ -107,16 +113,18 @@ export async function migration_002_shared_memory_pools(client: SupabaseClient):
       CREATE INDEX IF NOT EXISTS idx_shared_mappings_pool ON shared_memory_mappings(pool_id);
       CREATE INDEX IF NOT EXISTS idx_shared_mappings_shared_by ON shared_memory_mappings(shared_by);
       CREATE INDEX IF NOT EXISTS idx_shared_pools_created_at ON shared_memory_pools(created_at);
-    `
-  })
+    `,
+  });
 
-  console.log('✅ Created shared memory pools and mappings tables')
+  console.log('✅ Created shared memory pools and mappings tables');
 }
 
 /**
  * Migration 003: Vector search and utility functions
  */
-export async function migration_003_vector_search_functions(client: SupabaseClient): Promise<void> {
+export async function migration_003_vector_search_functions(
+  client: SupabaseClient
+): Promise<void> {
   // Enhanced vector search function with tier support
   await client.rpc('exec_sql', {
     sql: `
@@ -175,8 +183,8 @@ export async function migration_003_vector_search_functions(client: SupabaseClie
         ORDER BY similarity DESC
         LIMIT match_count;
       $$;
-    `
-  })
+    `,
+  });
 
   // Memory consolidation function
   await client.rpc('exec_sql', {
@@ -204,8 +212,8 @@ export async function migration_003_vector_search_functions(client: SupabaseClie
         RETURN consolidated_count;
       END;
       $$;
-    `
-  })
+    `,
+  });
 
   // Memory statistics function
   await client.rpc('exec_sql', {
@@ -242,16 +250,18 @@ export async function migration_003_vector_search_functions(client: SupabaseClie
         ) t
         GROUP BY tier, type, tier_count, type_count;
       $$;
-    `
-  })
+    `,
+  });
 
-  console.log('✅ Created vector search and utility functions')
+  console.log('✅ Created vector search and utility functions');
 }
 
 /**
  * Migration 004: Triggers and automated processes
  */
-export async function migration_004_triggers_and_automation(client: SupabaseClient): Promise<void> {
+export async function migration_004_triggers_and_automation(
+  client: SupabaseClient
+): Promise<void> {
   // Update timestamp trigger
   await client.rpc('exec_sql', {
     sql: `
@@ -262,8 +272,8 @@ export async function migration_004_triggers_and_automation(client: SupabaseClie
         RETURN NEW;
       END;
       $$ language 'plpgsql';
-    `
-  })
+    `,
+  });
 
   // Apply trigger to memories table
   await client.rpc('exec_sql', {
@@ -273,8 +283,8 @@ export async function migration_004_triggers_and_automation(client: SupabaseClie
         BEFORE UPDATE ON memories 
         FOR EACH ROW 
         EXECUTE FUNCTION update_updated_at_column();
-    `
-  })
+    `,
+  });
 
   // Apply trigger to shared_memory_pools table
   await client.rpc('exec_sql', {
@@ -284,8 +294,8 @@ export async function migration_004_triggers_and_automation(client: SupabaseClie
         BEFORE UPDATE ON shared_memory_pools 
         FOR EACH ROW 
         EXECUTE FUNCTION update_updated_at_column();
-    `
-  })
+    `,
+  });
 
   // Auto-expire short-term memories function
   await client.rpc('exec_sql', {
@@ -306,16 +316,18 @@ export async function migration_004_triggers_and_automation(client: SupabaseClie
         RETURN deleted_count;
       END;
       $$;
-    `
-  })
+    `,
+  });
 
-  console.log('✅ Created triggers and automation functions')
+  console.log('✅ Created triggers and automation functions');
 }
 
 /**
  * Migration 005: RPC helper functions
  */
-export async function migration_005_rpc_helpers(client: SupabaseClient): Promise<void> {
+export async function migration_005_rpc_helpers(
+  client: SupabaseClient
+): Promise<void> {
   // Function to check if tables exist
   await client.rpc('exec_sql', {
     sql: `
@@ -328,8 +340,8 @@ export async function migration_005_rpc_helpers(client: SupabaseClient): Promise
         RAISE NOTICE 'Memories table initialization checked';
       END;
       $$;
-    `
-  })
+    `,
+  });
 
   await client.rpc('exec_sql', {
     sql: `
@@ -342,8 +354,8 @@ export async function migration_005_rpc_helpers(client: SupabaseClient): Promise
         RAISE NOTICE 'Shared memory tables initialization checked';
       END;
       $$;
-    `
-  })
+    `,
+  });
 
   // Function to get available extensions
   await client.rpc('exec_sql', {
@@ -355,8 +367,8 @@ export async function migration_005_rpc_helpers(client: SupabaseClient): Promise
       AS $$
         SELECT extname::TEXT as name FROM pg_extension;
       $$;
-    `
-  })
+    `,
+  });
 
   // Helper function to execute SQL (for migrations)
   const { error: execSqlError } = await client.rpc('exec_sql', {
@@ -370,14 +382,16 @@ export async function migration_005_rpc_helpers(client: SupabaseClient): Promise
         EXECUTE sql;
       END;
       $$;
-    `
-  })
-  
+    `,
+  });
+
   if (execSqlError) {
-    console.log('exec_sql function may already exist or require higher privileges')
+    console.log(
+      'exec_sql function may already exist or require higher privileges'
+    );
   }
 
-  console.log('✅ Created RPC helper functions')
+  console.log('✅ Created RPC helper functions');
 }
 
 /**
@@ -387,46 +401,52 @@ export const MIGRATIONS = [
   {
     name: '001_enhanced_memory_schema',
     up: migration_001_enhanced_memory_schema,
-    description: 'Enhanced memory schema with tiers, vector support, and context'
+    description:
+      'Enhanced memory schema with tiers, vector support, and context',
   },
   {
     name: '002_shared_memory_pools',
     up: migration_002_shared_memory_pools,
-    description: 'Shared memory pools and mappings for multi-agent collaboration'
+    description:
+      'Shared memory pools and mappings for multi-agent collaboration',
   },
   {
     name: '003_vector_search_functions',
     up: migration_003_vector_search_functions,
-    description: 'Vector search and utility functions for memory operations'
+    description: 'Vector search and utility functions for memory operations',
   },
   {
     name: '004_triggers_and_automation',
     up: migration_004_triggers_and_automation,
-    description: 'Triggers and automated processes for memory management'
+    description: 'Triggers and automated processes for memory management',
   },
   {
     name: '005_rpc_helpers',
     up: migration_005_rpc_helpers,
-    description: 'RPC helper functions for provider initialization'
-  }
-]
+    description: 'RPC helper functions for provider initialization',
+  },
+];
 
 /**
  * Check if migrations table exists
  */
-export async function checkMigrationsTable(client: SupabaseClient): Promise<boolean> {
+export async function checkMigrationsTable(
+  client: SupabaseClient
+): Promise<boolean> {
   const { data, error } = await client
     .from('supabase_migrations')
     .select('id')
-    .limit(1)
+    .limit(1);
 
-  return !error
+  return !error;
 }
 
 /**
  * Create migrations tracking table
  */
-export async function createMigrationsTable(client: SupabaseClient): Promise<void> {
+export async function createMigrationsTable(
+  client: SupabaseClient
+): Promise<void> {
   await client.rpc('exec_sql', {
     sql: `
       CREATE TABLE IF NOT EXISTS supabase_migrations (
@@ -435,21 +455,21 @@ export async function createMigrationsTable(client: SupabaseClient): Promise<voi
         batch INTEGER NOT NULL,
         migration_time TIMESTAMPTZ DEFAULT NOW()
       )
-    `
-  })
+    `,
+  });
 }
 
 /**
  * Run all pending migrations
  */
 export async function runMigrations(client: SupabaseClient): Promise<void> {
-  console.log('🔄 Running Supabase memory migrations...')
+  console.log('🔄 Running Supabase memory migrations...');
 
   // Check if migrations table exists
-  const hasTable = await checkMigrationsTable(client)
+  const hasTable = await checkMigrationsTable(client);
   if (!hasTable) {
-    await createMigrationsTable(client)
-    console.log('✅ Created migrations tracking table')
+    await createMigrationsTable(client);
+    console.log('✅ Created migrations tracking table');
   }
 
   // Get current migration batch
@@ -458,50 +478,48 @@ export async function runMigrations(client: SupabaseClient): Promise<void> {
     .select('batch')
     .order('batch', { ascending: false })
     .limit(1)
-    .single()
-  
-  const currentBatch = (lastBatch?.batch || 0) + 1
+    .single();
+
+  const currentBatch = (lastBatch?.batch || 0) + 1;
 
   // Get already run migrations
   const { data: completedMigrations } = await client
     .from('supabase_migrations')
-    .select('name')
-  
-  const completedNames = (completedMigrations || []).map(m => m.name)
+    .select('name');
+
+  const completedNames = (completedMigrations || []).map((m) => m.name);
 
   // Run pending migrations
-  let migrationsRun = 0
-  
+  let migrationsRun = 0;
+
   for (const migration of MIGRATIONS) {
     if (!completedNames.includes(migration.name)) {
-      console.log(`🔄 Running migration: ${migration.name}`)
-      console.log(`   ${migration.description}`)
-      
+      console.log(`🔄 Running migration: ${migration.name}`);
+      console.log(`   ${migration.description}`);
+
       try {
-        await migration.up(client)
-        
+        await migration.up(client);
+
         // Record migration as completed
-        await client
-          .from('supabase_migrations')
-          .insert({
-            name: migration.name,
-            batch: currentBatch
-          })
-        
-        console.log(`✅ Migration completed: ${migration.name}`)
-        migrationsRun++
+        await client.from('supabase_migrations').insert({
+          name: migration.name,
+          batch: currentBatch,
+        });
+
+        console.log(`✅ Migration completed: ${migration.name}`);
+        migrationsRun++;
       } catch (error) {
-        console.error(`❌ Migration failed: ${migration.name}`, error)
-        throw error
+        console.error(`❌ Migration failed: ${migration.name}`, error);
+        throw error;
       }
     } else {
-      console.log(`⏭️  Migration already applied: ${migration.name}`)
+      console.log(`⏭️  Migration already applied: ${migration.name}`);
     }
   }
 
   if (migrationsRun > 0) {
-    console.log(`✅ Applied ${migrationsRun} new migrations successfully`)
+    console.log(`✅ Applied ${migrationsRun} new migrations successfully`);
   } else {
-    console.log('✅ All migrations were already applied')
+    console.log('✅ All migrations were already applied');
   }
 }

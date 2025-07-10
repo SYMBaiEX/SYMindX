@@ -1,14 +1,14 @@
 /**
  * PostgreSQL Memory Provider Migrations
- * 
+ *
  * Database migrations for the enhanced PostgreSQL memory provider
  */
 
 export interface Migration {
-  version: string
-  description: string
-  up: string
-  down?: string
+  version: string;
+  description: string;
+  up: string;
+  down?: string;
 }
 
 export const migrations: Migration[] = [
@@ -49,7 +49,7 @@ export const migrations: Migration[] = [
     `,
     down: `
       DROP TABLE IF EXISTS memories CASCADE;
-    `
+    `,
   },
   {
     version: '2.0.0',
@@ -192,21 +192,29 @@ export const migrations: Migration[] = [
       ALTER TABLE memories 
       DROP COLUMN IF EXISTS tier,
       DROP COLUMN IF EXISTS context;
-    `
-  }
-]
+    `,
+  },
+];
 
 /**
  * Run a migration
  */
-export async function runMigration(client: any, migration: Migration, direction: 'up' | 'down' = 'up'): Promise<void> {
-  const sql = direction === 'up' ? migration.up : migration.down
+export async function runMigration(
+  client: any,
+  migration: Migration,
+  direction: 'up' | 'down' = 'up'
+): Promise<void> {
+  const sql = direction === 'up' ? migration.up : migration.down;
   if (!sql) {
-    throw new Error(`No ${direction} migration for version ${migration.version}`)
+    throw new Error(
+      `No ${direction} migration for version ${migration.version}`
+    );
   }
-  
-  console.log(`Running migration ${migration.version} (${direction}): ${migration.description}`)
-  await client.query(sql)
+
+  console.log(
+    `Running migration ${migration.version} (${direction}): ${migration.description}`
+  );
+  await client.query(sql);
 }
 
 /**
@@ -216,20 +224,23 @@ export async function getCurrentVersion(client: any): Promise<string | null> {
   try {
     const result = await client.query(
       'SELECT version FROM schema_versions ORDER BY applied_at DESC LIMIT 1'
-    )
-    return result.rows[0]?.version || null
+    );
+    return result.rows[0]?.version || null;
   } catch (error) {
     // Table doesn't exist yet
-    return null
+    return null;
   }
 }
 
 /**
  * Record migration as applied
  */
-export async function recordMigration(client: any, migration: Migration): Promise<void> {
+export async function recordMigration(
+  client: any,
+  migration: Migration
+): Promise<void> {
   await client.query(
     'INSERT INTO schema_versions (version, description) VALUES ($1, $2)',
     [migration.version, migration.description]
-  )
+  );
 }

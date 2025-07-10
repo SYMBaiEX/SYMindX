@@ -1,6 +1,6 @@
 /**
  * SYMindX Public API
- * 
+ *
  * This file provides the main public interface for the SYMindX runtime system,
  * exposing all the essential components and factory functions for building
  * AI agent applications.
@@ -17,17 +17,17 @@ export { createExtensionLoader } from './core/extension-loader';
 export type * from './types/index';
 
 // === MODULES ===
-export { 
-  type ModuleFactories, 
-  createModule, 
-  registerCoreModules
+export {
+  type ModuleFactories,
+  createModule,
+  registerCoreModules,
 } from './modules/index';
 
 // Import module factories
-import { createMemoryProvider } from './modules/memory/providers/index';
-import { createEmotionModule } from './modules/emotion/index';
-import { createCognitionModule } from './modules/cognition/index';
 import { SYMindXRuntime } from './core/runtime';
+import { createCognitionModule } from './modules/cognition/index';
+import { createEmotionModule } from './modules/emotion/index';
+import { createMemoryProvider } from './modules/memory/providers/index';
 import { Logger } from './utils/logger';
 
 // === UTILITIES ===
@@ -39,12 +39,12 @@ export { Logger } from './utils/logger';
 export const SYMindX = {
   // Core components
   Runtime: SYMindXRuntime,
-  
+
   // Quick module creation
   createMemory: createMemoryProvider,
   createEmotion: createEmotionModule,
   createCognition: createCognitionModule,
-  
+
   // Utility functions
   Logger,
 };

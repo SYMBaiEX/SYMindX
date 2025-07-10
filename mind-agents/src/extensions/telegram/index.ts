@@ -1,163 +1,183 @@
 /**
  * Telegram Extension for SYMindX
- * 
+ *
  * Enables real-time chat with agents through Telegram Bot API
  * Uses telegraf library for Telegram Bot functionality
  */
 
-import { Telegraf, Context } from 'telegraf'
-import { Agent, AgentAction, Extension, ActionStatus, MemoryType, MemoryDuration, ThoughtContext, EnvironmentType } from '../../types/agent'
-import { ExtensionConfig, BaseConfig } from '../../types/common'
-import { MessageRole } from '../../types/portal'
-import { Logger } from '../../utils/logger'
+import { Telegraf, Context } from 'telegraf';
+
+import {
+  Agent,
+  AgentAction,
+  Extension,
+  ActionStatus,
+  MemoryType,
+  MemoryDuration,
+} from '../../types/agent';
+import { ExtensionConfig, BaseConfig } from '../../types/common';
+import { MessageRole } from '../../types/portal';
+import { Logger } from '../../utils/logger';
 
 export interface TelegramConfig extends ExtensionConfig {
-  botToken: string
-  allowedUsers?: number[] // Optional whitelist of user IDs
-  commandPrefix?: string
-  maxMessageLength?: number
-  enableLogging?: boolean
+  botToken: string;
+  allowedUsers?: number[]; // Optional whitelist of user IDs
+  commandPrefix?: string;
+  maxMessageLength?: number;
+  enableLogging?: boolean;
 }
 
 export interface TelegramSettings extends BaseConfig {
-  botToken: string
-  allowedUsers?: number[]
-  commandPrefix?: string
-  maxMessageLength?: number
-  enableLogging?: boolean
+  botToken: string;
+  allowedUsers?: number[];
+  commandPrefix?: string;
+  maxMessageLength?: number;
+  enableLogging?: boolean;
 }
 
 export interface TelegramMessage {
-  messageId: number
-  chatId: number
-  userId: number
-  username?: string
-  firstName?: string
-  lastName?: string
-  text: string
-  timestamp: Date
+  messageId: number;
+  chatId: number;
+  userId: number;
+  username?: string;
+  firstName?: string;
+  lastName?: string;
+  text: string;
+  timestamp: Date;
 }
 
 export interface TelegramResponse {
-  chatId: number
-  text: string
-  replyToMessageId?: number
-  parseMode?: 'Markdown' | 'HTML'
+  chatId: number;
+  text: string;
+  replyToMessageId?: number;
+  parseMode?: 'Markdown' | 'HTML';
 }
 
 export class TelegramExtension implements Extension {
-  id = 'telegram'
-  name = 'Telegram Bot'
-  version = '1.0.0'
-  type = 'communication' as any // TODO: Add proper ExtensionType enum
-  enabled = false
-  status = 'inactive' as any // TODO: Add proper ExtensionStatus enum
-  config: ExtensionConfig
-  actions: Record<string, any> = {}
-  events: Record<string, any> = {}
-  
-  private bot: Telegraf
-  private agent: Agent | null = null
-  private telegramConfig: TelegramSettings
-  private logger: Logger
-  private messageQueue: TelegramMessage[] = []
-  private isProcessingQueue = false
+  id = 'telegram';
+  name = 'Telegram Bot';
+  version = '1.0.0';
+  type = 'communication' as any; // TODO: Add proper ExtensionType enum
+  enabled = false;
+  status = 'inactive' as any; // TODO: Add proper ExtensionStatus enum
+  config: ExtensionConfig;
+  actions: Record<string, any> = {};
+  events: Record<string, any> = {};
+
+  private bot: Telegraf;
+  private agent: Agent | null = null;
+  private telegramConfig: TelegramSettings;
+  private logger: Logger;
+  private messageQueue: TelegramMessage[] = [];
+  private isProcessingQueue = false;
 
   constructor(config: TelegramConfig) {
-    this.config = config
+    this.config = config;
     this.telegramConfig = {
       commandPrefix: '/',
       maxMessageLength: 4096, // Telegram limit
       enableLogging: true,
       ...config.settings,
-      botToken: String(config.settings.botToken || config.botToken || '')
+      botToken: String(config.settings.botToken || config.botToken || ''),
+    };
+
+    this.logger = new Logger('TelegramExtension');
+    console.log(
+      `🔑 Telegram bot token configured: ${this.telegramConfig.botToken ? 'Yes' : 'No'} (length: ${this.telegramConfig.botToken?.length || 0})`
+    );
+
+    if (
+      !this.telegramConfig.botToken ||
+      this.telegramConfig.botToken.length < 10
+    ) {
+      console.error('❌ Invalid or missing Telegram bot token');
+      throw new Error('Invalid or missing Telegram bot token');
     }
-    
-    this.logger = new Logger('TelegramExtension')
-    console.log(`🔑 Telegram bot token configured: ${this.telegramConfig.botToken ? 'Yes' : 'No'} (length: ${this.telegramConfig.botToken?.length || 0})`)
-    
-    if (!this.telegramConfig.botToken || this.telegramConfig.botToken.length < 10) {
-      console.error('❌ Invalid or missing Telegram bot token')
-      throw new Error('Invalid or missing Telegram bot token')
-    }
-    
-    this.bot = new Telegraf(this.telegramConfig.botToken)
-    
-    this.setupBotHandlers()
+
+    this.bot = new Telegraf(this.telegramConfig.botToken);
+
+    this.setupBotHandlers();
   }
 
   /**
    * Initialize the extension with an agent
    */
   async init(agent: Agent): Promise<void> {
-    this.agent = agent
-    
+    this.agent = agent;
+
     try {
       // Check if bot token is valid
-      const botToken = (this.config.settings as any)?.botToken || (this.config as any).botToken
+      const botToken =
+        (this.config.settings as any)?.botToken ||
+        (this.config as any).botToken;
       if (!botToken || botToken.length < 10) {
-        console.log(`⏭️ Telegram extension disabled - no bot token configured`)
-        this.enabled = false
-        return
+        console.log(`⏭️ Telegram extension disabled - no bot token configured`);
+        this.enabled = false;
+        return;
       }
-      
-      this.enabled = true
-      
-      console.log(`🤖 Starting Telegram bot for agent ${agent.name}...`)
-      console.log(`📡 Attempting to connect to Telegram API...`)
-      
+
+      this.enabled = true;
+
+      console.log(`🤖 Starting Telegram bot for agent ${agent.name}...`);
+      console.log(`📡 Attempting to connect to Telegram API...`);
+
       // Start the bot with shorter timeout
-      const launchTimeout = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Bot launch timeout after 3 seconds')), 3000)
-      )
-      
+      const launchTimeout = new Promise((_, reject) =>
+        setTimeout(
+          () => reject(new Error('Bot launch timeout after 3 seconds')),
+          3000
+        )
+      );
+
       try {
         await Promise.race([
           this.bot.launch({
-            webhook: undefined,  // Don't use webhook, use long polling
-            dropPendingUpdates: true  // Ignore old messages
+            dropPendingUpdates: true, // Ignore old messages
           }),
-          launchTimeout
-        ])
-        this.logger.info(`Telegram bot started for agent ${agent.name}`)
-        console.log(`✅ Telegram bot started successfully`)
-        
+          launchTimeout,
+        ]);
+        this.logger.info(`Telegram bot started for agent ${agent.name}`);
+        console.log(`✅ Telegram bot started successfully`);
+
         // Get bot info
-        const botInfo = await this.bot.telegram.getMe()
-        console.log(`🤖 Bot username: @${botInfo.username}`)
-        
+        const botInfo = await this.bot.telegram.getMe();
+        console.log(`🤖 Bot username: @${botInfo.username}`);
       } catch (launchError) {
-        if (launchError instanceof Error && launchError.message.includes('timeout')) {
-          console.error('⏱️ Telegram bot launch timed out - continuing anyway')
-          this.logger.warn('Telegram bot launch timed out but may still be running')
+        if (
+          launchError instanceof Error &&
+          launchError.message.includes('timeout')
+        ) {
+          console.error('⏱️ Telegram bot launch timed out - continuing anyway');
+          this.logger.warn(
+            'Telegram bot launch timed out but may still be running'
+          );
         } else {
-          throw launchError
+          throw launchError;
         }
       }
-      
+
       // Set up bot commands
-      await this.setupCommands()
-      
+      await this.setupCommands();
+
       // Enable graceful stop
-      process.once('SIGINT', () => this.bot.stop('SIGINT'))
-      process.once('SIGTERM', () => this.bot.stop('SIGTERM'))
-      
+      process.once('SIGINT', () => this.bot.stop('SIGINT'));
+      process.once('SIGTERM', () => this.bot.stop('SIGTERM'));
     } catch (error) {
-      console.error(`❌ Failed to start Telegram bot:`, error)
-      this.logger.error('Failed to start Telegram bot:', error)
-      this.enabled = false
-      throw error
+      console.error(`❌ Failed to start Telegram bot:`, error);
+      this.logger.error('Failed to start Telegram bot:', error);
+      this.enabled = false;
+      throw error;
     }
   }
 
   /**
    * Main tick method called by the runtime
    */
-  async tick(agent: Agent): Promise<void> {
-    if (!this.enabled || !this.agent) return
-    
+  async tick(_agent: Agent): Promise<void> {
+    if (!this.enabled || !this.agent) return;
+
     // Process queued messages
-    await this.processMessageQueue()
+    await this.processMessageQueue();
   }
 
   /**
@@ -167,30 +187,40 @@ export class TelegramExtension implements Extension {
     // Handle text messages
     this.bot.on('text', async (ctx) => {
       try {
-        await this.handleTextMessage(ctx)
+        await this.handleTextMessage(ctx);
       } catch (error) {
-        this.logger.error('Error handling text message:', error)
-        await this.sendError(ctx.chat.id, 'Sorry, I encountered an error processing your message.')
+        this.logger.error('Error handling text message:', error);
+        await this.sendError(
+          ctx.chat.id,
+          'Sorry, I encountered an error processing your message.'
+        );
       }
-    })
+    });
 
     // Handle stickers with a fun response
     this.bot.on('sticker', async (ctx) => {
-      await ctx.reply('Nice sticker! 😊 I understand text messages best though.')
-    })
+      await ctx.reply(
+        'Nice sticker! 😊 I understand text messages best though.'
+      );
+    });
 
     // Handle photos
     this.bot.on('photo', async (ctx) => {
-      await ctx.reply('I see you sent a photo! Currently I can only process text, but that\'s a nice image!')
-    })
+      await ctx.reply(
+        "I see you sent a photo! Currently I can only process text, but that's a nice image!"
+      );
+    });
 
     // Error handling
     this.bot.catch((err, ctx) => {
-      this.logger.error('Bot error:', err)
+      this.logger.error('Bot error:', err);
       if (ctx && ctx.chat) {
-        this.sendError(ctx.chat.id, 'Oops! Something went wrong. Please try again.')
+        this.sendError(
+          ctx.chat.id,
+          'Oops! Something went wrong. Please try again.'
+        );
       }
-    })
+    });
   }
 
   /**
@@ -203,7 +233,7 @@ export class TelegramExtension implements Extension {
       { command: 'help', description: 'Show help information' },
       { command: 'status', description: 'Check agent status' },
       { command: 'clear', description: 'Clear conversation context' },
-    ])
+    ]);
 
     // Handle /start command
     this.bot.command('start', async (ctx) => {
@@ -216,10 +246,10 @@ Available commands:
 /status - Check my current status  
 /clear - Clear our conversation context
 
-Just send me a message to start chatting! 🤖`
+Just send me a message to start chatting! 🤖`;
 
-      await ctx.reply(welcomeMessage)
-    })
+      await ctx.reply(welcomeMessage);
+    });
 
     // Handle /help command
     this.bot.command('help', async (ctx) => {
@@ -241,16 +271,16 @@ Just send me a message to start chatting! 🤖`
 • Feel free to ask follow-up questions
 • I can maintain context throughout our conversation
 
-Try asking me something! 💬`
+Try asking me something! 💬`;
 
-      await ctx.reply(helpMessage)
-    })
+      await ctx.reply(helpMessage);
+    });
 
-    // Handle /status command  
+    // Handle /status command
     this.bot.command('status', async (ctx) => {
       if (!this.agent) {
-        await ctx.reply('❌ No agent connected')
-        return
+        await ctx.reply('❌ No agent connected');
+        return;
       }
 
       const statusMessage = `🤖 Agent Status Report
@@ -262,31 +292,36 @@ Try asking me something! 💬`
 **Emotion:** ${this.agent.emotion ? '✅ Available' : '❌ Not available'}
 **Cognition:** ${this.agent.cognition ? '✅ Available' : '❌ Not available'}
 
-I'm ready to chat! 💬`
+I'm ready to chat! 💬`;
 
-      await ctx.reply(statusMessage)
-    })
+      await ctx.reply(statusMessage);
+    });
 
     // Handle /clear command
     this.bot.command('clear', async (ctx) => {
       // Clear message queue
-      this.messageQueue = []
-      
-      await ctx.reply('🧹 Conversation context cleared! Starting fresh.')
-    })
+      this.messageQueue = [];
+
+      await ctx.reply('🧹 Conversation context cleared! Starting fresh.');
+    });
   }
 
   /**
    * Handle incoming text messages
    */
-  private async handleTextMessage(ctx: Context & { message: { text: string; message_id: number } }): Promise<void> {
-    if (!this.agent || !ctx.message?.text) return
+  private async handleTextMessage(
+    ctx: Context & { message: { text: string; message_id: number } }
+  ): Promise<void> {
+    if (!this.agent || !ctx.message?.text) return;
 
     // Check if user is allowed (if whitelist is configured)
-    if (this.telegramConfig.allowedUsers && this.telegramConfig.allowedUsers.length > 0) {
+    if (
+      this.telegramConfig.allowedUsers &&
+      this.telegramConfig.allowedUsers.length > 0
+    ) {
       if (!this.telegramConfig.allowedUsers.includes(ctx.from?.id || 0)) {
-        await ctx.reply('🚫 Sorry, you are not authorized to use this bot.')
-        return
+        await ctx.reply('🚫 Sorry, you are not authorized to use this bot.');
+        return;
       }
     }
 
@@ -295,21 +330,23 @@ I'm ready to chat! 💬`
       messageId: ctx.message.message_id,
       chatId: ctx.chat!.id,
       userId: ctx.from?.id || 0,
-      username: ctx.from?.username,
-      firstName: ctx.from?.first_name,
-      lastName: ctx.from?.last_name,
+      ...(ctx.from?.username && { username: ctx.from.username }),
+      ...(ctx.from?.first_name && { firstName: ctx.from.first_name }),
+      ...(ctx.from?.last_name && { lastName: ctx.from.last_name }),
       text: ctx.message.text,
-      timestamp: new Date()
-    }
+      timestamp: new Date(),
+    };
 
     // Add to queue for processing
-    this.messageQueue.push(message)
+    this.messageQueue.push(message);
 
     // Show typing indicator
-    await ctx.sendChatAction('typing')
+    await ctx.sendChatAction('typing');
 
     if (this.telegramConfig.enableLogging) {
-      this.logger.info(`Received message from ${message.username || message.firstName}: ${message.text}`)
+      this.logger.info(
+        `Received message from ${message.username || message.firstName}: ${message.text}`
+      );
     }
   }
 
@@ -317,21 +354,25 @@ I'm ready to chat! 💬`
    * Process queued messages
    */
   private async processMessageQueue(): Promise<void> {
-    if (this.isProcessingQueue || this.messageQueue.length === 0 || !this.agent) {
-      return
+    if (
+      this.isProcessingQueue ||
+      this.messageQueue.length === 0 ||
+      !this.agent
+    ) {
+      return;
     }
 
-    this.isProcessingQueue = true
+    this.isProcessingQueue = true;
 
     try {
       while (this.messageQueue.length > 0) {
-        const message = this.messageQueue.shift()!
-        await this.processMessage(message)
+        const message = this.messageQueue.shift()!;
+        await this.processMessage(message);
       }
     } catch (error) {
-      this.logger.error('Error processing message queue:', error)
+      this.logger.error('Error processing message queue:', error);
     } finally {
-      this.isProcessingQueue = false
+      this.isProcessingQueue = false;
     }
   }
 
@@ -339,25 +380,10 @@ I'm ready to chat! 💬`
    * Process a single message through the agent
    */
   private async processMessage(message: TelegramMessage): Promise<void> {
-    if (!this.agent) return
+    if (!this.agent) return;
 
     try {
-      // Create agent action for the message
-      const action: AgentAction = {
-        id: `telegram_${message.messageId}_${Date.now()}`,
-        type: 'communication',
-        extension: 'telegram',
-        action: 'respond_to_message',
-        parameters: {
-          message: message.text,
-          chatId: message.chatId,
-          userId: message.userId,
-          username: message.username,
-          platform: 'telegram'
-        },
-        timestamp: new Date(),
-        status: ActionStatus.PENDING
-      }
+      // Process message through agent (action creation handled internally)
 
       // Store message in agent memory if available
       if (this.agent.memory) {
@@ -370,18 +396,18 @@ I'm ready to chat! 💬`
             platform: 'telegram',
             chatId: message.chatId,
             userId: message.userId,
-            username: message.username
+            username: message.username,
           },
           importance: 0.7,
           timestamp: message.timestamp,
           tags: ['telegram', 'conversation', 'user_input'],
-          duration: MemoryDuration.WORKING
-        })
+          duration: MemoryDuration.WORKING,
+        });
       }
 
       // Generate response using agent's portal
-      let responseText = ''
-      
+      let responseText = '';
+
       if (this.agent.portal) {
         // Use agent's AI portal to generate response
         try {
@@ -389,67 +415,77 @@ I'm ready to chat! 💬`
           const systemPrompt = `You are ${this.agent.name}, ${this.agent.config.lore?.origin || 'an AI assistant'}. 
 Your personality: ${this.agent.config.core?.personality?.join(', ') || 'helpful and friendly'}.
 Communication style: ${this.agent.config.core?.tone || 'neutral'}.
-Current emotion: ${this.agent.emotion?.current || 'neutral'}`
+Current emotion: ${this.agent.emotion?.current || 'neutral'}`;
 
-          const chatResponse = await this.agent.portal.generateChat([
+          const chatResponse = await this.agent.portal.generateChat(
+            [
+              {
+                role: MessageRole.SYSTEM,
+                content: systemPrompt,
+              },
+              {
+                role: MessageRole.USER,
+                content: message.text,
+              },
+            ],
             {
-              role: MessageRole.SYSTEM,
-              content: systemPrompt
-            },
-            {
-              role: MessageRole.USER,
-              content: message.text
+              temperature: 0.8,
+              maxTokens: 1000,
             }
-          ], {
-            temperature: 0.8,
-            maxTokens: 1000
-          })
-          
-          responseText = chatResponse.message.content || 'I\'m having trouble forming a response right now.'
-          
+          );
+
+          responseText =
+            chatResponse.message.content ||
+            "I'm having trouble forming a response right now.";
         } catch (error) {
-          this.logger.error('Error using portal:', error)
+          this.logger.error('Error using portal:', error);
           // Try using cognition as fallback
           if (this.agent.cognition) {
             const response = await this.agent.cognition.think(this.agent, {
-              events: [{
-                id: `telegram_event_${Date.now()}`,
-                type: 'user_input',
-                source: 'telegram',
-                data: { message: message.text },
-                timestamp: message.timestamp,
-                processed: false
-              }],
+              events: [
+                {
+                  id: `telegram_event_${Date.now()}`,
+                  type: 'user_input',
+                  source: 'telegram',
+                  data: { message: message.text },
+                  timestamp: message.timestamp,
+                  processed: false,
+                },
+              ],
               memories: [],
               currentState: {} as any,
               environment: {} as any,
-              goal: 'Respond helpfully to the user message'
-            })
-            responseText = `I am thinking about: ${response.thoughts.length} events...`
+              goal: 'Respond helpfully to the user message',
+            });
+            responseText = `I am thinking about: ${response.thoughts.length} events...`;
           } else {
-            responseText = `Hello ${message.firstName || 'there'}! I received your message but I'm having technical difficulties.`
+            responseText = `Hello ${message.firstName || 'there'}! I received your message but I'm having technical difficulties.`;
           }
         }
       } else {
         // No portal available
-        responseText = `Hello ${message.firstName || 'there'}! I received your message: "${message.text}" but I don't have an AI portal configured to generate responses.`
+        responseText = `Hello ${message.firstName || 'there'}! I received your message: "${message.text}" but I don't have an AI portal configured to generate responses.`;
       }
 
       // Send response back to Telegram
       await this.sendResponse({
         chatId: message.chatId,
         text: responseText,
-        replyToMessageId: message.messageId
-      })
+        replyToMessageId: message.messageId,
+      });
 
       // Log the interaction
       if (this.telegramConfig.enableLogging) {
-        this.logger.info(`Sent response to ${message.username || message.firstName}: ${responseText.substring(0, 100)}...`)
+        this.logger.info(
+          `Sent response to ${message.username || message.firstName}: ${responseText.substring(0, 100)}...`
+        );
       }
-
     } catch (error) {
-      this.logger.error('Error processing message:', error)
-      await this.sendError(message.chatId, 'Sorry, I had trouble processing your message. Please try again.')
+      this.logger.error('Error processing message:', error);
+      await this.sendError(
+        message.chatId,
+        'Sorry, I had trouble processing your message. Please try again.'
+      );
     }
   }
 
@@ -459,27 +495,28 @@ Current emotion: ${this.agent.emotion?.current || 'neutral'}`
   private async sendResponse(response: TelegramResponse): Promise<void> {
     try {
       // Split long messages if needed
-      const messages = this.splitMessage(response.text)
-      
+      const messages = this.splitMessage(response.text);
+
       for (let i = 0; i < messages.length; i++) {
-        const messageText = messages[i]
+        const messageText = messages[i];
+
+        const sendOptions: any = {
+          parse_mode: response.parseMode,
+        };
         
-        await this.bot.telegram.sendMessage(
-          response.chatId,
-          messageText,
-          {
-            reply_parameters: response.replyToMessageId && i === 0 ? { message_id: response.replyToMessageId } : undefined,
-            parse_mode: response.parseMode
-          }
-        )
-        
+        if (response.replyToMessageId && i === 0) {
+          sendOptions.reply_parameters = { message_id: response.replyToMessageId };
+        }
+
+        await this.bot.telegram.sendMessage(response.chatId, messageText, sendOptions);
+
         // Small delay between messages to avoid rate limiting
         if (i < messages.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 100))
+          await new Promise((resolve) => setTimeout(resolve, 100));
         }
       }
     } catch (error) {
-      this.logger.error('Error sending Telegram response:', error)
+      this.logger.error('Error sending Telegram response:', error);
     }
   }
 
@@ -488,9 +525,9 @@ Current emotion: ${this.agent.emotion?.current || 'neutral'}`
    */
   private async sendError(chatId: number, errorMessage: string): Promise<void> {
     try {
-      await this.bot.telegram.sendMessage(chatId, `❌ ${errorMessage}`)
+      await this.bot.telegram.sendMessage(chatId, `❌ ${errorMessage}`);
     } catch (error) {
-      this.logger.error('Error sending error message to Telegram:', error)
+      this.logger.error('Error sending error message to Telegram:', error);
     }
   }
 
@@ -499,50 +536,50 @@ Current emotion: ${this.agent.emotion?.current || 'neutral'}`
    */
   private splitMessage(text: string): string[] {
     if (text.length <= this.telegramConfig.maxMessageLength!) {
-      return [text]
+      return [text];
     }
 
-    const messages: string[] = []
-    let remainingText = text
+    const messages: string[] = [];
+    let remainingText = text;
 
     while (remainingText.length > 0) {
       if (remainingText.length <= this.telegramConfig.maxMessageLength!) {
-        messages.push(remainingText)
-        break
+        messages.push(remainingText);
+        break;
       }
 
       // Find a good breaking point (prefer sentence or paragraph breaks)
-      let breakPoint = this.telegramConfig.maxMessageLength!
-      const lastSentence = remainingText.lastIndexOf('.', breakPoint)
-      const lastParagraph = remainingText.lastIndexOf('\n\n', breakPoint)
-      const lastSpace = remainingText.lastIndexOf(' ', breakPoint)
+      let breakPoint = this.telegramConfig.maxMessageLength!;
+      const lastSentence = remainingText.lastIndexOf('.', breakPoint);
+      const lastParagraph = remainingText.lastIndexOf('\n\n', breakPoint);
+      const lastSpace = remainingText.lastIndexOf(' ', breakPoint);
 
       if (lastParagraph > breakPoint - 200) {
-        breakPoint = lastParagraph + 2
+        breakPoint = lastParagraph + 2;
       } else if (lastSentence > breakPoint - 200) {
-        breakPoint = lastSentence + 1
+        breakPoint = lastSentence + 1;
       } else if (lastSpace > breakPoint - 100) {
-        breakPoint = lastSpace
+        breakPoint = lastSpace;
       }
 
-      messages.push(remainingText.substring(0, breakPoint).trim())
-      remainingText = remainingText.substring(breakPoint).trim()
+      messages.push(remainingText.substring(0, breakPoint).trim());
+      remainingText = remainingText.substring(breakPoint).trim();
     }
 
-    return messages
+    return messages;
   }
 
   /**
    * Cleanup when stopping
    */
   async stop(): Promise<void> {
-    this.enabled = false
-    
+    this.enabled = false;
+
     try {
-      await this.bot.stop()
-      this.logger.info('Telegram bot stopped')
+      await this.bot.stop();
+      this.logger.info('Telegram bot stopped');
     } catch (error) {
-      this.logger.error('Error stopping Telegram bot:', error)
+      this.logger.error('Error stopping Telegram bot:', error);
     }
   }
 
@@ -560,9 +597,12 @@ Current emotion: ${this.agent.emotion?.current || 'neutral'}`
         commandPrefix: this.telegramConfig.commandPrefix,
         maxMessageLength: this.telegramConfig.maxMessageLength,
         enableLogging: this.telegramConfig.enableLogging,
-        hasWhitelist: !!(this.telegramConfig.allowedUsers && this.telegramConfig.allowedUsers.length > 0)
-      }
-    }
+        hasWhitelist: !!(
+          this.telegramConfig.allowedUsers &&
+          this.telegramConfig.allowedUsers.length > 0
+        ),
+      },
+    };
   }
 
   /**
@@ -571,11 +611,13 @@ Current emotion: ${this.agent.emotion?.current || 'neutral'}`
   async cleanup(): Promise<void> {
     if (this.bot && this.enabled) {
       try {
-        console.log(`🧹 Stopping Telegram bot for agent ${this.agent?.name || 'unknown'}...`)
-        await this.bot.stop()
-        console.log(`✅ Telegram bot stopped cleanly`)
+        console.log(
+          `🧹 Stopping Telegram bot for agent ${this.agent?.name || 'unknown'}...`
+        );
+        await this.bot.stop();
+        console.log(`✅ Telegram bot stopped cleanly`);
       } catch (error) {
-        this.logger.warn('Error stopping Telegram bot:', error)
+        this.logger.warn('Error stopping Telegram bot:', error);
       }
     }
   }
@@ -591,13 +633,15 @@ export function createTelegramExtension(config: any): TelegramExtension {
     settings: {
       botToken: config.botToken || config.settings?.botToken || '',
       allowedUsers: config.allowedUsers || config.settings?.allowedUsers || [],
-      commandPrefix: config.commandPrefix || config.settings?.commandPrefix || '/',
-      maxMessageLength: config.maxMessageLength || config.settings?.maxMessageLength || 4096,
+      commandPrefix:
+        config.commandPrefix || config.settings?.commandPrefix || '/',
+      maxMessageLength:
+        config.maxMessageLength || config.settings?.maxMessageLength || 4096,
       enableLogging: config.enableLogging !== false,
-      ...config.settings
-    }
-  }
-  return new TelegramExtension(telegramConfig)
+      ...config.settings,
+    },
+  };
+  return new TelegramExtension(telegramConfig);
 }
 
 /**
@@ -610,6 +654,6 @@ export const defaultTelegramConfig: Partial<TelegramConfig> = {
     maxMessageLength: 4096,
     enableLogging: true,
     allowedUsers: [], // Empty means no whitelist
-    botToken: ''
-  }
-}
+    botToken: '',
+  },
+};

@@ -1,7 +1,8 @@
-import React from 'react';
 import { Box, Text } from 'ink';
-import { useSystemStats } from '../hooks/useSystemStats.js';
+import React from 'react';
+
 import { useAgentData } from '../hooks/useAgentData.js';
+import { useSystemStats } from '../hooks/useSystemStats.js';
 
 export const Dashboard: React.FC = () => {
   const systemStats = useSystemStats();

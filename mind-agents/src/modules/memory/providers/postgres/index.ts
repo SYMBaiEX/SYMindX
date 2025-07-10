@@ -1,75 +1,86 @@
 /**
  * PostgreSQL Memory Provider for SYMindX
- * 
+ *
  * Enhanced PostgreSQL-based memory provider with multi-tier memory architecture,
  * vector embeddings, shared memory pools, and archival strategies.
  */
 
-import { Pool, PoolClient } from 'pg'
-import { MemoryRecord, MemoryType, MemoryDuration } from '../../../../types/agent'
-import { BaseMemoryProvider, BaseMemoryConfig, MemoryRow, EnhancedMemoryRecord } from '../../base-memory-provider'
-import { 
-  MemoryProviderMetadata, 
+import { Pool, PoolClient } from 'pg';
+import { v4 as uuidv4 } from 'uuid';
+
+import {
+  MemoryRecord,
+  MemoryType,
+  MemoryDuration,
+} from '../../../../types/agent';
+import {
+  MemoryProviderMetadata,
   MemoryTierType,
   MemoryContext,
   SharedMemoryConfig,
   ArchivalStrategy,
-  MemoryPermission
-} from '../../../../types/memory'
-import { SharedMemoryPool } from './shared-pool'
-import { MemoryArchiver } from './archiver'
-import { runtimeLogger } from '../../../../utils/logger'
-import { v4 as uuidv4 } from 'uuid'
+  MemoryPermission,
+} from '../../../../types/memory';
+import { runtimeLogger } from '../../../../utils/logger';
+import {
+  BaseMemoryProvider,
+  BaseMemoryConfig,
+  MemoryRow,
+  EnhancedMemoryRecord,
+} from '../../base-memory-provider';
+
+import { MemoryArchiver } from './archiver';
+import { SharedMemoryPool } from './shared-pool';
 
 /**
  * Configuration for the PostgreSQL memory provider
  */
 export interface PostgresMemoryConfig extends BaseMemoryConfig {
   /** PostgreSQL connection string */
-  connectionString: string
+  connectionString: string;
   /** Maximum number of connections in the pool */
-  maxConnections?: number
+  maxConnections?: number;
   /** Connection timeout in milliseconds */
-  connectionTimeoutMillis?: number
+  connectionTimeoutMillis?: number;
   /** Idle timeout in milliseconds */
-  idleTimeoutMillis?: number
+  idleTimeoutMillis?: number;
   /** Enable SSL (default: true) */
-  ssl?: boolean
+  ssl?: boolean;
   /** Custom table name (default: 'memories') */
-  tableName?: string
+  tableName?: string;
   /** Auto-deploy schema on initialization (default: true) */
-  autoDeploySchema?: boolean
+  autoDeploySchema?: boolean;
   /** Enable connection pooling (default: true) */
-  enablePooling?: boolean
+  enablePooling?: boolean;
   /** Consolidation interval in milliseconds */
-  consolidationInterval?: number
+  consolidationInterval?: number;
   /** Archival interval in milliseconds */
-  archivalInterval?: number
+  archivalInterval?: number;
 }
 
 /**
  * PostgreSQL database row type
  */
 export interface PostgresMemoryRow extends MemoryRow {
-  embedding?: number[]
-  tier?: string
-  context?: Record<string, any> // JSON-encoded MemoryContext
-  created_at: Date
-  updated_at: Date
+  embedding?: number[];
+  tier?: string;
+  context?: Record<string, any>; // JSON-encoded MemoryContext
+  created_at: Date;
+  updated_at: Date;
 }
 
 /**
  * PostgreSQL memory provider implementation with auto-deployment and vector search
  */
 export class PostgresMemoryProvider extends BaseMemoryProvider {
-  private pool: Pool
-  protected declare config: PostgresMemoryConfig
-  private tableName: string
-  private isInitialized = false
-  private schemaVersion = '2.0.0'
-  private sharedPools: Map<string, SharedMemoryPool> = new Map()
-  private consolidationTimer?: NodeJS.Timeout
-  private archivalTimer?: NodeJS.Timeout
+  private pool: Pool;
+  declare protected config: PostgresMemoryConfig;
+  private tableName: string;
+  private isInitialized = false;
+  private schemaVersion = '2.0.0';
+  private sharedPools: Map<string, SharedMemoryPool> = new Map();
+  private consolidationTimer?: NodeJS.Timeout;
+  private archivalTimer?: NodeJS.Timeout;
 
   /**
    * Constructor for the PostgreSQL memory provider
@@ -78,7 +89,8 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
     const metadata: MemoryProviderMetadata = {
       id: 'postgres',
       name: 'PostgreSQL Memory Provider',
-      description: 'Enhanced PostgreSQL provider with multi-tier memory, vector search, and shared pools',
+      description:
+        'Enhanced PostgreSQL provider with multi-tier memory, vector search, and shared pools',
       version: '2.0.0',
       author: 'SYMindX Team',
       supportsVectorSearch: true,
@@ -87,12 +99,12 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
         MemoryTierType.WORKING,
         MemoryTierType.EPISODIC,
         MemoryTierType.SEMANTIC,
-        MemoryTierType.PROCEDURAL
+        MemoryTierType.PROCEDURAL,
       ],
-      supportsSharedMemory: true
-    }
+      supportsSharedMemory: true,
+    };
 
-    super(config, metadata)
+    super(config, metadata);
     this.config = {
       maxConnections: 20,
       connectionTimeoutMillis: 5000,
@@ -101,9 +113,9 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
       tableName: 'memories',
       autoDeploySchema: true,
       enablePooling: true,
-      ...config
-    }
-    this.tableName = this.config.tableName!
+      ...config,
+    };
+    this.tableName = this.config.tableName!;
 
     // Create connection pool
     this.pool = new Pool({
@@ -111,14 +123,18 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
       max: this.config.maxConnections,
       connectionTimeoutMillis: this.config.connectionTimeoutMillis,
       idleTimeoutMillis: this.config.idleTimeoutMillis,
-      ssl: this.config.ssl ? (typeof this.config.ssl === 'boolean' ? { rejectUnauthorized: false } : this.config.ssl) : false,
-      application_name: 'symindx-memory-provider'
-    })
+      ssl: this.config.ssl
+        ? typeof this.config.ssl === 'boolean'
+          ? { rejectUnauthorized: false }
+          : this.config.ssl
+        : false,
+      application_name: 'symindx-memory-provider',
+    });
 
-    this.initialize()
+    this.initialize();
 
     // Start background processes
-    this.startBackgroundProcesses(config)
+    this.startBackgroundProcesses(config);
   }
 
   /**
@@ -127,18 +143,18 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
   private startBackgroundProcesses(config: PostgresMemoryConfig): void {
     if (config.consolidationInterval) {
       this.consolidationTimer = setInterval(() => {
-        this.runConsolidation().catch(error => {
-          runtimeLogger.error('Consolidation error:', error)
-        })
-      }, config.consolidationInterval)
+        this.runConsolidation().catch((error) => {
+          runtimeLogger.error('Consolidation error:', error);
+        });
+      }, config.consolidationInterval);
     }
 
     if (config.archivalInterval) {
       this.archivalTimer = setInterval(() => {
-        this.runArchival().catch(error => {
-          runtimeLogger.error('Archival error:', error)
-        })
-      }, config.archivalInterval)
+        this.runArchival().catch((error) => {
+          runtimeLogger.error('Archival error:', error);
+        });
+      }, config.archivalInterval);
     }
   }
 
@@ -146,23 +162,28 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
    * Initialize the database schema and extensions
    */
   private async initialize(): Promise<void> {
-    if (this.isInitialized) return
+    if (this.isInitialized) return;
 
     try {
-      console.log('🚀 Initializing PostgreSQL memory provider...')
-      
+      console.log('🚀 Initializing PostgreSQL memory provider...');
+
       // Test connection
-      await this.testConnection()
-      
+      await this.testConnection();
+
       if (this.config.autoDeploySchema) {
-        await this.deploySchema()
+        await this.deploySchema();
       }
-      
-      this.isInitialized = true
-      console.log('✅ Enhanced PostgreSQL memory provider initialized successfully')
+
+      this.isInitialized = true;
+      console.log(
+        '✅ Enhanced PostgreSQL memory provider initialized successfully'
+      );
     } catch (error) {
-      console.error('❌ Failed to initialize PostgreSQL memory provider:', error)
-      throw error
+      console.error(
+        '❌ Failed to initialize PostgreSQL memory provider:',
+        error
+      );
+      throw error;
     }
   }
 
@@ -170,12 +191,15 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
    * Test database connection
    */
   private async testConnection(): Promise<void> {
-    const client = await this.pool.connect()
+    const client = await this.pool.connect();
     try {
-      const result = await client.query('SELECT version()')
-      console.log('🔗 Connected to PostgreSQL:', result.rows[0]?.version?.split(' ').slice(0, 2).join(' '))
+      const result = await client.query('SELECT version()');
+      console.log(
+        '🔗 Connected to PostgreSQL:',
+        result.rows[0]?.version?.split(' ').slice(0, 2).join(' ')
+      );
     } finally {
-      client.release()
+      client.release();
     }
   }
 
@@ -183,34 +207,34 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
    * Deploy the complete database schema
    */
   private async deploySchema(): Promise<void> {
-    const client = await this.pool.connect()
+    const client = await this.pool.connect();
     try {
-      console.log('🏗️ Deploying database schema...')
-      
+      console.log('🏗️ Deploying database schema...');
+
       // Enable extensions
-      await this.enableExtensions(client)
-      
+      await this.enableExtensions(client);
+
       // Create main memories table
-      await this.createMemoriesTable(client)
-      
+      await this.createMemoriesTable(client);
+
       // Create indexes for performance
-      await this.createIndexes(client)
-      
+      await this.createIndexes(client);
+
       // Create functions and procedures
-      await this.createFunctions(client)
-      
+      await this.createFunctions(client);
+
       // Create triggers
-      await this.createTriggers(client)
-      
+      await this.createTriggers(client);
+
       // Create shared memory tables
-      await this.createSharedMemoryTables(client)
-      
+      await this.createSharedMemoryTables(client);
+
       // Create schema version tracking
-      await this.createSchemaVersioning(client)
-      
-      console.log('✅ Database schema deployed successfully')
+      await this.createSchemaVersioning(client);
+
+      console.log('✅ Database schema deployed successfully');
     } finally {
-      client.release()
+      client.release();
     }
   }
 
@@ -219,18 +243,21 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
    */
   private async enableExtensions(client: PoolClient): Promise<void> {
     const extensions = [
-      'vector',      // pgvector for vector operations
-      'pg_trgm',     // Trigram matching for text search
-      'btree_gin',   // GIN indexes for btree operations
-      'uuid-ossp'    // UUID generation
-    ]
+      'vector', // pgvector for vector operations
+      'pg_trgm', // Trigram matching for text search
+      'btree_gin', // GIN indexes for btree operations
+      'uuid-ossp', // UUID generation
+    ];
 
     for (const extension of extensions) {
       try {
-        await client.query(`CREATE EXTENSION IF NOT EXISTS "${extension}";`)
-        console.log(`📦 Enabled extension: ${extension}`)
+        await client.query(`CREATE EXTENSION IF NOT EXISTS "${extension}";`);
+        console.log(`📦 Enabled extension: ${extension}`);
       } catch (error) {
-        console.warn(`⚠️ Could not enable extension ${extension}:`, (error as any).message)
+        console.warn(
+          `⚠️ Could not enable extension ${extension}:`,
+          (error as any).message
+        );
       }
     }
   }
@@ -257,10 +284,10 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       );
-    `
-    
-    await client.query(createTableQuery)
-    console.log(`🗄️ Created table: ${this.tableName}`)
+    `;
+
+    await client.query(createTableQuery);
+    console.log(`🗄️ Created table: ${this.tableName}`);
   }
 
   /**
@@ -276,43 +303,49 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
       `CREATE INDEX IF NOT EXISTS idx_${this.tableName}_duration ON ${this.tableName}(duration);`,
       `CREATE INDEX IF NOT EXISTS idx_${this.tableName}_expires_at ON ${this.tableName}(expires_at) WHERE expires_at IS NOT NULL;`,
       `CREATE INDEX IF NOT EXISTS idx_${this.tableName}_tier ON ${this.tableName}(tier);`,
-      
+
       // Composite indexes for common query patterns
       `CREATE INDEX IF NOT EXISTS idx_${this.tableName}_agent_type_time ON ${this.tableName}(agent_id, type, timestamp DESC);`,
       `CREATE INDEX IF NOT EXISTS idx_${this.tableName}_agent_duration_time ON ${this.tableName}(agent_id, duration, timestamp DESC);`,
       `CREATE INDEX IF NOT EXISTS idx_${this.tableName}_agent_importance ON ${this.tableName}(agent_id, importance DESC);`,
       `CREATE INDEX IF NOT EXISTS idx_${this.tableName}_agent_tier_time ON ${this.tableName}(agent_id, tier, timestamp DESC);`,
-      
+
       // Full-text search index
       `CREATE INDEX IF NOT EXISTS idx_${this.tableName}_content_fts ON ${this.tableName} USING gin(to_tsvector('english', content));`,
-      
+
       // Metadata and tags indexes
       `CREATE INDEX IF NOT EXISTS idx_${this.tableName}_metadata_gin ON ${this.tableName} USING gin(metadata);`,
-      `CREATE INDEX IF NOT EXISTS idx_${this.tableName}_tags_gin ON ${this.tableName} USING gin(tags);`
-    ]
+      `CREATE INDEX IF NOT EXISTS idx_${this.tableName}_tags_gin ON ${this.tableName} USING gin(tags);`,
+    ];
 
     // Vector index (with fallback if pgvector not available)
     try {
-      await client.query(`CREATE INDEX IF NOT EXISTS idx_${this.tableName}_embedding_hnsw ON ${this.tableName} USING hnsw (embedding vector_cosine_ops) WITH (m = 16, ef_construction = 64);`)
-      console.log('🔍 Created HNSW vector index')
+      await client.query(
+        `CREATE INDEX IF NOT EXISTS idx_${this.tableName}_embedding_hnsw ON ${this.tableName} USING hnsw (embedding vector_cosine_ops) WITH (m = 16, ef_construction = 64);`
+      );
+      console.log('🔍 Created HNSW vector index');
     } catch (error) {
       try {
-        await client.query(`CREATE INDEX IF NOT EXISTS idx_${this.tableName}_embedding_ivfflat ON ${this.tableName} USING ivfflat (embedding vector_cosine_ops);`)
-        console.log('🔍 Created IVFFlat vector index')
+        await client.query(
+          `CREATE INDEX IF NOT EXISTS idx_${this.tableName}_embedding_ivfflat ON ${this.tableName} USING ivfflat (embedding vector_cosine_ops);`
+        );
+        console.log('🔍 Created IVFFlat vector index');
       } catch (fallbackError) {
-        console.warn('⚠️ Could not create vector index, pgvector may not be available')
+        console.warn(
+          '⚠️ Could not create vector index, pgvector may not be available'
+        );
       }
     }
 
     for (const indexQuery of indexes) {
       try {
-        await client.query(indexQuery)
+        await client.query(indexQuery);
       } catch (error) {
-        console.warn('⚠️ Could not create index:', (error as any).message)
+        console.warn('⚠️ Could not create index:', (error as any).message);
       }
     }
 
-    console.log('📊 Created database indexes')
+    console.log('📊 Created database indexes');
   }
 
   /**
@@ -375,7 +408,7 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
         LIMIT p_match_count;
       END;
       $$;
-    `
+    `;
 
     // Cleanup function
     const cleanupFunction = `
@@ -395,7 +428,7 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
         RETURN deleted_count;
       END;
       $$;
-    `
+    `;
 
     // Statistics function
     const statsFunction = `
@@ -430,19 +463,19 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
         AND (duration != 'short_term' OR expires_at IS NULL OR expires_at > NOW());
       END;
       $$;
-    `
+    `;
 
-    const functions = [vectorSearchFunction, cleanupFunction, statsFunction]
-    
+    const functions = [vectorSearchFunction, cleanupFunction, statsFunction];
+
     for (const func of functions) {
       try {
-        await client.query(func)
+        await client.query(func);
       } catch (error) {
-        console.warn('⚠️ Could not create function:', (error as any).message)
+        console.warn('⚠️ Could not create function:', (error as any).message);
       }
     }
 
-    console.log('⚙️ Created database functions')
+    console.log('⚙️ Created database functions');
   }
 
   /**
@@ -456,7 +489,7 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
         config JSONB NOT NULL,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       );
-    `
+    `;
 
     // Create shared memory mappings table
     const mappingsTable = `
@@ -469,25 +502,28 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
         PRIMARY KEY (memory_id, pool_id),
         FOREIGN KEY (pool_id) REFERENCES shared_memory_pools(pool_id) ON DELETE CASCADE
       );
-    `
+    `;
 
     // Create indexes
     const mappingIndexes = [
       `CREATE INDEX IF NOT EXISTS idx_shared_mappings_pool ON shared_memory_mappings(pool_id);`,
-      `CREATE INDEX IF NOT EXISTS idx_shared_mappings_shared_by ON shared_memory_mappings(shared_by);`
-    ]
+      `CREATE INDEX IF NOT EXISTS idx_shared_mappings_shared_by ON shared_memory_mappings(shared_by);`,
+    ];
 
     try {
-      await client.query(poolsTable)
-      await client.query(mappingsTable)
-      
+      await client.query(poolsTable);
+      await client.query(mappingsTable);
+
       for (const index of mappingIndexes) {
-        await client.query(index)
+        await client.query(index);
       }
-      
-      console.log('🔗 Created shared memory tables')
+
+      console.log('🔗 Created shared memory tables');
     } catch (error) {
-      console.warn('⚠️ Could not create shared memory tables:', (error as any).message)
+      console.warn(
+        '⚠️ Could not create shared memory tables:',
+        (error as any).message
+      );
     }
   }
 
@@ -506,7 +542,7 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
         RETURN NEW;
       END;
       $$;
-    `
+    `;
 
     // Create trigger
     const createTrigger = `
@@ -515,14 +551,14 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
         BEFORE UPDATE ON ${this.tableName}
         FOR EACH ROW
         EXECUTE FUNCTION update_${this.tableName}_updated_at();
-    `
+    `;
 
     try {
-      await client.query(updateTimestampFunction)
-      await client.query(createTrigger)
-      console.log('⚡ Created database triggers')
+      await client.query(updateTimestampFunction);
+      await client.query(createTrigger);
+      console.log('⚡ Created database triggers');
     } catch (error) {
-      console.warn('⚠️ Could not create triggers:', (error as any).message)
+      console.warn('⚠️ Could not create triggers:', (error as any).message);
     }
   }
 
@@ -541,13 +577,16 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
       INSERT INTO schema_versions (version, description) 
       VALUES ('${this.schemaVersion}', 'Initial SYMindX memory schema')
       ON CONFLICT DO NOTHING;
-    `
+    `;
 
     try {
-      await client.query(versioningQuery)
-      console.log('📋 Created schema versioning')
+      await client.query(versioningQuery);
+      console.log('📋 Created schema versioning');
     } catch (error) {
-      console.warn('⚠️ Could not create schema versioning:', (error as any).message)
+      console.warn(
+        '⚠️ Could not create schema versioning:',
+        (error as any).message
+      );
     }
   }
 
@@ -555,15 +594,15 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
    * Store a memory for an agent
    */
   async store(agentId: string, memory: MemoryRecord): Promise<void> {
-    await this.initialize()
-    
-    const enhanced = memory as EnhancedMemoryRecord
-    const client = await this.pool.connect()
-    
+    await this.initialize();
+
+    const enhanced = memory as EnhancedMemoryRecord;
+    const client = await this.pool.connect();
+
     try {
       // Generate embedding if not provided
       if (!memory.embedding && memory.content) {
-        memory.embedding = await this.generateEmbedding(memory.content)
+        memory.embedding = await this.generateEmbedding(memory.content);
       }
 
       const query = `
@@ -585,7 +624,7 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
           tier = EXCLUDED.tier,
           context = EXCLUDED.context,
           updated_at = NOW()
-      `
+      `;
 
       const values = [
         memory.id,
@@ -600,42 +639,50 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
         memory.duration || MemoryDuration.LONG_TERM,
         memory.expiresAt,
         enhanced.tier || MemoryTierType.EPISODIC,
-        enhanced.context || null
-      ]
+        enhanced.context || null,
+      ];
 
-      await client.query(query, values)
-      
+      await client.query(query, values);
+
       // Handle working memory specially
       if (enhanced.tier === MemoryTierType.WORKING) {
-        await this.addToWorkingMemory(agentId, memory)
+        await this.addToWorkingMemory(agentId, memory);
       }
 
       // Only log conversation memories from user interactions
-      if (memory.type === MemoryType.INTERACTION && 
-          (memory.metadata?.source === 'chat_command' || 
-           memory.metadata?.source === 'chat_command_fallback' ||
-           memory.metadata?.messageType === 'user_input' ||
-           memory.metadata?.messageType === 'agent_response')) {
-        console.log(`💾 Stored ${enhanced.tier || 'episodic'} memory: ${memory.type} for agent ${agentId}`)
+      if (
+        memory.type === MemoryType.INTERACTION &&
+        (memory.metadata?.source === 'chat_command' ||
+          memory.metadata?.source === 'chat_command_fallback' ||
+          memory.metadata?.messageType === 'user_input' ||
+          memory.metadata?.messageType === 'agent_response')
+      ) {
+        console.log(
+          `💾 Stored ${enhanced.tier || 'episodic'} memory: ${memory.type} for agent ${agentId}`
+        );
       }
     } finally {
-      client.release()
+      client.release();
     }
   }
 
   /**
    * Retrieve memories for an agent based on a query
    */
-  async retrieve(agentId: string, query: string, limit = 10): Promise<MemoryRecord[]> {
-    await this.initialize()
-    
-    const client = await this.pool.connect()
-    
-    try {
-      let queryText: string
-      let values: any[]
+  async retrieve(
+    agentId: string,
+    query: string,
+    limit = 10
+  ): Promise<MemoryRecord[]> {
+    await this.initialize();
 
-      const baseCondition = `agent_id = $1 AND (duration != 'short_term' OR expires_at IS NULL OR expires_at > NOW())`
+    const client = await this.pool.connect();
+
+    try {
+      let queryText: string;
+      let values: any[];
+
+      const baseCondition = `agent_id = $1 AND (duration != 'short_term' OR expires_at IS NULL OR expires_at > NOW())`;
 
       if (query === 'recent') {
         queryText = `
@@ -643,16 +690,16 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
           WHERE ${baseCondition}
           ORDER BY timestamp DESC 
           LIMIT $2
-        `
-        values = [agentId, limit]
+        `;
+        values = [agentId, limit];
       } else if (query === 'important') {
         queryText = `
           SELECT * FROM ${this.tableName} 
           WHERE ${baseCondition}
           ORDER BY importance DESC 
           LIMIT $2
-        `
-        values = [agentId, limit]
+        `;
+        values = [agentId, limit];
       } else if (query === 'short_term') {
         queryText = `
           SELECT * FROM ${this.tableName} 
@@ -660,16 +707,16 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
             AND (expires_at IS NULL OR expires_at > NOW())
           ORDER BY timestamp DESC 
           LIMIT $2
-        `
-        values = [agentId, limit]
+        `;
+        values = [agentId, limit];
       } else if (query === 'long_term') {
         queryText = `
           SELECT * FROM ${this.tableName} 
           WHERE agent_id = $1 AND duration = 'long_term'
           ORDER BY importance DESC 
           LIMIT $2
-        `
-        values = [agentId, limit]
+        `;
+        values = [agentId, limit];
       } else {
         // Full-text search using PostgreSQL's text search
         queryText = `
@@ -678,47 +725,54 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
           WHERE ${baseCondition} AND to_tsvector('english', content) @@ plainto_tsquery('english', $2)
           ORDER BY rank DESC, importance DESC, timestamp DESC 
           LIMIT $3
-        `
-        values = [agentId, query, limit]
+        `;
+        values = [agentId, query, limit];
       }
 
-      const result = await client.query(queryText, values)
-      return result.rows.map(row => this.rowToMemoryRecord(row))
+      const result = await client.query(queryText, values);
+      return result.rows.map((row) => this.rowToMemoryRecord(row));
     } finally {
-      client.release()
+      client.release();
     }
   }
 
   /**
    * Search for memories using vector similarity
    */
-  async search(agentId: string, embedding: number[], limit = 10): Promise<MemoryRecord[]> {
-    await this.initialize()
-    
-    const client = await this.pool.connect()
-    
+  async search(
+    agentId: string,
+    embedding: number[],
+    limit = 10
+  ): Promise<MemoryRecord[]> {
+    await this.initialize();
+
+    const client = await this.pool.connect();
+
     try {
       // Try vector search using the database function
-      const vectorQuery = `SELECT * FROM search_${this.tableName}($1, $2, $3, $4, $5, $6, $7, $8)`
-      
+      const vectorQuery = `SELECT * FROM search_${this.tableName}($1, $2, $3, $4, $5, $6, $7, $8)`;
+
       try {
         const result = await client.query(vectorQuery, [
-          agentId, 
-          JSON.stringify(embedding), 
-          0.7,     // match_threshold
-          limit,   // match_count
-          null,    // memory_type
-          null,    // duration
-          null,    // min_importance
-          null     // tier
-        ])
-        return result.rows.map(row => this.rowToMemoryRecord(row))
+          agentId,
+          JSON.stringify(embedding),
+          0.7, // match_threshold
+          limit, // match_count
+          null, // memory_type
+          null, // duration
+          null, // min_importance
+          null, // tier
+        ]);
+        return result.rows.map((row) => this.rowToMemoryRecord(row));
       } catch (error) {
-        console.warn('⚠️ Vector search failed, falling back to recent memories:', error)
-        return this.retrieve(agentId, 'recent', limit)
+        console.warn(
+          '⚠️ Vector search failed, falling back to recent memories:',
+          error
+        );
+        return this.retrieve(agentId, 'recent', limit);
       }
     } finally {
-      client.release()
+      client.release();
     }
   }
 
@@ -726,21 +780,21 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
    * Delete a memory for an agent
    */
   async delete(agentId: string, memoryId: string): Promise<void> {
-    await this.initialize()
-    
-    const client = await this.pool.connect()
-    
+    await this.initialize();
+
+    const client = await this.pool.connect();
+
     try {
-      const query = `DELETE FROM ${this.tableName} WHERE agent_id = $1 AND id = $2`
-      const result = await client.query(query, [agentId, memoryId])
-      
+      const query = `DELETE FROM ${this.tableName} WHERE agent_id = $1 AND id = $2`;
+      const result = await client.query(query, [agentId, memoryId]);
+
       if (result.rowCount === 0) {
-        throw new Error(`Memory ${memoryId} not found for agent ${agentId}`)
+        throw new Error(`Memory ${memoryId} not found for agent ${agentId}`);
       }
 
-      console.log(`🗑️ Deleted memory: ${memoryId} for agent ${agentId}`)
+      console.log(`🗑️ Deleted memory: ${memoryId} for agent ${agentId}`);
     } finally {
-      client.release()
+      client.release();
     }
   }
 
@@ -748,33 +802,37 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
    * Clear all memories for an agent
    */
   async clear(agentId: string): Promise<void> {
-    await this.initialize()
-    
-    const client = await this.pool.connect()
-    
+    await this.initialize();
+
+    const client = await this.pool.connect();
+
     try {
-      const query = `DELETE FROM ${this.tableName} WHERE agent_id = $1`
-      const result = await client.query(query, [agentId])
-      
-      console.log(`🧹 Cleared ${result.rowCount} memories for agent ${agentId}`)
+      const query = `DELETE FROM ${this.tableName} WHERE agent_id = $1`;
+      const result = await client.query(query, [agentId]);
+
+      console.log(
+        `🧹 Cleared ${result.rowCount} memories for agent ${agentId}`
+      );
     } finally {
-      client.release()
+      client.release();
     }
   }
 
   /**
    * Get statistics about an agent's memories
    */
-  async getStats(agentId: string): Promise<{ total: number; byType: Record<string, number> }> {
-    await this.initialize()
-    
-    const client = await this.pool.connect()
-    
+  async getStats(
+    agentId: string
+  ): Promise<{ total: number; byType: Record<string, number> }> {
+    await this.initialize();
+
+    const client = await this.pool.connect();
+
     try {
       // Use the database function for comprehensive stats
-      const statsQuery = `SELECT * FROM get_${this.tableName}_stats($1)`
-      const statsResult = await client.query(statsQuery, [agentId])
-      const stats = statsResult.rows[0]
+      const statsQuery = `SELECT * FROM get_${this.tableName}_stats($1)`;
+      const statsResult = await client.query(statsQuery, [agentId]);
+      const stats = statsResult.rows[0];
 
       // Get count by type
       const typeQuery = `
@@ -782,20 +840,20 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
         FROM ${this.tableName} 
         WHERE agent_id = $1 
         GROUP BY type
-      `
-      const typeResult = await client.query(typeQuery, [agentId])
-      
-      const byType: Record<string, number> = {}
-      typeResult.rows.forEach(row => {
-        byType[row.type] = parseInt(row.count)
-      })
+      `;
+      const typeResult = await client.query(typeQuery, [agentId]);
 
-      return { 
-        total: stats?.total_memories || 0, 
-        byType 
-      }
+      const byType: Record<string, number> = {};
+      typeResult.rows.forEach((row) => {
+        byType[row.type] = parseInt(row.count);
+      });
+
+      return {
+        total: stats?.total_memories || 0,
+        byType,
+      };
     } finally {
-      client.release()
+      client.release();
     }
   }
 
@@ -803,24 +861,30 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
    * Clean up old and expired memories for an agent
    */
   async cleanup(agentId: string, retentionDays: number): Promise<void> {
-    await this.initialize()
-    
-    const client = await this.pool.connect()
-    
+    await this.initialize();
+
+    const client = await this.pool.connect();
+
     try {
-      const cutoffDate = new Date(Date.now() - (retentionDays * 24 * 60 * 60 * 1000))
+      const cutoffDate = new Date(
+        Date.now() - retentionDays * 24 * 60 * 60 * 1000
+      );
 
       // Clean up expired short-term memories using the function
-      const expiredResult = await client.query(`SELECT cleanup_expired_${this.tableName}()`)
-      const expiredCount = expiredResult.rows[0]?.cleanup_expired_memories || 0
+      const expiredResult = await client.query(
+        `SELECT cleanup_expired_${this.tableName}()`
+      );
+      const expiredCount = expiredResult.rows[0]?.cleanup_expired_memories || 0;
 
       // Clean up old memories beyond retention period
-      const oldQuery = `DELETE FROM ${this.tableName} WHERE agent_id = $1 AND timestamp < $2`
-      const oldResult = await client.query(oldQuery, [agentId, cutoffDate])
+      const oldQuery = `DELETE FROM ${this.tableName} WHERE agent_id = $1 AND timestamp < $2`;
+      const oldResult = await client.query(oldQuery, [agentId, cutoffDate]);
 
-      console.log(`🧹 Cleaned up ${expiredCount} expired and ${oldResult.rowCount} old memories for agent ${agentId}`)
+      console.log(
+        `🧹 Cleaned up ${expiredCount} expired and ${oldResult.rowCount} old memories for agent ${agentId}`
+      );
     } finally {
-      client.release()
+      client.release();
     }
   }
 
@@ -828,62 +892,75 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
    * Convert a database row to a memory record
    */
   private rowToMemoryRecord(row: any): EnhancedMemoryRecord {
-    let embedding: number[] | undefined = undefined
-    
+    let embedding: number[] | undefined = undefined;
+
     if (row.embedding) {
       try {
-        embedding = typeof row.embedding === 'string' 
-          ? JSON.parse(row.embedding) 
-          : row.embedding
+        embedding =
+          typeof row.embedding === 'string'
+            ? JSON.parse(row.embedding)
+            : row.embedding;
       } catch (error) {
-        console.warn('⚠️ Failed to parse embedding:', error)
+        console.warn('⚠️ Failed to parse embedding:', error);
       }
     }
 
     const record: EnhancedMemoryRecord = {
       id: row.id,
       agentId: row.agent_id,
-      type: MemoryType[row.type.toUpperCase() as keyof typeof MemoryType] || MemoryType.EXPERIENCE,
+      type:
+        MemoryType[row.type.toUpperCase() as keyof typeof MemoryType] ||
+        MemoryType.EXPERIENCE,
       content: row.content,
       embedding,
       metadata: row.metadata || {},
       importance: row.importance,
       timestamp: new Date(row.timestamp),
       tags: row.tags || [],
-      duration: MemoryDuration[row.duration.toUpperCase() as keyof typeof MemoryDuration] || MemoryDuration.LONG_TERM,
-      expiresAt: row.expires_at ? new Date(row.expires_at) : undefined
-    }
+      duration:
+        MemoryDuration[
+          row.duration.toUpperCase() as keyof typeof MemoryDuration
+        ] || MemoryDuration.LONG_TERM,
+      expiresAt: row.expires_at ? new Date(row.expires_at) : undefined,
+    };
 
     // Add tier and context if available
     if (row.tier) {
-      record.tier = row.tier as MemoryTierType
+      record.tier = row.tier as MemoryTierType;
     }
     if (row.context) {
-      record.context = row.context as MemoryContext
+      record.context = row.context as MemoryContext;
     }
 
-    return record
+    return record;
   }
 
   /**
    * Check database connection health
    */
-  async healthCheck(): Promise<{ healthy: boolean; latency: number; version?: string }> {
-    const start = Date.now()
-    
+  async healthCheck(): Promise<{
+    healthy: boolean;
+    latency: number;
+    version?: string;
+  }> {
+    const start = Date.now();
+
     try {
-      const client = await this.pool.connect()
+      const client = await this.pool.connect();
       try {
-        const result = await client.query('SELECT version()')
-        const latency = Date.now() - start
-        const version = result.rows[0]?.version?.split(' ').slice(0, 2).join(' ')
-        return { healthy: true, latency, version }
+        const result = await client.query('SELECT version()');
+        const latency = Date.now() - start;
+        const version = result.rows[0]?.version
+          ?.split(' ')
+          .slice(0, 2)
+          .join(' ');
+        return { healthy: true, latency, version };
       } finally {
-        client.release()
+        client.release();
       }
     } catch (error) {
-      console.error('❌ PostgreSQL health check failed:', error)
-      return { healthy: false, latency: -1 }
+      console.error('❌ PostgreSQL health check failed:', error);
+      return { healthy: false, latency: -1 };
     }
   }
 
@@ -894,40 +971,44 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
     return {
       total: this.pool.totalCount,
       idle: this.pool.idleCount,
-      waiting: this.pool.waitingCount
-    }
+      waiting: this.pool.waitingCount,
+    };
   }
 
   /**
    * Get schema information
    */
-  async getSchemaInfo(): Promise<{ version: string; tables: string[]; functions: string[] }> {
-    const client = await this.pool.connect()
-    
+  async getSchemaInfo(): Promise<{
+    version: string;
+    tables: string[];
+    functions: string[];
+  }> {
+    const client = await this.pool.connect();
+
     try {
       // Get schema version
       const versionResult = await client.query(
         'SELECT version FROM schema_versions ORDER BY applied_at DESC LIMIT 1'
-      )
-      const version = versionResult.rows[0]?.version || 'unknown'
+      );
+      const version = versionResult.rows[0]?.version || 'unknown';
 
       // Get tables
       const tablesResult = await client.query(`
         SELECT tablename FROM pg_tables 
         WHERE schemaname = 'public' AND tablename LIKE '%${this.tableName}%'
-      `)
-      const tables = tablesResult.rows.map(row => row.tablename)
+      `);
+      const tables = tablesResult.rows.map((row) => row.tablename);
 
       // Get functions
       const functionsResult = await client.query(`
         SELECT proname FROM pg_proc 
         WHERE proname LIKE '%${this.tableName}%'
-      `)
-      const functions = functionsResult.rows.map(row => row.proname)
+      `);
+      const functions = functionsResult.rows.map((row) => row.proname);
 
-      return { version, tables, functions }
+      return { version, tables, functions };
     } finally {
-      client.release()
+      client.release();
     }
   }
 
@@ -935,64 +1016,85 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
    * Consolidate memory from one tier to another
    */
   async consolidateMemory(
-    agentId: string, 
-    memoryId: string, 
-    fromTier: MemoryTierType, 
+    agentId: string,
+    memoryId: string,
+    fromTier: MemoryTierType,
     toTier: MemoryTierType
   ): Promise<void> {
-    const client = await this.pool.connect()
-    
+    const client = await this.pool.connect();
+
     try {
       const query = `
         UPDATE ${this.tableName} 
         SET tier = $1, updated_at = NOW() 
         WHERE agent_id = $2 AND id = $3 AND tier = $4
-      `
-      
-      const result = await client.query(query, [toTier, agentId, memoryId, fromTier])
-      
+      `;
+
+      const result = await client.query(query, [
+        toTier,
+        agentId,
+        memoryId,
+        fromTier,
+      ]);
+
       if (result.rowCount && result.rowCount > 0) {
-        runtimeLogger.memory(`Consolidated memory ${memoryId} from ${fromTier} to ${toTier}`)
-        
+        runtimeLogger.memory(
+          `Consolidated memory ${memoryId} from ${fromTier} to ${toTier}`
+        );
+
         // Apply tier-specific transformations
-        if (fromTier === MemoryTierType.EPISODIC && toTier === MemoryTierType.SEMANTIC) {
+        if (
+          fromTier === MemoryTierType.EPISODIC &&
+          toTier === MemoryTierType.SEMANTIC
+        ) {
           // Extract concepts and update type
-          const memoryQuery = `SELECT content FROM ${this.tableName} WHERE id = $1`
-          const memoryResult = await client.query(memoryQuery, [memoryId])
-          
+          const memoryQuery = `SELECT content FROM ${this.tableName} WHERE id = $1`;
+          const memoryResult = await client.query(memoryQuery, [memoryId]);
+
           if (memoryResult.rows[0]) {
-            const concepts = await this.extractConcepts(memoryResult.rows[0].content)
+            const concepts = await this.extractConcepts(
+              memoryResult.rows[0].content
+            );
             const updateQuery = `
               UPDATE ${this.tableName} 
               SET type = $1, tags = $2, updated_at = NOW() 
               WHERE agent_id = $3 AND id = $4
-            `
-            await client.query(updateQuery, [MemoryType.KNOWLEDGE, concepts, agentId, memoryId])
+            `;
+            await client.query(updateQuery, [
+              MemoryType.KNOWLEDGE,
+              concepts,
+              agentId,
+              memoryId,
+            ]);
           }
         }
       }
     } finally {
-      client.release()
+      client.release();
     }
   }
 
   /**
    * Get memories from a specific tier
    */
-  async retrieveTier(agentId: string, tier: MemoryTierType, limit?: number): Promise<MemoryRecord[]> {
-    const client = await this.pool.connect()
-    
+  async retrieveTier(
+    agentId: string,
+    tier: MemoryTierType,
+    limit?: number
+  ): Promise<MemoryRecord[]> {
+    const client = await this.pool.connect();
+
     try {
-      const query = limit 
+      const query = limit
         ? `SELECT * FROM ${this.tableName} WHERE agent_id = $1 AND tier = $2 ORDER BY timestamp DESC LIMIT $3`
-        : `SELECT * FROM ${this.tableName} WHERE agent_id = $1 AND tier = $2 ORDER BY timestamp DESC`
-      
-      const values = limit ? [agentId, tier, limit] : [agentId, tier]
-      const result = await client.query(query, values)
-      
-      return result.rows.map(row => this.rowToMemoryRecord(row))
+        : `SELECT * FROM ${this.tableName} WHERE agent_id = $1 AND tier = $2 ORDER BY timestamp DESC`;
+
+      const values = limit ? [agentId, tier, limit] : [agentId, tier];
+      const result = await client.query(query, values);
+
+      return result.rows.map((row) => this.rowToMemoryRecord(row));
     } finally {
-      client.release()
+      client.release();
     }
   }
 
@@ -1000,13 +1102,13 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
    * Archive old memories based on configured strategies
    */
   async archiveMemories(agentId: string): Promise<void> {
-    if (!this.config.archival) return
-    
+    if (!this.config.archival) return;
+
     for (const strategy of this.config.archival) {
       if (strategy.type === 'compression') {
-        await this.compressOldMemories(agentId, strategy)
+        await this.compressOldMemories(agentId, strategy);
       } else if (strategy.type === 'summarization') {
-        await this.summarizeMemories(agentId, strategy)
+        await this.summarizeMemories(agentId, strategy);
       }
     }
   }
@@ -1014,37 +1116,47 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
   /**
    * Share memories with other agents in a pool
    */
-  async shareMemories(agentId: string, memoryIds: string[], poolId: string): Promise<void> {
-    const client = await this.pool.connect()
-    
+  async shareMemories(
+    agentId: string,
+    memoryIds: string[],
+    poolId: string
+  ): Promise<void> {
+    const client = await this.pool.connect();
+
     try {
-      let pool = this.sharedPools.get(poolId)
-      
+      let pool = this.sharedPools.get(poolId);
+
       if (!pool && this.config.sharedMemory) {
-        pool = new SharedMemoryPool(poolId, this.config.sharedMemory)
-        this.sharedPools.set(poolId, pool)
-        
+        pool = new SharedMemoryPool(poolId, this.config.sharedMemory);
+        this.sharedPools.set(poolId, pool);
+
         // Store pool configuration
         const poolQuery = `
           INSERT INTO shared_memory_pools (pool_id, config, created_at)
           VALUES ($1, $2, NOW())
           ON CONFLICT (pool_id) DO NOTHING
-        `
-        await client.query(poolQuery, [poolId, this.config.sharedMemory])
+        `;
+        await client.query(poolQuery, [poolId, this.config.sharedMemory]);
       }
-      
+
       if (!pool) {
-        throw new Error(`Shared memory pool ${poolId} not found`)
+        throw new Error(`Shared memory pool ${poolId} not found`);
       }
-      
+
       // Share each memory
       for (const memoryId of memoryIds) {
-        const memoryQuery = `SELECT * FROM ${this.tableName} WHERE agent_id = $1 AND id = $2`
-        const memoryResult = await client.query(memoryQuery, [agentId, memoryId])
-        
+        const memoryQuery = `SELECT * FROM ${this.tableName} WHERE agent_id = $1 AND id = $2`;
+        const memoryResult = await client.query(memoryQuery, [
+          agentId,
+          memoryId,
+        ]);
+
         if (memoryResult.rows[0]) {
-          await pool.share(agentId, this.rowToMemoryRecord(memoryResult.rows[0]))
-          
+          await pool.share(
+            agentId,
+            this.rowToMemoryRecord(memoryResult.rows[0])
+          );
+
           // Record sharing
           const mappingQuery = `
             INSERT INTO shared_memory_mappings 
@@ -1054,17 +1166,17 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
               shared_by = EXCLUDED.shared_by,
               shared_at = EXCLUDED.shared_at,
               permissions = EXCLUDED.permissions
-          `
+          `;
           await client.query(mappingQuery, [
-            memoryId, 
-            poolId, 
-            agentId, 
-            [MemoryPermission.READ]
-          ])
+            memoryId,
+            poolId,
+            agentId,
+            [MemoryPermission.READ],
+          ]);
         }
       }
     } finally {
-      client.release()
+      client.release();
     }
   }
 
@@ -1074,7 +1186,7 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
   async generateEmbedding(content: string): Promise<number[]> {
     // This would call the actual embedding API based on config
     // For now, return a mock embedding
-    return new Array(1536).fill(0).map(() => Math.random() * 2 - 1)
+    return new Array(1536).fill(0).map(() => Math.random() * 2 - 1);
   }
 
   /**
@@ -1082,43 +1194,50 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
    */
   private async extractConcepts(content: string): Promise<string[]> {
     // Simple concept extraction - in production would use NLP
-    const words = content.toLowerCase().split(/\s+/)
+    const words = content.toLowerCase().split(/\s+/);
     const concepts = words
-      .filter(word => word.length > 4)
+      .filter((word) => word.length > 4)
       .filter((word, index, self) => self.indexOf(word) === index)
-      .slice(0, 5)
-    
-    return concepts
+      .slice(0, 5);
+
+    return concepts;
   }
 
   /**
    * Run memory consolidation
    */
   private async runConsolidation(): Promise<void> {
-    const client = await this.pool.connect()
-    
+    const client = await this.pool.connect();
+
     try {
-      const agentsQuery = `SELECT DISTINCT agent_id FROM ${this.tableName}`
-      const agentsResult = await client.query(agentsQuery)
-      
+      const agentsQuery = `SELECT DISTINCT agent_id FROM ${this.tableName}`;
+      const agentsResult = await client.query(agentsQuery);
+
       for (const { agent_id } of agentsResult.rows) {
         // Check consolidation rules for each tier
         for (const [, tier] of this.tiers) {
-          if (!tier.consolidationRules) continue
-          
+          if (!tier.consolidationRules) continue;
+
           for (const rule of tier.consolidationRules) {
-            const memories = await this.retrieveTier(agent_id, rule.fromTier)
-            
+            const memories = await this.retrieveTier(agent_id, rule.fromTier);
+
             for (const memory of memories) {
-              if (this.shouldConsolidate(memory as EnhancedMemoryRecord, rule)) {
-                await this.consolidateMemory(agent_id, memory.id, rule.fromTier, rule.toTier)
+              if (
+                this.shouldConsolidate(memory as EnhancedMemoryRecord, rule)
+              ) {
+                await this.consolidateMemory(
+                  agent_id,
+                  memory.id,
+                  rule.fromTier,
+                  rule.toTier
+                );
               }
             }
           }
         }
       }
     } finally {
-      client.release()
+      client.release();
     }
   }
 
@@ -1128,14 +1247,15 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
   private shouldConsolidate(memory: EnhancedMemoryRecord, rule: any): boolean {
     switch (rule.condition) {
       case 'importance':
-        return (memory.importance || 0) >= rule.threshold
+        return (memory.importance || 0) >= rule.threshold;
       case 'age':
-        const ageInDays = (Date.now() - memory.timestamp.getTime()) / (1000 * 60 * 60 * 24)
-        return ageInDays >= rule.threshold
+        const ageInDays =
+          (Date.now() - memory.timestamp.getTime()) / (1000 * 60 * 60 * 24);
+        return ageInDays >= rule.threshold;
       case 'emotional':
-        return (memory.context?.emotionalValence || 0) >= rule.threshold
+        return (memory.context?.emotionalValence || 0) >= rule.threshold;
       default:
-        return false
+        return false;
     }
   }
 
@@ -1143,99 +1263,111 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
    * Run memory archival
    */
   private async runArchival(): Promise<void> {
-    const client = await this.pool.connect()
-    
+    const client = await this.pool.connect();
+
     try {
-      const agentsQuery = `SELECT DISTINCT agent_id FROM ${this.tableName}`
-      const agentsResult = await client.query(agentsQuery)
-      
+      const agentsQuery = `SELECT DISTINCT agent_id FROM ${this.tableName}`;
+      const agentsResult = await client.query(agentsQuery);
+
       for (const { agent_id } of agentsResult.rows) {
-        await this.archiveMemories(agent_id)
+        await this.archiveMemories(agent_id);
       }
     } finally {
-      client.release()
+      client.release();
     }
   }
 
   /**
    * Compress old memories
    */
-  private async compressOldMemories(agentId: string, strategy: ArchivalStrategy): Promise<void> {
-    if (!strategy.triggerAge) return
-    
-    const client = await this.pool.connect()
-    
+  private async compressOldMemories(
+    agentId: string,
+    strategy: ArchivalStrategy
+  ): Promise<void> {
+    if (!strategy.triggerAge) return;
+
+    const client = await this.pool.connect();
+
     try {
-      const cutoffDate = new Date(Date.now() - (strategy.triggerAge * 24 * 60 * 60 * 1000))
+      const cutoffDate = new Date(
+        Date.now() - strategy.triggerAge * 24 * 60 * 60 * 1000
+      );
       const query = `
         SELECT * FROM ${this.tableName} 
         WHERE agent_id = $1 AND timestamp < $2 AND tier = 'episodic'
         ORDER BY timestamp DESC
-      `
-      const result = await client.query(query, [agentId, cutoffDate])
-      
+      `;
+      const result = await client.query(query, [agentId, cutoffDate]);
+
       // Group similar memories and compress
-      const compressed = this.groupAndCompress(result.rows.map(r => this.rowToMemoryRecord(r)))
-      
+      const compressed = this.groupAndCompress(
+        result.rows.map((r) => this.rowToMemoryRecord(r))
+      );
+
       // Store compressed memories
       for (const memory of compressed) {
-        await this.store(agentId, memory)
+        await this.store(agentId, memory);
       }
-      
+
       // Delete original memories
-      const deleteQuery = `DELETE FROM ${this.tableName} WHERE id = ANY($1)`
-      const idsToDelete = result.rows.map(row => row.id)
+      const deleteQuery = `DELETE FROM ${this.tableName} WHERE id = ANY($1)`;
+      const idsToDelete = result.rows.map((row) => row.id);
       if (idsToDelete.length > 0) {
-        await client.query(deleteQuery, [idsToDelete])
+        await client.query(deleteQuery, [idsToDelete]);
       }
     } finally {
-      client.release()
+      client.release();
     }
   }
 
   /**
    * Summarize memories
    */
-  private async summarizeMemories(agentId: string, strategy: ArchivalStrategy): Promise<void> {
+  private async summarizeMemories(
+    agentId: string,
+    strategy: ArchivalStrategy
+  ): Promise<void> {
     // Implementation would use LLM to summarize groups of memories
-    runtimeLogger.memory(`Summarizing memories for agent ${agentId}`)
+    runtimeLogger.memory(`Summarizing memories for agent ${agentId}`);
   }
 
   /**
    * Group and compress similar memories
    */
-  private groupAndCompress(memories: EnhancedMemoryRecord[]): EnhancedMemoryRecord[] {
+  private groupAndCompress(
+    memories: EnhancedMemoryRecord[]
+  ): EnhancedMemoryRecord[] {
     // Simple compression - group by day and combine
-    const grouped = new Map<string, EnhancedMemoryRecord[]>()
-    
+    const grouped = new Map<string, EnhancedMemoryRecord[]>();
+
     for (const memory of memories) {
-      const day = memory.timestamp.toISOString().split('T')[0]
+      const day = memory.timestamp.toISOString().split('T')[0];
       if (!grouped.has(day)) {
-        grouped.set(day, [])
+        grouped.set(day, []);
       }
-      grouped.get(day)!.push(memory)
+      grouped.get(day)!.push(memory);
     }
-    
-    const compressed: EnhancedMemoryRecord[] = []
+
+    const compressed: EnhancedMemoryRecord[] = [];
     for (const [day, group] of grouped) {
       compressed.push({
         id: this.generateId(),
         agentId: group[0].agentId,
         type: MemoryType.EXPERIENCE,
-        content: `Summary of ${day}: ${group.map(m => m.content).join('; ')}`,
+        content: `Summary of ${day}: ${group.map((m) => m.content).join('; ')}`,
         metadata: { compressed: true, source: 'compression' },
-        importance: Math.max(...group.map(m => m.importance || 0)),
+        importance: Math.max(...group.map((m) => m.importance || 0)),
         timestamp: new Date(day),
         tags: ['compressed', 'summary'],
         duration: MemoryDuration.LONG_TERM,
         tier: MemoryTierType.EPISODIC,
         context: {
-          source: 'compression'
-        }
-      })
+          source: 'compression',
+        },
+      });
     }
-    
-    return compressed
+
+    return compressed;
   }
 
   /**
@@ -1244,16 +1376,16 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
   async disconnect(): Promise<void> {
     try {
       if (this.consolidationTimer) {
-        clearInterval(this.consolidationTimer)
+        clearInterval(this.consolidationTimer);
       }
       if (this.archivalTimer) {
-        clearInterval(this.archivalTimer)
+        clearInterval(this.archivalTimer);
       }
-      
-      await this.pool.end()
-      console.log('🔌 PostgreSQL memory provider disconnected')
+
+      await this.pool.end();
+      console.log('🔌 PostgreSQL memory provider disconnected');
     } catch (error) {
-      console.error('❌ Error disconnecting PostgreSQL provider:', error)
+      console.error('❌ Error disconnecting PostgreSQL provider:', error);
     }
   }
 
@@ -1261,15 +1393,17 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
    * Clean up resources (alias for disconnect)
    */
   async destroy(): Promise<void> {
-    await this.disconnect()
+    await this.disconnect();
   }
 }
 
 /**
  * Create a PostgreSQL memory provider
  */
-export function createPostgresMemoryProvider(config: PostgresMemoryConfig): PostgresMemoryProvider {
-  return new PostgresMemoryProvider(config)
+export function createPostgresMemoryProvider(
+  config: PostgresMemoryConfig
+): PostgresMemoryProvider {
+  return new PostgresMemoryProvider(config);
 }
 
 /**
@@ -1285,20 +1419,22 @@ export function createPostgresConnectionString(
 ): string {
   const params = new URLSearchParams({
     sslmode: 'prefer',
-    ...options
-  })
-  
-  return `postgresql://${username}:${password}@${host}:${port}/${database}?${params.toString()}`
+    ...options,
+  });
+
+  return `postgresql://${username}:${password}@${host}:${port}/${database}?${params.toString()}`;
 }
 
 /**
  * Default PostgreSQL provider for quick setup
  */
-export function createDefaultPostgresProvider(connectionString: string): PostgresMemoryProvider {
+export function createDefaultPostgresProvider(
+  connectionString: string
+): PostgresMemoryProvider {
   return new PostgresMemoryProvider({
     connectionString,
     maxConnections: 20,
     autoDeploySchema: true,
-    enablePooling: true
-  })
+    enablePooling: true,
+  });
 }

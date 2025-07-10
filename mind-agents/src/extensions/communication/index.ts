@@ -1,50 +1,56 @@
 /**
  * Communication Extension for SYMindX
- * 
+ *
  * Provides advanced communication features including context management,
  * expression adaptation, and style customization for agent interactions.
  */
 
-import { ExtensionConfig, ExtensionMetadata } from '../../types/common'
-import { Extension, ExtensionType, ExtensionStatus } from '../../types/agent'
-import { Agent } from '../../types/agent'
-import { runtimeLogger } from '../../utils/logger'
-import { ContextManager, ContextManagerConfig } from './context-manager'
-import { ExpressionEngine, ExpressionEngineConfig } from './expression-engine'
-import { StyleAdapter, StyleAdapterConfig } from './style-adapter'
+import {
+  Extension,
+  ExtensionType,
+  ExtensionStatus,
+  Agent,
+} from '../../types/agent';
+import { ExtensionConfig, ExtensionMetadata } from '../../types/common';
+import { runtimeLogger } from '../../utils/logger';
+
+import { ContextManager, ContextManagerConfig } from './context-manager';
+import { ExpressionEngine, ExpressionEngineConfig } from './expression-engine';
+import { StyleAdapter, StyleAdapterConfig } from './style-adapter';
 
 export interface CommunicationExtensionConfig extends ExtensionConfig {
-  contextManager?: ContextManagerConfig
-  expressionEngine?: ExpressionEngineConfig
-  styleAdapter?: StyleAdapterConfig
-  enableContextPersistence?: boolean
-  enableStyleAdaptation?: boolean
-  enableExpressionVariation?: boolean
+  contextManager?: ContextManagerConfig;
+  expressionEngine?: ExpressionEngineConfig;
+  styleAdapter?: StyleAdapterConfig;
+  enableContextPersistence?: boolean;
+  enableStyleAdaptation?: boolean;
+  enableExpressionVariation?: boolean;
 }
 
 export class CommunicationExtension implements Extension {
-  public readonly id: string = 'communication'
-  public readonly name: string = 'Communication Extension'
-  public readonly version: string = '1.0.0'
-  public readonly type: ExtensionType = ExtensionType.COMMUNICATION
-  public enabled: boolean = true
-  public status: ExtensionStatus = ExtensionStatus.STOPPED
-  public actions: Record<string, any> = {}
-  public events: Record<string, any> = {}
+  public readonly id: string = 'communication';
+  public readonly name: string = 'Communication Extension';
+  public readonly version: string = '1.0.0';
+  public readonly type: ExtensionType = ExtensionType.COMMUNICATION;
+  public enabled: boolean = true;
+  public status: ExtensionStatus = ExtensionStatus.STOPPED;
+  public actions: Record<string, any> = {};
+  public events: Record<string, any> = {};
 
   public readonly metadata: ExtensionMetadata = {
     name: 'communication',
     version: '1.0.0',
-    description: 'Advanced communication features with context, expression, and style management',
-    author: 'SYMindX'
-  }
+    description:
+      'Advanced communication features with context, expression, and style management',
+    author: 'SYMindX',
+  };
 
-  public config: ExtensionConfig
-  private communicationConfig: CommunicationExtensionConfig
-  private contextManager: ContextManager
-  private expressionEngine: ExpressionEngine
-  private styleAdapter: StyleAdapter
-  private agent?: Agent
+  public config: ExtensionConfig;
+  private communicationConfig: CommunicationExtensionConfig;
+  private contextManager: ContextManager;
+  private expressionEngine: ExpressionEngine;
+  private styleAdapter: StyleAdapter;
+  private agent?: Agent;
 
   constructor(config: CommunicationExtensionConfig) {
     this.config = {
@@ -52,8 +58,8 @@ export class CommunicationExtension implements Extension {
       priority: config.priority ?? 1,
       settings: config.settings ?? {},
       dependencies: config.dependencies ?? [],
-      capabilities: config.capabilities ?? []
-    }
+      capabilities: config.capabilities ?? [],
+    };
 
     this.communicationConfig = {
       ...this.config,
@@ -62,39 +68,48 @@ export class CommunicationExtension implements Extension {
       enableExpressionVariation: config.enableExpressionVariation ?? true,
       contextManager: config.contextManager ?? {},
       expressionEngine: config.expressionEngine ?? {},
-      styleAdapter: config.styleAdapter ?? {}
-    }
+      styleAdapter: config.styleAdapter ?? {},
+    };
 
-    this.contextManager = new ContextManager(this.communicationConfig.contextManager || {})
-    this.expressionEngine = new ExpressionEngine(this.communicationConfig.expressionEngine || {})
-    this.styleAdapter = new StyleAdapter(this.communicationConfig.styleAdapter || {})
+    this.contextManager = new ContextManager(
+      this.communicationConfig.contextManager || {}
+    );
+    this.expressionEngine = new ExpressionEngine(
+      this.communicationConfig.expressionEngine || {}
+    );
+    this.styleAdapter = new StyleAdapter(
+      this.communicationConfig.styleAdapter || {}
+    );
 
-    runtimeLogger.info('💬 Communication Extension initialized')
+    runtimeLogger.info('💬 Communication Extension initialized');
   }
 
   async init(agent: Agent): Promise<void> {
     if (!this.config.enabled) {
-      runtimeLogger.info('⏸️ Communication Extension is disabled')
-      return
+      runtimeLogger.info('⏸️ Communication Extension is disabled');
+      return;
     }
 
-    this.agent = agent
-    this.status = ExtensionStatus.INITIALIZING
+    this.agent = agent;
+    this.status = ExtensionStatus.INITIALIZING;
 
     try {
       // Initialize components
-      await this.expressionEngine.initialize(agent)
-      await this.styleAdapter.initialize(agent)
+      await this.expressionEngine.initialize(agent);
+      await this.styleAdapter.initialize(agent);
 
       // Set up integrations
-      await this.setupIntegrations()
+      await this.setupIntegrations();
 
-      this.status = ExtensionStatus.RUNNING
-      runtimeLogger.info('💬 Communication Extension initialized successfully')
+      this.status = ExtensionStatus.RUNNING;
+      runtimeLogger.info('💬 Communication Extension initialized successfully');
     } catch (error) {
-      this.status = ExtensionStatus.ERROR
-      runtimeLogger.error('❌ Failed to initialize Communication Extension:', error)
-      throw error
+      this.status = ExtensionStatus.ERROR;
+      runtimeLogger.error(
+        '❌ Failed to initialize Communication Extension:',
+        error
+      );
+      throw error;
     }
   }
 
@@ -104,60 +119,66 @@ export class CommunicationExtension implements Extension {
     // - Clean up old conversation contexts
     // - Update conversation state
     // - Handle any pending communication tasks
-    
+
     try {
       // Update agent reference if needed
       if (this.agent?.id !== agent.id) {
-        this.agent = agent
+        this.agent = agent;
       }
-      
+
       // Perform periodic maintenance if needed
       // Note: cleanupOldContexts is private, so we skip that for now
     } catch (error) {
-      runtimeLogger.error('❌ Error during Communication Extension tick:', error)
+      runtimeLogger.error(
+        '❌ Error during Communication Extension tick:',
+        error
+      );
     }
   }
 
   async cleanup(): Promise<void> {
     try {
-      this.status = ExtensionStatus.STOPPING
-      
+      this.status = ExtensionStatus.STOPPING;
+
       // Export contexts if persistence is enabled
       if (this.communicationConfig.enableContextPersistence) {
-        await this.exportContexts()
+        await this.exportContexts();
       }
 
-      this.status = ExtensionStatus.STOPPED
-      runtimeLogger.info('💬 Communication Extension cleaned up')
+      this.status = ExtensionStatus.STOPPED;
+      runtimeLogger.info('💬 Communication Extension cleaned up');
     } catch (error) {
-      this.status = ExtensionStatus.ERROR
-      runtimeLogger.error('❌ Error during Communication Extension cleanup:', error)
+      this.status = ExtensionStatus.ERROR;
+      runtimeLogger.error(
+        '❌ Error during Communication Extension cleanup:',
+        error
+      );
     }
   }
 
   isEnabled(): boolean {
-    return this.config.enabled
+    return this.config.enabled;
   }
 
   /**
    * Get the context manager
    */
   getContextManager(): ContextManager {
-    return this.contextManager
+    return this.contextManager;
   }
 
   /**
    * Get the expression engine
    */
   getExpressionEngine(): ExpressionEngine {
-    return this.expressionEngine
+    return this.expressionEngine;
   }
 
   /**
    * Get the style adapter
    */
   getStyleAdapter(): StyleAdapter {
-    return this.styleAdapter
+    return this.styleAdapter;
   }
 
   /**
@@ -168,13 +189,13 @@ export class CommunicationExtension implements Extension {
     message: string,
     metadata?: Record<string, any>
   ): Promise<{
-    contextSummary: any
-    adaptedStyle: any
-    expressionVariations: string[]
-    recommendations: string[]
+    contextSummary: any;
+    adaptedStyle: any;
+    expressionVariations: string[];
+    recommendations: string[];
   }> {
     if (!this.agent) {
-      throw new Error('Communication extension not initialized with agent')
+      throw new Error('Communication extension not initialized with agent');
     }
 
     // Get or create context
@@ -182,37 +203,42 @@ export class CommunicationExtension implements Extension {
       this.agent.id,
       participantId,
       message
-    )
+    );
 
     // Add message to context
-    this.contextManager.addMessage(context, participantId, message, metadata?.emotion)
+    this.contextManager.addMessage(
+      context,
+      participantId,
+      message,
+      metadata?.emotion
+    );
 
     // Get context summary
-    const contextSummary = this.contextManager.getContextSummary(context.id)
+    const contextSummary = this.contextManager.getContextSummary(context.id);
 
     // Adapt style if enabled
-    let adaptedStyle: any = {}
+    let adaptedStyle: any = {};
     if (this.communicationConfig.enableStyleAdaptation && contextSummary) {
       adaptedStyle = await this.styleAdapter.adaptStyle({
         mood: contextSummary.mood,
         formality: metadata?.formality || 0.5,
         participantStyle: metadata?.participantStyle,
         topics: contextSummary.topics,
-        conversationPhase: contextSummary.phase
-      })
+        conversationPhase: contextSummary.phase,
+      });
     }
 
     // Generate expression variations if enabled
-    let expressionVariations: string[] = []
+    let expressionVariations: string[] = [];
     if (this.communicationConfig.enableExpressionVariation) {
       expressionVariations = await this.expressionEngine.generateVariations(
         message,
         {
           emotion: metadata?.emotion,
           style: adaptedStyle,
-          context: contextSummary
+          context: contextSummary,
         }
-      )
+      );
     }
 
     // Generate recommendations
@@ -220,14 +246,14 @@ export class CommunicationExtension implements Extension {
       context,
       contextSummary,
       adaptedStyle
-    )
+    );
 
     return {
       contextSummary,
       adaptedStyle,
       expressionVariations,
-      recommendations
-    }
+      recommendations,
+    };
   }
 
   /**
@@ -238,26 +264,26 @@ export class CommunicationExtension implements Extension {
     participantId: string,
     metadata?: Record<string, any>
   ): Promise<string> {
-    if (!this.agent) return baseResponse
+    if (!this.agent) return baseResponse;
 
     // Get active context
-    const context = this.contextManager.getActiveContext(this.agent.id)
-    if (!context) return baseResponse
+    const context = this.contextManager.getActiveContext(this.agent.id);
+    if (!context) return baseResponse;
 
     // Get context summary
-    const contextSummary = this.contextManager.getContextSummary(context.id)
-    if (!contextSummary) return baseResponse
+    const contextSummary = this.contextManager.getContextSummary(context.id);
+    if (!contextSummary) return baseResponse;
 
     // Adapt style
-    let adaptedResponse = baseResponse
+    let adaptedResponse = baseResponse;
     if (this.communicationConfig.enableStyleAdaptation) {
       adaptedResponse = await this.styleAdapter.applyStyle(baseResponse, {
         mood: contextSummary.mood,
         formality: metadata?.formality || 0.5,
         participantStyle: metadata?.participantStyle,
         topics: contextSummary.topics,
-        conversationPhase: contextSummary.phase
-      })
+        conversationPhase: contextSummary.phase,
+      });
     }
 
     // Apply expression enhancements
@@ -267,15 +293,20 @@ export class CommunicationExtension implements Extension {
         {
           emotion: metadata?.emotion,
           context: contextSummary,
-          variation: metadata?.expressionVariation || 'balanced'
+          variation: metadata?.expressionVariation || 'balanced',
         }
-      )
+      );
     }
 
     // Add response to context
-    this.contextManager.addMessage(context, this.agent.id, adaptedResponse, metadata?.emotion)
+    this.contextManager.addMessage(
+      context,
+      this.agent.id,
+      adaptedResponse,
+      metadata?.emotion
+    );
 
-    return adaptedResponse
+    return adaptedResponse;
   }
 
   /**
@@ -290,24 +321,30 @@ export class CommunicationExtension implements Extension {
    * Export contexts for persistence
    */
   private async exportContexts(): Promise<void> {
-    if (!this.agent) return
+    if (!this.agent) return;
 
     try {
-      const contexts = this.contextManager.exportContexts()
-      
+      const contexts = this.contextManager.exportContexts();
+
       // Save important contexts to memory if memory system is available
       for (const context of contexts) {
-        if (context.messages.length > 5) { // Only save substantial conversations
-          const memory = await this.contextManager.preserveToMemory(this.agent, context.id)
+        if (context.messages.length > 5) {
+          // Only save substantial conversations
+          const memory = await this.contextManager.preserveToMemory(
+            this.agent,
+            context.id
+          );
           if (memory && this.agent.memory) {
-            await this.agent.memory.store(this.agent.id, memory)
+            await this.agent.memory.store(this.agent.id, memory);
           }
         }
       }
 
-      runtimeLogger.info(`💾 Exported ${contexts.length} conversation contexts`)
+      runtimeLogger.info(
+        `💾 Exported ${contexts.length} conversation contexts`
+      );
     } catch (error) {
-      runtimeLogger.error('❌ Failed to export contexts:', error)
+      runtimeLogger.error('❌ Failed to export contexts:', error);
     }
   }
 
@@ -319,62 +356,70 @@ export class CommunicationExtension implements Extension {
     contextSummary: any,
     adaptedStyle: any
   ): string[] {
-    const recommendations: string[] = []
+    const recommendations: string[] = [];
 
     // Pending questions
     if (contextSummary?.pendingQuestions?.length > 0) {
-      recommendations.push(`Address ${contextSummary.pendingQuestions.length} pending questions`)
+      recommendations.push(
+        `Address ${contextSummary.pendingQuestions.length} pending questions`
+      );
     }
 
     // Topic continuity
     if (contextSummary?.topics?.length > 0) {
-      recommendations.push(`Continue discussion on: ${contextSummary.topics.slice(0, 2).join(', ')}`)
+      recommendations.push(
+        `Continue discussion on: ${contextSummary.topics.slice(0, 2).join(', ')}`
+      );
     }
 
     // Mood adaptation
     if (contextSummary?.mood === 'negative') {
-      recommendations.push('Use empathetic tone due to negative mood')
+      recommendations.push('Use empathetic tone due to negative mood');
     } else if (contextSummary?.mood === 'positive') {
-      recommendations.push('Maintain positive energy in response')
+      recommendations.push('Maintain positive energy in response');
     }
 
     // Conversation phase
     if (contextSummary?.phase === 'greeting') {
-      recommendations.push('Include welcoming elements in response')
+      recommendations.push('Include welcoming elements in response');
     } else if (contextSummary?.phase === 'closing') {
-      recommendations.push('Prepare for conversation conclusion')
+      recommendations.push('Prepare for conversation conclusion');
     }
 
-    return recommendations
+    return recommendations;
   }
 
   /**
    * Get extension configuration
    */
   getConfig(): CommunicationExtensionConfig {
-    return { ...this.config }
+    return { ...this.config };
   }
 
   /**
    * Update extension configuration
    */
-  async updateConfig(updates: Partial<CommunicationExtensionConfig>): Promise<void> {
-    this.config = { ...this.config, ...updates }
-    
+  async updateConfig(
+    updates: Partial<CommunicationExtensionConfig>
+  ): Promise<void> {
+    this.config = { ...this.config, ...updates };
+
     // Re-initialize components if needed
     if (this.agent && updates.enabled !== undefined) {
       if (updates.enabled && !this.config.enabled) {
-        await this.init(this.agent)
+        await this.init(this.agent);
       } else if (!updates.enabled && this.config.enabled) {
-        await this.cleanup()
+        await this.cleanup();
       }
     }
   }
 }
 
 // Factory function for creating Communication Extension
-export function createCommunicationExtension(config: CommunicationExtensionConfig): CommunicationExtension {
-  return new CommunicationExtension(config)
+export function createCommunicationExtension(
+  config: CommunicationExtensionConfig
+): CommunicationExtension {
+  return new CommunicationExtension(config);
 }
 
-export default CommunicationExtension
+export default CommunicationExtension;

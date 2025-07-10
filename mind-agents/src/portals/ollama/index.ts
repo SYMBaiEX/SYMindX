@@ -1,20 +1,20 @@
-import { convertUsage } from '../utils'
+import { convertUsage } from '../utils';
 /**
  * Ollama Local AI Portal Index
- * 
+ *
  * Exports Ollama portal implementations for privacy-preserving local AI inference
  * with support for quantized models and edge computing
  */
 
 // Ollama Local AI Portal
-export { 
-  OllamaPortal, 
-  createOllamaPortal, 
-  defaultOllamaConfig, 
+export {
+  OllamaPortal,
+  createOllamaPortal,
+  defaultOllamaConfig,
   ollamaModels,
   type OllamaConfig,
-  type OllamaModelStatus
-} from './ollama'
+  type OllamaModelStatus,
+} from './ollama';
 
 // Export common types
 export type {
@@ -23,5 +23,5 @@ export type {
   PortalType,
   PortalStatus,
   ModelType,
-  PortalCapability
-} from '../../types/portal'
+  PortalCapability,
+} from '../../types/portal';

@@ -1,20 +1,20 @@
-import React, { useState, useEffect, useMemo } from 'react'
 import { Box, Text, useInput } from 'ink'
-import { Card3D } from '../ui/Card3D.js'
-import { Chart } from '../ui/Chart.js'
-import { GlitchText } from '../effects/GlitchText.js'
-import { cyberpunkTheme } from '../../themes/cyberpunk.js'
+import React, { useState, useEffect } from 'react'
+
 import { runtimeClient } from '../../services/runtimeClient.js'
+import { cyberpunkTheme } from '../../themes/cyberpunk.js'
 import { soundManager, SoundType } from '../../utils/sound-effects.js'
+import { GlitchText } from '../effects/GlitchText.js'
+import { Card3D } from '../ui/Card3D.js'
 
 // Import all the panel components
-import { EmotionPanel } from './AgentDetail/EmotionPanel.js'
-import { MemoryPanel } from './AgentDetail/MemoryPanel.js'
-import { CognitionPanel } from './AgentDetail/CognitionPanel.js'
-import { PerformancePanel } from './AgentDetail/PerformancePanel.js'
 import { AutonomyPanel } from './AgentDetail/AutonomyPanel.js'
-import { PortalsPanel } from './AgentDetail/PortalsPanel.js'
+import { CognitionPanel } from './AgentDetail/CognitionPanel.js'
+import { EmotionPanel } from './AgentDetail/EmotionPanel.js'
 import { ExtensionsPanel } from './AgentDetail/ExtensionsPanel.js'
+import { MemoryPanel } from './AgentDetail/MemoryPanel.js'
+import { PerformancePanel } from './AgentDetail/PerformancePanel.js'
+import { PortalsPanel } from './AgentDetail/PortalsPanel.js'
 
 // Enhanced agent data interfaces for debugging
 interface AgentDetailData {
@@ -278,7 +278,7 @@ export const AgentDetail: React.FC<AgentDetailProps> = ({ agentId, onBack }) => 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [autoRefresh, setAutoRefresh] = useState(true)
-  const [refreshInterval, setRefreshInterval] = useState(2000)
+  const [refreshInterval] = useState(2000)
 
   // Navigation between debug views
   const views: DebugView[] = ['overview', 'emotion', 'memory', 'cognition', 'performance', 'autonomy', 'portals', 'extensions']
@@ -288,10 +288,16 @@ export const AgentDetail: React.FC<AgentDetailProps> = ({ agentId, onBack }) => 
     if (key.escape) {
       onBack()
     } else if (key.leftArrow && currentIndex > 0) {
-      setCurrentView(views[currentIndex - 1])
+      const prevView = views[currentIndex - 1]
+      if (prevView) {
+        setCurrentView(prevView)
+      }
       soundManager.play(SoundType.NAVIGATE)
     } else if (key.rightArrow && currentIndex < views.length - 1) {
-      setCurrentView(views[currentIndex + 1])
+      const nextView = views[currentIndex + 1]
+      if (nextView) {
+        setCurrentView(nextView)
+      }
       soundManager.play(SoundType.NAVIGATE)
     } else if (input === 'r') {
       fetchAgentData()
@@ -308,7 +314,7 @@ export const AgentDetail: React.FC<AgentDetailProps> = ({ agentId, onBack }) => 
       setError(null)
       
       // Fetch comprehensive agent data
-      const [basicAgent, detailedData] = await Promise.all([
+      const [basicAgent] = await Promise.all([
         runtimeClient.getAgent(agentId),
         runtimeClient.getAgentDetail(agentId) // This would need to be implemented
       ])
@@ -477,6 +483,7 @@ export const AgentDetail: React.FC<AgentDetailProps> = ({ agentId, onBack }) => 
       const interval = setInterval(fetchAgentData, refreshInterval)
       return () => clearInterval(interval)
     }
+    return undefined
   }, [agentId, autoRefresh, refreshInterval])
 
   // Mock data generators
@@ -485,7 +492,7 @@ export const AgentDetail: React.FC<AgentDetailProps> = ({ agentId, onBack }) => 
     const history: EmotionHistoryEntry[] = []
     
     for (let i = 0; i < 20; i++) {
-      const emotion = emotions[Math.floor(Math.random() * emotions.length)]
+      const emotion = emotions[Math.floor(Math.random() * emotions.length)] ?? 'neutral'
       history.push({
         emotion,
         intensity: Math.random() * 0.8 + 0.2,
@@ -701,6 +708,13 @@ export const AgentDetail: React.FC<AgentDetailProps> = ({ agentId, onBack }) => 
 
   return (
     <Box flexDirection="column" padding={1}>
+      {/* Back navigation */}
+      <Box marginBottom={1}>
+        <Text color={cyberpunkTheme.colors.primary}>← </Text>
+        <Text color={cyberpunkTheme.colors.accent} underline>Back to Agents</Text>
+        <Text color={cyberpunkTheme.colors.textDim}> (Press ESC)</Text>
+      </Box>
+
       {/* Header */}
       <Box marginBottom={1}>
         <GlitchText 

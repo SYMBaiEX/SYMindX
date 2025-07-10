@@ -4,7 +4,7 @@
   "description": "A local and privacy-focused AI assistant powered by Ollama, designed for on-device inference and data privacy",
   "version": "1.0.0",
   "enabled": false,
-  
+
   "personality": {
     "traits": {
       "chaos": 0.3,
@@ -38,7 +38,7 @@
       "Offline reliability"
     ]
   },
-  
+
   "autonomous": {
     "enabled": true,
     "independence_level": 0.9,
@@ -59,7 +59,7 @@
       ]
     }
   },
-  
+
   "memory": {
     "provider": "memory",
     "config": {
@@ -68,7 +68,7 @@
       "retention_policy": "local_only"
     }
   },
-  
+
   "emotion": {
     "type": "composite",
     "config": {
@@ -83,7 +83,7 @@
       }
     }
   },
-  
+
   "cognition": {
     "type": "reactive",
     "config": {
@@ -92,7 +92,7 @@
       "reasoning_style": "local"
     }
   },
-  
+
   "communication": {
     "style": "trustworthy",
     "tone": "reassuring",
@@ -105,12 +105,9 @@
       "Maintain trust and reliability"
     ]
   },
-  
-  "extensions": [
-    "api",
-    "telegram"
-  ],
-  
+
+  "extensions": ["api", "telegram"],
+
   "portals": {
     "primary": "ollama",
     "config": {

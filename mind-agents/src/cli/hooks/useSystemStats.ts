@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react';
 import * as os from 'os';
+
+import { useState, useEffect } from 'react';
+
 import { runtimeClient } from '../services/runtimeClient';
 
 export interface SystemComponent {

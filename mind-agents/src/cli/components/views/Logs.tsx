@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react'
 import { Box, Text } from 'ink'
-import { Card3D } from '../ui/Card3D.js'
-import { GlitchText } from '../effects/GlitchText.js'
+import React, { useState, useEffect } from 'react'
+
 import { cyberpunkTheme } from '../../themes/cyberpunk.js'
+import { GlitchText } from '../effects/GlitchText.js'
+import { Card3D } from '../ui/Card3D.js'
 
 interface LogEntry {
   id: string
@@ -14,8 +15,8 @@ interface LogEntry {
 
 export const Logs: React.FC = () => {
   const [logs, setLogs] = useState<LogEntry[]>([])
-  const [filter, setFilter] = useState<'all' | 'info' | 'warning' | 'error'>('all')
-  const [autoScroll, setAutoScroll] = useState(true)
+  const [filter, _setFilter] = useState<'all' | 'info' | 'warning' | 'error'>('all')
+  const [autoScroll, _setAutoScroll] = useState(true)
   
   // Generate mock logs
   useEffect(() => {
@@ -40,9 +41,9 @@ export const Logs: React.FC = () => {
       let random = Math.random()
       let level: LogEntry['level'] = 'info'
       for (let i = 0; i < levels.length; i++) {
-        random -= weights[i]
+        random -= weights[i] ?? 0
         if (random <= 0) {
-          level = levels[i]
+          level = levels[i] ?? 'info'
           break
         }
       }
@@ -50,9 +51,9 @@ export const Logs: React.FC = () => {
       return {
         id: Date.now().toString() + Math.random(),
         timestamp: new Date(),
-        level,
-        source: sources[Math.floor(Math.random() * sources.length)],
-        message: messages[Math.floor(Math.random() * messages.length)],
+        level: level ?? 'info',
+        source: sources[Math.floor(Math.random() * sources.length)] ?? 'system',
+        message: messages[Math.floor(Math.random() * messages.length)] ?? 'No message',
       }
     }
     

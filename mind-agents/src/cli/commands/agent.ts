@@ -8,11 +8,11 @@
  * - Agent status and configuration
  */
 
-import { Command } from 'commander'
 import chalk from 'chalk'
+import { Command } from 'commander'
 import inquirer from 'inquirer'
 import ora from 'ora'
-import { CLIContext } from '../index'
+
 import { 
   AgentConfig, 
   AgentStatus, 
@@ -21,6 +21,7 @@ import {
   EmotionModuleType 
 } from '../../types/agent'
 import { Logger } from '../../utils/logger'
+import { CLIContext } from '../index'
 
 export class AgentCommand {
   private logger = new Logger('cli:agent')

@@ -21,43 +21,48 @@ export {
   PlanStatus,
   PlanStepStatus,
   EnvironmentType,
-  LogLevel
-} from './agent'
+  LogLevel,
+} from './agent';
 
 // Re-export portal enums
 export {
   PortalType,
   PortalStatus,
   ModelType,
-  ConfigurationLevel
-} from './portal'
+  ConfigurationLevel,
+} from './portal';
 
 // Emotion-related enums (defined in agent.ts)
 // EmotionModuleType is already exported above
 
 // Additional utility types
-export type RuntimeStatus = 'initializing' | 'running' | 'stopping' | 'stopped' | 'error'
+export type RuntimeStatus =
+  | 'initializing'
+  | 'running'
+  | 'stopping'
+  | 'stopped'
+  | 'error';
 
-export type ModuleStatus = 'loaded' | 'unloaded' | 'error' | 'initializing'
+export type ModuleStatus = 'loaded' | 'unloaded' | 'error' | 'initializing';
 
-export type FactoryStatus = 'registered' | 'unregistered' | 'error'
+export type FactoryStatus = 'registered' | 'unregistered' | 'error';
 
 // Common result types
 export interface BaseResult {
-  success: boolean
-  message?: string
-  timestamp: Date
+  success: boolean;
+  message?: string;
+  timestamp: Date;
 }
 
 export interface ErrorResult extends BaseResult {
-  success: false
-  error: string
-  code?: string
+  success: false;
+  error: string;
+  code?: string;
 }
 
 export interface SuccessResult<T = unknown> extends BaseResult {
-  success: true
-  data?: T
+  success: true;
+  data?: T;
 }
 
-export type Result<T = unknown> = SuccessResult<T> | ErrorResult
+export type Result<T = unknown> = SuccessResult<T> | ErrorResult;

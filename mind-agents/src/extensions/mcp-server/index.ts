@@ -1,28 +1,40 @@
 /**
  * MCP Server Extension for SYMindX
- * 
+ *
  * Exposes agent APIs as an MCP server, allowing external MCP clients to interact
  * with the agent through the Model Context Protocol standard.
  */
 
-import { ExtensionConfig, Extension, ExtensionMetadata, Agent, ExtensionType } from '../../types/index'
-import { runtimeLogger } from '../../utils/logger'
-import { MCPServerManager } from './mcp-server-manager'
-import { MCPServerConfig, MCPServerTool, MCPServerResource, MCPServerPrompt } from './types'
+import {
+  ExtensionConfig,
+  Extension,
+  ExtensionMetadata,
+  Agent,
+  ExtensionType,
+} from '../../types/index';
+import { runtimeLogger } from '../../utils/logger';
+
+import { MCPServerManager } from './mcp-server-manager';
+import {
+  MCPServerConfig,
+  MCPServerTool,
+  MCPServerResource,
+  MCPServerPrompt,
+} from './types';
 
 export interface MCPServerExtensionConfig extends ExtensionConfig {
-  enabled: boolean
-  server: MCPServerConfig
+  enabled: boolean;
+  server: MCPServerConfig;
 }
 
 export class MCPServerExtension implements Extension {
-  public readonly id = 'mcp-server'
-  public readonly name = 'MCP Server Extension'
-  public readonly version = '1.0.0'
-  public readonly type = 'MCP_SERVER' as ExtensionType.MCP_SERVER
-  public enabled = true
-  public status = 'stopped'
-  
+  public readonly id = 'mcp-server';
+  public readonly name = 'MCP Server Extension';
+  public readonly version = '1.0.0';
+  public readonly type = 'MCP_SERVER' as ExtensionType.MCP_SERVER;
+  public enabled = true;
+  public status = 'stopped';
+
   public readonly metadata: ExtensionMetadata = {
     name: 'mcp-server',
     version: '1.0.0',
@@ -37,16 +49,16 @@ export class MCPServerExtension implements Extension {
       'prompt_serving',
       'stdio_support',
       'websocket_support',
-      'http_support'
-    ]
-  }
+      'http_support',
+    ],
+  };
 
-  public config: MCPServerExtensionConfig
-  public actions: Record<string, any> = {}
-  public events: Record<string, any> = {}
-  
-  private mcpServer: MCPServerManager
-  private agent?: Agent
+  public config: MCPServerExtensionConfig;
+  public actions: Record<string, any> = {};
+  public events: Record<string, any> = {};
+
+  private mcpServer: MCPServerManager;
+  private agent?: Agent;
 
   constructor(config: MCPServerExtensionConfig) {
     this.config = {
@@ -67,249 +79,256 @@ export class MCPServerExtension implements Extension {
           emotionState: true,
           cognitiveState: true,
           agentManagement: false,
-          extensionControl: false
+          extensionControl: false,
         },
-        ...config.server
-      }
-    }
+        ...config.server,
+      },
+    };
 
-    this.mcpServer = new MCPServerManager(this.config.server)
-    runtimeLogger.info('🎯 MCP Server Extension initialized')
+    this.mcpServer = new MCPServerManager(this.config.server);
+    runtimeLogger.info('🎯 MCP Server Extension initialized');
   }
 
   async init(): Promise<void> {
     // Initialize without agent for factory compatibility
-    this.status = 'initializing'
+    this.status = 'initializing';
   }
-  
+
   async tick(agent: Agent): Promise<void> {
     // Periodic tick - could be used for health checks
   }
-  
+
   async initialize(agent: Agent): Promise<void> {
     if (!this.config.enabled || !this.config.server.enabled) {
-      runtimeLogger.info('⏸️ MCP Server Extension is disabled')
-      return
+      runtimeLogger.info('⏸️ MCP Server Extension is disabled');
+      return;
     }
 
-    this.agent = agent
+    this.agent = agent;
 
     try {
       // Initialize the MCP server manager
-      await this.mcpServer.initialize(agent)
+      await this.mcpServer.initialize(agent);
 
       // Register agent-specific tools, resources, and prompts
-      await this.registerAgentCapabilities()
+      await this.registerAgentCapabilities();
 
       // Start the MCP server
-      await this.mcpServer.start()
+      await this.mcpServer.start();
 
       // Set up event listeners
-      this.setupEventListeners()
+      this.setupEventListeners();
 
-      runtimeLogger.info('🎯 MCP Server Extension initialized successfully')
+      runtimeLogger.info('🎯 MCP Server Extension initialized successfully');
     } catch (error) {
-      runtimeLogger.error('❌ Failed to initialize MCP Server Extension:', error)
-      throw error
+      runtimeLogger.error(
+        '❌ Failed to initialize MCP Server Extension:',
+        error
+      );
+      throw error;
     }
   }
 
   async cleanup(): Promise<void> {
     try {
-      await this.mcpServer.stop()
-      runtimeLogger.info('🎯 MCP Server Extension cleaned up')
+      await this.mcpServer.stop();
+      runtimeLogger.info('🎯 MCP Server Extension cleaned up');
     } catch (error) {
-      runtimeLogger.error('❌ Error during MCP Server Extension cleanup:', error)
+      runtimeLogger.error(
+        '❌ Error during MCP Server Extension cleanup:',
+        error
+      );
     }
   }
 
   isEnabled(): boolean {
-    return this.config.enabled && this.config.server.enabled
+    return this.config.enabled && this.config.server.enabled;
   }
 
   /**
    * Register a custom tool to be exposed via MCP
    */
   registerTool(tool: MCPServerTool): void {
-    this.mcpServer.registerTool(tool)
+    this.mcpServer.registerTool(tool);
   }
 
   /**
    * Register a custom resource to be exposed via MCP
    */
   registerResource(resource: MCPServerResource): void {
-    this.mcpServer.registerResource(resource)
+    this.mcpServer.registerResource(resource);
   }
 
   /**
    * Register a custom prompt to be exposed via MCP
    */
   registerPrompt(prompt: MCPServerPrompt): void {
-    this.mcpServer.registerPrompt(prompt)
+    this.mcpServer.registerPrompt(prompt);
   }
 
   /**
    * Unregister a tool
    */
   unregisterTool(name: string): void {
-    this.mcpServer.unregisterTool(name)
+    this.mcpServer.unregisterTool(name);
   }
 
   /**
    * Unregister a resource
    */
   unregisterResource(uri: string): void {
-    this.mcpServer.unregisterResource(uri)
+    this.mcpServer.unregisterResource(uri);
   }
 
   /**
    * Unregister a prompt
    */
   unregisterPrompt(name: string): void {
-    this.mcpServer.unregisterPrompt(name)
+    this.mcpServer.unregisterPrompt(name);
   }
 
   /**
    * Get server statistics
    */
   getServerStats() {
-    return this.mcpServer.getStats()
+    return this.mcpServer.getStats();
   }
 
   /**
    * Get active connections
    */
   getConnections() {
-    return this.mcpServer.getConnections()
+    return this.mcpServer.getConnections();
   }
 
   /**
    * Register agent-specific capabilities as MCP tools, resources, and prompts
    */
   private async registerAgentCapabilities(): Promise<void> {
-    if (!this.agent) return
+    if (!this.agent) return;
 
     // Register advanced chat tool with emotion and memory integration
     if (this.config.server.exposedCapabilities?.chat) {
       this.registerTool({
         name: 'agent_chat_advanced',
-        description: 'Have an advanced conversation with the agent including emotional context',
+        description:
+          'Have an advanced conversation with the agent including emotional context',
         inputSchema: {
           type: 'object',
           properties: {
-            message: { 
-              type: 'string', 
-              description: 'Message to send to the agent' 
+            message: {
+              type: 'string',
+              description: 'Message to send to the agent',
             },
-            context: { 
-              type: 'string', 
-              description: 'Additional context for the conversation' 
+            context: {
+              type: 'string',
+              description: 'Additional context for the conversation',
             },
-            includeEmotion: { 
-              type: 'boolean', 
+            includeEmotion: {
+              type: 'boolean',
               description: 'Include emotional state in response',
-              default: true
+              default: true,
             },
-            includeMemory: { 
-              type: 'boolean', 
+            includeMemory: {
+              type: 'boolean',
               description: 'Use memory context in response',
-              default: true
-            }
+              default: true,
+            },
           },
-          required: ['message']
+          required: ['message'],
         },
         handler: async (args) => {
           // TODO: Integrate with actual agent chat system
-          const response = `Advanced agent response to: ${args.message}`
-          
+          const response = `Advanced agent response to: ${args.message}`;
+
           return {
             type: 'text',
-            text: response
-          }
+            text: response,
+          };
         },
-        metadata: { 
-          category: 'communication', 
-          readOnly: false 
-        }
-      })
+        metadata: {
+          category: 'communication',
+          readOnly: false,
+        },
+      });
     }
 
     // Register text generation tool
     if (this.config.server.exposedCapabilities?.textGeneration) {
       this.registerTool({
         name: 'agent_generate_text',
-        description: 'Generate text using the agent\'s capabilities',
+        description: "Generate text using the agent's capabilities",
         inputSchema: {
           type: 'object',
           properties: {
-            prompt: { 
-              type: 'string', 
-              description: 'Text generation prompt' 
+            prompt: {
+              type: 'string',
+              description: 'Text generation prompt',
             },
-            maxTokens: { 
-              type: 'number', 
+            maxTokens: {
+              type: 'number',
               description: 'Maximum tokens to generate',
-              default: 1000
+              default: 1000,
             },
-            temperature: { 
-              type: 'number', 
+            temperature: {
+              type: 'number',
               description: 'Temperature for generation',
-              default: 0.7
-            }
+              default: 0.7,
+            },
           },
-          required: ['prompt']
+          required: ['prompt'],
         },
         handler: async (args) => {
           // TODO: Integrate with actual agent text generation
           return {
             type: 'text',
-            text: `Generated text for prompt: ${args.prompt}`
-          }
+            text: `Generated text for prompt: ${args.prompt}`,
+          };
         },
-        metadata: { 
-          category: 'generation', 
-          readOnly: false 
-        }
-      })
+        metadata: {
+          category: 'generation',
+          readOnly: false,
+        },
+      });
     }
 
     // Register memory tools
     if (this.config.server.exposedCapabilities?.memoryAccess) {
       this.registerTool({
         name: 'agent_memory_store',
-        description: 'Store information in the agent\'s memory',
+        description: "Store information in the agent's memory",
         inputSchema: {
           type: 'object',
           properties: {
-            content: { 
-              type: 'string', 
-              description: 'Content to store in memory' 
+            content: {
+              type: 'string',
+              description: 'Content to store in memory',
             },
-            tags: { 
-              type: 'array', 
+            tags: {
+              type: 'array',
               items: { type: 'string' },
-              description: 'Tags for categorizing the memory'
+              description: 'Tags for categorizing the memory',
             },
-            importance: { 
-              type: 'number', 
+            importance: {
+              type: 'number',
               description: 'Importance level (1-10)',
-              default: 5
-            }
+              default: 5,
+            },
           },
-          required: ['content']
+          required: ['content'],
         },
         handler: async (args) => {
           // TODO: Integrate with actual agent memory system
           return {
             type: 'text',
-            text: `Stored in memory: ${args.content}`
-          }
+            text: `Stored in memory: ${args.content}`,
+          };
         },
-        metadata: { 
-          category: 'memory', 
-          readOnly: false 
-        }
-      })
+        metadata: {
+          category: 'memory',
+          readOnly: false,
+        },
+      });
     }
 
     // Register emotion resources
@@ -323,18 +342,22 @@ export class MCPServerExtension implements Extension {
           // TODO: Integrate with actual emotion system
           return {
             type: 'text',
-            text: JSON.stringify({
-              primary: 'neutral',
-              intensity: 0.5,
-              secondary: ['curious'],
-              timestamp: new Date().toISOString()
-            }, null, 2)
-          }
+            text: JSON.stringify(
+              {
+                primary: 'neutral',
+                intensity: 0.5,
+                secondary: ['curious'],
+                timestamp: new Date().toISOString(),
+              },
+              null,
+              2
+            ),
+          };
         },
-        metadata: { 
-          cacheable: false 
-        }
-      })
+        metadata: {
+          cacheable: false,
+        },
+      });
 
       this.registerResource({
         uri: 'agent://emotion/history',
@@ -345,18 +368,26 @@ export class MCPServerExtension implements Extension {
           // TODO: Integrate with actual emotion system
           return {
             type: 'text',
-            text: JSON.stringify({
-              timeline: [
-                { emotion: 'neutral', timestamp: new Date().toISOString(), duration: 3600 }
-              ]
-            }, null, 2)
-          }
+            text: JSON.stringify(
+              {
+                timeline: [
+                  {
+                    emotion: 'neutral',
+                    timestamp: new Date().toISOString(),
+                    duration: 3600,
+                  },
+                ],
+              },
+              null,
+              2
+            ),
+          };
         },
-        metadata: { 
-          cacheable: true, 
-          refreshInterval: 60000 
-        }
-      })
+        metadata: {
+          cacheable: true,
+          refreshInterval: 60000,
+        },
+      });
     }
 
     // Register cognitive state resources
@@ -370,48 +401,57 @@ export class MCPServerExtension implements Extension {
           // TODO: Integrate with actual cognition system
           return {
             type: 'text',
-            text: JSON.stringify({
-              mode: 'reactive',
-              processing: 'idle',
-              capabilities: ['reasoning', 'planning', 'learning'],
-              load: 0.2
-            }, null, 2)
-          }
+            text: JSON.stringify(
+              {
+                mode: 'reactive',
+                processing: 'idle',
+                capabilities: ['reasoning', 'planning', 'learning'],
+                load: 0.2,
+              },
+              null,
+              2
+            ),
+          };
         },
-        metadata: { 
-          cacheable: false 
-        }
-      })
+        metadata: {
+          cacheable: false,
+        },
+      });
     }
 
     // Register conversation prompts
     this.registerPrompt({
       name: 'conversation_starter',
       description: 'Generate a conversation starter based on context',
-      arguments: [{
-        name: 'topic',
-        description: 'Topic for the conversation',
-        required: false,
-        type: 'string'
-      }, {
-        name: 'tone',
-        description: 'Tone of the conversation (casual, formal, friendly)',
-        required: false,
-        type: 'string',
-        default: 'friendly'
-      }],
+      arguments: [
+        {
+          name: 'topic',
+          description: 'Topic for the conversation',
+          required: false,
+          type: 'string',
+        },
+        {
+          name: 'tone',
+          description: 'Tone of the conversation (casual, formal, friendly)',
+          required: false,
+          type: 'string',
+          default: 'friendly',
+        },
+      ],
       handler: async (args) => {
-        const topic = args.topic || 'general'
-        const tone = args.tone || 'friendly'
-        
-        return `Hello! I'm ${this.agent?.name}. I'd love to discuss ${topic} with you in a ${tone} manner. What would you like to know?`
-      },
-      metadata: { 
-        category: 'conversation' 
-      }
-    })
+        const topic = args.topic || 'general';
+        const tone = args.tone || 'friendly';
 
-    runtimeLogger.info('✅ Registered agent capabilities as MCP tools, resources, and prompts')
+        return `Hello! I'm ${this.agent?.name}. I'd love to discuss ${topic} with you in a ${tone} manner. What would you like to know?`;
+      },
+      metadata: {
+        category: 'conversation',
+      },
+    });
+
+    runtimeLogger.info(
+      '✅ Registered agent capabilities as MCP tools, resources, and prompts'
+    );
   }
 
   /**
@@ -419,52 +459,56 @@ export class MCPServerExtension implements Extension {
    */
   private setupEventListeners(): void {
     this.mcpServer.on('server:started', () => {
-      runtimeLogger.info('🚀 MCP Server started successfully')
-    })
+      runtimeLogger.info('🚀 MCP Server started successfully');
+    });
 
     this.mcpServer.on('server:stopped', () => {
-      runtimeLogger.info('🛑 MCP Server stopped')
-    })
+      runtimeLogger.info('🛑 MCP Server stopped');
+    });
 
     this.mcpServer.on('connection:opened', (connectionId: string) => {
-      runtimeLogger.debug(`🔗 New MCP connection: ${connectionId}`)
-    })
+      runtimeLogger.debug(`🔗 New MCP connection: ${connectionId}`);
+    });
 
     this.mcpServer.on('connection:closed', (connectionId: string) => {
-      runtimeLogger.debug(`🔌 MCP connection closed: ${connectionId}`)
-    })
+      runtimeLogger.debug(`🔌 MCP connection closed: ${connectionId}`);
+    });
   }
 
   /**
    * Get extension configuration
    */
   getConfig(): MCPServerExtensionConfig {
-    return { ...this.config }
+    return { ...this.config };
   }
 
   /**
    * Update extension configuration
    */
-  async updateConfig(updates: Partial<MCPServerExtensionConfig>): Promise<void> {
-    this.config = { ...this.config, ...updates }
-    
+  async updateConfig(
+    updates: Partial<MCPServerExtensionConfig>
+  ): Promise<void> {
+    this.config = { ...this.config, ...updates };
+
     // Restart server if configuration changed
     if (updates.server && this.isEnabled()) {
-      await this.mcpServer.stop()
-      this.mcpServer = new MCPServerManager(this.config.server)
-      
+      await this.mcpServer.stop();
+      this.mcpServer = new MCPServerManager(this.config.server);
+
       if (this.agent) {
-        await this.mcpServer.initialize(this.agent)
-        await this.registerAgentCapabilities()
-        await this.mcpServer.start()
+        await this.mcpServer.initialize(this.agent);
+        await this.registerAgentCapabilities();
+        await this.mcpServer.start();
       }
     }
   }
 }
 
 // Factory function for creating MCP Server Extension
-export function createMCPServerExtension(config: MCPServerExtensionConfig): MCPServerExtension {
-  return new MCPServerExtension(config)
+export function createMCPServerExtension(
+  config: MCPServerExtensionConfig
+): MCPServerExtension {
+  return new MCPServerExtension(config);
 }
 
-export default MCPServerExtension
+export default MCPServerExtension;

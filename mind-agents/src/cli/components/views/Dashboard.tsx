@@ -1,24 +1,25 @@
-import React, { useState, useEffect } from 'react'
 import { Box, Text, useApp } from 'ink'
-import { Header } from '../ui/Header.js'
-import { Card3D } from '../ui/Card3D.js'
-import { Chart } from '../ui/Chart.js'
+import React, { useState, useEffect } from 'react'
+
+import { useAgentData } from '../../hooks/useAgentData.js'
+import { useSystemStats } from '../../hooks/useSystemStats.js'
+import { cyberpunkTheme } from '../../themes/cyberpunk.js'
+import { musicManager } from '../../utils/background-music.js'
+import { soundManager } from '../../utils/sound-effects.js'
 import { GlitchText } from '../effects/GlitchText.js'
 import { MatrixRain } from '../effects/MatrixRain.js'
-import { cyberpunkTheme } from '../../themes/cyberpunk.js'
-import { useSystemStats } from '../../hooks/useSystemStats.js'
-import { useAgentData } from '../../hooks/useAgentData.js'
-import { soundManager, SoundType } from '../../utils/sound-effects.js'
-import { musicManager } from '../../utils/background-music.js'
+import { Card3D } from '../ui/Card3D.js'
+import { Chart } from '../ui/Chart.js'
+import { Header } from '../ui/Header.js'
 
 export const Dashboard: React.FC = () => {
-  const { exit } = useApp()
+  const { exit: _exit } = useApp()
   const systemStats = useSystemStats()
   const agentData = useAgentData()
   
   const [cpuHistory, setCpuHistory] = useState<number[]>(Array(20).fill(0))
   const [memHistory, setMemHistory] = useState<number[]>(Array(20).fill(0))
-  const [selectedMetric, setSelectedMetric] = useState<'cpu' | 'memory'>('cpu')
+  const [selectedMetric, _setSelectedMetric] = useState<'cpu' | 'memory'>('cpu')
   const [showMatrix, setShowMatrix] = useState(false)
   
   // Convert SystemStats to simpler format for display

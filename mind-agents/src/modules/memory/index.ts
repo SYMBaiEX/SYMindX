@@ -1,43 +1,65 @@
 /**
  * Memory Module for SYMindX
- * 
+ *
  * This module provides memory providers for storing and retrieving agent memories.
  */
 
-import { ModuleRegistry, MemoryProviderType } from '../../types/agent'
-import { runtimeLogger } from '../../utils/logger'
+import { ModuleRegistry, MemoryProviderType } from '../../types/agent';
+import { runtimeLogger } from '../../utils/logger';
 
 // Re-export the memory provider factory and types
-export { createMemoryProvider, getMemoryProviderTypes } from './providers/index'
-export type { MemoryProviderConfig } from './providers/index'
+export {
+  createMemoryProvider,
+  getMemoryProviderTypes,
+} from './providers/index';
+export type { MemoryProviderConfig } from './providers/index';
 
 // Import provider classes for registration
-import { InMemoryProvider } from './providers/memory/index'
-import { SQLiteMemoryProvider } from './providers/sqlite/index'
-import { SupabaseMemoryProvider } from './providers/supabase/index'
-import { NeonMemoryProvider } from './providers/neon/index'
-import { PostgresMemoryProvider } from './providers/postgres/index'
+import { InMemoryProvider } from './providers/memory/index';
+import { NeonMemoryProvider } from './providers/neon/index';
+import { PostgresMemoryProvider } from './providers/postgres/index';
+import { SQLiteMemoryProvider } from './providers/sqlite/index';
+import { SupabaseMemoryProvider } from './providers/supabase/index';
 
 /**
  * Register all memory providers with the registry
  */
-export async function registerMemoryProviders(registry: ModuleRegistry): Promise<void> {
+export async function registerMemoryProviders(
+  registry: ModuleRegistry
+): Promise<void> {
   try {
     // Register memory provider factories
-    registry.registerMemoryFactory('memory', (config: any) => new InMemoryProvider(config))
-    registry.registerMemoryFactory('sqlite', (config: any) => new SQLiteMemoryProvider(config))
-    registry.registerMemoryFactory('supabase', (config: any) => new SupabaseMemoryProvider(config))
-    registry.registerMemoryFactory('neon', (config: any) => new NeonMemoryProvider(config))
-    registry.registerMemoryFactory('postgres', (config: any) => new PostgresMemoryProvider(config))
-    
-    runtimeLogger.info('📝 Memory providers registered: memory, sqlite, supabase, neon, postgres')
-    
+    registry.registerMemoryFactory(
+      'memory',
+      (config: any) => new InMemoryProvider(config)
+    );
+    registry.registerMemoryFactory(
+      'sqlite',
+      (config: any) => new SQLiteMemoryProvider(config)
+    );
+    registry.registerMemoryFactory(
+      'supabase',
+      (config: any) => new SupabaseMemoryProvider(config)
+    );
+    registry.registerMemoryFactory(
+      'neon',
+      (config: any) => new NeonMemoryProvider(config)
+    );
+    registry.registerMemoryFactory(
+      'postgres',
+      (config: any) => new PostgresMemoryProvider(config)
+    );
+
+    runtimeLogger.info(
+      '📝 Memory providers registered: memory, sqlite, supabase, neon, postgres'
+    );
+
     // Also register the main in-memory provider for backward compatibility
-    const defaultProvider = new InMemoryProvider({})
-    registry.registerMemoryProvider('memory', defaultProvider)
+    const defaultProvider = new InMemoryProvider({});
+    registry.registerMemoryProvider('memory', defaultProvider);
   } catch (error) {
-    runtimeLogger.error('❌ Failed to register memory providers:', error)
-    throw error
+    runtimeLogger.error('❌ Failed to register memory providers:', error);
+    throw error;
   }
 }
 
@@ -45,5 +67,5 @@ export async function registerMemoryProviders(registry: ModuleRegistry): Promise
  * Get available memory provider names
  */
 export function getAvailableMemoryProviders(): string[] {
-  return ['memory', 'sqlite', 'supabase', 'neon', 'postgres']
+  return ['memory', 'sqlite', 'supabase', 'neon', 'postgres'];
 }

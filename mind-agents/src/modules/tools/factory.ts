@@ -1,40 +1,45 @@
 /**
  * Tool System Factory
- * 
+ *
  * Factory for creating and managing tool system instances
  */
 
-import { ToolSystem, ToolSystemConfig } from './index'
-import { DynamicToolSystem } from './dynamic-tool-system'
-import { BaseConfig } from '../../types/common'
+import { BaseConfig } from '../../types/common';
 
-export type ToolSystemType = 'dynamic' | 'static' | 'hybrid'
+import { DynamicToolSystem } from './dynamic-tool-system';
+
+import { ToolSystem, ToolSystemConfig } from './index';
+
+export type ToolSystemType = 'dynamic' | 'static' | 'hybrid';
 
 export interface ToolSystemFactory {
-  (config: ToolSystemConfig): ToolSystem
+  (config: ToolSystemConfig): ToolSystem;
 }
 
 /**
  * Available tool system factories
  */
 const toolSystemFactories: Map<string, ToolSystemFactory> = new Map([
-  ['dynamic', (config: ToolSystemConfig) => new DynamicToolSystem(config)]
-])
+  ['dynamic', (config: ToolSystemConfig) => new DynamicToolSystem(config)],
+]);
 
 /**
  * Register a tool system factory
  */
-export function registerToolSystemFactory(type: string, factory: ToolSystemFactory): void {
-  toolSystemFactories.set(type, factory)
+export function registerToolSystemFactory(
+  type: string,
+  factory: ToolSystemFactory
+): void {
+  toolSystemFactories.set(type, factory);
 }
 
 /**
  * Create a tool system instance
  */
 export function createToolSystem(type: string, config: BaseConfig): ToolSystem {
-  const factory = toolSystemFactories.get(type)
+  const factory = toolSystemFactories.get(type);
   if (!factory) {
-    throw new Error(`Tool system factory for type '${type}' not found`)
+    throw new Error(`Tool system factory for type '${type}' not found`);
   }
 
   const toolSystemConfig: ToolSystemConfig = {
@@ -46,25 +51,25 @@ export function createToolSystem(type: string, config: BaseConfig): ToolSystem {
     errorHandling: {
       retryAttempts: 3,
       retryDelay: 1000,
-      fallbackEnabled: true
+      fallbackEnabled: true,
     },
     logging: {
       enabled: true,
       level: 'info',
       logExecutions: true,
-      logErrors: true
+      logErrors: true,
     },
-    ...config
-  }
+    ...config,
+  };
 
-  return factory(toolSystemConfig)
+  return factory(toolSystemConfig);
 }
 
 /**
  * Get all available tool system types
  */
 export function getAvailableToolSystems(): string[] {
-  return Array.from(toolSystemFactories.keys())
+  return Array.from(toolSystemFactories.keys());
 }
 
 /**
@@ -76,4 +81,4 @@ export function registerDefaultToolSystems(): void {
 }
 
 // Auto-register default tool systems
-registerDefaultToolSystems()
+registerDefaultToolSystems();

@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
 import { Box, Text, useInput } from 'ink';
-import { Dashboard } from '../components/Dashboard.js';
+import React, { useState, useEffect } from 'react';
+
 import { AgentList } from '../components/AgentList.js';
-import { SystemStatus } from '../components/SystemStatus.js';
 import { Chat } from '../components/Chat.js';
+import { Dashboard } from '../components/Dashboard.js';
+import { SystemStatus } from '../components/SystemStatus.js';
 
 interface MainLayoutProps {
   command?: string;
