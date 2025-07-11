@@ -13,11 +13,10 @@ import { Command } from 'commander'
 import figlet from 'figlet'
 import gradient from 'gradient-string'
 import inquirer from 'inquirer'
-import ora from 'ora'
 import WebSocket from 'ws'
 
 import { SYMindXRuntime } from '../core/runtime'
-import { RuntimeConfig, LogLevel } from '../types/agent'
+import { RuntimeConfig } from '../types/agent'
 import { 
   displayBanner, 
   createSpinner, 
@@ -28,19 +27,15 @@ import {
   createProgressBar,
   animateLoading,
   matrixRain,
-  createStatusDashboard,
   animateShutdown
 } from '../utils/cli-ui'
-import { Logger } from '../utils/logger'
-
-const logger = new Logger('cli')
 
 import { CommandSystem } from '../core/command-system'
 
 // CLI Context interface for commands
 export interface CLIContext {
   runtime: SYMindXRuntime
-  config: RuntimeConfig
+  config: CLIConfig
   selectedAgent?: string
   commandSystem: CommandSystem
 }
@@ -50,7 +45,7 @@ const coolGradient = gradient(['#FF006E', '#8338EC', '#3A86FF'])
 const neonGradient = gradient(['#00F5FF', '#FF00FF', '#FFFF00'])
 const fireGradient = gradient(['#FF6B6B', '#FFA500', '#FFD700'])
 
-interface CLIConfig {
+export interface CLIConfig {
   apiUrl: string
   wsUrl: string
   autoConnect: boolean
@@ -63,8 +58,6 @@ class AwesomeSYMindXCLI {
   private program: Command
   private config: CLIConfig
   private ws?: WebSocket
-  private selectedAgent?: string
-  private runtime?: SYMindXRuntime
   
   constructor() {
     this.program = new Command()
@@ -373,65 +366,6 @@ class AwesomeSYMindXCLI {
       }
     } catch (error) {
       console.log(chalk.red('❌ Could not connect to agent'))
-    }
-  }
-
-  private async connectWebSocket(agentId: string): Promise<void> {
-    const spinner = createSpinner('Connecting to agent...', 'dots')
-    spinner.start()
-
-    return new Promise((resolve, reject) => {
-      this.ws = new WebSocket(`${this.config.wsUrl}?agent=${agentId}`)
-
-      this.ws.on('open', () => {
-        spinner.succeed('Connected!')
-        resolve()
-      })
-
-      this.ws.on('message', (data) => {
-        const message = JSON.parse(data.toString())
-        if (message.type === 'chat' && message.from === agentId) {
-          displayChatMessage(message.from, message.content, true)
-        }
-      })
-
-      this.ws.on('error', (error) => {
-        spinner.fail('Connection failed')
-        displayError(error.message)
-        reject(error)
-      })
-
-      this.ws.on('close', () => {
-        console.log(chalk.gray('\nDisconnected from agent'))
-      })
-    })
-  }
-
-  private async sendMessage(agentId: string, message: string): Promise<void> {
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify({
-        type: 'chat',
-        to: agentId,
-        content: message
-      }))
-    } else {
-      // Fallback to HTTP API
-      try {
-        const response = await fetch(`${this.config.apiUrl}/chat`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ agentId, message })
-        })
-
-        if (response.ok) {
-          const data = await response.json()
-          displayChatMessage(agentId, data.response, true)
-        } else {
-          displayError('Failed to send message')
-        }
-      } catch (error) {
-        displayError('Could not connect to agent')
-      }
     }
   }
 

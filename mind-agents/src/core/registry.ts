@@ -47,6 +47,15 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
   // Lazy agent management
   private lazyAgents = new Map<string, LazyAgent>();
 
+  registerLazyAgent(agentId: string, lazyAgent: LazyAgent): void {
+    this.lazyAgents.set(agentId, lazyAgent);
+    runtimeLogger.factory(`🦥 Registered lazy agent: ${agentId}`);
+  }
+
+  getLazyAgent(agentId: string): LazyAgent | undefined {
+    return this.lazyAgents.get(agentId);
+  }
+
   registerMemoryProvider(name: string, provider: any): void {
     this.memoryProviders.set(name, provider);
     runtimeLogger.factory(`📝 Registered memory provider: ${name}`);
@@ -283,6 +292,57 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
       agentFactories: this.agentFactories.size,
       lazyAgents: this.lazyAgents.size,
     };
+  }
+
+  // Generic registry methods
+  register<T>(name: string, factory: any): void {
+    // Generic register - determine type and route to appropriate registry
+    if (name.includes('memory')) {
+      this.memoryFactories.set(name, factory);
+    } else if (name.includes('emotion')) {
+      this.emotionFactories.set(name, factory);
+    } else if (name.includes('cognition')) {
+      this.cognitionFactories.set(name, factory);
+    } else if (name.includes('portal')) {
+      this.portalFactories.set(name, factory);
+    } else if (name.includes('extension')) {
+      this.extensionFactories.set(name, factory);
+    }
+    runtimeLogger.factory(`📦 Registered generic factory: ${name}`);
+  }
+
+  get<T>(name: string): T | undefined {
+    // Generic get - try all registries
+    return (
+      this.memoryProviders.get(name) ||
+      this.emotionModules.get(name) ||
+      this.cognitionModules.get(name) ||
+      this.extensions.get(name) ||
+      this.portals.get(name) ||
+      this.toolSystems.get(name) ||
+      this.observabilityModules.get(name) ||
+      this.streamingInterfaces.get(name)
+    ) as T | undefined;
+  }
+
+  has(name: string): boolean {
+    return (
+      this.memoryProviders.has(name) ||
+      this.emotionModules.has(name) ||
+      this.cognitionModules.has(name) ||
+      this.extensions.has(name) ||
+      this.portals.has(name) ||
+      this.toolSystems.has(name) ||
+      this.observabilityModules.has(name) ||
+      this.streamingInterfaces.has(name) ||
+      this.memoryFactories.has(name) ||
+      this.emotionFactories.has(name) ||
+      this.cognitionFactories.has(name) ||
+      this.portalFactories.has(name) ||
+      this.extensionFactories.has(name) ||
+      this.agentFactories.has(name) ||
+      this.lazyAgents.has(name)
+    );
   }
 
   clear(): void {

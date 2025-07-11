@@ -188,8 +188,8 @@ export class AnthropicPortal extends BasePortal {
    * This is a placeholder that throws an error
    */
   override async generateEmbedding(
-    text: string,
-    options?: EmbeddingOptions
+    _text: string,
+    _options?: EmbeddingOptions
   ): Promise<EmbeddingResult> {
     throw new Error(
       'Anthropic does not provide embedding models. Consider using OpenAI or another provider for embeddings.'
@@ -201,8 +201,8 @@ export class AnthropicPortal extends BasePortal {
    * This is a placeholder that throws an error
    */
   override async generateImage(
-    prompt: string,
-    options?: ImageGenerationOptions
+    _prompt: string,
+    _options?: ImageGenerationOptions
   ): Promise<ImageGenerationResult> {
     throw new Error(
       'Anthropic does not provide image generation models. Consider using OpenAI or another provider for image generation.'

@@ -172,7 +172,6 @@ export class WebSocketServerSkill {
       id: connectionId,
       ws,
       clientInfo: {
-        userAgent,
         ip,
         connectedAt: new Date(),
         lastActivity: new Date(),
@@ -180,6 +179,10 @@ export class WebSocketServerSkill {
       subscriptions: new Set(),
       metadata: {},
     };
+    
+    if (userAgent) {
+      connection.clientInfo.userAgent = userAgent;
+    }
 
     // Force disable any compression extensions that might have been negotiated
     if ((ws as any).extensions) {
@@ -489,16 +492,23 @@ export class WebSocketServerSkill {
     try {
       const connectionInfo: ConnectionInfo[] = Array.from(
         this.connections.values()
-      ).map((conn) => ({
-        id: conn.id,
-        readyState: conn.ws.readyState,
-        ip: conn.clientInfo.ip,
-        userAgent: conn.clientInfo.userAgent,
-        connectedAt: conn.clientInfo.connectedAt,
-        lastActivity: conn.clientInfo.lastActivity,
-        subscriptions: Array.from(conn.subscriptions),
-        metadata: conn.metadata,
-      }));
+      ).map((conn) => {
+        const info: ConnectionInfo = {
+          id: conn.id,
+          readyState: conn.ws.readyState,
+          ip: conn.clientInfo.ip,
+          connectedAt: conn.clientInfo.connectedAt,
+          lastActivity: conn.clientInfo.lastActivity,
+          subscriptions: Array.from(conn.subscriptions),
+          metadata: conn.metadata,
+        };
+        
+        if (conn.clientInfo.userAgent) {
+          info.userAgent = conn.clientInfo.userAgent;
+        }
+        
+        return info;
+      });
 
       return {
         success: true,

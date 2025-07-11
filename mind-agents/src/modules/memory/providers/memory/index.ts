@@ -463,9 +463,9 @@ export class InMemoryProvider extends BaseMemoryProvider {
     let normB = 0;
 
     for (let i = 0; i < a.length; i++) {
-      dotProduct += a[i] * b[i];
-      normA += a[i] * a[i];
-      normB += b[i] * b[i];
+      dotProduct += a[i]! * b[i]!;
+      normA += a[i]! * a[i]!;
+      normB += b[i]! * b[i]!;
     }
 
     const magnitude = Math.sqrt(normA) * Math.sqrt(normB);
@@ -515,7 +515,7 @@ export class InMemoryProvider extends BaseMemoryProvider {
     // Remove 10% of memories to make room
     const toRemove = Math.floor(memories.length * 0.1);
     for (let i = 0; i < toRemove; i++) {
-      agentStorage.memories.delete(memories[i][0]);
+      agentStorage.memories.delete(memories[i]?.[0] ?? '');
     }
 
     console.log(

@@ -20,7 +20,6 @@ import {
   MCPServerPrompt,
   MCPRequest,
   MCPResponse,
-  MCPNotification,
   MCPCapabilities,
   MCPServerInfo,
   MCPInitializeParams,
@@ -39,7 +38,7 @@ export class MCPServerManager extends EventEmitter {
   private prompts = new Map<string, MCPServerPrompt>();
   private connections = new Map<string, MCPConnectionInfo>();
   private stats: MCPServerStats;
-  private requestId = 0;
+  private _requestId = 0;
 
   constructor(config: MCPServerConfig) {
     super();
@@ -299,8 +298,8 @@ export class MCPServerManager extends EventEmitter {
 
   private async handleRequest(
     request: MCPRequest,
-    transport: string,
-    connectionId?: string
+    _transport: string,
+    _connectionId?: string
   ): Promise<MCPResponse | null> {
     this.stats.requestCount++;
 
@@ -384,7 +383,7 @@ export class MCPServerManager extends EventEmitter {
   }
 
   private async handleInitialize(
-    params: MCPInitializeParams
+    _params: MCPInitializeParams
   ): Promise<MCPServerInfo> {
     return {
       name: this.config.name!,
@@ -467,7 +466,7 @@ export class MCPServerManager extends EventEmitter {
     };
   }
 
-  private handleHealthCheck(req: any, res: any): void {
+  private handleHealthCheck(_req: any, res: any): void {
     const health = {
       status: 'healthy',
       timestamp: new Date().toISOString(),
@@ -481,7 +480,7 @@ export class MCPServerManager extends EventEmitter {
     res.end(JSON.stringify(health));
   }
 
-  private handleStatsRequest(req: any, res: any): void {
+  private handleStatsRequest(_req: any, res: any): void {
     this.stats.uptime = Date.now() - this.stats.startTime.getTime();
     const memoryUsage = process.memoryUsage();
 
@@ -838,7 +837,7 @@ export class MCPServerManager extends EventEmitter {
           },
           required: ['trigger'],
         },
-        handler: async (args) => {
+        handler: async (_args) => {
           try {
             if (!this.agent?.emotion) {
               return { type: 'text', text: 'Emotion system not available' };
@@ -846,7 +845,7 @@ export class MCPServerManager extends EventEmitter {
 
             // Trigger emotion response
             // TODO: Implement processTrigger method in emotion module or use alternative approach
-            // await this.agent.emotion.processTrigger(args.trigger, args.intensity || 0.5)
+            // await this.agent.emotion.processTrigger(_args.trigger, _args.intensity || 0.5)
             const newState = await this.agent.emotion.getCurrentState();
 
             return {

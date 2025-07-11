@@ -132,11 +132,11 @@ describe('ConfigValidator', () => {
     });
 
     it('should validate telegram bot token format', () => {
-      process.env.TELEGRAM_BOT_TOKEN = '1234567890:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefgh';
+      process.env.TELEGRAM_BOT_TOKEN = '1234567890:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghX';
       
       const result = ConfigValidator.validateEnvironmentConfig();
       
-      expect(result.config.apiKeys.TELEGRAM_BOT_TOKEN).toBe('1234567890:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefgh');
+      expect(result.config.apiKeys.TELEGRAM_BOT_TOKEN).toBe('1234567890:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghX');
     });
 
     it('should reject invalid telegram bot token format', () => {

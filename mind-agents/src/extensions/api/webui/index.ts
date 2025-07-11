@@ -24,7 +24,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export class WebUIServer {
-  private logger = new Logger('webui');
+  private _logger = new Logger('webui');
   private app: express.Application;
 
   constructor(
@@ -45,37 +45,37 @@ export class WebUIServer {
 
   private setupRoutes(): void {
     // Serve main dashboard
-    this.app.get('/', (req, res) => {
+    this.app.get('/', (_req, res) => {
       res.send(this.generateDashboardHTML());
     });
 
     // Chat interface
-    this.app.get('/chat', (req, res) => {
+    this.app.get('/chat', (_req, res) => {
       res.send(this.generateChatHTML());
     });
 
     // Agent management interface
-    this.app.get('/agents', (req, res) => {
+    this.app.get('/agents', (_req, res) => {
       res.send(this.generateAgentsHTML());
     });
 
     // System monitoring interface
-    this.app.get('/monitor', (req, res) => {
+    this.app.get('/monitor', (_req, res) => {
       res.send(this.generateMonitorHTML());
     });
 
     // Multi-Agent Manager interface
-    this.app.get('/multi-agent', (req, res) => {
+    this.app.get('/multi-agent', (_req, res) => {
       res.send(this.generateMultiAgentHTML());
     });
 
     // Alternative route for UI namespace consistency
-    this.app.get('/ui/multi-agent', (req, res) => {
+    this.app.get('/ui/multi-agent', (_req, res) => {
       res.send(this.generateMultiAgentHTML());
     });
 
     // API endpoints for dynamic content
-    this.app.get('/api/agents', (req, res) => {
+    this.app.get('/api/agents', (_req, res) => {
       const agents = Array.from(this.getAgents().values()).map((agent) => ({
         id: agent.id,
         name: agent.name,
@@ -116,7 +116,7 @@ export class WebUIServer {
       });
     });
 
-    this.app.get('/api/stats', (req, res) => {
+    this.app.get('/api/stats', (_req, res) => {
       const runtimeStats = this.getRuntimeStats();
       const commandStats = this.commandSystem.getStats();
 
@@ -220,7 +220,7 @@ export class WebUIServer {
     });
 
     // Characters API endpoint
-    this.app.get('/api/characters', async (req, res) => {
+    this.app.get('/api/characters', async (_req, res) => {
       try {
         const fs = await import('fs');
         const path = await import('path');
@@ -265,7 +265,7 @@ export class WebUIServer {
     });
 
     // API endpoint to get all agents (from character files) with their running status
-    this.app.get('/api/agents/all', async (req, res) => {
+    this.app.get('/api/agents/all', async (_req, res) => {
       try {
         const fs = await import('fs');
         const path = await import('path');

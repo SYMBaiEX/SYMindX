@@ -14,7 +14,6 @@ import {
   ThoughtContext,
   ThoughtResult,
   AgentAction,
-  MemoryRecord,
   Plan,
   Decision,
   ActionStatus,
@@ -89,10 +88,10 @@ export class HybridReasoningEngine implements CognitionModule {
 
   // Learning components
   private qTable: Map<string, Map<string, number>> = new Map();
-  private policyNetwork: Map<string, Map<string, number>> = new Map();
+  private _policyNetwork: Map<string, Map<string, number>> = new Map();
   private patterns: Map<string, { frequency: number; success: number }> =
     new Map();
-  private metaKnowledge: Map<string, any> = new Map();
+  private _metaKnowledge: Map<string, any> = new Map();
 
   constructor(config: Partial<HybridReasoningConfig> = {}) {
     this.id = `hybrid_reasoning_${Date.now()}`;
@@ -229,7 +228,7 @@ export class HybridReasoningEngine implements CognitionModule {
    * System 1: Fast, intuitive reasoning
    */
   private async system1Think(
-    agent: Agent,
+    _agent: Agent,
     context: ReasoningContext
   ): Promise<ReasoningResult> {
     const startTime = Date.now();
@@ -245,7 +244,7 @@ export class HybridReasoningEngine implements CognitionModule {
 
       // Use strongest pattern for action
       const bestPattern = patterns[0];
-      if (bestPattern.confidence > this.config.system1Threshold) {
+      if (bestPattern && bestPattern.confidence > this.config.system1Threshold) {
         const action = this.generateActionFromPattern(bestPattern, context);
         if (action) {
           actions.push(action);
@@ -264,7 +263,7 @@ export class HybridReasoningEngine implements CognitionModule {
 
     return {
       system: 'system1',
-      confidence: patterns.length > 0 ? patterns[0].confidence : 0.6,
+      confidence: patterns.length > 0 ? patterns[0]?.confidence ?? 0.6 : 0.6,
       processingTime,
       thoughts,
       actions,
@@ -275,7 +274,7 @@ export class HybridReasoningEngine implements CognitionModule {
    * System 2: Slow, deliberate reasoning
    */
   private async system2Think(
-    agent: Agent,
+    _agent: Agent,
     context: ReasoningContext
   ): Promise<ReasoningResult> {
     const startTime = Date.now();
@@ -325,7 +324,7 @@ export class HybridReasoningEngine implements CognitionModule {
    * HTN Planning: Hierarchical task network planning
    */
   private async htnPlan(
-    agent: Agent,
+    _agent: Agent,
     context: ReasoningContext
   ): Promise<ReasoningResult> {
     const startTime = Date.now();
@@ -368,7 +367,7 @@ export class HybridReasoningEngine implements CognitionModule {
    * Reinforcement Learning: Experience-based decision making
    */
   private async reinforcementLearning(
-    agent: Agent,
+    _agent: Agent,
     context: ReasoningContext
   ): Promise<ReasoningResult> {
     const startTime = Date.now();
@@ -513,7 +512,7 @@ export class HybridReasoningEngine implements CognitionModule {
   }
 
   private async selectReasoningSystem(
-    agent: Agent,
+    _agent: Agent,
     context: ReasoningContext
   ): Promise<string> {
     // Simple heuristics for system selection
@@ -584,7 +583,7 @@ export class HybridReasoningEngine implements CognitionModule {
 
   private generateActionFromPattern(
     pattern: { name: string; confidence: number; action?: string },
-    context: ReasoningContext
+    _context: ReasoningContext
   ): AgentAction | null {
     if (!pattern.action) return null;
 
@@ -630,7 +629,7 @@ export class HybridReasoningEngine implements CognitionModule {
 
   private convertToThoughtResult(
     result: ReasoningResult,
-    totalTime: number
+    _totalTime: number
   ): ThoughtResult {
     return {
       thoughts: result.thoughts,
@@ -649,8 +648,8 @@ export class HybridReasoningEngine implements CognitionModule {
   }
 
   private async updateLearning(
-    agent: Agent,
-    context: ReasoningContext,
+    _agent: Agent,
+    _context: ReasoningContext,
     result: ReasoningResult
   ): Promise<void> {
     if (result.learningUpdates) {
@@ -672,7 +671,7 @@ export class HybridReasoningEngine implements CognitionModule {
     const qValues = this.qTable.get(state);
     if (qValues) {
       // Q-learning update rule: Q(s,a) = Q(s,a) + α[r + γ max Q(s',a') - Q(s,a)]
-      const newValue =
+      const _newValue =
         oldValue + this.config.rlLearningRate * (reward - oldValue);
       // This would need the specific action and next state in a real implementation
     }
@@ -687,40 +686,40 @@ export class HybridReasoningEngine implements CognitionModule {
 
   // Additional helper methods would be implemented here...
   private async deepContextAnalysis(
-    agent: Agent,
-    context: ReasoningContext
+    _agent: Agent,
+    _context: ReasoningContext
   ): Promise<any> {
     return { summary: 'Context analyzed', factors: [] };
   }
 
   private async generateOptions(
-    agent: Agent,
-    context: ReasoningContext,
-    analysis: any
+    _agent: Agent,
+    _context: ReasoningContext,
+    _analysis: any
   ): Promise<any[]> {
     return [];
   }
 
   private async evaluateOptions(
-    agent: Agent,
-    options: any[],
-    context: ReasoningContext
+    _agent: Agent,
+    _options: any[],
+    _context: ReasoningContext
   ): Promise<any> {
     return { bestOption: null, bestScore: 0 };
   }
 
   private createActionFromOption(
-    option: any,
-    context: ReasoningContext
+    _option: any,
+    _context: ReasoningContext
   ): AgentAction | null {
     return null;
   }
 
-  private identifyGoals(context: ReasoningContext): any[] {
+  private identifyGoals(_context: ReasoningContext): any[] {
     return [];
   }
 
-  private async decomposeGoals(goals: any[], maxDepth: number): Promise<Plan> {
+  private async decomposeGoals(_goals: any[], _maxDepth: number): Promise<Plan> {
     return {
       id: `plan_${Date.now()}`,
       goal: 'HTN Plan',
@@ -734,8 +733,8 @@ export class HybridReasoningEngine implements CognitionModule {
   }
 
   private createActionFromStep(
-    step: any,
-    context: ReasoningContext
+    _step: any,
+    _context: ReasoningContext
   ): AgentAction | null {
     return null;
   }
@@ -745,8 +744,8 @@ export class HybridReasoningEngine implements CognitionModule {
   }
 
   private getAvailableActions(
-    agent: Agent,
-    context: ReasoningContext
+    _agent: Agent,
+    _context: ReasoningContext
   ): AgentAction[] {
     return [];
   }
@@ -764,7 +763,7 @@ export class HybridReasoningEngine implements CognitionModule {
     } else {
       // Exploit: best Q-value
       let bestAction = actions[0];
-      let bestValue = qValues.get(bestAction.action) || 0;
+      let bestValue = qValues.get(bestAction?.action ?? '') || 0;
 
       for (const action of actions) {
         const value = qValues.get(action.action) || 0;
@@ -774,15 +773,15 @@ export class HybridReasoningEngine implements CognitionModule {
         }
       }
 
-      return bestAction;
+      return bestAction ?? actions[0];
     }
   }
 
-  private analyzeReasoningNeeds(context: ReasoningContext): any {
+  private analyzeReasoningNeeds(_context: ReasoningContext): any {
     return { summary: 'Analysis complete', requirements: [] };
   }
 
-  private selectOptimalStrategy(needs: any, context: ReasoningContext): any {
+  private selectOptimalStrategy(_needs: any, _context: ReasoningContext): any {
     return { name: 'hybrid', system: 'hybrid', confidence: 0.8 };
   }
 

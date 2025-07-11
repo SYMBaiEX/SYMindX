@@ -1,5 +1,5 @@
 import { useInput, Key } from 'ink'
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback } from 'react'
 
 import { soundManager, SoundType } from '../utils/sound-effects'
 
@@ -71,9 +71,12 @@ export const useKeyboardNavigation = (config: NavigationConfig) => {
   // Navigation functions
   const navigateToView = useCallback((index: number) => {
     if (index >= 0 && index < views.length) {
-      setCurrentViewIndex(index)
-      onViewChange(views[index])
-      playNavSound()
+      const view = views[index]
+      if (view) {
+        setCurrentViewIndex(index)
+        onViewChange(view)
+        playNavSound()
+      }
     }
   }, [views, onViewChange, playNavSound])
   

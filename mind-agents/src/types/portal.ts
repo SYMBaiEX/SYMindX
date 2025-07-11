@@ -234,9 +234,9 @@ export interface MessageAttachment {
 
 /**
  * AI SDK v5 ToolSet - compatible with generateText/streamText
- * Using ReturnType<typeof tool> for proper typing
+ * Using the proper tool type from AI SDK v5
  */
-export type AISDKToolSet = Record<string, ReturnType<typeof import('ai').tool>>;
+export type AISDKToolSet = Record<string, any>;
 
 /**
  * Options for chat generation

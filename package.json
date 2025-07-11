@@ -28,6 +28,10 @@
     "cli": "cd mind-agents && bun run cli",
     "cli:dashboard": "cd mind-agents && bun run cli:dashboard",
     "cli:agents": "cd mind-agents && bun run cli:agents",
-    "cli:status": "cd mind-agents && bun run cli:status"
+    "cli:status": "cd mind-agents && bun run cli:status",
+    "prepare": "husky"
+  },
+  "dependencies": {
+    "telegraf": "^4.16.3"
   }
 }

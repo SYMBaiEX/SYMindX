@@ -16,7 +16,6 @@ import {
 
 import { Agent } from '../../types/agent';
 import {
-  Portal,
   PortalConfig,
   PortalType,
   PortalStatus,
@@ -32,12 +31,11 @@ import {
   ImageGenerationOptions,
   ImageGenerationResult,
   MessageRole,
-  MessageType,
   FinishReason,
 } from '../../types/portal';
 import { BasePortal } from '../base-portal';
 import { convertUsage } from '../utils';
-import { AISDKParameterBuilder, handleAISDKError, validateGenerationOptions } from '../ai-sdk-utils';
+import { AISDKParameterBuilder, validateGenerationOptions } from '../ai-sdk-utils';
 
 export interface AzureOpenAIConfig extends PortalConfig {
   apiKey: string;

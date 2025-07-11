@@ -34,7 +34,7 @@ export async function generateAsciiText(
         reject(err)
         return
       }
-      const coloredText = GRADIENTS[gradientType]?.(data || '') ?? data || ''
+      const coloredText = GRADIENTS[gradientType]?.(data ?? '') ?? (data ?? '')
       resolve(coloredText)
     })
   })
@@ -164,7 +164,7 @@ export async function createCyberpunkHeader(): Promise<string> {
   return [
     title,
     '',
-    `${' '.repeat(15)}${GRADIENTS.neon(subtitle)}`,
-    `${' '.repeat(10)}[SYSTEM STATUS] ${GRADIENTS.synthwave(status)}`,
+    `${' '.repeat(15)}${GRADIENTS.neon?.(subtitle) ?? subtitle}`,
+    `${' '.repeat(10)}[SYSTEM STATUS] ${GRADIENTS.synthwave?.(status) ?? status}`,
   ].join('\n')
 }

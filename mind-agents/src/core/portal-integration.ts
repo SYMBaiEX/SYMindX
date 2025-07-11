@@ -535,7 +535,7 @@ What are your current thoughts? Respond with 2-3 brief thoughts.`;
     // Sort by score (highest first)
     scoredPortals.sort((a, b) => b.score - a.score);
 
-    return scoredPortals[0].portal;
+    return scoredPortals[0]?.portal ?? capablePortals[0];
   }
 
   /**
@@ -673,12 +673,28 @@ What are your current thoughts? Respond with 2-3 brief thoughts.`;
         `🔧 Task evaluated using tool model: ${result.metadata?.model}`
       );
 
-      return {
+      const evaluation: {
+        analysis: string;
+        recommendations?: string[];
+        confidence?: number;
+        model?: string;
+      } = {
         analysis: result.analysis,
-        recommendations: result.recommendations,
-        confidence: result.confidence,
-        model: result.metadata?.model,
       };
+      
+      if (result.recommendations) {
+        evaluation.recommendations = result.recommendations;
+      }
+      
+      if (result.confidence !== undefined) {
+        evaluation.confidence = result.confidence;
+      }
+      
+      if (result.metadata?.model) {
+        evaluation.model = result.metadata.model;
+      }
+      
+      return evaluation;
     } catch (error) {
       console.error('❌ Task evaluation failed:', error);
       return {

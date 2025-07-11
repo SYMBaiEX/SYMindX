@@ -238,24 +238,30 @@ export class ExtensionErrorHandler {
         details: error.details,
         statusCode: error.statusCode,
         timestamp: new Date(),
-        requestId,
       };
+      if (requestId) {
+        apiError.requestId = requestId;
+      }
     } else if (error instanceof Error) {
       apiError = {
         code: 'INTERNAL_ERROR',
         message: error.message,
         statusCode: 500,
         timestamp: new Date(),
-        requestId,
       };
+      if (requestId) {
+        apiError.requestId = requestId;
+      }
     } else {
       apiError = {
         code: 'INTERNAL_ERROR',
         message: String(error),
         statusCode: 500,
         timestamp: new Date(),
-        requestId,
       };
+      if (requestId) {
+        apiError.requestId = requestId;
+      }
     }
 
     // Log error with context
@@ -270,12 +276,15 @@ export class ExtensionErrorHandler {
       );
     }
 
-    return {
+    const response: ApiResponse<any> = {
       success: false,
       error: apiError,
       timestamp: new Date(),
-      requestId,
     };
+    if (requestId) {
+      response.requestId = requestId;
+    }
+    return response;
   }
 
   /**
@@ -286,13 +295,18 @@ export class ExtensionErrorHandler {
     message?: string,
     requestId?: string
   ): ApiResponse<T> {
-    return {
+    const response: ApiResponse<T> = {
       success: true,
       data,
-      message,
       timestamp: new Date(),
-      requestId,
     };
+    if (message) {
+      response.message = message;
+    }
+    if (requestId) {
+      response.requestId = requestId;
+    }
+    return response;
   }
 
   /**

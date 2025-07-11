@@ -3,22 +3,18 @@
  * Extends the existing SYMindXRuntime with robust lifecycle management
  */
 
-import * as path from 'path';
 
 import {
   Agent,
-  LazyAgent,
-  AgentStatus,
   LazyAgentState,
   RuntimeConfig,
 } from '../types/agent';
-import { Logger, runtimeLogger } from '../utils/logger';
+import { runtimeLogger } from '../utils/logger';
 
 import { CheckpointSystem, CheckpointSystemConfig } from './checkpoint-system';
 import {
   ConcurrentSafetyManager,
   ConcurrentSafetyConfig,
-  OperationType,
 } from './concurrent-safety';
 import {
   LifecycleManager,
@@ -29,7 +25,6 @@ import {
 import {
   ResourceManager,
   ResourceManagerConfig,
-  ResourceType,
 } from './resource-manager';
 import { SYMindXRuntime } from './runtime';
 import {
@@ -58,7 +53,7 @@ export class EnhancedSYMindXRuntime extends SYMindXRuntime {
   private resourceManager?: ResourceManager;
   private lifecycleManager?: LifecycleManager;
   private checkpointSystem?: CheckpointSystem;
-  private stateRecoverySystem?: StateRecoverySystem;
+  private _stateRecoverySystem?: StateRecoverySystem;
   private concurrentSafetyManager?: ConcurrentSafetyManager;
 
   private enhancedConfig: EnhancedRuntimeConfig;
@@ -241,9 +236,12 @@ export class EnhancedSYMindXRuntime extends SYMindXRuntime {
 
     const startupOptions: StartupOptions = {
       restoreFromCheckpoint: true,
-      specificCheckpoint: checkpointFile,
       validateState: true,
     };
+    
+    if (checkpointFile) {
+      startupOptions.specificCheckpoint = checkpointFile;
+    }
 
     return await this.lifecycleManager.robustStartup(lazyAgent, startupOptions);
   }
@@ -262,15 +260,26 @@ export class EnhancedSYMindXRuntime extends SYMindXRuntime {
       this.concurrentSafetyManager?.getAgentLockStatus(agentId);
     const checkpointMetrics = this.checkpointSystem?.getMetrics(agentId);
 
-    return {
+    const status: AgentStateStatus = {
       enabled: true,
-      resourceSnapshot,
-      lockStatus,
-      checkpointMetrics,
-      lastCheckpoint: checkpointMetrics?.lastCheckpointSize
-        ? new Date()
-        : undefined,
     };
+    
+    if (resourceSnapshot) {
+      status.resourceSnapshot = resourceSnapshot;
+    }
+    
+    if (lockStatus) {
+      status.lockStatus = lockStatus;
+    }
+    
+    if (checkpointMetrics) {
+      status.checkpointMetrics = checkpointMetrics;
+      if (checkpointMetrics.lastCheckpointSize) {
+        status.lastCheckpoint = new Date();
+      }
+    }
+    
+    return status;
   }
 
   /**
@@ -408,7 +417,7 @@ export class EnhancedSYMindXRuntime extends SYMindXRuntime {
 
       // Initialize StateRecoverySystem
       if (config.enableStateRecovery !== false) {
-        this.stateRecoverySystem = new StateRecoverySystem(
+        this._stateRecoverySystem = new StateRecoverySystem(
           this.stateManager,
           this.resourceManager
         );

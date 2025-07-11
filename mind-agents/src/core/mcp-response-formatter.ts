@@ -221,6 +221,7 @@ export class MCPResponseFormatter {
       i++
     ) {
       const line = lines[i];
+      if (!line) continue;
 
       // Stop at next section header
       if (line.startsWith('#') || line.startsWith('##')) break;
@@ -252,7 +253,8 @@ export class MCPResponseFormatter {
     );
 
     if (descriptionIndex >= 0 && descriptionIndex < lines.length - 1) {
-      const description = lines[descriptionIndex + 1].trim();
+      const nextLine = lines[descriptionIndex + 1];
+      const description = nextLine?.trim();
       if (description) {
         return description;
       }
@@ -318,11 +320,13 @@ export class MCPResponseFormatter {
 
       if (calendar.events.length === 1) {
         const event = calendar.events[0];
-        response += `one event: ${event.title} at ${event.time}`;
-        if (event.duration) {
-          response += ` for ${event.duration}`;
+        if (event) {
+          response += `one event: ${event.title} at ${event.time}`;
+          if (event.duration) {
+            response += ` for ${event.duration}`;
+          }
+          response += '.';
         }
-        response += '.';
       } else {
         response += `${calendar.events.length} events scheduled.`;
       }
@@ -348,7 +352,9 @@ export class MCPResponseFormatter {
       }
 
       const topResult = search.results[0];
-      return `I found relevant information: ${topResult.snippet}`;
+      if (topResult) {
+        return `I found relevant information: ${topResult.snippet}`;
+      }
     }
 
     return '';

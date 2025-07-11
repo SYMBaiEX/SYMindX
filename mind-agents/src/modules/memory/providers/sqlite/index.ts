@@ -17,7 +17,6 @@ import {
   MemoryProviderMetadata,
   MemoryTierType,
   MemoryContext,
-  SharedMemoryConfig,
   ArchivalStrategy,
   MemoryPermission,
 } from '../../../../types/memory';
@@ -29,11 +28,11 @@ import {
   EnhancedMemoryRecord,
 } from '../../base-memory-provider';
 
-const sqliteAvailable = true;
-import { readFileSync } from 'fs';
-import { join } from 'path';
+// const sqliteAvailable = true; // Unused
+// import { readFileSync } from 'fs'; // Unused
+// import { join } from 'path'; // Unused
 
-import { MemoryArchiver } from './archiver';
+// import { MemoryArchiver } from './archiver'; // Unused
 import { SharedMemoryPool } from './shared-pool';
 
 /**
@@ -574,9 +573,9 @@ export class SQLiteMemoryProvider extends BaseMemoryProvider {
     let normB = 0;
 
     for (let i = 0; i < a.length; i++) {
-      dotProduct += a[i] * b[i];
-      normA += a[i] * a[i];
-      normB += b[i] * b[i];
+      dotProduct += a[i]! * b[i]!;
+      normA += a[i]! * a[i]!;
+      normB += b[i]! * b[i]!;
     }
 
     const magnitude = Math.sqrt(normA) * Math.sqrt(normB);
@@ -729,7 +728,7 @@ export class SQLiteMemoryProvider extends BaseMemoryProvider {
   /**
    * Generate embedding for a memory
    */
-  async generateEmbedding(content: string): Promise<number[]> {
+  async generateEmbedding(_content: string): Promise<number[]> {
     // This would call the actual embedding API based on config
     // For now, return a mock embedding
     return new Array(1536).fill(0).map(() => Math.random() * 2 - 1);
@@ -854,7 +853,7 @@ export class SQLiteMemoryProvider extends BaseMemoryProvider {
    */
   private async summarizeMemories(
     agentId: string,
-    strategy: ArchivalStrategy
+    _strategy: ArchivalStrategy
   ): Promise<void> {
     // Implementation would use LLM to summarize groups of memories
     // For now, this is a placeholder
@@ -882,7 +881,7 @@ export class SQLiteMemoryProvider extends BaseMemoryProvider {
     for (const [day, group] of grouped) {
       compressed.push({
         id: this.generateId(),
-        agentId: group[0].agentId,
+        agentId: group[0]?.agentId ?? '',
         type: MemoryType.EXPERIENCE,
         content: `Summary of ${day}: ${group.map((m) => m.content).join('; ')}`,
         metadata: {

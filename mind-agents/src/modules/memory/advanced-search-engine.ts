@@ -396,13 +396,13 @@ export class AdvancedSearchEngine {
       const explanations: string[] = [];
 
       // Score based on recency
-      const age = Date.now() - memory.timestamp.getTime();
+      const age = Date.now() - (memory?.timestamp?.getTime() ?? Date.now());
       const daysSinceCreated = age / (1000 * 60 * 60 * 24);
       const recencyScore = Math.max(0, 1 - daysSinceCreated / 30);
       score += recencyScore * 0.5;
 
       // Score based on content relevance
-      if (memory.content.toLowerCase().includes(query.query.toLowerCase())) {
+      if (memory?.content?.toLowerCase().includes(query.query.toLowerCase())) {
         score += 0.5;
         explanations.push('Content match');
       }
@@ -735,7 +735,7 @@ export class AdvancedSearchEngine {
 
       const other = sortedMemories[i];
       const timeDiff = Math.abs(
-        memory.timestamp.getTime() - other.timestamp.getTime()
+        memory.timestamp.getTime() - (other?.timestamp?.getTime() ?? 0)
       );
 
       // Memories within 1 hour are considered in same cluster
@@ -935,22 +935,22 @@ export class SimpleConceptExtractor implements ConceptExtractor {
       matrix[i] = [i];
     }
     for (let j = 0; j <= str1.length; j++) {
-      matrix[0][j] = j;
+      matrix[0]![j] = j;
     }
     for (let i = 1; i <= str2.length; i++) {
       for (let j = 1; j <= str1.length; j++) {
         if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
-          matrix[i][j] = matrix[i - 1][j - 1];
+          matrix[i]![j] = matrix[i - 1]![j - 1]!;
         } else {
-          matrix[i][j] = Math.min(
-            matrix[i - 1][j - 1] + 1,
-            matrix[i][j - 1] + 1,
-            matrix[i - 1][j] + 1
+          matrix[i]![j] = Math.min(
+            matrix[i - 1]![j - 1]! + 1,
+            matrix[i]![j - 1]! + 1,
+            matrix[i - 1]![j]! + 1
           );
         }
       }
     }
-    return matrix[str2.length][str1.length];
+    return matrix[str2.length]![str1.length]!;
   }
 }
 
@@ -981,9 +981,9 @@ export class SimpleEmbeddingService implements EmbeddingService {
     let norm2 = 0;
 
     for (let i = 0; i < embedding1.length; i++) {
-      dotProduct += embedding1[i] * embedding2[i];
-      norm1 += embedding1[i] * embedding1[i];
-      norm2 += embedding2[i] * embedding2[i];
+      dotProduct += embedding1[i]! * embedding2[i]!;
+      norm1 += embedding1[i]! * embedding1[i]!;
+      norm2 += embedding2[i]! * embedding2[i]!;
     }
 
     const magnitude = Math.sqrt(norm1) * Math.sqrt(norm2);

@@ -129,13 +129,13 @@ export class ReactiveCognition implements CognitionModule {
     // Extract key stimulus from context events
     if (context.events.length > 0) {
       const latestEvent = context.events[context.events.length - 1];
-      if (latestEvent.data?.message) {
+      if (latestEvent?.data?.message) {
         const message = latestEvent.data.message;
         return typeof message === 'string'
           ? message.toLowerCase().trim()
           : String(message).toLowerCase().trim();
       }
-      if (latestEvent.type) {
+      if (latestEvent?.type) {
         return latestEvent.type.toLowerCase().trim();
       }
     }

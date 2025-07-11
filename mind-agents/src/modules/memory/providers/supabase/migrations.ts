@@ -433,7 +433,7 @@ export const MIGRATIONS = [
 export async function checkMigrationsTable(
   client: SupabaseClient
 ): Promise<boolean> {
-  const { data, error } = await client
+  const { data: _data, error } = await client
     .from('supabase_migrations')
     .select('id')
     .limit(1);

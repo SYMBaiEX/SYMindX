@@ -84,7 +84,7 @@ export class EnhancedRuntimeClient extends EventEmitter {
   private errorInterceptors: ErrorInterceptor[];
   private abortControllers: Map<string, AbortController>;
   private metrics: RequestMetrics;
-  private connectionCheckTimer?: NodeJS.Timer;
+  private connectionCheckTimer?: NodeJS.Timeout;
   private latencyHistory: number[];
   private requestTimestamps: number[];
 
@@ -185,7 +185,7 @@ export class EnhancedRuntimeClient extends EventEmitter {
   private stopConnectionMonitoring() {
     if (this.connectionCheckTimer) {
       clearInterval(this.connectionCheckTimer);
-      this.connectionCheckTimer = undefined;
+      delete this.connectionCheckTimer;
     }
   }
 
@@ -435,12 +435,14 @@ export class EnhancedRuntimeClient extends EventEmitter {
       try {
         const timeoutId = setTimeout(() => abortController.abort(), finalConfig.timeout || this.config.timeout);
 
-        const response = await fetch(finalConfig.url, {
+        const fetchOptions: RequestInit = {
           method: finalConfig.method,
           headers: finalConfig.headers,
-          body: finalConfig.body ? JSON.stringify(finalConfig.body) : undefined,
-          signal: abortController.signal
-        });
+          signal: abortController.signal,
+          ...(finalConfig.body && { body: JSON.stringify(finalConfig.body) })
+        };
+
+        const response = await fetch(finalConfig.url, fetchOptions);
 
         clearTimeout(timeoutId);
         const latency = Date.now() - startTime;
@@ -794,7 +796,7 @@ export class EnhancedRuntimeClient extends EventEmitter {
    * Cancel all pending requests
    */
   cancelAllRequests() {
-    for (const [id, controller] of this.abortControllers) {
+    for (const [_id, controller] of this.abortControllers) {
       controller.abort();
     }
     this.abortControllers.clear();

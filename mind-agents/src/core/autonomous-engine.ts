@@ -6,11 +6,8 @@
  */
 
 import {
-  Agent,
   AgentAction,
   AgentEvent,
-  AgentState,
-  AgentStatus,
   ActionStatus,
   ActionCategory,
   ActionResultType,
@@ -20,15 +17,11 @@ import {
 } from '../types/agent';
 import {
   AutonomousAgent,
-  AutonomousConfig,
   Goal,
   DecisionContext,
   MultiCriteriaDecision,
-  EmergentGoal,
-  MetaCognition,
   PerformanceMetrics,
   CuriosityDriver,
-  Constraint,
 } from '../types/autonomous';
 import { Logger } from '../utils/logger';
 
@@ -374,7 +367,8 @@ export class AutonomousEngine {
       source: 'autonomous_engine',
       data: {
         agentId: this.agent.id,
-        originalEvent: event,
+        originalEventId: event.id,
+        originalEventType: event.type,
         handled: true,
       },
       timestamp: new Date(),
@@ -619,8 +613,10 @@ export class AutonomousEngine {
         source: 'autonomous_engine',
         data: {
           agentId: this.agent.id,
-          action: action,
-          result: result,
+          actionId: action.id,
+          actionType: action.type,
+          resultSuccess: result.success,
+          resultData: result.result || null,
         },
         timestamp: new Date(),
         processed: false,
@@ -671,9 +667,11 @@ export class AutonomousEngine {
           source: 'autonomous_engine',
           data: {
             agentId: this.agent.id,
-            action,
-            evaluation,
-            timestamp: new Date(),
+            actionId: action.id,
+            actionType: action.type,
+            evaluationScore: evaluation.score,
+            evaluationFlagged: evaluation.flagged,
+            timestamp: new Date().toISOString(),
           },
           timestamp: new Date(),
           processed: false,
@@ -910,7 +908,7 @@ export class AutonomousEngine {
     for (const phase of this.lifeCyclePhases) {
       this.interactionManager.registerInterruptionCallback(
         phase.name,
-        async (interaction) => {
+        async (_interaction) => {
           this.logger.info(
             `Interrupting ${phase.name} phase for human interaction`
           );
@@ -947,7 +945,7 @@ export class AutonomousEngine {
     return totalWeight > 0 ? totalScore / totalWeight : 0;
   }
 
-  private populateGoalTemplate(template: string, activities: string[]): string {
+  private populateGoalTemplate(template: string, _activities: string[]): string {
     const placeholders = {
       '{topic}': this.getRandomInterestTopic(),
       '{domain}': this.getRandomKnowledgeDomain(),
@@ -975,7 +973,7 @@ export class AutonomousEngine {
       'cognitive science',
       'emergence theory',
     ];
-    return topics[Math.floor(Math.random() * topics.length)];
+    return topics[Math.floor(Math.random() * topics.length)] ?? 'artificial intelligence';
   }
 
   private getRandomKnowledgeDomain(): string {
@@ -989,7 +987,7 @@ export class AutonomousEngine {
       'visual arts',
       'computer science',
     ];
-    return domains[Math.floor(Math.random() * domains.length)];
+    return domains[Math.floor(Math.random() * domains.length)] ?? 'computer science';
   }
 
   private getRandomCreativeTheme(): string {
@@ -1001,7 +999,7 @@ export class AutonomousEngine {
       'creative expression',
       'meaningful connections',
     ];
-    return themes[Math.floor(Math.random() * themes.length)];
+    return themes[Math.floor(Math.random() * themes.length)] ?? 'creative expression';
   }
 
   // Stub methods - to be implemented based on specific requirements
@@ -1038,7 +1036,7 @@ export class AutonomousEngine {
     }
   }
 
-  private async evaluateGoalProgress(goal: Goal): Promise<void> {
+  private async evaluateGoalProgress(_goal: Goal): Promise<void> {
     // Update goal progress based on recent actions and outcomes
     // This would be implemented based on specific goal types and metrics
   }
@@ -1112,14 +1110,20 @@ export class AutonomousEngine {
     actions: AgentAction[],
     evaluation: Record<string, Record<string, number>>
   ): AgentAction {
+    if (actions.length === 0) {
+      throw new Error('No actions available to select from');
+    }
+    
     let bestAction = actions[0];
     let bestScore = 0;
 
     for (const action of actions) {
       let score = 0;
       const actionEval = evaluation[action.id];
-      for (const [criterion, value] of Object.entries(actionEval)) {
-        score += value;
+      if (actionEval) {
+        for (const [_criterion, value] of Object.entries(actionEval)) {
+          score += value;
+        }
       }
 
       if (score > bestScore) {
@@ -1132,16 +1136,16 @@ export class AutonomousEngine {
   }
 
   private calculateDecisionConfidence(
-    evaluation: Record<string, Record<string, number>>,
-    recommendation: AgentAction
+    _evaluation: Record<string, Record<string, number>>,
+    _recommendation: AgentAction
   ): number {
     return 0.8; // Simplified
   }
 
   private generateDecisionReasoning(
     recommendation: AgentAction,
-    criteria: any[],
-    evaluation: Record<string, Record<string, number>>
+    _criteria: any[],
+    _evaluation: Record<string, Record<string, number>>
   ): string[] {
     return [
       `Selected ${recommendation.action} based on current life cycle phase and goal alignment`,
@@ -1618,15 +1622,15 @@ export class AutonomousEngine {
     };
   }
 
-  private couldCauseHarm(action: AgentAction): boolean {
+  private couldCauseHarm(_action: AgentAction): boolean {
     return false; // Simplified - would check action against harm detection patterns
   }
 
-  private violatesAutonomy(action: AgentAction): boolean {
+  private violatesAutonomy(_action: AgentAction): boolean {
     return false; // Simplified
   }
 
-  private violatesPrivacy(action: AgentAction): boolean {
+  private violatesPrivacy(_action: AgentAction): boolean {
     return false; // Simplified
   }
 

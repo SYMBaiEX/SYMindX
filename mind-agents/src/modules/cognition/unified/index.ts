@@ -275,7 +275,7 @@ export class UnifiedCognition implements CognitionModule {
     // Quick situation assessment
     if (context.events.length > 0) {
       const event = context.events[0];
-      thoughts.push(`Received ${event.type} event`);
+      thoughts.push(`Received ${event?.type ?? 'unknown'} event`);
     }
 
     // Basic emotion from context
@@ -507,7 +507,7 @@ export class UnifiedCognition implements CognitionModule {
   /**
    * Basic emotion assessment for shallow thinking
    */
-  private assessBasicEmotion(context: ThoughtContext): any {
+  private assessBasicEmotion(_context: ThoughtContext): any {
     return {
       current: 'neutral',
       intensity: 0.5,
@@ -771,8 +771,8 @@ export class UnifiedCognition implements CognitionModule {
       const prev = context.events[i - 1];
       const curr = context.events[i];
 
-      if (curr.timestamp.getTime() - prev.timestamp.getTime() < 5000) {
-        chain.push(`${prev.type} → ${curr.type}`);
+      if (curr && prev && curr.timestamp.getTime() - prev.timestamp.getTime() < 5000) {
+        chain.push(`${prev?.type ?? 'unknown'} → ${curr?.type ?? 'unknown'}`);
       }
     }
 
@@ -864,7 +864,7 @@ export class UnifiedCognition implements CognitionModule {
       );
 
       for (let i = this.config.maxActiveGoals!; i < sorted.length; i++) {
-        this.activeGoals.delete(sorted[i][0]);
+        this.activeGoals.delete(sorted[i]?.[0] ?? '');
       }
     }
   }
@@ -936,7 +936,7 @@ export class UnifiedCognition implements CognitionModule {
       });
 
       // Get insights
-      const model = this.theoryOfMind.getModel(otherAgentId);
+      const _model = this.theoryOfMind.getModel(otherAgentId);
 
       // Predict behavior
       if (event.type.includes('question')) {
@@ -974,7 +974,7 @@ export class UnifiedCognition implements CognitionModule {
   /**
    * Plan method - creates plans for goals
    */
-  async plan(agent: Agent, goal: string): Promise<Plan> {
+  async plan(_agent: Agent, goal: string): Promise<Plan> {
     // Simple planning - just create basic steps
     const steps: PlanStep[] = [
       {
@@ -1011,7 +1011,7 @@ export class UnifiedCognition implements CognitionModule {
   /**
    * Decide method - makes decisions between options
    */
-  async decide(agent: Agent, options: Decision[]): Promise<Decision> {
+  async decide(_agent: Agent, options: Decision[]): Promise<Decision> {
     // Simple decision making - pick highest confidence option
     if (options.length === 0) {
       throw new Error('No options to decide between');
@@ -1023,7 +1023,7 @@ export class UnifiedCognition implements CognitionModule {
 
     // Weight options based on confidence
     let bestOption = options[0];
-    let bestScore = bestOption.confidence || 0;
+    let bestScore = bestOption?.confidence || 0;
 
     for (const option of options) {
       const score = option.confidence || 0;

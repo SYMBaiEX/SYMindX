@@ -16,10 +16,10 @@ import {
 import { ApiExtension } from '../index';
 
 export class HttpSkill {
-  private extension: ApiExtension;
+  private _extension: ApiExtension;
 
   constructor(extension: ApiExtension) {
-    this.extension = extension;
+    this._extension = extension;
   }
 
   /**
@@ -36,8 +36,8 @@ export class HttpSkill {
           sessionId: 'string',
           userId: 'string',
         },
-        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
-          return this.handleChatRequest(agent, params);
+        execute: async (_agent: Agent, params: any): Promise<ActionResult> => {
+          return this.handleChatRequest(_agent, params);
         },
       },
 
@@ -50,8 +50,8 @@ export class HttpSkill {
           statusCode: 'number',
           headers: 'object',
         },
-        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
-          return this.sendResponse(agent, params);
+        execute: async (_agent: Agent, params: any): Promise<ActionResult> => {
+          return this.sendResponse(_agent, params);
         },
       },
 
@@ -60,8 +60,8 @@ export class HttpSkill {
         description: 'Validate incoming HTTP request',
         category: ActionCategory.SYSTEM,
         parameters: { request: 'object', schema: 'object' },
-        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
-          return this.validateRequest(agent, params);
+        execute: async (_agent: Agent, params: any): Promise<ActionResult> => {
+          return this.validateRequest(_agent, params);
         },
       },
 
@@ -70,8 +70,8 @@ export class HttpSkill {
         description: 'Handle CORS preflight and headers',
         category: ActionCategory.SYSTEM,
         parameters: { origin: 'string', methods: 'array', headers: 'array' },
-        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
-          return this.handleCors(agent, params);
+        execute: async (_agent: Agent, params: any): Promise<ActionResult> => {
+          return this.handleCors(_agent, params);
         },
       },
 
@@ -80,8 +80,8 @@ export class HttpSkill {
         description: 'Check if request is within rate limits',
         category: ActionCategory.SYSTEM,
         parameters: { clientId: 'string', endpoint: 'string' },
-        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
-          return this.rateLimitCheck(agent, params);
+        execute: async (_agent: Agent, params: any): Promise<ActionResult> => {
+          return this.rateLimitCheck(_agent, params);
         },
       },
     };
@@ -91,7 +91,7 @@ export class HttpSkill {
    * Handle incoming chat request
    */
   private async handleChatRequest(
-    agent: Agent,
+    _agent: Agent,
     params: any
   ): Promise<ActionResult> {
     try {
@@ -136,7 +136,7 @@ export class HttpSkill {
   /**
    * Send HTTP response
    */
-  private async sendResponse(agent: Agent, params: any): Promise<ActionResult> {
+  private async sendResponse(_agent: Agent, params: any): Promise<ActionResult> {
     try {
       const { response, statusCode = 200, headers = {} } = params;
 
@@ -174,7 +174,7 @@ export class HttpSkill {
    * Validate incoming request
    */
   private async validateRequest(
-    agent: Agent,
+    _agent: Agent,
     params: any
   ): Promise<ActionResult> {
     try {
@@ -212,7 +212,7 @@ export class HttpSkill {
   /**
    * Handle CORS
    */
-  private async handleCors(agent: Agent, params: any): Promise<ActionResult> {
+  private async handleCors(_agent: Agent, params: any): Promise<ActionResult> {
     try {
       const { origin, methods = ['GET', 'POST'], headers = [] } = params;
 
@@ -252,7 +252,7 @@ export class HttpSkill {
    * Check rate limits
    */
   private async rateLimitCheck(
-    agent: Agent,
+    _agent: Agent,
     params: any
   ): Promise<ActionResult> {
     try {

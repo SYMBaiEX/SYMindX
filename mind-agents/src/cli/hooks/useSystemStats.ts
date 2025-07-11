@@ -41,7 +41,7 @@ export interface SystemStats {
   environment: EnvironmentInfo;
   warnings: string[];
   isConnected: boolean;
-  error?: string;
+  error: string | undefined;
 }
 
 export const useSystemStats = (): SystemStats => {
@@ -72,7 +72,8 @@ export const useSystemStats = (): SystemStats => {
       env: process.env.NODE_ENV || 'development'
     },
     warnings: [],
-    isConnected: false
+    isConnected: false,
+    error: undefined
   });
 
   useEffect(() => {
@@ -186,7 +187,6 @@ export const useSystemStats = (): SystemStats => {
 
       } catch (error) {
         console.error('Error fetching system stats:', error);
-        const connectionStatus = runtimeClient.getConnectionStatus();
         setSystemStats(prev => ({
           ...prev,
           isRunning: false,

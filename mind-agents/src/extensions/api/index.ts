@@ -22,8 +22,6 @@ import {
   createSQLiteChatRepository,
 } from '../../modules/memory/providers/sqlite/chat-repository';
 import {
-  Conversation,
-  Message,
   SenderType,
   MessageType,
   MessageStatus,
@@ -38,14 +36,11 @@ import {
   ExtensionAction,
   ExtensionEventHandler,
 } from '../../types/agent';
-import { ExtensionConfig } from '../../types/common';
 import { runtimeLogger } from '../../utils/logger';
 
 import {
   ApiConfig,
   ApiSettings,
-  ApiRequest,
-  ApiResponse,
   ChatRequest,
   ChatResponse,
   MemoryRequest,
@@ -75,7 +70,7 @@ export class ApiExtension implements Extension {
   private wss?: WebSocketServer;
   private apiConfig: ApiSettings;
   private connections = new Map<string, WebSocket>();
-  private rateLimiters = new Map<
+  private _rateLimiters = new Map<
     string,
     { count: number; resetTime: number }
   >();
@@ -223,7 +218,7 @@ export class ApiExtension implements Extension {
 
   private setupRoutes(): void {
     // Health check
-    this.app.get('/health', (req, res) => {
+    this.app.get('/health', (_req, res) => {
       res.json({
         status: 'healthy',
         timestamp: new Date().toISOString(),
@@ -232,7 +227,7 @@ export class ApiExtension implements Extension {
     });
 
     // Status endpoint
-    this.app.get('/status', (req, res) => {
+    this.app.get('/status', (_req, res) => {
       // Get runtime stats if available
       const runtimeStats = this.runtime?.getStats
         ? this.runtime.getStats()
@@ -262,13 +257,13 @@ export class ApiExtension implements Extension {
     });
 
     // Runtime metrics endpoint
-    this.app.get('/api/metrics', (req, res) => {
+    this.app.get('/api/metrics', (_req, res) => {
       const agentsMap = this.getAgentsMap();
       let totalCommands = 0;
       let totalPortalRequests = 0;
 
       // Calculate metrics from all agents
-      for (const [id, agent] of agentsMap) {
+      for (const [_id, _agent] of agentsMap) {
         // These are placeholders - in a real system you'd track these
         totalCommands += Math.floor(Math.random() * 100); // TODO: Track real commands
         totalPortalRequests += Math.floor(Math.random() * 50); // TODO: Track real portal requests
@@ -288,7 +283,7 @@ export class ApiExtension implements Extension {
     });
 
     // Agents endpoint (also available at /api/agents for consistency)
-    this.app.get('/agents', (req, res) => {
+    this.app.get('/agents', (_req, res) => {
       const agents = [];
 
       // Get all agents from the agents map
@@ -313,7 +308,7 @@ export class ApiExtension implements Extension {
     });
 
     // Also register at /api/agents for consistency with WebUI
-    this.app.get('/api/agents', (req, res) => {
+    this.app.get('/api/agents', (_req, res) => {
       const agents = [];
 
       // Get all agents from the agents map
@@ -418,7 +413,7 @@ export class ApiExtension implements Extension {
     });
 
     // Redirect old chat endpoint to new API
-    this.app.post('/chat', async (req, res) => {
+    this.app.post('/chat', async (_req, res) => {
       res.redirect(307, '/api/chat');
     });
 
@@ -545,7 +540,7 @@ export class ApiExtension implements Extension {
     });
 
     // Memory endpoints
-    this.app.get('/memory', async (req, res) => {
+    this.app.get('/memory', async (_req, res) => {
       try {
         const memories = await this.getMemories();
         res.json({ memories });
@@ -771,7 +766,7 @@ export class ApiExtension implements Extension {
     });
 
     // List all managed agents
-    this.app.get('/api/agents/managed', (req, res) => {
+    this.app.get('/api/agents/managed', (_req, res) => {
       try {
         if (!this.runtime?.multiAgentManager) {
           res.status(503).json({ error: 'Multi-Agent Manager not available' });
@@ -790,7 +785,7 @@ export class ApiExtension implements Extension {
     });
 
     // Get system metrics including multi-agent info
-    this.app.get('/api/agents/metrics', (req, res) => {
+    this.app.get('/api/agents/metrics', (_req, res) => {
       try {
         if (!this.runtime?.multiAgentManager) {
           res.status(503).json({ error: 'Multi-Agent Manager not available' });
@@ -873,7 +868,7 @@ export class ApiExtension implements Extension {
     });
 
     // Stats endpoint
-    this.app.get('/api/stats', (req, res) => {
+    this.app.get('/api/stats', (_req, res) => {
       const runtimeStats = this.getRuntimeStats();
       const commandStats = this.commandSystem
         ? this.commandSystem.getStats()
@@ -1290,12 +1285,12 @@ export class ApiExtension implements Extension {
     });
 
     // Get available agents for chat
-    this.app.get('/api/chat/agents/available', (req, res) => {
+    this.app.get('/api/chat/agents/available', (_req, res) => {
       try {
         const agentsMap = this.getAgentsMap();
         const availableAgents = [];
 
-        for (const [id, agent] of agentsMap) {
+        for (const [_id, agent] of agentsMap) {
           if (agent.status === 'active') {
             availableAgents.push({
               id: agent.id,
@@ -1842,10 +1837,9 @@ export class ApiExtension implements Extension {
         processingTime,
       });
 
-      return {
+      const result: ChatResponse = {
         response,
         timestamp: new Date().toISOString(),
-        sessionId,
         metadata: {
           tokensUsed: 0, // Would be calculated by the actual processing
           processingTime,
@@ -1853,6 +1847,12 @@ export class ApiExtension implements Extension {
           emotionState: agent?.emotion?.current,
         },
       };
+      
+      if (sessionId) {
+        result.sessionId = sessionId;
+      }
+      
+      return result;
     } catch (error) {
       console.error('Error processing chat message:', error);
 
@@ -1953,13 +1953,22 @@ export class ApiExtension implements Extension {
 
       const executionTime = Date.now() - startTime;
 
-      return {
+      const response: ActionResponse = {
         success: command.result?.success || false,
-        result: command.result?.response || command.result?.data,
-        error: command.result?.error,
         executionTime,
         actionId: command.id,
       };
+      
+      const result = command.result?.response || command.result?.data;
+      if (result !== undefined) {
+        response.result = result;
+      }
+      
+      if (command.result?.error) {
+        response.error = command.result.error;
+      }
+      
+      return response;
     } catch (error) {
       return {
         success: false,
@@ -2164,16 +2173,18 @@ export class ApiExtension implements Extension {
   getConnectionInfo(): ConnectionInfo[] {
     const legacyConnections: ConnectionInfo[] = Array.from(
       this.connections.entries()
-    ).map(([id, ws]) => ({
-      id,
-      readyState: ws.readyState,
-      ip: 'unknown',
-      userAgent: undefined,
-      connectedAt: new Date(),
-      lastActivity: new Date(),
-      subscriptions: [],
-      metadata: {},
-    }));
+    ).map(([id, ws]) => {
+      const info: ConnectionInfo = {
+        id,
+        readyState: ws.readyState,
+        ip: 'unknown',
+        connectedAt: new Date(),
+        lastActivity: new Date(),
+        subscriptions: [],
+        metadata: {},
+      };
+      return info;
+    });
 
     const enhancedConnections: ConnectionInfo[] = [];
     // Enhanced WebSocket connections would need to be fetched via proper API call
@@ -2379,9 +2390,12 @@ export class ApiExtension implements Extension {
     });
 
     if (existingConversations.length > 0) {
-      conversationId = existingConversations[0].id;
-      this.activeConversations.set(userId, conversationId);
-      return conversationId;
+      const firstConversation = existingConversations[0];
+      if (firstConversation) {
+        conversationId = firstConversation.id;
+        this.activeConversations.set(userId, conversationId);
+        return conversationId;
+      }
     }
 
     // Create new conversation

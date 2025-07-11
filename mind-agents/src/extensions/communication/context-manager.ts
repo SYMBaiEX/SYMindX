@@ -457,9 +457,13 @@ export class ContextManager {
 
     // Update current topic
     if (context.topics.length > 0) {
-      context.currentTopic = context.topics.sort(
+      const sortedTopics = context.topics.sort(
         (a, b) => b.mentions - a.mentions
-      )[0].topic;
+      );
+      const topTopic = sortedTopics[0];
+      if (topTopic) {
+        context.currentTopic = topTopic.topic;
+      }
     }
   }
 

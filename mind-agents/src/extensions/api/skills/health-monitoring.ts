@@ -31,7 +31,7 @@ interface EndpointHealth {
 }
 
 export class HealthMonitoringSkill {
-  private extension: ApiExtension;
+  private _extension: ApiExtension;
   private startTime: number = Date.now();
   private requestCount: number = 0;
   private errorCount: number = 0;
@@ -39,7 +39,7 @@ export class HealthMonitoringSkill {
   private endpointHealth: Map<string, EndpointHealth> = new Map();
 
   constructor(extension: ApiExtension) {
-    this.extension = extension;
+    this._extension = extension;
   }
 
   /**
@@ -52,8 +52,8 @@ export class HealthMonitoringSkill {
         description: 'Get overall API health status',
         category: ActionCategory.OBSERVATION,
         parameters: { includeMetrics: 'boolean' },
-        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
-          return this.getHealthStatus(agent, params);
+        execute: async (_agent: Agent, params: any): Promise<ActionResult> => {
+          return this.getHealthStatus(_agent, params);
         },
       },
 
@@ -62,8 +62,8 @@ export class HealthMonitoringSkill {
         description: 'Get detailed performance metrics',
         category: ActionCategory.OBSERVATION,
         parameters: { timeRange: 'string' },
-        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
-          return this.getMetrics(agent, params);
+        execute: async (_agent: Agent, params: any): Promise<ActionResult> => {
+          return this.getMetrics(_agent, params);
         },
       },
 
@@ -72,8 +72,8 @@ export class HealthMonitoringSkill {
         description: 'Check health of specific endpoint',
         category: ActionCategory.OBSERVATION,
         parameters: { endpoint: 'string', method: 'string' },
-        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
-          return this.checkEndpoint(agent, params);
+        execute: async (_agent: Agent, params: any): Promise<ActionResult> => {
+          return this.checkEndpoint(_agent, params);
         },
       },
 
@@ -86,8 +86,8 @@ export class HealthMonitoringSkill {
           responseTime: 'number',
           success: 'boolean',
         },
-        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
-          return this.recordRequest(agent, params);
+        execute: async (_agent: Agent, params: any): Promise<ActionResult> => {
+          return this.recordRequest(_agent, params);
         },
       },
 
@@ -96,8 +96,8 @@ export class HealthMonitoringSkill {
         description: 'Get system information and resource usage',
         category: ActionCategory.OBSERVATION,
         parameters: {},
-        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
-          return this.getSystemInfo(agent, params);
+        execute: async (_agent: Agent, params: any): Promise<ActionResult> => {
+          return this.getSystemInfo(_agent, params);
         },
       },
 
@@ -106,8 +106,8 @@ export class HealthMonitoringSkill {
         description: 'Reset monitoring metrics',
         category: ActionCategory.SYSTEM,
         parameters: { confirm: 'boolean' },
-        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
-          return this.resetMetrics(agent, params);
+        execute: async (_agent: Agent, params: any): Promise<ActionResult> => {
+          return this.resetMetrics(_agent, params);
         },
       },
 
@@ -120,8 +120,8 @@ export class HealthMonitoringSkill {
           threshold: 'number',
           operator: 'string',
         },
-        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
-          return this.setHealthThreshold(agent, params);
+        execute: async (_agent: Agent, params: any): Promise<ActionResult> => {
+          return this.setHealthThreshold(_agent, params);
         },
       },
     };
@@ -131,7 +131,7 @@ export class HealthMonitoringSkill {
    * Get overall health status
    */
   private async getHealthStatus(
-    agent: Agent,
+    _agent: Agent,
     params: any
   ): Promise<ActionResult> {
     try {
@@ -197,7 +197,7 @@ export class HealthMonitoringSkill {
   /**
    * Get detailed metrics
    */
-  private async getMetrics(agent: Agent, params: any): Promise<ActionResult> {
+  private async getMetrics(_agent: Agent, params: any): Promise<ActionResult> {
     try {
       const { timeRange = 'all' } = params;
 
@@ -263,7 +263,7 @@ export class HealthMonitoringSkill {
    * Check specific endpoint health
    */
   private async checkEndpoint(
-    agent: Agent,
+    _agent: Agent,
     params: any
   ): Promise<ActionResult> {
     try {
@@ -334,7 +334,7 @@ export class HealthMonitoringSkill {
    * Record API request for monitoring
    */
   private async recordRequest(
-    agent: Agent,
+    _agent: Agent,
     params: any
   ): Promise<ActionResult> {
     try {
@@ -403,8 +403,8 @@ export class HealthMonitoringSkill {
    * Get system information
    */
   private async getSystemInfo(
-    agent: Agent,
-    params: any
+    _agent: Agent,
+    _params: any
   ): Promise<ActionResult> {
     try {
       const memoryUsage = process.memoryUsage();
@@ -462,7 +462,7 @@ export class HealthMonitoringSkill {
   /**
    * Reset monitoring metrics
    */
-  private async resetMetrics(agent: Agent, params: any): Promise<ActionResult> {
+  private async resetMetrics(_agent: Agent, _params: any): Promise<ActionResult> {
     try {
       const { confirm = false } = params;
 
@@ -522,7 +522,7 @@ export class HealthMonitoringSkill {
    * Set health monitoring thresholds
    */
   private async setHealthThreshold(
-    agent: Agent,
+    _agent: Agent,
     params: any
   ): Promise<ActionResult> {
     try {

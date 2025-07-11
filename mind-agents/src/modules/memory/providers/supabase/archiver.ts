@@ -54,7 +54,7 @@ export class MemoryArchiver {
    */
   private async compressMemories(
     memories: MemoryRecord[],
-    strategy: ArchivalStrategy
+    _strategy: ArchivalStrategy
   ): Promise<MemoryRecord[]> {
     // Simple compression: group by day and combine content
     const grouped = new Map<string, MemoryRecord[]>();
@@ -72,15 +72,15 @@ export class MemoryArchiver {
       if (group.length > 1) {
         compressed.push({
           id: `compressed_${day}_${Date.now()}`,
-          agentId: group[0].agentId,
-          type: group[0].type,
+          agentId: group[0]?.agentId ?? '',
+          type: group[0]?.type ?? 'unknown' as any,
           content: `Compressed memories from ${day}: ${group.map((m) => m.content).join('; ')}`,
           importance: Math.max(...group.map((m) => m.importance || 0)),
           timestamp: new Date(day),
           tags: ['compressed', ...group.flatMap((m) => m.tags || [])],
-          duration: group[0].duration,
+          duration: group[0]?.duration,
           metadata: {
-            ...group[0].metadata,
+            ...(group[0]?.metadata ?? {}),
             compression: {
               originalCount: group.length,
               compressedAt: new Date().toISOString(),
@@ -100,7 +100,7 @@ export class MemoryArchiver {
    */
   private async summarizeMemories(
     memories: MemoryRecord[],
-    strategy: ArchivalStrategy
+    _strategy: ArchivalStrategy
   ): Promise<MemoryRecord[]> {
     // For now, return memories as-is
     // In production, this would use LLM summarization

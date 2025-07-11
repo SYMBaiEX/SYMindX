@@ -4,7 +4,6 @@
  * Provides actions related to authentication and authorization.
  */
 
-import { Request } from 'express';
 
 import {
   ExtensionAction,
@@ -32,8 +31,8 @@ export class AuthenticationSkill {
         description: 'Validate authentication token',
         category: ActionCategory.SYSTEM,
         parameters: { token: 'string', type: 'string' },
-        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
-          return this.validateToken(agent, params);
+        execute: async (_agent: Agent, params: any): Promise<ActionResult> => {
+          return this.validateToken(_agent, params);
         },
       },
 
@@ -42,8 +41,8 @@ export class AuthenticationSkill {
         description: 'Validate API key',
         category: ActionCategory.SYSTEM,
         parameters: { apiKey: 'string', permissions: 'array' },
-        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
-          return this.validateApiKey(agent, params);
+        execute: async (_agent: Agent, params: any): Promise<ActionResult> => {
+          return this.validateApiKey(_agent, params);
         },
       },
 
@@ -52,8 +51,8 @@ export class AuthenticationSkill {
         description: 'Check user permissions for specific action',
         category: ActionCategory.SYSTEM,
         parameters: { userId: 'string', action: 'string', resource: 'string' },
-        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
-          return this.checkPermissions(agent, params);
+        execute: async (_agent: Agent, params: any): Promise<ActionResult> => {
+          return this.checkPermissions(_agent, params);
         },
       },
 
@@ -62,8 +61,8 @@ export class AuthenticationSkill {
         description: 'Generate new session for authenticated user',
         category: ActionCategory.SYSTEM,
         parameters: { userId: 'string', metadata: 'object' },
-        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
-          return this.generateSession(agent, params);
+        execute: async (_agent: Agent, params: any): Promise<ActionResult> => {
+          return this.generateSession(_agent, params);
         },
       },
 
@@ -72,8 +71,8 @@ export class AuthenticationSkill {
         description: 'Revoke user session',
         category: ActionCategory.SYSTEM,
         parameters: { sessionId: 'string', reason: 'string' },
-        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
-          return this.revokeSession(agent, params);
+        execute: async (_agent: Agent, params: any): Promise<ActionResult> => {
+          return this.revokeSession(_agent, params);
         },
       },
     };
@@ -83,7 +82,7 @@ export class AuthenticationSkill {
    * Validate authentication token
    */
   private async validateToken(
-    agent: Agent,
+    _agent: Agent,
     params: any
   ): Promise<ActionResult> {
     try {
@@ -137,7 +136,7 @@ export class AuthenticationSkill {
    * Validate API key
    */
   private async validateApiKey(
-    agent: Agent,
+    _agent: Agent,
     params: any
   ): Promise<ActionResult> {
     try {
@@ -189,7 +188,7 @@ export class AuthenticationSkill {
    * Check user permissions
    */
   private async checkPermissions(
-    agent: Agent,
+    _agent: Agent,
     params: any
   ): Promise<ActionResult> {
     try {
@@ -235,7 +234,7 @@ export class AuthenticationSkill {
    * Generate new session
    */
   private async generateSession(
-    agent: Agent,
+    _agent: Agent,
     params: any
   ): Promise<ActionResult> {
     try {
@@ -284,7 +283,7 @@ export class AuthenticationSkill {
    * Revoke session
    */
   private async revokeSession(
-    agent: Agent,
+    _agent: Agent,
     params: any
   ): Promise<ActionResult> {
     try {
@@ -340,7 +339,7 @@ export class AuthenticationSkill {
   /**
    * Decode token
    */
-  private decodeToken(token: string): any {
+  private decodeToken(_token: string): any {
     // Basic decoding - in practice this would properly decode JWT
     return {
       sub: 'user123',
@@ -353,9 +352,9 @@ export class AuthenticationSkill {
    * Perform permission check
    */
   private async performPermissionCheck(
-    userId: string,
-    action: string,
-    resource: string
+    _userId: string,
+    _action: string,
+    _resource: string
   ): Promise<boolean> {
     // Basic permission logic - in practice this would check against a proper RBAC system
     return true; // Placeholder

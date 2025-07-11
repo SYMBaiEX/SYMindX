@@ -60,9 +60,9 @@ export const MUSIC_TRACKS: Record<string, MusicTrack> = {
 export class BackgroundMusicManager {
   private enabled: boolean
   private volume: number = 0.3
-  private currentProcess?: ChildProcess
+  private currentProcess: ChildProcess | undefined
   private platform: string = process.platform
-  private currentTrack?: string
+  private currentTrack: string | undefined
   
   constructor(enabled: boolean = false) {
     // Disabled by default - users can enable in settings
@@ -206,7 +206,9 @@ export class BackgroundMusicManager {
     
     if (tracks.length > 0) {
       const randomTrack = tracks[Math.floor(Math.random() * tracks.length)]
-      await this.play(randomTrack as keyof typeof MUSIC_TRACKS)
+      if (randomTrack) {
+        await this.play(randomTrack as keyof typeof MUSIC_TRACKS)
+      }
     }
   }
   

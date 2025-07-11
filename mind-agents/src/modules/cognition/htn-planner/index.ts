@@ -146,7 +146,10 @@ export class HTNPlannerCognition implements CognitionModule {
       for (const pattern of goalPatterns) {
         const matches = context.goal.matchAll(pattern);
         for (const match of matches) {
-          goals.push(match[1].trim());
+          const captured = match[1];
+          if (captured) {
+            goals.push(captured.trim());
+          }
         }
       }
     }
@@ -273,7 +276,7 @@ export class HTNPlannerCognition implements CognitionModule {
       description: `HTN Task: ${task.name}`,
       status: 'pending' as any,
       parameters: {},
-      preconditions: index > 0 ? [tasks[index - 1].id] : [],
+      preconditions: index > 0 && tasks[index - 1] ? [tasks[index - 1]?.id ?? ''] : [],
       effects: [],
     }));
   }

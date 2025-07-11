@@ -208,6 +208,14 @@ export class TheoryOfMind {
 
     // Make prediction
     const predicted = relevantIntentions[0];
+    if (!predicted) {
+      return {
+        action: 'unknown',
+        confidence: 0,
+        reasoning: 'No relevant intentions found',
+      };
+    }
+    
     const confidence = predicted.likelihood * emotionalInfluence;
 
     // Store prediction for accuracy tracking

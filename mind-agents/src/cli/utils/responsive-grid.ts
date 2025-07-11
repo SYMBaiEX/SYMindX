@@ -415,7 +415,7 @@ export const calculateGridItemDimensions = (
  */
 export const calculateAllGridItemDimensions = (
   layout: GridLayout,
-  dimensions: TerminalDimensions,
+  _dimensions: TerminalDimensions,
   itemCount: number
 ): Array<{ width: number; height: number }> => {
   const items: Array<{ width: number; height: number }> = []

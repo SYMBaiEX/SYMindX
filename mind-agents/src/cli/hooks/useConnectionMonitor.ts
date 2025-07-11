@@ -19,7 +19,7 @@ export interface ConnectionStats {
   minLatency: number;
   maxLatency: number;
   packetLoss: number;
-  lastError?: Error;
+  lastError: Error | undefined;
   connectionQuality: 'excellent' | 'good' | 'fair' | 'poor' | 'offline';
 }
 
@@ -67,6 +67,7 @@ export function useConnectionMonitor(
     minLatency: Infinity,
     maxLatency: 0,
     packetLoss: 0,
+    lastError: undefined,
     connectionQuality: 'offline'
   });
 
@@ -145,7 +146,10 @@ export function useConnectionMonitor(
         minLatency: Math.min(prev.minLatency, currentLatency || Infinity),
         maxLatency: Math.max(prev.maxLatency, currentLatency || 0),
         lastError: newStatus.lastError || prev.lastError,
-        connectionQuality: quality
+        connectionQuality: quality,
+        totalConnections: prev.totalConnections + (newStatus.status === 'connected' && prev.connectionQuality === 'offline' ? 1 : 0),
+        totalDisconnections: prev.totalDisconnections + (newStatus.status === 'disconnected' && prev.connectionQuality !== 'offline' ? 1 : 0),
+        packetLoss: prev.packetLoss
       };
     });
   }, []);
@@ -199,14 +203,14 @@ export function useConnectionMonitor(
 
   // Subscribe to client events
   useEffect(() => {
-    const handleConnected = (data: any) => {
+    const handleConnected = (_data: any) => {
       handleStatusChange({
         ...client.getConnectionStatus(),
         status: 'connected'
       });
     };
 
-    const handleDisconnected = (data: any) => {
+    const handleDisconnected = (_data: any) => {
       handleStatusChange({
         ...client.getConnectionStatus(),
         status: 'disconnected'
@@ -257,7 +261,6 @@ export function useConnectionMonitor(
       qualityCheckIntervalRef.current = setInterval(() => {
         // Perform quality check
         const metrics = client.getMetrics();
-        const currentStatus = client.getConnectionStatus();
         
         // Calculate packet loss (simulated based on failed requests)
         const packetLoss = metrics.totalRequests > 0

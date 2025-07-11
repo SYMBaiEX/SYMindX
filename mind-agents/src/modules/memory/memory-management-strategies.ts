@@ -9,9 +9,7 @@ import { MemoryRecord } from '../../types/agent';
 import {
   MemoryManagementPolicy,
   MemoryPolicyConfig,
-  MemoryTierType,
   MemoryRelationship,
-  MemoryRelationshipType,
 } from '../../types/memory';
 import { runtimeLogger } from '../../utils/logger';
 
@@ -86,7 +84,7 @@ export class MemoryManagementEngine {
    */
   applyDecay(
     memories: MemoryRecord[],
-    agentId: string,
+    _agentId: string,
     config: MemoryPolicyConfig
   ): MemoryRecord[] {
     const decayPolicy = this.policies.find(
@@ -156,7 +154,7 @@ export class MemoryManagementEngine {
    */
   prioritizeMemories(
     memories: MemoryRecord[],
-    agentId: string,
+    _agentId: string,
     config: MemoryPolicyConfig,
     relationships?: MemoryRelationship[]
   ): MemoryPriority[] {
@@ -270,7 +268,7 @@ export class MemoryManagementEngine {
     config: MemoryPolicyConfig
   ): Promise<SummarizedMemory> {
     const method = config.summaryMethod || 'temporal';
-    const preserveOriginal = config.preserveOriginal !== false;
+    const _preserveOriginal = config.preserveOriginal !== false;
 
     // Create summary content
     let summaryContent: string;
@@ -307,11 +305,11 @@ export class MemoryManagementEngine {
 
     const summarizedMemory: SummarizedMemory = {
       id: `summary_${cluster.id}`,
-      agentId: cluster.memories[0].agentId,
-      type: cluster.memories[0].type,
+      agentId: cluster.memories[0]?.agentId ?? '',
+      type: cluster.memories[0]?.type ?? 'unknown' as any,
       content: summaryContent,
       metadata: {
-        ...cluster.memories[0].metadata,
+        ...(cluster.memories[0]?.metadata ?? {}),
         isSummary: true,
         originalCount: cluster.memories.length,
         timeRange: cluster.timeRange,
@@ -320,7 +318,7 @@ export class MemoryManagementEngine {
       importance: maxImportance,
       timestamp: new Date(),
       tags: summaryTags,
-      duration: cluster.memories[0].duration,
+      duration: cluster.memories[0]?.duration,
       originalMemoryIds: cluster.memories.map((m) => m.id),
       summaryMethod: method,
       compressionRatio,
@@ -397,13 +395,13 @@ export class MemoryManagementEngine {
   private getDecayFunction(type: string): DecayFunction {
     switch (type) {
       case 'linear':
-        return (age, importance, accessCount) => age * 0.01;
+        return (age, _importance, _accessCount) => age * 0.01;
       case 'exponential':
-        return (age, importance, accessCount) => 1 - Math.exp(-age * 0.1);
+        return (age, _importance, _accessCount) => 1 - Math.exp(-age * 0.1);
       case 'sigmoid':
-        return (age, importance, accessCount) => 1 / (1 + Math.exp(-age + 10));
+        return (age, _importance, _accessCount) => 1 / (1 + Math.exp(-age + 10));
       default:
-        return (age, importance, accessCount) => 1 - Math.exp(-age * 0.1);
+        return (age, _importance, _accessCount) => 1 - Math.exp(-age * 0.1);
     }
   }
 
@@ -428,7 +426,7 @@ export class MemoryManagementEngine {
    */
   private clusterByTime(
     memories: MemoryRecord[],
-    config: MemoryPolicyConfig
+    _config: MemoryPolicyConfig
   ): MemoryCluster[] {
     const clusters: MemoryCluster[] = [];
     const sortedMemories = [...memories].sort(
@@ -558,12 +556,12 @@ export class MemoryManagementEngine {
       return [];
     }
 
-    const dimensions = embeddings[0].length;
+    const dimensions = embeddings[0]?.length ?? 0;
     const centroid = new Array(dimensions).fill(0);
 
     for (const embedding of embeddings) {
       for (let i = 0; i < dimensions; i++) {
-        centroid[i] += embedding[i];
+        centroid[i]! += embedding[i]!;
       }
     }
 
@@ -660,27 +658,27 @@ export class MemoryManagementEngine {
 
       // Assign memories to nearest centroid
       for (let i = 0; i < memories.length; i++) {
-        const embedding = memories[i].embedding!;
+        const embedding = memories[i]?.embedding ?? [];
         let nearestCentroid = 0;
         let minDistance = Infinity;
 
         for (let j = 0; j < k; j++) {
-          const distance = this.euclideanDistance(embedding, centroids[j]);
+          const distance = this.euclideanDistance(embedding, centroids[j]!);
           if (distance < minDistance) {
             minDistance = distance;
             nearestCentroid = j;
           }
         }
 
-        clusters[nearestCentroid].push(memories[i]);
+        clusters[nearestCentroid]!.push(memories[i]!);
       }
 
       // Update centroids
       converged = true;
       for (let i = 0; i < k; i++) {
-        if (clusters[i].length > 0) {
-          const newCentroid = this.calculateCentroid(clusters[i]);
-          if (this.euclideanDistance(centroids[i], newCentroid) > 0.01) {
+        if (clusters[i]!.length > 0) {
+          const newCentroid = this.calculateCentroid(clusters[i]!);
+          if (this.euclideanDistance(centroids[i]!, newCentroid) > 0.01) {
             converged = false;
             centroids[i] = newCentroid;
           }
@@ -695,19 +693,19 @@ export class MemoryManagementEngine {
       .fill(null)
       .map(() => []);
     for (let i = 0; i < memories.length; i++) {
-      const embedding = memories[i].embedding!;
+      const embedding = memories[i]?.embedding ?? [];
       let nearestCentroid = 0;
       let minDistance = Infinity;
 
       for (let j = 0; j < k; j++) {
-        const distance = this.euclideanDistance(embedding, centroids[j]);
+        const distance = this.euclideanDistance(embedding, centroids[j]!);
         if (distance < minDistance) {
           minDistance = distance;
           nearestCentroid = j;
         }
       }
 
-      finalClusters[nearestCentroid].push(memories[i]);
+      finalClusters[nearestCentroid]!.push(memories[i]!);
     }
 
     return finalClusters.filter((cluster) => cluster.length > 0);
@@ -721,7 +719,7 @@ export class MemoryManagementEngine {
 
     let sum = 0;
     for (let i = 0; i < vector1.length; i++) {
-      sum += Math.pow(vector1[i] - vector2[i], 2);
+      sum += Math.pow(vector1[i]! - vector2[i]!, 2);
     }
 
     return Math.sqrt(sum);

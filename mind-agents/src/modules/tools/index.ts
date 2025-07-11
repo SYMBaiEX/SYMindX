@@ -9,7 +9,7 @@ import { z } from 'zod';
 
 import { Agent } from '../../types/agent';
 import { BaseConfig } from '../../types/common';
-import { runtimeLogger } from '../../utils/logger';
+// import { runtimeLogger } from '../../utils/logger'; // Unused import
 
 // Tool parameter and result types
 export interface ToolParameters {

@@ -406,7 +406,7 @@ export class RuntimeClient {
             'X-Request-Priority': options?.priority || 'normal',
             'X-Request-ID': this.generateRequestId()
           },
-          body: body ? JSON.stringify(body) : undefined,
+          ...(body && { body: JSON.stringify(body) }),
           signal: controller.signal
         });
         
@@ -532,7 +532,7 @@ export class RuntimeClient {
    * Cancel all in-flight requests
    */
   public cancelAllRequests(): void {
-    for (const [key, controller] of this.requestsInFlight) {
+    for (const [_key, controller] of this.requestsInFlight) {
       controller.abort();
     }
     this.requestsInFlight.clear();

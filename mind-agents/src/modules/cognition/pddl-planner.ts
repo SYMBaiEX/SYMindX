@@ -23,14 +23,9 @@ import {
   CognitionModule,
   CognitionModuleMetadata,
   PDDLDomain,
-  PDDLPredicate,
-  PDDLParameter,
   PDDLAction,
-  PDDLCondition,
-  PDDLEffect,
   PDDLProblem,
   PDDLExpression,
-  ReasoningPerformance,
   HybridReasoningConfig,
   ReasoningParadigm,
 } from '../../types/cognition';
@@ -324,7 +319,7 @@ export class PDDLPlanner implements CognitionModule {
     memories.push(memory);
 
     // Calculate performance
-    const reasoningTime = Date.now() - startTime;
+    const _reasoningTime = Date.now() - startTime;
     const confidence = plan.valid ? 0.8 : 0.3;
 
     return {
@@ -345,7 +340,7 @@ export class PDDLPlanner implements CognitionModule {
   /**
    * Plan using PDDL approach
    */
-  async plan(agent: Agent, goal: string): Promise<Plan> {
+  async plan(agent: Agent, _goal: string): Promise<Plan> {
     // Generate PDDL problem for the goal
     const problem = this.generateGoalProblem(agent, goal);
 
@@ -377,7 +372,7 @@ export class PDDLPlanner implements CognitionModule {
   /**
    * Decide using PDDL planning
    */
-  async decide(agent: Agent, options: Decision[]): Promise<Decision> {
+  async decide(agent: Agent, _options: Decision[]): Promise<Decision> {
     if (options.length === 0) {
       throw new Error('No options to decide between');
     }
@@ -410,7 +405,7 @@ export class PDDLPlanner implements CognitionModule {
   /**
    * Learn from experience
    */
-  async learn(agent: Agent, experience: Experience): Promise<void> {
+  async learn(_agent: Agent, experience: Experience): Promise<void> {
     const { state, action, reward, nextState } = experience;
 
     // Update domain based on experience
@@ -657,7 +652,7 @@ export class PDDLPlanner implements CognitionModule {
    */
   private instantiateAction(
     action: PDDLAction,
-    state: Set<string>
+    _state: Set<string>
   ): PDDLActionInstance[] {
     // Simple instantiation - in practice, this would be more sophisticated
     const instances: PDDLActionInstance[] = [];
@@ -805,7 +800,7 @@ export class PDDLPlanner implements CognitionModule {
   /**
    * Reinforce successful actions
    */
-  private reinforceSuccessfulActions(action: any, reward: any): void {
+  private reinforceSuccessfulActions(action: any, _reward: any): void {
     // Update action costs (lower cost for successful actions)
     const actionName = action.type || 'unknown';
     const domainAction = this.domain.actions.find((a) => a.name === actionName);
@@ -819,7 +814,7 @@ export class PDDLPlanner implements CognitionModule {
   /**
    * Adjust failed actions
    */
-  private adjustFailedActions(action: any, reward: any): void {
+  private adjustFailedActions(action: any, _reward: any): void {
     // Update action costs (higher cost for failed actions)
     const actionName = action.type || 'unknown';
     const domainAction = this.domain.actions.find((a) => a.name === actionName);
@@ -833,7 +828,7 @@ export class PDDLPlanner implements CognitionModule {
   /**
    * Update state model based on experience
    */
-  private updateStateModel(state: any, action: any, nextState: any): void {
+  private updateStateModel(_state: any, _action: any, _nextState: any): void {
     // Learn state transitions
     // In practice, this would update the domain model
     runtimeLogger.cognition('Updated state model from experience');

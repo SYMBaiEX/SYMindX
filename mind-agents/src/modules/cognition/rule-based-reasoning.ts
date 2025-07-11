@@ -27,7 +27,6 @@ import {
   Condition,
   RuleAction,
   FactBase,
-  ReasoningPerformance,
   HybridReasoningConfig,
 } from '../../types/cognition';
 import { BaseConfig } from '../../types/common';
@@ -94,7 +93,7 @@ export class RuleBasedFactBase implements FactBase {
 
   query(pattern: any): any[] {
     const results: any[] = [];
-    for (const [key, value] of Array.from(this.facts.entries())) {
+    for (const [_key, value] of Array.from(this.facts.entries())) {
       // Simple pattern matching
       if (this.matchesPattern(value, pattern)) {
         results.push(value);
@@ -300,7 +299,7 @@ export class RuleBasedReasoning implements CognitionModule {
     }
 
     // Calculate performance metrics
-    const reasoningTime = Date.now() - startTime;
+    const _reasoningTime = Date.now() - startTime;
     const confidence = this.calculateConfidence(firedRules);
 
     return {
@@ -321,7 +320,7 @@ export class RuleBasedReasoning implements CognitionModule {
   /**
    * Plan using rule-based approach
    */
-  async plan(agent: Agent, goal: string): Promise<Plan> {
+  async plan(_agent: Agent, goal: string): Promise<Plan> {
     // Add goal to fact base
     this.factBase.addSimpleFact('current_goal', goal);
     this.factBase.addSimpleFact('has_active_goal', true);
@@ -378,7 +377,7 @@ export class RuleBasedReasoning implements CognitionModule {
   /**
    * Decide between options using rule-based criteria
    */
-  async decide(agent: Agent, options: Decision[]): Promise<Decision> {
+  async decide(_agent: Agent, options: Decision[]): Promise<Decision> {
     if (options.length === 0) {
       throw new Error('No options to decide between');
     }
@@ -409,8 +408,8 @@ export class RuleBasedReasoning implements CognitionModule {
   /**
    * Learn from experience by updating rules
    */
-  async learn(agent: Agent, experience: Experience): Promise<void> {
-    const { state, action, reward, nextState } = experience;
+  async learn(_agent: Agent, experience: Experience): Promise<void> {
+    const { state, action, reward, nextState: _nextState } = experience;
 
     // Analyze experience for rule updates
     if (reward.value > 0.5) {
@@ -587,7 +586,7 @@ export class RuleBasedReasoning implements CognitionModule {
       }
 
       // Create safe evaluation context
-      const context = {
+      const _context = {
         facts: this.factBase.getAllFacts(),
         ...parameters,
       };
@@ -741,8 +740,8 @@ export class RuleBasedReasoning implements CognitionModule {
   private async executeAction(
     actionName: string,
     parameters: any,
-    agent: Agent,
-    context: ThoughtContext
+    _agent: Agent,
+    _context: ThoughtContext
   ): Promise<void> {
     switch (actionName) {
       case 'generate_response':
@@ -772,7 +771,7 @@ export class RuleBasedReasoning implements CognitionModule {
   private generateActionsFromRule(
     agent: Agent,
     rule: Rule,
-    context: ThoughtContext
+    _context: ThoughtContext
   ): AgentAction[] {
     const actions: AgentAction[] = [];
 
@@ -822,7 +821,7 @@ export class RuleBasedReasoning implements CognitionModule {
   private createReasoningMemory(
     agent: Agent,
     rules: Rule[],
-    context: ThoughtContext
+    _context: ThoughtContext
   ): MemoryRecord {
     const content = `Rule-based reasoning: ${rules.map((r) => r.name).join(', ')}`;
 
@@ -934,9 +933,9 @@ export class RuleBasedReasoning implements CognitionModule {
    * Reinforce successful patterns
    */
   private reinforceSuccessfulPattern(
-    state: any,
-    action: any,
-    reward: any
+    _state: any,
+    _action: any,
+    _reward: any
   ): void {
     // Find rules that contributed to successful actions
     const recentRules = this.executionHistory
@@ -956,7 +955,7 @@ export class RuleBasedReasoning implements CognitionModule {
   /**
    * Learn from failure
    */
-  private learnFromFailure(state: any, action: any, reward: any): void {
+  private learnFromFailure(_state: any, _action: any, _reward: any): void {
     // Find rules that contributed to failed actions
     const failedRules = this.executionHistory
       .filter((h) => !h.success && Date.now() - h.timestamp.getTime() < 60000)

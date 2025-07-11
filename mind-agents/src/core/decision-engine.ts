@@ -87,10 +87,10 @@ export class DecisionEngine {
     const result = await this.applyDecisionMethod(matrix, this.config.type);
 
     // 6. Perform ethical check
-    const ethicalCheck = await this.performEthicalCheck(
-      feasibleAlternatives[0], // Best alternative
-      context
-    );
+    const bestAlternative = feasibleAlternatives[0];
+    const ethicalCheck = bestAlternative 
+      ? await this.performEthicalCheck(bestAlternative, context)
+      : { confidence: 1, reasoning: ['No alternatives to check'] };
 
     // 7. Handle uncertainty
     const uncertaintyAdjustment = this.calculateUncertaintyAdjustment(
@@ -137,7 +137,7 @@ export class DecisionEngine {
    * Generate decision criteria based on agent personality, goals, and context
    */
   private async generateDecisionCriteria(
-    context: DecisionContext
+    _context: DecisionContext
   ): Promise<DecisionCriteria[]> {
     const criteria: DecisionCriteria[] = [];
     const personality = this.agent.config.psyche?.traits || [];
@@ -750,7 +750,7 @@ export class DecisionEngine {
     );
   }
 
-  private calculateConsistencyRatio(matrix: DecisionMatrix): number {
+  private calculateConsistencyRatio(_matrix: DecisionMatrix): number {
     // Simplified consistency calculation
     return Math.random() * 0.1; // Should be < 0.1 for good consistency
   }
@@ -822,6 +822,10 @@ export class DecisionEngine {
     result: DecisionResult,
     alternatives: AgentAction[]
   ): AgentAction {
+    if (alternatives.length === 0) {
+      throw new Error('No alternatives available for recommendation');
+    }
+    
     const bestAlternativeId = result.ranking[0]?.alternative;
     return (
       alternatives.find((a) => a.id === bestAlternativeId) || alternatives[0]
@@ -830,16 +834,16 @@ export class DecisionEngine {
 
   // Constraint checking methods
   private checkResourceConstraint(
-    action: AgentAction,
-    constraint: Constraint
+    _action: AgentAction,
+    _constraint: Constraint
   ): boolean {
     // Simplified resource constraint check
     return true;
   }
 
   private checkTemporalConstraint(
-    action: AgentAction,
-    constraint: Constraint
+    _action: AgentAction,
+    _constraint: Constraint
   ): boolean {
     // Simplified temporal constraint check
     return true;
@@ -847,14 +851,14 @@ export class DecisionEngine {
 
   private checkEthicalConstraint(
     action: AgentAction,
-    constraint: Constraint
+    _constraint: Constraint
   ): boolean {
     return this.scoreEthicalCompliance(action, {} as DecisionContext) > 0.5;
   }
 
   private checkLogicalConstraint(
-    action: AgentAction,
-    constraint: Constraint
+    _action: AgentAction,
+    _constraint: Constraint
   ): boolean {
     // Simplified logical constraint check
     return true;

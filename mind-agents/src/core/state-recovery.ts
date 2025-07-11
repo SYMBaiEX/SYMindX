@@ -5,7 +5,7 @@
 
 import { EventEmitter } from 'events';
 
-import { Agent, LazyAgent, AgentConfig } from '../types/agent';
+import { AgentConfig } from '../types/agent';
 import { Logger } from '../utils/logger';
 
 import { ResourceManager } from './resource-manager';
@@ -73,13 +73,13 @@ export interface RecoveryResult {
 export class StateRecoverySystem extends EventEmitter {
   private logger: Logger;
   private stateManager: StateManager;
-  private resourceManager: ResourceManager;
+  private _resourceManager: ResourceManager;
   private recoveryStrategies: Map<string, RecoveryStrategy> = new Map();
 
   constructor(stateManager: StateManager, resourceManager: ResourceManager) {
     super();
     this.stateManager = stateManager;
-    this.resourceManager = resourceManager;
+    this._resourceManager = resourceManager;
     this.logger = new Logger('StateRecoverySystem');
 
     this.registerDefaultStrategies();
@@ -240,11 +240,7 @@ export class StateRecoverySystem extends EventEmitter {
           timestamp: now,
         },
         recentMemories: [],
-        currentThoughts: undefined,
-        decisionContext: undefined,
       },
-
-      autonomous: undefined,
 
       communication: {
         activeConversations: [],
@@ -419,7 +415,7 @@ export class StateRecoverySystem extends EventEmitter {
       priority: 10,
       canRecover: (corruption) =>
         corruption.type === CorruptionType.SCHEMA_MISMATCH,
-      recover: async (snapshot, corruption) => {
+      recover: async (snapshot, _corruption) => {
         // Implement schema migration logic
         return this.migrateSchema(snapshot);
       },
@@ -432,7 +428,7 @@ export class StateRecoverySystem extends EventEmitter {
       priority: 8,
       canRecover: (corruption) =>
         corruption.type === CorruptionType.INTEGRITY_FAILURE,
-      recover: async (snapshot, corruption) => {
+      recover: async (snapshot, _corruption) => {
         const repaired = { ...snapshot };
         repaired.metadata.integrity = this.calculateIntegrity({
           ...repaired,
@@ -449,7 +445,7 @@ export class StateRecoverySystem extends EventEmitter {
       priority: 6,
       canRecover: (corruption) =>
         corruption.type === CorruptionType.DEPENDENCY_MISSING,
-      recover: async (snapshot, corruption) => {
+      recover: async (snapshot, _corruption) => {
         return this.substituteDependencies(
           snapshot,
           corruption.metadata.missing
@@ -465,7 +461,7 @@ export class StateRecoverySystem extends EventEmitter {
       canRecover: (corruption) =>
         corruption.type === CorruptionType.MISSING_DATA &&
         corruption.severity !== CorruptionSeverity.CRITICAL,
-      recover: async (snapshot, corruption) => {
+      recover: async (snapshot, _corruption) => {
         return this.recoverPartialData(snapshot);
       },
     });
@@ -476,7 +472,7 @@ export class StateRecoverySystem extends EventEmitter {
       description: 'Create minimal functional state',
       priority: 1,
       canRecover: () => true, // Can always create minimal state
-      recover: async (snapshot, corruption) => {
+      recover: async (snapshot, _corruption) => {
         return this.createMinimalState(snapshot);
       },
     });
@@ -517,7 +513,7 @@ export class StateRecoverySystem extends EventEmitter {
 
   private estimateDataLoss(
     corruption: StateCorruption,
-    snapshot: AgentStateSnapshot
+    _snapshot: AgentStateSnapshot
   ): number {
     switch (corruption.severity) {
       case CorruptionSeverity.MINOR:
@@ -650,12 +646,12 @@ export class StateRecoverySystem extends EventEmitter {
     return ['memory', 'sqlite'].includes(type);
   }
 
-  private isExtensionAvailable(id: string): boolean {
+  private isExtensionAvailable(_id: string): boolean {
     // Would check with registry
     return true; // Simplified
   }
 
-  private isPortalAvailable(id: string): boolean {
+  private isPortalAvailable(_id: string): boolean {
     // Would check with registry
     return true; // Simplified
   }

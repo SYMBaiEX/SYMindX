@@ -44,7 +44,7 @@ import {
   MessageRole,
 } from '../../types/portal';
 import { BasePortal } from '../base-portal';
-import { convertUsage } from '../utils';
+import { AISDKParameterBuilder } from '../ai-sdk-utils';
 
 export interface VercelAIConfig extends PortalConfig {
   providers: ProviderConfig[];
@@ -446,17 +446,20 @@ export class VercelAIPortal extends BasePortal {
         value: text,
       });
 
-      return {
+      const result: EmbeddingResult = {
         embedding,
         dimensions: embedding.length,
         model,
-        usage: usage
-          ? {
-              promptTokens: usage.tokens,
-              totalTokens: usage.tokens,
-            }
-          : undefined,
       };
+      
+      if (usage) {
+        result.usage = {
+          promptTokens: usage.tokens,
+          totalTokens: usage.tokens,
+        };
+      }
+      
+      return result;
     } catch (error) {
       throw new Error(`Vercel AI SDK embedding generation failed: ${error}`);
     }
@@ -469,12 +472,13 @@ export class VercelAIPortal extends BasePortal {
     const model = options?.model || this.resolveModel('image');
 
     try {
-      const { image } = await generateImage({
+      const imageParams = AISDKParameterBuilder.buildImageGenerationParams({
         model: this.getImageModel(model),
         prompt,
-        size: options?.size as `${number}x${number}` | undefined,
         n: options?.n || 1,
-      });
+      }, options);
+
+      const { image } = await generateImage(imageParams);
 
       return {
         images: [

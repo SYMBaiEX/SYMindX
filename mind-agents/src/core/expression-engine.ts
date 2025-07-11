@@ -144,19 +144,22 @@ export class ExpressionEngine {
 
     // Blend expressions
     let blended = content;
-    if (expressions.length > 0) {
+    if (expressions.length > 0 && expressions[0]) {
       // Use the strongest emotion's expression as base
       blended = expressions[0];
 
       // Add nuances from other emotions
       for (let i = 1; i < expressions.length; i++) {
-        const modifier = this.extractModifier(expressions[i]);
-        if (modifier) {
-          blended = this.addNuance(
-            blended,
-            modifier,
-            blend.components[i]?.weight ?? 0
-          );
+        const expression = expressions[i];
+        if (expression) {
+          const modifier = this.extractModifier(expression);
+          if (modifier) {
+            blended = this.addNuance(
+              blended,
+              modifier,
+              blend.components[i]?.weight ?? 0
+            );
+          }
         }
       }
     }
@@ -375,16 +378,16 @@ export class ExpressionEngine {
 
       // Add emphasis
       if (template.modifiers.emphasis && weight > 0.8) {
-        const emphasis =
-          template.modifiers.emphasis[
-            Math.floor(Math.random() * template.modifiers.emphasis.length)
-          ];
-        // Insert emphasis before key words
-        const words = expressed.split(' ');
-        if (words.length > 3) {
-          const insertPos = Math.floor(words.length / 2);
-          words.splice(insertPos, 0, emphasis);
-          expressed = words.join(' ');
+        const emphasisIndex = Math.floor(Math.random() * template.modifiers.emphasis.length);
+        const emphasis = template.modifiers.emphasis[emphasisIndex];
+        if (emphasis) {
+          // Insert emphasis before key words
+          const words = expressed.split(' ');
+          if (words.length > 3) {
+            const insertPos = Math.floor(words.length / 2);
+            words.splice(insertPos, 0, emphasis);
+            expressed = words.join(' ');
+          }
         }
       }
     }
@@ -439,7 +442,7 @@ export class ExpressionEngine {
       // Add creative flair (simplified for demo)
       if (emotion.intensity > 0.7 && Math.random() < personality.openness) {
         const creative = ['✨', '🌟', '💡', '🎨'];
-        const emoji = creative[Math.floor(Math.random() * creative.length)];
+        const emoji = creative[Math.floor(Math.random() * creative.length)] ?? '✨';
         if (!modified.includes(emoji)) {
           modified = `${modified} ${emoji}`;
         }
@@ -499,7 +502,7 @@ export class ExpressionEngine {
 
     for (const pattern of patterns) {
       const match = expression.match(pattern);
-      if (match) return match[1];
+      if (match && match[1]) return match[1];
     }
 
     return null;
@@ -547,7 +550,7 @@ export class ExpressionEngine {
 
       const variation =
         variations[Math.floor(Math.random() * variations.length)];
-      return variation(expression);
+      return variation ? variation(expression) : expression;
     }
 
     return expression;

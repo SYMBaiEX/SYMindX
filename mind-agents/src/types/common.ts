@@ -118,21 +118,24 @@ export interface ActionResult<T = GenericData> {
   metadata?: Metadata;
 }
 
-// Validation Types
-export interface ValidationResult {
+// Validation Types (re-exported from helpers for backward compatibility)
+export type { ValidationResult, ValidationError, ValidationWarning } from './helpers';
+
+// Legacy validation types for backward compatibility
+export interface LegacyValidationResult {
   valid: boolean;
-  errors: ValidationError[];
-  warnings?: ValidationWarning[];
+  errors: LegacyValidationError[];
+  warnings?: LegacyValidationWarning[];
 }
 
-export interface ValidationError {
+export interface LegacyValidationError {
   field: string;
   message: string;
   code: string;
   value?: any;
 }
 
-export interface ValidationWarning {
+export interface LegacyValidationWarning {
   field: string;
   message: string;
   code: string;
@@ -478,20 +481,242 @@ export interface McpPromptArgument {
   required?: boolean;
 }
 
-// Utility Types
-export type DeepPartial<T> = {
-  [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
-};
+// Enhanced Result Types for better API consistency
+export interface ServiceResult<T = any> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  message?: string;
+  timestamp: Date;
+  metadata?: {
+    serviceId: string;
+    operation: string;
+    duration?: number;
+    version?: string;
+    [key: string]: any;
+  };
+}
 
-export type RequiredFields<T, K extends keyof T> = T & Required<Pick<T, K>>;
+// Enhanced Error Types
+export interface ServiceError {
+  code: string;
+  message: string;
+  details?: string;
+  timestamp: Date;
+  correlationId?: string;
+  metadata?: {
+    serviceId: string;
+    operation: string;
+    context?: Record<string, any>;
+    [key: string]: any;
+  };
+}
 
-export type OptionalFields<T, K extends keyof T> = Omit<T, K> &
-  Partial<Pick<T, K>>;
+// Configuration Management Types
+export interface ConfigurationSchema {
+  version: string;
+  schema: {
+    [key: string]: {
+      type: 'string' | 'number' | 'boolean' | 'object' | 'array';
+      required?: boolean;
+      default?: any;
+      validation?: {
+        min?: number;
+        max?: number;
+        pattern?: string;
+        enum?: any[];
+      };
+      description?: string;
+    };
+  };
+}
 
-export type Nullable<T> = T | null;
+// Enhanced Module Types
+export interface ModuleManifest {
+  id: string;
+  name: string;
+  version: string;
+  description: string;
+  author: string;
+  license: string;
+  dependencies?: {
+    [key: string]: string;
+  };
+  peerDependencies?: {
+    [key: string]: string;
+  };
+  capabilities?: string[];
+  configuration?: ConfigurationSchema;
+  metadata?: {
+    category: string;
+    tags?: string[];
+    homepage?: string;
+    repository?: string;
+    [key: string]: any;
+  };
+}
 
-export type Optional<T> = T | undefined;
+// Enhanced Context Types
+export interface RuntimeContext {
+  agentId: string;
+  sessionId: string;
+  timestamp: Date;
+  environment: {
+    node: string;
+    platform: string;
+    arch: string;
+    version: string;
+  };
+  runtime: {
+    uptime: number;
+    memory: {
+      used: number;
+      total: number;
+      heap: number;
+    };
+    cpu: {
+      usage: number;
+      loadAverage: number[];
+    };
+  };
+  metadata?: Record<string, any>;
+}
 
-export type StringKeys<T> = Extract<keyof T, string>;
+// Enhanced Event Types
+export interface SystemEvent {
+  id: string;
+  type: string;
+  category: 'system' | 'agent' | 'user' | 'external';
+  source: string;
+  timestamp: Date;
+  data: Record<string, any>;
+  metadata?: {
+    priority: 'low' | 'medium' | 'high' | 'critical';
+    tags?: string[];
+    correlationId?: string;
+    [key: string]: any;
+  };
+}
 
-export type NonEmptyArray<T> = [T, ...T[]];
+// Enhanced Service Types
+export interface ServiceConfiguration {
+  id: string;
+  name: string;
+  enabled: boolean;
+  config: Record<string, any>;
+  dependencies?: string[];
+  healthCheck?: {
+    enabled: boolean;
+    interval: number;
+    timeout: number;
+    retries: number;
+  };
+  metadata?: {
+    version: string;
+    description?: string;
+    tags?: string[];
+    [key: string]: any;
+  };
+}
+
+// Enhanced Communication Types
+export interface Message {
+  id: string;
+  type: string;
+  source: string;
+  target: string;
+  content: string | Record<string, any>;
+  timestamp: Date;
+  metadata?: {
+    priority: 'low' | 'medium' | 'high' | 'urgent';
+    encryption?: boolean;
+    compression?: boolean;
+    ttl?: number;
+    correlationId?: string;
+    [key: string]: any;
+  };
+}
+
+// Enhanced Task Types
+export interface Task {
+  id: string;
+  name: string;
+  type: string;
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
+  priority: number;
+  parameters: Record<string, any>;
+  result?: any;
+  error?: string;
+  createdAt: Date;
+  startedAt?: Date;
+  completedAt?: Date;
+  metadata?: {
+    agentId?: string;
+    retryCount?: number;
+    timeout?: number;
+    tags?: string[];
+    [key: string]: any;
+  };
+}
+
+// Enhanced Workflow Types
+export interface WorkflowStep {
+  id: string;
+  name: string;
+  type: string;
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
+  dependencies?: string[];
+  parameters: Record<string, any>;
+  result?: any;
+  error?: string;
+  metadata?: {
+    retryCount?: number;
+    timeout?: number;
+    [key: string]: any;
+  };
+}
+
+export interface Workflow {
+  id: string;
+  name: string;
+  description?: string;
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
+  steps: WorkflowStep[];
+  context: Record<string, any>;
+  createdAt: Date;
+  startedAt?: Date;
+  completedAt?: Date;
+  metadata?: {
+    agentId?: string;
+    version?: string;
+    tags?: string[];
+    [key: string]: any;
+  };
+}
+
+// Utility Types (re-exported from helpers for better organization)
+export type {
+  DeepPartial,
+  RequiredFields,
+  OptionalFields,
+  Nullable,
+  Optional,
+  StringKeys,
+  NonEmptyArray,
+  DeepReadonly,
+  NumberKeys,
+  SymbolKeys
+} from './helpers';
+
+// Operation Result Types
+export type {
+  OperationResult,
+  VoidResult,
+  VoidError,
+  InitializationResult,
+  CleanupResult,
+  EventProcessingResult,
+  StateUpdateResult,
+  ExecutionResult,
+  AsyncOperationResult
+} from './helpers';

@@ -344,7 +344,7 @@ export class ConcurrentSafetyManager extends EventEmitter {
 
     if (this.deadlockTimer) {
       clearInterval(this.deadlockTimer);
-      this.deadlockTimer = undefined;
+      delete this.deadlockTimer;
     }
 
     // Force release all locks
@@ -452,7 +452,9 @@ export class ConcurrentSafetyManager extends EventEmitter {
 
     // Check if request is still valid (not timed out)
     const now = Date.now();
-    const requestAge = now - parseInt(nextRequest.requestId.split('_')[2]);
+    const requestIdParts = nextRequest.requestId.split('_');
+    const timestamp = requestIdParts[2] ?? '0';
+    const requestAge = now - parseInt(timestamp);
 
     if (requestAge > nextRequest.timeout) {
       this.logger.debug(

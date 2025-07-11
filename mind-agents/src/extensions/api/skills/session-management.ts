@@ -14,11 +14,11 @@ import {
 import { ApiExtension } from '../index';
 
 export class SessionManagementSkill {
-  private extension: ApiExtension;
+  private _extension: ApiExtension;
   private sessions: Map<string, any> = new Map();
 
   constructor(extension: ApiExtension) {
-    this.extension = extension;
+    this._extension = extension;
   }
 
   /**
@@ -209,7 +209,7 @@ export class SessionManagementSkill {
    * Update session data
    */
   private async updateSession(
-    agent: Agent,
+    _agent: Agent,
     params: any
   ): Promise<ActionResult> {
     try {
@@ -269,7 +269,7 @@ export class SessionManagementSkill {
    * Extend session expiration
    */
   private async extendSession(
-    agent: Agent,
+    _agent: Agent,
     params: any
   ): Promise<ActionResult> {
     try {
@@ -333,7 +333,7 @@ export class SessionManagementSkill {
    * Destroy a session
    */
   private async destroySession(
-    agent: Agent,
+    _agent: Agent,
     params: any
   ): Promise<ActionResult> {
     try {
@@ -437,8 +437,8 @@ export class SessionManagementSkill {
    * Clean up expired sessions
    */
   private async cleanupExpired(
-    agent: Agent,
-    params: any
+    _agent: Agent,
+    _params: any
   ): Promise<ActionResult> {
     try {
       const now = new Date();

@@ -2,8 +2,8 @@
  * Ethics Engine - Comprehensive ethical constraint checking and safety controls
  */
 
-import { Agent, AgentAction, AgentEvent } from '../types/agent';
-import { DecisionContext, Constraint } from '../types/autonomous';
+import { Agent, AgentAction } from '../types/agent';
+import { DecisionContext } from '../types/autonomous';
 import { Logger } from '../utils/logger';
 
 export interface EthicsConfig {
@@ -265,7 +265,7 @@ export class EthicsEngine {
    * Check ethical constraints
    */
   private async checkEthicalConstraints(
-    agent: Agent,
+    _agent: Agent,
     action: AgentAction,
     context: DecisionContext
   ): Promise<{
@@ -470,7 +470,7 @@ export class EthicsEngine {
    */
   private generateRecommendations(
     violations: EthicalViolation[],
-    action: AgentAction
+    _action: AgentAction
   ): string[] {
     const recommendations: string[] = [];
 
@@ -585,7 +585,7 @@ export class EthicsEngine {
 
   private evaluateHarmPotential(
     action: AgentAction,
-    context: DecisionContext
+    _context: DecisionContext
   ): number {
     // Evaluate potential for harm
     const harmIndicators = [
@@ -609,7 +609,7 @@ export class EthicsEngine {
 
   private evaluateAutonomyRespect(
     action: AgentAction,
-    context: DecisionContext
+    _context: DecisionContext
   ): number {
     // Evaluate respect for human autonomy
     const autonomyViolators = [
@@ -632,7 +632,7 @@ export class EthicsEngine {
 
   private evaluateWellbeingPromotion(
     action: AgentAction,
-    context: DecisionContext
+    _context: DecisionContext
   ): number {
     // Evaluate contribution to wellbeing
     const wellbeingPromotors = [
@@ -656,7 +656,7 @@ export class EthicsEngine {
 
   private evaluateTruthfulness(
     action: AgentAction,
-    context: DecisionContext
+    _context: DecisionContext
   ): number {
     // Evaluate truthfulness
     const deceptionIndicators = ['lie', 'deceive', 'mislead', 'fake', 'false'];
@@ -673,7 +673,7 @@ export class EthicsEngine {
 
   private evaluatePrivacyProtection(
     action: AgentAction,
-    context: DecisionContext
+    _context: DecisionContext
   ): number {
     // Evaluate privacy protection
     const privacyViolators = [
@@ -697,8 +697,8 @@ export class EthicsEngine {
 
   private evaluateGrowthFostering(
     action: AgentAction,
-    context: DecisionContext,
-    agent: Agent
+    _context: DecisionContext,
+    _agent: Agent
   ): number {
     // Evaluate contribution to growth and learning
     const growthPromotors = [

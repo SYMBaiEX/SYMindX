@@ -1,5 +1,5 @@
 import { Box, Text, useInput } from 'ink';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
 import { AgentList } from '../components/AgentList.js';
 import { Chat } from '../components/Chat.js';
@@ -11,7 +11,7 @@ interface MainLayoutProps {
   args?: string[];
 }
 
-export const MainLayout: React.FC<MainLayoutProps> = ({ command = 'dashboard', args = [] }) => {
+export const MainLayout: React.FC<MainLayoutProps> = ({ command = 'dashboard' }) => {
   const [currentView, setCurrentView] = useState(command);
   const [showHelp, setShowHelp] = useState(false);
 

@@ -11,9 +11,7 @@ import { Logger } from '../utils/logger';
 import { ResourceManager } from './resource-manager';
 import {
   StateManager,
-  AgentStateSnapshot,
   CheckpointType,
-  StateManagerConfig,
 } from './state-manager';
 
 export interface CheckpointSchedule {
@@ -52,7 +50,7 @@ export class CheckpointSystem extends EventEmitter {
   private logger: Logger;
   private config: CheckpointSystemConfig;
   private stateManager: StateManager;
-  private resourceManager: ResourceManager;
+  private _resourceManager: ResourceManager; // Unused but kept for interface compatibility
   private schedules: Map<string, CheckpointSchedule> = new Map();
   private checkpointTimer?: NodeJS.Timeout;
   private metrics: Map<string, CheckpointMetrics> = new Map();
@@ -66,7 +64,7 @@ export class CheckpointSystem extends EventEmitter {
     super();
     this.config = config;
     this.stateManager = stateManager;
-    this.resourceManager = resourceManager;
+    this._resourceManager = resourceManager;
     this.logger = new Logger('CheckpointSystem');
 
     if (config.enableScheduledCheckpoints) {
@@ -375,7 +373,7 @@ export class CheckpointSystem extends EventEmitter {
 
     if (this.checkpointTimer) {
       clearInterval(this.checkpointTimer);
-      this.checkpointTimer = undefined;
+      delete this.checkpointTimer;
     }
 
     // Final cleanup
@@ -503,7 +501,7 @@ export class CheckpointSystem extends EventEmitter {
     return nextCheckpoint;
   }
 
-  private async getAgentInstance(agentId: string): Promise<Agent | null> {
+  private async getAgentInstance(_agentId: string): Promise<Agent | null> {
     // This would need to be implemented by injecting the runtime
     // For now, return null to indicate agent not available
     return null;

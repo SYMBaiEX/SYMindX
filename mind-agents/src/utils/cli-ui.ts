@@ -288,7 +288,7 @@ export async function matrixRain(duration: number = 3000) {
       const x = i * 2;
       const y = drops[i];
 
-      if (y < rows && process.stdout.cursorTo && process.stdout.write) {
+      if (y !== undefined && y < rows && process.stdout.cursorTo && process.stdout.write) {
         try {
           const safeY = y ?? 0;
           process.stdout.cursorTo(x, safeY);
@@ -302,9 +302,11 @@ export async function matrixRain(duration: number = 3000) {
         }
       }
 
-      drops[i]++;
-      if (drops[i] * Math.random() > rows) {
-        drops[i] = 0;
+      if (drops[i] !== undefined) {
+        drops[i] = (drops[i] ?? 0) + 1;
+        if ((drops[i] ?? 0) * Math.random() > rows) {
+          drops[i] = 0;
+        }
       }
     }
   }, 50);

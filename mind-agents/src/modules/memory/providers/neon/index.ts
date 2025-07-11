@@ -17,7 +17,6 @@ import {
   MemoryTierType,
   MemoryContext,
   SharedMemoryConfig,
-  ArchivalStrategy,
   MemoryPermission,
 } from '../../../../types/memory';
 import { runtimeLogger } from '../../../../utils/logger';
@@ -28,7 +27,7 @@ import {
   EnhancedMemoryRecord,
 } from '../../base-memory-provider';
 
-import { MemoryArchiver } from './archiver';
+// import { MemoryArchiver } from './archiver'; // Unused import
 import {
   MIGRATIONS,
   createMigrationsTable,
@@ -81,7 +80,7 @@ export class NeonMemoryProvider extends BaseMemoryProvider {
   declare protected config: NeonMemoryConfig;
   private tableName: string;
   private isInitialized = false;
-  private schemaVersion = '2.0.0';
+  private _schemaVersion = '2.0.0'; // Unused but kept for future compatibility
   private sharedPools: Map<string, SharedMemoryPool> = new Map();
   private consolidationTimer?: NodeJS.Timeout;
   private archivalTimer?: NodeJS.Timeout;
@@ -707,7 +706,7 @@ export class NeonMemoryProvider extends BaseMemoryProvider {
   /**
    * Generate embedding for a memory
    */
-  async generateEmbedding(content: string): Promise<number[]> {
+  async generateEmbedding(_content: string): Promise<number[]> {
     // This would call the actual embedding API based on config
     // For now, return a mock embedding
     return new Array(1536).fill(0).map(() => Math.random() * 2 - 1);
@@ -962,9 +961,9 @@ export class NeonMemoryProvider extends BaseMemoryProvider {
    * Summarize memories
    */
   private async summarizeMemories(
-    client: PoolClient,
+    _client: PoolClient,
     agentId: string,
-    rule: any
+    _rule: any
   ): Promise<void> {
     // Implementation would use LLM to summarize groups of memories
     runtimeLogger.memory(`Summarizing memories for agent ${agentId}`);
@@ -991,7 +990,7 @@ export class NeonMemoryProvider extends BaseMemoryProvider {
     for (const [day, group] of Array.from(grouped.entries())) {
       compressed.push({
         id: this.generateId(),
-        agentId: group[0].agentId,
+        agentId: group[0]?.agentId ?? '',
         type: MemoryType.EXPERIENCE,
         content: `Summary of ${day}: ${group.map((m) => m.content).join('; ')}`,
         importance: Math.max(...group.map((m) => m.importance || 0)),

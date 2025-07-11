@@ -1,4 +1,3 @@
-import { EventEmitter } from 'events';
 
 import {
   Agent,
@@ -13,9 +12,7 @@ import {
   ThoughtContext,
   AgentState,
   EnvironmentState,
-  MemoryProvider,
   Extension,
-  ActionResult,
   AgentStatus,
   EnvironmentType,
   MemoryRecord,
@@ -30,18 +27,11 @@ import { ExtensionConfig } from '../types/common';
 import { EmotionModule, EmotionModuleFactory } from '../types/emotion';
 import {
   ActionResultType,
-  ActionCategory,
-  RuntimeStatus,
-  ModuleStatus,
-  Result,
-  ErrorResult,
-  SuccessResult,
 } from '../types/enums';
 import { ExtensionContext } from '../types/extension';
 import {
   Portal,
   PortalConfig,
-  PortalRegistry,
   PortalCapability,
 } from '../types/portal';
 import { configResolver } from '../utils/config-resolver';
@@ -92,6 +82,7 @@ export class SYMindXRuntime implements AgentRuntime {
       },
     };
     this.extensionLoader = createExtensionLoader();
+    // extensionContext is available for future use
   }
 
   async initialize(): Promise<void> {
@@ -297,7 +288,7 @@ export class SYMindXRuntime implements AgentRuntime {
 
     if (this.tickTimer) {
       clearInterval(this.tickTimer);
-      this.tickTimer = undefined;
+      delete this.tickTimer;
     }
 
     // Gracefully shutdown all agents
@@ -396,8 +387,6 @@ export class SYMindXRuntime implements AgentRuntime {
               continue;
             }
 
-            let agentConfig: AgentConfig;
-
             // Check if this is a new clean character config or old format
             if (this.isCleanCharacterConfig(rawConfig)) {
               // Validate environment variables
@@ -410,12 +399,12 @@ export class SYMindXRuntime implements AgentRuntime {
               }
 
               // Transform clean config to runtime config
-              agentConfig = configResolver.resolveCharacterConfig(
+              configResolver.resolveCharacterConfig(
                 rawConfig as CharacterConfig
               );
             } else {
               // Legacy format - use as-is but process environment variables
-              agentConfig = this.processLegacyConfig(rawConfig);
+              this.processLegacyConfig(rawConfig);
             }
 
             // Enabled agents should load immediately, not be lazy
@@ -473,7 +462,7 @@ export class SYMindXRuntime implements AgentRuntime {
     );
   }
 
-  private findPortalByCapability(portals: any[], capability: string): any {
+  private _findPortalByCapability(portals: any[], capability: string): any {
     if (!portals || portals.length === 0) return null;
     // Find first enabled portal with the specified capability
     return portals.find(
@@ -721,7 +710,7 @@ export class SYMindXRuntime implements AgentRuntime {
     if (!primaryPortal && portals.length > 0) {
       primaryPortal = portals[0];
       console.log(
-        `🔮 Using first portal as primary: ${primaryPortal.constructor.name}`
+        `🔮 Using first portal as primary: ${primaryPortal?.constructor.name ?? 'Unknown'}`
       );
     }
 
@@ -779,7 +768,6 @@ export class SYMindXRuntime implements AgentRuntime {
 
     const agent: Agent = {
       id: agentId,
-      character_id: characterId,
       name: agentConfig.core.name,
       status: AgentStatus.IDLE,
       emotion: emotionModule,
@@ -792,6 +780,10 @@ export class SYMindXRuntime implements AgentRuntime {
       characterConfig: config, // Preserve original character configuration
       lastUpdate: new Date(),
     };
+    
+    if (characterId) {
+      agent.character_id = characterId;
+    }
 
     // Initialize extensions (skip API extension - it's shared at runtime level)
     for (const extension of extensions) {
@@ -1257,7 +1249,7 @@ export class SYMindXRuntime implements AgentRuntime {
     }
   }
 
-  private getCurrentState(agent: Agent): AgentState {
+  private getCurrentState(_agent: Agent): AgentState {
     return {
       location: 'unknown',
       inventory: {},
@@ -1316,12 +1308,6 @@ export class SYMindXRuntime implements AgentRuntime {
       const { createEmotionModule, createCognitionModule } = await import(
         '../modules/index'
       );
-      const { getEmotionModuleTypes } = await import(
-        '../modules/emotion/index'
-      );
-      const { getCognitionModuleTypes } = await import(
-        '../modules/cognition/index'
-      );
 
       // Register core modules
       const { registerCoreModules } = await import('../modules/index');
@@ -1350,7 +1336,7 @@ export class SYMindXRuntime implements AgentRuntime {
   /**
    * Check if agent configuration indicates autonomous capabilities
    */
-  private isAutonomousAgent(config: AgentConfig): boolean {
+  private _isAutonomousAgent(config: AgentConfig): boolean {
     return (
       config.autonomous?.enabled === true ||
       config.autonomous_behaviors !== undefined
@@ -1360,7 +1346,7 @@ export class SYMindXRuntime implements AgentRuntime {
   /**
    * Initialize autonomous agent capabilities
    */
-  private async initializeAutonomousAgent(
+  private async _initializeAutonomousAgent(
     agent: Agent,
     config: AgentConfig
   ): Promise<AutonomousAgent> {
@@ -1714,7 +1700,7 @@ export class SYMindXRuntime implements AgentRuntime {
   /**
    * Load dynamic plugins (simplified for emergency cleanup)
    */
-  private async loadDynamicPlugins(): Promise<void> {
+  private async _loadDynamicPlugins(): Promise<void> {
     // This method is kept for backward compatibility but does nothing
     // Extensions are loaded in the loadExtensions() method
   }
@@ -1789,8 +1775,9 @@ export class SYMindXRuntime implements AgentRuntime {
 
         // Extract unique server names from tool keys (format: "server:toolname")
         for (const toolKey of Object.keys(agent.toolSystem)) {
-          const serverName = toolKey.split(':')[0];
-          if (!mcpServers.includes(serverName)) {
+          const serverParts = toolKey.split(':');
+          const serverName = serverParts[0] ?? '';
+          if (serverName && !mcpServers.includes(serverName)) {
             mcpServers.push(serverName);
           }
         }
@@ -1856,7 +1843,7 @@ export class SYMindXRuntime implements AgentRuntime {
    */
   async loadPlugin(
     pluginId: string,
-    config?: ExtensionConfig
+    _config?: ExtensionConfig
   ): Promise<boolean> {
     console.log(
       `🔌 Plugin loading simplified for emergency cleanup: ${pluginId}`
@@ -1879,7 +1866,7 @@ export class SYMindXRuntime implements AgentRuntime {
    */
   async reloadPlugin(
     pluginId: string,
-    config?: ExtensionConfig
+    _config?: ExtensionConfig
   ): Promise<boolean> {
     console.log(
       `🔌 Plugin reloading simplified for emergency cleanup: ${pluginId}`

@@ -20,7 +20,6 @@ import {
   MemoryProviderMetadata,
   MemoryTierType,
   MemoryContext,
-  SharedMemoryConfig,
   ArchivalStrategy,
   MemoryPermission,
 } from '../../../../types/memory';
@@ -32,7 +31,7 @@ import {
   EnhancedMemoryRecord,
 } from '../../base-memory-provider';
 
-import { MemoryArchiver } from './archiver';
+// import { MemoryArchiver } from './archiver'; // Unused import
 import { runMigrations } from './migrations';
 import { SharedMemoryPool } from './shared-pool';
 
@@ -677,7 +676,7 @@ export class SupabaseMemoryProvider extends BaseMemoryProvider {
   /**
    * Generate embedding for a memory
    */
-  async generateEmbedding(content: string): Promise<number[]> {
+  async generateEmbedding(_content: string): Promise<number[]> {
     // This would call the actual embedding API based on config
     // For now, return a mock embedding
     // In production, this would use OpenAI, Cohere, or another embedding service
@@ -814,7 +813,7 @@ export class SupabaseMemoryProvider extends BaseMemoryProvider {
    */
   private async summarizeMemories(
     agentId: string,
-    strategy: ArchivalStrategy
+    _strategy: ArchivalStrategy
   ): Promise<void> {
     // Implementation would use LLM to summarize groups of memories
     // For now, this is a placeholder
@@ -842,7 +841,7 @@ export class SupabaseMemoryProvider extends BaseMemoryProvider {
     for (const [day, group] of Array.from(grouped.entries())) {
       compressed.push({
         id: this.generateId(),
-        agentId: group[0].agentId,
+        agentId: group[0]?.agentId ?? '',
         type: MemoryType.EXPERIENCE,
         content: `Summary of ${day}: ${group.map((m) => m.content).join('; ')}`,
         importance: Math.max(...group.map((m) => m.importance || 0)),

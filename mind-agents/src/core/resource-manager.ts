@@ -92,8 +92,11 @@ export class ResourceManager extends EventEmitter {
       createdAt: new Date(),
       lastAccessed: new Date(),
       isActive: true,
-      cleanup,
     };
+    
+    if (cleanup) {
+      handle.cleanup = cleanup;
+    }
 
     this.resources.set(resourceId, handle);
 
@@ -369,20 +372,25 @@ export class ResourceManager extends EventEmitter {
       ? process.memoryUsage()
       : undefined;
 
-    return {
+    const report: ResourceHealthReport = {
       timestamp: new Date(),
       totalResources,
       activeResources,
       staleResources: staleResources.length,
       totalAgents,
       resourcesByType,
-      memoryUsage,
       health: this.calculateHealthScore(
         totalResources,
         staleResources.length,
         activeResources
       ),
     };
+    
+    if (memoryUsage) {
+      report.memoryUsage = memoryUsage;
+    }
+    
+    return report;
   }
 
   /**
@@ -393,7 +401,7 @@ export class ResourceManager extends EventEmitter {
 
     if (this.cleanupTimer) {
       clearInterval(this.cleanupTimer);
-      this.cleanupTimer = undefined;
+      delete this.cleanupTimer;
     }
 
     const totalResources = this.resources.size;

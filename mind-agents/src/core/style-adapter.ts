@@ -415,9 +415,12 @@ export class StyleAdapter {
       };
 
       const expList = expressions[emotion] || [];
-      if (expList.length > 0 && !message.includes(expList[0])) {
-        const exp = expList[Math.floor(Math.random() * expList.length)];
-        message = `${exp} - ${message}`;
+      if (expList.length > 0) {
+        const firstExp = expList[0];
+        if (firstExp && !message.includes(firstExp)) {
+          const exp = expList[Math.floor(Math.random() * expList.length)] ?? firstExp;
+          message = `${exp} - ${message}`;
+        }
       }
     } else if (emotionality < 0.3) {
       // Remove emotional language
@@ -542,7 +545,7 @@ export class StyleAdapter {
     if (phase === 'greeting' && cultural.greeting.length > 0) {
       const greeting =
         cultural.greeting[Math.floor(Math.random() * cultural.greeting.length)];
-      if (!message.toLowerCase().includes(greeting.toLowerCase())) {
+      if (greeting && !message.toLowerCase().includes(greeting.toLowerCase())) {
         message = `${greeting} ${message}`;
       }
     }
@@ -551,7 +554,7 @@ export class StyleAdapter {
     if (phase === 'closing' && cultural.farewell.length > 0) {
       const farewell =
         cultural.farewell[Math.floor(Math.random() * cultural.farewell.length)];
-      if (!message.toLowerCase().includes(farewell.toLowerCase())) {
+      if (farewell && !message.toLowerCase().includes(farewell.toLowerCase())) {
         message = `${message} ${farewell}`;
       }
     }

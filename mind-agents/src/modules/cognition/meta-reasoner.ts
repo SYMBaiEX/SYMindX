@@ -396,8 +396,8 @@ export class MetaReasoner implements CognitionModule {
     const sortedScores = Array.from(scores.entries()).sort(
       (a, b) => b[1] - a[1]
     );
-    const selectedParadigm = sortedScores[0][0];
-    const confidence = sortedScores[0][1];
+    const selectedParadigm = sortedScores[0]?.[0] ?? 'reactive';
+    const confidence = sortedScores[0]?.[1] ?? 0.5;
 
     // Generate reasoning
     reasoning.push(

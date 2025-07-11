@@ -94,7 +94,7 @@ export class InteractionManager {
   private activeInteractions: Map<string, HumanInteraction> = new Map();
   private interactionHistory: HumanInteraction[] = [];
   private relationships: Map<string, RelationshipInfo> = new Map();
-  private responseQueue: AgentResponse[] = [];
+  private _responseQueue: AgentResponse[] = [];
   private interruptionCallbacks: Map<
     string,
     (interaction: HumanInteraction) => Promise<void>
@@ -209,7 +209,7 @@ export class InteractionManager {
   private determinePriority(
     content: string,
     type: InteractionType,
-    humanId: string
+    _humanId: string
   ): 'low' | 'medium' | 'high' | 'urgent' {
     // Emergency keywords
     const emergencyKeywords = [
@@ -264,21 +264,30 @@ export class InteractionManager {
       .slice(-5)
       .map((i) => i.id);
 
-    return {
+    const context: InteractionContext = {
       previousInteractions: recentInteractions,
-      currentActivity: this.getCurrentActivity(),
       emotionalState: this.agent.emotion
         ? {
             intensity: this.agent.emotion.intensity || 0,
             mood: this.agent.emotion.current === 'happy' ? 1 : 0,
           }
         : { intensity: 0, mood: 0 },
-      relationship,
       environment: {
         timestamp: new Date(),
         agentStatus: this.agent.status,
       },
     };
+    
+    const currentActivity = this.getCurrentActivity();
+    if (currentActivity) {
+      context.currentActivity = currentActivity;
+    }
+    
+    if (relationship) {
+      context.relationship = relationship;
+    }
+    
+    return context;
   }
 
   /**
@@ -427,7 +436,7 @@ export class InteractionManager {
   private async generateContextualResponse(
     interaction: HumanInteraction
   ): Promise<string> {
-    const { content, type, context } = interaction;
+    const { type } = interaction;
 
     // Simple response generation based on interaction type
     // In a real implementation, this would use the agent's cognition and AI capabilities
@@ -586,23 +595,23 @@ export class InteractionManager {
     }
   }
 
-  private generateQuestionResponse(interaction: HumanInteraction): string {
+  private generateQuestionResponse(_interaction: HumanInteraction): string {
     return `That's an interesting question. Let me think about that... Based on my understanding, I'd say that this topic involves several important considerations. Would you like me to explore any particular aspect in more detail?`;
   }
 
-  private generateRequestResponse(interaction: HumanInteraction): string {
+  private generateRequestResponse(_interaction: HumanInteraction): string {
     return `I understand you'd like me to help with that. Let me see what I can do to assist you with your request.`;
   }
 
-  private generateCommandResponse(interaction: HumanInteraction): string {
+  private generateCommandResponse(_interaction: HumanInteraction): string {
     return `I've received your instruction. I'll do my best to carry that out while ensuring it aligns with my ethical guidelines.`;
   }
 
-  private generateEmergencyResponse(interaction: HumanInteraction): string {
+  private generateEmergencyResponse(_interaction: HumanInteraction): string {
     return `I understand this is urgent. I'm here to help immediately. Please tell me more about what's happening so I can assist you effectively.`;
   }
 
-  private generateFeedbackResponse(interaction: HumanInteraction): string {
+  private generateFeedbackResponse(_interaction: HumanInteraction): string {
     return `Thank you for your feedback. I really appreciate you taking the time to share your thoughts with me. This helps me understand how to better assist you.`;
   }
 
@@ -619,7 +628,7 @@ export class InteractionManager {
     }
   }
 
-  private generateConversationResponse(interaction: HumanInteraction): string {
+  private generateConversationResponse(_interaction: HumanInteraction): string {
     return `I find our conversation quite engaging. Your perspective on this is really thoughtful. What are your thoughts on how we might explore this topic further?`;
   }
 

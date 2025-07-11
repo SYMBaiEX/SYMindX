@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 import { render, Box, Text } from 'ink'
 import { useInput } from 'ink'
-import React from 'react'
 
 import { NavigationBar } from './components/ui/NavigationBar.js'
 import { useNavigation } from './hooks/useNavigation.js'

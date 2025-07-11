@@ -12,8 +12,6 @@ import { WebSocket } from 'ws';
 import { PortalRouter } from '../portals/index';
 import {
   Agent,
-  AgentAction,
-  ActionStatus,
   MemoryType,
   MemoryDuration,
 } from '../types/agent';
@@ -33,6 +31,7 @@ export interface Command {
   status: CommandStatus;
   result?: CommandResult;
   progress?: CommandProgress;
+  extension?: string;
 }
 
 export interface CommandResult {
@@ -101,7 +100,7 @@ export class CommandSystem extends EventEmitter {
       canParse: (input: string) => {
         return !input.startsWith('/') && !input.startsWith('!');
       },
-      parse: (input: string) => ({
+      parse: (_input: string) => ({
         type: CommandType.CHAT,
         instruction: input,
         priority: CommandPriority.NORMAL,
@@ -121,7 +120,7 @@ export class CommandSystem extends EventEmitter {
 
         return {
           type: CommandType.ACTION,
-          instruction: actionName,
+          instruction: actionName || '',
           parameters: params ? this.parseParameters(params) : {},
           priority: CommandPriority.HIGH,
           async: true,
@@ -153,7 +152,7 @@ export class CommandSystem extends EventEmitter {
       canParse: (input: string) => {
         return input === '/status' || input === '/info';
       },
-      parse: (input: string) => ({
+      parse: (_input: string) => ({
         type: CommandType.STATUS,
         instruction: 'get_status',
         priority: CommandPriority.LOW,
@@ -166,7 +165,7 @@ export class CommandSystem extends EventEmitter {
       canParse: (input: string) => {
         return ['/pause', '/resume', '/stop', '/start'].includes(input);
       },
-      parse: (input: string) => ({
+      parse: (_input: string) => ({
         type: CommandType.CONTROL,
         instruction: input.slice(1),
         priority: CommandPriority.URGENT,
@@ -353,18 +352,26 @@ export class CommandSystem extends EventEmitter {
         parsedCommand.timeout = options.timeout;
     }
 
-    return {
+    const command: Command = {
       id: commandId,
       type: parsedCommand.type || CommandType.CUSTOM,
       agentId,
       instruction: parsedCommand.instruction || input,
-      parameters: parsedCommand.parameters,
       priority: parsedCommand.priority || CommandPriority.NORMAL,
       async: parsedCommand.async || false,
-      timeout: parsedCommand.timeout,
       timestamp: new Date(),
       status: CommandStatus.PENDING,
     };
+    
+    if (parsedCommand.parameters) {
+      command.parameters = parsedCommand.parameters;
+    }
+    
+    if (parsedCommand.timeout) {
+      command.timeout = parsedCommand.timeout;
+    }
+    
+    return command;
   }
 
   private parseParameters(paramString: string): Record<string, any> {
@@ -452,7 +459,7 @@ export class CommandSystem extends EventEmitter {
   }
 
   private async processQueues(): Promise<void> {
-    for (const [agentId, queue] of this.queues) {
+    for (const [_agentId, queue] of this.queues) {
       if (queue.length === 0) continue;
 
       const command = queue[0];
@@ -1107,11 +1114,12 @@ export class CommandSystem extends EventEmitter {
     );
 
     if (!extension) {
-      return {
+      const errorResult: CommandResult = {
         success: false,
-        error: `No extension found for action: ${command.instruction}`,
         executionTime: 0,
       };
+      errorResult.error = `No extension found for action: ${command.instruction}`;
+      return errorResult;
     }
 
     const action = extension.actions[command.instruction];
@@ -1120,13 +1128,21 @@ export class CommandSystem extends EventEmitter {
     }
     const result = await action.execute(agent, command.parameters || {});
 
-    return {
+    const commandResult: CommandResult = {
       success: result.success,
-      response: result.result ? String(result.result) : undefined,
-      data: result.result,
-      error: result.error,
       executionTime: 0,
     };
+    
+    if (result.result) {
+      commandResult.response = String(result.result);
+      commandResult.data = result.result;
+    }
+    
+    if (result.error) {
+      commandResult.error = result.error;
+    }
+    
+    return commandResult;
   }
 
   private async processMemoryQueryCommand(
@@ -1251,7 +1267,7 @@ export class CommandSystem extends EventEmitter {
 
   private async processStatusCommand(
     agent: Agent,
-    command: Command
+    _command: Command
   ): Promise<CommandResult> {
     const status = {
       id: agent.id,
@@ -1515,8 +1531,8 @@ export class CommandSystem extends EventEmitter {
    * Build system prompt that includes emotional state
    * @deprecated Use PromptIntegration for sophisticated prompting
    */
-  private buildEmotionalSystemPrompt(
-    agent: Agent,
+  private _buildEmotionalSystemPrompt(
+    _agent: Agent,
     emotionalContext: {
       currentEmotion?: string;
       emotionIntensity?: number;
@@ -1645,7 +1661,7 @@ export class CommandSystem extends EventEmitter {
       postResponseIntensity?: number;
     },
     conversationContext?: string,
-    cognitiveContext?: {
+    _cognitiveContext?: {
       thoughts?: string[];
       cognitiveActions?: any[];
       cognitiveEmotions?: any[];

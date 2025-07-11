@@ -19,7 +19,6 @@ import {
   ToolEvaluationResult,
 } from '../types/portal';
 
-import { convertUsage } from './utils';
 /**
  * Base Portal Implementation
  *
@@ -178,8 +177,8 @@ export abstract class BasePortal implements Portal {
    * @param options Options for image generation
    */
   async generateImage(
-    prompt: string,
-    options?: ImageGenerationOptions
+    _prompt: string,
+    _options?: ImageGenerationOptions
   ): Promise<ImageGenerationResult> {
     throw new Error(`Image generation not supported by ${this.name} portal`);
   }
@@ -190,8 +189,8 @@ export abstract class BasePortal implements Portal {
    * @param options Options for text generation
    */
   async *streamText(
-    prompt: string,
-    options?: TextGenerationOptions
+    _prompt: string,
+    _options?: TextGenerationOptions
   ): AsyncGenerator<string> {
     throw new Error(`Text streaming not supported by ${this.name} portal`);
   }
@@ -202,8 +201,8 @@ export abstract class BasePortal implements Portal {
    * @param options Options for chat generation
    */
   async *streamChat(
-    messages: ChatMessage[],
-    options?: ChatGenerationOptions
+    _messages: ChatMessage[],
+    _options?: ChatGenerationOptions
   ): AsyncGenerator<string> {
     throw new Error(`Chat streaming not supported by ${this.name} portal`);
   }

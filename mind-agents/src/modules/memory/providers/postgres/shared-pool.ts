@@ -12,13 +12,13 @@ import { SharedMemoryConfig, MemoryPermission } from '../../../../types/memory';
  */
 export class SharedMemoryPool {
   private poolId: string;
-  private config: SharedMemoryConfig;
+  private _config: SharedMemoryConfig; // Unused but kept for future use
   private memories: Map<string, MemoryRecord> = new Map();
   private permissions: Map<string, MemoryPermission[]> = new Map();
 
   constructor(poolId: string, config: SharedMemoryConfig) {
     this.poolId = poolId;
-    this.config = config;
+    this._config = config;
   }
 
   /**
@@ -33,7 +33,7 @@ export class SharedMemoryPool {
   /**
    * Get shared memories for an agent
    */
-  async getSharedMemories(agentId: string): Promise<MemoryRecord[]> {
+  async getSharedMemories(_agentId: string): Promise<MemoryRecord[]> {
     const memories: MemoryRecord[] = [];
 
     for (const [key, memory] of Array.from(this.memories.entries())) {

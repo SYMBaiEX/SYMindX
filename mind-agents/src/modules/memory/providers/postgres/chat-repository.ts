@@ -4,7 +4,7 @@
  * Implements the ChatRepository interface using PostgreSQL with advanced features
  */
 
-import { Pool, PoolClient } from 'pg';
+import { Pool } from 'pg';
 
 import {
   ChatRepository,
@@ -25,7 +25,6 @@ import {
   ParticipantStatus,
   ChatSession,
   AnalyticsEvent,
-  EmotionSnapshot,
 } from '../sqlite/chat-types';
 
 export interface PostgresChatConfig extends ChatSystemConfig {
@@ -592,11 +591,11 @@ export class PostgresChatRepository implements ChatRepository {
     try {
       await client.query('BEGIN');
 
-      const results: Message[] = [];
+      const _results: Message[] = []; // Unused but kept for future use
 
       // Use COPY or VALUES for bulk insert
       const values = messages
-        .map((msg, index) => {
+        .map((_msg, index) => {
           const baseIndex = index * 12;
           return `($${baseIndex + 1}, $${baseIndex + 2}, $${baseIndex + 3}, $${baseIndex + 4}, $${baseIndex + 5}, $${baseIndex + 6}, $${baseIndex + 7}, $${baseIndex + 8}, $${baseIndex + 9}, $${baseIndex + 10}, $${baseIndex + 11}, $${baseIndex + 12})`;
         })

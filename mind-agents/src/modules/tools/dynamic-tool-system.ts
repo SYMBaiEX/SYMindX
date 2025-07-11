@@ -415,7 +415,7 @@ export class DynamicToolSystem implements ToolSystem {
         // JSON schema - basic validation
         const jsonSchema = schema as JSONSchema;
         if (jsonSchema.type === 'object' && jsonSchema.properties) {
-          for (const [key, prop] of Object.entries(jsonSchema.properties)) {
+          for (const [key, _prop] of Object.entries(jsonSchema.properties)) {
             if (
               jsonSchema.required &&
               jsonSchema.required.includes(key) &&

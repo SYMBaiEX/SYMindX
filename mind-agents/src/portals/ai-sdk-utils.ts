@@ -8,8 +8,7 @@
 import { 
   TextGenerationOptions, 
   ChatGenerationOptions, 
-  ImageGenerationOptions,
-  EmbeddingOptions 
+  ImageGenerationOptions
 } from '../types/portal';
 
 /**
@@ -129,7 +128,7 @@ export class AISDKParameterBuilder {
     baseParams: T,
     options?: ImageGenerationOptions
   ): T & Record<string, any> {
-    const params = { ...baseParams };
+    const params: any = { ...baseParams };
     
     if (options?.size !== undefined) {
       params.size = options.size;
@@ -162,7 +161,7 @@ export class AISDKParameterBuilder {
       headers?: Record<string, string>;
     }
   ): T & Record<string, any> {
-    const config = { ...baseConfig };
+    const config: any = { ...baseConfig };
     
     if (options?.apiKey !== undefined) {
       config.apiKey = options.apiKey;

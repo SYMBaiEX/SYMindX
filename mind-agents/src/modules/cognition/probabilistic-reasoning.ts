@@ -25,7 +25,6 @@ import {
   BayesianNetwork,
   BayesianNode,
   BayesianEdge,
-  ReasoningPerformance,
   ReasoningParadigm,
   HybridReasoningConfig,
 } from '../../types/cognition';
@@ -154,7 +153,7 @@ export class SimpleBayesianNetwork implements BayesianNetwork {
   /**
    * Generate condition key for learning
    */
-  private generateConditionKey(
+  private _generateConditionKey(
     dataPoint: Record<string, any>,
     node: BayesianNode
   ): string {
@@ -168,7 +167,7 @@ export class SimpleBayesianNetwork implements BayesianNetwork {
   /**
    * Update probabilities from counts
    */
-  private updateProbabilities(
+  private _updateProbabilities(
     node: BayesianNode,
     counts: Map<string, number>,
     totalData: number
@@ -396,7 +395,7 @@ export class ProbabilisticReasoning implements CognitionModule {
 
     // Calculate confidence
     const confidence = this.calculateOverallConfidence(probabilities);
-    const reasoningTime = Date.now() - startTime;
+    const _reasoningTime = Date.now() - startTime;
 
     return {
       thoughts,
@@ -421,7 +420,7 @@ export class ProbabilisticReasoning implements CognitionModule {
   /**
    * Plan using probabilistic approach
    */
-  async plan(agent: Agent, goal: string): Promise<Plan> {
+  async plan(_agent: Agent, goal: string): Promise<Plan> {
     // Set up evidence for planning
     const evidence = {
       has_goal: 'true',
@@ -499,7 +498,7 @@ export class ProbabilisticReasoning implements CognitionModule {
   /**
    * Decide using probabilistic reasoning
    */
-  async decide(agent: Agent, options: Decision[]): Promise<Decision> {
+  async decide(_agent: Agent, options: Decision[]): Promise<Decision> {
     if (options.length === 0) {
       throw new Error('No options to decide between');
     }
@@ -532,7 +531,7 @@ export class ProbabilisticReasoning implements CognitionModule {
   /**
    * Learn from experience
    */
-  async learn(agent: Agent, experience: Experience): Promise<void> {
+  async learn(_agent: Agent, experience: Experience): Promise<void> {
     const { state, action, reward, nextState } = experience;
 
     // Convert experience to training data
@@ -564,7 +563,7 @@ export class ProbabilisticReasoning implements CognitionModule {
     // Message analysis
     const messageEvents = context.events.filter((e) => e.data?.message);
     if (messageEvents.length > 0) {
-      const message = messageEvents[0].data.message as string;
+      const message = messageEvents[0]?.data?.message as string;
       evidence['message_type'] = this.classifyMessage(message);
     }
 

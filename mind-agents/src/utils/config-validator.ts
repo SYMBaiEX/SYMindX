@@ -200,7 +200,7 @@ export class ConfigValidator {
       case 'GROQ_API_KEY':
         return value.startsWith('gsk_') && value.length > 20;
       case 'TELEGRAM_BOT_TOKEN':
-        return /^\d{10}:[A-Za-z0-9_-]{35}$/.test(value);
+        return /^\d{10}:[A-Za-z0-9_-]{35,}$/.test(value);
       default:
         return true; // Basic length check passed
     }
@@ -211,7 +211,7 @@ export class ConfigValidator {
    */
   private static validateAndIncludePortalModels(
     config: ValidatedEnvironmentConfig,
-    warnings: string[]
+    _warnings: string[]
   ): void {
     const portals = [
       'GROQ', 'OPENAI', 'ANTHROPIC', 'XAI', 'OLLAMA',
@@ -240,7 +240,7 @@ export class ConfigValidator {
    */
   private static validateAndIncludePortalSettings(
     config: ValidatedEnvironmentConfig,
-    warnings: string[]
+    _warnings: string[]
   ): void {
     const portals = [
       'GROQ', 'OPENAI', 'ANTHROPIC', 'XAI', 'OLLAMA',
@@ -288,15 +288,23 @@ export class ConfigValidator {
     // Validate embedding configuration
     if (config.ENABLE_OPENAI_EMBEDDINGS) {
       if (config.EMBEDDING_PROVIDER === 'openai' && !config.apiKeys.OPENAI_API_KEY) {
-        errors.push('OpenAI API key required when using OpenAI embeddings');
+        // Only require OpenAI API key if no other AI provider is available
+        const hasOtherProvider = (config.portalSettings.OLLAMA_ENABLED ?? false) ||
+          Object.keys(config.apiKeys).some(key => key.endsWith('_API_KEY') && config.apiKeys[key as keyof typeof config.apiKeys]);
+        
+        if (!hasOtherProvider) {
+          errors.push('OpenAI API key required when using OpenAI embeddings');
+        } else {
+          warnings.push('OpenAI embeddings enabled but no OpenAI API key provided, falling back to available providers');
+        }
       }
-      if (config.EMBEDDING_PROVIDER === 'ollama' && !config.portalSettings.OLLAMA_ENABLED) {
+      if (config.EMBEDDING_PROVIDER === 'ollama' && !(config.portalSettings.OLLAMA_ENABLED ?? false)) {
         warnings.push('Ollama embeddings enabled but Ollama is not configured');
       }
     }
 
     // Validate Ollama configuration
-    if (config.portalSettings.OLLAMA_ENABLED) {
+    if (config.portalSettings.OLLAMA_ENABLED ?? false) {
       if (!this.isValidUrl(config.OLLAMA_BASE_URL)) {
         errors.push('Invalid Ollama base URL format');
       }
@@ -321,8 +329,8 @@ export class ConfigValidator {
 
     return providers.some(provider => 
       config.apiKeys[provider.key as keyof typeof config.apiKeys] && 
-      config.portalSettings[provider.setting]
-    ) || config.portalSettings.OLLAMA_ENABLED;
+      (config.portalSettings[provider.setting] ?? false)
+    ) || (config.portalSettings.OLLAMA_ENABLED ?? false);
   }
 
   /**

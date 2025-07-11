@@ -310,7 +310,7 @@ export class MultiAgentManager extends EventEmitter {
     // Sort by score and return best match
     scoredAgents.sort((a, b) => b.score - a.score);
 
-    return scoredAgents.length > 0 ? scoredAgents[0].agent : null;
+    return scoredAgents.length > 0 ? scoredAgents[0]?.agent ?? null : null;
   }
 
   private calculateAgentScore(

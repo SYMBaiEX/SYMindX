@@ -25,7 +25,6 @@ import {
   ParticipantStatus,
   ChatSession,
   AnalyticsEvent,
-  EmotionSnapshot,
 } from '../sqlite/chat-types';
 
 export interface SupabaseChatConfig extends ChatSystemConfig {

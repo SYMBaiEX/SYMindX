@@ -29,12 +29,11 @@ import {
   ParticipantStatus,
   ChatSession,
   AnalyticsEvent,
-  EmotionSnapshot,
 } from './chat-types';
 import { runMigrations } from './migrations';
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+// const __dirname = dirname(__filename); // Unused
 
 export class SQLiteChatRepository implements ChatRepository {
   private db: DatabaseType;

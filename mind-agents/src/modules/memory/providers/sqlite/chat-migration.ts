@@ -357,7 +357,7 @@ export class ChatMigrationManager {
   /**
    * Parse SQL statements more carefully, handling JSON and comments
    */
-  private parseStatements(sql: string): string[] {
+  private _parseStatements(sql: string): string[] { // Unused but kept for future use
     const statements: string[] = [];
     let currentStatement = '';
     let inString = false;
@@ -422,7 +422,7 @@ export class ChatMigrationManager {
   /**
    * Check if an error is expected during migration
    */
-  private isExpectedError(error: any, statement: string): boolean {
+  private _isExpectedError(error: any, statement: string): boolean { // Unused but kept for future use
     const errorMessage = error.message?.toLowerCase() || '';
     const stmt = statement.toLowerCase();
 

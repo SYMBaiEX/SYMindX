@@ -198,18 +198,7 @@ export class StateManager {
         cognitive: {
           emotionState,
           recentMemories,
-          currentThoughts: (agent as any).currentThoughts,
-          decisionContext: (agent as any).decisionContext,
         },
-
-        autonomous: agent.autonomyLevel
-          ? {
-              goals: (agent as any).goals || [],
-              learningState: (agent.learning as any)?.getState?.() || {},
-              decisionHistory: (agent.decision as any)?.getHistory?.() || [],
-              autonomyLevel: agent.autonomyLevel,
-            }
-          : undefined,
 
         communication: {
           activeConversations: [], // TODO: Implement conversation tracking
@@ -228,16 +217,38 @@ export class StateManager {
           checkpointType: type,
           integrity: '', // Will be calculated after snapshot is complete
           dependencies: this.gatherDependencies(agent),
-          recoveryData:
-            type === CheckpointType.EMERGENCY
-              ? {
-                  reason: 'emergency_checkpoint',
-                  context: 'system_initiated',
-                }
-              : undefined,
         },
       };
+      
+      // Add optional cognitive properties
+      const currentThoughts = (agent as any).currentThoughts;
+      if (currentThoughts) {
+        snapshot.cognitive.currentThoughts = currentThoughts;
+      }
+      
+      const decisionContext = (agent as any).decisionContext;
+      if (decisionContext) {
+        snapshot.cognitive.decisionContext = decisionContext;
+      }
+      
+      // Add autonomous state if present
+      if (agent.autonomyLevel) {
+        snapshot.autonomous = {
+          goals: (agent as any).goals || [],
+          learningState: (agent.learning as any)?.getState?.() || {},
+          decisionHistory: (agent.decision as any)?.getHistory?.() || [],
+          autonomyLevel: agent.autonomyLevel,
+        };
+      }
 
+      // Add recovery data for emergency checkpoints
+      if (type === CheckpointType.EMERGENCY) {
+        snapshot.metadata.recoveryData = {
+          reason: 'emergency_checkpoint',
+          context: 'system_initiated',
+        };
+      }
+      
       // Calculate integrity hash after full snapshot is created
       snapshot.metadata.integrity = this.calculateIntegrity(snapshot);
 

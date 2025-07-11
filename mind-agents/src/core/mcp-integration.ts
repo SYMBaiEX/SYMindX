@@ -379,7 +379,8 @@ export class MCPIntegration {
     }
 
     const resource = this.resources.get(resourceKey)!;
-    const serverName = resourceKey.split(':')[0];
+    const serverParts = resourceKey.split(':');
+    const serverName = serverParts[0] ?? '';
     const client = this.clients.get(serverName);
 
     if (!client) {
@@ -415,7 +416,8 @@ export class MCPIntegration {
       throw new Error(`Prompt not found: ${promptName}`);
     }
 
-    const serverName = promptName.split(':')[0];
+    const serverParts = promptName.split(':');
+    const serverName = serverParts[0] ?? '';
     const client = this.clients.get(serverName);
 
     if (!client) {
