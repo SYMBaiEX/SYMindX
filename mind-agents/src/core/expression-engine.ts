@@ -8,7 +8,7 @@
 import { EmotionState } from '../types/agent';
 import { BaseConfig } from '../types/common';
 import { PersonalityTraits, EmotionBlend } from '../types/emotion';
-import { runtimeLogger } from '../utils/logger';
+// import { runtimeLogger } from '../utils/logger'; // Unused import
 
 /**
  * Expression template

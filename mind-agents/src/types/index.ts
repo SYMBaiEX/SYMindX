@@ -5,15 +5,68 @@
  * providing a single point of access for all type definitions.
  */
 
-// Core types
-export * from './common';
-export * from './enums';
-export * from './helpers';
-export * from './results';
-export * from './signatures';
+// Core types - selective exports to avoid conflicts
+export type { BaseConfig, ActionParameters, Metadata, Context, GenericData, SkillParameters, ExtensionConfig, ConfigValue } from './common';
+export { LogLevel, Priority, Status } from './enums';
+export type { 
+  OperationResult, 
+  ExecutionResult, 
+  ValidationResult, 
+  InitializationResult, 
+  CleanupResult, 
+  EventProcessingResult, 
+  HealthCheckResult, 
+  LifecycleEventResult,
+  Duration,
+  Timestamp,
+  AgentId,
+  MemoryId,
+  EventId,
+  ModuleId,
+  CorrelationId
+} from './helpers';
+export type { 
+  AgentCreationResult,
+  AgentDestructionResult,
+  AgentStateTransitionResult,
+  MemoryStorageResult,
+  MemoryRetrievalResult,
+  ThoughtProcessingResult,
+  SystemHealthResult,
+  EventDispatchResult,
+  PerformanceMetrics,
+  ModuleManifest,
+  ConfigurationLoadResult,
+  ConfigurationUpdateResult,
+  LoggingResult
+} from './results';
+export type { 
+  InitializationFunction,
+  CleanupFunction,
+  EventProcessingFunction,
+  HealthCheckFunction
+} from './signatures';
 
 // Agent system types (selective exports to avoid conflicts)
-export type { Agent, AgentConfig, AgentStatus, AgentState, AgentAction } from './agent';
+export type { 
+  Agent, 
+  AgentConfig, 
+  AgentStatus, 
+  AgentState, 
+  LazyAgentState, 
+  LazyAgent, 
+  AgentFactory, 
+  AgentAction,
+  AgentEvent,
+  ExtensionType,
+  ExtensionStatus,
+  ExtensionAction,
+  ExtensionEventHandler,
+  ActionCategory,
+  ActionResult,
+  ActionResultType
+} from './agent';
+export { LazyAgentStatus } from './agent';
 export type { Extension } from './extension';
 export type { Portal, PortalConfig, PortalType } from './portal';
 
@@ -87,59 +140,12 @@ export interface Result<T> {
  * Enhanced result types that replace the generic Result<T>
  * These provide better type safety and more detailed information
  */
-export type {
-  OperationResult,
-  ExecutionResult,
-  AsyncOperationResult,
-  ValidationResult as EnhancedValidationResult,
-  InitializationResult,
-  CleanupResult,
-  EventProcessingResult,
-  StateUpdateResult,
-  HealthCheckResult,
-  LifecycleEventResult
-} from './helpers';
+// Already exported above to avoid duplicate exports
 
 /**
  * Module-specific result types for better type safety
  */
-export type {
-  AgentCreationResult,
-  AgentDestructionResult,
-  AgentStateTransitionResult,
-  MemoryStorageResult,
-  MemoryRetrievalResult,
-  MemoryConsolidationResult,
-  EmotionUpdateResult,
-  EmotionProcessingResult,
-  ThoughtProcessingResult,
-  PlanningResult,
-  DecisionMakingResult,
-  ExtensionLoadResult,
-  ExtensionExecutionResult,
-  PortalConnectionResult,
-  PortalGenerationResult,
-  EventDispatchResult,
-  EventSubscriptionResult,
-  CommandExecutionResult,
-  CommandValidationResult,
-  ResourceAllocationResult,
-  ResourceMonitoringResult,
-  AuthenticationResult,
-  AuthorizationResult,
-  ConfigurationLoadResult,
-  ConfigurationUpdateResult,
-  SystemHealthResult,
-  ComponentHealthResult,
-  ModuleLifecycleResult,
-  SystemLifecycleResult,
-  BatchOperationResult,
-  MigrationResult,
-  BackupResult,
-  RestoreResult,
-  AuditResult,
-  LoggingResult
-} from './results';
+// Already exported above to avoid duplicate exports
 
 /**
  * Factory function type for creating modules

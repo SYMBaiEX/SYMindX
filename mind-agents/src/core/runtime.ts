@@ -68,7 +68,7 @@ export class SYMindXRuntime implements AgentRuntime {
   constructor(config: RuntimeConfig) {
     this.config = config;
     this.eventBus = new SimpleEventBus();
-    this.registry = new SYMindXModuleRegistry();
+    this.registry = new SYMindXModuleRegistry() as ModuleRegistry;
 
     // Create extension context for plugin loader
     const extensionContext: ExtensionContext = {
@@ -774,10 +774,10 @@ export class SYMindXRuntime implements AgentRuntime {
       memory: memoryProvider,
       cognition: cognitionModule,
       extensions,
-      portal: primaryPortal, // Primary portal for backward compatibility
-      portals: portals, // All available portals
+      ...(primaryPortal && { portal: primaryPortal }), // Primary portal for backward compatibility
+      ...(portals.length > 0 && { portals: portals }), // All available portals
       config: agentConfig,
-      characterConfig: config, // Preserve original character configuration
+      ...(config && { characterConfig: config }), // Preserve original character configuration
       lastUpdate: new Date(),
     };
     

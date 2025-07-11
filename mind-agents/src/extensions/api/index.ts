@@ -35,6 +35,10 @@ import {
   Agent,
   ExtensionAction,
   ExtensionEventHandler,
+  ActionCategory,
+  ActionResult,
+  ActionResultType,
+  AgentEvent
 } from '../../types/agent';
 import { runtimeLogger } from '../../utils/logger';
 
@@ -50,6 +54,7 @@ import {
   WebSocketMessage,
   ConnectionInfo,
 } from './types';
+import { SkillParameters } from '../../types/common';
 // WebSocketServerSkill removed - using simple WebSocket server directly
 import { WebUIServer } from './webui/index';
 
@@ -106,6 +111,9 @@ export class ApiExtension implements Extension {
 
     // Register agent with command system
     this.commandSystem.registerAgent(agent);
+
+    // Register extension actions and events
+    this.registerExtensionActions();
 
     // Start the API server
     await this.start();
@@ -2445,6 +2453,137 @@ export class ApiExtension implements Extension {
         console.error('❌ Error during chat cleanup:', error);
       }
     }
+  }
+
+  /**
+   * Register extension actions and events
+   */
+  private registerExtensionActions(): void {
+    // Register HTTP API actions
+    this.actions['sendChatMessage'] = {
+      name: 'sendChatMessage',
+      description: 'Send a chat message to an agent via the API',
+      category: ActionCategory.COMMUNICATION,
+      parameters: {
+        agentId: { type: 'string', required: false, description: 'Target agent ID' },
+        message: { type: 'string', required: true, description: 'Message to send' },
+        context: { type: 'object', required: false, description: 'Additional context' }
+      },
+      execute: async (_agent: Agent, params: SkillParameters): Promise<ActionResult> => {
+        const { agentId, message, context } = params;
+        const response = await this.processChatMessage({
+          message: message as string,
+          agentId: agentId as string | undefined,
+          context: context as any
+        });
+        return {
+          success: true,
+          type: ActionResultType.SUCCESS,
+          result: response,
+          timestamp: new Date()
+        };
+      }
+    };
+
+    this.actions['getAgentStatus'] = {
+      name: 'getAgentStatus',
+      description: 'Get status of an agent',
+      category: ActionCategory.SYSTEM,
+      parameters: {
+        agentId: { type: 'string', required: true, description: 'Agent ID' }
+      },
+      execute: async (_agent: Agent, params: SkillParameters): Promise<ActionResult> => {
+        const { agentId } = params;
+        const agentsMap = this.getAgentsMap();
+        const agent = agentsMap.get(agentId as string);
+        if (!agent) {
+          return {
+            success: false,
+            type: ActionResultType.FAILURE,
+            error: 'Agent not found',
+            timestamp: new Date()
+          };
+        }
+        return {
+          success: true,
+          type: ActionResultType.SUCCESS,
+          result: {
+            id: agent.id,
+            name: agent.name,
+            status: agent.status,
+            emotion: agent.emotion?.current,
+            lastUpdate: agent.lastUpdate
+          },
+          timestamp: new Date()
+        };
+      }
+    };
+
+    this.actions['executeCommand'] = {
+      name: 'executeCommand',
+      description: 'Execute a command on an agent',
+      category: ActionCategory.SYSTEM,
+      parameters: {
+        agentId: { type: 'string', required: true, description: 'Agent ID' },
+        command: { type: 'string', required: true, description: 'Command to execute' },
+        priority: { type: 'number', required: false, description: 'Command priority' },
+        async: { type: 'boolean', required: false, description: 'Execute asynchronously' }
+      },
+      execute: async (_agent: Agent, params: SkillParameters): Promise<ActionResult> => {
+        const { agentId, command, priority, async } = params;
+        const result = await this.executeAction({
+          agentId: agentId as string,
+          action: command as string,
+          parameters: {},
+          priority: priority as number,
+          async: async as boolean
+        });
+        return {
+          success: result.success,
+          type: result.success ? ActionResultType.SUCCESS : ActionResultType.FAILURE,
+          result: result.result,
+          error: result.error,
+          timestamp: new Date()
+        };
+      }
+    };
+
+    // Register event handlers
+    this.events['http_request'] = {
+      event: 'http_request',
+      description: 'Handle HTTP requests to the API',
+      handler: async (_agent: Agent, event: AgentEvent): Promise<void> => {
+        // Handle HTTP request events
+        console.log('HTTP request event:', event);
+      }
+    };
+
+    this.events['websocket_message'] = {
+      event: 'websocket_message',
+      description: 'Handle WebSocket messages',
+      handler: async (_agent: Agent, event: AgentEvent): Promise<void> => {
+        // Handle WebSocket message events
+        console.log('WebSocket message event:', event);
+      }
+    };
+
+    this.events['chat_message'] = {
+      event: 'chat_message',
+      description: 'Handle chat messages',
+      handler: async (_agent: Agent, event: AgentEvent): Promise<void> => {
+        // Handle chat message events
+        console.log('Chat message event:', event);
+      }
+    };
+
+    this.events['api_error'] = {
+      event: 'api_error',
+      description: 'Handle API errors',
+      handler: async (_agent: Agent, event: AgentEvent): Promise<void> => {
+        // Handle API error events
+        console.error('API error event:', event);
+      }
+    };
   }
 
   /**

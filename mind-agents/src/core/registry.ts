@@ -114,7 +114,12 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
     runtimeLogger.factory(`🔧 Registered tool system: ${name}`);
   }
 
-  getToolSystem(
+  getToolSystem(): any {
+    // Return the default tool system for backward compatibility
+    return this.toolSystems.get('default');
+  }
+  
+  getToolSystemByName(
     name: string
   ): import('../modules/tools/index').ToolSystem | undefined {
     return this.toolSystems.get(name);
@@ -400,7 +405,7 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
       throw new Error(`Agent factory for type '${type}' not found`);
     }
     try {
-      const agent = await factory(config, characterConfig);
+      const agent = await factory.create(config);
       return agent;
     } catch (error) {
       runtimeLogger.error(`❌ Failed to create agent '${type}':`, error);
@@ -408,15 +413,7 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
     }
   }
 
-  // Lazy agent management methods
-  registerLazyAgent(lazyAgent: LazyAgent): void {
-    this.lazyAgents.set(lazyAgent.id, lazyAgent);
-    runtimeLogger.factory(`🎭 Registered lazy agent: ${lazyAgent.name}`);
-  }
-
-  getLazyAgent(id: string): LazyAgent | undefined {
-    return this.lazyAgents.get(id);
-  }
+  // Lazy agent management methods (removed duplicate - using the first definition above)
 
   listLazyAgents(): LazyAgent[] {
     return Array.from(this.lazyAgents.values());

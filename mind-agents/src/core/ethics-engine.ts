@@ -284,7 +284,7 @@ export class EthicsEngine {
             severity: constraint.severity,
             description: constraint.description,
             evidence: [`Constraint condition met for: ${constraint.id}`],
-            remediation: constraint.remediation,
+            ...(constraint.remediation && { remediation: constraint.remediation }),
           });
           reasoning.push(
             `Ethical constraint violated: ${constraint.description}`

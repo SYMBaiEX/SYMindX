@@ -570,7 +570,7 @@ export class ConcurrentSafetyManager extends EventEmitter {
 
     // Build graph based on lock requests waiting for locks
     for (const [lockKey, queue] of this.lockQueue) {
-      const [agentId, operation] = lockKey.split(':');
+      const [_agentId, _operation] = lockKey.split(':');
       const currentLock = this.locks.get(lockKey);
 
       if (currentLock && queue.length > 0) {

@@ -186,13 +186,21 @@ export class ContextManager {
     }
 
     // Add message
-    context.messages.push({
+    const messageObj: { from: string; content: string; timestamp: Date; emotion?: string; intent?: string } = {
       from,
       content,
       timestamp: new Date(),
-      emotion,
-      intent,
-    });
+    };
+    
+    if (emotion) {
+      messageObj.emotion = emotion;
+    }
+    
+    if (intent) {
+      messageObj.intent = intent;
+    }
+    
+    context.messages.push(messageObj);
 
     // Limit message history
     if (context.messages.length > this.config.maxMessageHistory!) {
@@ -476,9 +484,14 @@ export class ContextManager {
 
     // Update current topic
     if (context.topics.length > 0) {
-      context.currentTopic = context.topics.sort(
+      const topTopic = context.topics.sort(
         (a, b) => b.mentions - a.mentions
-      )[0]?.topic;
+      )[0];
+      if (topTopic) {
+        context.currentTopic = topTopic.topic;
+      } else {
+        delete context.currentTopic;
+      }
     }
   }
 

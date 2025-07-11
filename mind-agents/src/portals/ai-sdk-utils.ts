@@ -57,7 +57,7 @@ export class AISDKParameterBuilder {
       (params as any).presencePenalty = Math.min(Math.max(presencePenalty, -2), 2);
     }
     
-    // Handle stop sequences
+    // Handle stop sequences - only include if array is not empty
     if (options?.stop !== undefined && options.stop.length > 0) {
       (params as any).stopSequences = options.stop;
     }
@@ -107,13 +107,13 @@ export class AISDKParameterBuilder {
       (params as any).presencePenalty = Math.min(Math.max(presencePenalty, -2), 2);
     }
     
-    // Handle stop sequences
+    // Handle stop sequences - only include if array is not empty
     if (options?.stop !== undefined && options.stop.length > 0) {
       (params as any).stopSequences = options.stop;
     }
     
-    // Add tools support for AI SDK v5
-    if (options?.tools !== undefined && options.tools.length > 0) {
+    // Add tools support for AI SDK v5 - only include if tools exist
+    if (options?.tools !== undefined && Object.keys(options.tools).length > 0) {
       (params as any).tools = options.tools;
       (params as any).maxSteps = 5; // Enable multi-step tool execution
     }
@@ -323,4 +323,17 @@ export function validateGenerationOptions(
   if (options.presencePenalty !== undefined && (options.presencePenalty < -2 || options.presencePenalty > 2)) {
     throw new Error(`Invalid presencePenalty for ${provider}: must be between -2 and 2`);
   }
+}
+
+/**
+ * Convert AI SDK usage to portal usage format
+ */
+export function convertUsage(usage: any): any {
+  if (!usage) return {};
+  
+  return {
+    promptTokens: usage.promptTokens || 0,
+    completionTokens: usage.completionTokens || 0,
+    totalTokens: usage.totalTokens || (usage.promptTokens || 0) + (usage.completionTokens || 0)
+  };
 }

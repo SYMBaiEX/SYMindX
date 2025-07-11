@@ -50,7 +50,7 @@ export class CheckpointSystem extends EventEmitter {
   private logger: Logger;
   private config: CheckpointSystemConfig;
   private stateManager: StateManager;
-  private _resourceManager: ResourceManager; // Unused but kept for interface compatibility
+  // private _resourceManager: ResourceManager // Unused, commenting out; // Unused but kept for interface compatibility
   private schedules: Map<string, CheckpointSchedule> = new Map();
   private checkpointTimer?: NodeJS.Timeout;
   private metrics: Map<string, CheckpointMetrics> = new Map();
@@ -59,12 +59,12 @@ export class CheckpointSystem extends EventEmitter {
   constructor(
     config: CheckpointSystemConfig,
     stateManager: StateManager,
-    resourceManager: ResourceManager
+    _resourceManager: ResourceManager
   ) {
     super();
     this.config = config;
     this.stateManager = stateManager;
-    this._resourceManager = resourceManager;
+    // Note: resourceManager parameter kept for interface compatibility but not used
     this.logger = new Logger('CheckpointSystem');
 
     if (config.enableScheduledCheckpoints) {

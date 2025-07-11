@@ -10,8 +10,14 @@ import {
   ExtensionType,
   ExtensionStatus,
   Agent,
+  ExtensionAction,
+  ExtensionEventHandler,
+  ActionCategory,
+  ActionResult,
+  ActionResultType,
+  AgentEvent
 } from '../../types/agent';
-import { ExtensionConfig, ExtensionMetadata } from '../../types/common';
+import { ExtensionConfig, ExtensionMetadata, SkillParameters } from '../../types/common';
 import { runtimeLogger } from '../../utils/logger';
 
 import { ContextManager, ContextManagerConfig } from './context-manager';
@@ -34,8 +40,8 @@ export class CommunicationExtension implements Extension {
   public readonly type: ExtensionType = ExtensionType.COMMUNICATION;
   public enabled: boolean = true;
   public status: ExtensionStatus = ExtensionStatus.STOPPED;
-  public actions: Record<string, any> = {};
-  public events: Record<string, any> = {};
+  public actions: Record<string, ExtensionAction> = {};
+  public events: Record<string, ExtensionEventHandler> = {};
 
   public readonly metadata: ExtensionMetadata = {
     name: 'communication',
@@ -100,6 +106,9 @@ export class CommunicationExtension implements Extension {
 
       // Set up integrations
       await this.setupIntegrations();
+
+      // Register extension actions and events
+      this.registerExtensionActions();
 
       this.status = ExtensionStatus.RUNNING;
       runtimeLogger.info('💬 Communication Extension initialized successfully');
@@ -315,6 +324,119 @@ export class CommunicationExtension implements Extension {
   private async setupIntegrations(): Promise<void> {
     // Integration points for other systems would go here
     // For example, connecting to emotion system, memory system, etc.
+  }
+
+  /**
+   * Register extension actions and events
+   */
+  private registerExtensionActions(): void {
+    // Register communication actions
+    this.actions['processMessage'] = {
+      name: 'processMessage',
+      description: 'Process incoming message with communication features',
+      category: ActionCategory.COMMUNICATION,
+      parameters: {
+        participantId: { type: 'string', required: true, description: 'Participant ID' },
+        message: { type: 'string', required: true, description: 'Message content' },
+        metadata: { type: 'object', required: false, description: 'Additional metadata' }
+      },
+      execute: async (_agent: Agent, params: SkillParameters): Promise<ActionResult> => {
+        const { participantId, message, metadata } = params;
+        const result = await this.processMessage(
+          participantId as string,
+          message as string,
+          metadata as Record<string, any>
+        );
+        return {
+          success: true,
+          type: ActionResultType.SUCCESS,
+          result,
+          timestamp: new Date()
+        };
+      }
+    };
+
+    this.actions['generateEnhancedResponse'] = {
+      name: 'generateEnhancedResponse',
+      description: 'Generate response with communication enhancements',
+      category: ActionCategory.COMMUNICATION,
+      parameters: {
+        baseResponse: { type: 'string', required: true, description: 'Base response text' },
+        participantId: { type: 'string', required: true, description: 'Participant ID' },
+        metadata: { type: 'object', required: false, description: 'Additional metadata' }
+      },
+      execute: async (_agent: Agent, params: SkillParameters): Promise<ActionResult> => {
+        const { baseResponse, participantId, metadata } = params;
+        const result = await this.generateEnhancedResponse(
+          baseResponse as string,
+          participantId as string,
+          metadata as Record<string, any>
+        );
+        return {
+          success: true,
+          type: ActionResultType.SUCCESS,
+          result,
+          timestamp: new Date()
+        };
+      }
+    };
+
+    this.actions['getContextSummary'] = {
+      name: 'getContextSummary',
+      description: 'Get context summary for conversation',
+      category: ActionCategory.COMMUNICATION,
+      parameters: {
+        contextId: { type: 'string', required: true, description: 'Context ID' }
+      },
+      execute: async (_agent: Agent, params: SkillParameters): Promise<ActionResult> => {
+        const { contextId } = params;
+        const result = this.contextManager.getContextSummary(contextId as string);
+        return {
+          success: true,
+          type: ActionResultType.SUCCESS,
+          result,
+          timestamp: new Date()
+        };
+      }
+    };
+
+    // Register event handlers
+    this.events['message_received'] = {
+      event: 'message_received',
+      description: 'Handle incoming message events',
+      handler: async (_agent: Agent, event: AgentEvent): Promise<void> => {
+        // Handle message received events
+        runtimeLogger.info('Communication extension received message event:', event);
+        // TODO: Process message through communication features
+      }
+    };
+
+    this.events['context_updated'] = {
+      event: 'context_updated',
+      description: 'Handle context update events',
+      handler: async (_agent: Agent, event: AgentEvent): Promise<void> => {
+        // Handle context update events
+        runtimeLogger.info('Communication extension context updated:', event);
+      }
+    };
+
+    this.events['style_adapted'] = {
+      event: 'style_adapted',
+      description: 'Handle style adaptation events',
+      handler: async (_agent: Agent, event: AgentEvent): Promise<void> => {
+        // Handle style adaptation events
+        runtimeLogger.info('Communication extension style adapted:', event);
+      }
+    };
+
+    this.events['communication_error'] = {
+      event: 'communication_error',
+      description: 'Handle communication errors',
+      handler: async (_agent: Agent, event: AgentEvent): Promise<void> => {
+        // Handle communication error events
+        runtimeLogger.error('Communication extension error:', event);
+      }
+    };
   }
 
   /**

@@ -5,10 +5,10 @@
 
 import { EventEmitter } from 'events';
 
-import { Agent, LazyAgent, AgentStatus, LazyAgentState } from '../types/agent';
+import { Agent, LazyAgent, AgentStatus, LazyAgentStatus } from '../types/agent';
 import { Logger } from '../utils/logger';
 
-import { ResourceManager, ResourceType } from './resource-manager';
+import { ResourceManager } from './resource-manager';
 import {
   StateManager,
   AgentStateSnapshot,
@@ -271,7 +271,7 @@ export class LifecycleManager extends EventEmitter {
         operation,
         LifecyclePhase.INITIALIZING,
         async () => {
-          lazyAgent.state = LazyAgentState.LOADING;
+          lazyAgent.status = LazyAgentStatus.LOADING;
           this.emit('startup_initialized', { agentId: lazyAgent.id });
         }
       );
@@ -360,7 +360,7 @@ export class LifecycleManager extends EventEmitter {
         LifecyclePhase.ACTIVATING,
         async () => {
           agent!.status = AgentStatus.ACTIVE;
-          lazyAgent.state = LazyAgentState.ACTIVE;
+          lazyAgent.status = LazyAgentStatus.LOADED;
           lazyAgent.agent = agent;
           lazyAgent.lastActivated = new Date();
 
@@ -422,21 +422,18 @@ export class LifecycleManager extends EventEmitter {
 
       // Create lazy agent from current agent
       const lazyAgent: LazyAgent = {
-        id: agent.id,
-        character_id: agent.character_id,
-        name: agent.name,
-        state: LazyAgentState.ACTIVE,
-        config: agent.config,
-        characterConfig: agent.characterConfig,
+        ...agent,
+        state: {
+          lazy: true,
+          lastAccessTime: new Date(),
+          hibernationLevel: 0,
+        },
+        isLazy: true,
+        hibernationLevel: 0,
+        lastAccessTime: new Date(),
+        status: LazyAgentStatus.LOADED,
         lastActivated: new Date(),
         agent: agent,
-        priority: 5,
-        lazyMetrics: {
-          activationCount: 1,
-          lastActivationTime: new Date(),
-          averageActiveTime: 0,
-          memoryUsage: 0,
-        },
       };
 
       // Graceful shutdown
@@ -563,9 +560,9 @@ export class LifecycleManager extends EventEmitter {
   }
 
   private async createAgentFromConfig(
-    config: any,
-    characterConfig: any,
-    agentId: string
+    _config: any,
+    _characterConfig: any,
+    _agentId: string
   ): Promise<Agent> {
     // This is a simplified implementation
     // In practice, this would call the existing runtime.loadAgent method
@@ -596,7 +593,7 @@ export class LifecycleManager extends EventEmitter {
   private async attemptRollback(
     lazyAgent: LazyAgent,
     operation: LifecycleOperation,
-    snapshot: AgentStateSnapshot
+    _snapshot: AgentStateSnapshot
   ): Promise<void> {
     operation.phase = LifecyclePhase.ROLLBACK_IN_PROGRESS;
 

@@ -1114,7 +1114,12 @@ export class AutonomousEngine {
       throw new Error('No actions available to select from');
     }
     
-    let bestAction = actions[0];
+    const firstAction = actions[0];
+    if (!firstAction) {
+      throw new Error('Invalid actions array');
+    }
+    
+    let bestAction: AgentAction = firstAction;
     let bestScore = 0;
 
     for (const action of actions) {
@@ -1622,17 +1627,18 @@ export class AutonomousEngine {
     };
   }
 
-  private couldCauseHarm(_action: AgentAction): boolean {
-    return false; // Simplified - would check action against harm detection patterns
-  }
+  // These methods are placeholders for future ethical evaluation
+  // private couldCauseHarm(_action: AgentAction): boolean {
+  //   return false; // Simplified - would check action against harm detection patterns
+  // }
 
-  private violatesAutonomy(_action: AgentAction): boolean {
-    return false; // Simplified
-  }
+  // private violatesAutonomy(_action: AgentAction): boolean {
+  //   return false; // Simplified
+  // }
 
-  private violatesPrivacy(_action: AgentAction): boolean {
-    return false; // Simplified
-  }
+  // private violatesPrivacy(_action: AgentAction): boolean {
+  //   return false; // Simplified
+  // }
 
   private async evaluateBehaviorTrigger(
     trigger: BehaviorTrigger

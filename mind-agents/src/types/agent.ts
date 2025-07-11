@@ -507,16 +507,26 @@ export interface AgentState {
 }
 
 export interface LazyAgentState extends AgentState {
-  lazy?: boolean
-  lastAccessTime?: Date
-  hibernationLevel?: number
+  lazy?: boolean;
+  lastAccessTime?: Date;
+  hibernationLevel?: number;
 }
 
-export interface LazyAgent extends Agent {
+export enum LazyAgentStatus {
+  LOADED = 'loaded',
+  UNLOADED = 'unloaded',
+  LOADING = 'loading',
+  ERROR = 'error'
+}
+
+export interface LazyAgent extends Omit<Agent, 'status'> {
   state: LazyAgentState
   isLazy: boolean
   hibernationLevel: number
   lastAccessTime?: Date
+  agent?: Agent
+  lastActivated?: Date
+  status: LazyAgentStatus
 }
 
 export interface AgentFactory {
@@ -609,7 +619,7 @@ export interface ModuleRegistry {
   
   // Other methods
   registerLazyAgent(name: string, loader: any): void
-  getToolSystem(): any
+  getToolSystem(name: string): any
 }
 
 export enum LogLevel {

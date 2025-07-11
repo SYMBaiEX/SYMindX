@@ -48,7 +48,24 @@ export function buildAISDKParams<T extends Record<string, any>>(
   // Dynamically add only defined and non-null properties
   for (const [key, value] of Object.entries(options)) {
     if (value !== undefined && value !== null) {
-      (params as any)[key] = value;
+      // Special handling for arrays - only include if not empty
+      if (Array.isArray(value)) {
+        if (value.length > 0) {
+          (params as any)[key] = value;
+        }
+      } else if (typeof value === 'number') {
+        // Numbers should be included even if 0
+        (params as any)[key] = value;
+      } else if (typeof value === 'boolean') {
+        // Booleans should be included even if false
+        (params as any)[key] = value;
+      } else if (typeof value === 'string') {
+        // Strings should be included even if empty
+        (params as any)[key] = value;
+      } else if (typeof value === 'object' && Object.keys(value).length > 0) {
+        // Objects should be included if they have properties
+        (params as any)[key] = value;
+      }
     }
   }
 

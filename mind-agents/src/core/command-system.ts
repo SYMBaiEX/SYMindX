@@ -15,7 +15,6 @@ import {
   MemoryType,
   MemoryDuration,
 } from '../types/agent';
-import { ActionCategory, ActionResultType } from '../types/enums';
 import { Logger, runtimeLogger } from '../utils/logger';
 
 export interface Command {
@@ -100,7 +99,7 @@ export class CommandSystem extends EventEmitter {
       canParse: (input: string) => {
         return !input.startsWith('/') && !input.startsWith('!');
       },
-      parse: (_input: string) => ({
+      parse: (input: string) => ({
         type: CommandType.CHAT,
         instruction: input,
         priority: CommandPriority.NORMAL,
@@ -165,7 +164,7 @@ export class CommandSystem extends EventEmitter {
       canParse: (input: string) => {
         return ['/pause', '/resume', '/stop', '/start'].includes(input);
       },
-      parse: (_input: string) => ({
+      parse: (input: string) => ({
         type: CommandType.CONTROL,
         instruction: input.slice(1),
         priority: CommandPriority.URGENT,
@@ -387,11 +386,13 @@ export class CommandSystem extends EventEmitter {
 
       for (const pair of pairs) {
         const [key, value] = pair.split('=');
-        // Try to parse as number or boolean
-        if (value === 'true') params[key] = true;
-        else if (value === 'false') params[key] = false;
-        else if (!isNaN(Number(value))) params[key] = Number(value);
-        else params[key] = value;
+        if (key && value !== undefined) {
+          // Try to parse as number or boolean
+          if (value === 'true') params[key] = true;
+          else if (value === 'false') params[key] = false;
+          else if (!isNaN(Number(value))) params[key] = Number(value);
+          else params[key] = value;
+        }
       }
 
       return params;
@@ -1531,120 +1532,67 @@ export class CommandSystem extends EventEmitter {
    * Build system prompt that includes emotional state
    * @deprecated Use PromptIntegration for sophisticated prompting
    */
-  private _buildEmotionalSystemPrompt(
-    _agent: Agent,
-    emotionalContext: {
-      currentEmotion?: string;
-      emotionIntensity?: number;
-      emotionModifiers?: Record<string, number>;
-      emotionColor?: string;
-      postResponseEmotion?: string;
-      postResponseIntensity?: number;
-    },
-    conversationContext?: string
-  ): string {
-    // Legacy implementation preserved for backward compatibility
-    let prompt = `You are in a chat conversation. Respond naturally and helpfully.`;
+  // private _buildEmotionalSystemPrompt(
+  //   _agent: Agent,
+  //   emotionalContext: {
+  //     currentEmotion?: string;
+  //     emotionIntensity?: number;
+  //     emotionModifiers?: Record<string, number>;
+  //     emotionColor?: string;
+  //     postResponseEmotion?: string;
+  //     postResponseIntensity?: number;
+  //   },
+  //   conversationContext?: string
+  // ): string {
+  //   // Legacy implementation preserved for backward compatibility
+  //   let prompt = `You are in a chat conversation. Respond naturally and helpfully.`;
 
-    // Add emotional state context
-    if (
-      emotionalContext.currentEmotion &&
-      emotionalContext.currentEmotion !== 'neutral'
-    ) {
-      const intensity = emotionalContext.emotionIntensity || 0;
-      prompt += `\n\nYour current emotional state: ${emotionalContext.currentEmotion} (intensity: ${(intensity * 100).toFixed(0)}%)`;
+  //   // Add emotional state context
+  //   if (
+  //     emotionalContext.currentEmotion &&
+  //     emotionalContext.currentEmotion !== 'neutral'
+  //   ) {
+  //     const intensity = emotionalContext.emotionIntensity || 0;
+  //     prompt += `\n\nYour current emotional state: ${emotionalContext.currentEmotion} (intensity: ${(intensity * 100).toFixed(0)}%)`;
 
-      // Add emotional modifiers guidance
-      if (
-        emotionalContext.emotionModifiers &&
-        Object.keys(emotionalContext.emotionModifiers).length > 0
-      ) {
-        prompt += `\nEmotional influences on your behavior:`;
-        for (const [modifier, value] of Object.entries(
-          emotionalContext.emotionModifiers
-        )) {
-          if (typeof value === 'number' && value !== 1.0) {
-            const change = value > 1.0 ? 'increased' : 'decreased';
-            const percentage = Math.abs((value - 1.0) * 100).toFixed(0);
-            prompt += `\n- ${modifier}: ${change} by ${percentage}%`;
-          }
-        }
-      }
+  //     // Add emotional modifiers guidance
+  //     if (
+  //       emotionalContext.emotionModifiers &&
+  //       Object.keys(emotionalContext.emotionModifiers).length > 0
+  //     ) {
+  //       prompt += `\nEmotional influences on your behavior:`;
+  //       for (const [modifier, value] of Object.entries(
+  //         emotionalContext.emotionModifiers
+  //       )) {
+  //         if (typeof value === 'number' && value !== 1.0) {
+  //           const change = value > 1.0 ? 'increased' : 'decreased';
+  //           const percentage = Math.abs((value - 1.0) * 100).toFixed(0);
+  //           prompt += `\n- ${modifier}: ${change} by ${percentage}%`;
+  //         }
+  //       }
+  //     }
 
-      // Add emotional guidance
-      prompt += `\n\nRespond in a way that reflects your ${emotionalContext.currentEmotion} emotional state. `;
-      prompt += this.getEmotionalGuidance(
-        emotionalContext.currentEmotion,
-        intensity
-      );
-    }
+  //     // Add emotional guidance
+  //     prompt += `\n\nRespond in a way that reflects your ${emotionalContext.currentEmotion} emotional state. `;
+  //     prompt += this.getEmotionalGuidance(
+  //       emotionalContext.currentEmotion,
+  //       intensity
+  //     );
+  //   }
 
-    // Add conversation context
-    if (conversationContext) {
-      prompt += `\n\nRecent conversation context:\n${conversationContext}`;
-    }
+  //   // Add conversation context
+  //   if (conversationContext) {
+  //     prompt += `\n\nRecent conversation context:\n${conversationContext}`;
+  //   }
 
-    return prompt;
-  }
+  //   return prompt;
+  // }
 
   /**
    * Get behavioral guidance based on emotional state
+   * @deprecated - Method removed as it's not used
    */
-  private getEmotionalGuidance(emotion: string, intensity: number): string {
-    const guidance: Record<string, Record<string, string>> = {
-      excited: {
-        low: 'Show some enthusiasm in your response.',
-        medium:
-          'Be energetic and positive! Use exclamation points appropriately.',
-        high: "You're very excited! Let your enthusiasm show clearly while staying helpful.",
-      },
-      frustrated: {
-        low: 'You might be slightly impatient, but remain helpful.',
-        medium:
-          "You're frustrated but trying to stay professional. Keep responses brief and direct.",
-        high: "You're quite frustrated. Be direct and honest about challenges while remaining respectful.",
-      },
-      friendly: {
-        low: 'Be warm and welcoming in your response.',
-        medium: 'Show genuine friendliness and interest in helping.',
-        high: 'Be very warm, helpful, and engaging. You genuinely want to connect and assist.',
-      },
-      curious: {
-        low: 'Show some interest in learning more.',
-        medium: 'Ask follow-up questions and show genuine curiosity.',
-        high: "You're very curious! Ask engaging questions and explore the topic deeply.",
-      },
-      proud: {
-        low: 'Feel good about your capabilities and knowledge.',
-        medium: 'Show confidence in your responses and abilities.',
-        high: "You're quite proud! Demonstrate your capabilities while staying humble.",
-      },
-      confused: {
-        low: 'You might need slight clarification on something.',
-        medium:
-          'Ask for clarification when needed and admit uncertainty honestly.',
-        high: "You're quite confused. Ask clear questions to understand better.",
-      },
-      cautious: {
-        low: 'Be slightly careful in your recommendations.',
-        medium:
-          'Think through responses carefully and mention important considerations.',
-        high: 'Be very thoughtful and careful. Mention risks and alternatives when relevant.',
-      },
-      determined: {
-        low: 'Show some focus and resolve in helping.',
-        medium: 'Be focused and committed to finding good solutions.',
-        high: "You're very determined! Show strong commitment to helping solve the problem.",
-      },
-    };
-
-    const intensityLevel =
-      intensity < 0.4 ? 'low' : intensity < 0.7 ? 'medium' : 'high';
-    return (
-      guidance[emotion]?.[intensityLevel] ||
-      'Respond naturally according to your personality.'
-    );
-  }
+  // Method removed - was not being used and causing build errors
 
   /**
    * Build enhanced system prompt that includes emotional AND cognitive context

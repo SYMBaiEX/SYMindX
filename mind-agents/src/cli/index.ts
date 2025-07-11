@@ -13,10 +13,8 @@ import { Command } from 'commander'
 import figlet from 'figlet'
 import gradient from 'gradient-string'
 import inquirer from 'inquirer'
-import WebSocket from 'ws'
 
 import { SYMindXRuntime } from '../core/runtime'
-import { RuntimeConfig } from '../types/agent'
 import { 
   displayBanner, 
   createSpinner, 
@@ -47,7 +45,6 @@ const fireGradient = gradient(['#FF6B6B', '#FFA500', '#FFD700'])
 
 export interface CLIConfig {
   apiUrl: string
-  wsUrl: string
   autoConnect: boolean
   defaultAgent?: string
   colors: boolean
@@ -57,7 +54,6 @@ export interface CLIConfig {
 class AwesomeSYMindXCLI {
   private program: Command
   private config: CLIConfig
-  private ws?: WebSocket
   
   constructor() {
     this.program = new Command()
@@ -70,7 +66,6 @@ class AwesomeSYMindXCLI {
     const port = process.env.API_PORT || '8000'
     return {
       apiUrl: process.env.SYMINDX_API_URL || `http://localhost:${port}`,
-      wsUrl: process.env.SYMINDX_WS_URL || `ws://localhost:${port}/ws`,
       autoConnect: process.env.SYMINDX_AUTO_CONNECT === 'true',
       ...(process.env.SYMINDX_DEFAULT_AGENT && { defaultAgent: process.env.SYMINDX_DEFAULT_AGENT }),
       colors: process.env.NO_COLOR !== 'true',
@@ -86,7 +81,6 @@ class AwesomeSYMindXCLI {
       .option('-v, --verbose', 'Enable verbose output')
       .option('--no-colors', 'Disable colored output')
       .option('--api-url <url>', 'API server URL', this.config.apiUrl)
-      .option('--ws-url <url>', 'WebSocket server URL (default: "ws://localhost:8000/ws")', this.config.wsUrl)
       .option('--agent <id>', 'Default agent to interact with')
       .option('--matrix', 'Show matrix rain animation on startup')
       .hook('preAction', (thisCommand) => {

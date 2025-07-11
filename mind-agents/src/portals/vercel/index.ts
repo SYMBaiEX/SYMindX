@@ -44,6 +44,7 @@ import {
   MessageRole,
 } from '../../types/portal';
 import { BasePortal } from '../base-portal';
+import { convertUsage, buildAISDKParams } from '../utils';
 import { AISDKParameterBuilder } from '../ai-sdk-utils';
 
 export interface VercelAIConfig extends PortalConfig {
@@ -374,11 +375,11 @@ export class VercelAIPortal extends BasePortal {
         prompt,
         maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
-        topP: options?.topP,
-        frequencyPenalty: options?.frequencyPenalty,
-        presencePenalty: options?.presencePenalty,
-        stopSequences: options?.stop,
-        tools: toolsToUse.size > 0 ? Object.fromEntries(toolsToUse) : undefined,
+        ...(options?.topP && { topP: options.topP }),
+        ...(options?.frequencyPenalty && { frequencyPenalty: options.frequencyPenalty }),
+        ...(options?.presencePenalty && { presencePenalty: options.presencePenalty }),
+        ...(options?.stop && { stopSequences: options.stop }),
+        ...(toolsToUse.size > 0 && { tools: Object.fromEntries(toolsToUse) }),
       });
 
       return {
@@ -408,11 +409,11 @@ export class VercelAIPortal extends BasePortal {
         messages: modelMessages,
         maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
-        topP: options?.topP,
-        frequencyPenalty: options?.frequencyPenalty,
-        presencePenalty: options?.presencePenalty,
-        stopSequences: options?.stop,
-        tools: toolsToUse.size > 0 ? Object.fromEntries(toolsToUse) : undefined,
+        ...(options?.topP && { topP: options.topP }),
+        ...(options?.frequencyPenalty && { frequencyPenalty: options.frequencyPenalty }),
+        ...(options?.presencePenalty && { presencePenalty: options.presencePenalty }),
+        ...(options?.stop && { stopSequences: options.stop }),
+        ...(toolsToUse.size > 0 && { tools: Object.fromEntries(toolsToUse) }),
       });
 
       const assistantMessage: ChatMessage = {
@@ -552,11 +553,11 @@ export class VercelAIPortal extends BasePortal {
         messages: modelMessages,
         maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
-        topP: options?.topP,
-        frequencyPenalty: options?.frequencyPenalty,
-        presencePenalty: options?.presencePenalty,
-        stopSequences: options?.stop,
-        tools: toolsToUse.size > 0 ? Object.fromEntries(toolsToUse) : undefined,
+        ...(options?.topP && { topP: options.topP }),
+        ...(options?.frequencyPenalty && { frequencyPenalty: options.frequencyPenalty }),
+        ...(options?.presencePenalty && { presencePenalty: options.presencePenalty }),
+        ...(options?.stop && { stopSequences: options.stop }),
+        ...(toolsToUse.size > 0 && { tools: Object.fromEntries(toolsToUse) }),
       });
 
       for await (const textPart of textStream) {
@@ -620,7 +621,7 @@ export class VercelAIPortal extends BasePortal {
                   content.push({
                     type: 'image',
                     image: attachment.data,
-                    mediaType: attachment.mimeType,
+                    ...(attachment.mimeType && { mediaType: attachment.mimeType }),
                   });
                 } else if (attachment.url) {
                   content.push({

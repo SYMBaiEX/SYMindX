@@ -34,7 +34,7 @@ import {
   FinishReason,
 } from '../../types/portal';
 import { BasePortal } from '../base-portal';
-import { convertUsage } from '../utils';
+import { convertUsage, buildAISDKParams } from '../utils';
 import { AISDKParameterBuilder, validateGenerationOptions } from '../ai-sdk-utils';
 
 export interface AzureOpenAIConfig extends PortalConfig {

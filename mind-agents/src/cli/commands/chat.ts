@@ -201,10 +201,8 @@ export class ChatCommand {
     try {
       console.log(chalk.blue('🔌 Connecting to WebSocket...'))
       
-      const wsUrl = this.context.config.wsUrl
-      if (!wsUrl) {
-        throw new Error('WebSocket URL not configured')
-      }
+      const port = process.env.API_PORT || '8000'
+      const wsUrl = process.env.SYMINDX_WS_URL || `ws://localhost:${port}/ws`
       this.ws = new WebSocket(wsUrl, [], {
         perMessageDeflate: false  // Disable compression to match server
       })

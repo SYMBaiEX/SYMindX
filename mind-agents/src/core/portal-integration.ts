@@ -664,8 +664,8 @@ What are your current thoughts? Respond with 2-3 brief thoughts.`;
     try {
       const result = await PortalRouter.evaluateTask(agent, {
         task,
-        context,
-        criteria,
+        context: context || '',
+        criteria: criteria || [],
         outputFormat: 'structured',
       });
 

@@ -29,7 +29,7 @@ import {
   ToolEvaluationResult,
 } from '../../types/portal';
 import { BasePortal } from '../base-portal';
-import { convertUsage } from '../utils';
+import { convertUsage, buildAISDKParams } from '../utils';
 import { AISDKParameterBuilder, handleAISDKError, validateGenerationOptions } from '../ai-sdk-utils';
 
 export interface GroqConfig extends PortalConfig {

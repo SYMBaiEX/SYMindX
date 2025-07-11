@@ -244,9 +244,32 @@ export class ReactiveCognition implements CognitionModule {
   }
 
   // Remove duplicate methods - they already exist above
+
+  /**
+   * Initialize the cognition module
+   */
+  initialize(config: any): void {
+    this.config = { ...this.config, ...config };
+  }
+
+  /**
+   * Get metadata about the cognition module
+   */
+  getMetadata() {
+    return {
+      id: this.id,
+      name: 'Reactive Cognition',
+      description: 'Fast reactive cognition system',
+      version: '1.0.0',
+      author: 'SYMindX',
+      paradigms: ['reactive'],
+      learningCapable: this.config.enableLearning || false,
+    };
+  }
 }
 
 // Factory function for discovery system
+
 export function createReactiveCognition(
   config: ReactiveCognitionConfig = {}
 ): ReactiveCognition {

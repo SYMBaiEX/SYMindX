@@ -36,7 +36,7 @@ import {
   FinishReason,
 } from '../../types/portal';
 import { BasePortal } from '../base-portal';
-import { convertUsage } from '../utils';
+import { convertUsage, buildAISDKParams } from '../utils';
 
 // AI SDK v5 compatible types - removed old Vertex AI SDK types
 // All functionality now uses AI SDK v5 through the vertex provider

@@ -630,6 +630,28 @@ export class HybridCognition implements CognitionModule {
       }
     }
   }
+
+  /**
+   * Initialize the cognition module
+   */
+  initialize(config: any): void {
+    this.config = { ...this.config, ...config };
+  }
+
+  /**
+   * Get metadata about the cognition module
+   */
+  getMetadata() {
+    return {
+      id: this.id,
+      name: 'Hybrid Cognition',
+      description: 'Adaptive hybrid cognition system',
+      version: '1.0.0',
+      author: 'SYMindX',
+      paradigms: ['hybrid', 'reactive', 'planning'],
+      learningCapable: this.config.enableAdaptation || false,
+    };
+  }
 }
 
 export default HybridCognition;

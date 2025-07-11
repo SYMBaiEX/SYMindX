@@ -827,9 +827,8 @@ export class DecisionEngine {
     }
     
     const bestAlternativeId = result.ranking[0]?.alternative;
-    return (
-      alternatives.find((a) => a.id === bestAlternativeId) || alternatives[0]
-    );
+    const found = alternatives.find((a) => a.id === bestAlternativeId);
+    return found || alternatives[0]!;
   }
 
   // Constraint checking methods

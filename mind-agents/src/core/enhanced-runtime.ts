@@ -6,8 +6,8 @@
 
 import {
   Agent,
-  LazyAgentState,
   RuntimeConfig,
+  LazyAgentStatus,
 } from '../types/agent';
 import { runtimeLogger } from '../utils/logger';
 
@@ -32,7 +32,7 @@ import {
   StateManagerConfig,
   CheckpointType,
 } from './state-manager';
-import { StateRecoverySystem } from './state-recovery';
+// import { StateRecoverySystem } from './state-recovery'; // Unused
 
 export interface EnhancedRuntimeConfig extends RuntimeConfig {
   stateManagement: {
@@ -53,7 +53,7 @@ export class EnhancedSYMindXRuntime extends SYMindXRuntime {
   private resourceManager?: ResourceManager;
   private lifecycleManager?: LifecycleManager;
   private checkpointSystem?: CheckpointSystem;
-  private _stateRecoverySystem?: StateRecoverySystem;
+  // private _stateRecoverySystem?: StateRecoverySystem; // Unused, commenting out
   private concurrentSafetyManager?: ConcurrentSafetyManager;
 
   private enhancedConfig: EnhancedRuntimeConfig;
@@ -177,8 +177,8 @@ export class EnhancedSYMindXRuntime extends SYMindXRuntime {
       // Update lazy agent state
       const lazyAgent = this.lazyAgents.get(agentId);
       if (lazyAgent) {
-        lazyAgent.state = LazyAgentState.UNLOADED;
-        lazyAgent.agent = undefined;
+        lazyAgent.status = LazyAgentStatus.UNLOADED;
+        delete lazyAgent.agent;
       }
 
       // Remove from active agents
@@ -323,8 +323,8 @@ export class EnhancedSYMindXRuntime extends SYMindXRuntime {
       // Update lazy agent state
       const lazyAgent = this.lazyAgents.get(agentId);
       if (lazyAgent) {
-        lazyAgent.state = LazyAgentState.ERROR;
-        lazyAgent.agent = undefined;
+        lazyAgent.status = LazyAgentStatus.ERROR;
+        delete lazyAgent.agent;
       }
 
       runtimeLogger.info(`✅ Emergency cleanup completed for agent ${agentId}`);
@@ -416,12 +416,12 @@ export class EnhancedSYMindXRuntime extends SYMindXRuntime {
       }
 
       // Initialize StateRecoverySystem
-      if (config.enableStateRecovery !== false) {
-        this._stateRecoverySystem = new StateRecoverySystem(
-          this.stateManager,
-          this.resourceManager
-        );
-      }
+      // if (config.enableStateRecovery !== false) {
+      //   this._stateRecoverySystem = new StateRecoverySystem(
+      //     this.stateManager,
+      //     this.resourceManager
+      //   );
+      // }
 
       this.stateManagementEnabled = true;
       runtimeLogger.info('🔄 State management components initialized');

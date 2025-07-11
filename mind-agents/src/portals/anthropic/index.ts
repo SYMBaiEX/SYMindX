@@ -31,27 +31,13 @@ import {
   ModelType,
 } from '../../types/portal';
 import { BasePortal } from '../base-portal';
-import { buildAISDKParams, buildProviderSettings } from '../utils';
+import { buildAISDKParams, buildProviderSettings, convertUsage } from '../utils';
 
 export interface AnthropicConfig extends PortalConfig {
   model?: string;
   baseURL?: string;
 }
 
-/**
- * Convert AI SDK usage to our internal format
- */
-function convertUsage(usage: any) {
-  if (!usage) return { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
-
-  return {
-    promptTokens: usage.promptTokens || 0,
-    completionTokens: usage.completionTokens || 0,
-    totalTokens:
-      usage.totalTokens ||
-      (usage.promptTokens || 0) + (usage.completionTokens || 0),
-  };
-}
 
 export class AnthropicPortal extends BasePortal {
   type: PortalType = PortalType.ANTHROPIC;

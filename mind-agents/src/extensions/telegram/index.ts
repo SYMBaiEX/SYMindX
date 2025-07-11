@@ -15,12 +15,17 @@ import {
   ActionResult,
   ActionResultType,
   ActionCategory,
-  ExtensionStatus
+  ExtensionStatus,
+  AgentEvent
 } from '../../types/agent.js';
-import { GenericData, ExtensionConfig } from '../../types/common.js';
+import { GenericData, ExtensionConfig, SkillParameters } from '../../types/common.js';
 import { TelegramConfig, TelegramErrorType, TelegramMessage, TelegramUser, TelegramChat } from './types.js';
-import { initializeSkills, TelegramSkill } from './skills/index.js';
 import { Logger } from '../../utils/logger.js';
+
+// Define a simple skill interface since skills/index.js doesn't exist
+interface TelegramSkill {
+  getActions(): Record<string, any>;
+}
 
 /**
  * Telegram Extension class
@@ -52,12 +57,8 @@ export class TelegramExtension implements Extension {
     this.config = config;
     this.logger = new Logger('telegram');
     
-    // Initialize skills
-     const skillsArray = initializeSkills(this);
-     this.skills = new Map();
-     skillsArray.forEach(skill => {
-       this.skills.set(skill.constructor.name, skill);
-     });
+    // Initialize skills map (empty for now since skills system is not implemented)
+    this.skills = new Map();
     
     // Register actions from all skills
     this.registerSkillActions();
@@ -66,7 +67,7 @@ export class TelegramExtension implements Extension {
   /**
    * Initialize the extension
    */
-  async init(): Promise<void> {
+  async init(_agent: Agent): Promise<void> {
     try {
       if (!this.config.token) {
         throw new Error('Bot token is required');
@@ -83,6 +84,9 @@ export class TelegramExtension implements Extension {
       
       this.logger.info('Telegram bot started successfully');
       this.status = ExtensionStatus.RUNNING;
+      
+      // Register extension actions
+      this.registerExtensionActions();
     } catch (error) {
       this.logger.error('Failed to initialize Telegram extension', error);
       this.status = ExtensionStatus.ERROR;
@@ -106,8 +110,10 @@ export class TelegramExtension implements Extension {
   /**
    * Periodic tick function
    */
-  async tick(): Promise<void> {
+  async tick(_agent: Agent): Promise<void> {
     // Nothing to do on tick for Telegram as it uses webhooks/polling
+    // Store agent reference for use in message handlers
+    // Note: agent parameter is required by Extension interface
   }
   
   /**
@@ -183,12 +189,128 @@ export class TelegramExtension implements Extension {
    * Register all actions from skills
    */
   private registerSkillActions(): void {
+    // Register actions from skills when skill system is implemented
     for (const skill of Array.from(this.skills.values())) {
       const actions = skill.getActions();
       for (const [actionId, action] of Object.entries(actions)) {
-        this.actions[actionId] = action;
+        this.actions[actionId] = action as ExtensionAction;
       }
     }
+  }
+  
+  /**
+   * Register core extension actions
+   */
+  private registerExtensionActions(): void {
+    // Register built-in Telegram actions
+    this.actions['sendMessage'] = {
+      name: 'sendMessage',
+      description: 'Send a text message to a Telegram chat',
+      category: ActionCategory.COMMUNICATION,
+      parameters: {
+        chatId: { type: 'string', required: true, description: 'Chat ID or username' },
+        text: { type: 'string', required: true, description: 'Message text' },
+        parseMode: { type: 'string', required: false, description: 'Parse mode (HTML, Markdown)' },
+        disableWebPagePreview: { type: 'boolean', required: false, description: 'Disable web page preview' },
+        disableNotification: { type: 'boolean', required: false, description: 'Send silently' },
+        replyToMessageId: { type: 'number', required: false, description: 'Reply to message ID' }
+      },
+      execute: async (_agent: Agent, params: SkillParameters): Promise<ActionResult> => {
+        const { chatId, text, parseMode, disableWebPagePreview, disableNotification, replyToMessageId } = params;
+        return this.sendMessage(
+          chatId as string | number,
+          text as string,
+          parseMode as string | undefined,
+          disableWebPagePreview as boolean | undefined,
+          disableNotification as boolean | undefined,
+          replyToMessageId as number | undefined
+        );
+      }
+    };
+    
+    this.actions['editMessage'] = {
+      name: 'editMessage',
+      description: 'Edit a previously sent message',
+      category: ActionCategory.COMMUNICATION,
+      parameters: {
+        chatId: { type: 'string', required: true, description: 'Chat ID or username' },
+        messageId: { type: 'number', required: true, description: 'Message ID' },
+        text: { type: 'string', required: true, description: 'New message text' },
+        parseMode: { type: 'string', required: false, description: 'Parse mode (HTML, Markdown)' },
+        disableWebPagePreview: { type: 'boolean', required: false, description: 'Disable web page preview' }
+      },
+      execute: async (_agent: Agent, params: SkillParameters): Promise<ActionResult> => {
+        const { chatId, messageId, text, parseMode, disableWebPagePreview } = params;
+        return this.editMessage(
+          chatId as string | number,
+          messageId as number,
+          text as string,
+          parseMode as string | undefined,
+          disableWebPagePreview as boolean | undefined
+        );
+      }
+    };
+    
+    this.actions['deleteMessage'] = {
+      name: 'deleteMessage',
+      description: 'Delete a message',
+      category: ActionCategory.COMMUNICATION,
+      parameters: {
+        chatId: { type: 'string', required: true, description: 'Chat ID or username' },
+        messageId: { type: 'number', required: true, description: 'Message ID' }
+      },
+      execute: async (_agent: Agent, params: SkillParameters): Promise<ActionResult> => {
+        const { chatId, messageId } = params;
+        return this.deleteMessage(
+          chatId as string | number,
+          messageId as number
+        );
+      }
+    };
+    
+    this.actions['sendPhoto'] = {
+      name: 'sendPhoto',
+      description: 'Send a photo to a Telegram chat',
+      category: ActionCategory.COMMUNICATION,
+      parameters: {
+        chatId: { type: 'string', required: true, description: 'Chat ID or username' },
+        photo: { type: 'string', required: true, description: 'Photo file path or URL' },
+        caption: { type: 'string', required: false, description: 'Photo caption' },
+        parseMode: { type: 'string', required: false, description: 'Parse mode (HTML, Markdown)' },
+        disableNotification: { type: 'boolean', required: false, description: 'Send silently' },
+        replyToMessageId: { type: 'number', required: false, description: 'Reply to message ID' }
+      },
+      execute: async (_agent: Agent, params: SkillParameters): Promise<ActionResult> => {
+        const { chatId, photo, caption, parseMode, disableNotification, replyToMessageId } = params;
+        return this.sendPhoto(
+          chatId as string | number,
+          photo as string,
+          caption as string | undefined,
+          parseMode as string | undefined,
+          disableNotification as boolean | undefined,
+          replyToMessageId as number | undefined
+        );
+      }
+    };
+    
+    // Register event handlers
+    this.events['message'] = {
+      event: 'message',
+      description: 'Handle incoming Telegram messages',
+      handler: async (_agent: Agent, event: AgentEvent): Promise<void> => {
+        // Handle incoming message events
+        this.logger.info('Received message event', event);
+        // TODO: Forward message to agent for processing
+      }
+    };
+    
+    this.events['error'] = {
+      event: 'error',
+      description: 'Handle Telegram errors',
+      handler: async (_agent: Agent, event: AgentEvent): Promise<void> => {
+        this.logger.error('Telegram error event', event);
+      }
+    };
   }
   
   /**
@@ -207,15 +329,23 @@ export class TelegramExtension implements Extension {
         throw new Error('Bot is not initialized');
       }
       
-      const result = await this.bot.telegram.sendMessage(chatId, text, {
+      const options: any = {
         parse_mode: parseMode as any,
-        disable_web_page_preview: disableWebPagePreview,
         disable_notification: disableNotification,
         reply_parameters: replyToMessageId ? {
           message_id: replyToMessageId,
           allow_sending_without_reply: true
         } : undefined
-      });
+      };
+      
+      // Handle deprecated disable_web_page_preview
+      if (disableWebPagePreview !== undefined) {
+        options.link_preview_options = {
+          is_disabled: disableWebPagePreview
+        };
+      }
+      
+      const result = await this.bot.telegram.sendMessage(chatId, text, options);
       
       return {
         success: true,
@@ -252,10 +382,18 @@ export class TelegramExtension implements Extension {
         throw new Error('Bot is not initialized');
       }
       
-      const result = await this.bot.telegram.editMessageText(chatId, messageId, undefined, text, {
-        parse_mode: parseMode as any,
-        disable_web_page_preview: disableWebPagePreview
-      });
+      const options: any = {
+        parse_mode: parseMode as any
+      };
+      
+      // Handle deprecated disable_web_page_preview
+      if (disableWebPagePreview !== undefined) {
+        options.link_preview_options = {
+          is_disabled: disableWebPagePreview
+        };
+      }
+      
+      const result = await this.bot.telegram.editMessageText(chatId, messageId, undefined, text, options);
       
       return {
         success: true,
@@ -321,9 +459,12 @@ export class TelegramExtension implements Extension {
         throw new Error('Bot is not initialized');
       }
       
-      const result = await this.bot.telegram.pinChatMessage(chatId, messageId, {
-        disable_notification: disableNotification
-      });
+      const options: any = {};
+      if (disableNotification !== undefined) {
+        options.disable_notification = disableNotification;
+      }
+      
+      const result = await this.bot.telegram.pinChatMessage(chatId, messageId, options);
       
       return {
         success: true,
@@ -545,10 +686,11 @@ export class TelegramExtension implements Extension {
         throw new Error('Bot is not initialized');
       }
       
-      const result = await this.bot.telegram.banChatMember(chatId, userId, {
-        until_date: untilDate,
-        revoke_messages: revokeMessages
-      });
+      const options: any = {};
+      if (untilDate !== undefined) options.until_date = untilDate;
+      if (revokeMessages !== undefined) options.revoke_messages = revokeMessages;
+      
+      const result = await this.bot.telegram.banChatMember(chatId, userId, options);
       
       return {
         success: true,
@@ -583,9 +725,12 @@ export class TelegramExtension implements Extension {
         throw new Error('Bot is not initialized');
       }
       
-      const result = await this.bot.telegram.unbanChatMember(chatId, userId, {
-        only_if_banned: onlyIfBanned
-      });
+      const options: any = {};
+      if (onlyIfBanned !== undefined) {
+        options.only_if_banned = onlyIfBanned;
+      }
+      
+      const result = await this.bot.telegram.unbanChatMember(chatId, userId, options);
       
       return {
         success: true,
@@ -697,15 +842,20 @@ export class TelegramExtension implements Extension {
         throw new Error('Bot is not initialized');
       }
       
-      const result = await this.bot.telegram.sendPhoto(chatId, photo, {
+      const options: any = {
         caption,
-        parse_mode: parseMode,
-        disable_notification: disableNotification,
+        parse_mode: parseMode as any,
         reply_parameters: replyToMessageId ? {
           message_id: replyToMessageId,
           allow_sending_without_reply: true
         } : undefined
-      });
+      };
+      
+      if (disableNotification !== undefined) {
+        options.disable_notification = disableNotification;
+      }
+      
+      const result = await this.bot.telegram.sendPhoto(chatId, photo, options);
       
       return {
         success: true,
@@ -746,18 +896,23 @@ export class TelegramExtension implements Extension {
         throw new Error('Bot is not initialized');
       }
       
-      const result = await this.bot.telegram.sendVideo(chatId, video, {
+      const options: any = {
         caption,
-        parse_mode: parseMode,
+        parse_mode: parseMode as any,
         duration,
         width,
         height,
-        disable_notification: disableNotification,
         reply_parameters: replyToMessageId ? {
           message_id: replyToMessageId,
           allow_sending_without_reply: true
         } : undefined
-      });
+      };
+      
+      if (disableNotification !== undefined) {
+        options.disable_notification = disableNotification;
+      }
+      
+      const result = await this.bot.telegram.sendVideo(chatId, video, options);
       
       return {
         success: true,
@@ -798,18 +953,23 @@ export class TelegramExtension implements Extension {
         throw new Error('Bot is not initialized');
       }
       
-      const result = await this.bot.telegram.sendAudio(chatId, audio, {
+      const options: any = {
         caption,
-        parse_mode: parseMode,
+        parse_mode: parseMode as any,
         duration,
         performer,
         title,
-        disable_notification: disableNotification,
         reply_parameters: replyToMessageId ? {
           message_id: replyToMessageId,
           allow_sending_without_reply: true
         } : undefined
-      });
+      };
+      
+      if (disableNotification !== undefined) {
+        options.disable_notification = disableNotification;
+      }
+      
+      const result = await this.bot.telegram.sendAudio(chatId, audio, options);
       
       return {
         success: true,
@@ -847,15 +1007,20 @@ export class TelegramExtension implements Extension {
         throw new Error('Bot is not initialized');
       }
       
-      const result = await this.bot.telegram.sendDocument(chatId, document, {
+      const options: any = {
         caption,
-        parse_mode: parseMode,
-        disable_notification: disableNotification,
+        parse_mode: parseMode as any,
         reply_parameters: replyToMessageId ? {
           message_id: replyToMessageId,
           allow_sending_without_reply: true
         } : undefined
-      });
+      };
+      
+      if (disableNotification !== undefined) {
+        options.disable_notification = disableNotification;
+      }
+      
+      const result = await this.bot.telegram.sendDocument(chatId, document, options);
       
       return {
         success: true,
@@ -891,13 +1056,18 @@ export class TelegramExtension implements Extension {
         throw new Error('Bot is not initialized');
       }
       
-      const result = await this.bot.telegram.sendSticker(chatId, sticker, {
-        disable_notification: disableNotification,
+      const options: any = {
         reply_parameters: replyToMessageId ? {
           message_id: replyToMessageId,
           allow_sending_without_reply: true
         } : undefined
-      });
+      };
+      
+      if (disableNotification !== undefined) {
+        options.disable_notification = disableNotification;
+      }
+      
+      const result = await this.bot.telegram.sendSticker(chatId, sticker, options);
       
       return {
         success: true,
@@ -934,13 +1104,18 @@ export class TelegramExtension implements Extension {
         throw new Error('Bot is not initialized');
       }
       
-      const result = await this.bot.telegram.sendLocation(chatId, latitude, longitude, {
-        disable_notification: disableNotification,
+      const options: any = {
         reply_parameters: replyToMessageId ? {
           message_id: replyToMessageId,
           allow_sending_without_reply: true
         } : undefined
-      });
+      };
+      
+      if (disableNotification !== undefined) {
+        options.disable_notification = disableNotification;
+      }
+      
+      const result = await this.bot.telegram.sendLocation(chatId, latitude, longitude, options);
       
       return {
         success: true,

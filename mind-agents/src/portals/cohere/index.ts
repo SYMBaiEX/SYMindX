@@ -34,7 +34,7 @@ import {
   ImageGenerationResult,
 } from '../../types/portal';
 import { BasePortal } from '../base-portal';
-import { convertUsage } from '../utils';
+import { convertUsage, buildAISDKParams } from '../utils';
 
 export interface CohereConfig extends PortalConfig {
   apiKey: string;

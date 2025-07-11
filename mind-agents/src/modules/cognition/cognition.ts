@@ -1047,6 +1047,28 @@ export class UnifiedCognition implements CognitionModule {
 
     return bestOption;
   }
+
+  /**
+   * Initialize the cognition module
+   */
+  initialize(config: BaseConfig): void {
+    this.config = { ...this.config, ...config };
+  }
+
+  /**
+   * Get metadata about the cognition module
+   */
+  getMetadata(): CognitionModuleMetadata {
+    return {
+      id: this.id,
+      name: 'Unified Cognition',
+      description: 'Unified cognition system with dual-process thinking',
+      version: '1.0.0',
+      author: 'SYMindX',
+      paradigms: ['dual_process', 'unified'],
+      learningCapable: false,
+    };
+  }
 }
 
 // Add missing import

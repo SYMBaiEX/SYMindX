@@ -11,7 +11,15 @@ import {
   ExtensionMetadata,
   Agent,
   ExtensionType,
+  ExtensionStatus,
+  ExtensionAction,
+  ExtensionEventHandler,
+  ActionCategory,
+  ActionResult,
+  ActionResultType,
+  AgentEvent
 } from '../../types/index';
+import { SkillParameters } from '../../types/common';
 import { runtimeLogger } from '../../utils/logger';
 
 import { MCPServerManager } from './mcp-server-manager';
@@ -31,9 +39,9 @@ export class MCPServerExtension implements Extension {
   public readonly id = 'mcp-server';
   public readonly name = 'MCP Server Extension';
   public readonly version = '1.0.0';
-  public readonly type = 'MCP_SERVER' as ExtensionType.MCP_SERVER;
+  public readonly type = ExtensionType.UTILITY;
   public enabled = true;
-  public status = 'stopped';
+  public status = ExtensionStatus.STOPPED;
 
   public readonly metadata: ExtensionMetadata = {
     name: 'mcp-server',
@@ -54,8 +62,8 @@ export class MCPServerExtension implements Extension {
   };
 
   public config: MCPServerExtensionConfig;
-  public actions: Record<string, any> = {};
-  public events: Record<string, any> = {};
+  public actions: Record<string, ExtensionAction> = {};
+  public events: Record<string, ExtensionEventHandler> = {};
 
   private mcpServer: MCPServerManager;
   private agent?: Agent;
@@ -89,9 +97,10 @@ export class MCPServerExtension implements Extension {
     runtimeLogger.info('🎯 MCP Server Extension initialized');
   }
 
-  async init(): Promise<void> {
-    // Initialize without agent for factory compatibility
-    this.status = 'initializing';
+  async init(agent: Agent): Promise<void> {
+    // Initialize with agent for Extension interface compatibility
+    this.status = ExtensionStatus.INITIALIZING;
+    await this.initialize(agent);
   }
 
   async tick(agent: Agent): Promise<void> {
@@ -119,6 +128,10 @@ export class MCPServerExtension implements Extension {
       // Set up event listeners
       this.setupEventListeners();
 
+      // Register extension actions and events
+      this.registerExtensionActions();
+
+      this.status = ExtensionStatus.RUNNING;
       runtimeLogger.info('🎯 MCP Server Extension initialized successfully');
     } catch (error) {
       runtimeLogger.error(
@@ -473,6 +486,123 @@ export class MCPServerExtension implements Extension {
     this.mcpServer.on('connection:closed', (connectionId: string) => {
       runtimeLogger.debug(`🔌 MCP connection closed: ${connectionId}`);
     });
+  }
+
+  /**
+   * Register extension actions and events
+   */
+  private registerExtensionActions(): void {
+    // Register MCP server actions
+    this.actions['registerTool'] = {
+      name: 'registerTool',
+      description: 'Register a custom tool to be exposed via MCP',
+      category: ActionCategory.SYSTEM,
+      parameters: {
+        tool: { type: 'object', required: true, description: 'MCP tool definition' }
+      },
+      execute: async (_agent: Agent, params: SkillParameters): Promise<ActionResult> => {
+        const { tool } = params;
+        this.registerTool(tool as MCPServerTool);
+        return {
+          success: true,
+          type: ActionResultType.SUCCESS,
+          result: { toolName: (tool as MCPServerTool).name },
+          timestamp: new Date()
+        };
+      }
+    };
+
+    this.actions['registerResource'] = {
+      name: 'registerResource',
+      description: 'Register a custom resource to be exposed via MCP',
+      category: ActionCategory.SYSTEM,
+      parameters: {
+        resource: { type: 'object', required: true, description: 'MCP resource definition' }
+      },
+      execute: async (_agent: Agent, params: SkillParameters): Promise<ActionResult> => {
+        const { resource } = params;
+        this.registerResource(resource as MCPServerResource);
+        return {
+          success: true,
+          type: ActionResultType.SUCCESS,
+          result: { resourceUri: (resource as MCPServerResource).uri },
+          timestamp: new Date()
+        };
+      }
+    };
+
+    this.actions['getServerStats'] = {
+      name: 'getServerStats',
+      description: 'Get MCP server statistics',
+      category: ActionCategory.SYSTEM,
+      parameters: {},
+      execute: async (_agent: Agent, _params: SkillParameters): Promise<ActionResult> => {
+        const stats = this.getServerStats();
+        return {
+          success: true,
+          type: ActionResultType.SUCCESS,
+          result: stats,
+          timestamp: new Date()
+        };
+      }
+    };
+
+    this.actions['getConnections'] = {
+      name: 'getConnections',
+      description: 'Get active MCP connections',
+      category: ActionCategory.SYSTEM,
+      parameters: {},
+      execute: async (_agent: Agent, _params: SkillParameters): Promise<ActionResult> => {
+        const connections = this.getConnections();
+        return {
+          success: true,
+          type: ActionResultType.SUCCESS,
+          result: connections,
+          timestamp: new Date()
+        };
+      }
+    };
+
+    // Register event handlers
+    this.events['server_started'] = {
+      event: 'server_started',
+      description: 'Handle MCP server started events',
+      handler: async (_agent: Agent, event: AgentEvent): Promise<void> => {
+        runtimeLogger.info('MCP server started event:', event);
+      }
+    };
+
+    this.events['server_stopped'] = {
+      event: 'server_stopped',
+      description: 'Handle MCP server stopped events',
+      handler: async (_agent: Agent, event: AgentEvent): Promise<void> => {
+        runtimeLogger.info('MCP server stopped event:', event);
+      }
+    };
+
+    this.events['connection_opened'] = {
+      event: 'connection_opened',
+      description: 'Handle MCP connection opened events',
+      handler: async (_agent: Agent, event: AgentEvent): Promise<void> => {
+        runtimeLogger.debug('MCP connection opened event:', event);
+      }
+    };
+
+    this.events['connection_closed'] = {
+      event: 'connection_closed',
+      description: 'Handle MCP connection closed events',
+      handler: async (_agent: Agent, event: AgentEvent): Promise<void> => {
+        runtimeLogger.debug('MCP connection closed event:', event);
+      }
+    };
+
+    this.events['mcp_error'] = {
+      event: 'mcp_error',
+      description: 'Handle MCP server errors',
+      handler: async (_agent: Agent, event: AgentEvent): Promise<void> => {
+        runtimeLogger.error('MCP server error event:', event);
+      }
+    };
   }
 
   /**

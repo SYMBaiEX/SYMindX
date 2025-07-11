@@ -111,7 +111,7 @@ export class HTNPlannerCognition implements CognitionModule {
     }
 
     // Select the highest-ranked option
-    return rankedOptions[0];
+    return rankedOptions[0]!;
   }
 
   initialize(config: any): void {
