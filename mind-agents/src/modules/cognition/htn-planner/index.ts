@@ -276,7 +276,8 @@ export class HTNPlannerCognition implements CognitionModule {
       description: `HTN Task: ${task.name}`,
       status: 'pending' as any,
       parameters: {},
-      preconditions: index > 0 && tasks[index - 1] ? [tasks[index - 1]?.id ?? ''] : [],
+      preconditions:
+        index > 0 && tasks[index - 1] ? [tasks[index - 1]?.id ?? ''] : [],
       effects: [],
     }));
   }

@@ -5,9 +5,9 @@
  * replacing generic void returns with meaningful, typed results.
  */
 
-import { 
-  OperationResult, 
-  ExecutionResult, 
+import {
+  OperationResult,
+  ExecutionResult,
   ValidationResult,
   HealthCheckResult,
   LifecycleEventResult,
@@ -17,7 +17,7 @@ import {
   MemoryId,
   EventId,
   ModuleId,
-  CorrelationId
+  CorrelationId,
 } from './helpers';
 
 /**
@@ -587,7 +587,14 @@ export interface ModuleLifecycleResult extends LifecycleEventResult {
     dependencies: string[];
   };
   lifecycle: {
-    phase: 'initialize' | 'start' | 'stop' | 'pause' | 'resume' | 'restart' | 'shutdown';
+    phase:
+      | 'initialize'
+      | 'start'
+      | 'stop'
+      | 'pause'
+      | 'resume'
+      | 'restart'
+      | 'shutdown';
     duration: Duration;
     checkpoints: string[];
   };

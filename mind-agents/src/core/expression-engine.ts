@@ -54,7 +54,7 @@ export class ExpressionEngine {
   private config: ExpressionEngineConfig;
   private expressionHistory: string[] = [];
   private emotionTemplates: Map<string, ExpressionTemplate> = new Map();
-  private lastEmotion: string = 'neutral';
+  // private _lastEmotion: string = 'neutral'; // Reserved for future smoothing
   private lastIntensity: number = 0.5;
 
   constructor(config: ExpressionEngineConfig = {}) {
@@ -318,7 +318,8 @@ export class ExpressionEngine {
       this.lastIntensity + intensityDiff * this.config.transitionSpeed!;
 
     // Update tracking
-    this.lastEmotion = targetEmotion;
+    // Track target emotion for future smoothing features
+    void targetEmotion; // Acknowledge variable usage
     this.lastIntensity = smoothedIntensity;
 
     return {
@@ -378,7 +379,9 @@ export class ExpressionEngine {
 
       // Add emphasis
       if (template.modifiers.emphasis && weight > 0.8) {
-        const emphasisIndex = Math.floor(Math.random() * template.modifiers.emphasis.length);
+        const emphasisIndex = Math.floor(
+          Math.random() * template.modifiers.emphasis.length
+        );
         const emphasis = template.modifiers.emphasis[emphasisIndex];
         if (emphasis) {
           // Insert emphasis before key words
@@ -442,7 +445,8 @@ export class ExpressionEngine {
       // Add creative flair (simplified for demo)
       if (emotion.intensity > 0.7 && Math.random() < personality.openness) {
         const creative = ['✨', '🌟', '💡', '🎨'];
-        const emoji = creative[Math.floor(Math.random() * creative.length)] ?? '✨';
+        const emoji =
+          creative[Math.floor(Math.random() * creative.length)] ?? '✨';
         if (!modified.includes(emoji)) {
           modified = `${modified} ${emoji}`;
         }
@@ -585,7 +589,9 @@ export class ExpressionEngine {
     };
 
     const options = punctuation[emotion] || punctuation.neutral;
-    const index = Math.floor(intensity * Math.max(0, (options?.length ?? 1) - 1));
+    const index = Math.floor(
+      intensity * Math.max(0, (options?.length ?? 1) - 1)
+    );
 
     return options?.[index] ?? '.';
   }

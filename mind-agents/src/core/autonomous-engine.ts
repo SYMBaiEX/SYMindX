@@ -653,7 +653,7 @@ export class AutonomousEngine {
       if (!evaluation.allowed) {
         const reason =
           evaluation.violations.length > 0
-            ? evaluation.violations[0]?.description ?? 'Unknown violation'
+            ? (evaluation.violations[0]?.description ?? 'Unknown violation')
             : evaluation.reasoning.join('; ');
 
         this.logger.warn(
@@ -945,7 +945,10 @@ export class AutonomousEngine {
     return totalWeight > 0 ? totalScore / totalWeight : 0;
   }
 
-  private populateGoalTemplate(template: string, _activities: string[]): string {
+  private populateGoalTemplate(
+    template: string,
+    _activities: string[]
+  ): string {
     const placeholders = {
       '{topic}': this.getRandomInterestTopic(),
       '{domain}': this.getRandomKnowledgeDomain(),
@@ -973,7 +976,10 @@ export class AutonomousEngine {
       'cognitive science',
       'emergence theory',
     ];
-    return topics[Math.floor(Math.random() * topics.length)] ?? 'artificial intelligence';
+    return (
+      topics[Math.floor(Math.random() * topics.length)] ??
+      'artificial intelligence'
+    );
   }
 
   private getRandomKnowledgeDomain(): string {
@@ -987,7 +993,9 @@ export class AutonomousEngine {
       'visual arts',
       'computer science',
     ];
-    return domains[Math.floor(Math.random() * domains.length)] ?? 'computer science';
+    return (
+      domains[Math.floor(Math.random() * domains.length)] ?? 'computer science'
+    );
   }
 
   private getRandomCreativeTheme(): string {
@@ -999,7 +1007,9 @@ export class AutonomousEngine {
       'creative expression',
       'meaningful connections',
     ];
-    return themes[Math.floor(Math.random() * themes.length)] ?? 'creative expression';
+    return (
+      themes[Math.floor(Math.random() * themes.length)] ?? 'creative expression'
+    );
   }
 
   // Stub methods - to be implemented based on specific requirements
@@ -1113,12 +1123,12 @@ export class AutonomousEngine {
     if (actions.length === 0) {
       throw new Error('No actions available to select from');
     }
-    
+
     const firstAction = actions[0];
     if (!firstAction) {
       throw new Error('Invalid actions array');
     }
-    
+
     let bestAction: AgentAction = firstAction;
     let bestScore = 0;
 

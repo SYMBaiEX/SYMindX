@@ -3,12 +3,7 @@
  * Extends the existing SYMindXRuntime with robust lifecycle management
  */
 
-
-import {
-  Agent,
-  RuntimeConfig,
-  LazyAgentStatus,
-} from '../types/agent';
+import { Agent, RuntimeConfig, LazyAgentStatus } from '../types/agent';
 import { runtimeLogger } from '../utils/logger';
 
 import { CheckpointSystem, CheckpointSystemConfig } from './checkpoint-system';
@@ -22,10 +17,7 @@ import {
   ShutdownOptions,
   StartupOptions,
 } from './lifecycle-manager';
-import {
-  ResourceManager,
-  ResourceManagerConfig,
-} from './resource-manager';
+import { ResourceManager, ResourceManagerConfig } from './resource-manager';
 import { SYMindXRuntime } from './runtime';
 import {
   StateManager,
@@ -238,7 +230,7 @@ export class EnhancedSYMindXRuntime extends SYMindXRuntime {
       restoreFromCheckpoint: true,
       validateState: true,
     };
-    
+
     if (checkpointFile) {
       startupOptions.specificCheckpoint = checkpointFile;
     }
@@ -263,22 +255,22 @@ export class EnhancedSYMindXRuntime extends SYMindXRuntime {
     const status: AgentStateStatus = {
       enabled: true,
     };
-    
+
     if (resourceSnapshot) {
       status.resourceSnapshot = resourceSnapshot;
     }
-    
+
     if (lockStatus) {
       status.lockStatus = lockStatus;
     }
-    
+
     if (checkpointMetrics) {
       status.checkpointMetrics = checkpointMetrics;
       if (checkpointMetrics.lastCheckpointSize) {
         status.lastCheckpoint = new Date();
       }
     }
-    
+
     return status;
   }
 

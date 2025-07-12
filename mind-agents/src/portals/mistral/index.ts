@@ -34,9 +34,13 @@ import {
   ImageGenerationOptions,
   ImageGenerationResult,
 } from '../../types/portal';
+import {
+  AISDKParameterBuilder,
+  handleAISDKError,
+  validateGenerationOptions,
+} from '../ai-sdk-utils';
 import { BasePortal } from '../base-portal';
 import { convertUsage } from '../utils';
-import { AISDKParameterBuilder, handleAISDKError, validateGenerationOptions } from '../ai-sdk-utils';
 
 export interface MistralConfig extends PortalConfig {
   apiKey: string;
@@ -172,13 +176,13 @@ export class MistralPortal extends BasePortal {
       options,
       this.getMistralDefaults()
     );
-    
+
     // Add Mistral-specific seed parameter
     const randomSeed = (this.config as MistralConfig).randomSeed;
     if (randomSeed !== undefined) {
       (params as any).seed = randomSeed;
     }
-    
+
     return params;
   }
 
@@ -191,16 +195,17 @@ export class MistralPortal extends BasePortal {
       if (options) {
         validateGenerationOptions(options, 'Mistral');
       }
-      
+
       const baseParams = {
         model: this.model,
         messages: [{ role: 'user', content: prompt }],
       };
-      
+
       // Build parameters conditionally to satisfy exactOptionalPropertyTypes
       const generateParams = this.buildMistralParams(baseParams, options);
-      
-      const { text, usage, finishReason } = await aiGenerateText(generateParams);
+
+      const { text, usage, finishReason } =
+        await aiGenerateText(generateParams);
 
       return {
         text,
@@ -226,13 +231,13 @@ export class MistralPortal extends BasePortal {
       options,
       this.getMistralDefaults()
     );
-    
+
     // Add Mistral-specific seed parameter
     const randomSeed = (this.config as MistralConfig).randomSeed;
     if (randomSeed !== undefined) {
       (params as any).seed = randomSeed;
     }
-    
+
     return params;
   }
 
@@ -245,18 +250,19 @@ export class MistralPortal extends BasePortal {
       if (options) {
         validateGenerationOptions(options, 'Mistral');
       }
-      
+
       const modelMessages = this.convertToModelMessages(messages);
 
       const baseParams = {
         model: this.model,
         messages: modelMessages,
       };
-      
+
       // Build parameters conditionally to satisfy exactOptionalPropertyTypes
       const generateParams = this.buildMistralChatParams(baseParams, options);
-      
-      const { text, usage, finishReason } = await aiGenerateText(generateParams);
+
+      const { text, usage, finishReason } =
+        await aiGenerateText(generateParams);
 
       const message: ChatMessage = {
         role: MessageRole.ASSISTANT,
@@ -323,15 +329,15 @@ export class MistralPortal extends BasePortal {
       if (options) {
         validateGenerationOptions(options, 'Mistral');
       }
-      
+
       const baseParams = {
         model: this.model,
         messages: [{ role: 'user', content: prompt }],
       };
-      
+
       // Build parameters conditionally to satisfy exactOptionalPropertyTypes
       const streamParams = this.buildMistralParams(baseParams, options);
-      
+
       const { textStream } = await aiStreamText(streamParams);
 
       for await (const chunk of textStream) {
@@ -351,17 +357,17 @@ export class MistralPortal extends BasePortal {
       if (options) {
         validateGenerationOptions(options, 'Mistral');
       }
-      
+
       const modelMessages = this.convertToModelMessages(messages);
 
       const baseParams = {
         model: this.model,
         messages: modelMessages,
       };
-      
+
       // Build parameters conditionally to satisfy exactOptionalPropertyTypes
       const streamParams = this.buildMistralChatParams(baseParams, options);
-      
+
       const { textStream } = await aiStreamText(streamParams);
 
       for await (const chunk of textStream) {

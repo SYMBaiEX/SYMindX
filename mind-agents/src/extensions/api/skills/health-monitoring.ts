@@ -462,7 +462,10 @@ export class HealthMonitoringSkill {
   /**
    * Reset monitoring metrics
    */
-  private async resetMetrics(_agent: Agent, _params: any): Promise<ActionResult> {
+  private async resetMetrics(
+    _agent: Agent,
+    _params: any
+  ): Promise<ActionResult> {
     try {
       const { confirm = false } = params;
 

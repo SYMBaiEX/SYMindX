@@ -348,7 +348,7 @@ Tools will be automatically executed and their results will be available for you
             parameters: zodSchema,
             execute:
               toolDef.execute ||
-              (async (args: any) => {
+              (async (_args: any) => {
                 runtimeLogger.warn(
                   `Tool ${toolName} executed without implementation`
                 );
@@ -681,19 +681,19 @@ What are your current thoughts? Respond with 2-3 brief thoughts.`;
       } = {
         analysis: result.analysis,
       };
-      
+
       if (result.recommendations) {
         evaluation.recommendations = result.recommendations;
       }
-      
+
       if (result.confidence !== undefined) {
         evaluation.confidence = result.confidence;
       }
-      
+
       if (result.metadata?.model) {
         evaluation.model = result.metadata.model;
       }
-      
+
       return evaluation;
     } catch (error) {
       console.error('❌ Task evaluation failed:', error);

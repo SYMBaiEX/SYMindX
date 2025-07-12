@@ -119,7 +119,11 @@ export interface ActionResult<T = GenericData> {
 }
 
 // Validation Types (re-exported from helpers for backward compatibility)
-export type { ValidationResult, ValidationError, ValidationWarning } from './helpers';
+export type {
+  ValidationResult,
+  ValidationError,
+  ValidationWarning,
+} from './helpers';
 
 // Legacy validation types for backward compatibility
 export interface LegacyValidationResult {
@@ -705,7 +709,7 @@ export type {
   NonEmptyArray,
   DeepReadonly,
   NumberKeys,
-  SymbolKeys
+  SymbolKeys,
 } from './helpers';
 
 // Operation Result Types
@@ -718,5 +722,5 @@ export type {
   EventProcessingResult,
   StateUpdateResult,
   ExecutionResult,
-  AsyncOperationResult
+  AsyncOperationResult,
 } from './helpers';

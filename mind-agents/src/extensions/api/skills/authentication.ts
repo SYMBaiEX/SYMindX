@@ -4,7 +4,6 @@
  * Provides actions related to authentication and authorization.
  */
 
-
 import {
   ExtensionAction,
   Agent,

@@ -6,7 +6,11 @@
  * agent development, deployment, and operations.
  */
 
-import { AgentConfig, AgentEvent as _AgentEvent, Agent as _Agent } from './agent';
+import {
+  AgentConfig,
+  AgentEvent as _AgentEvent,
+  Agent as _Agent,
+} from './agent';
 import { BaseConfig, Metadata as _Metadata } from './common';
 
 // =============================================================================

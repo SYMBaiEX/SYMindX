@@ -1,6 +1,6 @@
 /**
  * Telegram Extension Types
- * 
+ *
  * Type definitions for the Telegram extension with improved type safety using enums.
  */
 
@@ -16,7 +16,7 @@ export enum TelegramActionType {
   DELETE_MESSAGE = 'delete_message',
   PIN_MESSAGE = 'pin_message',
   UNPIN_MESSAGE = 'unpin_message',
-  
+
   // Media actions
   SEND_PHOTO = 'send_photo',
   SEND_VIDEO = 'send_video',
@@ -24,28 +24,28 @@ export enum TelegramActionType {
   SEND_DOCUMENT = 'send_document',
   SEND_STICKER = 'send_sticker',
   SEND_LOCATION = 'send_location',
-  
+
   // Chat actions
   JOIN_CHAT = 'join_chat',
   LEAVE_CHAT = 'leave_chat',
   GET_CHAT_INFO = 'get_chat_info',
   GET_CHAT_MEMBERS = 'get_chat_members',
-  
+
   // User actions
   GET_USER_INFO = 'get_user_info',
   BAN_USER = 'ban_user',
   UNBAN_USER = 'unban_user',
   RESTRICT_USER = 'restrict_user',
   PROMOTE_USER = 'promote_user',
-  
+
   // Bot actions
   SET_COMMANDS = 'set_commands',
   DELETE_COMMANDS = 'delete_commands',
   GET_UPDATES = 'get_updates',
-  
+
   // Inline actions
   ANSWER_INLINE_QUERY = 'answer_inline_query',
-  ANSWER_CALLBACK_QUERY = 'answer_callback_query'
+  ANSWER_CALLBACK_QUERY = 'answer_callback_query',
 }
 
 /**
@@ -62,7 +62,7 @@ export enum TelegramErrorType {
   CHAT_NOT_FOUND = 'chat_not_found',
   USER_NOT_FOUND = 'user_not_found',
   INTERNAL_ERROR = 'internal_error',
-  API_ERROR = 'api_error'
+  API_ERROR = 'api_error',
 }
 
 /**
@@ -72,7 +72,7 @@ export enum TelegramChatType {
   PRIVATE = 'private',
   GROUP = 'group',
   SUPERGROUP = 'supergroup',
-  CHANNEL = 'channel'
+  CHANNEL = 'channel',
 }
 
 /**
@@ -93,7 +93,7 @@ export enum TelegramMessageEntityType {
   CODE = 'code',
   PRE = 'pre',
   TEXT_LINK = 'text_link',
-  TEXT_MENTION = 'text_mention'
+  TEXT_MENTION = 'text_mention',
 }
 
 /**
@@ -107,7 +107,7 @@ export enum TelegramMediaType {
   STICKER = 'sticker',
   ANIMATION = 'animation',
   VOICE = 'voice',
-  VIDEO_NOTE = 'video_note'
+  VIDEO_NOTE = 'video_note',
 }
 
 /**

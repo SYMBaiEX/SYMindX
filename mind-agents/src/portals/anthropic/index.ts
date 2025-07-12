@@ -31,13 +31,16 @@ import {
   ModelType,
 } from '../../types/portal';
 import { BasePortal } from '../base-portal';
-import { buildAISDKParams, buildProviderSettings, convertUsage } from '../utils';
+import {
+  buildAISDKParams,
+  buildProviderSettings,
+  convertUsage,
+} from '../utils';
 
 export interface AnthropicConfig extends PortalConfig {
   model?: string;
   baseURL?: string;
 }
-
 
 export class AnthropicPortal extends BasePortal {
   type: PortalType = PortalType.ANTHROPIC;
@@ -62,12 +65,12 @@ export class AnthropicPortal extends BasePortal {
     const model =
       modelId || (this.config as AnthropicConfig).model || 'claude-4-sonnet';
     const config = this.config as AnthropicConfig;
-    
+
     const providerSettings = buildProviderSettings({
       apiKey: config.apiKey || process.env.ANTHROPIC_API_KEY,
       baseURL: config.baseURL,
     });
-    
+
     return this.anthropicProvider(model, providerSettings);
   }
 
@@ -88,13 +91,16 @@ export class AnthropicPortal extends BasePortal {
         model: this.getLanguageModel(model),
         prompt,
       };
-      
+
       const params = buildAISDKParams(baseParams, {
-        maxOutputTokens: options?.maxOutputTokens ?? options?.maxTokens ?? this.config.maxTokens,
+        maxOutputTokens:
+          options?.maxOutputTokens ??
+          options?.maxTokens ??
+          this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
       });
-      
+
       const result = await generateText(params);
 
       return {
@@ -130,9 +136,12 @@ export class AnthropicPortal extends BasePortal {
         model: this.getLanguageModel(model),
         messages: modelMessages,
       };
-      
+
       const generateOptions = buildAISDKParams(baseOptions, {
-        maxOutputTokens: options?.maxOutputTokens ?? options?.maxTokens ?? this.config.maxTokens,
+        maxOutputTokens:
+          options?.maxOutputTokens ??
+          options?.maxTokens ??
+          this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
       });
@@ -212,13 +221,16 @@ export class AnthropicPortal extends BasePortal {
         model: this.getLanguageModel(model),
         prompt,
       };
-      
+
       const params = buildAISDKParams(baseParams, {
-        maxOutputTokens: options?.maxOutputTokens ?? options?.maxTokens ?? this.config.maxTokens,
+        maxOutputTokens:
+          options?.maxOutputTokens ??
+          options?.maxTokens ??
+          this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
       });
-      
+
       const result = await streamText(params);
 
       for await (const textPart of result.textStream) {
@@ -248,9 +260,12 @@ export class AnthropicPortal extends BasePortal {
         model: this.getLanguageModel(model),
         messages: modelMessages,
       };
-      
+
       const streamOptions = buildAISDKParams(baseOptions, {
-        maxOutputTokens: options?.maxOutputTokens ?? options?.maxTokens ?? this.config.maxTokens,
+        maxOutputTokens:
+          options?.maxOutputTokens ??
+          options?.maxTokens ??
+          this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
       });

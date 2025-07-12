@@ -88,7 +88,7 @@ export class DecisionEngine {
 
     // 6. Perform ethical check
     const bestAlternative = feasibleAlternatives[0];
-    const ethicalCheck = bestAlternative 
+    const ethicalCheck = bestAlternative
       ? await this.performEthicalCheck(bestAlternative, context)
       : { confidence: 1, reasoning: ['No alternatives to check'] };
 
@@ -739,9 +739,10 @@ export class DecisionEngine {
   }
 
   private normalizeMatrix(scores: number[][]): number[][] {
-    const colSums = scores[0]?.map((_, colIndex) =>
-      scores.reduce((sum, row) => sum + (row[colIndex] ?? 0), 0)
-    ) ?? [];
+    const colSums =
+      scores[0]?.map((_, colIndex) =>
+        scores.reduce((sum, row) => sum + (row[colIndex] ?? 0), 0)
+      ) ?? [];
 
     return scores.map((row) =>
       row.map((score, colIndex) =>
@@ -825,7 +826,7 @@ export class DecisionEngine {
     if (alternatives.length === 0) {
       throw new Error('No alternatives available for recommendation');
     }
-    
+
     const bestAlternativeId = result.ranking[0]?.alternative;
     const found = alternatives.find((a) => a.id === bestAlternativeId);
     return found || alternatives[0]!;

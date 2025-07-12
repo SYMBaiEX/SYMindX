@@ -5,6 +5,7 @@
  * with the agent through the Model Context Protocol standard.
  */
 
+import { SkillParameters } from '../../types/common';
 import {
   ExtensionConfig,
   Extension,
@@ -17,9 +18,8 @@ import {
   ActionCategory,
   ActionResult,
   ActionResultType,
-  AgentEvent
+  AgentEvent,
 } from '../../types/index';
-import { SkillParameters } from '../../types/common';
 import { runtimeLogger } from '../../utils/logger';
 
 import { MCPServerManager } from './mcp-server-manager';
@@ -498,18 +498,25 @@ export class MCPServerExtension implements Extension {
       description: 'Register a custom tool to be exposed via MCP',
       category: ActionCategory.SYSTEM,
       parameters: {
-        tool: { type: 'object', required: true, description: 'MCP tool definition' }
+        tool: {
+          type: 'object',
+          required: true,
+          description: 'MCP tool definition',
+        },
       },
-      execute: async (_agent: Agent, params: SkillParameters): Promise<ActionResult> => {
+      execute: async (
+        _agent: Agent,
+        params: SkillParameters
+      ): Promise<ActionResult> => {
         const { tool } = params;
         this.registerTool(tool as MCPServerTool);
         return {
           success: true,
           type: ActionResultType.SUCCESS,
           result: { toolName: (tool as MCPServerTool).name },
-          timestamp: new Date()
+          timestamp: new Date(),
         };
-      }
+      },
     };
 
     this.actions['registerResource'] = {
@@ -517,18 +524,25 @@ export class MCPServerExtension implements Extension {
       description: 'Register a custom resource to be exposed via MCP',
       category: ActionCategory.SYSTEM,
       parameters: {
-        resource: { type: 'object', required: true, description: 'MCP resource definition' }
+        resource: {
+          type: 'object',
+          required: true,
+          description: 'MCP resource definition',
+        },
       },
-      execute: async (_agent: Agent, params: SkillParameters): Promise<ActionResult> => {
+      execute: async (
+        _agent: Agent,
+        params: SkillParameters
+      ): Promise<ActionResult> => {
         const { resource } = params;
         this.registerResource(resource as MCPServerResource);
         return {
           success: true,
           type: ActionResultType.SUCCESS,
           result: { resourceUri: (resource as MCPServerResource).uri },
-          timestamp: new Date()
+          timestamp: new Date(),
         };
-      }
+      },
     };
 
     this.actions['getServerStats'] = {
@@ -536,15 +550,18 @@ export class MCPServerExtension implements Extension {
       description: 'Get MCP server statistics',
       category: ActionCategory.SYSTEM,
       parameters: {},
-      execute: async (_agent: Agent, _params: SkillParameters): Promise<ActionResult> => {
+      execute: async (
+        _agent: Agent,
+        _params: SkillParameters
+      ): Promise<ActionResult> => {
         const stats = this.getServerStats();
         return {
           success: true,
           type: ActionResultType.SUCCESS,
           result: stats,
-          timestamp: new Date()
+          timestamp: new Date(),
         };
-      }
+      },
     };
 
     this.actions['getConnections'] = {
@@ -552,15 +569,18 @@ export class MCPServerExtension implements Extension {
       description: 'Get active MCP connections',
       category: ActionCategory.SYSTEM,
       parameters: {},
-      execute: async (_agent: Agent, _params: SkillParameters): Promise<ActionResult> => {
+      execute: async (
+        _agent: Agent,
+        _params: SkillParameters
+      ): Promise<ActionResult> => {
         const connections = this.getConnections();
         return {
           success: true,
           type: ActionResultType.SUCCESS,
           result: connections,
-          timestamp: new Date()
+          timestamp: new Date(),
         };
-      }
+      },
     };
 
     // Register event handlers
@@ -569,7 +589,7 @@ export class MCPServerExtension implements Extension {
       description: 'Handle MCP server started events',
       handler: async (_agent: Agent, event: AgentEvent): Promise<void> => {
         runtimeLogger.info('MCP server started event:', event);
-      }
+      },
     };
 
     this.events['server_stopped'] = {
@@ -577,7 +597,7 @@ export class MCPServerExtension implements Extension {
       description: 'Handle MCP server stopped events',
       handler: async (_agent: Agent, event: AgentEvent): Promise<void> => {
         runtimeLogger.info('MCP server stopped event:', event);
-      }
+      },
     };
 
     this.events['connection_opened'] = {
@@ -585,7 +605,7 @@ export class MCPServerExtension implements Extension {
       description: 'Handle MCP connection opened events',
       handler: async (_agent: Agent, event: AgentEvent): Promise<void> => {
         runtimeLogger.debug('MCP connection opened event:', event);
-      }
+      },
     };
 
     this.events['connection_closed'] = {
@@ -593,7 +613,7 @@ export class MCPServerExtension implements Extension {
       description: 'Handle MCP connection closed events',
       handler: async (_agent: Agent, event: AgentEvent): Promise<void> => {
         runtimeLogger.debug('MCP connection closed event:', event);
-      }
+      },
     };
 
     this.events['mcp_error'] = {
@@ -601,7 +621,7 @@ export class MCPServerExtension implements Extension {
       description: 'Handle MCP server errors',
       handler: async (_agent: Agent, event: AgentEvent): Promise<void> => {
         runtimeLogger.error('MCP server error event:', event);
-      }
+      },
     };
   }
 

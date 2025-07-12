@@ -34,9 +34,13 @@ import {
   ModelType,
   AISDKToolSet,
 } from '../../types/portal';
+import {
+  AISDKParameterBuilder,
+  handleAISDKError,
+  validateGenerationOptions,
+} from '../ai-sdk-utils';
 import { BasePortal } from '../base-portal';
 import { convertUsage, buildAISDKParams } from '../utils';
-import { AISDKParameterBuilder, handleAISDKError, validateGenerationOptions } from '../ai-sdk-utils';
 
 export interface OpenAIConfig extends PortalConfig {
   model?: string;
@@ -76,7 +80,7 @@ export class OpenAIPortal extends BasePortal {
     const model =
       modelId || (this.config as OpenAIConfig).model || 'gpt-4.1-mini';
     const config = this.config as OpenAIConfig;
-    
+
     const providerSettings = AISDKParameterBuilder.buildProviderConfig(
       {},
       {
@@ -85,7 +89,7 @@ export class OpenAIPortal extends BasePortal {
         baseURL: config.baseURL,
       }
     );
-    
+
     return this.openaiProvider(model, providerSettings);
   }
 
@@ -167,7 +171,7 @@ export class OpenAIPortal extends BasePortal {
         model: this.getLanguageModel(model),
         prompt,
       };
-      
+
       const params = buildAISDKParams(baseParams, {
         maxOutputTokens:
           options?.maxOutputTokens ??
@@ -178,7 +182,7 @@ export class OpenAIPortal extends BasePortal {
         frequencyPenalty: options?.frequencyPenalty,
         presencePenalty: options?.presencePenalty,
       });
-      
+
       const result = await generateText(params);
 
       return {
@@ -226,7 +230,7 @@ export class OpenAIPortal extends BasePortal {
         model: this.getLanguageModel(model),
         messages: modelMessages,
       };
-      
+
       const generateOptions = buildAISDKParams(baseOptions, {
         maxOutputTokens:
           options?.maxOutputTokens ??
@@ -372,7 +376,7 @@ export class OpenAIPortal extends BasePortal {
         model: this.getLanguageModel(model),
         prompt,
       };
-      
+
       const params = buildAISDKParams(baseParams, {
         maxOutputTokens:
           options?.maxOutputTokens ??
@@ -383,7 +387,7 @@ export class OpenAIPortal extends BasePortal {
         frequencyPenalty: options?.frequencyPenalty,
         presencePenalty: options?.presencePenalty,
       });
-      
+
       const { textStream } = await streamText(params);
 
       for await (const delta of textStream) {
@@ -423,7 +427,7 @@ export class OpenAIPortal extends BasePortal {
         model: this.getLanguageModel(model),
         messages: modelMessages,
       };
-      
+
       const streamOptions = buildAISDKParams(baseOptions, {
         maxOutputTokens:
           options?.maxOutputTokens ??

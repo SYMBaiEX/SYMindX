@@ -113,10 +113,9 @@ export class CompositeEmotionModule implements EmotionModule {
 
         // Transition to the dominant emotion
         if (
-          dominant && (
-            dominant.name !== this._current ||
-            Math.abs(dominant.intensity - this._intensity) > 0.1
-          )
+          dominant &&
+          (dominant.name !== this._current ||
+            Math.abs(dominant.intensity - this._intensity) > 0.1)
         ) {
           this.transitionToEmotion(dominant.name, dominant.intensity);
         }
@@ -149,7 +148,8 @@ export class CompositeEmotionModule implements EmotionModule {
       duration:
         this._history.length > 0
           ? Date.now() -
-            (this._history[this._history.length - 1]?.timestamp.getTime() ?? Date.now())
+            (this._history[this._history.length - 1]?.timestamp.getTime() ??
+              Date.now())
           : 0,
       triggers: [`transition_to_${emotion}`],
     });

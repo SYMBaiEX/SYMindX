@@ -306,7 +306,7 @@ export class MemoryManagementEngine {
     const summarizedMemory: SummarizedMemory = {
       id: `summary_${cluster.id}`,
       agentId: cluster.memories[0]?.agentId ?? '',
-      type: cluster.memories[0]?.type ?? 'unknown' as any,
+      type: cluster.memories[0]?.type ?? ('unknown' as any),
       content: summaryContent,
       metadata: {
         ...(cluster.memories[0]?.metadata ?? {}),
@@ -399,7 +399,8 @@ export class MemoryManagementEngine {
       case 'exponential':
         return (age, _importance, _accessCount) => 1 - Math.exp(-age * 0.1);
       case 'sigmoid':
-        return (age, _importance, _accessCount) => 1 / (1 + Math.exp(-age + 10));
+        return (age, _importance, _accessCount) =>
+          1 / (1 + Math.exp(-age + 10));
       default:
         return (age, _importance, _accessCount) => 1 - Math.exp(-age * 0.1);
     }

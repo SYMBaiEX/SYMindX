@@ -445,7 +445,7 @@ export class StateRecoverySystem extends EventEmitter {
       priority: 6,
       canRecover: (corruption) =>
         corruption.type === CorruptionType.DEPENDENCY_MISSING,
-      recover: async (snapshot, _corruption) => {
+      recover: async (snapshot, corruption) => {
         return this.substituteDependencies(
           snapshot,
           corruption.metadata.missing

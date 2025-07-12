@@ -6,16 +6,26 @@
  */
 
 // Core types - selective exports to avoid conflicts
-export type { BaseConfig, ActionParameters, Metadata, Context, GenericData, SkillParameters, ExtensionConfig, ConfigValue } from './common';
+export type {
+  BaseConfig,
+  ActionParameters,
+  Metadata,
+  Context,
+  GenericData,
+  SkillParameters,
+  ExtensionConfig,
+  ConfigValue,
+  ConfigurationSchema,
+} from './common';
 export { LogLevel, Priority, Status } from './enums';
-export type { 
-  OperationResult, 
-  ExecutionResult, 
-  ValidationResult, 
-  InitializationResult, 
-  CleanupResult, 
-  EventProcessingResult, 
-  HealthCheckResult, 
+export type {
+  OperationResult,
+  ExecutionResult,
+  ValidationResult,
+  InitializationResult,
+  CleanupResult,
+  EventProcessingResult,
+  HealthCheckResult,
   LifecycleEventResult,
   Duration,
   Timestamp,
@@ -23,9 +33,9 @@ export type {
   MemoryId,
   EventId,
   ModuleId,
-  CorrelationId
+  CorrelationId,
 } from './helpers';
-export type { 
+export type {
   AgentCreationResult,
   AgentDestructionResult,
   AgentStateTransitionResult,
@@ -38,24 +48,24 @@ export type {
   ModuleManifest,
   ConfigurationLoadResult,
   ConfigurationUpdateResult,
-  LoggingResult
+  LoggingResult,
 } from './results';
-export type { 
+export type {
   InitializationFunction,
   CleanupFunction,
   EventProcessingFunction,
-  HealthCheckFunction
+  HealthCheckFunction,
 } from './signatures';
 
 // Agent system types (selective exports to avoid conflicts)
-export type { 
-  Agent, 
-  AgentConfig, 
-  AgentStatus, 
-  AgentState, 
-  LazyAgentState, 
-  LazyAgent, 
-  AgentFactory, 
+export type {
+  Agent,
+  AgentConfig,
+  AgentStatus,
+  AgentState,
+  LazyAgentState,
+  LazyAgent,
+  AgentFactory,
   AgentAction,
   AgentEvent,
   ExtensionType,
@@ -64,14 +74,14 @@ export type {
   ExtensionEventHandler,
   ActionCategory,
   ActionResult,
-  ActionResultType
+  ActionResultType,
 } from './agent';
-export { LazyAgentStatus } from './agent';
+export { LazyAgentStatus, ActionStatus } from './agent';
 export type { Extension } from './extension';
 export type { Portal, PortalConfig, PortalType } from './portal';
 
-// Export ExtensionMetadata and ExtensionConfig from common
-export type { ExtensionMetadata, ExtensionConfig } from './common';
+// Export ExtensionMetadata from common (ExtensionConfig already exported above)
+export type { ExtensionMetadata } from './common';
 
 // Advanced module types (selective exports)
 export type {
@@ -231,6 +241,11 @@ export interface ValidationResult {
 }
 
 /**
+ * Enhanced validation result type alias
+ */
+export type EnhancedValidationResult = ValidationResult;
+
+/**
  * Dependency validation result
  */
 export interface DependencyValidation {
@@ -253,10 +268,19 @@ export interface TypedEventEmitter<T extends Record<string, any>> {
  * Enhanced type-safe event emitter with proper result types
  */
 export interface EnhancedTypedEventEmitter<T extends Record<string, any>> {
-  on<K extends keyof T>(event: K, listener: (data: T[K]) => EventProcessingResult): OperationResult;
-  off<K extends keyof T>(event: K, listener: (data: T[K]) => EventProcessingResult): OperationResult;
+  on<K extends keyof T>(
+    event: K,
+    listener: (data: T[K]) => EventProcessingResult
+  ): OperationResult;
+  off<K extends keyof T>(
+    event: K,
+    listener: (data: T[K]) => EventProcessingResult
+  ): OperationResult;
   emit<K extends keyof T>(event: K, data: T[K]): EventDispatchResult;
-  once<K extends keyof T>(event: K, listener: (data: T[K]) => EventProcessingResult): OperationResult;
+  once<K extends keyof T>(
+    event: K,
+    listener: (data: T[K]) => EventProcessingResult
+  ): OperationResult;
   listenerCount<K extends keyof T>(event: K): number;
   eventNames(): (keyof T)[];
   removeAllListeners<K extends keyof T>(event?: K): OperationResult;
@@ -306,9 +330,15 @@ export interface HealthCheck {
 export interface HealthMonitoringService {
   checkHealth(componentId: string): Promise<HealthCheckResult>;
   checkSystemHealth(): Promise<SystemHealthResult>;
-  registerHealthCheck(componentId: string, check: () => Promise<HealthCheckResult>): OperationResult;
+  registerHealthCheck(
+    componentId: string,
+    check: () => Promise<HealthCheckResult>
+  ): OperationResult;
   unregisterHealthCheck(componentId: string): OperationResult;
-  getHealthHistory(componentId: string, duration?: Duration): Promise<HealthCheckResult[]>;
+  getHealthHistory(
+    componentId: string,
+    duration?: Duration
+  ): Promise<HealthCheckResult[]>;
   subscribe(callback: (result: HealthCheckResult) => void): OperationResult;
   unsubscribe(callback: (result: HealthCheckResult) => void): OperationResult;
 }
@@ -355,7 +385,10 @@ export interface EnhancedConfigProvider {
   reload(): Promise<ConfigurationLoadResult>;
   validate(key?: string): ValidationResult;
   getSchema(): ConfigurationSchema;
-  watch(key: string, callback: (result: ConfigurationUpdateResult) => void): OperationResult;
+  watch(
+    key: string,
+    callback: (result: ConfigurationUpdateResult) => void
+  ): OperationResult;
   unwatch(key: string): OperationResult;
 }
 
@@ -378,10 +411,20 @@ export interface EnhancedLogger {
   debug(message: string, metadata?: Record<string, any>): LoggingResult;
   info(message: string, metadata?: Record<string, any>): LoggingResult;
   warn(message: string, metadata?: Record<string, any>): LoggingResult;
-  error(message: string, error?: Error, metadata?: Record<string, any>): LoggingResult;
-  fatal(message: string, error?: Error, metadata?: Record<string, any>): LoggingResult;
+  error(
+    message: string,
+    error?: Error,
+    metadata?: Record<string, any>
+  ): LoggingResult;
+  fatal(
+    message: string,
+    error?: Error,
+    metadata?: Record<string, any>
+  ): LoggingResult;
   child(metadata: Record<string, any>): EnhancedLogger;
-  setLevel(level: 'debug' | 'info' | 'warn' | 'error' | 'fatal'): OperationResult;
+  setLevel(
+    level: 'debug' | 'info' | 'warn' | 'error' | 'fatal'
+  ): OperationResult;
   getLevel(): string;
   flush(): Promise<OperationResult>;
 }
@@ -430,11 +473,26 @@ export interface FactoryRegistry {
  * Enhanced factory registry with proper result types
  */
 export interface EnhancedFactoryRegistry {
-  registerMemoryFactory(name: string, factory: ModuleFactory<any>): OperationResult;
-  registerEmotionFactory(name: string, factory: ModuleFactory<any>): OperationResult;
-  registerCognitionFactory(name: string, factory: ModuleFactory<any>): OperationResult;
-  registerExtensionFactory(name: string, factory: ModuleFactory<any>): OperationResult;
-  registerPortalFactory(name: string, factory: ModuleFactory<any>): OperationResult;
+  registerMemoryFactory(
+    name: string,
+    factory: ModuleFactory<any>
+  ): OperationResult;
+  registerEmotionFactory(
+    name: string,
+    factory: ModuleFactory<any>
+  ): OperationResult;
+  registerCognitionFactory(
+    name: string,
+    factory: ModuleFactory<any>
+  ): OperationResult;
+  registerExtensionFactory(
+    name: string,
+    factory: ModuleFactory<any>
+  ): OperationResult;
+  registerPortalFactory(
+    name: string,
+    factory: ModuleFactory<any>
+  ): OperationResult;
 
   getMemoryFactory(name: string): ModuleFactory<any> | undefined;
   getEmotionFactory(name: string): ModuleFactory<any> | undefined;

@@ -38,8 +38,9 @@ import {
   ActionCategory,
   ActionResult,
   ActionResultType,
-  AgentEvent
+  AgentEvent,
 } from '../../types/agent';
+import { SkillParameters } from '../../types/common';
 import { runtimeLogger } from '../../utils/logger';
 
 import {
@@ -54,7 +55,6 @@ import {
   WebSocketMessage,
   ConnectionInfo,
 } from './types';
-import { SkillParameters } from '../../types/common';
 // WebSocketServerSkill removed - using simple WebSocket server directly
 import { WebUIServer } from './webui/index';
 
@@ -1153,14 +1153,12 @@ export class ApiExtension implements Extension {
               emotionState: this.agent?.emotion?.current,
               processingTime,
             },
-            emotionState: this.agent?.emotion?.current
-              ? {
-                  current: this.agent.emotion.current,
-                  intensity: 0.5,
-                  triggers: [],
-                  timestamp: new Date(),
-                }
-              : undefined,
+            emotionState: {
+              current: this.agent?.emotion?.current || 'neutral',
+              intensity: 0.5,
+              triggers: [],
+              timestamp: new Date(),
+            },
             memoryReferences: [],
             createdMemories: [],
             status: MessageStatus.SENT,
@@ -1796,14 +1794,12 @@ export class ApiExtension implements Extension {
           emotionState: agent?.emotion?.current,
           processingTime,
         },
-        emotionState: agent?.emotion?.current
-          ? {
-              current: agent.emotion.current,
-              intensity: 0.5, // Default intensity
-              triggers: [],
-              timestamp: new Date(),
-            }
-          : undefined,
+        emotionState: {
+          current: agent?.emotion?.current || 'neutral',
+          intensity: 0.5, // Default intensity
+          triggers: [],
+          timestamp: new Date(),
+        },
         memoryReferences: [],
         createdMemories: [],
         status: MessageStatus.SENT,
@@ -1855,11 +1851,11 @@ export class ApiExtension implements Extension {
           emotionState: agent?.emotion?.current,
         },
       };
-      
+
       if (sessionId) {
         result.sessionId = sessionId;
       }
-      
+
       return result;
     } catch (error) {
       console.error('Error processing chat message:', error);
@@ -1966,16 +1962,16 @@ export class ApiExtension implements Extension {
         executionTime,
         actionId: command.id,
       };
-      
+
       const result = command.result?.response || command.result?.data;
       if (result !== undefined) {
         response.result = result;
       }
-      
+
       if (command.result?.error) {
         response.error = command.result.error;
       }
-      
+
       return response;
     } catch (error) {
       return {
@@ -2465,24 +2461,39 @@ export class ApiExtension implements Extension {
       description: 'Send a chat message to an agent via the API',
       category: ActionCategory.COMMUNICATION,
       parameters: {
-        agentId: { type: 'string', required: false, description: 'Target agent ID' },
-        message: { type: 'string', required: true, description: 'Message to send' },
-        context: { type: 'object', required: false, description: 'Additional context' }
+        agentId: {
+          type: 'string',
+          required: false,
+          description: 'Target agent ID',
+        },
+        message: {
+          type: 'string',
+          required: true,
+          description: 'Message to send',
+        },
+        context: {
+          type: 'object',
+          required: false,
+          description: 'Additional context',
+        },
       },
-      execute: async (_agent: Agent, params: SkillParameters): Promise<ActionResult> => {
+      execute: async (
+        _agent: Agent,
+        params: SkillParameters
+      ): Promise<ActionResult> => {
         const { agentId, message, context } = params;
         const response = await this.processChatMessage({
           message: message as string,
-          agentId: agentId as string | undefined,
-          context: context as any
+          agentId: agentId as string || '',
+          context: context as any,
         });
         return {
           success: true,
           type: ActionResultType.SUCCESS,
-          result: response,
-          timestamp: new Date()
+          result: response as any,
+          timestamp: new Date(),
         };
-      }
+      },
     };
 
     this.actions['getAgentStatus'] = {
@@ -2490,9 +2501,12 @@ export class ApiExtension implements Extension {
       description: 'Get status of an agent',
       category: ActionCategory.SYSTEM,
       parameters: {
-        agentId: { type: 'string', required: true, description: 'Agent ID' }
+        agentId: { type: 'string', required: true, description: 'Agent ID' },
       },
-      execute: async (_agent: Agent, params: SkillParameters): Promise<ActionResult> => {
+      execute: async (
+        _agent: Agent,
+        params: SkillParameters
+      ): Promise<ActionResult> => {
         const { agentId } = params;
         const agentsMap = this.getAgentsMap();
         const agent = agentsMap.get(agentId as string);
@@ -2501,7 +2515,7 @@ export class ApiExtension implements Extension {
             success: false,
             type: ActionResultType.FAILURE,
             error: 'Agent not found',
-            timestamp: new Date()
+            timestamp: new Date(),
           };
         }
         return {
@@ -2512,11 +2526,11 @@ export class ApiExtension implements Extension {
             name: agent.name,
             status: agent.status,
             emotion: agent.emotion?.current,
-            lastUpdate: agent.lastUpdate
+            lastUpdate: agent.lastUpdate,
           },
-          timestamp: new Date()
+          timestamp: new Date(),
         };
-      }
+      },
     };
 
     this.actions['executeCommand'] = {
@@ -2525,27 +2539,43 @@ export class ApiExtension implements Extension {
       category: ActionCategory.SYSTEM,
       parameters: {
         agentId: { type: 'string', required: true, description: 'Agent ID' },
-        command: { type: 'string', required: true, description: 'Command to execute' },
-        priority: { type: 'number', required: false, description: 'Command priority' },
-        async: { type: 'boolean', required: false, description: 'Execute asynchronously' }
+        command: {
+          type: 'string',
+          required: true,
+          description: 'Command to execute',
+        },
+        priority: {
+          type: 'number',
+          required: false,
+          description: 'Command priority',
+        },
+        async: {
+          type: 'boolean',
+          required: false,
+          description: 'Execute asynchronously',
+        },
       },
-      execute: async (_agent: Agent, params: SkillParameters): Promise<ActionResult> => {
-        const { agentId, command, priority, async } = params;
+      execute: async (
+        _agent: Agent,
+        params: SkillParameters
+      ): Promise<ActionResult> => {
+        const { command, priority, async } = params;
         const result = await this.executeAction({
-          agentId: agentId as string,
           action: command as string,
           parameters: {},
           priority: priority as number,
-          async: async as boolean
+          async: async as boolean,
         });
         return {
           success: result.success,
-          type: result.success ? ActionResultType.SUCCESS : ActionResultType.FAILURE,
+          type: result.success
+            ? ActionResultType.SUCCESS
+            : ActionResultType.FAILURE,
           result: result.result,
-          error: result.error,
-          timestamp: new Date()
+          error: result.error || undefined,
+          timestamp: new Date(),
         };
-      }
+      },
     };
 
     // Register event handlers
@@ -2555,7 +2585,7 @@ export class ApiExtension implements Extension {
       handler: async (_agent: Agent, event: AgentEvent): Promise<void> => {
         // Handle HTTP request events
         console.log('HTTP request event:', event);
-      }
+      },
     };
 
     this.events['websocket_message'] = {
@@ -2564,7 +2594,7 @@ export class ApiExtension implements Extension {
       handler: async (_agent: Agent, event: AgentEvent): Promise<void> => {
         // Handle WebSocket message events
         console.log('WebSocket message event:', event);
-      }
+      },
     };
 
     this.events['chat_message'] = {
@@ -2573,7 +2603,7 @@ export class ApiExtension implements Extension {
       handler: async (_agent: Agent, event: AgentEvent): Promise<void> => {
         // Handle chat message events
         console.log('Chat message event:', event);
-      }
+      },
     };
 
     this.events['api_error'] = {
@@ -2582,7 +2612,7 @@ export class ApiExtension implements Extension {
       handler: async (_agent: Agent, event: AgentEvent): Promise<void> => {
         // Handle API error events
         console.error('API error event:', event);
-      }
+      },
     };
   }
 

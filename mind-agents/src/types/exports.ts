@@ -1,6 +1,6 @@
 /**
  * Complete Type Exports for SYMindX
- * 
+ *
  * This file provides a clean export interface for all enhanced types
  * to avoid conflicts and ensure proper type resolution.
  */
@@ -22,15 +22,15 @@ export type {
   RegistryResult,
   HealthCheckResult,
   LifecycleEventResult,
-  
+
   // Validation Types
   ValidationResult as EnhancedValidationResult,
   ValidationError as EnhancedValidationError,
   ValidationWarning as EnhancedValidationWarning,
-  
+
   // Configuration Types
   ConfigurationResult,
-  
+
   // Branded Types
   Brand,
   AgentId,
@@ -48,7 +48,7 @@ export type {
   Confidence,
   Priority,
   Version,
-  
+
   // Utility Types
   DeepReadonly,
   DeepPartial,
@@ -60,7 +60,7 @@ export type {
   StringKeys,
   NumberKeys,
   SymbolKeys,
-  
+
   // Function Types
   AsyncFunction,
   SyncFunction,
@@ -76,7 +76,7 @@ export type {
   AsyncPredicate,
   Comparator,
   Equals,
-  
+
   // Pattern Types
   Builder,
   FluentBuilder,
@@ -89,57 +89,57 @@ export type {
   CommandInvoker,
   Strategy,
   StrategyContext,
-  
+
   // Error Handling Types
   ErrorHandler,
   AsyncErrorHandler,
   RetryPolicy,
   CircuitBreakerConfig,
-  
+
   // Cache Types
   CacheKey,
   Cache,
-  
+
   // Serialization Types
   Serializer,
   JSONSerializable,
-  
+
   // Logging Types
   LogLevel,
   LogEntry,
   Logger,
-  
+
   // Metrics Types
   Metric,
   Counter,
   Gauge,
   Timer,
-  
+
   // Configuration Types
   ConfigValue,
   ConfigProvider,
-  
+
   // Event System Types
   EventBus,
-  
+
   // Resource Management Types
   Resource,
   ResourceManager,
-  
+
   // Dependency Injection Types
   Container,
-  
+
   // Plugin System Types
   Plugin,
   PluginManager,
-  
+
   // Security Types
   Permission,
   Role,
   Subject as SecuritySubject,
   SecurityContext,
   AuthenticationResult,
-  AuthorizationResult
+  AuthorizationResult,
 } from './helpers';
 
 // Re-export all result types with proper names
@@ -178,7 +178,7 @@ export type {
   BackupResult,
   RestoreResult,
   AuditResult,
-  LoggingResult
+  LoggingResult,
 } from './results';
 
 // Re-export all function signature types
@@ -201,97 +201,97 @@ export type {
   ConfigurationReloadFunction,
   HealthCheckFunction,
   SystemHealthCheckFunction,
-  
+
   // Agent System Functions
   AgentCreationFunction,
   AgentDestructionFunction,
   AgentStateTransitionFunction,
   AgentActionFunction,
   AgentTickFunction,
-  
+
   // Memory System Functions
   MemoryStoreFunction,
   MemoryRetrieveFunction,
   MemoryDeleteFunction,
   MemoryConsolidationFunction,
   MemoryArchiveFunction,
-  
+
   // Emotion System Functions
   EmotionUpdateFunction,
   EmotionProcessingFunction,
   EmotionResetFunction,
-  
+
   // Cognition System Functions
   ThoughtProcessingFunction,
   PlanningFunction,
   DecisionMakingFunction,
-  
+
   // Extension System Functions
   ExtensionInitializationFunction,
   ExtensionCleanupFunction,
   ExtensionExecutionFunction,
-  
+
   // Portal System Functions
   PortalGenerationFunction,
   PortalInitializationFunction,
   PortalHealthCheckFunction,
-  
+
   // Event System Functions
   EventSubscriptionFunction,
   EventUnsubscriptionFunction,
   EventEmissionFunction,
-  
+
   // Command System Functions
   CommandExecutionFunction,
   CommandValidationFunction,
   CommandRegistrationFunction,
-  
+
   // Resource Management Functions
   ResourceAllocationFunction,
   ResourceDeallocationFunction,
   ResourceMonitoringFunction,
-  
+
   // Security System Functions
   AuthenticationFunction,
   AuthorizationFunction,
   TokenValidationFunction,
-  
+
   // Configuration System Functions
   ConfigurationLoadFunction,
   ConfigurationSaveFunction,
   ConfigurationMergeFunction,
-  
+
   // Logging System Functions
   LoggingFunction,
   LogFormattingFunction,
   LogFilteringFunction,
-  
+
   // Monitoring System Functions
   MetricsCollectionFunction,
   MetricsAggregationFunction,
   AlertingFunction,
-  
+
   // Backup and Recovery Functions
   BackupFunction,
   RestoreFunction,
   BackupVerificationFunction,
-  
+
   // Migration Functions
   MigrationFunction,
   MigrationValidationFunction,
   MigrationRollbackFunction,
-  
+
   // Testing Functions
   TestFunction,
   TestValidationFunction,
   TestSetupFunction,
   TestTeardownFunction,
-  
+
   // Plugin System Functions
   PluginLoadFunction,
   PluginUnloadFunction,
   PluginValidationFunction,
-  
+
   // Utility Functions
   SerializationFunction,
   DeserializationFunction,
@@ -299,83 +299,83 @@ export type {
   SchemaValidationFunction,
   TransformationFunction,
   BatchTransformationFunction,
-  
+
   // Cache Functions
   CacheGetFunction,
   CacheSetFunction,
   CacheDeleteFunction,
   CacheClearFunction,
-  
+
   // Queue Functions
   QueueEnqueueFunction,
   QueueDequeueFunction,
   QueuePeekFunction,
   QueueSizeFunction,
-  
+
   // Worker Functions
   WorkerStartFunction,
   WorkerStopFunction,
   WorkerTaskFunction,
-  
+
   // Scheduler Functions
   ScheduleFunction,
   UnscheduleFunction,
   SchedulerTickFunction,
-  
+
   // Network Functions
   NetworkRequestFunction,
   NetworkResponseFunction,
   NetworkErrorHandlerFunction,
-  
+
   // Database Functions
   DatabaseConnectFunction,
   DatabaseDisconnectFunction,
   DatabaseQueryFunction,
   DatabaseTransactionFunction,
-  
+
   // File System Functions
   FileReadFunction,
   FileWriteFunction,
   FileDeleteFunction,
   DirectoryCreateFunction,
-  
+
   // Composite Functions
   BatchOperationFunction,
   PipelineFunction,
   WorkflowFunction,
-  
+
   // Error Handling Functions
   ErrorHandlerFunction,
   ErrorRecoveryFunction,
   ErrorReportingFunction,
-  
+
   // Lifecycle Hook Functions
   BeforeHookFunction,
   AfterHookFunction,
   ErrorHookFunction,
-  
+
   // Middleware Functions
   MiddlewareFunction,
   MiddlewareChainFunction,
-  
+
   // Factory Functions
   FactoryFunction,
   AsyncFactoryFunction,
   FactoryValidationFunction,
-  
+
   // Registry Functions
   RegistryRegisterFunction,
   RegistryUnregisterFunction,
   RegistryGetFunction,
   RegistryListFunction,
   RegistryHasFunction,
-  
+
   // Service Functions
   ServiceStartFunction,
   ServiceStopFunction,
   ServiceRestartFunction,
   ServiceHealthCheckFunction,
-  ServiceConfigurationFunction
+  ServiceConfigurationFunction,
 } from './signatures';
 
 // Re-export common types
@@ -408,7 +408,7 @@ export type {
   EnvironmentalContext,
   CognitionContext,
   TimeConstraints,
-  
+
   // Enhanced Types
   ServiceResult,
   ServiceError,
@@ -421,7 +421,7 @@ export type {
   Task,
   WorkflowStep,
   Workflow,
-  
+
   // Game State Types
   GameState,
   Position,
@@ -431,7 +431,7 @@ export type {
   GameObject,
   Equipment,
   QuestState,
-  
+
   // Social Media Types
   SlackMessage,
   SlackBlock,
@@ -445,14 +445,14 @@ export type {
   TwitterMetrics,
   TwitterReference,
   TwitterAttachment,
-  
+
   // MCP Types
   McpToolDefinition,
   JsonSchema,
   JsonSchemaProperty,
   McpResource,
   McpPrompt,
-  McpPromptArgument
+  McpPromptArgument,
 } from './common';
 
 // Re-export enum types
@@ -475,13 +475,13 @@ export {
   PlanStepStatus,
   EnvironmentType,
   LogLevel,
-  
+
   // Portal Enums
   PortalType,
   PortalStatus,
   ModelType,
   ConfigurationLevel,
-  
+
   // Additional Enums
   RuntimeStatus,
   ModuleStatus,
@@ -489,7 +489,7 @@ export {
   BaseResult,
   ErrorResult,
   SuccessResult,
-  Result
+  Result,
 } from './enums';
 
 // Re-export specific types from other modules
@@ -521,7 +521,7 @@ export type {
   EventBus,
   ModuleRegistry,
   RuntimeConfig,
-  ToolsConfig
+  ToolsConfig,
 } from './agent';
 
 // Re-export emotion types
@@ -532,7 +532,7 @@ export type {
   EmotionModuleFactory,
   PersonalityTraits,
   EmotionBlend,
-  AdvancedEmotionConfig
+  AdvancedEmotionConfig,
 } from './emotion';
 
 // Re-export memory types
@@ -558,7 +558,7 @@ export type {
   MemoryManagementPolicy,
   MemoryPolicyConfig,
   PolicyCondition,
-  PolicyAction
+  PolicyAction,
 } from './memory';
 
 // Re-export cognition types
@@ -591,7 +591,7 @@ export type {
   PDDLCondition,
   PDDLEffect,
   ContextAnalysis,
-  ReasoningState
+  ReasoningState,
 } from './cognition';
 
 // Re-export portal types
@@ -620,24 +620,19 @@ export type {
   ToolEvaluationOptions,
   ToolEvaluationResult,
   VectorStoreConfig,
-  PortalCapability
+  PortalCapability,
 } from './portal';
 
 // Re-export extension types
-export type {
-  ExtensionContext,
-  Extension as ExtensionBase
-} from './extension';
+export type { ExtensionContext, Extension as ExtensionBase } from './extension';
 
 // Legacy compatibility exports
 export type {
   // Legacy validation types
   ValidationResult as LegacyValidationResult,
   ValidationError as LegacyValidationError,
-  ValidationWarning as LegacyValidationWarning
+  ValidationWarning as LegacyValidationWarning,
 } from './common';
 
 // Performance metrics
-export type {
-  PerformanceMetrics
-} from './index';
+export type { PerformanceMetrics } from './index';

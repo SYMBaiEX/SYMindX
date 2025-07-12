@@ -462,7 +462,10 @@ export class SQLiteMemoryProvider extends BaseMemoryProvider {
    * @param agentId The ID of the agent
    * @param retentionDays The number of days to retain memories
    */
-  override async cleanup(agentId: string, retentionDays: number): Promise<void> {
+  override async cleanup(
+    agentId: string,
+    retentionDays: number
+  ): Promise<void> {
     const now = Date.now();
     const cutoffTime = now - retentionDays * 24 * 60 * 60 * 1000;
 

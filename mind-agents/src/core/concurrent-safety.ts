@@ -638,14 +638,14 @@ export class ConcurrentSafetyManager extends EventEmitter {
   }
 
   private async abortLowestPriorityOperations(
-    operationIds: string[]
+    _operationIds: string[]
   ): Promise<void> {
     // Find and abort lowest priority operations
     // This is a simplified implementation
     this.logger.info('Aborting lowest priority operations to resolve deadlock');
   }
 
-  private async abortOldestOperations(operationIds: string[]): Promise<void> {
+  private async abortOldestOperations(_operationIds: string[]): Promise<void> {
     // Find and abort oldest operations
     // This is a simplified implementation
     this.logger.info('Aborting oldest operations to resolve deadlock');

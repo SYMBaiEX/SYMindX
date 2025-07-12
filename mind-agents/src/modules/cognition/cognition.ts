@@ -774,7 +774,11 @@ export class UnifiedCognition implements CognitionModule {
       const prev = context.events[i - 1];
       const curr = context.events[i];
 
-      if (prev && curr && curr.timestamp.getTime() - prev.timestamp.getTime() < 5000) {
+      if (
+        prev &&
+        curr &&
+        curr.timestamp.getTime() - prev.timestamp.getTime() < 5000
+      ) {
         chain.push(`${prev.type} → ${curr.type}`);
       }
     }

@@ -8,7 +8,9 @@ import type { LanguageModelUsage } from 'ai';
  * Convert AI SDK v5 usage to our internal format
  * Returns a guaranteed usage object (never undefined) for type safety
  */
-export function convertUsage(usage?: LanguageModelUsage | Record<string, any>): {
+export function convertUsage(
+  usage?: LanguageModelUsage | Record<string, any>
+): {
   promptTokens: number;
   completionTokens: number;
   totalTokens: number;
@@ -99,7 +101,11 @@ export function buildProviderSettings(settings: {
 
   // Include any other defined properties
   for (const [key, value] of Object.entries(settings)) {
-    if (value !== undefined && value !== null && !['apiKey', 'baseURL', 'organization'].includes(key)) {
+    if (
+      value !== undefined &&
+      value !== null &&
+      !['apiKey', 'baseURL', 'organization'].includes(key)
+    ) {
       result[key] = value;
     }
   }

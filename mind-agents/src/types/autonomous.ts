@@ -5,8 +5,18 @@
  * reinforcement learning, decision making, self-management, goal emergence, and meta-cognition.
  */
 
-import { Agent, AgentAction, AgentEvent as _AgentEvent, MemoryRecord as _MemoryRecord } from './agent';
-import { BaseConfig, Context, GenericData as _GenericData, Metadata } from './common';
+import {
+  Agent,
+  AgentAction,
+  AgentEvent as _AgentEvent,
+  MemoryRecord as _MemoryRecord,
+} from './agent';
+import {
+  BaseConfig,
+  Context,
+  GenericData as _GenericData,
+  Metadata,
+} from './common';
 
 // =================== REINFORCEMENT LEARNING =================== //
 

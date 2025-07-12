@@ -186,20 +186,26 @@ export class ContextManager {
     }
 
     // Add message
-    const messageObj: { from: string; content: string; timestamp: Date; emotion?: string; intent?: string } = {
+    const messageObj: {
+      from: string;
+      content: string;
+      timestamp: Date;
+      emotion?: string;
+      intent?: string;
+    } = {
       from,
       content,
       timestamp: new Date(),
     };
-    
+
     if (emotion) {
       messageObj.emotion = emotion;
     }
-    
+
     if (intent) {
       messageObj.intent = intent;
     }
-    
+
     context.messages.push(messageObj);
 
     // Limit message history

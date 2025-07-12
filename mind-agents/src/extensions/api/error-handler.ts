@@ -53,7 +53,9 @@ export class ExtensionApiError extends Error {
     this.code = code;
     this.statusCode = statusCode;
     this.details = details;
-    this.context = context;
+    if (context) {
+      this.context = context;
+    }
   }
 }
 
@@ -71,6 +73,7 @@ export class ExtensionValidator {
           message: `${field} is required`,
           code: 'REQUIRED_FIELD_MISSING',
           value: body[field],
+          severity: 'error' as const,
         });
       }
     }
@@ -78,6 +81,8 @@ export class ExtensionValidator {
     return {
       valid: errors.length === 0,
       errors,
+      warnings: [],
+      timestamp: new Date(),
     };
   }
 
@@ -93,6 +98,7 @@ export class ExtensionValidator {
         message: 'Agent ID must be a non-empty string',
         code: 'INVALID_AGENT_ID',
         value: agentId,
+        severity: 'error' as const,
       });
     } else if (agentId.length < 2 || agentId.length > 64) {
       errors.push({
@@ -100,12 +106,15 @@ export class ExtensionValidator {
         message: 'Agent ID must be between 2 and 64 characters',
         code: 'INVALID_AGENT_ID_LENGTH',
         value: agentId,
+        severity: 'error' as const,
       });
     }
 
     return {
       valid: errors.length === 0,
       errors,
+      warnings: [],
+      timestamp: new Date(),
     };
   }
 
@@ -123,6 +132,7 @@ export class ExtensionValidator {
           message: 'Limit must be a number between 1 and 1000',
           code: 'INVALID_LIMIT',
           value: query.limit,
+          severity: 'error' as const,
         });
       }
     }
@@ -135,6 +145,7 @@ export class ExtensionValidator {
           message: 'Offset must be a non-negative number',
           code: 'INVALID_OFFSET',
           value: query.offset,
+          severity: 'error' as const,
         });
       }
     }
@@ -142,6 +153,8 @@ export class ExtensionValidator {
     return {
       valid: errors.length === 0,
       errors,
+      warnings: [],
+      timestamp: new Date(),
     };
   }
 
@@ -157,6 +170,7 @@ export class ExtensionValidator {
         message: 'Message must be a non-empty string',
         code: 'INVALID_MESSAGE',
         value: message,
+        severity: 'error' as const,
       });
     } else if (message.length > 10000) {
       errors.push({
@@ -164,12 +178,15 @@ export class ExtensionValidator {
         message: 'Message must be less than 10,000 characters',
         code: 'MESSAGE_TOO_LONG',
         value: message,
+        severity: 'error' as const,
       });
     }
 
     return {
       valid: errors.length === 0,
       errors,
+      warnings: [],
+      timestamp: new Date(),
     };
   }
 }

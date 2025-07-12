@@ -43,9 +43,9 @@ import {
   FinishReason,
   MessageRole,
 } from '../../types/portal';
+import { AISDKParameterBuilder } from '../ai-sdk-utils';
 import { BasePortal } from '../base-portal';
 import { convertUsage, buildAISDKParams } from '../utils';
-import { AISDKParameterBuilder } from '../ai-sdk-utils';
 
 export interface VercelAIConfig extends PortalConfig {
   providers: ProviderConfig[];
@@ -198,7 +198,8 @@ export class VercelAIPortal extends BasePortal {
             break;
           }
           case 'anthropic': {
-            const apiKey = providerConfig?.apiKey || process.env.ANTHROPIC_API_KEY;
+            const apiKey =
+              providerConfig?.apiKey || process.env.ANTHROPIC_API_KEY;
             if (apiKey) {
               provider = createAnthropic({
                 apiKey,
@@ -234,7 +235,8 @@ export class VercelAIPortal extends BasePortal {
             break;
           }
           case 'perplexity': {
-            const apiKey = providerConfig?.apiKey || process.env.PERPLEXITY_API_KEY;
+            const apiKey =
+              providerConfig?.apiKey || process.env.PERPLEXITY_API_KEY;
             if (apiKey) {
               provider = createPerplexity({
                 apiKey,
@@ -376,8 +378,12 @@ export class VercelAIPortal extends BasePortal {
         maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         ...(options?.topP && { topP: options.topP }),
-        ...(options?.frequencyPenalty && { frequencyPenalty: options.frequencyPenalty }),
-        ...(options?.presencePenalty && { presencePenalty: options.presencePenalty }),
+        ...(options?.frequencyPenalty && {
+          frequencyPenalty: options.frequencyPenalty,
+        }),
+        ...(options?.presencePenalty && {
+          presencePenalty: options.presencePenalty,
+        }),
         ...(options?.stop && { stopSequences: options.stop }),
         ...(toolsToUse.size > 0 && { tools: Object.fromEntries(toolsToUse) }),
       });
@@ -410,8 +416,12 @@ export class VercelAIPortal extends BasePortal {
         maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         ...(options?.topP && { topP: options.topP }),
-        ...(options?.frequencyPenalty && { frequencyPenalty: options.frequencyPenalty }),
-        ...(options?.presencePenalty && { presencePenalty: options.presencePenalty }),
+        ...(options?.frequencyPenalty && {
+          frequencyPenalty: options.frequencyPenalty,
+        }),
+        ...(options?.presencePenalty && {
+          presencePenalty: options.presencePenalty,
+        }),
         ...(options?.stop && { stopSequences: options.stop }),
         ...(toolsToUse.size > 0 && { tools: Object.fromEntries(toolsToUse) }),
       });
@@ -452,14 +462,14 @@ export class VercelAIPortal extends BasePortal {
         dimensions: embedding.length,
         model,
       };
-      
+
       if (usage) {
         result.usage = {
           promptTokens: usage.tokens,
           totalTokens: usage.tokens,
         };
       }
-      
+
       return result;
     } catch (error) {
       throw new Error(`Vercel AI SDK embedding generation failed: ${error}`);
@@ -473,11 +483,14 @@ export class VercelAIPortal extends BasePortal {
     const model = options?.model || this.resolveModel('image');
 
     try {
-      const imageParams = AISDKParameterBuilder.buildImageGenerationParams({
-        model: this.getImageModel(model),
-        prompt,
-        n: options?.n || 1,
-      }, options);
+      const imageParams = AISDKParameterBuilder.buildImageGenerationParams(
+        {
+          model: this.getImageModel(model),
+          prompt,
+          n: options?.n || 1,
+        },
+        options
+      );
 
       const { image } = await generateImage(imageParams);
 
@@ -514,20 +527,26 @@ export class VercelAIPortal extends BasePortal {
         model: this.getLanguageModel(model),
         prompt,
       };
-      
+
       const streamParams = {
         ...baseParams,
         ...(options?.maxTokens && { maxOutputTokens: options.maxTokens }),
-        ...(this.config.maxTokens && !options?.maxTokens && { maxOutputTokens: this.config.maxTokens }),
+        ...(this.config.maxTokens &&
+          !options?.maxTokens && { maxOutputTokens: this.config.maxTokens }),
         ...(options?.temperature && { temperature: options.temperature }),
-        ...(this.config.temperature && !options?.temperature && { temperature: this.config.temperature }),
+        ...(this.config.temperature &&
+          !options?.temperature && { temperature: this.config.temperature }),
         ...(options?.topP && { topP: options.topP }),
-        ...(options?.frequencyPenalty && { frequencyPenalty: options.frequencyPenalty }),
-        ...(options?.presencePenalty && { presencePenalty: options.presencePenalty }),
+        ...(options?.frequencyPenalty && {
+          frequencyPenalty: options.frequencyPenalty,
+        }),
+        ...(options?.presencePenalty && {
+          presencePenalty: options.presencePenalty,
+        }),
         ...(options?.stop && { stopSequences: options.stop }),
         ...(toolsToUse.size > 0 && { tools: Object.fromEntries(toolsToUse) }),
       };
-      
+
       const { textStream } = await streamText(streamParams);
 
       for await (const textPart of textStream) {
@@ -554,8 +573,12 @@ export class VercelAIPortal extends BasePortal {
         maxOutputTokens: options?.maxTokens || this.config.maxTokens,
         temperature: options?.temperature || this.config.temperature,
         ...(options?.topP && { topP: options.topP }),
-        ...(options?.frequencyPenalty && { frequencyPenalty: options.frequencyPenalty }),
-        ...(options?.presencePenalty && { presencePenalty: options.presencePenalty }),
+        ...(options?.frequencyPenalty && {
+          frequencyPenalty: options.frequencyPenalty,
+        }),
+        ...(options?.presencePenalty && {
+          presencePenalty: options.presencePenalty,
+        }),
         ...(options?.stop && { stopSequences: options.stop }),
         ...(toolsToUse.size > 0 && { tools: Object.fromEntries(toolsToUse) }),
       });
@@ -621,7 +644,9 @@ export class VercelAIPortal extends BasePortal {
                   content.push({
                     type: 'image',
                     image: attachment.data,
-                    ...(attachment.mimeType && { mediaType: attachment.mimeType }),
+                    ...(attachment.mimeType && {
+                      mediaType: attachment.mimeType,
+                    }),
                   });
                 } else if (attachment.url) {
                   content.push({

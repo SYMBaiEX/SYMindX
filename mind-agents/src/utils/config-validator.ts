@@ -1,6 +1,6 @@
 /**
  * Configuration Validator
- * 
+ *
  * Provides comprehensive validation and type-safe configuration management
  * for the SYMindX runtime environment.
  */
@@ -17,7 +17,7 @@ export interface ValidatedEnvironmentConfig {
   ENABLE_OPENAI_EMBEDDINGS: boolean;
   EMBEDDING_PROVIDER: 'openai' | 'ollama';
   EMBEDDING_DIMENSIONS: number;
-  
+
   // Legacy model support
   GROQ_MODEL: string;
   OLLAMA_MODEL: string;
@@ -63,17 +63,17 @@ export interface ConfigValidationResult {
  * Environment Configuration Validator
  */
 export class ConfigValidator {
-  
   /**
    * Validate and build safe environment configuration
    */
   public static validateEnvironmentConfig(): ConfigValidationResult {
     const errors: string[] = [];
     const warnings: string[] = [];
-    
+
     // Build base configuration with safe defaults
     const config: ValidatedEnvironmentConfig = {
-      OLLAMA_BASE_URL: process.env.OLLAMA_BASE_URL || ConfigDefaults.OLLAMA_BASE_URL,
+      OLLAMA_BASE_URL:
+        process.env.OLLAMA_BASE_URL || ConfigDefaults.OLLAMA_BASE_URL,
       ENABLE_OPENAI_EMBEDDINGS: this.parseBoolean(
         process.env.ENABLE_OPENAI_EMBEDDINGS,
         ConfigDefaults.ENABLE_OPENAI_EMBEDDINGS
@@ -86,12 +86,13 @@ export class ConfigValidator {
         process.env.EMBEDDING_DIMENSIONS,
         ConfigDefaults.EMBEDDING_DIMENSIONS
       ),
-      
+
       // Legacy model support
       GROQ_MODEL: process.env.GROQ_MODEL || ConfigDefaults.GROQ_MODEL,
       OLLAMA_MODEL: process.env.OLLAMA_MODEL || ConfigDefaults.OLLAMA_MODEL,
-      ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL || ConfigDefaults.ANTHROPIC_MODEL,
-      
+      ANTHROPIC_MODEL:
+        process.env.ANTHROPIC_MODEL || ConfigDefaults.ANTHROPIC_MODEL,
+
       // Initialize collections
       apiKeys: {},
       portalModels: {},
@@ -100,16 +101,16 @@ export class ConfigValidator {
 
     // Validate and include API keys
     this.validateAndIncludeApiKeys(config, warnings);
-    
+
     // Validate and include portal models
     this.validateAndIncludePortalModels(config, warnings);
-    
+
     // Validate and include portal settings
     this.validateAndIncludePortalSettings(config, warnings);
-    
+
     // Validate overall configuration
     this.validateOverallConfiguration(config, errors, warnings);
-    
+
     return {
       isValid: errors.length === 0,
       errors,
@@ -121,7 +122,10 @@ export class ConfigValidator {
   /**
    * Parse boolean environment variable with safe defaults
    */
-  private static parseBoolean(value: string | undefined, defaultValue: boolean): boolean {
+  private static parseBoolean(
+    value: string | undefined,
+    defaultValue: boolean
+  ): boolean {
     if (value === undefined) return defaultValue;
     return value.toLowerCase() === 'true' || value === '1';
   }
@@ -129,7 +133,10 @@ export class ConfigValidator {
   /**
    * Parse positive integer with safe defaults
    */
-  private static parsePositiveInteger(value: string | undefined, defaultValue: number): number {
+  private static parsePositiveInteger(
+    value: string | undefined,
+    defaultValue: number
+  ): number {
     if (value === undefined) return defaultValue;
     const parsed = parseInt(value, 10);
     return isNaN(parsed) || parsed <= 0 ? defaultValue : parsed;
@@ -169,7 +176,7 @@ export class ConfigValidator {
       'TELEGRAM_BOT_TOKEN',
     ];
 
-    apiKeyMappings.forEach(key => {
+    apiKeyMappings.forEach((key) => {
       const value = process.env[key];
       if (value && value.trim() !== '') {
         // Validate API key format
@@ -214,14 +221,28 @@ export class ConfigValidator {
     _warnings: string[]
   ): void {
     const portals = [
-      'GROQ', 'OPENAI', 'ANTHROPIC', 'XAI', 'OLLAMA',
-      'OPENROUTER', 'KLUSTERAI', 'GOOGLE', 'MISTRAL', 'COHERE', 'AZURE_OPENAI'
+      'GROQ',
+      'OPENAI',
+      'ANTHROPIC',
+      'XAI',
+      'OLLAMA',
+      'OPENROUTER',
+      'KLUSTERAI',
+      'GOOGLE',
+      'MISTRAL',
+      'COHERE',
+      'AZURE_OPENAI',
     ];
-    
-    const modelTypes = ['CHAT_MODEL', 'EMBEDDING_MODEL', 'IMAGE_MODEL', 'TOOL_MODEL'];
 
-    portals.forEach(portal => {
-      modelTypes.forEach(modelType => {
+    const modelTypes = [
+      'CHAT_MODEL',
+      'EMBEDDING_MODEL',
+      'IMAGE_MODEL',
+      'TOOL_MODEL',
+    ];
+
+    portals.forEach((portal) => {
+      modelTypes.forEach((modelType) => {
         const key = `${portal}_${modelType}`;
         const envValue = process.env[key];
         const defaultValue = ConfigDefaults[key as keyof typeof ConfigDefaults];
@@ -243,23 +264,42 @@ export class ConfigValidator {
     _warnings: string[]
   ): void {
     const portals = [
-      'GROQ', 'OPENAI', 'ANTHROPIC', 'XAI', 'OLLAMA',
-      'OPENROUTER', 'KLUSTERAI', 'GOOGLE', 'MISTRAL', 'COHERE', 'AZURE_OPENAI'
+      'GROQ',
+      'OPENAI',
+      'ANTHROPIC',
+      'XAI',
+      'OLLAMA',
+      'OPENROUTER',
+      'KLUSTERAI',
+      'GOOGLE',
+      'MISTRAL',
+      'COHERE',
+      'AZURE_OPENAI',
     ];
-    
+
     const capabilities = ['CHAT', 'EMBEDDING', 'IMAGE'];
 
-    portals.forEach(portal => {
+    portals.forEach((portal) => {
       // Main portal toggle
       const mainKey = `${portal}_ENABLED`;
-      const defaultValue = (ConfigDefaults[mainKey as keyof typeof ConfigDefaults] as boolean) ?? false;
-      config.portalSettings[mainKey] = this.parseBoolean(process.env[mainKey], defaultValue);
+      const defaultValue =
+        (ConfigDefaults[mainKey as keyof typeof ConfigDefaults] as boolean) ??
+        false;
+      config.portalSettings[mainKey] = this.parseBoolean(
+        process.env[mainKey],
+        defaultValue
+      );
 
       // Capability toggles
-      capabilities.forEach(capability => {
+      capabilities.forEach((capability) => {
         const key = `${portal}_${capability}_ENABLED`;
-        const defaultCapabilityValue = (config.portalSettings[mainKey] ?? false) && process.env[key] !== 'false';
-        config.portalSettings[key] = this.parseBoolean(process.env[key], defaultCapabilityValue);
+        const defaultCapabilityValue =
+          (config.portalSettings[mainKey] ?? false) &&
+          process.env[key] !== 'false';
+        config.portalSettings[key] = this.parseBoolean(
+          process.env[key],
+          defaultCapabilityValue
+        );
       });
     });
 
@@ -282,23 +322,38 @@ export class ConfigValidator {
     // Check for at least one AI provider
     const hasProvider = this.hasValidAIProvider(config);
     if (!hasProvider) {
-      errors.push('At least one AI provider must be configured with valid API key');
+      errors.push(
+        'At least one AI provider must be configured with valid API key'
+      );
     }
 
     // Validate embedding configuration
     if (config.ENABLE_OPENAI_EMBEDDINGS) {
-      if (config.EMBEDDING_PROVIDER === 'openai' && !config.apiKeys.OPENAI_API_KEY) {
+      if (
+        config.EMBEDDING_PROVIDER === 'openai' &&
+        !config.apiKeys.OPENAI_API_KEY
+      ) {
         // Only require OpenAI API key if no other AI provider is available
-        const hasOtherProvider = (config.portalSettings.OLLAMA_ENABLED ?? false) ||
-          Object.keys(config.apiKeys).some(key => key.endsWith('_API_KEY') && config.apiKeys[key as keyof typeof config.apiKeys]);
-        
+        const hasOtherProvider =
+          (config.portalSettings.OLLAMA_ENABLED ?? false) ||
+          Object.keys(config.apiKeys).some(
+            (key) =>
+              key.endsWith('_API_KEY') &&
+              config.apiKeys[key as keyof typeof config.apiKeys]
+          );
+
         if (!hasOtherProvider) {
           errors.push('OpenAI API key required when using OpenAI embeddings');
         } else {
-          warnings.push('OpenAI embeddings enabled but no OpenAI API key provided, falling back to available providers');
+          warnings.push(
+            'OpenAI embeddings enabled but no OpenAI API key provided, falling back to available providers'
+          );
         }
       }
-      if (config.EMBEDDING_PROVIDER === 'ollama' && !(config.portalSettings.OLLAMA_ENABLED ?? false)) {
+      if (
+        config.EMBEDDING_PROVIDER === 'ollama' &&
+        !(config.portalSettings.OLLAMA_ENABLED ?? false)
+      ) {
         warnings.push('Ollama embeddings enabled but Ollama is not configured');
       }
     }
@@ -319,7 +374,9 @@ export class ConfigValidator {
   /**
    * Check if at least one AI provider is valid
    */
-  private static hasValidAIProvider(config: ValidatedEnvironmentConfig): boolean {
+  private static hasValidAIProvider(
+    config: ValidatedEnvironmentConfig
+  ): boolean {
     const providers = [
       { key: 'GROQ_API_KEY', setting: 'GROQ_ENABLED' },
       { key: 'OPENAI_API_KEY', setting: 'OPENAI_ENABLED' },
@@ -327,10 +384,14 @@ export class ConfigValidator {
       { key: 'XAI_API_KEY', setting: 'XAI_ENABLED' },
     ];
 
-    return providers.some(provider => 
-      config.apiKeys[provider.key as keyof typeof config.apiKeys] && 
-      (config.portalSettings[provider.setting] ?? false)
-    ) || (config.portalSettings.OLLAMA_ENABLED ?? false);
+    return (
+      providers.some(
+        (provider) =>
+          config.apiKeys[provider.key as keyof typeof config.apiKeys] &&
+          (config.portalSettings[provider.setting] ?? false)
+      ) ||
+      (config.portalSettings.OLLAMA_ENABLED ?? false)
+    );
   }
 
   /**
@@ -349,4 +410,5 @@ export class ConfigValidator {
 /**
  * Global configuration validator instance
  */
-export const validateEnvironmentConfig = () => ConfigValidator.validateEnvironmentConfig();
+export const validateEnvironmentConfig = () =>
+  ConfigValidator.validateEnvironmentConfig();

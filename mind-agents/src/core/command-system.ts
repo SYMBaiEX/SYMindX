@@ -10,11 +10,7 @@ import { EventEmitter } from 'events';
 import { WebSocket } from 'ws';
 
 import { PortalRouter } from '../portals/index';
-import {
-  Agent,
-  MemoryType,
-  MemoryDuration,
-} from '../types/agent';
+import { Agent, MemoryType, MemoryDuration } from '../types/agent';
 import { Logger, runtimeLogger } from '../utils/logger';
 
 export interface Command {
@@ -361,15 +357,15 @@ export class CommandSystem extends EventEmitter {
       timestamp: new Date(),
       status: CommandStatus.PENDING,
     };
-    
+
     if (parsedCommand.parameters) {
       command.parameters = parsedCommand.parameters;
     }
-    
+
     if (parsedCommand.timeout) {
       command.timeout = parsedCommand.timeout;
     }
-    
+
     return command;
   }
 
@@ -1125,7 +1121,9 @@ export class CommandSystem extends EventEmitter {
 
     const action = extension.actions[command.instruction];
     if (!action) {
-      throw new Error(`Action '${command.instruction}' not found in extension '${command.extension}'`);
+      throw new Error(
+        `Action '${command.instruction}' not found in extension '${command.extension}'`
+      );
     }
     const result = await action.execute(agent, command.parameters || {});
 
@@ -1133,16 +1131,16 @@ export class CommandSystem extends EventEmitter {
       success: result.success,
       executionTime: 0,
     };
-    
+
     if (result.result) {
       commandResult.response = String(result.result);
       commandResult.data = result.result;
     }
-    
+
     if (result.error) {
       commandResult.error = result.error;
     }
-    
+
     return commandResult;
   }
 

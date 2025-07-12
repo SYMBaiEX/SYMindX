@@ -120,7 +120,7 @@ export class MCPResponseFormatter {
   private static formatContext7Result(
     toolName: string,
     data: unknown,
-    context: ConversationContext
+    _context: ConversationContext
   ): string {
     if (toolName.includes('resolve-library-id')) {
       const libraries = data as Array<{

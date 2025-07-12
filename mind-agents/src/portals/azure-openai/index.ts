@@ -33,9 +33,12 @@ import {
   MessageRole,
   FinishReason,
 } from '../../types/portal';
+import {
+  AISDKParameterBuilder,
+  validateGenerationOptions,
+} from '../ai-sdk-utils';
 import { BasePortal } from '../base-portal';
 import { convertUsage, buildAISDKParams } from '../utils';
-import { AISDKParameterBuilder, validateGenerationOptions } from '../ai-sdk-utils';
 
 export interface AzureOpenAIConfig extends PortalConfig {
   apiKey: string;
@@ -97,7 +100,7 @@ export class AzureOpenAIPortal extends BasePortal {
       apiVersion: config.apiVersion || '2024-06-01',
       baseURL: config.baseURL,
     });
-    
+
     this.azure = createAzure(azureConfig);
 
     // Create model instances
@@ -199,16 +202,19 @@ export class AzureOpenAIPortal extends BasePortal {
         model: this.model,
         messages: [{ role: 'user', content: prompt }],
       };
-      
+
       const params = buildAISDKParams(baseParams, {
-        maxOutputTokens: options?.maxOutputTokens ?? options?.maxTokens ?? this.config.maxTokens,
+        maxOutputTokens:
+          options?.maxOutputTokens ??
+          options?.maxTokens ??
+          this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
         presencePenalty: options?.presencePenalty,
         stopSequences: options?.stop,
       });
-      
+
       const { text, usage, finishReason } = await aiGenerateText(params);
 
       return {
@@ -234,9 +240,12 @@ export class AzureOpenAIPortal extends BasePortal {
         model: this.model,
         messages: modelMessages,
       };
-      
+
       const params = buildAISDKParams(baseParams, {
-        maxOutputTokens: options?.maxOutputTokens ?? options?.maxTokens ?? this.config.maxTokens,
+        maxOutputTokens:
+          options?.maxOutputTokens ??
+          options?.maxTokens ??
+          this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
@@ -244,7 +253,7 @@ export class AzureOpenAIPortal extends BasePortal {
         stopSequences: options?.stop,
         tools: options?.tools,
       });
-      
+
       const { text, usage, finishReason } = await aiGenerateText(params);
 
       const message: ChatMessage = {
@@ -331,16 +340,19 @@ export class AzureOpenAIPortal extends BasePortal {
         model: this.model,
         messages: [{ role: 'user', content: prompt }],
       };
-      
+
       const params = buildAISDKParams(baseParams, {
-        maxOutputTokens: options?.maxOutputTokens ?? options?.maxTokens ?? this.config.maxTokens,
+        maxOutputTokens:
+          options?.maxOutputTokens ??
+          options?.maxTokens ??
+          this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
         presencePenalty: options?.presencePenalty,
         stopSequences: options?.stop,
       });
-      
+
       const { textStream } = await aiStreamText(params);
 
       for await (const chunk of textStream) {
@@ -362,13 +374,13 @@ export class AzureOpenAIPortal extends BasePortal {
         model: this.model,
         messages: modelMessages,
       };
-      
+
       const streamParams = AISDKParameterBuilder.buildChatGenerationParams(
         baseParams,
         options,
         AISDKParameterBuilder.getProviderDefaults('azure-openai')
       );
-      
+
       const { textStream } = await aiStreamText(streamParams);
 
       for await (const chunk of textStream) {

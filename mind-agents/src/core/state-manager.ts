@@ -219,18 +219,18 @@ export class StateManager {
           dependencies: this.gatherDependencies(agent),
         },
       };
-      
+
       // Add optional cognitive properties
       const currentThoughts = (agent as any).currentThoughts;
       if (currentThoughts) {
         snapshot.cognitive.currentThoughts = currentThoughts;
       }
-      
+
       const decisionContext = (agent as any).decisionContext;
       if (decisionContext) {
         snapshot.cognitive.decisionContext = decisionContext;
       }
-      
+
       // Add autonomous state if present
       if (agent.autonomyLevel) {
         snapshot.autonomous = {
@@ -248,7 +248,7 @@ export class StateManager {
           context: 'system_initiated',
         };
       }
-      
+
       // Calculate integrity hash after full snapshot is created
       snapshot.metadata.integrity = this.calculateIntegrity(snapshot);
 

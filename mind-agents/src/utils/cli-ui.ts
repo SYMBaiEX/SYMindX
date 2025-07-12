@@ -288,7 +288,12 @@ export async function matrixRain(duration: number = 3000) {
       const x = i * 2;
       const y = drops[i];
 
-      if (y !== undefined && y < rows && process.stdout.cursorTo && process.stdout.write) {
+      if (
+        y !== undefined &&
+        y < rows &&
+        process.stdout.cursorTo &&
+        process.stdout.write
+      ) {
         try {
           const safeY = y ?? 0;
           process.stdout.cursorTo(x, safeY);
@@ -324,7 +329,7 @@ function safeGradient(text: string | undefined, gradientFn: any): string {
   if (!text || text.trim() === '') {
     return '';
   }
-  
+
   try {
     return gradientFn(text);
   } catch (error) {

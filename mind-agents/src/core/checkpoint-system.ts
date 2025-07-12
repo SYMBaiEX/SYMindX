@@ -9,10 +9,7 @@ import { Agent } from '../types/agent';
 import { Logger } from '../utils/logger';
 
 import { ResourceManager } from './resource-manager';
-import {
-  StateManager,
-  CheckpointType,
-} from './state-manager';
+import { StateManager, CheckpointType } from './state-manager';
 
 export interface CheckpointSchedule {
   agentId: string;

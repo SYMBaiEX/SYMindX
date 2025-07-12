@@ -94,7 +94,7 @@ export class InteractionManager {
   private activeInteractions: Map<string, HumanInteraction> = new Map();
   private interactionHistory: HumanInteraction[] = [];
   private relationships: Map<string, RelationshipInfo> = new Map();
-  private _responseQueue: AgentResponse[] = [];
+  private ___responseQueue: AgentResponse[] = [];
   private interruptionCallbacks: Map<
     string,
     (interaction: HumanInteraction) => Promise<void>
@@ -277,16 +277,16 @@ export class InteractionManager {
         agentStatus: this.agent.status,
       },
     };
-    
+
     const currentActivity = this.getCurrentActivity();
     if (currentActivity) {
       context.currentActivity = currentActivity;
     }
-    
+
     if (relationship) {
       context.relationship = relationship;
     }
-    
+
     return context;
   }
 

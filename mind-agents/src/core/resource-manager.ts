@@ -5,7 +5,6 @@
 
 import { EventEmitter } from 'events';
 
-import { Agent } from '../types/agent';
 import { Logger } from '../utils/logger';
 
 export interface ResourceHandle {
@@ -93,7 +92,7 @@ export class ResourceManager extends EventEmitter {
       lastAccessed: new Date(),
       isActive: true,
     };
-    
+
     if (cleanup) {
       handle.cleanup = cleanup;
     }
@@ -385,11 +384,11 @@ export class ResourceManager extends EventEmitter {
         activeResources
       ),
     };
-    
+
     if (memoryUsage) {
       report.memoryUsage = memoryUsage;
     }
-    
+
     return report;
   }
 

@@ -10,7 +10,11 @@ import {
   EnvironmentConfig,
   ConfigDefaults,
 } from '../types/character.js';
-import { validateEnvironmentConfig, ValidatedEnvironmentConfig } from './config-validator.js';
+
+import {
+  validateEnvironmentConfig,
+  ValidatedEnvironmentConfig,
+} from './config-validator.js';
 
 export class ConfigResolver {
   private envConfig: EnvironmentConfig | null = null;
@@ -26,18 +30,20 @@ export class ConfigResolver {
   private loadEnvironmentConfig(): EnvironmentConfig {
     // Use the new validator to get a safe configuration
     const validationResult = validateEnvironmentConfig();
-    
+
     // Store the validated config for later use
     this.validatedConfig = validationResult.config;
-    
+
     // Log validation results
     if (validationResult.warnings.length > 0) {
       console.warn('Configuration warnings:', validationResult.warnings);
     }
-    
+
     if (!validationResult.isValid) {
       console.error('Configuration errors:', validationResult.errors);
-      throw new Error('Invalid environment configuration. Please check your environment variables.');
+      throw new Error(
+        'Invalid environment configuration. Please check your environment variables.'
+      );
     }
 
     // Convert validated config to EnvironmentConfig format
@@ -47,14 +53,16 @@ export class ConfigResolver {
   /**
    * Convert ValidatedEnvironmentConfig to EnvironmentConfig
    */
-  private convertToEnvironmentConfig(validated: ValidatedEnvironmentConfig): EnvironmentConfig {
+  private convertToEnvironmentConfig(
+    validated: ValidatedEnvironmentConfig
+  ): EnvironmentConfig {
     const config: EnvironmentConfig = {
       // Core settings
       OLLAMA_BASE_URL: validated.OLLAMA_BASE_URL,
       ENABLE_OPENAI_EMBEDDINGS: validated.ENABLE_OPENAI_EMBEDDINGS,
       EMBEDDING_PROVIDER: validated.EMBEDDING_PROVIDER,
       EMBEDDING_DIMENSIONS: validated.EMBEDDING_DIMENSIONS,
-      
+
       // Legacy models
       GROQ_MODEL: validated.GROQ_MODEL,
       OLLAMA_MODEL: validated.OLLAMA_MODEL,
@@ -82,7 +90,6 @@ export class ConfigResolver {
 
     return config;
   }
-
 
   /**
    * Get validated configuration (lazily loaded)
@@ -192,7 +199,7 @@ export class ConfigResolver {
     }
     // Use granular model control for OpenAI
     return (
-      validatedConfig.portalModels.OPENAI_EMBEDDING_MODEL || 
+      validatedConfig.portalModels.OPENAI_EMBEDDING_MODEL ||
       ConfigDefaults.OPENAI_EMBEDDING_MODEL!
     );
   }
@@ -312,10 +319,21 @@ export class ConfigResolver {
       const hasImageCapability = capabilities.includes('image_generation');
 
       // Enable based on specific capability flags
-      if (hasChatCapability && (validatedConfig.portalSettings.OPENAI_CHAT_ENABLED ?? false)) return true;
-      if (hasEmbeddingCapability && (validatedConfig.portalSettings.OPENAI_EMBEDDINGS_ENABLED ?? false))
+      if (
+        hasChatCapability &&
+        (validatedConfig.portalSettings.OPENAI_CHAT_ENABLED ?? false)
+      )
         return true;
-      if (hasImageCapability && (validatedConfig.portalSettings.OPENAI_IMAGE_ENABLED ?? false)) return true;
+      if (
+        hasEmbeddingCapability &&
+        (validatedConfig.portalSettings.OPENAI_EMBEDDINGS_ENABLED ?? false)
+      )
+        return true;
+      if (
+        hasImageCapability &&
+        (validatedConfig.portalSettings.OPENAI_IMAGE_ENABLED ?? false)
+      )
+        return true;
 
       // If no specific capabilities defined, use legacy logic
       if (capabilities.length === 0) {
@@ -331,8 +349,12 @@ export class ConfigResolver {
 
     // Generic handling for all other portals
     const portalName = type.toUpperCase().replace('.', '').replace('-', '_');
-    const mainEnabled = validatedConfig.portalSettings[`${portalName}_ENABLED`] ?? false;
-    const apiKey = validatedConfig.apiKeys[`${portalName}_API_KEY` as keyof typeof validatedConfig.apiKeys];
+    const mainEnabled =
+      validatedConfig.portalSettings[`${portalName}_ENABLED`] ?? false;
+    const apiKey =
+      validatedConfig.apiKeys[
+        `${portalName}_API_KEY` as keyof typeof validatedConfig.apiKeys
+      ];
 
     // Check main toggle and API key (except Ollama which doesn't need API key)
     if (!mainEnabled || (type !== 'ollama' && !apiKey)) {
@@ -349,17 +371,21 @@ export class ConfigResolver {
     const hasImageCapability = capabilities.includes('image_generation');
 
     if (hasChatCapability) {
-      const chatEnabled = validatedConfig.portalSettings[`${portalName}_CHAT_ENABLED`] ?? false;
+      const chatEnabled =
+        validatedConfig.portalSettings[`${portalName}_CHAT_ENABLED`] ?? false;
       if (chatEnabled === false) return false;
     }
 
     if (hasEmbeddingCapability) {
-      const embeddingEnabled = validatedConfig.portalSettings[`${portalName}_EMBEDDING_ENABLED`] ?? false;
+      const embeddingEnabled =
+        validatedConfig.portalSettings[`${portalName}_EMBEDDING_ENABLED`] ??
+        false;
       if (embeddingEnabled === false) return false;
     }
 
     if (hasImageCapability) {
-      const imageEnabled = validatedConfig.portalSettings[`${portalName}_IMAGE_ENABLED`] ?? false;
+      const imageEnabled =
+        validatedConfig.portalSettings[`${portalName}_IMAGE_ENABLED`] ?? false;
       if (imageEnabled === false) return false;
     }
 
@@ -382,13 +408,18 @@ export class ConfigResolver {
     // Build configuration with granular model controls
     const portalConfig: any = {
       ...baseConfig,
-      apiKey: validatedConfig.apiKeys[`${portalName}_API_KEY` as keyof typeof validatedConfig.apiKeys],
+      apiKey:
+        validatedConfig.apiKeys[
+          `${portalName}_API_KEY` as keyof typeof validatedConfig.apiKeys
+        ],
     };
 
     // Add granular model configurations
     const chatModel = validatedConfig.portalModels[`${portalName}_CHAT_MODEL`];
-    const embeddingModel = validatedConfig.portalModels[`${portalName}_EMBEDDING_MODEL`];
-    const imageModel = validatedConfig.portalModels[`${portalName}_IMAGE_MODEL`];
+    const embeddingModel =
+      validatedConfig.portalModels[`${portalName}_EMBEDDING_MODEL`];
+    const imageModel =
+      validatedConfig.portalModels[`${portalName}_IMAGE_MODEL`];
     const toolModel = validatedConfig.portalModels[`${portalName}_TOOL_MODEL`];
 
     // Set models based on what's available
@@ -426,12 +457,20 @@ export class ConfigResolver {
 
       case 'openai':
         // Ensure backward compatibility with legacy model names
-        if (!portalConfig.chatModel && validatedConfig.portalModels.OPENAI_CHAT_MODEL) {
-          portalConfig.chatModel = validatedConfig.portalModels.OPENAI_CHAT_MODEL;
+        if (
+          !portalConfig.chatModel &&
+          validatedConfig.portalModels.OPENAI_CHAT_MODEL
+        ) {
+          portalConfig.chatModel =
+            validatedConfig.portalModels.OPENAI_CHAT_MODEL;
           portalConfig.model = validatedConfig.portalModels.OPENAI_CHAT_MODEL;
         }
-        if (!portalConfig.embeddingModel && validatedConfig.portalModels.OPENAI_EMBEDDING_MODEL) {
-          portalConfig.embeddingModel = validatedConfig.portalModels.OPENAI_EMBEDDING_MODEL;
+        if (
+          !portalConfig.embeddingModel &&
+          validatedConfig.portalModels.OPENAI_EMBEDDING_MODEL
+        ) {
+          portalConfig.embeddingModel =
+            validatedConfig.portalModels.OPENAI_EMBEDDING_MODEL;
           portalConfig.embeddingDimensions = this.getEmbeddingDimensions();
         }
         break;
@@ -463,7 +502,7 @@ export class ConfigResolver {
     try {
       // Use the new validation system
       const validationResult = validateEnvironmentConfig();
-      
+
       return {
         valid: validationResult.isValid,
         missing: validationResult.errors,
@@ -471,7 +510,9 @@ export class ConfigResolver {
     } catch (error) {
       return {
         valid: false,
-        missing: [error instanceof Error ? error.message : 'Unknown validation error'],
+        missing: [
+          error instanceof Error ? error.message : 'Unknown validation error',
+        ],
       };
     }
   }

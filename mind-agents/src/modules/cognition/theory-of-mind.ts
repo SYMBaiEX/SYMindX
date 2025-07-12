@@ -215,7 +215,7 @@ export class TheoryOfMind {
         reasoning: 'No relevant intentions found',
       };
     }
-    
+
     const confidence = predicted.likelihood * emotionalInfluence;
 
     // Store prediction for accuracy tracking

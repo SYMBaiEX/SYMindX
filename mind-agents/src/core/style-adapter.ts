@@ -418,7 +418,8 @@ export class StyleAdapter {
       if (expList.length > 0) {
         const firstExp = expList[0];
         if (firstExp && !message.includes(firstExp)) {
-          const exp = expList[Math.floor(Math.random() * expList.length)] ?? firstExp;
+          const exp =
+            expList[Math.floor(Math.random() * expList.length)] ?? firstExp;
           message = `${exp} - ${message}`;
         }
       }

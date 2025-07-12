@@ -29,9 +29,13 @@ import {
   PortalType,
   ModelType,
 } from '../../types/portal';
+import {
+  AISDKParameterBuilder,
+  handleAISDKError,
+  validateGenerationOptions,
+} from '../ai-sdk-utils';
 import { BasePortal } from '../base-portal';
 import { convertUsage } from '../utils';
-import { AISDKParameterBuilder, handleAISDKError, validateGenerationOptions } from '../ai-sdk-utils';
 
 export interface XAIConfig extends PortalConfig {
   model?: string;
@@ -122,18 +126,21 @@ export class XAIPortal extends BasePortal {
       options,
       this.getGrokDefaults()
     );
-    
+
     // Apply Grok-specific optimizations
     if ((params as any).maxOutputTokens !== undefined) {
       // Grok supports large contexts, cap at 8192 for safety
-      (params as any).maxOutputTokens = Math.min((params as any).maxOutputTokens, 8192);
+      (params as any).maxOutputTokens = Math.min(
+        (params as any).maxOutputTokens,
+        8192
+      );
     }
-    
+
     if ((params as any).topP !== undefined && (params as any).topP < 0.1) {
       // Grok performs better with topP >= 0.1
       (params as any).topP = Math.max((params as any).topP, 0.1);
     }
-    
+
     return params;
   }
 
@@ -149,18 +156,21 @@ export class XAIPortal extends BasePortal {
       options,
       this.getGrokDefaults()
     );
-    
+
     // Apply Grok-specific optimizations
     if ((params as any).maxOutputTokens !== undefined) {
       // Grok supports large contexts, cap at 8192 for safety
-      (params as any).maxOutputTokens = Math.min((params as any).maxOutputTokens, 8192);
+      (params as any).maxOutputTokens = Math.min(
+        (params as any).maxOutputTokens,
+        8192
+      );
     }
-    
+
     if ((params as any).topP !== undefined && (params as any).topP < 0.1) {
       // Grok performs better with topP >= 0.1
       (params as any).topP = Math.max((params as any).topP, 0.1);
     }
-    
+
     return params;
   }
 
@@ -176,7 +186,7 @@ export class XAIPortal extends BasePortal {
       if (options) {
         validateGenerationOptions(options, 'XAI');
       }
-      
+
       const model =
         options?.model || (this.config as XAIConfig).model || 'grok-2';
 
@@ -184,10 +194,10 @@ export class XAIPortal extends BasePortal {
         model: this.getLanguageModel(model),
         prompt,
       };
-      
+
       // Build parameters conditionally to satisfy exactOptionalPropertyTypes
       const generateParams = this.buildXAIParams(baseParams, options);
-      
+
       const result = await aiGenerateText(generateParams);
 
       return {
@@ -216,7 +226,7 @@ export class XAIPortal extends BasePortal {
       if (options) {
         validateGenerationOptions(options, 'XAI');
       }
-      
+
       const model =
         options?.model || (this.config as XAIConfig).model || 'grok-2';
       const modelMessages = this.convertToModelMessages(messages);
@@ -225,10 +235,10 @@ export class XAIPortal extends BasePortal {
         model: this.getLanguageModel(model),
         messages: modelMessages,
       };
-      
+
       // Build parameters conditionally to satisfy exactOptionalPropertyTypes
       const generateParams = this.buildXAIChatParams(baseParams, options);
-      
+
       const result = await aiGenerateText(generateParams);
 
       return {
@@ -287,7 +297,7 @@ export class XAIPortal extends BasePortal {
       if (options) {
         validateGenerationOptions(options, 'XAI');
       }
-      
+
       const model =
         options?.model || (this.config as XAIConfig).model || 'grok-2';
 
@@ -295,10 +305,10 @@ export class XAIPortal extends BasePortal {
         model: this.getLanguageModel(model),
         prompt,
       };
-      
+
       // Build parameters conditionally to satisfy exactOptionalPropertyTypes
       const streamParams = this.buildXAIParams(baseParams, options);
-      
+
       const result = await aiStreamText(streamParams);
 
       for await (const chunk of result.textStream) {
@@ -321,7 +331,7 @@ export class XAIPortal extends BasePortal {
       if (options) {
         validateGenerationOptions(options, 'XAI');
       }
-      
+
       const model =
         options?.model || (this.config as XAIConfig).model || 'grok-2';
       const modelMessages = this.convertToModelMessages(messages);
@@ -330,10 +340,10 @@ export class XAIPortal extends BasePortal {
         model: this.getLanguageModel(model),
         messages: modelMessages,
       };
-      
+
       // Build parameters conditionally to satisfy exactOptionalPropertyTypes
       const streamParams = this.buildXAIChatParams(baseParams, options);
-      
+
       const result = await aiStreamText(streamParams);
 
       for await (const chunk of result.textStream) {

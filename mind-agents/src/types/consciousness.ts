@@ -5,7 +5,12 @@
  * that creates truly life-like agents with human-level and superhuman consciousness
  */
 
-import { Agent, AgentEvent, MemoryRecord as _MemoryRecord, EmotionState as _EmotionState } from './agent';
+import {
+  Agent,
+  AgentEvent,
+  MemoryRecord as _MemoryRecord,
+  EmotionState as _EmotionState,
+} from './agent';
 import {
   BaseConfig,
   Context as _CommonContext,

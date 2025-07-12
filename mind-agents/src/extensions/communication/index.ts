@@ -15,9 +15,13 @@ import {
   ActionCategory,
   ActionResult,
   ActionResultType,
-  AgentEvent
+  AgentEvent,
 } from '../../types/agent';
-import { ExtensionConfig, ExtensionMetadata, SkillParameters } from '../../types/common';
+import {
+  ExtensionConfig,
+  ExtensionMetadata,
+  SkillParameters,
+} from '../../types/common';
 import { runtimeLogger } from '../../utils/logger';
 
 import { ContextManager, ContextManagerConfig } from './context-manager';
@@ -336,11 +340,26 @@ export class CommunicationExtension implements Extension {
       description: 'Process incoming message with communication features',
       category: ActionCategory.COMMUNICATION,
       parameters: {
-        participantId: { type: 'string', required: true, description: 'Participant ID' },
-        message: { type: 'string', required: true, description: 'Message content' },
-        metadata: { type: 'object', required: false, description: 'Additional metadata' }
+        participantId: {
+          type: 'string',
+          required: true,
+          description: 'Participant ID',
+        },
+        message: {
+          type: 'string',
+          required: true,
+          description: 'Message content',
+        },
+        metadata: {
+          type: 'object',
+          required: false,
+          description: 'Additional metadata',
+        },
       },
-      execute: async (_agent: Agent, params: SkillParameters): Promise<ActionResult> => {
+      execute: async (
+        _agent: Agent,
+        params: SkillParameters
+      ): Promise<ActionResult> => {
         const { participantId, message, metadata } = params;
         const result = await this.processMessage(
           participantId as string,
@@ -351,9 +370,9 @@ export class CommunicationExtension implements Extension {
           success: true,
           type: ActionResultType.SUCCESS,
           result,
-          timestamp: new Date()
+          timestamp: new Date(),
         };
-      }
+      },
     };
 
     this.actions['generateEnhancedResponse'] = {
@@ -361,11 +380,26 @@ export class CommunicationExtension implements Extension {
       description: 'Generate response with communication enhancements',
       category: ActionCategory.COMMUNICATION,
       parameters: {
-        baseResponse: { type: 'string', required: true, description: 'Base response text' },
-        participantId: { type: 'string', required: true, description: 'Participant ID' },
-        metadata: { type: 'object', required: false, description: 'Additional metadata' }
+        baseResponse: {
+          type: 'string',
+          required: true,
+          description: 'Base response text',
+        },
+        participantId: {
+          type: 'string',
+          required: true,
+          description: 'Participant ID',
+        },
+        metadata: {
+          type: 'object',
+          required: false,
+          description: 'Additional metadata',
+        },
       },
-      execute: async (_agent: Agent, params: SkillParameters): Promise<ActionResult> => {
+      execute: async (
+        _agent: Agent,
+        params: SkillParameters
+      ): Promise<ActionResult> => {
         const { baseResponse, participantId, metadata } = params;
         const result = await this.generateEnhancedResponse(
           baseResponse as string,
@@ -376,9 +410,9 @@ export class CommunicationExtension implements Extension {
           success: true,
           type: ActionResultType.SUCCESS,
           result,
-          timestamp: new Date()
+          timestamp: new Date(),
         };
-      }
+      },
     };
 
     this.actions['getContextSummary'] = {
@@ -386,18 +420,27 @@ export class CommunicationExtension implements Extension {
       description: 'Get context summary for conversation',
       category: ActionCategory.COMMUNICATION,
       parameters: {
-        contextId: { type: 'string', required: true, description: 'Context ID' }
+        contextId: {
+          type: 'string',
+          required: true,
+          description: 'Context ID',
+        },
       },
-      execute: async (_agent: Agent, params: SkillParameters): Promise<ActionResult> => {
+      execute: async (
+        _agent: Agent,
+        params: SkillParameters
+      ): Promise<ActionResult> => {
         const { contextId } = params;
-        const result = this.contextManager.getContextSummary(contextId as string);
+        const result = this.contextManager.getContextSummary(
+          contextId as string
+        );
         return {
           success: true,
           type: ActionResultType.SUCCESS,
           result,
-          timestamp: new Date()
+          timestamp: new Date(),
         };
-      }
+      },
     };
 
     // Register event handlers
@@ -406,9 +449,12 @@ export class CommunicationExtension implements Extension {
       description: 'Handle incoming message events',
       handler: async (_agent: Agent, event: AgentEvent): Promise<void> => {
         // Handle message received events
-        runtimeLogger.info('Communication extension received message event:', event);
+        runtimeLogger.info(
+          'Communication extension received message event:',
+          event
+        );
         // TODO: Process message through communication features
-      }
+      },
     };
 
     this.events['context_updated'] = {
@@ -417,7 +463,7 @@ export class CommunicationExtension implements Extension {
       handler: async (_agent: Agent, event: AgentEvent): Promise<void> => {
         // Handle context update events
         runtimeLogger.info('Communication extension context updated:', event);
-      }
+      },
     };
 
     this.events['style_adapted'] = {
@@ -426,7 +472,7 @@ export class CommunicationExtension implements Extension {
       handler: async (_agent: Agent, event: AgentEvent): Promise<void> => {
         // Handle style adaptation events
         runtimeLogger.info('Communication extension style adapted:', event);
-      }
+      },
     };
 
     this.events['communication_error'] = {
@@ -435,7 +481,7 @@ export class CommunicationExtension implements Extension {
       handler: async (_agent: Agent, event: AgentEvent): Promise<void> => {
         // Handle communication error events
         runtimeLogger.error('Communication extension error:', event);
-      }
+      },
     };
   }
 

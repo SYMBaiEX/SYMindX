@@ -1,14 +1,14 @@
 /**
  * AI SDK v5 Utility Functions
- * 
+ *
  * Shared utilities for building AI SDK parameters with strict type safety
  * and exactOptionalPropertyTypes compliance
  */
 
-import { 
-  TextGenerationOptions, 
-  ChatGenerationOptions, 
-  ImageGenerationOptions
+import {
+  TextGenerationOptions,
+  ChatGenerationOptions,
+  ImageGenerationOptions,
 } from '../types/portal';
 
 /**
@@ -30,41 +30,52 @@ export class AISDKParameterBuilder {
     }
   ): T & Record<string, any> {
     const params = { ...baseParams };
-    
+
     // Apply defaults if not provided in options
-    const maxTokens = options?.maxOutputTokens ?? options?.maxTokens ?? defaults?.maxOutputTokens;
+    const maxTokens =
+      options?.maxOutputTokens ??
+      options?.maxTokens ??
+      defaults?.maxOutputTokens;
     if (maxTokens !== undefined && maxTokens > 0) {
       (params as any).maxOutputTokens = maxTokens;
     }
-    
+
     const temperature = options?.temperature ?? defaults?.temperature;
     if (temperature !== undefined && temperature >= 0) {
       (params as any).temperature = Math.min(Math.max(temperature, 0), 2);
     }
-    
+
     const topP = options?.topP ?? defaults?.topP;
     if (topP !== undefined && topP > 0) {
       (params as any).topP = Math.min(Math.max(topP, 0), 1);
     }
-    
-    const frequencyPenalty = options?.frequencyPenalty ?? defaults?.frequencyPenalty;
+
+    const frequencyPenalty =
+      options?.frequencyPenalty ?? defaults?.frequencyPenalty;
     if (frequencyPenalty !== undefined) {
-      (params as any).frequencyPenalty = Math.min(Math.max(frequencyPenalty, -2), 2);
+      (params as any).frequencyPenalty = Math.min(
+        Math.max(frequencyPenalty, -2),
+        2
+      );
     }
-    
-    const presencePenalty = options?.presencePenalty ?? defaults?.presencePenalty;
+
+    const presencePenalty =
+      options?.presencePenalty ?? defaults?.presencePenalty;
     if (presencePenalty !== undefined) {
-      (params as any).presencePenalty = Math.min(Math.max(presencePenalty, -2), 2);
+      (params as any).presencePenalty = Math.min(
+        Math.max(presencePenalty, -2),
+        2
+      );
     }
-    
+
     // Handle stop sequences - only include if array is not empty
     if (options?.stop !== undefined && options.stop.length > 0) {
       (params as any).stopSequences = options.stop;
     }
-    
+
     return params;
   }
-  
+
   /**
    * Build AI SDK parameters with strict type safety for chat generation
    */
@@ -80,47 +91,58 @@ export class AISDKParameterBuilder {
     }
   ): T & Record<string, any> {
     const params = { ...baseParams };
-    
+
     // Apply defaults if not provided in options
-    const maxTokens = options?.maxOutputTokens ?? options?.maxTokens ?? defaults?.maxOutputTokens;
+    const maxTokens =
+      options?.maxOutputTokens ??
+      options?.maxTokens ??
+      defaults?.maxOutputTokens;
     if (maxTokens !== undefined && maxTokens > 0) {
       (params as any).maxOutputTokens = maxTokens;
     }
-    
+
     const temperature = options?.temperature ?? defaults?.temperature;
     if (temperature !== undefined && temperature >= 0) {
       (params as any).temperature = Math.min(Math.max(temperature, 0), 2);
     }
-    
+
     const topP = options?.topP ?? defaults?.topP;
     if (topP !== undefined && topP > 0) {
       (params as any).topP = Math.min(Math.max(topP, 0), 1);
     }
-    
-    const frequencyPenalty = options?.frequencyPenalty ?? defaults?.frequencyPenalty;
+
+    const frequencyPenalty =
+      options?.frequencyPenalty ?? defaults?.frequencyPenalty;
     if (frequencyPenalty !== undefined) {
-      (params as any).frequencyPenalty = Math.min(Math.max(frequencyPenalty, -2), 2);
+      (params as any).frequencyPenalty = Math.min(
+        Math.max(frequencyPenalty, -2),
+        2
+      );
     }
-    
-    const presencePenalty = options?.presencePenalty ?? defaults?.presencePenalty;
+
+    const presencePenalty =
+      options?.presencePenalty ?? defaults?.presencePenalty;
     if (presencePenalty !== undefined) {
-      (params as any).presencePenalty = Math.min(Math.max(presencePenalty, -2), 2);
+      (params as any).presencePenalty = Math.min(
+        Math.max(presencePenalty, -2),
+        2
+      );
     }
-    
+
     // Handle stop sequences - only include if array is not empty
     if (options?.stop !== undefined && options.stop.length > 0) {
       (params as any).stopSequences = options.stop;
     }
-    
+
     // Add tools support for AI SDK v5 - only include if tools exist
     if (options?.tools !== undefined && Object.keys(options.tools).length > 0) {
       (params as any).tools = options.tools;
       (params as any).maxSteps = 5; // Enable multi-step tool execution
     }
-    
+
     return params;
   }
-  
+
   /**
    * Build AI SDK parameters with strict type safety for image generation
    */
@@ -129,26 +151,26 @@ export class AISDKParameterBuilder {
     options?: ImageGenerationOptions
   ): T & Record<string, any> {
     const params: any = { ...baseParams };
-    
+
     if (options?.size !== undefined) {
       params.size = options.size;
     }
-    
+
     if (options?.n !== undefined && options.n > 0) {
       params.n = options.n;
     }
-    
+
     if (options?.quality !== undefined) {
       params.quality = options.quality;
     }
-    
+
     if (options?.style !== undefined) {
       params.style = options.style;
     }
-    
+
     return params;
   }
-  
+
   /**
    * Build provider-specific configuration with strict type safety
    */
@@ -162,26 +184,26 @@ export class AISDKParameterBuilder {
     }
   ): T & Record<string, any> {
     const config: any = { ...baseConfig };
-    
+
     if (options?.apiKey !== undefined) {
       config.apiKey = options.apiKey;
     }
-    
+
     if (options?.baseURL !== undefined) {
       config.baseURL = options.baseURL;
     }
-    
+
     if (options?.organization !== undefined) {
       config.organization = options.organization;
     }
-    
+
     if (options?.headers !== undefined) {
       config.headers = options.headers;
     }
-    
+
     return config;
   }
-  
+
   /**
    * Safely build object with only defined properties
    */
@@ -189,16 +211,16 @@ export class AISDKParameterBuilder {
     source: T
   ): Record<string, any> {
     const result: Record<string, any> = {};
-    
+
     for (const [key, value] of Object.entries(source)) {
       if (value !== undefined) {
         result[key] = value;
       }
     }
-    
+
     return result;
   }
-  
+
   /**
    * Provider-specific parameter validation and defaults
    */
@@ -281,19 +303,19 @@ export function handleAISDKError(error: any, provider: string): Error {
   if (error.name === 'AI_APICallError') {
     return new Error(`${provider} API Error: ${error.message}`);
   }
-  
+
   if (error.name === 'AI_InvalidArgumentError') {
     return new Error(`Invalid ${provider} parameters: ${error.message}`);
   }
-  
+
   if (error.name === 'AI_RateLimitError') {
     return new Error(`${provider} rate limit exceeded: ${error.message}`);
   }
-  
+
   if (error.name === 'AI_AuthenticationError') {
     return new Error(`${provider} authentication failed: ${error.message}`);
   }
-  
+
   return new Error(`${provider} Error: ${error.message || 'Unknown error'}`);
 }
 
@@ -305,23 +327,40 @@ export function validateGenerationOptions(
   provider: string
 ): void {
   if (options.maxOutputTokens !== undefined && options.maxOutputTokens <= 0) {
-    throw new Error(`Invalid maxOutputTokens for ${provider}: must be positive`);
+    throw new Error(
+      `Invalid maxOutputTokens for ${provider}: must be positive`
+    );
   }
-  
-  if (options.temperature !== undefined && (options.temperature < 0 || options.temperature > 2)) {
-    throw new Error(`Invalid temperature for ${provider}: must be between 0 and 2`);
+
+  if (
+    options.temperature !== undefined &&
+    (options.temperature < 0 || options.temperature > 2)
+  ) {
+    throw new Error(
+      `Invalid temperature for ${provider}: must be between 0 and 2`
+    );
   }
-  
+
   if (options.topP !== undefined && (options.topP <= 0 || options.topP > 1)) {
     throw new Error(`Invalid topP for ${provider}: must be between 0 and 1`);
   }
-  
-  if (options.frequencyPenalty !== undefined && (options.frequencyPenalty < -2 || options.frequencyPenalty > 2)) {
-    throw new Error(`Invalid frequencyPenalty for ${provider}: must be between -2 and 2`);
+
+  if (
+    options.frequencyPenalty !== undefined &&
+    (options.frequencyPenalty < -2 || options.frequencyPenalty > 2)
+  ) {
+    throw new Error(
+      `Invalid frequencyPenalty for ${provider}: must be between -2 and 2`
+    );
   }
-  
-  if (options.presencePenalty !== undefined && (options.presencePenalty < -2 || options.presencePenalty > 2)) {
-    throw new Error(`Invalid presencePenalty for ${provider}: must be between -2 and 2`);
+
+  if (
+    options.presencePenalty !== undefined &&
+    (options.presencePenalty < -2 || options.presencePenalty > 2)
+  ) {
+    throw new Error(
+      `Invalid presencePenalty for ${provider}: must be between -2 and 2`
+    );
   }
 }
 
@@ -330,10 +369,12 @@ export function validateGenerationOptions(
  */
 export function convertUsage(usage: any): any {
   if (!usage) return {};
-  
+
   return {
     promptTokens: usage.promptTokens || 0,
     completionTokens: usage.completionTokens || 0,
-    totalTokens: usage.totalTokens || (usage.promptTokens || 0) + (usage.completionTokens || 0)
+    totalTokens:
+      usage.totalTokens ||
+      (usage.promptTokens || 0) + (usage.completionTokens || 0),
   };
 }

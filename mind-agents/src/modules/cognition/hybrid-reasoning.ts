@@ -244,7 +244,10 @@ export class HybridReasoningEngine implements CognitionModule {
 
       // Use strongest pattern for action
       const bestPattern = patterns[0];
-      if (bestPattern && bestPattern.confidence > this.config.system1Threshold) {
+      if (
+        bestPattern &&
+        bestPattern.confidence > this.config.system1Threshold
+      ) {
         const action = this.generateActionFromPattern(bestPattern, context);
         if (action) {
           actions.push(action);
@@ -263,7 +266,7 @@ export class HybridReasoningEngine implements CognitionModule {
 
     return {
       system: 'system1',
-      confidence: patterns.length > 0 ? patterns[0]?.confidence ?? 0.6 : 0.6,
+      confidence: patterns.length > 0 ? (patterns[0]?.confidence ?? 0.6) : 0.6,
       processingTime,
       thoughts,
       actions,
@@ -719,7 +722,10 @@ export class HybridReasoningEngine implements CognitionModule {
     return [];
   }
 
-  private async decomposeGoals(_goals: any[], _maxDepth: number): Promise<Plan> {
+  private async decomposeGoals(
+    _goals: any[],
+    _maxDepth: number
+  ): Promise<Plan> {
     return {
       id: `plan_${Date.now()}`,
       goal: 'HTN Plan',

@@ -14,6 +14,7 @@ import figlet from 'figlet'
 import gradient from 'gradient-string'
 import inquirer from 'inquirer'
 
+import { CommandSystem } from '../core/command-system'
 import { SYMindXRuntime } from '../core/runtime'
 import { 
   displayBanner, 
@@ -28,7 +29,6 @@ import {
   animateShutdown
 } from '../utils/cli-ui'
 
-import { CommandSystem } from '../core/command-system'
 
 // CLI Context interface for commands
 export interface CLIContext {

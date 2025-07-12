@@ -237,11 +237,7 @@ export class ExpressionEngine {
           const modifier = this.extractModifier(expression);
           if (modifier) {
             const component = blend.components[i];
-            blended = this.addNuance(
-              blended,
-              modifier,
-              component?.weight ?? 0
-            );
+            blended = this.addNuance(blended, modifier, component?.weight ?? 0);
           }
         }
       }
@@ -444,7 +440,7 @@ export class ExpressionEngine {
     // Select template based on intensity
     const templateIndex = Math.floor(Math.random() * template.templates.length);
     let expressed = template.templates[templateIndex];
-    
+
     if (!expressed) {
       return content;
     }
@@ -465,7 +461,9 @@ export class ExpressionEngine {
 
       // Add emphasis
       if (template.modifiers.emphasis && weight > 0.8) {
-        const emphasisIndex = Math.floor(Math.random() * template.modifiers.emphasis.length);
+        const emphasisIndex = Math.floor(
+          Math.random() * template.modifiers.emphasis.length
+        );
         const emphasis = template.modifiers.emphasis[emphasisIndex];
         if (emphasis) {
           // Insert emphasis before key words
@@ -529,7 +527,8 @@ export class ExpressionEngine {
       // Add creative flair (simplified for demo)
       if (emotion.intensity > 0.7 && Math.random() < personality.openness) {
         const creative = ['✨', '🌟', '💡', '🎨'];
-        const emoji = creative[Math.floor(Math.random() * creative.length)] ?? '✨';
+        const emoji =
+          creative[Math.floor(Math.random() * creative.length)] ?? '✨';
         if (!modified.includes(emoji)) {
           modified = `${modified} ${emoji}`;
         }

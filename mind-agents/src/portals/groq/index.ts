@@ -28,9 +28,13 @@ import {
   ToolEvaluationOptions,
   ToolEvaluationResult,
 } from '../../types/portal';
+import {
+  AISDKParameterBuilder,
+  handleAISDKError,
+  validateGenerationOptions,
+} from '../ai-sdk-utils';
 import { BasePortal } from '../base-portal';
 import { convertUsage, buildAISDKParams } from '../utils';
-import { AISDKParameterBuilder, handleAISDKError, validateGenerationOptions } from '../ai-sdk-utils';
 
 export interface GroqConfig extends PortalConfig {
   model?: string;
@@ -139,20 +143,23 @@ export class GroqPortal extends BasePortal {
           baseURL: config.baseURL,
         }
       );
-      
+
       const baseParams = {
         model: this.groqProvider(model, providerSettings),
         prompt,
       };
-      
+
       const params = buildAISDKParams(baseParams, {
-        maxOutputTokens: options?.maxOutputTokens ?? options?.maxTokens ?? this.config.maxTokens,
+        maxOutputTokens:
+          options?.maxOutputTokens ??
+          options?.maxTokens ??
+          this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
         presencePenalty: options?.presencePenalty,
       });
-      
+
       const result = await generateText(params);
 
       return {
@@ -215,20 +222,23 @@ export class GroqPortal extends BasePortal {
           baseURL: config.baseURL,
         }
       );
-      
+
       const baseOptions = {
         model: this.groqProvider(model, providerSettings),
         messages: aiMessages,
       };
-      
+
       const generateOptions = buildAISDKParams(baseOptions, {
-        maxOutputTokens: options?.maxOutputTokens ?? options?.maxTokens ?? this.config.maxTokens,
+        maxOutputTokens:
+          options?.maxOutputTokens ??
+          options?.maxTokens ??
+          this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
         presencePenalty: options?.presencePenalty,
       });
-      
+
       // Add tools if provided
       if (tools) {
         (generateOptions as any).tools = tools;
@@ -337,12 +347,12 @@ export class GroqPortal extends BasePortal {
           baseURL: config.baseURL,
         }
       );
-      
+
       const baseParams = {
         model: this.groqProvider(toolModel, providerSettings),
         prompt: evaluationPrompt,
       };
-      
+
       const params = buildAISDKParams(baseParams, {
         maxOutputTokens: options.timeout
           ? Math.min(4000, options.timeout / 10)
@@ -350,7 +360,7 @@ export class GroqPortal extends BasePortal {
         temperature: 0.1, // Lower temperature for more consistent evaluations
         topP: 0.9,
       });
-      
+
       const result = await generateText(params);
 
       const processingTime = Date.now() - startTime;
@@ -485,17 +495,20 @@ export class GroqPortal extends BasePortal {
           baseURL: config.baseURL,
         }
       );
-      
+
       const baseParams = {
         model: this.groqProvider(model, providerSettings),
         prompt,
       };
-      
+
       const params = buildAISDKParams(baseParams, {
-        maxOutputTokens: options?.maxOutputTokens ?? options?.maxTokens ?? this.config.maxTokens,
+        maxOutputTokens:
+          options?.maxOutputTokens ??
+          options?.maxTokens ??
+          this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
       });
-      
+
       const result = streamText(params);
 
       for await (const delta of result.textStream) {
@@ -543,20 +556,23 @@ export class GroqPortal extends BasePortal {
           baseURL: config.baseURL,
         }
       );
-      
+
       const baseParams = {
         model: this.groqProvider(model, providerSettings),
         messages: aiMessages,
       };
-      
+
       const params = buildAISDKParams(baseParams, {
-        maxOutputTokens: options?.maxOutputTokens ?? options?.maxTokens ?? this.config.maxTokens,
+        maxOutputTokens:
+          options?.maxOutputTokens ??
+          options?.maxTokens ??
+          this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
         frequencyPenalty: options?.frequencyPenalty,
         presencePenalty: options?.presencePenalty,
       });
-      
+
       const result = streamText(params);
 
       for await (const delta of result.textStream) {

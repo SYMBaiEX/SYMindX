@@ -118,7 +118,7 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
     // Return the default tool system for backward compatibility
     return this.toolSystems.get('default');
   }
-  
+
   getToolSystemByName(
     name: string
   ): import('../modules/tools/index').ToolSystem | undefined {
@@ -300,7 +300,7 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
   }
 
   // Generic registry methods
-  register<T>(name: string, factory: any): void {
+  register(name: string, factory: any): void {
     // Generic register - determine type and route to appropriate registry
     if (name.includes('memory')) {
       this.memoryFactories.set(name, factory);
@@ -318,16 +318,14 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
 
   get<T>(name: string): T | undefined {
     // Generic get - try all registries
-    return (
-      this.memoryProviders.get(name) ||
+    return (this.memoryProviders.get(name) ||
       this.emotionModules.get(name) ||
       this.cognitionModules.get(name) ||
       this.extensions.get(name) ||
       this.portals.get(name) ||
       this.toolSystems.get(name) ||
       this.observabilityModules.get(name) ||
-      this.streamingInterfaces.get(name)
-    ) as T | undefined;
+      this.streamingInterfaces.get(name)) as T | undefined;
   }
 
   has(name: string): boolean {
@@ -398,7 +396,7 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
   async createAgent(
     type: string,
     config: AgentConfig,
-    characterConfig?: any
+    _characterConfig?: any
   ): Promise<Agent> {
     const factory = this.agentFactories.get(type);
     if (!factory) {

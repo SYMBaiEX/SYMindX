@@ -136,7 +136,10 @@ export class HttpSkill {
   /**
    * Send HTTP response
    */
-  private async sendResponse(_agent: Agent, params: any): Promise<ActionResult> {
+  private async sendResponse(
+    _agent: Agent,
+    params: any
+  ): Promise<ActionResult> {
     try {
       const { response, statusCode = 200, headers = {} } = params;
 

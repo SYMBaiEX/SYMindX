@@ -75,8 +75,8 @@ export class MultiAgentManager extends EventEmitter {
   private collaborationTimeouts: Map<string, NodeJS.Timeout> = new Map();
 
   constructor(
-    private registry: SYMindXModuleRegistry,
-    private eventBus: EventBus,
+    _registry: SYMindXModuleRegistry,
+    _eventBus: EventBus,
     private runtime: any // SYMindXRuntime reference
   ) {
     super();
@@ -310,7 +310,7 @@ export class MultiAgentManager extends EventEmitter {
     // Sort by score and return best match
     scoredAgents.sort((a, b) => b.score - a.score);
 
-    return scoredAgents.length > 0 ? scoredAgents[0]?.agent ?? null : null;
+    return scoredAgents.length > 0 ? (scoredAgents[0]?.agent ?? null) : null;
   }
 
   private calculateAgentScore(

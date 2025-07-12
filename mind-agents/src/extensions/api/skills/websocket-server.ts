@@ -179,7 +179,7 @@ export class WebSocketServerSkill {
       subscriptions: new Set(),
       metadata: {},
     };
-    
+
     if (userAgent) {
       connection.clientInfo.userAgent = userAgent;
     }
@@ -502,11 +502,11 @@ export class WebSocketServerSkill {
           subscriptions: Array.from(conn.subscriptions),
           metadata: conn.metadata,
         };
-        
+
         if (conn.clientInfo.userAgent) {
           info.userAgent = conn.clientInfo.userAgent;
         }
-        
+
         return info;
       });
 
