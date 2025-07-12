@@ -519,7 +519,7 @@ export interface LazyAgent extends Omit<Agent, 'status'> {
   state: LazyAgentState;
   isLazy: boolean;
   hibernationLevel: number;
-  lastAccessTime?: Date;
+  lastAccessTime: Date;
   agent?: Agent;
   lastActivated?: Date;
   status: LazyAgentStatus;

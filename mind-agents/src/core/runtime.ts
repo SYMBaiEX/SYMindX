@@ -63,16 +63,16 @@ export class SYMindXRuntime implements AgentRuntime {
     this.registry = new SYMindXModuleRegistry() as ModuleRegistry;
 
     // Create extension context for plugin loader
-    const _extensionContext: ExtensionContext = {
-      logger: new Logger('plugin-loader'),
-      config: {
-        enabled: true,
-        priority: 1,
-        settings: {},
-        dependencies: [],
-        capabilities: [],
-      },
-    };
+    // const _extensionContext: ExtensionContext = {
+    //   logger: new Logger('plugin-loader'),
+    //   config: {
+    //     enabled: true,
+    //     priority: 1,
+    //     settings: {},
+    //     dependencies: [],
+    //     capabilities: [],
+    //   },
+    // };
     this.extensionLoader = createExtensionLoader();
     // extensionContext is available for future use
   }
