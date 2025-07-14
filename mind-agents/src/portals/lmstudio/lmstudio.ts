@@ -18,6 +18,7 @@ import {
 } from '../../types/portal';
 import { BasePortal } from '../base-portal';
 import { convertUsage } from '../utils';
+import { buildObject } from '../../utils/type-helpers';
 /**
  * LM Studio Local AI Portal
  *
@@ -275,7 +276,7 @@ export class LMStudioPortal extends BasePortal {
     this.apiVersion = lmStudioConfig.apiVersion || 'v1';
   }
 
-  async init(agent: Agent): Promise<void> {
+  override async init(agent: Agent): Promise<void> {
     this.status = PortalStatus.INITIALIZING;
     console.log(`🎯 Initializing LM Studio portal for agent ${agent.name}`);
 
@@ -292,7 +293,7 @@ export class LMStudioPortal extends BasePortal {
     }
   }
 
-  protected async validateConfig(): Promise<void> {
+  protected override async validateConfig(): Promise<void> {
     const config = this.config as LMStudioConfig;
 
     if (!config.model) {
@@ -375,14 +376,15 @@ export class LMStudioPortal extends BasePortal {
 
     const chatResult = await this.generateChat(messages, options);
 
-    return {
+    return buildObject<TextGenerationResult>({
       text: chatResult.text,
-      model: chatResult.model,
-      usage: chatResult.usage,
-      finishReason: chatResult.finishReason,
-      timestamp: chatResult.timestamp,
-      metadata: chatResult.metadata,
-    };
+    })
+      .addOptional('model', chatResult.model)
+      .addOptional('usage', chatResult.usage)
+      .addOptional('finishReason', chatResult.finishReason)
+      .addOptional('timestamp', chatResult.timestamp)
+      .addOptional('metadata', chatResult.metadata)
+      .build();
   }
 
   async generateChat(
@@ -392,27 +394,29 @@ export class LMStudioPortal extends BasePortal {
     const config = this.config as LMStudioConfig;
     const model = options?.model || config.model!;
 
-    const requestBody: LMStudioChatCompletionRequest = {
-      model,
-      messages: this.convertMessagesToOpenAIFormat(messages),
-      max_tokens: options?.maxTokens ?? config.maxTokens,
-      temperature: options?.temperature ?? config.temperature,
-      top_p: options?.topP,
-      stream: false,
-      stop: options?.stop,
-      presence_penalty: options?.presencePenalty,
-      frequency_penalty: options?.frequencyPenalty,
-      // LM Studio specific options
-      repetition_penalty: config.repetitionPenalty,
-      top_k: config.topK,
-      typical_p: config.typicalP,
-      tfs_z: config.tfsZ,
-      mirostat: config.mirostat,
-      mirostat_tau: config.mirostatTau,
-      mirostat_eta: config.mirostatEta,
-      repeat_last_n: config.repeatLastN,
-      penalize_nl: config.penalizeNewline,
-    };
+    const requestBody: LMStudioChatCompletionRequest =
+      buildObject<LMStudioChatCompletionRequest>({
+        model,
+        messages: this.convertMessagesToOpenAIFormat(messages),
+        stream: false,
+      })
+        .addOptional('max_tokens', options?.maxTokens ?? config.maxTokens)
+        .addOptional('temperature', options?.temperature ?? config.temperature)
+        .addOptional('top_p', options?.topP)
+        .addOptional('stop', options?.stop)
+        .addOptional('presence_penalty', options?.presencePenalty)
+        .addOptional('frequency_penalty', options?.frequencyPenalty)
+        // LM Studio specific options
+        .addOptional('repetition_penalty', config.repetitionPenalty)
+        .addOptional('top_k', config.topK)
+        .addOptional('typical_p', config.typicalP)
+        .addOptional('tfs_z', config.tfsZ)
+        .addOptional('mirostat', config.mirostat)
+        .addOptional('mirostat_tau', config.mirostatTau)
+        .addOptional('mirostat_eta', config.mirostatEta)
+        .addOptional('repeat_last_n', config.repeatLastN)
+        .addOptional('penalize_nl', config.penalizeNewline)
+        .build();
 
     try {
       const requestId = this.generateRequestId();
@@ -469,7 +473,7 @@ export class LMStudioPortal extends BasePortal {
     }
   }
 
-  async *streamText(
+  override async *streamText(
     prompt: string,
     options?: TextGenerationOptions
   ): AsyncGenerator<string> {
@@ -487,24 +491,26 @@ export class LMStudioPortal extends BasePortal {
     yield* this.streamChat(messages, options);
   }
 
-  async *streamChat(
+  override async *streamChat(
     messages: ChatMessage[],
     options?: ChatGenerationOptions
   ): AsyncGenerator<string> {
     const config = this.config as LMStudioConfig;
     const model = options?.model || config.model!;
 
-    const requestBody: LMStudioChatCompletionRequest = {
-      model,
-      messages: this.convertMessagesToOpenAIFormat(messages),
-      max_tokens: options?.maxTokens ?? config.maxTokens,
-      temperature: options?.temperature ?? config.temperature,
-      top_p: options?.topP,
-      stream: true,
-      stop: options?.stop,
-      presence_penalty: options?.presencePenalty,
-      frequency_penalty: options?.frequencyPenalty,
-    };
+    const requestBody: LMStudioChatCompletionRequest =
+      buildObject<LMStudioChatCompletionRequest>({
+        model,
+        messages: this.convertMessagesToOpenAIFormat(messages),
+        stream: true,
+      })
+        .addOptional('max_tokens', options?.maxTokens ?? config.maxTokens)
+        .addOptional('temperature', options?.temperature ?? config.temperature)
+        .addOptional('top_p', options?.topP)
+        .addOptional('stop', options?.stop)
+        .addOptional('presence_penalty', options?.presencePenalty)
+        .addOptional('frequency_penalty', options?.frequencyPenalty)
+        .build();
 
     try {
       const response = await this.makeStreamRequest(
@@ -526,7 +532,7 @@ export class LMStudioPortal extends BasePortal {
     }
   }
 
-  hasCapability(capability: PortalCapability): boolean {
+  override hasCapability(capability: PortalCapability): boolean {
     switch (capability) {
       case PortalCapability.TEXT_GENERATION:
       case PortalCapability.CHAT_GENERATION:

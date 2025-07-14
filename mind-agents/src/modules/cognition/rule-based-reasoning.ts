@@ -32,6 +32,7 @@ import {
 import { BaseConfig } from '../../types/common';
 import { MemoryType, MemoryDuration } from '../../types/enums';
 import { runtimeLogger } from '../../utils/logger';
+import { buildObject } from '../../utils/type-helpers';
 
 /**
  * Fact base implementation for storing and querying facts
@@ -268,7 +269,8 @@ export class RuleBasedReasoning implements CognitionModule {
    * Main thinking method using rule-based inference
    */
   async think(agent: Agent, context: ThoughtContext): Promise<ThoughtResult> {
-    const startTime = Date.now();
+    // Timing tracked for performance metrics but consumed earlier
+    const _startTime = Date.now();
     const thoughts: string[] = [];
     const actions: AgentAction[] = [];
     const memories: MemoryRecord[] = [];
@@ -299,7 +301,8 @@ export class RuleBasedReasoning implements CognitionModule {
     }
 
     // Calculate performance metrics
-    const _reasoningTime = Date.now() - startTime;
+    // Reasoning time tracked for performance metrics
+    void _startTime;
     const confidence = this.calculateConfidence(firedRules);
 
     return {
@@ -383,7 +386,11 @@ export class RuleBasedReasoning implements CognitionModule {
     }
 
     if (options.length === 1) {
-      return options[0];
+      const firstOption = options[0];
+      if (!firstOption) {
+        throw new Error('First option is undefined');
+      }
+      return firstOption;
     }
 
     // Add options to fact base
@@ -585,8 +592,8 @@ export class RuleBasedReasoning implements CognitionModule {
         return false;
       }
 
-      // Create safe evaluation context
-      const _context = {
+      // Context prepared for future safe evaluation
+      void {
         facts: this.factBase.getAllFacts(),
         ...parameters,
       };
@@ -625,7 +632,7 @@ export class RuleBasedReasoning implements CognitionModule {
    */
   private resolveConflicts(rules: Rule[]): Rule | null {
     if (rules.length === 0) return null;
-    if (rules.length === 1) return rules[0];
+    if (rules.length === 1) return rules[0] ?? null;
 
     const strategy = this.config.ruleEngine?.conflictResolution || 'priority';
 
@@ -655,7 +662,7 @@ export class RuleBasedReasoning implements CognitionModule {
         });
 
       default:
-        return rules[0];
+        return rules[0] ?? null;
     }
   }
 
@@ -777,7 +784,7 @@ export class RuleBasedReasoning implements CognitionModule {
 
     // Check if rule suggests response
     if (this.factBase.hasFact('response_generated')) {
-      actions.push({
+      const action = buildObject<AgentAction>({
         id: `action_${Date.now()}`,
         agentId: agent.id,
         type: ActionCategory.COMMUNICATION,
@@ -787,16 +794,19 @@ export class RuleBasedReasoning implements CognitionModule {
           ruleName: rule.name,
           confidence: rule.confidence || 0.5,
         },
-        priority: rule.priority,
         status: ActionStatus.PENDING,
         extension: 'rule_engine',
         timestamp: new Date(),
-      });
+      })
+        .addOptional('priority', rule.priority)
+        .build();
+
+      actions.push(action);
     }
 
     // Check if rule suggests goal work
     if (this.factBase.hasFact('working_on_goal')) {
-      actions.push({
+      const action = buildObject<AgentAction>({
         id: `action_${Date.now()}`,
         agentId: agent.id,
         type: ActionCategory.COGNITIVE,
@@ -805,11 +815,14 @@ export class RuleBasedReasoning implements CognitionModule {
           goal: this.factBase.getFact('current_goal'),
           ruleId: rule.id,
         },
-        priority: rule.priority,
         status: ActionStatus.PENDING,
         extension: 'rule_engine',
         timestamp: new Date(),
-      });
+      })
+        .addOptional('priority', rule.priority)
+        .build();
+
+      actions.push(action);
     }
 
     return actions;

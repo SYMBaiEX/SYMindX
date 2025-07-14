@@ -115,10 +115,16 @@ export class SessionManagementSkill {
       const session = {
         sessionId,
         userId,
+        agentId: agent.id,
+        agentName: agent.name,
         createdAt: now.toISOString(),
         updatedAt: now.toISOString(),
         expiresAt: expiresAt.toISOString(),
-        metadata,
+        metadata: {
+          ...metadata,
+          extensionId: this._extension.name,
+          extensionVersion: this._extension.version,
+        },
         isActive: true,
         lastActivity: now.toISOString(),
       };
@@ -171,6 +177,13 @@ export class SessionManagementSkill {
             timestamp: new Date().toISOString(),
           },
         };
+      }
+
+      // Validate agent access to session
+      if (session.agentId && session.agentId !== agent.id) {
+        console.log(
+          `[Session] Agent ${agent.id} attempting to access session owned by ${session.agentId}`
+        );
       }
 
       // Check if session is expired
@@ -398,12 +411,22 @@ export class SessionManagementSkill {
         sessions = sessions.filter((session) => session.userId === userId);
       }
 
+      // Filter by agent ID to show only sessions this agent has access to
+      const agentSessions = sessions.filter(
+        (session) => !session.agentId || session.agentId === agent.id
+      );
+      console.log(
+        `[Session] Agent ${agent.id} can access ${agentSessions.length} of ${sessions.length} total sessions`
+      );
+
       // Filter expired sessions if not included
       if (!includeExpired) {
         const now = new Date();
-        sessions = sessions.filter(
+        sessions = agentSessions.filter(
           (session) => new Date(session.expiresAt) > now
         );
+      } else {
+        sessions = agentSessions;
       }
 
       return {

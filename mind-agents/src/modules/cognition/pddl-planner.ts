@@ -319,8 +319,13 @@ export class PDDLPlanner implements CognitionModule {
     memories.push(memory);
 
     // Calculate performance
-    const _reasoningTime = Date.now() - startTime;
+    const reasoningTime = Date.now() - startTime;
     const confidence = plan.valid ? 0.8 : 0.3;
+
+    // Log reasoning performance
+    runtimeLogger.debug(
+      `🧠 PDDL planning completed in ${reasoningTime}ms (confidence: ${confidence})`
+    );
 
     return {
       thoughts,
@@ -340,7 +345,7 @@ export class PDDLPlanner implements CognitionModule {
   /**
    * Plan using PDDL approach
    */
-  async plan(agent: Agent, _goal: string): Promise<Plan> {
+  async plan(agent: Agent, goal: string): Promise<Plan> {
     // Generate PDDL problem for the goal
     const problem = this.generateGoalProblem(agent, goal);
 
@@ -372,13 +377,17 @@ export class PDDLPlanner implements CognitionModule {
   /**
    * Decide using PDDL planning
    */
-  async decide(agent: Agent, _options: Decision[]): Promise<Decision> {
+  async decide(agent: Agent, options: Decision[]): Promise<Decision> {
     if (options.length === 0) {
       throw new Error('No options to decide between');
     }
 
     if (options.length === 1) {
-      return options[0];
+      const firstOption = options[0];
+      if (!firstOption) {
+        throw new Error('First option is undefined');
+      }
+      return firstOption;
     }
 
     // Create planning problems for each option
@@ -503,9 +512,31 @@ export class PDDLPlanner implements CognitionModule {
     ];
 
     const initialState = Array.from(this.currentState.predicates);
+
+    // Create goal expressions based on the actual goal content
     const goalExpressions: PDDLExpression[] = [
       { type: 'predicate', predicate: `achieved(${goalId})` },
     ];
+
+    // Add specific goal predicates based on goal content
+    if (goal.includes('help')) {
+      goalExpressions.push({
+        type: 'predicate',
+        predicate: `helped(${agent.id})`,
+      });
+    }
+    if (goal.includes('answer')) {
+      goalExpressions.push({
+        type: 'predicate',
+        predicate: `answered(${agent.id})`,
+      });
+    }
+    if (goal.includes('plan')) {
+      goalExpressions.push({
+        type: 'predicate',
+        predicate: `planned(${agent.id})`,
+      });
+    }
 
     return {
       name: 'goal_problem',
@@ -524,13 +555,27 @@ export class PDDLPlanner implements CognitionModule {
   private generateDecisionProblem(agent: Agent, option: Decision): PDDLProblem {
     const objects = [
       { name: agent.id, type: 'agent' },
-      { name: 'option', type: 'goal' },
+      { name: option.id, type: 'goal' },
     ];
 
     const initialState = Array.from(this.currentState.predicates);
     const goalExpressions: PDDLExpression[] = [
-      { type: 'predicate', predicate: 'achieved(option)' },
+      { type: 'predicate', predicate: `achieved(${option.id})` },
     ];
+
+    // Add decision-specific predicates based on option properties
+    if (option.confidence > 0.7) {
+      goalExpressions.push({
+        type: 'predicate',
+        predicate: `high_confidence(${option.id})`,
+      });
+    }
+    if (option.rationale.includes('critical')) {
+      goalExpressions.push({
+        type: 'predicate',
+        predicate: `critical_decision(${option.id})`,
+      });
+    }
 
     return {
       name: 'decision_problem',

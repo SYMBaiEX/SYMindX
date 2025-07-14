@@ -436,6 +436,8 @@ export abstract class BaseExtension extends EventEmitter implements Extension {
    */
   protected async checkDependency(dependency: string): Promise<boolean> {
     // Override in subclasses to implement dependency checking
+    // Base implementation logs the dependency check for debugging
+    runtimeLogger.debug(`Checking dependency: ${dependency}`);
     return true;
   }
 

@@ -1,15 +1,15 @@
-import { Box, Text } from 'ink'
-import React from 'react'
+import { Box, Text } from 'ink';
+import React from 'react';
 
-import { TerminalDimensions } from '../../hooks/useTerminalDimensions.js'
-import { cyberpunkTheme } from '../../themes/cyberpunk.js'
+import { TerminalDimensions } from '../../hooks/useTerminalDimensions.js';
+import { cyberpunkTheme } from '../../themes/cyberpunk.js';
 
 interface NavigationBarProps {
-  navigation: any // Would be properly typed with NavigationState
-  dimensions: TerminalDimensions
-  currentBreakpoint: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
-  showHelp: boolean
-  commandMode: boolean
+  navigation: any; // Would be properly typed with NavigationState
+  dimensions: TerminalDimensions;
+  currentBreakpoint: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+  showHelp: boolean;
+  commandMode: boolean;
 }
 
 export const NavigationBar: React.FC<NavigationBarProps> = ({
@@ -17,29 +17,29 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
   dimensions,
   currentBreakpoint,
   showHelp,
-  commandMode
+  commandMode,
 }) => {
-  const { width, height } = dimensions
-  const { breadcrumbs, canGoBack } = navigation
+  const { width, height } = dimensions;
+  const { breadcrumbs, canGoBack } = navigation;
 
   return (
-    <Box 
-      paddingX={1} 
-      borderStyle="single" 
+    <Box
+      paddingX={1}
+      borderStyle='single'
       borderColor={cyberpunkTheme.colors.primary}
-      flexDirection="column"
+      flexDirection='column'
     >
-      <Box justifyContent="space-between">
+      <Box justifyContent='space-between'>
         {/* Left side - Breadcrumbs */}
         <Box flexGrow={1}>
           <Text color={cyberpunkTheme.colors.primary}>
             {breadcrumbs.map((crumb: any, i: number) => (
               <React.Fragment key={i}>
                 {i > 0 && <Text color={cyberpunkTheme.colors.accent}> › </Text>}
-                <Text 
+                <Text
                   color={
-                    i === breadcrumbs.length - 1 
-                      ? cyberpunkTheme.colors.accent 
+                    i === breadcrumbs.length - 1
+                      ? cyberpunkTheme.colors.accent
                       : cyberpunkTheme.colors.text
                   }
                   bold={i === breadcrumbs.length - 1}
@@ -78,15 +78,15 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
           <Text color={cyberpunkTheme.colors.textDim}>
             {canGoBack && (
               <>
-                <Text color={cyberpunkTheme.colors.accent}>[ESC]</Text> Back • 
+                <Text color={cyberpunkTheme.colors.accent}>[ESC]</Text> Back •
               </>
             )}
-            <Text color={cyberpunkTheme.colors.accent}>[?]</Text> Help • 
-            <Text color={cyberpunkTheme.colors.accent}>[:]</Text> Command • 
+            <Text color={cyberpunkTheme.colors.accent}>[?]</Text> Help •
+            <Text color={cyberpunkTheme.colors.accent}>[:]</Text> Command •
             <Text color={cyberpunkTheme.colors.accent}>[Ctrl+C]</Text> Exit
           </Text>
         </Box>
       )}
     </Box>
-  )
-}
+  );
+};

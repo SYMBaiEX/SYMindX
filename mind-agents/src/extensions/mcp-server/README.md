@@ -60,16 +60,19 @@ Expose agent APIs as an MCP (Model Context Protocol) server, allowing external M
 ### Connecting with MCP Clients
 
 #### Using stdio transport:
+
 ```bash
 npx @modelcontextprotocol/cli connect stdio node agent-mcp-server.js
 ```
 
 #### Using WebSocket transport:
+
 ```bash
 npx @modelcontextprotocol/cli connect ws://localhost:3001
 ```
 
 #### Using HTTP transport:
+
 ```bash
 curl -X POST http://localhost:3001/mcp \
   -H "Content-Type: application/json" \
@@ -81,27 +84,33 @@ curl -X POST http://localhost:3001/mcp \
 The server exposes various tools based on configuration:
 
 #### Chat Tools
+
 - `agent_chat_advanced`: Have an advanced conversation with the agent
 - `agent_generate_text`: Generate text using the agent's capabilities
 
 #### Memory Tools
+
 - `agent_memory_search`: Search through the agent's memory
 - `agent_memory_store`: Store information in the agent's memory
 
 #### Emotion Tools
+
 - `agent_emotion_state`: Get the current emotional state of the agent
 
 ### Available Resources
 
 #### Agent Information
+
 - `agent://config`: Agent configuration and capabilities
 - `agent://status`: Real-time agent status and metrics
 
 #### Emotional State
+
 - `agent://emotion/current`: Current emotional state
 - `agent://emotion/history`: Historical emotional states
 
 #### Cognitive State
+
 - `agent://cognition/state`: Current cognitive processing state
 
 ### Available Prompts
@@ -115,27 +124,29 @@ The server exposes various tools based on configuration:
 
 ```typescript
 // MCP client code
-const client = new MCPClient()
-await client.connect('stdio', { command: 'node', args: ['agent-server.js'] })
+const client = new MCPClient();
+await client.connect('stdio', { command: 'node', args: ['agent-server.js'] });
 
 // Call the chat tool
 const response = await client.callTool('agent_chat_advanced', {
   message: 'Hello! How are you feeling today?',
   includeEmotion: true,
-  includeMemory: true
-})
+  includeMemory: true,
+});
 
-console.log(response.content[0].text)
+console.log(response.content[0].text);
 ```
 
 ### Access Emotional State
 
 ```typescript
 // Read emotion resource
-const emotionData = await client.readResource('agent://emotion/current')
-const emotion = JSON.parse(emotionData.contents[0].text)
+const emotionData = await client.readResource('agent://emotion/current');
+const emotion = JSON.parse(emotionData.contents[0].text);
 
-console.log(`Agent is feeling ${emotion.primary} (intensity: ${emotion.intensity})`)
+console.log(
+  `Agent is feeling ${emotion.primary} (intensity: ${emotion.intensity})`
+);
 ```
 
 ### Generate Text
@@ -145,10 +156,10 @@ console.log(`Agent is feeling ${emotion.primary} (intensity: ${emotion.intensity
 const result = await client.callTool('agent_generate_text', {
   prompt: 'Write a creative story about AI consciousness',
   maxTokens: 500,
-  temperature: 0.8
-})
+  temperature: 0.8,
+});
 
-console.log(result.content[0].text)
+console.log(result.content[0].text);
 ```
 
 ### Store Memory
@@ -158,8 +169,8 @@ console.log(result.content[0].text)
 await client.callTool('agent_memory_store', {
   content: 'User prefers technical discussions about AI',
   tags: ['user-preference', 'ai', 'technical'],
-  importance: 7
-})
+  importance: 7,
+});
 ```
 
 ## Custom Tools and Resources
@@ -167,7 +178,7 @@ await client.callTool('agent_memory_store', {
 ### Register Custom Tool
 
 ```typescript
-const mcpServer = agent.getExtension('mcp-server')
+const mcpServer = agent.getExtension('mcp-server');
 
 mcpServer.registerTool({
   name: 'custom_analysis',
@@ -176,22 +187,25 @@ mcpServer.registerTool({
     type: 'object',
     properties: {
       data: { type: 'string', description: 'Data to analyze' },
-      analysisType: { type: 'string', enum: ['sentiment', 'entity', 'summary'] }
+      analysisType: {
+        type: 'string',
+        enum: ['sentiment', 'entity', 'summary'],
+      },
     },
-    required: ['data', 'analysisType']
+    required: ['data', 'analysisType'],
   },
   handler: async (args) => {
     // Custom analysis logic
     return {
       type: 'text',
-      text: `Analysis result for ${args.analysisType}: ${args.data}`
-    }
+      text: `Analysis result for ${args.analysisType}: ${args.data}`,
+    };
   },
   metadata: {
     category: 'analysis',
-    readOnly: true
-  }
-})
+    readOnly: true,
+  },
+});
 ```
 
 ### Register Custom Resource
@@ -206,14 +220,14 @@ mcpServer.registerResource({
     type: 'text',
     text: JSON.stringify({
       timestamp: new Date().toISOString(),
-      data: 'custom-value'
-    })
+      data: 'custom-value',
+    }),
   }),
   metadata: {
     cacheable: true,
-    refreshInterval: 30000
-  }
-})
+    refreshInterval: 30000,
+  },
+});
 ```
 
 ### Register Custom Prompt
@@ -224,15 +238,21 @@ mcpServer.registerPrompt({
   description: 'Generate custom prompts for specific tasks',
   arguments: [
     { name: 'task', description: 'Task type', required: true, type: 'string' },
-    { name: 'complexity', description: 'Complexity level', required: false, type: 'string', default: 'medium' }
+    {
+      name: 'complexity',
+      description: 'Complexity level',
+      required: false,
+      type: 'string',
+      default: 'medium',
+    },
   ],
   handler: async (args) => {
-    return `You are tasked with ${args.task} at ${args.complexity} complexity level. Please proceed with care and attention to detail.`
+    return `You are tasked with ${args.task} at ${args.complexity} complexity level. Please proceed with care and attention to detail.`;
   },
   metadata: {
-    category: 'custom'
-  }
-})
+    category: 'custom',
+  },
+});
 ```
 
 ## Security Features
@@ -288,6 +308,7 @@ curl http://localhost:3001/health
 ```
 
 Response:
+
 ```json
 {
   "status": "healthy",
@@ -306,6 +327,7 @@ curl http://localhost:3001/stats
 ```
 
 Response:
+
 ```json
 {
   "startTime": "2024-01-01T00:00:00.000Z",
@@ -327,16 +349,19 @@ Response:
 ## Transport Details
 
 ### Stdio Transport
+
 - **Use Case**: Command-line tools and desktop applications
 - **Pros**: Simple, secure, no network configuration
 - **Cons**: Single connection only
 
 ### WebSocket Transport
+
 - **Use Case**: Real-time applications, web interfaces
 - **Pros**: Bidirectional, real-time, multiple connections
 - **Cons**: Requires network configuration
 
 ### HTTP Transport
+
 - **Use Case**: REST API clients, web services
 - **Pros**: Standard HTTP, easy integration
 - **Cons**: Request-response only, no real-time features
@@ -402,6 +427,7 @@ Enable debug logging:
 ### Types
 
 See `types.ts` for complete type definitions including:
+
 - `MCPServerConfig`
 - `MCPServerTool`
 - `MCPServerResource`

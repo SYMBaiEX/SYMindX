@@ -8,6 +8,7 @@
 import { z } from 'zod';
 
 import { Agent } from '../../types/agent';
+import { buildObject } from '../../utils/type-helpers';
 import { runtimeLogger } from '../../utils/logger';
 
 import {
@@ -183,7 +184,7 @@ export class DynamicToolSystem implements ToolSystem {
     const aiSDKTools: Record<string, ToolDefinition> = {};
 
     for (const [name, tool] of this.tools) {
-      aiSDKTools[name] = {
+      const toolDef = buildObject<ToolDefinition>({
         name: tool.name,
         description: tool.description,
         parameters: tool.parameters,
@@ -195,8 +196,11 @@ export class DynamicToolSystem implements ToolSystem {
             throw new Error(result.error || 'Tool execution failed');
           }
         },
-        metadata: tool.metadata,
-      };
+      })
+        .addOptional('metadata', tool.metadata)
+        .build();
+
+      aiSDKTools[name] = toolDef;
     }
 
     return aiSDKTools;
@@ -368,7 +372,7 @@ export class DynamicToolSystem implements ToolSystem {
     const servers = new Set<string>();
     for (const [toolKey] of mcpTools) {
       const serverName = toolKey.includes(':')
-        ? toolKey.split(':', 2)[0]
+        ? toolKey.split(':', 2)[0] || 'unknown'
         : 'unknown';
       servers.add(serverName);
     }

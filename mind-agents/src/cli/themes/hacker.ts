@@ -1,38 +1,38 @@
-import { Theme } from './cyberpunk.js'
+import { Theme } from './cyberpunk.js';
 
 export const hackerTheme: Theme = {
   name: 'hacker',
   colors: {
     // Primary colors (classic terminal)
-    primary: '#39FF14',      // Neon green
-    secondary: '#FF3131',    // Terminal red
-    accent: '#FFD700',       // Gold
-    danger: '#FF0000',       // Pure red
-    success: '#00FF00',      // Pure green
-    warning: '#FFA500',      // Orange
-    
+    primary: '#39FF14', // Neon green
+    secondary: '#FF3131', // Terminal red
+    accent: '#FFD700', // Gold
+    danger: '#FF0000', // Pure red
+    success: '#00FF00', // Pure green
+    warning: '#FFA500', // Orange
+
     // Background colors
-    bgPrimary: '#0C0C0C',    // Almost black
-    bgSecondary: '#1A1A1A',  // Very dark gray
-    bgTertiary: '#262626',   // Dark gray
-    
+    bgPrimary: '#0C0C0C', // Almost black
+    bgSecondary: '#1A1A1A', // Very dark gray
+    bgTertiary: '#262626', // Dark gray
+
     // Text colors
-    text: '#39FF14',         // Neon green
-    textDim: '#2A7F0F',      // Dark green
-    textBright: '#7FFF00',   // Bright green
-    
+    text: '#39FF14', // Neon green
+    textDim: '#2A7F0F', // Dark green
+    textBright: '#7FFF00', // Bright green
+
     // Border colors
-    border: '#39FF14',       // Neon green
+    border: '#39FF14', // Neon green
     borderBright: '#7FFF00', // Bright green
-    borderDim: '#1F5F00',    // Very dark green
-    
+    borderDim: '#1F5F00', // Very dark green
+
     // Special effects
-    glow: '#39FF14',         // Green glow
-    glowAlt: '#FF3131',      // Red glow
-    matrix: '#39FF14',       // Green
-    glitch: '#FF3131',       // Red
+    glow: '#39FF14', // Green glow
+    glowAlt: '#FF3131', // Red glow
+    matrix: '#39FF14', // Green
+    glitch: '#FF3131', // Red
   },
-  
+
   // ASCII art characters (hacker style)
   ascii: {
     // Box drawing
@@ -43,13 +43,13 @@ export const hackerTheme: Theme = {
     boxHorizontal: '━',
     boxVertical: '┃',
     boxCross: '╋',
-    
+
     // Progress bars
     progressFull: '▓',
     progressHalf: '▒',
     progressQuarter: '░',
     progressEmpty: ' ',
-    
+
     // Arrows and indicators
     arrowRight: '➤',
     arrowLeft: '➤',
@@ -57,14 +57,14 @@ export const hackerTheme: Theme = {
     arrowDown: '⬇',
     bullet: '◉',
     star: '✱',
-    
+
     // Special characters
     blockFull: '█',
     blockLight: '░',
     blockMedium: '▒',
     blockDark: '▓',
   },
-  
+
   // Animation settings
   animations: {
     duration: {
@@ -74,14 +74,14 @@ export const hackerTheme: Theme = {
     },
     easing: 'linear',
   },
-  
+
   // Typography
   fonts: {
     ascii: 'ANSI Shadow',
     header: 'Doom',
     subheader: 'Small',
   },
-  
+
   // Effects
   effects: {
     glow: true,
@@ -90,4 +90,4 @@ export const hackerTheme: Theme = {
     particles: false,
     scanlines: true,
   },
-}
+};

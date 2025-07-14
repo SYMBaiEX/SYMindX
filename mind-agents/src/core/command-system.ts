@@ -417,7 +417,7 @@ export class CommandSystem extends EventEmitter {
     return new Promise((resolve, reject) => {
       const timeout = command.timeout || 30000; // 30 second default
 
-      const timeoutId = setTimeout(() => {
+      const timeoutId = global.setTimeout(() => {
         command.status = CommandStatus.TIMEOUT;
         command.result = {
           success: false,
@@ -432,7 +432,7 @@ export class CommandSystem extends EventEmitter {
           command.status === CommandStatus.COMPLETED ||
           command.status === CommandStatus.FAILED
         ) {
-          clearTimeout(timeoutId);
+          global.clearTimeout(timeoutId);
           resolve(command);
         }
       };
@@ -456,7 +456,7 @@ export class CommandSystem extends EventEmitter {
   }
 
   private async processQueues(): Promise<void> {
-    for (const [_agentId, queue] of this.queues) {
+    for (const [, queue] of this.queues) {
       if (queue.length === 0) continue;
 
       const command = queue[0];

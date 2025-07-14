@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
-import { EnhancedRuntimeClient, ConnectionStatus } from '../services/enhancedRuntimeClient.js';
+import {
+  EnhancedRuntimeClient,
+  ConnectionStatus,
+} from '../services/enhancedRuntimeClient.js';
 
 export interface ConnectionEvent {
   timestamp: Date;
@@ -52,10 +55,12 @@ export function useConnectionMonitor(
     latencySpikeThreshold = 1000, // 1 second
     qualityCheckInterval = 5000, // 5 seconds
     historyLimit = 100,
-    enableNotifications = true
+    enableNotifications = true,
   } = options || {};
 
-  const [status, setStatus] = useState<ConnectionStatus>(client.getConnectionStatus());
+  const [status, setStatus] = useState<ConnectionStatus>(
+    client.getConnectionStatus()
+  );
   const [events, setEvents] = useState<ConnectionEvent[]>([]);
   const [stats, setStats] = useState<ConnectionStats>({
     uptime: 0,
@@ -68,7 +73,7 @@ export function useConnectionMonitor(
     maxLatency: 0,
     packetLoss: 0,
     lastError: undefined,
-    connectionQuality: 'offline'
+    connectionQuality: 'offline',
   });
 
   const connectionStartTimeRef = useRef<Date | null>(null);
@@ -77,22 +82,25 @@ export function useConnectionMonitor(
   const qualityCheckIntervalRef = useRef<NodeJS.Timer | null>(null);
 
   // Add event to history
-  const addEvent = useCallback((event: ConnectionEvent) => {
-    setEvents(prev => {
-      const newEvents = [...prev, event];
-      return newEvents.slice(-historyLimit);
-    });
+  const addEvent = useCallback(
+    (event: ConnectionEvent) => {
+      setEvents((prev) => {
+        const newEvents = [...prev, event];
+        return newEvents.slice(-historyLimit);
+      });
 
-    // Trigger notification if enabled
-    if (enableNotifications) {
-      // In a real implementation, this would trigger system notifications
-      console.log(`[Connection Event] ${event.type}: ${event.message || ''}`);
-    }
-  }, [historyLimit, enableNotifications]);
+      // Trigger notification if enabled
+      if (enableNotifications) {
+        // In a real implementation, this would trigger system notifications
+        console.log(`[Connection Event] ${event.type}: ${event.message || ''}`);
+      }
+    },
+    [historyLimit, enableNotifications]
+  );
 
   // Update connection stats
   const updateStats = useCallback((newStatus: ConnectionStatus) => {
-    setStats(prev => {
+    setStats((prev) => {
       const now = new Date();
       let uptime = prev.uptime;
       let downtime = prev.downtime;
@@ -103,7 +111,8 @@ export function useConnectionMonitor(
           uptime = now.getTime() - connectionStartTimeRef.current.getTime();
         }
         if (disconnectionStartTimeRef.current) {
-          downtime += now.getTime() - disconnectionStartTimeRef.current.getTime();
+          downtime +=
+            now.getTime() - disconnectionStartTimeRef.current.getTime();
           disconnectionStartTimeRef.current = null;
         }
       } else {
@@ -124,9 +133,11 @@ export function useConnectionMonitor(
         }
       }
 
-      const avgLatency = latencyHistoryRef.current.length > 0
-        ? latencyHistoryRef.current.reduce((a, b) => a + b, 0) / latencyHistoryRef.current.length
-        : 0;
+      const avgLatency =
+        latencyHistoryRef.current.length > 0
+          ? latencyHistoryRef.current.reduce((a, b) => a + b, 0) /
+            latencyHistoryRef.current.length
+          : 0;
 
       // Calculate connection quality
       let quality: ConnectionStats['connectionQuality'] = 'offline';
@@ -147,73 +158,95 @@ export function useConnectionMonitor(
         maxLatency: Math.max(prev.maxLatency, currentLatency || 0),
         lastError: newStatus.lastError || prev.lastError,
         connectionQuality: quality,
-        totalConnections: prev.totalConnections + (newStatus.status === 'connected' && prev.connectionQuality === 'offline' ? 1 : 0),
-        totalDisconnections: prev.totalDisconnections + (newStatus.status === 'disconnected' && prev.connectionQuality !== 'offline' ? 1 : 0),
-        packetLoss: prev.packetLoss
+        totalConnections:
+          prev.totalConnections +
+          (newStatus.status === 'connected' &&
+          prev.connectionQuality === 'offline'
+            ? 1
+            : 0),
+        totalDisconnections:
+          prev.totalDisconnections +
+          (newStatus.status === 'disconnected' &&
+          prev.connectionQuality !== 'offline'
+            ? 1
+            : 0),
+        packetLoss: prev.packetLoss,
       };
     });
   }, []);
 
   // Handle status changes
-  const handleStatusChange = useCallback((newStatus: ConnectionStatus) => {
-    const prevStatus = status.status;
-    setStatus(newStatus);
-    updateStats(newStatus);
+  const handleStatusChange = useCallback(
+    (newStatus: ConnectionStatus) => {
+      const prevStatus = status.status;
+      setStatus(newStatus);
+      updateStats(newStatus);
 
-    // Track status change events
-    if (prevStatus !== newStatus.status) {
-      const now = new Date();
+      // Track status change events
+      if (prevStatus !== newStatus.status) {
+        const now = new Date();
 
-      if (newStatus.status === 'connected') {
-        connectionStartTimeRef.current = now;
-        setStats(prev => ({ ...prev, totalConnections: prev.totalConnections + 1 }));
+        if (newStatus.status === 'connected') {
+          connectionStartTimeRef.current = now;
+          setStats((prev) => ({
+            ...prev,
+            totalConnections: prev.totalConnections + 1,
+          }));
+          addEvent({
+            timestamp: now,
+            type: 'connected',
+            message: `Connected with ${newStatus.latency}ms latency`,
+          });
+        } else if (newStatus.status === 'disconnected') {
+          disconnectionStartTimeRef.current = now;
+          setStats((prev) => ({
+            ...prev,
+            totalDisconnections: prev.totalDisconnections + 1,
+          }));
+          addEvent({
+            timestamp: now,
+            type: 'disconnected',
+            message: 'Connection lost',
+          });
+        } else if (newStatus.status === 'error') {
+          addEvent({
+            timestamp: now,
+            type: 'error',
+            message: newStatus.lastError?.message ?? 'Unknown error',
+            details: newStatus.lastError,
+          });
+        }
+      }
+
+      // Check for latency spikes
+      if (
+        newStatus.status === 'connected' &&
+        newStatus.latency > latencySpikeThreshold
+      ) {
         addEvent({
-          timestamp: now,
-          type: 'connected',
-          message: `Connected with ${newStatus.latency}ms latency`
-        });
-      } else if (newStatus.status === 'disconnected') {
-        disconnectionStartTimeRef.current = now;
-        setStats(prev => ({ ...prev, totalDisconnections: prev.totalDisconnections + 1 }));
-        addEvent({
-          timestamp: now,
-          type: 'disconnected',
-          message: 'Connection lost'
-        });
-      } else if (newStatus.status === 'error') {
-        addEvent({
-          timestamp: now,
-          type: 'error',
-          message: newStatus.lastError?.message ?? 'Unknown error',
-          details: newStatus.lastError
+          timestamp: new Date(),
+          type: 'latency_spike',
+          message: `High latency detected: ${newStatus.latency}ms`,
+          details: { latency: newStatus.latency },
         });
       }
-    }
-
-    // Check for latency spikes
-    if (newStatus.status === 'connected' && newStatus.latency > latencySpikeThreshold) {
-      addEvent({
-        timestamp: new Date(),
-        type: 'latency_spike',
-        message: `High latency detected: ${newStatus.latency}ms`,
-        details: { latency: newStatus.latency }
-      });
-    }
-  }, [status.status, updateStats, addEvent, latencySpikeThreshold]);
+    },
+    [status.status, updateStats, addEvent, latencySpikeThreshold]
+  );
 
   // Subscribe to client events
   useEffect(() => {
     const handleConnected = (_data: any) => {
       handleStatusChange({
         ...client.getConnectionStatus(),
-        status: 'connected'
+        status: 'connected',
       });
     };
 
     const handleDisconnected = (_data: any) => {
       handleStatusChange({
         ...client.getConnectionStatus(),
-        status: 'disconnected'
+        status: 'disconnected',
       });
     };
 
@@ -221,12 +254,15 @@ export function useConnectionMonitor(
       handleStatusChange(newStatus);
     };
 
-    const handleLatencyUpdate = (data: { current: number; average: number }) => {
+    const handleLatencyUpdate = (data: {
+      current: number;
+      average: number;
+    }) => {
       const currentStatus = client.getConnectionStatus();
       if (currentStatus.status === 'connected') {
         handleStatusChange({
           ...currentStatus,
-          latency: data.current
+          latency: data.current,
         });
       }
     };
@@ -236,7 +272,7 @@ export function useConnectionMonitor(
         timestamp: new Date(),
         type: 'error',
         message: `${data.operation}: ${data.error.message}`,
-        details: data
+        details: data,
       });
     };
 
@@ -261,15 +297,16 @@ export function useConnectionMonitor(
       qualityCheckIntervalRef.current = setInterval(() => {
         // Perform quality check
         const metrics = client.getMetrics();
-        
-        // Calculate packet loss (simulated based on failed requests)
-        const packetLoss = metrics.totalRequests > 0
-          ? (metrics.failedRequests / metrics.totalRequests) * 100
-          : 0;
 
-        setStats(prev => ({
+        // Calculate packet loss (simulated based on failed requests)
+        const packetLoss =
+          metrics.totalRequests > 0
+            ? (metrics.failedRequests / metrics.totalRequests) * 100
+            : 0;
+
+        setStats((prev) => ({
           ...prev,
-          packetLoss: Math.round(packetLoss * 100) / 100
+          packetLoss: Math.round(packetLoss * 100) / 100,
         }));
       }, qualityCheckInterval);
     }
@@ -284,24 +321,23 @@ export function useConnectionMonitor(
   // Calculate quality score (0-100)
   const qualityScore = (() => {
     if (status.status !== 'connected') return 0;
-    
+
     let score = 100;
-    
+
     // Deduct for high latency
     if (stats.averageLatency > 500) score -= 30;
     else if (stats.averageLatency > 200) score -= 20;
     else if (stats.averageLatency > 100) score -= 10;
-    
+
     // Deduct for packet loss
     score -= Math.min(stats.packetLoss * 2, 30);
-    
+
     // Deduct for recent disconnections
     const recentDisconnections = events
-      .filter(e => e.type === 'disconnected')
-      .filter(e => Date.now() - e.timestamp.getTime() < 300000) // Last 5 minutes
-      .length;
+      .filter((e) => e.type === 'disconnected')
+      .filter((e) => Date.now() - e.timestamp.getTime() < 300000).length; // Last 5 minutes
     score -= recentDisconnections * 10;
-    
+
     return Math.max(0, Math.min(100, score));
   })();
 
@@ -329,7 +365,7 @@ export function useConnectionMonitor(
     qualityScore,
     reconnect,
     disconnect,
-    clearHistory
+    clearHistory,
   };
 }
 
@@ -344,13 +380,20 @@ export function useConnectionNotifications(
     soundVolume?: number;
   }
 ) {
-  const { enableSound = true, enableToast = true, soundVolume = 0.5 } = options || {};
+  const {
+    enableSound = true,
+    enableToast = true,
+    soundVolume = 0.5,
+  } = options || {};
   const prevStatusRef = useRef(status.status);
 
   useEffect(() => {
     if (prevStatusRef.current !== status.status) {
       // Status changed
-      if (status.status === 'connected' && prevStatusRef.current !== 'connected') {
+      if (
+        status.status === 'connected' &&
+        prevStatusRef.current !== 'connected'
+      ) {
         // Connected
         if (enableSound) {
           // Play connection sound
@@ -361,7 +404,10 @@ export function useConnectionNotifications(
           // Show toast notification
           console.log('✅ Connected to runtime');
         }
-      } else if (status.status === 'disconnected' && prevStatusRef.current === 'connected') {
+      } else if (
+        status.status === 'disconnected' &&
+        prevStatusRef.current === 'connected'
+      ) {
         // Disconnected
         if (enableSound) {
           // Play disconnection sound
@@ -372,7 +418,7 @@ export function useConnectionNotifications(
           console.log('❌ Disconnected from runtime');
         }
       }
-      
+
       prevStatusRef.current = status.status;
     }
   }, [status.status, enableSound, enableToast, soundVolume]);
@@ -391,25 +437,25 @@ export function useNetworkQuality(latency: number, packetLoss: number = 0) {
     level: 'poor',
     score: 0,
     color: 'red',
-    icon: '📶'
+    icon: '📶',
   });
 
   useEffect(() => {
     let score = 100;
-    
+
     // Latency impact
     if (latency > 500) score -= 40;
     else if (latency > 200) score -= 25;
     else if (latency > 100) score -= 10;
-    
+
     // Packet loss impact
     score -= Math.min(packetLoss * 3, 50);
-    
+
     score = Math.max(0, Math.min(100, score));
-    
+
     let level: typeof quality.level;
     let color: string;
-    
+
     if (score >= 90) {
       level = 'excellent';
       color = 'green';
@@ -423,7 +469,7 @@ export function useNetworkQuality(latency: number, packetLoss: number = 0) {
       level = 'poor';
       color = 'red';
     }
-    
+
     setQuality({ level, score, color, icon: '📶' });
   }, [latency, packetLoss]);
 

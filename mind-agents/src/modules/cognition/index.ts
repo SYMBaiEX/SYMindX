@@ -15,8 +15,17 @@ import { TheoryOfMind, createTheoryOfMind } from './theory-of-mind';
 export function createCognitionModule(type: string, config: any) {
   console.log(`🧠 Creating cognition module: ${type}`);
 
+  // Use enum values for type validation
+  const supportedTypes = Object.values(CognitionModuleType);
+  if (!supportedTypes.includes(type as CognitionModuleType)) {
+    console.warn(
+      `Unknown cognition type: ${type}, supported types: ${supportedTypes.join(', ')}`
+    );
+  }
+
   // All types now use unified cognition with different configs
   switch (type) {
+    case CognitionModuleType.UNIFIED:
     case 'unified':
     case 'htn_planner': // Legacy compatibility
     case 'reactive': // Legacy compatibility
@@ -31,6 +40,15 @@ export function createCognitionModule(type: string, config: any) {
               ? 'shallow'
               : 'normal',
       });
+    case CognitionModuleType.THEORY_OF_MIND:
+    case 'theory_of_mind':
+      // Add theory of mind capability alongside unified cognition
+      const unifiedModule = createUnifiedCognition(config);
+      const theoryOfMindModule = createTheoryOfMind(config);
+      return {
+        ...unifiedModule,
+        theoryOfMind: theoryOfMindModule,
+      };
     default:
       console.warn(`Unknown cognition type: ${type}, using unified`);
       return createUnifiedCognition(config);

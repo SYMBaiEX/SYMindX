@@ -94,7 +94,7 @@ export class InteractionManager {
   private activeInteractions: Map<string, HumanInteraction> = new Map();
   private interactionHistory: HumanInteraction[] = [];
   private relationships: Map<string, RelationshipInfo> = new Map();
-  private ___responseQueue: AgentResponse[] = [];
+  private _responseQueue: AgentResponse[] = [];
   private interruptionCallbacks: Map<
     string,
     (interaction: HumanInteraction) => Promise<void>
@@ -126,6 +126,11 @@ export class InteractionManager {
    */
   async stop(): Promise<void> {
     this.logger.info('Stopping interaction manager...');
+
+    // Process any remaining responses in queue
+    if (this._responseQueue.length > 0) {
+      await this.processResponseQueue();
+    }
 
     // Complete pending interactions
     await this.completePendingInteractions();
@@ -394,6 +399,14 @@ export class InteractionManager {
         ],
       };
 
+      // Add response to queue for potential batch processing
+      this._responseQueue.push(response);
+
+      // Process queue if it reaches a certain size
+      if (this._responseQueue.length >= 5) {
+        await this.processResponseQueue();
+      }
+
       // Emit response event
       await this.eventBus.publish({
         id: `response_${Date.now()}`,
@@ -517,6 +530,7 @@ export class InteractionManager {
       // Create action to fulfill the request
       actions.push({
         id: `action_${Date.now()}`,
+        agentId: this.agent.id,
         type: 'task_execution' as any,
         extension: 'interaction_manager',
         action: 'fulfill_request',
@@ -739,6 +753,48 @@ export class InteractionManager {
   private async saveInteractionHistory(): Promise<void> {
     // This would save interaction history to persistent storage
     this.logger.debug('Saving interaction history...');
+  }
+
+  /**
+   * Process queued responses for batch operations
+   */
+  private async processResponseQueue(): Promise<void> {
+    if (this._responseQueue.length === 0) return;
+
+    this.logger.debug(
+      `Processing ${this._responseQueue.length} queued responses`
+    );
+
+    // Batch process responses for analytics or logging
+    const batch = [...this._responseQueue];
+    this._responseQueue = []; // Clear the queue
+
+    // Emit batch response event for analytics
+    await this.eventBus.publish({
+      id: `response_batch_${Date.now()}`,
+      type: 'response_batch_processed',
+      source: 'interaction_manager',
+      data: {
+        agentId: this.agent.id,
+        batchSize: batch.length,
+        responses: batch.map((r) => ({
+          id: r.id,
+          emotionalTone: r.emotionalTone,
+          confidence: r.confidence,
+          timestamp: r.timestamp,
+        })),
+        averageConfidence:
+          batch.reduce((sum, r) => sum + r.confidence, 0) / batch.length,
+        timestamp: new Date(),
+      },
+      timestamp: new Date(),
+      processed: false,
+    });
+
+    // Log batch statistics
+    this.logger.info(
+      `Processed response batch: ${batch.length} responses, avg confidence: ${(batch.reduce((sum, r) => sum + r.confidence, 0) / batch.length).toFixed(2)}`
+    );
   }
 
   /**

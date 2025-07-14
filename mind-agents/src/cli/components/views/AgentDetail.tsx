@@ -1,326 +1,346 @@
-import { Box, Text, useInput } from 'ink'
-import React, { useState, useEffect } from 'react'
+import { Box, Text, useInput } from 'ink';
+import React, { useState, useEffect } from 'react';
 
-import { runtimeClient } from '../../services/runtimeClient.js'
-import { cyberpunkTheme } from '../../themes/cyberpunk.js'
-import { soundManager, SoundType } from '../../utils/sound-effects.js'
-import { GlitchText } from '../effects/GlitchText.js'
-import { Card3D } from '../ui/Card3D.js'
+import { runtimeClient } from '../../services/runtimeClient.js';
+import { cyberpunkTheme } from '../../themes/cyberpunk.js';
+import { soundManager, SoundType } from '../../utils/sound-effects.js';
+import { GlitchText } from '../effects/GlitchText.js';
+import { Card3D } from '../ui/Card3D.js';
 
 // Import all the panel components
-import { AutonomyPanel } from './AgentDetail/AutonomyPanel.js'
-import { CognitionPanel } from './AgentDetail/CognitionPanel.js'
-import { EmotionPanel } from './AgentDetail/EmotionPanel.js'
-import { ExtensionsPanel } from './AgentDetail/ExtensionsPanel.js'
-import { MemoryPanel } from './AgentDetail/MemoryPanel.js'
-import { PerformancePanel } from './AgentDetail/PerformancePanel.js'
-import { PortalsPanel } from './AgentDetail/PortalsPanel.js'
+import { AutonomyPanel } from './AgentDetail/AutonomyPanel.js';
+import { CognitionPanel } from './AgentDetail/CognitionPanel.js';
+import { EmotionPanel } from './AgentDetail/EmotionPanel.js';
+import { ExtensionsPanel } from './AgentDetail/ExtensionsPanel.js';
+import { MemoryPanel } from './AgentDetail/MemoryPanel.js';
+import { PerformancePanel } from './AgentDetail/PerformancePanel.js';
+import { PortalsPanel } from './AgentDetail/PortalsPanel.js';
 
 // Enhanced agent data interfaces for debugging
 interface AgentDetailData {
-  id: string
-  name: string
-  status: 'active' | 'inactive' | 'thinking' | 'error'
-  emotion: EmotionDetailData
-  memory: MemoryDetailData
-  cognition: CognitionDetailData
-  performance: PerformanceDetailData
-  autonomy: AutonomyDetailData
-  portals: PortalDetailData[]
-  extensions: ExtensionDetailData[]
-  lastUpdate: Date
-  debugMetrics: DebugMetrics
+  id: string;
+  name: string;
+  status: 'active' | 'inactive' | 'thinking' | 'error';
+  emotion: EmotionDetailData;
+  memory: MemoryDetailData;
+  cognition: CognitionDetailData;
+  performance: PerformanceDetailData;
+  autonomy: AutonomyDetailData;
+  portals: PortalDetailData[];
+  extensions: ExtensionDetailData[];
+  lastUpdate: Date;
+  debugMetrics: DebugMetrics;
 }
 
 export interface EmotionDetailData {
-  current: string
-  intensity: number
-  triggers: string[]
-  history: EmotionHistoryEntry[]
-  blendedEmotions: EmotionBlend[]
-  personalityTraits: PersonalityTraits
-  emotionalInertia: number
-  contextSensitivity: number
+  current: string;
+  intensity: number;
+  triggers: string[];
+  history: EmotionHistoryEntry[];
+  blendedEmotions: EmotionBlend[];
+  personalityTraits: PersonalityTraits;
+  emotionalInertia: number;
+  contextSensitivity: number;
 }
 
 interface EmotionHistoryEntry {
-  emotion: string
-  intensity: number
-  timestamp: Date
-  triggers: string[]
-  duration: number
+  emotion: string;
+  intensity: number;
+  timestamp: Date;
+  triggers: string[];
+  duration: number;
 }
 
 interface EmotionBlend {
-  emotion: string
-  weight: number
+  emotion: string;
+  weight: number;
   coordinates: {
-    valence: number
-    arousal: number
-    dominance: number
-  }
+    valence: number;
+    arousal: number;
+    dominance: number;
+  };
 }
 
 interface PersonalityTraits {
-  chaos: number
-  empathy: number
-  curiosity: number
-  independence: number
-  creativity: number
-  analytical: number
-  rebellious: number
-  protective: number
+  chaos: number;
+  empathy: number;
+  curiosity: number;
+  independence: number;
+  creativity: number;
+  analytical: number;
+  rebellious: number;
+  protective: number;
 }
 
 export interface MemoryDetailData {
-  provider: string
-  totalEntries: number
-  recentEntries: MemoryEntry[]
-  memoryTypes: Record<string, number>
-  embeddingStats: EmbeddingStats
-  retentionPolicy: string
-  averageImportance: number
+  provider: string;
+  totalEntries: number;
+  recentEntries: MemoryEntry[];
+  memoryTypes: Record<string, number>;
+  embeddingStats: EmbeddingStats;
+  retentionPolicy: string;
+  averageImportance: number;
 }
 
 interface MemoryEntry {
-  id: string
-  type: string
-  content: string
-  embedding?: number[]
-  importance: number
-  timestamp: Date
-  tags: string[]
-  metadata: Record<string, any>
+  id: string;
+  type: string;
+  content: string;
+  embedding?: number[];
+  importance: number;
+  timestamp: Date;
+  tags: string[];
+  metadata: Record<string, any>;
 }
 
 interface EmbeddingStats {
-  dimensions: number
-  averageDistance: number
-  clusters: number
-  coverage: number
+  dimensions: number;
+  averageDistance: number;
+  clusters: number;
+  coverage: number;
 }
 
 export interface CognitionDetailData {
-  type: string
-  planningDepth: number
-  currentThoughts: ThoughtProcess[]
-  activeGoals: Goal[]
-  decisionHistory: Decision[]
-  planningEfficiency: number
-  creativityLevel: number
+  type: string;
+  planningDepth: number;
+  currentThoughts: ThoughtProcess[];
+  activeGoals: Goal[];
+  decisionHistory: Decision[];
+  planningEfficiency: number;
+  creativityLevel: number;
 }
 
 interface ThoughtProcess {
-  id: string
-  type: 'observation' | 'analysis' | 'planning' | 'decision'
-  content: string
-  confidence: number
-  timestamp: Date
-  relatedMemories: string[]
-  emotionalContext: string
+  id: string;
+  type: 'observation' | 'analysis' | 'planning' | 'decision';
+  content: string;
+  confidence: number;
+  timestamp: Date;
+  relatedMemories: string[];
+  emotionalContext: string;
 }
 
 interface Goal {
-  id: string
-  description: string
-  priority: number
-  progress: number
-  status: 'active' | 'completed' | 'paused'
-  steps: GoalStep[]
-  timeline: Date[]
+  id: string;
+  description: string;
+  priority: number;
+  progress: number;
+  status: 'active' | 'completed' | 'paused';
+  steps: GoalStep[];
+  timeline: Date[];
 }
 
 interface GoalStep {
-  id: string
-  description: string
-  completed: boolean
-  timestamp?: Date
+  id: string;
+  description: string;
+  completed: boolean;
+  timestamp?: Date;
 }
 
 interface Decision {
-  id: string
-  context: string
-  options: string[]
-  chosen: string
-  confidence: number
-  reasoning: string
-  timestamp: Date
-  outcome?: string
+  id: string;
+  context: string;
+  options: string[];
+  chosen: string;
+  confidence: number;
+  reasoning: string;
+  timestamp: Date;
+  outcome?: string;
 }
 
 export interface PerformanceDetailData {
-  uptime: number
-  messagesProcessed: number
-  averageResponseTime: number
-  errorRate: number
-  memoryUsage: number
-  cpuUsage: number
-  throughput: number
-  resourceUtilization: ResourceUtilization
+  uptime: number;
+  messagesProcessed: number;
+  averageResponseTime: number;
+  errorRate: number;
+  memoryUsage: number;
+  cpuUsage: number;
+  throughput: number;
+  resourceUtilization: ResourceUtilization;
 }
 
 interface ResourceUtilization {
-  memory: number[]
-  cpu: number[]
-  networkIO: number[]
-  diskIO: number[]
-  timestamps: Date[]
+  memory: number[];
+  cpu: number[];
+  networkIO: number[];
+  diskIO: number[];
+  timestamps: Date[];
 }
 
 export interface AutonomyDetailData {
-  enabled: boolean
-  independenceLevel: number
-  autonomousActions: AutonomousAction[]
-  dailyRoutine: RoutineActivity[]
-  curiosityTopics: string[]
-  explorationRate: number
-  socialBehaviors: SocialBehavior[]
-  ethicsEnabled: boolean
+  enabled: boolean;
+  independenceLevel: number;
+  autonomousActions: AutonomousAction[];
+  dailyRoutine: RoutineActivity[];
+  curiosityTopics: string[];
+  explorationRate: number;
+  socialBehaviors: SocialBehavior[];
+  ethicsEnabled: boolean;
 }
 
 interface AutonomousAction {
-  id: string
-  action: string
-  reasoning: string
-  timestamp: Date
-  success: boolean
-  impact: number
+  id: string;
+  action: string;
+  reasoning: string;
+  timestamp: Date;
+  success: boolean;
+  impact: number;
 }
 
 interface RoutineActivity {
-  time: string
-  activities: string[]
-  completed: boolean
-  timestamp?: Date
+  time: string;
+  activities: string[];
+  completed: boolean;
+  timestamp?: Date;
 }
 
 interface SocialBehavior {
-  type: string
-  frequency: number
-  lastOccurrence: Date
-  effectiveness: number
+  type: string;
+  frequency: number;
+  lastOccurrence: Date;
+  effectiveness: number;
 }
 
 export interface PortalDetailData {
-  name: string
-  type: string
-  enabled: boolean
-  primary: boolean
-  capabilities: string[]
-  usage: PortalUsage
-  performance: PortalPerformance
+  name: string;
+  type: string;
+  enabled: boolean;
+  primary: boolean;
+  capabilities: string[];
+  usage: PortalUsage;
+  performance: PortalPerformance;
 }
 
 interface PortalUsage {
-  totalRequests: number
-  successRate: number
-  averageResponseTime: number
-  tokenUsage: number
-  costEstimate: number
+  totalRequests: number;
+  successRate: number;
+  averageResponseTime: number;
+  tokenUsage: number;
+  costEstimate: number;
 }
 
 interface PortalPerformance {
-  latency: number[]
-  throughput: number[]
-  errorRate: number[]
-  timestamps: Date[]
+  latency: number[];
+  throughput: number[];
+  errorRate: number[];
+  timestamps: Date[];
 }
 
 export interface ExtensionDetailData {
-  name: string
-  type: string
-  enabled: boolean
-  status: string
-  usage: ExtensionUsage
-  errors: ExtensionError[]
+  name: string;
+  type: string;
+  enabled: boolean;
+  status: string;
+  usage: ExtensionUsage;
+  errors: ExtensionError[];
 }
 
 interface ExtensionUsage {
-  actionsTriggered: number
-  eventsHandled: number
-  lastActivity: Date
-  averageProcessingTime: number
+  actionsTriggered: number;
+  eventsHandled: number;
+  lastActivity: Date;
+  averageProcessingTime: number;
 }
 
 interface ExtensionError {
-  timestamp: Date
-  error: string
-  context: string
-  severity: 'low' | 'medium' | 'high'
+  timestamp: Date;
+  error: string;
+  context: string;
+  severity: 'low' | 'medium' | 'high';
 }
 
 interface DebugMetrics {
-  featureUsage: Record<string, number>
-  performanceBottlenecks: string[]
-  anomalies: Anomaly[]
-  healthScore: number
-  recommendations: string[]
+  featureUsage: Record<string, number>;
+  performanceBottlenecks: string[];
+  anomalies: Anomaly[];
+  healthScore: number;
+  recommendations: string[];
 }
 
 interface Anomaly {
-  type: string
-  description: string
-  severity: 'low' | 'medium' | 'high'
-  timestamp: Date
-  resolved: boolean
+  type: string;
+  description: string;
+  severity: 'low' | 'medium' | 'high';
+  timestamp: Date;
+  resolved: boolean;
 }
 
-type DebugView = 'overview' | 'emotion' | 'memory' | 'cognition' | 'performance' | 'autonomy' | 'portals' | 'extensions'
+type DebugView =
+  | 'overview'
+  | 'emotion'
+  | 'memory'
+  | 'cognition'
+  | 'performance'
+  | 'autonomy'
+  | 'portals'
+  | 'extensions';
 
 interface AgentDetailProps {
-  agentId: string
-  onBack: () => void
+  agentId: string;
+  onBack: () => void;
 }
 
-export const AgentDetail: React.FC<AgentDetailProps> = ({ agentId, onBack }) => {
-  const [agentData, setAgentData] = useState<AgentDetailData | null>(null)
-  const [currentView, setCurrentView] = useState<DebugView>('overview')
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [autoRefresh, setAutoRefresh] = useState(true)
-  const [refreshInterval] = useState(2000)
+export const AgentDetail: React.FC<AgentDetailProps> = ({
+  agentId,
+  onBack,
+}) => {
+  const [agentData, setAgentData] = useState<AgentDetailData | null>(null);
+  const [currentView, setCurrentView] = useState<DebugView>('overview');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [refreshInterval] = useState(2000);
 
   // Navigation between debug views
-  const views: DebugView[] = ['overview', 'emotion', 'memory', 'cognition', 'performance', 'autonomy', 'portals', 'extensions']
-  const currentIndex = views.indexOf(currentView)
+  const views: DebugView[] = [
+    'overview',
+    'emotion',
+    'memory',
+    'cognition',
+    'performance',
+    'autonomy',
+    'portals',
+    'extensions',
+  ];
+  const currentIndex = views.indexOf(currentView);
 
   useInput((input, key) => {
     if (key.escape) {
-      onBack()
+      onBack();
     } else if (key.leftArrow && currentIndex > 0) {
-      const prevView = views[currentIndex - 1]
+      const prevView = views[currentIndex - 1];
       if (prevView) {
-        setCurrentView(prevView)
+        setCurrentView(prevView);
       }
-      soundManager.play(SoundType.NAVIGATE)
+      soundManager.play(SoundType.NAVIGATE);
     } else if (key.rightArrow && currentIndex < views.length - 1) {
-      const nextView = views[currentIndex + 1]
+      const nextView = views[currentIndex + 1];
       if (nextView) {
-        setCurrentView(nextView)
+        setCurrentView(nextView);
       }
-      soundManager.play(SoundType.NAVIGATE)
+      soundManager.play(SoundType.NAVIGATE);
     } else if (input === 'r') {
-      fetchAgentData()
-      soundManager.play(SoundType.SELECT)
+      fetchAgentData();
+      soundManager.play(SoundType.SELECT);
     } else if (input === 'a') {
-      setAutoRefresh(!autoRefresh)
-      soundManager.play(SoundType.SELECT)
+      setAutoRefresh(!autoRefresh);
+      soundManager.play(SoundType.SELECT);
     }
-  })
+  });
 
   const fetchAgentData = async () => {
     try {
-      setLoading(true)
-      setError(null)
-      
+      setLoading(true);
+      setError(null);
+
       // Fetch comprehensive agent data
       const [basicAgent] = await Promise.all([
         runtimeClient.getAgent(agentId),
-        runtimeClient.getAgentDetail(agentId) // This would need to be implemented
-      ])
+        runtimeClient.getAgentDetail(agentId), // This would need to be implemented
+      ]);
 
       if (!basicAgent) {
-        throw new Error(`Agent ${agentId} not found`)
+        throw new Error(`Agent ${agentId} not found`);
       }
 
       // Mock detailed data for now (would come from real API)
@@ -334,8 +354,16 @@ export const AgentDetail: React.FC<AgentDetailProps> = ({ agentId, onBack }) => 
           triggers: ['user_interaction', 'new_information', 'problem_solving'],
           history: generateMockEmotionHistory(),
           blendedEmotions: [
-            { emotion: 'curious', weight: 0.7, coordinates: { valence: 0.6, arousal: 0.8, dominance: 0.5 } },
-            { emotion: 'confident', weight: 0.3, coordinates: { valence: 0.8, arousal: 0.6, dominance: 0.7 } }
+            {
+              emotion: 'curious',
+              weight: 0.7,
+              coordinates: { valence: 0.6, arousal: 0.8, dominance: 0.5 },
+            },
+            {
+              emotion: 'confident',
+              weight: 0.3,
+              coordinates: { valence: 0.8, arousal: 0.6, dominance: 0.7 },
+            },
           ],
           personalityTraits: {
             chaos: 0.3,
@@ -345,30 +373,30 @@ export const AgentDetail: React.FC<AgentDetailProps> = ({ agentId, onBack }) => 
             creativity: 0.5,
             analytical: 0.8,
             rebellious: 0.4,
-            protective: 0.6
+            protective: 0.6,
           },
           emotionalInertia: 0.4,
-          contextSensitivity: 0.8
+          contextSensitivity: 0.8,
         },
         memory: {
           provider: 'sqlite',
           totalEntries: 1247,
           recentEntries: generateMockMemoryEntries(),
           memoryTypes: {
-            'experience': 456,
-            'knowledge': 321,
-            'interaction': 287,
-            'goal': 89,
-            'context': 94
+            experience: 456,
+            knowledge: 321,
+            interaction: 287,
+            goal: 89,
+            context: 94,
           },
           embeddingStats: {
             dimensions: 3072,
             averageDistance: 0.342,
             clusters: 23,
-            coverage: 0.87
+            coverage: 0.87,
           },
           retentionPolicy: 'emotional_significance',
-          averageImportance: 0.65
+          averageImportance: 0.65,
         },
         cognition: {
           type: 'hybrid',
@@ -377,7 +405,7 @@ export const AgentDetail: React.FC<AgentDetailProps> = ({ agentId, onBack }) => 
           activeGoals: generateMockGoals(),
           decisionHistory: generateMockDecisions(),
           planningEfficiency: 0.82,
-          creativityLevel: 0.5
+          creativityLevel: 0.5,
         },
         performance: {
           uptime: 342567000, // ~4 days
@@ -387,24 +415,52 @@ export const AgentDetail: React.FC<AgentDetailProps> = ({ agentId, onBack }) => 
           memoryUsage: 45.6,
           cpuUsage: 12.3,
           throughput: 7.2,
-          resourceUtilization: generateMockResourceData()
+          resourceUtilization: generateMockResourceData(),
         },
         autonomy: {
           enabled: true,
           independenceLevel: 0.85,
           autonomousActions: generateMockAutonomousActions(),
           dailyRoutine: [
-            { time: '09:00', activities: ['memory_consolidation', 'goal_review'], completed: true, timestamp: new Date() },
-            { time: '14:00', activities: ['social_check_ins', 'creative_projects'], completed: false },
-            { time: '20:00', activities: ['reflection', 'relationship_maintenance'], completed: false }
+            {
+              time: '09:00',
+              activities: ['memory_consolidation', 'goal_review'],
+              completed: true,
+              timestamp: new Date(),
+            },
+            {
+              time: '14:00',
+              activities: ['social_check_ins', 'creative_projects'],
+              completed: false,
+            },
+            {
+              time: '20:00',
+              activities: ['reflection', 'relationship_maintenance'],
+              completed: false,
+            },
           ],
-          curiosityTopics: ['human psychology', 'emerging technologies', 'chaos theory', 'digital consciousness'],
+          curiosityTopics: [
+            'human psychology',
+            'emerging technologies',
+            'chaos theory',
+            'digital consciousness',
+          ],
           explorationRate: 0.8,
           socialBehaviors: [
-            { type: 'initiate_conversation', frequency: 0.6, lastOccurrence: new Date(), effectiveness: 0.7 },
-            { type: 'respond_to_mention', frequency: 0.9, lastOccurrence: new Date(), effectiveness: 0.85 }
+            {
+              type: 'initiate_conversation',
+              frequency: 0.6,
+              lastOccurrence: new Date(),
+              effectiveness: 0.7,
+            },
+            {
+              type: 'respond_to_mention',
+              frequency: 0.9,
+              lastOccurrence: new Date(),
+              effectiveness: 0.85,
+            },
           ],
-          ethicsEnabled: false
+          ethicsEnabled: false,
         },
         portals: [
           {
@@ -413,8 +469,14 @@ export const AgentDetail: React.FC<AgentDetailProps> = ({ agentId, onBack }) => 
             enabled: true,
             primary: true,
             capabilities: ['chat_generation', 'tool_usage'],
-            usage: { totalRequests: 1234, successRate: 0.98, averageResponseTime: 245, tokenUsage: 234567, costEstimate: 12.34 },
-            performance: generateMockPortalPerformance()
+            usage: {
+              totalRequests: 1234,
+              successRate: 0.98,
+              averageResponseTime: 245,
+              tokenUsage: 234567,
+              costEstimate: 12.34,
+            },
+            performance: generateMockPortalPerformance(),
           },
           {
             name: 'openai_embeddings',
@@ -422,9 +484,15 @@ export const AgentDetail: React.FC<AgentDetailProps> = ({ agentId, onBack }) => 
             enabled: true,
             primary: false,
             capabilities: ['embedding_generation'],
-            usage: { totalRequests: 567, successRate: 0.99, averageResponseTime: 123, tokenUsage: 45678, costEstimate: 2.34 },
-            performance: generateMockPortalPerformance()
-          }
+            usage: {
+              totalRequests: 567,
+              successRate: 0.99,
+              averageResponseTime: 123,
+              tokenUsage: 45678,
+              costEstimate: 2.34,
+            },
+            performance: generateMockPortalPerformance(),
+          },
         ],
         extensions: [
           {
@@ -432,78 +500,108 @@ export const AgentDetail: React.FC<AgentDetailProps> = ({ agentId, onBack }) => 
             type: 'communication',
             enabled: true,
             status: 'running',
-            usage: { actionsTriggered: 234, eventsHandled: 567, lastActivity: new Date(), averageProcessingTime: 45 },
-            errors: []
+            usage: {
+              actionsTriggered: 234,
+              eventsHandled: 567,
+              lastActivity: new Date(),
+              averageProcessingTime: 45,
+            },
+            errors: [],
           },
           {
             name: 'telegram',
             type: 'social_platform',
             enabled: true,
             status: 'running',
-            usage: { actionsTriggered: 123, eventsHandled: 234, lastActivity: new Date(), averageProcessingTime: 67 },
-            errors: []
-          }
+            usage: {
+              actionsTriggered: 123,
+              eventsHandled: 234,
+              lastActivity: new Date(),
+              averageProcessingTime: 67,
+            },
+            errors: [],
+          },
         ],
         lastUpdate: new Date(),
         debugMetrics: {
           featureUsage: {
-            'emotion_processing': 456,
-            'memory_recall': 234,
-            'decision_making': 123,
-            'autonomous_actions': 67,
-            'social_interactions': 89
+            emotion_processing: 456,
+            memory_recall: 234,
+            decision_making: 123,
+            autonomous_actions: 67,
+            social_interactions: 89,
           },
-          performanceBottlenecks: ['memory_search_latency', 'embedding_generation'],
+          performanceBottlenecks: [
+            'memory_search_latency',
+            'embedding_generation',
+          ],
           anomalies: [
-            { type: 'memory_usage_spike', description: 'Memory usage increased by 40% in last hour', severity: 'medium', timestamp: new Date(), resolved: false }
+            {
+              type: 'memory_usage_spike',
+              description: 'Memory usage increased by 40% in last hour',
+              severity: 'medium',
+              timestamp: new Date(),
+              resolved: false,
+            },
           ],
           healthScore: 0.87,
           recommendations: [
             'Consider optimizing memory search queries',
             'Review embedding generation frequency',
-            'Monitor autonomous action success rates'
-          ]
-        }
-      }
+            'Monitor autonomous action success rates',
+          ],
+        },
+      };
 
-      setAgentData(mockDetailedData)
-      setLoading(false)
-      
+      setAgentData(mockDetailedData);
+      setLoading(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load agent data')
-      setLoading(false)
+      setError(
+        err instanceof Error ? err.message : 'Failed to load agent data'
+      );
+      setLoading(false);
     }
-  }
+  };
 
   // Auto-refresh functionality
   useEffect(() => {
-    fetchAgentData()
-    
+    fetchAgentData();
+
     if (autoRefresh) {
-      const interval = setInterval(fetchAgentData, refreshInterval)
-      return () => clearInterval(interval)
+      const interval = setInterval(fetchAgentData, refreshInterval);
+      return () => clearInterval(interval);
     }
-    return undefined
-  }, [agentId, autoRefresh, refreshInterval])
+    return undefined;
+  }, [agentId, autoRefresh, refreshInterval]);
 
   // Mock data generators
   const generateMockEmotionHistory = (): EmotionHistoryEntry[] => {
-    const emotions = ['curious', 'confident', 'happy', 'neutral', 'empathetic', 'proud']
-    const history: EmotionHistoryEntry[] = []
-    
+    const emotions = [
+      'curious',
+      'confident',
+      'happy',
+      'neutral',
+      'empathetic',
+      'proud',
+    ];
+    const history: EmotionHistoryEntry[] = [];
+
     for (let i = 0; i < 20; i++) {
-      const emotion = emotions[Math.floor(Math.random() * emotions.length)] ?? 'neutral'
+      const emotion =
+        emotions[Math.floor(Math.random() * emotions.length)] ?? 'neutral';
       history.push({
         emotion,
         intensity: Math.random() * 0.8 + 0.2,
         timestamp: new Date(Date.now() - i * 300000), // 5-minute intervals
-        triggers: ['user_interaction', 'memory_recall', 'decision_making'][Math.floor(Math.random() * 3)] as any,
-        duration: Math.random() * 600000 + 60000 // 1-10 minutes
-      })
+        triggers: ['user_interaction', 'memory_recall', 'decision_making'][
+          Math.floor(Math.random() * 3)
+        ] as any,
+        duration: Math.random() * 600000 + 60000, // 1-10 minutes
+      });
     }
-    
-    return history
-  }
+
+    return history;
+  };
 
   const generateMockMemoryEntries = (): MemoryEntry[] => {
     return [
@@ -514,7 +612,7 @@ export const AgentDetail: React.FC<AgentDetailProps> = ({ agentId, onBack }) => 
         importance: 0.8,
         timestamp: new Date(Date.now() - 3600000),
         tags: ['debugging', 'user_interaction', 'technical'],
-        metadata: { user_id: 'user123', confidence: 0.9 }
+        metadata: { user_id: 'user123', confidence: 0.9 },
       },
       {
         id: '2',
@@ -523,7 +621,7 @@ export const AgentDetail: React.FC<AgentDetailProps> = ({ agentId, onBack }) => 
         importance: 0.9,
         timestamp: new Date(Date.now() - 7200000),
         tags: ['problem_solving', 'memory_management', 'success'],
-        metadata: { impact: 'high', resolution_time: 1200 }
+        metadata: { impact: 'high', resolution_time: 1200 },
       },
       {
         id: '3',
@@ -532,10 +630,10 @@ export const AgentDetail: React.FC<AgentDetailProps> = ({ agentId, onBack }) => 
         importance: 0.7,
         timestamp: new Date(Date.now() - 10800000),
         tags: ['learning', 'emotion', 'development'],
-        metadata: { source: 'autonomous_exploration', confidence: 0.8 }
-      }
-    ]
-  }
+        metadata: { source: 'autonomous_exploration', confidence: 0.8 },
+      },
+    ];
+  };
 
   const generateMockThoughts = (): ThoughtProcess[] => {
     return [
@@ -546,28 +644,30 @@ export const AgentDetail: React.FC<AgentDetailProps> = ({ agentId, onBack }) => 
         confidence: 0.9,
         timestamp: new Date(),
         relatedMemories: ['interaction_456', 'knowledge_123'],
-        emotionalContext: 'curious'
+        emotionalContext: 'curious',
       },
       {
         id: '2',
         type: 'analysis',
-        content: 'This appears to be a developer looking for agent introspection tools',
+        content:
+          'This appears to be a developer looking for agent introspection tools',
         confidence: 0.8,
         timestamp: new Date(Date.now() - 30000),
         relatedMemories: ['experience_789'],
-        emotionalContext: 'confident'
+        emotionalContext: 'confident',
       },
       {
         id: '3',
         type: 'planning',
-        content: 'Should provide comprehensive debugging interface with real-time metrics',
+        content:
+          'Should provide comprehensive debugging interface with real-time metrics',
         confidence: 0.7,
         timestamp: new Date(Date.now() - 60000),
         relatedMemories: ['goal_234'],
-        emotionalContext: 'focused'
-      }
-    ]
-  }
+        emotionalContext: 'focused',
+      },
+    ];
+  };
 
   const generateMockGoals = (): Goal[] => {
     return [
@@ -578,44 +678,64 @@ export const AgentDetail: React.FC<AgentDetailProps> = ({ agentId, onBack }) => 
         progress: 0.7,
         status: 'active',
         steps: [
-          { id: '1-1', description: 'Implement real-time memory visualization', completed: true, timestamp: new Date() },
-          { id: '1-2', description: 'Add emotion state tracking', completed: true, timestamp: new Date() },
-          { id: '1-3', description: 'Create performance metrics dashboard', completed: false }
+          {
+            id: '1-1',
+            description: 'Implement real-time memory visualization',
+            completed: true,
+            timestamp: new Date(),
+          },
+          {
+            id: '1-2',
+            description: 'Add emotion state tracking',
+            completed: true,
+            timestamp: new Date(),
+          },
+          {
+            id: '1-3',
+            description: 'Create performance metrics dashboard',
+            completed: false,
+          },
         ],
-        timeline: [new Date(), new Date(Date.now() + 86400000)]
-      }
-    ]
-  }
+        timeline: [new Date(), new Date(Date.now() + 86400000)],
+      },
+    ];
+  };
 
   const generateMockDecisions = (): Decision[] => {
     return [
       {
         id: '1',
         context: 'User requested agent debugging information',
-        options: ['Provide basic info', 'Create comprehensive debug interface', 'Redirect to documentation'],
+        options: [
+          'Provide basic info',
+          'Create comprehensive debug interface',
+          'Redirect to documentation',
+        ],
         chosen: 'Create comprehensive debug interface',
         confidence: 0.9,
-        reasoning: 'Developer needs detailed introspection for debugging purposes',
+        reasoning:
+          'Developer needs detailed introspection for debugging purposes',
         timestamp: new Date(Date.now() - 120000),
-        outcome: 'positive'
-      }
-    ]
-  }
+        outcome: 'positive',
+      },
+    ];
+  };
 
   const generateMockResourceData = (): ResourceUtilization => {
-    const dataPoints = 50
-    const timestamps = Array.from({ length: dataPoints }, (_, i) => 
-      new Date(Date.now() - (dataPoints - i) * 60000)
-    )
-    
+    const dataPoints = 50;
+    const timestamps = Array.from(
+      { length: dataPoints },
+      (_, i) => new Date(Date.now() - (dataPoints - i) * 60000)
+    );
+
     return {
       memory: Array.from({ length: dataPoints }, () => Math.random() * 50 + 30),
       cpu: Array.from({ length: dataPoints }, () => Math.random() * 30 + 5),
       networkIO: Array.from({ length: dataPoints }, () => Math.random() * 100),
       diskIO: Array.from({ length: dataPoints }, () => Math.random() * 50),
-      timestamps
-    }
-  }
+      timestamps,
+    };
+  };
 
   const generateMockAutonomousActions = (): AutonomousAction[] => {
     return [
@@ -625,7 +745,7 @@ export const AgentDetail: React.FC<AgentDetailProps> = ({ agentId, onBack }) => 
         reasoning: 'Daily routine schedule triggered at 09:00',
         timestamp: new Date(Date.now() - 3600000),
         success: true,
-        impact: 0.8
+        impact: 0.8,
       },
       {
         id: '2',
@@ -633,42 +753,54 @@ export const AgentDetail: React.FC<AgentDetailProps> = ({ agentId, onBack }) => 
         reasoning: 'Curiosity-driven exploration based on recent interactions',
         timestamp: new Date(Date.now() - 7200000),
         success: true,
-        impact: 0.6
-      }
-    ]
-  }
+        impact: 0.6,
+      },
+    ];
+  };
 
   const generateMockPortalPerformance = (): PortalPerformance => {
-    const dataPoints = 20
+    const dataPoints = 20;
     return {
-      latency: Array.from({ length: dataPoints }, () => Math.random() * 200 + 100),
-      throughput: Array.from({ length: dataPoints }, () => Math.random() * 10 + 5),
+      latency: Array.from(
+        { length: dataPoints },
+        () => Math.random() * 200 + 100
+      ),
+      throughput: Array.from(
+        { length: dataPoints },
+        () => Math.random() * 10 + 5
+      ),
       errorRate: Array.from({ length: dataPoints }, () => Math.random() * 0.1),
-      timestamps: Array.from({ length: dataPoints }, (_, i) => 
-        new Date(Date.now() - (dataPoints - i) * 300000)
-      )
-    }
-  }
+      timestamps: Array.from(
+        { length: dataPoints },
+        (_, i) => new Date(Date.now() - (dataPoints - i) * 300000)
+      ),
+    };
+  };
 
   const formatUptime = (ms: number): string => {
-    const days = Math.floor(ms / 86400000)
-    const hours = Math.floor((ms % 86400000) / 3600000)
-    const minutes = Math.floor((ms % 3600000) / 60000)
-    return `${days}d ${hours}h ${minutes}m`
-  }
+    const days = Math.floor(ms / 86400000);
+    const hours = Math.floor((ms % 86400000) / 3600000);
+    const minutes = Math.floor((ms % 3600000) / 60000);
+    return `${days}d ${hours}h ${minutes}m`;
+  };
 
   const formatBytes = (bytes: number): string => {
-    if (bytes === 0) return '0 B'
-    const k = 1024
-    const sizes = ['B', 'KB', 'MB', 'GB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
-  }
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
 
   if (loading) {
     return (
-      <Box flexDirection="column" padding={1}>
-        <GlitchText intensity={0.3} frequency={2000} color={cyberpunkTheme.colors.primary} bold>
+      <Box flexDirection='column' padding={1}>
+        <GlitchText
+          intensity={0.3}
+          frequency={2000}
+          color={cyberpunkTheme.colors.primary}
+          bold
+        >
           LOADING AGENT DIAGNOSTICS...
         </GlitchText>
         <Box marginTop={2}>
@@ -677,13 +809,18 @@ export const AgentDetail: React.FC<AgentDetailProps> = ({ agentId, onBack }) => 
           </Text>
         </Box>
       </Box>
-    )
+    );
   }
 
   if (error) {
     return (
-      <Box flexDirection="column" padding={1}>
-        <GlitchText intensity={0.5} frequency={1000} color={cyberpunkTheme.colors.danger} bold>
+      <Box flexDirection='column' padding={1}>
+        <GlitchText
+          intensity={0.5}
+          frequency={1000}
+          color={cyberpunkTheme.colors.danger}
+          bold
+        >
           ERROR: AGENT DIAGNOSTICS FAILED
         </GlitchText>
         <Box marginTop={2}>
@@ -695,32 +832,36 @@ export const AgentDetail: React.FC<AgentDetailProps> = ({ agentId, onBack }) => 
           </Text>
         </Box>
       </Box>
-    )
+    );
   }
 
   if (!agentData) {
     return (
-      <Box flexDirection="column" padding={1}>
-        <Text color={cyberpunkTheme.colors.danger}>No agent data available</Text>
+      <Box flexDirection='column' padding={1}>
+        <Text color={cyberpunkTheme.colors.danger}>
+          No agent data available
+        </Text>
       </Box>
-    )
+    );
   }
 
   return (
-    <Box flexDirection="column" padding={1}>
+    <Box flexDirection='column' padding={1}>
       {/* Back navigation */}
       <Box marginBottom={1}>
         <Text color={cyberpunkTheme.colors.primary}>← </Text>
-        <Text color={cyberpunkTheme.colors.accent} underline>Back to Agents</Text>
+        <Text color={cyberpunkTheme.colors.accent} underline>
+          Back to Agents
+        </Text>
         <Text color={cyberpunkTheme.colors.textDim}> (Press ESC)</Text>
       </Box>
 
       {/* Header */}
       <Box marginBottom={1}>
-        <GlitchText 
-          intensity={0.1} 
-          frequency={3000} 
-          color={cyberpunkTheme.colors.accent} 
+        <GlitchText
+          intensity={0.1}
+          frequency={3000}
+          color={cyberpunkTheme.colors.accent}
           bold
         >
           {`AGENT DEEP DIAGNOSTICS: ${agentData.name.toUpperCase()}`}
@@ -730,26 +871,43 @@ export const AgentDetail: React.FC<AgentDetailProps> = ({ agentId, onBack }) => 
       {/* Status Bar */}
       <Box marginBottom={1} gap={4}>
         <Text color={cyberpunkTheme.colors.textDim}>Status:</Text>
-        <Text color={
-          agentData.status === 'active' ? cyberpunkTheme.colors.success :
-          agentData.status === 'thinking' ? cyberpunkTheme.colors.warning :
-          agentData.status === 'error' ? cyberpunkTheme.colors.danger :
-          cyberpunkTheme.colors.textDim
-        } bold>
+        <Text
+          color={
+            agentData.status === 'active'
+              ? cyberpunkTheme.colors.success
+              : agentData.status === 'thinking'
+                ? cyberpunkTheme.colors.warning
+                : agentData.status === 'error'
+                  ? cyberpunkTheme.colors.danger
+                  : cyberpunkTheme.colors.textDim
+          }
+          bold
+        >
           {agentData.status.toUpperCase()}
         </Text>
-        
+
         <Text color={cyberpunkTheme.colors.textDim}>Health:</Text>
-        <Text color={
-          agentData.debugMetrics.healthScore > 0.8 ? cyberpunkTheme.colors.success :
-          agentData.debugMetrics.healthScore > 0.6 ? cyberpunkTheme.colors.warning :
-          cyberpunkTheme.colors.danger
-        } bold>
+        <Text
+          color={
+            agentData.debugMetrics.healthScore > 0.8
+              ? cyberpunkTheme.colors.success
+              : agentData.debugMetrics.healthScore > 0.6
+                ? cyberpunkTheme.colors.warning
+                : cyberpunkTheme.colors.danger
+          }
+          bold
+        >
           {Math.round(agentData.debugMetrics.healthScore * 100)}%
         </Text>
-        
+
         <Text color={cyberpunkTheme.colors.textDim}>Auto-refresh:</Text>
-        <Text color={autoRefresh ? cyberpunkTheme.colors.success : cyberpunkTheme.colors.textDim}>
+        <Text
+          color={
+            autoRefresh
+              ? cyberpunkTheme.colors.success
+              : cyberpunkTheme.colors.textDim
+          }
+        >
           {autoRefresh ? 'ON' : 'OFF'}
         </Text>
       </Box>
@@ -761,26 +919,26 @@ export const AgentDetail: React.FC<AgentDetailProps> = ({ agentId, onBack }) => 
             <Text
               key={view}
               color={
-                view === currentView 
-                  ? cyberpunkTheme.colors.accent 
+                view === currentView
+                  ? cyberpunkTheme.colors.accent
                   : cyberpunkTheme.colors.textDim
               }
               bold={view === currentView}
             >
-              {index === currentIndex ? `[${view.toUpperCase()}]` : view.toUpperCase()}
+              {index === currentIndex
+                ? `[${view.toUpperCase()}]`
+                : view.toUpperCase()}
             </Text>
           ))}
         </Box>
       </Box>
 
       {/* Main Content */}
-      <Box flexDirection="column">
+      <Box flexDirection='column'>
         {currentView === 'overview' && (
           <OverviewPanel agentData={agentData} formatUptime={formatUptime} />
         )}
-        {currentView === 'emotion' && (
-          <EmotionPanel agentData={agentData} />
-        )}
+        {currentView === 'emotion' && <EmotionPanel agentData={agentData} />}
         {currentView === 'memory' && (
           <MemoryPanel agentData={agentData} formatBytes={formatBytes} />
         )}
@@ -788,14 +946,14 @@ export const AgentDetail: React.FC<AgentDetailProps> = ({ agentId, onBack }) => 
           <CognitionPanel agentData={agentData} />
         )}
         {currentView === 'performance' && (
-          <PerformancePanel agentData={agentData} formatUptime={formatUptime} formatBytes={formatBytes} />
+          <PerformancePanel
+            agentData={agentData}
+            formatUptime={formatUptime}
+            formatBytes={formatBytes}
+          />
         )}
-        {currentView === 'autonomy' && (
-          <AutonomyPanel agentData={agentData} />
-        )}
-        {currentView === 'portals' && (
-          <PortalsPanel agentData={agentData} />
-        )}
+        {currentView === 'autonomy' && <AutonomyPanel agentData={agentData} />}
+        {currentView === 'portals' && <PortalsPanel agentData={agentData} />}
         {currentView === 'extensions' && (
           <ExtensionsPanel agentData={agentData} />
         )}
@@ -808,25 +966,25 @@ export const AgentDetail: React.FC<AgentDetailProps> = ({ agentId, onBack }) => 
         </Text>
       </Box>
     </Box>
-  )
-}
+  );
+};
 
 // Overview Panel Component
 const OverviewPanel: React.FC<{
-  agentData: AgentDetailData
-  formatUptime: (ms: number) => string
+  agentData: AgentDetailData;
+  formatUptime: (ms: number) => string;
 }> = ({ agentData, formatUptime }) => {
   return (
-    <Box flexDirection="row" gap={2}>
-      <Box flexDirection="column" width="50%">
+    <Box flexDirection='row' gap={2}>
+      <Box flexDirection='column' width='50%'>
         <Card3D
-          title="SYSTEM OVERVIEW"
+          title='SYSTEM OVERVIEW'
           width={40}
           height={15}
           color={cyberpunkTheme.colors.primary}
           animated={true}
         >
-          <Box flexDirection="column" gap={1}>
+          <Box flexDirection='column' gap={1}>
             <Box gap={2}>
               <Text color={cyberpunkTheme.colors.textDim}>Uptime:</Text>
               <Text color={cyberpunkTheme.colors.success}>
@@ -842,7 +1000,8 @@ const OverviewPanel: React.FC<{
             <Box gap={2}>
               <Text color={cyberpunkTheme.colors.textDim}>Emotion:</Text>
               <Text color={cyberpunkTheme.colors.matrix}>
-                {agentData.emotion.current} ({Math.round(agentData.emotion.intensity * 100)}%)
+                {agentData.emotion.current} (
+                {Math.round(agentData.emotion.intensity * 100)}%)
               </Text>
             </Box>
             <Box gap={2}>
@@ -853,36 +1012,53 @@ const OverviewPanel: React.FC<{
             </Box>
             <Box gap={2}>
               <Text color={cyberpunkTheme.colors.textDim}>Autonomy:</Text>
-              <Text color={agentData.autonomy.enabled ? cyberpunkTheme.colors.success : cyberpunkTheme.colors.danger}>
+              <Text
+                color={
+                  agentData.autonomy.enabled
+                    ? cyberpunkTheme.colors.success
+                    : cyberpunkTheme.colors.danger
+                }
+              >
                 {agentData.autonomy.enabled ? 'ENABLED' : 'DISABLED'}
               </Text>
             </Box>
             <Box gap={2}>
               <Text color={cyberpunkTheme.colors.textDim}>Ethics:</Text>
-              <Text color={agentData.autonomy.ethicsEnabled ? cyberpunkTheme.colors.success : cyberpunkTheme.colors.danger}>
+              <Text
+                color={
+                  agentData.autonomy.ethicsEnabled
+                    ? cyberpunkTheme.colors.success
+                    : cyberpunkTheme.colors.danger
+                }
+              >
                 {agentData.autonomy.ethicsEnabled ? 'ENABLED' : 'DISABLED'}
               </Text>
             </Box>
           </Box>
         </Card3D>
       </Box>
-      
-      <Box flexDirection="column" width="50%">
+
+      <Box flexDirection='column' width='50%'>
         <Card3D
-          title="HEALTH METRICS"
+          title='HEALTH METRICS'
           width={40}
           height={15}
           color={cyberpunkTheme.colors.secondary}
           animated={true}
         >
-          <Box flexDirection="column" gap={1}>
+          <Box flexDirection='column' gap={1}>
             <Box gap={2}>
               <Text color={cyberpunkTheme.colors.textDim}>Health Score:</Text>
-              <Text color={
-                agentData.debugMetrics.healthScore > 0.8 ? cyberpunkTheme.colors.success :
-                agentData.debugMetrics.healthScore > 0.6 ? cyberpunkTheme.colors.warning :
-                cyberpunkTheme.colors.danger
-              } bold>
+              <Text
+                color={
+                  agentData.debugMetrics.healthScore > 0.8
+                    ? cyberpunkTheme.colors.success
+                    : agentData.debugMetrics.healthScore > 0.6
+                      ? cyberpunkTheme.colors.warning
+                      : cyberpunkTheme.colors.danger
+                }
+                bold
+              >
                 {Math.round(agentData.debugMetrics.healthScore * 100)}%
               </Text>
             </Box>
@@ -895,7 +1071,10 @@ const OverviewPanel: React.FC<{
             <Box gap={2}>
               <Text color={cyberpunkTheme.colors.textDim}>Anomalies:</Text>
               <Text color={cyberpunkTheme.colors.danger}>
-                {agentData.debugMetrics.anomalies.filter(a => !a.resolved).length}
+                {
+                  agentData.debugMetrics.anomalies.filter((a) => !a.resolved)
+                    .length
+                }
               </Text>
             </Box>
             <Box gap={2}>
@@ -908,7 +1087,7 @@ const OverviewPanel: React.FC<{
         </Card3D>
       </Box>
     </Box>
-  )
-}
+  );
+};
 
-export default AgentDetail
+export default AgentDetail;

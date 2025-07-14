@@ -36,11 +36,13 @@ export class WebUIServer {
     this.app = express();
     this.setupMiddleware();
     this.setupRoutes();
+    this._logger.info('WebUI server initialized');
   }
 
   private setupMiddleware(): void {
     this.app.use(express.json());
     this.app.use(express.static(path.join(__dirname, 'static')));
+    this._logger.debug('WebUI middleware configured');
   }
 
   private setupRoutes(): void {
@@ -250,7 +252,10 @@ export class WebUIServer {
                 file: file,
               });
             } catch (error) {
-              console.warn(`Failed to parse character file ${file}:`, error);
+              this._logger.warn(
+                `Failed to parse character file ${file}:`,
+                error
+              );
             }
           }
         }
@@ -313,7 +318,10 @@ export class WebUIServer {
                 file: file,
               });
             } catch (error) {
-              console.warn(`Failed to parse character file ${file}:`, error);
+              this._logger.warn(
+                `Failed to parse character file ${file}:`,
+                error
+              );
             }
           }
         }
@@ -370,7 +378,7 @@ export class WebUIServer {
           message: `Agent ${id} started successfully`,
         });
       } catch (error) {
-        console.error('Failed to start agent:', error);
+        this._logger.error('Failed to start agent:', error);
         res.status(500).json({
           error: 'Failed to start agent',
           details: error instanceof Error ? error.message : String(error),
@@ -403,7 +411,7 @@ export class WebUIServer {
           message: `Agent ${id} stopped successfully`,
         });
       } catch (error) {
-        console.error('Failed to stop agent:', error);
+        this._logger.error('Failed to stop agent:', error);
         res.status(500).json({
           error: 'Failed to stop agent',
           details: error instanceof Error ? error.message : String(error),

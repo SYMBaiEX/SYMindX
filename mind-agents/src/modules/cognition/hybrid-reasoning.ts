@@ -24,7 +24,8 @@ import {
   CognitionModuleMetadata,
 } from '../../types/cognition';
 import { BaseConfig } from '../../types/common';
-import { MemoryType, MemoryDuration } from '../../types/index';
+// Types for memory operations - to be used when implementing memory integration
+// import { MemoryType, MemoryDuration } from '../../types/index';
 
 export interface HybridReasoningConfig extends BaseConfig {
   // System selection
@@ -88,13 +89,20 @@ export class HybridReasoningEngine implements CognitionModule {
 
   // Learning components
   private qTable: Map<string, Map<string, number>> = new Map();
-  private _policyNetwork: Map<string, Map<string, number>> = new Map();
+  private policyNetwork: Map<string, Map<string, number>> = new Map();
   private patterns: Map<string, { frequency: number; success: number }> =
     new Map();
-  private _metaKnowledge: Map<string, any> = new Map();
+  private metaKnowledge: Map<string, any> = new Map();
 
   constructor(config: Partial<HybridReasoningConfig> = {}) {
     this.id = `hybrid_reasoning_${Date.now()}`;
+
+    // Initialize policy network with default strategies
+    this.initializePolicyNetwork();
+
+    // Initialize meta-knowledge base
+    this.initializeMetaKnowledge();
+
     this.config = {
       enableSystem1: true,
       enableSystem2: true,
@@ -118,6 +126,34 @@ export class HybridReasoningEngine implements CognitionModule {
 
   initialize(config: BaseConfig): void {
     this.config = { ...this.config, ...config };
+  }
+
+  private initializePolicyNetwork(): void {
+    // Initialize policy network with common state-action mappings
+    const commonStates = ['exploration', 'exploitation', 'planning'];
+    for (const state of commonStates) {
+      const actionWeights = new Map<string, number>();
+      actionWeights.set('analyze', 0.5);
+      actionWeights.set('act', 0.3);
+      actionWeights.set('wait', 0.2);
+      this.policyNetwork.set(state, actionWeights);
+    }
+  }
+
+  private initializeMetaKnowledge(): void {
+    // Initialize meta-knowledge with reasoning strategies
+    this.metaKnowledge.set('reasoning_patterns', [
+      { name: 'deductive', confidence: 0.9 },
+      { name: 'inductive', confidence: 0.7 },
+      { name: 'abductive', confidence: 0.6 },
+    ]);
+
+    this.metaKnowledge.set('context_types', [
+      'social',
+      'technical',
+      'creative',
+      'analytical',
+    ]);
   }
 
   getMetadata(): CognitionModuleMetadata {
@@ -221,6 +257,10 @@ export class HybridReasoningEngine implements CognitionModule {
       }
     }
 
+    if (!bestOption) {
+      throw new Error('Unable to select best option');
+    }
+
     return bestOption;
   }
 
@@ -248,7 +288,11 @@ export class HybridReasoningEngine implements CognitionModule {
         bestPattern &&
         bestPattern.confidence > this.config.system1Threshold
       ) {
-        const action = this.generateActionFromPattern(bestPattern, context);
+        const action = this.generateActionFromPattern(
+          bestPattern,
+          context,
+          _agent.id
+        );
         if (action) {
           actions.push(action);
           thoughts.push(`System 1: Quick response - ${action.action}`);
@@ -277,7 +321,7 @@ export class HybridReasoningEngine implements CognitionModule {
    * System 2: Slow, deliberate reasoning
    */
   private async system2Think(
-    _agent: Agent,
+    agent: Agent,
     context: ReasoningContext
   ): Promise<ReasoningResult> {
     const startTime = Date.now();
@@ -391,7 +435,7 @@ export class HybridReasoningEngine implements CognitionModule {
     }
 
     // Select action using epsilon-greedy policy
-    const availableActions = this.getAvailableActions(agent, context);
+    const availableActions = this.getAvailableActions(_agent, context);
     const selectedAction = this.epsilonGreedySelection(
       availableActions,
       qValues
@@ -586,12 +630,14 @@ export class HybridReasoningEngine implements CognitionModule {
 
   private generateActionFromPattern(
     pattern: { name: string; confidence: number; action?: string },
-    _context: ReasoningContext
+    _context: ReasoningContext,
+    agentId: string
   ): AgentAction | null {
     if (!pattern.action) return null;
 
     return {
       id: `action_${Date.now()}`,
+      agentId,
       type: 'communication',
       action: pattern.action,
       parameters: { pattern: pattern.name },
@@ -646,7 +692,7 @@ export class HybridReasoningEngine implements CognitionModule {
       },
       memories: [],
       confidence: result.confidence,
-      plan: result.plan,
+      // plan: result.plan, // TODO: Add plan to ThoughtResult or return separately
     };
   }
 
@@ -674,8 +720,12 @@ export class HybridReasoningEngine implements CognitionModule {
     const qValues = this.qTable.get(state);
     if (qValues) {
       // Q-learning update rule: Q(s,a) = Q(s,a) + α[r + γ max Q(s',a') - Q(s,a)]
-      const _newValue =
+      const newValue =
         oldValue + this.config.rlLearningRate * (reward - oldValue);
+      // Update Q-table with new value
+      const stateActions = this.qTable.get(state) || new Map();
+      stateActions.set('action', newValue);
+      this.qTable.set(state, stateActions);
       // This would need the specific action and next state in a real implementation
     }
   }
@@ -765,7 +815,8 @@ export class HybridReasoningEngine implements CognitionModule {
     // Epsilon-greedy selection
     if (Math.random() < this.config.rlExplorationRate) {
       // Explore: random action
-      return actions[Math.floor(Math.random() * actions.length)];
+      const randomAction = actions[Math.floor(Math.random() * actions.length)];
+      return randomAction !== undefined ? randomAction : null;
     } else {
       // Exploit: best Q-value
       let bestAction = actions[0];
@@ -779,7 +830,8 @@ export class HybridReasoningEngine implements CognitionModule {
         }
       }
 
-      return bestAction ?? actions[0];
+      const finalAction = bestAction ?? actions[0];
+      return finalAction !== undefined ? finalAction : null;
     }
   }
 

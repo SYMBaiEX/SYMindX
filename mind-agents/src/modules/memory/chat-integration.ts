@@ -103,12 +103,13 @@ export function createChatRepositoryFromEnv(): ChatRepository | null {
   }
 
   // Check for PostgreSQL
-  if (process.env.POSTGRES_URL || process.env.DATABASE_URL) {
+  const postgresUrl = process.env.POSTGRES_URL || process.env.DATABASE_URL;
+  if (postgresUrl) {
     return createChatRepository({
       provider: 'postgres',
       config: {
         dbPath: '', // Not used for PostgreSQL
-        connectionString: process.env.POSTGRES_URL || process.env.DATABASE_URL!,
+        connectionString: postgresUrl,
         ssl: process.env.POSTGRES_SSL !== 'false',
         maxConnections: parseInt(process.env.POSTGRES_MAX_CONNECTIONS || '20'),
         enableAnalytics: process.env.CHAT_ENABLE_ANALYTICS === 'true',
@@ -133,11 +134,15 @@ export async function getChatSystemStatus(repository: ChatRepository): Promise<{
   };
 }> {
   const provider = getProviderName(repository);
-  const details = {
+  const details: {
+    canCreateConversation: boolean;
+    canCreateMessage: boolean;
+    canQueryMessages: boolean;
+    error?: string;
+  } = {
     canCreateConversation: false,
     canCreateMessage: false,
     canQueryMessages: false,
-    error: undefined as string | undefined,
   };
 
   try {
@@ -152,7 +157,7 @@ export async function getChatSystemStatus(repository: ChatRepository): Promise<{
     });
     details.canCreateConversation = true;
 
-    const testMessage = await repository.createMessage({
+    const _testMessage = await repository.createMessage({
       conversationId: testConversation.id,
       senderType: 'system' as any,
       senderId: 'system',

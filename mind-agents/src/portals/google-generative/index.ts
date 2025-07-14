@@ -8,11 +8,11 @@ import { google } from '@ai-sdk/google';
 import {
   generateText,
   streamText,
-  generateObject,
+  // generateObject - advanced AI SDK feature not used in this implementation
   type LanguageModel,
   type ModelMessage,
 } from 'ai';
-import { z } from 'zod';
+// import { z } from 'zod'; - schema validation library not used in this implementation
 
 import { Agent } from '../../types/agent';
 import {
@@ -28,8 +28,8 @@ import {
   ChatGenerationResult,
   EmbeddingOptions,
   EmbeddingResult,
-  ImageGenerationOptions,
-  ImageGenerationResult,
+  // ImageGenerationOptions - not supported by Google Generative AI
+  // ImageGenerationResult - not supported by Google Generative AI
   MessageRole,
   FinishReason,
 } from '../../types/portal';
@@ -103,7 +103,7 @@ export class GoogleGenerativePortal extends BasePortal {
     this.googleProvider = google;
   }
 
-  protected getDefaultModel(
+  protected override getDefaultModel(
     type: 'chat' | 'tool' | 'embedding' | 'image'
   ): string {
     switch (type) {
@@ -120,7 +120,7 @@ export class GoogleGenerativePortal extends BasePortal {
     }
   }
 
-  async init(agent: Agent): Promise<void> {
+  override async init(agent: Agent): Promise<void> {
     this.status = PortalStatus.INITIALIZING;
     console.log(
       `🔮 Initializing Google Generative AI portal for agent ${agent.name}`
@@ -143,7 +143,7 @@ export class GoogleGenerativePortal extends BasePortal {
     }
   }
 
-  protected async validateConfig(): Promise<void> {
+  protected override async validateConfig(): Promise<void> {
     const config = this.config as GoogleGenerativeConfig;
     if (!config.apiKey && !process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
       throw new Error('API key is required for Google Generative AI portal');
@@ -182,9 +182,12 @@ export class GoogleGenerativePortal extends BasePortal {
 
     try {
       const config = this.config as GoogleGenerativeConfig;
-      const { text, usage, finishReason } = await generateText({
+      const baseParams = {
         model: this.getLanguageModel(model),
         prompt,
+      };
+
+      const params = buildAISDKParams(baseParams, {
         maxOutputTokens:
           options?.maxTokens ??
           config.generationConfig?.maxOutputTokens ??
@@ -198,6 +201,8 @@ export class GoogleGenerativePortal extends BasePortal {
         presencePenalty: options?.presencePenalty,
         stopSequences: options?.stop ?? config.generationConfig?.stopSequences,
       });
+
+      const { text, usage, finishReason } = await generateText(params);
 
       return {
         text,
@@ -221,9 +226,12 @@ export class GoogleGenerativePortal extends BasePortal {
       const config = this.config as GoogleGenerativeConfig;
       const modelMessages = this.convertToModelMessages(messages);
 
-      const { text, usage, finishReason } = await generateText({
+      const baseParams = {
         model: this.getLanguageModel(model),
         messages: modelMessages,
+      };
+
+      const params = buildAISDKParams(baseParams, {
         maxOutputTokens:
           options?.maxTokens ??
           config.generationConfig?.maxOutputTokens ??
@@ -237,6 +245,8 @@ export class GoogleGenerativePortal extends BasePortal {
         presencePenalty: options?.presencePenalty,
         stopSequences: options?.stop ?? config.generationConfig?.stopSequences,
       });
+
+      const { text, usage, finishReason } = await generateText(params);
 
       const assistantMessage: ChatMessage = {
         role: MessageRole.ASSISTANT,
@@ -290,9 +300,12 @@ export class GoogleGenerativePortal extends BasePortal {
 
     try {
       const config = this.config as GoogleGenerativeConfig;
-      const { textStream } = streamText({
+      const baseParams = {
         model: this.getLanguageModel(model),
         prompt,
+      };
+
+      const params = buildAISDKParams(baseParams, {
         maxOutputTokens:
           options?.maxTokens ??
           config.generationConfig?.maxOutputTokens ??
@@ -306,6 +319,8 @@ export class GoogleGenerativePortal extends BasePortal {
         presencePenalty: options?.presencePenalty,
         stopSequences: options?.stop ?? config.generationConfig?.stopSequences,
       });
+
+      const { textStream } = streamText(params);
 
       for await (const textPart of textStream) {
         yield textPart;
@@ -325,9 +340,12 @@ export class GoogleGenerativePortal extends BasePortal {
       const config = this.config as GoogleGenerativeConfig;
       const modelMessages = this.convertToModelMessages(messages);
 
-      const { textStream } = streamText({
+      const baseParams = {
         model: this.getLanguageModel(model),
         messages: modelMessages,
+      };
+
+      const params = buildAISDKParams(baseParams, {
         maxOutputTokens:
           options?.maxTokens ??
           config.generationConfig?.maxOutputTokens ??
@@ -341,6 +359,8 @@ export class GoogleGenerativePortal extends BasePortal {
         presencePenalty: options?.presencePenalty,
         stopSequences: options?.stop ?? config.generationConfig?.stopSequences,
       });
+
+      const { textStream } = streamText(params);
 
       for await (const textPart of textStream) {
         yield textPart;

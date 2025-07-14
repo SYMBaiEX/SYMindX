@@ -4,9 +4,6 @@
  * Implements the ChatRepository interface using SQLite for persistent chat storage
  */
 
-import { dirname } from 'path';
-import { fileURLToPath } from 'url';
-
 import { Database } from 'bun:sqlite';
 import type { Database as DatabaseType, Statement } from 'bun:sqlite';
 
@@ -31,9 +28,7 @@ import {
   AnalyticsEvent,
 } from './chat-types';
 import { runMigrations } from './migrations';
-
-const __filename = fileURLToPath(import.meta.url);
-// const __dirname = dirname(__filename); // Unused
+import { buildObject } from '../../../../utils/type-helpers';
 
 export class SQLiteChatRepository implements ChatRepository {
   private db: DatabaseType;
@@ -730,22 +725,25 @@ export class SQLiteChatRepository implements ChatRepository {
 
     const row = stmt.get(conversationId, conversationId) as any;
 
-    return {
+    return buildObject<ConversationStats>({
       conversationId,
       messageCount: row.message_count || 0,
       uniqueSenders: row.unique_senders || 0,
-      firstMessageAt: row.first_message_at
-        ? new Date(row.first_message_at)
-        : undefined,
-      lastMessageAt: row.last_message_at
-        ? new Date(row.last_message_at)
-        : undefined,
-      avgConfidence: row.avg_confidence || undefined,
       userMessageCount: row.user_message_count || 0,
       agentMessageCount: row.agent_message_count || 0,
       commandCount: row.command_count || 0,
       failedMessageCount: row.failed_message_count || 0,
-    };
+    })
+      .addOptional(
+        'firstMessageAt',
+        row.first_message_at ? new Date(row.first_message_at) : undefined
+      )
+      .addOptional(
+        'lastMessageAt',
+        row.last_message_at ? new Date(row.last_message_at) : undefined
+      )
+      .addOptional('avgConfidence', row.avg_confidence || undefined)
+      .build();
   }
 
   // ===================================================================
@@ -791,7 +789,7 @@ export class SQLiteChatRepository implements ChatRepository {
   }
 
   private rowToConversation(row: any): Conversation {
-    return {
+    return buildObject<Conversation>({
       id: row.id,
       agentId: row.agent_id,
       userId: row.user_id,
@@ -799,33 +797,42 @@ export class SQLiteChatRepository implements ChatRepository {
       status: row.status as ConversationStatus,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
-      lastMessageAt: row.last_message_at
-        ? new Date(row.last_message_at)
-        : undefined,
       messageCount: row.message_count,
       metadata: JSON.parse(row.metadata || '{}'),
-      deletedAt: row.deleted_at ? new Date(row.deleted_at) : undefined,
-      deletedBy: row.deleted_by,
-    };
+    })
+      .addOptional(
+        'lastMessageAt',
+        row.last_message_at ? new Date(row.last_message_at) : undefined
+      )
+      .addOptional(
+        'deletedAt',
+        row.deleted_at ? new Date(row.deleted_at) : undefined
+      )
+      .addOptional('deletedBy', row.deleted_by)
+      .build();
   }
 
   private rowToConversationWithLastMessage(
     row: any
   ): ConversationWithLastMessage {
-    return {
+    return buildObject<ConversationWithLastMessage>({
       ...this.rowToConversation(row),
       lastMessageContent: row.last_message_content,
       lastMessageSenderType: row.last_message_sender_type as SenderType,
-      lastMessageTimestamp: row.last_message_timestamp
-        ? new Date(row.last_message_timestamp)
-        : undefined,
       participantCount: row.participant_count || 0,
       activeParticipantCount: row.active_participant_count || 0,
-    };
+    })
+      .addOptional(
+        'lastMessageTimestamp',
+        row.last_message_timestamp
+          ? new Date(row.last_message_timestamp)
+          : undefined
+      )
+      .build();
   }
 
   private rowToMessage(row: any): Message {
-    return {
+    return buildObject<Message>({
       id: row.id,
       conversationId: row.conversation_id,
       senderType: row.sender_type as SenderType,
@@ -833,56 +840,73 @@ export class SQLiteChatRepository implements ChatRepository {
       content: row.content,
       messageType: row.message_type as MessageType,
       timestamp: new Date(row.timestamp),
-      editedAt: row.edited_at ? new Date(row.edited_at) : undefined,
       metadata: JSON.parse(row.metadata || '{}'),
-      emotionState: row.emotion_state
-        ? JSON.parse(row.emotion_state)
-        : undefined,
-      thoughtProcess: row.thought_process
-        ? JSON.parse(row.thought_process)
-        : undefined,
-      confidenceScore: row.confidence_score,
       memoryReferences: JSON.parse(row.memory_references || '[]'),
       createdMemories: JSON.parse(row.created_memories || '[]'),
       status: row.status as MessageStatus,
-      readAt: row.read_at ? new Date(row.read_at) : undefined,
-      deletedAt: row.deleted_at ? new Date(row.deleted_at) : undefined,
-      deletedBy: row.deleted_by,
-    };
+    })
+      .addOptional(
+        'editedAt',
+        row.edited_at ? new Date(row.edited_at) : undefined
+      )
+      .addOptional(
+        'emotionState',
+        row.emotion_state ? JSON.parse(row.emotion_state) : undefined
+      )
+      .addOptional(
+        'thoughtProcess',
+        row.thought_process ? JSON.parse(row.thought_process) : undefined
+      )
+      .addOptional('confidenceScore', row.confidence_score)
+      .addOptional('readAt', row.read_at ? new Date(row.read_at) : undefined)
+      .addOptional(
+        'deletedAt',
+        row.deleted_at ? new Date(row.deleted_at) : undefined
+      )
+      .addOptional('deletedBy', row.deleted_by)
+      .build();
   }
 
   private rowToParticipant(row: any): Participant {
-    return {
+    return buildObject<Participant>({
       id: row.id,
       conversationId: row.conversation_id,
       participantType: row.participant_type as ParticipantType,
       participantId: row.participant_id,
-      participantName: row.participant_name,
       joinedAt: new Date(row.joined_at),
-      leftAt: row.left_at ? new Date(row.left_at) : undefined,
       role: row.role as ParticipantRole,
-      lastSeenAt: row.last_seen_at ? new Date(row.last_seen_at) : undefined,
-      lastTypedAt: row.last_typed_at ? new Date(row.last_typed_at) : undefined,
       messageCount: row.message_count,
       notificationsEnabled: Boolean(row.notifications_enabled),
       preferences: JSON.parse(row.preferences || '{}'),
       status: row.status as ParticipantStatus,
-    };
+    })
+      .addOptional('participantName', row.participant_name)
+      .addOptional('leftAt', row.left_at ? new Date(row.left_at) : undefined)
+      .addOptional(
+        'lastSeenAt',
+        row.last_seen_at ? new Date(row.last_seen_at) : undefined
+      )
+      .addOptional(
+        'lastTypedAt',
+        row.last_typed_at ? new Date(row.last_typed_at) : undefined
+      )
+      .build();
   }
 
   private rowToSession(row: any): ChatSession {
-    return {
+    return buildObject<ChatSession>({
       id: row.id,
       userId: row.user_id,
       conversationId: row.conversation_id,
-      connectionId: row.connection_id,
       startedAt: new Date(row.started_at),
       lastActivityAt: new Date(row.last_activity_at),
-      endedAt: row.ended_at ? new Date(row.ended_at) : undefined,
       clientInfo: JSON.parse(row.client_info || '{}'),
-      ipAddress: row.ip_address,
-      userAgent: row.user_agent,
-    };
+    })
+      .addOptional('connectionId', row.connection_id)
+      .addOptional('endedAt', row.ended_at ? new Date(row.ended_at) : undefined)
+      .addOptional('ipAddress', row.ip_address)
+      .addOptional('userAgent', row.user_agent)
+      .build();
   }
 
   // Close database connection

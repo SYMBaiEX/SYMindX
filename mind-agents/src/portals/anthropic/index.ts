@@ -33,7 +33,7 @@ import {
 import { BasePortal } from '../base-portal';
 import {
   buildAISDKParams,
-  buildProviderSettings,
+  // buildProviderSettings - utility function not used in this implementation
   convertUsage,
 } from '../utils';
 
@@ -66,10 +66,16 @@ export class AnthropicPortal extends BasePortal {
       modelId || (this.config as AnthropicConfig).model || 'claude-4-sonnet';
     const config = this.config as AnthropicConfig;
 
-    const providerSettings = buildProviderSettings({
-      apiKey: config.apiKey || process.env.ANTHROPIC_API_KEY,
-      baseURL: config.baseURL,
-    });
+    const providerSettings: { apiKey?: string; baseURL?: string } = {};
+
+    const apiKey = config.apiKey || process.env.ANTHROPIC_API_KEY;
+    if (apiKey) {
+      providerSettings.apiKey = apiKey;
+    }
+
+    if (config.baseURL) {
+      providerSettings.baseURL = config.baseURL;
+    }
 
     return this.anthropicProvider(model, providerSettings);
   }

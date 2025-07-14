@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 import { EnhancedRuntimeClient } from '../services/enhancedRuntimeClient.js';
-import { 
-  AgentInfo, 
-  SystemMetrics, 
-  RuntimeStatus, 
+import {
+  AgentInfo,
+  SystemMetrics,
+  RuntimeStatus,
   RuntimeCapabilities,
-  ActivityEvent 
+  ActivityEvent,
 } from '../services/runtimeClient.js';
 
 export interface UseAPIDataOptions<T> {
@@ -37,7 +37,9 @@ export interface UseAPIDataResult<T> {
 /**
  * Generic hook for fetching API data with loading states and error handling
  */
-export function useAPIData<T>(options: UseAPIDataOptions<T>): UseAPIDataResult<T> {
+export function useAPIData<T>(
+  options: UseAPIDataOptions<T>
+): UseAPIDataResult<T> {
   const {
     fetchFn,
     dependencies = [],
@@ -48,7 +50,7 @@ export function useAPIData<T>(options: UseAPIDataOptions<T>): UseAPIDataResult<T
     retryCount = 3,
     retryDelay = 1000,
     staleTime = 60000, // 1 minute
-    cacheKey: _cacheKey
+    cacheKey: _cacheKey,
   } = options;
 
   const [data, setData] = useState<T | null>(null);
@@ -56,15 +58,15 @@ export function useAPIData<T>(options: UseAPIDataOptions<T>): UseAPIDataResult<T
   const [isLoading, setIsLoading] = useState(true);
   const [isValidating, setIsValidating] = useState(false);
   const [lastFetchTime, setLastFetchTime] = useState<Date | null>(null);
-  
+
   const abortControllerRef = useRef<AbortController | null>(null);
   const pollingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isMountedRef = useRef(true);
 
   // Calculate if data is stale
-  const isStale = lastFetchTime 
-    ? Date.now() - lastFetchTime.getTime() > staleTime 
+  const isStale = lastFetchTime
+    ? Date.now() - lastFetchTime.getTime() > staleTime
     : true;
 
   const clearTimeouts = useCallback(() => {
@@ -86,84 +88,88 @@ export function useAPIData<T>(options: UseAPIDataOptions<T>): UseAPIDataResult<T
     clearTimeouts();
   }, [clearTimeouts]);
 
-  const fetchData = useCallback(async (isInitial = false) => {
-    if (!enabled) return;
+  const fetchData = useCallback(
+    async (isInitial = false) => {
+      if (!enabled) return;
 
-    try {
-      // Cancel any existing request
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
+      try {
+        // Cancel any existing request
+        if (abortControllerRef.current) {
+          abortControllerRef.current.abort();
+        }
 
-      // Create new abort controller
-      abortControllerRef.current = new AbortController();
+        // Create new abort controller
+        abortControllerRef.current = new AbortController();
 
-      // Set loading state
-      if (isInitial) {
-        setIsLoading(true);
-      } else {
-        setIsValidating(true);
-      }
-      setError(null);
+        // Set loading state
+        if (isInitial) {
+          setIsLoading(true);
+        } else {
+          setIsValidating(true);
+        }
+        setError(null);
 
-      // Fetch data with retry logic
-      let lastError: Error | null = null;
-      let attempts = 0;
+        // Fetch data with retry logic
+        let lastError: Error | null = null;
+        let attempts = 0;
 
-      while (attempts <= retryCount) {
-        try {
-          const result = await fetchFn();
-          
-          if (!isMountedRef.current) return;
+        while (attempts <= retryCount) {
+          try {
+            const result = await fetchFn();
 
-          setData(result);
-          setLastFetchTime(new Date());
-          setError(null);
-          
-          if (onSuccess) {
-            onSuccess(result);
-          }
-          
-          break; // Success, exit retry loop
-          
-        } catch (err) {
-          lastError = err as Error;
-          attempts++;
-          
-          if (attempts <= retryCount) {
-            // Wait before retrying
-            await new Promise(resolve => {
-              retryTimeoutRef.current = setTimeout(resolve, retryDelay * attempts);
-            });
+            if (!isMountedRef.current) return;
+
+            setData(result);
+            setLastFetchTime(new Date());
+            setError(null);
+
+            if (onSuccess) {
+              onSuccess(result);
+            }
+
+            break; // Success, exit retry loop
+          } catch (err) {
+            lastError = err as Error;
+            attempts++;
+
+            if (attempts <= retryCount) {
+              // Wait before retrying
+              await new Promise((resolve) => {
+                retryTimeoutRef.current = setTimeout(
+                  resolve,
+                  retryDelay * attempts
+                );
+              });
+            }
           }
         }
-      }
 
-      // If all retries failed
-      if (lastError && attempts > retryCount) {
-        throw lastError;
-      }
+        // If all retries failed
+        if (lastError && attempts > retryCount) {
+          throw lastError;
+        }
+      } catch (err) {
+        if (!isMountedRef.current) return;
 
-    } catch (err) {
-      if (!isMountedRef.current) return;
-      
-      const error = err as Error;
-      
-      // Don't treat abort as an error
-      if (error.name === 'AbortError') return;
-      
-      setError(error);
-      
-      if (onError) {
-        onError(error);
+        const error = err as Error;
+
+        // Don't treat abort as an error
+        if (error.name === 'AbortError') return;
+
+        setError(error);
+
+        if (onError) {
+          onError(error);
+        }
+      } finally {
+        if (isMountedRef.current) {
+          setIsLoading(false);
+          setIsValidating(false);
+        }
       }
-    } finally {
-      if (isMountedRef.current) {
-        setIsLoading(false);
-        setIsValidating(false);
-      }
-    }
-  }, [enabled, fetchFn, onSuccess, onError, retryCount, retryDelay]);
+    },
+    [enabled, fetchFn, onSuccess, onError, retryCount, retryDelay]
+  );
 
   const refetch = useCallback(async () => {
     await fetchData(false);
@@ -200,7 +206,7 @@ export function useAPIData<T>(options: UseAPIDataOptions<T>): UseAPIDataResult<T
   // Cleanup on unmount
   useEffect(() => {
     isMountedRef.current = true;
-    
+
     return () => {
       isMountedRef.current = false;
       cancel();
@@ -216,7 +222,7 @@ export function useAPIData<T>(options: UseAPIDataOptions<T>): UseAPIDataResult<T
     lastFetchTime,
     refetch,
     mutate,
-    cancel
+    cancel,
   };
 }
 
@@ -231,7 +237,7 @@ export function useAgentData(
     fetchFn: () => client.getAgents(),
     pollingInterval: 5000, // Poll every 5 seconds
     staleTime: 10000, // Consider stale after 10 seconds
-    ...options
+    ...options,
   });
 }
 
@@ -246,7 +252,7 @@ export function useSystemMetrics(
     fetchFn: () => client.getSystemMetrics(),
     pollingInterval: 2000, // Poll every 2 seconds
     staleTime: 5000, // Consider stale after 5 seconds
-    ...options
+    ...options,
   });
 }
 
@@ -261,7 +267,7 @@ export function useRuntimeStatus(
     fetchFn: () => client.getRuntimeStatus(),
     pollingInterval: 3000, // Poll every 3 seconds
     staleTime: 5000, // Consider stale after 5 seconds
-    ...options
+    ...options,
   });
 }
 
@@ -276,7 +282,7 @@ export function useRuntimeCapabilities(
     fetchFn: () => client.getRuntimeCapabilities(),
     pollingInterval: 0, // No polling, capabilities don't change often
     staleTime: 300000, // Consider stale after 5 minutes
-    ...options
+    ...options,
   });
 }
 
@@ -292,7 +298,7 @@ export function useRecentEvents(
     fetchFn: () => client.getRecentEvents(limit),
     pollingInterval: 1000, // Poll every second
     staleTime: 2000, // Consider stale after 2 seconds
-    ...options
+    ...options,
   });
 }
 
@@ -310,7 +316,7 @@ export function useAgentDetail(
     pollingInterval: 5000, // Poll every 5 seconds
     staleTime: 10000, // Consider stale after 10 seconds
     enabled: !!agentId,
-    ...options
+    ...options,
   });
 }
 
@@ -322,46 +328,52 @@ export function useAgentControl(client: EnhancedRuntimeClient) {
   const [isStopping, setIsStopping] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  const startAgent = useCallback(async (agentId: string) => {
-    setIsStarting(true);
-    setError(null);
-    
-    try {
-      const success = await client.startAgent(agentId);
-      if (!success) {
-        throw new Error('Failed to start agent');
-      }
-    } catch (err) {
-      setError(err as Error);
-      throw err;
-    } finally {
-      setIsStarting(false);
-    }
-  }, [client]);
+  const startAgent = useCallback(
+    async (agentId: string) => {
+      setIsStarting(true);
+      setError(null);
 
-  const stopAgent = useCallback(async (agentId: string) => {
-    setIsStopping(true);
-    setError(null);
-    
-    try {
-      const success = await client.stopAgent(agentId);
-      if (!success) {
-        throw new Error('Failed to stop agent');
+      try {
+        const success = await client.startAgent(agentId);
+        if (!success) {
+          throw new Error('Failed to start agent');
+        }
+      } catch (err) {
+        setError(err as Error);
+        throw err;
+      } finally {
+        setIsStarting(false);
       }
-    } catch (err) {
-      setError(err as Error);
-      throw err;
-    } finally {
-      setIsStopping(false);
-    }
-  }, [client]);
+    },
+    [client]
+  );
+
+  const stopAgent = useCallback(
+    async (agentId: string) => {
+      setIsStopping(true);
+      setError(null);
+
+      try {
+        const success = await client.stopAgent(agentId);
+        if (!success) {
+          throw new Error('Failed to stop agent');
+        }
+      } catch (err) {
+        setError(err as Error);
+        throw err;
+      } finally {
+        setIsStopping(false);
+      }
+    },
+    [client]
+  );
 
   return {
     startAgent,
     stopAgent,
     isStarting,
     isStopping,
-    error
+    error,
   };
 }
 
@@ -373,27 +385,30 @@ export function useAgentChat(client: EnhancedRuntimeClient) {
   const [error, setError] = useState<Error | null>(null);
   const [lastResponse, setLastResponse] = useState<any>(null);
 
-  const sendMessage = useCallback(async (agentId: string, message: string) => {
-    setIsSending(true);
-    setError(null);
-    
-    try {
-      const response = await client.sendChatMessage(agentId, message);
-      setLastResponse(response);
-      return response;
-    } catch (err) {
-      setError(err as Error);
-      throw err;
-    } finally {
-      setIsSending(false);
-    }
-  }, [client]);
+  const sendMessage = useCallback(
+    async (agentId: string, message: string) => {
+      setIsSending(true);
+      setError(null);
+
+      try {
+        const response = await client.sendChatMessage(agentId, message);
+        setLastResponse(response);
+        return response;
+      } catch (err) {
+        setError(err as Error);
+        throw err;
+      } finally {
+        setIsSending(false);
+      }
+    },
+    [client]
+  );
 
   return {
     sendMessage,
     isSending,
     error,
-    lastResponse
+    lastResponse,
   };
 }
 
@@ -413,7 +428,7 @@ export function useSmartPolling(
     minInterval = 1000,
     maxInterval = 30000,
     activityThreshold = 5000,
-    inactivityMultiplier = 2
+    inactivityMultiplier = 2,
   } = options || {};
 
   const [pollingInterval, setPollingInterval] = useState(baseInterval);
@@ -427,10 +442,13 @@ export function useSmartPolling(
   useEffect(() => {
     const checkInactivity = setInterval(() => {
       const timeSinceActivity = Date.now() - lastActivityRef.current;
-      
+
       if (timeSinceActivity > activityThreshold) {
-        setPollingInterval(current => {
-          const newInterval = Math.min(current * inactivityMultiplier, maxInterval);
+        setPollingInterval((current) => {
+          const newInterval = Math.min(
+            current * inactivityMultiplier,
+            maxInterval
+          );
           return Math.max(newInterval, minInterval);
         });
       }

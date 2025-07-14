@@ -10,7 +10,7 @@ import {
 } from '../../../types/agent';
 import { CognitionModule } from '../../../types/cognition';
 
-import { HTNPlannerConfig, TaskNetwork, Task, Method } from './types';
+import { HTNPlannerConfig, TaskNetwork, Task } from './types';
 
 export class HTNPlannerCognition implements CognitionModule {
   public id: string;
@@ -57,9 +57,10 @@ export class HTNPlannerCognition implements CognitionModule {
     }
 
     // Determine next actions based on plan priorities
-    const nextActions = this.prioritizeActions(plans);
+    const nextActions = this.prioritizeActions(agent, plans);
 
     const processingTime = Date.now() - startTime;
+    thoughts.push(`HTN planning completed in ${processingTime}ms`);
 
     return {
       thoughts,
@@ -74,6 +75,16 @@ export class HTNPlannerCognition implements CognitionModule {
 
   async plan(agent: Agent, goal: string): Promise<Plan> {
     const startTime = Date.now();
+
+    // Use agent context for personalized planning
+    const agentContext = {
+      id: agent.id,
+      personality: agent.config.core.personality,
+      capabilities: agent.extensions ? Object.keys(agent.extensions) : [],
+    };
+
+    // Log planning context
+    console.log(`HTN planner creating plan for agent ${agentContext.id}`);
 
     // Create or retrieve task network for this goal
     const network = this.getOrCreateTaskNetwork(goal);
@@ -301,7 +312,7 @@ export class HTNPlannerCognition implements CognitionModule {
     return 2;
   }
 
-  private prioritizeActions(plans: Plan[]): AgentAction[] {
+  private prioritizeActions(agent: Agent, plans: Plan[]): AgentAction[] {
     // Extract and prioritize next actions from all plans
     const actions: Array<{ step: PlanStep; priority: number }> = [];
 
@@ -320,6 +331,7 @@ export class HTNPlannerCognition implements CognitionModule {
       .sort((a, b) => b.priority - a.priority)
       .map((item) => ({
         id: `action_${item.step.id}_${Date.now()}`,
+        agentId: agent.id,
         type: 'planned_action',
         extension: 'htn_planner',
         action: item.step.action,
@@ -334,12 +346,30 @@ export class HTNPlannerCognition implements CognitionModule {
     context: ThoughtContext,
     plans: Plan[]
   ): EmotionState {
+    // Use context to assess emotional impact
+    const hasUrgentEvents = context.events.some((e) =>
+      e.type.includes('urgent')
+    );
+    const hasSocialEvents = context.events.some((e) =>
+      e.type.includes('social')
+    );
     // Emotional assessment based on planning complexity
     const totalSteps = plans.reduce((sum, plan) => sum + plan.steps.length, 0);
 
     let emotion = 'thoughtful';
     let intensity = 0.6;
     const triggers: string[] = ['planning'];
+
+    // Adjust emotion based on event urgency and social context
+    if (hasUrgentEvents) {
+      emotion = 'focused';
+      intensity = Math.min(1.0, intensity + 0.3);
+      triggers.push('urgent_events');
+    } else if (hasSocialEvents) {
+      emotion = 'empathetic';
+      intensity = Math.min(1.0, intensity + 0.2);
+      triggers.push('social_events');
+    }
 
     if (totalSteps > 10) {
       emotion = 'focused';
@@ -377,6 +407,22 @@ export class HTNPlannerCognition implements CognitionModule {
 
   private scoreOption(option: Decision, agent: Agent): number {
     let score = option.confidence || 0.5;
+
+    // Adjust score based on agent's personality traits
+    if (agent.config.psyche?.traits) {
+      if (
+        agent.config.psyche.traits.includes('analytical') &&
+        option.reasoning?.includes('analysis')
+      ) {
+        score += 0.1;
+      }
+      if (
+        agent.config.psyche.traits.includes('cautious') &&
+        option.reasoning?.includes('safe')
+      ) {
+        score += 0.1;
+      }
+    }
 
     // Boost score for strategic options
     if (

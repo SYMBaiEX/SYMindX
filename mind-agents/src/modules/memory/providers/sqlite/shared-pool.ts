@@ -12,7 +12,8 @@ import { SharedMemoryConfig, MemoryPermission } from '../../../../types/memory';
  */
 export class SharedMemoryPool {
   private poolId: string;
-  private _config: SharedMemoryConfig; // Unused but kept for future use
+  // Configuration stored for future memory pool features
+  private readonly _config: SharedMemoryConfig;
   private memories: Map<string, MemoryRecord> = new Map();
   private permissions: Map<string, MemoryPermission[]> = new Map();
 

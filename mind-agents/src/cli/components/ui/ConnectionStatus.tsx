@@ -14,7 +14,7 @@ export const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
   status,
   showDetails = false,
   position = 'inline',
-  compact = false
+  compact = false,
 }) => {
   const getStatusIcon = () => {
     switch (status.status) {
@@ -70,7 +70,8 @@ export const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
     return (
       <Box>
         <Text color={getStatusColor()}>
-          {getStatusIcon()} {status.latency > 0 && `${formatLatency(status.latency)}`}
+          {getStatusIcon()}{' '}
+          {status.latency > 0 && `${formatLatency(status.latency)}`}
         </Text>
       </Box>
     );
@@ -88,8 +89,17 @@ export const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
         <>
           {status.latency > 0 && (
             <Box marginLeft={2}>
-              <Text color="gray">
-                Latency: <Text color={status.latency < 100 ? 'green' : status.latency < 500 ? 'yellow' : 'red'}>
+              <Text color='gray'>
+                Latency:{' '}
+                <Text
+                  color={
+                    status.latency < 100
+                      ? 'green'
+                      : status.latency < 500
+                        ? 'yellow'
+                        : 'red'
+                  }
+                >
                   {formatLatency(status.latency)}
                 </Text>
               </Text>
@@ -98,7 +108,7 @@ export const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
 
           {status.lastConnectedAt && (
             <Box marginLeft={2}>
-              <Text color="gray">
+              <Text color='gray'>
                 Last connected: {status.lastConnectedAt.toLocaleTimeString()}
               </Text>
             </Box>
@@ -106,15 +116,13 @@ export const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
 
           {status.lastError && (
             <Box marginLeft={2}>
-              <Text color="red">
-                Error: {status.lastError.message}
-              </Text>
+              <Text color='red'>Error: {status.lastError.message}</Text>
             </Box>
           )}
 
           {status.reconnectAttempts > 0 && (
             <Box marginLeft={2}>
-              <Text color="yellow">
+              <Text color='yellow'>
                 Reconnect attempts: {status.reconnectAttempts}
               </Text>
             </Box>
@@ -123,9 +131,7 @@ export const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
       )}
 
       {!showDetails && status.latency > 0 && (
-        <Text color="gray">
-          ({formatLatency(status.latency)})
-        </Text>
+        <Text color='gray'>({formatLatency(status.latency)})</Text>
       )}
     </Box>
   );
@@ -136,7 +142,7 @@ export const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
 
   return (
     <Box
-      position="absolute"
+      position='absolute'
       marginTop={position === 'top' ? 0 : undefined}
       marginBottom={position === 'bottom' ? 0 : undefined}
       paddingX={1}
@@ -158,7 +164,7 @@ interface ConnectionHealthProps {
 export const ConnectionHealth: React.FC<ConnectionHealthProps> = ({
   latency,
   status,
-  showBars = true
+  showBars = true,
 }) => {
   const getHealthLevel = () => {
     if (status !== 'connected') return 0;
@@ -190,7 +196,7 @@ export const ConnectionHealth: React.FC<ConnectionHealthProps> = ({
     <Box>
       <Text color={getHealthColor()}>
         {'█'.repeat(healthLevel)}
-        <Text color="gray">{'░'.repeat(5 - healthLevel)}</Text>
+        <Text color='gray'>{'░'.repeat(5 - healthLevel)}</Text>
       </Text>
     </Box>
   );
@@ -206,14 +212,14 @@ interface ConnectionBadgeProps {
 
 export const ConnectionBadge: React.FC<ConnectionBadgeProps> = ({
   status,
-  size = 'medium'
+  size = 'medium',
 }) => {
   const [pulse, setPulse] = React.useState(false);
 
   React.useEffect(() => {
     if (status === 'connecting') {
       const interval = setInterval(() => {
-        setPulse(p => !p);
+        setPulse((p) => !p);
       }, 500);
       return () => clearInterval(interval);
     }
@@ -246,11 +252,7 @@ export const ConnectionBadge: React.FC<ConnectionBadgeProps> = ({
     }
   };
 
-  return (
-    <Text color={getColor()}>
-      {getIcon()}
-    </Text>
-  );
+  return <Text color={getColor()}>{getIcon()}</Text>;
 };
 
 /**
@@ -267,7 +269,7 @@ export const AutoReconnectIndicator: React.FC<AutoReconnectIndicatorProps> = ({
   attempts,
   maxAttempts,
   nextRetryIn,
-  onCancel
+  onCancel,
 }) => {
   const [countdown, setCountdown] = React.useState(nextRetryIn || 0);
 
@@ -275,7 +277,7 @@ export const AutoReconnectIndicator: React.FC<AutoReconnectIndicatorProps> = ({
     if (nextRetryIn && nextRetryIn > 0) {
       setCountdown(nextRetryIn);
       const interval = setInterval(() => {
-        setCountdown(c => Math.max(0, c - 100));
+        setCountdown((c) => Math.max(0, c - 100));
       }, 100);
       return () => clearInterval(interval);
     }
@@ -283,11 +285,16 @@ export const AutoReconnectIndicator: React.FC<AutoReconnectIndicatorProps> = ({
   }, [nextRetryIn]);
 
   return (
-    <Box flexDirection="column" padding={1} borderStyle="round" borderColor="yellow">
-      <Text color="yellow" bold>
+    <Box
+      flexDirection='column'
+      padding={1}
+      borderStyle='round'
+      borderColor='yellow'
+    >
+      <Text color='yellow' bold>
         🔄 Auto-reconnecting...
       </Text>
-      
+
       <Box marginTop={1}>
         <Text>
           Attempt {attempts} of {maxAttempts}
@@ -296,7 +303,7 @@ export const AutoReconnectIndicator: React.FC<AutoReconnectIndicatorProps> = ({
 
       {countdown > 0 && (
         <Box marginTop={1}>
-          <Text color="gray">
+          <Text color='gray'>
             Next retry in {(countdown / 1000).toFixed(1)}s
           </Text>
         </Box>
@@ -304,7 +311,7 @@ export const AutoReconnectIndicator: React.FC<AutoReconnectIndicatorProps> = ({
 
       {onCancel && (
         <Box marginTop={1}>
-          <Text color="cyan">
+          <Text color='cyan'>
             Press <Text bold>C</Text> to cancel
           </Text>
         </Box>
@@ -329,7 +336,7 @@ interface ConnectionTimelineProps {
 
 export const ConnectionTimeline: React.FC<ConnectionTimelineProps> = ({
   events,
-  maxEvents = 5
+  maxEvents = 5,
 }) => {
   const recentEvents = events.slice(-maxEvents);
 
@@ -364,10 +371,10 @@ export const ConnectionTimeline: React.FC<ConnectionTimelineProps> = ({
   };
 
   return (
-    <Box flexDirection="column">
+    <Box flexDirection='column'>
       {recentEvents.map((event, index) => (
         <Box key={index}>
-          <Text color="gray" dimColor>
+          <Text color='gray' dimColor>
             {event.timestamp.toLocaleTimeString()}
           </Text>
           <Text> </Text>
@@ -377,7 +384,7 @@ export const ConnectionTimeline: React.FC<ConnectionTimelineProps> = ({
           {event.message && (
             <>
               <Text> </Text>
-              <Text color="gray">{event.message}</Text>
+              <Text color='gray'>{event.message}</Text>
             </>
           )}
         </Box>

@@ -4,7 +4,7 @@
  * Handles memory archival and compression strategies
  */
 
-import { MemoryRecord } from '../../../../types/agent';
+import { MemoryRecord, MemoryDuration } from '../../../../types/agent';
 import { ArchivalStrategy } from '../../../../types/memory';
 
 /**
@@ -61,6 +61,7 @@ export class MemoryArchiver {
 
     for (const memory of memories) {
       const day = memory.timestamp.toISOString().split('T')[0];
+      if (!day) continue;
       if (!grouped.has(day)) {
         grouped.set(day, []);
       }
@@ -78,7 +79,8 @@ export class MemoryArchiver {
           importance: Math.max(...group.map((m) => m.importance || 0)),
           timestamp: new Date(day),
           tags: ['compressed', ...group.flatMap((m) => m.tags || [])],
-          duration: group[0]?.duration,
+          duration:
+            (group[0]?.duration as MemoryDuration) || MemoryDuration.PERMANENT,
           metadata: {
             ...(group[0]?.metadata ?? {}),
             compression: {

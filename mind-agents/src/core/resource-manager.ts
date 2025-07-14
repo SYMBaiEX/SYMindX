@@ -470,6 +470,98 @@ export class ResourceManager extends EventEmitter {
     // Health score: high active ratio is good, high stale ratio is bad
     return Math.max(0, activeRatio - staleRatio * 0.5);
   }
+
+  /**
+   * Allocate resources for an agent (required by state recovery)
+   */
+  async allocateResources(
+    agentId: string,
+    requirements: Record<string, any>
+  ): Promise<any> {
+    const resourceId = await this.registerResource(
+      agentId,
+      ResourceType.MEMORY_ALLOCATION,
+      `Resource allocation for agent ${agentId}`,
+      requirements
+    );
+
+    return {
+      success: true,
+      resourceId,
+      timestamp: new Date(),
+      metadata: requirements,
+    };
+  }
+
+  /**
+   * Release resources for an agent (required by state recovery)
+   */
+  async releaseResources(agentId: string): Promise<any> {
+    await this.cleanupAgentResources(agentId);
+
+    return {
+      success: true,
+      timestamp: new Date(),
+      agentId,
+    };
+  }
+
+  /**
+   * Check resource availability (required by state recovery)
+   */
+  async checkAvailability(
+    type: string,
+    requirements?: Record<string, any>
+  ): Promise<boolean> {
+    // Check availability based on resource type and requirements
+    const totalResources = this.resources.size;
+    const maxResources = this.config.maxResourcesPerAgent * 10; // Assume 10 agents max
+
+    // Check basic capacity
+    if (totalResources >= maxResources) {
+      return false;
+    }
+
+    // Check type-specific availability
+    if (type === 'memory' && requirements?.memoryMB) {
+      const currentMemoryUsage = process.memoryUsage().heapUsed / 1024 / 1024;
+      const requiredMemory = requirements.memoryMB;
+      return currentMemoryUsage + requiredMemory < 1024; // 1GB limit
+    }
+
+    if (type === 'processing' && requirements?.cpuTime) {
+      // Simple CPU availability check
+      return requirements.cpuTime < 5000; // Max 5 seconds
+    }
+
+    // Default to available if no specific requirements
+    return true;
+  }
+
+  /**
+   * Get current resource usage (required by state recovery)
+   */
+  async getCurrentUsage(agentId?: string): Promise<Record<string, any>> {
+    if (agentId) {
+      const agentResourceIds = this.agentResources.get(agentId) || new Set();
+      const memoryUsage = this.estimateMemoryUsage(agentId);
+
+      return {
+        agentId,
+        resourceCount: agentResourceIds.size,
+        memoryUsage,
+        resources: Array.from(agentResourceIds)
+          .map((id) => this.resources.get(id))
+          .filter(Boolean),
+      };
+    } else {
+      return {
+        totalResources: this.resources.size,
+        totalAgents: this.agentResources.size,
+        memoryUsage: process.memoryUsage(),
+      };
+    }
+  }
 }
 
 export interface CleanupResult {

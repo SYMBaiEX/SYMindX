@@ -33,10 +33,7 @@ import {
   MessageRole,
   FinishReason,
 } from '../../types/portal';
-import {
-  AISDKParameterBuilder,
-  validateGenerationOptions,
-} from '../ai-sdk-utils';
+import { AISDKParameterBuilder } from '../ai-sdk-utils';
 import { BasePortal } from '../base-portal';
 import { convertUsage, buildAISDKParams } from '../utils';
 
@@ -117,7 +114,7 @@ export class AzureOpenAIPortal extends BasePortal {
     this.imageModel = this.azure(imageDeployment);
   }
 
-  async init(agent: Agent): Promise<void> {
+  override async init(agent: Agent): Promise<void> {
     this.status = PortalStatus.INITIALIZING;
     console.log(`🔮 Initializing Azure OpenAI portal for agent ${agent.name}`);
 
@@ -133,7 +130,7 @@ export class AzureOpenAIPortal extends BasePortal {
     }
   }
 
-  protected async validateConfig(): Promise<void> {
+  protected override async validateConfig(): Promise<void> {
     const config = this.config as AzureOpenAIConfig;
 
     if (!config.apiKey) {
@@ -198,22 +195,37 @@ export class AzureOpenAIPortal extends BasePortal {
     options?: TextGenerationOptions
   ): Promise<TextGenerationResult> {
     try {
-      const baseParams = {
+      const params: any = {
         model: this.model,
-        messages: [{ role: 'user', content: prompt }],
+        messages: [{ role: 'user' as const, content: prompt }],
       };
 
-      const params = buildAISDKParams(baseParams, {
-        maxOutputTokens:
-          options?.maxOutputTokens ??
-          options?.maxTokens ??
-          this.config.maxTokens,
-        temperature: options?.temperature ?? this.config.temperature,
-        topP: options?.topP,
-        frequencyPenalty: options?.frequencyPenalty,
-        presencePenalty: options?.presencePenalty,
-        stopSequences: options?.stop,
-      });
+      const maxOutputTokens =
+        options?.maxOutputTokens ?? options?.maxTokens ?? this.config.maxTokens;
+      if (maxOutputTokens !== undefined) {
+        params.maxOutputTokens = maxOutputTokens;
+      }
+
+      const temperature = options?.temperature ?? this.config.temperature;
+      if (temperature !== undefined) {
+        params.temperature = temperature;
+      }
+
+      if (options?.topP !== undefined) {
+        params.topP = options.topP;
+      }
+
+      if (options?.frequencyPenalty !== undefined) {
+        params.frequencyPenalty = options.frequencyPenalty;
+      }
+
+      if (options?.presencePenalty !== undefined) {
+        params.presencePenalty = options.presencePenalty;
+      }
+
+      if (options?.stop !== undefined) {
+        params.stopSequences = options.stop;
+      }
 
       const { text, usage, finishReason } = await aiGenerateText(params);
 
@@ -277,7 +289,7 @@ export class AzureOpenAIPortal extends BasePortal {
 
   override async generateEmbedding(
     text: string,
-    options?: EmbeddingOptions
+    _options?: EmbeddingOptions
   ): Promise<EmbeddingResult> {
     try {
       const { embedding, usage } = await aiEmbed({
@@ -338,7 +350,7 @@ export class AzureOpenAIPortal extends BasePortal {
     try {
       const baseParams = {
         model: this.model,
-        messages: [{ role: 'user', content: prompt }],
+        messages: [{ role: 'user' as const, content: prompt }],
       };
 
       const params = buildAISDKParams(baseParams, {

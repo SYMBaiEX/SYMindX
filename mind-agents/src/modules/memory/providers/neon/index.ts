@@ -15,11 +15,12 @@ import {
 import {
   MemoryProviderMetadata,
   MemoryTierType,
-  MemoryContext,
-  SharedMemoryConfig,
+  // MemoryContext - type used for annotations but not instantiated at runtime
+  // SharedMemoryConfig - type used for annotations but not instantiated at runtime
   MemoryPermission,
 } from '../../../../types/memory';
 import { runtimeLogger } from '../../../../utils/logger';
+import { buildObject } from '../../../../utils/type-helpers';
 import {
   BaseMemoryProvider,
   BaseMemoryConfig,
@@ -80,7 +81,8 @@ export class NeonMemoryProvider extends BaseMemoryProvider {
   declare protected config: NeonMemoryConfig;
   private tableName: string;
   private isInitialized = false;
-  private _schemaVersion = '2.0.0'; // Unused but kept for future compatibility
+  // Schema version tracked for future migrations
+  private readonly _schemaVersion = '2.0.0';
   private sharedPools: Map<string, SharedMemoryPool> = new Map();
   private consolidationTimer?: NodeJS.Timeout;
   private archivalTimer?: NodeJS.Timeout;
@@ -729,14 +731,13 @@ export class NeonMemoryProvider extends BaseMemoryProvider {
       }
     }
 
-    const record: EnhancedMemoryRecord = {
+    const builder = buildObject<EnhancedMemoryRecord>({
       id: row.id,
       agentId: row.agent_id,
       type:
         MemoryType[row.type.toUpperCase() as keyof typeof MemoryType] ||
         MemoryType.EXPERIENCE,
       content: row.content,
-      embedding,
       metadata: row.metadata || {},
       importance: row.importance,
       timestamp: new Date(row.timestamp),
@@ -745,19 +746,25 @@ export class NeonMemoryProvider extends BaseMemoryProvider {
         MemoryDuration[
           row.duration.toUpperCase() as keyof typeof MemoryDuration
         ] || MemoryDuration.LONG_TERM,
-      expiresAt: row.expires_at ? new Date(row.expires_at) : undefined,
-    };
+    })
+      .addOptional('embedding', embedding)
+      .addOptional(
+        'expiresAt',
+        row.expires_at ? new Date(row.expires_at) : undefined
+      );
 
     // Add tier and context if available
     if (row.tier) {
-      record.tier = row.tier as MemoryTierType;
+      builder.addOptional('tier', row.tier as MemoryTierType);
     }
     if (row.context) {
-      record.context =
-        typeof row.context === 'string' ? JSON.parse(row.context) : row.context;
+      builder.addOptional(
+        'context',
+        typeof row.context === 'string' ? JSON.parse(row.context) : row.context
+      );
     }
 
-    return record;
+    return builder.build();
   }
 
   /**
@@ -980,6 +987,7 @@ export class NeonMemoryProvider extends BaseMemoryProvider {
 
     for (const memory of memories) {
       const day = memory.timestamp.toISOString().split('T')[0];
+      if (!day) continue;
       if (!grouped.has(day)) {
         grouped.set(day, []);
       }

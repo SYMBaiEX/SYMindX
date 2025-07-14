@@ -10,17 +10,13 @@
  * - Status streaming
  */
 
-import { createServer, IncomingMessage } from 'http';
+import type { IncomingMessage } from 'http';
+import { createServer } from 'http';
 import { parse } from 'url';
 
 import { WebSocket, WebSocketServer } from 'ws';
 
-import {
-  CommandSystem,
-  Command,
-  CommandPriority,
-  CommandType,
-} from '../../../core/command-system';
+// CommandSystem types are available from the extension
 import {
   ExtensionAction,
   Agent,
@@ -126,7 +122,14 @@ export class WebSocketServerSkill {
       if (httpServer) {
         serverOptions.server = httpServer;
       } else {
-        serverOptions.port = this.config.port;
+        // Create standalone HTTP server if none provided
+        const standaloneServer = createServer();
+        serverOptions.server = standaloneServer;
+        standaloneServer.listen(this.config.port, () => {
+          runtimeLogger.extension(
+            `🌐 HTTP server for WebSocket listening on port ${this.config.port}`
+          );
+        });
       }
 
       this.server = new WebSocketServer(serverOptions);
@@ -159,6 +162,15 @@ export class WebSocketServerSkill {
     const ip = req.socket.remoteAddress || 'unknown';
     const userAgent = req.headers['user-agent'];
 
+    // Parse URL for additional connection metadata
+    const urlInfo = parse(req.url || '', true);
+    const query = urlInfo.query;
+
+    // Log connection details including parsed URL parameters
+    runtimeLogger.extension(
+      `🔗 New WebSocket connection attempt from ${ip}${urlInfo.pathname ? ` (${urlInfo.pathname})` : ''}`
+    );
+
     // Check connection limit
     if (this.connections.size >= this.config.maxConnections!) {
       runtimeLogger.warn(
@@ -177,7 +189,11 @@ export class WebSocketServerSkill {
         lastActivity: new Date(),
       },
       subscriptions: new Set(),
-      metadata: {},
+      metadata: {
+        // Store URL query parameters in metadata
+        urlQuery: query,
+        requestPath: urlInfo.pathname,
+      },
     };
 
     if (userAgent) {
@@ -398,9 +414,16 @@ export class WebSocketServerSkill {
     reason: Buffer
   ): void {
     this.connections.delete(connection.id);
+    const reasonStr = reason.toString() || 'No reason provided';
     runtimeLogger.extension(
-      `🔌 WebSocket client disconnected: ${connection.id} (code: ${code})`
+      `🔌 WebSocket client disconnected: ${connection.id} (code: ${code}, reason: ${reasonStr})`
     );
+
+    // Log disconnect details for debugging
+    if (code !== 1000 && code !== 1001) {
+      // Not normal closure
+      runtimeLogger.extension(`⚠️ Abnormal WebSocket closure: ${reasonStr}`);
+    }
   }
 
   /**
@@ -434,7 +457,7 @@ export class WebSocketServerSkill {
       return {
         success: true,
         type: ActionResultType.SUCCESS,
-        data: { sentTo: sentCount, totalConnections: this.connections.size },
+        result: { sentTo: sentCount, totalConnections: this.connections.size },
       };
     } catch (error) {
       return {
@@ -474,7 +497,7 @@ export class WebSocketServerSkill {
       return {
         success: true,
         type: ActionResultType.SUCCESS,
-        data: { sentTo: connectionId },
+        result: { sentTo: connectionId },
       };
     } catch (error) {
       return {
@@ -490,32 +513,60 @@ export class WebSocketServerSkill {
    */
   async getConnections(agent: Agent, params: any): Promise<ActionResult> {
     try {
-      const connectionInfo: ConnectionInfo[] = Array.from(
-        this.connections.values()
-      ).map((conn) => {
-        const info: ConnectionInfo = {
-          id: conn.id,
-          readyState: conn.ws.readyState,
-          ip: conn.clientInfo.ip,
-          connectedAt: conn.clientInfo.connectedAt,
-          lastActivity: conn.clientInfo.lastActivity,
-          subscriptions: Array.from(conn.subscriptions),
-          metadata: conn.metadata,
-        };
+      const { includeMetadata = false, filterByAgent = false } = params || {};
 
-        if (conn.clientInfo.userAgent) {
-          info.userAgent = conn.clientInfo.userAgent;
+      // Log request details
+      runtimeLogger.extension(
+        `📊 Getting WebSocket connections for agent: ${agent.name} (filter: ${filterByAgent})`
+      );
+
+      let connectionsToProcess = Array.from(this.connections.values());
+
+      // Filter by agent if requested
+      if (filterByAgent) {
+        connectionsToProcess = connectionsToProcess.filter(
+          (conn) => conn.metadata?.agentId === agent.id
+        );
+      }
+
+      const connectionInfo: ConnectionInfo[] = connectionsToProcess.map(
+        (conn) => {
+          const info: ConnectionInfo = {
+            id: conn.id,
+            readyState: conn.ws.readyState,
+            ip: conn.clientInfo.ip,
+            connectedAt: conn.clientInfo.connectedAt,
+            lastActivity: conn.clientInfo.lastActivity,
+            subscriptions: Array.from(conn.subscriptions),
+            metadata: includeMetadata ? conn.metadata : {}, // Always include metadata field, but only populate if requested
+          };
+
+          if (conn.clientInfo.userAgent) {
+            info.userAgent = conn.clientInfo.userAgent;
+          }
+
+          return info;
         }
-
-        return info;
-      });
+      );
 
       return {
         success: true,
         type: ActionResultType.SUCCESS,
-        data: {
+        result: {
           totalConnections: this.connections.size,
-          connections: connectionInfo,
+          connections: connectionInfo.map(
+            (info) =>
+              ({
+                id: info.id,
+                readyState: info.readyState,
+                ip: info.ip,
+                userAgent: info.userAgent,
+                connectedAt: info.connectedAt.toISOString(),
+                lastActivity: info.lastActivity.toISOString(),
+                subscriptions: info.subscriptions,
+                metadata: info.metadata,
+              }) as Record<string, any>
+          ),
         },
       };
     } catch (error) {

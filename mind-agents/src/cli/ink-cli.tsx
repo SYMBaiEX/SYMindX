@@ -7,16 +7,13 @@ import React from 'react';
 
 import { MainLayout } from './layouts/index.js';
 
-
 interface AppProps {
   command?: string;
   args?: string[];
 }
 
 const App: React.FC<AppProps> = ({ command, args }) => {
-  return (
-    <MainLayout {...(command && { command })} {...(args && { args })} />
-  );
+  return <MainLayout {...(command && { command })} {...(args && { args })} />;
 };
 
 export default App;

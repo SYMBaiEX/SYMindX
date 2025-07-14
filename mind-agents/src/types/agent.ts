@@ -13,17 +13,37 @@ import {
 } from './common.js';
 import { EmotionModule } from './emotion.js';
 import {
-  AgentCreationResult,
-  AgentDestructionResult,
   AgentStateTransitionResult,
-  MemoryStorageResult,
-  MemoryRetrievalResult,
-  ThoughtProcessingResult,
-  SystemHealthResult,
-  EventDispatchResult,
-  PerformanceMetrics,
-  ModuleManifest,
+  // ModuleManifest - type definition available but not used at runtime
 } from './results.js';
+import {
+  OperationResult,
+  ExecutionResult,
+  AgentId,
+  Timestamp,
+} from './helpers.js';
+
+// Additional result types for agent lifecycle methods
+export interface InitializationResult {
+  success: boolean;
+  message?: string;
+  timestamp: Timestamp;
+  resourcesInitialized: string[];
+}
+
+export interface CleanupResult {
+  success: boolean;
+  message?: string;
+  timestamp: Timestamp;
+  resourcesReleased: string[];
+}
+
+export interface EventProcessingResult {
+  success: boolean;
+  message?: string;
+  timestamp: Timestamp;
+  eventProcessed: boolean;
+}
 
 export enum AgentStatus {
   ACTIVE = 'active',
@@ -33,6 +53,7 @@ export enum AgentStatus {
   ERROR = 'error',
   INITIALIZING = 'initializing',
   STOPPING = 'stopping',
+  DISABLED = 'disabled',
 }
 
 export interface Agent {
@@ -54,6 +75,7 @@ export interface Agent {
   autonomyLevel?: number; // Autonomy level (0-100)
   learning?: any; // Learning system reference
   decision?: any; // Decision system reference
+  personality?: string[]; // Personality traits
 
   // Enhanced lifecycle methods with proper result types
   initialize(config: AgentConfig): Promise<InitializationResult>;
@@ -86,6 +108,8 @@ export interface AgentConfig {
       portal?: string;
     };
   };
+  personality?: string[]; // Top-level personality access for backward compatibility
+  goals?: string[]; // Goals list for agent objectives
   modules: {
     extensions: string[];
     memory?: MemoryConfig;
@@ -145,6 +169,7 @@ export interface EmotionState {
   triggers: string[];
   history: EmotionRecord[];
   timestamp: Date;
+  metadata?: Record<string, any>; // Add metadata property
 }
 
 export interface EmotionRecord {
@@ -186,9 +211,11 @@ export enum MemoryType {
 
 export enum MemoryDuration {
   SHORT_TERM = 'short_term',
+  MEDIUM_TERM = 'medium_term',
   LONG_TERM = 'long_term',
   WORKING = 'working',
   EPISODIC = 'episodic',
+  PERMANENT = 'permanent',
 }
 
 export interface MemoryRecord {
@@ -261,6 +288,7 @@ export interface ThoughtResult {
   actions: AgentAction[];
   memories: MemoryRecord[];
   confidence: number;
+  plan?: Plan; // Add optional plan property
 }
 
 export enum PlanStatus {
@@ -304,6 +332,7 @@ export interface Decision {
   action: AgentAction;
   confidence: number;
   reasoning: string;
+  rationale: string;
   consequences: string[];
 }
 
@@ -314,6 +343,8 @@ export enum CognitionModuleType {
   GOAL_ORIENTED = 'goal_oriented',
   BEHAVIOR_TREE = 'behavior_tree',
   NEURAL_SYMBOLIC = 'neural_symbolic',
+  UNIFIED = 'unified', // Add UNIFIED type
+  THEORY_OF_MIND = 'theory_of_mind', // Add THEORY_OF_MIND type
 }
 
 export interface CognitionConfig {
@@ -431,6 +462,7 @@ export enum ActionStatus {
 
 export interface AgentAction {
   id: string;
+  agentId: string;
   type: string;
   extension: string;
   action: string;
@@ -506,6 +538,14 @@ export interface LazyAgentState extends AgentState {
   lazy?: boolean;
   lastAccessTime?: Date;
   hibernationLevel?: number;
+  memories?: MemoryRecord[]; // Add memories property
+  emotions?: EmotionState; // Add emotions property
+  memoryUsage?: number; // Add memory usage tracking
+  lastActivity?: Date; // Add last activity timestamp
+  emotionState: EmotionState; // Required emotion state
+  recentMemories: MemoryRecord[]; // Required recent memories
+  currentThoughts?: string[]; // Optional current thoughts
+  decisionContext?: any; // Optional decision context
 }
 
 export enum LazyAgentStatus {
@@ -625,6 +665,7 @@ export interface ModuleRegistry {
   // Other methods
   registerLazyAgent(name: string, loader: any): void;
   getToolSystem(name: string): any;
+  getRegisteredAgents(): Agent[]; // Add method for getting registered agents
 }
 
 export enum LogLevel {

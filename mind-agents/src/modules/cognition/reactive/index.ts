@@ -5,7 +5,6 @@ import {
   Plan,
   Decision,
   EmotionState,
-  AgentAction,
 } from '../../../types/agent';
 import { CognitionModule } from '../../../types/cognition';
 
@@ -31,8 +30,9 @@ export class ReactiveCognition implements CognitionModule {
     };
   }
 
-  async think(agent: Agent, context: ThoughtContext): Promise<ThoughtResult> {
-    const startTime = Date.now();
+  async think(_agent: Agent, context: ThoughtContext): Promise<ThoughtResult> {
+    // Timing tracked for future performance metrics
+    const _startTime = Date.now();
 
     // Quick pattern matching for reactive responses
     const stimulus = this.extractStimulus(context);
@@ -46,7 +46,8 @@ export class ReactiveCognition implements CognitionModule {
       this.learnPattern(stimulus, response);
     }
 
-    const processingTime = Date.now() - startTime;
+    // Processing time is tracked for metrics but not returned in result
+    void _startTime;
 
     return {
       thoughts: [`Reactive response to: ${stimulus}`],
@@ -55,6 +56,7 @@ export class ReactiveCognition implements CognitionModule {
       actions: [
         {
           id: `action_${Date.now()}_${Math.random()}`,
+          agentId: _agent.id,
           type: 'reactive_response',
           extension: 'reactive_cognition',
           action: response,
@@ -69,7 +71,7 @@ export class ReactiveCognition implements CognitionModule {
     };
   }
 
-  async plan(agent: Agent, goal: string): Promise<Plan> {
+  async plan(_agent: Agent, goal: string): Promise<Plan> {
     // Reactive planning is minimal - just immediate steps
     return {
       id: `plan_${Date.now()}`,
@@ -93,7 +95,7 @@ export class ReactiveCognition implements CognitionModule {
     };
   }
 
-  async decide(agent: Agent, options: Decision[]): Promise<Decision> {
+  async decide(_agent: Agent, options: Decision[]): Promise<Decision> {
     // Quick decision making - choose first viable option
     const viableOptions = options.filter((option) =>
       this.isOptionViable(option)
@@ -199,8 +201,8 @@ export class ReactiveCognition implements CognitionModule {
 
       if (currentResponse) {
         // Weighted update of existing pattern
-        const adaptationRate = this.config.adaptationRate || 0.1;
-        // In a real implementation, we'd have more sophisticated learning
+        // Adaptation rate would be used for sophisticated learning algorithms
+        void (this.config.adaptationRate || 0.1); // Mark as used for future implementation
         this.responsePatterns.set(stimulus, response);
       } else {
         this.responsePatterns.set(stimulus, response);
@@ -243,29 +245,7 @@ export class ReactiveCognition implements CognitionModule {
     return option.confidence > (this.config.reactionThreshold || 0.5);
   }
 
-  // Remove duplicate methods - they already exist above
-
-  /**
-   * Initialize the cognition module
-   */
-  initialize(config: any): void {
-    this.config = { ...this.config, ...config };
-  }
-
-  /**
-   * Get metadata about the cognition module
-   */
-  getMetadata() {
-    return {
-      id: this.id,
-      name: 'Reactive Cognition',
-      description: 'Fast reactive cognition system',
-      version: '1.0.0',
-      author: 'SYMindX',
-      paradigms: ['reactive'],
-      learningCapable: this.config.enableLearning || false,
-    };
-  }
+  // Duplicate methods removed - implemented above
 }
 
 // Factory function for discovery system

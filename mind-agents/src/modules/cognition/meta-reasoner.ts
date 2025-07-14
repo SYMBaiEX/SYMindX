@@ -11,11 +11,9 @@ import {
   ThoughtResult,
   Plan,
   Decision,
-  AgentAction,
-  ActionCategory,
-  ActionStatus,
   MemoryRecord,
 } from '../../types/agent';
+// import type { AgentAction, ActionCategory, ActionStatus } from '../../types/agent'; - types not used at runtime
 import { Experience } from '../../types/autonomous';
 import {
   CognitionModule,
@@ -266,7 +264,11 @@ export class MetaReasoner implements CognitionModule {
     }
 
     if (options.length === 1) {
-      return options[0];
+      const firstOption = options[0];
+      if (!firstOption) {
+        throw new Error('First option is undefined');
+      }
+      return firstOption;
     }
 
     // Create decision context
@@ -288,6 +290,9 @@ export class MetaReasoner implements CognitionModule {
     // Learn from the experience with all learning-capable reasoners
     for (const [paradigm, reasoner] of Array.from(this.reasoners.entries())) {
       if (reasoner.learn) {
+        runtimeLogger.debug(
+          `🧠 Learning from experience using ${paradigm} paradigm`
+        );
         await reasoner.learn(agent, experience);
       }
     }
@@ -359,6 +364,17 @@ export class MetaReasoner implements CognitionModule {
       (1 - analysis.uncertainty) * 0.3 +
       analysis.knowledgeAvailable * 0.3;
     if (analysis.timeConstraint > 0.7) ruleBasedScore *= 1.2; // Good for quick decisions
+
+    // Boost rule-based scoring if context contains clear patterns
+    if (
+      context.events.some(
+        (e) => e.type.includes('pattern') || e.type.includes('rule')
+      )
+    ) {
+      ruleBasedScore *= 1.1;
+      reasoning.push('Context contains patterns favoring rule-based reasoning');
+    }
+
     scores.set(ReasoningParadigm.RULE_BASED, ruleBasedScore);
 
     // PDDL planning scoring
@@ -396,7 +412,8 @@ export class MetaReasoner implements CognitionModule {
     const sortedScores = Array.from(scores.entries()).sort(
       (a, b) => b[1] - a[1]
     );
-    const selectedParadigm = sortedScores[0]?.[0] ?? 'reactive';
+    const selectedParadigm = (sortedScores[0]?.[0] ??
+      'reactive') as ReasoningParadigm;
     const confidence = sortedScores[0]?.[1] ?? 0.5;
 
     // Generate reasoning
@@ -496,6 +513,14 @@ export class MetaReasoner implements CognitionModule {
     context: ThoughtContext
   ): number {
     let knowledge = 0.5; // Base knowledge
+
+    // Agent's experience level affects knowledge availability
+    if (agent.characterConfig?.personality?.traits?.openness > 0.7) {
+      knowledge += 0.1; // More open agents tend to have broader knowledge
+    }
+    if (agent.characterConfig?.personality?.traits?.conscientiousness > 0.7) {
+      knowledge += 0.1; // More conscientious agents retain knowledge better
+    }
 
     // Memory availability
     if (context.memories && context.memories.length > 0) {

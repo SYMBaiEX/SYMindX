@@ -10,12 +10,14 @@ The SYMindX configuration system provides robust, type-safe environment variable
 ## Key Features
 
 ### ✅ Type Safety
+
 - **exactOptionalPropertyTypes** compliance
 - No `undefined` values in required configuration
 - Strong typing throughout the system
 - Comprehensive type validation
 
 ### 🛡️ Environment Variable Validation
+
 - **API Key Format Validation**: Validates specific formats for each provider
 - **Boolean Parsing**: Safe conversion of string values to boolean
 - **Integer Validation**: Ensures positive values for numeric settings
@@ -23,6 +25,7 @@ The SYMindX configuration system provides robust, type-safe environment variable
 - **Conditional Inclusion**: Only includes defined values
 
 ### 🔧 Configuration Management
+
 - **Safe Defaults**: Provides sensible defaults for all settings
 - **Graceful Fallbacks**: Handles missing or invalid values
 - **Environment-Specific**: Adapts to development/production environments
@@ -53,7 +56,7 @@ The system validates API keys for specific formats:
 // OpenAI: Must start with 'sk-' and be >20 characters
 OPENAI_API_KEY=sk-1234567890123456789012345678901234
 
-// Anthropic: Must start with 'sk-ant-' and be >20 characters  
+// Anthropic: Must start with 'sk-ant-' and be >20 characters
 ANTHROPIC_API_KEY=sk-ant-1234567890123456789012345678901234
 
 // Groq: Must start with 'gsk_' and be >20 characters
@@ -69,9 +72,9 @@ Safe boolean parsing with defaults:
 
 ```typescript
 // Accepts: 'true', '1', 'false', '0', undefined
-ENABLE_OPENAI_EMBEDDINGS=true
-GROQ_ENABLED=1
-OPENAI_CHAT_ENABLED=false
+ENABLE_OPENAI_EMBEDDINGS = true;
+GROQ_ENABLED = 1;
+OPENAI_CHAT_ENABLED = false;
 ```
 
 ### Portal Configuration
@@ -128,8 +131,8 @@ const memoryConfig = {
     enable_embeddings: 'true',
     embedding_provider: 'openai',
     embedding_model: 'text-embedding-3-large',
-    embedding_dimensions: 3072
-  }
+    embedding_dimensions: 3072,
+  },
 };
 ```
 
@@ -147,8 +150,8 @@ const portalConfig = {
   config: {
     apiKey: process.env.OPENAI_API_KEY, // Only if valid
     chatModel: 'gpt-4.1-mini',
-    embeddingModel: 'text-embedding-3-large'
-  }
+    embeddingModel: 'text-embedding-3-large',
+  },
 };
 ```
 
@@ -160,16 +163,16 @@ Critical configuration errors that prevent startup:
 
 ```typescript
 // Missing required providers
-"At least one AI provider must be configured with valid API key"
+'At least one AI provider must be configured with valid API key';
 
 // Invalid API configuration
-"OpenAI API key required when using OpenAI embeddings"
+'OpenAI API key required when using OpenAI embeddings';
 
 // Invalid URL format
-"Invalid Ollama base URL format"
+'Invalid Ollama base URL format';
 
 // Invalid numeric values
-"Embedding dimensions must be a positive number"
+'Embedding dimensions must be a positive number';
 ```
 
 ### Validation Warnings
@@ -178,10 +181,10 @@ Non-critical issues that allow startup but should be addressed:
 
 ```typescript
 // Invalid API key format
-"Invalid format for GROQ_API_KEY"
+'Invalid format for GROQ_API_KEY';
 
 // Configuration mismatches
-"Ollama embeddings enabled but Ollama is not configured"
+'Ollama embeddings enabled but Ollama is not configured';
 ```
 
 ## Best Practices
@@ -262,7 +265,7 @@ afterEach(() => {
    - Check API key format validation
    - Verify portal enabled flags
 
-2. **"Invalid format for [PROVIDER]_API_KEY"**
+2. **"Invalid format for [PROVIDER]\_API_KEY"**
    - Check API key format requirements
    - Ensure key is not truncated or corrupted
    - Verify key is for the correct provider
@@ -314,20 +317,23 @@ No changes needed to existing character configuration files. The system automati
 ## Performance Considerations
 
 ### Lazy Loading
+
 - Configuration validation occurs only when needed
 - Cached results for subsequent calls
 - Minimal performance impact
 
 ### Memory Usage
+
 - Efficient validation algorithms
 - Shared configuration instances
 - Garbage collection friendly
 
 ### Startup Time
+
 - Fast validation process
 - Parallel validation where possible
 - Early error detection prevents wasted startup time
 
 ---
 
-*Configuration System v2.0 | Type-safe, secure, and robust*
+_Configuration System v2.0 | Type-safe, secure, and robust_

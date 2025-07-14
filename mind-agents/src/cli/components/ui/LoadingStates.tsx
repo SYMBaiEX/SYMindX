@@ -10,11 +10,11 @@ interface LoadingIndicatorProps {
 }
 
 // Loading dots indicator
-const LoadingDots: React.FC<{ color?: string; text?: string; reducedMotion?: boolean }> = ({ 
-  color = 'cyan', 
-  text = 'Loading',
-  reducedMotion = false 
-}) => {
+const LoadingDots: React.FC<{
+  color?: string;
+  text?: string;
+  reducedMotion?: boolean;
+}> = ({ color = 'cyan', text = 'Loading', reducedMotion = false }) => {
   const [dots, setDots] = React.useState('');
 
   React.useEffect(() => {
@@ -24,7 +24,7 @@ const LoadingDots: React.FC<{ color?: string; text?: string; reducedMotion?: boo
     }
 
     const interval = setInterval(() => {
-      setDots(prev => {
+      setDots((prev) => {
         if (prev.length >= 3) return '';
         return prev + '.';
       });
@@ -36,18 +36,19 @@ const LoadingDots: React.FC<{ color?: string; text?: string; reducedMotion?: boo
   return (
     <Box>
       <Text color={color}>
-        {text}{dots}
+        {text}
+        {dots}
       </Text>
     </Box>
   );
 };
 
 // Spinner indicator
-const LoadingSpinner: React.FC<{ color?: string; size?: number; reducedMotion?: boolean }> = ({ 
-  color = 'cyan', 
-  size = 1,
-  reducedMotion = false 
-}) => {
+const LoadingSpinner: React.FC<{
+  color?: string;
+  size?: number;
+  reducedMotion?: boolean;
+}> = ({ color = 'cyan', size = 1, reducedMotion = false }) => {
   const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
   const [frame, setFrame] = React.useState(0);
 
@@ -58,7 +59,7 @@ const LoadingSpinner: React.FC<{ color?: string; size?: number; reducedMotion?: 
     }
 
     const interval = setInterval(() => {
-      setFrame(prev => (prev + 1) % frames.length);
+      setFrame((prev) => (prev + 1) % frames.length);
     }, 80);
 
     return () => clearInterval(interval);
@@ -66,19 +67,15 @@ const LoadingSpinner: React.FC<{ color?: string; size?: number; reducedMotion?: 
 
   const spinner = reducedMotion ? '○' : frames[frame];
 
-  return (
-    <Text color={color}>
-      {Array(size).fill(spinner).join('')}
-    </Text>
-  );
+  return <Text color={color}>{Array(size).fill(spinner).join('')}</Text>;
 };
 
 // Pulse indicator
-const LoadingPulse: React.FC<{ color?: string; width?: number; reducedMotion?: boolean }> = ({ 
-  color = 'cyan', 
-  width = 20,
-  reducedMotion = false 
-}) => {
+const LoadingPulse: React.FC<{
+  color?: string;
+  width?: number;
+  reducedMotion?: boolean;
+}> = ({ color = 'cyan', width = 20, reducedMotion = false }) => {
   const [position, setPosition] = React.useState(0);
   const [direction, setDirection] = React.useState(1);
 
@@ -89,7 +86,7 @@ const LoadingPulse: React.FC<{ color?: string; width?: number; reducedMotion?: b
     }
 
     const interval = setInterval(() => {
-      setPosition(prev => {
+      setPosition((prev) => {
         const next = prev + direction;
         if (next >= width - 3 || next <= 0) {
           setDirection(-direction);
@@ -101,7 +98,7 @@ const LoadingPulse: React.FC<{ color?: string; width?: number; reducedMotion?: b
     return () => clearInterval(interval);
   }, [width, direction, reducedMotion]);
 
-  const pulse = reducedMotion 
+  const pulse = reducedMotion
     ? '█'.repeat(3)
     : ' '.repeat(position) + '█'.repeat(3) + ' '.repeat(width - position - 3);
 
@@ -113,13 +110,28 @@ const LoadingPulse: React.FC<{ color?: string; width?: number; reducedMotion?: b
 };
 
 // Wave indicator
-const LoadingWave: React.FC<{ color?: string; width?: number; reducedMotion?: boolean }> = ({ 
-  color = 'cyan', 
-  width = 10,
-  reducedMotion = false 
-}) => {
+const LoadingWave: React.FC<{
+  color?: string;
+  width?: number;
+  reducedMotion?: boolean;
+}> = ({ color = 'cyan', width = 10, reducedMotion = false }) => {
   const [phase, setPhase] = React.useState(0);
-  const waveChars = ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█', '▇', '▆', '▅', '▄', '▃', '▂'];
+  const waveChars = [
+    '▁',
+    '▂',
+    '▃',
+    '▄',
+    '▅',
+    '▆',
+    '▇',
+    '█',
+    '▇',
+    '▆',
+    '▅',
+    '▄',
+    '▃',
+    '▂',
+  ];
 
   React.useEffect(() => {
     if (reducedMotion) {
@@ -128,20 +140,21 @@ const LoadingWave: React.FC<{ color?: string; width?: number; reducedMotion?: bo
     }
 
     const interval = setInterval(() => {
-      setPhase(prev => (prev + 1) % waveChars.length);
+      setPhase((prev) => (prev + 1) % waveChars.length);
     }, 150);
 
     return () => clearInterval(interval);
   }, [waveChars.length, reducedMotion]);
 
-  const wave = Array(width).fill(null).map((_, i) => {
-    const charIndex = reducedMotion ? 4 : (phase + i) % waveChars.length;
-    return waveChars[charIndex];
-  }).join('');
+  const wave = Array(width)
+    .fill(null)
+    .map((_, i) => {
+      const charIndex = reducedMotion ? 4 : (phase + i) % waveChars.length;
+      return waveChars[charIndex];
+    })
+    .join('');
 
-  return (
-    <Text color={color}>{wave}</Text>
-  );
+  return <Text color={color}>{wave}</Text>;
 };
 
 // Main loading indicator component
@@ -150,31 +163,61 @@ export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
   variant = 'spinner',
   color = 'cyan',
   size = 'medium',
-  reducedMotion = false
+  reducedMotion = false,
 }) => {
   const sizeMap = {
     small: 1,
     medium: 2,
-    large: 3
+    large: 3,
   };
 
   const widthMap = {
     small: 15,
     medium: 20,
-    large: 30
+    large: 30,
   };
 
   switch (variant) {
     case 'dots':
-      return <LoadingDots color={color} {...(text && { text })} reducedMotion={reducedMotion} />;
+      return (
+        <LoadingDots
+          color={color}
+          {...(text && { text })}
+          reducedMotion={reducedMotion}
+        />
+      );
     case 'spinner':
-      return <LoadingSpinner color={color} size={sizeMap[size]} reducedMotion={reducedMotion} />;
+      return (
+        <LoadingSpinner
+          color={color}
+          size={sizeMap[size]}
+          reducedMotion={reducedMotion}
+        />
+      );
     case 'pulse':
-      return <LoadingPulse color={color} width={widthMap[size]} reducedMotion={reducedMotion} />;
+      return (
+        <LoadingPulse
+          color={color}
+          width={widthMap[size]}
+          reducedMotion={reducedMotion}
+        />
+      );
     case 'wave':
-      return <LoadingWave color={color} width={widthMap[size]} reducedMotion={reducedMotion} />;
+      return (
+        <LoadingWave
+          color={color}
+          width={widthMap[size]}
+          reducedMotion={reducedMotion}
+        />
+      );
     default:
-      return <LoadingSpinner color={color} size={sizeMap[size]} reducedMotion={reducedMotion} />;
+      return (
+        <LoadingSpinner
+          color={color}
+          size={sizeMap[size]}
+          reducedMotion={reducedMotion}
+        />
+      );
   }
 };
 
@@ -196,12 +239,14 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
   showPercentage = true,
   color = 'green',
   backgroundColor = 'gray',
-  reducedMotion = false
+  reducedMotion = false,
 }) => {
   const percentage = Math.min(100, Math.max(0, (value / total) * 100));
   const filledWidth = Math.round((percentage / 100) * width);
-  
-  const [displayWidth, setDisplayWidth] = React.useState(reducedMotion ? filledWidth : 0);
+
+  const [displayWidth, setDisplayWidth] = React.useState(
+    reducedMotion ? filledWidth : 0
+  );
 
   React.useEffect(() => {
     if (reducedMotion) {
@@ -215,7 +260,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
 
     const interval = setInterval(() => {
       currentStep++;
-      setDisplayWidth(prev => {
+      setDisplayWidth((prev) => {
         const next = prev + stepSize;
         if (currentStep >= steps) {
           clearInterval(interval);
@@ -257,7 +302,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
   width = 20,
   height = 1,
   animate = true,
-  reducedMotion = false
+  reducedMotion = false,
 }) => {
   const [opacity, setOpacity] = React.useState(1);
 
@@ -268,19 +313,20 @@ export const Skeleton: React.FC<SkeletonProps> = ({
     }
 
     const interval = setInterval(() => {
-      setOpacity(prev => prev === 1 ? 0.3 : 1);
+      setOpacity((prev) => (prev === 1 ? 0.3 : 1));
     }, 1000);
 
     return () => clearInterval(interval);
   }, [animate, reducedMotion]);
 
   const char = opacity > 0.6 ? '█' : '▓';
-  const skeleton = Array(height).fill(null).map(() => 
-    char.repeat(width)
-  ).join('\n');
+  const skeleton = Array(height)
+    .fill(null)
+    .map(() => char.repeat(width))
+    .join('\n');
 
   return (
-    <Box flexDirection="column">
+    <Box flexDirection='column'>
       <Text dimColor={opacity < 0.6}>{skeleton}</Text>
     </Box>
   );
@@ -298,7 +344,7 @@ export const Shimmer: React.FC<ShimmerProps> = ({
   width = 20,
   height = 1,
   duration = 2000,
-  reducedMotion = false
+  reducedMotion = false,
 }) => {
   const [position, setPosition] = React.useState(-5);
 
@@ -308,33 +354,43 @@ export const Shimmer: React.FC<ShimmerProps> = ({
       return;
     }
 
-    const interval = setInterval(() => {
-      setPosition(prev => {
-        if (prev > width) return -5;
-        return prev + 1;
-      });
-    }, duration / (width + 5));
+    const interval = setInterval(
+      () => {
+        setPosition((prev) => {
+          if (prev > width) return -5;
+          return prev + 1;
+        });
+      },
+      duration / (width + 5)
+    );
 
     return () => clearInterval(interval);
   }, [width, duration, reducedMotion]);
 
-  const lines = Array(height).fill(null).map(() => {
-    const line = Array(width).fill(null).map((_, i) => {
-      const distance = Math.abs(i - position);
-      if (distance <= 2) {
-        return '█';
-      } else if (distance <= 4) {
-        return '▓';
-      }
-      return '░';
-    }).join('');
-    return line;
-  });
+  const lines = Array(height)
+    .fill(null)
+    .map(() => {
+      const line = Array(width)
+        .fill(null)
+        .map((_, i) => {
+          const distance = Math.abs(i - position);
+          if (distance <= 2) {
+            return '█';
+          } else if (distance <= 4) {
+            return '▓';
+          }
+          return '░';
+        })
+        .join('');
+      return line;
+    });
 
   return (
-    <Box flexDirection="column">
+    <Box flexDirection='column'>
       {lines.map((line, i) => (
-        <Text key={i} color="gray">{line}</Text>
+        <Text key={i} color='gray'>
+          {line}
+        </Text>
       ))}
     </Box>
   );
@@ -345,5 +401,5 @@ export default {
   LoadingIndicator,
   ProgressBar,
   Skeleton,
-  Shimmer
+  Shimmer,
 };

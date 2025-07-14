@@ -72,6 +72,7 @@ export type EventDispatchFunction<T = any> = (
   eventType: string,
   data: T
 ) => Promise<EventDispatchResult>;
+export type EventProcessingFunction = EventHandlerFunction;
 
 /**
  * State management function signatures

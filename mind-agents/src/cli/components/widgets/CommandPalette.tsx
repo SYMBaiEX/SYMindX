@@ -1,13 +1,13 @@
-import { Box, Text } from 'ink'
-import React from 'react'
+import { Box, Text } from 'ink';
+import React from 'react';
 
-import { cyberpunkTheme } from '../../themes/cyberpunk.js'
-import { GlitchText } from '../effects/GlitchText.js'
+import { cyberpunkTheme } from '../../themes/cyberpunk.js';
+import { GlitchText } from '../effects/GlitchText.js';
 
 interface CommandPaletteProps {
-  value: string
-  onSubmit: (command: string) => void
-  onCancel: () => void
+  value: string;
+  onSubmit: (command: string) => void;
+  onCancel: () => void;
 }
 
 export const CommandPalette: React.FC<CommandPaletteProps> = ({
@@ -17,19 +17,23 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 }) => {
   return (
     <Box
-      flexDirection="column"
-      borderStyle="double"
+      flexDirection='column'
+      borderStyle='double'
       borderColor={cyberpunkTheme.colors.primary}
       paddingX={2}
       paddingY={1}
     >
       {/* Title */}
       <Box marginBottom={1}>
-        <GlitchText intensity={0.1} frequency={3000} color={cyberpunkTheme.colors.accent}>
+        <GlitchText
+          intensity={0.1}
+          frequency={3000}
+          color={cyberpunkTheme.colors.accent}
+        >
           COMMAND MODE
         </GlitchText>
       </Box>
-      
+
       {/* Command input */}
       <Box>
         <Text color={cyberpunkTheme.colors.primary} bold>
@@ -42,13 +46,14 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
           █
         </Text>
       </Box>
-      
+
       {/* Hints */}
       <Box marginTop={1}>
         <Text color={cyberpunkTheme.colors.textDim}>
-          [Enter] Execute | [Esc] Cancel | Commands: dashboard, agents, chat, logs, settings, help, quit
+          [Enter] Execute | [Esc] Cancel | Commands: dashboard, agents, chat,
+          logs, settings, help, quit
         </Text>
       </Box>
     </Box>
-  )
-}
+  );
+};

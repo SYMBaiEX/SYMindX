@@ -10,10 +10,8 @@ import {
   SearchQuery,
   SearchResult,
   SearchQueryType,
-  BoostFactors,
   TimeRange,
   MemoryRelationship,
-  MemoryRelationshipType,
 } from '../../types/memory';
 import { runtimeLogger } from '../../utils/logger';
 
@@ -47,8 +45,12 @@ export class AdvancedSearchEngine {
     conceptExtractor?: ConceptExtractor,
     embeddingService?: EmbeddingService
   ) {
-    this.conceptExtractor = conceptExtractor;
-    this.embeddingService = embeddingService;
+    if (conceptExtractor !== undefined) {
+      this.conceptExtractor = conceptExtractor;
+    }
+    if (embeddingService !== undefined) {
+      this.embeddingService = embeddingService;
+    }
   }
 
   /**
@@ -392,17 +394,19 @@ export class AdvancedSearchEngine {
     // Find temporal patterns
     for (let i = 0; i < sortedMemories.length; i++) {
       const memory = sortedMemories[i];
+      if (!memory) continue;
+
       let score = 0;
       const explanations: string[] = [];
 
       // Score based on recency
-      const age = Date.now() - (memory?.timestamp?.getTime() ?? Date.now());
+      const age = Date.now() - memory.timestamp.getTime();
       const daysSinceCreated = age / (1000 * 60 * 60 * 24);
       const recencyScore = Math.max(0, 1 - daysSinceCreated / 30);
       score += recencyScore * 0.5;
 
       // Score based on content relevance
-      if (memory?.content?.toLowerCase().includes(query.query.toLowerCase())) {
+      if (memory.content.toLowerCase().includes(query.query.toLowerCase())) {
         score += 0.5;
         explanations.push('Content match');
       }
@@ -633,9 +637,13 @@ export class AdvancedSearchEngine {
   }
 
   /**
-   * Apply single filter
+   * Apply single filter (reserved for future filtering features)
    */
-  private applyFilter(value: any, operator: string, filterValue: any): boolean {
+  private _applyFilter(
+    value: any,
+    operator: string,
+    filterValue: any
+  ): boolean {
     switch (operator) {
       case 'eq':
         return value === filterValue;

@@ -1,4 +1,5 @@
 import { Agent } from '../types/agent';
+import { buildObject } from '../utils/type-helpers';
 import {
   Portal,
   PortalConfig,
@@ -240,20 +241,28 @@ export abstract class BasePortal implements Portal {
         options.outputFormat
       );
 
-      return {
+      const evalResult = buildObject<ToolEvaluationResult>({
         analysis: evaluation.analysis,
-        score: evaluation.score,
-        confidence: evaluation.confidence,
         reasoning: evaluation.reasoning,
-        recommendations: evaluation.recommendations,
         metadata: {
           model: toolModel,
           processingTime,
-          tokenUsage: result.usage,
-          evaluationCriteria: options.criteria,
-          outputFormat: options.outputFormat,
         },
-      };
+      })
+        .addOptional('score', evaluation.score)
+        .addOptional('confidence', evaluation.confidence)
+        .addOptional('recommendations', evaluation.recommendations)
+        .build();
+
+      // Add optional metadata fields
+      if (result.usage && evalResult.metadata)
+        evalResult.metadata.tokenUsage = result.usage;
+      if (options.criteria && evalResult.metadata)
+        evalResult.metadata.evaluationCriteria = options.criteria;
+      if (options.outputFormat && evalResult.metadata)
+        evalResult.metadata.outputFormat = options.outputFormat;
+
+      return evalResult;
     } catch (error) {
       console.error(`${this.name} task evaluation error:`, error);
       throw new Error(`${this.name} task evaluation failed: ${error}`);
@@ -350,7 +359,7 @@ export abstract class BasePortal implements Portal {
       ) {
         currentSection = 'score';
         const scoreMatch = trimmed.match(/(\\d+)/);
-        if (scoreMatch) score = parseInt(scoreMatch[1]);
+        if (scoreMatch && scoreMatch[1]) score = parseInt(scoreMatch[1]);
         continue;
       } else if (
         trimmed.toLowerCase().includes('confidence:') ||
@@ -358,7 +367,7 @@ export abstract class BasePortal implements Portal {
       ) {
         currentSection = 'confidence';
         const confMatch = trimmed.match(/(\\d+)/);
-        if (confMatch) confidence = parseInt(confMatch[1]);
+        if (confMatch && confMatch[1]) confidence = parseInt(confMatch[1]);
         continue;
       } else if (
         trimmed.toLowerCase().includes('reasoning:') ||
@@ -399,13 +408,19 @@ export abstract class BasePortal implements Portal {
       analysis = text.trim();
     }
 
-    return {
+    const result = buildObject<ToolEvaluationResult>({
       analysis: analysis || text.trim(),
-      score,
-      confidence,
       reasoning: reasoning || 'No specific reasoning provided',
-      recommendations: recommendations.length > 0 ? recommendations : undefined,
-    };
+    })
+      .addOptional('score', score)
+      .addOptional('confidence', confidence)
+      .addOptional(
+        'recommendations',
+        recommendations.length > 0 ? recommendations : undefined
+      )
+      .build();
+
+    return result;
   }
 
   /**

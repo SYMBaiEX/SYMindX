@@ -6,17 +6,10 @@
  */
 
 import { vertex } from '@ai-sdk/google-vertex';
-import {
-  generateText,
-  streamText,
-  embed,
-  embedMany,
-  type LanguageModel,
-} from 'ai';
+import { generateText, streamText, type LanguageModel } from 'ai';
 
 import { Agent } from '../../types/agent';
 import {
-  Portal,
   PortalConfig,
   PortalType,
   PortalStatus,
@@ -215,7 +208,7 @@ export class GoogleVertexPortal extends BasePortal {
     this.vertexProvider = vertex;
   }
 
-  protected getDefaultModel(
+  protected override getDefaultModel(
     type: 'chat' | 'tool' | 'embedding' | 'image'
   ): string {
     switch (type) {
@@ -232,7 +225,7 @@ export class GoogleVertexPortal extends BasePortal {
     }
   }
 
-  async init(agent: Agent): Promise<void> {
+  override async init(agent: Agent): Promise<void> {
     this.status = PortalStatus.INITIALIZING;
     console.log(
       `🔮 Initializing Google Vertex AI portal for agent ${agent.name}`
@@ -250,7 +243,7 @@ export class GoogleVertexPortal extends BasePortal {
     }
   }
 
-  protected async validateConfig(): Promise<void> {
+  protected override async validateConfig(): Promise<void> {
     if (!this.projectId) {
       throw new Error('Project ID is required for Google Vertex AI portal');
     }
@@ -297,14 +290,19 @@ export class GoogleVertexPortal extends BasePortal {
     const config = this.config as GoogleVertexConfig;
 
     try {
-      const { text, usage, finishReason } = await generateText({
+      const baseParams = {
         model,
         prompt,
         maxOutputTokens: config.maxOutputTokens || 8192,
         temperature: options?.temperature || config.temperature || 0.7,
+      };
+
+      const params = buildAISDKParams(baseParams, {
         topP: options?.topP || config.generationConfig?.topP,
         topK: config.generationConfig?.topK,
       });
+
+      const { text, usage, finishReason } = await generateText(params);
 
       return {
         text,
@@ -330,14 +328,19 @@ export class GoogleVertexPortal extends BasePortal {
     const convertedMessages = this.convertToModelMessages(messages);
 
     try {
-      const { text, usage, finishReason } = await generateText({
+      const baseParams = {
         model,
         messages: convertedMessages,
         maxOutputTokens: config.maxOutputTokens || 8192,
         temperature: options?.temperature || config.temperature || 0.7,
+      };
+
+      const params = buildAISDKParams(baseParams, {
         topP: options?.topP || config.generationConfig?.topP,
         topK: config.generationConfig?.topK,
       });
+
+      const { text, usage, finishReason } = await generateText(params);
 
       const message: ChatMessage = {
         role: MessageRole.ASSISTANT,
@@ -383,7 +386,7 @@ export class GoogleVertexPortal extends BasePortal {
     }
   }
 
-  async generateImage(
+  override async generateImage(
     prompt: string,
     options?: ImageGenerationOptions
   ): Promise<ImageGenerationResult> {
@@ -405,7 +408,7 @@ export class GoogleVertexPortal extends BasePortal {
     }
   }
 
-  async *streamText(
+  override async *streamText(
     prompt: string,
     options?: TextGenerationOptions
   ): AsyncGenerator<string> {
@@ -415,14 +418,19 @@ export class GoogleVertexPortal extends BasePortal {
     const config = this.config as GoogleVertexConfig;
 
     try {
-      const { textStream } = await streamText({
+      const baseParams = {
         model,
         prompt,
         maxOutputTokens: config.maxOutputTokens || 8192,
         temperature: options?.temperature || config.temperature || 0.7,
+      };
+
+      const params = buildAISDKParams(baseParams, {
         topP: options?.topP || config.generationConfig?.topP,
         topK: config.generationConfig?.topK,
       });
+
+      const { textStream } = await streamText(params);
 
       for await (const delta of textStream) {
         yield delta;
@@ -432,7 +440,7 @@ export class GoogleVertexPortal extends BasePortal {
     }
   }
 
-  async *streamChat(
+  override async *streamChat(
     messages: ChatMessage[],
     options?: ChatGenerationOptions
   ): AsyncGenerator<string> {
@@ -444,14 +452,19 @@ export class GoogleVertexPortal extends BasePortal {
     const convertedMessages = this.convertToModelMessages(messages);
 
     try {
-      const { textStream } = await streamText({
+      const baseParams = {
         model,
         messages: convertedMessages,
         maxOutputTokens: config.maxOutputTokens || 8192,
         temperature: options?.temperature || config.temperature || 0.7,
+      };
+
+      const params = buildAISDKParams(baseParams, {
         topP: options?.topP || config.generationConfig?.topP,
         topK: config.generationConfig?.topK,
       });
+
+      const { textStream } = await streamText(params);
 
       for await (const delta of textStream) {
         yield delta;
@@ -461,7 +474,7 @@ export class GoogleVertexPortal extends BasePortal {
     }
   }
 
-  hasCapability(capability: PortalCapability): boolean {
+  override hasCapability(capability: PortalCapability): boolean {
     switch (capability) {
       case PortalCapability.TEXT_GENERATION:
       case PortalCapability.CHAT_GENERATION:

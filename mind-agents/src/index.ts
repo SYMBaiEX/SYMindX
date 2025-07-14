@@ -12,12 +12,19 @@ dotenv.config({ path: envPath });
 
 import { SYMindXRuntime } from './core/runtime';
 import type { RuntimeConfig } from './types/agent';
-import {
-  LogLevel,
+import { LogLevel } from './types/agent';
+// Export types for API consumers
+export type {
   MemoryProviderType,
   EmotionModuleType,
   CognitionModuleType,
 } from './types/agent';
+
+// Available module types for runtime configuration:
+// - Memory providers: MemoryProviderType
+// - Emotion modules: EmotionModuleType
+// - Cognition modules: CognitionModuleType
+// These types are exported for API consumers but not used directly in startup
 import {
   displayBanner,
   createSpinner,
@@ -121,7 +128,17 @@ async function start() {
     runtime.eventBus.on('command:executed', () => commandCount++);
     runtime.eventBus.on('portal:request', () => portalRequestCount++);
 
-    // Dashboard update removed - now handled by CLI monitor command
+    // Display initial dashboard status with actual uptime
+    dashboard.update({
+      metrics: {
+        uptime: (Date.now() - startTime) / 1000, // uptime in seconds
+        activeAgents: runtime.registry.getRegisteredAgents().length,
+        commandsProcessed: commandCount,
+        portalRequests: portalRequestCount,
+        memory: process.memoryUsage().heapUsed / 1024 / 1024,
+      },
+    });
+    dashboard.render();
   } catch (error) {
     logger.error('Failed to start runtime:', error);
     process.exit(1);

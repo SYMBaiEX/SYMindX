@@ -4,7 +4,7 @@
  * Provides actions related to HTTP request handling and response management.
  */
 
-import { Request, Response } from 'express';
+// HTTP skill implementation - Express types available when needed
 
 import {
   ExtensionAction,
@@ -97,14 +97,31 @@ export class HttpSkill {
     try {
       const { message, sessionId, userId } = params;
 
-      // Process the chat message through the agent
-      // For now, return a simple response as Agent.processMessage doesn't exist
-      const response = {
-        message: `Received message: ${message}`,
-        sessionId,
-        userId,
-        source: 'api',
-      };
+      // Process the chat message through the extension's chat handler
+      let response;
+      if (this._extension.handleChatRequest) {
+        // Use extension's chat handling if available
+        const chatResponse = await this._extension.handleChatRequest({
+          agentId: _agent.id,
+          message,
+          conversationId: sessionId,
+          userId,
+        });
+        response = {
+          message: chatResponse.message || chatResponse.response,
+          sessionId,
+          userId,
+          source: 'api',
+        };
+      } else {
+        // Fallback response
+        response = {
+          message: `Received message: ${message}`,
+          sessionId,
+          userId,
+          source: 'api',
+        };
+      }
 
       return {
         type: ActionResultType.SUCCESS,

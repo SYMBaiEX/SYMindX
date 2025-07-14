@@ -1,19 +1,19 @@
 /**
  * Enhanced Runtime API Client
- * 
+ *
  * Provides an improved client interface with better error handling,
  * connection monitoring, request/response interceptors, and caching.
  */
 
 import { EventEmitter } from 'events';
 
-import { 
-  RuntimeClientConfig, 
-  AgentInfo, 
-  SystemMetrics, 
+import {
+  RuntimeClientConfig,
+  AgentInfo,
+  SystemMetrics,
   RuntimeStatus,
   RuntimeCapabilities,
-  ActivityEvent 
+  ActivityEvent,
 } from './runtimeClient.js';
 
 export interface ConnectionStatus {
@@ -103,7 +103,7 @@ export class EnhancedRuntimeClient extends EventEmitter {
       connectionCheckInterval: 10000, // 10 seconds
       enableMetrics: true,
       enableLogging: process.env.NODE_ENV !== 'production',
-      ...config
+      ...config,
     };
 
     this.connectionStatus = {
@@ -112,7 +112,7 @@ export class EnhancedRuntimeClient extends EventEmitter {
       lastError: null,
       latency: 0,
       reconnectAttempts: 0,
-      reconnectDelay: 1000
+      reconnectDelay: 1000,
     };
 
     this.cache = new Map();
@@ -129,7 +129,7 @@ export class EnhancedRuntimeClient extends EventEmitter {
       failedRequests: 0,
       cachedResponses: 0,
       averageLatency: 0,
-      requestsPerMinute: 0
+      requestsPerMinute: 0,
     };
 
     this.setupDefaultInterceptors();
@@ -169,7 +169,10 @@ export class EnhancedRuntimeClient extends EventEmitter {
    * Start connection monitoring
    */
   private startConnectionMonitoring() {
-    if (this.config.connectionCheckInterval && this.config.connectionCheckInterval > 0) {
+    if (
+      this.config.connectionCheckInterval &&
+      this.config.connectionCheckInterval > 0
+    ) {
       this.connectionCheckTimer = setInterval(() => {
         this.checkConnection();
       }, this.config.connectionCheckInterval);
@@ -194,7 +197,7 @@ export class EnhancedRuntimeClient extends EventEmitter {
    */
   public async checkConnection() {
     const previousStatus = this.connectionStatus.status;
-    
+
     try {
       const startTime = Date.now();
       const response = await this.makeRequest({
@@ -203,11 +206,11 @@ export class EnhancedRuntimeClient extends EventEmitter {
         headers: {},
         timeout: 2000,
         retries: 0,
-        skipCache: true
+        skipCache: true,
       });
 
       const latency = Date.now() - startTime;
-      
+
       if (response.status === 'healthy') {
         this.updateConnectionStatus({
           status: 'connected',
@@ -215,7 +218,7 @@ export class EnhancedRuntimeClient extends EventEmitter {
           lastError: null,
           latency,
           reconnectAttempts: 0,
-          reconnectDelay: 1000
+          reconnectDelay: 1000,
         });
 
         if (previousStatus !== 'connected') {
@@ -228,7 +231,7 @@ export class EnhancedRuntimeClient extends EventEmitter {
       this.updateConnectionStatus({
         status: 'error',
         lastError: error as Error,
-        reconnectAttempts: this.connectionStatus.reconnectAttempts + 1
+        reconnectAttempts: this.connectionStatus.reconnectAttempts + 1,
       });
 
       if (previousStatus === 'connected') {
@@ -246,7 +249,7 @@ export class EnhancedRuntimeClient extends EventEmitter {
   private updateConnectionStatus(updates: Partial<ConnectionStatus>) {
     this.connectionStatus = {
       ...this.connectionStatus,
-      ...updates
+      ...updates,
     };
 
     this.emit('statusChanged', this.connectionStatus);
@@ -257,7 +260,7 @@ export class EnhancedRuntimeClient extends EventEmitter {
    */
   private scheduleReconnection() {
     const { reconnectAttempts, reconnectDelay } = this.connectionStatus;
-    
+
     if (reconnectAttempts >= this.config.maxRetries!) {
       this.updateConnectionStatus({ status: 'disconnected' });
       this.emit('maxRetriesReached', { attempts: reconnectAttempts });
@@ -265,16 +268,16 @@ export class EnhancedRuntimeClient extends EventEmitter {
     }
 
     let nextDelay = reconnectDelay;
-    
+
     if (this.config.retryStrategy === 'exponential') {
       nextDelay = Math.min(reconnectDelay * 2, 30000); // Max 30 seconds
     } else if (this.config.retryStrategy === 'linear') {
       nextDelay = reconnectDelay + 1000;
     }
 
-    this.updateConnectionStatus({ 
+    this.updateConnectionStatus({
       status: 'connecting',
-      reconnectDelay: nextDelay 
+      reconnectDelay: nextDelay,
     });
 
     setTimeout(() => {
@@ -287,16 +290,18 @@ export class EnhancedRuntimeClient extends EventEmitter {
    */
   private updateLatency(latency: number) {
     this.latencyHistory.push(latency);
-    
+
     // Keep only last 100 latency measurements
     if (this.latencyHistory.length > 100) {
       this.latencyHistory.shift();
     }
 
     // Calculate average latency
-    const avgLatency = this.latencyHistory.reduce((a, b) => a + b, 0) / this.latencyHistory.length;
+    const avgLatency =
+      this.latencyHistory.reduce((a, b) => a + b, 0) /
+      this.latencyHistory.length;
     this.metrics.averageLatency = Math.round(avgLatency);
-    
+
     this.emit('latencyUpdate', { current: latency, average: avgLatency });
   }
 
@@ -305,7 +310,7 @@ export class EnhancedRuntimeClient extends EventEmitter {
    */
   private updateRequestMetrics(success: boolean, cached: boolean = false) {
     this.metrics.totalRequests++;
-    
+
     if (success) {
       this.metrics.successfulRequests++;
     } else {
@@ -319,11 +324,13 @@ export class EnhancedRuntimeClient extends EventEmitter {
     // Track requests per minute
     const now = Date.now();
     this.requestTimestamps.push(now);
-    
+
     // Remove timestamps older than 1 minute
     const oneMinuteAgo = now - 60000;
-    this.requestTimestamps = this.requestTimestamps.filter(ts => ts > oneMinuteAgo);
-    
+    this.requestTimestamps = this.requestTimestamps.filter(
+      (ts) => ts > oneMinuteAgo
+    );
+
     this.metrics.requestsPerMinute = this.requestTimestamps.length;
 
     this.emit('metricsUpdate', this.metrics);
@@ -336,11 +343,11 @@ export class EnhancedRuntimeClient extends EventEmitter {
     if (config.cacheKey) {
       return config.cacheKey;
     }
-    
+
     const method = config.method || 'GET';
     const url = config.url;
     const body = config.body ? JSON.stringify(config.body) : '';
-    
+
     return `${method}:${url}:${body}`;
   }
 
@@ -353,7 +360,7 @@ export class EnhancedRuntimeClient extends EventEmitter {
     }
 
     const entry = this.cache.get(key);
-    
+
     if (!entry) {
       return null;
     }
@@ -379,7 +386,7 @@ export class EnhancedRuntimeClient extends EventEmitter {
     this.cache.set(key, {
       data,
       timestamp: Date.now(),
-      ttl: ttl || this.config.cacheTTL!
+      ttl: ttl || this.config.cacheTTL!,
     });
 
     // Cleanup old cache entries
@@ -399,7 +406,7 @@ export class EnhancedRuntimeClient extends EventEmitter {
       }
     }
 
-    entriesToDelete.forEach(key => this.cache.delete(key));
+    entriesToDelete.forEach((key) => this.cache.delete(key));
   }
 
   /**
@@ -416,7 +423,7 @@ export class EnhancedRuntimeClient extends EventEmitter {
     if (!finalConfig.skipCache && finalConfig.method === 'GET') {
       const cacheKey = this.getCacheKey(finalConfig);
       const cachedResponse = this.getCachedResponse(cacheKey);
-      
+
       if (cachedResponse !== null) {
         return cachedResponse;
       }
@@ -433,13 +440,16 @@ export class EnhancedRuntimeClient extends EventEmitter {
 
     while (retries <= maxRetries) {
       try {
-        const timeoutId = setTimeout(() => abortController.abort(), finalConfig.timeout || this.config.timeout);
+        const timeoutId = setTimeout(
+          () => abortController.abort(),
+          finalConfig.timeout || this.config.timeout
+        );
 
         const fetchOptions: RequestInit = {
           method: finalConfig.method,
           headers: finalConfig.headers,
           signal: abortController.signal,
-          ...(finalConfig.body && { body: JSON.stringify(finalConfig.body) })
+          ...(finalConfig.body && { body: JSON.stringify(finalConfig.body) }),
         };
 
         const response = await fetch(finalConfig.url, fetchOptions);
@@ -469,10 +479,9 @@ export class EnhancedRuntimeClient extends EventEmitter {
         this.abortControllers.delete(requestId);
 
         return data;
-
       } catch (error) {
         retries++;
-        
+
         if (retries > maxRetries) {
           // Apply error interceptors
           let finalError = error as Error;
@@ -482,7 +491,7 @@ export class EnhancedRuntimeClient extends EventEmitter {
 
           this.updateRequestMetrics(false);
           this.abortControllers.delete(requestId);
-          
+
           throw finalError;
         }
 
@@ -495,10 +504,12 @@ export class EnhancedRuntimeClient extends EventEmitter {
         }
 
         if (this.config.enableLogging) {
-          console.debug(`[Retry ${retries}/${maxRetries}] Waiting ${delay}ms...`);
+          console.debug(
+            `[Retry ${retries}/${maxRetries}] Waiting ${delay}ms...`
+          );
         }
 
-        await new Promise(resolve => setTimeout(resolve, delay));
+        await new Promise((resolve) => setTimeout(resolve, delay));
       }
     }
 
@@ -536,9 +547,9 @@ export class EnhancedRuntimeClient extends EventEmitter {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         cacheKey: 'agents',
-        cacheTTL: 5000 // 5 seconds cache
+        cacheTTL: 5000, // 5 seconds cache
       });
-      
+
       return response.agents || [];
     } catch (error) {
       this.emit('error', { operation: 'getAgents', error });
@@ -553,9 +564,9 @@ export class EnhancedRuntimeClient extends EventEmitter {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         cacheKey: 'metrics',
-        cacheTTL: 2000 // 2 seconds cache
+        cacheTTL: 2000, // 2 seconds cache
       });
-      
+
       return response;
     } catch (error) {
       this.emit('error', { operation: 'getSystemMetrics', error });
@@ -565,7 +576,7 @@ export class EnhancedRuntimeClient extends EventEmitter {
         activeAgents: 0,
         totalAgents: 0,
         commandsProcessed: 0,
-        portalRequests: 0
+        portalRequests: 0,
       };
     }
   }
@@ -577,9 +588,9 @@ export class EnhancedRuntimeClient extends EventEmitter {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         cacheKey: 'status',
-        cacheTTL: 3000 // 3 seconds cache
+        cacheTTL: 3000, // 3 seconds cache
       });
-      
+
       return response;
     } catch (error) {
       this.emit('error', { operation: 'getRuntimeStatus', error });
@@ -587,7 +598,7 @@ export class EnhancedRuntimeClient extends EventEmitter {
         agent: { id: 'unknown', status: 'unknown', uptime: 0 },
         extensions: { loaded: 0, active: 0 },
         memory: { used: 0, total: 0 },
-        runtime: { agents: 0, isRunning: false, eventBus: { events: 0 } }
+        runtime: { agents: 0, isRunning: false, eventBus: { events: 0 } },
       };
     }
   }
@@ -599,39 +610,58 @@ export class EnhancedRuntimeClient extends EventEmitter {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         cacheKey: 'capabilities',
-        cacheTTL: 60000 // 1 minute cache
+        cacheTTL: 60000, // 1 minute cache
       });
-      
+
       return response;
     } catch (error) {
       // Fallback to constructed response
       const status = await this.getRuntimeStatus();
       const agents = await this.getAgents();
-      
+
       return {
         runtime: {
           version: '1.0.0',
           isRunning: status.runtime.isRunning,
-          tickInterval: 1000
+          tickInterval: 1000,
         },
         agents: {
-          active: agents.filter(a => a.status === 'active').length,
+          active: agents.filter((a) => a.status === 'active').length,
           lazy: 0,
           total: agents.length,
-          activeList: agents.filter(a => a.status === 'active').map(a => a.id)
+          activeList: agents
+            .filter((a) => a.status === 'active')
+            .map((a) => a.id),
         },
         modules: {
           memory: { available: ['sqlite', 'postgres', 'supabase', 'neon'] },
-          emotion: { available: ['composite', 'happy', 'sad', 'angry', 'anxious', 'confident', 'neutral'] },
+          emotion: {
+            available: [
+              'composite',
+              'happy',
+              'sad',
+              'angry',
+              'anxious',
+              'confident',
+              'neutral',
+            ],
+          },
           cognition: { available: ['htn_planner', 'reactive', 'hybrid'] },
           portals: {
-            available: ['openai', 'anthropic', 'groq', 'xai', 'google-generative', 'ollama'],
-            factories: ['openai', 'anthropic', 'groq']
-          }
+            available: [
+              'openai',
+              'anthropic',
+              'groq',
+              'xai',
+              'google-generative',
+              'ollama',
+            ],
+            factories: ['openai', 'anthropic', 'groq'],
+          },
         },
         extensions: {
-          loaded: ['api', 'telegram', 'slack']
-        }
+          loaded: ['api', 'telegram', 'slack'],
+        },
       };
     }
   }
@@ -643,38 +673,38 @@ export class EnhancedRuntimeClient extends EventEmitter {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         cacheKey: `events-${limit}`,
-        cacheTTL: 1000 // 1 second cache
+        cacheTTL: 1000, // 1 second cache
       });
-      
+
       return response.events || [];
     } catch (error) {
       // Fallback to simulated events
       const status = await this.getRuntimeStatus();
       const agents = await this.getAgents();
-      
+
       const events: ActivityEvent[] = [];
       const now = new Date();
-      
-      agents.forEach(agent => {
+
+      agents.forEach((agent) => {
         if (agent.status === 'active') {
           events.push({
             timestamp: now.toLocaleTimeString(),
             type: 'agent_active',
             source: agent.id,
-            data: { agentName: agent.name }
+            data: { agentName: agent.name },
           });
         }
       });
-      
+
       if (status.runtime.isRunning) {
         events.push({
           timestamp: now.toLocaleTimeString(),
           type: 'runtime_status',
           source: 'system',
-          data: { status: 'running', agents: status.runtime.agents }
+          data: { status: 'running', agents: status.runtime.agents },
         });
       }
-      
+
       return events.slice(0, limit);
     }
   }
@@ -686,9 +716,9 @@ export class EnhancedRuntimeClient extends EventEmitter {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         cacheKey: `agent-${agentId}`,
-        cacheTTL: 10000 // 10 seconds cache
+        cacheTTL: 10000, // 10 seconds cache
       });
-      
+
       return response;
     } catch (error) {
       this.emit('error', { operation: 'getAgent', error, agentId });
@@ -702,12 +732,12 @@ export class EnhancedRuntimeClient extends EventEmitter {
         url: `${this.config.apiUrl}/api/agents/${agentId}/start`,
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        skipCache: true
+        skipCache: true,
       });
-      
+
       // Invalidate related caches
       this.invalidateCache(['agents', 'status', `agent-${agentId}`]);
-      
+
       return true;
     } catch (error) {
       this.emit('error', { operation: 'startAgent', error, agentId });
@@ -721,12 +751,12 @@ export class EnhancedRuntimeClient extends EventEmitter {
         url: `${this.config.apiUrl}/api/agents/${agentId}/stop`,
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        skipCache: true
+        skipCache: true,
       });
-      
+
       // Invalidate related caches
       this.invalidateCache(['agents', 'status', `agent-${agentId}`]);
-      
+
       return true;
     } catch (error) {
       this.emit('error', { operation: 'stopAgent', error, agentId });
@@ -743,23 +773,23 @@ export class EnhancedRuntimeClient extends EventEmitter {
         body: {
           agentId,
           userId: 'cli_user',
-          title: `CLI Chat`
+          title: `CLI Chat`,
         },
-        skipCache: true
+        skipCache: true,
       });
-      
+
       if (response.conversation) {
         const chatResponse = await this.makeRequest({
           url: `${this.config.apiUrl}/api/conversations/${response.conversation.id}/messages`,
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: { message, userId: 'cli_user' },
-          skipCache: true
+          skipCache: true,
         });
-        
+
         return chatResponse;
       }
-      
+
       return null;
     } catch (error) {
       this.emit('error', { operation: 'sendChatMessage', error, agentId });
@@ -786,7 +816,7 @@ export class EnhancedRuntimeClient extends EventEmitter {
    */
   invalidateCache(keys?: string[]) {
     if (keys) {
-      keys.forEach(key => this.cache.delete(key));
+      keys.forEach((key) => this.cache.delete(key));
     } else {
       this.cache.clear();
     }
@@ -816,7 +846,9 @@ export class EnhancedRuntimeClient extends EventEmitter {
 /**
  * Create enhanced runtime client instance
  */
-export function createEnhancedRuntimeClient(config?: Partial<EnhancedClientConfig>): EnhancedRuntimeClient {
+export function createEnhancedRuntimeClient(
+  config?: Partial<EnhancedClientConfig>
+): EnhancedRuntimeClient {
   return new EnhancedRuntimeClient(config);
 }
 

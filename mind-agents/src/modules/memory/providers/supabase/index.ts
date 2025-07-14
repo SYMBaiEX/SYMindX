@@ -24,6 +24,7 @@ import {
   MemoryPermission,
 } from '../../../../types/memory';
 import { runtimeLogger } from '../../../../utils/logger';
+import { buildObject } from '../../../../utils/type-helpers';
 import {
   BaseMemoryProvider,
   BaseMemoryConfig,
@@ -221,22 +222,24 @@ export class SupabaseMemoryProvider extends BaseMemoryProvider {
         memory.embedding = await this.generateEmbedding(memory.content);
       }
 
-      const memoryData: Partial<SupabaseMemoryRow> = {
+      const builder = buildObject<Partial<SupabaseMemoryRow>>({
         id: memory.id,
         agent_id: agentId,
         type: memory.type,
         content: memory.content,
-        embedding: memory.embedding,
         metadata: memory.metadata || {},
         importance: memory.importance,
         timestamp: memory.timestamp.toISOString(),
         tags: memory.tags || [],
         duration: memory.duration || MemoryDuration.LONG_TERM,
-        expires_at: memory.expiresAt?.toISOString(),
         updated_at: new Date().toISOString(),
         tier: enhanced.tier || MemoryTierType.EPISODIC,
-        context: enhanced.context || undefined,
-      };
+      })
+        .addOptional('embedding', memory.embedding)
+        .addOptional('expires_at', memory.expiresAt?.toISOString())
+        .addOptional('context', enhanced.context);
+
+      const memoryData = builder.build();
 
       const { error } = await this.client
         .from(this.tableName)
@@ -494,14 +497,13 @@ export class SupabaseMemoryProvider extends BaseMemoryProvider {
    * Convert a database row to a memory record
    */
   private rowToMemoryRecord(row: SupabaseMemoryRow): EnhancedMemoryRecord {
-    const record: EnhancedMemoryRecord = {
+    const record = buildObject<EnhancedMemoryRecord>({
       id: row.id,
       agentId: row.agent_id,
       type:
         MemoryType[row.type.toUpperCase() as keyof typeof MemoryType] ||
         MemoryType.EXPERIENCE,
       content: row.content,
-      embedding: row.embedding,
       metadata: row.metadata || {},
       importance: row.importance,
       timestamp: new Date(row.timestamp),
@@ -510,8 +512,13 @@ export class SupabaseMemoryProvider extends BaseMemoryProvider {
         MemoryDuration[
           row.duration.toUpperCase() as keyof typeof MemoryDuration
         ] || MemoryDuration.LONG_TERM,
-      expiresAt: row.expires_at ? new Date(row.expires_at) : undefined,
-    };
+    })
+      .addOptional('embedding', row.embedding)
+      .addOptional(
+        'expiresAt',
+        row.expires_at ? new Date(row.expires_at) : undefined
+      )
+      .build();
 
     // Add tier and context if available
     if (row.tier) {
@@ -831,6 +838,7 @@ export class SupabaseMemoryProvider extends BaseMemoryProvider {
 
     for (const memory of memories) {
       const day = memory.timestamp.toISOString().split('T')[0];
+      if (!day) continue;
       if (!grouped.has(day)) {
         grouped.set(day, []);
       }

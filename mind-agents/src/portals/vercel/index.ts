@@ -45,7 +45,7 @@ import {
 } from '../../types/portal';
 import { AISDKParameterBuilder } from '../ai-sdk-utils';
 import { BasePortal } from '../base-portal';
-import { convertUsage, buildAISDKParams } from '../utils';
+import { convertUsage } from '../utils';
 
 export interface VercelAIConfig extends PortalConfig {
   providers: ProviderConfig[];
@@ -281,7 +281,7 @@ export class VercelAIPortal extends BasePortal {
     this.registry = createProviderRegistry(registryConfig);
   }
 
-  async init(agent: Agent): Promise<void> {
+  override async init(agent: Agent): Promise<void> {
     this.status = PortalStatus.INITIALIZING;
     console.log(`🔮 Initializing Vercel AI SDK portal for agent ${agent.name}`);
 
@@ -299,7 +299,7 @@ export class VercelAIPortal extends BasePortal {
     }
   }
 
-  protected async validateConfig(): Promise<void> {
+  protected override async validateConfig(): Promise<void> {
     if (this.providers.size === 0) {
       throw new Error(
         'At least one provider must be configured for Vercel AI SDK portal'
@@ -325,9 +325,11 @@ export class VercelAIPortal extends BasePortal {
   private getLanguageModel(modelSpec: string): LanguageModel {
     if (modelSpec.includes(':')) {
       const [providerName, modelId] = modelSpec.split(':');
-      const provider = this.providers.get(providerName);
-      if (provider) {
-        return provider(modelId);
+      if (providerName && modelId) {
+        const provider = this.providers.get(providerName);
+        if (provider) {
+          return provider(modelId);
+        }
       }
     }
 
@@ -342,9 +344,11 @@ export class VercelAIPortal extends BasePortal {
   private getEmbeddingModel(modelSpec: string): EmbeddingModel<string> {
     if (modelSpec.includes(':')) {
       const [providerName, modelId] = modelSpec.split(':');
-      const provider = this.providers.get(providerName);
-      if (provider && provider.textEmbeddingModel) {
-        return provider.textEmbeddingModel(modelId);
+      if (providerName && modelId) {
+        const provider = this.providers.get(providerName);
+        if (provider && provider.textEmbeddingModel) {
+          return provider.textEmbeddingModel(modelId);
+        }
       }
     }
 
@@ -354,9 +358,11 @@ export class VercelAIPortal extends BasePortal {
   private getImageModel(modelSpec: string): ImageModel {
     if (modelSpec.includes(':')) {
       const [providerName, modelId] = modelSpec.split(':');
-      const provider = this.providers.get(providerName);
-      if (provider && provider.imageModel) {
-        return provider.imageModel(modelId);
+      if (providerName && modelId) {
+        const provider = this.providers.get(providerName);
+        if (provider && provider.imageModel) {
+          return provider.imageModel(modelId);
+        }
       }
     }
 
@@ -372,19 +378,39 @@ export class VercelAIPortal extends BasePortal {
     try {
       const toolsToUse = this.buildTools();
 
-      const { text, usage, finishReason } = await generateText({
+      const params: any = {
         model: this.getLanguageModel(model),
         prompt,
-        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
-        temperature: options?.temperature || this.config.temperature,
-        ...(options?.topP && { topP: options.topP }),
-        ...(options?.frequencyPenalty && {
-          frequencyPenalty: options.frequencyPenalty,
-        }),
-        ...(options?.presencePenalty && {
-          presencePenalty: options.presencePenalty,
-        }),
-        ...(options?.stop && { stopSequences: options.stop }),
+      };
+
+      const maxOutputTokens = options?.maxTokens || this.config.maxTokens;
+      if (maxOutputTokens !== undefined) {
+        params.maxOutputTokens = maxOutputTokens;
+      }
+
+      const temperature = options?.temperature || this.config.temperature;
+      if (temperature !== undefined) {
+        params.temperature = temperature;
+      }
+
+      if (options?.topP !== undefined) {
+        params.topP = options.topP;
+      }
+
+      if (options?.frequencyPenalty !== undefined) {
+        params.frequencyPenalty = options.frequencyPenalty;
+      }
+
+      if (options?.presencePenalty !== undefined) {
+        params.presencePenalty = options.presencePenalty;
+      }
+
+      if (options?.stop !== undefined) {
+        params.stopSequences = options.stop;
+      }
+
+      const { text, usage, finishReason } = await generateText({
+        ...params,
         ...(toolsToUse.size > 0 && { tools: Object.fromEntries(toolsToUse) }),
       });
 
@@ -410,21 +436,42 @@ export class VercelAIPortal extends BasePortal {
       const modelMessages = this.convertToModelMessages(messages);
       const toolsToUse = this.buildTools();
 
-      const { text, usage, finishReason } = await generateText({
+      const params: any = {
         model: this.getLanguageModel(model),
         messages: modelMessages,
-        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
-        temperature: options?.temperature || this.config.temperature,
-        ...(options?.topP && { topP: options.topP }),
-        ...(options?.frequencyPenalty && {
-          frequencyPenalty: options.frequencyPenalty,
-        }),
-        ...(options?.presencePenalty && {
-          presencePenalty: options.presencePenalty,
-        }),
-        ...(options?.stop && { stopSequences: options.stop }),
-        ...(toolsToUse.size > 0 && { tools: Object.fromEntries(toolsToUse) }),
-      });
+      };
+
+      const maxOutputTokens = options?.maxTokens || this.config.maxTokens;
+      if (maxOutputTokens !== undefined) {
+        params.maxOutputTokens = maxOutputTokens;
+      }
+
+      const temperature = options?.temperature || this.config.temperature;
+      if (temperature !== undefined) {
+        params.temperature = temperature;
+      }
+
+      if (options?.topP !== undefined) {
+        params.topP = options.topP;
+      }
+
+      if (options?.frequencyPenalty !== undefined) {
+        params.frequencyPenalty = options.frequencyPenalty;
+      }
+
+      if (options?.presencePenalty !== undefined) {
+        params.presencePenalty = options.presencePenalty;
+      }
+
+      if (options?.stop !== undefined) {
+        params.stopSequences = options.stop;
+      }
+
+      if (toolsToUse.size > 0) {
+        params.tools = Object.fromEntries(toolsToUse);
+      }
+
+      const { text, usage, finishReason } = await generateText(params);
 
       const assistantMessage: ChatMessage = {
         role: MessageRole.ASSISTANT,
@@ -567,21 +614,29 @@ export class VercelAIPortal extends BasePortal {
       const modelMessages = this.convertToModelMessages(messages);
       const toolsToUse = this.buildTools();
 
-      const { textStream } = await streamText({
+      const streamParams: any = {
         model: this.getLanguageModel(model),
         messages: modelMessages,
-        maxOutputTokens: options?.maxTokens || this.config.maxTokens,
-        temperature: options?.temperature || this.config.temperature,
-        ...(options?.topP && { topP: options.topP }),
-        ...(options?.frequencyPenalty && {
-          frequencyPenalty: options.frequencyPenalty,
-        }),
-        ...(options?.presencePenalty && {
-          presencePenalty: options.presencePenalty,
-        }),
-        ...(options?.stop && { stopSequences: options.stop }),
-        ...(toolsToUse.size > 0 && { tools: Object.fromEntries(toolsToUse) }),
-      });
+      };
+
+      // Add required parameters
+      const maxTokens = options?.maxTokens || this.config.maxTokens;
+      if (maxTokens) streamParams.maxOutputTokens = maxTokens;
+
+      const temperature = options?.temperature || this.config.temperature;
+      if (temperature !== undefined) streamParams.temperature = temperature;
+
+      // Add optional parameters
+      if (options?.topP) streamParams.topP = options.topP;
+      if (options?.frequencyPenalty)
+        streamParams.frequencyPenalty = options.frequencyPenalty;
+      if (options?.presencePenalty)
+        streamParams.presencePenalty = options.presencePenalty;
+      if (options?.stop) streamParams.stopSequences = options.stop;
+      if (toolsToUse.size > 0)
+        streamParams.tools = Object.fromEntries(toolsToUse);
+
+      const { textStream } = await streamText(streamParams);
 
       for await (const textPart of textStream) {
         yield textPart;

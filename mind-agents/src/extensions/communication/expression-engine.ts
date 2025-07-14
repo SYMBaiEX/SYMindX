@@ -117,6 +117,72 @@ export class ExpressionEngine {
         personality,
         effectiveEmotion
       );
+    } else if (this.agent?.personality) {
+      // Use agent's default personality if not provided
+      // Convert string array to PersonalityTraits with default values
+      const personalityTraits: PersonalityTraits = {
+        openness: 0.5,
+        conscientiousness: 0.5,
+        extraversion: 0.5,
+        agreeableness: 0.5,
+        neuroticism: 0.5,
+      };
+
+      // Basic mapping from personality strings to traits
+      for (const trait of this.agent.personality) {
+        const lowerTrait = trait.toLowerCase();
+        if (
+          lowerTrait.includes('creative') ||
+          lowerTrait.includes('imaginative')
+        ) {
+          personalityTraits.openness = Math.min(
+            1.0,
+            personalityTraits.openness + 0.3
+          );
+        }
+        if (
+          lowerTrait.includes('organized') ||
+          lowerTrait.includes('disciplined')
+        ) {
+          personalityTraits.conscientiousness = Math.min(
+            1.0,
+            personalityTraits.conscientiousness + 0.3
+          );
+        }
+        if (
+          lowerTrait.includes('outgoing') ||
+          lowerTrait.includes('energetic')
+        ) {
+          personalityTraits.extraversion = Math.min(
+            1.0,
+            personalityTraits.extraversion + 0.3
+          );
+        }
+        if (
+          lowerTrait.includes('friendly') ||
+          lowerTrait.includes('compassionate')
+        ) {
+          personalityTraits.agreeableness = Math.min(
+            1.0,
+            personalityTraits.agreeableness + 0.3
+          );
+        }
+        if (
+          lowerTrait.includes('anxious') ||
+          lowerTrait.includes('sensitive')
+        ) {
+          personalityTraits.neuroticism = Math.min(
+            1.0,
+            personalityTraits.neuroticism + 0.3
+          );
+        }
+      }
+
+      expressed = this.applyPersonality(
+        expressed,
+        personalityTraits,
+        effectiveEmotion
+      );
     }
 
     // Apply context adaptations
@@ -391,6 +457,14 @@ export class ExpressionEngine {
     const targetEmotion = emotion.current;
     const targetIntensity = emotion.intensity;
 
+    // Check if emotion changed
+    const emotionChanged = targetEmotion !== this.lastEmotion;
+    if (emotionChanged) {
+      runtimeLogger.debug(
+        `Emotion transition: ${this.lastEmotion} -> ${targetEmotion}`
+      );
+    }
+
     // Smooth intensity change
     const intensityDiff = targetIntensity - this.lastIntensity;
     const smoothedIntensity =
@@ -403,6 +477,12 @@ export class ExpressionEngine {
     return {
       ...emotion,
       intensity: smoothedIntensity,
+      // Add transition metadata
+      metadata: {
+        ...emotion.metadata,
+        previousEmotion: emotionChanged ? this.lastEmotion : undefined,
+        transitionSmoothed: true,
+      },
     };
   }
 

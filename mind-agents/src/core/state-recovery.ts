@@ -150,61 +150,80 @@ export class StateRecoverySystem extends EventEmitter {
       strategies: plan.strategies.length,
     });
 
-    for (const strategy of plan.strategies) {
-      try {
-        this.logger.debug(`Attempting recovery strategy: ${strategy.name}`);
-
-        const recoveredSnapshot = await strategy.recover(
-          snapshot,
-          plan.corruption
-        );
-
-        // Validate recovered snapshot
-        const validation =
-          await this.stateManager.validateSnapshot(recoveredSnapshot);
-
-        if (
-          validation.result === StateValidationResult.VALID ||
-          validation.result === StateValidationResult.RECOVERABLE
-        ) {
-          const result: RecoveryResult = {
-            success: true,
-            strategy: strategy.name,
-            recoveredSnapshot,
-            dataLoss: this.calculateActualDataLoss(snapshot, recoveredSnapshot),
-            warnings: validation.warnings,
-            errors: [],
-          };
-
-          this.logger.info(
-            `Recovery successful using strategy: ${strategy.name}`
-          );
-          this.emit('recovery_completed', {
-            agentId: snapshot.agentId,
-            result,
-          });
-
-          return result;
-        }
-      } catch (error) {
-        this.logger.warn(`Recovery strategy ${strategy.name} failed:`, error);
-        continue;
+    // Allocate resources for recovery operation
+    await this._resourceManager.allocateResources(
+      `recovery-${snapshot.agentId}`,
+      {
+        memory: 50 * 1024 * 1024, // 50MB for recovery
+        cpu: 0.3, // 30% CPU
       }
+    );
+
+    try {
+      for (const strategy of plan.strategies) {
+        try {
+          this.logger.debug(`Attempting recovery strategy: ${strategy.name}`);
+
+          const recoveredSnapshot = await strategy.recover(
+            snapshot,
+            plan.corruption
+          );
+
+          // Validate recovered snapshot
+          const validation =
+            await this.stateManager.validateSnapshot(recoveredSnapshot);
+
+          if (
+            validation.result === StateValidationResult.VALID ||
+            validation.result === StateValidationResult.RECOVERABLE
+          ) {
+            const result: RecoveryResult = {
+              success: true,
+              strategy: strategy.name,
+              recoveredSnapshot,
+              dataLoss: this.calculateActualDataLoss(
+                snapshot,
+                recoveredSnapshot
+              ),
+              warnings: validation.warnings,
+              errors: [],
+            };
+
+            this.logger.info(
+              `Recovery successful using strategy: ${strategy.name}`
+            );
+            this.emit('recovery_completed', {
+              agentId: snapshot.agentId,
+              result,
+            });
+
+            return result;
+          }
+        } catch (error) {
+          this.logger.warn(`Recovery strategy ${strategy.name} failed:`, error);
+          continue;
+        }
+      }
+
+      // All strategies failed
+      const result: RecoveryResult = {
+        success: false,
+        strategy: 'none',
+        dataLoss: 1.0,
+        warnings: [],
+        errors: ['All recovery strategies failed'],
+      };
+
+      this.logger.error(`Recovery failed for agent ${snapshot.agentId}`);
+      this.emit('recovery_failed', { agentId: snapshot.agentId, result });
+
+      return result;
+    } finally {
+      // Always release recovery resources
+      await this._resourceManager.releaseResources(
+        `recovery-${snapshot.agentId}`
+      );
     }
-
-    // All strategies failed
-    const result: RecoveryResult = {
-      success: false,
-      strategy: 'none',
-      dataLoss: 1.0,
-      warnings: [],
-      errors: ['All recovery strategies failed'],
-    };
-
-    this.logger.error(`Recovery failed for agent ${snapshot.agentId}`);
-    this.emit('recovery_failed', { agentId: snapshot.agentId, result });
-
-    return result;
   }
 
   /**
@@ -215,6 +234,17 @@ export class StateRecoverySystem extends EventEmitter {
     originalConfig?: AgentConfig
   ): Promise<AgentStateSnapshot> {
     this.logger.warn(`Creating fallback state for agent ${agentId}`);
+
+    // Check resource availability before creating fallback
+    const resourceStatus =
+      await this._resourceManager.checkAvailability('memory');
+    if (!resourceStatus) {
+      this.logger.error(
+        'Insufficient resources for fallback state creation',
+        resourceStatus
+      );
+      throw new Error('Resource unavailable for fallback state creation');
+    }
 
     const now = new Date();
 
@@ -249,7 +279,8 @@ export class StateRecoverySystem extends EventEmitter {
       },
 
       resources: {
-        memoryUsage: 0,
+        memoryUsage:
+          (await this._resourceManager.getCurrentUsage()).memory || 0,
         connections: [],
         fileHandles: [],
         timers: [],

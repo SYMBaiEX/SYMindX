@@ -19,11 +19,7 @@ import {
   ExtensionStatus,
   AgentEvent,
 } from '../../types/agent.js';
-import {
-  GenericData,
-  ExtensionConfig,
-  SkillParameters,
-} from '../../types/common.js';
+import { GenericData, SkillParameters } from '../../types/common.js';
 import { Logger } from '../../utils/logger.js';
 
 import {
@@ -1314,3 +1310,13 @@ export class TelegramExtension implements Extension {
     }
   }
 }
+
+/**
+ * Factory function to create Telegram extension
+ */
+export function createTelegramExtension(config?: any): TelegramExtension {
+  return new TelegramExtension(config);
+}
+
+// Re-export TelegramConfig for external use
+export type { TelegramConfig } from './types.js';

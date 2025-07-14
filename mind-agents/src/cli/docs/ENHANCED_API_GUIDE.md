@@ -40,7 +40,7 @@ const client = new EnhancedRuntimeClient({
   retryStrategy: 'exponential',
   cacheEnabled: true,
   cacheTTL: 60000, // 1 minute
-  connectionCheckInterval: 10000 // 10 seconds
+  connectionCheckInterval: 10000, // 10 seconds
 });
 ```
 
@@ -116,10 +116,10 @@ import { LoadingIndicator } from '@symindx/cli/lib';
 ```typescript
 import { ProgressBar } from '@symindx/cli/lib';
 
-<ProgressBar 
-  value={currentBytes} 
-  total={totalBytes} 
-  width={30} 
+<ProgressBar
+  value={currentBytes}
+  total={totalBytes}
+  width={30}
   showPercentage={true}
   color="green"
 />
@@ -175,9 +175,9 @@ import { ErrorBoundary } from '@symindx/cli/lib';
 ### Specialized Error Components
 
 ```typescript
-import { 
-  NetworkErrorFallback, 
-  TimeoutErrorFallback 
+import {
+  NetworkErrorFallback,
+  TimeoutErrorFallback
 } from '@symindx/cli/lib';
 
 // Network errors
@@ -201,7 +201,7 @@ import { useErrorHandler } from '@symindx/cli/lib';
 
 const MyComponent = () => {
   const { resetError, captureError } = useErrorHandler();
-  
+
   const riskyOperation = async () => {
     try {
       await doSomethingRisky();
@@ -209,7 +209,7 @@ const MyComponent = () => {
       captureError(error); // Will be caught by ErrorBoundary
     }
   };
-  
+
   return <Button onClick={riskyOperation}>Try It</Button>;
 };
 ```
@@ -222,16 +222,16 @@ const MyComponent = () => {
 import { ConnectionStatus } from '@symindx/cli/lib';
 
 // Inline status
-<ConnectionStatus 
-  status={connectionStatus} 
-  showDetails={false} 
+<ConnectionStatus
+  status={connectionStatus}
+  showDetails={false}
 />
 
 // Detailed status
-<ConnectionStatus 
-  status={connectionStatus} 
+<ConnectionStatus
+  status={connectionStatus}
   showDetails={true}
-  position="top" 
+  position="top"
 />
 
 // Compact badge
@@ -252,14 +252,14 @@ const Dashboard = () => {
     qualityScore,
     reconnect
   } = useConnectionMonitor(enhancedRuntimeClient);
-  
+
   return (
     <Box>
       <Text>Status: {status.status}</Text>
       <Text>Latency: {status.latency}ms</Text>
       <Text>Quality: {qualityScore}%</Text>
       <Text>Uptime: {formatDuration(stats.uptime)}</Text>
-      
+
       {!isHealthy && (
         <Button onClick={reconnect}>Reconnect</Button>
       )}
@@ -304,10 +304,10 @@ const MyComponent = () => {
     retryCount: 3,
     staleTime: 60000 // 1 minute
   });
-  
+
   if (isLoading) return <LoadingIndicator />;
   if (error) return <ErrorFallback error={error} />;
-  
+
   return (
     <Box>
       <Text>{JSON.stringify(data)}</Text>
@@ -341,7 +341,8 @@ const events = useRecentEvents(client, 20);
 ### Agent Control Hook
 
 ```typescript
-const { startAgent, stopAgent, isStarting, isStopping, error } = useAgentControl(client);
+const { startAgent, stopAgent, isStarting, isStopping, error } =
+  useAgentControl(client);
 
 const handleToggle = async (agentId: string, isActive: boolean) => {
   try {
@@ -386,7 +387,7 @@ const data = useAPIData({
 ```typescript
 import React from 'react';
 import { Box, Text } from 'ink';
-import { 
+import {
   ErrorBoundary,
   LoadingIndicator,
   ConnectionStatus,
@@ -399,7 +400,7 @@ const Dashboard = () => {
   const connection = useConnectionMonitor(client);
   const agents = useAgentData(client);
   const metrics = useSystemMetrics(client);
-  
+
   return (
     <ErrorBoundary>
       <Box flexDirection="column">
@@ -408,7 +409,7 @@ const Dashboard = () => {
           <Text bold>Dashboard</Text>
           <ConnectionStatus status={connection.status} />
         </Box>
-        
+
         {/* Agents Section */}
         <Box marginTop={1}>
           <Text bold>Agents</Text>
@@ -420,7 +421,7 @@ const Dashboard = () => {
             <AgentList agents={agents.data} />
           )}
         </Box>
-        
+
         {/* Metrics Section */}
         <Box marginTop={1}>
           <Text bold>System Metrics</Text>
@@ -443,11 +444,11 @@ const ChatInterface = ({ agentId }) => {
   const connection = useConnectionMonitor(client);
   const { sendMessage, isSending, error } = useAgentChat(client);
   const [messages, setMessages] = useState([]);
-  
+
   const handleSend = async (text: string) => {
     try {
       const response = await sendMessage(agentId, text);
-      setMessages(prev => [...prev, 
+      setMessages(prev => [...prev,
         { type: 'user', text },
         { type: 'agent', text: response.message }
       ]);
@@ -455,7 +456,7 @@ const ChatInterface = ({ agentId }) => {
       // Error is already set in the hook
     }
   };
-  
+
   if (!connection.isHealthy) {
     return (
       <Box padding={1}>
@@ -466,7 +467,7 @@ const ChatInterface = ({ agentId }) => {
       </Box>
     );
   }
-  
+
   return (
     <Box flexDirection="column">
       <MessageList messages={messages} />
@@ -484,29 +485,29 @@ const ChatInterface = ({ agentId }) => {
 ```typescript
 const AgentDetails = ({ agentId }) => {
   const agent = useAgentDetail(client, agentId);
-  
+
   // Show skeleton while initial loading
   if (agent.isLoading) {
     return <AgentDetailsSkeleton />;
   }
-  
+
   // Show error state
   if (agent.error) {
     return <ErrorFallback error={agent.error} onRetry={agent.refetch} />;
   }
-  
+
   // Show data with validation indicator
   return (
     <Box position="relative">
       <AgentInfo agent={agent.data} />
-      
+
       {/* Subtle validation indicator */}
       {agent.isValidating && (
         <Box position="absolute" right={0} top={0}>
           <LoadingIndicator variant="spinner" size="small" />
         </Box>
       )}
-      
+
       {/* Stale data warning */}
       {agent.isStale && (
         <Box marginTop={1}>
@@ -542,7 +543,7 @@ import type {
   ConnectionStatus,
   UseAPIDataResult,
   AgentInfo,
-  ConnectionStats
+  ConnectionStats,
 } from '@symindx/cli/lib';
 ```
 
@@ -595,7 +596,7 @@ console.log('Request metrics:', metrics);
 const data = useAPIData({
   fetchFn: fetchData,
   pollingInterval: 10000, // 10 seconds instead of 1 second
-  staleTime: 300000 // 5 minutes
+  staleTime: 300000, // 5 minutes
 });
 ```
 

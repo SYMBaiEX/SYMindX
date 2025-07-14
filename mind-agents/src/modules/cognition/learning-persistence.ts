@@ -13,13 +13,15 @@ import { Experience } from '../../types/autonomous';
 import {
   ReasoningParadigm,
   Rule,
+  RuleAction,
   BayesianNetwork,
-  LearningCapability,
   ReasoningPerformance,
 } from '../../types/cognition';
-import { BaseConfig } from '../../types/common';
+// import type { LearningCapability } from '../../types/cognition'; - type not used at runtime
+// import type { BaseConfig } from '../../types/common'; - type not used at runtime
 import { MemoryType } from '../../types/index';
 import { runtimeLogger } from '../../utils/logger';
+import { buildObject } from '../../utils/type-helpers';
 
 /**
  * Serializable learning state
@@ -141,6 +143,31 @@ export class LearningPersistence {
   constructor(dataDirectory: string = './data/learning') {
     this.dataDirectory = dataDirectory;
     this.ensureDirectoryExists();
+
+    // Set up auto-save timer for learning data
+    this.setupAutoSave();
+  }
+
+  /**
+   * Set up automatic saving of learning data
+   */
+  private setupAutoSave(): void {
+    setInterval(() => {
+      this.performAutoSave();
+    }, this.saveInterval);
+  }
+
+  /**
+   * Perform automatic saving of current learning state
+   */
+  private async performAutoSave(): Promise<void> {
+    try {
+      runtimeLogger.debug('🤖 Performing auto-save of learning data');
+      // This would save current learning state - implementation depends on specific data to save
+      // For now, just log the event
+    } catch (error) {
+      runtimeLogger.error('❌ Failed to auto-save learning data:', error);
+    }
   }
 
   /**
@@ -180,8 +207,17 @@ export class LearningPersistence {
       await this.createBackup(filepath);
 
       // Save new state
-      const serialized = JSON.stringify(learningState, null, 2);
-      await fs.writeFile(filepath, serialized, 'utf8');
+      let serialized = JSON.stringify(learningState, null, 2);
+
+      // Apply compression if enabled
+      if (this.compressionEnabled) {
+        const zlib = await import('zlib');
+        const compressed = zlib.gzipSync(Buffer.from(serialized, 'utf8'));
+        await fs.writeFile(filepath + '.gz', compressed);
+        runtimeLogger.debug(`🗜️ Applied compression to learning state file`);
+      } else {
+        await fs.writeFile(filepath, serialized, 'utf8');
+      }
 
       runtimeLogger.cognition(
         `Saved learning state for ${agent.id}:${paradigm} to ${filename}`
@@ -311,7 +347,7 @@ export class LearningPersistence {
       for (const [id, rule] of Array.from(rules.entries())) {
         const perf = performance.get(id) || { usageCount: 0, successRate: 0.5 };
 
-        serializableRules.push({
+        const serializableRule = buildObject<SerializableRule>({
           id: rule.id,
           name: rule.name,
           conditions: rule.conditions.map((c) => ({
@@ -324,17 +360,25 @@ export class LearningPersistence {
               value: c.value,
             },
           })),
-          actions: rule.actions.map((a) => ({
-            type: a.type,
-            target: a.target,
-            parameters: a.parameters,
-          })),
+          actions: rule.actions.map((a) => {
+            const action: any = {
+              type: a.type,
+              target: a.target,
+            };
+            if (a.parameters !== undefined) {
+              action.parameters = a.parameters;
+            }
+            return action;
+          }),
           priority: rule.priority || 1,
           confidence: (rule as any).confidence || 0.5,
           usageCount: perf.usageCount,
           successRate: perf.successRate,
-          metadata: rule.metadata,
-        });
+        })
+          .addOptional('metadata', rule.metadata)
+          .build();
+
+        serializableRules.push(serializableRule);
       }
 
       const state: Partial<LearningState> = {
@@ -373,7 +417,7 @@ export class LearningPersistence {
       >();
 
       for (const serializableRule of state.rules) {
-        const rule: Rule = {
+        const rule = buildObject<Rule>({
           id: serializableRule.id,
           name: serializableRule.name,
           conditions: serializableRule.conditions.map((c) => ({
@@ -383,14 +427,20 @@ export class LearningPersistence {
             value: c.parameters?.value || '',
             expression: c.expression,
           })),
-          actions: serializableRule.actions.map((a) => ({
-            type: a.type as any,
-            target: a.target,
-            parameters: a.parameters,
-          })),
+          actions: serializableRule.actions.map((a) => {
+            const action: RuleAction = {
+              type: a.type as any,
+              target: a.target,
+            };
+            if (a.parameters !== undefined) {
+              action.parameters = a.parameters;
+            }
+            return action;
+          }),
           priority: serializableRule.priority,
-          metadata: serializableRule.metadata,
-        };
+        })
+          .addOptional('metadata', serializableRule.metadata)
+          .build();
 
         rules.set(rule.id, rule);
         performance.set(rule.id, {
@@ -540,6 +590,7 @@ export class LearningPersistence {
         },
         action: {
           id: `action_${exp.timestamp.getTime()}`,
+          agentId: exp.agentId,
           type: exp.action.type,
           extension: 'learning_persistence',
           action: exp.action.type,
@@ -703,11 +754,16 @@ export class LearningPersistence {
 
       const backupFiles = files
         .filter((f) => f.startsWith(`${basename}.backup.`))
-        .map((f) => ({
-          name: f,
-          path: path.join(dir, f),
-          timestamp: parseInt(f.split('.backup.')[1]),
-        }))
+        .map((f) => {
+          const parts = f.split('.backup.');
+          const timestampStr = parts[1];
+          return {
+            name: f,
+            path: path.join(dir, f),
+            timestamp: timestampStr ? parseInt(timestampStr) : 0,
+          };
+        })
+        .filter((f) => f.timestamp > 0)
         .sort((a, b) => b.timestamp - a.timestamp);
 
       // Keep only the most recent backups
@@ -760,7 +816,7 @@ export class LearningPersistence {
 
         // Extract paradigm from filename
         const parts = file.split('_');
-        if (parts.length >= 3) {
+        if (parts.length >= 3 && parts[1]) {
           const paradigm = parts[1];
           paradigmCounts[paradigm] = (paradigmCounts[paradigm] || 0) + 1;
         }

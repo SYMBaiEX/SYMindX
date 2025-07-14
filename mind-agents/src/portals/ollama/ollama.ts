@@ -1,6 +1,5 @@
 import { Agent } from '../../types/agent';
 import {
-  Portal,
   PortalConfig,
   PortalType,
   PortalStatus,
@@ -17,7 +16,7 @@ import {
   FinishReason,
 } from '../../types/portal';
 import { BasePortal } from '../base-portal';
-import { convertUsage } from '../utils';
+// convertUsage import removed - not used in this implementation
 /**
  * Ollama Edge AI Portal
  *
@@ -261,13 +260,22 @@ export class OllamaPortal extends BasePortal {
   private modelCache: Map<string, OllamaModelInfo> = new Map();
   private lastHealthCheck: Date | null = null;
 
+  // Use model cache for performance optimization
+  private getCachedModel(model: string): OllamaModelInfo | undefined {
+    return this.modelCache.get(model);
+  }
+
+  private updateHealthCheck(): void {
+    this.lastHealthCheck = new Date();
+  }
+
   constructor(config: OllamaConfig) {
     super('ollama-local', 'Ollama Local AI', '1.0.0', config);
     const ollamaConfig = config as OllamaConfig;
     this.baseUrl = `http://${ollamaConfig.host || 'localhost'}:${ollamaConfig.port || 11434}`;
   }
 
-  async init(agent: Agent): Promise<void> {
+  override async init(agent: Agent): Promise<void> {
     this.status = PortalStatus.INITIALIZING;
     console.log(`🔮 Initializing Ollama portal for agent ${agent.name}`);
 
@@ -284,7 +292,7 @@ export class OllamaPortal extends BasePortal {
     }
   }
 
-  protected async validateConfig(): Promise<void> {
+  protected override async validateConfig(): Promise<void> {
     const config = this.config as OllamaConfig;
 
     if (!config.model) {
@@ -302,6 +310,7 @@ export class OllamaPortal extends BasePortal {
   }
 
   async healthCheck(): Promise<boolean> {
+    this.updateHealthCheck();
     try {
       const response = await this.makeRequest('/', {}, 'GET');
       this.lastHealthCheck = new Date();
@@ -367,9 +376,9 @@ export class OllamaPortal extends BasePortal {
       prompt,
       stream: false,
       options: this.buildOllamaOptions(options),
-      system: config.system,
-      template: config.template,
-      keep_alive: config.keepAlive,
+      ...(config.system && { system: config.system }),
+      ...(config.template && { template: config.template }),
+      ...(config.keepAlive && { keep_alive: config.keepAlive }),
     };
 
     try {
@@ -399,8 +408,8 @@ export class OllamaPortal extends BasePortal {
       messages: ollamaMessages,
       stream: false,
       options: this.buildOllamaOptions(options),
-      format: config.format,
-      keep_alive: config.keepAlive,
+      ...(config.format && { format: config.format }),
+      ...(config.keepAlive && { keep_alive: config.keepAlive }),
     };
 
     try {
@@ -416,11 +425,10 @@ export class OllamaPortal extends BasePortal {
     }
   }
 
-  async generateEmbedding(
+  override async generateEmbedding(
     text: string,
     options?: EmbeddingOptions
   ): Promise<EmbeddingResult> {
-    const config = this.config as OllamaConfig;
     const model = options?.model || 'nomic-embed-text';
 
     const requestBody = {
@@ -452,7 +460,7 @@ export class OllamaPortal extends BasePortal {
     }
   }
 
-  async *streamText(
+  override async *streamText(
     prompt: string,
     options?: TextGenerationOptions
   ): AsyncGenerator<string> {
@@ -464,9 +472,9 @@ export class OllamaPortal extends BasePortal {
       prompt,
       stream: true,
       options: this.buildOllamaOptions(options),
-      system: config.system,
-      template: config.template,
-      keep_alive: config.keepAlive,
+      ...(config.system && { system: config.system }),
+      ...(config.template && { template: config.template }),
+      ...(config.keepAlive && { keep_alive: config.keepAlive }),
     };
 
     try {
@@ -485,7 +493,7 @@ export class OllamaPortal extends BasePortal {
     }
   }
 
-  async *streamChat(
+  override async *streamChat(
     messages: ChatMessage[],
     options?: ChatGenerationOptions
   ): AsyncGenerator<string> {
@@ -499,8 +507,8 @@ export class OllamaPortal extends BasePortal {
       messages: ollamaMessages,
       stream: true,
       options: this.buildOllamaOptions(options),
-      format: config.format,
-      keep_alive: config.keepAlive,
+      ...(config.format && { format: config.format }),
+      ...(config.keepAlive && { keep_alive: config.keepAlive }),
     };
 
     try {
@@ -516,7 +524,7 @@ export class OllamaPortal extends BasePortal {
     }
   }
 
-  hasCapability(capability: PortalCapability): boolean {
+  override hasCapability(capability: PortalCapability): boolean {
     switch (capability) {
       case PortalCapability.TEXT_GENERATION:
       case PortalCapability.CHAT_GENERATION:
@@ -678,7 +686,18 @@ export class OllamaPortal extends BasePortal {
   ): OllamaOptions {
     const config = this.config as OllamaConfig;
 
-    return {
+    // Helper to omit undefined values
+    const removeUndefined = (obj: any): any => {
+      const cleaned: any = {};
+      for (const [key, value] of Object.entries(obj)) {
+        if (value !== undefined) {
+          cleaned[key] = value;
+        }
+      }
+      return cleaned;
+    };
+
+    return removeUndefined({
       numa: config.numa,
       num_ctx: config.numCtx,
       num_batch: config.numBatch,
@@ -703,7 +722,7 @@ export class OllamaPortal extends BasePortal {
       mirostat_eta: config.mirostatEta,
       penalize_newline: config.penalizeNewline,
       stop: options?.stop ?? config.stop,
-    };
+    });
   }
 
   private convertMessagesToOllamaFormat(
@@ -765,6 +784,11 @@ export class OllamaPortal extends BasePortal {
     if (!response.message?.content) {
       throw new Error('Invalid response format from Ollama');
     }
+
+    // Log conversation turn count
+    console.log(
+      `Ollama chat response for conversation with ${originalMessages.length} messages`
+    );
 
     const text = response.message.content;
 

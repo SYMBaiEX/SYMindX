@@ -95,7 +95,7 @@ export class CoherePortal extends BasePortal {
     this.cohereProvider = cohere;
   }
 
-  async init(agent: Agent): Promise<void> {
+  override async init(agent: Agent): Promise<void> {
     this.status = PortalStatus.INITIALIZING;
     console.log(`🔮 Initializing Cohere AI portal for agent ${agent.name}`);
 
@@ -119,7 +119,7 @@ export class CoherePortal extends BasePortal {
           apiKey: (this.config as CohereConfig).apiKey,
           baseURL: (this.config as CohereConfig).baseUrl,
         }),
-        messages: [{ role: 'user', content: 'Hello' }],
+        messages: [{ role: 'user' as const, content: 'Hello' }],
         maxOutputTokens: 10,
       });
       return true;
@@ -136,17 +136,17 @@ export class CoherePortal extends BasePortal {
     return messages.map((msg) => {
       switch (msg.role) {
         case MessageRole.SYSTEM:
-          return { role: 'system', content: msg.content };
+          return { role: 'system' as const, content: msg.content };
         case MessageRole.USER:
-          return { role: 'user', content: msg.content };
+          return { role: 'user' as const, content: msg.content };
         case MessageRole.ASSISTANT:
-          return { role: 'assistant', content: msg.content };
+          return { role: 'assistant' as const, content: msg.content };
         case MessageRole.TOOL:
           return {
-            role: 'tool',
+            role: 'tool' as const,
             content: [
               {
-                type: 'tool-result',
+                type: 'tool-result' as const,
                 toolCallId: '',
                 toolName: '',
                 result: msg.content,
@@ -155,9 +155,9 @@ export class CoherePortal extends BasePortal {
           };
         case MessageRole.FUNCTION:
           // Convert function messages to assistant messages for compatibility
-          return { role: 'assistant', content: msg.content };
+          return { role: 'assistant' as const, content: msg.content };
         default:
-          return { role: 'user', content: msg.content };
+          return { role: 'user' as const, content: msg.content };
       }
     });
   }
@@ -167,7 +167,7 @@ export class CoherePortal extends BasePortal {
     options?: TextGenerationOptions
   ): Promise<TextGenerationResult> {
     try {
-      const { text, usage, finishReason } = await aiGenerateText({
+      const baseParams = {
         model: this.cohereProvider(
           (this.config as CohereConfig).model || 'command-r-plus',
           {
@@ -175,7 +175,10 @@ export class CoherePortal extends BasePortal {
             baseURL: (this.config as CohereConfig).baseUrl,
           }
         ),
-        messages: [{ role: 'user', content: prompt }],
+        messages: [{ role: 'user' as const, content: prompt }],
+      };
+
+      const params = buildAISDKParams(baseParams, {
         maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
@@ -183,6 +186,8 @@ export class CoherePortal extends BasePortal {
         presencePenalty: options?.presencePenalty,
         stopSequences: options?.stop,
       });
+
+      const { text, usage, finishReason } = await aiGenerateText(params);
 
       return {
         text,
@@ -211,7 +216,7 @@ export class CoherePortal extends BasePortal {
         });
       }
 
-      const { text, usage, finishReason } = await aiGenerateText({
+      const baseParams = {
         model: this.cohereProvider(
           (this.config as CohereConfig).model || 'command-r-plus',
           {
@@ -220,6 +225,9 @@ export class CoherePortal extends BasePortal {
           }
         ),
         messages: modelMessages,
+      };
+
+      const params = buildAISDKParams(baseParams, {
         maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
@@ -228,6 +236,8 @@ export class CoherePortal extends BasePortal {
         stopSequences: options?.stop,
         tools: options?.tools,
       });
+
+      const { text, usage, finishReason } = await aiGenerateText(params);
 
       const message: ChatMessage = {
         role: MessageRole.ASSISTANT,
@@ -281,8 +291,8 @@ export class CoherePortal extends BasePortal {
    * This is a placeholder that throws an error
    */
   override async generateImage(
-    prompt: string,
-    options?: ImageGenerationOptions
+    _prompt: string,
+    _options?: ImageGenerationOptions
   ): Promise<ImageGenerationResult> {
     throw new Error(
       'Cohere AI does not provide image generation models. Consider using OpenAI or another provider for image generation.'
@@ -294,7 +304,7 @@ export class CoherePortal extends BasePortal {
     options?: TextGenerationOptions
   ): AsyncGenerator<string> {
     try {
-      const { textStream } = aiStreamText({
+      const baseParams = {
         model: this.cohereProvider(
           (this.config as CohereConfig).model || 'command-r-plus',
           {
@@ -302,7 +312,10 @@ export class CoherePortal extends BasePortal {
             baseURL: (this.config as CohereConfig).baseUrl,
           }
         ),
-        messages: [{ role: 'user', content: prompt }],
+        messages: [{ role: 'user' as const, content: prompt }],
+      };
+
+      const params = buildAISDKParams(baseParams, {
         maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
@@ -310,6 +323,8 @@ export class CoherePortal extends BasePortal {
         presencePenalty: options?.presencePenalty,
         stopSequences: options?.stop,
       });
+
+      const { textStream } = aiStreamText(params);
 
       for await (const chunk of textStream) {
         yield chunk;
@@ -334,7 +349,7 @@ export class CoherePortal extends BasePortal {
         });
       }
 
-      const { textStream } = aiStreamText({
+      const baseParams = {
         model: this.cohereProvider(
           (this.config as CohereConfig).model || 'command-r-plus',
           {
@@ -343,6 +358,9 @@ export class CoherePortal extends BasePortal {
           }
         ),
         messages: modelMessages,
+      };
+
+      const params = buildAISDKParams(baseParams, {
         maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
         temperature: options?.temperature ?? this.config.temperature,
         topP: options?.topP,
@@ -351,6 +369,8 @@ export class CoherePortal extends BasePortal {
         stopSequences: options?.stop,
         tools: options?.tools,
       });
+
+      const { textStream } = aiStreamText(params);
 
       for await (const chunk of textStream) {
         yield chunk;

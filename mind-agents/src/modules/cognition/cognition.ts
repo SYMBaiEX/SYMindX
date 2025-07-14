@@ -26,10 +26,12 @@ import {
   CognitionModule,
   CognitionModuleMetadata,
 } from '../../types/cognition';
+// Remove unused import - ReasoningParadigm not used in this module
 import { BaseConfig, ActionParameters } from '../../types/common';
 import { MemoryType, MemoryDuration } from '../../types/enums';
 
-import { TheoryOfMind, MentalModel } from './theory-of-mind';
+// Remove unused import - TheoryOfMind is not fully implemented
+// import type { TheoryOfMind, MentalModel } from './theory-of-mind';
 
 export interface UnifiedCognitionConfig extends BaseConfig {
   // When to think
@@ -297,7 +299,7 @@ export class UnifiedCognition implements CognitionModule {
    * Deep thinking - full analysis
    */
   private async deepThink(
-    _agent: Agent,
+    agent: Agent,
     context: ThoughtContext
   ): Promise<ThoughtResult> {
     const thoughts: string[] = [];
@@ -324,6 +326,22 @@ export class UnifiedCognition implements CognitionModule {
         actions.push(action);
         thoughts.push(`Decided to: ${action.type} - ${action.action}`);
       }
+    }
+
+    // 3a. Generate plan if needed
+    if (situation.requiresPlanning) {
+      const plan = this._createSimplePlan(situation);
+      if (plan) {
+        thoughts.push(
+          `Created plan: ${plan.goal} with ${plan.steps.length} steps`
+        );
+      }
+    }
+
+    // 3b. Apply theory of mind insights
+    const theoryInsights = this._applyTheoryOfMind(context);
+    if (theoryInsights.length > 0) {
+      thoughts.push(...theoryInsights);
     }
 
     // 4. Process emotions based on situation
@@ -420,6 +438,12 @@ export class UnifiedCognition implements CognitionModule {
 
     // Social media response
     if (situation.type === 'social_mention') {
+      // Use agent's personality to determine response style
+      const responseType =
+        agent.characterConfig?.personality?.traits?.extraversion > 0.5
+          ? 'enthusiastic'
+          : 'thoughtful';
+
       return {
         id: `action_${Date.now()}`,
         agentId: agent.id,
@@ -427,7 +451,9 @@ export class UnifiedCognition implements CognitionModule {
         action: 'respond_to_mention',
         parameters: {
           platform: context.events[0]?.source || 'unknown',
-          responseType: 'thoughtful',
+          responseType,
+          agentPersonality:
+            agent.characterConfig?.personality?.summary || 'neutral',
         },
         priority: 0.8,
         status: ActionStatus.PENDING,
@@ -469,9 +495,16 @@ export class UnifiedCognition implements CognitionModule {
     situation: any,
     context: ThoughtContext
   ): any {
+    // Use agent personality to influence emotion processing
+    const personalityTraits = agent.config.psyche?.traits || [];
+    const hasEmotionalTrait = personalityTraits.some(
+      (t) => t.includes('emotional') || t.includes('sensitive')
+    );
+    const personalityInfluence = hasEmotionalTrait ? 0.8 : 0.5;
+
     // Base emotion
     let emotion = 'neutral';
-    let intensity = 0.5;
+    let intensity = 0.5 * personalityInfluence;
     const triggers: string[] = [];
 
     // Adjust based on situation
@@ -570,6 +603,9 @@ export class UnifiedCognition implements CognitionModule {
     agent: Agent,
     context: ThoughtContext
   ): Promise<ThoughtResult> {
+    // Log quick thinking for agent
+    console.log(`System 1 thinking for agent ${agent.id}`);
+    const startTime = Date.now();
     const thoughts: string[] = ['[System 1] Quick intuitive response'];
 
     // Check cache for similar contexts
@@ -608,6 +644,10 @@ export class UnifiedCognition implements CognitionModule {
       confidence,
     };
 
+    // Log processing time
+    const processingTime = Date.now() - startTime;
+    thoughts.push(`Processing took ${processingTime}ms`);
+
     // Cache the result
     this.system1Cache.set(cacheKey, {
       response: result,
@@ -626,7 +666,7 @@ export class UnifiedCognition implements CognitionModule {
     system1Result: ThoughtResult
   ): Promise<ThoughtResult> {
     const thoughts: string[] = ['[System 2] Engaging deliberative thinking'];
-    const _startTime = Date.now();
+    const startTime = Date.now();
 
     // Include System 1 insights
     thoughts.push(
@@ -660,6 +700,10 @@ export class UnifiedCognition implements CognitionModule {
       const reflection = this.reflect(analysis, system1Result);
       thoughts.push(`Metacognition: ${reflection}`);
     }
+
+    // Add timing information
+    const processingTime = Date.now() - startTime;
+    thoughts.push(`[System 2] Processing completed in ${processingTime}ms`);
 
     return {
       thoughts: [...thoughts, ...analysis.thoughts],
@@ -946,7 +990,13 @@ export class UnifiedCognition implements CognitionModule {
       });
 
       // Get insights
-      const _model = this.theoryOfMind.getModel(otherAgentId);
+      const model = this.theoryOfMind.getModel(otherAgentId);
+      // Use the model for insights
+      if (model.beliefs) {
+        insights.push(
+          `[ToM] ${otherAgentId} beliefs: ${JSON.stringify(model.beliefs)}`
+        );
+      }
 
       // Predict behavior
       if (event.type.includes('question')) {
@@ -1050,28 +1100,6 @@ export class UnifiedCognition implements CognitionModule {
     }
 
     return bestOption;
-  }
-
-  /**
-   * Initialize the cognition module
-   */
-  initialize(config: BaseConfig): void {
-    this.config = { ...this.config, ...config };
-  }
-
-  /**
-   * Get metadata about the cognition module
-   */
-  getMetadata(): CognitionModuleMetadata {
-    return {
-      id: this.id,
-      name: 'Unified Cognition',
-      description: 'Unified cognition system with dual-process thinking',
-      version: '1.0.0',
-      author: 'SYMindX',
-      paradigms: ['dual_process', 'unified'],
-      learningCapable: false,
-    };
   }
 }
 

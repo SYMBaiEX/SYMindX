@@ -12,8 +12,9 @@ import {
   ChatGenerationOptions,
 } from '../types/portal';
 import { runtimeLogger } from '../utils/logger';
+import { buildObject, filterUndefined } from '../utils/type-helpers';
 
-import { convertUsage } from './utils';
+// import { convertUsage } from './utils'; - utility function not used in integration layer
 
 import {
   PortalRegistry,
@@ -31,7 +32,8 @@ export async function registerPortals(
   registry: ModuleRegistry,
   apiKeys: Record<string, string> = {}
 ): Promise<void> {
-  const portalRegistry = PortalRegistry.getInstance();
+  // Portal registry instance not used directly in this function
+  const _portalRegistry = PortalRegistry.getInstance();
   const availablePortals = getAvailablePortals();
 
   let registeredCount = 0;
@@ -40,13 +42,31 @@ export async function registerPortals(
     try {
       // Get default config and override with provided API key if available
       const defaultConfig = getPortalDefaultConfig(portalName);
-      const config: PortalConfig = {
-        ...defaultConfig,
-        apiKey:
-          apiKeys[portalName] ||
-          process.env[`${portalName.toUpperCase()}_API_KEY`] ||
-          defaultConfig.apiKey,
-      };
+      const finalApiKey =
+        apiKeys[portalName] ||
+        process.env[`${portalName.toUpperCase()}_API_KEY`] ||
+        defaultConfig.apiKey;
+
+      const configBuilder = buildObject<PortalConfig>({})
+        .addOptional('apiKey', finalApiKey)
+        .addOptional('baseUrl', defaultConfig.baseUrl)
+        .addOptional('organization', defaultConfig.organization)
+        .addOptional('defaultModel', defaultConfig.defaultModel)
+        .addOptional('maxTokens', defaultConfig.maxTokens)
+        .addOptional('temperature', defaultConfig.temperature)
+        .addOptional('timeout', defaultConfig.timeout)
+        .addOptional('headers', defaultConfig.headers)
+        .addOptional('proxy', defaultConfig.proxy)
+        .addOptional('embeddingModel', defaultConfig.embeddingModel)
+        .addOptional('imageModel', defaultConfig.imageModel)
+        .addOptional('vectorStore', defaultConfig.vectorStore)
+        .addOptional('retryAttempts', defaultConfig.retryAttempts)
+        .addOptional('retryDelay', defaultConfig.retryDelay)
+        .addOptional('rateLimitBuffer', defaultConfig.rateLimitBuffer)
+        .addOptional('priority', defaultConfig.priority)
+        .addOptional('fallbackPortals', defaultConfig.fallbackPortals);
+
+      const config = configBuilder.build();
 
       // Skip if no API key is available (silently)
       if (!config.apiKey) {
@@ -101,7 +121,8 @@ export function getPortalCapabilities(): Array<{
   name: string;
   capabilities: string[];
 }> {
-  const portalRegistry = PortalRegistry.getInstance();
+  // Portal registry instance not used directly in this function
+  const _portalRegistry = PortalRegistry.getInstance();
   const availablePortals = getAvailablePortals();
 
   return availablePortals.map((name) => {
@@ -204,10 +225,10 @@ export function getRecommendedModelConfig(
       };
 
     default:
-      return {
-        model: config.defaultModel,
-        temperature: config.temperature,
-        maxTokens: config.maxTokens,
-      };
+      return buildObject<Record<string, any>>({})
+        .addOptional('model', config.defaultModel)
+        .addOptional('temperature', config.temperature)
+        .addOptional('maxTokens', config.maxTokens)
+        .build();
   }
 }

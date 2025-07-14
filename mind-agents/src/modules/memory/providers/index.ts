@@ -37,22 +37,21 @@ export {
 } from './postgres/index';
 export type { PostgresMemoryConfig } from './postgres/index';
 
-import { MemoryProviderType } from '../../../types/agent';
-import { BaseMemoryConfig } from '../base-memory-provider';
+// The following imports were removed as they are unused and already exported above
+// They were causing duplicate import errors
 
-import { InMemoryProvider, InMemoryConfig } from './memory/index';
-import {
-  NeonMemoryProvider,
-  NeonMemoryConfig,
-  createNeonMemoryProvider,
-} from './neon/index';
-import {
-  PostgresMemoryProvider,
-  PostgresMemoryConfig,
-  createPostgresMemoryProvider,
-} from './postgres/index';
-import { SQLiteMemoryProvider, SQLiteMemoryConfig } from './sqlite/index';
-import { SupabaseMemoryProvider, SupabaseMemoryConfig } from './supabase/index';
+// Import provider types and classes for internal use
+import { MemoryProviderType } from '../../../types/enums';
+import type { InMemoryConfig } from './memory/index';
+import { InMemoryProvider } from './memory/index';
+import type { SQLiteMemoryConfig } from './sqlite/index';
+import { SQLiteMemoryProvider } from './sqlite/index';
+import type { SupabaseMemoryConfig } from './supabase/index';
+import { SupabaseMemoryProvider } from './supabase/index';
+import type { NeonMemoryConfig } from './neon/index';
+import { createNeonMemoryProvider } from './neon/index';
+import type { PostgresMemoryConfig } from './postgres/index';
+import { createPostgresMemoryProvider } from './postgres/index';
 
 /**
  * Union type for all memory provider configurations

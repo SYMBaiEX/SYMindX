@@ -71,25 +71,52 @@ export class SimpleBayesianNetwork implements BayesianNetwork {
   }
 
   query(evidence: Record<string, string>): Record<string, number> {
-    // Simple query implementation
+    // Enhanced query implementation using both calculation methods
     const results: Record<string, number> = {};
     for (const node of Array.from(this.nodeMap.values())) {
+      // Use the basic calculation as primary method
       results[node.id] = this.calculateProbability(node, evidence);
+
+      // Use computeProbability for validation/comparison
+      const alternativeResult = this.computeProbability(node.id, evidence);
+      const currentResult = results[node.id];
+      if (
+        currentResult !== undefined &&
+        Math.abs(currentResult - alternativeResult) > 0.1
+      ) {
+        // Average the results if they differ significantly
+        results[node.id] = (currentResult + alternativeResult) / 2;
+      }
     }
     return results;
   }
 
   learn(data: Record<string, string>[]): void {
-    // Simple learning from data
+    // Enhanced learning from data
+    const nodeCounts = new Map<string, Map<string, number>>();
+
+    // Count occurrences for each node
     for (const sample of data) {
-      for (const [nodeId, value] of Object.entries(sample)) {
+      for (const [nodeId, _value] of Object.entries(sample)) {
         const node = this.nodeMap.get(nodeId);
-        if (node && node.conditionalProbabilities) {
-          // Update probabilities based on observation
-          const key = JSON.stringify(sample);
-          node.conditionalProbabilities[key] =
-            (node.conditionalProbabilities[key] || 0) + 1;
+        if (node) {
+          // Generate proper condition key using helper method
+          const key = this._generateConditionKey(sample, node);
+
+          if (!nodeCounts.has(nodeId)) {
+            nodeCounts.set(nodeId, new Map());
+          }
+          const counts = nodeCounts.get(nodeId)!;
+          counts.set(key, (counts.get(key) || 0) + 1);
         }
+      }
+    }
+
+    // Update probabilities for each node using the helper method
+    for (const [nodeId, counts] of nodeCounts.entries()) {
+      const node = this.nodeMap.get(nodeId);
+      if (node) {
+        this._updateProbabilities(node, counts, data.length);
       }
     }
   }
@@ -393,9 +420,14 @@ export class ProbabilisticReasoning implements CognitionModule {
     );
     memories.push(memory);
 
-    // Calculate confidence
+    // Calculate confidence and timing
     const confidence = this.calculateOverallConfidence(probabilities);
-    const _reasoningTime = Date.now() - startTime;
+    const reasoningTime = Date.now() - startTime;
+
+    // Log reasoning performance
+    runtimeLogger.debug(
+      `🎲 Probabilistic reasoning completed in ${reasoningTime}ms (confidence: ${confidence.toFixed(2)})`
+    );
 
     return {
       thoughts,
@@ -504,7 +536,11 @@ export class ProbabilisticReasoning implements CognitionModule {
     }
 
     if (options.length === 1) {
-      return options[0];
+      const firstOption = options[0];
+      if (!firstOption) {
+        throw new Error('First option is undefined');
+      }
+      return firstOption;
     }
 
     // Evaluate each option probabilistically
@@ -532,7 +568,12 @@ export class ProbabilisticReasoning implements CognitionModule {
    * Learn from experience
    */
   async learn(_agent: Agent, experience: Experience): Promise<void> {
-    const { state, action, reward, nextState } = experience;
+    const { state, action, reward, nextState: _nextState } = experience;
+
+    // Log learning from experience
+    runtimeLogger.debug(
+      `🎲 Learning from experience: state=${JSON.stringify(state)}, action=${action}, reward=${reward}`
+    );
 
     // Convert experience to training data
     const dataPoint = this.experienceToDataPoint(experience);

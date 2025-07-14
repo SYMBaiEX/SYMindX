@@ -125,7 +125,7 @@ Write a brief journal entry (max 100 words) about your growth and insights.`,
     return this.format(this.PROMPTS.CHAT_RESPONSE, {
       name: agent.name,
       personality: agent.config.core.personality.join(', '),
-      emotion: emotionalContext.currentEmotion || 'neutral',
+      emotion: emotionalContext.current || 'neutral',
       intensity:
         ((emotionalContext.emotionIntensity || 0.5) * 100).toFixed(0) + '%',
       context: conversationContext || 'No previous context',

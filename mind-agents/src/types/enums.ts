@@ -47,6 +47,23 @@ export type ModuleStatus = 'loaded' | 'unloaded' | 'error' | 'initializing';
 
 export type FactoryStatus = 'registered' | 'unregistered' | 'error';
 
+// Additional enums needed by the system
+export enum Priority {
+  LOW = 'low',
+  MEDIUM = 'medium',
+  HIGH = 'high',
+  CRITICAL = 'critical',
+}
+
+export enum Status {
+  ACTIVE = 'active',
+  INACTIVE = 'inactive',
+  PENDING = 'pending',
+  COMPLETED = 'completed',
+  FAILED = 'failed',
+  CANCELLED = 'cancelled',
+}
+
 // Common result types
 export interface BaseResult {
   success: boolean;

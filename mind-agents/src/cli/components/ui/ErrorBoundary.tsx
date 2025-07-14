@@ -20,16 +20,19 @@ interface ErrorBoundaryState {
   isRetrying: boolean;
 }
 
-export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+export class ErrorBoundary extends Component<
+  ErrorBoundaryProps,
+  ErrorBoundaryState
+> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
-    
+
     this.state = {
       hasError: false,
       error: null,
       errorInfo: null,
       retryCount: 0,
-      isRetrying: false
+      isRetrying: false,
     };
   }
 
@@ -40,13 +43,13 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     // Log error to console
     console.error('ErrorBoundary caught an error:', error, errorInfo);
-    
+
     // Update state with error details
     this.setState({
       error,
-      errorInfo
+      errorInfo,
     });
-    
+
     // Call onError callback if provided
     if (this.props.onError) {
       this.props.onError(error, errorInfo);
@@ -55,19 +58,19 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   handleRetry = async () => {
     this.setState({ isRetrying: true });
-    
+
     // Wait a bit before retrying
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
     // Reset error state
     this.setState({
       hasError: false,
       error: null,
       errorInfo: null,
       retryCount: this.state.retryCount + 1,
-      isRetrying: false
+      isRetrying: false,
     });
-    
+
     // Call onRetry callback if provided
     if (this.props.onRetry) {
       this.props.onRetry();
@@ -75,13 +78,13 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   };
 
   override render() {
-    const { 
-      children, 
-      fallback, 
-      enableRetry = true, 
-      showDetails = process.env.NODE_ENV !== 'production' 
+    const {
+      children,
+      fallback,
+      enableRetry = true,
+      showDetails = process.env.NODE_ENV !== 'production',
     } = this.props;
-    
+
     const { hasError, error, errorInfo, retryCount, isRetrying } = this.state;
 
     if (hasError && error) {
@@ -92,31 +95,41 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
       // Default error UI
       return (
-        <Box flexDirection="column" padding={1}>
-          <Box flexDirection="column" borderStyle="round" borderColor="red" padding={1}>
+        <Box flexDirection='column' padding={1}>
+          <Box
+            flexDirection='column'
+            borderStyle='round'
+            borderColor='red'
+            padding={1}
+          >
             {/* Error Header */}
             <Box marginBottom={1}>
-              <Text color="red" bold>
-                ⚠️  An error occurred
+              <Text color='red' bold>
+                ⚠️ An error occurred
               </Text>
             </Box>
 
             {/* Error Message */}
             <Box marginBottom={1}>
-              <Text color="yellow">
+              <Text color='yellow'>
                 {error.message || 'Something went wrong'}
               </Text>
             </Box>
 
             {/* Error Details (Development Only) */}
             {showDetails && errorInfo && (
-              <Box flexDirection="column" marginBottom={1}>
-                <Text color="gray" dimColor>
+              <Box flexDirection='column' marginBottom={1}>
+                <Text color='gray' dimColor>
                   Component Stack:
                 </Text>
                 <Box marginLeft={2}>
-                  <Text color="gray" wrap="truncate-end">
-                    {errorInfo.componentStack ? errorInfo.componentStack.split('\n').slice(0, 3).join('\n') : 'No stack trace available'}
+                  <Text color='gray' wrap='truncate-end'>
+                    {errorInfo.componentStack
+                      ? errorInfo.componentStack
+                          .split('\n')
+                          .slice(0, 3)
+                          .join('\n')
+                      : 'No stack trace available'}
                   </Text>
                 </Box>
               </Box>
@@ -125,9 +138,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             {/* Retry Information */}
             {retryCount > 0 && (
               <Box marginBottom={1}>
-                <Text color="gray">
-                  Retry attempts: {retryCount}
-                </Text>
+                <Text color='gray'>Retry attempts: {retryCount}</Text>
               </Box>
             )}
 
@@ -135,10 +146,15 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             {enableRetry && (
               <Box marginTop={1}>
                 {isRetrying ? (
-                  <LoadingIndicator text="Retrying" variant="dots" color="cyan" />
+                  <LoadingIndicator
+                    text='Retrying'
+                    variant='dots'
+                    color='cyan'
+                  />
                 ) : (
-                  <Text color="cyan">
-                    Press <Text bold>R</Text> to retry or <Text bold>Q</Text> to quit
+                  <Text color='cyan'>
+                    Press <Text bold>R</Text> to retry or <Text bold>Q</Text> to
+                    quit
                   </Text>
                 )}
               </Box>
@@ -147,8 +163,9 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
           {/* Additional Help Text */}
           <Box marginTop={1}>
-            <Text color="gray" dimColor>
-              If this error persists, please check your configuration and try again.
+            <Text color='gray' dimColor>
+              If this error persists, please check your configuration and try
+              again.
             </Text>
           </Box>
         </Box>
@@ -173,26 +190,28 @@ export const ErrorFallback: React.FC<ErrorFallbackProps> = ({
   error,
   resetError,
   title = 'Something went wrong',
-  showStack = false
+  showStack = false,
 }) => {
   return (
-    <Box flexDirection="column" padding={1}>
-      <Box borderStyle="round" borderColor="red" padding={1}>
-        <Box flexDirection="column">
-          <Text color="red" bold>{title}</Text>
-          <Text color="yellow">{error.message}</Text>
-          
+    <Box flexDirection='column' padding={1}>
+      <Box borderStyle='round' borderColor='red' padding={1}>
+        <Box flexDirection='column'>
+          <Text color='red' bold>
+            {title}
+          </Text>
+          <Text color='yellow'>{error.message}</Text>
+
           {showStack && error.stack && (
             <Box marginTop={1}>
-              <Text color="gray" dimColor wrap="truncate-end">
+              <Text color='gray' dimColor wrap='truncate-end'>
                 {error.stack.split('\n').slice(1, 4).join('\n')}
               </Text>
             </Box>
           )}
-          
+
           {resetError && (
             <Box marginTop={1}>
-              <Text color="cyan">
+              <Text color='cyan'>
                 Press <Text bold>Enter</Text> to try again
               </Text>
             </Box>
@@ -233,42 +252,42 @@ export const NetworkErrorFallback: React.FC<NetworkErrorFallbackProps> = ({
   // Retry functionality handled by UI interactions
 
   return (
-    <Box flexDirection="column" padding={1}>
-      <Box borderStyle="round" borderColor="yellow" padding={1}>
-        <Box flexDirection="column">
-          <Text color="yellow" bold>
+    <Box flexDirection='column' padding={1}>
+      <Box borderStyle='round' borderColor='yellow' padding={1}>
+        <Box flexDirection='column'>
+          <Text color='yellow' bold>
             🌐 Connection Error
           </Text>
-          
+
           <Box marginTop={1}>
             <Text>Unable to connect to the runtime API</Text>
           </Box>
-          
+
           {endpoint && (
             <Box marginTop={1}>
-              <Text color="gray">
-                Endpoint: {endpoint}
-              </Text>
+              <Text color='gray'>Endpoint: {endpoint}</Text>
             </Box>
           )}
-          
+
           <Box marginTop={1}>
-            <Text color="gray" dimColor>
+            <Text color='gray' dimColor>
               {error.message}
             </Text>
           </Box>
-          
+
           <Box marginTop={1}>
             {retrying ? (
-              <LoadingIndicator text="Reconnecting" variant="dots" color="cyan" />
+              <LoadingIndicator
+                text='Reconnecting'
+                variant='dots'
+                color='cyan'
+              />
             ) : onRetry ? (
-              <Text color="cyan">
+              <Text color='cyan'>
                 Press <Text bold>R</Text> to retry
               </Text>
             ) : (
-              <Text color="gray">
-                Check connection and try again
-              </Text>
+              <Text color='gray'>Check connection and try again</Text>
             )}
           </Box>
         </Box>
@@ -287,30 +306,28 @@ interface TimeoutErrorFallbackProps {
 
 export const TimeoutErrorFallback: React.FC<TimeoutErrorFallbackProps> = ({
   onRetry: _onRetry,
-  timeout
+  timeout,
 }) => {
   return (
-    <Box flexDirection="column" padding={1}>
-      <Box borderStyle="round" borderColor="yellow" padding={1}>
-        <Box flexDirection="column">
-          <Text color="yellow" bold>
-            ⏱️  Request Timeout
+    <Box flexDirection='column' padding={1}>
+      <Box borderStyle='round' borderColor='yellow' padding={1}>
+        <Box flexDirection='column'>
+          <Text color='yellow' bold>
+            ⏱️ Request Timeout
           </Text>
-          
+
           <Box marginTop={1}>
-            <Text>
-              The request took longer than {timeout / 1000} seconds
-            </Text>
+            <Text>The request took longer than {timeout / 1000} seconds</Text>
           </Box>
-          
+
           <Box marginTop={1}>
-            <Text color="gray">
+            <Text color='gray'>
               This might be due to network issues or server load
             </Text>
           </Box>
-          
+
           <Box marginTop={1}>
-            <Text color="cyan">
+            <Text color='cyan'>
               Press <Text bold>R</Text> to retry with a longer timeout
             </Text>
           </Box>

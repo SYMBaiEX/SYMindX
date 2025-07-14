@@ -6,7 +6,7 @@
  */
 
 import { writeFileSync, readFileSync, existsSync } from 'fs';
-import { join } from 'path';
+// import { join } from 'path'; - path utilities not used in current implementation
 
 import {
   MemoryRecord,
@@ -441,13 +441,27 @@ export class InMemoryProvider extends BaseMemoryProvider {
     // Rough memory usage calculation
     const memoryUsage = totalMemories * 1000; // Estimate 1KB per memory
 
-    return {
+    const result: {
+      totalAgents: number;
+      totalMemories: number;
+      memoryUsage: number;
+      oldestMemory?: Date;
+      newestMemory?: Date;
+    } = {
       totalAgents: Object.keys(this.storage).length,
       totalMemories,
       memoryUsage,
-      oldestMemory,
-      newestMemory,
     };
+
+    if (oldestMemory !== undefined) {
+      result.oldestMemory = oldestMemory;
+    }
+
+    if (newestMemory !== undefined) {
+      result.newestMemory = newestMemory;
+    }
+
+    return result;
   }
 
   /**
@@ -617,7 +631,7 @@ export class InMemoryProvider extends BaseMemoryProvider {
    */
   async retrieveTier(
     agentId: string,
-    tier: MemoryTierType,
+    _tier: MemoryTierType,
     limit?: number
   ): Promise<MemoryRecord[]> {
     // For in-memory provider, return all memories as we don't have tier separation

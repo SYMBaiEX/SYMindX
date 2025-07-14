@@ -30,12 +30,14 @@ src/portals/
 ## Available Portals
 
 ### OpenAI Portal
+
 - **Provider**: OpenAI
 - **Models**: GPT-4.1, GPT-4o, gpt-4.1-mini, o3
 - **Features**: Text generation, chat completion, embeddings, streaming
 - **AI SDK v5**: `@ai-sdk/openai@^2.0.0-canary.11`
 
 ### Groq Portal
+
 - **Provider**: Groq
 - **Models**: Llama 3.3 (70B), Llama 3.1 (405B, 70B, 8B), Mixtral, Gemma
 - **Features**: Fast inference, text generation, chat completion, streaming
@@ -43,6 +45,7 @@ src/portals/
 - **Note**: No embedding support
 
 ### Anthropic Portal
+
 - **Provider**: Anthropic
 - **Models**: Claude 3.5 Sonnet (20241022), Claude 3 Opus/Sonnet/Haiku
 - **Features**: Advanced reasoning, text generation, chat completion, streaming
@@ -50,6 +53,7 @@ src/portals/
 - **Note**: No embedding support
 
 ### XAI Portal
+
 - **Provider**: XAI (Grok)
 - **Models**: Grok Beta, Grok Vision Beta
 - **Features**: Text generation, chat completion
@@ -57,6 +61,7 @@ src/portals/
 - **Note**: No embedding support
 
 ### OpenRouter Portal
+
 - **Provider**: OpenRouter
 - **Models**: Access to 100+ models from multiple providers
 - **Features**: Text generation, chat completion, embeddings
@@ -64,6 +69,7 @@ src/portals/
 - **Special**: Cost tracking included
 
 ### Kluster.ai Portal
+
 - **Provider**: Kluster.ai
 - **Models**: Custom models
 - **Features**: Text generation, chat completion, embeddings
@@ -74,37 +80,37 @@ src/portals/
 ### Basic Portal Creation
 
 ```typescript
-import { createPortal } from '../portals'
+import { createPortal } from '../portals';
 
 // Create an OpenAI portal with AI SDK v5
 const openaiPortal = createPortal('openai', {
   apiKey: 'your-openai-api-key',
   model: 'gpt-4.1-mini',
   maxTokens: 1000,
-  temperature: 0.7
-})
+  temperature: 0.7,
+});
 
 // Generate text with streaming support
-const { text, textStream } = await openaiPortal.generateText('Hello, world!')
-console.log(text)
+const { text, textStream } = await openaiPortal.generateText('Hello, world!');
+console.log(text);
 
 // Or use streaming
 for await (const chunk of textStream) {
-  process.stdout.write(chunk)
+  process.stdout.write(chunk);
 }
 ```
 
 ### Agent Integration
 
 ```typescript
-import { Agent, AgentConfig } from '../types/agent'
-import { createPortal } from '../portals'
+import { Agent, AgentConfig } from '../types/agent';
+import { createPortal } from '../portals';
 
 const agentConfig: AgentConfig = {
   core: {
     name: 'MyAgent',
     tone: 'friendly',
-    personality: ['helpful', 'curious']
+    personality: ['helpful', 'curious'],
   },
   psyche: {
     traits: ['analytical'],
@@ -112,8 +118,8 @@ const agentConfig: AgentConfig = {
       memory: 'supabase_pgvector',
       emotion: 'rune_emotion_stack',
       cognition: 'htn_planner',
-      portal: 'openai'  // Specify which portal to use
-    }
+      portal: 'openai', // Specify which portal to use
+    },
   },
   modules: {
     extensions: ['slack', 'twitter'],
@@ -121,10 +127,10 @@ const agentConfig: AgentConfig = {
       apiKey: process.env.OPENAI_API_KEY,
       model: 'gpt-4.1-mini',
       maxTokens: 2000,
-      temperature: 0.8
-    }
-  }
-}
+      temperature: 0.8,
+    },
+  },
+};
 ```
 
 ### Chat Completion
@@ -132,30 +138,30 @@ const agentConfig: AgentConfig = {
 ```typescript
 const messages = [
   { role: 'system', content: 'You are a helpful assistant.' },
-  { role: 'user', content: 'What is the capital of France?' }
-]
+  { role: 'user', content: 'What is the capital of France?' },
+];
 
 const response = await portal.generateChat(messages, {
   maxTokens: 500,
-  temperature: 0.3
-})
+  temperature: 0.3,
+});
 
-console.log(response.message.content)
+console.log(response.message.content);
 ```
 
 ### Streaming Responses (AI SDK v5)
 
 ```typescript
 // All portals now return both text and textStream
-const { text, textStream } = await portal.generateText('Tell me a story')
+const { text, textStream } = await portal.generateText('Tell me a story');
 
 // Use the stream
 for await (const chunk of textStream) {
-  process.stdout.write(chunk)
+  process.stdout.write(chunk);
 }
 
 // Or await the full text
-console.log(await text)
+console.log(await text);
 ```
 
 ### Function Calling (AI SDK v5)
@@ -169,19 +175,19 @@ const tools = {
   get_weather: tool({
     description: 'Get current weather for a location',
     parameters: z.object({
-      location: z.string().describe('City name')
+      location: z.string().describe('City name'),
     }),
     execute: async ({ location }) => {
       // Tool implementation
       return { temperature: 72, condition: 'sunny' };
-    }
-  })
+    },
+  }),
 };
 
 const response = await portal.generateChat(messages, {
   tools,
-  maxTokens: 500
-})
+  maxTokens: 500,
+});
 ```
 
 ## Portal Registry
@@ -189,21 +195,21 @@ const response = await portal.generateChat(messages, {
 The `PortalRegistry` manages all available portals and provides factory methods:
 
 ```typescript
-import { PortalRegistry } from '../portals'
+import { PortalRegistry } from '../portals';
 
-const registry = PortalRegistry.getInstance()
+const registry = PortalRegistry.getInstance();
 
 // Get available portals
-const available = registry.getAvailablePortals()
-console.log(available) // ['openai', 'groq', 'anthropic', 'xai', 'openrouter', 'kluster.ai']
+const available = registry.getAvailablePortals();
+console.log(available); // ['openai', 'groq', 'anthropic', 'xai', 'openrouter', 'kluster.ai']
 
 // Check if a portal is available
 if (registry.isAvailable('openai')) {
-  const portal = registry.create('openai', config)
+  const portal = registry.create('openai', config);
 }
 
 // Get default configuration
-const defaultConfig = registry.getDefaultConfig('groq')
+const defaultConfig = registry.getDefaultConfig('groq');
 ```
 
 ## Environment Variables
@@ -241,38 +247,43 @@ To add a new AI provider with AI SDK v5:
 
 ```typescript
 // src/portals/newprovider/index.ts
-import { BasePortal } from '../base-portal.js'
-import { streamText, generateText, embed } from 'ai'
-import { newprovider } from '@ai-sdk/newprovider' // Import the provider factory
+import { BasePortal } from '../base-portal.js';
+import { streamText, generateText, embed } from 'ai';
+import { newprovider } from '@ai-sdk/newprovider'; // Import the provider factory
 
 export class NewProviderPortal extends BasePortal {
   private model: any;
-  
+
   constructor(config: NewProviderConfig) {
-    super('newprovider', 'New Provider', '1.0.0', config)
+    super('newprovider', 'New Provider', '1.0.0', config);
     // Initialize AI SDK v5 model
     this.model = newprovider(config.model || 'default-model', {
       apiKey: config.apiKey,
-      baseURL: config.baseURL
-    })
+      baseURL: config.baseURL,
+    });
   }
 
-  async generateText(prompt: string, options?: TextGenerationOptions): Promise<TextGenerationResult> {
+  async generateText(
+    prompt: string,
+    options?: TextGenerationOptions
+  ): Promise<TextGenerationResult> {
     const { text, textStream } = await streamText({
       model: this.model,
       prompt,
       temperature: options?.temperature,
-      maxTokens: options?.maxTokens
-    })
-    
-    return { text: await text, textStream }
+      maxTokens: options?.maxTokens,
+    });
+
+    return { text: await text, textStream };
   }
 
   // ... other required methods
 }
 
-export function createNewProviderPortal(config: NewProviderConfig): NewProviderPortal {
-  return new NewProviderPortal(config)
+export function createNewProviderPortal(
+  config: NewProviderConfig
+): NewProviderPortal {
+  return new NewProviderPortal(config);
 }
 ```
 
@@ -282,14 +293,14 @@ All portals implement consistent error handling:
 
 ```typescript
 try {
-  const result = await portal.generateText('Hello')
+  const result = await portal.generateText('Hello');
 } catch (error) {
   if (error.message.includes('API key')) {
-    console.error('Invalid API key')
+    console.error('Invalid API key');
   } else if (error.message.includes('rate limit')) {
-    console.error('Rate limit exceeded')
+    console.error('Rate limit exceeded');
   } else {
-    console.error('Generation failed:', error.message)
+    console.error('Generation failed:', error.message);
   }
 }
 ```
@@ -325,6 +336,7 @@ The portals system uses Vercel AI SDK v5 (alpha/canary version):
 ```
 
 Install with:
+
 ```bash
 # Install AI SDK v5 and provider packages
 npm install ai@^5.0.0-canary.24

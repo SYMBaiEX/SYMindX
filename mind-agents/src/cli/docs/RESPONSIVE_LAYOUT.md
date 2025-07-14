@@ -5,6 +5,7 @@ A comprehensive responsive layout system for terminal-based UIs in the SYMindX C
 ## Overview
 
 The responsive layout system provides:
+
 - **Breakpoint-based layouts** - Different layouts for different terminal sizes
 - **Responsive components** - Components that adapt to available space
 - **Smart text truncation** - Automatic text ellipsis with word preservation
@@ -35,18 +36,15 @@ import { ResponsiveBox } from '../components/ui/ResponsiveBox.js';
 <ResponsiveBox
   // Responsive padding
   padding={{ xs: 0, sm: 1, md: 2, default: 1 }}
-  
   // Responsive flex direction
   direction={{ xs: 'column', md: 'row', default: 'row' }}
-  
   // Responsive visibility
   show={{ xs: false, sm: true }}
-  
   // Responsive gap between children
   gap={{ xs: 1, sm: 2, md: 3, default: 2 }}
 >
   {children}
-</ResponsiveBox>
+</ResponsiveBox>;
 ```
 
 ### ResponsiveGrid
@@ -59,10 +57,8 @@ import { ResponsiveGrid } from '../components/ui/ResponsiveGrid.js';
 <ResponsiveGrid
   // Responsive columns
   columns={{ xs: 1, sm: 2, md: 3, lg: 4 }}
-  
   // Responsive gap
   gap={{ xs: 1, sm: 2, default: 2 }}
-  
   // Auto-fit items to available space
   autoFit={true}
   minItemWidth={30}
@@ -70,10 +66,8 @@ import { ResponsiveGrid } from '../components/ui/ResponsiveGrid.js';
   <ResponsiveGrid.Item span={2}>
     Wide item spanning 2 columns
   </ResponsiveGrid.Item>
-  <ResponsiveGrid.Item>
-    Regular item
-  </ResponsiveGrid.Item>
-</ResponsiveGrid>
+  <ResponsiveGrid.Item>Regular item</ResponsiveGrid.Item>
+</ResponsiveGrid>;
 ```
 
 ### ResponsiveCard3D
@@ -84,21 +78,17 @@ An enhanced 3D card component with responsive sizing:
 import { ResponsiveCard3D } from '../components/ui/ResponsiveCard3D.js';
 
 <ResponsiveCard3D
-  title="System Status"
-  
+  title='System Status'
   // Responsive width
   width={{ xs: 'full', sm: 40, md: 50, default: 'auto' }}
-  
   // Responsive height
   height={{ xs: 10, sm: 12, md: 14, default: 'auto' }}
-  
   // Grid span when used in ResponsiveGrid
   span={{ xs: 1, md: 2, default: 1 }}
-  
   animated={true}
 >
   <Text>Card content</Text>
-</ResponsiveCard3D>
+</ResponsiveCard3D>;
 ```
 
 ## Utility Functions
@@ -111,7 +101,7 @@ import { responsiveTruncate } from '../utils/responsive-grid.js';
 const truncated = responsiveTruncate(longText, breakpoints, {
   maxWidth: { xs: 20, sm: 40, md: 60, default: 50 },
   preserveWords: true,
-  suffix: '...'
+  suffix: '...',
 });
 ```
 
@@ -124,7 +114,7 @@ const fontSize = getResponsiveValue(breakpoints, {
   xs: 'small',
   sm: 'medium',
   md: 'large',
-  default: 'medium'
+  default: 'medium',
 });
 ```
 
@@ -134,9 +124,9 @@ const fontSize = getResponsiveValue(breakpoints, {
 import { shouldShowElement } from '../utils/responsive-grid.js';
 
 const showFeature = shouldShowElement(breakpoints, {
-  xs: false,  // Hide on extra small
-  sm: false,  // Hide on small
-  md: true,   // Show on medium and above
+  xs: false, // Hide on extra small
+  sm: false, // Hide on small
+  md: true, // Show on medium and above
 });
 ```
 
@@ -147,40 +137,26 @@ const showFeature = shouldShowElement(breakpoints, {
 ```tsx
 export const ResponsiveDashboard = () => {
   const { dimensions, breakpoints } = useTerminalDimensions();
-  
+
   return (
-    <ResponsiveBox
-      direction="column"
-      padding={{ xs: 0, sm: 1, default: 2 }}
-    >
-      <Header title="Dashboard" />
-      
-      <ResponsiveGrid
-        columns={{ xs: 1, sm: 1, md: 2, lg: 3 }}
-        gap={2}
-      >
-        <ResponsiveCard3D
-          title="CPU Usage"
-          width="auto"
-          height="auto"
-        >
+    <ResponsiveBox direction='column' padding={{ xs: 0, sm: 1, default: 2 }}>
+      <Header title='Dashboard' />
+
+      <ResponsiveGrid columns={{ xs: 1, sm: 1, md: 2, lg: 3 }} gap={2}>
+        <ResponsiveCard3D title='CPU Usage' width='auto' height='auto'>
           <Chart data={cpuData} />
         </ResponsiveCard3D>
-        
+
         <ResponsiveCard3D
-          title="Memory"
-          width="auto"
-          height="auto"
+          title='Memory'
+          width='auto'
+          height='auto'
           show={{ xs: false, sm: true }}
         >
           <MemoryStats />
         </ResponsiveCard3D>
-        
-        <ResponsiveCard3D
-          title="Agents"
-          width="auto"
-          span={{ md: 2, lg: 1 }}
-        >
+
+        <ResponsiveCard3D title='Agents' width='auto' span={{ md: 2, lg: 1 }}>
           <AgentList />
         </ResponsiveCard3D>
       </ResponsiveGrid>
@@ -194,7 +170,7 @@ export const ResponsiveDashboard = () => {
 ```tsx
 export const AdaptiveAgentList = () => {
   const { breakpoints } = useTerminalDimensions();
-  
+
   return (
     <ResponsiveGrid
       columns={{ xs: 1, sm: 2, md: 3, lg: 4 }}
@@ -202,16 +178,16 @@ export const AdaptiveAgentList = () => {
       autoFit={true}
       minItemWidth={30}
     >
-      {agents.map(agent => (
+      {agents.map((agent) => (
         <ResponsiveCard3D
           key={agent.id}
           title={agent.name}
-          width="auto"
+          width='auto'
           height={{ xs: 8, sm: 10, md: 12 }}
         >
-          <ResponsiveBox direction="column" gap={1}>
+          <ResponsiveBox direction='column' gap={1}>
             <Text>Status: {agent.status}</Text>
-            
+
             {/* Hide details on small screens */}
             <ResponsiveBox show={{ xs: false, md: true }}>
               <Text>Portal: {agent.portal}</Text>
@@ -230,7 +206,7 @@ export const AdaptiveAgentList = () => {
 ```tsx
 export const ResponsiveChat = () => {
   const { dimensions, breakpoints } = useTerminalDimensions();
-  
+
   return (
     <ResponsiveBox
       direction={{ xs: 'column', md: 'row' }}
@@ -238,13 +214,10 @@ export const ResponsiveChat = () => {
       height={dimensions.height}
     >
       {/* Agent list - hide on mobile */}
-      <ResponsiveBox
-        show={{ xs: false, md: true }}
-        width={{ md: 30, lg: 40 }}
-      >
+      <ResponsiveBox show={{ xs: false, md: true }} width={{ md: 30, lg: 40 }}>
         <AgentList />
       </ResponsiveBox>
-      
+
       {/* Chat area - full width on mobile */}
       <ResponsiveBox flexGrow={1}>
         <ChatMessages />
@@ -258,6 +231,7 @@ export const ResponsiveChat = () => {
 ## Best Practices
 
 ### 1. Mobile-First Design
+
 Start with the smallest screen size and enhance for larger screens:
 
 ```tsx
@@ -268,6 +242,7 @@ Start with the smallest screen size and enhance for larger screens:
 ```
 
 ### 2. Progressive Disclosure
+
 Show more information as screen size increases:
 
 ```tsx
@@ -283,6 +258,7 @@ Show more information as screen size increases:
 ```
 
 ### 3. Smart Defaults
+
 Always provide sensible default values:
 
 ```tsx
@@ -290,11 +266,12 @@ const columns = getResponsiveValue(breakpoints, {
   xs: 1,
   sm: 2,
   md: 3,
-  default: 2  // Fallback value
+  default: 2, // Fallback value
 });
 ```
 
 ### 4. Performance Considerations
+
 - Use `responsive={false}` on Card3D for static layouts
 - Minimize re-renders by memoizing responsive calculations
 - Debounce terminal resize events (handled automatically)
@@ -302,10 +279,12 @@ const columns = getResponsiveValue(breakpoints, {
 ## Terminal Size Guidelines
 
 ### Minimum Requirements
+
 - Width: 80 columns
 - Height: 24 rows
 
 ### Recommended Sizes
+
 - **Mobile view**: 80x24 (standard terminal)
 - **Tablet view**: 120x30 (medium terminal)
 - **Desktop view**: 160x40+ (full terminal)
@@ -315,13 +294,15 @@ const columns = getResponsiveValue(breakpoints, {
 Enable debug mode to see current breakpoint:
 
 ```tsx
-{process.env.NODE_ENV === 'development' && (
-  <Box position="absolute" top={0} right={0}>
-    <Text dimColor>
-      {dimensions.width}x{dimensions.height} [{currentBreakpoint}]
-    </Text>
-  </Box>
-)}
+{
+  process.env.NODE_ENV === 'development' && (
+    <Box position='absolute' top={0} right={0}>
+      <Text dimColor>
+        {dimensions.width}x{dimensions.height} [{currentBreakpoint}]
+      </Text>
+    </Box>
+  );
+}
 ```
 
 ## Migration Guide
@@ -345,8 +326,8 @@ Example migration:
 </Card3D>
 
 // After
-<ResponsiveCard3D 
-  title="Status" 
+<ResponsiveCard3D
+  title="Status"
   width={{ xs: 'full', md: 40 }}
   height={{ xs: 10, md: 12 }}
 >
@@ -359,6 +340,7 @@ Example migration:
 ## Future Enhancements
 
 Planned features:
+
 - [ ] Responsive typography scale
 - [ ] Orientation detection (portrait/landscape)
 - [ ] Custom breakpoint configuration

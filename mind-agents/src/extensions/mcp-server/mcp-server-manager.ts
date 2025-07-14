@@ -92,13 +92,22 @@ export class MCPServerManager extends EventEmitter {
     };
   }
 
+  /**
+   * Generate a unique request ID
+   */
+  private generateRequestId(): string {
+    return `req_${++this._requestId}_${Date.now()}`;
+  }
+
   async initialize(agent: Agent): Promise<void> {
     this.agent = agent;
     this.registerDefaultTools();
     this.registerDefaultResources();
     this.registerDefaultPrompts();
 
-    runtimeLogger.info('🎯 MCP Server Manager initialized');
+    runtimeLogger.info(
+      `🎯 MCP Server Manager initialized for agent: ${agent.name}`
+    );
   }
 
   async start(): Promise<void> {
@@ -306,9 +315,12 @@ export class MCPServerManager extends EventEmitter {
     try {
       const { method, params, id } = request;
 
+      // Generate internal request ID for tracking
+      const internalRequestId = this.generateRequestId();
+
       if (this.config.logging?.enabled) {
         runtimeLogger.debug(
-          `📥 MCP Request: ${method}`,
+          `📥 MCP Request [${internalRequestId}]: ${method}`,
           this.config.logging.includeArgs ? params : undefined
         );
       }

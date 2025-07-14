@@ -6,8 +6,8 @@
  */
 
 import {
-  OperationResult,
-  ExecutionResult,
+  // OperationResult,
+  // ExecutionResult,
   ValidationResult,
   HealthCheckResult,
   LifecycleEventResult,
@@ -736,3 +736,24 @@ export interface LoggingResult {
     [key: string]: any;
   };
 }
+
+/**
+ * Performance measurement result
+ */
+export interface PerformanceMetrics {
+  memoryUsage: {
+    heapUsed: number;
+    heapTotal: number;
+    external: number;
+    rss: number;
+  };
+  cpuUsage: {
+    user: number;
+    system: number;
+  };
+  uptime: number;
+  loadAverage: number[];
+  timestamp: Date;
+}
+
+// ModuleManifest moved to types/index.ts to avoid circular import issues

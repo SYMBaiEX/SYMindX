@@ -5,7 +5,6 @@
  * has its own module with specific behaviors and triggers.
  */
 
-import { EmotionConfig } from '../../types/agent';
 import { EmotionModule } from '../../types/emotion';
 import { runtimeLogger } from '../../utils/logger';
 

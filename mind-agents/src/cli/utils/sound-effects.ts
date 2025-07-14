@@ -1,7 +1,7 @@
-import { exec } from 'child_process'
-import { promisify } from 'util'
+import { exec } from 'child_process';
+import { promisify } from 'util';
 
-const execAsync = promisify(exec)
+const execAsync = promisify(exec);
 
 // Sound effect types
 export enum SoundType {
@@ -26,10 +26,10 @@ export enum SoundType {
 
 // Sound configuration
 interface SoundConfig {
-  frequency: number
-  duration: number
-  type?: 'sine' | 'square' | 'sawtooth' | 'triangle'
-  volume?: number
+  frequency: number;
+  duration: number;
+  type?: 'sine' | 'square' | 'sawtooth' | 'triangle';
+  volume?: number;
 }
 
 // Default sound configurations
@@ -59,9 +59,7 @@ const SOUND_CONFIGS: Record<SoundType, SoundConfig[]> = {
     { frequency: 1000, duration: 100 },
     { frequency: 1200, duration: 150 },
   ],
-  [SoundType.KEYPRESS]: [
-    { frequency: 2000, duration: 10, volume: 0.1 },
-  ],
+  [SoundType.KEYPRESS]: [{ frequency: 2000, duration: 10, volume: 0.1 }],
   [SoundType.GLITCH]: [
     { frequency: 100, duration: 20, type: 'square' },
     { frequency: 2500, duration: 20, type: 'sawtooth' },
@@ -92,12 +90,8 @@ const SOUND_CONFIGS: Record<SoundType, SoundConfig[]> = {
     { frequency: 1200, duration: 50 },
     { frequency: 800, duration: 50 },
   ],
-  [SoundType.NAVIGATION]: [
-    { frequency: 1500, duration: 30, volume: 0.3 },
-  ],
-  [SoundType.NAVIGATE]: [
-    { frequency: 1500, duration: 30, volume: 0.3 },
-  ],
+  [SoundType.NAVIGATION]: [{ frequency: 1500, duration: 30, volume: 0.3 }],
+  [SoundType.NAVIGATE]: [{ frequency: 1500, duration: 30, volume: 0.3 }],
   [SoundType.SELECT]: [
     { frequency: 1800, duration: 50 },
     { frequency: 2200, duration: 50 },
@@ -112,60 +106,60 @@ const SOUND_CONFIGS: Record<SoundType, SoundConfig[]> = {
     { frequency: 400, duration: 100 },
     { frequency: 300, duration: 100 },
   ],
-}
+};
 
 // Sound effects manager
 export class SoundEffectsManager {
-  private enabled: boolean = true
-  private platform: string = process.platform
-  private queue: Promise<void> = Promise.resolve()
-  
+  private enabled: boolean = true;
+  private platform: string = process.platform;
+  private queue: Promise<void> = Promise.resolve();
+
   constructor(enabled: boolean = true) {
-    this.enabled = enabled && this.checkAudioSupport()
+    this.enabled = enabled && this.checkAudioSupport();
   }
-  
+
   // Check if audio is supported on the platform
   private checkAudioSupport(): boolean {
     // Check for audio support based on platform
     if (this.platform === 'darwin') {
       // macOS - check for afplay
-      return true
+      return true;
     } else if (this.platform === 'linux') {
       // Linux - check for paplay or aplay
       try {
-        execAsync('which paplay').catch(() => execAsync('which aplay'))
-        return true
+        execAsync('which paplay').catch(() => execAsync('which aplay'));
+        return true;
       } catch {
-        return false
+        return false;
       }
     } else if (this.platform === 'win32') {
       // Windows - PowerShell beep
-      return true
+      return true;
     }
-    return false
+    return false;
   }
-  
+
   // Play a sound effect
   async play(soundType: SoundType): Promise<void> {
-    if (!this.enabled) return
-    
-    const configs = SOUND_CONFIGS[soundType]
-    if (!configs) return
-    
+    if (!this.enabled) return;
+
+    const configs = SOUND_CONFIGS[soundType];
+    if (!configs) return;
+
     // Queue sound to prevent overlapping
     this.queue = this.queue.then(async () => {
       for (const config of configs) {
-        await this.playTone(config)
+        await this.playTone(config);
       }
-    })
-    
-    return this.queue
+    });
+
+    return this.queue;
   }
-  
+
   // Play a custom tone
   async playTone(config: SoundConfig): Promise<void> {
-    if (!this.enabled) return
-    
+    if (!this.enabled) return;
+
     try {
       if (this.platform === 'darwin') {
         // macOS using afplay with generated sine wave
@@ -173,74 +167,76 @@ export class SoundEffectsManager {
           for i in {1..${config.duration}}; do 
             printf '\\a'
             sleep 0.001
-          done" | bash`
-        await execAsync(command)
+          done" | bash`;
+        await execAsync(command);
       } else if (this.platform === 'linux') {
         // Linux using paplay or speaker-test
-        const command = `timeout ${config.duration}ms speaker-test -t sine -f ${config.frequency} >/dev/null 2>&1 || true`
-        await execAsync(command)
+        const command = `timeout ${config.duration}ms speaker-test -t sine -f ${config.frequency} >/dev/null 2>&1 || true`;
+        await execAsync(command);
       } else if (this.platform === 'win32') {
         // Windows PowerShell beep
-        const command = `powershell -Command "[console]::beep(${config.frequency}, ${config.duration})"`
-        await execAsync(command)
+        const command = `powershell -Command "[console]::beep(${config.frequency}, ${config.duration})"`;
+        await execAsync(command);
       }
     } catch (error) {
       // Silently fail if sound playback fails
     }
   }
-  
+
   // Toggle sound effects
   toggle(): void {
-    this.enabled = !this.enabled
+    this.enabled = !this.enabled;
   }
-  
+
   // Check if sound is enabled
   isEnabled(): boolean {
-    return this.enabled
+    return this.enabled;
   }
-  
+
   // Play a sequence of notes (for melodies)
-  async playMelody(notes: Array<{ frequency: number; duration: number }>): Promise<void> {
-    if (!this.enabled) return
-    
+  async playMelody(
+    notes: Array<{ frequency: number; duration: number }>
+  ): Promise<void> {
+    if (!this.enabled) return;
+
     for (const note of notes) {
-      await this.playTone(note)
+      await this.playTone(note);
     }
   }
-  
+
   // Play cyberpunk-style boot sequence
   async playBootSequence(): Promise<void> {
     const bootMelody = [
-      { frequency: 110, duration: 100 },  // A2
-      { frequency: 220, duration: 100 },  // A3
-      { frequency: 440, duration: 100 },  // A4
-      { frequency: 880, duration: 100 },  // A5
-      { frequency: 440, duration: 50 },   // A4
-      { frequency: 523, duration: 100 },  // C5
-      { frequency: 659, duration: 100 },  // E5
-      { frequency: 784, duration: 200 },  // G5
-    ]
-    
-    await this.playMelody(bootMelody)
+      { frequency: 110, duration: 100 }, // A2
+      { frequency: 220, duration: 100 }, // A3
+      { frequency: 440, duration: 100 }, // A4
+      { frequency: 880, duration: 100 }, // A5
+      { frequency: 440, duration: 50 }, // A4
+      { frequency: 523, duration: 100 }, // C5
+      { frequency: 659, duration: 100 }, // E5
+      { frequency: 784, duration: 200 }, // G5
+    ];
+
+    await this.playMelody(bootMelody);
   }
-  
+
   // Play glitch sequence
   async playGlitchSequence(): Promise<void> {
     const glitchNotes = Array.from({ length: 10 }, () => ({
       frequency: Math.random() * 2000 + 100,
       duration: Math.random() * 50 + 10,
-    }))
-    
-    await this.playMelody(glitchNotes)
+    }));
+
+    await this.playMelody(glitchNotes);
   }
 }
 
 // Global sound manager instance
 export const soundManager = new SoundEffectsManager(
   process.env.SYMINDX_SOUND_EFFECTS !== 'false'
-)
+);
 
 // Helper function to play sounds
 export async function playSound(type: SoundType): Promise<void> {
-  return soundManager.play(type)
+  return soundManager.play(type);
 }

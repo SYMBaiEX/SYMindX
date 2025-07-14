@@ -80,7 +80,12 @@ export class ExtensionMiddleware {
    * Extension context middleware
    */
   static extensionContext(extensionId: string, operation?: string) {
-    return (req: ExtensionRequest, res: Response, next: NextFunction): void => {
+    return (
+      req: ExtensionRequest,
+      _res: Response,
+      next: NextFunction
+    ): void => {
+      // Note: '_res' is required by Express middleware signature but not used here
       req.extensionContext = {
         extensionId,
         operation: operation || req.method + ' ' + req.path,

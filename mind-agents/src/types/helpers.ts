@@ -5,6 +5,8 @@
  * and provide better type safety throughout the system.
  */
 
+import type { CommunicationStyle } from './communication';
+
 /**
  * Operation Result Types
  * These replace void returns with meaningful result types
@@ -305,7 +307,7 @@ export interface LifecycleEventResult {
  * NOTE: Brand type preserved for future use but currently disabled
  * to simplify type assignments and fix compilation errors
  */
-// export type Brand<T, K> = T & { __brand: K };
+export type Brand<T, K> = T & { __brand: K };
 
 /**
  * Simplified ID types (previously branded)
@@ -442,7 +444,7 @@ export type Observer<T> = {
   update: (data: T) => OperationResult;
 };
 
-export type Subject<T> = {
+export type ObservableSubject<T> = {
   attach: (observer: Observer<T>) => OperationResult;
   detach: (observer: Observer<T>) => OperationResult;
   notify: (data: T) => OperationResult;
@@ -642,6 +644,17 @@ export type ResourceManager = {
   deallocate: (resourceId: string) => Promise<OperationResult>;
   query: (type: string, filters?: Record<string, any>) => Promise<Resource[]>;
   getStatus: (resourceId: string) => Promise<Resource>;
+  // Additional methods required by the codebase
+  allocateResources: (
+    agentId: string,
+    requirements: Record<string, any>
+  ) => Promise<OperationResult>;
+  releaseResources: (agentId: string) => Promise<OperationResult>;
+  checkAvailability: (
+    type: string,
+    requirements?: Record<string, any>
+  ) => Promise<boolean>;
+  getCurrentUsage: (agentId?: string) => Promise<Record<string, any>>;
 };
 
 /**
@@ -691,21 +704,21 @@ export type Role = {
   permissions: Permission[];
 };
 
-export type Subject = {
+export type SecuritySubject = {
   id: string;
   type: 'user' | 'service' | 'agent';
   roles: Role[];
 };
 
 export type SecurityContext = {
-  subject: Subject;
+  subject: SecuritySubject;
   permissions: Permission[];
   hasPermission: (permission: string) => boolean;
 };
 
 export type AuthenticationResult = {
   success: boolean;
-  subject?: Subject;
+  subject?: SecuritySubject;
   token?: string;
   error?: string;
   metadata?: Record<string, any>;
@@ -716,3 +729,87 @@ export type AuthorizationResult = {
   reason?: string;
   metadata?: Record<string, any>;
 };
+
+/**
+ * Additional Result Types
+ * These are commonly used result types that were missing
+ */
+export interface EventDispatchResult {
+  success: boolean;
+  message?: string;
+  timestamp: Date;
+  eventId: EventId;
+  handlersTriggered: number;
+  errors?: string[];
+  metadata?: Record<string, any>;
+}
+
+export interface SystemHealthResult {
+  success: boolean;
+  overall: 'healthy' | 'degraded' | 'unhealthy';
+  timestamp: Date;
+  components: HealthCheckResult[];
+  metadata?: Record<string, any>;
+}
+
+export interface ConfigurationUpdateResult {
+  success: boolean;
+  message?: string;
+  timestamp: Date;
+  key: string;
+  oldValue?: any;
+  newValue?: any;
+  metadata?: Record<string, any>;
+}
+
+export interface ConfigurationLoadResult {
+  success: boolean;
+  configuration?: Record<string, any>;
+  error?: string;
+  timestamp: Date;
+  source: 'file' | 'environment' | 'remote' | 'default';
+  metadata?: Record<string, any>;
+}
+
+export interface LoggingResult {
+  success: boolean;
+  message?: string;
+  timestamp: Date;
+  logLevel: string;
+  logMessage: string;
+  metadata?: Record<string, any>;
+}
+
+export interface ConfigurationSchema {
+  properties: Record<
+    string,
+    {
+      type: string;
+      description?: string;
+      required?: boolean;
+      default?: any;
+      enum?: any[];
+    }
+  >;
+  required: string[];
+  additionalProperties: boolean;
+}
+
+/**
+ * Feedback Entry for style learning
+ */
+export interface FeedbackEntry {
+  feedback: 'positive' | 'negative' | 'neutral';
+  style: CommunicationStyle;
+  timestamp: Date;
+  context?: {
+    originalLength: number;
+    adaptedLength: number;
+    styleUsed: CommunicationStyle;
+  };
+}
+
+// Re-export types from other files
+export type { PerformanceMetrics } from './results';
+
+export type { ModuleManifest } from './index';

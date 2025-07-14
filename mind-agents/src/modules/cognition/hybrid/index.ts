@@ -4,9 +4,9 @@ import {
   ThoughtResult,
   Plan,
   Decision,
-  AgentAction,
   EmotionState,
 } from '../../../types/agent';
+// Remove unused AgentAction import - actions are created inline
 import { CognitionModule } from '../../../types/cognition';
 
 import { HybridCognitionConfig } from './types';
@@ -67,6 +67,12 @@ export class HybridCognition implements CognitionModule {
       }
     }
 
+    // Log processing time
+    const processingTime = Date.now() - startTime;
+    result.thoughts.push(
+      `Hybrid thinking completed in ${processingTime}ms using ${approach} approach`
+    );
+
     // Add hybrid metadata
     result.thoughts.unshift(
       `Using ${approach} approach (${Math.round(contextAnalysis.complexity * 100)}% complexity)`
@@ -83,6 +89,7 @@ export class HybridCognition implements CognitionModule {
 
   async plan(agent: Agent, goal: string): Promise<Plan> {
     // Use a balanced approach for planning
+    console.log(`[Hybrid] Creating plan for agent ${agent.id}: ${goal}`);
     const complexity = this.assessGoalComplexity(goal);
 
     if (complexity > this.config.complexityThreshold!) {
@@ -94,6 +101,9 @@ export class HybridCognition implements CognitionModule {
 
   async decide(agent: Agent, options: Decision[]): Promise<Decision> {
     // Hybrid decision making
+    console.log(
+      `[Hybrid] Agent ${agent.id} making decision from ${options.length} options`
+    );
     const urgency = this.assessUrgency(options);
 
     if (urgency > this.config.urgencyThreshold!) {
@@ -186,15 +196,24 @@ export class HybridCognition implements CognitionModule {
     context: ThoughtContext,
     analysis: any
   ): Promise<ThoughtResult> {
-    // Fast, pattern-based response
-    const thoughts = ['Applying reactive cognition pattern'];
-    const confidence = 0.7 - analysis.complexity * 0.2; // Lower confidence for complex situations
+    // Fast, pattern-based response based on agent's experience
+    const thoughts = [
+      `Applying reactive cognition pattern for agent: ${agent.name}`,
+    ];
+
+    // Adjust confidence based on agent's experience level and personality
+    let confidence = 0.7 - analysis.complexity * 0.2;
+    if (agent.characterConfig?.personality?.traits?.conscientiousness > 0.7) {
+      confidence += 0.1; // More conscientious agents are more confident in quick decisions
+    }
+    confidence = Math.max(0.1, Math.min(1.0, confidence));
 
     return {
       thoughts,
       confidence,
       actions: this.generateQuickActions(context).map((action) => ({
         id: `action_${Date.now()}_${Math.random()}`,
+        agentId: agent.id,
         type: 'reactive_action',
         extension: 'hybrid_cognition',
         action,
@@ -220,12 +239,20 @@ export class HybridCognition implements CognitionModule {
   ): Promise<ThoughtResult> {
     const startTime = Date.now();
 
-    // More deliberate, goal-oriented response
+    // More deliberate, goal-oriented response tailored to agent
     const thoughts = [
-      'Analyzing context for planning approach',
+      `Analyzing context for planning approach (agent: ${agent.name})`,
       'Identifying goals and sub-goals',
       'Considering multiple response strategies',
     ];
+
+    // Use agent's planning style based on personality
+    if (agent.characterConfig?.personality?.traits?.openness > 0.7) {
+      thoughts.push('Exploring creative planning alternatives');
+    }
+    if (agent.characterConfig?.personality?.traits?.conscientiousness > 0.7) {
+      thoughts.push('Applying systematic planning methodology');
+    }
 
     // Check timeout
     const timeoutTime = startTime + this.config.maxPlanningTime!;
@@ -237,6 +264,7 @@ export class HybridCognition implements CognitionModule {
       confidence,
       actions: this.generatePlannedActions(context, analysis).map((action) => ({
         id: `action_${Date.now()}_${Math.random()}`,
+        agentId: agent.id,
         type: 'planned_action',
         extension: 'hybrid_cognition',
         action,
@@ -380,14 +408,35 @@ export class HybridCognition implements CognitionModule {
   }
 
   private generateQuickActions(context: ThoughtContext): string[] {
-    // Simple pattern-based actions
+    const actions: string[] = [];
+
+    // Analyze context for quick action patterns
     if (context.goal?.includes('?')) {
-      return ['provide_answer'];
+      actions.push('provide_answer');
     }
     if (context.goal?.includes('help')) {
-      return ['offer_assistance'];
+      actions.push('offer_assistance');
     }
-    return ['acknowledge_and_respond'];
+
+    // Consider event types in context
+    if (context.events.some((e) => e.type.includes('social'))) {
+      actions.push('social_response');
+    }
+    if (context.events.some((e) => e.type.includes('urgent'))) {
+      actions.push('priority_response');
+    }
+
+    // Consider memory relevance
+    if (context.memories && context.memories.length > 0) {
+      actions.push('reference_memory');
+    }
+
+    // Default action if no specific patterns match
+    if (actions.length === 0) {
+      actions.push('acknowledge_and_respond');
+    }
+
+    return actions;
   }
 
   private generatePlannedActions(
@@ -395,6 +444,19 @@ export class HybridCognition implements CognitionModule {
     analysis: any
   ): string[] {
     const actions: string[] = [];
+
+    // Use context to inform planned actions
+    if (context.goal?.includes('plan') || context.goal?.includes('strategy')) {
+      actions.push('develop_detailed_plan');
+    }
+
+    if (context.events.some((e) => e.type.includes('urgent'))) {
+      actions.push('prioritize_urgent_tasks');
+    }
+
+    if (context.memories && context.memories.length > 0) {
+      actions.push('integrate_past_experience');
+    }
 
     if (analysis.complexity > 0.7) {
       actions.push('analyze_deeply', 'consider_alternatives');
@@ -631,27 +693,7 @@ export class HybridCognition implements CognitionModule {
     }
   }
 
-  /**
-   * Initialize the cognition module
-   */
-  initialize(config: any): void {
-    this.config = { ...this.config, ...config };
-  }
-
-  /**
-   * Get metadata about the cognition module
-   */
-  getMetadata() {
-    return {
-      id: this.id,
-      name: 'Hybrid Cognition',
-      description: 'Adaptive hybrid cognition system',
-      version: '1.0.0',
-      author: 'SYMindX',
-      paradigms: ['hybrid', 'reactive', 'planning'],
-      learningCapable: this.config.enableAdaptation || false,
-    };
-  }
+  // Duplicate implementations removed - see lines 114-128 for the actual implementations
 }
 
 export default HybridCognition;

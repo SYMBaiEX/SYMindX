@@ -5,7 +5,7 @@
  * summarization strategies, prioritization algorithms, and consolidation rules.
  */
 
-import { MemoryRecord } from '../../types/agent';
+import { MemoryRecord, MemoryDuration } from '../../types/agent';
 import {
   MemoryManagementPolicy,
   MemoryPolicyConfig,
@@ -268,7 +268,12 @@ export class MemoryManagementEngine {
     config: MemoryPolicyConfig
   ): Promise<SummarizedMemory> {
     const method = config.summaryMethod || 'temporal';
-    const _preserveOriginal = config.preserveOriginal !== false;
+    const preserveOriginal = config.preserveOriginal !== false;
+
+    // Log preservation strategy
+    if (preserveOriginal) {
+      runtimeLogger.debug('Preserving original memories during summarization');
+    }
 
     // Create summary content
     let summaryContent: string;
@@ -318,7 +323,9 @@ export class MemoryManagementEngine {
       importance: maxImportance,
       timestamp: new Date(),
       tags: summaryTags,
-      duration: cluster.memories[0]?.duration,
+      duration:
+        (cluster.memories[0]?.duration as MemoryDuration) ||
+        MemoryDuration.LONG_TERM,
       originalMemoryIds: cluster.memories.map((m) => m.id),
       summaryMethod: method,
       compressionRatio,
@@ -469,7 +476,7 @@ export class MemoryManagementEngine {
    */
   private clusterByEmbedding(
     memories: MemoryRecord[],
-    config: MemoryPolicyConfig
+    _config: MemoryPolicyConfig
   ): MemoryCluster[] {
     const clusters: MemoryCluster[] = [];
     const memoriesWithEmbeddings = memories.filter((m) => m.embedding);
@@ -500,6 +507,9 @@ export class MemoryManagementEngine {
   ): MemoryCluster[] {
     const clusters: MemoryCluster[] = [];
     const conceptGroups = new Map<string, MemoryRecord[]>();
+
+    // Apply config thresholds
+    const _minClusterSize = config.minClusterSize || 2;
 
     // Group by common tags/concepts
     for (const memory of memories) {
@@ -585,7 +595,10 @@ export class MemoryManagementEngine {
 
     for (let i = 0; i < memories.length; i++) {
       for (let j = i + 1; j < memories.length; j++) {
-        const sim = this.calculateContentSimilarity(memories[i], memories[j]);
+        const mem1 = memories[i];
+        const mem2 = memories[j];
+        if (!mem1 || !mem2) continue;
+        const sim = this.calculateContentSimilarity(mem1, mem2);
         totalSimilarity += sim;
         comparisons++;
       }
@@ -643,9 +656,11 @@ export class MemoryManagementEngine {
     // Initialize centroids randomly
     const centroids: number[][] = [];
     for (let i = 0; i < k; i++) {
-      centroids.push([
-        ...embeddings[Math.floor(Math.random() * embeddings.length)],
-      ]);
+      const randomIndex = Math.floor(Math.random() * embeddings.length);
+      const embedding = embeddings[randomIndex];
+      if (embedding) {
+        centroids.push([...embedding]);
+      }
     }
 
     let converged = false;

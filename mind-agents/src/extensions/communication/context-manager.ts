@@ -65,7 +65,7 @@ export interface ConversationContext {
   followUpTopics: string[];
 
   // Metadata
-  metadata: Record<string, any>;
+  metadata: Metadata;
 }
 
 /**
@@ -157,7 +157,7 @@ export class ContextManager {
       },
       pendingQuestions: [],
       followUpTopics: [],
-      metadata: {},
+      metadata: {} as Metadata,
     };
 
     // Process initial message if provided
@@ -190,13 +190,27 @@ export class ContextManager {
     }
 
     // Add message
-    context.messages.push({
+    const message: {
+      from: string;
+      content: string;
+      timestamp: Date;
+      emotion?: string;
+      intent?: string;
+    } = {
       from,
       content,
       timestamp: new Date(),
-      emotion,
-      intent,
-    });
+    };
+
+    if (emotion !== undefined) {
+      message.emotion = emotion;
+    }
+
+    if (intent !== undefined) {
+      message.intent = intent;
+    }
+
+    context.messages.push(message);
 
     // Limit message history
     if (context.messages.length > this.config.maxMessageHistory!) {
@@ -276,14 +290,32 @@ export class ContextManager {
       agentId: agent.id,
       type: MemoryType.INTERACTION,
       content: this.summarizeContext(context),
-      metadata: {
-        contextId,
-        participants: Array.from(context.participants),
-        topics: context.topics.map((t) => t.topic),
-        duration: Date.now() - context.startedAt.getTime(),
-        messageCount: context.messages.length,
-        mood: context.state.mood,
-      },
+      metadata: (() => {
+        const metadata: Metadata = {};
+        this.setMetadataValue(metadata, 'contextId', contextId);
+        this.setMetadataValue(
+          metadata,
+          'participants',
+          Array.from(context.participants)
+        );
+        this.setMetadataValue(
+          metadata,
+          'topics',
+          context.topics.map((t) => t.topic)
+        );
+        this.setMetadataValue(
+          metadata,
+          'duration',
+          Date.now() - context.startedAt.getTime()
+        );
+        this.setMetadataValue(
+          metadata,
+          'messageCount',
+          context.messages.length
+        );
+        this.setMetadataValue(metadata, 'mood', context.state.mood);
+        return metadata;
+      })(),
       importance,
       timestamp: new Date(),
       tags: ['conversation', 'context', ...context.topics.map((t) => t.topic)],
@@ -330,10 +362,12 @@ export class ContextManager {
       pendingQuestions: [],
       followUpTopics: (memory.metadata.topics as string[]) || [],
       previousContextId: memory.metadata.contextId as string,
-      metadata: {
-        restored: true,
-        restoredFrom: memory.id,
-      },
+      metadata: (() => {
+        const metadata: Metadata = {};
+        this.setMetadataValue(metadata, 'restored', true);
+        this.setMetadataValue(metadata, 'restoredFrom', memory.id);
+        return metadata;
+      })(),
     };
 
     this.contexts.set(context.id, context);
@@ -586,6 +620,15 @@ export class ContextManager {
     summary += `Mood: ${context.state.mood}.`;
 
     return summary;
+  }
+
+  /**
+   * Validate and set metadata value
+   */
+  private setMetadataValue(metadata: Metadata, key: string, value: any): void {
+    // Ensure value conforms to MetadataValue type
+    const validValue: MetadataValue = value;
+    metadata[key] = validValue;
   }
 
   /**

@@ -25,6 +25,12 @@ export default [
         Buffer: 'readonly',
         __dirname: 'readonly',
         __filename: 'readonly',
+        setTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearTimeout: 'readonly',
+        clearInterval: 'readonly',
+        fetch: 'readonly',
+        global: 'readonly',
       },
       parserOptions: {
         ecmaFeatures: {

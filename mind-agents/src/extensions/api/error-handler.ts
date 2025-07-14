@@ -333,8 +333,10 @@ export class ExtensionErrorHandler {
     err: Error,
     req: Request,
     res: Response,
-    next: NextFunction
+    _next: NextFunction
   ): void {
+    // Note: '_next' is required by Express error handler signature but not used
+    // as this is the final error handler in the middleware chain
     const requestId =
       (req.headers['x-request-id'] as string) ||
       Math.random().toString(36).substring(2, 15);

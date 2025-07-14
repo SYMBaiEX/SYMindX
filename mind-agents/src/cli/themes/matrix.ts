@@ -1,38 +1,38 @@
-import { Theme } from './cyberpunk.js'
+import { Theme } from './cyberpunk.js';
 
 export const matrixTheme: Theme = {
   name: 'matrix',
   colors: {
     // Primary colors
-    primary: '#00FF00',      // Matrix green
-    secondary: '#008F00',    // Dark green
-    accent: '#00FF00',       // Bright green
-    danger: '#FF0000',       // Red (for agents)
-    success: '#00FF00',      // Green
-    warning: '#FFFF00',      // Yellow
-    
+    primary: '#00FF00', // Matrix green
+    secondary: '#008F00', // Dark green
+    accent: '#00FF00', // Bright green
+    danger: '#FF0000', // Red (for agents)
+    success: '#00FF00', // Green
+    warning: '#FFFF00', // Yellow
+
     // Background colors
-    bgPrimary: '#000000',    // Black
-    bgSecondary: '#0A0A0A',  // Very dark gray
-    bgTertiary: '#141414',   // Dark gray
-    
+    bgPrimary: '#000000', // Black
+    bgSecondary: '#0A0A0A', // Very dark gray
+    bgTertiary: '#141414', // Dark gray
+
     // Text colors
-    text: '#00FF00',         // Green
-    textDim: '#008F00',      // Dark green
-    textBright: '#00FF00',   // Bright green
-    
+    text: '#00FF00', // Green
+    textDim: '#008F00', // Dark green
+    textBright: '#00FF00', // Bright green
+
     // Border colors
-    border: '#00FF00',       // Green
+    border: '#00FF00', // Green
     borderBright: '#00FF00', // Bright green
-    borderDim: '#004F00',    // Very dark green
-    
+    borderDim: '#004F00', // Very dark green
+
     // Special effects
-    glow: '#00FF00',         // Green glow
-    glowAlt: '#00FF00',      // Green glow
-    matrix: '#00FF00',       // Matrix green
-    glitch: '#FF0000',       // Red glitch
+    glow: '#00FF00', // Green glow
+    glowAlt: '#00FF00', // Green glow
+    matrix: '#00FF00', // Matrix green
+    glitch: '#FF0000', // Red glitch
   },
-  
+
   // ASCII art characters
   ascii: {
     // Box drawing (Matrix style)
@@ -43,13 +43,13 @@ export const matrixTheme: Theme = {
     boxHorizontal: '─',
     boxVertical: '│',
     boxCross: '┼',
-    
+
     // Progress bars
     progressFull: '█',
     progressHalf: '▓',
     progressQuarter: '▒',
     progressEmpty: '░',
-    
+
     // Arrows and indicators
     arrowRight: '>',
     arrowLeft: '<',
@@ -57,14 +57,14 @@ export const matrixTheme: Theme = {
     arrowDown: 'v',
     bullet: '*',
     star: '*',
-    
+
     // Special characters
     blockFull: '█',
     blockLight: '░',
     blockMedium: '▒',
     blockDark: '▓',
   },
-  
+
   // Animation settings
   animations: {
     duration: {
@@ -74,14 +74,14 @@ export const matrixTheme: Theme = {
     },
     easing: 'linear',
   },
-  
+
   // Typography
   fonts: {
     ascii: 'Standard',
     header: 'Standard',
     subheader: 'Standard',
   },
-  
+
   // Effects
   effects: {
     glow: false,
@@ -90,4 +90,4 @@ export const matrixTheme: Theme = {
     particles: false,
     scanlines: true,
   },
-}
+};

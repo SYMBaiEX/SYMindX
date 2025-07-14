@@ -4,11 +4,13 @@ The most visually stunning terminal interface ever created! This comprehensive v
 
 ## 🎨 Available Effects
 
-### 1. **MatrixRain** 
+### 1. **MatrixRain**
+
 Digital rain effect with multiple variants
+
 ```tsx
-<MatrixRain 
-  variant="classic" // classic | binary | japanese | glitch | custom
+<MatrixRain
+  variant='classic' // classic | binary | japanese | glitch | custom
   responsive={true}
   colorVariation={true}
   density={0.02}
@@ -16,10 +18,12 @@ Digital rain effect with multiple variants
 ```
 
 ### 2. **GlitchText**
+
 Text corruption and glitch effects
+
 ```tsx
-<GlitchText 
-  variant="digital" // classic | digital | matrix | chromatic | zalgo | wave
+<GlitchText
+  variant='digital' // classic | digital | matrix | chromatic | zalgo | wave
   multiLayer={true}
   intensity={0.5}
 >
@@ -28,9 +32,11 @@ Text corruption and glitch effects
 ```
 
 ### 3. **ParticleSystem**
+
 Dynamic particle effects
+
 ```tsx
-<ParticleSystem 
+<ParticleSystem
   particleTypes={['star', 'fire', 'snow']}
   gravity={0.1}
   wind={0.05}
@@ -39,33 +45,39 @@ Dynamic particle effects
 ```
 
 ### 4. **NeonGlow**
+
 Neon text effects with animations
+
 ```tsx
-<NeonGlow 
-  variant="outline" // outline | solid | double | gradient
-  animation="pulse" // none | pulse | flicker | wave | rainbow
+<NeonGlow
+  variant='outline' // outline | solid | double | gradient
+  animation='pulse' // none | pulse | flicker | wave | rainbow
 >
   Neon Text
 </NeonGlow>
 ```
 
 ### 5. **AnimatedBorder**
+
 Dynamic animated borders
+
 ```tsx
-<AnimatedBorder 
-  variant="tech" // solid | dashed | double | rounded | tech | matrix | glow
-  animation="flow" // none | pulse | flow | snake | sparkle | loading
-  title="Section Title"
+<AnimatedBorder
+  variant='tech' // solid | dashed | double | rounded | tech | matrix | glow
+  animation='flow' // none | pulse | flow | snake | sparkle | loading
+  title='Section Title'
 >
   <Content />
 </AnimatedBorder>
 ```
 
 ### 6. **PulsingEffect**
+
 Breathing and pulsing animations
+
 ```tsx
-<PulsingEffect 
-  variant="heartbeat" // fade | scale | glow | heartbeat | breathe | bounce
+<PulsingEffect
+  variant='heartbeat' // fade | scale | glow | heartbeat | breathe | bounce
   speed={1000}
 >
   <Content />
@@ -73,51 +85,61 @@ Breathing and pulsing animations
 ```
 
 ### 7. **LoadingSpinner**
+
 Advanced loading indicators
+
 ```tsx
-<LoadingSpinner 
-  variant="quantum" // matrix | dna | orbit | quantum | glitch | cube | hexagon | neural
+<LoadingSpinner
+  variant='quantum' // matrix | dna | orbit | quantum | glitch | cube | hexagon | neural
   showProgress={true}
   progress={75}
 />
 ```
 
 ### 8. **ScanlineEffect**
+
 CRT monitor scanline effects
+
 ```tsx
-<ScanlineEffect 
-  variant="classic" // classic | digital | interference | static | wave
-  direction="down" // down | up | both
+<ScanlineEffect
+  variant='classic' // classic | digital | interference | static | wave
+  direction='down' // down | up | both
   scanlineCount={2}
 />
 ```
 
 ### 9. **ASCIIAnimation**
+
 Pre-built ASCII art animations
+
 ```tsx
-<ASCIIAnimation 
-  variant="fire" // logo | fire | water | lightning | explosion | portal
+<ASCIIAnimation
+  variant='fire' // logo | fire | water | lightning | explosion | portal
   loop={true}
   rainbow={true}
 />
 ```
 
 ### 10. **AnimatedChart**
+
 Data visualization with animations
+
 ```tsx
 <AnimatedChart
-  type="bar" // bar | line | wave | radar | sparkline | area
+  type='bar' // bar | line | wave | radar | sparkline | area
   data={dataPoints}
   animate={true}
-  style="blocks" // ascii | blocks | smooth
+  style='blocks' // ascii | blocks | smooth
 />
 ```
 
 ### 11. **Perspective3D**
+
 3D perspective effects
+
 ```tsx
-<Perspective3D 
-  variant="cube" // rotate | flip | cube | pyramid | tunnel | grid
+<Perspective3D
+  variant='cube' // rotate | flip | cube | pyramid | tunnel | grid
   animated={true}
 >
   3D Text
@@ -125,22 +147,26 @@ Data visualization with animations
 ```
 
 ### 12. **StatusAnimation**
+
 Success/error/warning animations
+
 ```tsx
-<StatusAnimation 
-  type="success" // success | error | warning | info
-  variant="explosive" // minimal | animated | explosive | matrix
-  message="Operation complete!"
+<StatusAnimation
+  type='success' // success | error | warning | info
+  variant='explosive' // minimal | animated | explosive | matrix
+  message='Operation complete!'
 />
 ```
 
 ### 13. **ViewTransition**
+
 Smooth transitions between views
+
 ```tsx
-<ViewTransition 
+<ViewTransition
   transitionKey={viewKey}
-  variant="glitch" // fade | slide | zoom | flip | dissolve | glitch | matrix
-  direction="right"
+  variant='glitch' // fade | slide | zoom | flip | dissolve | glitch | matrix
+  direction='right'
 >
   <Content />
 </ViewTransition>
@@ -151,16 +177,16 @@ Smooth transitions between views
 The theme engine provides dynamic theme switching and effect control:
 
 ```tsx
-import { themeEngine } from './effects'
+import { themeEngine } from './effects';
 
 // Switch themes
-themeEngine.setTheme('cyberpunk') // cyberpunk | matrix | minimal | retrowave | hacker
+themeEngine.setTheme('cyberpunk'); // cyberpunk | matrix | minimal | retrowave | hacker
 
 // Toggle animations globally
-themeEngine.toggleAnimations()
+themeEngine.toggleAnimations();
 
 // Toggle specific effects
-themeEngine.toggleEffect('glow', true)
+themeEngine.toggleEffect('glow', true);
 
 // Check if animations are enabled
 if (themeEngine.areAnimationsEnabled()) {
@@ -181,18 +207,18 @@ if (themeEngine.areAnimationsEnabled()) {
 Integrated terminal sound effects:
 
 ```tsx
-import { soundManager, SoundType } from './utils/sound-effects'
+import { soundManager, SoundType } from './utils/sound-effects';
 
 // Play predefined sounds
-soundManager.play(SoundType.SUCCESS)
-soundManager.play(SoundType.MATRIX)
-soundManager.play(SoundType.GLITCH)
+soundManager.play(SoundType.SUCCESS);
+soundManager.play(SoundType.MATRIX);
+soundManager.play(SoundType.GLITCH);
 
 // Play boot sequence
-soundManager.playBootSequence()
+soundManager.playBootSequence();
 
 // Toggle sound
-soundManager.toggle()
+soundManager.toggle();
 ```
 
 ## 📱 Responsive Design
@@ -219,56 +245,53 @@ const { dimensions, breakpoints } = useTerminalDimensions()
 ## 💡 Usage Examples
 
 ### Complete Dashboard
+
 ```tsx
 <Box>
   {/* Background effects */}
-  <MatrixRain variant="binary" responsive />
-  
+  <MatrixRain variant='binary' responsive />
+
   {/* Main content */}
-  <AnimatedBorder variant="glow" animation="flow">
-    <NeonGlow animation="pulse">
+  <AnimatedBorder variant='glow' animation='flow'>
+    <NeonGlow animation='pulse'>
       <Text>System Status</Text>
     </NeonGlow>
-    
-    <LoadingSpinner variant="quantum" />
-    
-    <AnimatedChart 
-      type="sparkline" 
-      data={systemMetrics}
-    />
+
+    <LoadingSpinner variant='quantum' />
+
+    <AnimatedChart type='sparkline' data={systemMetrics} />
   </AnimatedBorder>
-  
+
   {/* Particles overlay */}
   <ParticleSystem particleTypes={['star']} />
 </Box>
 ```
 
 ### Status Messages
+
 ```tsx
 // Success with effects
 <Box>
-  <SuccessAnimation 
-    variant="explosive" 
-    message="Agent activated successfully!" 
+  <SuccessAnimation
+    variant='explosive'
+    message='Agent activated successfully!'
   />
-  <ParticleSystem 
-    particleTypes={['star']} 
-    emitterY="center"
+  <ParticleSystem
+    particleTypes={['star']}
+    emitterY='center'
     particleCount={20}
   />
 </Box>
 ```
 
 ### Loading States
+
 ```tsx
-<ViewTransition transitionKey={isLoading} variant="fade">
+<ViewTransition transitionKey={isLoading} variant='fade'>
   {isLoading ? (
-    <Box flexDirection="column" alignItems="center">
-      <ASCIIAnimation variant="portal" />
-      <LoadingSpinner 
-        variant="neural" 
-        text="Initializing neural network..."
-      />
+    <Box flexDirection='column' alignItems='center'>
+      <ASCIIAnimation variant='portal' />
+      <LoadingSpinner variant='neural' text='Initializing neural network...' />
     </Box>
   ) : (
     <Content />
@@ -279,6 +302,7 @@ const { dimensions, breakpoints } = useTerminalDimensions()
 ## 🎮 Controls
 
 Standard keyboard controls for demos:
+
 - `↑↓` - Navigate options
 - `←→` - Change values/themes
 - `Tab` - Switch views
@@ -292,29 +316,27 @@ Standard keyboard controls for demos:
 Extend the base components to create your own effects:
 
 ```tsx
-import { Box, Text } from 'ink'
-import { themeEngine } from './effects'
+import { Box, Text } from 'ink';
+import { themeEngine } from './effects';
 
 export const CustomEffect: React.FC<Props> = ({ children }) => {
-  const theme = themeEngine.getTheme()
-  const [frame, setFrame] = useState(0)
-  
+  const theme = themeEngine.getTheme();
+  const [frame, setFrame] = useState(0);
+
   useEffect(() => {
-    if (!themeEngine.areAnimationsEnabled()) return
-    
+    if (!themeEngine.areAnimationsEnabled()) return;
+
     const interval = setInterval(() => {
-      setFrame(prev => (prev + 1) % 10)
-    }, 100)
-    
-    return () => clearInterval(interval)
-  }, [])
-  
+      setFrame((prev) => (prev + 1) % 10);
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, []);
+
   return (
-    <Text color={theme.colors.primary}>
-      {/* Your custom effect logic */}
-    </Text>
-  )
-}
+    <Text color={theme.colors.primary}>{/* Your custom effect logic */}</Text>
+  );
+};
 ```
 
 ## 🌟 Best Practices
@@ -350,4 +372,4 @@ Then navigate to the effects demo to see everything in action!
 
 ---
 
-*Making the terminal beautiful, one effect at a time* ✨
+_Making the terminal beautiful, one effect at a time_ ✨

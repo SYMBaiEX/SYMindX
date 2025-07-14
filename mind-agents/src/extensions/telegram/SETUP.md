@@ -16,12 +16,14 @@ Follow these steps to start chatting with your autonomous AI agent Nyx through T
 ### 2. Configure Your Agent
 
 **Option A: Environment Variable (Recommended)**
+
 ```bash
 export TELEGRAM_BOT_TOKEN="your_bot_token_here"
 ```
 
 **Option B: Update Nyx Config**
 Edit `src/characters/nyx.json` and update the Telegram extension:
+
 ```json
 {
   "name": "telegram",
@@ -47,6 +49,7 @@ npm run dev
 ```
 
 You should see:
+
 ```
 ✅ SYMindX Runtime initialized
 🤖 Agent 'nyx' loaded and starting...
@@ -64,7 +67,7 @@ You should see:
 ## Bot Commands
 
 - `/start` - Initialize conversation with Nyx
-- `/help` - Show available commands  
+- `/help` - Show available commands
 - `/status` - Get Nyx's current status
 - `/clear` - Clear conversation history
 
@@ -84,20 +87,26 @@ Nyx: Right now I'm in my afternoon exploration phase. I've been contemplating qu
 ## Advanced Configuration
 
 ### User Whitelist
+
 To restrict access to specific users, add their Telegram user IDs:
+
 ```json
 "allowedUsers": [123456789, 987654321]
 ```
 
 ### Rate Limiting
+
 Adjust message rate limits:
+
 ```json
 "rateLimitWindow": 60000,     // 1 minute window
 "rateLimitRequests": 20       // 20 messages per window
 ```
 
 ### Multiple Agents
+
 You can run multiple agents with different Telegram bots by:
+
 1. Creating multiple character files
 2. Assigning different bot tokens
 3. Starting multiple instances
@@ -105,15 +114,18 @@ You can run multiple agents with different Telegram bots by:
 ## Troubleshooting
 
 **Bot not responding?**
+
 - Check your bot token is correct
 - Ensure the Telegram extension is enabled in character config
 - Check the console for error messages
 
 **Rate limiting issues?**
+
 - Increase `rateLimitRequests` in config
 - Add delays between messages
 
 **Permission errors?**
+
 - Add your Telegram user ID to `allowedUsers` array
 - Remove the whitelist entirely for open access (set `allowedUsers: []`)
 

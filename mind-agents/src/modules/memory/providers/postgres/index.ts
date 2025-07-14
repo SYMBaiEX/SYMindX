@@ -21,6 +21,7 @@ import {
   MemoryPermission,
 } from '../../../../types/memory';
 import { runtimeLogger } from '../../../../utils/logger';
+import { buildObject } from '../../../../utils/type-helpers';
 import {
   BaseMemoryProvider,
   BaseMemoryConfig,
@@ -904,14 +905,13 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
       }
     }
 
-    const record: EnhancedMemoryRecord = {
+    const builder = buildObject<EnhancedMemoryRecord>({
       id: row.id,
       agentId: row.agent_id,
       type:
         MemoryType[row.type.toUpperCase() as keyof typeof MemoryType] ||
         MemoryType.EXPERIENCE,
       content: row.content,
-      embedding,
       metadata: row.metadata || {},
       importance: row.importance,
       timestamp: new Date(row.timestamp),
@@ -920,18 +920,22 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
         MemoryDuration[
           row.duration.toUpperCase() as keyof typeof MemoryDuration
         ] || MemoryDuration.LONG_TERM,
-      expiresAt: row.expires_at ? new Date(row.expires_at) : undefined,
-    };
+    })
+      .addOptional('embedding', embedding)
+      .addOptional(
+        'expiresAt',
+        row.expires_at ? new Date(row.expires_at) : undefined
+      );
 
     // Add tier and context if available
     if (row.tier) {
-      record.tier = row.tier as MemoryTierType;
+      builder.addOptional('tier', row.tier as MemoryTierType);
     }
     if (row.context) {
-      record.context = row.context as MemoryContext;
+      builder.addOptional('context', row.context as MemoryContext);
     }
 
-    return record;
+    return builder.build();
   }
 
   /**
@@ -1341,6 +1345,7 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
 
     for (const memory of memories) {
       const day = memory.timestamp.toISOString().split('T')[0];
+      if (!day) continue;
       if (!grouped.has(day)) {
         grouped.set(day, []);
       }

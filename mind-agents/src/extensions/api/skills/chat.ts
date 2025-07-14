@@ -11,6 +11,7 @@ import {
   ActionResultType,
   ActionCategory,
 } from '../../../types/agent';
+import { GenericData } from '../../../types/common';
 import { runtimeLogger } from '../../../utils/logger';
 import { ChatRequest, ChatResponse, WebSocketMessage } from '../types';
 
@@ -62,19 +63,37 @@ export class ChatSkill {
     try {
       const { agentId, message, conversationId } = params;
 
-      runtimeLogger.memory(`💬 Processing chat message for agent: ${agentId}`);
+      // Validate agent ID matches or use current agent if not specified
+      const targetAgentId = agentId || agent.id;
+
+      runtimeLogger.memory(
+        `💬 Processing chat message for agent: ${targetAgentId} (requested by: ${agent.name})`
+      );
 
       // Use the extension's chat handling logic
-      const response = await this.extension.handleChatRequest({
-        agentId,
+      const chatRequest: ChatRequest = {
+        agentId: targetAgentId,
         message,
         conversationId,
-      });
+      };
+      const response: ChatResponse =
+        await this.extension.handleChatRequest(chatRequest);
+
+      // Convert ChatResponse to GenericData format
+      const result: GenericData = {
+        response: response.response,
+        timestamp: response.timestamp,
+      };
+
+      if (response.sessionId) result.sessionId = response.sessionId;
+      if (response.metadata) {
+        result.metadata = JSON.stringify(response.metadata);
+      }
 
       return {
         success: true,
         type: ActionResultType.SUCCESS,
-        data: response,
+        result,
       };
     } catch (error) {
       runtimeLogger.error(`❌ Failed to send message:`, error);
@@ -96,9 +115,16 @@ export class ChatSkill {
     try {
       const { agentId, conversationId, limit = 50 } = params;
 
+      // Validate agent ID matches or use current agent if not specified
+      const targetAgentId = agentId || agent.id;
+
+      runtimeLogger.memory(
+        `📜 Retrieving conversation history for agent: ${targetAgentId} (requested by: ${agent.name})`
+      );
+
       // Use the extension's memory system to get history
       const history = await this.extension.getConversationHistory(
-        agentId,
+        targetAgentId,
         conversationId,
         limit
       );
@@ -106,7 +132,7 @@ export class ChatSkill {
       return {
         success: true,
         type: ActionResultType.SUCCESS,
-        data: history,
+        result: history,
       };
     } catch (error) {
       runtimeLogger.error(`❌ Failed to get conversation history:`, error);

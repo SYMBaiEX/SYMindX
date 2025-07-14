@@ -2,7 +2,7 @@
 
 /**
  * SYMindX CLI v2.0 - Ultra-modern Ink-based interface
- * 
+ *
  * This is the new modular CLI system with:
  * - Cyberpunk aesthetic with neon colors and glitch effects
  * - Real-time data visualization
@@ -14,4 +14,4 @@
  * - Modular component architecture
  */
 
-import './cli.js'
+import './cli.js';

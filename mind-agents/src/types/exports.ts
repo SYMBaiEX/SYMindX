@@ -84,7 +84,6 @@ export type {
   Transition,
   StateMachine,
   Observer,
-  Subject,
   Command,
   CommandInvoker,
   Strategy,
@@ -136,7 +135,6 @@ export type {
   // Security Types
   Permission,
   Role,
-  Subject as SecuritySubject,
   SecurityContext,
   AuthenticationResult,
   AuthorizationResult,
@@ -180,6 +178,9 @@ export type {
   AuditResult,
   LoggingResult,
 } from './results';
+
+// Re-export ModuleManifest from index
+export type { ModuleManifest } from './index';
 
 // Re-export all function signature types
 export type {
@@ -395,7 +396,6 @@ export type {
   ToolInput,
   ToolOutput,
   ApiResponse,
-  ActionResult,
   SkillParameters,
   SkillParameterValue,
   ExtensionConfig,
@@ -413,7 +413,6 @@ export type {
   ServiceResult,
   ServiceError,
   ConfigurationSchema,
-  ModuleManifest,
   RuntimeContext,
   SystemEvent,
   ServiceConfiguration,
@@ -474,23 +473,19 @@ export {
   PlanStatus,
   PlanStepStatus,
   EnvironmentType,
-  LogLevel,
 
   // Portal Enums
   PortalType,
   PortalStatus,
   ModelType,
   ConfigurationLevel,
-
-  // Additional Enums
-  RuntimeStatus,
-  ModuleStatus,
-  FactoryStatus,
-  BaseResult,
-  ErrorResult,
-  SuccessResult,
-  Result,
 } from './enums';
+
+// Re-export additional enums as types
+export type { RuntimeStatus, ModuleStatus, FactoryStatus } from './enums';
+
+// Re-export Result types separately since they may be type-only
+export type { BaseResult, ErrorResult, SuccessResult, Result } from './enums';
 
 // Re-export specific types from other modules
 export type {
@@ -518,7 +513,6 @@ export type {
   ExtensionEventHandler,
   ActionResult,
   EnvironmentState,
-  EventBus,
   ModuleRegistry,
   RuntimeConfig,
   ToolsConfig,

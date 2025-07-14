@@ -155,11 +155,20 @@ export class HealthMonitoringSkill {
         status = 'degraded';
       }
 
+      // Include extension-specific health data
+      const extensionInfo = {
+        name: this._extension.name,
+        version: this._extension.version,
+        enabled: this._extension.enabled,
+        connectedAgents: this._extension.getAgent() ? 1 : 0,
+      };
+
       const healthData: any = {
         status,
         uptime: Math.floor(uptime / 1000), // in seconds
         errorRate: Math.round(errorRate * 100) / 100,
         timestamp: new Date().toISOString(),
+        extension: extensionInfo,
       };
 
       if (includeMetrics) {
@@ -467,7 +476,7 @@ export class HealthMonitoringSkill {
     _params: any
   ): Promise<ActionResult> {
     try {
-      const { confirm = false } = params;
+      const { confirm = false } = _params;
 
       if (!confirm) {
         return {

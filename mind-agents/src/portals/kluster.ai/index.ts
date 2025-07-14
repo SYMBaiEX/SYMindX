@@ -13,7 +13,7 @@ import {
   ModelType,
 } from '../../types/portal';
 import { BasePortal } from '../base-portal';
-import { convertUsage } from '../utils';
+import { buildObject } from '../../utils/type-helpers';
 /**
  * Kluster.ai Portal Implementation
  *
@@ -208,17 +208,21 @@ export class KlusterAiPortal extends BasePortal {
       const data = await response.json();
       const embedding = data.data[0].embedding;
 
-      return {
+      return buildObject<EmbeddingResult>({
         embedding,
         dimensions: embedding.length,
         model,
-        usage: data.usage
-          ? {
-              promptTokens: data.usage.prompt_tokens,
-              totalTokens: data.usage.total_tokens,
-            }
-          : undefined,
-      };
+      })
+        .addOptional(
+          'usage',
+          data.usage
+            ? {
+                promptTokens: data.usage.prompt_tokens,
+                totalTokens: data.usage.total_tokens,
+              }
+            : undefined
+        )
+        .build();
     } catch (error) {
       console.error('Kluster.ai embedding generation error:', error);
       throw new Error(`Kluster.ai embedding generation failed: ${error}`);
@@ -228,7 +232,7 @@ export class KlusterAiPortal extends BasePortal {
   /**
    * Stream text generation for real-time responses
    */
-  async *streamText(
+  override async *streamText(
     prompt: string,
     options?: TextGenerationOptions
   ): AsyncGenerator<string> {

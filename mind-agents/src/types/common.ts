@@ -536,7 +536,7 @@ export interface ConfigurationSchema {
 }
 
 // Enhanced Module Types
-export interface ModuleManifest {
+export interface ModuleConfigManifest {
   id: string;
   name: string;
   version: string;

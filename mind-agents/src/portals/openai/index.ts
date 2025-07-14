@@ -10,8 +10,6 @@ import {
   generateText,
   streamText,
   embed,
-  embedMany,
-  generateObject,
   type LanguageModel,
   type ModelMessage,
 } from 'ai';
@@ -32,13 +30,8 @@ import {
   FinishReason,
   PortalType,
   ModelType,
-  AISDKToolSet,
 } from '../../types/portal';
-import {
-  AISDKParameterBuilder,
-  handleAISDKError,
-  validateGenerationOptions,
-} from '../ai-sdk-utils';
+import { AISDKParameterBuilder } from '../ai-sdk-utils';
 import { BasePortal } from '../base-portal';
 import { convertUsage, buildAISDKParams } from '../utils';
 
@@ -81,13 +74,15 @@ export class OpenAIPortal extends BasePortal {
       modelId || (this.config as OpenAIConfig).model || 'gpt-4.1-mini';
     const config = this.config as OpenAIConfig;
 
+    const configObj: any = {};
+    const apiKey = config.apiKey || process.env.OPENAI_API_KEY;
+    if (apiKey) configObj.apiKey = apiKey;
+    if (config.organization) configObj.organization = config.organization;
+    if (config.baseURL) configObj.baseURL = config.baseURL;
+
     const providerSettings = AISDKParameterBuilder.buildProviderConfig(
       {},
-      {
-        apiKey: config.apiKey || process.env.OPENAI_API_KEY,
-        organization: config.organization,
-        baseURL: config.baseURL,
-      }
+      configObj
     );
 
     return this.openaiProvider(model, providerSettings);

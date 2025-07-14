@@ -1,6 +1,15 @@
-import React, { useState, useEffect, useContext, createContext, ReactNode } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useContext,
+  createContext,
+  ReactNode,
+} from 'react';
 
-import { EnhancedRuntimeClient, EnhancedClientConfig } from '../services/enhancedRuntimeClient.js';
+import {
+  EnhancedRuntimeClient,
+  EnhancedClientConfig,
+} from '../services/enhancedRuntimeClient.js';
 
 interface RuntimeClientContextValue {
   client: EnhancedRuntimeClient;
@@ -10,7 +19,9 @@ interface RuntimeClientContextValue {
   updateConfig: (config: Partial<EnhancedClientConfig>) => void;
 }
 
-const RuntimeClientContext = createContext<RuntimeClientContextValue | null>(null);
+const RuntimeClientContext = createContext<RuntimeClientContextValue | null>(
+  null
+);
 
 interface RuntimeClientProviderProps {
   children: ReactNode;
@@ -20,9 +31,9 @@ interface RuntimeClientProviderProps {
 /**
  * Provider component for runtime client
  */
-export const RuntimeClientProvider: React.FC<RuntimeClientProviderProps> = ({ 
-  children, 
-  config 
+export const RuntimeClientProvider: React.FC<RuntimeClientProviderProps> = ({
+  children,
+  config,
 }) => {
   const [client] = useState(() => new EnhancedRuntimeClient(config));
   const [isReady, setIsReady] = useState(false);
@@ -75,7 +86,9 @@ export const RuntimeClientProvider: React.FC<RuntimeClientProviderProps> = ({
   };
 
   return (
-    <RuntimeClientContext.Provider value={{ client, isReady, error, reconnect, updateConfig }}>
+    <RuntimeClientContext.Provider
+      value={{ client, isReady, error, reconnect, updateConfig }}
+    >
       {children}
     </RuntimeClientContext.Provider>
   );
@@ -86,11 +99,13 @@ export const RuntimeClientProvider: React.FC<RuntimeClientProviderProps> = ({
  */
 export const useRuntimeClient = () => {
   const context = useContext(RuntimeClientContext);
-  
+
   if (!context) {
-    throw new Error('useRuntimeClient must be used within RuntimeClientProvider');
+    throw new Error(
+      'useRuntimeClient must be used within RuntimeClientProvider'
+    );
   }
-  
+
   return context;
 };
 
@@ -109,7 +124,7 @@ export const useRuntimeClientConfig = () => {
 
   return {
     config,
-    updateConfig: updateAndApplyConfig
+    updateConfig: updateAndApplyConfig,
   };
 };
 
@@ -157,6 +172,6 @@ export const useRuntimeClientCache = () => {
 
   return {
     invalidateCache,
-    clearAllCache
+    clearAllCache,
   };
 };

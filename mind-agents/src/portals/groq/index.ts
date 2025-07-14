@@ -28,13 +28,10 @@ import {
   ToolEvaluationOptions,
   ToolEvaluationResult,
 } from '../../types/portal';
-import {
-  AISDKParameterBuilder,
-  handleAISDKError,
-  validateGenerationOptions,
-} from '../ai-sdk-utils';
+import { AISDKParameterBuilder, handleAISDKError } from '../ai-sdk-utils';
 import { BasePortal } from '../base-portal';
-import { convertUsage, buildAISDKParams } from '../utils';
+import { buildAISDKParams } from '../utils';
+import { buildObject } from '../../utils/type-helpers';
 
 export interface GroqConfig extends PortalConfig {
   model?: string;
@@ -61,7 +58,7 @@ export class GroqPortal extends BasePortal {
   /**
    * Override default models for Groq
    */
-  protected getDefaultModel(
+  protected override getDefaultModel(
     type: 'chat' | 'tool' | 'embedding' | 'image'
   ): string {
     switch (type) {
@@ -136,13 +133,9 @@ export class GroqPortal extends BasePortal {
 
       const config = this.config as GroqConfig;
       const apiKey = config.apiKey || process.env.GROQ_API_KEY;
-      const providerSettings = AISDKParameterBuilder.buildProviderConfig(
-        {},
-        {
-          apiKey,
-          baseURL: config.baseURL,
-        }
-      );
+      const providerSettings: any = {};
+      if (apiKey) providerSettings.apiKey = apiKey;
+      if (config.baseURL) providerSettings.baseURL = config.baseURL;
 
       const baseParams = {
         model: this.groqProvider(model, providerSettings),
@@ -215,13 +208,9 @@ export class GroqPortal extends BasePortal {
 
       const config = this.config as GroqConfig;
       const apiKey = config.apiKey || process.env.GROQ_API_KEY;
-      const providerSettings = AISDKParameterBuilder.buildProviderConfig(
-        {},
-        {
-          apiKey,
-          baseURL: config.baseURL,
-        }
-      );
+      const providerSettings: any = {};
+      if (apiKey) providerSettings.apiKey = apiKey;
+      if (config.baseURL) providerSettings.baseURL = config.baseURL;
 
       const baseOptions = {
         model: this.groqProvider(model, providerSettings),
@@ -340,13 +329,9 @@ export class GroqPortal extends BasePortal {
 
       const config = this.config as GroqConfig;
       const apiKey = config.apiKey || process.env.GROQ_API_KEY;
-      const providerSettings = AISDKParameterBuilder.buildProviderConfig(
-        {},
-        {
-          apiKey,
-          baseURL: config.baseURL,
-        }
-      );
+      const providerSettings: any = {};
+      if (apiKey) providerSettings.apiKey = apiKey;
+      if (config.baseURL) providerSettings.baseURL = config.baseURL;
 
       const baseParams = {
         model: this.groqProvider(toolModel, providerSettings),
@@ -371,20 +356,27 @@ export class GroqPortal extends BasePortal {
         options.outputFormat
       );
 
-      return {
+      const evalResult = buildObject<ToolEvaluationResult>({
         analysis: evaluation.analysis,
-        score: evaluation.score,
-        confidence: evaluation.confidence,
         reasoning: evaluation.reasoning,
-        recommendations: evaluation.recommendations,
         metadata: {
           model: toolModel,
           processingTime,
           tokenUsage: convertUsage(result.usage),
-          evaluationCriteria: options.criteria,
-          outputFormat: options.outputFormat,
         },
-      };
+      })
+        .addOptional('score', evaluation.score)
+        .addOptional('confidence', evaluation.confidence)
+        .addOptional('recommendations', evaluation.recommendations)
+        .build();
+
+      // Add optional metadata fields
+      if (options.criteria && evalResult.metadata)
+        evalResult.metadata.evaluationCriteria = options.criteria;
+      if (options.outputFormat && evalResult.metadata)
+        evalResult.metadata.outputFormat = options.outputFormat;
+
+      return evalResult;
     } catch (error) {
       console.error('Groq task evaluation error:', error);
       throw new Error(`Groq task evaluation failed: ${error}`);
@@ -395,7 +387,9 @@ export class GroqPortal extends BasePortal {
    * Build evaluation prompt based on task and criteria
    * Override base implementation for Groq-specific formatting
    */
-  protected buildEvaluationPrompt(options: ToolEvaluationOptions): string {
+  protected override buildEvaluationPrompt(
+    options: ToolEvaluationOptions
+  ): string {
     let prompt = `You are an expert evaluator tasked with analyzing the following:\n\n`;
     prompt += `TASK: ${options.task}\n\n`;
 
@@ -453,7 +447,7 @@ export class GroqPortal extends BasePortal {
    * Parse evaluation result based on output format
    * Override base implementation for Groq-specific parsing
    */
-  protected parseEvaluationResult(
+  protected override parseEvaluationResult(
     text: string,
     format?: string
   ): ToolEvaluationResult {
@@ -488,13 +482,9 @@ export class GroqPortal extends BasePortal {
 
       const config = this.config as GroqConfig;
       const apiKey = config.apiKey || process.env.GROQ_API_KEY;
-      const providerSettings = AISDKParameterBuilder.buildProviderConfig(
-        {},
-        {
-          apiKey,
-          baseURL: config.baseURL,
-        }
-      );
+      const providerSettings: any = {};
+      if (apiKey) providerSettings.apiKey = apiKey;
+      if (config.baseURL) providerSettings.baseURL = config.baseURL;
 
       const baseParams = {
         model: this.groqProvider(model, providerSettings),
@@ -549,13 +539,9 @@ export class GroqPortal extends BasePortal {
 
       const config = this.config as GroqConfig;
       const apiKey = config.apiKey || process.env.GROQ_API_KEY;
-      const providerSettings = AISDKParameterBuilder.buildProviderConfig(
-        {},
-        {
-          apiKey,
-          baseURL: config.baseURL,
-        }
-      );
+      const providerSettings: any = {};
+      if (apiKey) providerSettings.apiKey = apiKey;
+      if (config.baseURL) providerSettings.baseURL = config.baseURL;
 
       const baseParams = {
         model: this.groqProvider(model, providerSettings),

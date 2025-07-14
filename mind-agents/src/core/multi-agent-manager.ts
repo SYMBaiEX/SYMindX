@@ -71,8 +71,9 @@ export class MultiAgentManager extends EventEmitter {
   private agentHealth: Map<string, AgentHealthStatus> = new Map();
   private agentStartTimes: Map<string, Date> = new Map();
   private agentMetrics: Map<string, any> = new Map();
-  private healthCheckInterval?: NodeJS.Timeout;
-  private collaborationTimeouts: Map<string, NodeJS.Timeout> = new Map();
+  private healthCheckInterval?: ReturnType<typeof setInterval>;
+  private collaborationTimeouts: Map<string, ReturnType<typeof setTimeout>> =
+    new Map();
 
   constructor(
     _registry: SYMindXModuleRegistry,

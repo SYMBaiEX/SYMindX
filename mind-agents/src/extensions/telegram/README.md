@@ -56,6 +56,7 @@ export TELEGRAM_BOT_TOKEN="your_bot_token_here"
 ```
 
 Or in your `.env` file:
+
 ```
 TELEGRAM_BOT_TOKEN=your_bot_token_here
 ```
@@ -82,6 +83,7 @@ bun dev
 ### Chatting
 
 Simply send any message to your bot to start a conversation! The agent will:
+
 - Process your message through its cognition system
 - Generate contextual responses
 - Remember your conversation history
@@ -102,13 +104,13 @@ Bot: Absolutely! I'd be happy to help you create an effective study schedule. To
 
 ## Configuration Options
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `botToken` | string | **required** | Your Telegram bot token from BotFather |
-| `allowedUsers` | number[] | `[]` | Array of Telegram user IDs (empty = allow all) |
-| `commandPrefix` | string | `"/"` | Prefix for bot commands |
-| `maxMessageLength` | number | `4096` | Maximum message length (Telegram limit) |
-| `enableLogging` | boolean | `true` | Enable detailed logging of interactions |
+| Option             | Type     | Default      | Description                                    |
+| ------------------ | -------- | ------------ | ---------------------------------------------- |
+| `botToken`         | string   | **required** | Your Telegram bot token from BotFather         |
+| `allowedUsers`     | number[] | `[]`         | Array of Telegram user IDs (empty = allow all) |
+| `commandPrefix`    | string   | `"/"`        | Prefix for bot commands                        |
+| `maxMessageLength` | number   | `4096`       | Maximum message length (Telegram limit)        |
+| `enableLogging`    | boolean  | `true`       | Enable detailed logging of interactions        |
 
 ## Security Features
 
@@ -140,20 +142,24 @@ The extension includes built-in rate limiting and queue processing to prevent ab
 ### Common Issues
 
 **"Bot token invalid"**
+
 - Double-check your bot token in the configuration
 - Ensure no extra spaces or characters
 
-**"User not authorized"** 
+**"User not authorized"**
+
 - Check if you've configured `allowedUsers` and the user ID is included
 - Set `allowedUsers: []` to allow all users
 
 **Messages not being processed**
+
 - Check that the agent's cognition module is properly configured
 - Verify the agent is running and healthy with `/status`
 
 ### Debug Mode
 
 Enable detailed logging by setting `enableLogging: true` in your configuration. This will show:
+
 - Incoming messages with user details
 - Response generation process
 - Error details and stack traces
@@ -181,6 +187,7 @@ Test your Telegram bot locally by:
 ## Support
 
 For issues or questions:
+
 - Check the main SYMindX documentation
 - Review error logs for specific error messages
 - Ensure all dependencies are properly installed

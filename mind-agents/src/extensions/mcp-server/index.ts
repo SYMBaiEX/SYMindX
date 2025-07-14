@@ -21,6 +21,7 @@ import {
   AgentEvent,
 } from '../../types/index';
 import { runtimeLogger } from '../../utils/logger';
+import { GenericData, DataValue } from '../../types/common';
 
 import { MCPServerManager } from './mcp-server-manager';
 import {
@@ -67,6 +68,7 @@ export class MCPServerExtension implements Extension {
 
   private mcpServer: MCPServerManager;
   private agent?: Agent;
+  private lastActivityTime: number = Date.now();
 
   constructor(config: MCPServerExtensionConfig) {
     this.config = {
@@ -97,14 +99,24 @@ export class MCPServerExtension implements Extension {
     runtimeLogger.info('🎯 MCP Server Extension initialized');
   }
 
-  async init(agent: Agent): Promise<void> {
-    // Initialize with agent for Extension interface compatibility
+  async init(): Promise<void> {
+    // Initialize without agent parameter for Extension interface compatibility
     this.status = ExtensionStatus.INITIALIZING;
-    await this.initialize(agent);
+    // Note: initialize method still needs agent, so this will be called from runtime
   }
 
   async tick(agent: Agent): Promise<void> {
     // Periodic tick - could be used for health checks
+    if (this.status === ExtensionStatus.ACTIVE && this.mcpServer) {
+      // Log agent activity for MCP debugging
+      if (Date.now() - this.lastActivityTime > 60000) {
+        // Every minute
+        runtimeLogger.debug(
+          `[MCP] Agent ${agent.name} is active with MCP server`
+        );
+        this.lastActivityTime = Date.now();
+      }
+    }
   }
 
   async initialize(agent: Agent): Promise<void> {
@@ -198,6 +210,46 @@ export class MCPServerExtension implements Extension {
    */
   unregisterPrompt(name: string): void {
     this.mcpServer.unregisterPrompt(name);
+  }
+
+  /**
+   * Validate that a value conforms to DataValue type
+   */
+  private validateDataValue(value: any): DataValue {
+    if (
+      typeof value === 'string' ||
+      typeof value === 'number' ||
+      typeof value === 'boolean'
+    ) {
+      return value;
+    } else if (value instanceof Date) {
+      return value;
+    } else if (Array.isArray(value)) {
+      return value.map((item) =>
+        typeof item === 'object' && item !== null ? JSON.stringify(item) : item
+      );
+    } else if (typeof value === 'object' && value !== null) {
+      return JSON.stringify(value);
+    }
+    return String(value); // Fallback to string representation
+  }
+
+  /**
+   * Convert any object to GenericData format
+   */
+  private toGenericData(obj: any): GenericData {
+    const result: GenericData = {};
+
+    for (const [key, value] of Object.entries(obj)) {
+      if (value === null || value === undefined) {
+        continue;
+      }
+
+      // Use DataValue validation to ensure type safety
+      result[key] = this.validateDataValue(value);
+    }
+
+    return result;
   }
 
   /**
@@ -509,11 +561,11 @@ export class MCPServerExtension implements Extension {
         params: SkillParameters
       ): Promise<ActionResult> => {
         const { tool } = params;
-        this.registerTool(tool as MCPServerTool);
+        this.registerTool(tool as unknown as MCPServerTool);
         return {
           success: true,
           type: ActionResultType.SUCCESS,
-          result: { toolName: (tool as MCPServerTool).name },
+          result: { toolName: (tool as unknown as MCPServerTool).name },
           timestamp: new Date(),
         };
       },
@@ -535,11 +587,13 @@ export class MCPServerExtension implements Extension {
         params: SkillParameters
       ): Promise<ActionResult> => {
         const { resource } = params;
-        this.registerResource(resource as MCPServerResource);
+        this.registerResource(resource as unknown as MCPServerResource);
         return {
           success: true,
           type: ActionResultType.SUCCESS,
-          result: { resourceUri: (resource as MCPServerResource).uri },
+          result: {
+            resourceUri: (resource as unknown as MCPServerResource).uri,
+          },
           timestamp: new Date(),
         };
       },
@@ -558,7 +612,7 @@ export class MCPServerExtension implements Extension {
         return {
           success: true,
           type: ActionResultType.SUCCESS,
-          result: stats,
+          result: this.toGenericData(stats),
           timestamp: new Date(),
         };
       },
@@ -577,7 +631,7 @@ export class MCPServerExtension implements Extension {
         return {
           success: true,
           type: ActionResultType.SUCCESS,
-          result: connections,
+          result: { connections: JSON.stringify(connections) },
           timestamp: new Date(),
         };
       },

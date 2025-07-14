@@ -10,13 +10,13 @@ import {
   generateText as aiGenerateText,
   streamText as aiStreamText,
   embed as aiEmbed,
-  tool,
+  // tool - AI SDK tool integration not implemented yet
 } from 'ai';
-import { z } from 'zod';
+// import { z } from 'zod'; - schema validation not implemented yet
 
 import { Agent } from '../../types/agent';
 import {
-  Portal,
+  // Portal - interface already imported via BasePortal
   PortalConfig,
   PortalType,
   PortalStatus,
@@ -99,7 +99,7 @@ export class MistralPortal extends BasePortal {
     this.embedModel = mistral('mistral-embed');
   }
 
-  async init(agent: Agent): Promise<void> {
+  override async init(agent: Agent): Promise<void> {
     this.status = PortalStatus.INITIALIZING;
     console.log(`🔮 Initializing Mistral AI portal for agent ${agent.name}`);
 
@@ -198,7 +198,7 @@ export class MistralPortal extends BasePortal {
 
       const baseParams = {
         model: this.model,
-        messages: [{ role: 'user', content: prompt }],
+        messages: [{ role: 'user' as const, content: prompt }],
       };
 
       // Build parameters conditionally to satisfy exactOptionalPropertyTypes
@@ -285,7 +285,7 @@ export class MistralPortal extends BasePortal {
 
   override async generateEmbedding(
     text: string,
-    options?: EmbeddingOptions
+    _options?: EmbeddingOptions
   ): Promise<EmbeddingResult> {
     try {
       const { embedding, usage } = await aiEmbed({
@@ -312,8 +312,8 @@ export class MistralPortal extends BasePortal {
    * This is a placeholder that throws an error
    */
   override async generateImage(
-    prompt: string,
-    options?: ImageGenerationOptions
+    _prompt: string,
+    _options?: ImageGenerationOptions
   ): Promise<ImageGenerationResult> {
     throw new Error(
       'Mistral AI does not provide image generation models. Consider using OpenAI or another provider for image generation.'
@@ -332,7 +332,7 @@ export class MistralPortal extends BasePortal {
 
       const baseParams = {
         model: this.model,
-        messages: [{ role: 'user', content: prompt }],
+        messages: [{ role: 'user' as const, content: prompt }],
       };
 
       // Build parameters conditionally to satisfy exactOptionalPropertyTypes

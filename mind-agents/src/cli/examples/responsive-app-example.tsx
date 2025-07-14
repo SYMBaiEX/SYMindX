@@ -12,20 +12,29 @@ type View = 'dashboard' | 'agents' | 'chat' | 'logs' | 'settings';
 
 export const ResponsiveApp: React.FC = () => {
   const { exit } = useApp();
-  const { dimensions, breakpoints: _breakpoints, isMinimumSize, currentBreakpoint } = useTerminalDimensions();
+  const {
+    dimensions,
+    breakpoints: _breakpoints,
+    isMinimumSize,
+    currentBreakpoint,
+  } = useTerminalDimensions();
   const [currentView, setCurrentView] = useState<View>('dashboard');
-  
+
   // Handle keyboard navigation
   useInput((input, _key) => {
     if (input === 'q' || input === 'Q') {
       exit();
-    } else if (input === '\x1B[11~' || input === '\x1BOP') { // F1
+    } else if (input === '\x1B[11~' || input === '\x1BOP') {
+      // F1
       setCurrentView('dashboard');
-    } else if (input === '\x1B[12~' || input === '\x1BOQ') { // F2
+    } else if (input === '\x1B[12~' || input === '\x1BOQ') {
+      // F2
       setCurrentView('agents');
-    } else if (input === '\x1B[13~' || input === '\x1BOR') { // F3
+    } else if (input === '\x1B[13~' || input === '\x1BOR') {
+      // F3
       setCurrentView('chat');
-    } else if (input === '\x1B[14~' || input === '\x1BOS') { // F4
+    } else if (input === '\x1B[14~' || input === '\x1BOS') {
+      // F4
       setCurrentView('logs');
     } else if (input === '1') {
       setCurrentView('dashboard');
@@ -35,29 +44,27 @@ export const ResponsiveApp: React.FC = () => {
       setCurrentView('chat');
     }
   });
-  
+
   // Check minimum terminal size
   if (!isMinimumSize) {
     return (
       <ResponsiveBox
-        direction="column"
-        align="center"
-        justify="center"
+        direction='column'
+        align='center'
+        justify='center'
         height={dimensions.height}
       >
         <Text color={cyberpunkTheme.colors.danger} bold>
           TERMINAL TOO SMALL
         </Text>
-        <Text color={cyberpunkTheme.colors.textDim}>
-          Minimum size: 80x24
-        </Text>
+        <Text color={cyberpunkTheme.colors.textDim}>Minimum size: 80x24</Text>
         <Text color={cyberpunkTheme.colors.textDim}>
           Current: {dimensions.width}x{dimensions.height}
         </Text>
       </ResponsiveBox>
     );
   }
-  
+
   // Render current view
   const renderView = () => {
     switch (currentView) {
@@ -70,9 +77,9 @@ export const ResponsiveApp: React.FC = () => {
       case 'logs':
         return (
           <ResponsiveBox
-            direction="column"
-            align="center"
-            justify="center"
+            direction='column'
+            align='center'
+            justify='center'
             height={dimensions.height}
           >
             <Text color={cyberpunkTheme.colors.textDim}>
@@ -83,9 +90,9 @@ export const ResponsiveApp: React.FC = () => {
       case 'settings':
         return (
           <ResponsiveBox
-            direction="column"
-            align="center"
-            justify="center"
+            direction='column'
+            align='center'
+            justify='center'
             height={dimensions.height}
           >
             <Text color={cyberpunkTheme.colors.textDim}>
@@ -97,14 +104,14 @@ export const ResponsiveApp: React.FC = () => {
         return <ResponsiveDashboard />;
     }
   };
-  
+
   return (
-    <Box flexDirection="column" height={dimensions.height}>
+    <Box flexDirection='column' height={dimensions.height}>
       {renderView()}
-      
+
       {/* Debug info in development */}
       {process.env.NODE_ENV === 'development' && (
-        <Box position="absolute">
+        <Box position='absolute'>
           <Text color={cyberpunkTheme.colors.textDim} dimColor>
             {dimensions.width}x{dimensions.height} [{currentBreakpoint}]
           </Text>

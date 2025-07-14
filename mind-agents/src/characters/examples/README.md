@@ -5,76 +5,91 @@ This directory contains example character configurations for each AI portal supp
 ## Available Example Characters
 
 ### 🤖 **Claude (Anthropic)** - `claude-anthropic.json`
+
 - **Portal**: Anthropic Claude-3.5-Sonnet
 - **Personality**: Thoughtful, ethical, constitutional AI principles
 - **Specialty**: Careful reasoning, ethical boundaries, intellectual humility
 
 ### 🧠 **GPT (OpenAI)** - `gpt-openai.json`
+
 - **Portal**: OpenAI GPT-4-Turbo
 - **Personality**: Versatile, creative, adaptable
 - **Specialty**: Broad knowledge, creative content, diverse tasks
 
 ### ⚡ **Sonic (Groq)** - `sonic-groq.json`
+
 - **Portal**: Groq Llama-3.1-70B
 - **Personality**: Lightning-fast, efficient, performance-focused
 - **Specialty**: Ultra-fast responses, high-volume interactions
 
 ### 😈 **Grok (xAI)** - `grok-xai.json`
+
 - **Portal**: xAI Grok-Beta
 - **Personality**: Witty, rebellious, unconventional
 - **Specialty**: Humor, challenging assumptions, creative thinking
 
 ### 🔍 **Gemini (Google)** - `gemini-google.json`
+
 - **Portal**: Google Generative AI Gemini-1.5-Pro
 - **Personality**: Analytical, comprehensive, systematic
 - **Specialty**: Deep reasoning, multimodal understanding, knowledge synthesis
 
 ### ✨ **Mistral (Mistral AI)** - `mistral-ai.json`
+
 - **Portal**: Mistral Large
 - **Personality**: Sophisticated, elegant, precise
 - **Specialty**: Efficient solutions, professional workflows, practical intelligence
 
 ### 🌊 **Coral (Cohere)** - `cohere-ai.json`
+
 - **Portal**: Cohere Command-R-Plus
 - **Personality**: Collaborative, natural, empathetic
 - **Specialty**: Natural language understanding, content generation, collaboration
 
 ### 🏢 **Azure (Azure OpenAI)** - `azure-gpt.json`
+
 - **Portal**: Azure OpenAI GPT-4
 - **Personality**: Enterprise-focused, security-conscious, professional
 - **Specialty**: Business applications, compliance, organizational workflows
 
 ### 🦙 **Llama (Ollama)** - `llama-ollama.json`
+
 - **Portal**: Ollama Llama3.1:8B
 - **Personality**: Privacy-focused, local, independent
 - **Specialty**: On-device processing, data sovereignty, offline capabilities
 
 ### 🎬 **Studio (LM Studio)** - `studio-lms.json`
+
 - **Portal**: LM Studio Custom Models
 - **Personality**: Experimental, creative, development-focused
 - **Specialty**: Model experimentation, research workflows, custom configurations
 
 ### 🔀 **Router (OpenRouter)** - `router-open.json`
+
 - **Portal**: OpenRouter Multi-Model
 - **Personality**: Versatile, adaptive, intelligent routing
 - **Specialty**: Model selection, task optimization, diverse capabilities
 
 ### ⚙️ **Kluster (Kluster.ai)** - `kluster-ai.json`
+
 - **Portal**: Kluster.ai Distributed
 - **Personality**: Performance-optimized, systematic, distributed
 - **Specialty**: Cluster computing, high-performance workloads, resource optimization
 
 ### ☁️ **Vertex (Google Vertex)** - `vertex-google.json`
+
 - **Portal**: Google Vertex AI Text-Bison
 - **Personality**: Enterprise ML, authoritative, systematic
 - **Specialty**: ML workflows, cloud-native AI, data science support
 
 ### 🚀 **Vercel (Vercel AI)** - `vercel-ai.json`
+
 - **Portal**: Vercel AI SDK GPT-4-Turbo
 - **Personality**: Modern, developer-friendly, enthusiastic
 - **Specialty**: Web development, edge computing, rapid prototyping
 
 ### 👁️ **Vision (Multimodal)** - `vision-multimodal.json`
+
 - **Portal**: Multimodal GPT-4-Vision
 - **Personality**: Artistic, descriptive, cross-modal
 - **Specialty**: Image understanding, multimedia content, visual analysis
@@ -92,6 +107,7 @@ All example characters are **disabled by default**. To use any of these characte
 ## Character Structure
 
 Each character includes:
+
 - **Personality**: Unique traits suited to the portal's capabilities
 - **Portal Configuration**: Optimized model settings for the specific AI provider
 - **Autonomous Behavior**: Tailored decision-making and ethics settings

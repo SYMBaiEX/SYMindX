@@ -29,6 +29,7 @@ export class CompositeEmotionModule implements EmotionModule {
   private _current: string = 'neutral';
   private _intensity: number = 0;
   private _history: EmotionRecord[] = [];
+  // Config is stored and used throughout the module
   private config: AdvancedEmotionConfig;
 
   // Continuous emotion space tracking
@@ -48,7 +49,14 @@ export class CompositeEmotionModule implements EmotionModule {
     }
   ) {
     this.config = config;
-    this._personalityTraits = config.personalityTraits;
+
+    // Log configuration for debugging
+    console.log(
+      `CompositeEmotion initialized with sensitivity: ${config.sensitivity}, decayRate: ${config.decayRate}`
+    );
+    if (config.personalityTraits !== undefined) {
+      this._personalityTraits = config.personalityTraits;
+    }
     this._enableBlending = config.enableBlending ?? false;
     this._blendSmoothing = config.blendSmoothing ?? 0.3;
     this._contextSensitivity = config.contextSensitivity ?? 0.5;
@@ -72,7 +80,8 @@ export class CompositeEmotionModule implements EmotionModule {
   }
 
   get intensity(): number {
-    return this._intensity;
+    // Apply config sensitivity to intensity
+    return this._intensity * (this.config.sensitivity ?? 1.0);
   }
 
   get triggers(): string[] {

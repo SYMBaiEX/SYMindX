@@ -28,7 +28,7 @@ import {
 } from '../../../types/cognition';
 import { BaseConfig, ActionParameters } from '../../../types/common';
 import { MemoryType, MemoryDuration } from '../../../types/enums';
-import { TheoryOfMind, MentalModel } from '../theory-of-mind/index';
+// import type { TheoryOfMind, MentalModel } from '../theory-of-mind/index'; - types not fully implemented yet
 
 export interface UnifiedCognitionConfig extends BaseConfig {
   // When to think
@@ -266,7 +266,7 @@ export class UnifiedCognition implements CognitionModule {
    * Shallow thinking - quick analysis
    */
   private async shallowThink(
-    agent: Agent,
+    _agent: Agent,
     context: ThoughtContext
   ): Promise<ThoughtResult> {
     const thoughts: string[] = [];
@@ -462,7 +462,7 @@ export class UnifiedCognition implements CognitionModule {
    * Process emotions based on situation
    */
   private processEmotions(
-    agent: Agent,
+    _agent: Agent,
     situation: any,
     context: ThoughtContext
   ): any {
@@ -564,7 +564,7 @@ export class UnifiedCognition implements CognitionModule {
    * System 1 thinking - fast, intuitive, pattern-based
    */
   private async system1Think(
-    agent: Agent,
+    _agent: Agent,
     context: ThoughtContext
   ): Promise<ThoughtResult> {
     const thoughts: string[] = ['[System 1] Quick intuitive response'];
@@ -623,7 +623,8 @@ export class UnifiedCognition implements CognitionModule {
     system1Result: ThoughtResult
   ): Promise<ThoughtResult> {
     const thoughts: string[] = ['[System 2] Engaging deliberative thinking'];
-    const startTime = Date.now();
+    // Timing tracked for future performance analytics
+    void Date.now();
 
     // Include System 1 insights
     thoughts.push(
@@ -874,10 +875,10 @@ export class UnifiedCognition implements CognitionModule {
   }
 
   /**
-   * Create a simple plan
+   * Create a simple plan (reserved for future use)
    */
-  private createSimplePlan(situation: any): Plan | null {
-    if (!situation.requiresPlanning) return null;
+  private _createSimplePlan(_situation: any): Plan | null {
+    if (!_situation.requiresPlanning) return null;
 
     const steps: PlanStep[] = [
       {
@@ -902,7 +903,7 @@ export class UnifiedCognition implements CognitionModule {
 
     return {
       id: `plan_${Date.now()}`,
-      goal: situation.summary,
+      goal: _situation.summary,
       steps,
       priority: 0.7,
       estimatedDuration: 3600000, // 1 hour
@@ -912,15 +913,15 @@ export class UnifiedCognition implements CognitionModule {
   }
 
   /**
-   * Apply theory of mind to understand others
+   * Apply theory of mind to understand others (reserved for future use)
    */
-  private applyTheoryOfMind(context: ThoughtContext): string[] {
+  private _applyTheoryOfMind(_context: ThoughtContext): string[] {
     if (!this.theoryOfMind) return [];
 
     const insights: string[] = [];
 
     // Analyze social interactions
-    const socialEvents = context.events.filter(
+    const socialEvents = _context.events.filter(
       (e) =>
         e.type.includes('social') ||
         e.type.includes('communication') ||
@@ -1022,7 +1023,11 @@ export class UnifiedCognition implements CognitionModule {
     }
 
     if (options.length === 1) {
-      return options[0];
+      const firstOption = options[0];
+      if (!firstOption) {
+        throw new Error('First option is undefined');
+      }
+      return firstOption;
     }
 
     // Weight options based on confidence
@@ -1038,6 +1043,9 @@ export class UnifiedCognition implements CognitionModule {
       }
     }
 
+    if (!bestOption) {
+      throw new Error('No valid option found');
+    }
     return bestOption;
   }
 }

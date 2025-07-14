@@ -344,6 +344,7 @@ export class AutonomousEngine {
     // Create context for human interaction
     const interactionAction: AgentAction = {
       id: `interaction_${Date.now()}`,
+      agentId: this.agent.id,
       type: ActionCategory.COMMUNICATION,
       extension: 'human_interaction',
       action: 'respond_to_human',
@@ -924,7 +925,7 @@ export class AutonomousEngine {
 
   // Utility methods
   private async sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+    return new Promise<void>((resolve) => global.setTimeout(resolve, ms));
   }
 
   private calculateCuriosityScore(): number {
@@ -1077,6 +1078,7 @@ export class AutonomousEngine {
       for (const activity of this.currentPhase.activities) {
         actions.push({
           id: `action_${Date.now()}_${activity}`,
+          agentId: this.agent.id,
           type: ActionCategory.AUTONOMOUS,
           extension: 'autonomous_engine',
           action: activity,
@@ -1136,7 +1138,7 @@ export class AutonomousEngine {
       let score = 0;
       const actionEval = evaluation[action.id];
       if (actionEval) {
-        for (const [_criterion, value] of Object.entries(actionEval)) {
+        for (const [, value] of Object.entries(actionEval)) {
           score += value;
         }
       }
@@ -1675,6 +1677,7 @@ export class AutonomousEngine {
 
     return this.currentPhase.activities.map((activity) => ({
       id: `routine_${Date.now()}_${activity}`,
+      agentId: this.agent.id,
       type: ActionCategory.AUTONOMOUS,
       extension: 'autonomous_engine',
       action: activity,
@@ -1690,6 +1693,7 @@ export class AutonomousEngine {
     return [
       {
         id: `curiosity_${Date.now()}`,
+        agentId: this.agent.id,
         type: ActionCategory.LEARNING,
         extension: 'autonomous_engine',
         action: 'explore_topic',
@@ -1705,6 +1709,7 @@ export class AutonomousEngine {
     return [
       {
         id: `social_${Date.now()}`,
+        agentId: this.agent.id,
         type: ActionCategory.COMMUNICATION,
         extension: 'autonomous_engine',
         action: 'initiate_conversation',
@@ -1720,6 +1725,7 @@ export class AutonomousEngine {
     return [
       {
         id: `growth_${Date.now()}`,
+        agentId: this.agent.id,
         type: ActionCategory.LEARNING,
         extension: 'autonomous_engine',
         action: 'skill_development',

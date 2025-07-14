@@ -83,6 +83,11 @@ export class StyleAdapter {
       feedback: 'positive' | 'negative' | 'neutral';
       style: CommunicationStyle;
       timestamp: Date;
+      context?: {
+        originalLength: number;
+        adaptedLength: number;
+        styleUsed: CommunicationStyle;
+      };
     }>
   > = new Map();
   private agent?: Agent;
@@ -133,6 +138,15 @@ export class StyleAdapter {
   }): Promise<any> {
     const adaptedStyle = { ...this.defaultStyle };
 
+    // Apply agent personality traits if available
+    if (this.agent?.characterConfig?.personality?.traits) {
+      const personalityAdaptedStyle = this.applyPersonalityTraits(
+        adaptedStyle,
+        this.agent.characterConfig.personality.traits
+      );
+      Object.assign(adaptedStyle, personalityAdaptedStyle);
+    }
+
     // Apply context-based adaptations
     if (context.mood) {
       adaptedStyle.emotionality = this.adjustForMood(
@@ -166,15 +180,22 @@ export class StyleAdapter {
     }
   ): Promise<string> {
     const style = await this.adaptStyle(styleParams);
-    return this.adaptMessage(
-      message,
-      'default',
-      {
-        emotion: styleParams.mood,
-        phase: styleParams.conversationPhase,
-      },
-      style
-    );
+    const messageParams: {
+      emotion?: string;
+      mood?: string;
+      topic?: string;
+      phase?: string;
+    } = {};
+
+    if (styleParams.mood !== undefined) {
+      messageParams.emotion = styleParams.mood;
+    }
+
+    if (styleParams.conversationPhase !== undefined) {
+      messageParams.phase = styleParams.conversationPhase;
+    }
+
+    return this.adaptMessage(message, 'default', messageParams, style);
   }
 
   /**
@@ -264,12 +285,23 @@ export class StyleAdapter {
     const currentStyle = this.getStyle(userId);
     const history = this.learningHistory.get(userId) || [];
 
-    // Record feedback
-    history.push({
+    // Record feedback with context
+    const feedbackEntry = {
       feedback,
       style: { ...currentStyle },
       timestamp: new Date(),
-    });
+    } as any;
+
+    // Only add context if messageContext exists
+    if (messageContext) {
+      feedbackEntry.context = {
+        originalLength: messageContext.originalMessage.length,
+        adaptedLength: messageContext.adaptedMessage.length,
+        styleUsed: messageContext.style,
+      };
+    }
+
+    history.push(feedbackEntry);
 
     // Keep only recent history
     const recentHistory = history.filter(
@@ -360,6 +392,25 @@ export class StyleAdapter {
     ).length;
     if (technicalCount > 0) {
       inferred.technicality = 0.7;
+    }
+
+    // Store user preference for future reference
+    const userHistory = this.learningHistory.get(userId) || [];
+    if (userHistory.length > 0) {
+      runtimeLogger.style(
+        `Analyzing style for user ${userId} with ${userHistory.length} historical interactions`
+      );
+    }
+
+    // Update user style if we inferred new preferences
+    if (Object.keys(inferred).length > 0) {
+      const currentStyle = this.getStyle(userId);
+      const merged = { ...currentStyle, ...inferred };
+      this.userStyles.set(userId, merged);
+      runtimeLogger.style(
+        `Updated style preferences for user ${userId}`,
+        inferred
+      );
     }
 
     return inferred;
@@ -682,13 +733,24 @@ export class StyleAdapter {
     Object.keys(current).forEach((key) => {
       if (typeof current[key as keyof CommunicationStyle] === 'number') {
         const currentVal = current[key as keyof CommunicationStyle] as number;
+        const styleVal = style[key as keyof CommunicationStyle] as number;
+
+        // Move in opposite direction from unsuccessful style
+        const direction = currentVal > styleVal ? 1 : -1;
+        const adjustment = direction * this.config.learningRate! * 0.1;
+
         // Add some randomness to explore new styles
-        const adjustment =
-          (Math.random() - 0.5) * this.config.learningRate! * 2;
-        const newVal = currentVal + adjustment;
+        const randomness =
+          (Math.random() - 0.5) * this.config.learningRate! * 0.05;
+        const newVal = currentVal + adjustment + randomness;
         (current as any)[key] = Math.max(0, Math.min(1, newVal));
       }
     });
+
+    this.userStyles.set(userId, current);
+    runtimeLogger.style(
+      `Adjusted style for user ${userId} away from unsuccessful pattern`
+    );
   }
 
   /**

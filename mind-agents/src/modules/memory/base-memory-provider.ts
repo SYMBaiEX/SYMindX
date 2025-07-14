@@ -7,6 +7,7 @@
  */
 
 import { v4 as uuidv4 } from 'uuid';
+import { buildObject } from '../../utils/type-helpers';
 
 import {
   MemoryProvider,
@@ -19,7 +20,6 @@ import {
   MemoryTier,
   MemoryTierType,
   MemoryContext,
-  ConsolidationRule,
   SharedMemoryConfig,
   ArchivalStrategy,
 } from '../../types/memory';
@@ -358,7 +358,7 @@ export abstract class BaseMemoryProvider implements MemoryProvider {
    * @returns The parsed memory record
    */
   protected parseMemoryFromStorage(row: MemoryRow): MemoryRecord {
-    return {
+    return buildObject<MemoryRecord>({
       id: row.id || row.memory_id || '',
       agentId: row.agent_id,
       type: (row.type as string)
@@ -366,7 +366,6 @@ export abstract class BaseMemoryProvider implements MemoryProvider {
           MemoryType.EXPERIENCE
         : MemoryType.EXPERIENCE,
       content: row.content,
-      embedding: Array.isArray(row.embedding) ? row.embedding : undefined,
       metadata:
         typeof row.metadata === 'string'
           ? JSON.parse(row.metadata)
@@ -381,12 +380,20 @@ export abstract class BaseMemoryProvider implements MemoryProvider {
             ? row.tags
             : [],
       duration: (row.duration || MemoryDuration.LONG_TERM) as MemoryDuration,
-      expiresAt: row.expires_at
-        ? row.expires_at instanceof Date
-          ? row.expires_at
-          : new Date(row.expires_at)
-        : undefined,
-    };
+    })
+      .addOptional(
+        'embedding',
+        Array.isArray(row.embedding) ? row.embedding : undefined
+      )
+      .addOptional(
+        'expiresAt',
+        row.expires_at
+          ? row.expires_at instanceof Date
+            ? row.expires_at
+            : new Date(row.expires_at)
+          : undefined
+      )
+      .build();
   }
 
   /**

@@ -26,6 +26,7 @@ import {
   ChatSession,
   AnalyticsEvent,
 } from '../sqlite/chat-types';
+import { buildObject } from '../../../../utils/type-helpers';
 
 export interface SupabaseChatConfig extends ChatSystemConfig {
   url: string;
@@ -693,22 +694,25 @@ export class SupabaseChatRepository implements ChatRepository {
       throw new Error(`Failed to get conversation stats: ${error.message}`);
     }
 
-    return {
+    return buildObject<ConversationStats>({
       conversationId,
       messageCount: data.message_count || 0,
       uniqueSenders: data.unique_senders || 0,
-      firstMessageAt: data.first_message_at
-        ? new Date(data.first_message_at)
-        : undefined,
-      lastMessageAt: data.last_message_at
-        ? new Date(data.last_message_at)
-        : undefined,
-      avgConfidence: data.avg_confidence || undefined,
       userMessageCount: data.user_message_count || 0,
       agentMessageCount: data.agent_message_count || 0,
       commandCount: data.command_count || 0,
       failedMessageCount: data.failed_message_count || 0,
-    };
+    })
+      .addOptional(
+        'firstMessageAt',
+        data.first_message_at ? new Date(data.first_message_at) : undefined
+      )
+      .addOptional(
+        'lastMessageAt',
+        data.last_message_at ? new Date(data.last_message_at) : undefined
+      )
+      .addOptional('avgConfidence', data.avg_confidence || undefined)
+      .build();
   }
 
   // ===================================================================
@@ -754,7 +758,7 @@ export class SupabaseChatRepository implements ChatRepository {
   // ===================================================================
 
   private supabaseToConversation(row: any): Conversation {
-    return {
+    return buildObject<Conversation>({
       id: row.id,
       agentId: row.agent_id,
       userId: row.user_id,
@@ -762,33 +766,42 @@ export class SupabaseChatRepository implements ChatRepository {
       status: row.status as ConversationStatus,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
-      lastMessageAt: row.last_message_at
-        ? new Date(row.last_message_at)
-        : undefined,
       messageCount: row.message_count,
       metadata: row.metadata || {},
-      deletedAt: row.deleted_at ? new Date(row.deleted_at) : undefined,
-      deletedBy: row.deleted_by,
-    };
+    })
+      .addOptional(
+        'lastMessageAt',
+        row.last_message_at ? new Date(row.last_message_at) : undefined
+      )
+      .addOptional(
+        'deletedAt',
+        row.deleted_at ? new Date(row.deleted_at) : undefined
+      )
+      .addOptional('deletedBy', row.deleted_by)
+      .build();
   }
 
   private supabaseToConversationWithLastMessage(
     row: any
   ): ConversationWithLastMessage {
-    return {
+    return buildObject<ConversationWithLastMessage>({
       ...this.supabaseToConversation(row),
       lastMessageContent: row.last_message_content,
       lastMessageSenderType: row.last_message_sender_type as SenderType,
-      lastMessageTimestamp: row.last_message_timestamp
-        ? new Date(row.last_message_timestamp)
-        : undefined,
       participantCount: row.participant_count || 0,
       activeParticipantCount: row.active_participant_count || 0,
-    };
+    })
+      .addOptional(
+        'lastMessageTimestamp',
+        row.last_message_timestamp
+          ? new Date(row.last_message_timestamp)
+          : undefined
+      )
+      .build();
   }
 
   private supabaseToMessage(row: any): Message {
-    return {
+    return buildObject<Message>({
       id: row.id,
       conversationId: row.conversation_id,
       senderType: row.sender_type as SenderType,
@@ -796,52 +809,67 @@ export class SupabaseChatRepository implements ChatRepository {
       content: row.content,
       messageType: row.message_type as MessageType,
       timestamp: new Date(row.timestamp),
-      editedAt: row.edited_at ? new Date(row.edited_at) : undefined,
       metadata: row.metadata || {},
-      emotionState: row.emotion_state,
-      thoughtProcess: row.thought_process,
-      confidenceScore: row.confidence_score,
       memoryReferences: row.memory_references || [],
       createdMemories: row.created_memories || [],
       status: row.status as MessageStatus,
-      readAt: row.read_at ? new Date(row.read_at) : undefined,
-      deletedAt: row.deleted_at ? new Date(row.deleted_at) : undefined,
-      deletedBy: row.deleted_by,
-    };
+    })
+      .addOptional(
+        'editedAt',
+        row.edited_at ? new Date(row.edited_at) : undefined
+      )
+      .addOptional('emotionState', row.emotion_state)
+      .addOptional('thoughtProcess', row.thought_process)
+      .addOptional('confidenceScore', row.confidence_score)
+      .addOptional('readAt', row.read_at ? new Date(row.read_at) : undefined)
+      .addOptional(
+        'deletedAt',
+        row.deleted_at ? new Date(row.deleted_at) : undefined
+      )
+      .addOptional('deletedBy', row.deleted_by)
+      .build();
   }
 
   private supabaseToParticipant(row: any): Participant {
-    return {
+    return buildObject<Participant>({
       id: row.id,
       conversationId: row.conversation_id,
       participantType: row.participant_type as ParticipantType,
       participantId: row.participant_id,
-      participantName: row.participant_name,
       joinedAt: new Date(row.joined_at),
-      leftAt: row.left_at ? new Date(row.left_at) : undefined,
       role: row.role as ParticipantRole,
-      lastSeenAt: row.last_seen_at ? new Date(row.last_seen_at) : undefined,
-      lastTypedAt: row.last_typed_at ? new Date(row.last_typed_at) : undefined,
       messageCount: row.message_count,
       notificationsEnabled: row.notifications_enabled,
       preferences: row.preferences || {},
       status: row.status as ParticipantStatus,
-    };
+    })
+      .addOptional('participantName', row.participant_name)
+      .addOptional('leftAt', row.left_at ? new Date(row.left_at) : undefined)
+      .addOptional(
+        'lastSeenAt',
+        row.last_seen_at ? new Date(row.last_seen_at) : undefined
+      )
+      .addOptional(
+        'lastTypedAt',
+        row.last_typed_at ? new Date(row.last_typed_at) : undefined
+      )
+      .build();
   }
 
   private supabaseToSession(row: any): ChatSession {
-    return {
+    return buildObject<ChatSession>({
       id: row.id,
       userId: row.user_id,
       conversationId: row.conversation_id,
-      connectionId: row.connection_id,
       startedAt: new Date(row.started_at),
       lastActivityAt: new Date(row.last_activity_at),
-      endedAt: row.ended_at ? new Date(row.ended_at) : undefined,
       clientInfo: row.client_info || {},
-      ipAddress: row.ip_address,
-      userAgent: row.user_agent,
-    };
+    })
+      .addOptional('connectionId', row.connection_id)
+      .addOptional('endedAt', row.ended_at ? new Date(row.ended_at) : undefined)
+      .addOptional('ipAddress', row.ip_address)
+      .addOptional('userAgent', row.user_agent)
+      .build();
   }
 }
 

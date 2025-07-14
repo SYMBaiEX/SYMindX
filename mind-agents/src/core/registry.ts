@@ -427,4 +427,59 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
   listAgentFactories(): string[] {
     return Array.from(this.agentFactories.keys());
   }
+
+  // Required method from ModuleRegistry interface
+  getRegisteredAgents(): Agent[] {
+    // Return active agents from lazy agent map
+    return Array.from(this.lazyAgents.values())
+      .filter((lazyAgent) => lazyAgent.agent !== undefined)
+      .map((lazyAgent) => lazyAgent.agent!);
+  }
+
+  // Additional missing methods that might be needed
+  unregister(name: string): boolean {
+    // Try to unregister from all maps
+    const removed =
+      this.memoryProviders.delete(name) ||
+      this.emotionModules.delete(name) ||
+      this.cognitionModules.delete(name) ||
+      this.extensions.delete(name) ||
+      this.portals.delete(name) ||
+      this.toolSystems.delete(name) ||
+      this.observabilityModules.delete(name) ||
+      this.streamingInterfaces.delete(name) ||
+      this.memoryFactories.delete(name) ||
+      this.emotionFactories.delete(name) ||
+      this.cognitionFactories.delete(name) ||
+      this.portalFactories.delete(name) ||
+      this.extensionFactories.delete(name) ||
+      this.agentFactories.delete(name) ||
+      this.lazyAgents.delete(name);
+
+    if (removed) {
+      runtimeLogger.factory(`🗑️ Unregistered: ${name}`);
+    }
+    return removed;
+  }
+
+  list(): string[] {
+    // Return all registered names
+    const allNames = new Set<string>();
+    this.memoryProviders.forEach((_, name) => allNames.add(name));
+    this.emotionModules.forEach((_, name) => allNames.add(name));
+    this.cognitionModules.forEach((_, name) => allNames.add(name));
+    this.extensions.forEach((_, name) => allNames.add(name));
+    this.portals.forEach((_, name) => allNames.add(name));
+    this.toolSystems.forEach((_, name) => allNames.add(name));
+    this.observabilityModules.forEach((_, name) => allNames.add(name));
+    this.streamingInterfaces.forEach((_, name) => allNames.add(name));
+    this.memoryFactories.forEach((_, name) => allNames.add(name));
+    this.emotionFactories.forEach((_, name) => allNames.add(name));
+    this.cognitionFactories.forEach((_, name) => allNames.add(name));
+    this.portalFactories.forEach((_, name) => allNames.add(name));
+    this.extensionFactories.forEach((_, name) => allNames.add(name));
+    this.agentFactories.forEach((_, name) => allNames.add(name));
+    this.lazyAgents.forEach((_, name) => allNames.add(name));
+    return Array.from(allNames);
+  }
 }

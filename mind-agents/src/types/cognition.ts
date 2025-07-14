@@ -126,6 +126,8 @@ export enum ReasoningParadigm {
   REINFORCEMENT_LEARNING = 'reinforcement_learning',
   PDDL_PLANNING = 'pddl_planning',
   HYBRID = 'hybrid',
+  DUAL_PROCESS = 'dual_process',
+  UNIFIED = 'unified',
 }
 
 /**

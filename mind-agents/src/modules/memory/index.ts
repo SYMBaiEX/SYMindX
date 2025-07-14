@@ -4,7 +4,9 @@
  * This module provides memory providers for storing and retrieving agent memories.
  */
 
-import { ModuleRegistry, MemoryProviderType } from '../../types/agent';
+// MemoryProviderType used in type exports but not at runtime
+import { ModuleRegistry } from '../../types/agent';
+export type { MemoryProviderType } from '../../types/agent';
 import { runtimeLogger } from '../../utils/logger';
 
 // Re-export the memory provider factory and types

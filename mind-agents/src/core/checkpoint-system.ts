@@ -5,6 +5,8 @@
 
 import { EventEmitter } from 'events';
 
+/// <reference path="../types/globals.d.ts" />
+
 import { Agent } from '../types/agent';
 import { Logger } from '../utils/logger';
 
@@ -49,7 +51,7 @@ export class CheckpointSystem extends EventEmitter {
   private stateManager: StateManager;
   // private _resourceManager: ResourceManager // Unused, commenting out; // Unused but kept for interface compatibility
   private schedules: Map<string, CheckpointSchedule> = new Map();
-  private checkpointTimer?: NodeJS.Timeout;
+  private checkpointTimer?: ReturnType<typeof setInterval>;
   private metrics: Map<string, CheckpointMetrics> = new Map();
   private agentStateHashes: Map<string, string> = new Map();
 

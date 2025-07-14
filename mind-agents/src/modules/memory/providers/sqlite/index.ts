@@ -21,6 +21,7 @@ import {
   MemoryPermission,
 } from '../../../../types/memory';
 import { runtimeLogger } from '../../../../utils/logger';
+import { buildObject } from '../../../../utils/type-helpers';
 import {
   BaseMemoryProvider,
   BaseMemoryConfig,
@@ -504,7 +505,7 @@ export class SQLiteMemoryProvider extends BaseMemoryProvider {
       embedding = this.bufferToEmbedding(row.embedding);
     }
 
-    const record: EnhancedMemoryRecord = {
+    const builder = buildObject<EnhancedMemoryRecord>({
       id: row.id,
       agentId: row.agent_id,
       type: (row.type as string)
@@ -512,7 +513,6 @@ export class SQLiteMemoryProvider extends BaseMemoryProvider {
           MemoryType.EXPERIENCE
         : MemoryType.EXPERIENCE,
       content: row.content,
-      embedding,
       metadata: JSON.parse((row.metadata as string) || '{}') as Record<
         string,
         any
@@ -526,18 +526,22 @@ export class SQLiteMemoryProvider extends BaseMemoryProvider {
               row.duration.toUpperCase() as keyof typeof MemoryDuration
             ] || MemoryDuration.LONG_TERM
           : MemoryDuration.LONG_TERM,
-      expiresAt: row.expires_at ? new Date(row.expires_at) : undefined,
-    };
+    })
+      .addOptional('embedding', embedding)
+      .addOptional(
+        'expiresAt',
+        row.expires_at ? new Date(row.expires_at) : undefined
+      );
 
     // Add tier and context if available
     if (row.tier) {
-      record.tier = row.tier as MemoryTierType;
+      builder.addOptional('tier', row.tier as MemoryTierType);
     }
     if (row.context) {
-      record.context = JSON.parse(row.context) as MemoryContext;
+      builder.addOptional('context', JSON.parse(row.context) as MemoryContext);
     }
 
-    return record;
+    return builder.build();
   }
 
   /**
@@ -565,7 +569,7 @@ export class SQLiteMemoryProvider extends BaseMemoryProvider {
    * @param b Second vector
    * @returns Cosine similarity (0-1, where 1 is most similar)
    */
-  protected cosineSimilarity(a: number[], b: number[]): number {
+  protected override cosineSimilarity(a: number[], b: number[]): number {
     if (a.length !== b.length) {
       console.warn(`⚠️ Vector dimension mismatch: ${a.length} vs ${b.length}`);
       return 0;
@@ -874,10 +878,12 @@ export class SQLiteMemoryProvider extends BaseMemoryProvider {
 
     for (const memory of memories) {
       const day = memory.timestamp.toISOString().split('T')[0];
-      if (!grouped.has(day)) {
+      if (day && !grouped.has(day)) {
         grouped.set(day, []);
       }
-      grouped.get(day)!.push(memory);
+      if (day) {
+        grouped.get(day)!.push(memory);
+      }
     }
 
     const compressed: EnhancedMemoryRecord[] = [];

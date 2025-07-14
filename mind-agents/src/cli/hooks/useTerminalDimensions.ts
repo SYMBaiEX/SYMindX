@@ -6,11 +6,11 @@ export interface TerminalDimensions {
 }
 
 export interface TerminalBreakpoints {
-  isXSmall: boolean;  // 80x24 or smaller
-  isSmall: boolean;   // 81-100 columns
-  isMedium: boolean;  // 101-120 columns
-  isLarge: boolean;   // 121-160 columns
-  isXLarge: boolean;  // 161+ columns
+  isXSmall: boolean; // 80x24 or smaller
+  isSmall: boolean; // 81-100 columns
+  isMedium: boolean; // 101-120 columns
+  isLarge: boolean; // 121-160 columns
+  isXLarge: boolean; // 161+ columns
 }
 
 export interface TerminalOrientation {
@@ -77,10 +77,15 @@ export const useTerminalDimensions = (): TerminalResponsive => {
   };
 
   // Determine current breakpoint
-  const currentBreakpoint = breakpoints.isXSmall ? 'xs' :
-                           breakpoints.isSmall ? 'sm' :
-                           breakpoints.isMedium ? 'md' :
-                           breakpoints.isLarge ? 'lg' : 'xl';
+  const currentBreakpoint = breakpoints.isXSmall
+    ? 'xs'
+    : breakpoints.isSmall
+      ? 'sm'
+      : breakpoints.isMedium
+        ? 'md'
+        : breakpoints.isLarge
+          ? 'lg'
+          : 'xl';
 
   // Calculate orientation
   const aspectRatio = dimensions.width / dimensions.height;
@@ -110,26 +115,37 @@ export const getAdaptiveDimensions = (
   breakpoints: TerminalBreakpoints
 ) => {
   const { width, height } = dimensions;
-  
-  // Card dimensions based on breakpoints
-  const cardWidth = breakpoints.isXSmall ? Math.floor(width * 0.9) :
-                    breakpoints.isSmall ? Math.floor(width * 0.8) :
-                    breakpoints.isMedium ? Math.floor(width * 0.7) :
-                    breakpoints.isLarge ? Math.floor(width * 0.6) :
-                    Math.floor(width * 0.5);
 
-  const cardHeight = breakpoints.isXSmall ? Math.floor(height * 0.3) :
-                     breakpoints.isSmall ? Math.floor(height * 0.35) :
-                     Math.floor(height * 0.4);
+  // Card dimensions based on breakpoints
+  const cardWidth = breakpoints.isXSmall
+    ? Math.floor(width * 0.9)
+    : breakpoints.isSmall
+      ? Math.floor(width * 0.8)
+      : breakpoints.isMedium
+        ? Math.floor(width * 0.7)
+        : breakpoints.isLarge
+          ? Math.floor(width * 0.6)
+          : Math.floor(width * 0.5);
+
+  const cardHeight = breakpoints.isXSmall
+    ? Math.floor(height * 0.3)
+    : breakpoints.isSmall
+      ? Math.floor(height * 0.35)
+      : Math.floor(height * 0.4);
 
   // Layout configuration
   const layout = {
     cardWidth: Math.max(20, cardWidth), // Minimum 20 columns
     cardHeight: Math.max(6, cardHeight), // Minimum 6 rows
-    maxCardsPerRow: breakpoints.isXSmall ? 1 :
-                    breakpoints.isSmall ? 2 :
-                    breakpoints.isMedium ? 2 :
-                    breakpoints.isLarge ? 3 : 4,
+    maxCardsPerRow: breakpoints.isXSmall
+      ? 1
+      : breakpoints.isSmall
+        ? 2
+        : breakpoints.isMedium
+          ? 2
+          : breakpoints.isLarge
+            ? 3
+            : 4,
     padding: breakpoints.isXSmall ? 0 : 1,
     gap: breakpoints.isXSmall ? 0 : 1,
   };

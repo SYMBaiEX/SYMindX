@@ -3,6 +3,7 @@
 To create a new AI provider portal:
 
 1. **Create your portal directory:**
+
    ```
    mind-agents/src/portals/your-portal-name/
    ```
@@ -14,6 +15,7 @@ To create a new AI provider portal:
    - `config.example.json` - Example configuration
 
 3. **Use this package.json template:**
+
    ```json
    {
      "name": "@symindx/portal-your-name",
@@ -39,9 +41,10 @@ To create a new AI provider portal:
    ```
 
 4. **Implement the BasePortal interface:**
+
    ```typescript
-   import { BasePortal } from '../base-portal.js'
-   
+   import { BasePortal } from '../base-portal.js';
+
    export class YourPortal extends BasePortal {
      // Implementation
    }

@@ -1,4 +1,3 @@
-import { convertUsage } from './utils';
 /**
  * Portals Index
  *

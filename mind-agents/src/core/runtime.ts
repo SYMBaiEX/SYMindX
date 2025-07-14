@@ -1,3 +1,5 @@
+/// <reference path="../types/globals.d.ts" />
+
 import {
   Agent,
   AgentConfig,
@@ -23,11 +25,11 @@ import { AutonomousAgent, DecisionModuleType } from '../types/autonomous';
 import { CharacterConfig } from '../types/character';
 import { ExtensionConfig } from '../types/common';
 import { ActionResultType } from '../types/enums';
-import { ExtensionContext } from '../types/extension';
+// import { ExtensionContext } from '../types/extension';
 import { Timestamp } from '../types/helpers';
-import { Portal, PortalConfig, PortalCapability } from '../types/portal';
+import { Portal, PortalConfig } from '../types/portal';
 import { configResolver } from '../utils/config-resolver';
-import { Logger, runtimeLogger } from '../utils/logger';
+import { runtimeLogger } from '../utils/logger';
 
 // Autonomous system imports
 import { AutonomousEngine, AutonomousEngineConfig } from './autonomous-engine';
@@ -45,7 +47,7 @@ export class SYMindXRuntime implements AgentRuntime {
   public registry: ModuleRegistry;
   public extensionLoader: ExtensionLoader;
   public config: RuntimeConfig;
-  private tickTimer?: NodeJS.Timeout;
+  private tickTimer?: ReturnType<typeof setInterval>;
   private isRunning = false;
 
   // Multi-Agent Manager
@@ -60,7 +62,7 @@ export class SYMindXRuntime implements AgentRuntime {
   constructor(config: RuntimeConfig) {
     this.config = config;
     this.eventBus = new SimpleEventBus();
-    this.registry = new SYMindXModuleRegistry() as ModuleRegistry;
+    this.registry = new SYMindXModuleRegistry();
 
     // Create extension context for plugin loader
     // const _extensionContext: ExtensionContext = {
@@ -93,7 +95,7 @@ export class SYMindXRuntime implements AgentRuntime {
       // Try to load .env file
       configDotenv({ path: envPath });
       // Environment variables loaded - logged by UI
-    } catch (error) {
+    } catch {
       runtimeLogger.warn(
         '⚠️ No .env file found or dotenv not available, using system environment variables'
       );
@@ -162,7 +164,7 @@ export class SYMindXRuntime implements AgentRuntime {
 
         // Configuration loaded - logged by UI
       } catch (err) {
-        if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+        if ((err as any).code === 'ENOENT') {
           runtimeLogger.warn(
             '⚠️ No runtime.json found, using default configuration with environment variables'
           );
@@ -235,6 +237,9 @@ export class SYMindXRuntime implements AgentRuntime {
 
       // Initialize tool system
       await this.initializeToolSystem();
+
+      // Load any dynamic plugins (currently a no-op but kept for compatibility)
+      await this._loadDynamicPlugins();
 
       // Phase 4: Agent Loading
       runtimeLogger.info('🤖 Loading agents...');
@@ -427,7 +432,7 @@ export class SYMindXRuntime implements AgentRuntime {
 
         runtimeLogger.success(`✅ Agents: ${summary.join(', ')}`);
       } catch (err) {
-        if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+        if ((err as any).code === 'ENOENT') {
           runtimeLogger.warn(
             '⚠️ Characters directory not found, no agents loaded'
           );
@@ -454,7 +459,7 @@ export class SYMindXRuntime implements AgentRuntime {
     );
   }
 
-  private __findPortalByCapability(portals: any[], capability: string): any {
+  private _findPortalByCapability(portals: any[], capability: string): any {
     if (!portals || portals.length === 0) return null;
     // Find first enabled portal with the specified capability
     return portals.find(
@@ -837,27 +842,49 @@ export class SYMindXRuntime implements AgentRuntime {
       findPortalByCapability(capability: string): Portal | undefined;
     };
     agentWithUtility.findPortalByCapability = (capability: string) => {
-      if (!agent.portals) return agent.portal;
-      return (
-        agent.portals.find((p) => {
-          if (typeof p.hasCapability === 'function') {
-            return p.hasCapability(capability as PortalCapability);
-          }
-          // Fallback to checking config capabilities
-          const portalWithCapabilities = p as Portal & {
-            capabilities?: string[];
-          };
-          return portalWithCapabilities.capabilities?.includes(capability);
-        }) || agent.portal
+      // Use the private method to find portal by capability
+      if (!agent.portals || agent.portals.length === 0) {
+        return agent.portal;
+      }
+
+      // Convert Portal objects to config-like objects for compatibility
+      const portalConfigs = agent.portals.map((p) => ({
+        enabled: true,
+        capabilities: (p as any).capabilities || [],
+        portal: p,
+      }));
+
+      const foundPortalConfig = this._findPortalByCapability(
+        portalConfigs,
+        capability
       );
+      return foundPortalConfig ? foundPortalConfig.portal : agent.portal;
     };
 
     // Initialize autonomous capabilities if enabled
-    const finalAgent = agent;
-    // DISABLED: Autonomous behaviors - agents should only respond to messages
-    // if (this.isAutonomousAgent(config)) {
-    //   finalAgent = await this.initializeAutonomousAgent(agent, config)
-    // }
+    let finalAgent = agent;
+
+    // Check if autonomous capabilities should be enabled
+    if (this._isAutonomousAgent(config)) {
+      runtimeLogger.info(
+        `🤖 Agent ${agent.name} has autonomous capabilities defined`
+      );
+      // Log warning that autonomous features are currently disabled by design
+      runtimeLogger.warn(
+        `⚠️ Autonomous behaviors for ${agent.name} are disabled - agents should only respond to messages`
+      );
+      // Still initialize the autonomous agent structure for future use
+      try {
+        finalAgent = await this._initializeAutonomousAgent(agent, config);
+      } catch (error) {
+        runtimeLogger.error(
+          `❌ Failed to initialize autonomous structure for ${agent.name}:`,
+          error
+        );
+        // Continue with non-autonomous agent
+        finalAgent = agent;
+      }
+    }
 
     // TEMPORARILY DISABLED - Prompt and tool system initialization
     /*
@@ -1297,7 +1324,7 @@ export class SYMindXRuntime implements AgentRuntime {
   private async registerCoreModules(): Promise<void> {
     try {
       // Import factory functions from modules
-      const {} = await import('../modules/index');
+      await import('../modules/index');
 
       // Register core modules
       const { registerCoreModules } = await import('../modules/index');
@@ -1326,7 +1353,7 @@ export class SYMindXRuntime implements AgentRuntime {
   /**
    * Check if agent configuration indicates autonomous capabilities
    */
-  private __isAutonomousAgent(config: AgentConfig): boolean {
+  private _isAutonomousAgent(config: AgentConfig): boolean {
     return (
       config.autonomous?.enabled === true ||
       config.autonomous_behaviors !== undefined
@@ -1336,7 +1363,7 @@ export class SYMindXRuntime implements AgentRuntime {
   /**
    * Initialize autonomous agent capabilities
    */
-  private async __initializeAutonomousAgent(
+  private async _initializeAutonomousAgent(
     agent: Agent,
     config: AgentConfig
   ): Promise<AutonomousAgent> {
@@ -1690,7 +1717,7 @@ export class SYMindXRuntime implements AgentRuntime {
   /**
    * Load dynamic plugins (simplified for emergency cleanup)
    */
-  private async __loadDynamicPlugins(): Promise<void> {
+  private async _loadDynamicPlugins(): Promise<void> {
     // This method is kept for backward compatibility but does nothing
     // Extensions are loaded in the loadExtensions() method
   }
@@ -2205,15 +2232,13 @@ export class SYMindXRuntime implements AgentRuntime {
       characterId ||
       `agent_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-    const lazyAgent = {
+    const lazyAgent: LazyAgent = {
       id: agentId,
-      character_id: characterId,
+      ...(characterId && { character_id: characterId }),
       name: characterConfig.name || agentConfig.core?.name || 'Unknown Agent',
       status: LazyAgentStatus.UNLOADED,
       config: agentConfig,
       characterConfig: characterConfig,
-      lastActivated: undefined,
-      agent: undefined,
       priority: this.calculateAgentPriority(characterConfig),
       lazyMetrics: {
         loadCount: 0,
@@ -2221,6 +2246,14 @@ export class SYMindXRuntime implements AgentRuntime {
       },
       // LazyAgent specific properties
       state: {
+        emotionState: {
+          current: 'neutral',
+          intensity: 0.5,
+          triggers: [],
+          history: [],
+          timestamp: new Date(),
+        },
+        recentMemories: [],
         lazy: true,
         hibernationLevel: 1,
       },
@@ -2239,8 +2272,9 @@ export class SYMindXRuntime implements AgentRuntime {
         return agent.initialize(config);
       },
       cleanup: async () => {
-        if (lazyAgent.agent) {
-          return lazyAgent.agent.cleanup();
+        const currentLazyAgent = this.lazyAgents.get(agentId);
+        if (currentLazyAgent?.agent) {
+          return await currentLazyAgent.agent.cleanup();
         }
         return {
           success: true,
@@ -2265,7 +2299,7 @@ export class SYMindXRuntime implements AgentRuntime {
         const agent = await this.activateAgent(agentId);
         return agent.executeAction(action);
       },
-    } as LazyAgent;
+    };
 
     return lazyAgent;
   }

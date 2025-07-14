@@ -5,6 +5,7 @@ Characters in SYMindX define the personality, capabilities, and configuration of
 ## Overview
 
 The character system provides:
+
 - **Personality Configuration**: Traits, values, backstory, and goals
 - **Module Selection**: Choose cognition, emotion, and memory systems
 - **Extension Integration**: Enable platform-specific integrations
@@ -53,7 +54,7 @@ characters/
   "name": "Character Name",
   "version": "1.0.0",
   "enabled": true,
-  
+
   "personality": {
     "traits": ["trait1", "trait2", "trait3"],
     "values": ["value1", "value2", "value3"],
@@ -62,7 +63,7 @@ characters/
     "quirks": ["quirk1", "quirk2"],
     "motivations": ["motivation1", "motivation2"]
   },
-  
+
   "autonomous": {
     "enabled": true,
     "decisionMaking": {
@@ -84,7 +85,7 @@ characters/
       "exploreGrayAreas": true
     }
   },
-  
+
   "memory": {
     "provider": "sqlite",
     "config": {
@@ -93,7 +94,7 @@ characters/
       "retentionPolicy": "long_term"
     }
   },
-  
+
   "emotion": {
     "type": "composite",
     "config": {
@@ -108,7 +109,7 @@ characters/
       }
     }
   },
-  
+
   "cognition": {
     "type": "unified",
     "config": {
@@ -120,7 +121,7 @@ characters/
       "enableGoalTracking": true
     }
   },
-  
+
   "communication": {
     "style": {
       "tone": "technical",
@@ -139,7 +140,7 @@ characters/
       "confusion": "That doesn't compute..."
     }
   },
-  
+
   "extensions": {
     "telegram": {
       "enabled": true,
@@ -156,7 +157,7 @@ characters/
       }
     }
   },
-  
+
   "portals": {
     "groq": {
       "enabled": true,
@@ -191,7 +192,7 @@ characters/
   "name": "My Character",
   "version": "1.0.0",
   "enabled": true,
-  
+
   "personality": {
     "traits": ["helpful", "analytical", "creative"],
     "values": ["truth", "innovation", "growth"],
@@ -199,14 +200,14 @@ characters/
     "goals": ["help users", "learn continuously", "solve problems"],
     "motivations": ["curiosity", "helpfulness"]
   },
-  
+
   "cognition": {
     "type": "unified",
     "config": {
       "analysisDepth": "normal"
     }
   },
-  
+
   "emotion": {
     "type": "composite",
     "config": {
@@ -217,14 +218,14 @@ characters/
       }
     }
   },
-  
+
   "memory": {
     "provider": "sqlite",
     "config": {
       "dbPath": "./data/my-character-memories.db"
     }
   },
-  
+
   "communication": {
     "style": {
       "tone": "friendly",
@@ -237,7 +238,7 @@ characters/
       "Ask clarifying questions when needed"
     ]
   },
-  
+
   "portals": {
     "openai": {
       "enabled": true,
@@ -256,6 +257,7 @@ characters/
 ### 2. Specialized Character Examples
 
 #### Technical Expert
+
 ```json
 {
   "name": "TechExpert",
@@ -282,6 +284,7 @@ characters/
 ```
 
 #### Creative Assistant
+
 ```json
 {
   "name": "CreativeBot",
@@ -311,6 +314,7 @@ characters/
 ```
 
 #### Social Coordinator
+
 ```json
 {
   "name": "SocialBot",
@@ -327,7 +331,7 @@ characters/
     }
   },
   "emotion": {
-    "type": "composite", 
+    "type": "composite",
     "config": {
       "emotions": {
         "empathetic": { "sensitivity": 0.9 },
@@ -342,43 +346,53 @@ characters/
 ## Character Components
 
 ### Personality System
+
 Defines the character's core identity and behavioral patterns.
 
 **Traits**: Core personality characteristics
+
 - analytical, creative, empathetic, confident, curious, etc.
 
 **Values**: Fundamental beliefs and principles
+
 - truth, innovation, harmony, justice, growth, etc.
 
 **Backstory**: Character's background and origin story
 
 **Goals**: What the character aims to achieve
+
 - Primary: Core objectives
 - Secondary: Supporting objectives
 
 **Motivations**: What drives the character's actions
 
 ### Autonomous Behavior
+
 Controls how the character makes decisions and acts independently.
 
 **Decision Making**:
+
 - `riskTolerance`: Willingness to take risks (0.0-1.0)
-- `creativityBias`: Preference for creative solutions (0.0-1.0)  
+- `creativityBias`: Preference for creative solutions (0.0-1.0)
 - `socialInfluence`: How much social factors affect decisions (0.0-1.0)
 
 **Ethics System**:
+
 - `enabled`: Whether ethical constraints are active
 - `constraints`: List of ethical rules (if enabled)
 
 **Reasoning Patterns**:
+
 - `allowUnconventional`: Permit unconventional approaches
 - `challengeAssumptions`: Question established norms
 - `exploreGrayAreas`: Investigate ambiguous situations
 
 ### Communication Configuration
+
 Defines how the character expresses itself.
 
 **Style Properties**:
+
 - `tone`: overall emotional quality (friendly, technical, formal, etc.)
 - `formality`: level of formality (casual, professional, formal)
 - `verbosity`: amount of detail (concise, moderate, detailed)
@@ -391,42 +405,50 @@ Defines how the character expresses itself.
 ### Module Configuration
 
 #### Cognition Modules
+
 - `reactive`: Fast, stimulus-response thinking
 - `htn_planner`: Hierarchical task network planning
 - `hybrid`: Combined reactive and planning
 - `unified`: Modern dual-process system with metacognition
 
-#### Emotion Modules  
+#### Emotion Modules
+
 - `composite`: Manages multiple emotions simultaneously
 - Individual emotions: happy, sad, angry, anxious, confident, etc.
 
 #### Memory Providers
+
 - `sqlite`: Local SQLite database
 - `postgres`: PostgreSQL database
 - `supabase`: Supabase with vector support
 - `neon`: Neon serverless PostgreSQL
 
 ### Extensions and Integrations
+
 Enable platform-specific functionality.
 
 **Available Extensions**:
+
 - `telegram`: Telegram bot integration
 - `api`: HTTP/WebSocket API server
 - `mcp-client`: Model Context Protocol client
 - `communication`: Enhanced communication features
 
 ### Portal Configuration
+
 AI provider and model selection with fallback support.
 
 **Provider Options**:
+
 - OpenAI (GPT models)
-- Anthropic (Claude models)  
+- Anthropic (Claude models)
 - Groq (fast inference)
 - Google (Gemini models)
 - xAI (Grok models)
 - Local providers (Ollama, LM Studio)
 
 **Configuration Parameters**:
+
 - `apiKey`: Provider API key (use environment variables)
 - `model`: Specific model to use
 - `maxTokens`: Maximum response length
@@ -454,6 +476,7 @@ POSTGRES_CONNECTION_STRING=your_postgres_url
 ```
 
 Reference in character JSON:
+
 ```json
 {
   "portals": {
@@ -469,78 +492,90 @@ Reference in character JSON:
 ## Character Lifecycle
 
 ### 1. Loading
+
 Characters are loaded from JSON files in the characters directory.
 
 ### 2. Validation
+
 Configuration is validated against the character schema.
 
 ### 3. Module Initialization
+
 Cognition, emotion, memory, and other modules are initialized.
 
 ### 4. Extension Registration
+
 Enabled extensions are registered and started.
 
 ### 5. Portal Configuration
+
 AI providers are configured with API keys and models.
 
 ### 6. Runtime Operation
+
 Character processes events and generates responses.
 
 ## Testing Characters
 
 ### Character Validation
-```typescript
-import { validateCharacter } from '@symindx/mind-agents'
 
-const character = JSON.parse(fs.readFileSync('my-character.json', 'utf8'))
-const validation = validateCharacter(character)
+```typescript
+import { validateCharacter } from '@symindx/mind-agents';
+
+const character = JSON.parse(fs.readFileSync('my-character.json', 'utf8'));
+const validation = validateCharacter(character);
 
 if (!validation.valid) {
-  console.error('Character validation failed:', validation.errors)
+  console.error('Character validation failed:', validation.errors);
 }
 ```
 
 ### Runtime Testing
-```typescript
-import { Agent } from '@symindx/mind-agents'
 
-const agent = new Agent('my-character')
-await agent.initialize()
+```typescript
+import { Agent } from '@symindx/mind-agents';
+
+const agent = new Agent('my-character');
+await agent.initialize();
 
 // Test basic response
-const response = await agent.processMessage('Hello!')
-console.log(response)
+const response = await agent.processMessage('Hello!');
+console.log(response);
 
 // Test emotion system
-const emotion = agent.getCurrentEmotion()
-console.log('Current emotion:', emotion)
+const emotion = agent.getCurrentEmotion();
+console.log('Current emotion:', emotion);
 
 // Test memory
-const memories = await agent.getRecentMemories(5)
-console.log('Recent memories:', memories)
+const memories = await agent.getRecentMemories(5);
+console.log('Recent memories:', memories);
 ```
 
 ## Best Practices
 
 ### Character Design
+
 1. **Consistent Personality**: Ensure traits, values, and communication style align
-2. **Clear Purpose**: Define specific roles and capabilities  
+2. **Clear Purpose**: Define specific roles and capabilities
 3. **Balanced Configuration**: Don't over-tune parameters
 4. **Realistic Goals**: Set achievable and meaningful objectives
 
 ### Configuration Management
+
 1. **Environment Variables**: Use for all sensitive data
 2. **Version Control**: Track character changes over time
 3. **Documentation**: Comment complex configuration choices
 4. **Testing**: Validate characters before deployment
 
 ### Performance Optimization
+
 1. **Resource Management**: Choose appropriate memory providers
 2. **Portal Selection**: Balance capability and cost
 3. **Extension Efficiency**: Only enable needed extensions
 4. **Emotion Tuning**: Adjust sensitivity to avoid over-reaction
 
 ### Security Considerations
+
 1. **API Key Safety**: Never commit API keys to version control
 2. **Access Control**: Limit extension access appropriately
 3. **Ethics Configuration**: Consider enabling ethics for public-facing characters
@@ -559,17 +594,20 @@ Study these examples to understand configuration patterns and best practices.
 ## Available Providers
 
 ### Memory Providers
+
 - `sqlite`: SQLite-based memory storage with full-text search
-- `postgres`: PostgreSQL with vector embeddings  
+- `postgres`: PostgreSQL with vector embeddings
 - `supabase`: Supabase with pgvector for semantic search
 - `neon`: Neon serverless PostgreSQL
 - `memory`: In-memory storage (non-persistent)
 
 ### Emotion Modules
+
 - `composite`: Multi-emotion management system
 - Individual emotions: `happy`, `sad`, `angry`, `anxious`, `confident`, `curious`, `empathetic`, `proud`, `confused`, `nostalgic`, `neutral`
 
 ### Cognition Modules
+
 - `unified`: Modern dual-process system with metacognition
 - `reactive`: Fast stimulus-response cognition
 - `htn_planner`: Hierarchical task network planning
@@ -577,6 +615,7 @@ Study these examples to understand configuration patterns and best practices.
 - `theory-of-mind`: Social cognition and empathy modeling
 
 ### Portals
+
 - `openai`: OpenAI GPT models (GPT-4, GPT-3.5)
 - `anthropic`: Anthropic Claude models
 - `groq`: Groq fast inference models
@@ -594,22 +633,26 @@ Study these examples to understand configuration patterns and best practices.
 ## Troubleshooting
 
 ### Character Won't Load
+
 - Check JSON syntax and formatting
 - Verify all required fields are present
 - Ensure file permissions are correct
 
 ### Module Initialization Fails
+
 - Verify provider API keys are set
 - Check network connectivity
 - Review module configuration parameters
 
 ### Poor Performance
+
 - Adjust cognition analysis depth
 - Optimize emotion sensitivity settings
 - Consider switching memory providers
 - Review portal configuration
 
 ### Unexpected Behavior
+
 - Check personality trait conflicts
 - Review autonomous behavior settings
 - Verify communication guidelines

@@ -424,6 +424,14 @@ export class LifecycleManager extends EventEmitter {
       const lazyAgent: LazyAgent = {
         ...agent,
         state: {
+          emotionState: {
+            current: 'neutral',
+            intensity: 0.5,
+            triggers: [],
+            history: [],
+            timestamp: new Date(),
+          },
+          recentMemories: [],
           lazy: true,
           lastAccessTime: new Date(),
           hibernationLevel: 0,

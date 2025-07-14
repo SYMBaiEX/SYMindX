@@ -7,16 +7,16 @@ export { Chart } from './Chart.js';
 export { Header } from './Header.js';
 
 // Loading States Components
-export { 
-  LoadingIndicator, 
-  ProgressBar, 
-  Skeleton, 
-  Shimmer 
+export {
+  LoadingIndicator,
+  ProgressBar,
+  Skeleton,
+  Shimmer,
 } from './LoadingStates.js';
 
 // Re-export types
-export type { 
-  ResponsiveValue, 
-  ResponsiveSize, 
-  ResponsiveSpacing 
+export type {
+  ResponsiveValue,
+  ResponsiveSize,
+  ResponsiveSpacing,
 } from '../../utils/responsive-grid.js';

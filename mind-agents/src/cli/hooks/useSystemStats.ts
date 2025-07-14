@@ -61,7 +61,7 @@ export const useSystemStats = (): SystemStats => {
       uptime: '0s',
       connections: 0,
       messageRate: 0,
-      responseTime: 0
+      responseTime: 0,
     },
     environment: {
       nodeVersion: process.version,
@@ -69,11 +69,11 @@ export const useSystemStats = (): SystemStats => {
       arch: os.arch(),
       configFile: './mind-agents/src/core/config/runtime.json',
       logLevel: 'info',
-      env: process.env.NODE_ENV || 'development'
+      env: process.env.NODE_ENV || 'development',
     },
     warnings: [],
     isConnected: false,
-    error: undefined
+    error: undefined,
   });
 
   useEffect(() => {
@@ -81,11 +81,11 @@ export const useSystemStats = (): SystemStats => {
       try {
         // Check if runtime is available
         const isAvailable = await runtimeClient.isRuntimeAvailable();
-        
+
         if (!isAvailable) {
           // Runtime not available - show offline state
           const connectionStatus = runtimeClient.getConnectionStatus();
-          setSystemStats(prev => ({
+          setSystemStats((prev) => ({
             ...prev,
             isRunning: false,
             isConnected: false,
@@ -96,13 +96,15 @@ export const useSystemStats = (): SystemStats => {
             portals: { status: 'stopped', message: 'No connection' },
             extensions: { status: 'stopped', message: 'No connection' },
             security: { status: 'stopped', message: 'No connection' },
-            warnings: [connectionStatus.error || 'Unable to connect to runtime'],
+            warnings: [
+              connectionStatus.error || 'Unable to connect to runtime',
+            ],
             performance: {
               ...prev.performance,
               connections: 0,
               messageRate: 0,
-              responseTime: 0
-            }
+              responseTime: 0,
+            },
           }));
           return;
         }
@@ -110,20 +112,25 @@ export const useSystemStats = (): SystemStats => {
         // Fetch real data from runtime
         const [status, metrics] = await Promise.all([
           runtimeClient.getRuntimeStatus(),
-          runtimeClient.getSystemMetrics()
+          runtimeClient.getSystemMetrics(),
         ]);
 
         // Convert runtime data to our format
         const runtimeUptime = formatUptime(metrics.uptime / 1000); // Convert ms to seconds
         const memoryUsage = formatBytes(metrics.memory.heapUsed);
-        
+
         // Determine component statuses based on runtime data
         const isRuntimeRunning = status.runtime.isRunning;
-        const componentStatus: SystemComponent['status'] = isRuntimeRunning ? 'running' : 'stopped';
-        
+        const componentStatus: SystemComponent['status'] = isRuntimeRunning
+          ? 'running'
+          : 'stopped';
+
         // Calculate CPU usage approximation from memory pressure
-        const cpuUsage = Math.min(100, Math.round((metrics.memory.heapUsed / metrics.memory.heapTotal) * 100));
-        
+        const cpuUsage = Math.min(
+          100,
+          Math.round((metrics.memory.heapUsed / metrics.memory.heapTotal) * 100)
+        );
+
         // Build warnings array
         const warnings: string[] = [];
         if (!status.runtime.isRunning) {
@@ -140,37 +147,51 @@ export const useSystemStats = (): SystemStats => {
           isRunning: isRuntimeRunning,
           uptime: runtimeUptime,
           memoryUsage,
-          runtime: { 
-            status: componentStatus, 
-            message: isRuntimeRunning ? 'Runtime operational' : 'Runtime stopped'
+          runtime: {
+            status: componentStatus,
+            message: isRuntimeRunning
+              ? 'Runtime operational'
+              : 'Runtime stopped',
           },
-          memory: { 
-            status: componentStatus, 
-            message: isRuntimeRunning ? 'Memory providers connected' : 'Memory offline'
+          memory: {
+            status: componentStatus,
+            message: isRuntimeRunning
+              ? 'Memory providers connected'
+              : 'Memory offline',
           },
-          eventBus: { 
-            status: componentStatus, 
-            message: isRuntimeRunning ? `${status.runtime.eventBus.events} events processed` : 'Event bus offline'
+          eventBus: {
+            status: componentStatus,
+            message: isRuntimeRunning
+              ? `${status.runtime.eventBus.events} events processed`
+              : 'Event bus offline',
           },
-          portals: { 
-            status: componentStatus, 
-            message: isRuntimeRunning ? 'AI portals connected' : 'Portals offline'
+          portals: {
+            status: componentStatus,
+            message: isRuntimeRunning
+              ? 'AI portals connected'
+              : 'Portals offline',
           },
-          extensions: { 
-            status: componentStatus, 
-            message: isRuntimeRunning ? `${status.extensions.loaded} extensions loaded` : 'Extensions offline'
+          extensions: {
+            status: componentStatus,
+            message: isRuntimeRunning
+              ? `${status.extensions.loaded} extensions loaded`
+              : 'Extensions offline',
           },
-          security: { 
-            status: componentStatus, 
-            message: isRuntimeRunning ? 'Security systems active' : 'Security offline'
+          security: {
+            status: componentStatus,
+            message: isRuntimeRunning
+              ? 'Security systems active'
+              : 'Security offline',
           },
           performance: {
             cpu: cpuUsage,
             memory: formatBytes(metrics.memory.heapUsed),
             uptime: runtimeUptime,
             connections: 0, // Would need WebSocket connection count from API
-            messageRate: Math.round(metrics.commandsProcessed / Math.max(1, metrics.uptime / 60000)), // Commands per minute
-            responseTime: 150 // Would need actual response time metrics
+            messageRate: Math.round(
+              metrics.commandsProcessed / Math.max(1, metrics.uptime / 60000)
+            ), // Commands per minute
+            responseTime: 150, // Would need actual response time metrics
           },
           environment: {
             nodeVersion: process.version,
@@ -178,40 +199,42 @@ export const useSystemStats = (): SystemStats => {
             arch: os.arch(),
             configFile: './mind-agents/src/core/config/runtime.json',
             logLevel: 'info',
-            env: process.env.NODE_ENV || 'development'
+            env: process.env.NODE_ENV || 'development',
           },
           warnings,
           isConnected: true,
-          error: undefined
+          error: undefined,
         });
-
       } catch (error) {
         console.error('Error fetching system stats:', error);
-        setSystemStats(prev => ({
+        setSystemStats((prev) => ({
           ...prev,
           isRunning: false,
           isConnected: false,
           error: error instanceof Error ? error.message : 'Unknown error',
           warnings: [
             ...prev.warnings.slice(0, 4), // Keep only recent warnings
-            `Error fetching stats: ${error instanceof Error ? error.message : 'Unknown error'}`
+            `Error fetching stats: ${error instanceof Error ? error.message : 'Unknown error'}`,
           ],
-          runtime: { status: 'error', message: 'Failed to fetch runtime status' },
+          runtime: {
+            status: 'error',
+            message: 'Failed to fetch runtime status',
+          },
           memory: { status: 'error', message: 'Connection failed' },
           eventBus: { status: 'error', message: 'Connection failed' },
           portals: { status: 'error', message: 'Connection failed' },
           extensions: { status: 'error', message: 'Connection failed' },
-          security: { status: 'error', message: 'Connection failed' }
+          security: { status: 'error', message: 'Connection failed' },
         }));
       }
     };
 
     // Initial fetch
     fetchSystemStats();
-    
+
     // Refresh stats every 2 seconds for system metrics
     const interval = setInterval(fetchSystemStats, 2000);
-    
+
     return () => clearInterval(interval);
   }, []);
 

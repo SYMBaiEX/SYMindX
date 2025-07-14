@@ -8,7 +8,7 @@ import { Extension, RuntimeConfig } from '../types/agent';
 
 import { ApiExtension } from './api/index';
 import { MCPServerExtension } from './mcp-server/index';
-import { TelegramExtension, createTelegramExtension } from './telegram/index';
+import { createTelegramExtension } from './telegram/index';
 
 export async function registerExtensions(
   config: RuntimeConfig

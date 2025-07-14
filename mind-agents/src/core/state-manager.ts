@@ -30,6 +30,8 @@ export interface AgentStateSnapshot {
     characterConfig: any;
     agentConfig: any;
     lastUpdate: Date;
+    personality?: any; // Agent personality traits
+    goals?: string[]; // Agent goals
   };
 
   // Cognitive state
@@ -38,6 +40,10 @@ export interface AgentStateSnapshot {
     recentMemories: MemoryRecord[];
     currentThoughts?: string[];
     decisionContext?: any;
+    memories?: MemoryRecord[]; // Additional memories storage
+    emotions?: any; // Flexible emotions structure
+    plans?: any[]; // Plans storage
+    decisions?: any[]; // Decisions storage
   };
 
   // Autonomous state
@@ -77,6 +83,7 @@ export enum CheckpointType {
   INCREMENTAL = 'incremental',
   EMERGENCY = 'emergency',
   SCHEDULED = 'scheduled',
+  LAZY = 'lazy',
 }
 
 export enum StateValidationResult {
@@ -615,6 +622,149 @@ export class StateManager {
         `Failed to update metadata for agent ${agentId}:`,
         error
       );
+    }
+  }
+
+  /**
+   * Create a state snapshot for a lazy agent
+   */
+  async createLazySnapshot(
+    lazyAgent: LazyAgent,
+    state: LazyAgentState
+  ): Promise<AgentStateSnapshot> {
+    const snapshot: AgentStateSnapshot = {
+      agentId: lazyAgent.id,
+      timestamp: new Date(),
+      version: '1.0.0',
+
+      core: {
+        name: lazyAgent.name,
+        status: AgentStatus.DISABLED,
+        characterConfig: lazyAgent.config,
+        agentConfig: lazyAgent.config,
+        lastUpdate: new Date(),
+        ...(lazyAgent.config.personality && {
+          personality: lazyAgent.config.personality,
+        }),
+        ...(lazyAgent.config.goals && { goals: lazyAgent.config.goals }),
+      },
+
+      cognitive: {
+        emotionState: state.emotionState,
+        recentMemories: state.recentMemories,
+        memories: [],
+        emotions: state.emotions || { currentEmotions: [] },
+        plans: [],
+        decisions: [],
+      },
+
+      communication: {
+        activeConversations: [],
+        extensionStates: {},
+        portalStates: {},
+      },
+
+      resources: {
+        memoryUsage: state.memoryUsage || 0,
+        connections: [],
+        fileHandles: [],
+        timers: [],
+      },
+
+      metadata: {
+        checkpointType: CheckpointType.LAZY,
+        integrity: '',
+        dependencies: [],
+      },
+    };
+
+    // Calculate integrity
+    snapshot.metadata.integrity = this.calculateIntegrity(snapshot);
+
+    this.logger.info(`Created lazy snapshot for agent ${lazyAgent.id}`, {
+      size: JSON.stringify(snapshot).length,
+    });
+
+    return snapshot;
+  }
+
+  /**
+   * Save lazy agent state
+   */
+  async saveLazyAgentState(
+    lazyAgent: LazyAgent,
+    state: LazyAgentState
+  ): Promise<void> {
+    try {
+      const snapshot = await this.createLazySnapshot(lazyAgent, state);
+      await this.saveSnapshot(snapshot);
+
+      this.logger.info(`Saved lazy agent state for ${lazyAgent.id}`);
+    } catch (error) {
+      this.logger.error(
+        `Failed to save lazy agent state for ${lazyAgent.id}:`,
+        error
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Restore lazy agent state
+   */
+  async restoreLazyAgentState(
+    lazyAgentId: string
+  ): Promise<LazyAgentState | null> {
+    try {
+      const checkpointDir = path.join(
+        this.stateDirectory,
+        lazyAgentId,
+        'checkpoints'
+      );
+      const latestPath = path.join(checkpointDir, 'latest.json');
+
+      try {
+        const data = await fs.readFile(latestPath, 'utf-8');
+        const snapshot: AgentStateSnapshot = JSON.parse(data);
+
+        // Validate it's a lazy agent snapshot
+        if (snapshot.metadata.checkpointType !== CheckpointType.LAZY) {
+          this.logger.warn(
+            `Latest snapshot for ${lazyAgentId} is not a lazy agent snapshot`
+          );
+          return null;
+        }
+
+        // Extract lazy agent state from snapshot
+        const state: LazyAgentState = {
+          emotionState: snapshot.cognitive.emotionState || {
+            current: 'neutral',
+            intensity: 0.5,
+            triggers: [],
+            history: [],
+            timestamp: new Date(),
+          },
+          recentMemories: snapshot.cognitive.recentMemories || [],
+          lastActivity: snapshot.timestamp,
+          emotions: snapshot.cognitive.emotions,
+          memoryUsage: snapshot.resources.memoryUsage,
+        };
+
+        this.logger.info(`Restored lazy agent state for ${lazyAgentId}`);
+        return state;
+      } catch (error) {
+        if ((error as any).code === 'ENOENT') {
+          this.logger.info(`No saved state for lazy agent ${lazyAgentId}`);
+          return null;
+        }
+        throw error;
+      }
+    } catch (error) {
+      this.logger.error(
+        `Failed to restore lazy agent state for ${lazyAgentId}:`,
+        error
+      );
+      throw error;
     }
   }
 }

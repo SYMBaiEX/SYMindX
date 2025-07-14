@@ -56,6 +56,8 @@ export interface ApiConfig extends ExtensionConfig {
 export interface ChatRequest {
   message: string;
   agentId?: string;
+  conversationId?: string; // Add conversationId property
+  userId?: string; // Add userId property for compatibility
   context?: {
     sessionId?: string;
     userId?: string;
@@ -70,6 +72,7 @@ export interface ChatRequest {
 
 export interface ChatResponse {
   response: string;
+  message?: string; // Add message property for compatibility
   sessionId?: string;
   timestamp: string;
   metadata?: {
@@ -215,6 +218,16 @@ export interface MemoryResponse {
   id: string;
   timestamp: string;
   error?: string;
+}
+
+/**
+ * Agent context for API requests
+ */
+export interface AgentContext {
+  agent: Agent;
+  sessionId?: string;
+  userId?: string;
+  metadata?: Record<string, any>;
 }
 
 export interface ConnectionInfo {

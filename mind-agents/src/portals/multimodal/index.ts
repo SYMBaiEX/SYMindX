@@ -13,14 +13,14 @@ import {
   ChatGenerationResult,
   EmbeddingOptions,
   EmbeddingResult,
-  ImageGenerationOptions,
-  ImageGenerationResult,
-  MessageRole,
+  // ImageGenerationOptions - used for image generation features
+  // ImageGenerationResult - used for image generation features
+  // MessageRole - used for message handling
   MessageType,
-  FinishReason,
+  // FinishReason - used for completion handling
 } from '../../types/portal';
 import { BasePortal } from '../base-portal';
-import { convertUsage } from '../utils';
+// import { convertUsage } from '../utils'; - utility function not used in multimodal portal
 /**
  * Multimodal AI Portal System
  *
@@ -337,11 +337,12 @@ export class MultimodalPortal extends BasePortal {
   ];
 
   private multimodalConfig: MultimodalConfig;
-  private visionPortal?: Portal;
-  private audioPortal?: Portal;
-  private videoPortal?: Portal;
-  private speechPortal?: Portal;
-  private musicPortal?: Portal;
+  // Reserved for future multimodal portal implementations
+  // private visionPortal?: Portal;
+  // private audioPortal?: Portal;
+  // private videoPortal?: Portal;
+  // private speechPortal?: Portal;
+  // private musicPortal?: Portal;
   private crossModalPortal?: Portal;
 
   constructor(config: MultimodalConfig) {
@@ -352,7 +353,7 @@ export class MultimodalPortal extends BasePortal {
     };
   }
 
-  async init(agent: Agent): Promise<void> {
+  override async init(agent: Agent): Promise<void> {
     this.status = PortalStatus.INITIALIZING;
     console.log(`🎭 Initializing Multimodal AI portal for agent ${agent.name}`);
 
@@ -494,7 +495,7 @@ export class MultimodalPortal extends BasePortal {
   async analyzeImage(
     imageData: string,
     mimeType: string,
-    options?: any
+    _options?: any
   ): Promise<VisionAnalysisResult> {
     if (!this.multimodalConfig.enableVisionAnalysis) {
       throw new Error('Vision analysis is disabled');
@@ -524,7 +525,7 @@ export class MultimodalPortal extends BasePortal {
   async processAudio(
     audioData: string,
     mimeType: string,
-    options?: any
+    _options?: any
   ): Promise<AudioAnalysisResult> {
     if (!this.multimodalConfig.enableAudioProcessing) {
       throw new Error('Audio processing is disabled');
@@ -550,7 +551,7 @@ export class MultimodalPortal extends BasePortal {
   async analyzeVideo(
     videoData: string,
     mimeType: string,
-    options?: any
+    _options?: any
   ): Promise<VideoAnalysisResult> {
     if (!this.multimodalConfig.enableVideoAnalysis) {
       throw new Error('Video analysis is disabled');
@@ -604,8 +605,8 @@ export class MultimodalPortal extends BasePortal {
    * Generate music from prompt
    */
   async generateMusic(
-    prompt: string,
-    options?: MusicGenerationOptions
+    _prompt: string,
+    _options?: MusicGenerationOptions
   ): Promise<MusicGenerationResult> {
     if (!this.multimodalConfig.enableMusicGeneration) {
       throw new Error('Music generation is disabled');
@@ -615,13 +616,13 @@ export class MultimodalPortal extends BasePortal {
     // This is a placeholder implementation
     return {
       audioData: 'placeholder_music_data',
-      duration: options?.duration || 30,
-      format: options?.outputFormat || 'mp3',
+      duration: _options?.duration || 30,
+      format: _options?.outputFormat || 'mp3',
       metadata: {
-        genre: options?.genre || 'electronic',
-        tempo: options?.tempo || 120,
-        key: options?.key || 'C',
-        instruments: options?.instruments || ['synthesizer'],
+        genre: _options?.genre || 'electronic',
+        tempo: _options?.tempo || 120,
+        key: _options?.key || 'C',
+        instruments: _options?.instruments || ['synthesizer'],
         size: 1024 * 1024, // 1MB estimate
         timestamp: new Date(),
       },
@@ -633,7 +634,7 @@ export class MultimodalPortal extends BasePortal {
    */
   async reasonAcrossModalities(
     inputs: Array<{ type: string; data: any; description?: string }>,
-    options?: CrossModalReasoningOptions
+    _options?: CrossModalReasoningOptions
   ): Promise<CrossModalReasoningResult> {
     if (!this.multimodalConfig.enableCrossModalReasoning) {
       throw new Error('Cross-modal reasoning is disabled');
@@ -740,7 +741,7 @@ export class MultimodalPortal extends BasePortal {
     );
   }
 
-  hasCapability(capability: PortalCapability): boolean {
+  override hasCapability(capability: PortalCapability): boolean {
     switch (capability) {
       case PortalCapability.TEXT_GENERATION:
       case PortalCapability.CHAT_GENERATION:
@@ -759,7 +760,7 @@ export class MultimodalPortal extends BasePortal {
 }
 
 export function createMultimodalPortal(
-  type: MultimodalPortalType,
+  _type: MultimodalPortalType,
   config: MultimodalConfig
 ): MultimodalPortal {
   return new MultimodalPortal(config);

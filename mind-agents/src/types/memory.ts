@@ -320,6 +320,7 @@ export interface MemoryPolicyConfig {
   summaryMethod?: string;
   preserveOriginal?: boolean;
   priorityThreshold?: number;
+  minClusterSize?: number;
 }
 
 /**

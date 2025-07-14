@@ -5,7 +5,8 @@
  * including their beliefs, desires, intentions, and emotional states.
  */
 
-import { Agent, EmotionState } from '../../../types/agent';
+// import { Agent, EmotionState } from '../../../types/agent'; - Agent type not used at runtime, EmotionState used
+import { EmotionState } from '../../../types/agent';
 import { BaseConfig } from '../../../types/common';
 import { runtimeLogger } from '../../../utils/logger';
 
@@ -82,7 +83,8 @@ export interface TheoryOfMindConfig extends BaseConfig {
 export class TheoryOfMind {
   private models: Map<string, MentalModel> = new Map();
   private config: TheoryOfMindConfig;
-  private selfModel?: MentalModel; // How the agent models itself
+  // Self-model for introspective reasoning (future implementation)
+  // private readonly _selfModel?: MentalModel;
 
   constructor(config: TheoryOfMindConfig = {}) {
     this.config = {
@@ -403,7 +405,7 @@ export class TheoryOfMind {
   private updateIntentions(
     model: MentalModel,
     action: string,
-    context: any
+    _context: any
   ): void {
     // Find existing intention
     const existing = model.intentions.find((i) => i.action === action);

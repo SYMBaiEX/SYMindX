@@ -5,6 +5,25 @@
  * providing a single point of access for all type definitions.
  */
 
+// Global type definitions
+import './globals';
+
+// Import types needed for local interface definitions
+import type {
+  OperationResult,
+  EventProcessingResult,
+  EventDispatchResult,
+  HealthCheckResult,
+  SystemHealthResult,
+  Duration,
+  ConfigurationUpdateResult,
+  ConfigurationLoadResult,
+  ConfigurationSchema,
+  LoggingResult,
+  CleanupResult,
+  ValidationResult,
+} from './helpers';
+
 // Core types - selective exports to avoid conflicts
 export type {
   BaseConfig,
@@ -21,7 +40,6 @@ export { LogLevel, Priority, Status } from './enums';
 export type {
   OperationResult,
   ExecutionResult,
-  ValidationResult,
   InitializationResult,
   CleanupResult,
   EventProcessingResult,
@@ -45,11 +63,33 @@ export type {
   SystemHealthResult,
   EventDispatchResult,
   PerformanceMetrics,
-  ModuleManifest,
   ConfigurationLoadResult,
   ConfigurationUpdateResult,
   LoggingResult,
 } from './results';
+// Define ModuleManifest inline to avoid import issues
+export interface ModuleManifest {
+  id: string;
+  name: string;
+  version: string;
+  description?: string;
+  author?: string;
+  license?: string;
+  homepage?: string;
+  repository?: string;
+  main: string;
+  type: 'portal' | 'memory' | 'utility' | 'extension' | 'skill';
+  dependencies?: string[];
+  devDependencies?: string[];
+  peerDependencies?: string[];
+  keywords?: string[];
+  engines?: Record<string, string>;
+  files?: string[];
+  scripts?: Record<string, string>;
+  config?: Record<string, any>;
+  permissions?: string[];
+  platforms?: ('linux' | 'darwin' | 'win32')[];
+}
 export type {
   InitializationFunction,
   CleanupFunction,
@@ -68,15 +108,19 @@ export type {
   AgentFactory,
   AgentAction,
   AgentEvent,
-  ExtensionType,
-  ExtensionStatus,
   ExtensionAction,
   ExtensionEventHandler,
-  ActionCategory,
   ActionResult,
-  ActionResultType,
 } from './agent';
-export { LazyAgentStatus, ActionStatus } from './agent';
+export {
+  LazyAgentStatus,
+  ActionStatus,
+  MemoryType,
+  ExtensionStatus,
+  ActionCategory,
+  ActionResultType,
+  ExtensionType,
+} from './agent';
 export type { Extension } from './extension';
 export type { Portal, PortalConfig, PortalType } from './portal';
 
@@ -232,15 +276,6 @@ export interface SecurityContext {
 }
 
 /**
- * Validation result interface
- */
-export interface ValidationResult {
-  valid: boolean;
-  errors: string[];
-  warnings?: string[];
-}
-
-/**
  * Enhanced validation result type alias
  */
 export type EnhancedValidationResult = ValidationResult;
@@ -341,25 +376,6 @@ export interface HealthMonitoringService {
   ): Promise<HealthCheckResult[]>;
   subscribe(callback: (result: HealthCheckResult) => void): OperationResult;
   unsubscribe(callback: (result: HealthCheckResult) => void): OperationResult;
-}
-
-/**
- * Performance metrics interface
- */
-export interface PerformanceMetrics {
-  memoryUsage: {
-    heapUsed: number;
-    heapTotal: number;
-    external: number;
-    rss: number;
-  };
-  cpuUsage: {
-    user: number;
-    system: number;
-  };
-  uptime: number;
-  loadAverage: number[];
-  timestamp: Date;
 }
 
 /**
@@ -504,3 +520,124 @@ export interface EnhancedFactoryRegistry {
   listFactories(type?: string): string[];
   getFactoryMetadata(name: string): ModuleManifest | undefined;
 }
+
+// Export strict types to replace any usage
+export type {
+  LoggerMetadata,
+  LoggerArgs,
+  AgentData,
+  AgentMetadata,
+  AgentConfiguration,
+  ConfigurationValue,
+  AgentPerformanceMetrics,
+  MemoryConfiguration,
+  DatabaseConfiguration,
+  VectorSearchConfiguration,
+  RetentionConfiguration,
+  EmotionConfiguration,
+  EmotionType,
+  EmotionState,
+  EmotionContext,
+  EmotionMetadata,
+  SocialContextData,
+  EnvironmentalContextData,
+  CognitionConfiguration,
+  CognitionContext,
+  TimeConstraints,
+  PortalConfiguration,
+  ModelSettings,
+  PortalResponse,
+  PortalResponseData,
+  TokenUsage,
+  PortalMetadata,
+  ExtensionConfiguration,
+  ExtensionSettings,
+  ExtensionData,
+  CLIOptions,
+  CLIMetrics,
+  AgentMetrics,
+  SystemMetrics,
+  CommandOptions,
+  CommandContext,
+  CommandResult,
+  CommandResultData,
+  CommandMetadata,
+  ChatPriority,
+  ChatMessage,
+  ChatMessageMetadata,
+  MonitoringOptions,
+  MonitoringCommand,
+  MonitoringResult,
+  MonitoringResultData,
+  MonitoringMetrics,
+  HookDependencies,
+  NavigationData,
+  NavigationParams,
+  NavigationMetadata,
+  ConnectionDetails,
+  TerminalFunction,
+  TerminalDimensions,
+  GridContent,
+  RuntimeClientResponse,
+  RuntimeClientData,
+  RuntimeClientMetadata,
+  RuntimeClientRequestBody,
+  AISDKParameters,
+  AIMessage,
+  AIMessageMetadata,
+  AITool,
+  AIToolParameters,
+  AIToolProperty,
+  GenerationOptions,
+  StreamingOptions,
+  ValidationOptions,
+  ValidationSchema,
+  ValidationRule,
+  ExecutionContext,
+  EnvironmentContext,
+  RuntimeContext,
+  CPUContext,
+  ExecutionMetadata,
+  SearchCriteria,
+  SearchFilters,
+  SearchSort,
+  SearchPagination,
+  SearchResults,
+  SearchMetadata,
+  DecisionCriteria,
+  DecisionOption,
+  DecisionMetadata,
+  DecisionResult,
+  KeyValuePair,
+  StatusCounts,
+  GradientFunction,
+  UpdateData,
+  CharacterConfiguration,
+  PersonalityConfiguration,
+  ModuleConfiguration,
+  AutonomousConfiguration,
+  AutonomousConstraints,
+  // Strict type aliases
+  StrictConfigurationValue,
+  StrictLoggerArgs,
+  StrictLoggerMetadata,
+  StrictAgentData,
+  StrictCLIOptions,
+  StrictCommandOptions,
+  StrictMonitoringOptions,
+  StrictHookDependencies,
+  StrictNavigationData,
+  StrictConnectionDetails,
+  StrictGridContent,
+  StrictRuntimeClientResponse,
+  StrictRuntimeClientRequestBody,
+  StrictAISDKParameters,
+  StrictGenerationOptions,
+  StrictValidationOptions,
+  StrictExecutionContext,
+  StrictSearchCriteria,
+  StrictDecisionCriteria,
+  StrictKeyValuePair,
+  StrictStatusCounts,
+  StrictUpdateData,
+} from './strict';

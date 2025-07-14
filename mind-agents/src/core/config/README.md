@@ -83,7 +83,7 @@ API keys for portals can be provided in three ways (in order of precedence):
          "provider": "openai",
          "apiKey": "sk-...",
          "model": "gpt-4.1-mini",
-         "streaming": true  // AI SDK v5 streaming
+         "streaming": true // AI SDK v5 streaming
        }
      }
    }

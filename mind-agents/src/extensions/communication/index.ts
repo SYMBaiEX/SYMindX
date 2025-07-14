@@ -279,6 +279,10 @@ export class CommunicationExtension implements Extension {
   ): Promise<string> {
     if (!this.agent) return baseResponse;
 
+    runtimeLogger.debug(
+      `💬 Enhancing response for participant: ${participantId}`
+    );
+
     // Get active context
     const context = this.contextManager.getActiveContext(this.agent.id);
     if (!context) return baseResponse;
@@ -409,7 +413,7 @@ export class CommunicationExtension implements Extension {
         return {
           success: true,
           type: ActionResultType.SUCCESS,
-          result,
+          result: { response: result },
           timestamp: new Date(),
         };
       },
@@ -437,7 +441,7 @@ export class CommunicationExtension implements Extension {
         return {
           success: true,
           type: ActionResultType.SUCCESS,
-          result,
+          result: result || {},
           timestamp: new Date(),
         };
       },
@@ -525,6 +529,23 @@ export class CommunicationExtension implements Extension {
     adaptedStyle: any
   ): string[] {
     const recommendations: string[] = [];
+
+    // Context-based recommendations
+    if (context?.messages?.length > 0) {
+      const messageCount = context.messages.length;
+      if (messageCount > 50) {
+        recommendations.push(
+          'Consider summarizing the conversation to maintain focus'
+        );
+      }
+    }
+
+    // Style-based recommendations
+    if (adaptedStyle?.formality < 0.3 && context?.participants?.size > 2) {
+      recommendations.push(
+        'Consider increasing formality for multi-participant conversations'
+      );
+    }
 
     // Pending questions
     if (contextSummary?.pendingQuestions?.length > 0) {

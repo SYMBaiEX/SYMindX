@@ -134,6 +134,41 @@ export class ApiExtension implements Extension {
     this.agent = agent;
   }
 
+  /**
+   * Get the connected agent (for health monitoring and other skills)
+   */
+  getAgent(): Agent | undefined {
+    return this.agent;
+  }
+
+  /**
+   * Handle chat request from skills
+   */
+  async handleChatRequest(request: ChatRequest): Promise<ChatResponse> {
+    if (!this.agent) {
+      throw new Error('No agent connected to API extension');
+    }
+
+    // Basic chat handling - delegate to agent's portal or cognition
+    const response = 'Chat handling implementation needed';
+
+    const builder = {
+      response,
+      timestamp: new Date().toISOString(),
+      metadata: {
+        processingTime: 0,
+        memoryRetrieved: false,
+      },
+    } as any;
+
+    // Only add sessionId if it exists
+    if (request.context?.sessionId) {
+      builder.sessionId = request.context.sessionId;
+    }
+
+    return builder;
+  }
+
   private getDefaultSettings(): ApiSettings {
     return {
       port: parseInt(
@@ -202,6 +237,11 @@ export class ApiExtension implements Extension {
     if (this.apiConfig.auth.enabled) {
       this.app.use(this.authMiddleware.bind(this));
     }
+
+    // Set up periodic cleanup of rate limiters
+    setInterval(() => {
+      this.cleanupRateLimiters();
+    }, 60000); // Every minute
   }
 
   private authMiddleware(
@@ -224,6 +264,46 @@ export class ApiExtension implements Extension {
     next();
   }
 
+  /**
+   * Custom rate limiting for specific endpoints
+   */
+  private checkCustomRateLimit(
+    identifier: string,
+    limit: number = 100,
+    windowMs: number = 60000
+  ): boolean {
+    const now = Date.now();
+    const limiter = this._rateLimiters.get(identifier);
+
+    if (!limiter || now > limiter.resetTime) {
+      // Reset or create new limiter
+      this._rateLimiters.set(identifier, {
+        count: 1,
+        resetTime: now + windowMs,
+      });
+      return true;
+    }
+
+    if (limiter.count >= limit) {
+      return false; // Rate limit exceeded
+    }
+
+    limiter.count++;
+    return true;
+  }
+
+  /**
+   * Clean up expired rate limiters
+   */
+  private cleanupRateLimiters(): void {
+    const now = Date.now();
+    for (const [key, limiter] of this._rateLimiters.entries()) {
+      if (now > limiter.resetTime) {
+        this._rateLimiters.delete(key);
+      }
+    }
+  }
+
   private setupRoutes(): void {
     // Health check
     this.app.get('/health', (_req, res) => {
@@ -234,35 +314,48 @@ export class ApiExtension implements Extension {
       });
     });
 
-    // Status endpoint
-    this.app.get('/status', (_req, res) => {
-      // Get runtime stats if available
-      const runtimeStats = this.runtime?.getStats
-        ? this.runtime.getStats()
-        : null;
+    // Status endpoint with custom rate limiting
+    this.app.get(
+      '/status',
+      (req: express.Request, res: express.Response): void => {
+        // Apply custom rate limiting for status endpoint
+        const clientIp = req.ip;
+        if (!this.checkCustomRateLimit(`status:${clientIp}`, 60, 60000)) {
+          // 60 requests per minute
+          res
+            .status(429)
+            .json({ error: 'Rate limit exceeded for status endpoint' });
+          return;
+        }
 
-      res.json({
-        agent: {
-          id: this.agent?.id || 'unknown',
-          status: this.agent?.status || 'unknown',
-          uptime: process.uptime(),
-        },
-        extensions: {
-          loaded: this.agent?.extensions?.length || 0,
-          active:
-            this.agent?.extensions?.filter((ext) => ext.enabled).length || 0,
-        },
-        memory: {
-          used: process.memoryUsage().heapUsed,
-          total: process.memoryUsage().heapTotal,
-        },
-        runtime: runtimeStats || {
-          agents: 0,
-          isRunning: false,
-          eventBus: { events: 0 },
-        },
-      });
-    });
+        // Get runtime stats if available
+        const runtimeStats = this.runtime?.getStats
+          ? this.runtime.getStats()
+          : null;
+
+        res.json({
+          agent: {
+            id: this.agent?.id || 'unknown',
+            status: this.agent?.status || 'unknown',
+            uptime: process.uptime(),
+          },
+          extensions: {
+            loaded: this.agent?.extensions?.length || 0,
+            active:
+              this.agent?.extensions?.filter((ext) => ext.enabled).length || 0,
+          },
+          memory: {
+            used: process.memoryUsage().heapUsed,
+            total: process.memoryUsage().heapTotal,
+          },
+          runtime: runtimeStats || {
+            agents: 0,
+            isRunning: false,
+            eventBus: { events: 0 },
+          },
+        });
+      }
+    );
 
     // Runtime metrics endpoint
     this.app.get('/api/metrics', (_req, res) => {
@@ -2484,7 +2577,7 @@ export class ApiExtension implements Extension {
         const { agentId, message, context } = params;
         const response = await this.processChatMessage({
           message: message as string,
-          agentId: agentId as string || '',
+          agentId: (agentId as string) || '',
           context: context as any,
         });
         return {
@@ -2560,21 +2653,29 @@ export class ApiExtension implements Extension {
         params: SkillParameters
       ): Promise<ActionResult> => {
         const { command, priority, async } = params;
+
+        // Log command execution with priority
+        console.log(
+          `[API] Executing command "${command}" with priority: ${priority || 'normal'}`
+        );
+
         const result = await this.executeAction({
           action: command as string,
-          parameters: {},
-          priority: priority as number,
+          parameters: { priority },
           async: async as boolean,
         });
-        return {
+        const response: ActionResult = {
           success: result.success,
           type: result.success
             ? ActionResultType.SUCCESS
             : ActionResultType.FAILURE,
           result: result.result,
-          error: result.error || undefined,
           timestamp: new Date(),
         };
+        if (result.error) {
+          response.error = result.error;
+        }
+        return response;
       },
     };
 
