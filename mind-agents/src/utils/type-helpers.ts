@@ -19,15 +19,15 @@
  *   }
  * );
  */
-export function withOptionalProperties<T extends object, O extends object>(
-  base: T,
-  optionals: O
-): T & Partial<O> {
+export function withOptionalProperties<
+  T extends Record<string, unknown>,
+  O extends Record<string, unknown>,
+>(base: T, optionals: O): T & Partial<O> {
   const result = { ...base } as T & Partial<O>;
 
   for (const [key, value] of Object.entries(optionals)) {
     if (value !== undefined && value !== null) {
-      (result as any)[key] = value;
+      (result as Record<string, unknown>)[key] = value;
     }
   }
 
@@ -47,7 +47,7 @@ export function withOptionalProperties<T extends object, O extends object>(
  * .addOptional('deletedAt', row.deleted_at ? new Date(row.deleted_at) : undefined)
  * .build();
  */
-export class ObjectBuilder<T> {
+export class ObjectBuilder<T extends Record<string, unknown>> {
   private obj: Partial<T>;
 
   constructor(base: Partial<T>) {
@@ -74,7 +74,9 @@ export class ObjectBuilder<T> {
 /**
  * Creates an object builder instance
  */
-export function buildObject<T>(base: Partial<T>): ObjectBuilder<T> {
+export function buildObject<T extends Record<string, unknown>>(
+  base: Partial<T>
+): ObjectBuilder<T> {
   return new ObjectBuilder<T>(base);
 }
 
@@ -91,19 +93,21 @@ export function buildObject<T>(base: Partial<T>): ObjectBuilder<T> {
  *   })
  * );
  */
-export function mapRowToObject<TRow, TResult>(
+export function mapRowToObject<
+  TRow extends Record<string, unknown>,
+  TResult extends Record<string, unknown>,
+>(
   row: TRow,
   mapping: { [K in keyof TResult]: (row: TRow) => TResult[K] | undefined }
 ): TResult {
   const result = {} as TResult;
 
-  for (const [key, mapper] of Object.entries(mapping) as [
-    keyof TResult,
-    (row: TRow) => any,
-  ][]) {
+  for (const [key, mapper] of Object.entries(mapping) as Array<
+    [keyof TResult, (row: TRow) => unknown]
+  >) {
     const value = mapper(row);
     if (value !== undefined) {
-      result[key] = value;
+      result[key] = value as TResult[keyof TResult];
     }
   }
 
@@ -114,12 +118,12 @@ export function mapRowToObject<TRow, TResult>(
  * Filters out undefined values from an object
  * Useful for creating objects that comply with exactOptionalPropertyTypes
  */
-export function filterUndefined<T extends object>(obj: T): T {
+export function filterUndefined<T extends Record<string, unknown>>(obj: T): T {
   const result = {} as T;
 
   for (const [key, value] of Object.entries(obj)) {
     if (value !== undefined) {
-      (result as any)[key] = value;
+      (result as Record<string, unknown>)[key] = value;
     }
   }
 
@@ -136,9 +140,9 @@ export function isDefined<T>(value: T | null | undefined): value is T {
 /**
  * Type guard to check if an optional property exists on an object
  */
-export function hasProperty<T extends object, K extends keyof T>(
-  obj: T,
-  key: K
-): obj is T & Required<Pick<T, K>> {
+export function hasProperty<
+  T extends Record<string, unknown>,
+  K extends keyof T,
+>(obj: T, key: K): obj is T & Required<Pick<T, K>> {
   return key in obj && obj[key] !== undefined;
 }

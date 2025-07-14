@@ -3,12 +3,22 @@
  * Provides clean, uniform formatting for all log messages
  */
 
-import { LogLevel } from '../types/agent';
+import {
+  LogLevel,
+  LogContext,
+  LogEntry,
+  LogTransport,
+  LogFormatter,
+  ILogger,
+} from '../types/utils/logger.js';
 
 export interface LoggerOptions {
-  level?: LogLevel | 'debug' | 'info' | 'warn' | 'error';
+  level?: LogLevel;
   prefix?: string;
   colors?: boolean;
+  transports?: LogTransport[];
+  defaultContext?: LogContext;
+  formatter?: LogFormatter;
 }
 
 // ANSI color codes for console output
@@ -45,32 +55,38 @@ const icons = {
   process: '⚡',
 };
 
-export class Logger {
-  private level: string;
+export class Logger implements ILogger {
+  private level: LogLevel;
   private prefix: string;
   private useColors: boolean;
+  private transports: LogTransport[];
+  private defaultContext?: LogContext;
+  private formatter?: LogFormatter;
 
   constructor(prefix: string = '', options: LoggerOptions = {}) {
     this.prefix = prefix;
-    this.level = options.level || 'info';
+    this.level = options.level || LogLevel.INFO;
     this.useColors = options.colors !== false && process.stdout.isTTY;
+    this.transports = options.transports || [];
+    this.defaultContext = options.defaultContext;
+    this.formatter = options.formatter;
   }
 
-  child(options: { extension?: string; [key: string]: any }): Logger {
-    const childPrefix = options.extension
-      ? `${this.prefix}[${options.extension}]`
+  child(context: LogContext): ILogger {
+    const childPrefix = context.source
+      ? `${this.prefix}[${context.source}]`
       : this.prefix;
     return new Logger(childPrefix, {
-      level: this.level as any,
+      level: this.level,
       colors: this.useColors,
+      transports: this.transports,
+      defaultContext: { ...this.defaultContext, ...context },
+      formatter: this.formatter,
     });
   }
 
-  private shouldLog(level: string): boolean {
-    const levels = ['debug', 'info', 'warn', 'error'];
-    const currentLevelIndex = levels.indexOf(this.level);
-    const messageLevelIndex = levels.indexOf(level);
-    return messageLevelIndex >= currentLevelIndex;
+  private shouldLog(level: LogLevel): boolean {
+    return level >= this.level;
   }
 
   private formatTime(): string {
@@ -79,23 +95,27 @@ export class Logger {
     return this.useColors ? `${colors.gray}${time}${colors.reset}` : time;
   }
 
-  private formatLevel(level: string): string {
-    const levelUpper = level.toUpperCase().padEnd(5);
+  private formatLevel(level: LogLevel): string {
+    const levelName = LogLevel[level];
+    const levelUpper = levelName.padEnd(5);
     let coloredLevel = levelUpper;
 
     if (this.useColors) {
       switch (level) {
-        case 'debug':
+        case LogLevel.DEBUG:
           coloredLevel = `${colors.gray}${levelUpper}${colors.reset}`;
           break;
-        case 'info':
+        case LogLevel.INFO:
           coloredLevel = `${colors.blue}${levelUpper}${colors.reset}`;
           break;
-        case 'warn':
+        case LogLevel.WARN:
           coloredLevel = `${colors.yellow}${levelUpper}${colors.reset}`;
           break;
-        case 'error':
+        case LogLevel.ERROR:
           coloredLevel = `${colors.red}${levelUpper}${colors.reset}`;
+          break;
+        case LogLevel.FATAL:
+          coloredLevel = `${colors.red}${colors.bright}${levelUpper}${colors.reset}`;
           break;
       }
     }
@@ -110,7 +130,7 @@ export class Logger {
       : this.prefix;
   }
 
-  private formatMessage(level: string, message: string): string {
+  private formatMessage(level: LogLevel, message: string): string {
     const time = this.formatTime();
     const levelFormatted = this.formatLevel(level);
     const prefix = this.formatPrefix();
@@ -120,116 +140,208 @@ export class Logger {
   }
 
   // Core logging methods
-  debug(message: string, ...args: any[]): void {
-    if (this.shouldLog('debug')) {
-      console.debug(this.formatMessage('debug', message), ...args);
+  debug(message: string, context?: LogContext): void {
+    this.log(LogLevel.DEBUG, message, context);
+  }
+
+  info(message: string, context?: LogContext): void {
+    this.log(LogLevel.INFO, message, context);
+  }
+
+  warn(message: string, context?: LogContext): void {
+    this.log(LogLevel.WARN, message, context);
+  }
+
+  error(message: string, error?: Error | unknown, context?: LogContext): void {
+    const errorContext: LogContext = {
+      ...context,
+      error:
+        error instanceof Error
+          ? {
+              code: 'ERROR',
+              message: error.message,
+              stack: error.stack,
+              cause: error.cause,
+            }
+          : {
+              code: 'UNKNOWN_ERROR',
+              message: String(error),
+            },
+    };
+    this.log(LogLevel.ERROR, message, errorContext);
+  }
+
+  fatal(message: string, error?: Error | unknown, context?: LogContext): void {
+    const errorContext: LogContext = {
+      ...context,
+      error:
+        error instanceof Error
+          ? {
+              code: 'FATAL',
+              message: error.message,
+              stack: error.stack,
+              cause: error.cause,
+            }
+          : {
+              code: 'UNKNOWN_FATAL',
+              message: String(error),
+            },
+    };
+    this.log(LogLevel.FATAL, message, errorContext);
+  }
+
+  private log(level: LogLevel, message: string, context?: LogContext): void {
+    if (!this.shouldLog(level)) return;
+
+    const entry: LogEntry = {
+      level,
+      message,
+      timestamp: new Date(),
+      context: { ...this.defaultContext, ...context },
+      category: this.prefix,
+    };
+
+    // Format message for console
+    const formattedMessage = this.formatMessage(level, message);
+
+    // Console output
+    switch (level) {
+      case LogLevel.DEBUG:
+        // eslint-disable-next-line no-console
+        console.debug(formattedMessage);
+        break;
+      case LogLevel.INFO:
+        // eslint-disable-next-line no-console
+        console.info(formattedMessage);
+        break;
+      case LogLevel.WARN:
+        // eslint-disable-next-line no-console
+        console.warn(formattedMessage);
+        break;
+      case LogLevel.ERROR:
+      case LogLevel.FATAL:
+        // eslint-disable-next-line no-console
+        console.error(formattedMessage);
+        break;
+    }
+
+    // Send to transports
+    for (const transport of this.transports) {
+      if (!transport.level || level >= transport.level) {
+        transport.write(entry);
+      }
     }
   }
 
-  info(message: string, ...args: any[]): void {
-    if (this.shouldLog('info')) {
-      console.info(this.formatMessage('info', message), ...args);
-    }
+  // ILogger interface methods
+  setLevel(level: LogLevel): void {
+    this.level = level;
   }
 
-  warn(message: string, ...args: any[]): void {
-    if (this.shouldLog('warn')) {
-      console.warn(this.formatMessage('warn', message), ...args);
-    }
+  addTransport(transport: LogTransport): void {
+    this.transports.push(transport);
   }
 
-  error(message: string, ...args: any[]): void {
-    if (this.shouldLog('error')) {
-      console.error(this.formatMessage('error', message), ...args);
-    }
+  removeTransport(name: string): void {
+    this.transports = this.transports.filter((t) => t.name !== name);
+  }
+
+  async flush(): Promise<void> {
+    await Promise.all(
+      this.transports.filter((t) => t.flush).map((t) => t.flush!())
+    );
   }
 
   // Specialized logging methods for clean, consistent output
-  success(message: string, ...args: any[]): void {
+  success(message: string, context?: LogContext): void {
     const icon = icons.success;
     const colored = this.useColors
       ? `${colors.green}${message}${colors.reset}`
       : message;
-    this.info(`${icon} ${colored}`, ...args);
+    this.info(`${icon} ${colored}`, context);
   }
 
-  start(message: string, ...args: any[]): void {
+  start(message: string, context?: LogContext): void {
     const icon = icons.start;
     const colored = this.useColors
       ? `${colors.bright}${message}${colors.reset}`
       : message;
-    this.info(`${icon} ${colored}`, ...args);
+    this.info(`${icon} ${colored}`, context);
   }
 
-  config(message: string, ...args: any[]): void {
+  config(message: string, context?: LogContext): void {
     const icon = icons.config;
-    this.info(`${icon} ${message}`, ...args);
+    this.info(`${icon} ${message}`, context);
   }
 
-  agent(message: string, ...args: any[]): void {
+  agent(message: string, context?: LogContext): void {
     const icon = icons.agent;
-    this.info(`${icon} ${message}`, ...args);
+    this.info(`${icon} ${message}`, context);
   }
 
-  portal(message: string, ...args: any[]): void {
+  portal(message: string, context?: LogContext): void {
     const icon = icons.portal;
-    this.info(`${icon} ${message}`, ...args);
+    this.info(`${icon} ${message}`, context);
   }
 
-  memory(message: string, ...args: any[]): void {
+  memory(message: string, context?: LogContext): void {
     const icon = icons.memory;
-    this.info(`${icon} ${message}`, ...args);
+    this.info(`${icon} ${message}`, context);
   }
 
-  emotion(message: string, ...args: any[]): void {
+  emotion(message: string, context?: LogContext): void {
     const icon = icons.emotion;
-    this.info(`${icon} ${message}`, ...args);
+    this.info(`${icon} ${message}`, context);
   }
 
-  cognition(message: string, ...args: any[]): void {
+  cognition(message: string, context?: LogContext): void {
     const icon = icons.cognition;
-    this.info(`${icon} ${message}`, ...args);
+    this.info(`${icon} ${message}`, context);
   }
 
-  extension(message: string, ...args: any[]): void {
+  extension(message: string, context?: LogContext): void {
     const icon = icons.extension;
-    this.info(`${icon} ${message}`, ...args);
+    this.info(`${icon} ${message}`, context);
   }
 
-  factory(message: string, ...args: any[]): void {
+  factory(message: string, context?: LogContext): void {
     const icon = icons.factory;
-    this.info(`${icon} ${message}`, ...args);
+    this.info(`${icon} ${message}`, context);
   }
 
-  process(message: string, ...args: any[]): void {
+  process(message: string, context?: LogContext): void {
     const icon = icons.process;
-    this.info(`${icon} ${message}`, ...args);
+    this.info(`${icon} ${message}`, context);
   }
 
-  context(message: string, ...args: any[]): void {
+  context(message: string, logContext?: LogContext): void {
     const icon = '🗂️';
-    this.info(`${icon} ${message}`, ...args);
+    this.info(`${icon} ${message}`, logContext);
   }
 
-  style(message: string, ...args: any[]): void {
+  style(message: string, context?: LogContext): void {
     const icon = '🎨';
-    this.info(`${icon} ${message}`, ...args);
+    this.info(`${icon} ${message}`, context);
   }
 
   // Helper method for clean startup banners
   banner(title: string, subtitle?: string): void {
     const line = '─'.repeat(50);
+    // eslint-disable-next-line no-console
     console.log(
       `\n${this.useColors ? colors.cyan : ''}╭${line}╮${this.useColors ? colors.reset : ''}`
     );
+    // eslint-disable-next-line no-console
     console.log(
       `${this.useColors ? colors.cyan : ''}│${this.useColors ? colors.bright : ''} ${title.padEnd(48)} ${this.useColors ? colors.reset + colors.cyan : ''}│${this.useColors ? colors.reset : ''}`
     );
     if (subtitle) {
+      // eslint-disable-next-line no-console
       console.log(
         `${this.useColors ? colors.cyan : ''}│${this.useColors ? colors.dim : ''} ${subtitle.padEnd(48)} ${this.useColors ? colors.reset + colors.cyan : ''}│${this.useColors ? colors.reset : ''}`
       );
     }
+    // eslint-disable-next-line no-console
     console.log(
       `${this.useColors ? colors.cyan : ''}╰${line}╯${this.useColors ? colors.reset : ''}\n`
     );
@@ -240,6 +352,7 @@ export class Logger {
     const separator = this.useColors
       ? `${colors.cyan}▶ ${colors.bright}${title}${colors.reset}`
       : `▶ ${title}`;
+    // eslint-disable-next-line no-console
     console.log(`\n${separator}`);
   }
 }

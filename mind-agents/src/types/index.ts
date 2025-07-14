@@ -86,7 +86,7 @@ export interface ModuleManifest {
   engines?: Record<string, string>;
   files?: string[];
   scripts?: Record<string, string>;
-  config?: Record<string, any>;
+  config?: Record<string, unknown>;
   permissions?: string[];
   platforms?: ('linux' | 'darwin' | 'win32')[];
 }
@@ -123,6 +123,8 @@ export {
 } from './agent';
 export type { Extension } from './extension';
 export type { Portal, PortalConfig, PortalType } from './portal';
+export * from './portals/ai-sdk';
+export * from './portals/responses';
 
 // Export ExtensionMetadata from common (ExtensionConfig already exported above)
 export type { ExtensionMetadata } from './common';
@@ -134,6 +136,19 @@ export type {
   EmotionBlend,
   AdvancedEmotionConfig,
 } from './emotion';
+export type {
+  EmotionTriggerEvent,
+  EmotionModifier,
+  EmotionTransition,
+  EmotionBlendResult,
+  EmotionHistoryEntry,
+  EmotionResult,
+  EmotionData,
+  EmotionCalculation,
+  EmotionEventHandler,
+  EmotionDecayConfig,
+  EmotionModuleRegistration,
+} from './modules/emotions';
 export type { CognitionModule } from './cognition';
 
 // Memory types (selective exports)
@@ -187,7 +202,7 @@ export interface Result<T> {
   success: boolean;
   data?: T;
   error?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -204,7 +219,7 @@ export interface Result<T> {
 /**
  * Factory function type for creating modules
  */
-export type ModuleFactory<T, C = any> = (config?: C) => T | Promise<T>;
+export type ModuleFactory<T, C = unknown> = (config?: C) => T | Promise<T>;
 
 /**
  * Plugin manifest for dynamic loading
@@ -228,7 +243,7 @@ export interface PluginManifest {
   engines?: Record<string, string>;
   files?: string[];
   scripts?: Record<string, string>;
-  config?: Record<string, any>;
+  config?: Record<string, unknown>;
   permissions?: string[];
   platforms?: ('linux' | 'darwin' | 'win32')[];
   enabled?: boolean;
@@ -257,7 +272,7 @@ export interface PluginConfig {
     sandboxed: boolean;
     permissions: string[];
   };
-  config: Record<string, any>;
+  config: Record<string, unknown>;
 }
 
 /**
@@ -293,7 +308,7 @@ export interface DependencyValidation {
  * Type-safe event emitter interface
  * @deprecated Use enhanced event emitter with proper result types
  */
-export interface TypedEventEmitter<T extends Record<string, any>> {
+export interface TypedEventEmitter<T extends Record<string, unknown>> {
   on<K extends keyof T>(event: K, listener: (data: T[K]) => void): void;
   off<K extends keyof T>(event: K, listener: (data: T[K]) => void): void;
   emit<K extends keyof T>(event: K, data: T[K]): void;
@@ -302,7 +317,7 @@ export interface TypedEventEmitter<T extends Record<string, any>> {
 /**
  * Enhanced type-safe event emitter with proper result types
  */
-export interface EnhancedTypedEventEmitter<T extends Record<string, any>> {
+export interface EnhancedTypedEventEmitter<T extends Record<string, unknown>> {
   on<K extends keyof T>(
     event: K,
     listener: (data: T[K]) => EventProcessingResult
@@ -354,7 +369,7 @@ export interface EnhancedModuleRegistry {
 export interface HealthCheck {
   name: string;
   status: 'healthy' | 'degraded' | 'unhealthy';
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
   lastChecked: Date;
   responseTime?: number;
 }
@@ -384,9 +399,9 @@ export interface HealthMonitoringService {
  */
 export interface ConfigProvider {
   get<T>(key: string, defaultValue?: T): T;
-  set(key: string, value: any): void;
+  set(key: string, value: unknown): void;
   has(key: string): boolean;
-  getAll(): Record<string, any>;
+  getAll(): Record<string, unknown>;
   reload(): Promise<void>;
 }
 
@@ -395,9 +410,9 @@ export interface ConfigProvider {
  */
 export interface EnhancedConfigProvider {
   get<T>(key: string, defaultValue?: T): T;
-  set(key: string, value: any): ConfigurationUpdateResult;
+  set(key: string, value: unknown): ConfigurationUpdateResult;
   has(key: string): boolean;
-  getAll(): Record<string, any>;
+  getAll(): Record<string, unknown>;
   reload(): Promise<ConfigurationLoadResult>;
   validate(key?: string): ValidationResult;
   getSchema(): ConfigurationSchema;
@@ -463,7 +478,7 @@ export interface EnhancedAsyncDisposable {
     type: string;
     id: string;
     status: 'active' | 'disposed' | 'disposing';
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
   };
 }
 
@@ -641,3 +656,22 @@ export type {
   StrictStatusCounts,
   StrictUpdateData,
 } from './strict';
+
+// Extension types
+export * from './extensions';
+
+// CLI types
+export * from './cli/index';
+
+// Module-specific types
+export * from './modules/index';
+
+// Core system types
+export * from './core/runtime';
+export * from './core/events';
+
+// Utility types
+export * from './utils/logger';
+export * from './utils/validation';
+export * from './utils/arrays';
+export * from './utils/maps';

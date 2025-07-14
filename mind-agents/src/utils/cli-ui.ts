@@ -11,6 +11,8 @@ import gradient from 'gradient-string';
 import ora from 'ora';
 
 import { Extension } from '../types/agent';
+import { AgentStatusArray } from '../types/utils/arrays.js';
+import { TypedMap } from '../types/utils/maps.js';
 
 // Cool gradients
 const symindxGradient = gradient(['#FF006E', '#8338EC', '#3A86FF']);
@@ -22,6 +24,7 @@ const fireGradient = gradient(['#FF6B6B', '#FFA500', '#FFD700']);
  * Display the epic SYMindX banner
  */
 export async function displayBanner(): Promise<void> {
+  // eslint-disable-next-line no-console
   console.clear();
 
   const banner = figlet.textSync('SYMindX', {
@@ -30,7 +33,9 @@ export async function displayBanner(): Promise<void> {
     verticalLayout: 'default',
   });
 
+  // eslint-disable-next-line no-console
   console.log(symindxGradient.multiline(banner));
+  // eslint-disable-next-line no-console
   console.log();
 
   const subtitle = boxen(
@@ -46,7 +51,9 @@ export async function displayBanner(): Promise<void> {
     }
   );
 
+  // eslint-disable-next-line no-console
   console.log(subtitle);
+  // eslint-disable-next-line no-console
   console.log();
 }
 
@@ -56,7 +63,7 @@ export async function displayBanner(): Promise<void> {
 export function createSpinner(
   text: string,
   type: 'dots' | 'line' | 'star' | 'bouncingBar' = 'dots'
-) {
+): ReturnType<typeof ora> {
   const spinner = ora({
     text: chalk.cyan(text),
     spinner: type,
@@ -68,7 +75,7 @@ export function createSpinner(
 /**
  * Display agent status in a beautiful table
  */
-export function displayAgentStatus(agents: any[]) {
+export function displayAgentStatus(agents: AgentStatusArray): void {
   const table = new Table({
     head: [
       chalk.cyan('Agent'),
@@ -104,14 +111,15 @@ export function displayAgentStatus(agents: any[]) {
     ]);
   });
 
+  // eslint-disable-next-line no-console
   console.log(table.toString());
 }
 
 /**
  * Get color for emotion display
  */
-function getEmotionColor(emotion: string) {
-  const emotionColors: Record<string, any> = {
+function getEmotionColor(emotion: string): typeof chalk {
+  const emotionColors: TypedMap<typeof chalk> = {
     happy: chalk.yellow,
     sad: chalk.blue,
     angry: chalk.red,
@@ -128,7 +136,7 @@ function getEmotionColor(emotion: string) {
 /**
  * Display runtime metrics
  */
-export function displayMetrics(metrics: any) {
+export function displayMetrics(metrics: Record<string, unknown>): void {
   const metricsBox = boxen(
     chalk.bold('Runtime Metrics\n\n') +
       `${chalk.green('▲')} Uptime: ${chalk.white(formatUptime(metrics.uptime))}\n` +
@@ -144,6 +152,7 @@ export function displayMetrics(metrics: any) {
     }
   );
 
+  // eslint-disable-next-line no-console
   console.log(metricsBox);
 }
 
@@ -193,7 +202,8 @@ export async function animateLoading(
 /**
  * Display error in a cool way
  */
-export function displayError(error: string) {
+export function displayError(error: string): void {
+  // eslint-disable-next-line no-console
   console.log(
     boxen(chalk.red.bold('⚠ ERROR ⚠\n\n') + chalk.white(error), {
       padding: 1,
@@ -206,7 +216,8 @@ export function displayError(error: string) {
 /**
  * Display success message
  */
-export function displaySuccess(message: string) {
+export function displaySuccess(message: string): void {
+  // eslint-disable-next-line no-console
   console.log(
     boxen(chalk.green.bold('✅ SUCCESS\n\n') + chalk.white(message), {
       padding: 1,
@@ -219,10 +230,10 @@ export function displaySuccess(message: string) {
 /**
  * Create a progress bar
  */
-export function createProgressBar(title: string, total: number) {
+export function createProgressBar(title: string, total: number): { update: (value: number) => void } {
   let current = 0;
 
-  const update = (value: number) => {
+  const update = (value: number): void => {
     current = value;
     const percentage = Math.floor((current / total) * 100);
     const filled = Math.floor((current / total) * 30);
@@ -231,9 +242,11 @@ export function createProgressBar(title: string, total: number) {
     const bar = chalk.green('█'.repeat(filled)) + chalk.gray('░'.repeat(empty));
     const text = `${title} [${bar}] ${percentage}%`;
 
+    // eslint-disable-next-line no-console
     process.stdout.write('\r' + text);
 
     if (current >= total) {
+      // eslint-disable-next-line no-console
       console.log(); // New line after completion
     }
   };
@@ -248,10 +261,11 @@ export function displayChatMessage(
   from: string,
   message: string,
   isAgent: boolean = false
-) {
+): void {
   const timestamp = new Date().toLocaleTimeString();
 
   if (isAgent) {
+    // eslint-disable-next-line no-console
     console.log(
       chalk.gray(`[${timestamp}]`) +
         ' ' +
@@ -260,6 +274,7 @@ export function displayChatMessage(
         chalk.white(message)
     );
   } else {
+    // eslint-disable-next-line no-console
     console.log(
       chalk.gray(`[${timestamp}]`) +
         ' ' +
@@ -282,6 +297,7 @@ export async function matrixRain(duration: number = 3000) {
     'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$%^&*()_+-=[]{}|;:,.<>?';
 
   const interval = setInterval(() => {
+    // eslint-disable-next-line no-console
     console.clear();
 
     for (let i = 0; i < drops.length; i++) {
@@ -318,6 +334,7 @@ export async function matrixRain(duration: number = 3000) {
 
   setTimeout(() => {
     clearInterval(interval);
+    // eslint-disable-next-line no-console
     console.clear();
   }, duration);
 }
@@ -365,8 +382,9 @@ export function createStatusDashboard() {
       this.render();
     },
 
-    render() {
-      console.clear();
+    render(): void {
+      // eslint-disable-next-line no-console
+    console.clear();
       displayBanner();
 
       console.log(chalk.cyan.bold('\n📊 System Dashboard\n'));
@@ -389,7 +407,8 @@ export function createStatusDashboard() {
 /**
  * Cool shutdown animation
  */
-export async function animateShutdown() {
+export async function animateShutdown(): Promise<void> {
+  // eslint-disable-next-line no-console
   console.log();
   const messages = [
     '🔌 Disconnecting neural networks...',
@@ -403,9 +422,12 @@ export async function animateShutdown() {
     await animateLoading(msg, 500);
   }
 
+  // eslint-disable-next-line no-console
   console.log();
+  // eslint-disable-next-line no-console
   console.log(
     fireGradient.multiline(figlet.textSync('Goodbye!', { font: 'Small' }))
   );
+  // eslint-disable-next-line no-console
   console.log();
 }

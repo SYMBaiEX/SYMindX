@@ -6,6 +6,10 @@
  */
 
 import { ConfigDefaults } from '../types/character.js';
+import {
+  SchemaValidationResult,
+  ValidationError,
+} from '../types/utils/validation.js';
 
 /**
  * Validated Environment Configuration
@@ -50,12 +54,9 @@ export interface ValidatedEnvironmentConfig {
 }
 
 /**
- * Configuration Validation Result
+ * Configuration Validation Result extends ValidationResult
  */
-export interface ConfigValidationResult {
-  isValid: boolean;
-  errors: string[];
-  warnings: string[];
+export interface ConfigValidationResult extends SchemaValidationResult {
   config: ValidatedEnvironmentConfig;
 }
 
@@ -67,8 +68,8 @@ export class ConfigValidator {
    * Validate and build safe environment configuration
    */
   public static validateEnvironmentConfig(): ConfigValidationResult {
-    const errors: string[] = [];
-    const warnings: string[] = [];
+    const errors: ValidationError[] = [];
+    const warnings: ValidationError[] = [];
 
     // Build base configuration with safe defaults
     const config: ValidatedEnvironmentConfig = {
@@ -112,10 +113,11 @@ export class ConfigValidator {
     this.validateOverallConfiguration(config, errors, warnings);
 
     return {
-      isValid: errors.length === 0,
+      valid: errors.length === 0,
       errors,
       warnings,
       config,
+      data: config,
     };
   }
 
@@ -160,7 +162,7 @@ export class ConfigValidator {
    */
   private static validateAndIncludeApiKeys(
     config: ValidatedEnvironmentConfig,
-    warnings: string[]
+    warnings: ValidationError[]
   ): void {
     const apiKeyMappings = [
       'GROQ_API_KEY',
@@ -183,7 +185,12 @@ export class ConfigValidator {
         if (this.isValidApiKey(key, value)) {
           config.apiKeys[key as keyof typeof config.apiKeys] = value;
         } else {
-          warnings.push(`Invalid format for ${key}`);
+          warnings.push({
+            field: `apiKeys.${key}`,
+            message: `Invalid format for ${key}`,
+            code: 'INVALID_API_KEY_FORMAT',
+            severity: 'warning',
+          });
         }
       }
     });
@@ -218,7 +225,7 @@ export class ConfigValidator {
    */
   private static validateAndIncludePortalModels(
     config: ValidatedEnvironmentConfig,
-    _warnings: string[]
+    _warnings: ValidationError[]
   ): void {
     const portals = [
       'GROQ',
@@ -261,7 +268,7 @@ export class ConfigValidator {
    */
   private static validateAndIncludePortalSettings(
     config: ValidatedEnvironmentConfig,
-    _warnings: string[]
+    _warnings: ValidationError[]
   ): void {
     const portals = [
       'GROQ',
@@ -316,15 +323,19 @@ export class ConfigValidator {
    */
   private static validateOverallConfiguration(
     config: ValidatedEnvironmentConfig,
-    errors: string[],
-    warnings: string[]
+    errors: ValidationError[],
+    warnings: ValidationError[]
   ): void {
     // Check for at least one AI provider
     const hasProvider = this.hasValidAIProvider(config);
     if (!hasProvider) {
-      errors.push(
-        'At least one AI provider must be configured with valid API key'
-      );
+      errors.push({
+        field: 'apiKeys',
+        message:
+          'At least one AI provider must be configured with valid API key',
+        code: 'NO_AI_PROVIDER',
+        severity: 'error',
+      });
     }
 
     // Validate embedding configuration
@@ -343,31 +354,58 @@ export class ConfigValidator {
           );
 
         if (!hasOtherProvider) {
-          errors.push('OpenAI API key required when using OpenAI embeddings');
+          errors.push({
+            field: 'apiKeys.OPENAI_API_KEY',
+            message: 'OpenAI API key required when using OpenAI embeddings',
+            code: 'MISSING_OPENAI_KEY',
+            severity: 'error',
+          });
         } else {
-          warnings.push(
-            'OpenAI embeddings enabled but no OpenAI API key provided, falling back to available providers'
-          );
+          warnings.push({
+            field: 'apiKeys.OPENAI_API_KEY',
+            message:
+              'OpenAI embeddings enabled but no OpenAI API key provided, falling back to available providers',
+            code: 'OPENAI_KEY_FALLBACK',
+            severity: 'warning',
+          });
         }
       }
       if (
         config.EMBEDDING_PROVIDER === 'ollama' &&
         !(config.portalSettings.OLLAMA_ENABLED ?? false)
       ) {
-        warnings.push('Ollama embeddings enabled but Ollama is not configured');
+        warnings.push({
+          field: 'portalSettings.OLLAMA_ENABLED',
+          message: 'Ollama embeddings enabled but Ollama is not configured',
+          code: 'OLLAMA_NOT_CONFIGURED',
+          severity: 'warning',
+        });
       }
     }
 
     // Validate Ollama configuration
     if (config.portalSettings.OLLAMA_ENABLED ?? false) {
       if (!this.isValidUrl(config.OLLAMA_BASE_URL)) {
-        errors.push('Invalid Ollama base URL format');
+        errors.push({
+          field: 'OLLAMA_BASE_URL',
+          message: 'Invalid Ollama base URL format',
+          code: 'INVALID_URL',
+          value: config.OLLAMA_BASE_URL,
+          severity: 'error',
+        });
       }
     }
 
     // Validate embedding dimensions
     if (config.EMBEDDING_DIMENSIONS <= 0) {
-      errors.push('Embedding dimensions must be a positive number');
+      errors.push({
+        field: 'EMBEDDING_DIMENSIONS',
+        message: 'Embedding dimensions must be a positive number',
+        code: 'INVALID_NUMBER',
+        value: config.EMBEDDING_DIMENSIONS,
+        expected: 'positive integer',
+        severity: 'error',
+      });
     }
   }
 
@@ -410,5 +448,6 @@ export class ConfigValidator {
 /**
  * Global configuration validator instance
  */
-export const validateEnvironmentConfig = () =>
-  ConfigValidator.validateEnvironmentConfig();
+export const validateEnvironmentConfig =
+  (): SchemaValidationResult<ValidatedEnvironmentConfig> =>
+    ConfigValidator.validateEnvironmentConfig();

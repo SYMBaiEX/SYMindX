@@ -10,6 +10,10 @@ import {
   EnvironmentConfig,
   ConfigDefaults,
 } from '../types/character.js';
+import {
+  ExtensionConfigArray,
+  PortalConfigArray,
+} from '../types/utils/arrays.js';
 
 import {
   validateEnvironmentConfig,
@@ -36,10 +40,12 @@ export class ConfigResolver {
 
     // Log validation results
     if (validationResult.warnings.length > 0) {
+      // eslint-disable-next-line no-console
       console.warn('Configuration warnings:', validationResult.warnings);
     }
 
-    if (!validationResult.isValid) {
+    if (!validationResult.valid) {
+      // eslint-disable-next-line no-console
       console.error('Configuration errors:', validationResult.errors);
       throw new Error(
         'Invalid environment configuration. Please check your environment variables.'
@@ -72,20 +78,20 @@ export class ConfigResolver {
     // Add API keys if they exist
     Object.entries(validated.apiKeys).forEach(([key, value]) => {
       if (value) {
-        (config as any)[key] = value;
+        (config as Record<string, unknown>)[key] = value;
       }
     });
 
     // Add portal models if they exist
     Object.entries(validated.portalModels).forEach(([key, value]) => {
       if (value) {
-        (config as any)[key] = value;
+        (config as Record<string, unknown>)[key] = value;
       }
     });
 
     // Add portal settings
     Object.entries(validated.portalSettings).forEach(([key, value]) => {
-      (config as any)[key] = value;
+      (config as Record<string, unknown>)[key] = value;
     });
 
     return config;
@@ -115,7 +121,9 @@ export class ConfigResolver {
   /**
    * Resolve character configuration to runtime configuration
    */
-  public resolveCharacterConfig(config: CharacterConfig): any {
+  public resolveCharacterConfig(
+    config: CharacterConfig
+  ): Record<string, unknown> {
     // Ensure environment is loaded first
     this.ensureEnvConfig();
     return {
@@ -150,7 +158,9 @@ export class ConfigResolver {
   /**
    * Resolve autonomous configuration
    */
-  private resolveAutonomousConfig(config: any): any {
+  private resolveAutonomousConfig(
+    config: Record<string, unknown>
+  ): Record<string, unknown> {
     return {
       ...config,
       enabled: config.enabled ?? true,
@@ -160,7 +170,9 @@ export class ConfigResolver {
   /**
    * Resolve memory configuration with environment variables
    */
-  private resolveMemoryConfig(config: any): any {
+  private resolveMemoryConfig(
+    config: Record<string, unknown>
+  ): Record<string, unknown> {
     const validatedConfig = this.getValidatedConfig();
     const resolved = {
       type: config.type,
@@ -244,7 +256,9 @@ export class ConfigResolver {
   /**
    * Resolve extensions configuration
    */
-  private resolveExtensionsConfig(extensions: any[]): any[] {
+  private resolveExtensionsConfig(
+    extensions: ExtensionConfigArray
+  ): ExtensionConfigArray {
     return extensions.map((ext) => ({
       ...ext,
       config: this.resolveExtensionConfig(ext.name, ext.config),
@@ -270,7 +284,7 @@ export class ConfigResolver {
   /**
    * Resolve portals configuration with environment variables
    */
-  private resolvePortalsConfig(portals: any[]): any[] {
+  private resolvePortalsConfig(portals: PortalConfigArray): PortalConfigArray {
     return portals
       .map((portal) => this.resolvePortalConfig(portal))
       .filter((portal) => portal.enabled !== false);
@@ -504,7 +518,7 @@ export class ConfigResolver {
       const validationResult = validateEnvironmentConfig();
 
       return {
-        valid: validationResult.isValid,
+        valid: validationResult.valid,
         missing: validationResult.errors,
       };
     } catch (error) {

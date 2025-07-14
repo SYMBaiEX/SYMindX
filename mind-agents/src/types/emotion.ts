@@ -3,10 +3,11 @@
  */
 
 import { EmotionState, EmotionRecord, EmotionConfig } from './agent';
+import { Context, BaseConfig } from './common';
+import { EmotionResult } from './modules/emotions';
 
 // Re-export for convenience
 export type { EmotionState, EmotionRecord, EmotionConfig };
-import { Context, BaseConfig } from './common';
 
 /**
  * Base interface for all emotion modules
@@ -36,9 +37,9 @@ export interface EmotionModule {
    * Process an event and update the emotion state
    * @param eventType The type of event that occurred
    * @param context Additional context about the event
-   * @returns The updated emotion state
+   * @returns The emotion processing result
    */
-  processEvent(eventType: string, context?: Context): EmotionState;
+  processEvent(eventType: string, context?: Context): EmotionResult;
 
   /**
    * Get the current emotion state
@@ -57,13 +58,13 @@ export interface EmotionModule {
    * @param emotion The emotion to set
    * @param intensity The intensity of the emotion (0.0 to 1.0)
    * @param triggers What triggered this emotion
-   * @returns The updated emotion state
+   * @returns The emotion processing result
    */
   setEmotion(
     emotion: string,
     intensity: number,
     triggers?: string[]
-  ): EmotionState;
+  ): EmotionResult;
 
   /**
    * Get the emotion history
@@ -74,9 +75,9 @@ export interface EmotionModule {
 
   /**
    * Reset the emotion state to neutral
-   * @returns The updated emotion state
+   * @returns The emotion processing result
    */
-  reset(): EmotionState;
+  reset(): EmotionResult;
 }
 
 /**
