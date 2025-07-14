@@ -83,7 +83,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   const config = sizeConfig[size];
 
   // Update animation
-  useEffect((): (() => void) | undefined => {
+  useEffect(() => {
     if (!themeEngine.areAnimationsEnabled()) return;
 
     const interval = setInterval(() => {
@@ -199,7 +199,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
           <Box flexDirection='column'>
             <Box>
               {Array.from({ length: 5 }, (_, i) => (
-                <Text key={i} color={theme.colors.glitch}>
+                <Text key={`glitch-frame-${i}`} color={theme.colors.glitch}>
                   {spinner.frames[(frame + i) % spinner.frames.length]}
                 </Text>
               ))}

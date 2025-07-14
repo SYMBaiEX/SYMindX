@@ -5,7 +5,7 @@
  * with the agent through the Model Context Protocol standard.
  */
 
-import { SkillParameters } from '../../types/common';
+import { SkillParameters, GenericData, DataValue } from '../../types/common';
 import {
   ExtensionConfig,
   Extension,
@@ -21,7 +21,6 @@ import {
   AgentEvent,
 } from '../../types/index';
 import { runtimeLogger } from '../../utils/logger';
-import { GenericData, DataValue } from '../../types/common';
 
 import { MCPServerManager } from './mcp-server-manager';
 import {

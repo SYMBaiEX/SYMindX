@@ -82,13 +82,13 @@ export const AnimatedChart: React.FC<AnimatedChartProps> = ({
         setWavePhase((prev) => (prev + 0.1) % (Math.PI * 2));
       }, speed);
 
-      return () => {
+      return (): void => {
         clearInterval(animateInterval);
         clearInterval(waveInterval);
       };
     }
 
-    return () => clearInterval(animateInterval);
+    return (): void => clearInterval(animateInterval);
   }, [animate, type, speed]);
 
   // Easing function
@@ -97,7 +97,7 @@ export const AnimatedChart: React.FC<AnimatedChartProps> = ({
   };
 
   // Chart rendering functions
-  const renderBarChart = () => {
+  const renderBarChart = (): React.ReactElement => {
     const barWidth = Math.floor(width / data.length) - 1;
     const bars: React.ReactNode[] = [];
 
@@ -132,20 +132,20 @@ export const AnimatedChart: React.FC<AnimatedChartProps> = ({
               chars.length - 1
             );
             row.push(
-              <Text key={x} color={barColor} bold={y === height - barHeight}>
+              <Text key={`bar-${x}`} color={barColor} bold={y === height - barHeight}>
                 {chars[charIndex]}
               </Text>
             );
           } else {
-            row.push(<Text key={x}> </Text>);
+            row.push(<Text key={`empty-${x}`}> </Text>);
           }
         }
 
-        bar.push(<Box key={y}>{row}</Box>);
+        bar.push(<Box key={`bar-row-${y}`}>{row}</Box>);
       }
 
       bars.push(
-        <Box key={index} flexDirection='column' marginRight={1}>
+        <Box key={`bar-${point.label || `data-${index}`}`} flexDirection='column' marginRight={1}>
           {bar}
           {showLabels && (
             <Text color={theme.colors.textDim}>{point.label || index}</Text>
@@ -162,7 +162,7 @@ export const AnimatedChart: React.FC<AnimatedChartProps> = ({
     return <Box>{bars}</Box>;
   };
 
-  const renderLineChart = () => {
+  const renderLineChart = (): React.ReactElement => {
     const chartWidth = width;
     const pointSpacing = chartWidth / (data.length - 1);
 
@@ -208,27 +208,31 @@ export const AnimatedChart: React.FC<AnimatedChartProps> = ({
 
     return (
       <Box flexDirection='column'>
-        {grid.map((row, y) => (
-          <Text key={y}>
-            {row.map((char, x) => {
-              const pointIndex = Math.floor(x / pointSpacing);
-              const pointColor = data[pointIndex]?.color || defaultColor;
+        {grid.map((row, y) => {
+          const rowKey = `line-row-${y}-${row.length}-${row.filter(c => c !== ' ').length}`;
+          return (
+            <Text key={rowKey}>
+              {row.map((char, x) => {
+                const pointIndex = Math.floor(x / pointSpacing);
+                const pointColor = data[pointIndex]?.color || defaultColor;
 
-              if (char === ' ') return ' ';
+                if (char === ' ') return ' ';
 
-              return (
-                <Text key={x} color={pointColor} bold={char === '●'}>
-                  {char}
-                </Text>
-              );
-            })}
-          </Text>
-        ))}
+                const uniqueKey = `char-${char.charCodeAt(0)}-y${y}x${x}`;
+                return (
+                  <Text key={uniqueKey} color={pointColor} bold={char === '●'}>
+                    {char}
+                  </Text>
+                );
+              })}
+            </Text>
+          );
+        })}
       </Box>
     );
   };
 
-  const renderWaveChart = () => {
+  const renderWaveChart = (): React.ReactElement => {
     const lines: React.ReactNode[] = [];
 
     for (let y = 0; y < height; y++) {
@@ -251,7 +255,7 @@ export const AnimatedChart: React.FC<AnimatedChartProps> = ({
           const waveChars = ['～', '≈', '≋', '~'];
           const charIndex = Math.floor((x + wavePhase * 10) % waveChars.length);
           row.push(
-            <Text key={x} color={point?.color || defaultColor}>
+            <Text key={`wave-${x}`} color={point?.color || defaultColor}>
               {waveChars[charIndex]}
             </Text>
           );
@@ -260,13 +264,13 @@ export const AnimatedChart: React.FC<AnimatedChartProps> = ({
         }
       }
 
-      lines.push(<Box key={y}>{row}</Box>);
+      lines.push(<Box key={`wave-row-${y}`}>{row}</Box>);
     }
 
     return <Box flexDirection='column'>{lines}</Box>;
   };
 
-  const renderSparkline = () => {
+  const renderSparkline = (): React.ReactElement => {
     const sparkChars = ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
 
     return (
@@ -278,7 +282,7 @@ export const AnimatedChart: React.FC<AnimatedChartProps> = ({
           );
 
           return (
-            <Text key={index} color={point.color || defaultColor}>
+            <Text key={`spark-${point.label || `data-${index}`}`} color={point.color || defaultColor}>
               {sparkChars[charIndex]}
             </Text>
           );
@@ -288,7 +292,7 @@ export const AnimatedChart: React.FC<AnimatedChartProps> = ({
   };
 
   // Chart selection
-  const renderChart = () => {
+  const renderChart = (): React.ReactElement => {
     switch (type) {
       case 'bar':
         return renderBarChart();

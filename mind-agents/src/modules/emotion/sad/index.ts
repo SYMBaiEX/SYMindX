@@ -1,3 +1,4 @@
+import { EmotionResult, EmotionData } from '../../../types/modules/emotions';
 import { BaseEmotion, EmotionDefinition } from '../base-emotion';
 
 import { SadEmotionConfig } from './types';
@@ -49,8 +50,9 @@ export class SadEmotion extends BaseEmotion {
     };
   }
 
-  override processEvent(eventType: string, context?: any): any {
+  override processEvent(eventType: string, context?: any): EmotionResult {
     // Special processing for sad-specific events
+    const previousIntensity = this._intensity;
     if (context?.outcome?.success === false) {
       this._intensity = Math.min(1.0, this._intensity + 0.15);
       this.recordHistory('failed_outcome');
@@ -61,7 +63,26 @@ export class SadEmotion extends BaseEmotion {
       this.recordHistory(context.type);
     }
 
-    return super.processEvent(eventType, context);
+    const result = super.processEvent(eventType, context);
+
+    // Add sad-specific data
+    const sadData: EmotionData = {
+      base: {
+        intensity: this._intensity,
+        triggers: this.triggers,
+        modifiers: this.getEmotionModifier(),
+      },
+      sad: {
+        griefLevel: context?.type === 'loss' ? 0.8 : this._intensity * 0.6,
+        isolationFactor: 1.4,
+        energyPenalty: 0.7,
+      },
+    };
+
+    return {
+      ...result,
+      changed: result.changed || previousIntensity !== this._intensity,
+    };
   }
 }
 

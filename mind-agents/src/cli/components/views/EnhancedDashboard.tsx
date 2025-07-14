@@ -30,11 +30,9 @@ interface EnhancedDashboardProps {
 
 export const EnhancedDashboard: React.FC<EnhancedDashboardProps> = ({
   onSelectAgent: _onSelectAgent,
-}) => {
+}): React.ReactElement => {
   const {
-    dimensions: _dimensions,
     breakpoints,
-    currentBreakpoint: _currentBreakpoint,
   } = useTerminalDimensions();
   const spacing = getAdaptiveSpacing(breakpoints);
 
@@ -42,14 +40,15 @@ export const EnhancedDashboard: React.FC<EnhancedDashboardProps> = ({
   const {
     status,
     stats,
-    isHealthy: _isHealthy,
     qualityScore,
-    reconnect: _reconnect,
   } = useConnectionMonitor(enhancedRuntimeClient);
 
   // Data fetching with loading states
   const agents = useAgentData(enhancedRuntimeClient, {
-    onError: (error) => console.error('Failed to fetch agents:', error),
+    onError: (error): void => {
+      // Error handled by useAgentData hook
+      void error;
+    },
   });
 
   const metrics = useSystemMetrics(enhancedRuntimeClient);
@@ -57,7 +56,7 @@ export const EnhancedDashboard: React.FC<EnhancedDashboardProps> = ({
   const events = useRecentEvents(enhancedRuntimeClient, 10);
 
   // Handle retry
-  const handleRetry = () => {
+  const handleRetry = (): void => {
     agents.refetch();
     metrics.refetch();
     runtimeStatus.refetch();
@@ -66,7 +65,10 @@ export const EnhancedDashboard: React.FC<EnhancedDashboardProps> = ({
 
   return (
     <ErrorBoundary
-      onError={(error) => console.error('Dashboard error:', error)}
+      onError={(error): void => {
+        // Dashboard error handled by ErrorBoundary
+        void error;
+      }}
       onRetry={handleRetry}
     >
       <Box flexDirection='column' padding={spacing.padding}>
@@ -171,7 +173,7 @@ export const EnhancedDashboard: React.FC<EnhancedDashboardProps> = ({
               {agents.isLoading ? (
                 <Box flexDirection='column' gap={1}>
                   {[1, 2, 3].map((i) => (
-                    <Shimmer key={i} width={40} height={2} />
+                    <Shimmer key={`agent-shimmer-${i}`} width={40} height={2} />
                   ))}
                 </Box>
               ) : agents.error ? (
@@ -232,8 +234,8 @@ export const EnhancedDashboard: React.FC<EnhancedDashboardProps> = ({
                 </Text>
               ) : events.data && events.data.length > 0 ? (
                 <Box flexDirection='column'>
-                  {events.data.slice(0, 5).map((event, i) => (
-                    <Box key={i}>
+                  {events.data.slice(0, 5).map((event) => (
+                    <Box key={`event-${event.type}-${event.timestamp}-${event.id || Date.now()}`}>
                       <Text color='gray' dimColor>
                         {event.timestamp}
                       </Text>

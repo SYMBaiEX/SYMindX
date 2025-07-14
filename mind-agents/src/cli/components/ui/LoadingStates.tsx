@@ -17,7 +17,7 @@ const LoadingDots: React.FC<{
 }> = ({ color = 'cyan', text = 'Loading', reducedMotion = false }) => {
   const [dots, setDots] = React.useState('');
 
-  React.useEffect(() => {
+  React.useEffect((): (() => void) | undefined => {
     if (reducedMotion) {
       setDots('...');
       return;
@@ -30,7 +30,7 @@ const LoadingDots: React.FC<{
       });
     }, 400);
 
-    return () => clearInterval(interval);
+    return (): void => clearInterval(interval);
   }, [reducedMotion]);
 
   return (
@@ -52,7 +52,7 @@ const LoadingSpinner: React.FC<{
   const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
   const [frame, setFrame] = React.useState(0);
 
-  React.useEffect(() => {
+  React.useEffect((): (() => void) | undefined => {
     if (reducedMotion) {
       setFrame(0);
       return;
@@ -62,7 +62,7 @@ const LoadingSpinner: React.FC<{
       setFrame((prev) => (prev + 1) % frames.length);
     }, 80);
 
-    return () => clearInterval(interval);
+    return (): void => clearInterval(interval);
   }, [frames.length, reducedMotion]);
 
   const spinner = reducedMotion ? '○' : frames[frame];
@@ -79,7 +79,7 @@ const LoadingPulse: React.FC<{
   const [position, setPosition] = React.useState(0);
   const [direction, setDirection] = React.useState(1);
 
-  React.useEffect(() => {
+  React.useEffect((): (() => void) | undefined => {
     if (reducedMotion) {
       setPosition(Math.floor(width / 2));
       return;
@@ -95,7 +95,7 @@ const LoadingPulse: React.FC<{
       });
     }, 100);
 
-    return () => clearInterval(interval);
+    return (): void => clearInterval(interval);
   }, [width, direction, reducedMotion]);
 
   const pulse = reducedMotion
@@ -133,7 +133,7 @@ const LoadingWave: React.FC<{
     '▂',
   ];
 
-  React.useEffect(() => {
+  React.useEffect((): (() => void) | undefined => {
     if (reducedMotion) {
       setPhase(0);
       return;
@@ -143,7 +143,7 @@ const LoadingWave: React.FC<{
       setPhase((prev) => (prev + 1) % waveChars.length);
     }, 150);
 
-    return () => clearInterval(interval);
+    return (): void => clearInterval(interval);
   }, [waveChars.length, reducedMotion]);
 
   const wave = Array(width)
@@ -248,7 +248,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
     reducedMotion ? filledWidth : 0
   );
 
-  React.useEffect(() => {
+  React.useEffect((): (() => void) | undefined => {
     if (reducedMotion) {
       setDisplayWidth(filledWidth);
       return;
@@ -270,8 +270,8 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
       });
     }, 50);
 
-    return () => clearInterval(interval);
-  }, [filledWidth, reducedMotion]);
+    return (): void => clearInterval(interval);
+  }, [filledWidth, reducedMotion, displayWidth]);
 
   const filled = '█'.repeat(Math.round(displayWidth));
   const empty = '░'.repeat(width - Math.round(displayWidth));
@@ -306,7 +306,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
 }) => {
   const [opacity, setOpacity] = React.useState(1);
 
-  React.useEffect(() => {
+  React.useEffect((): (() => void) | undefined => {
     if (!animate || reducedMotion) {
       setOpacity(0.5);
       return;
@@ -316,7 +316,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
       setOpacity((prev) => (prev === 1 ? 0.3 : 1));
     }, 1000);
 
-    return () => clearInterval(interval);
+    return (): void => clearInterval(interval);
   }, [animate, reducedMotion]);
 
   const char = opacity > 0.6 ? '█' : '▓';
@@ -348,7 +348,7 @@ export const Shimmer: React.FC<ShimmerProps> = ({
 }) => {
   const [position, setPosition] = React.useState(-5);
 
-  React.useEffect(() => {
+  React.useEffect((): (() => void) | undefined => {
     if (reducedMotion) {
       setPosition(width / 2);
       return;
@@ -364,7 +364,7 @@ export const Shimmer: React.FC<ShimmerProps> = ({
       duration / (width + 5)
     );
 
-    return () => clearInterval(interval);
+    return (): void => clearInterval(interval);
   }, [width, duration, reducedMotion]);
 
   const lines = Array(height)
@@ -387,8 +387,8 @@ export const Shimmer: React.FC<ShimmerProps> = ({
 
   return (
     <Box flexDirection='column'>
-      {lines.map((line, i) => (
-        <Text key={i} color='gray'>
+      {lines.map((line) => (
+        <Text key={`skeleton-line-${width}-${height}-${line.length}`} color='gray'>
           {line}
         </Text>
       ))}

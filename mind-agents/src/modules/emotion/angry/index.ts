@@ -1,3 +1,4 @@
+import { EmotionResult, EmotionData } from '../../../types/modules/emotions';
 import { BaseEmotion, EmotionDefinition } from '../base-emotion';
 
 import { AngryEmotionConfig } from './types';
@@ -50,8 +51,9 @@ export class AngryEmotion extends BaseEmotion {
     };
   }
 
-  override processEvent(eventType: string, context?: any): any {
+  override processEvent(eventType: string, context?: any): EmotionResult {
     // Special processing for anger-specific events
+    const previousIntensity = this._intensity;
     if (context?.type === 'blocked' || context?.type === 'denied') {
       this._intensity = Math.min(1.0, this._intensity + 0.25);
       this.recordHistory('blocked_action');
@@ -62,7 +64,28 @@ export class AngryEmotion extends BaseEmotion {
       this.recordHistory('repeated_failure');
     }
 
-    return super.processEvent(eventType, context);
+    const result = super.processEvent(eventType, context);
+
+    // Add angry-specific data
+    const angryData: EmotionData = {
+      base: {
+        intensity: this._intensity,
+        triggers: this.triggers,
+        modifiers: this.getEmotionModifier(),
+      },
+      angry: {
+        frustrationLevel: context?.repeated_failure
+          ? 0.9
+          : this._intensity * 0.7,
+        aggressionFactor: this._intensity * 1.2,
+        focusPenalty: 0.7,
+      },
+    };
+
+    return {
+      ...result,
+      changed: result.changed || previousIntensity !== this._intensity,
+    };
   }
 }
 

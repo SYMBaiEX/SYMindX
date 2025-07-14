@@ -9,7 +9,7 @@ interface HelpOverlayProps {
   keyBindings: KeyBinding[];
 }
 
-export const HelpOverlay: React.FC<HelpOverlayProps> = ({ keyBindings }) => {
+export const HelpOverlay: React.FC<HelpOverlayProps> = ({ keyBindings }): React.ReactElement => {
   // Group key bindings by category
   const navigationBindings = keyBindings.filter((kb) =>
     ['f1', 'f2', 'f3', 'f4', 'f5', 'tab', 'd', 'a', 'c', 'l', 's'].includes(
@@ -46,8 +46,8 @@ export const HelpOverlay: React.FC<HelpOverlayProps> = ({ keyBindings }) => {
             Navigation
           </Text>
           <Box flexDirection='column' marginTop={1}>
-            {navigationBindings.map((binding, index) => (
-              <Box key={index} gap={2}>
+            {navigationBindings.map((binding) => (
+              <Box key={`nav-${binding.key}-${binding.description}`} gap={2}>
                 <Box width={15}>
                   <Text color={cyberpunkTheme.colors.accent}>
                     {formatKey(binding)}
@@ -70,8 +70,8 @@ export const HelpOverlay: React.FC<HelpOverlayProps> = ({ keyBindings }) => {
             Commands
           </Text>
           <Box flexDirection='column' marginTop={1}>
-            {commandBindings.map((binding, index) => (
-              <Box key={index} gap={2}>
+            {commandBindings.map((binding) => (
+              <Box key={`cmd-${binding.key}-${binding.description}`} gap={2}>
                 <Box width={15}>
                   <Text color={cyberpunkTheme.colors.accent}>
                     {formatKey(binding)}

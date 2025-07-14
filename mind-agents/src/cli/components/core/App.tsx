@@ -57,7 +57,7 @@ export const App: React.FC<AppProps> = ({ initialView = 'dashboard' }) => {
   }, []);
 
   // Render current view
-  const renderView = () => {
+  const renderView = (): React.ReactNode => {
     switch (currentView) {
       case 'dashboard':
         return <Dashboard />;

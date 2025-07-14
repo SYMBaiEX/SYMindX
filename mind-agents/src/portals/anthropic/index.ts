@@ -6,12 +6,7 @@
  */
 
 import { anthropic } from '@ai-sdk/anthropic';
-import {
-  generateText,
-  streamText,
-  type ModelMessage,
-  type LanguageModel,
-} from 'ai';
+import { generateText, streamText } from 'ai';
 
 import {
   PortalConfig,
@@ -30,6 +25,12 @@ import {
   PortalType,
   ModelType,
 } from '../../types/portal';
+import type {
+  LanguageModel,
+  AIMessage as ModelMessage,
+  GenerateTextParamsWithTools,
+  AIContentPart,
+} from '../../types/portals/ai-sdk';
 import { BasePortal } from '../base-portal';
 import {
   buildAISDKParams,
@@ -49,7 +50,7 @@ export class AnthropicPortal extends BasePortal {
     ModelType.CHAT,
     ModelType.MULTIMODAL,
   ];
-  private anthropicProvider: any;
+  private anthropicProvider: typeof anthropic;
 
   constructor(config: AnthropicConfig) {
     super('anthropic', 'Anthropic', '1.0.0', config);
@@ -78,6 +79,28 @@ export class AnthropicPortal extends BasePortal {
     }
 
     return this.anthropicProvider(model, providerSettings);
+  }
+
+  /**
+   * Map MessageRole to AI SDK role type
+   */
+  private mapMessageRole(
+    role: MessageRole
+  ): 'system' | 'user' | 'assistant' | 'tool' {
+    switch (role) {
+      case MessageRole.SYSTEM:
+        return 'system';
+      case MessageRole.USER:
+        return 'user';
+      case MessageRole.ASSISTANT:
+        return 'assistant';
+      case MessageRole.TOOL:
+        return 'tool';
+      case MessageRole.FUNCTION:
+        return 'assistant'; // Functions are mapped to assistant
+      default:
+        return 'user'; // Default fallback
+    }
   }
 
   /**
@@ -119,7 +142,6 @@ export class AnthropicPortal extends BasePortal {
         },
       };
     } catch (error) {
-      console.error('Anthropic text generation error:', error);
       throw new Error(`Anthropic text generation failed: ${error}`);
     }
   }
@@ -154,8 +176,9 @@ export class AnthropicPortal extends BasePortal {
 
       // Add tools if provided (native AI SDK v5 tools)
       if (options?.tools) {
-        (generateOptions as any).tools = options.tools;
-        (generateOptions as any).maxSteps = 5; // Enable multi-step tool execution
+        const optionsWithTools = generateOptions as GenerateTextParamsWithTools;
+        optionsWithTools.tools = options.tools;
+        optionsWithTools.maxSteps = 5; // Enable multi-step tool execution
       }
 
       const result = await generateText(generateOptions);
@@ -179,7 +202,6 @@ export class AnthropicPortal extends BasePortal {
         },
       };
     } catch (error) {
-      console.error('Anthropic chat generation error:', error);
       throw new Error(`Anthropic chat generation failed: ${error}`);
     }
   }
@@ -243,7 +265,6 @@ export class AnthropicPortal extends BasePortal {
         yield textPart;
       }
     } catch (error) {
-      console.error('Anthropic stream text error:', error);
       throw new Error(`Anthropic stream text failed: ${error}`);
     }
   }
@@ -278,8 +299,9 @@ export class AnthropicPortal extends BasePortal {
 
       // Add tools if provided (native AI SDK v5 tools)
       if (options?.tools) {
-        (streamOptions as any).tools = options.tools;
-        (streamOptions as any).maxSteps = 5; // Enable multi-step tool execution
+        const optionsWithTools = streamOptions as GenerateTextParamsWithTools;
+        optionsWithTools.tools = options.tools;
+        optionsWithTools.maxSteps = 5; // Enable multi-step tool execution
       }
 
       const result = await streamText(streamOptions);
@@ -288,7 +310,6 @@ export class AnthropicPortal extends BasePortal {
         yield textPart;
       }
     } catch (error) {
-      console.error('Anthropic stream chat error:', error);
       throw new Error(`Anthropic stream chat failed: ${error}`);
     }
   }
@@ -320,13 +341,15 @@ export class AnthropicPortal extends BasePortal {
 
       const modelMessage: ModelMessage = {
         role:
-          msg.role === MessageRole.FUNCTION ? 'assistant' : (msg.role as any),
+          msg.role === MessageRole.FUNCTION
+            ? 'assistant'
+            : this.mapMessageRole(msg.role),
         content: msg.content,
       };
 
       // Handle attachments for multimodal support
       if (msg.attachments && msg.attachments.length > 0) {
-        const content: any[] = [{ type: 'text', text: msg.content }];
+        const content: AIContentPart[] = [{ type: 'text', text: msg.content }];
 
         for (const attachment of msg.attachments) {
           if (attachment.type === 'image') {

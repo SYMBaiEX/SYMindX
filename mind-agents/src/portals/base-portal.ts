@@ -1,5 +1,4 @@
 import { Agent } from '../types/agent';
-import { buildObject } from '../utils/type-helpers';
 import {
   Portal,
   PortalConfig,
@@ -19,6 +18,7 @@ import {
   ToolEvaluationOptions,
   ToolEvaluationResult,
 } from '../types/portal';
+import { buildObject } from '../utils/type-helpers';
 
 /**
  * Base Portal Implementation

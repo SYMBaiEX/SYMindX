@@ -27,10 +27,10 @@ export interface AgentStateSnapshot {
   core: {
     name: string;
     status: AgentStatus;
-    characterConfig: any;
-    agentConfig: any;
+    characterConfig: unknown;
+    agentConfig: unknown;
     lastUpdate: Date;
-    personality?: any; // Agent personality traits
+    personality?: unknown; // Agent personality traits
     goals?: string[]; // Agent goals
   };
 
@@ -39,26 +39,26 @@ export interface AgentStateSnapshot {
     emotionState: EmotionState;
     recentMemories: MemoryRecord[];
     currentThoughts?: string[];
-    decisionContext?: any;
+    decisionContext?: unknown;
     memories?: MemoryRecord[]; // Additional memories storage
-    emotions?: any; // Flexible emotions structure
-    plans?: any[]; // Plans storage
-    decisions?: any[]; // Decisions storage
+    emotions?: unknown; // Flexible emotions structure
+    plans?: unknown[]; // Plans storage
+    decisions?: unknown[]; // Decisions storage
   };
 
   // Autonomous state
   autonomous?: {
-    goals: any[];
-    learningState: any;
-    decisionHistory: any[];
+    goals: unknown[];
+    learningState: unknown;
+    decisionHistory: unknown[];
     autonomyLevel: number;
   };
 
   // Communication state
   communication: {
-    activeConversations: any[];
-    extensionStates: Record<string, any>;
-    portalStates: Record<string, any>;
+    activeConversations: unknown[];
+    extensionStates: Record<string, unknown>;
+    portalStates: Record<string, unknown>;
   };
 
   // Resource state
@@ -74,7 +74,7 @@ export interface AgentStateSnapshot {
     checkpointType: CheckpointType;
     integrity: string;
     dependencies: string[];
-    recoveryData?: any;
+    recoveryData?: unknown;
   };
 }
 
@@ -114,6 +114,8 @@ export class StateManager {
   private config: StateManagerConfig;
   private stateDirectory: string;
   private operationLocks: Map<string, boolean> = new Map();
+  private checkpointTimers: Map<string, ReturnType<typeof setInterval>> =
+    new Map();
 
   constructor(config: StateManagerConfig) {
     this.config = config;
@@ -525,7 +527,7 @@ export class StateManager {
     }
   }
 
-  private calculateIntegrity(snapshot: any): string {
+  private calculateIntegrity(snapshot: unknown): string {
     const hash = createHash('sha256');
     hash.update(JSON.stringify(snapshot, Object.keys(snapshot).sort()));
     return hash.digest('hex');
@@ -594,7 +596,10 @@ export class StateManager {
     }
   }
 
-  private async updateMetadata(agentId: string, metadata: any): Promise<void> {
+  private async updateMetadata(
+    agentId: string,
+    metadata: unknown
+  ): Promise<void> {
     const agentDir = path.join(this.stateDirectory, agentId);
     const metadataPath = path.join(agentDir, 'metadata.json');
 

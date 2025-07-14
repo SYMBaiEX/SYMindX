@@ -26,6 +26,48 @@ import {
   ChatSession,
   AnalyticsEvent,
 } from '../sqlite/chat-types';
+
+// Database schema type for Supabase
+interface Database {
+  public: {
+    Tables: {
+      conversations: {
+        Row: Conversation;
+        Insert: Omit<Conversation, 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<Conversation, 'id'>>;
+      };
+      messages: {
+        Row: Message;
+        Insert: Omit<Message, 'timestamp'>;
+        Update: Partial<Omit<Message, 'id'>>;
+      };
+      participants: {
+        Row: Participant;
+        Insert: Omit<Participant, 'joined_at'>;
+        Update: Partial<Omit<Participant, 'id' | 'conversation_id'>>;
+      };
+      chat_sessions: {
+        Row: ChatSession;
+        Insert: Omit<ChatSession, 'start_time'>;
+        Update: Partial<Omit<ChatSession, 'id'>>;
+      };
+      analytics_events: {
+        Row: AnalyticsEvent;
+        Insert: Omit<AnalyticsEvent, 'timestamp'>;
+        Update: Partial<Omit<AnalyticsEvent, 'id'>>;
+      };
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      [_ in never]: never;
+    };
+    Enums: {
+      [_ in never]: never;
+    };
+  };
+}
 import { buildObject } from '../../../../utils/type-helpers';
 
 export interface SupabaseChatConfig extends ChatSystemConfig {
@@ -36,7 +78,7 @@ export interface SupabaseChatConfig extends ChatSystemConfig {
 }
 
 export class SupabaseChatRepository implements ChatRepository {
-  private client: SupabaseClient<any, 'public', any>;
+  private client: SupabaseClient<Database, 'public', Database['public']>;
   private config: SupabaseChatConfig;
 
   constructor(config: SupabaseChatConfig) {

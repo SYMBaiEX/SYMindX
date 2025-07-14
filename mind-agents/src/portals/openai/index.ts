@@ -6,13 +6,7 @@
  */
 
 import { openai } from '@ai-sdk/openai';
-import {
-  generateText,
-  streamText,
-  embed,
-  type LanguageModel,
-  type ModelMessage,
-} from 'ai';
+import { generateText, streamText, embed } from 'ai';
 
 import {
   PortalConfig,
@@ -31,6 +25,11 @@ import {
   PortalType,
   ModelType,
 } from '../../types/portal';
+import type {
+  LanguageModel,
+  AIMessage as ModelMessage,
+  GenerateTextParamsWithTools,
+} from '../../types/portals/ai-sdk';
 import { AISDKParameterBuilder } from '../ai-sdk-utils';
 import { BasePortal } from '../base-portal';
 import { convertUsage, buildAISDKParams } from '../utils';
@@ -57,7 +56,7 @@ export class OpenAIPortal extends BasePortal {
     ModelType.MULTIMODAL,
     ModelType.CODE_GENERATION,
   ];
-  private openaiProvider: any;
+  private openaiProvider: typeof openai;
 
   constructor(config: OpenAIConfig) {
     super('openai', 'OpenAI', '1.0.0', config);
@@ -74,7 +73,11 @@ export class OpenAIPortal extends BasePortal {
       modelId || (this.config as OpenAIConfig).model || 'gpt-4.1-mini';
     const config = this.config as OpenAIConfig;
 
-    const configObj: any = {};
+    const configObj: {
+      apiKey?: string;
+      organization?: string;
+      baseURL?: string;
+    } = {};
     const apiKey = config.apiKey || process.env.OPENAI_API_KEY;
     if (apiKey) configObj.apiKey = apiKey;
     if (config.organization) configObj.organization = config.organization;
@@ -100,7 +103,12 @@ export class OpenAIPortal extends BasePortal {
         case MessageRole.USER: {
           // Handle attachments for multimodal support
           if (msg.attachments && msg.attachments.length > 0) {
-            const content: any[] = [{ type: 'text', text: msg.content }];
+            const content: Array<{
+              type: string;
+              text?: string;
+              image?: string | URL;
+              mediaType?: string;
+            }> = [{ type: 'text', text: msg.content }];
 
             for (const attachment of msg.attachments) {
               if (attachment.type === 'image') {
@@ -189,7 +197,7 @@ export class OpenAIPortal extends BasePortal {
         },
       };
     } catch (error) {
-      console.error('OpenAI text generation error:', error);
+      // OpenAI text generation error
       throw new Error(`OpenAI text generation failed: ${error}`);
     }
   }
@@ -240,8 +248,9 @@ export class OpenAIPortal extends BasePortal {
       // Add tools if provided (native AI SDK v5 tools)
       if (options?.tools) {
         // Native AI SDK v5 MCP tools - pass directly
-        (generateOptions as any).tools = options.tools;
-        (generateOptions as any).maxSteps = 5; // Enable multi-step tool execution
+        const optionsWithTools = generateOptions as GenerateTextParamsWithTools;
+        optionsWithTools.tools = options.tools;
+        optionsWithTools.maxSteps = 5; // Enable multi-step tool execution
       }
 
       const result = await generateText(generateOptions);
@@ -260,7 +269,7 @@ export class OpenAIPortal extends BasePortal {
         },
       };
     } catch (error) {
-      console.error('OpenAI chat generation error:', error);
+      // OpenAI chat generation error
       throw new Error(`OpenAI chat generation failed: ${error}`);
     }
   }
@@ -296,7 +305,7 @@ export class OpenAIPortal extends BasePortal {
         },
       };
     } catch (error) {
-      console.error('OpenAI embedding generation error:', error);
+      // OpenAI embedding generation error
       throw new Error(`OpenAI embedding generation failed: ${error}`);
     }
   }
@@ -340,7 +349,7 @@ export class OpenAIPortal extends BasePortal {
       const data = await response.json();
 
       return {
-        images: data.data.map((img: any) => ({
+        images: data.data.map((img: { url?: string; b64_json?: string }) => ({
           url: img.url,
           b64_json: img.b64_json,
         })),
@@ -351,7 +360,7 @@ export class OpenAIPortal extends BasePortal {
         },
       };
     } catch (error) {
-      console.error('OpenAI image generation error:', error);
+      // OpenAI image generation error
       throw new Error(`OpenAI image generation failed: ${error}`);
     }
   }
@@ -389,7 +398,7 @@ export class OpenAIPortal extends BasePortal {
         yield delta;
       }
     } catch (error) {
-      console.error('OpenAI stream text error:', error);
+      // OpenAI stream text error
       throw new Error(`OpenAI stream text failed: ${error}`);
     }
   }
@@ -436,8 +445,9 @@ export class OpenAIPortal extends BasePortal {
 
       // Add tools if provided
       if (options?.tools) {
-        (streamOptions as any).tools = options.tools;
-        (streamOptions as any).maxSteps = 5; // Enable multi-step tool execution for streaming
+        const optionsWithTools = streamOptions as GenerateTextParamsWithTools;
+        optionsWithTools.tools = options.tools;
+        optionsWithTools.maxSteps = 5; // Enable multi-step tool execution for streaming
       }
 
       const { textStream } = await streamText(streamOptions);
@@ -446,7 +456,7 @@ export class OpenAIPortal extends BasePortal {
         yield delta;
       }
     } catch (error) {
-      console.error('OpenAI stream chat error:', error);
+      // OpenAI stream chat error
       throw new Error(`OpenAI stream chat failed: ${error}`);
     }
   }

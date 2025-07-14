@@ -24,13 +24,26 @@ export {
 /**
  * Initialize all skills with the API extension instance
  */
-export function initializeSkills(extension: any, config: any = {}) {
+export function initializeSkills(
+  extension: unknown,
+  config: Record<string, unknown> = {}
+): {
+  http: HttpSkill;
+  websocketServer: WebSocketServerSkill;
+  chat: ChatSkill;
+  authentication: AuthenticationSkill;
+  sessionManagement: SessionManagementSkill;
+  healthMonitoring: HealthMonitoringSkill;
+} {
   return {
-    http: new HttpSkill(extension),
-    websocketServer: new WebSocketServerSkill(extension, config.websocket),
-    chat: new ChatSkill(extension),
-    authentication: new AuthenticationSkill(extension),
-    sessionManagement: new SessionManagementSkill(extension),
-    healthMonitoring: new HealthMonitoringSkill(extension),
+    http: new HttpSkill(extension as any),
+    websocketServer: new WebSocketServerSkill(
+      extension as any,
+      (config as any).websocket
+    ),
+    chat: new ChatSkill(extension as any),
+    authentication: new AuthenticationSkill(extension as any),
+    sessionManagement: new SessionManagementSkill(extension as any),
+    healthMonitoring: new HealthMonitoringSkill(extension as any),
   };
 }

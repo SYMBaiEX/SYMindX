@@ -106,15 +106,15 @@ export const StatusAnimation: React.FC<StatusAnimationProps> = ({
       }
     }, frameTime);
 
-    return () => clearInterval(interval);
+    return (): void => clearInterval(interval);
   }, [duration, selectedAnimation.length, onComplete]);
 
   // Render status icon with effects
-  const renderStatusIcon = () => {
+  const renderStatusIcon = (): React.ReactNode => {
     const icon = selectedAnimation[frame];
 
     switch (variant) {
-      case 'explosive':
+      case 'explosive': {
         // Add explosion effects
         const explosionSize = Math.min(frame, 3);
         const explosionChars = ['·', '•', '○', '◉'];
@@ -124,7 +124,7 @@ export const StatusAnimation: React.FC<StatusAnimationProps> = ({
             {explosionSize > 0 && (
               <Box>
                 {Array.from({ length: explosionSize * 2 + 1 }, (_, i) => (
-                  <Text key={i} color={color} dimColor>
+                  <Text key={`explosion-top-${i}`} color={color} dimColor>
                     {
                       explosionChars[
                         Math.min(explosionSize - 1, explosionChars.length - 1)
@@ -160,7 +160,7 @@ export const StatusAnimation: React.FC<StatusAnimationProps> = ({
             {explosionSize > 0 && (
               <Box>
                 {Array.from({ length: explosionSize * 2 + 1 }, (_, i) => (
-                  <Text key={i} color={color} dimColor>
+                  <Text key={`explosion-bottom-${i}`} color={color} dimColor>
                     {
                       explosionChars[
                         Math.min(explosionSize - 1, explosionChars.length - 1)
@@ -172,8 +172,9 @@ export const StatusAnimation: React.FC<StatusAnimationProps> = ({
             )}
           </Box>
         );
+      }
 
-      case 'matrix':
+      case 'matrix': {
         // Add matrix rain effect around icon
         return (
           <Box>
@@ -188,19 +189,21 @@ export const StatusAnimation: React.FC<StatusAnimationProps> = ({
             </Text>
           </Box>
         );
+      }
 
-      default:
+      default: {
         // Standard animation
         return (
           <Text color={color} bold={frame === selectedAnimation.length - 1}>
             {icon}
           </Text>
         );
+      }
     }
   };
 
   // Render message with typewriter effect
-  const renderMessage = () => {
+  const renderMessage = (): React.ReactNode => {
     if (!message) return null;
 
     if (variant === 'animated' && !isComplete) {

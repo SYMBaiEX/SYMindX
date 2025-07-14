@@ -5,8 +5,8 @@
  */
 
 import { Pool } from 'pg';
-import { buildObject } from '../../../../utils/type-helpers';
 
+import { buildObject } from '../../../../utils/type-helpers';
 import {
   ChatRepository,
   ChatSystemConfig,

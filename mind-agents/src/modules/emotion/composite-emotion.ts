@@ -9,6 +9,12 @@ import {
   EmotionBlend,
   AdvancedEmotionConfig,
 } from '../../types/emotion';
+import {
+  EmotionResult,
+  EmotionBlendResult,
+  EmotionTransition,
+  EmotionModifier,
+} from '../../types/modules/emotions';
 
 // Import all emotion types
 import { AngryEmotion } from './angry/index';
@@ -50,10 +56,7 @@ export class CompositeEmotionModule implements EmotionModule {
   ) {
     this.config = config;
 
-    // Log configuration for debugging
-    console.log(
-      `CompositeEmotion initialized with sensitivity: ${config.sensitivity}, decayRate: ${config.decayRate}`
-    );
+    // CompositeEmotion initialized with configuration
     if (config.personalityTraits !== undefined) {
       this._personalityTraits = config.personalityTraits;
     }
@@ -93,8 +96,11 @@ export class CompositeEmotionModule implements EmotionModule {
     return this._history;
   }
 
-  processEvent(eventType: string, context?: any): EmotionState {
-    console.log(`🎭 Processing emotional event: ${eventType}`);
+  processEvent(
+    eventType: string,
+    context?: Record<string, unknown>
+  ): EmotionResult {
+    // Processing emotional event
 
     // Process event through all emotions
     const emotionResponses: Array<{
@@ -139,7 +145,35 @@ export class CompositeEmotionModule implements EmotionModule {
       }
     }
 
-    return this.getCurrentState();
+    const state = this.getCurrentState();
+    const transitions: EmotionTransition[] = [];
+
+    // Check if we had any transitions
+    if (this._history.length > 0) {
+      const lastEntry = this._history[this._history.length - 1];
+      if (lastEntry.emotion !== this._current) {
+        transitions.push({
+          from: lastEntry.emotion,
+          to: this._current,
+          duration: 300, // Default transition duration
+          easing: 'ease-in-out',
+        });
+      }
+    }
+
+    return {
+      state,
+      changed: transitions.length > 0 || emotionResponses.length > 0,
+      previousEmotion: transitions.length > 0 ? transitions[0].from : undefined,
+      transitions,
+      blendResult: this._blendedState
+        ? this.convertToBlendResult(this._blendedState)
+        : undefined,
+      metadata: {
+        processingTime: 0,
+        triggersProcessed: 1,
+      },
+    };
   }
 
   private transitionToEmotion(emotion: string, intensity: number): void {
@@ -168,9 +202,7 @@ export class CompositeEmotionModule implements EmotionModule {
 
     // Only log significant emotion changes (not neutral or minor changes)
     if (emotion !== 'neutral' && intensity > 0.3) {
-      console.log(
-        `😊 Emotion changed to ${this._current} (${(this._intensity * 100).toFixed(0)}%)`
-      );
+      // Emotion changed
     }
   }
 
@@ -193,7 +225,7 @@ export class CompositeEmotionModule implements EmotionModule {
     emotion: string,
     intensity: number,
     triggers: string[] = []
-  ): EmotionState {
+  ): EmotionResult {
     if (this.emotions.has(emotion)) {
       this.transitionToEmotion(emotion, intensity);
 
@@ -204,7 +236,16 @@ export class CompositeEmotionModule implements EmotionModule {
       }
     }
 
-    return this.getCurrentState();
+    const state = this.getCurrentState();
+    return {
+      state,
+      changed: this.emotions.has(emotion),
+      previousEmotion: this._current !== emotion ? this._current : undefined,
+      metadata: {
+        processingTime: 0,
+        triggersProcessed: triggers.length,
+      },
+    };
   }
 
   getHistory(limit?: number): EmotionRecord[] {
@@ -221,7 +262,7 @@ export class CompositeEmotionModule implements EmotionModule {
     return limit ? allHistory.slice(0, limit) : allHistory;
   }
 
-  reset(): EmotionState {
+  reset(): EmotionResult {
     // Reset all emotions
     for (const emotion of this.emotions.values()) {
       emotion.reset();
@@ -231,7 +272,15 @@ export class CompositeEmotionModule implements EmotionModule {
     this._intensity = 0;
     this._history = [];
 
-    return this.getCurrentState();
+    const state = this.getCurrentState();
+    return {
+      state,
+      changed: true,
+      metadata: {
+        processingTime: 0,
+        triggersProcessed: 0,
+      },
+    };
   }
 
   // Helper methods
@@ -340,7 +389,7 @@ export class CompositeEmotionModule implements EmotionModule {
         .slice(0, 3)
         .map((c) => `${c.emotion}(${(c.weight * 100).toFixed(0)}%)`)
         .join(' + ');
-      console.log(`🎨 Blended emotion: ${componentStr} → ${this._current}`);
+      // Blended emotion calculated
     }
   }
 
@@ -408,6 +457,23 @@ export class CompositeEmotionModule implements EmotionModule {
       modifiers: currentEmotion?.getEmotionModifier() || {},
       personalityTraits: this._personalityTraits,
       contextSensitivity: this._contextSensitivity,
+    };
+  }
+
+  // Convert internal blend to public blend result
+  private convertToBlendResult(blend: EmotionBlend): EmotionBlendResult {
+    return {
+      primary: this._current,
+      secondary:
+        blend.components.length > 1 ? blend.components[1].emotion : undefined,
+      ratio: blend.components.length > 1 ? blend.components[0].weight : 1.0,
+      coordinates: blend.coordinates,
+      intensity: blend.intensity,
+      components: blend.components.map((c) => ({
+        emotion: c.emotion,
+        weight: c.weight,
+        contribution: c.weight * blend.intensity,
+      })),
     };
   }
 }

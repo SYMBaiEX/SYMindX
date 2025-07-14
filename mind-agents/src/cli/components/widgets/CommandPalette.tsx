@@ -14,7 +14,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   value,
   onSubmit: _onSubmit,
   onCancel: _onCancel,
-}) => {
+}): React.ReactElement => {
   return (
     <Box
       flexDirection='column'

@@ -167,7 +167,9 @@ export class TelegramExtension implements Extension {
    * @param telegrafMessage Message from Telegraf
    * @returns Standardized TelegramMessage
    */
-  private convertToTelegramMessage(telegrafMessage: any): TelegramMessage {
+  private convertToTelegramMessage(
+    telegrafMessage: Record<string, unknown>
+  ): TelegramMessage {
     // Basic conversion - would need to be expanded for a complete implementation
     return {
       messageId: telegrafMessage.message_id,
@@ -436,8 +438,8 @@ export class TelegramExtension implements Extension {
         throw new Error('Bot is not initialized');
       }
 
-      const options: any = {
-        parse_mode: parseMode as any,
+      const options: Record<string, unknown> = {
+        parse_mode: parseMode,
         disable_notification: disableNotification,
         reply_parameters: replyToMessageId
           ? {
@@ -491,8 +493,8 @@ export class TelegramExtension implements Extension {
         throw new Error('Bot is not initialized');
       }
 
-      const options: any = {
-        parse_mode: parseMode as any,
+      const options: Record<string, unknown> = {
+        parse_mode: parseMode,
       };
 
       // Handle deprecated disable_web_page_preview
@@ -577,7 +579,7 @@ export class TelegramExtension implements Extension {
         throw new Error('Bot is not initialized');
       }
 
-      const options: any = {};
+      const options: Record<string, unknown> = {};
       if (disableNotification !== undefined) {
         options.disable_notification = disableNotification;
       }
@@ -817,7 +819,7 @@ export class TelegramExtension implements Extension {
         throw new Error('Bot is not initialized');
       }
 
-      const options: any = {};
+      const options: Record<string, unknown> = {};
       if (untilDate !== undefined) options.until_date = untilDate;
       if (revokeMessages !== undefined)
         options.revoke_messages = revokeMessages;
@@ -861,7 +863,7 @@ export class TelegramExtension implements Extension {
         throw new Error('Bot is not initialized');
       }
 
-      const options: any = {};
+      const options: Record<string, unknown> = {};
       if (onlyIfBanned !== undefined) {
         options.only_if_banned = onlyIfBanned;
       }
@@ -898,7 +900,7 @@ export class TelegramExtension implements Extension {
   async restrictChatMember(
     chatId: string | number,
     userId: number,
-    permissions: any,
+    permissions: Record<string, unknown>,
     untilDate?: number
   ): Promise<ActionResult> {
     try {
@@ -941,7 +943,7 @@ export class TelegramExtension implements Extension {
   async promoteChatMember(
     chatId: string | number,
     userId: number,
-    permissions: any
+    permissions: Record<string, unknown>
   ): Promise<ActionResult> {
     try {
       if (!this.bot) {
@@ -990,9 +992,9 @@ export class TelegramExtension implements Extension {
         throw new Error('Bot is not initialized');
       }
 
-      const options: any = {
+      const options: Record<string, unknown> = {
         caption,
-        parse_mode: parseMode as any,
+        parse_mode: parseMode,
         reply_parameters: replyToMessageId
           ? {
               message_id: replyToMessageId,
@@ -1046,9 +1048,9 @@ export class TelegramExtension implements Extension {
         throw new Error('Bot is not initialized');
       }
 
-      const options: any = {
+      const options: Record<string, unknown> = {
         caption,
-        parse_mode: parseMode as any,
+        parse_mode: parseMode,
         duration,
         width,
         height,
@@ -1105,9 +1107,9 @@ export class TelegramExtension implements Extension {
         throw new Error('Bot is not initialized');
       }
 
-      const options: any = {
+      const options: Record<string, unknown> = {
         caption,
-        parse_mode: parseMode as any,
+        parse_mode: parseMode,
         duration,
         performer,
         title,
@@ -1161,9 +1163,9 @@ export class TelegramExtension implements Extension {
         throw new Error('Bot is not initialized');
       }
 
-      const options: any = {
+      const options: Record<string, unknown> = {
         caption,
-        parse_mode: parseMode as any,
+        parse_mode: parseMode,
         reply_parameters: replyToMessageId
           ? {
               message_id: replyToMessageId,
@@ -1216,7 +1218,7 @@ export class TelegramExtension implements Extension {
         throw new Error('Bot is not initialized');
       }
 
-      const options: any = {
+      const options: Record<string, unknown> = {
         reply_parameters: replyToMessageId
           ? {
               message_id: replyToMessageId,
@@ -1270,7 +1272,7 @@ export class TelegramExtension implements Extension {
         throw new Error('Bot is not initialized');
       }
 
-      const options: any = {
+      const options: Record<string, unknown> = {
         reply_parameters: replyToMessageId
           ? {
               message_id: replyToMessageId,
@@ -1314,7 +1316,9 @@ export class TelegramExtension implements Extension {
 /**
  * Factory function to create Telegram extension
  */
-export function createTelegramExtension(config?: any): TelegramExtension {
+export function createTelegramExtension(
+  config?: TelegramConfig
+): TelegramExtension {
   return new TelegramExtension(config);
 }
 

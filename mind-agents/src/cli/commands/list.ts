@@ -117,7 +117,7 @@ export class ListCommand {
       // Fetch agents from API server
       const response = await fetch(`${this.context.config.apiUrl}/agents`);
       if (!response.ok) {
-        console.log(
+        process.stdout.write(
           chalk.yellow(
             '⚠️  Could not connect to API server. Is the runtime running?'
           )
@@ -139,18 +139,18 @@ export class ListCommand {
       if (options.type) {
         // For API-fetched agents, we might not have autonomy information
         // This would need to be enhanced to call a separate API endpoint for autonomy status
-        console.log(
+        process.stdout.write(
           chalk.yellow('⚠️  Type filtering not available via API yet')
         );
       }
 
       if (options.json) {
-        console.log(JSON.stringify(agents, null, 2));
+        process.stdout.write(JSON.stringify(agents, null, 2));
         return;
       }
 
       if (agents.length === 0) {
-        console.log(chalk.yellow('No agents found matching criteria'));
+        process.stdout.write(chalk.yellow('No agents found matching criteria') + '\n');
         return;
       }
 
@@ -159,27 +159,27 @@ export class ListCommand {
         (agent: any) => agent.status === 'error'
       );
       if (errorAgents.length > 0) {
-        console.log(
+        process.stdout.write(
           chalk.red(
             `⚠️  ${errorAgents.length} agent(s) are in error state. Check API keys and configuration.`
           )
         );
       }
 
-      console.log(chalk.blue.bold(`\n🤖 Agents (${agents.length})`));
-      console.log(chalk.gray('─'.repeat(80)));
+      process.stdout.write(chalk.blue.bold(`\n🤖 Agents (${agents.length})`));
+      process.stdout.write(chalk.gray('─'.repeat(80)));
 
       if (options.verbose) {
         for (const agent of agents) {
           await this.displayAgentDetailed(agent);
         }
       } else {
-        console.log(
+        process.stdout.write(
           chalk.cyan(
             'TYPE  NAME                    STATUS      EMOTION     EXTENSIONS  ID'
           )
         );
-        console.log(chalk.gray('─'.repeat(80)));
+        process.stdout.write(chalk.gray('─'.repeat(80)));
 
         for (const agent of agents) {
           const typeIcon = '🤖'; // Default to bot icon for API-fetched agents
@@ -191,95 +191,95 @@ export class ListCommand {
           const extensions = (agent.extensionCount || 0).toString().padEnd(10);
           const id = chalk.gray(agent.id.substring(0, 12) + '...');
 
-          console.log(
+          process.stdout.write(
             `${typeIcon}    ${chalk.cyan(name)} ${status} ${emotion} ${extensions} ${id}`
           );
         }
       }
     } catch (error) {
-      console.log(chalk.red('❌ Failed to list agents'));
+      process.stdout.write(chalk.red('❌ Failed to list agents'));
       this.logger.error('List agents error:', error);
     }
   }
 
   async listModules(options: any): Promise<void> {
     try {
-      console.log(chalk.blue.bold('\n🧩 Available Modules'));
-      console.log(chalk.gray('─'.repeat(60)));
+      process.stdout.write(chalk.blue.bold('\n🧩 Available Modules'));
+      process.stdout.write(chalk.gray('─'.repeat(60)));
 
       const capabilities = this.context.runtime.getRuntimeCapabilities();
 
       // Memory modules
       if (!options.type || options.type === 'memory') {
-        console.log(chalk.cyan('\n💾 Memory Providers:'));
+        process.stdout.write(chalk.cyan('\n💾 Memory Providers:'));
         for (const provider of capabilities.modules.memory.available) {
-          console.log(`  • ${provider}`);
+          process.stdout.write(`  • ${provider}`);
         }
       }
 
       // Emotion modules
       if (!options.type || options.type === 'emotion') {
-        console.log(chalk.cyan('\n😊 Emotion Modules:'));
+        process.stdout.write(chalk.cyan('\n😊 Emotion Modules:'));
         for (const module of capabilities.modules.emotion.available) {
-          console.log(`  • ${module}`);
+          process.stdout.write(`  • ${module}`);
         }
       }
 
       // Cognition modules
       if (!options.type || options.type === 'cognition') {
-        console.log(chalk.cyan('\n🧠 Cognition Modules:'));
+        process.stdout.write(chalk.cyan('\n🧠 Cognition Modules:'));
         for (const module of capabilities.modules.cognition.available) {
-          console.log(`  • ${module}`);
+          process.stdout.write(`  • ${module}`);
         }
       }
 
       // Portal modules
       if (!options.type || options.type === 'portal') {
-        console.log(chalk.cyan('\n🔮 Portals:'));
+        process.stdout.write(chalk.cyan('\n🔮 Portals:'));
         for (const portal of capabilities.modules.portals.available) {
-          console.log(`  • ${portal}`);
+          process.stdout.write(`  • ${portal}`);
         }
 
         if (capabilities.modules.portals.factories.length > 0) {
-          console.log(chalk.gray('\n  Portal Factories:'));
+          process.stdout.write(chalk.gray('\n  Portal Factories:'));
           for (const factory of capabilities.modules.portals.factories) {
-            console.log(chalk.gray(`    • ${factory}`));
+            process.stdout.write(chalk.gray(`    • ${factory}`));
           }
         }
       }
     } catch (error) {
-      console.log(chalk.red('❌ Failed to list modules'));
+      process.stdout.write(chalk.red('❌ Failed to list modules'));
       this.logger.error('List modules error:', error);
     }
   }
 
   async listExtensions(options: any): Promise<void> {
     try {
-      console.log(chalk.blue.bold('\n📦 Extensions'));
-      console.log(chalk.gray('─'.repeat(60)));
+      process.stdout.write(chalk.blue.bold('\n📦 Extensions'));
+      process.stdout.write(chalk.gray('─'.repeat(60)));
 
       if (options.agent) {
         // Show extensions for specific agent
         const agent = this.context.runtime.agents.get(options.agent);
         if (!agent) {
-          console.log(chalk.red(`❌ Agent '${options.agent}' not found`));
+          process.stdout.write(chalk.red(`❌ Agent '${options.agent}' not found`));
           return;
         }
 
-        console.log(chalk.cyan(`Extensions for ${agent.name}:`));
+        process.stdout.write(chalk.cyan(`Extensions for ${agent.name}:`));
         for (const ext of agent.extensions) {
           if (options.enabled && !ext.enabled) continue;
 
           const statusIcon = ext.enabled ? '✅' : '❌';
-          console.log(`${statusIcon} ${ext.name} (${ext.id})`);
+          process.stdout.write(`${statusIcon} ${ext.name} (${ext.id})`);
 
           if (ext.version) {
-            console.log(chalk.gray(`    Version: ${ext.version}`));
+            process.stdout.write(chalk.gray(`    Version: ${ext.version}`));
           }
 
           const actions = Object.keys(ext.actions || {});
           if (actions.length > 0) {
-            console.log(chalk.gray(`    Actions: ${actions.join(', ')}`));
+            process.stdout.write(chalk.gray(`    Actions: ${actions.join(', ')}`));
           }
         }
       } else {
@@ -305,30 +305,30 @@ export class ListCommand {
         }
 
         if (allExtensions.size === 0) {
-          console.log(chalk.yellow('No extensions found'));
+          process.stdout.write(chalk.yellow('No extensions found'));
           return;
         }
 
         for (const [extId, data] of allExtensions) {
           const statusIcon = data.extension.enabled ? '✅' : '❌';
-          console.log(
+          process.stdout.write(
             `${statusIcon} ${chalk.cyan(data.extension.name)} (${extId})`
           );
-          console.log(chalk.gray(`    Used by: ${data.agents.join(', ')}`));
+          process.stdout.write(chalk.gray(`    Used by: ${data.agents.join(', ')}`));
 
           if (data.extension.version) {
-            console.log(chalk.gray(`    Version: ${data.extension.version}`));
+            process.stdout.write(chalk.gray(`    Version: ${data.extension.version}`));
           }
 
           const actions = Object.keys(data.extension.actions || {});
           if (actions.length > 0) {
-            console.log(chalk.gray(`    Actions: ${actions.join(', ')}`));
+            process.stdout.write(chalk.gray(`    Actions: ${actions.join(', ')}`));
           }
-          console.log();
+          process.stdout.write();
         }
       }
     } catch (error) {
-      console.log(chalk.red('❌ Failed to list extensions'));
+      process.stdout.write(chalk.red('❌ Failed to list extensions'));
       this.logger.error('List extensions error:', error);
     }
   }
@@ -359,18 +359,18 @@ export class ListCommand {
         .slice(0, limit);
 
       if (commands.length === 0) {
-        console.log(chalk.yellow('No commands found matching criteria'));
+        process.stdout.write(chalk.yellow('No commands found matching criteria'));
         return;
       }
 
-      console.log(chalk.blue.bold(`\n⚡ Commands (${commands.length})`));
-      console.log(chalk.gray('─'.repeat(80)));
-      console.log(
+      process.stdout.write(chalk.blue.bold(`\n⚡ Commands (${commands.length})`));
+      process.stdout.write(chalk.gray('─'.repeat(80)));
+      process.stdout.write(
         chalk.cyan(
           'TIME     AGENT           STATUS      TYPE         INSTRUCTION'
         )
       );
-      console.log(chalk.gray('─'.repeat(80)));
+      process.stdout.write(chalk.gray('─'.repeat(80)));
 
       for (const cmd of commands) {
         const time = cmd.timestamp.toLocaleTimeString().padEnd(8);
@@ -385,45 +385,45 @@ export class ListCommand {
             ? cmd.instruction.substring(0, 27) + '...'
             : cmd.instruction;
 
-        console.log(
+        process.stdout.write(
           `${chalk.gray(time)} ${chalk.cyan(agentName)} ${status} ${type} ${instruction}`
         );
 
         if (cmd.result?.error) {
-          console.log(chalk.red(`         Error: ${cmd.result.error}`));
+          process.stdout.write(chalk.red(`         Error: ${cmd.result.error}`));
         }
       }
     } catch (error) {
-      console.log(chalk.red('❌ Failed to list commands'));
+      process.stdout.write(chalk.red('❌ Failed to list commands'));
       this.logger.error('List commands error:', error);
     }
   }
 
   async listPortals(_options: any): Promise<void> {
     try {
-      console.log(chalk.blue.bold('\n🔮 AI Portals'));
-      console.log(chalk.gray('─'.repeat(60)));
+      process.stdout.write(chalk.blue.bold('\n🔮 AI Portals'));
+      process.stdout.write(chalk.gray('─'.repeat(60)));
 
       const capabilities = this.context.runtime.getRuntimeCapabilities();
       const availablePortals = capabilities.modules.portals.available;
       const factories = capabilities.modules.portals.factories;
 
-      console.log(chalk.cyan('Available Portals:'));
+      process.stdout.write(chalk.cyan('Available Portals:'));
       for (const portal of availablePortals) {
         const isConfigured = this.isPortalConfigured(portal);
         const statusIcon = isConfigured ? '✅' : '❌';
-        console.log(`${statusIcon} ${portal}`);
+        process.stdout.write(`${statusIcon} ${portal}`);
       }
 
       if (factories.length > 0) {
-        console.log(chalk.cyan('\nPortal Factories:'));
+        process.stdout.write(chalk.cyan('\nPortal Factories:'));
         for (const factory of factories) {
-          console.log(`  🏭 ${factory}`);
+          process.stdout.write(`  🏭 ${factory}`);
         }
       }
 
       // Show which agents are using which portals
-      console.log(chalk.cyan('\nPortal Usage:'));
+      process.stdout.write(chalk.cyan('\nPortal Usage:'));
       const portalUsage = new Map<string, string[]>();
 
       for (const agent of this.context.runtime.agents.values()) {
@@ -438,15 +438,15 @@ export class ListCommand {
       }
 
       if (portalUsage.size === 0) {
-        console.log(chalk.gray('  No portals currently in use'));
+        process.stdout.write(chalk.gray('  No portals currently in use'));
       } else {
         for (const [portal, agents] of portalUsage) {
-          console.log(`  ${portal}: ${agents.join(', ')}`);
+          process.stdout.write(`  ${portal}: ${agents.join(', ')}`);
         }
       }
 
       // Show API key status
-      console.log(chalk.cyan('\nAPI Key Status:'));
+      process.stdout.write(chalk.cyan('\nAPI Key Status:'));
       const apiKeys = [
         { name: 'OpenAI', env: 'OPENAI_API_KEY' },
         { name: 'Anthropic', env: 'ANTHROPIC_API_KEY' },
@@ -458,10 +458,10 @@ export class ListCommand {
       for (const apiKey of apiKeys) {
         const isSet = !!process.env[apiKey.env];
         const statusIcon = isSet ? '✅' : '❌';
-        console.log(`${statusIcon} ${apiKey.name}`);
+        process.stdout.write(`${statusIcon} ${apiKey.name}`);
       }
     } catch (error) {
-      console.log(chalk.red('❌ Failed to list portals'));
+      process.stdout.write(chalk.red('❌ Failed to list portals'));
       this.logger.error('List portals error:', error);
     }
   }
@@ -475,16 +475,16 @@ export class ListCommand {
       });
 
       if (events.length === 0) {
-        console.log(chalk.yellow('No events found matching criteria'));
+        process.stdout.write(chalk.yellow('No events found matching criteria'));
         return;
       }
 
-      console.log(chalk.blue.bold(`\n📡 Events (${events.length})`));
-      console.log(chalk.gray('─'.repeat(80)));
-      console.log(
+      process.stdout.write(chalk.blue.bold(`\n📡 Events (${events.length})`));
+      process.stdout.write(chalk.gray('─'.repeat(80)));
+      process.stdout.write(
         chalk.cyan('TIME     TYPE               SOURCE          DATA')
       );
-      console.log(chalk.gray('─'.repeat(80)));
+      process.stdout.write(chalk.gray('─'.repeat(80)));
 
       for (const event of events) {
         const time = new Date(event.timestamp).toLocaleTimeString().padEnd(8);
@@ -495,12 +495,12 @@ export class ListCommand {
           ? JSON.stringify(event.data).substring(0, 30)
           : '';
 
-        console.log(
+        process.stdout.write(
           `${chalk.gray(time)} ${type} ${chalk.cyan(source)} ${chalk.gray(data)}`
         );
       }
     } catch (error) {
-      console.log(chalk.red('❌ Failed to list events'));
+      process.stdout.write(chalk.red('❌ Failed to list events'));
       this.logger.error('List events error:', error);
     }
   }
@@ -544,41 +544,41 @@ export class ListCommand {
       };
 
       if (options.json) {
-        console.log(JSON.stringify(capabilityData, null, 2));
+        process.stdout.write(JSON.stringify(capabilityData, null, 2));
       } else {
-        console.log(chalk.blue.bold('\n🛠️  System Capabilities'));
-        console.log(chalk.gray('─'.repeat(60)));
+        process.stdout.write(chalk.blue.bold('\n🛠️  System Capabilities'));
+        process.stdout.write(chalk.gray('─'.repeat(60)));
 
-        console.log(chalk.cyan('Runtime:'));
-        console.log(`  Version: ${capabilityData.runtime.version}`);
-        console.log(
+        process.stdout.write(chalk.cyan('Runtime:'));
+        process.stdout.write(`  Version: ${capabilityData.runtime.version}`);
+        process.stdout.write(
           `  Status: ${capabilityData.runtime.isRunning ? '✅ Running' : '❌ Stopped'}`
         );
-        console.log(
+        process.stdout.write(
           `  Uptime: ${(capabilityData.runtime.uptime / 60).toFixed(1)} minutes`
         );
 
-        console.log(chalk.cyan('\nAgents:'));
-        console.log(`  Total: ${capabilityData.agents.total}`);
-        console.log(`  Autonomous: ${capabilityData.agents.autonomous}`);
+        process.stdout.write(chalk.cyan('\nAgents:'));
+        process.stdout.write(`  Total: ${capabilityData.agents.total}`);
+        process.stdout.write(`  Autonomous: ${capabilityData.agents.autonomous}`);
 
-        console.log(chalk.cyan('\nModules:'));
-        console.log(
+        process.stdout.write(chalk.cyan('\nModules:'));
+        process.stdout.write(
           `  Memory: ${capabilityData.modules.memory.available.join(', ')}`
         );
-        console.log(
+        process.stdout.write(
           `  Emotion: ${capabilityData.modules.emotion.available.join(', ')}`
         );
-        console.log(
+        process.stdout.write(
           `  Cognition: ${capabilityData.modules.cognition.available.join(', ')}`
         );
-        console.log(
+        process.stdout.write(
           `  Portals: ${capabilityData.modules.portals.available.join(', ')}`
         );
 
-        console.log(chalk.cyan('\nCommands:'));
-        console.log(`  Total Processed: ${capabilityData.commands.total}`);
-        console.log(
+        process.stdout.write(chalk.cyan('\nCommands:'));
+        process.stdout.write(`  Total Processed: ${capabilityData.commands.total}`);
+        process.stdout.write(
           `  Success Rate: ${
             capabilityData.commands.total > 0
               ? (
@@ -589,12 +589,12 @@ export class ListCommand {
               : 0
           }%`
         );
-        console.log(
+        process.stdout.write(
           `  Average Execution: ${capabilityData.commands.averageExecutionTime.toFixed(2)}ms`
         );
       }
     } catch (error) {
-      console.log(chalk.red('❌ Failed to list capabilities'));
+      process.stdout.write(chalk.red('❌ Failed to list capabilities'));
       this.logger.error('List capabilities error:', error);
     }
   }
@@ -603,7 +603,7 @@ export class ListCommand {
     const typeIcon = '🤖'; // Default to bot icon for API-fetched agents
     const statusColor = this.getStatusColor(agent.status);
 
-    console.log(
+    process.stdout.write(
       '\n' +
         typeIcon +
         ' ' +
@@ -611,13 +611,13 @@ export class ListCommand {
         ' ' +
         chalk.gray('(' + agent.id + ')')
     );
-    console.log('  Status: ' + statusColor(agent.status));
-    console.log('  Emotion: ' + (agent.emotion || 'unknown'));
-    console.log('  Last Update: ' + (agent.lastUpdate || 'never'));
-    console.log('  Extensions: ' + (agent.extensionCount || 0));
+    process.stdout.write('  Status: ' + statusColor(agent.status));
+    process.stdout.write('  Emotion: ' + (agent.emotion || 'unknown'));
+    process.stdout.write('  Last Update: ' + (agent.lastUpdate || 'never'));
+    process.stdout.write('  Extensions: ' + (agent.extensionCount || 0));
 
     if (agent.hasPortal) {
-      console.log('  Portal: configured');
+      process.stdout.write('  Portal: configured');
     }
 
     // Show ethics status if available
@@ -625,7 +625,7 @@ export class ListCommand {
       const ethicsStatus = agent.ethicsEnabled
         ? chalk.green('✅ Enabled')
         : chalk.yellow('⚠️ Disabled');
-      console.log('  Ethics: ' + ethicsStatus);
+      process.stdout.write('  Ethics: ' + ethicsStatus);
     }
   }
 

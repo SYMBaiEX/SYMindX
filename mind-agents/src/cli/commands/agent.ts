@@ -129,7 +129,7 @@ export class AgentCommand {
       const agents = Array.from(this.context.runtime.agents.values());
 
       if (agents.length === 0) {
-        console.log(chalk.yellow('No agents found'));
+        process.stdout.write(chalk.yellow('No agents found') + '\n');
         return;
       }
 
@@ -142,14 +142,14 @@ export class AgentCommand {
         : agents;
 
       if (filteredAgents.length === 0) {
-        console.log(
-          chalk.yellow(`No agents found with status: ${options?.status}`)
+        process.stdout.write(
+          chalk.yellow(`No agents found with status: ${options?.status}`) + '\n'
         );
         return;
       }
 
-      console.log(chalk.blue.bold(`\n🤖 Agents (${filteredAgents.length})`));
-      console.log(chalk.gray('─'.repeat(80)));
+      process.stdout.write(chalk.blue.bold(`\n🤖 Agents (${filteredAgents.length})`) + '\n');
+      process.stdout.write(chalk.gray('─'.repeat(80)) + '\n');
 
       for (const agent of filteredAgents) {
         const statusColor = this.getStatusColor(agent.status);
@@ -159,63 +159,63 @@ export class AgentCommand {
         const isAutonomous = autonomousStatus.autonomous;
 
         if (options?.verbose) {
-          console.log(
+          process.stdout.write(
             '\n' +
               chalk.cyan(agent.name) +
               ' ' +
-              chalk.gray('(' + agent.id + ')')
+              chalk.gray('(' + agent.id + ')') + '\n'
           );
-          console.log('  ' + chalk.white('Status:') + ' ' + statusColor);
-          console.log(
+          process.stdout.write('  ' + chalk.white('Status:') + ' ' + statusColor + '\n');
+          process.stdout.write(
             '  ' +
               chalk.white('Autonomous:') +
               ' ' +
-              (isAutonomous ? '✅' : '❌')
+              (isAutonomous ? '✅' : '❌') + '\n'
           );
-          console.log(
+          process.stdout.write(
             '  ' +
               chalk.white('Emotion:') +
               ' ' +
-              (agent.emotion?.current || 'unknown')
+              (agent.emotion?.current || 'unknown') + '\n'
           );
-          console.log(
+          process.stdout.write(
             '  ' +
               chalk.white('Last Update:') +
               ' ' +
-              (agent.lastUpdate?.toLocaleString() || 'never')
+              (agent.lastUpdate?.toLocaleString() || 'never') + '\n'
           );
-          console.log(
-            '  ' + chalk.white('Extensions:') + ' ' + agent.extensions.length
+          process.stdout.write(
+            '  ' + chalk.white('Extensions:') + ' ' + agent.extensions.length + '\n'
           );
 
           if (isAutonomous && autonomousStatus.engine) {
-            console.log(
+            process.stdout.write(
               '  ' +
                 chalk.white('Autonomy Level:') +
                 ' ' +
                 (autonomousStatus.engine.autonomyLevel * 100).toFixed(0) +
-                '%'
+                '%' + '\n'
             );
           }
         } else {
           const autonomyIndicator = isAutonomous ? '🤖' : '👤';
-          console.log(
+          process.stdout.write(
             autonomyIndicator +
               ' ' +
               chalk.cyan(agent.name.padEnd(20)) +
               ' ' +
               statusColor(agent.status.padEnd(10)) +
               ' ' +
-              chalk.gray(agent.id)
+              chalk.gray(agent.id) + '\n'
           );
         }
       }
 
       if (options?.verbose) {
-        console.log(chalk.gray('\n' + '─'.repeat(80)));
+        process.stdout.write(chalk.gray('\n' + '─'.repeat(80)) + '\n');
       }
     } catch (error) {
-      console.log(chalk.red('❌ Failed to list agents'));
+      process.stdout.write(chalk.red('❌ Failed to list agents') + '\n');
       this.logger.error('List agents error:', error);
     }
   }
@@ -227,13 +227,13 @@ export class AgentCommand {
     try {
       const agent = this.context.runtime.agents.get(agentId);
       if (!agent) {
-        console.log(chalk.red(`❌ Agent '${agentId}' not found`));
+        process.stdout.write(chalk.red(`❌ Agent '${agentId}' not found`) + '\n');
         return;
       }
 
       if (agent.status === AgentStatus.ACTIVE) {
-        console.log(
-          chalk.yellow(`⚠️  Agent '${agent.name}' is already active`)
+        process.stdout.write(
+          chalk.yellow(`⚠️  Agent '${agent.name}' is already active`) + '\n'
         );
         return;
       }
@@ -277,7 +277,7 @@ export class AgentCommand {
     try {
       const agent = this.context.runtime.agents.get(agentId);
       if (!agent) {
-        console.log(chalk.red(`❌ Agent '${agentId}' not found`));
+        process.stdout.write(chalk.red(`❌ Agent '${agentId}' not found`) + '\n');
         return;
       }
 
@@ -285,8 +285,8 @@ export class AgentCommand {
         agent.status === AgentStatus.IDLE ||
         agent.status === AgentStatus.ERROR
       ) {
-        console.log(
-          chalk.yellow(`⚠️  Agent '${agent.name}' is already stopped`)
+        process.stdout.write(
+          chalk.yellow(`⚠️  Agent '${agent.name}' is already stopped`) + '\n'
         );
         return;
       }
@@ -302,7 +302,7 @@ export class AgentCommand {
         ]);
 
         if (!confirm) {
-          console.log(chalk.gray('Operation cancelled'));
+          process.stdout.write(chalk.gray('Operation cancelled') + '\n');
           return;
         }
       }
@@ -370,7 +370,7 @@ export class AgentCommand {
       const agentId = await this.context.runtime.createAgent(config);
 
       this.spinner.succeed(`Agent created successfully with ID: ${agentId}`);
-      console.log(chalk.green(`✅ Agent '${config.core.name}' is ready`));
+      process.stdout.write(chalk.green(`✅ Agent '${config.core.name}' is ready`) + '\n');
     } catch (error) {
       this.spinner.fail('Failed to create agent');
       this.logger.error('Create agent error:', error);
@@ -384,7 +384,7 @@ export class AgentCommand {
     try {
       const agent = this.context.runtime.agents.get(agentId);
       if (!agent) {
-        console.log(chalk.red(`❌ Agent '${agentId}' not found`));
+        process.stdout.write(chalk.red(`❌ Agent '${agentId}' not found`) + '\n');
         return;
       }
 
@@ -399,7 +399,7 @@ export class AgentCommand {
         ]);
 
         if (!confirm) {
-          console.log(chalk.gray('Operation cancelled'));
+          process.stdout.write(chalk.gray('Operation cancelled') + '\n');
           return;
         }
       }
@@ -423,7 +423,7 @@ export class AgentCommand {
     try {
       const agent = this.context.runtime.agents.get(agentId);
       if (!agent) {
-        console.log(chalk.red(`❌ Agent '${agentId}' not found`));
+        process.stdout.write(chalk.red(`❌ Agent '${agentId}' not found`) + '\n');
         return;
       }
 
@@ -431,105 +431,107 @@ export class AgentCommand {
         this.context.runtime.getAutonomousStatus(agentId);
       const statusColor = this.getStatusColor(agent.status);
 
-      console.log(chalk.blue.bold(`\n🤖 Agent Information`));
-      console.log(chalk.gray('─'.repeat(50)));
-      console.log(`${chalk.cyan('Name:')} ${agent.name}`);
-      console.log(`${chalk.cyan('ID:')} ${agent.id}`);
-      console.log(`${chalk.cyan('Status:')} ${statusColor}`);
-      console.log(
-        `${chalk.cyan('Autonomous:')} ${autonomousStatus.autonomous ? '✅ Yes' : '❌ No'}`
+      process.stdout.write(chalk.blue.bold(`\n🤖 Agent Information`) + '\n');
+      process.stdout.write(chalk.gray('─'.repeat(50)) + '\n');
+      process.stdout.write(`${chalk.cyan('Name:')} ${agent.name}` + '\n');
+      process.stdout.write(`${chalk.cyan('ID:')} ${agent.id}` + '\n');
+      process.stdout.write(`${chalk.cyan('Status:')} ${statusColor}` + '\n');
+      process.stdout.write(
+        `${chalk.cyan('Autonomous:')} ${autonomousStatus.autonomous ? '✅ Yes' : '❌ No'}` + '\n'
       );
-      console.log(
-        `${chalk.cyan('Emotion:')} ${agent.emotion?.current || 'unknown'}`
+      process.stdout.write(
+        `${chalk.cyan('Emotion:')} ${agent.emotion?.current || 'unknown'}` + '\n'
       );
-      console.log(
-        `${chalk.cyan('Last Update:')} ${agent.lastUpdate?.toLocaleString() || 'never'}`
+      process.stdout.write(
+        `${chalk.cyan('Last Update:')} ${agent.lastUpdate?.toLocaleString() || 'never'}` + '\n'
       );
 
       if (agent.portal) {
-        console.log(
-          `${chalk.cyan('Portal:')} ${agent.portal.name || 'configured'}`
+        process.stdout.write(
+          `${chalk.cyan('Portal:')} ${agent.portal.name || 'configured'}` + '\n'
         );
       }
 
       // Extensions
-      console.log(chalk.blue('\n📦 Extensions'));
-      console.log(chalk.gray('─'.repeat(50)));
+      process.stdout.write(chalk.blue('\n📦 Extensions') + '\n');
+      process.stdout.write(chalk.gray('─'.repeat(50)) + '\n');
       for (const ext of agent.extensions) {
         const statusIcon = ext.enabled ? '✅' : '❌';
-        console.log(`${statusIcon} ${ext.name} (${ext.id})`);
+        process.stdout.write(`${statusIcon} ${ext.name} (${ext.id})` + '\n');
       }
 
       // Autonomous information
       if (autonomousStatus.autonomous && autonomousStatus.engine) {
-        console.log(chalk.blue('\n🤖 Autonomous Status'));
-        console.log(chalk.gray('─'.repeat(50)));
-        console.log(
-          `${chalk.cyan('Autonomy Level:')} ${(autonomousStatus.engine.autonomyLevel * 100).toFixed(0)}%`
+        process.stdout.write(chalk.blue('\n🤖 Autonomous Status') + '\n');
+        process.stdout.write(chalk.gray('─'.repeat(50)) + '\n');
+        process.stdout.write(
+          `${chalk.cyan('Autonomy Level:')} ${(autonomousStatus.engine.autonomyLevel * 100).toFixed(0)}%` + '\n'
         );
-        console.log(
-          `${chalk.cyan('Interruptible:')} ${autonomousStatus.engine.interruptible ? '✅' : '❌'}`
+        process.stdout.write(
+          `${chalk.cyan('Interruptible:')} ${autonomousStatus.engine.interruptible ? '✅' : '❌'}` + '\n'
         );
-        console.log(
-          `${chalk.cyan('Ethical Constraints:')} ${autonomousStatus.engine.ethicalConstraints ? '✅' : '❌'}`
+        process.stdout.write(
+          `${chalk.cyan('Ethical Constraints:')} ${autonomousStatus.engine.ethicalConstraints ? '✅' : '❌'}` + '\n'
         );
 
-        console.log(
-          chalk.cyan('Lifecycle:') + ' Integrated into autonomous engine'
+        process.stdout.write(
+          chalk.cyan('Lifecycle:') + ' Integrated into autonomous engine' + '\n'
         );
       }
 
       // Configuration summary
       if (agent.config) {
-        console.log(chalk.blue('\n⚙️  Configuration'));
-        console.log(chalk.gray('─'.repeat(50)));
-        console.log(
-          `${chalk.cyan('Memory Provider:')} ${agent.config.psyche?.defaults?.memory || 'unknown'}`
+        process.stdout.write(chalk.blue('\n⚙️  Configuration') + '\n');
+        process.stdout.write(chalk.gray('─'.repeat(50)) + '\n');
+        process.stdout.write(
+          `${chalk.cyan('Memory Provider:')} ${agent.config.psyche?.defaults?.memory || 'unknown'}` + '\n'
         );
-        console.log(
-          `${chalk.cyan('Cognition Module:')} ${agent.config.psyche?.defaults?.cognition || 'unknown'}`
+        process.stdout.write(
+          `${chalk.cyan('Cognition Module:')} ${agent.config.psyche?.defaults?.cognition || 'unknown'}` + '\n'
         );
-        console.log(
-          `${chalk.cyan('Emotion Module:')} ${agent.config.psyche?.defaults?.emotion || 'unknown'}`
+        process.stdout.write(
+          `${chalk.cyan('Emotion Module:')} ${agent.config.psyche?.defaults?.emotion || 'unknown'}` + '\n'
         );
-        console.log(
-          `${chalk.cyan('Portal:')} ${agent.config.psyche?.defaults?.portal || 'none'}`
+        process.stdout.write(
+          `${chalk.cyan('Portal:')} ${agent.config.psyche?.defaults?.portal || 'none'}` + '\n'
         );
       }
     } catch (error) {
-      console.log(chalk.red('❌ Failed to get agent information'));
+      process.stdout.write(chalk.red('❌ Failed to get agent information') + '\n');
       this.logger.error('Agent info error:', error);
     }
   }
 
-  async manageAgentConfig(agentId: string, options: any): Promise<void> {
+  async manageAgentConfig(agentId: string, options: unknown): Promise<void> {
     try {
       const agent = this.context.runtime.agents.get(agentId);
       if (!agent) {
-        console.log(chalk.red(`❌ Agent '${agentId}' not found`));
+        process.stdout.write(chalk.red(`❌ Agent '${agentId}' not found`) + '\n');
         return;
       }
 
-      if (options.edit) {
-        console.log(
-          chalk.yellow('⚠️  Configuration editing not yet implemented')
+      const opts = options as { edit?: boolean; set?: Record<string, unknown> };
+
+      if (opts.edit) {
+        process.stdout.write(
+          chalk.yellow('⚠️  Configuration editing not yet implemented') + '\n'
         );
         return;
       }
 
-      if (Object.keys(options.set || {}).length > 0) {
-        console.log(
-          chalk.yellow('⚠️  Configuration setting not yet implemented')
+      if (Object.keys(opts.set || {}).length > 0) {
+        process.stdout.write(
+          chalk.yellow('⚠️  Configuration setting not yet implemented') + '\n'
         );
         return;
       }
 
       // Show configuration
-      console.log(chalk.blue.bold(`\n⚙️  Configuration for ${agent.name}`));
-      console.log(chalk.gray('─'.repeat(50)));
-      console.log(JSON.stringify(agent.config, null, 2));
+      process.stdout.write(chalk.blue.bold(`\n⚙️  Configuration for ${agent.name}`) + '\n');
+      process.stdout.write(chalk.gray('─'.repeat(50)) + '\n');
+      process.stdout.write(JSON.stringify(agent.config, null, 2) + '\n');
     } catch (error) {
-      console.log(chalk.red('❌ Failed to manage agent configuration'));
+      process.stdout.write(chalk.red('❌ Failed to manage agent configuration') + '\n');
       this.logger.error('Agent config error:', error);
     }
   }
@@ -541,7 +543,7 @@ export class AgentCommand {
     );
 
     if (agents.length === 0) {
-      console.log(chalk.yellow('⚠️  No stopped agents to start'));
+      process.stdout.write(chalk.yellow('⚠️  No stopped agents to start') + '\n');
       return;
     }
 
@@ -566,7 +568,7 @@ export class AgentCommand {
     );
 
     if (agents.length === 0) {
-      console.log(chalk.yellow('⚠️  No running agents to stop'));
+      process.stdout.write(chalk.yellow('⚠️  No running agents to stop') + '\n');
       return;
     }
 
@@ -589,7 +591,7 @@ export class AgentCommand {
     const agents = Array.from(this.context.runtime.agents.values());
 
     if (agents.length === 0) {
-      console.log(chalk.yellow('⚠️  No agents to restart'));
+      process.stdout.write(chalk.yellow('⚠️  No agents to restart') + '\n');
       return;
     }
 
@@ -662,7 +664,7 @@ export class AgentCommand {
     const agents = Array.from(this.context.runtime.agents.values());
 
     if (agents.length === 0) {
-      console.log(chalk.yellow('⚠️  No agents to remove'));
+      process.stdout.write(chalk.yellow('⚠️  No agents to remove') + '\n');
       return;
     }
 
@@ -861,8 +863,8 @@ export class AgentCommand {
 
   private collectKeyValue(
     value: string,
-    previous: Record<string, any>
-  ): Record<string, any> {
+    previous: Record<string, unknown>
+  ): Record<string, unknown> {
     const [key, val] = value.split('=');
     if (key && val !== undefined) {
       previous[key] = val;

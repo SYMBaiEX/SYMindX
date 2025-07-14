@@ -207,7 +207,7 @@ export class LearningPersistence {
       await this.createBackup(filepath);
 
       // Save new state
-      let serialized = JSON.stringify(learningState, null, 2);
+      const serialized = JSON.stringify(learningState, null, 2);
 
       // Apply compression if enabled
       if (this.compressionEnabled) {

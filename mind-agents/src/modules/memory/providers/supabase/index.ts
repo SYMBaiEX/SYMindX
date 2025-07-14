@@ -23,6 +23,7 @@ import {
   ArchivalStrategy,
   MemoryPermission,
 } from '../../../../types/memory';
+import { DatabaseError } from '../../../../types/modules/database';
 import { runtimeLogger } from '../../../../utils/logger';
 import { buildObject } from '../../../../utils/type-helpers';
 import {
@@ -162,8 +163,18 @@ export class SupabaseMemoryProvider extends BaseMemoryProvider {
 
       console.log('✅ Enhanced Supabase memory provider initialized');
     } catch (error) {
-      console.error('❌ Failed to initialize Supabase memory provider:', error);
-      throw error;
+      const dbError =
+        error instanceof DatabaseError
+          ? error
+          : DatabaseError.connectionFailed(
+              'Failed to initialize Supabase memory provider',
+              error instanceof Error ? error : new Error(String(error))
+            );
+      console.error(
+        '❌ Failed to initialize Supabase memory provider:',
+        dbError
+      );
+      throw dbError;
     }
   }
 
@@ -173,16 +184,36 @@ export class SupabaseMemoryProvider extends BaseMemoryProvider {
   private startBackgroundProcesses(config: SupabaseMemoryConfig): void {
     if (config.consolidationInterval) {
       this.consolidationTimer = setInterval(() => {
-        this.runConsolidation().catch((error) => {
-          runtimeLogger.error('Consolidation error:', error);
+        this.runConsolidation().catch((error: Error) => {
+          const dbError =
+            error instanceof DatabaseError
+              ? error
+              : new DatabaseError(
+                  'Consolidation process failed',
+                  DatabaseError.ErrorCodes.UNKNOWN,
+                  'medium',
+                  true,
+                  error
+                );
+          runtimeLogger.error('Consolidation error:', dbError);
         });
       }, config.consolidationInterval);
     }
 
     if (config.archivalInterval) {
       this.archivalTimer = setInterval(() => {
-        this.runArchival().catch((error) => {
-          runtimeLogger.error('Archival error:', error);
+        this.runArchival().catch((error: Error) => {
+          const dbError =
+            error instanceof DatabaseError
+              ? error
+              : new DatabaseError(
+                  'Archival process failed',
+                  DatabaseError.ErrorCodes.UNKNOWN,
+                  'medium',
+                  true,
+                  error
+                );
+          runtimeLogger.error('Archival error:', dbError);
         });
       }, config.archivalInterval);
     }
@@ -267,8 +298,16 @@ export class SupabaseMemoryProvider extends BaseMemoryProvider {
         );
       }
     } catch (error) {
-      console.error('❌ Error storing memory:', error);
-      throw error;
+      const dbError =
+        error instanceof DatabaseError
+          ? error
+          : DatabaseError.queryFailed(
+              'Error storing memory',
+              'INSERT INTO memories',
+              error instanceof Error ? error : new Error(String(error))
+            );
+      console.error('❌ Error storing memory:', dbError);
+      throw dbError;
     }
   }
 
@@ -320,8 +359,16 @@ export class SupabaseMemoryProvider extends BaseMemoryProvider {
 
       return (data || []).map((row) => this.rowToMemoryRecord(row));
     } catch (error) {
-      console.error('❌ Error retrieving memories:', error);
-      throw error;
+      const dbError =
+        error instanceof DatabaseError
+          ? error
+          : DatabaseError.queryFailed(
+              'Error retrieving memories',
+              'SELECT FROM memories',
+              error instanceof Error ? error : new Error(String(error))
+            );
+      console.error('❌ Error retrieving memories:', dbError);
+      throw dbError;
     }
   }
 
@@ -358,7 +405,17 @@ export class SupabaseMemoryProvider extends BaseMemoryProvider {
 
       return results;
     } catch (error) {
-      console.error('❌ Error in vector search:', error);
+      const dbError =
+        error instanceof DatabaseError
+          ? error
+          : new DatabaseError(
+              'Error in vector search',
+              DatabaseError.ErrorCodes.QUERY_FAILED,
+              'low',
+              true,
+              error instanceof Error ? error : new Error(String(error))
+            );
+      console.error('❌ Error in vector search:', dbError);
       return this.retrieve(agentId, 'recent', limit);
     }
   }
@@ -380,8 +437,16 @@ export class SupabaseMemoryProvider extends BaseMemoryProvider {
 
       console.log(`🗑️ Deleted memory: ${memoryId} for agent ${agentId}`);
     } catch (error) {
-      console.error('❌ Error deleting memory:', error);
-      throw error;
+      const dbError =
+        error instanceof DatabaseError
+          ? error
+          : DatabaseError.queryFailed(
+              'Error deleting memory',
+              'DELETE FROM memories',
+              error instanceof Error ? error : new Error(String(error))
+            );
+      console.error('❌ Error deleting memory:', dbError);
+      throw dbError;
     }
   }
 
@@ -401,8 +466,16 @@ export class SupabaseMemoryProvider extends BaseMemoryProvider {
 
       console.log(`🧹 Cleared all memories for agent ${agentId}`);
     } catch (error) {
-      console.error('❌ Error clearing memories:', error);
-      throw error;
+      const dbError =
+        error instanceof DatabaseError
+          ? error
+          : DatabaseError.queryFailed(
+              'Error clearing memories',
+              'DELETE FROM memories',
+              error instanceof Error ? error : new Error(String(error))
+            );
+      console.error('❌ Error clearing memories:', dbError);
+      throw dbError;
     }
   }
 
@@ -442,7 +515,15 @@ export class SupabaseMemoryProvider extends BaseMemoryProvider {
 
       return { total: count || 0, byType };
     } catch (error) {
-      console.error('❌ Error getting memory stats:', error);
+      const dbError =
+        error instanceof DatabaseError
+          ? error
+          : DatabaseError.queryFailed(
+              'Error getting memory stats',
+              'SELECT COUNT FROM memories',
+              error instanceof Error ? error : new Error(String(error))
+            );
+      console.error('❌ Error getting memory stats:', dbError);
       return { total: 0, byType: {} };
     }
   }
@@ -488,8 +569,16 @@ export class SupabaseMemoryProvider extends BaseMemoryProvider {
         `🧹 Cleaned up old and expired memories for agent ${agentId}`
       );
     } catch (error) {
-      console.error('❌ Error during memory cleanup:', error);
-      throw error;
+      const dbError =
+        error instanceof DatabaseError
+          ? error
+          : DatabaseError.queryFailed(
+              'Error during memory cleanup',
+              'DELETE FROM memories WHERE expires_at < NOW',
+              error instanceof Error ? error : new Error(String(error))
+            );
+      console.error('❌ Error during memory cleanup:', dbError);
+      throw dbError;
     }
   }
 

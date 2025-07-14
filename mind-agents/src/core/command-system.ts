@@ -18,7 +18,7 @@ export interface Command {
   type: CommandType;
   agentId: string;
   instruction: string;
-  parameters?: Record<string, any>;
+  parameters?: Record<string, unknown>;
   priority: CommandPriority;
   async: boolean;
   timeout?: number;
@@ -32,7 +32,7 @@ export interface Command {
 export interface CommandResult {
   success: boolean;
   response?: string;
-  data?: any;
+  data?: unknown;
   error?: string;
   executionTime: number;
 }
@@ -69,9 +69,11 @@ export enum CommandStatus {
   TIMEOUT = 'timeout',
 }
 
+export type CommandParseHandler = (input: string) => Partial<Command>;
+
 export interface CommandParser {
   canParse(input: string): boolean;
-  parse(input: string): Partial<Command>;
+  parse: CommandParseHandler;
 }
 
 export class CommandSystem extends EventEmitter {
@@ -369,7 +371,7 @@ export class CommandSystem extends EventEmitter {
     return command;
   }
 
-  private parseParameters(paramString: string): Record<string, any> {
+  private parseParameters(paramString: string): Record<string, unknown> {
     try {
       // Try JSON first
       if (paramString.startsWith('{') && paramString.endsWith('}')) {
@@ -377,7 +379,7 @@ export class CommandSystem extends EventEmitter {
       }
 
       // Parse key=value pairs
-      const params: Record<string, any> = {};
+      const params: Record<string, unknown> = {};
       const pairs = paramString.match(/(\w+)=([^\s]+)/g) || [];
 
       for (const pair of pairs) {
@@ -393,7 +395,7 @@ export class CommandSystem extends EventEmitter {
 
       return params;
     } catch (error) {
-      this.logger.warn('Failed to parse parameters:', paramString, error);
+      this.logger.warn(`Failed to parse parameters: ${paramString} - ${error}`);
       return { raw: paramString };
     }
   }
@@ -572,7 +574,7 @@ export class CommandSystem extends EventEmitter {
         const messageEmotion = this.analyzeMessageEmotion(command.instruction);
 
         // Process the emotional event
-        const emotionState = agent.emotion.processEvent('chat_message', {
+        const emotionResult = agent.emotion.processEvent('chat_message', {
           message: command.instruction,
           messageType: messageEmotion.type,
           sentiment: messageEmotion.sentiment,
@@ -581,8 +583,8 @@ export class CommandSystem extends EventEmitter {
         });
 
         emotionalContext = {
-          currentEmotion: emotionState.current,
-          emotionIntensity: emotionState.intensity,
+          currentEmotion: emotionResult.state.current,
+          emotionIntensity: emotionResult.state.intensity,
           emotionModifiers: (agent.emotion as any).getEmotionModifier
             ? (agent.emotion as any).getEmotionModifier()
             : {},
@@ -593,7 +595,7 @@ export class CommandSystem extends EventEmitter {
 
         emotionTriggered = true;
         this.logger.debug(
-          `Agent ${agent.name} emotion updated to ${emotionState.current} (${emotionState.intensity.toFixed(2)}) from message: ${command.instruction}`
+          `Agent ${agent.name} emotion updated to ${emotionResult.state.current} (${emotionResult.state.intensity.toFixed(2)}) from message: ${command.instruction}`
         );
       } catch (error) {
         this.logger.warn(
@@ -717,12 +719,7 @@ export class CommandSystem extends EventEmitter {
             };
 
             this.logger.debug(
-              `Agent ${agent.name} cognitive processing complete:`,
-              {
-                thoughts: cognitiveContext.thoughts.length,
-                actions: cognitiveContext.cognitiveActions.length,
-                confidence: cognitiveContext.cognitiveConfidence,
-              }
+              `Agent ${agent.name} cognitive processing complete: ${cognitiveContext.thoughts.length} thoughts, ${cognitiveContext.cognitiveActions.length} actions, confidence ${cognitiveContext.cognitiveConfidence}`
             );
           }
         } catch (error) {
@@ -818,7 +815,7 @@ export class CommandSystem extends EventEmitter {
                 response,
                 true
               );
-              const responseEmotionState = agent.emotion.processEvent(
+              const responseEmotionResult = agent.emotion.processEvent(
                 'agent_response',
                 {
                   response: response,
@@ -831,8 +828,8 @@ export class CommandSystem extends EventEmitter {
 
               responseEmotionalContext = {
                 ...emotionalContext,
-                postResponseEmotion: responseEmotionState.current,
-                postResponseIntensity: responseEmotionState.intensity,
+                postResponseEmotion: responseEmotionResult.state.current,
+                postResponseIntensity: responseEmotionResult.state.intensity,
               };
             } catch (error) {
               this.logger.warn(
@@ -1198,7 +1195,7 @@ export class CommandSystem extends EventEmitter {
             );
           }
         } catch (error) {
-          console.warn(
+          this.logger.warn(
             '⚠️ Failed to generate embedding, falling back to text search:',
             error
           );

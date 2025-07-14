@@ -33,7 +33,7 @@ export interface HumanInteraction {
   context: InteractionContext;
   status: InteractionStatus;
   response?: AgentResponse;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   [key: string]: any; // Allow additional properties for GenericData compatibility
 }
 
@@ -43,7 +43,7 @@ export interface InteractionContext {
   currentActivity?: string;
   emotionalState?: Record<string, number>;
   relationship?: RelationshipInfo;
-  environment?: Record<string, any>;
+  environment?: Record<string, unknown>;
 }
 
 export interface RelationshipInfo {
@@ -51,7 +51,7 @@ export interface RelationshipInfo {
   trustLevel: number; // 0.0 to 1.0
   interactionHistory: number;
   lastInteraction?: Date;
-  preferences: Record<string, any>;
+  preferences: Record<string, unknown>;
 }
 
 export interface AgentResponse {
@@ -63,7 +63,7 @@ export interface AgentResponse {
   timestamp: Date;
   confidence: number;
   reasoning?: string[];
-  [key: string]: any; // Index signature for DataValue compatibility
+  [key: string]: unknown; // Index signature for DataValue compatibility
 }
 
 export enum InteractionType {
@@ -148,7 +148,7 @@ export class InteractionManager {
     humanId: string,
     content: string,
     type: InteractionType = InteractionType.CONVERSATION,
-    metadata: Record<string, any> = {}
+    metadata: Record<string, unknown> = {}
   ): Promise<string> {
     const interactionId = `interaction_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
@@ -531,7 +531,7 @@ export class InteractionManager {
       actions.push({
         id: `action_${Date.now()}`,
         agentId: this.agent.id,
-        type: 'task_execution' as any,
+        type: 'task_execution',
         extension: 'interaction_manager',
         action: 'fulfill_request',
         parameters: {
@@ -540,7 +540,7 @@ export class InteractionManager {
           priority: interaction.priority,
         },
         priority: this.mapPriorityToNumber(interaction.priority),
-        status: 'pending' as any,
+        status: 'pending',
         timestamp: new Date(),
       });
     }
@@ -800,7 +800,15 @@ export class InteractionManager {
   /**
    * Get interaction statistics
    */
-  getInteractionStats() {
+  getInteractionStats(): {
+    totalInteractions: number;
+    activeInteractions: number;
+    totalRelationships: number;
+    priorityDistribution: Record<string, number>;
+    typeDistribution: Record<string, number>;
+    averageResponseTime: number;
+    config: InteractionConfig;
+  } {
     const totalInteractions = this.interactionHistory.length;
     const activeCount = this.activeInteractions.size;
 

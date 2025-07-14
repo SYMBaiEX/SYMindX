@@ -1,5 +1,5 @@
 import { Box, Text } from 'ink';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 import { themeEngine } from '../../themes/ThemeEngine.js';
 
@@ -24,7 +24,7 @@ export const PulsingEffect: React.FC<PulsingEffectProps> = ({
   glowColor,
   active = true,
 }) => {
-  const [_phase, setPhase] = useState(0);
+  const [, setPhase] = useState(0);
   const [intensity, setIntensity] = useState(maxIntensity);
   const theme = themeEngine.getTheme();
 
@@ -32,38 +32,42 @@ export const PulsingEffect: React.FC<PulsingEffectProps> = ({
   const defaultGlowColor = glowColor || theme.colors.glow;
 
   // Calculate animation curves
-  const getAnimationValue = (p: number): number => {
+  const getAnimationValue = useCallback((p: number): number => {
     switch (variant) {
-      case 'fade':
+      case 'fade': {
         // Simple sine wave
         return (
           minIntensity +
           (maxIntensity - minIntensity) *
             (0.5 + 0.5 * Math.sin(p * Math.PI * 2))
         );
+      }
 
-      case 'scale':
+      case 'scale': {
         // Breathing effect
         return (
           minIntensity +
           (maxIntensity - minIntensity) *
             (0.5 + 0.5 * Math.sin(p * Math.PI * 2))
         );
+      }
 
-      case 'glow':
+      case 'glow': {
         // Sharp pulses
         const glowPhase = (p * 4) % 1;
         return glowPhase < 0.3 ? maxIntensity : minIntensity;
+      }
 
-      case 'heartbeat':
+      case 'heartbeat': {
         // Double beat pattern
         const beat = (p * 2) % 1;
         if (beat < 0.1) return maxIntensity;
         if (beat < 0.2) return minIntensity;
         if (beat < 0.3) return maxIntensity * 0.8;
         return minIntensity;
+      }
 
-      case 'breathe':
+      case 'breathe': {
         // Smooth in and out
         const breathPhase = p % 1;
         return (
@@ -71,17 +75,19 @@ export const PulsingEffect: React.FC<PulsingEffectProps> = ({
           (maxIntensity - minIntensity) *
             Math.pow(Math.sin(breathPhase * Math.PI), 2)
         );
+      }
 
-      case 'bounce':
+      case 'bounce': {
         // Bouncing effect
         const bouncePhase = (p * 2) % 1;
         const bounce = Math.abs(Math.sin(bouncePhase * Math.PI));
         return minIntensity + (maxIntensity - minIntensity) * bounce;
+      }
 
       default:
         return maxIntensity;
     }
-  };
+  }, [variant, minIntensity, maxIntensity]);
 
   // Update animation
   useEffect(() => {
@@ -98,13 +104,13 @@ export const PulsingEffect: React.FC<PulsingEffectProps> = ({
       setIntensity(getAnimationValue(newPhase));
     }, 16); // ~60fps
 
-    return () => clearInterval(interval);
-  }, [active, speed, variant, minIntensity, maxIntensity]);
+    return (): void => clearInterval(interval);
+  }, [active, speed, variant, minIntensity, maxIntensity, getAnimationValue]);
 
   // Render with effect
-  const renderWithEffect = () => {
+  const renderWithEffect = (): React.ReactNode => {
     switch (variant) {
-      case 'fade':
+      case 'fade': {
         return (
           <Box>
             <Text color={defaultColor} dimColor={intensity < 0.7}>
@@ -112,8 +118,9 @@ export const PulsingEffect: React.FC<PulsingEffectProps> = ({
             </Text>
           </Box>
         );
+      }
 
-      case 'scale':
+      case 'scale': {
         // Simulate scale with padding
         const padding = Math.floor((1 - intensity) * 2);
         return (
@@ -123,8 +130,9 @@ export const PulsingEffect: React.FC<PulsingEffectProps> = ({
             </Text>
           </Box>
         );
+      }
 
-      case 'glow':
+      case 'glow': {
         const showGlow = intensity > 0.8;
         return (
           <Box>
@@ -146,8 +154,9 @@ export const PulsingEffect: React.FC<PulsingEffectProps> = ({
             )}
           </Box>
         );
+      }
 
-      case 'heartbeat':
+      case 'heartbeat': {
         const isBeat = intensity > 0.8;
         return (
           <Box>
@@ -161,8 +170,9 @@ export const PulsingEffect: React.FC<PulsingEffectProps> = ({
             {isBeat && <Text color={theme.colors.danger}> ♥</Text>}
           </Box>
         );
+      }
 
-      case 'breathe':
+      case 'breathe': {
         return (
           <Box>
             <Text
@@ -174,19 +184,21 @@ export const PulsingEffect: React.FC<PulsingEffectProps> = ({
             </Text>
           </Box>
         );
+      }
 
-      case 'bounce':
+      case 'bounce': {
         const bounceHeight = Math.floor((1 - intensity) * 2);
         return (
           <Box flexDirection='column'>
             {Array.from({ length: bounceHeight }, (_, i) => (
-              <Text key={i}> </Text>
+              <Text key={`bounce-space-${i}`}> </Text>
             ))}
             <Text color={defaultColor} bold={intensity > 0.9}>
               {children}
             </Text>
           </Box>
         );
+      }
 
       default:
         return children;

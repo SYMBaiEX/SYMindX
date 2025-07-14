@@ -17,10 +17,8 @@ import {
   experimental_generateImage as generateImage,
   tool,
   createProviderRegistry,
-  type LanguageModel,
   type EmbeddingModel,
   type ImageModel,
-  type ModelMessage,
 } from 'ai';
 import { z } from 'zod';
 
@@ -43,6 +41,10 @@ import {
   FinishReason,
   MessageRole,
 } from '../../types/portal';
+import type {
+  LanguageModel,
+  AIMessage as ModelMessage,
+} from '../../types/portals/ai-sdk';
 import { AISDKParameterBuilder } from '../ai-sdk-utils';
 import { BasePortal } from '../base-portal';
 import { convertUsage } from '../utils';
@@ -52,7 +54,7 @@ export interface VercelAIConfig extends PortalConfig {
   defaultProvider?: string;
   defaultModel?: string;
   enabledProviders?: string[];
-  providerRegistry?: any;
+  providerRegistry?: unknown;
   tools?: ToolDefinition[];
   maxRetries?: number;
   retryDelay?: number;
@@ -77,7 +79,7 @@ export interface ProviderConfig {
   baseUrl?: string;
   models?: ModelConfig[];
   enabled?: boolean;
-  settings?: Record<string, any>;
+  settings?: Record<string, unknown>;
 }
 
 export interface ModelConfig {
@@ -95,7 +97,7 @@ export interface ToolDefinition {
   name: string;
   description: string;
   parameters: z.ZodSchema;
-  execute: (args: any) => Promise<any>;
+  execute: (args: unknown) => Promise<unknown>;
 }
 
 export const defaultVercelConfig: Partial<VercelAIConfig> = {
@@ -134,8 +136,8 @@ export class VercelAIPortal extends BasePortal {
     ModelType.IMAGE_GENERATION,
   ];
 
-  private registry: any;
-  private providers: Map<string, any> = new Map();
+  private registry: unknown;
+  private providers: Map<string, unknown> = new Map();
   private tools: Map<string, ToolDefinition> = new Map();
   private enabledProviders: Set<string> = new Set();
 
@@ -179,7 +181,7 @@ export class VercelAIPortal extends BasePortal {
       this.enabledProviders.add(providerName);
 
       try {
-        let provider: any;
+        let provider: unknown;
         const providerConfig = config.providers?.find(
           (p) => p.name === providerName
         );
@@ -192,7 +194,7 @@ export class VercelAIPortal extends BasePortal {
                 apiKey,
               });
             } else {
-              console.warn('OpenAI API key not found');
+              // OpenAI API key not found
               continue;
             }
             break;
@@ -205,7 +207,7 @@ export class VercelAIPortal extends BasePortal {
                 apiKey,
               });
             } else {
-              console.warn('Anthropic API key not found');
+              // Anthropic API key not found
               continue;
             }
             break;
@@ -217,7 +219,7 @@ export class VercelAIPortal extends BasePortal {
                 apiKey,
               });
             } else {
-              console.warn('Groq API key not found');
+              // Groq API key not found
               continue;
             }
             break;
@@ -229,7 +231,7 @@ export class VercelAIPortal extends BasePortal {
                 apiKey,
               });
             } else {
-              console.warn('Cohere API key not found');
+              // Cohere API key not found
               continue;
             }
             break;
@@ -242,25 +244,22 @@ export class VercelAIPortal extends BasePortal {
                 apiKey,
               });
             } else {
-              console.warn('Perplexity API key not found');
+              // Perplexity API key not found
               continue;
             }
             break;
           }
           default:
-            console.warn(`Unknown provider: ${providerName}`);
+            // Unknown provider
             continue;
         }
 
         if (provider) {
           this.providers.set(providerName, provider);
-          console.log(`✅ Initialized ${providerName} provider`);
+          // Initialized provider successfully
         }
-      } catch (error) {
-        console.error(
-          `❌ Failed to initialize ${providerName} provider:`,
-          error
-        );
+      } catch (_error) {
+        // Failed to initialize provider
       }
     }
   }
@@ -272,7 +271,7 @@ export class VercelAIPortal extends BasePortal {
   }
 
   private setupProviderRegistry(): void {
-    const registryConfig: Record<string, any> = {};
+    const registryConfig: Record<string, unknown> = {};
 
     for (const [name, provider] of Array.from(this.providers.entries())) {
       registryConfig[name] = provider;
@@ -281,20 +280,18 @@ export class VercelAIPortal extends BasePortal {
     this.registry = createProviderRegistry(registryConfig);
   }
 
-  override async init(agent: Agent): Promise<void> {
+  override async init(_agent: Agent): Promise<void> {
     this.status = PortalStatus.INITIALIZING;
-    console.log(`🔮 Initializing Vercel AI SDK portal for agent ${agent.name}`);
+    // Initializing Vercel AI SDK portal for agent
 
     try {
       await this.validateConfig();
       await this.healthCheck();
       this.status = PortalStatus.ACTIVE;
-      console.log(
-        `✅ Vercel AI SDK portal initialized for ${agent.name} with ${this.providers.size} providers`
-      );
+      // Vercel AI SDK portal initialized successfully
     } catch (error) {
       this.status = PortalStatus.ERROR;
-      console.error(`❌ Failed to initialize Vercel AI SDK portal:`, error);
+      // Failed to initialize Vercel AI SDK portal
       throw error;
     }
   }
@@ -316,8 +313,8 @@ export class VercelAIPortal extends BasePortal {
         maxOutputTokens: 10,
       });
       return !!text;
-    } catch (error) {
-      console.error('Vercel AI SDK health check failed:', error);
+    } catch (_error) {
+      // Vercel AI SDK health check failed
       return false;
     }
   }
@@ -378,7 +375,7 @@ export class VercelAIPortal extends BasePortal {
     try {
       const toolsToUse = this.buildTools();
 
-      const params: any = {
+      const params: Record<string, unknown> = {
         model: this.getLanguageModel(model),
         prompt,
       };
@@ -436,7 +433,7 @@ export class VercelAIPortal extends BasePortal {
       const modelMessages = this.convertToModelMessages(messages);
       const toolsToUse = this.buildTools();
 
-      const params: any = {
+      const params: Record<string, unknown> = {
         model: this.getLanguageModel(model),
         messages: modelMessages,
       };
@@ -545,8 +542,8 @@ export class VercelAIPortal extends BasePortal {
         images: [
           {
             url:
-              (image as any).url ||
-              (image as any).b64_json ||
+              (image as Record<string, unknown>).url ||
+              (image as Record<string, unknown>).b64_json ||
               'data:image/png;base64,' + image,
           },
         ],
@@ -614,7 +611,7 @@ export class VercelAIPortal extends BasePortal {
       const modelMessages = this.convertToModelMessages(messages);
       const toolsToUse = this.buildTools();
 
-      const streamParams: any = {
+      const streamParams: Record<string, unknown> = {
         model: this.getLanguageModel(model),
         messages: modelMessages,
       };
@@ -744,7 +741,7 @@ export class VercelAIPortal extends BasePortal {
     });
   }
 
-  private buildTools(): Map<string, any> {
+  private buildTools(): Map<string, unknown> {
     const toolsMap = new Map();
 
     for (const [name, toolDef] of Array.from(this.tools.entries())) {

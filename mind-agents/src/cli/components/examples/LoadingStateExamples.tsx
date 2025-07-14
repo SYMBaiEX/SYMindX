@@ -87,7 +87,7 @@ export const ListWithShimmer: React.FC = () => {
           <Shimmer width={35} height={1} />
         </>
       ) : (
-        items.map((item, i) => <Text key={i}>• {item}</Text>)
+        items.map((item) => <Text key={`list-item-${item}`}>• {item}</Text>)
       )}
     </Box>
   );
@@ -160,7 +160,7 @@ export const MultiStateLoading: React.FC = () => {
 export const ErrorBoundaryExample: React.FC = () => {
   const [shouldError, setShouldError] = useState(false);
 
-  const ProblematicComponent = () => {
+  const ProblematicComponent = (): React.ReactElement => {
     if (shouldError) {
       throw new Error('Something went wrong!');
     }

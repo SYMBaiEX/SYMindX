@@ -6,6 +6,13 @@
  */
 
 import {
+  ReasoningPath,
+  ThoughtNode,
+  DecisionMatrix,
+  LearningOutcome,
+  StructuredThoughtResult,
+} from '../../types';
+import {
   Agent,
   ThoughtContext,
   ThoughtResult,
@@ -13,7 +20,6 @@ import {
   Decision,
   MemoryRecord,
 } from '../../types/agent';
-// import type { AgentAction, ActionCategory, ActionStatus } from '../../types/agent'; - types not used at runtime
 import { Experience } from '../../types/autonomous';
 import {
   CognitionModule,
@@ -21,6 +27,7 @@ import {
   ReasoningParadigm,
   ReasoningPerformance,
   HybridReasoningConfig,
+  ContextAnalysis,
 } from '../../types/cognition';
 import { BaseConfig } from '../../types/common';
 import { MemoryType, MemoryDuration } from '../../types/enums';
@@ -33,17 +40,14 @@ import { RuleBasedReasoning } from './rule-based-reasoning';
 // import { ReinforcementLearningCognition } from './reinforcement-learning'
 
 /**
- * Context analysis for paradigm selection
+ * Extended context analysis for paradigm selection
  */
-interface ContextAnalysis {
-  complexity: number; // 0-1: problem complexity
-  uncertainty: number; // 0-1: level of uncertainty
-  timeConstraint: number; // 0-1: urgency (1 = immediate)
-  knowledgeAvailable: number; // 0-1: available domain knowledge
-  adaptationNeeded: number; // 0-1: need for learning/adaptation
+interface ExtendedContextAnalysis extends ContextAnalysis {
   goalOriented: number; // 0-1: how goal-oriented the task is
   probabilisticNature: number; // 0-1: uncertainty/probabilistic elements
   rulesApplicable: number; // 0-1: how well rules can handle this
+  knowledgeAvailable: number; // 0-1: available domain knowledge
+  adaptationNeeded: number; // 0-1: need for learning/adaptation
 }
 
 /**
@@ -68,7 +72,8 @@ interface MetaDecision {
   confidence: number;
   reasoning: string[];
   fallbackParadigms: ReasoningParadigm[];
-  contextAnalysis: ContextAnalysis;
+  contextAnalysis: ExtendedContextAnalysis;
+  decisionMatrix?: DecisionMatrix;
 }
 
 /**
@@ -83,6 +88,9 @@ export class MetaReasoner implements CognitionModule {
     new Map();
   private decisionHistory: MetaDecision[] = [];
   private contextPatterns: Map<string, ReasoningParadigm> = new Map();
+  private thoughtGraph: Map<string, ThoughtNode> = new Map();
+  private reasoningPaths: ReasoningPath[] = [];
+  private learningHistory: LearningOutcome[] = [];
 
   constructor(config: HybridReasoningConfig) {
     this.id = `meta_reasoner_${Date.now()}`;
@@ -120,9 +128,7 @@ export class MetaReasoner implements CognitionModule {
     // Reinforcement learning
     // this.reasoners.set(ReasoningParadigm.REINFORCEMENT_LEARNING, new ReinforcementLearningCognition(this.config))
 
-    runtimeLogger.cognition(
-      `Meta-reasoner initialized with ${this.reasoners.size} reasoning paradigms`
-    );
+    // Meta-reasoner initialized with reasoning paradigms
   }
 
   /**
@@ -290,9 +296,7 @@ export class MetaReasoner implements CognitionModule {
     // Learn from the experience with all learning-capable reasoners
     for (const [paradigm, reasoner] of Array.from(this.reasoners.entries())) {
       if (reasoner.learn) {
-        runtimeLogger.debug(
-          `🧠 Learning from experience using ${paradigm} paradigm`
-        );
+        // Learning from experience using paradigm
         await reasoner.learn(agent, experience);
       }
     }
@@ -300,9 +304,7 @@ export class MetaReasoner implements CognitionModule {
     // Update meta-learning about paradigm effectiveness
     await this.metaLearn(experience);
 
-    runtimeLogger.cognition(
-      'Meta-reasoner learned from experience across all paradigms'
-    );
+    // Meta-reasoner learned from experience across all paradigms
   }
 
   /**
@@ -311,7 +313,7 @@ export class MetaReasoner implements CognitionModule {
   private analyzeContext(
     agent: Agent,
     context: ThoughtContext
-  ): ContextAnalysis {
+  ): ExtendedContextAnalysis {
     // Complexity analysis
     const complexity = this.assessComplexity(context);
 
@@ -781,6 +783,137 @@ export class MetaReasoner implements CognitionModule {
       averageSelectionConfidence,
       totalDecisions: this.decisionHistory.length,
     };
+  }
+
+  private createThoughtNode(
+    content: string,
+    confidence: number,
+    type:
+      | 'observation'
+      | 'inference'
+      | 'hypothesis'
+      | 'conclusion'
+      | 'question' = 'inference'
+  ): ThoughtNode {
+    const node: ThoughtNode = {
+      id: `thought_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      content,
+      confidence,
+      type,
+      connections: [],
+      timestamp: new Date(),
+    };
+    this.thoughtGraph.set(node.id, node);
+    return node;
+  }
+
+  private createReasoningPath(
+    paradigm: ReasoningParadigm,
+    result: ThoughtResult
+  ): ReasoningPath {
+    const steps = result.thoughts.map((thought, index) => ({
+      stepNumber: index + 1,
+      thoughtNodeId: this.createThoughtNode(thought, result.confidence).id,
+      action: `Apply ${paradigm} reasoning`,
+      justification: `Step ${index + 1} of ${paradigm} reasoning process`,
+      confidence: result.confidence,
+      dependencies: index > 0 ? [index - 1] : [],
+    }));
+
+    const path: ReasoningPath = {
+      id: `path_${Date.now()}`,
+      steps,
+      probability: result.confidence,
+      outcome: `${paradigm} reasoning completed`,
+      evaluation: {
+        consistency: 0.85,
+        completeness: 0.8,
+        efficiency: 0.75,
+        risk: 'low',
+      },
+    };
+
+    this.reasoningPaths.push(path);
+    return path;
+  }
+
+  private createDecisionMatrix(
+    paradigms: Array<{ paradigm: ReasoningParadigm; score: number }>
+  ): DecisionMatrix {
+    const options = paradigms.map((p) => ({
+      id: p.paradigm,
+      name: p.paradigm,
+      description: `Use ${p.paradigm} reasoning approach`,
+    }));
+
+    const criteria = [
+      { id: 'score', name: 'Suitability Score', type: 'benefit' as const },
+      {
+        id: 'performance',
+        name: 'Historical Performance',
+        type: 'benefit' as const,
+      },
+      { id: 'speed', name: 'Expected Speed', type: 'benefit' as const },
+    ];
+
+    const weights = { score: 0.5, performance: 0.3, speed: 0.2 };
+
+    const scores = paradigms.map((p) => {
+      const perf = this.performanceHistory.get(p.paradigm);
+      return [
+        { value: p.score, normalized: p.score, confidence: 0.9 },
+        {
+          value: perf?.successRate || 0.5,
+          normalized: perf?.successRate || 0.5,
+          confidence: 0.8,
+        },
+        {
+          value: 1 - (perf?.averageTime || 0.5) / 1000,
+          normalized: 0.7,
+          confidence: 0.7,
+        },
+      ];
+    });
+
+    return {
+      options,
+      criteria,
+      weights,
+      scores,
+      method: 'weighted_sum',
+      rankings: paradigms.map((p, idx) => ({
+        optionId: p.paradigm,
+        rank: idx + 1,
+        score: p.score,
+        strengths: [`Suitable for current context`],
+        weaknesses: [],
+      })),
+    };
+  }
+
+  private recordLearning(
+    paradigm: ReasoningParadigm,
+    performance: ReasoningPerformance
+  ): void {
+    const outcome: LearningOutcome = {
+      concept: `${paradigm} performance pattern`,
+      category: 'pattern',
+      confidence: performance.confidence,
+      retention: 0.9,
+      reinforcements: 1,
+      learnedAt: new Date(),
+      lastAccessed: new Date(),
+      relatedConcepts: [paradigm],
+      examples: [
+        {
+          content: `Performance: ${performance.accuracy}`,
+          context: 'Meta-reasoning evaluation',
+          type: 'positive',
+        },
+      ],
+    };
+
+    this.learningHistory.push(outcome);
   }
 }
 

@@ -1,20 +1,48 @@
 import {
+  ThoughtNode,
+  ReasoningPath,
+  DecisionMatrix,
+  DecisionOption,
+  DecisionCriterion,
+  StructuredThoughtResult,
+} from '../../../types';
+import {
   Agent,
   ThoughtContext,
   ThoughtResult,
   Plan,
   Decision,
   EmotionState,
+  AgentAction,
+  PlanStatus,
+  PlanStepStatus,
+  ActionStatus,
 } from '../../../types/agent';
-import { CognitionModule } from '../../../types/cognition';
+import {
+  CognitionModule,
+  CognitionModuleMetadata,
+} from '../../../types/cognition';
+import { BaseConfig } from '../../../types/common';
 
 import { ReactiveCognitionConfig } from './types';
+
+/**
+ * Reactive pattern structure
+ */
+interface ReactivePattern {
+  response: string;
+  confidence: number;
+  frequency: number;
+  lastUsed: Date;
+}
 
 export class ReactiveCognition implements CognitionModule {
   public id: string;
   public type: string = 'reactive';
   private config: ReactiveCognitionConfig;
-  private responsePatterns: Map<string, string> = new Map();
+  private responsePatterns: Map<string, ReactivePattern> = new Map();
+  private thoughtGraph: Map<string, ThoughtNode> = new Map();
+  private decisionHistory: DecisionMatrix[] = [];
 
   constructor(config: ReactiveCognitionConfig = {}) {
     this.id = `reactive_${Date.now()}`;
@@ -28,6 +56,7 @@ export class ReactiveCognition implements CognitionModule {
       adaptationRate: 0.1,
       ...config,
     };
+    this.initializePatterns();
   }
 
   async think(_agent: Agent, context: ThoughtContext): Promise<ThoughtResult> {
@@ -62,7 +91,7 @@ export class ReactiveCognition implements CognitionModule {
           action: response,
           parameters: {},
           timestamp: new Date(),
-          status: 'pending' as any,
+          status: ActionStatus.PENDING,
         },
       ],
       emotions: this.assessEmotionalResponse(context),
@@ -81,7 +110,7 @@ export class ReactiveCognition implements CognitionModule {
           id: '1',
           action: 'immediate_response',
           description: `React to: ${goal}`,
-          status: 'pending' as any,
+          status: PlanStepStatus.PENDING,
           parameters: {},
           preconditions: [],
           effects: [],
@@ -90,7 +119,7 @@ export class ReactiveCognition implements CognitionModule {
       priority: 1,
       estimatedDuration: this.config.maxResponseTime || 1000,
       dependencies: [],
-      status: 'pending' as any,
+      status: PlanStatus.PENDING,
       confidence: 0.7,
     };
   }
@@ -111,18 +140,18 @@ export class ReactiveCognition implements CognitionModule {
     );
   }
 
-  initialize(config: any): void {
+  initialize(config: BaseConfig): void {
     this.config = { ...this.config, ...config };
   }
 
-  getMetadata() {
+  getMetadata(): CognitionModuleMetadata {
     return {
       id: `reactive_${Date.now()}`,
       name: 'Reactive Cognition',
       version: '1.0.0',
       description: 'Fast pattern-based reactive response system',
       author: 'SYMindX',
-      paradigms: ['reactive'] as any,
+      paradigms: ['reactive'],
       learningCapable: this.config.enableLearning || false,
     };
   }
@@ -152,14 +181,15 @@ export class ReactiveCognition implements CognitionModule {
 
   private findMatchingPattern(stimulus: string): string | null {
     // Look for exact matches first
-    if (this.responsePatterns.has(stimulus)) {
-      return this.responsePatterns.get(stimulus)!;
+    const pattern = this.responsePatterns.get(stimulus);
+    if (pattern) {
+      return pattern.response;
     }
 
     // Look for partial matches
-    for (const [pattern, response] of this.responsePatterns) {
-      if (stimulus.includes(pattern) || pattern.includes(stimulus)) {
-        return response;
+    for (const [patternKey, patternData] of this.responsePatterns) {
+      if (stimulus.includes(patternKey) || patternKey.includes(stimulus)) {
+        return patternData.response;
       }
     }
 
@@ -197,15 +227,24 @@ export class ReactiveCognition implements CognitionModule {
   private learnPattern(stimulus: string, response: string): void {
     if (this.config.enableLearning) {
       // Simple pattern learning with adaptation
-      const currentResponse = this.responsePatterns.get(stimulus);
+      const currentPattern = this.responsePatterns.get(stimulus);
 
-      if (currentResponse) {
-        // Weighted update of existing pattern
-        // Adaptation rate would be used for sophisticated learning algorithms
-        void (this.config.adaptationRate || 0.1); // Mark as used for future implementation
-        this.responsePatterns.set(stimulus, response);
+      if (currentPattern) {
+        // Update existing pattern
+        currentPattern.frequency++;
+        currentPattern.lastUsed = new Date();
+        currentPattern.confidence = Math.min(
+          1.0,
+          currentPattern.confidence + (this.config.adaptationRate || 0.1)
+        );
       } else {
-        this.responsePatterns.set(stimulus, response);
+        // Create new pattern
+        this.responsePatterns.set(stimulus, {
+          response,
+          confidence: 0.6,
+          frequency: 1,
+          lastUsed: new Date(),
+        });
       }
     }
   }
@@ -246,6 +285,113 @@ export class ReactiveCognition implements CognitionModule {
   }
 
   // Duplicate methods removed - implemented above
+
+  private initializePatterns(): void {
+    // Initialize common reactive patterns
+    const patterns: Array<[string, ReactivePattern]> = [
+      [
+        'urgent',
+        {
+          response: 'immediate_action',
+          confidence: 0.9,
+          frequency: 0,
+          lastUsed: new Date(),
+        },
+      ],
+      [
+        'help',
+        {
+          response: 'provide_assistance',
+          confidence: 0.8,
+          frequency: 0,
+          lastUsed: new Date(),
+        },
+      ],
+      [
+        'error',
+        {
+          response: 'error_handling',
+          confidence: 0.85,
+          frequency: 0,
+          lastUsed: new Date(),
+        },
+      ],
+      [
+        'greeting',
+        {
+          response: 'greeting_response',
+          confidence: 0.7,
+          frequency: 0,
+          lastUsed: new Date(),
+        },
+      ],
+      [
+        'question',
+        {
+          response: 'answer_question',
+          confidence: 0.75,
+          frequency: 0,
+          lastUsed: new Date(),
+        },
+      ],
+    ];
+
+    patterns.forEach(([key, pattern]) => {
+      this.responsePatterns.set(key, pattern);
+    });
+  }
+
+  private createThoughtNode(
+    content: string,
+    confidence: number,
+    type:
+      | 'observation'
+      | 'inference'
+      | 'hypothesis'
+      | 'conclusion'
+      | 'question' = 'observation'
+  ): ThoughtNode {
+    const node: ThoughtNode = {
+      id: `thought_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      content,
+      confidence,
+      type,
+      connections: [],
+      timestamp: new Date(),
+    };
+    this.thoughtGraph.set(node.id, node);
+    return node;
+  }
+
+  private createQuickDecisionMatrix(options: Decision[]): DecisionMatrix {
+    const criteria: DecisionCriterion[] = [
+      { id: 'speed', name: 'Response Speed', type: 'benefit' },
+      { id: 'confidence', name: 'Confidence Level', type: 'benefit' },
+      { id: 'simplicity', name: 'Simplicity', type: 'benefit' },
+    ];
+
+    const decisionOptions: DecisionOption[] = options.map((opt, idx) => ({
+      id: opt.id,
+      name: `Option ${idx + 1}`,
+      description: opt.reasoning || 'No reasoning provided',
+      cost: 1 - (opt.confidence || 0.5),
+    }));
+
+    const matrix: DecisionMatrix = {
+      options: decisionOptions,
+      criteria,
+      weights: { speed: 0.5, confidence: 0.3, simplicity: 0.2 },
+      scores: decisionOptions.map(() => [
+        { value: 1, normalized: 1, confidence: 0.9 }, // speed
+        { value: 0.8, normalized: 0.8, confidence: 0.8 }, // confidence
+        { value: 0.9, normalized: 0.9, confidence: 0.9 }, // simplicity
+      ]),
+      method: 'weighted_sum',
+    };
+
+    this.decisionHistory.push(matrix);
+    return matrix;
+  }
 }
 
 // Factory function for discovery system

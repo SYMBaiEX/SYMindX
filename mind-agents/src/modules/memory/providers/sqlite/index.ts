@@ -20,6 +20,7 @@ import {
   ArchivalStrategy,
   MemoryPermission,
 } from '../../../../types/memory';
+import { DatabaseError } from '../../../../types/modules/database';
 import { runtimeLogger } from '../../../../utils/logger';
 import { buildObject } from '../../../../utils/type-helpers';
 import {
@@ -170,7 +171,7 @@ export class SQLiteMemoryProvider extends BaseMemoryProvider {
       CREATE INDEX IF NOT EXISTS idx_shared_mappings_pool ON shared_memory_mappings(pool_id);
     `);
 
-    console.log('✅ Enhanced SQLite memory database initialized');
+    // Enhanced SQLite memory database initialized
   }
 
   /**
@@ -179,16 +180,36 @@ export class SQLiteMemoryProvider extends BaseMemoryProvider {
   private startBackgroundProcesses(config: SQLiteMemoryConfig): void {
     if (config.consolidationInterval) {
       this.consolidationTimer = setInterval(() => {
-        this.runConsolidation().catch((error) => {
-          runtimeLogger.error('Consolidation error:', error);
+        this.runConsolidation().catch((error: Error) => {
+          const dbError =
+            error instanceof DatabaseError
+              ? error
+              : new DatabaseError(
+                  'Consolidation process failed',
+                  DatabaseError.ErrorCodes.UNKNOWN,
+                  'medium',
+                  true,
+                  error
+                );
+          runtimeLogger.error('Consolidation error:', dbError);
         });
       }, config.consolidationInterval);
     }
 
     if (config.archivalInterval) {
       this.archivalTimer = setInterval(() => {
-        this.runArchival().catch((error) => {
-          runtimeLogger.error('Archival error:', error);
+        this.runArchival().catch((error: Error) => {
+          const dbError =
+            error instanceof DatabaseError
+              ? error
+              : new DatabaseError(
+                  'Archival process failed',
+                  DatabaseError.ErrorCodes.UNKNOWN,
+                  'medium',
+                  true,
+                  error
+                );
+          runtimeLogger.error('Archival error:', dbError);
         });
       }, config.archivalInterval);
     }
@@ -251,9 +272,7 @@ export class SQLiteMemoryProvider extends BaseMemoryProvider {
         memory.metadata?.messageType === 'user_input' ||
         memory.metadata?.messageType === 'agent_response')
     ) {
-      console.log(
-        `💾 Stored ${enhanced.tier || 'episodic'} memory: ${memory.type} for agent ${agentId}`
-      );
+      // Stored memory for agent
     }
   }
 
@@ -351,9 +370,7 @@ export class SQLiteMemoryProvider extends BaseMemoryProvider {
       const rows = stmt.all(agentId) as SQLiteMemoryRow[];
 
       if (rows.length === 0) {
-        console.log(
-          '🔍 No memories with embeddings found, falling back to recent memories'
-        );
+        // No memories with embeddings found, falling back to recent memories
         return this.retrieve(agentId, 'recent', limit);
       }
 
@@ -380,15 +397,23 @@ export class SQLiteMemoryProvider extends BaseMemoryProvider {
       similarities.sort((a, b) => b.similarity - a.similarity);
       const results = similarities.slice(0, limit).map((item) => item.memory);
 
-      console.log(
-        `🎯 Vector search found ${results.length} similar memories (avg similarity: ${(similarities.slice(0, limit).reduce((sum, item) => sum + item.similarity, 0) / Math.min(limit, similarities.length)).toFixed(3)})`
-      );
+      // Vector search found similar memories
 
       return results;
     } catch (error) {
+      const dbError =
+        error instanceof DatabaseError
+          ? error
+          : new DatabaseError(
+              'Vector search failed',
+              DatabaseError.ErrorCodes.QUERY_FAILED,
+              'low',
+              true,
+              error instanceof Error ? error : new Error(String(error))
+            );
       console.warn(
         '⚠️ Vector search failed, falling back to recent memories:',
-        error
+        dbError
       );
       return this.retrieve(agentId, 'recent', limit);
     }
@@ -411,7 +436,7 @@ export class SQLiteMemoryProvider extends BaseMemoryProvider {
       throw new Error(`Memory ${memoryId} not found for agent ${agentId}`);
     }
 
-    console.log(`🗑️ Deleted memory: ${memoryId} for agent ${agentId}`);
+    // Deleted memory for agent
   }
 
   /**
@@ -425,7 +450,7 @@ export class SQLiteMemoryProvider extends BaseMemoryProvider {
     `);
 
     const result = stmt.run(agentId);
-    console.log(`🧹 Cleared ${result.changes} memories for agent ${agentId}`);
+    // Cleared memories for agent
   }
 
   /**
@@ -477,9 +502,7 @@ export class SQLiteMemoryProvider extends BaseMemoryProvider {
     `);
 
     const expiredResult = expiredStmt.run(agentId, now);
-    console.log(
-      `🧹 Cleaned up ${expiredResult.changes} expired short-term memories for agent ${agentId}`
-    );
+    // Cleaned up expired short-term memories for agent
 
     // Then, clean up old memories based on retention days
     const oldStmt = this.db.prepare(`
@@ -488,9 +511,7 @@ export class SQLiteMemoryProvider extends BaseMemoryProvider {
     `);
 
     const oldResult = oldStmt.run(agentId, cutoffTime);
-    console.log(
-      `🧹 Cleaned up ${oldResult.changes} old memories for agent ${agentId}`
-    );
+    // Cleaned up old memories for agent
   }
 
   /**
@@ -558,7 +579,17 @@ export class SQLiteMemoryProvider extends BaseMemoryProvider {
       );
       return Array.from(floatArray);
     } catch (error) {
-      console.warn('⚠️ Failed to convert buffer to embedding:', error);
+      const dbError =
+        error instanceof DatabaseError
+          ? error
+          : new DatabaseError(
+              'Failed to convert buffer to embedding',
+              DatabaseError.ErrorCodes.DATA_INTEGRITY,
+              'low',
+              false,
+              error instanceof Error ? error : new Error(String(error))
+            );
+      console.warn('⚠️ Failed to convert buffer to embedding:', dbError);
       return undefined;
     }
   }

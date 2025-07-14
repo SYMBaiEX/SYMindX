@@ -157,8 +157,8 @@ export const ResponsiveCard3D: React.FC<ResponsiveCard3DProps> = ({
       {!useCompactMode && (
         <>
           <Text color={cyberpunkTheme.colors.borderDim}>{topLine}</Text>
-          {depthLines.map((line, i) => (
-            <Text key={i} color={cyberpunkTheme.colors.borderDim}>
+          {depthLines.map((line) => (
+            <Text key={`resp-depth-${depthValue}-${line.length}-${line.charAt(0)}`} color={cyberpunkTheme.colors.borderDim}>
               {line}
             </Text>
           ))}
@@ -177,13 +177,16 @@ export const ResponsiveCard3D: React.FC<ResponsiveCard3DProps> = ({
 
       {/* Content area */}
       <Box flexDirection='column' minHeight={Math.max(1, cardHeight - 4)}>
-        {React.Children.map(children, (child, index) => (
-          <Box key={index}>
-            <Text color={cyberpunkTheme.colors.text}>║ </Text>
-            <Box width={contentWidth}>{child}</Box>
-            <Text color={cyberpunkTheme.colors.text}> ║{depthChar}</Text>
-          </Box>
-        ))}
+        {React.Children.map(children, (child, index) => {
+          const childKey = typeof child === 'string' ? child.substring(0, 10) : `child-${index}`;
+          return (
+            <Box key={`resp-content-${childKey}`}>
+              <Text color={cyberpunkTheme.colors.text}>║ </Text>
+              <Box width={contentWidth}>{child}</Box>
+              <Text color={cyberpunkTheme.colors.text}> ║{depthChar}</Text>
+            </Box>
+          );
+        })}
       </Box>
 
       {/* Bottom */}

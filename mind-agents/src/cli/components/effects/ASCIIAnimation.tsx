@@ -204,7 +204,7 @@ export const ASCIIAnimation: React.FC<ASCIIAnimationProps> = ({
   ];
 
   // Get current color for rainbow effect
-  const getCurrentColor = () => {
+  const getCurrentColor = (): string => {
     if (!rainbow) return defaultColor;
     const colorIndex = currentFrame % rainbowColors.length;
     return rainbowColors[colorIndex] || defaultColor;
@@ -232,11 +232,11 @@ export const ASCIIAnimation: React.FC<ASCIIAnimationProps> = ({
       });
     }, speed);
 
-    return () => clearInterval(interval);
+    return (): void => clearInterval(interval);
   }, [isPlaying, speed, selectedFrames.length, loop, onComplete]);
 
   // Apply effects to frame
-  const renderFrame = () => {
+  const renderFrame = (): React.ReactElement[] => {
     const frame = selectedFrames[currentFrame % selectedFrames.length];
     if (!frame) {
       return [<Text key='empty'>Loading...</Text>];
@@ -244,11 +244,12 @@ export const ASCIIAnimation: React.FC<ASCIIAnimationProps> = ({
     const lines = frame.trim().split('\n');
 
     return lines.map((line, i) => {
+      const uniqueKey = `${variant}-${currentFrame}-${line.substring(0, 10)}-${i}`;
       // Apply wave effect for water variant
       if (variant === 'water') {
         const offset = Math.sin((Date.now() / 200 + i) * 0.5) * 2;
         return (
-          <Box key={i} marginLeft={Math.floor(offset + 2)}>
+          <Box key={uniqueKey} marginLeft={Math.floor(offset + 2)}>
             <Text color={getCurrentColor()}>{line}</Text>
           </Box>
         );
@@ -260,7 +261,7 @@ export const ASCIIAnimation: React.FC<ASCIIAnimationProps> = ({
         Math.random() < 0.3
       ) {
         return (
-          <Text key={i} color={getCurrentColor()} dimColor>
+          <Text key={uniqueKey} color={getCurrentColor()} dimColor>
             {line}
           </Text>
         );
@@ -269,7 +270,7 @@ export const ASCIIAnimation: React.FC<ASCIIAnimationProps> = ({
       // Apply glow effect for lightning and portal
       if (variant === 'lightning' || variant === 'portal') {
         return (
-          <Text key={i} color={getCurrentColor()} bold>
+          <Text key={uniqueKey} color={getCurrentColor()} bold>
             {line}
           </Text>
         );
@@ -277,7 +278,7 @@ export const ASCIIAnimation: React.FC<ASCIIAnimationProps> = ({
 
       // Default rendering
       return (
-        <Text key={i} color={getCurrentColor()}>
+        <Text key={uniqueKey} color={getCurrentColor()}>
           {line}
         </Text>
       );

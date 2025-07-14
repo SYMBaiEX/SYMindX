@@ -71,7 +71,7 @@ export interface EthicalEvaluation {
   violations: EthicalViolation[];
   recommendations: string[];
   requiredApprovals: string[];
-  [key: string]: any; // Allow additional properties for GenericData compatibility
+  [key: string]: unknown; // Allow additional properties for GenericData compatibility
 }
 
 export interface EthicalViolation {
@@ -911,7 +911,19 @@ export class EthicsEngine {
   /**
    * Get ethics engine statistics
    */
-  getEthicsStats() {
+  getEthicsStats(): {
+    enabled: boolean;
+    strictMode: boolean;
+    totalEvaluations: number;
+    allowedActions: number;
+    blockedActions: number;
+    allowanceRate: number;
+    principles: number;
+    constraints: number;
+    safetyLimits: SafetyLimits;
+    violationsByPrinciple: Record<string, number>;
+    recentAudits: EthicsAuditRecord[];
+  } {
     const recentAudits = this.auditRecords.slice(-100); // Last 100 audits
     const totalEvaluations = this.auditRecords.length;
     const allowedActions = this.auditRecords.filter(

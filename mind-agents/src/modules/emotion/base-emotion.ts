@@ -4,6 +4,13 @@ import {
   PersonalityTraits,
   EmotionBlend,
 } from '../../types/emotion';
+import {
+  EmotionResult,
+  EmotionModifier,
+  EmotionTriggerEvent,
+  EmotionCalculation,
+  EmotionDecayConfig,
+} from '../../types/modules/emotions';
 
 export interface EmotionDefinition {
   name: string;
@@ -39,7 +46,7 @@ export abstract class BaseEmotion implements EmotionModule {
   protected _lastUpdate: Date = new Date();
   protected _blendWeights: Map<string, number> = new Map();
   protected _personalityTraits?: PersonalityTraits;
-  protected _contextualModifiers: Map<string, number> = new Map();
+  protected _contextualModifiers: Map<string, EmotionModifier> = new Map();
   protected _emotionalInertia: number = 0.3; // Resistance to change
 
   constructor(protected config: any) {
@@ -66,7 +73,7 @@ export abstract class BaseEmotion implements EmotionModule {
     return this._history;
   }
 
-  processEvent(eventType: string, context?: any): EmotionState {
+  processEvent(eventType: string, context?: any): EmotionResult {
     // Check if this event should trigger this emotion
     const definition = this.getDefinition();
     let shouldTrigger = false;
@@ -112,7 +119,13 @@ export abstract class BaseEmotion implements EmotionModule {
     // Apply contextual modifiers
     if (context?.emotionalContext) {
       for (const [key, value] of Object.entries(context.emotionalContext)) {
-        this._contextualModifiers.set(key, value as number);
+        const modifier: EmotionModifier = {
+          factor: value as number,
+          duration: 60000, // 1 minute default
+          reason: `contextual_${key}`,
+          type: 'context',
+        };
+        this._contextualModifiers.set(key, modifier);
       }
     }
 
@@ -129,7 +142,31 @@ export abstract class BaseEmotion implements EmotionModule {
       this.decay();
     }
 
-    return this.getCurrentState();
+    // Create trigger event
+    const triggerEvent: EmotionTriggerEvent = {
+      type: eventType,
+      source: context?.source || 'unknown',
+      intensity: shouldTrigger ? triggerIntensity : 0,
+      context,
+      timestamp: new Date(),
+    };
+
+    // Create emotion result
+    const previousEmotion = this.current;
+    const previousIntensity = this._intensity;
+    const state = this.getCurrentState();
+
+    return {
+      state,
+      changed: shouldTrigger || previousIntensity !== this._intensity,
+      previousEmotion:
+        previousEmotion !== this.current ? previousEmotion : undefined,
+      modifiers: Array.from(this._contextualModifiers.values()),
+      metadata: {
+        processingTime: Date.now() - triggerEvent.timestamp.getTime(),
+        triggersProcessed: 1,
+      },
+    };
   }
 
   protected decay(): void {
@@ -185,7 +222,7 @@ export abstract class BaseEmotion implements EmotionModule {
     emotion: string,
     intensity: number,
     triggers: string[] = []
-  ): EmotionState {
+  ): EmotionResult {
     // This is a specific emotion module, so we only set our own emotion
     if (emotion === this.current) {
       this._intensity = intensity;
@@ -193,7 +230,16 @@ export abstract class BaseEmotion implements EmotionModule {
         this.recordHistory(triggers.join(', '));
       }
     }
-    return this.getCurrentState();
+    const state = this.getCurrentState();
+    return {
+      state,
+      changed: emotion === this.current,
+      modifiers: Array.from(this._contextualModifiers.values()),
+      metadata: {
+        processingTime: 0,
+        triggersProcessed: triggers.length,
+      },
+    };
   }
 
   getHistory(limit?: number): EmotionRecord[] {
@@ -201,11 +247,20 @@ export abstract class BaseEmotion implements EmotionModule {
     return limit ? history.slice(0, limit) : history;
   }
 
-  reset(): EmotionState {
+  reset(): EmotionResult {
     this._intensity = 0;
     this._history = [];
     this._lastUpdate = new Date();
-    return this.getCurrentState();
+    const state = this.getCurrentState();
+    return {
+      state,
+      changed: true,
+      modifiers: [],
+      metadata: {
+        processingTime: 0,
+        triggersProcessed: 0,
+      },
+    };
   }
 
   // Helper methods
@@ -295,12 +350,16 @@ export abstract class BaseEmotion implements EmotionModule {
 
   // Get emotional context for decision making
   getEmotionalContext(): Record<string, any> {
+    const modifiers: Record<string, number> = {};
+    for (const [key, modifier] of this._contextualModifiers) {
+      modifiers[key] = modifier.factor;
+    }
     return {
       emotion: this.current,
       intensity: this._intensity,
       coordinates: this.getCoordinates(),
       modifiers: this.getEmotionModifier(),
-      contextualFactors: Object.fromEntries(this._contextualModifiers),
+      contextualFactors: modifiers,
       personalityInfluence: this._personalityTraits,
     };
   }

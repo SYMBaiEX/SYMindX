@@ -20,6 +20,7 @@ import {
   ArchivalStrategy,
   MemoryPermission,
 } from '../../../../types/memory';
+import { DatabaseError } from '../../../../types/modules/database';
 import { runtimeLogger } from '../../../../utils/logger';
 import { buildObject } from '../../../../utils/type-helpers';
 import {
@@ -64,7 +65,7 @@ export interface PostgresMemoryConfig extends BaseMemoryConfig {
 export interface PostgresMemoryRow extends MemoryRow {
   embedding?: number[];
   tier?: string;
-  context?: Record<string, any>; // JSON-encoded MemoryContext
+  context?: MemoryContext; // Proper type instead of Record<string, any>
   created_at: Date;
   updated_at: Date;
 }
@@ -143,16 +144,36 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
   private startBackgroundProcesses(config: PostgresMemoryConfig): void {
     if (config.consolidationInterval) {
       this.consolidationTimer = setInterval(() => {
-        this.runConsolidation().catch((error) => {
-          runtimeLogger.error('Consolidation error:', error);
+        this.runConsolidation().catch((error: Error) => {
+          const dbError =
+            error instanceof DatabaseError
+              ? error
+              : new DatabaseError(
+                  'Consolidation process failed',
+                  DatabaseError.ErrorCodes.UNKNOWN,
+                  'medium',
+                  true,
+                  error
+                );
+          runtimeLogger.error('Consolidation error:', dbError);
         });
       }, config.consolidationInterval);
     }
 
     if (config.archivalInterval) {
       this.archivalTimer = setInterval(() => {
-        this.runArchival().catch((error) => {
-          runtimeLogger.error('Archival error:', error);
+        this.runArchival().catch((error: Error) => {
+          const dbError =
+            error instanceof DatabaseError
+              ? error
+              : new DatabaseError(
+                  'Archival process failed',
+                  DatabaseError.ErrorCodes.UNKNOWN,
+                  'medium',
+                  true,
+                  error
+                );
+          runtimeLogger.error('Archival error:', dbError);
         });
       }, config.archivalInterval);
     }
@@ -165,7 +186,7 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
     if (this.isInitialized) return;
 
     try {
-      console.log('🚀 Initializing PostgreSQL memory provider...');
+      // Initializing PostgreSQL memory provider
 
       // Test connection
       await this.testConnection();
@@ -175,13 +196,18 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
       }
 
       this.isInitialized = true;
-      console.log(
-        '✅ Enhanced PostgreSQL memory provider initialized successfully'
-      );
+      // Enhanced PostgreSQL memory provider initialized successfully
     } catch (error) {
+      const dbError =
+        error instanceof DatabaseError
+          ? error
+          : DatabaseError.connectionFailed(
+              'Failed to initialize PostgreSQL memory provider',
+              error instanceof Error ? error : new Error(String(error))
+            );
       console.error(
         '❌ Failed to initialize PostgreSQL memory provider:',
-        error
+        dbError
       );
       throw error;
     }
@@ -254,9 +280,19 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
         await client.query(`CREATE EXTENSION IF NOT EXISTS "${extension}";`);
         console.log(`📦 Enabled extension: ${extension}`);
       } catch (error) {
+        const dbError =
+          error instanceof DatabaseError
+            ? error
+            : new DatabaseError(
+                `Could not enable extension ${extension}`,
+                DatabaseError.ErrorCodes.QUERY_FAILED,
+                'low',
+                false,
+                error instanceof Error ? error : new Error(String(error))
+              );
         console.warn(
           `⚠️ Could not enable extension ${extension}:`,
-          (error as any).message
+          dbError.message
         );
       }
     }
@@ -331,8 +367,21 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
         );
         console.log('🔍 Created IVFFlat vector index');
       } catch (fallbackError) {
+        const dbError =
+          fallbackError instanceof DatabaseError
+            ? fallbackError
+            : new DatabaseError(
+                'Could not create vector index, pgvector may not be available',
+                DatabaseError.ErrorCodes.QUERY_FAILED,
+                'low',
+                false,
+                fallbackError instanceof Error
+                  ? fallbackError
+                  : new Error(String(fallbackError))
+              );
         console.warn(
-          '⚠️ Could not create vector index, pgvector may not be available'
+          '⚠️ Could not create vector index, pgvector may not be available',
+          dbError
         );
       }
     }
@@ -341,7 +390,17 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
       try {
         await client.query(indexQuery);
       } catch (error) {
-        console.warn('⚠️ Could not create index:', (error as any).message);
+        const dbError =
+          error instanceof DatabaseError
+            ? error
+            : new DatabaseError(
+                'Could not create index',
+                DatabaseError.ErrorCodes.QUERY_FAILED,
+                'low',
+                false,
+                error instanceof Error ? error : new Error(String(error))
+              );
+        console.warn('⚠️ Could not create index:', dbError.message);
       }
     }
 
@@ -471,7 +530,17 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
       try {
         await client.query(func);
       } catch (error) {
-        console.warn('⚠️ Could not create function:', (error as any).message);
+        const dbError =
+          error instanceof DatabaseError
+            ? error
+            : new DatabaseError(
+                'Could not create function',
+                DatabaseError.ErrorCodes.QUERY_FAILED,
+                'low',
+                false,
+                error instanceof Error ? error : new Error(String(error))
+              );
+        console.warn('⚠️ Could not create function:', dbError.message);
       }
     }
 
@@ -520,9 +589,19 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
 
       console.log('🔗 Created shared memory tables');
     } catch (error) {
+      const dbError =
+        error instanceof DatabaseError
+          ? error
+          : new DatabaseError(
+              'Could not create shared memory tables',
+              DatabaseError.ErrorCodes.QUERY_FAILED,
+              'medium',
+              false,
+              error instanceof Error ? error : new Error(String(error))
+            );
       console.warn(
         '⚠️ Could not create shared memory tables:',
-        (error as any).message
+        dbError.message
       );
     }
   }
@@ -558,7 +637,17 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
       await client.query(createTrigger);
       console.log('⚡ Created database triggers');
     } catch (error) {
-      console.warn('⚠️ Could not create triggers:', (error as any).message);
+      const dbError =
+        error instanceof DatabaseError
+          ? error
+          : new DatabaseError(
+              'Could not create triggers',
+              DatabaseError.ErrorCodes.QUERY_FAILED,
+              'low',
+              false,
+              error instanceof Error ? error : new Error(String(error))
+            );
+      console.warn('⚠️ Could not create triggers:', dbError.message);
     }
   }
 
@@ -583,10 +672,17 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
       await client.query(versioningQuery);
       console.log('📋 Created schema versioning');
     } catch (error) {
-      console.warn(
-        '⚠️ Could not create schema versioning:',
-        (error as any).message
-      );
+      const dbError =
+        error instanceof DatabaseError
+          ? error
+          : new DatabaseError(
+              'Could not create schema versioning',
+              DatabaseError.ErrorCodes.QUERY_FAILED,
+              'low',
+              false,
+              error instanceof Error ? error : new Error(String(error))
+            );
+      console.warn('⚠️ Could not create schema versioning:', dbError.message);
     }
   }
 
@@ -765,9 +861,19 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
         ]);
         return result.rows.map((row) => this.rowToMemoryRecord(row));
       } catch (error) {
+        const dbError =
+          error instanceof DatabaseError
+            ? error
+            : new DatabaseError(
+                'Vector search failed',
+                DatabaseError.ErrorCodes.QUERY_FAILED,
+                'low',
+                true,
+                error instanceof Error ? error : new Error(String(error))
+              );
         console.warn(
           '⚠️ Vector search failed, falling back to recent memories:',
-          error
+          dbError
         );
         return this.retrieve(agentId, 'recent', limit);
       }
@@ -901,7 +1007,17 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
             ? JSON.parse(row.embedding)
             : row.embedding;
       } catch (error) {
-        console.warn('⚠️ Failed to parse embedding:', error);
+        const dbError =
+          error instanceof DatabaseError
+            ? error
+            : new DatabaseError(
+                'Failed to parse embedding',
+                DatabaseError.ErrorCodes.DATA_INTEGRITY,
+                'low',
+                false,
+                error instanceof Error ? error : new Error(String(error))
+              );
+        console.warn('⚠️ Failed to parse embedding:', dbError);
       }
     }
 
@@ -962,7 +1078,14 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
         client.release();
       }
     } catch (error) {
-      console.error('❌ PostgreSQL health check failed:', error);
+      const dbError =
+        error instanceof DatabaseError
+          ? error
+          : DatabaseError.connectionFailed(
+              'PostgreSQL health check failed',
+              error instanceof Error ? error : new Error(String(error))
+            );
+      console.error('❌ PostgreSQL health check failed:', dbError);
       return { healthy: false, latency: -1 };
     }
   }
@@ -1389,7 +1512,17 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
       await this.pool.end();
       console.log('🔌 PostgreSQL memory provider disconnected');
     } catch (error) {
-      console.error('❌ Error disconnecting PostgreSQL provider:', error);
+      const dbError =
+        error instanceof DatabaseError
+          ? error
+          : new DatabaseError(
+              'Error disconnecting PostgreSQL provider',
+              DatabaseError.ErrorCodes.CONNECTION_FAILED,
+              'low',
+              false,
+              error instanceof Error ? error : new Error(String(error))
+            );
+      console.error('❌ Error disconnecting PostgreSQL provider:', dbError);
     }
   }
 

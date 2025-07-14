@@ -13,12 +13,12 @@ interface LogEntry {
   message: string;
 }
 
-export const Logs: React.FC = () => {
+export const Logs: React.FC = (): React.ReactElement => {
   const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [filter, _setFilter] = useState<'all' | 'info' | 'warning' | 'error'>(
+  const [filter] = useState<'all' | 'info' | 'warning' | 'error'>(
     'all'
   );
-  const [autoScroll, _setAutoScroll] = useState(true);
+  const [autoScroll] = useState(true);
 
   // Generate mock logs
   useEffect(() => {
@@ -56,9 +56,9 @@ export const Logs: React.FC = () => {
       let random = Math.random();
       let level: LogEntry['level'] = 'info';
       for (let i = 0; i < levels.length; i++) {
-        random -= weights[i] ?? 0;
+        random -= weights[i] || 0;
         if (random <= 0) {
-          level = levels[i] ?? 'info';
+          level = levels[i] || 'info';
           break;
         }
       }
@@ -66,10 +66,10 @@ export const Logs: React.FC = () => {
       return {
         id: Date.now().toString() + Math.random(),
         timestamp: new Date(),
-        level: level ?? 'info',
-        source: sources[Math.floor(Math.random() * sources.length)] ?? 'system',
+        level: level || 'info',
+        source: sources[Math.floor(Math.random() * sources.length)] || 'system',
         message:
-          messages[Math.floor(Math.random() * messages.length)] ?? 'No message',
+          messages[Math.floor(Math.random() * messages.length)] || 'No message',
       };
     };
 
@@ -87,10 +87,10 @@ export const Logs: React.FC = () => {
       2000 + Math.random() * 3000
     );
 
-    return () => clearInterval(interval);
+    return (): void => clearInterval(interval);
   }, [autoScroll]);
 
-  const getLevelColor = (level: LogEntry['level']) => {
+  const getLevelColor = (level: LogEntry['level']): string => {
     switch (level) {
       case 'info':
         return cyberpunkTheme.colors.primary;
@@ -105,7 +105,7 @@ export const Logs: React.FC = () => {
     }
   };
 
-  const getLevelIcon = (level: LogEntry['level']) => {
+  const getLevelIcon = (level: LogEntry['level']): string => {
     switch (level) {
       case 'info':
         return 'ℹ';

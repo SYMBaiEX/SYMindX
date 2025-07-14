@@ -6,7 +6,7 @@
  */
 
 import { vertex } from '@ai-sdk/google-vertex';
-import { generateText, streamText, type LanguageModel } from 'ai';
+import { generateText, streamText } from 'ai';
 
 import { Agent } from '../../types/agent';
 import {
@@ -28,6 +28,10 @@ import {
   MessageType,
   FinishReason,
 } from '../../types/portal';
+import type {
+  LanguageModel,
+  AIMessage as ModelMessage,
+} from '../../types/portals/ai-sdk';
 import { BasePortal } from '../base-portal';
 import { convertUsage, buildAISDKParams } from '../utils';
 
@@ -43,7 +47,7 @@ export interface GoogleVertexConfig extends PortalConfig {
   generationConfig?: GenerationConfig;
   systemInstruction?: string;
   tools?: Tool[];
-  googleAuthOptions?: any;
+  googleAuthOptions?: Record<string, unknown>;
 }
 
 export interface SafetySetting {
@@ -71,7 +75,7 @@ export interface FunctionDeclaration {
   description: string;
   parameters?: {
     type: string;
-    properties: Record<string, any>;
+    properties: Record<string, unknown>;
     required?: string[];
   };
 }
@@ -96,11 +100,11 @@ export interface VertexPart {
   };
   functionCall?: {
     name: string;
-    args: Record<string, any>;
+    args: Record<string, unknown>;
   };
   functionResponse?: {
     name: string;
-    response: Record<string, any>;
+    response: Record<string, unknown>;
   };
 }
 
@@ -195,7 +199,7 @@ export class GoogleVertexPortal extends BasePortal {
     ModelType.IMAGE_GENERATION,
   ];
 
-  private vertexProvider: any;
+  private vertexProvider: typeof vertex;
   private projectId: string;
   private location: string;
 
@@ -225,20 +229,18 @@ export class GoogleVertexPortal extends BasePortal {
     }
   }
 
-  override async init(agent: Agent): Promise<void> {
+  override async init(_agent: Agent): Promise<void> {
     this.status = PortalStatus.INITIALIZING;
-    console.log(
-      `🔮 Initializing Google Vertex AI portal for agent ${agent.name}`
-    );
+    // Initializing Google Vertex AI portal for agent
 
     try {
       await this.validateConfig();
       await this.healthCheck();
       this.status = PortalStatus.ACTIVE;
-      console.log(`✅ Google Vertex AI portal initialized for ${agent.name}`);
+      // Google Vertex AI portal initialized successfully
     } catch (error) {
       this.status = PortalStatus.ERROR;
-      console.error(`❌ Failed to initialize Google Vertex AI portal:`, error);
+      // Failed to initialize Google Vertex AI portal
       throw error;
     }
   }
@@ -258,8 +260,8 @@ export class GoogleVertexPortal extends BasePortal {
         maxOutputTokens: 10,
       });
       return text.length > 0;
-    } catch (error) {
-      console.error('Google Vertex AI health check failed:', error);
+    } catch (_error) {
+      // Google Vertex AI health check failed
       return false;
     }
   }
@@ -368,9 +370,7 @@ export class GoogleVertexPortal extends BasePortal {
     try {
       // Google Vertex AI doesn't have a direct embedding model through AI SDK v5
       // For now, use a placeholder implementation
-      console.warn(
-        'Google Vertex AI embedding not directly supported through AI SDK v5, using placeholder'
-      );
+      // Google Vertex AI embedding not directly supported through AI SDK v5, using placeholder
       return {
         embedding: new Array(768).fill(0).map(() => Math.random() * 2 - 1),
         dimensions: 768,
@@ -495,16 +495,21 @@ export class GoogleVertexPortal extends BasePortal {
   /**
    * Convert ChatMessage array to message format for AI SDK v5
    */
-  private convertToModelMessages(messages: ChatMessage[]) {
+  private convertToModelMessages(messages: ChatMessage[]): ModelMessage[] {
     return messages.map((msg) => {
-      const message: any = {
+      const message: ModelMessage = {
         role: msg.role,
         content: msg.content,
       };
 
       // Handle attachments for multimodal support
       if (msg.attachments && msg.attachments.length > 0) {
-        const content: any[] = [{ type: 'text', text: msg.content }];
+        const content: Array<{
+          type: string;
+          text?: string;
+          image?: string | URL;
+          mimeType?: string;
+        }> = [{ type: 'text', text: msg.content }];
 
         for (const attachment of msg.attachments) {
           if (attachment.type === MessageType.IMAGE) {

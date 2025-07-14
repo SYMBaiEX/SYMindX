@@ -1,5 +1,5 @@
 import { Box, Text } from 'ink';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 import { useTerminalDimensions } from '../../hooks/useTerminalDimensions.js';
 import { themeEngine } from '../../themes/ThemeEngine.js';
@@ -64,7 +64,7 @@ export const MatrixRain: React.FC<MatrixRainProps> = ({
   const matrixChars = charSets[variant];
 
   // Generate color variation
-  const getDropColor = (): string => {
+  const getDropColor = useCallback((): string => {
     if (!colorVariation) return defaultColor;
 
     const colors = [
@@ -75,7 +75,7 @@ export const MatrixRain: React.FC<MatrixRainProps> = ({
     ];
 
     return colors[Math.floor(Math.random() * colors.length)] ?? defaultColor;
-  };
+  }, [colorVariation, defaultColor, theme.colors.matrix, theme.colors.primary, theme.colors.accent, theme.colors.success]);
 
   // Initialize drops
   useEffect(() => {
@@ -104,7 +104,7 @@ export const MatrixRain: React.FC<MatrixRainProps> = ({
     }
 
     setDrops(initialDrops);
-  }, [width, height, density, variant]);
+  }, [width, height, density, variant, getDropColor, matrixChars]);
 
   // Animate drops
   useEffect(() => {
@@ -161,11 +161,11 @@ export const MatrixRain: React.FC<MatrixRainProps> = ({
       );
     }, speed);
 
-    return () => clearInterval(interval);
-  }, [speed, height, width, variant]);
+    return (): void => clearInterval(interval);
+  }, [speed, height, width, variant, defaultColor, getDropColor, matrixChars]);
 
   // Render matrix
-  const renderMatrix = () => {
+  const renderMatrix = (): React.ReactElement[] => {
     const display: string[][] = Array(height)
       .fill(null)
       .map(() => Array(width).fill(' '));
@@ -188,7 +188,7 @@ export const MatrixRain: React.FC<MatrixRainProps> = ({
     });
 
     return display.map((row, y) => (
-      <Text key={y}>
+      <Text key={`row-${y}-${row.join('')}`}>
         {row.map((char, x) => {
           const dropIndex = drops.findIndex(
             (d) =>
@@ -199,7 +199,7 @@ export const MatrixRain: React.FC<MatrixRainProps> = ({
 
           if (dropIndex !== -1) {
             const drop = drops[dropIndex];
-            if (!drop) return <Text key={x}> </Text>;
+            if (!drop) return <Text key={`empty-${y}-${x}`}> </Text>;
 
             const charPosition = Math.floor(drop.y) - y;
             const opacity = 1 - (charPosition / drop.length) * fadeLength;
@@ -207,7 +207,7 @@ export const MatrixRain: React.FC<MatrixRainProps> = ({
             // Head of the drop is brighter
             if (charPosition === 0) {
               return (
-                <Text key={x} color={theme.colors.textBright} bold>
+                <Text key={`bright-${y}-${x}`} color={theme.colors.textBright} bold>
                   {char}
                 </Text>
               );
@@ -219,7 +219,7 @@ export const MatrixRain: React.FC<MatrixRainProps> = ({
               (variant === 'glitch' || variant === 'binary')
             ) {
               return (
-                <Text key={x} color={drop?.color ?? defaultColor} bold>
+                <Text key={`bold-${y}-${x}`} color={drop?.color ?? defaultColor} bold>
                   {char}
                 </Text>
               );
@@ -228,13 +228,13 @@ export const MatrixRain: React.FC<MatrixRainProps> = ({
             // Fade out towards the tail
             const useColor = drop?.color ?? defaultColor;
             return (
-              <Text key={x} color={useColor} dimColor={opacity < 0.5}>
+              <Text key={`fade-${y}-${x}`} color={useColor} dimColor={opacity < 0.5}>
                 {char}
               </Text>
             );
           }
 
-          return <Text key={x}> </Text>;
+          return <Text key={`space-${y}-${x}`}> </Text>;
         })}
       </Text>
     ));

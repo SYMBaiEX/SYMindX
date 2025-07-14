@@ -16,7 +16,7 @@ export const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
   position = 'inline',
   compact = false,
 }) => {
-  const getStatusIcon = () => {
+  const getStatusIcon = (): string => {
     switch (status.status) {
       case 'connected':
         return '🟢';
@@ -31,7 +31,7 @@ export const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
     }
   };
 
-  const getStatusColor = () => {
+  const getStatusColor = (): string => {
     switch (status.status) {
       case 'connected':
         return 'green';
@@ -45,7 +45,7 @@ export const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
     }
   };
 
-  const getStatusText = () => {
+  const getStatusText = (): string => {
     switch (status.status) {
       case 'connected':
         return 'Connected';
@@ -60,7 +60,7 @@ export const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
     }
   };
 
-  const formatLatency = (latency: number) => {
+  const formatLatency = (latency: number): string => {
     if (latency < 100) return `${latency}ms`;
     if (latency < 1000) return `${latency}ms`;
     return `${(latency / 1000).toFixed(1)}s`;
@@ -166,7 +166,7 @@ export const ConnectionHealth: React.FC<ConnectionHealthProps> = ({
   status,
   showBars = true,
 }) => {
-  const getHealthLevel = () => {
+  const getHealthLevel = (): number => {
     if (status !== 'connected') return 0;
     if (latency < 50) return 5;
     if (latency < 100) return 4;
@@ -175,7 +175,7 @@ export const ConnectionHealth: React.FC<ConnectionHealthProps> = ({
     return 1;
   };
 
-  const getHealthColor = () => {
+  const getHealthColor = (): string => {
     const level = getHealthLevel();
     if (level >= 4) return 'green';
     if (level >= 3) return 'yellow';
@@ -216,7 +216,7 @@ export const ConnectionBadge: React.FC<ConnectionBadgeProps> = ({
 }) => {
   const [pulse, setPulse] = React.useState(false);
 
-  React.useEffect(() => {
+  React.useEffect((): (() => void) | undefined => {
     if (status === 'connecting') {
       const interval = setInterval(() => {
         setPulse((p) => !p);
@@ -226,7 +226,7 @@ export const ConnectionBadge: React.FC<ConnectionBadgeProps> = ({
     return undefined;
   }, [status]);
 
-  const getIcon = () => {
+  const getIcon = (): string => {
     switch (size) {
       case 'small':
         return status === 'connected' ? '●' : '○';
@@ -237,7 +237,7 @@ export const ConnectionBadge: React.FC<ConnectionBadgeProps> = ({
     }
   };
 
-  const getColor = () => {
+  const getColor = (): string => {
     switch (status) {
       case 'connected':
         return 'green';
@@ -273,7 +273,7 @@ export const AutoReconnectIndicator: React.FC<AutoReconnectIndicatorProps> = ({
 }) => {
   const [countdown, setCountdown] = React.useState(nextRetryIn || 0);
 
-  React.useEffect(() => {
+  React.useEffect((): (() => void) | undefined => {
     if (nextRetryIn && nextRetryIn > 0) {
       setCountdown(nextRetryIn);
       const interval = setInterval(() => {
@@ -340,7 +340,7 @@ export const ConnectionTimeline: React.FC<ConnectionTimelineProps> = ({
 }) => {
   const recentEvents = events.slice(-maxEvents);
 
-  const getEventIcon = (type: ConnectionEvent['type']) => {
+  const getEventIcon = (type: ConnectionEvent['type']): string => {
     switch (type) {
       case 'connected':
         return '✓';
@@ -355,7 +355,7 @@ export const ConnectionTimeline: React.FC<ConnectionTimelineProps> = ({
     }
   };
 
-  const getEventColor = (type: ConnectionEvent['type']) => {
+  const getEventColor = (type: ConnectionEvent['type']): string => {
     switch (type) {
       case 'connected':
         return 'green';
@@ -372,8 +372,8 @@ export const ConnectionTimeline: React.FC<ConnectionTimelineProps> = ({
 
   return (
     <Box flexDirection='column'>
-      {recentEvents.map((event, index) => (
-        <Box key={index}>
+      {recentEvents.map((event) => (
+        <Box key={`conn-event-${event.type}-${event.timestamp.getTime()}`}>
           <Text color='gray' dimColor>
             {event.timestamp.toLocaleTimeString()}
           </Text>

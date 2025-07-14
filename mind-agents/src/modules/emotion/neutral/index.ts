@@ -1,3 +1,4 @@
+import { EmotionResult, EmotionData } from '../../../types/modules/emotions';
 import { BaseEmotion, EmotionDefinition } from '../base-emotion';
 
 import { NeutralEmotionConfig } from './types';
@@ -44,8 +45,9 @@ export class NeutralEmotion extends BaseEmotion {
     };
   }
 
-  override processEvent(eventType: string, context?: any): any {
+  override processEvent(eventType: string, context?: any): EmotionResult {
     // Neutral is the default state - it has very low reactivity
+    const previousIntensity = this._intensity;
     if (context?.return_to_baseline) {
       this._intensity = 0.5; // Mild neutral state
       this.recordHistory('baseline_return');
@@ -56,7 +58,25 @@ export class NeutralEmotion extends BaseEmotion {
     const decayRate = 0.02 * (timeSinceUpdate / 60000); // Faster decay
     this._intensity = Math.max(0, this._intensity - decayRate);
 
-    return super.processEvent(eventType, context);
+    const result = super.processEvent(eventType, context);
+
+    // Add neutral-specific data
+    const neutralData: EmotionData = {
+      base: {
+        intensity: this._intensity,
+        triggers: this.triggers,
+        modifiers: this.getEmotionModifier(),
+      },
+      neutral: {
+        baseline: 0.5,
+        stabilityFactor: 1.0,
+      },
+    };
+
+    return {
+      ...result,
+      changed: result.changed || previousIntensity !== this._intensity,
+    };
   }
 }
 

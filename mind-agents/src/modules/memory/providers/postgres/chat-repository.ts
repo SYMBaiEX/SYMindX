@@ -6,6 +6,7 @@
 
 import { Pool } from 'pg';
 
+import { buildObject } from '../../../../utils/type-helpers';
 import {
   ChatRepository,
   ChatSystemConfig,
@@ -26,7 +27,6 @@ import {
   ChatSession,
   AnalyticsEvent,
 } from '../sqlite/chat-types';
-import { buildObject } from '../../../../utils/type-helpers';
 
 export interface PostgresChatConfig extends ChatSystemConfig {
   host: string;

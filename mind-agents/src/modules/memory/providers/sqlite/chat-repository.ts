@@ -7,6 +7,8 @@
 import { Database } from 'bun:sqlite';
 import type { Database as DatabaseType, Statement } from 'bun:sqlite';
 
+import { buildObject } from '../../../../utils/type-helpers';
+
 import {
   ChatRepository,
   ChatSystemConfig,
@@ -28,7 +30,6 @@ import {
   AnalyticsEvent,
 } from './chat-types';
 import { runMigrations } from './migrations';
-import { buildObject } from '../../../../utils/type-helpers';
 
 export class SQLiteChatRepository implements ChatRepository {
   private db: DatabaseType;

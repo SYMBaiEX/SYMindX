@@ -10,12 +10,10 @@ import {
   generateText as aiGenerateText,
   streamText as aiStreamText,
   embed as aiEmbed,
-  type ModelMessage,
 } from 'ai';
 
 import { Agent } from '../../types/agent';
 import {
-  Portal,
   PortalConfig,
   PortalType,
   PortalStatus,
@@ -33,6 +31,7 @@ import {
   ImageGenerationOptions,
   ImageGenerationResult,
 } from '../../types/portal';
+import type { AIMessage as ModelMessage } from '../../types/portals/ai-sdk';
 import { BasePortal } from '../base-portal';
 import { convertUsage, buildAISDKParams } from '../utils';
 
@@ -88,25 +87,25 @@ export class CoherePortal extends BasePortal {
     ModelType.EMBEDDING,
   ];
 
-  private cohereProvider: any;
+  private cohereProvider: typeof cohere;
 
   constructor(config: CohereConfig) {
     super('cohere-ai', 'Cohere AI', '1.0.0', config);
     this.cohereProvider = cohere;
   }
 
-  override async init(agent: Agent): Promise<void> {
+  override async init(_agent: Agent): Promise<void> {
     this.status = PortalStatus.INITIALIZING;
-    console.log(`🔮 Initializing Cohere AI portal for agent ${agent.name}`);
+    // Initializing Cohere AI portal for agent
 
     try {
       await this.validateConfig();
       await this.healthCheck();
       this.status = PortalStatus.ACTIVE;
-      console.log(`✅ Cohere AI portal initialized for ${agent.name}`);
+      // Cohere AI portal initialized successfully
     } catch (error) {
       this.status = PortalStatus.ERROR;
-      console.error(`❌ Failed to initialize Cohere AI portal:`, error);
+      // Failed to initialize Cohere AI portal
       throw error;
     }
   }
@@ -123,8 +122,8 @@ export class CoherePortal extends BasePortal {
         maxOutputTokens: 10,
       });
       return true;
-    } catch (error) {
-      console.error('Cohere AI health check failed:', error);
+    } catch (_error) {
+      // Cohere AI health check failed
       return false;
     }
   }
@@ -324,7 +323,7 @@ export class CoherePortal extends BasePortal {
         stopSequences: options?.stop,
       });
 
-      const { textStream } = aiStreamText(params);
+      const { textStream } = await aiStreamText(params);
 
       for await (const chunk of textStream) {
         yield chunk;
@@ -370,7 +369,7 @@ export class CoherePortal extends BasePortal {
         tools: options?.tools,
       });
 
-      const { textStream } = aiStreamText(params);
+      const { textStream } = await aiStreamText(params);
 
       for await (const chunk of textStream) {
         yield chunk;
@@ -418,7 +417,7 @@ export class CoherePortal extends BasePortal {
   }
 }
 
-export function createCoherePortal(config: CohereConfig): Portal {
+export function createCoherePortal(config: CohereConfig): CoherePortal {
   return new CoherePortal({
     ...defaultCohereConfig,
     ...config,

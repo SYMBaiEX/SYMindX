@@ -1021,7 +1021,7 @@ export class AutonomousEngine {
   private async loadInitialGoals(): Promise<void> {
     const agentGoals: string[] = []; // TODO: Add goals to agent config structure
     // Convert string goals to Goal objects
-    this.currentGoals = agentGoals.map((goalStr: any, index: any) => ({
+    this.currentGoals = agentGoals.map((goalStr: string, index: number) => ({
       id: `initial_goal_${index}`,
       type: 'long_term' as const,
       description: goalStr,
@@ -1093,7 +1093,7 @@ export class AutonomousEngine {
     return actions;
   }
 
-  private createDecisionCriteria(): any[] {
+  private createDecisionCriteria(): unknown[] {
     return [
       { id: 'goal_alignment', weight: 0.4 },
       { id: 'personality_fit', weight: 0.3 },
@@ -1104,7 +1104,7 @@ export class AutonomousEngine {
 
   private async evaluateActions(
     actions: AgentAction[],
-    criteria: any[]
+    criteria: unknown[]
   ): Promise<Record<string, Record<string, number>>> {
     const evaluation: Record<string, Record<string, number>> = {};
 
@@ -1161,7 +1161,7 @@ export class AutonomousEngine {
 
   private generateDecisionReasoning(
     recommendation: AgentAction,
-    _criteria: any[],
+    _criteria: unknown[],
     _evaluation: Record<string, Record<string, number>>
   ): string[] {
     return [
@@ -1529,7 +1529,7 @@ export class AutonomousEngine {
           emotions:
             this.agent.emotion
               ?.getHistory?.(5)
-              ?.map((e: any) => e.emotion)
+              ?.map((e: { emotion: unknown }) => e.emotion)
               .join(', ') || 'various',
           goals: 'Personal growth and learning',
           learnings:
@@ -1780,7 +1780,7 @@ export class AutonomousEngine {
   async processHumanInteraction(
     humanId: string,
     content: string,
-    type?: any
+    type?: unknown
   ): Promise<string> {
     return await this.interactionManager.processInteraction(
       humanId,

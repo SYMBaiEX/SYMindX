@@ -90,144 +90,204 @@ export class PDDLPlanner implements CognitionModule {
    * Create default PDDL domain for agent actions
    */
   private createDefaultDomain(): PDDLDomain {
+    const requirements: PDDLRequirement[] = [':strips', ':typing'];
+    const types: PDDLType[] = [
+      { name: 'agent', primitive: true },
+      { name: 'message', primitive: true },
+      { name: 'goal', primitive: true },
+      { name: 'resource', primitive: true },
+      { name: 'location', primitive: true },
+    ];
+
+    const predicates: PDDLPredicate[] = [
+      {
+        name: 'at',
+        parameters: [
+          { name: 'agent', type: 'agent' },
+          { name: 'location', type: 'location' },
+        ],
+        description: 'Agent is at location',
+      },
+      {
+        name: 'has',
+        parameters: [
+          { name: 'agent', type: 'agent' },
+          { name: 'resource', type: 'resource' },
+        ],
+        description: 'Agent has resource',
+      },
+      {
+        name: 'knows',
+        parameters: [
+          { name: 'agent', type: 'agent' },
+          { name: 'message', type: 'message' },
+        ],
+        description: 'Agent knows message',
+      },
+      {
+        name: 'achieved',
+        parameters: [{ name: 'goal', type: 'goal' }],
+        description: 'Goal has been achieved',
+      },
+      {
+        name: 'available',
+        parameters: [{ name: 'resource', type: 'resource' }],
+        description: 'Resource is available',
+      },
+      {
+        name: 'connected',
+        parameters: [
+          { name: 'location1', type: 'location' },
+          { name: 'location2', type: 'location' },
+        ],
+        description: 'Locations are connected',
+      },
+    ];
+
+    const actions: PDDLAction[] = this.createDefaultActions();
+
     return {
       name: 'agent_actions',
-      requirements: [':strips', ':typing'],
-      types: ['agent', 'message', 'goal', 'resource', 'location'],
-      predicates: [
-        {
-          name: 'at',
-          parameters: [
-            { name: 'agent', type: 'agent' },
-            { name: 'location', type: 'location' },
-          ],
-        },
-        {
-          name: 'has',
-          parameters: [
-            { name: 'agent', type: 'agent' },
-            { name: 'resource', type: 'resource' },
-          ],
-        },
-        {
-          name: 'knows',
-          parameters: [
-            { name: 'agent', type: 'agent' },
-            { name: 'message', type: 'message' },
-          ],
-        },
-        { name: 'achieved', parameters: [{ name: 'goal', type: 'goal' }] },
-        {
-          name: 'available',
-          parameters: [{ name: 'resource', type: 'resource' }],
-        },
-        {
-          name: 'connected',
-          parameters: [
-            { name: 'location', type: 'location' },
-            { name: 'location', type: 'location' },
-          ],
-        },
-      ],
-      actions: [
-        {
-          name: 'move',
-          parameters: [
-            { name: 'agent', type: 'agent' },
-            { name: 'from', type: 'location' },
-            { name: 'to', type: 'location' },
-          ],
-          precondition: {
-            type: 'and',
-            expressions: [
-              { type: 'predicate', predicate: 'at(agent, from)' },
-              { type: 'predicate', predicate: 'connected(from, to)' },
-            ],
-          },
-          effect: {
-            type: 'and',
-            expressions: [
-              {
-                type: 'not',
-                expressions: [
-                  { type: 'predicate', predicate: 'at(agent, from)' },
-                ],
-              },
-              { type: 'predicate', predicate: 'at(agent, to)' },
-            ],
-          },
-          effects: [
-            { type: 'not', predicate: 'at(agent, from)' },
-            { type: 'predicate', predicate: 'at(agent, to)' },
-          ],
-        },
-        {
-          name: 'communicate',
-          parameters: [
-            { name: 'agent', type: 'agent' },
-            { name: 'message', type: 'message' },
-          ],
-          precondition: {
-            type: 'and',
-            expressions: [
-              { type: 'predicate', predicate: 'knows(agent, message)' },
-            ],
-          },
-          effect: {
-            type: 'predicate',
-            predicate: 'communicated(agent, message)',
-          },
-          effects: [
-            { type: 'predicate', predicate: 'communicated(agent, message)' },
-          ],
-        },
-        {
-          name: 'acquire_resource',
-          parameters: [
-            { name: 'agent', type: 'agent' },
-            { name: 'resource', type: 'resource' },
-          ],
-          precondition: {
-            type: 'and',
-            expressions: [
-              { type: 'predicate', predicate: 'available(resource)' },
-            ],
-          },
-          effect: {
-            type: 'and',
-            expressions: [
-              { type: 'predicate', predicate: 'has(agent, resource)' },
-              {
-                type: 'not',
-                expressions: [
-                  { type: 'predicate', predicate: 'available(resource)' },
-                ],
-              },
-            ],
-          },
-          effects: [
-            { type: 'predicate', predicate: 'has(agent, resource)' },
-            { type: 'not', predicate: 'available(resource)' },
-          ],
-        },
-        {
-          name: 'work_on_goal',
-          parameters: [
-            { name: 'agent', type: 'agent' },
-            { name: 'goal', type: 'goal' },
-          ],
-          precondition: {
-            type: 'and',
-            expressions: [
-              { type: 'predicate', predicate: 'has(agent, knowledge)' },
-              { type: 'predicate', predicate: 'has(agent, tools)' },
-            ],
-          },
-          effect: { type: 'predicate', predicate: 'achieved(goal)' },
-          effects: [{ type: 'predicate', predicate: 'achieved(goal)' }],
-        },
-      ],
+      requirements,
+      types,
+      predicates,
+      actions,
     };
+  }
+
+  /**
+   * Create default PDDL actions
+   */
+  private createDefaultActions(): PDDLAction[] {
+    return [
+      {
+        name: 'move',
+        parameters: [
+          { name: 'agent', type: 'agent' },
+          { name: 'from', type: 'location' },
+          { name: 'to', type: 'location' },
+        ],
+        precondition: {
+          type: 'and',
+          operands: [
+            {
+              type: 'atom',
+              predicate: 'at',
+              parameters: ['?agent', '?from'],
+            },
+            {
+              type: 'atom',
+              predicate: 'connected',
+              parameters: ['?from', '?to'],
+            },
+          ],
+        },
+        effect: {
+          type: 'and',
+          operands: [
+            {
+              type: 'not',
+              operands: [
+                {
+                  type: 'atom',
+                  predicate: 'at',
+                  parameters: ['?agent', '?from'],
+                },
+              ],
+            },
+            {
+              type: 'atom',
+              predicate: 'at',
+              parameters: ['?agent', '?to'],
+            },
+          ],
+        },
+        cost: 1,
+        description: 'Move agent from one location to another',
+      },
+      {
+        name: 'communicate',
+        parameters: [
+          { name: 'agent', type: 'agent' },
+          { name: 'message', type: 'message' },
+        ],
+        precondition: {
+          type: 'atom',
+          predicate: 'knows',
+          parameters: ['?agent', '?message'],
+        },
+        effect: {
+          type: 'atom',
+          predicate: 'communicated',
+          parameters: ['?agent', '?message'],
+        },
+        cost: 0.5,
+        description: 'Agent communicates a known message',
+      },
+      {
+        name: 'acquire_resource',
+        parameters: [
+          { name: 'agent', type: 'agent' },
+          { name: 'resource', type: 'resource' },
+        ],
+        precondition: {
+          type: 'atom',
+          predicate: 'available',
+          parameters: ['?resource'],
+        },
+        effect: {
+          type: 'and',
+          operands: [
+            {
+              type: 'atom',
+              predicate: 'has',
+              parameters: ['?agent', '?resource'],
+            },
+            {
+              type: 'not',
+              operands: [
+                {
+                  type: 'atom',
+                  predicate: 'available',
+                  parameters: ['?resource'],
+                },
+              ],
+            },
+          ],
+        },
+        cost: 1.5,
+        description: 'Agent acquires an available resource',
+      },
+      {
+        name: 'work_on_goal',
+        parameters: [
+          { name: 'agent', type: 'agent' },
+          { name: 'goal', type: 'goal' },
+        ],
+        precondition: {
+          type: 'and',
+          operands: [
+            {
+              type: 'atom',
+              predicate: 'has',
+              parameters: ['?agent', 'knowledge'],
+            },
+            {
+              type: 'atom',
+              predicate: 'has',
+              parameters: ['?agent', 'tools'],
+            },
+          ],
+        },
+        effect: {
+          type: 'atom',
+          predicate: 'achieved',
+          parameters: ['?goal'],
+        },
+        cost: 2,
+        description: 'Work on achieving a goal',
+      },
+    ];
   }
 
   /**

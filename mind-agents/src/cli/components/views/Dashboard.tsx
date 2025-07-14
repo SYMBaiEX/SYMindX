@@ -1,5 +1,5 @@
 import { Box, Text, useApp } from 'ink';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 
 import { useAgentData } from '../../hooks/useAgentData.js';
 import { useSystemStats } from '../../hooks/useSystemStats.js';
@@ -12,20 +12,20 @@ import { Card3D } from '../ui/Card3D.js';
 import { Chart } from '../ui/Chart.js';
 import { Header } from '../ui/Header.js';
 
-export const Dashboard: React.FC = () => {
-  const { exit: _exit } = useApp();
+export const Dashboard: React.FC = (): React.ReactElement => {
+  useApp();
   const systemStats = useSystemStats();
   const agentData = useAgentData();
 
   const [cpuHistory, setCpuHistory] = useState<number[]>(Array(20).fill(0));
   const [memHistory, setMemHistory] = useState<number[]>(Array(20).fill(0));
-  const [selectedMetric, _setSelectedMetric] = useState<'cpu' | 'memory'>(
+  const [selectedMetric] = useState<'cpu' | 'memory'>(
     'cpu'
   );
   const [showMatrix, setShowMatrix] = useState(false);
 
   // Convert SystemStats to simpler format for display
-  const displayStats = systemStats
+  const displayStats = useMemo(() => systemStats
     ? {
         cpu: systemStats.performance.cpu,
         memory: parseFloat(systemStats.performance.memory) || 0,
@@ -34,7 +34,7 @@ export const Dashboard: React.FC = () => {
         uptime: systemStats.uptime,
         network: systemStats.isConnected ? 'CONNECTED' : 'DISCONNECTED',
       }
-    : null;
+    : null, [systemStats]);
 
   // Play startup sound and music
   useEffect(() => {
@@ -43,7 +43,7 @@ export const Dashboard: React.FC = () => {
       musicManager.playMood('cyberpunk');
     }
 
-    return () => {
+    return (): void => {
       musicManager.stop();
     };
   }, []);
@@ -62,7 +62,7 @@ export const Dashboard: React.FC = () => {
       setShowMatrix(true);
     }, 2000);
 
-    return () => clearTimeout(timer);
+    return (): void => clearTimeout(timer);
   }, []);
 
   const formatBytes = (bytes: number): string => {
@@ -175,7 +175,7 @@ export const Dashboard: React.FC = () => {
             animated={true}
           >
             <Box flexDirection='column' gap={1}>
-              {agentData?.agents.slice(0, 5).map((agent, index) => (
+              {agentData?.agents.slice(0, 5).map((agent) => (
                 <Box key={agent.id} flexDirection='column'>
                   <Box>
                     <Text
@@ -203,7 +203,7 @@ export const Dashboard: React.FC = () => {
                     </Text>
                   </Box>
 
-                  {index < agentData.agents.length - 1 && (
+                  {agent.id !== agentData.agents[agentData.agents.length - 1]?.id && (
                     <Text color={cyberpunkTheme.colors.borderDim}>
                       {'─'.repeat(35)}
                     </Text>

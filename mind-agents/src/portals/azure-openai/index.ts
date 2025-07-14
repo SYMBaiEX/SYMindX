@@ -11,7 +11,6 @@ import {
   streamText as aiStreamText,
   embed as aiEmbed,
   experimental_generateImage as aiGenerateImage,
-  type ModelMessage,
 } from 'ai';
 
 import { Agent } from '../../types/agent';
@@ -33,6 +32,7 @@ import {
   MessageRole,
   FinishReason,
 } from '../../types/portal';
+import type { AIMessage as ModelMessage } from '../../types/portals/ai-sdk';
 import { AISDKParameterBuilder } from '../ai-sdk-utils';
 import { BasePortal } from '../base-portal';
 import { convertUsage, buildAISDKParams } from '../utils';
@@ -82,10 +82,10 @@ export class AzureOpenAIPortal extends BasePortal {
     ModelType.MULTIMODAL,
   ];
 
-  private azure: any;
-  private model: any;
-  private embedModel: any;
-  private imageModel: any;
+  private azure: ReturnType<typeof createAzure>;
+  private model: ReturnType<ReturnType<typeof createAzure>>;
+  private embedModel: ReturnType<ReturnType<typeof createAzure>>;
+  private imageModel: ReturnType<ReturnType<typeof createAzure>>;
 
   constructor(config: AzureOpenAIConfig) {
     super('azure-openai', 'Azure OpenAI', '1.0.0', config);
@@ -114,19 +114,19 @@ export class AzureOpenAIPortal extends BasePortal {
     this.imageModel = this.azure(imageDeployment);
   }
 
-  override async init(agent: Agent): Promise<void> {
+  override async init(_agent: Agent): Promise<void> {
     this.status = PortalStatus.INITIALIZING;
-    console.log(`🔮 Initializing Azure OpenAI portal for agent ${agent.name}`);
+    // Initializing Azure OpenAI portal for agent
 
     try {
       await this.validateConfig();
       await this.healthCheck();
       this.status = PortalStatus.ACTIVE;
-      console.log(`✅ Azure OpenAI portal initialized for ${agent.name}`);
-    } catch (error) {
+      // Azure OpenAI portal initialized successfully
+    } catch (_error) {
       this.status = PortalStatus.ERROR;
-      console.error(`❌ Failed to initialize Azure OpenAI portal:`, error);
-      throw error;
+      // Failed to initialize Azure OpenAI portal
+      throw _error;
     }
   }
 
@@ -151,8 +151,8 @@ export class AzureOpenAIPortal extends BasePortal {
         maxOutputTokens: 10,
       });
       return true;
-    } catch (error) {
-      console.error('Azure OpenAI health check failed:', error);
+    } catch (_error) {
+      // Azure OpenAI health check failed
       return false;
     }
   }
@@ -195,7 +195,7 @@ export class AzureOpenAIPortal extends BasePortal {
     options?: TextGenerationOptions
   ): Promise<TextGenerationResult> {
     try {
-      const params: any = {
+      const params: Parameters<typeof aiGenerateText>[0] = {
         model: this.model,
         messages: [{ role: 'user' as const, content: prompt }],
       };
@@ -328,8 +328,12 @@ export class AzureOpenAIPortal extends BasePortal {
 
       return {
         images: images.map((img) => ({
-          url: (img as any).url || undefined,
-          b64_json: (img as any).base64 || undefined,
+          url:
+            'url' in img && typeof img.url === 'string' ? img.url : undefined,
+          b64_json:
+            'base64' in img && typeof img.base64 === 'string'
+              ? img.base64
+              : undefined,
         })),
         model:
           (this.config as AzureOpenAIConfig).imageDeploymentName || 'dall-e-3',

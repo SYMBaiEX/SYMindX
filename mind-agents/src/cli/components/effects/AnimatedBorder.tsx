@@ -96,7 +96,7 @@ export const AnimatedBorder: React.FC<AnimatedBorderProps> = ({
   const chars = borderChars[variant][cornerStyle];
 
   // Animation logic
-  useEffect((): (() => void) | undefined => {
+  useEffect(() => {
     if (!themeEngine.areAnimationsEnabled() || animation === 'none') return;
 
     const interval = setInterval(() => {
@@ -210,13 +210,13 @@ export const AnimatedBorder: React.FC<AnimatedBorderProps> = ({
         if (titleInfo && pos >= titleInfo.startPos && pos < titleInfo.endPos) {
           const titleIndex = pos - titleInfo.startPos;
           return (
-            <Text key={i} color={theme.colors.text} bold>
+            <Text key={`title-char-${i}`} color={theme.colors.text} bold>
               {titleInfo.title[titleIndex]}
             </Text>
           );
         }
         return (
-          <Text key={i} color={getAnimatedColor('top', pos)}>
+          <Text key={`top-border-${i}`} color={getAnimatedColor('top', pos)}>
             {variant === 'matrix' && Math.random() < 0.1
               ? String.fromCharCode(0x30a0 + Math.floor(Math.random() * 96))
               : chars.h}
@@ -231,7 +231,7 @@ export const AnimatedBorder: React.FC<AnimatedBorderProps> = ({
   const renderMiddle = (): React.ReactElement | React.ReactElement[] => {
     if (!children) {
       return Array.from({ length: height - 2 }, (_, i) => (
-        <Box key={i}>
+        <Box key={`middle-row-${i}`}>
           <Text color={getAnimatedColor('left', height - i - 2)}>
             {chars.v}
           </Text>
@@ -245,7 +245,7 @@ export const AnimatedBorder: React.FC<AnimatedBorderProps> = ({
       <Box flexDirection='row'>
         <Box flexDirection='column'>
           {Array.from({ length: height - 2 }, (_, i) => (
-            <Text key={i} color={getAnimatedColor('left', height - i - 2)}>
+            <Text key={`left-border-${i}`} color={getAnimatedColor('left', height - i - 2)}>
               {chars.v}
             </Text>
           ))}
@@ -255,7 +255,7 @@ export const AnimatedBorder: React.FC<AnimatedBorderProps> = ({
         </Box>
         <Box flexDirection='column'>
           {Array.from({ length: height - 2 }, (_, i) => (
-            <Text key={i} color={getAnimatedColor('right', i + 1)}>
+            <Text key={`right-border-${i}`} color={getAnimatedColor('right', i + 1)}>
               {chars.v}
             </Text>
           ))}
@@ -269,7 +269,7 @@ export const AnimatedBorder: React.FC<AnimatedBorderProps> = ({
     <Box>
       <Text color={getAnimatedColor('bottom', width - 1)}>{chars.bl}</Text>
       {Array.from({ length: width - 2 }, (_, i) => (
-        <Text key={i} color={getAnimatedColor('bottom', width - i - 2)}>
+        <Text key={`bottom-border-${i}`} color={getAnimatedColor('bottom', width - i - 2)}>
           {chars.h}
         </Text>
       ))}

@@ -1,5 +1,5 @@
 import { Text, Box } from 'ink';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 import { themeEngine } from '../../themes/ThemeEngine.js';
 
@@ -42,7 +42,7 @@ export const GlitchText: React.FC<GlitchTextProps> = ({
   const glitchChars = glitchCharSets[variant];
 
   // Apply different glitch algorithms based on variant
-  const applyGlitch = (text: string): string => {
+  const applyGlitch = useCallback((text: string): string => {
     switch (variant) {
       case 'digital':
         // Binary corruption effect
@@ -127,7 +127,7 @@ export const GlitchText: React.FC<GlitchTextProps> = ({
           })
           .join('');
     }
-  };
+  }, [variant, glitchChars, intensity]);
 
   useEffect(() => {
     if (!themeEngine.areAnimationsEnabled()) return;
@@ -160,8 +160,8 @@ export const GlitchText: React.FC<GlitchTextProps> = ({
       }
     }, frequency);
 
-    return () => clearInterval(glitchInterval);
-  }, [children, intensity, frequency, variant, duration, multiLayer]);
+    return (): void => clearInterval(glitchInterval);
+  }, [children, intensity, frequency, variant, duration, multiLayer, applyGlitch]);
 
   // Create multiple text layers for glitch effect
   if (isGlitching && multiLayer) {

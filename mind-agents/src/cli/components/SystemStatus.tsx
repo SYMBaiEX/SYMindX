@@ -6,7 +6,7 @@ import { useSystemStats } from '../hooks/useSystemStats.js';
 export const SystemStatus: React.FC = () => {
   const systemStats = useSystemStats();
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string): string => {
     switch (status.toLowerCase()) {
       case 'running':
       case 'active':
@@ -222,8 +222,8 @@ export const SystemStatus: React.FC = () => {
               System Warnings & Issues
             </Text>
             <Text> </Text>
-            {systemStats.warnings.slice(0, 5).map((warning, index) => (
-              <Text key={index} color='yellow'>
+            {systemStats.warnings.slice(0, 5).map((warning) => (
+              <Text key={`system-warning-${warning.substring(0, 20)}`} color='yellow'>
                 ⚠️ {warning}
               </Text>
             ))}

@@ -15,7 +15,7 @@ interface Message {
   agentId?: string;
 }
 
-export const Chat: React.FC = () => {
+export const Chat: React.FC = (): React.ReactElement => {
   const agentData = useAgentData();
   const [selectedAgent, setSelectedAgent] = useState<string>('nyx');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -62,7 +62,7 @@ export const Chat: React.FC = () => {
     }
   });
 
-  const sendMessage = () => {
+  const sendMessage = (): void => {
     const userMessage: Message = {
       id: Date.now().toString(),
       from: 'user',
@@ -78,7 +78,7 @@ export const Chat: React.FC = () => {
 
     // Simulate agent response
     setTimeout(
-      () => {
+      (): void => {
         const responses = [
           'Processing neural patterns... Analysis complete.',
           'Interesting query. Let me interface with the knowledge matrix.',
@@ -91,7 +91,7 @@ export const Chat: React.FC = () => {
           id: (Date.now() + 1).toString(),
           from: 'agent',
           content:
-            responses[Math.floor(Math.random() * responses.length)] ??
+            responses[Math.floor(Math.random() * responses.length)] ||
             'No response available',
           timestamp: new Date(),
           agentId: selectedAgent,

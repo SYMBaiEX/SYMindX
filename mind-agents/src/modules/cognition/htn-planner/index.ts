@@ -1,4 +1,18 @@
 import {
+  HTNOperator,
+  HTNPrecondition,
+  HTNEffect,
+  HTNDecomposition,
+  HTNSubtask,
+  PlanExecutionResult,
+  DecisionMatrix,
+  DecisionOption,
+  DecisionCriterion,
+  StructuredThoughtResult,
+  ThoughtNode,
+  ReasoningPath,
+} from '../../../types';
+import {
   Agent,
   ThoughtContext,
   ThoughtResult,
@@ -7,8 +21,15 @@ import {
   PlanStep,
   EmotionState,
   AgentAction,
+  PlanStatus,
+  PlanStepStatus,
+  ActionStatus,
 } from '../../../types/agent';
-import { CognitionModule } from '../../../types/cognition';
+import {
+  CognitionModule,
+  CognitionModuleMetadata,
+} from '../../../types/cognition';
+import { BaseConfig } from '../../../types/common';
 
 import { HTNPlannerConfig, TaskNetwork, Task } from './types';
 
@@ -18,6 +39,8 @@ export class HTNPlannerCognition implements CognitionModule {
   private config: HTNPlannerConfig;
   private taskNetworks: Map<string, TaskNetwork> = new Map();
   private decompositionCache: Map<string, Task[]> = new Map();
+  private operators: Map<string, HTNOperator> = new Map();
+  private thoughtGraph: Map<string, ThoughtNode> = new Map();
 
   constructor(config: HTNPlannerConfig = {}) {
     this.id = `htn_planner_${Date.now()}`;
@@ -34,6 +57,7 @@ export class HTNPlannerCognition implements CognitionModule {
       useHeuristics: true,
       ...config,
     };
+    this.initializeOperators();
   }
 
   async think(agent: Agent, context: ThoughtContext): Promise<ThoughtResult> {
@@ -64,12 +88,10 @@ export class HTNPlannerCognition implements CognitionModule {
 
     return {
       thoughts,
-      // reasoning: 'Hierarchical task decomposition and goal-oriented planning', // Removed - not part of ThoughtResult
       confidence: 0.85,
       actions: nextActions,
       emotions: this.assessEmotionalResponse(context, plans),
       memories: [],
-      // processingTime // Removed - not part of ThoughtResult
     };
   }
 
@@ -83,8 +105,7 @@ export class HTNPlannerCognition implements CognitionModule {
       capabilities: agent.extensions ? Object.keys(agent.extensions) : [],
     };
 
-    // Log planning context
-    console.log(`HTN planner creating plan for agent ${agentContext.id}`);
+    // Planning for agent context
 
     // Create or retrieve task network for this goal
     const network = this.getOrCreateTaskNetwork(goal);
@@ -109,7 +130,7 @@ export class HTNPlannerCognition implements CognitionModule {
       priority: this.calculatePriority(goal),
       estimatedDuration: duration * steps.length, // Rough estimate
       dependencies: [],
-      status: 'pending' as any, // TODO: Use proper enum
+      status: PlanStatus.PENDING,
     };
   }
 
@@ -125,18 +146,18 @@ export class HTNPlannerCognition implements CognitionModule {
     return rankedOptions[0]!;
   }
 
-  initialize(config: any): void {
+  initialize(config: BaseConfig): void {
     this.config = { ...this.config, ...config };
   }
 
-  getMetadata() {
+  getMetadata(): CognitionModuleMetadata {
     return {
       id: `htn_planner_${Date.now()}`,
       name: 'HTN Planner Cognition',
       version: '1.0.0',
       description: 'Hierarchical Task Network planning cognition system',
       author: 'SYMindX',
-      paradigms: ['hierarchical', 'planning'] as any,
+      paradigms: ['hierarchical', 'planning'],
       learningCapable: false,
     };
   }
@@ -285,7 +306,7 @@ export class HTNPlannerCognition implements CognitionModule {
       id: task.id,
       action: task.name,
       description: `HTN Task: ${task.name}`,
-      status: 'pending' as any,
+      status: PlanStepStatus.PENDING,
       parameters: {},
       preconditions:
         index > 0 && tasks[index - 1] ? [tasks[index - 1]?.id ?? ''] : [],
@@ -337,7 +358,7 @@ export class HTNPlannerCognition implements CognitionModule {
         action: item.step.action,
         parameters: item.step.parameters,
         timestamp: new Date(),
-        status: 'pending' as any,
+        status: ActionStatus.PENDING,
         priority: item.priority,
       }));
   }
@@ -441,6 +462,169 @@ export class HTNPlannerCognition implements CognitionModule {
     }
 
     return Math.min(1.0, score);
+  }
+
+  private initializeOperators(): void {
+    // Initialize basic HTN operators
+    const basicOperators: HTNOperator[] = [
+      {
+        id: 'analyze_context',
+        name: 'Analyze Context',
+        type: 'primitive',
+        preconditions: [
+          {
+            type: 'state',
+            predicate: 'has_context',
+            parameters: ['agent'],
+            positive: true,
+          },
+        ],
+        effects: [
+          {
+            type: 'add',
+            predicate: 'context_analyzed',
+            parameters: ['agent'],
+          },
+        ],
+        cost: 1.0,
+      },
+      {
+        id: 'decompose_goal',
+        name: 'Decompose Goal',
+        type: 'compound',
+        preconditions: [
+          {
+            type: 'state',
+            predicate: 'has_goal',
+            parameters: ['agent', 'goal'],
+            positive: true,
+          },
+        ],
+        effects: [
+          {
+            type: 'add',
+            predicate: 'goal_decomposed',
+            parameters: ['agent', 'goal'],
+          },
+        ],
+        cost: 2.0,
+        decomposition: {
+          method: 'goal_analysis',
+          subtasks: [
+            {
+              id: 'identify_subgoals',
+              task: 'identify_subgoals',
+              parameters: ['goal'],
+            },
+            {
+              id: 'prioritize_subgoals',
+              task: 'prioritize_subgoals',
+              parameters: ['subgoals'],
+            },
+          ],
+          ordering: [
+            {
+              type: 'before',
+              first: 'identify_subgoals',
+              second: 'prioritize_subgoals',
+            },
+          ],
+        },
+      },
+    ];
+
+    basicOperators.forEach((op) => this.operators.set(op.id, op));
+  }
+
+  private createThoughtNode(
+    content: string,
+    confidence: number,
+    type?:
+      | 'observation'
+      | 'inference'
+      | 'hypothesis'
+      | 'conclusion'
+      | 'question'
+  ): ThoughtNode {
+    const node: ThoughtNode = {
+      id: `thought_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      content,
+      confidence,
+      type,
+      connections: [],
+      timestamp: new Date(),
+    };
+    this.thoughtGraph.set(node.id, node);
+    return node;
+  }
+
+  private createReasoningPath(goal: string, plan: Plan): ReasoningPath {
+    return {
+      id: `path_${plan.id}`,
+      steps: plan.steps.map((step, index) => ({
+        stepNumber: index + 1,
+        thoughtNodeId: this.createThoughtNode(
+          `Execute: ${step.action}`,
+          0.8,
+          'inference'
+        ).id,
+        action: step.action,
+        justification: step.description || 'Required for goal achievement',
+        confidence: 0.8,
+        dependencies:
+          step.preconditions
+            ?.map((p) => plan.steps.findIndex((s) => s.id === p))
+            .filter((i) => i >= 0) || [],
+      })),
+      probability: 0.75,
+      outcome: `Achieve: ${goal}`,
+      evaluation: {
+        consistency: 0.85,
+        completeness: 0.8,
+        efficiency: 0.7,
+        risk: plan.priority >= 4 ? 'high' : 'medium',
+      },
+    };
+  }
+
+  private evaluateOperatorPreconditions(
+    operator: HTNOperator,
+    state: Set<string>
+  ): boolean {
+    return operator.preconditions.every((precond) => {
+      const predicate = `${precond.predicate}(${precond.parameters.join(',')})`;
+      return precond.positive ? state.has(predicate) : !state.has(predicate);
+    });
+  }
+
+  private applyOperatorEffects(
+    operator: HTNOperator,
+    state: Set<string>
+  ): Set<string> {
+    const newState = new Set(state);
+
+    operator.effects.forEach((effect) => {
+      const predicate = `${effect.predicate}(${effect.parameters.join(',')})`;
+
+      switch (effect.type) {
+        case 'add':
+          newState.add(predicate);
+          break;
+        case 'delete':
+          newState.delete(predicate);
+          break;
+        case 'update':
+          // For updates, remove old value and add new
+          const oldPredicate = Array.from(newState).find((p) =>
+            p.startsWith(`${effect.predicate}(`)
+          );
+          if (oldPredicate) newState.delete(oldPredicate);
+          newState.add(predicate);
+          break;
+      }
+    });
+
+    return newState;
   }
 }
 

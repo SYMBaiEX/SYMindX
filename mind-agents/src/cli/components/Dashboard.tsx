@@ -86,7 +86,7 @@ export const Dashboard: React.FC = () => {
           </Text>
           <Text> </Text>
           {agentData.recentActivity.length > 0 ? (
-            agentData.recentActivity.slice(0, 5).map((activity, index) => {
+            agentData.recentActivity.slice(0, 5).map((activity) => {
               const activityColor =
                 activity.type === 'error'
                   ? 'red'
@@ -94,7 +94,7 @@ export const Dashboard: React.FC = () => {
                     ? 'yellow'
                     : 'white';
               return (
-                <Text key={index} color={activityColor}>
+                <Text key={`activity-${activity.timestamp}-${activity.message}`} color={activityColor}>
                   <Text color='gray'>{activity.timestamp}</Text> -{' '}
                   {activity.message}
                 </Text>
@@ -118,8 +118,8 @@ export const Dashboard: React.FC = () => {
               ⚠️ System Warnings
             </Text>
             <Text> </Text>
-            {systemStats.warnings.slice(0, 3).map((warning, index) => (
-              <Text key={index} color='yellow'>
+            {systemStats.warnings.slice(0, 3).map((warning) => (
+              <Text key={`warning-${warning.substring(0, 20)}`} color='yellow'>
                 • {warning}
               </Text>
             ))}

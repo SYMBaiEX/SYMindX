@@ -7,7 +7,6 @@
  */
 
 import { v4 as uuidv4 } from 'uuid';
-import { buildObject } from '../../utils/type-helpers';
 
 import {
   MemoryProvider,
@@ -23,6 +22,7 @@ import {
   SharedMemoryConfig,
   ArchivalStrategy,
 } from '../../types/memory';
+import { buildObject } from '../../utils/type-helpers';
 
 /**
  * Base configuration interface for memory providers

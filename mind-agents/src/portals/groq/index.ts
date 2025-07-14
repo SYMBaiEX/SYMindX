@@ -28,10 +28,10 @@ import {
   ToolEvaluationOptions,
   ToolEvaluationResult,
 } from '../../types/portal';
-import { AISDKParameterBuilder, handleAISDKError } from '../ai-sdk-utils';
-import { BasePortal } from '../base-portal';
-import { buildAISDKParams } from '../utils';
+import type { GenerateTextParamsWithTools } from '../../types/portals/ai-sdk';
 import { buildObject } from '../../utils/type-helpers';
+import { BasePortal } from '../base-portal';
+import { buildAISDKParams, convertUsage } from '../utils';
 
 export interface GroqConfig extends PortalConfig {
   model?: string;
@@ -46,7 +46,7 @@ export class GroqPortal extends BasePortal {
     ModelType.CHAT,
     ModelType.CODE_GENERATION,
   ];
-  private groqProvider: any;
+  private groqProvider: typeof groq;
 
   constructor(config: GroqConfig) {
     super('groq', 'Groq', '1.0.0', config);
@@ -78,7 +78,9 @@ export class GroqPortal extends BasePortal {
   /**
    * Convert function definitions to AI SDK v5 tool format
    */
-  private convertFunctionsToTools(functions: any) {
+  private convertFunctionsToTools(
+    functions: unknown
+  ): Record<string, ReturnType<typeof tool>> {
     const tools: Record<string, ReturnType<typeof tool>> = {};
 
     // Handle both array format and MCP tools object format
@@ -102,7 +104,11 @@ export class GroqPortal extends BasePortal {
       for (const [toolName, toolDef] of Object.entries(functions)) {
         // Type guard to ensure toolDef is an object
         if (toolDef && typeof toolDef === 'object') {
-          const def = toolDef as any;
+          const def = toolDef as {
+            description?: string;
+            parameters?: unknown;
+            execute?: (args: Record<string, unknown>) => Promise<unknown>;
+          };
 
           tools[toolName] = tool({
             description: def.description || toolName,
@@ -110,7 +116,7 @@ export class GroqPortal extends BasePortal {
             execute:
               def.execute ||
               (async (_args: Record<string, unknown>) => {
-                console.warn(`⚠️ Tool ${toolName} has no execute function`);
+                // Tool has no execute function
                 return { error: 'Tool execution not implemented' };
               }),
           });
@@ -133,7 +139,7 @@ export class GroqPortal extends BasePortal {
 
       const config = this.config as GroqConfig;
       const apiKey = config.apiKey || process.env.GROQ_API_KEY;
-      const providerSettings: any = {};
+      const providerSettings: { apiKey?: string; baseURL?: string } = {};
       if (apiKey) providerSettings.apiKey = apiKey;
       if (config.baseURL) providerSettings.baseURL = config.baseURL;
 
@@ -166,7 +172,7 @@ export class GroqPortal extends BasePortal {
         },
       };
     } catch (error) {
-      console.error('Groq text generation error:', error);
+      // Groq text generation error
       throw new Error(`Groq text generation failed: ${error}`);
     }
   }
@@ -208,7 +214,7 @@ export class GroqPortal extends BasePortal {
 
       const config = this.config as GroqConfig;
       const apiKey = config.apiKey || process.env.GROQ_API_KEY;
-      const providerSettings: any = {};
+      const providerSettings: { apiKey?: string; baseURL?: string } = {};
       if (apiKey) providerSettings.apiKey = apiKey;
       if (config.baseURL) providerSettings.baseURL = config.baseURL;
 
@@ -230,8 +236,9 @@ export class GroqPortal extends BasePortal {
 
       // Add tools if provided
       if (tools) {
-        (generateOptions as any).tools = tools;
-        (generateOptions as any).maxSteps = 5; // Add maxSteps when tools are present
+        const optionsWithTools = generateOptions as GenerateTextParamsWithTools;
+        optionsWithTools.tools = tools;
+        optionsWithTools.maxSteps = 5; // Add maxSteps when tools are present
       }
 
       const result = await generateText(generateOptions);
@@ -282,7 +289,7 @@ export class GroqPortal extends BasePortal {
         },
       };
     } catch (error) {
-      console.error('Groq chat generation error:', error);
+      // Groq chat generation error
       throw new Error(`Groq chat generation failed: ${error}`);
     }
   }
@@ -329,7 +336,7 @@ export class GroqPortal extends BasePortal {
 
       const config = this.config as GroqConfig;
       const apiKey = config.apiKey || process.env.GROQ_API_KEY;
-      const providerSettings: any = {};
+      const providerSettings: { apiKey?: string; baseURL?: string } = {};
       if (apiKey) providerSettings.apiKey = apiKey;
       if (config.baseURL) providerSettings.baseURL = config.baseURL;
 
@@ -377,9 +384,9 @@ export class GroqPortal extends BasePortal {
         evalResult.metadata.outputFormat = options.outputFormat;
 
       return evalResult;
-    } catch (error) {
-      console.error('Groq task evaluation error:', error);
-      throw new Error(`Groq task evaluation failed: ${error}`);
+    } catch (_error) {
+      // Groq task evaluation error
+      throw new Error(`Groq task evaluation failed: ${_error}`);
     }
   }
 
@@ -482,7 +489,7 @@ export class GroqPortal extends BasePortal {
 
       const config = this.config as GroqConfig;
       const apiKey = config.apiKey || process.env.GROQ_API_KEY;
-      const providerSettings: any = {};
+      const providerSettings: { apiKey?: string; baseURL?: string } = {};
       if (apiKey) providerSettings.apiKey = apiKey;
       if (config.baseURL) providerSettings.baseURL = config.baseURL;
 
@@ -499,13 +506,13 @@ export class GroqPortal extends BasePortal {
         temperature: options?.temperature ?? this.config.temperature,
       });
 
-      const result = streamText(params);
+      const result = await streamText(params);
 
       for await (const delta of result.textStream) {
         yield delta;
       }
     } catch (error) {
-      console.error('Groq stream text error:', error);
+      // Groq stream text error
       throw new Error(`Groq stream text failed: ${error}`);
     }
   }
@@ -539,7 +546,7 @@ export class GroqPortal extends BasePortal {
 
       const config = this.config as GroqConfig;
       const apiKey = config.apiKey || process.env.GROQ_API_KEY;
-      const providerSettings: any = {};
+      const providerSettings: { apiKey?: string; baseURL?: string } = {};
       if (apiKey) providerSettings.apiKey = apiKey;
       if (config.baseURL) providerSettings.baseURL = config.baseURL;
 
@@ -559,13 +566,13 @@ export class GroqPortal extends BasePortal {
         presencePenalty: options?.presencePenalty,
       });
 
-      const result = streamText(params);
+      const result = await streamText(params);
 
       for await (const delta of result.textStream) {
         yield delta;
       }
     } catch (error) {
-      console.error('Groq stream chat error:', error);
+      // Groq stream chat error
       throw new Error(`Groq stream chat failed: ${error}`);
     }
   }

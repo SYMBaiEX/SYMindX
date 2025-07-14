@@ -90,8 +90,8 @@ export const Card3D: React.FC<Card3DProps> = ({
       {(!responsive || !breakpoints.isXSmall) && (
         <>
           <Text color={cyberpunkTheme.colors.borderDim}>{topLine}</Text>
-          {depthLines.map((line, i) => (
-            <Text key={i} color={cyberpunkTheme.colors.borderDim}>
+          {depthLines.map((line) => (
+            <Text key={`3d-depth-${actualDepth}-${line.length}-${line.charAt(0)}`} color={cyberpunkTheme.colors.borderDim}>
               {line}
             </Text>
           ))}
@@ -110,13 +110,16 @@ export const Card3D: React.FC<Card3DProps> = ({
 
       {/* Content area */}
       <Box flexDirection='column' minHeight={Math.max(1, actualHeight - 4)}>
-        {React.Children.map(children, (child, index) => (
-          <Box key={index}>
-            <Text color={cyberpunkTheme.colors.text}>║ </Text>
-            <Box width={contentWidth}>{child}</Box>
-            <Text color={cyberpunkTheme.colors.text}> ║{depthChar}</Text>
-          </Box>
-        ))}
+        {React.Children.map(children, (child, index) => {
+          const childKey = typeof child === 'string' ? child.substring(0, 10) : `child-${index}`;
+          return (
+            <Box key={`3d-content-${childKey}`}>
+              <Text color={cyberpunkTheme.colors.text}>║ </Text>
+              <Box width={contentWidth}>{child}</Box>
+              <Text color={cyberpunkTheme.colors.text}> ║{depthChar}</Text>
+            </Box>
+          );
+        })}
       </Box>
 
       {/* Bottom */}

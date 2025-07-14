@@ -96,11 +96,11 @@ export const ScanlineEffect: React.FC<ScanlineEffectProps> = ({
       }
     }, speed);
 
-    return () => clearInterval(interval);
+    return (): void => clearInterval(interval);
   }, [speed, height, direction, variant]);
 
   // Render scanline effect
-  const renderScanlines = () => {
+  const renderScanlines = (): React.ReactNode[] => {
     const lines: React.ReactNode[] = [];
 
     for (let y = 0; y < height; y++) {

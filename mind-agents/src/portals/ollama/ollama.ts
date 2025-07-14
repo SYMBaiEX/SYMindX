@@ -275,19 +275,19 @@ export class OllamaPortal extends BasePortal {
     this.baseUrl = `http://${ollamaConfig.host || 'localhost'}:${ollamaConfig.port || 11434}`;
   }
 
-  override async init(agent: Agent): Promise<void> {
+  override async init(_agent: Agent): Promise<void> {
     this.status = PortalStatus.INITIALIZING;
-    console.log(`🔮 Initializing Ollama portal for agent ${agent.name}`);
+    // Initializing Ollama portal for agent
 
     try {
       await this.validateConfig();
       await this.ensureModelAvailable();
       await this.healthCheck();
       this.status = PortalStatus.ACTIVE;
-      console.log(`✅ Ollama portal initialized for ${agent.name}`);
+      // Ollama portal initialized successfully
     } catch (error) {
       this.status = PortalStatus.ERROR;
-      console.error(`❌ Failed to initialize Ollama portal:`, error);
+      // Failed to initialize Ollama portal
       throw error;
     }
   }
@@ -302,7 +302,7 @@ export class OllamaPortal extends BasePortal {
     // Test connection to Ollama server
     try {
       await this.makeRequest('/', {}, 'GET');
-    } catch (error) {
+    } catch (_error) {
       throw new Error(
         `Cannot connect to Ollama server at ${this.baseUrl}. Please ensure Ollama is running.`
       );
@@ -315,8 +315,8 @@ export class OllamaPortal extends BasePortal {
       const response = await this.makeRequest('/', {}, 'GET');
       this.lastHealthCheck = new Date();
       return response.status === 'ok' || typeof response === 'string';
-    } catch (error) {
-      console.error('Ollama health check failed:', error);
+    } catch (_error) {
+      // Ollama health check failed
       return false;
     }
   }
@@ -331,14 +331,14 @@ export class OllamaPortal extends BasePortal {
       const modelExists = models.some((model) => model.name === modelName);
 
       if (!modelExists) {
-        console.log(`📥 Pulling model ${modelName}...`);
+        // Pulling model
         await this.pullModel(modelName);
-        console.log(`✅ Model ${modelName} pulled successfully`);
+        // Model pulled successfully
       } else {
-        console.log(`✅ Model ${modelName} is available`);
+        // Model is available
       }
-    } catch (error) {
-      console.warn(`⚠️ Could not ensure model availability: ${error}`);
+    } catch (_error) {
+      // Could not ensure model availability
       // Continue initialization - model might be available but not listed
     }
   }
@@ -347,8 +347,8 @@ export class OllamaPortal extends BasePortal {
     try {
       const response = await this.makeRequest('/api/tags', {}, 'GET');
       return response.models || [];
-    } catch (error) {
-      console.error('Failed to list Ollama models:', error);
+    } catch (_error) {
+      // Failed to list Ollama models
       return [];
     }
   }
@@ -589,9 +589,9 @@ export class OllamaPortal extends BasePortal {
 
   private async makeRequest(
     endpoint: string,
-    body: any,
+    body: Record<string, unknown>,
     method: string = 'POST'
-  ): Promise<any> {
+  ): Promise<OllamaResponse | string> {
     const config = this.config as OllamaConfig;
     const url = `${this.baseUrl}${endpoint}`;
 
@@ -620,14 +620,14 @@ export class OllamaPortal extends BasePortal {
     if (contentType?.includes('application/json')) {
       return response.json();
     } else {
-      return response.text();
+      return response.text() as Promise<string>;
     }
   }
 
   private async makeStreamRequest(
     endpoint: string,
-    body: any
-  ): Promise<AsyncGenerator<any>> {
+    body: Record<string, unknown>
+  ): Promise<AsyncGenerator<OllamaResponse>> {
     const config = this.config as OllamaConfig;
     const url = `${this.baseUrl}${endpoint}`;
 
@@ -649,7 +649,9 @@ export class OllamaPortal extends BasePortal {
     return this.parseStreamResponse(response);
   }
 
-  private async *parseStreamResponse(response: Response): AsyncGenerator<any> {
+  private async *parseStreamResponse(
+    response: Response
+  ): AsyncGenerator<OllamaResponse> {
     const reader = response.body?.getReader();
     if (!reader) throw new Error('No response body');
 
@@ -671,7 +673,7 @@ export class OllamaPortal extends BasePortal {
             if (parsed.done) {
               return;
             }
-          } catch (e) {
+          } catch (_e) {
             // Skip invalid JSON lines
           }
         }
@@ -687,8 +689,10 @@ export class OllamaPortal extends BasePortal {
     const config = this.config as OllamaConfig;
 
     // Helper to omit undefined values
-    const removeUndefined = (obj: any): any => {
-      const cleaned: any = {};
+    const removeUndefined = (
+      obj: Record<string, unknown>
+    ): Record<string, unknown> => {
+      const cleaned: Record<string, unknown> = {};
       for (const [key, value] of Object.entries(obj)) {
         if (value !== undefined) {
           cleaned[key] = value;
@@ -722,7 +726,7 @@ export class OllamaPortal extends BasePortal {
       mirostat_eta: config.mirostatEta,
       penalize_newline: config.penalizeNewline,
       stop: options?.stop ?? config.stop,
-    });
+    }) as OllamaOptions;
   }
 
   private convertMessagesToOllamaFormat(
@@ -779,16 +783,13 @@ export class OllamaPortal extends BasePortal {
   private parseChatResponse(
     response: OllamaResponse,
     model: string,
-    originalMessages: ChatMessage[]
+    _originalMessages: ChatMessage[]
   ): ChatGenerationResult {
     if (!response.message?.content) {
       throw new Error('Invalid response format from Ollama');
     }
 
-    // Log conversation turn count
-    console.log(
-      `Ollama chat response for conversation with ${originalMessages.length} messages`
-    );
+    // Conversation turn count: ${originalMessages.length} messages
 
     const text = response.message.content;
 

@@ -7,10 +7,24 @@
 
 import { EventEmitter } from 'events';
 import { createServer, Server } from 'http';
+import * as http from 'http';
 
-import { WebSocketServer } from 'ws';
+import { WebSocket, WebSocketServer } from 'ws';
 
 import { Agent } from '../../types/agent';
+import type {
+  MCPServer,
+  MCPTool,
+  MCPResource,
+  MCPPrompt,
+  InitializeRequest,
+  ListToolsResponse,
+  CallToolResponse,
+  ListResourcesResponse,
+  ReadResourceResponse,
+  ListPromptsResponse,
+  GetPromptResponse,
+} from '../../types/extensions/mcp';
 import { runtimeLogger } from '../../utils/logger';
 
 import {
@@ -27,7 +41,8 @@ import {
   MCPConnectionInfo,
 } from './types';
 
-export class MCPServerManager extends EventEmitter {
+export class MCPServerManager extends EventEmitter implements MCPServer {
+  serverInfo: MCPServerInfo;
   private config: MCPServerConfig;
   private agent?: Agent;
   private httpServer?: Server;
@@ -89,6 +104,13 @@ export class MCPServerManager extends EventEmitter {
       resourceAccesses: 0,
       promptRequests: 0,
       uptime: 0,
+    };
+
+    this.serverInfo = {
+      name: this.config.name!,
+      version: this.config.version!,
+      protocolVersion: '2024-11-05',
+      capabilities: this.getServerCapabilities(),
     };
   }
 
@@ -222,7 +244,7 @@ export class MCPServerManager extends EventEmitter {
 
         for (const line of lines) {
           const request = JSON.parse(line) as MCPRequest;
-          const response = await this.handleRequest(request, 'stdio');
+          const response = await this.handleRequestInternal(request, 'stdio');
 
           if (response) {
             process.stdout.write(JSON.stringify(response) + '\n');
@@ -234,7 +256,10 @@ export class MCPServerManager extends EventEmitter {
     });
   }
 
-  private async handleHTTPRequest(req: any, res: any): Promise<void> {
+  private async handleHTTPRequest(
+    req: http.IncomingMessage,
+    res: http.ServerResponse
+  ): Promise<void> {
     let body = '';
 
     req.on('data', (chunk: Buffer) => {
@@ -244,7 +269,7 @@ export class MCPServerManager extends EventEmitter {
     req.on('end', async () => {
       try {
         const request = JSON.parse(body) as MCPRequest;
-        const response = await this.handleRequest(request, 'http');
+        const response = await this.handleRequestInternal(request, 'http');
 
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(response));
@@ -264,7 +289,10 @@ export class MCPServerManager extends EventEmitter {
     });
   }
 
-  private handleWebSocketConnection(ws: any, req: any): void {
+  private handleWebSocketConnection(
+    ws: WebSocket,
+    req: http.IncomingMessage
+  ): void {
     const connectionId = this.generateConnectionId();
     const connection: MCPConnectionInfo = {
       id: connectionId,
@@ -282,7 +310,7 @@ export class MCPServerManager extends EventEmitter {
     ws.on('message', async (data: Buffer) => {
       try {
         const request = JSON.parse(data.toString()) as MCPRequest;
-        const response = await this.handleRequest(
+        const response = await this.handleRequestInternal(
           request,
           'websocket',
           connectionId
@@ -305,7 +333,22 @@ export class MCPServerManager extends EventEmitter {
     });
   }
 
-  private async handleRequest(
+  async handleRequest(request: MCPRequest): Promise<MCPResponse> {
+    const response = await this.handleRequestInternal(request, 'unknown');
+    if (!response) {
+      return {
+        id: request.id,
+        jsonrpc: '2.0',
+        error: {
+          code: -32603,
+          message: 'Internal error',
+        },
+      };
+    }
+    return response;
+  }
+
+  private async handleRequestInternal(
     request: MCPRequest,
     _transport: string,
     _connectionId?: string
@@ -325,7 +368,7 @@ export class MCPServerManager extends EventEmitter {
         );
       }
 
-      let result: any;
+      let result: unknown;
 
       switch (method) {
         case 'initialize':
@@ -394,18 +437,57 @@ export class MCPServerManager extends EventEmitter {
     }
   }
 
+  // Implement MCPServer interface methods
+  async initialize(
+    params: InitializeRequest['params']
+  ): Promise<MCPServerInfo> {
+    return this.handleInitialize(params as MCPInitializeParams);
+  }
+
+  async listTools(): Promise<MCPTool[]> {
+    const result = await this.handleToolsList();
+    return result.tools as MCPTool[];
+  }
+
+  async callTool(
+    name: string,
+    args?: Record<string, any>
+  ): Promise<CallToolResponse['result']> {
+    return this.handleToolCall({ name, arguments: args });
+  }
+
+  async listResources(): Promise<MCPResource[]> {
+    const result = await this.handleResourcesList();
+    return result.resources as MCPResource[];
+  }
+
+  async readResource(uri: string): Promise<ReadResourceResponse['result']> {
+    return this.handleResourceRead({ uri });
+  }
+
+  async listPrompts(): Promise<MCPPrompt[]> {
+    const result = await this.handlePromptsList();
+    return result.prompts as MCPPrompt[];
+  }
+
+  async getPrompt(
+    name: string,
+    args?: Record<string, string>
+  ): Promise<GetPromptResponse['result']> {
+    return this.handlePromptGet({ name, arguments: args });
+  }
+
+  async close(): Promise<void> {
+    await this.stop();
+  }
+
   private async handleInitialize(
     _params: MCPInitializeParams
   ): Promise<MCPServerInfo> {
-    return {
-      name: this.config.name!,
-      version: this.config.version!,
-      protocolVersion: '2024-11-05',
-      capabilities: this.getServerCapabilities(),
-    };
+    return this.serverInfo;
   }
 
-  private async handleToolsList(): Promise<{ tools: any[] }> {
+  private async handleToolsList(): Promise<ListToolsResponse['result']> {
     const tools = Array.from(this.tools.values()).map((tool) => ({
       name: tool.name,
       description: tool.description,
@@ -415,7 +497,10 @@ export class MCPServerManager extends EventEmitter {
     return { tools };
   }
 
-  private async handleToolCall(params: any): Promise<any> {
+  private async handleToolCall(params: {
+    name: string;
+    arguments?: Record<string, unknown>;
+  }): Promise<unknown> {
     const { name, arguments: args } = params;
     const tool = this.tools.get(name);
 
@@ -426,7 +511,9 @@ export class MCPServerManager extends EventEmitter {
     return await tool.handler(args);
   }
 
-  private async handleResourcesList(): Promise<{ resources: any[] }> {
+  private async handleResourcesList(): Promise<
+    ListResourcesResponse['result']
+  > {
     const resources = Array.from(this.resources.values()).map((resource) => ({
       uri: resource.uri,
       name: resource.name,
@@ -437,7 +524,7 @@ export class MCPServerManager extends EventEmitter {
     return { resources };
   }
 
-  private async handleResourceRead(params: any): Promise<any> {
+  private async handleResourceRead(params: { uri: string }): Promise<unknown> {
     const { uri } = params;
     const resource = this.resources.get(uri);
 
@@ -449,7 +536,7 @@ export class MCPServerManager extends EventEmitter {
     return { contents: [contents] };
   }
 
-  private async handlePromptsList(): Promise<{ prompts: any[] }> {
+  private async handlePromptsList(): Promise<ListPromptsResponse['result']> {
     const prompts = Array.from(this.prompts.values()).map((prompt) => ({
       name: prompt.name,
       description: prompt.description,
@@ -459,7 +546,10 @@ export class MCPServerManager extends EventEmitter {
     return { prompts };
   }
 
-  private async handlePromptGet(params: any): Promise<any> {
+  private async handlePromptGet(params: {
+    name: string;
+    arguments?: Record<string, unknown>;
+  }): Promise<unknown> {
     const { name, arguments: args } = params;
     const prompt = this.prompts.get(name);
 
@@ -478,7 +568,10 @@ export class MCPServerManager extends EventEmitter {
     };
   }
 
-  private handleHealthCheck(_req: any, res: any): void {
+  private handleHealthCheck(
+    _req: http.IncomingMessage,
+    res: http.ServerResponse
+  ): void {
     const health = {
       status: 'healthy',
       timestamp: new Date().toISOString(),
@@ -492,7 +585,10 @@ export class MCPServerManager extends EventEmitter {
     res.end(JSON.stringify(health));
   }
 
-  private handleStatsRequest(_req: any, res: any): void {
+  private handleStatsRequest(
+    _req: http.IncomingMessage,
+    res: http.ServerResponse
+  ): void {
     this.stats.uptime = Date.now() - this.stats.startTime.getTime();
     const memoryUsage = process.memoryUsage();
 
@@ -748,7 +844,7 @@ export class MCPServerManager extends EventEmitter {
               tags: args.tags || [],
               duration: 'long_term',
               metadata: { source: 'mcp_client', stored_via: 'mcp_server' },
-            } as any;
+            };
 
             await this.agent.memory.store(this.agent.id, memoryRecord);
 
@@ -795,7 +891,7 @@ export class MCPServerManager extends EventEmitter {
             }
 
             const currentState = await this.agent.emotion.getCurrentState();
-            const result: any = {
+            const result: Record<string, unknown> = {
               current: currentState.current,
               intensity: currentState.intensity,
               triggers: currentState.triggers,
@@ -892,7 +988,7 @@ export class MCPServerManager extends EventEmitter {
         },
         handler: async (args) => {
           try {
-            const cognitiveState: any = {
+            const cognitiveState: Record<string, unknown> = {
               status: this.agent?.status || 'unknown',
               lastUpdate:
                 this.agent?.lastUpdate?.toISOString() ||
@@ -948,7 +1044,7 @@ export class MCPServerManager extends EventEmitter {
         },
         handler: async (args) => {
           try {
-            const agentInfo: any = {
+            const agentInfo: Record<string, unknown> = {
               id: this.agent?.id,
               name: this.agent?.name,
               status: this.agent?.status,

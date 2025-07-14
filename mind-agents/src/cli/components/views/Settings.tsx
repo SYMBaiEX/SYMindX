@@ -17,9 +17,9 @@ interface SettingItem {
   max?: number;
 }
 
-export const Settings: React.FC = () => {
-  const [selectedCategory, _setSelectedCategory] = useState('general');
-  const [selectedSetting, _setSelectedSetting] = useState(0);
+export const Settings: React.FC = (): React.ReactElement => {
+  const [selectedCategory] = useState('general');
+  const [selectedSetting] = useState(0);
 
   const categories = {
     general: {
@@ -137,7 +137,7 @@ export const Settings: React.FC = () => {
   const currentSettings =
     categories[selectedCategory as keyof typeof categories].settings;
 
-  const renderSettingValue = (setting: SettingItem) => {
+  const renderSettingValue = (setting: SettingItem): React.ReactElement => {
     switch (setting.type) {
       case 'toggle':
         return (
@@ -155,7 +155,7 @@ export const Settings: React.FC = () => {
         return (
           <Text color={cyberpunkTheme.colors.primary}>{setting.value}</Text>
         );
-      case 'range':
+      case 'range': {
         const percentage =
           setting.max && setting.min
             ? (((setting.value as number) - setting.min) /
@@ -176,6 +176,11 @@ export const Settings: React.FC = () => {
             </Text>
             <Text color={cyberpunkTheme.colors.text}>{setting.value}</Text>
           </Box>
+        );
+      }
+      default:
+        return (
+          <Text color={cyberpunkTheme.colors.text}>{setting.value}</Text>
         );
     }
   };

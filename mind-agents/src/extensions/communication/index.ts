@@ -200,10 +200,10 @@ export class CommunicationExtension implements Extension {
   async processMessage(
     participantId: string,
     message: string,
-    metadata?: Record<string, any>
+    metadata?: Record<string, unknown>
   ): Promise<{
-    contextSummary: any;
-    adaptedStyle: any;
+    contextSummary: Record<string, unknown>;
+    adaptedStyle: Record<string, unknown>;
     expressionVariations: string[];
     recommendations: string[];
   }> {
@@ -230,7 +230,7 @@ export class CommunicationExtension implements Extension {
     const contextSummary = this.contextManager.getContextSummary(context.id);
 
     // Adapt style if enabled
-    let adaptedStyle: any = {};
+    let adaptedStyle: Record<string, unknown> = {};
     if (this.communicationConfig.enableStyleAdaptation && contextSummary) {
       adaptedStyle = await this.styleAdapter.adaptStyle({
         mood: contextSummary.mood,
@@ -275,7 +275,7 @@ export class CommunicationExtension implements Extension {
   async generateEnhancedResponse(
     baseResponse: string,
     participantId: string,
-    metadata?: Record<string, any>
+    metadata?: Record<string, unknown>
   ): Promise<string> {
     if (!this.agent) return baseResponse;
 
@@ -368,7 +368,7 @@ export class CommunicationExtension implements Extension {
         const result = await this.processMessage(
           participantId as string,
           message as string,
-          metadata as Record<string, any>
+          metadata as Record<string, unknown>
         );
         return {
           success: true,
@@ -408,7 +408,7 @@ export class CommunicationExtension implements Extension {
         const result = await this.generateEnhancedResponse(
           baseResponse as string,
           participantId as string,
-          metadata as Record<string, any>
+          metadata as Record<string, unknown>
         );
         return {
           success: true,
@@ -524,9 +524,9 @@ export class CommunicationExtension implements Extension {
    * Generate communication recommendations
    */
   private generateCommunicationRecommendations(
-    context: any,
-    contextSummary: any,
-    adaptedStyle: any
+    context: Record<string, unknown>,
+    contextSummary: Record<string, unknown>,
+    adaptedStyle: Record<string, unknown>
   ): string[] {
     const recommendations: string[] = [];
 

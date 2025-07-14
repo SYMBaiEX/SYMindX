@@ -43,14 +43,14 @@ export const ViewTransition: React.FC<ViewTransitionProps> = ({
       setProgress(0);
 
       const startTime = Date.now();
-      const animate = () => {
+      const animate = (): void => {
         const elapsed = Date.now() - startTime;
         const newProgress = Math.min(elapsed / duration, 1);
 
         setProgress(easeInOutCubic(newProgress));
 
         if (newProgress < 1) {
-          requestAnimationFrame(animate);
+          (global as any).requestAnimationFrame?.(animate);
         } else {
           setIsTransitioning(false);
           setCurrentContent(children);
@@ -59,7 +59,7 @@ export const ViewTransition: React.FC<ViewTransitionProps> = ({
         }
       };
 
-      requestAnimationFrame(animate);
+      (global as any).requestAnimationFrame?.(animate);
     } else {
       setCurrentContent(children);
       previousKey.current = transitionKey;
@@ -72,7 +72,7 @@ export const ViewTransition: React.FC<ViewTransitionProps> = ({
   };
 
   // Render transition effect
-  const renderTransition = () => {
+  const renderTransition = (): React.ReactNode => {
     if (!isTransitioning) {
       return <Box>{currentContent}</Box>;
     }
@@ -97,13 +97,13 @@ export const ViewTransition: React.FC<ViewTransitionProps> = ({
     }
   };
 
-  const renderFadeTransition = () => {
+  const renderFadeTransition = (): React.ReactNode => {
     const showNext = progress > 0.5;
 
     return <Box>{showNext ? nextContent : currentContent}</Box>;
   };
 
-  const renderSlideTransition = () => {
+  const renderSlideTransition = (): React.ReactNode => {
     const offset = Math.floor((1 - progress) * 20);
 
     let marginProps = {};
@@ -133,7 +133,7 @@ export const ViewTransition: React.FC<ViewTransitionProps> = ({
     );
   };
 
-  const renderZoomTransition = () => {
+  const renderZoomTransition = (): React.ReactNode => {
     const scale = progress < 0.5 ? 1 - progress : progress;
     const showNext = progress > 0.5;
 
@@ -162,7 +162,7 @@ export const ViewTransition: React.FC<ViewTransitionProps> = ({
     );
   };
 
-  const renderFlipTransition = () => {
+  const renderFlipTransition = (): React.ReactNode => {
     const flipProgress = progress * 180;
     const isFlipped = flipProgress > 90;
 
@@ -182,7 +182,7 @@ export const ViewTransition: React.FC<ViewTransitionProps> = ({
     );
   };
 
-  const renderDissolveTransition = () => {
+  const renderDissolveTransition = (): React.ReactNode => {
     const dissolveChars = ['█', '▓', '▒', '░', ' '];
     const dissolveIndex = Math.floor(progress * dissolveChars.length);
 
@@ -210,7 +210,7 @@ export const ViewTransition: React.FC<ViewTransitionProps> = ({
         {progress > 0.2 && progress < 0.8 && (
           <Box flexDirection='column' marginTop={-5}>
             {overlay.map((line, i) => (
-              <Text key={i} color={theme.colors.glitch}>
+              <Text key={`glitch-line-${i}-${line}`} color={theme.colors.glitch}>
                 {line}
               </Text>
             ))}
@@ -220,7 +220,7 @@ export const ViewTransition: React.FC<ViewTransitionProps> = ({
     );
   };
 
-  const renderGlitchTransition = () => {
+  const renderGlitchTransition = (): React.ReactNode => {
     const glitchIntensity = progress < 0.5 ? progress * 2 : (1 - progress) * 2;
     const showNext = progress > 0.5;
 
@@ -237,7 +237,7 @@ export const ViewTransition: React.FC<ViewTransitionProps> = ({
           .join('');
 
         glitchArtifacts.push(
-          <Box key={i} marginTop={-1}>
+          <Box key={`glitch-artifact-${i}`} marginTop={-1}>
             <Text color={theme.colors.glitch}>{artifact}</Text>
           </Box>
         );
@@ -252,7 +252,7 @@ export const ViewTransition: React.FC<ViewTransitionProps> = ({
     );
   };
 
-  const renderMatrixTransition = () => {
+  const renderMatrixTransition = (): React.ReactNode => {
     const matrixDensity = progress < 0.5 ? progress * 2 : (1 - progress) * 2;
     const showNext = progress > 0.5;
 
@@ -272,7 +272,7 @@ export const ViewTransition: React.FC<ViewTransitionProps> = ({
           .join('');
 
         matrixOverlay.push(
-          <Text key={i} color={theme.colors.matrix} dimColor>
+          <Text key={`matrix-overlay-${i}`} color={theme.colors.matrix} dimColor>
             {line}
           </Text>
         );

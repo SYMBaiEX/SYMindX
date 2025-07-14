@@ -1,5 +1,5 @@
 import { Box, Text } from 'ink';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 
 import { useTerminalDimensions } from '../../hooks/useTerminalDimensions.js';
 import { themeEngine } from '../../themes/ThemeEngine.js';
@@ -61,17 +61,17 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
   const height = responsive ? dimensions.height - 2 : propHeight || 24;
 
   // Particle character sets
-  const particleChars = {
+  const particleChars = useMemo(() => ({
     star: ['✦', '✧', '★', '☆', '✨', '✪', '✫', '✬', '✭', '✮'],
     spark: ['·', '•', '∘', '○', '◦', '⁕', '⁎', '⁑'],
     snow: ['❄', '❅', '❆', '❇', '❈', '❉', '❊', '❋', '*', '·'],
     fire: ['🔥', '火', '炎', '🔸', '🔶', '▲', '△', '▴', '▵'],
     bubble: ['○', '◯', '◔', '◕', '◐', '◑', '◒', '◓', '⦿', '◉'],
     custom: customParticles || ['*'],
-  };
+  }), [customParticles]);
 
   // Get emitter position
-  const getEmitterPosition = () => {
+  const getEmitterPosition = useCallback((): { x: number; y: number } => {
     let x = width / 2;
     let y = height - 1;
 
@@ -86,18 +86,18 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
     else if (typeof emitterY === 'number') y = emitterY;
 
     return { x, y };
-  };
+  }, [width, height, emitterX, emitterY]);
 
   // Get random particle character
-  const getParticleChar = () => {
+  const getParticleChar = useCallback((): string => {
     const type =
       particleTypes[Math.floor(Math.random() * particleTypes.length)];
     const chars = particleChars[type ?? 'star'];
     return chars[Math.floor(Math.random() * chars.length)] ?? '*';
-  };
+  }, [particleTypes, particleChars]);
 
   // Get particle color
-  const getParticleColor = (type: string | undefined) => {
+  const getParticleColor = useCallback((type: string | undefined): string => {
     if (!type) return theme.colors.text;
     if (!colorful) return theme.colors.text;
 
@@ -120,10 +120,10 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
     return (
       colors[Math.floor(Math.random() * colors.length)] ?? theme.colors.text
     );
-  };
+  }, [theme.colors, colorful]);
 
   // Create new particle
-  const createParticle = (id: number): Particle => {
+  const createParticle = useCallback((id: number): Particle => {
     const { x, y } = getEmitterPosition();
     const type =
       particleTypes[Math.floor(Math.random() * particleTypes.length)];
@@ -142,7 +142,7 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
       color: getParticleColor(type ?? 'star'),
       size: Math.random() < 0.2 ? 2 : 1, // 20% chance for larger particles
     };
-  };
+  }, [getEmitterPosition, particleTypes, spread, speed, wind, lifespan, getParticleChar, getParticleColor]);
 
   // Initialize particles
   useEffect(() => {
@@ -155,7 +155,7 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
       initialParticles.push(particle);
     }
     setParticles(initialParticles);
-  }, [particleCount, width, height]);
+  }, [particleCount, width, height, createParticle, lifespan]);
 
   // Update particles
   useEffect(() => {
@@ -193,11 +193,11 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
       );
     }, 50);
 
-    return () => clearInterval(updateInterval);
-  }, [gravity, wind, height, width]);
+    return (): void => clearInterval(updateInterval);
+  }, [gravity, wind, height, width, createParticle]);
 
   // Render particles
-  const renderParticles = () => {
+  const renderParticles = (): React.ReactElement[] => {
     const display: string[][] = Array(height)
       .fill(null)
       .map(() => Array(width).fill(' '));
@@ -219,16 +219,16 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
     });
 
     return display.map((row, y) => (
-      <Text key={y}>
+      <Text key={`row-${y}-${row.join('')}`}>
         {row.map((char, x) => {
-          if (char === ' ') return <Text key={x}> </Text>;
+          if (char === ' ') return <Text key={`space-${y}-${x}`}> </Text>;
 
           // Find the particle at this position
           const particle = particles.find(
             (p) => Math.floor(p.x) === x && Math.floor(p.y) === y
           );
 
-          if (!particle) return <Text key={x}>{char}</Text>;
+          if (!particle) return <Text key={`char-${y}-${x}`}>{char}</Text>;
 
           // Calculate opacity based on life
           const lifeRatio = particle.life / particle.maxLife;
@@ -236,7 +236,7 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
 
           return (
             <Text
-              key={x}
+              key={`particle-${y}-${x}`}
               color={particle.color}
               dimColor={dimmed}
               bold={particle.size > 1}

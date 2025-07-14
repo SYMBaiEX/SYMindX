@@ -19,6 +19,7 @@ import {
   // SharedMemoryConfig - type used for annotations but not instantiated at runtime
   MemoryPermission,
 } from '../../../../types/memory';
+import { DatabaseError } from '../../../../types/modules/database';
 import { runtimeLogger } from '../../../../utils/logger';
 import { buildObject } from '../../../../utils/type-helpers';
 import {
@@ -145,16 +146,36 @@ export class NeonMemoryProvider extends BaseMemoryProvider {
   private startBackgroundProcesses(config: NeonMemoryConfig): void {
     if (config.consolidationInterval) {
       this.consolidationTimer = setInterval(() => {
-        this.runConsolidation().catch((error) => {
-          runtimeLogger.error('Consolidation error:', error);
+        this.runConsolidation().catch((error: Error) => {
+          const dbError =
+            error instanceof DatabaseError
+              ? error
+              : new DatabaseError(
+                  'Consolidation process failed',
+                  DatabaseError.ErrorCodes.UNKNOWN,
+                  'medium',
+                  true,
+                  error
+                );
+          runtimeLogger.error('Consolidation error:', dbError);
         });
       }, config.consolidationInterval);
     }
 
     if (config.archivalInterval) {
       this.archivalTimer = setInterval(() => {
-        this.runArchival().catch((error) => {
-          runtimeLogger.error('Archival error:', error);
+        this.runArchival().catch((error: Error) => {
+          const dbError =
+            error instanceof DatabaseError
+              ? error
+              : new DatabaseError(
+                  'Archival process failed',
+                  DatabaseError.ErrorCodes.UNKNOWN,
+                  'medium',
+                  true,
+                  error
+                );
+          runtimeLogger.error('Archival error:', dbError);
         });
       }, config.archivalInterval);
     }
@@ -179,8 +200,15 @@ export class NeonMemoryProvider extends BaseMemoryProvider {
       this.isInitialized = true;
       console.log('✅ Enhanced Neon memory provider initialized successfully');
     } catch (error) {
-      console.error('❌ Failed to initialize Neon memory provider:', error);
-      throw error;
+      const dbError =
+        error instanceof DatabaseError
+          ? error
+          : DatabaseError.connectionFailed(
+              'Failed to initialize Neon memory provider',
+              error instanceof Error ? error : new Error(String(error))
+            );
+      console.error('❌ Failed to initialize Neon memory provider:', dbError);
+      throw dbError;
     }
   }
 
@@ -424,9 +452,19 @@ export class NeonMemoryProvider extends BaseMemoryProvider {
         ]);
         return result.rows.map((row) => this.rowToMemoryRecord(row));
       } catch (error) {
+        const dbError =
+          error instanceof DatabaseError
+            ? error
+            : new DatabaseError(
+                'Vector search failed',
+                DatabaseError.ErrorCodes.QUERY_FAILED,
+                'low',
+                true,
+                error instanceof Error ? error : new Error(String(error))
+              );
         console.warn(
           '⚠️ Vector search failed, falling back to recent memories:',
-          error
+          dbError
         );
         return this.retrieve(agentId, 'recent', limit);
       }
@@ -727,7 +765,17 @@ export class NeonMemoryProvider extends BaseMemoryProvider {
             ? JSON.parse(row.embedding)
             : row.embedding;
       } catch (error) {
-        console.warn('⚠️ Failed to parse embedding:', error);
+        const dbError =
+          error instanceof DatabaseError
+            ? error
+            : new DatabaseError(
+                'Failed to parse embedding',
+                DatabaseError.ErrorCodes.DATA_INTEGRITY,
+                'low',
+                false,
+                error instanceof Error ? error : new Error(String(error))
+              );
+        console.warn('⚠️ Failed to parse embedding:', dbError);
       }
     }
 
@@ -1037,7 +1085,14 @@ export class NeonMemoryProvider extends BaseMemoryProvider {
         client.release();
       }
     } catch (error) {
-      console.error('❌ Neon health check failed:', error);
+      const dbError =
+        error instanceof DatabaseError
+          ? error
+          : DatabaseError.connectionFailed(
+              'Neon health check failed',
+              error instanceof Error ? error : new Error(String(error))
+            );
+      console.error('❌ Neon health check failed:', dbError);
       return { healthy: false, latency: -1 };
     }
   }
@@ -1070,7 +1125,17 @@ export class NeonMemoryProvider extends BaseMemoryProvider {
       await this.pool.end();
       console.log('🔌 Enhanced Neon memory provider disconnected');
     } catch (error) {
-      console.error('❌ Error disconnecting Neon provider:', error);
+      const dbError =
+        error instanceof DatabaseError
+          ? error
+          : new DatabaseError(
+              'Error disconnecting Neon provider',
+              DatabaseError.ErrorCodes.CONNECTION_FAILED,
+              'low',
+              false,
+              error instanceof Error ? error : new Error(String(error))
+            );
+      console.error('❌ Error disconnecting Neon provider:', dbError);
     }
   }
 

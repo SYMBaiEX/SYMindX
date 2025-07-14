@@ -16,9 +16,9 @@ import {
   MessageRole,
   FinishReason,
 } from '../../types/portal';
+import { buildObject } from '../../utils/type-helpers';
 import { BasePortal } from '../base-portal';
 import { convertUsage } from '../utils';
-import { buildObject } from '../../utils/type-helpers';
 /**
  * LM Studio Local AI Portal
  *

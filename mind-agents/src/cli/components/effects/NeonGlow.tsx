@@ -51,11 +51,11 @@ export const NeonGlow: React.FC<NeonGlowProps> = ({
       speed / (animation === 'flicker' ? 10 : 1)
     );
 
-    return () => clearInterval(interval);
+    return (): void => clearInterval(interval);
   }, [animation, speed, children.length]);
 
   // Get glow characters based on variant
-  const getGlowChars = () => {
+  const getGlowChars = (): { left: string; right: string; top: string; bottom: string } => {
     switch (variant) {
       case 'outline':
         return {
@@ -91,12 +91,12 @@ export const NeonGlow: React.FC<NeonGlowProps> = ({
   };
 
   // Get color based on animation state
-  const getAnimatedColor = (index?: number) => {
+  const getAnimatedColor = (index?: number): string => {
     if (!flickerState && animation === 'flicker')
       return theme.colors.bgSecondary;
 
     switch (animation) {
-      case 'pulse':
+      case 'pulse': {
         const pulseColors = [
           defaultColor,
           theme.colors.glowAlt,
@@ -104,6 +104,7 @@ export const NeonGlow: React.FC<NeonGlowProps> = ({
           theme.colors.primary,
         ];
         return pulseColors[glowPhase % pulseColors.length] ?? defaultColor;
+      }
 
       case 'wave':
         if (index !== undefined && Math.abs(index - glowPhase) < 2) {
@@ -111,7 +112,7 @@ export const NeonGlow: React.FC<NeonGlowProps> = ({
         }
         return defaultColor;
 
-      case 'rainbow':
+      case 'rainbow': {
         const rainbowColors = [
           '#FF0000',
           '#FF7F00',
@@ -122,6 +123,7 @@ export const NeonGlow: React.FC<NeonGlowProps> = ({
           '#9400D3',
         ];
         return rainbowColors[glowPhase % rainbowColors.length] ?? defaultColor;
+      }
 
       default:
         return defaultColor;
@@ -129,7 +131,7 @@ export const NeonGlow: React.FC<NeonGlowProps> = ({
   };
 
   // Get intensity-based styling
-  const getIntensityStyle = () => {
+  const getIntensityStyle = (): { dimColor: boolean; bold: boolean } => {
     const baseStyle = { dimColor: false, bold: bold };
 
     switch (intensity) {
@@ -180,7 +182,7 @@ export const NeonGlow: React.FC<NeonGlowProps> = ({
         </Text>
         {children.split('').map((char, i) => (
           <Text
-            key={i}
+            key={`char-${i}-${char}`}
             color={getAnimatedColor(i)}
             dimColor={style.dimColor}
             bold={style.bold}

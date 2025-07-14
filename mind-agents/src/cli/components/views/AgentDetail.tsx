@@ -1,5 +1,5 @@
 import { Box, Text, useInput } from 'ink';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 import { runtimeClient } from '../../services/runtimeClient.js';
 import { cyberpunkTheme } from '../../themes/cyberpunk.js';
@@ -283,7 +283,7 @@ interface AgentDetailProps {
 export const AgentDetail: React.FC<AgentDetailProps> = ({
   agentId,
   onBack,
-}) => {
+}): React.ReactElement => {
   const [agentData, setAgentData] = useState<AgentDetailData | null>(null);
   const [currentView, setCurrentView] = useState<DebugView>('overview');
   const [loading, setLoading] = useState(true);
@@ -328,7 +328,7 @@ export const AgentDetail: React.FC<AgentDetailProps> = ({
     }
   });
 
-  const fetchAgentData = async () => {
+  const fetchAgentData = useCallback(async (): Promise<void> => {
     try {
       setLoading(true);
       setError(null);
@@ -561,7 +561,7 @@ export const AgentDetail: React.FC<AgentDetailProps> = ({
       );
       setLoading(false);
     }
-  };
+  }, [agentId]);
 
   // Auto-refresh functionality
   useEffect(() => {
@@ -569,10 +569,10 @@ export const AgentDetail: React.FC<AgentDetailProps> = ({
 
     if (autoRefresh) {
       const interval = setInterval(fetchAgentData, refreshInterval);
-      return () => clearInterval(interval);
+      return (): void => clearInterval(interval);
     }
     return undefined;
-  }, [agentId, autoRefresh, refreshInterval]);
+  }, [agentId, autoRefresh, refreshInterval, fetchAgentData]);
 
   // Mock data generators
   const generateMockEmotionHistory = (): EmotionHistoryEntry[] => {
@@ -593,9 +593,11 @@ export const AgentDetail: React.FC<AgentDetailProps> = ({
         emotion,
         intensity: Math.random() * 0.8 + 0.2,
         timestamp: new Date(Date.now() - i * 300000), // 5-minute intervals
-        triggers: ['user_interaction', 'memory_recall', 'decision_making'][
-          Math.floor(Math.random() * 3)
-        ] as any,
+        triggers: [
+          ['user_interaction', 'memory_recall', 'decision_making'][
+            Math.floor(Math.random() * 3)
+          ] || 'user_interaction'
+        ],
         duration: Math.random() * 600000 + 60000, // 1-10 minutes
       });
     }
@@ -973,7 +975,7 @@ export const AgentDetail: React.FC<AgentDetailProps> = ({
 const OverviewPanel: React.FC<{
   agentData: AgentDetailData;
   formatUptime: (ms: number) => string;
-}> = ({ agentData, formatUptime }) => {
+}> = ({ agentData, formatUptime }): React.ReactElement => {
   return (
     <Box flexDirection='row' gap={2}>
       <Box flexDirection='column' width='50%'>

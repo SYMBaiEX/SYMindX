@@ -12,8 +12,8 @@ import {
   PortalType,
   ModelType,
 } from '../../types/portal';
-import { BasePortal } from '../base-portal';
 import { buildObject } from '../../utils/type-helpers';
+import { BasePortal } from '../base-portal';
 /**
  * Kluster.ai Portal Implementation
  *

@@ -5,12 +5,7 @@
  */
 
 import { xai } from '@ai-sdk/xai';
-import {
-  generateText as aiGenerateText,
-  streamText as aiStreamText,
-  type LanguageModel,
-  type ModelMessage,
-} from 'ai';
+import { generateText as aiGenerateText, streamText as aiStreamText } from 'ai';
 
 import {
   PortalConfig,
@@ -29,6 +24,10 @@ import {
   PortalType,
   ModelType,
 } from '../../types/portal';
+import type {
+  LanguageModel,
+  AIMessage as ModelMessage,
+} from '../../types/portals/ai-sdk';
 import {
   AISDKParameterBuilder,
   handleAISDKError,
@@ -49,7 +48,7 @@ export class XAIPortal extends BasePortal {
     ModelType.CHAT,
     ModelType.CODE_GENERATION,
   ];
-  private xaiProvider: any;
+  private xaiProvider: typeof xai;
 
   constructor(config: XAIConfig) {
     super('xai', 'XAI', '1.0.0', config);
@@ -104,7 +103,13 @@ export class XAIPortal extends BasePortal {
   /**
    * Get default parameters for XAI/Grok
    */
-  private getGrokDefaults() {
+  private getGrokDefaults(): {
+    maxOutputTokens: number;
+    temperature: number;
+    topP: number;
+    frequencyPenalty: number;
+    presencePenalty: number;
+  } {
     return {
       maxOutputTokens: this.config.maxTokens ?? 2000, // Grok supports larger contexts
       temperature: this.config.temperature ?? 0.8, // Grok performs well with slightly higher temperature
@@ -117,10 +122,10 @@ export class XAIPortal extends BasePortal {
   /**
    * Build XAI-specific parameters with context limits
    */
-  private buildXAIParams<T extends Record<string, any>>(
+  private buildXAIParams<T extends Record<string, unknown>>(
     baseParams: T,
     options?: TextGenerationOptions | ChatGenerationOptions
-  ): T & Record<string, any> {
+  ): T & Record<string, unknown> {
     const params = AISDKParameterBuilder.buildTextGenerationParams(
       baseParams,
       options,
@@ -128,17 +133,25 @@ export class XAIPortal extends BasePortal {
     );
 
     // Apply Grok-specific optimizations
-    if ((params as any).maxOutputTokens !== undefined) {
+    const mutableParams = params as Record<string, unknown>;
+    if (
+      mutableParams.maxOutputTokens !== undefined &&
+      typeof mutableParams.maxOutputTokens === 'number'
+    ) {
       // Grok supports large contexts, cap at 8192 for safety
-      (params as any).maxOutputTokens = Math.min(
-        (params as any).maxOutputTokens,
+      mutableParams.maxOutputTokens = Math.min(
+        mutableParams.maxOutputTokens,
         8192
       );
     }
 
-    if ((params as any).topP !== undefined && (params as any).topP < 0.1) {
+    if (
+      mutableParams.topP !== undefined &&
+      typeof mutableParams.topP === 'number' &&
+      mutableParams.topP < 0.1
+    ) {
       // Grok performs better with topP >= 0.1
-      (params as any).topP = Math.max((params as any).topP, 0.1);
+      mutableParams.topP = Math.max(mutableParams.topP, 0.1);
     }
 
     return params;
@@ -147,10 +160,10 @@ export class XAIPortal extends BasePortal {
   /**
    * Build XAI-specific chat parameters with tool support
    */
-  private buildXAIChatParams<T extends Record<string, any>>(
+  private buildXAIChatParams<T extends Record<string, unknown>>(
     baseParams: T,
     options?: ChatGenerationOptions
-  ): T & Record<string, any> {
+  ): T & Record<string, unknown> {
     const params = AISDKParameterBuilder.buildChatGenerationParams(
       baseParams,
       options,
@@ -158,17 +171,25 @@ export class XAIPortal extends BasePortal {
     );
 
     // Apply Grok-specific optimizations
-    if ((params as any).maxOutputTokens !== undefined) {
+    const mutableParams = params as Record<string, unknown>;
+    if (
+      mutableParams.maxOutputTokens !== undefined &&
+      typeof mutableParams.maxOutputTokens === 'number'
+    ) {
       // Grok supports large contexts, cap at 8192 for safety
-      (params as any).maxOutputTokens = Math.min(
-        (params as any).maxOutputTokens,
+      mutableParams.maxOutputTokens = Math.min(
+        mutableParams.maxOutputTokens,
         8192
       );
     }
 
-    if ((params as any).topP !== undefined && (params as any).topP < 0.1) {
+    if (
+      mutableParams.topP !== undefined &&
+      typeof mutableParams.topP === 'number' &&
+      mutableParams.topP < 0.1
+    ) {
       // Grok performs better with topP >= 0.1
-      (params as any).topP = Math.max((params as any).topP, 0.1);
+      mutableParams.topP = Math.max(mutableParams.topP, 0.1);
     }
 
     return params;

@@ -1,3 +1,4 @@
+import { EmotionResult, EmotionData } from '../../../types/modules/emotions';
 import { BaseEmotion, EmotionDefinition } from '../base-emotion';
 
 import { HappyEmotionConfig } from './types';
@@ -50,15 +51,35 @@ export class HappyEmotion extends BaseEmotion {
     };
   }
 
-  override processEvent(eventType: string, context?: any): any {
+  override processEvent(eventType: string, context?: any): EmotionResult {
     // Special processing for happy-specific events
+    const previousIntensity = this._intensity;
     if (context?.outcome?.success === true) {
       this._intensity = Math.min(1.0, this._intensity + 0.2);
       this.recordHistory('successful_outcome');
     }
 
     // Call parent processing
-    return super.processEvent(eventType, context);
+    const result = super.processEvent(eventType, context);
+
+    // Add happy-specific data
+    const happyData: EmotionData = {
+      base: {
+        intensity: this._intensity,
+        triggers: this.triggers,
+        modifiers: this.getEmotionModifier(),
+      },
+      happy: {
+        joyLevel: this._intensity * 0.8,
+        excitementFactor: context?.outcome?.success ? 1.2 : 1.0,
+        socialBonus: 1.3,
+      },
+    };
+
+    return {
+      ...result,
+      changed: result.changed || previousIntensity !== this._intensity,
+    };
   }
 }
 

@@ -87,7 +87,7 @@ export class ChatCommand {
         const agents = data.agents || [];
 
         if (agents.length === 0) {
-          console.log(chalk.yellow('⚠️  No agents available'));
+          process.stdout.write(chalk.yellow('⚠️  No agents available') + '\n');
           return;
         }
 
@@ -99,7 +99,7 @@ export class ChatCommand {
               type: 'list',
               name: 'selectedAgent',
               message: 'Select an agent to chat with:',
-              choices: agents.map((agent: any) => ({
+              choices: agents.map((agent: { id: string; name: string; status: string }) => ({
                 name: `${agent.name} (${agent.id}) - ${agent.status}${agent.status === 'error' ? ' ⚠️' : ''}`,
                 value: agent.id,
               })),
@@ -112,17 +112,17 @@ export class ChatCommand {
       // Verify agent exists via API
       const agentResponse = await fetch(`${this.context.config.apiUrl}/agents`);
       const agentData = await agentResponse.json();
-      let agent = agentData.agents?.find((a: any) => a.id === agentId);
+      let agent = agentData.agents?.find((a: { id: string; name: string }) => a.id === agentId);
 
       // If not found by ID, try to find by name (case-insensitive)
       if (!agent && agentId) {
         agent = agentData.agents?.find(
-          (a: any) => a.name.toLowerCase() === agentId!.toLowerCase()
+          (a: { id: string; name: string }) => a.name.toLowerCase() === agentId!.toLowerCase()
         );
       }
 
       if (!agent) {
-        console.log(chalk.red(`❌ Agent '${agentId}' not found`));
+        process.stdout.write(chalk.red(`❌ Agent '${agentId}' not found`) + '\n');
         return;
       }
 
@@ -137,14 +137,14 @@ export class ChatCommand {
         await this.startInteractiveChat();
       }
     } catch (error) {
-      console.log(chalk.red('❌ Failed to start chat'));
+      process.stdout.write(chalk.red('❌ Failed to start chat') + '\n');
       this.logger.error('Start chat error:', error);
     }
   }
 
   async startInteractiveChat(): Promise<void> {
     if (!this.context.selectedAgent) {
-      console.log(chalk.red('❌ No agent selected'));
+      process.stdout.write(chalk.red('❌ No agent selected') + '\n');
       return;
     }
 
@@ -152,42 +152,42 @@ export class ChatCommand {
     const response = await fetch(`${this.context.config.apiUrl}/agents`);
     const data = await response.json();
     const agent = data.agents?.find(
-      (a: any) => a.id === this.context.selectedAgent
+      (a: { id: string; name: string; status: string }) => a.id === this.context.selectedAgent
     );
 
     if (!agent) {
-      console.log(
-        chalk.red(`❌ Agent '${this.context.selectedAgent}' not found`)
+      process.stdout.write(
+        chalk.red(`❌ Agent '${this.context.selectedAgent}' not found`) + '\n'
       );
       return;
     }
 
     // Check if agent is in error state and show helpful message
     if (agent.status === 'error') {
-      console.log(
+      process.stdout.write(
         chalk.yellow(
           `⚠️  Agent ${agent.name} is in error state. This may be due to missing API keys.`
-        )
+        ) + '\n'
       );
-      console.log(
+      process.stdout.write(
         chalk.gray(
           '   You can still try to chat, but responses may not work properly.'
-        )
+        ) + '\n'
       );
-      console.log(
+      process.stdout.write(
         chalk.gray(
           '   To fix: Add your API keys to .env file in the project root.'
-        )
+        ) + '\n'
       );
     }
 
-    console.log(chalk.blue.bold(`\n💬 Chat with ${agent.name}`));
-    console.log(
+    process.stdout.write(chalk.blue.bold(`\n💬 Chat with ${agent.name}`) + '\n');
+    process.stdout.write(
       chalk.gray(
         'Type your message and press Enter. Use "/help" for commands, "/exit" to quit.'
-      )
+      ) + '\n'
     );
-    console.log(chalk.gray('─'.repeat(60)));
+    process.stdout.write(chalk.gray('─'.repeat(60)) + '\n');
 
     this.chatActive = true;
 
@@ -215,23 +215,24 @@ export class ChatCommand {
         // Send message to agent
         await this.processChatMessage(agent.id, message);
       } catch (error) {
+        const err = error as { isTtyError?: boolean; name?: string };
         if (
-          (error as any).isTtyError ||
-          (error as any).name === 'ExitPromptError'
+          err.isTtyError ||
+          err.name === 'ExitPromptError'
         ) {
           // User pressed Ctrl+C or similar
           break;
         }
-        console.log(chalk.red('❌ Error in chat:'), error);
+        process.stdout.write(chalk.red('❌ Error in chat: ') + error + '\n');
       }
     }
 
-    console.log(chalk.gray('\n👋 Chat ended'));
+    process.stdout.write(chalk.gray('\n👋 Chat ended') + '\n');
   }
 
   async startWebSocketChat(_agentId: string): Promise<void> {
     try {
-      console.log(chalk.blue('🔌 Connecting to WebSocket...'));
+      process.stdout.write(chalk.blue('🔌 Connecting to WebSocket...') + '\n');
 
       const port = process.env.API_PORT || '8000';
       const wsUrl = process.env.SYMINDX_WS_URL || `ws://localhost:${port}/ws`;
@@ -240,7 +241,7 @@ export class ChatCommand {
       });
 
       this.ws.on('open', () => {
-        console.log(chalk.green('✅ Connected to WebSocket'));
+        process.stdout.write(chalk.green('✅ Connected to WebSocket') + '\n');
         this.context.commandSystem.addWebSocketConnection(this.ws!);
 
         // Start interactive chat with WebSocket support
@@ -257,14 +258,14 @@ export class ChatCommand {
       });
 
       this.ws.on('error', (error) => {
-        console.log(chalk.red('❌ WebSocket error:'), error.message);
+        process.stdout.write(chalk.red('❌ WebSocket error: ') + error.message + '\n');
       });
 
       this.ws.on('close', () => {
-        console.log(chalk.yellow('🔌 WebSocket disconnected'));
+        process.stdout.write(chalk.yellow('🔌 WebSocket disconnected') + '\n');
       });
     } catch (error) {
-      console.log(chalk.red('❌ Failed to connect to WebSocket'));
+      process.stdout.write(chalk.red('❌ Failed to connect to WebSocket') + '\n');
       this.logger.error('WebSocket connection error:', error);
     }
   }
@@ -278,12 +279,12 @@ export class ChatCommand {
       // Verify agent exists via API
       const agentResponse = await fetch(`${this.context.config.apiUrl}/agents`);
       const agentData = await agentResponse.json();
-      let agent = agentData.agents?.find((a: any) => a.id === agentId);
+      let agent = agentData.agents?.find((a: { id: string; name: string }) => a.id === agentId);
 
       // If not found by ID, try to find by name (case-insensitive)
       if (!agent && agentId) {
         agent = agentData.agents?.find(
-          (a: any) => a.name.toLowerCase() === agentId.toLowerCase()
+          (a: { id: string; name: string }) => a.name.toLowerCase() === agentId.toLowerCase()
         );
         // Update agentId to the actual ID if we found by name
         if (agent) {
@@ -292,12 +293,12 @@ export class ChatCommand {
       }
 
       if (!agent) {
-        console.log(chalk.red(`❌ Agent '${agentId}' not found`));
+        process.stdout.write(chalk.red(`❌ Agent '${agentId}' not found`) + '\n');
         return;
       }
 
       if (options?.wait) {
-        console.log(chalk.blue(`Sending message to ${agent.name}...`));
+        process.stdout.write(chalk.blue(`Sending message to ${agent.name}...`) + '\n');
 
         // Send message via API
         const response = await fetch(`${this.context.config.apiUrl}/chat`, {
@@ -316,8 +317,8 @@ export class ChatCommand {
         }
 
         const data = await response.json();
-        console.log(chalk.green(`\n💬 ${agent.name}:`));
-        console.log(chalk.white(data.response));
+        process.stdout.write(chalk.green(`\n💬 ${agent.name}:`) + '\n');
+        process.stdout.write(chalk.white(data.response) + '\n');
       } else {
         // For async messages, just use the chat endpoint without waiting for full response
         fetch(`${this.context.config.apiUrl}/chat`, {
@@ -331,14 +332,14 @@ export class ChatCommand {
           }),
         })
           .then(() => {
-            console.log(chalk.green(`✅ Message sent to ${agent.name}`));
+            process.stdout.write(chalk.green(`✅ Message sent to ${agent.name}`) + '\n');
           })
           .catch(() => {
-            console.log(chalk.red('❌ Failed to send message'));
+            process.stdout.write(chalk.red('❌ Failed to send message') + '\n');
           });
       }
     } catch (error) {
-      console.log(chalk.red('❌ Failed to send message'));
+      process.stdout.write(chalk.red('❌ Failed to send message') + '\n');
       this.logger.error('Send message error:', error);
     }
   }
@@ -346,16 +347,16 @@ export class ChatCommand {
   async sendCommand(
     agentId: string,
     command: string,
-    options: any
+    options: { priority?: string; async?: boolean }
   ): Promise<void> {
     try {
       const agent = this.context.runtime.agents.get(agentId);
       if (!agent) {
-        console.log(chalk.red(`❌ Agent '${agentId}' not found`));
+        process.stdout.write(chalk.red(`❌ Agent '${agentId}' not found`) + '\n');
         return;
       }
 
-      const priority = this.parsePriority(options.priority);
+      const priority = this.parsePriority(options.priority || 'normal');
       const cmd = await this.context.commandSystem.sendCommand(
         agentId,
         command,
@@ -366,21 +367,21 @@ export class ChatCommand {
       );
 
       if (options.async) {
-        console.log(
-          chalk.green(`✅ Command queued for ${agent.name} (ID: ${cmd.id})`)
+        process.stdout.write(
+          chalk.green(`✅ Command queued for ${agent.name} (ID: ${cmd.id})`) + '\n'
         );
       } else {
         if (cmd.result?.success) {
-          console.log(chalk.green(`✅ Command executed successfully`));
+          process.stdout.write(chalk.green(`✅ Command executed successfully`) + '\n');
           if (cmd.result.response) {
-            console.log(chalk.white(cmd.result.response));
+            process.stdout.write(chalk.white(cmd.result.response) + '\n');
           }
         } else {
-          console.log(chalk.red(`❌ Command failed: ${cmd.result?.error}`));
+          process.stdout.write(chalk.red(`❌ Command failed: ${cmd.result?.error}`) + '\n');
         }
       }
     } catch (error) {
-      console.log(chalk.red('❌ Failed to send command'));
+      process.stdout.write(chalk.red('❌ Failed to send command') + '\n');
       this.logger.error('Send command error:', error);
     }
   }
@@ -392,13 +393,13 @@ export class ChatCommand {
     try {
       const targetAgent = agentId || this.context.selectedAgent;
       if (!targetAgent) {
-        console.log(chalk.red('❌ No agent specified'));
+        process.stdout.write(chalk.red('❌ No agent specified') + '\n');
         return;
       }
 
       const agent = this.context.runtime.agents.get(targetAgent);
       if (!agent) {
-        console.log(chalk.red(`❌ Agent '${targetAgent}' not found`));
+        process.stdout.write(chalk.red(`❌ Agent '${targetAgent}' not found`) + '\n');
         return;
       }
 
@@ -412,38 +413,37 @@ export class ChatCommand {
         .slice(-limit);
 
       if (commands.length === 0) {
-        console.log(
-          chalk.yellow(`⚠️  No chat history found for ${agent.name}`)
+        process.stdout.write(
+          chalk.yellow(`⚠️  No chat history found for ${agent.name}`) + '\n'
         );
         return;
       }
 
-      console.log(
+      process.stdout.write(
         chalk.blue.bold(
           `\n📝 Chat History with ${agent.name} (last ${commands.length} messages)`
-        )
+        ) + '\n'
       );
-      console.log(chalk.gray('─'.repeat(60)));
+      process.stdout.write(chalk.gray('─'.repeat(60)) + '\n');
 
       for (const cmd of commands) {
         const timestamp = cmd.timestamp.toLocaleTimeString();
-        console.log(chalk.gray(`[${timestamp}]`));
-        console.log(chalk.cyan('You:'), cmd.instruction);
+        process.stdout.write(chalk.gray(`[${timestamp}]`) + '\n');
+        process.stdout.write(chalk.cyan('You: ') + cmd.instruction + '\n');
 
         if (cmd.result?.response) {
-          console.log(chalk.green(`${agent.name}:`), cmd.result.response);
+          process.stdout.write(chalk.green(`${agent.name}: `) + cmd.result.response + '\n');
         } else if (cmd.status === 'failed') {
-          console.log(
-            chalk.red(`${agent.name}:`),
-            cmd.result?.error || 'Command failed'
+          process.stdout.write(
+            chalk.red(`${agent.name}: `) + (cmd.result?.error || 'Command failed') + '\n'
           );
         } else if (cmd.status === 'pending' || cmd.status === 'processing') {
-          console.log(chalk.yellow(`${agent.name}:`), 'Processing...');
+          process.stdout.write(chalk.yellow(`${agent.name}: `) + 'Processing...' + '\n');
         }
-        console.log();
+        process.stdout.write('\n');
       }
     } catch (error) {
-      console.log(chalk.red('❌ Failed to show chat history'));
+      process.stdout.write(chalk.red('❌ Failed to show chat history') + '\n');
       this.logger.error('Show history error:', error);
     }
   }
@@ -454,10 +454,10 @@ export class ChatCommand {
     const [command, ...args] = message.slice(1).split(' ');
 
     if (!command) {
-      console.log(
+      process.stdout.write(
         chalk.yellow(
           '⚠️  Invalid command format. Type /help for available commands.'
-        )
+        ) + '\n'
       );
       return true;
     }
@@ -481,13 +481,13 @@ export class ChatCommand {
         return true;
 
       case 'clear':
-        console.clear();
-        console.log(
+        process.stdout.write('\x1Bc'); // Clear screen
+        process.stdout.write(
           chalk.blue.bold(
             `💬 Chat with ${this.context.runtime.agents.get(this.context.selectedAgent!)?.name}`
-          )
+          ) + '\n'
         );
-        console.log(chalk.gray('─'.repeat(60)));
+        process.stdout.write(chalk.gray('─'.repeat(60)) + '\n');
         return true;
 
       case 'emotion':
@@ -498,7 +498,7 @@ export class ChatCommand {
         if (args.length > 0) {
           await this.queryMemory(args.join(' '));
         } else {
-          console.log(chalk.yellow('⚠️  Usage: /memory <query>'));
+          process.stdout.write(chalk.yellow('⚠️  Usage: /memory <query>') + '\n');
         }
         return true;
 
@@ -507,29 +507,29 @@ export class ChatCommand {
         return true;
 
       default:
-        console.log(
+        process.stdout.write(
           chalk.yellow(
             `⚠️  Unknown command: /${command}. Type /help for available commands.`
-          )
+          ) + '\n'
         );
         return true;
     }
   }
 
   private showChatHelp(): void {
-    console.log(chalk.blue.bold('\n💡 Chat Commands'));
-    console.log(chalk.gray('─'.repeat(40)));
-    console.log(chalk.cyan('/help') + ' - Show this help message');
-    console.log(chalk.cyan('/exit') + ' - Exit chat');
-    console.log(chalk.cyan('/status') + ' - Show agent status');
-    console.log(chalk.cyan('/emotion') + ' - Show agent emotion');
-    console.log(
-      chalk.cyan('/switch <agentId>') + ' - Switch to different agent'
+    process.stdout.write(chalk.blue.bold('\n💡 Chat Commands') + '\n');
+    process.stdout.write(chalk.gray('─'.repeat(40)) + '\n');
+    process.stdout.write(chalk.cyan('/help') + ' - Show this help message' + '\n');
+    process.stdout.write(chalk.cyan('/exit') + ' - Exit chat' + '\n');
+    process.stdout.write(chalk.cyan('/status') + ' - Show agent status' + '\n');
+    process.stdout.write(chalk.cyan('/emotion') + ' - Show agent emotion' + '\n');
+    process.stdout.write(
+      chalk.cyan('/switch <agentId>') + ' - Switch to different agent' + '\n'
     );
-    console.log(chalk.cyan('/clear') + ' - Clear screen');
-    console.log(chalk.cyan('/memory <query>') + ' - Query agent memory');
-    console.log(chalk.cyan('/commands') + ' - Show available agent commands');
-    console.log(chalk.gray('─'.repeat(40)));
+    process.stdout.write(chalk.cyan('/clear') + ' - Clear screen' + '\n');
+    process.stdout.write(chalk.cyan('/memory <query>') + ' - Query agent memory' + '\n');
+    process.stdout.write(chalk.cyan('/commands') + ' - Show available agent commands' + '\n');
+    process.stdout.write(chalk.gray('─'.repeat(40)) + '\n');
   }
 
   private async showAgentStatus(): Promise<void> {
@@ -538,18 +538,18 @@ export class ChatCommand {
     const agent = this.context.runtime.agents.get(this.context.selectedAgent);
     if (!agent) return;
 
-    console.log(chalk.blue.bold('\n📊 Agent Status'));
-    console.log(chalk.gray('─'.repeat(30)));
-    console.log(`${chalk.cyan('Name:')} ${agent.name}`);
-    console.log(`${chalk.cyan('Status:')} ${agent.status}`);
-    console.log(
-      `${chalk.cyan('Emotion:')} ${agent.emotion?.current || 'unknown'}`
+    process.stdout.write(chalk.blue.bold('\n📊 Agent Status') + '\n');
+    process.stdout.write(chalk.gray('─'.repeat(30)) + '\n');
+    process.stdout.write(`${chalk.cyan('Name:')} ${agent.name}` + '\n');
+    process.stdout.write(`${chalk.cyan('Status:')} ${agent.status}` + '\n');
+    process.stdout.write(
+      `${chalk.cyan('Emotion:')} ${agent.emotion?.current || 'unknown'}` + '\n'
     );
-    console.log(
-      `${chalk.cyan('Last Update:')} ${agent.lastUpdate?.toLocaleString() || 'never'}`
+    process.stdout.write(
+      `${chalk.cyan('Last Update:')} ${agent.lastUpdate?.toLocaleString() || 'never'}` + '\n'
     );
-    console.log(`${chalk.cyan('Extensions:')} ${agent.extensions.length}`);
-    console.log(chalk.gray('─'.repeat(30)));
+    process.stdout.write(`${chalk.cyan('Extensions:')} ${agent.extensions.length}` + '\n');
+    process.stdout.write(chalk.gray('─'.repeat(30)) + '\n');
   }
 
   private async showAgentEmotion(): Promise<void> {
@@ -557,21 +557,21 @@ export class ChatCommand {
 
     const agent = this.context.runtime.agents.get(this.context.selectedAgent);
     if (!agent || !agent.emotion) {
-      console.log(chalk.yellow('⚠️  No emotion information available'));
+      process.stdout.write(chalk.yellow('⚠️  No emotion information available') + '\n');
       return;
     }
 
-    console.log(chalk.blue.bold('\n😊 Agent Emotion'));
-    console.log(chalk.gray('─'.repeat(30)));
-    console.log(`${chalk.cyan('Current:')} ${agent.emotion.current}`);
-    console.log(`${chalk.cyan('Intensity:')} ${agent.emotion.intensity}`);
+    process.stdout.write(chalk.blue.bold('\n😊 Agent Emotion') + '\n');
+    process.stdout.write(chalk.gray('─'.repeat(30)) + '\n');
+    process.stdout.write(`${chalk.cyan('Current:')} ${agent.emotion.current}` + '\n');
+    process.stdout.write(`${chalk.cyan('Intensity:')} ${agent.emotion.intensity}` + '\n');
     const emotionState = agent.emotion.getCurrentState();
     if (emotionState.triggers && emotionState.triggers.length > 0) {
-      console.log(
-        `${chalk.cyan('Triggers:')} ${emotionState.triggers.join(', ')}`
+      process.stdout.write(
+        `${chalk.cyan('Triggers:')} ${emotionState.triggers.join(', ')}` + '\n'
       );
     }
-    console.log(chalk.gray('─'.repeat(30)));
+    process.stdout.write(chalk.gray('─'.repeat(30)) + '\n');
   }
 
   private async switchAgent(agentId?: string): Promise<void> {
@@ -579,7 +579,7 @@ export class ChatCommand {
 
     if (!agentId) {
       if (agents.length <= 1) {
-        console.log(chalk.yellow('⚠️  No other agents available'));
+        process.stdout.write(chalk.yellow('⚠️  No other agents available') + '\n');
         return;
       }
 
@@ -600,19 +600,19 @@ export class ChatCommand {
     }
 
     if (!agentId) {
-      console.log(chalk.red('❌ No agent ID provided'));
+      process.stdout.write(chalk.red('❌ No agent ID provided') + '\n');
       return;
     }
 
     const agent = this.context.runtime.agents.get(agentId);
     if (!agent) {
-      console.log(chalk.red(`❌ Agent '${agentId}' not found`));
+      process.stdout.write(chalk.red(`❌ Agent '${agentId}' not found`) + '\n');
       return;
     }
 
     this.context.selectedAgent = agentId;
-    console.log(chalk.green(`✅ Switched to ${agent.name}`));
-    console.log(chalk.gray('─'.repeat(60)));
+    process.stdout.write(chalk.green(`✅ Switched to ${agent.name}`) + '\n');
+    process.stdout.write(chalk.gray('─'.repeat(60)) + '\n');
   }
 
   private async queryMemory(query: string): Promise<void> {
@@ -623,9 +623,10 @@ export class ChatCommand {
         this.context.selectedAgent,
         `/memory ${query}`
       );
-      console.log(chalk.blue('🧠 Memory:'), response);
+      process.stdout.write(chalk.blue('🧠 Memory: ') + response + '\n');
     } catch (error) {
-      console.log(chalk.red('❌ Failed to query memory'), error instanceof Error ? error.message : 'Unknown error');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      process.stdout.write(chalk.red('❌ Failed to query memory ') + errorMessage + '\n');
     }
   }
 
@@ -635,21 +636,21 @@ export class ChatCommand {
     const agent = this.context.runtime.agents.get(this.context.selectedAgent);
     if (!agent) return;
 
-    console.log(chalk.blue.bold('\n⚡ Available Commands'));
-    console.log(chalk.gray('─'.repeat(40)));
+    process.stdout.write(chalk.blue.bold('\n⚡ Available Commands') + '\n');
+    process.stdout.write(chalk.gray('─'.repeat(40)) + '\n');
 
     for (const extension of agent.extensions) {
       const actions = Object.keys(extension.actions);
       if (actions.length > 0) {
-        console.log(chalk.cyan(`${extension.name}:`));
+        process.stdout.write(chalk.cyan(`${extension.name}:`) + '\n');
         for (const action of actions) {
-          console.log(`  /action ${action}`);
+          process.stdout.write(`  /action ${action}` + '\n');
         }
       }
     }
 
-    console.log(chalk.gray('─'.repeat(40)));
-    console.log(chalk.gray('Usage: /action <command> [parameters]'));
+    process.stdout.write(chalk.gray('─'.repeat(40)) + '\n');
+    process.stdout.write(chalk.gray('Usage: /action <command> [parameters]') + '\n');
   }
 
   private async processChatMessage(
@@ -680,15 +681,15 @@ export class ChatCommand {
         `${this.context.config.apiUrl}/agents`
       );
       const agentsData = await agentsResponse.json();
-      const agent = agentsData.agents?.find((a: any) => a.id === agentId);
+      const agent = agentsData.agents?.find((a: { id: string; name: string }) => a.id === agentId);
 
-      console.log(chalk.green(`${agent?.name || agentId}:`), data.response);
+      process.stdout.write(chalk.green(`${agent?.name || agentId}: `) + data.response + '\n');
     } catch (error) {
-      console.log(chalk.red('❌ Error:'), (error as Error).message);
+      process.stdout.write(chalk.red('❌ Error: ') + (error as Error).message + '\n');
     }
   }
 
-  private handleWebSocketMessage(message: any): void {
+  private handleWebSocketMessage(message: { type: string; data: { agentId: string; status: string; result?: { response?: string } } }): void {
     if (message.type === 'command_update') {
       const { data } = message;
       if (
@@ -697,17 +698,16 @@ export class ChatCommand {
       ) {
         if (data.result?.response) {
           const agent = this.context.runtime.agents.get(data.agentId);
-          console.log(
-            chalk.green(`\n${agent?.name || data.agentId}:`),
-            data.result.response
+          process.stdout.write(
+            chalk.green(`\n${agent?.name || data.agentId}: `) + data.result.response + '\n'
           );
         }
       }
     }
   }
 
-  private parsePriority(priority: string): any {
-    const priorities: Record<string, any> = {
+  private parsePriority(priority: string): number {
+    const priorities: Record<string, number> = {
       low: 1,
       normal: 2,
       high: 3,

@@ -34,7 +34,7 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
         <Box flexGrow={1}>
           <Text color={cyberpunkTheme.colors.primary}>
             {breadcrumbs.map((crumb: any, i: number) => (
-              <React.Fragment key={i}>
+              <React.Fragment key={`breadcrumb-${crumb.label}-${crumb.id || i}`}>
                 {i > 0 && <Text color={cyberpunkTheme.colors.accent}> › </Text>}
                 <Text
                   color={

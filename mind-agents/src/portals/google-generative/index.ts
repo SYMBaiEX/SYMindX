@@ -5,14 +5,7 @@
  */
 
 import { google } from '@ai-sdk/google';
-import {
-  generateText,
-  streamText,
-  // generateObject - advanced AI SDK feature not used in this implementation
-  type LanguageModel,
-  type ModelMessage,
-} from 'ai';
-// import { z } from 'zod'; - schema validation library not used in this implementation
+import { generateText, streamText } from 'ai';
 
 import { Agent } from '../../types/agent';
 import {
@@ -33,6 +26,10 @@ import {
   MessageRole,
   FinishReason,
 } from '../../types/portal';
+import type {
+  LanguageModel,
+  AIMessage as ModelMessage,
+} from '../../types/portals/ai-sdk';
 import { BasePortal } from '../base-portal';
 import { convertUsage, buildAISDKParams } from '../utils';
 
@@ -58,7 +55,7 @@ export interface GenerationConfig {
   candidateCount?: number;
   stopSequences?: string[];
   responseMimeType?: string;
-  responseSchema?: any;
+  responseSchema?: Record<string, unknown>;
 }
 
 export const defaultGenerativeConfig: Partial<GoogleGenerativeConfig> = {
@@ -95,7 +92,7 @@ export class GoogleGenerativePortal extends BasePortal {
     ModelType.CODE_GENERATION,
   ];
 
-  private googleProvider: any;
+  private googleProvider: typeof google;
 
   constructor(config: GoogleGenerativeConfig) {
     super('google-generative', 'Google Generative AI', '1.0.0', config);
@@ -120,25 +117,18 @@ export class GoogleGenerativePortal extends BasePortal {
     }
   }
 
-  override async init(agent: Agent): Promise<void> {
+  override async init(_agent: Agent): Promise<void> {
     this.status = PortalStatus.INITIALIZING;
-    console.log(
-      `🔮 Initializing Google Generative AI portal for agent ${agent.name}`
-    );
+    // Initializing Google Generative AI portal for agent
 
     try {
       await this.validateConfig();
       await this.healthCheck();
       this.status = PortalStatus.ACTIVE;
-      console.log(
-        `✅ Google Generative AI portal initialized for ${agent.name}`
-      );
+      // Google Generative AI portal initialized successfully
     } catch (error) {
       this.status = PortalStatus.ERROR;
-      console.error(
-        `❌ Failed to initialize Google Generative AI portal:`,
-        error
-      );
+      // Failed to initialize Google Generative AI portal
       throw error;
     }
   }
@@ -159,8 +149,8 @@ export class GoogleGenerativePortal extends BasePortal {
         maxOutputTokens: 10,
       });
       return !!text;
-    } catch (error) {
-      console.error('Google Generative AI health check failed:', error);
+    } catch (_error) {
+      // Google Generative AI health check failed
       return false;
     }
   }
@@ -320,7 +310,7 @@ export class GoogleGenerativePortal extends BasePortal {
         stopSequences: options?.stop ?? config.generationConfig?.stopSequences,
       });
 
-      const { textStream } = streamText(params);
+      const { textStream } = await streamText(params);
 
       for await (const textPart of textStream) {
         yield textPart;
@@ -360,7 +350,7 @@ export class GoogleGenerativePortal extends BasePortal {
         stopSequences: options?.stop ?? config.generationConfig?.stopSequences,
       });
 
-      const { textStream } = streamText(params);
+      const { textStream } = await streamText(params);
 
       for await (const textPart of textStream) {
         yield textPart;
@@ -399,7 +389,12 @@ export class GoogleGenerativePortal extends BasePortal {
         case MessageRole.USER: {
           // Handle attachments for multimodal support
           if (msg.attachments && msg.attachments.length > 0) {
-            const content: any[] = [{ type: 'text', text: msg.content }];
+            const content: Array<{
+              type: string;
+              text?: string;
+              image?: string | URL;
+              mediaType?: string;
+            }> = [{ type: 'text', text: msg.content }];
 
             for (const attachment of msg.attachments) {
               if (attachment.type === 'image') {

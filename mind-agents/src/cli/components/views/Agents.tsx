@@ -36,7 +36,7 @@ interface AgentsProps {
 
 export const Agents: React.FC<AgentsProps> = ({
   navigation: parentNavigation,
-}) => {
+}): React.ReactElement => {
   const agentData = useAgentData();
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
@@ -178,7 +178,7 @@ export const Agents: React.FC<AgentsProps> = ({
             animated={true}
           >
             <Box flexDirection='column' gap={1}>
-              {agentData?.agents.map((agent, index) => (
+              {agentData?.agents.map((agent) => (
                 <Box key={agent.id} flexDirection='column' paddingY={1}>
                   <Box flexDirection='row' gap={1}>
                     {/* Status indicator */}
@@ -221,7 +221,7 @@ export const Agents: React.FC<AgentsProps> = ({
                   </Box>
 
                   {/* Separator */}
-                  {index < agentData.agents.length - 1 && (
+                  {agent.id !== agentData.agents[agentData.agents.length - 1]?.id && (
                     <Box marginTop={1}>
                       <Text color={cyberpunkTheme.colors.borderDim}>
                         {'─'.repeat(35)}

@@ -13,6 +13,13 @@ import {
   ActionResultType,
   ActionCategory,
 } from '../../../types/agent';
+import type { SkillParameters } from '../../../types/common';
+import type {
+  SkillExecutionContext,
+  SkillResult,
+  HTTPSkillConfig,
+  APISkillResult,
+} from '../../../types/extensions/skills';
 import { ApiExtension } from '../index';
 
 export class HttpSkill {
@@ -36,8 +43,30 @@ export class HttpSkill {
           sessionId: 'string',
           userId: 'string',
         },
-        execute: async (_agent: Agent, params: any): Promise<ActionResult> => {
-          return this.handleChatRequest(_agent, params);
+        execute: async (
+          _agent: Agent,
+          params: SkillParameters
+        ): Promise<ActionResult> => {
+          const context: SkillExecutionContext = {
+            agent: _agent,
+            parameters: params,
+            metadata: {
+              executionId: `http-chat-${Date.now()}`,
+              startTime: new Date(),
+              extension: 'api',
+            },
+            environment: {
+              mode:
+                process.env.NODE_ENV === 'production'
+                  ? 'production'
+                  : 'development',
+              resources: {
+                memory: process.memoryUsage().heapUsed,
+                cpu: process.cpuUsage().user,
+              },
+            },
+          };
+          return this.handleChatRequest(context);
         },
       },
 
@@ -50,7 +79,10 @@ export class HttpSkill {
           statusCode: 'number',
           headers: 'object',
         },
-        execute: async (_agent: Agent, params: any): Promise<ActionResult> => {
+        execute: async (
+          _agent: Agent,
+          params: SkillParameters
+        ): Promise<ActionResult> => {
           return this.sendResponse(_agent, params);
         },
       },
@@ -60,7 +92,10 @@ export class HttpSkill {
         description: 'Validate incoming HTTP request',
         category: ActionCategory.SYSTEM,
         parameters: { request: 'object', schema: 'object' },
-        execute: async (_agent: Agent, params: any): Promise<ActionResult> => {
+        execute: async (
+          _agent: Agent,
+          params: SkillParameters
+        ): Promise<ActionResult> => {
           return this.validateRequest(_agent, params);
         },
       },
@@ -70,7 +105,10 @@ export class HttpSkill {
         description: 'Handle CORS preflight and headers',
         category: ActionCategory.SYSTEM,
         parameters: { origin: 'string', methods: 'array', headers: 'array' },
-        execute: async (_agent: Agent, params: any): Promise<ActionResult> => {
+        execute: async (
+          _agent: Agent,
+          params: SkillParameters
+        ): Promise<ActionResult> => {
           return this.handleCors(_agent, params);
         },
       },
@@ -80,7 +118,10 @@ export class HttpSkill {
         description: 'Check if request is within rate limits',
         category: ActionCategory.SYSTEM,
         parameters: { clientId: 'string', endpoint: 'string' },
-        execute: async (_agent: Agent, params: any): Promise<ActionResult> => {
+        execute: async (
+          _agent: Agent,
+          params: SkillParameters
+        ): Promise<ActionResult> => {
           return this.rateLimitCheck(_agent, params);
         },
       },
@@ -91,21 +132,20 @@ export class HttpSkill {
    * Handle incoming chat request
    */
   private async handleChatRequest(
-    _agent: Agent,
-    params: any
+    context: SkillExecutionContext
   ): Promise<ActionResult> {
     try {
-      const { message, sessionId, userId } = params;
+      const { message, sessionId, userId } = context.parameters;
 
       // Process the chat message through the extension's chat handler
       let response;
       if (this._extension.handleChatRequest) {
         // Use extension's chat handling if available
         const chatResponse = await this._extension.handleChatRequest({
-          agentId: _agent.id,
-          message,
-          conversationId: sessionId,
-          userId,
+          agentId: context.agent.id,
+          message: message as string,
+          conversationId: sessionId as string,
+          userId: userId as string,
         });
         response = {
           message: chatResponse.message || chatResponse.response,
@@ -155,7 +195,7 @@ export class HttpSkill {
    */
   private async sendResponse(
     _agent: Agent,
-    params: any
+    params: SkillParameters
   ): Promise<ActionResult> {
     try {
       const { response, statusCode = 200, headers = {} } = params;
@@ -195,7 +235,7 @@ export class HttpSkill {
    */
   private async validateRequest(
     _agent: Agent,
-    params: any
+    params: SkillParameters
   ): Promise<ActionResult> {
     try {
       const { request, schema } = params;
@@ -232,7 +272,10 @@ export class HttpSkill {
   /**
    * Handle CORS
    */
-  private async handleCors(_agent: Agent, params: any): Promise<ActionResult> {
+  private async handleCors(
+    _agent: Agent,
+    params: SkillParameters
+  ): Promise<ActionResult> {
     try {
       const { origin, methods = ['GET', 'POST'], headers = [] } = params;
 
@@ -273,7 +316,7 @@ export class HttpSkill {
    */
   private async rateLimitCheck(
     _agent: Agent,
-    params: any
+    params: SkillParameters
   ): Promise<ActionResult> {
     try {
       const { clientId, endpoint } = params;
@@ -312,7 +355,10 @@ export class HttpSkill {
   /**
    * Perform basic validation
    */
-  private performValidation(request: any, schema: any): boolean {
+  private performValidation(
+    request: Record<string, unknown>,
+    schema: Record<string, unknown>
+  ): boolean {
     // Basic validation logic - in practice this would use a proper validation library
     if (!request || !schema) return false;
 

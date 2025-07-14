@@ -8,8 +8,8 @@
 import { z } from 'zod';
 
 import { Agent } from '../../types/agent';
-import { buildObject } from '../../utils/type-helpers';
 import { runtimeLogger } from '../../utils/logger';
+import { buildObject } from '../../utils/type-helpers';
 
 import {
   ToolSystem,

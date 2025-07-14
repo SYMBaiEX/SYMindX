@@ -52,9 +52,24 @@ import {
   MemoryResponse,
   ActionRequest,
   ActionResponse,
-  WebSocketMessage,
   ConnectionInfo,
 } from './types';
+import type {
+  WebSocketMessage,
+  RouteHandler,
+  MiddlewareContext,
+  APIResponse,
+  ChatRequestPayload,
+  ChatResponsePayload,
+  ActionRequestPayload,
+  ActionResponsePayload,
+  AgentStatusPayload,
+  SystemMetricsPayload,
+  SpawnAgentPayload,
+  RouteConversationPayload,
+  BroadcastMessagePayload,
+  TransferConversationPayload,
+} from '../../types/extensions/api';
 // WebSocketServerSkill removed - using simple WebSocket server directly
 import { WebUIServer } from './webui/index';
 
@@ -82,7 +97,24 @@ export class ApiExtension implements Extension {
   // Enhanced WebSocket removed - using simple WebSocket server
   private webUI?: WebUIServer;
   private commandSystem?: CommandSystem;
-  private runtime?: any;
+  private runtime?: {
+    agents?: Map<string, Agent>;
+    lazyAgents?: Map<string, { id: string; name: string; state: string; lastActivated?: Date; characterConfig?: any; config?: any }>;
+    activateAgent?: (agentId: string) => Promise<void>;
+    deactivateAgent?: (agentId: string) => Promise<void>;
+    multiAgentManager?: {
+      spawnAgent: (params: any) => Promise<string>;
+      startAgent: (agentId: string) => Promise<void>;
+      stopAgent: (agentId: string) => Promise<void>;
+      restartAgent: (agentId: string) => Promise<void>;
+      getAgentHealth: (agentId: string) => any;
+      listAgents: () => any[];
+      getSystemMetrics: () => any;
+      findAgentsBySpecialty: (specialty: string) => any[];
+      routeConversation: (requirements: any) => any;
+    };
+    getStats?: () => any;
+  };
   private chatRepository?: SQLiteChatRepository;
   private migrationManager?: ChatMigrationManager;
   private activeConversations: Map<string, string> = new Map(); // userId -> conversationId
@@ -152,14 +184,14 @@ export class ApiExtension implements Extension {
     // Basic chat handling - delegate to agent's portal or cognition
     const response = 'Chat handling implementation needed';
 
-    const builder = {
+    const builder: ChatResponse = {
       response,
       timestamp: new Date().toISOString(),
       metadata: {
         processingTime: 0,
         memoryRetrieved: false,
       },
-    } as any;
+    };
 
     // Only add sessionId if it exists
     if (request.context?.sessionId) {
@@ -306,18 +338,21 @@ export class ApiExtension implements Extension {
 
   private setupRoutes(): void {
     // Health check
-    this.app.get('/health', (_req, res) => {
+    const healthHandler: RouteHandler<void, { status: string; timestamp: string; version: string }> = (_req, res) => {
       res.json({
-        status: 'healthy',
+        success: true,
+        data: {
+          status: 'healthy',
+          timestamp: new Date().toISOString(),
+          version: this.version,
+        },
         timestamp: new Date().toISOString(),
-        version: this.version,
       });
-    });
+    };
+    this.app.get('/health', healthHandler);
 
     // Status endpoint with custom rate limiting
-    this.app.get(
-      '/status',
-      (req: express.Request, res: express.Response): void => {
+    const statusHandler: RouteHandler<void, any> = (req, res): void => {
         // Apply custom rate limiting for status endpoint
         const clientIp = req.ip;
         if (!this.checkCustomRateLimit(`status:${clientIp}`, 60, 60000)) {
@@ -334,31 +369,35 @@ export class ApiExtension implements Extension {
           : null;
 
         res.json({
-          agent: {
-            id: this.agent?.id || 'unknown',
-            status: this.agent?.status || 'unknown',
-            uptime: process.uptime(),
+          success: true,
+          data: {
+            agent: {
+              id: this.agent?.id || 'unknown',
+              status: this.agent?.status || 'unknown',
+              uptime: process.uptime(),
+            },
+            extensions: {
+              loaded: this.agent?.extensions?.length || 0,
+              active:
+                this.agent?.extensions?.filter((ext) => ext.enabled).length || 0,
+            },
+            memory: {
+              used: process.memoryUsage().heapUsed,
+              total: process.memoryUsage().heapTotal,
+            },
+            runtime: runtimeStats || {
+              agents: 0,
+              isRunning: false,
+              eventBus: { events: 0 },
+            },
           },
-          extensions: {
-            loaded: this.agent?.extensions?.length || 0,
-            active:
-              this.agent?.extensions?.filter((ext) => ext.enabled).length || 0,
-          },
-          memory: {
-            used: process.memoryUsage().heapUsed,
-            total: process.memoryUsage().heapTotal,
-          },
-          runtime: runtimeStats || {
-            agents: 0,
-            isRunning: false,
-            eventBus: { events: 0 },
-          },
+          timestamp: new Date().toISOString(),
         });
-      }
-    );
+      };
+      this.app.get('/status', statusHandler);
 
     // Runtime metrics endpoint
-    this.app.get('/api/metrics', (_req, res) => {
+    const metricsHandler: RouteHandler<void, SystemMetricsPayload> = (_req, res) => {
       const agentsMap = this.getAgentsMap();
       let totalCommands = 0;
       let totalPortalRequests = 0;
@@ -370,7 +409,7 @@ export class ApiExtension implements Extension {
         totalPortalRequests += Math.floor(Math.random() * 50); // TODO: Track real portal requests
       }
 
-      res.json({
+      const metrics: SystemMetricsPayload = {
         uptime: process.uptime() * 1000, // Convert to milliseconds
         memory: process.memoryUsage(),
         activeAgents: Array.from(agentsMap.values()).filter(
@@ -380,12 +419,19 @@ export class ApiExtension implements Extension {
         commandsProcessed: totalCommands,
         portalRequests: totalPortalRequests,
         runtime: this.runtime?.getStats ? this.runtime.getStats() : null,
+      };
+      
+      res.json({
+        success: true,
+        data: metrics,
+        timestamp: new Date().toISOString(),
       });
-    });
+    };
+    this.app.get('/api/metrics', metricsHandler);
 
     // Agents endpoint (also available at /api/agents for consistency)
-    this.app.get('/agents', (_req, res) => {
-      const agents = [];
+    const agentsHandler: RouteHandler<void, { agents: AgentStatusPayload[] }> = (_req, res) => {
+      const agents: AgentStatusPayload[] = [];
 
       // Get all agents from the agents map
       const agentsMap = this.getAgentsMap();
@@ -405,31 +451,36 @@ export class ApiExtension implements Extension {
         });
       }
 
-      res.json({ agents });
-    });
+      res.json({
+        success: true,
+        data: { agents },
+        timestamp: new Date().toISOString(),
+      });
+    };
+    this.app.get('/agents', agentsHandler);
 
     // Also register at /api/agents for consistency with WebUI
-    this.app.get('/api/agents', (_req, res) => {
-      const agents = [];
+    const apiAgentsHandler: RouteHandler<void, { agents: AgentStatusPayload[] }> = (_req, res) => {
+      const agents: AgentStatusPayload[] = [];
 
       // Get all agents from the agents map
       const agentsMap = this.getAgentsMap();
 
-      // Debug: Log the Map contents
+      // Log the Map contents
       const mapContents = Array.from(agentsMap.entries()).map(
         ([id, agent]) => ({ id, name: agent.name })
       );
       runtimeLogger.debug(
-        'DEBUG: agentsMap contents:',
+        'agentsMap contents:',
         JSON.stringify(mapContents, null, 2)
       );
-      runtimeLogger.debug('DEBUG: agentsMap size:', agentsMap.size);
+      runtimeLogger.debug('agentsMap size:', agentsMap.size);
 
       for (const [id, agent] of agentsMap) {
         // Filter out runtime agent - only show character agents
         if (id === 'runtime') continue;
 
-        runtimeLogger.debug(`DEBUG: Processing agent ${id} (${agent.name})`);
+        runtimeLogger.debug(`Processing agent ${id} (${agent.name})`);
 
         agents.push({
           id: agent.id,
@@ -443,13 +494,18 @@ export class ApiExtension implements Extension {
         });
       }
 
-      runtimeLogger.debug('DEBUG: Final agents array length:', agents.length);
+      runtimeLogger.debug('Final agents array length:', agents.length);
 
-      res.json({ agents });
-    });
+      res.json({
+        success: true,
+        data: { agents },
+        timestamp: new Date().toISOString(),
+      });
+    };
+    this.app.get('/api/agents', apiAgentsHandler);
 
     // Get MCP tools for debugging
-    this.app.get('/api/agent/:agentId/tools', (req, res) => {
+    this.app.get('/api/agent/:agentId/tools', (req, res): void => {
       const { agentId } = req.params;
       const agentsMap = this.getAgentsMap();
       const agent = agentsMap.get(agentId);
@@ -477,7 +533,7 @@ export class ApiExtension implements Extension {
     });
 
     // Get individual agent details
-    this.app.get('/api/agent/:agentId', (req, res) => {
+    this.app.get('/api/agent/:agentId', (req, res): void => {
       const { agentId } = req.params;
       const agentsMap = this.getAgentsMap();
       const agent = agentsMap.get(agentId);
@@ -514,13 +570,13 @@ export class ApiExtension implements Extension {
     });
 
     // Redirect old chat endpoint to new API
-    this.app.post('/chat', async (_req, res) => {
+    this.app.post('/chat', async (_req, res): Promise<void> => {
       res.redirect(307, '/api/chat');
     });
 
     // New API chat endpoints
     // General chat endpoint
-    this.app.post('/api/chat', async (req, res) => {
+    const chatHandler: RouteHandler<ChatRequestPayload, ChatResponsePayload> = async (req, res) => {
       try {
         const chatRequest: ChatRequest = req.body;
         if (!chatRequest.message) {
@@ -530,14 +586,26 @@ export class ApiExtension implements Extension {
 
         // Process chat message through agent
         const response = await this.processChatMessage(chatRequest);
-        res.json(response);
+        res.json({
+          success: true,
+          data: response,
+          timestamp: new Date().toISOString(),
+        });
       } catch (error) {
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({
+          success: false,
+          error: {
+            code: 'INTERNAL_ERROR',
+            message: 'Internal server error',
+          },
+          timestamp: new Date().toISOString(),
+        });
       }
-    });
+    };
+    this.app.post('/api/chat', chatHandler);
 
     // Agent-specific chat endpoint
-    this.app.post('/api/chat/:agentId', async (req, res) => {
+    const agentChatHandler: RouteHandler<ChatRequestPayload, ChatResponsePayload> = async (req, res) => {
       try {
         const { agentId } = req.params;
         const chatRequest: ChatRequest = {
@@ -562,14 +630,26 @@ export class ApiExtension implements Extension {
 
         // Process chat message through specific agent
         const response = await this.processChatMessage(chatRequest);
-        res.json(response);
+        res.json({
+          success: true,
+          data: response,
+          timestamp: new Date().toISOString(),
+        });
       } catch (error) {
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({
+          success: false,
+          error: {
+            code: 'INTERNAL_ERROR',
+            message: 'Internal server error',
+          },
+          timestamp: new Date().toISOString(),
+        });
       }
-    });
+    };
+    this.app.post('/api/chat/:agentId', agentChatHandler);
 
     // Chat history endpoint
-    this.app.get('/chat/history/:agentId', async (req, res) => {
+    this.app.get('/chat/history/:agentId', async (req, res): Promise<void> => {
       try {
         const { agentId } = req.params;
         const limit = parseInt(req.query.limit as string) || 50;
@@ -614,7 +694,7 @@ export class ApiExtension implements Extension {
     });
 
     // Clear chat history endpoint
-    this.app.delete('/chat/history/:agentId', async (req, res) => {
+    this.app.delete('/chat/history/:agentId', async (req, res): Promise<void> => {
       try {
         const { agentId } = req.params;
         const userId = (req.query.userId as string) || 'default_user';
@@ -641,7 +721,7 @@ export class ApiExtension implements Extension {
     });
 
     // Memory endpoints
-    this.app.get('/memory', async (_req, res) => {
+    this.app.get('/memory', async (_req, res): Promise<void> => {
       try {
         const memories = await this.getMemories();
         res.json({ memories });
@@ -650,7 +730,7 @@ export class ApiExtension implements Extension {
       }
     });
 
-    this.app.post('/memory', async (req, res) => {
+    this.app.post('/memory', async (req, res): Promise<void> => {
       try {
         const memoryRequest: MemoryRequest = req.body;
         const result = await this.storeMemory(memoryRequest);
@@ -661,7 +741,7 @@ export class ApiExtension implements Extension {
     });
 
     // Action endpoint
-    this.app.post('/action', async (req, res) => {
+    this.app.post('/action', async (req, res): Promise<void> => {
       try {
         const actionRequest: ActionRequest = req.body;
         const result = await this.executeAction(actionRequest);
@@ -674,7 +754,7 @@ export class ApiExtension implements Extension {
     // Multi-Agent Management Endpoints
 
     // Spawn new agent
-    this.app.post('/api/agents/spawn', async (req, res) => {
+    const spawnAgentHandler: RouteHandler<SpawnAgentPayload, any> = async (req, res) => {
       try {
         const {
           characterId,
@@ -708,6 +788,7 @@ export class ApiExtension implements Extension {
           characterId,
           instanceName,
           message: `Agent spawned successfully: ${instanceName || characterId}`,
+          timestamp: new Date().toISOString(),
         });
       } catch (error) {
         runtimeLogger.error('Error spawning agent:', error);
@@ -716,10 +797,11 @@ export class ApiExtension implements Extension {
           details: error instanceof Error ? error.message : String(error),
         });
       }
-    });
+    };
+    this.app.post('/api/agents/spawn', spawnAgentHandler);
 
     // Start/Activate agent (works for both lazy and multi-agent manager)
-    this.app.post('/api/agents/:agentId/start', async (req, res) => {
+    this.app.post('/api/agents/:agentId/start', async (req, res): Promise<void> => {
       try {
         const { agentId } = req.params;
 
@@ -765,7 +847,7 @@ export class ApiExtension implements Extension {
     });
 
     // Stop agent
-    this.app.post('/api/agents/:agentId/stop', async (req, res) => {
+    this.app.post('/api/agents/:agentId/stop', async (req, res): Promise<void> => {
       try {
         const { agentId } = req.params;
 
@@ -814,7 +896,7 @@ export class ApiExtension implements Extension {
     });
 
     // Restart agent
-    this.app.post('/api/agents/:agentId/restart', async (req, res) => {
+    this.app.post('/api/agents/:agentId/restart', async (req, res): Promise<void> => {
       try {
         const { agentId } = req.params;
 
@@ -840,7 +922,7 @@ export class ApiExtension implements Extension {
     });
 
     // Get agent health
-    this.app.get('/api/agents/:agentId/health', (req, res) => {
+    this.app.get('/api/agents/:agentId/health', (req, res): void => {
       try {
         const { agentId } = req.params;
 
@@ -867,7 +949,7 @@ export class ApiExtension implements Extension {
     });
 
     // List all managed agents
-    this.app.get('/api/agents/managed', (_req, res) => {
+    this.app.get('/api/agents/managed', (_req, res): void => {
       try {
         if (!this.runtime?.multiAgentManager) {
           res.status(503).json({ error: 'Multi-Agent Manager not available' });
@@ -886,7 +968,7 @@ export class ApiExtension implements Extension {
     });
 
     // Get system metrics including multi-agent info
-    this.app.get('/api/agents/metrics', (_req, res) => {
+    this.app.get('/api/agents/metrics', (_req, res): void => {
       try {
         if (!this.runtime?.multiAgentManager) {
           res.status(503).json({ error: 'Multi-Agent Manager not available' });
@@ -905,7 +987,7 @@ export class ApiExtension implements Extension {
     });
 
     // Find agents by specialty
-    this.app.get('/api/agents/specialty/:specialty', (req, res) => {
+    this.app.get('/api/agents/specialty/:specialty', (req, res): void => {
       try {
         const { specialty } = req.params;
 
@@ -934,7 +1016,7 @@ export class ApiExtension implements Extension {
     });
 
     // Route conversation to best agent
-    this.app.post('/api/agents/route', (req, res) => {
+    const routeConversationHandler: RouteHandler<RouteConversationPayload, any> = (req, res): void => {
       try {
         const requirements = req.body;
 
@@ -966,10 +1048,11 @@ export class ApiExtension implements Extension {
           details: error instanceof Error ? error.message : String(error),
         });
       }
-    });
+    };
+    this.app.post('/api/agents/route', routeConversationHandler);
 
     // Stats endpoint
-    this.app.get('/api/stats', (_req, res) => {
+    this.app.get('/api/stats', (_req, res): void => {
       const runtimeStats = this.getRuntimeStats();
       const commandStats = this.commandSystem
         ? this.commandSystem.getStats()
@@ -1015,7 +1098,7 @@ export class ApiExtension implements Extension {
     });
 
     // Commands endpoint for recent command history
-    this.app.get('/api/commands', (req, res) => {
+    this.app.get('/api/commands', (req, res): void => {
       const agentId = req.query.agent as string | undefined;
       const limit = parseInt(req.query.limit as string) || 20;
 
@@ -1050,7 +1133,7 @@ export class ApiExtension implements Extension {
     });
 
     // Conversation endpoints
-    this.app.get('/api/conversations', async (req, res) => {
+    this.app.get('/api/conversations', async (req, res): Promise<void> => {
       try {
         if (!this.chatRepository) {
           res.status(500).json({ error: 'Chat system not available' });
@@ -1073,12 +1156,12 @@ export class ApiExtension implements Extension {
 
         res.json({ conversations });
       } catch (error) {
-        console.error('Error fetching conversations:', error);
+        runtimeLogger.error('Error fetching conversations:', error);
         res.status(500).json({ error: 'Failed to fetch conversations' });
       }
     });
 
-    this.app.post('/api/conversations', async (req, res) => {
+    this.app.post('/api/conversations', async (req, res): Promise<void> => {
       try {
         if (!this.chatRepository) {
           res.status(500).json({ error: 'Chat system not available' });
@@ -1109,12 +1192,12 @@ export class ApiExtension implements Extension {
 
         res.json({ conversation });
       } catch (error) {
-        console.error('Error creating conversation:', error);
+        runtimeLogger.error('Error creating conversation:', error);
         res.status(500).json({ error: 'Failed to create conversation' });
       }
     });
 
-    this.app.get('/api/conversations/:conversationId', async (req, res) => {
+    this.app.get('/api/conversations/:conversationId', async (req, res): Promise<void> => {
       try {
         if (!this.chatRepository) {
           res.status(500).json({ error: 'Chat system not available' });
@@ -1132,14 +1215,14 @@ export class ApiExtension implements Extension {
 
         res.json({ conversation });
       } catch (error) {
-        console.error('Error fetching conversation:', error);
+        runtimeLogger.error('Error fetching conversation:', error);
         res.status(500).json({ error: 'Failed to fetch conversation' });
       }
     });
 
     this.app.get(
       '/api/conversations/:conversationId/messages',
-      async (req, res) => {
+      async (req, res): Promise<void> => {
         try {
           if (!this.chatRepository) {
             res.status(500).json({ error: 'Chat system not available' });
@@ -1181,7 +1264,7 @@ export class ApiExtension implements Extension {
             total: apiMessages.length,
           });
         } catch (error) {
-          console.error('Error fetching conversation messages:', error);
+          runtimeLogger.error('Error fetching conversation messages:', error);
           res
             .status(500)
             .json({ error: 'Failed to fetch conversation messages' });
@@ -1191,7 +1274,7 @@ export class ApiExtension implements Extension {
 
     this.app.post(
       '/api/conversations/:conversationId/messages',
-      async (req, res) => {
+      async (req, res): Promise<void> => {
         try {
           if (!this.chatRepository || !this.commandSystem) {
             res.status(500).json({ error: 'Chat system not available' });
@@ -1274,13 +1357,13 @@ export class ApiExtension implements Extension {
             },
           });
         } catch (error) {
-          console.error('Error sending message:', error);
+          runtimeLogger.error('Error sending message:', error);
           res.status(500).json({ error: 'Failed to send message' });
         }
       }
     );
 
-    this.app.delete('/api/conversations/:conversationId', async (req, res) => {
+    this.app.delete('/api/conversations/:conversationId', async (req, res): Promise<void> => {
       try {
         if (!this.chatRepository) {
           res.status(500).json({ error: 'Chat system not available' });
@@ -1302,7 +1385,7 @@ export class ApiExtension implements Extension {
 
         res.json({ success: true });
       } catch (error) {
-        console.error('Error deleting conversation:', error);
+        runtimeLogger.error('Error deleting conversation:', error);
         res.status(500).json({ error: 'Failed to delete conversation' });
       }
     });
@@ -1312,7 +1395,7 @@ export class ApiExtension implements Extension {
     // ========================================
 
     // Route message to best agent automatically
-    this.app.post('/api/chat/route', async (req, res) => {
+    this.app.post('/api/chat/route', async (req, res): Promise<void> => {
       try {
         const {
           message,
@@ -1378,13 +1461,13 @@ export class ApiExtension implements Extension {
           },
         });
       } catch (error) {
-        console.error('Error routing chat message:', error);
+        runtimeLogger.error('Error routing chat message:', error);
         res.status(500).json({ error: 'Failed to route message' });
       }
     });
 
     // Get available agents for chat
-    this.app.get('/api/chat/agents/available', (_req, res) => {
+    this.app.get('/api/chat/agents/available', (_req, res): void => {
       try {
         const agentsMap = this.getAgentsMap();
         const availableAgents = [];
@@ -1410,13 +1493,13 @@ export class ApiExtension implements Extension {
           agents: availableAgents,
         });
       } catch (error) {
-        console.error('Error getting available agents:', error);
+        runtimeLogger.error('Error getting available agents:', error);
         res.status(500).json({ error: 'Failed to get available agents' });
       }
     });
 
     // Broadcast message to multiple agents
-    this.app.post('/api/chat/broadcast', async (req, res) => {
+    this.app.post('/api/chat/broadcast', async (req, res): Promise<void> => {
       try {
         const { message, agentIds, userId = 'default_user', title } = req.body;
 
@@ -1494,7 +1577,7 @@ export class ApiExtension implements Extension {
           results,
         });
       } catch (error) {
-        console.error('Error broadcasting message:', error);
+        runtimeLogger.error('Error broadcasting message:', error);
         res.status(500).json({ error: 'Failed to broadcast message' });
       }
     });
@@ -1502,7 +1585,7 @@ export class ApiExtension implements Extension {
     // Transfer conversation to another agent
     this.app.put(
       '/api/conversations/:conversationId/transfer/:newAgentId',
-      async (req, res) => {
+      async (req, res): Promise<void> => {
         try {
           if (!this.chatRepository) {
             res.status(500).json({ error: 'Chat system not available' });
@@ -1568,7 +1651,7 @@ export class ApiExtension implements Extension {
             },
           });
         } catch (error) {
-          console.error('Error transferring conversation:', error);
+          runtimeLogger.error('Error transferring conversation:', error);
           res.status(500).json({ error: 'Failed to transfer conversation' });
         }
       }
@@ -1577,7 +1660,7 @@ export class ApiExtension implements Extension {
     // Add agent to existing conversation (multi-agent conversation)
     this.app.post(
       '/api/conversations/:conversationId/invite/:agentId',
-      async (req, res) => {
+      async (req, res): Promise<void> => {
         try {
           if (!this.chatRepository) {
             res.status(500).json({ error: 'Chat system not available' });
@@ -1631,7 +1714,7 @@ export class ApiExtension implements Extension {
             role,
           });
         } catch (error) {
-          console.error('Error inviting agent to conversation:', error);
+          runtimeLogger.error('Error inviting agent to conversation:', error);
           res.status(500).json({ error: 'Failed to invite agent' });
         }
       }
@@ -1640,7 +1723,7 @@ export class ApiExtension implements Extension {
     // Remove agent from conversation
     this.app.delete(
       '/api/conversations/:conversationId/participants/:agentId',
-      async (req, res) => {
+      async (req, res): Promise<void> => {
         try {
           if (!this.chatRepository) {
             res.status(500).json({ error: 'Chat system not available' });
@@ -1676,14 +1759,14 @@ export class ApiExtension implements Extension {
             removedAgent: agentId,
           });
         } catch (error) {
-          console.error('Error removing agent from conversation:', error);
+          runtimeLogger.error('Error removing agent from conversation:', error);
           res.status(500).json({ error: 'Failed to remove agent' });
         }
       }
     );
 
     // Get chat analytics for specific agent
-    this.app.get('/api/chat/analytics/agent/:agentId', async (req, res) => {
+    this.app.get('/api/chat/analytics/agent/:agentId', async (req, res): Promise<void> => {
       try {
         if (!this.chatRepository) {
           res.status(500).json({ error: 'Chat system not available' });
@@ -1736,13 +1819,13 @@ export class ApiExtension implements Extension {
           },
         });
       } catch (error) {
-        console.error('Error getting agent chat analytics:', error);
+        runtimeLogger.error('Error getting agent chat analytics:', error);
         res.status(500).json({ error: 'Failed to get chat analytics' });
       }
     });
 
     // Get system-wide chat analytics
-    this.app.get('/api/chat/analytics/system', async (req, res) => {
+    this.app.get('/api/chat/analytics/system', async (req, res): Promise<void> => {
       try {
         if (!this.chatRepository) {
           res.status(500).json({ error: 'Chat system not available' });
@@ -1794,7 +1877,7 @@ export class ApiExtension implements Extension {
           },
         });
       } catch (error) {
-        console.error('Error getting system chat analytics:', error);
+        runtimeLogger.error('Error getting system chat analytics:', error);
         res.status(500).json({ error: 'Failed to get system analytics' });
       }
     });
@@ -1914,7 +1997,7 @@ export class ApiExtension implements Extension {
               clientInfo: { userAgent: 'API', source: 'http' },
             });
           } catch (createError) {
-            console.warn('Failed to create session:', createError);
+            runtimeLogger.warn('Failed to create session:', createError);
           }
         }
       }
@@ -1951,7 +2034,7 @@ export class ApiExtension implements Extension {
 
       return result;
     } catch (error) {
-      console.error('Error processing chat message:', error);
+      runtimeLogger.error('Error processing chat message:', error);
 
       // Still try to log the error
       try {
@@ -1967,7 +2050,7 @@ export class ApiExtension implements Extension {
           });
         }
       } catch (logError) {
-        console.error('Failed to log error event:', logError);
+        runtimeLogger.error('Failed to log error event:', logError);
       }
 
       return {
@@ -2097,7 +2180,7 @@ export class ApiExtension implements Extension {
         });
 
         this.server.on('error', (error) => {
-          console.error('❌ API Server error:', error);
+          runtimeLogger.error('❌ API Server error:', error);
           this.status = ExtensionStatus.ERROR;
           reject(error);
         });
@@ -2309,18 +2392,18 @@ export class ApiExtension implements Extension {
     runtimeLogger.extension('🌐 WebUI server initialized at /ui and /api/ui');
   }
 
-  private getAgentsMap(): Map<string, any> {
-    const agentsMap = new Map();
+  private getAgentsMap(): Map<string, Agent> {
+    const agentsMap = new Map<string, Agent>();
 
     if (this.runtime) {
       // First add active agents
       if (this.runtime.agents && typeof this.runtime.agents !== 'undefined') {
-        console.log(
-          'DEBUG: Active agents:',
+        runtimeLogger.debug(
+          'Active agents:',
           Array.from(this.runtime.agents.keys())
         );
         for (const [id, agent] of this.runtime.agents) {
-          console.log(`DEBUG: Adding active agent ${id} (${agent.name})`);
+          runtimeLogger.debug(`Adding active agent ${id} (${agent.name})`);
           agentsMap.set(id, agent);
         }
       }
@@ -2330,20 +2413,20 @@ export class ApiExtension implements Extension {
         this.runtime.lazyAgents &&
         typeof this.runtime.lazyAgents !== 'undefined'
       ) {
-        console.log(
-          'DEBUG: Lazy agents:',
+        runtimeLogger.debug(
+          'Lazy agents:',
           Array.from(this.runtime.lazyAgents.keys())
         );
         for (const [id, lazyAgent] of this.runtime.lazyAgents) {
           // Skip if agent is already active (prevent duplicates)
           if (agentsMap.has(id)) {
-            console.log(
-              `DEBUG: Skipping lazy agent ${id} - already in active agents`
+            runtimeLogger.debug(
+              `Skipping lazy agent ${id} - already in active agents`
             );
             continue;
           }
 
-          console.log(`DEBUG: Adding lazy agent ${id} (${lazyAgent.name})`);
+          runtimeLogger.debug(`Adding lazy agent ${id} (${lazyAgent.name})`);
 
           // Convert lazy agent to agent format for API
           const agentLike = {
@@ -2367,15 +2450,15 @@ export class ApiExtension implements Extension {
 
     // Add the API extension agent itself if present and not already added
     if (this.agent && !agentsMap.has(this.agent.id)) {
-      console.log(`DEBUG: Adding API extension agent ${this.agent.id}`);
+      runtimeLogger.debug(`Adding API extension agent ${this.agent.id}`);
       agentsMap.set(this.agent.id, this.agent);
     }
 
-    console.log('DEBUG: Final agentsMap keys:', Array.from(agentsMap.keys()));
+    runtimeLogger.debug('Final agentsMap keys:', Array.from(agentsMap.keys()));
     return agentsMap;
   }
 
-  private getRuntimeStats(): any {
+  private getRuntimeStats(): { isRunning: boolean; agents: number; autonomousAgents: number } {
     // Return actual runtime stats if available
     if (this.runtime && typeof this.runtime.getStats === 'function') {
       const stats = this.runtime.getStats();
@@ -2431,7 +2514,7 @@ export class ApiExtension implements Extension {
       // Validate database
       const validation = await this.migrationManager.validate();
       if (!validation.valid) {
-        console.error('❌ Chat database validation failed:', validation.errors);
+        runtimeLogger.error('❌ Chat database validation failed:', validation.errors);
         throw new Error('Chat database validation failed');
       }
 
@@ -2448,7 +2531,7 @@ export class ApiExtension implements Extension {
 
       runtimeLogger.success('✅ Chat persistence system initialized');
     } catch (error) {
-      console.error('❌ Failed to initialize chat persistence:', error);
+      runtimeLogger.error('❌ Failed to initialize chat persistence:', error);
       throw error;
     }
   }
@@ -2539,7 +2622,7 @@ export class ApiExtension implements Extension {
           );
         }
       } catch (error) {
-        console.error('❌ Error during chat cleanup:', error);
+        runtimeLogger.error('❌ Error during chat cleanup:', error);
       }
     }
   }
@@ -2655,7 +2738,7 @@ export class ApiExtension implements Extension {
         const { command, priority, async } = params;
 
         // Log command execution with priority
-        console.log(
+        runtimeLogger.debug(
           `[API] Executing command "${command}" with priority: ${priority || 'normal'}`
         );
 
@@ -2724,7 +2807,7 @@ export class ApiExtension implements Extension {
     return new Promise((resolve) => {
       // Cleanup chat resources
       this.cleanupChatResources().catch((error) => {
-        console.error('Error during chat cleanup:', error);
+        runtimeLogger.error('Error during chat cleanup:', error);
       });
 
       // Close database connections
@@ -2732,7 +2815,7 @@ export class ApiExtension implements Extension {
         try {
           this.chatRepository.close();
         } catch (error) {
-          console.error('Error closing chat repository:', error);
+          runtimeLogger.error('Error closing chat repository:', error);
         }
       }
 
@@ -2740,7 +2823,7 @@ export class ApiExtension implements Extension {
         try {
           this.migrationManager.close();
         } catch (error) {
-          console.error('Error closing migration manager:', error);
+          runtimeLogger.error('Error closing migration manager:', error);
         }
       }
 

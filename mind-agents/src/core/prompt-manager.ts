@@ -93,7 +93,7 @@ Write a brief journal entry (max 100 words) about your growth and insights.`,
   /**
    * Format a template with variables
    */
-  static format(template: string, vars: Record<string, any>): string {
+  static format(template: string, vars: Record<string, unknown>): string {
     return template.replace(/{(\w+)}/g, (_, key) => {
       const value = vars[key];
       if (value === undefined || value === null) return `{${key}}`;
@@ -117,9 +117,9 @@ Write a brief journal entry (max 100 words) about your growth and insights.`,
    * Create a chat prompt with full context
    */
   static createChatPrompt(
-    agent: any,
+    agent: unknown,
     message: string,
-    emotionalContext: any,
+    emotionalContext: unknown,
     conversationContext: string
   ): string {
     return this.format(this.PROMPTS.CHAT_RESPONSE, {
@@ -156,11 +156,11 @@ Write a brief journal entry (max 100 words) about your growth and insights.`,
    * Create a thinking/analysis prompt
    */
   static createThinkingPrompt(
-    agent: any,
-    events: any[],
+    agent: unknown,
+    events: unknown[],
     goal: string,
-    memories: any[],
-    emotionalState: any
+    memories: unknown[],
+    emotionalState: unknown
   ): string {
     return this.format(this.PROMPTS.THINKING_ANALYSIS, {
       name: agent.name,
@@ -177,7 +177,7 @@ Write a brief journal entry (max 100 words) about your growth and insights.`,
  */
 export interface PromptContext {
   type: keyof typeof PromptManager.PROMPTS;
-  variables: Record<string, any>;
+  variables: Record<string, unknown>;
 }
 
 /**

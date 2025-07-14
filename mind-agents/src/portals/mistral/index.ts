@@ -10,9 +10,7 @@ import {
   generateText as aiGenerateText,
   streamText as aiStreamText,
   embed as aiEmbed,
-  // tool - AI SDK tool integration not implemented yet
 } from 'ai';
-// import { z } from 'zod'; - schema validation not implemented yet
 
 import { Agent } from '../../types/agent';
 import {
@@ -34,6 +32,7 @@ import {
   ImageGenerationOptions,
   ImageGenerationResult,
 } from '../../types/portal';
+import type { AIMessage as ModelMessage } from '../../types/portals/ai-sdk';
 import {
   AISDKParameterBuilder,
   handleAISDKError,
@@ -88,8 +87,8 @@ export class MistralPortal extends BasePortal {
     ModelType.EMBEDDING,
   ];
 
-  private model: any;
-  private embedModel: any;
+  private model: ReturnType<typeof mistral>;
+  private embedModel: ReturnType<typeof mistral>;
 
   constructor(config: MistralConfig) {
     super('mistral-ai', 'Mistral AI', '1.0.0', config);
@@ -99,18 +98,18 @@ export class MistralPortal extends BasePortal {
     this.embedModel = mistral('mistral-embed');
   }
 
-  override async init(agent: Agent): Promise<void> {
+  override async init(_agent: Agent): Promise<void> {
     this.status = PortalStatus.INITIALIZING;
-    console.log(`🔮 Initializing Mistral AI portal for agent ${agent.name}`);
+    // Initializing Mistral AI portal for agent
 
     try {
       await this.validateConfig();
       await this.healthCheck();
       this.status = PortalStatus.ACTIVE;
-      console.log(`✅ Mistral AI portal initialized for ${agent.name}`);
+      // Mistral AI portal initialized successfully
     } catch (error) {
       this.status = PortalStatus.ERROR;
-      console.error(`❌ Failed to initialize Mistral AI portal:`, error);
+      // Failed to initialize Mistral AI portal
       throw error;
     }
   }
@@ -124,8 +123,8 @@ export class MistralPortal extends BasePortal {
         maxOutputTokens: 10,
       });
       return true;
-    } catch (error) {
-      console.error('Mistral AI health check failed:', error);
+    } catch (_error) {
+      // Mistral AI health check failed
       return false;
     }
   }
@@ -133,7 +132,9 @@ export class MistralPortal extends BasePortal {
   /**
    * Convert ChatMessage array to message format for AI SDK
    */
-  private convertToModelMessages(messages: ChatMessage[]) {
+  private convertToModelMessages(
+    messages: ChatMessage[]
+  ): Array<{ role: 'user' | 'assistant' | 'system'; content: string }> {
     return messages.map((msg) => {
       const role =
         msg.role === MessageRole.USER
@@ -154,7 +155,13 @@ export class MistralPortal extends BasePortal {
   /**
    * Get default parameters for Mistral AI
    */
-  private getMistralDefaults() {
+  private getMistralDefaults(): {
+    maxOutputTokens: number;
+    temperature: number;
+    topP: number;
+    frequencyPenalty: number;
+    presencePenalty: number;
+  } {
     return {
       maxOutputTokens: this.config.maxTokens ?? 8192,
       temperature: this.config.temperature ?? 0.7,
@@ -167,10 +174,10 @@ export class MistralPortal extends BasePortal {
   /**
    * Build Mistral-specific parameters with seed support
    */
-  private buildMistralParams<T extends Record<string, any>>(
+  private buildMistralParams<T extends Record<string, unknown>>(
     baseParams: T,
     options?: TextGenerationOptions | ChatGenerationOptions
-  ): T & Record<string, any> {
+  ): T & Record<string, unknown> {
     const params = AISDKParameterBuilder.buildTextGenerationParams(
       baseParams,
       options,
@@ -180,7 +187,7 @@ export class MistralPortal extends BasePortal {
     // Add Mistral-specific seed parameter
     const randomSeed = (this.config as MistralConfig).randomSeed;
     if (randomSeed !== undefined) {
-      (params as any).seed = randomSeed;
+      (params as Record<string, unknown>).seed = randomSeed;
     }
 
     return params;
@@ -222,10 +229,10 @@ export class MistralPortal extends BasePortal {
   /**
    * Build Mistral-specific chat parameters with tool support
    */
-  private buildMistralChatParams<T extends Record<string, any>>(
+  private buildMistralChatParams<T extends Record<string, unknown>>(
     baseParams: T,
     options?: ChatGenerationOptions
-  ): T & Record<string, any> {
+  ): T & Record<string, unknown> {
     const params = AISDKParameterBuilder.buildChatGenerationParams(
       baseParams,
       options,
@@ -235,7 +242,7 @@ export class MistralPortal extends BasePortal {
     // Add Mistral-specific seed parameter
     const randomSeed = (this.config as MistralConfig).randomSeed;
     if (randomSeed !== undefined) {
-      (params as any).seed = randomSeed;
+      (params as Record<string, unknown>).seed = randomSeed;
     }
 
     return params;

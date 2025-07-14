@@ -260,22 +260,25 @@ Tools will be automatically executed and their results will be available for you
       } else if (result.message?.content) {
         return result.message.content;
       } else if ((result as any).success === false) {
-        console.warn('⚠️ Portal generation failed:', (result as any).error);
+        this.logger.warn(
+          '⚠️ Portal generation failed:',
+          (result as unknown).error
+        );
         return this.getFallbackResponse(prompt);
       } else {
-        console.warn('⚠️ Unexpected portal result format:', result);
+        this.logger.warn('⚠️ Unexpected portal result format:', result);
         return this.getFallbackResponse(prompt);
       }
     } catch (error) {
-      console.error('❌ Error generating AI response:', error);
+      this.logger.error('❌ Error generating AI response:', error);
       // Log more details about the error
       if (error instanceof Error) {
-        console.error('Error message:', error.message);
-        console.error('Error stack:', error.stack);
+        this.logger.error('Error message:', error.message);
+        this.logger.error('Error stack:', error.stack);
       }
       // Log the portal and tools info for debugging
-      console.error('Portal used:', chatPortal.name);
-      console.error(
+      this.logger.error('Portal used:', chatPortal.name);
+      this.logger.error(
         'Tools available:',
         agent.toolSystem ? Object.keys(agent.toolSystem).length : 0
       );
@@ -696,7 +699,7 @@ What are your current thoughts? Respond with 2-3 brief thoughts.`;
 
       return evaluation;
     } catch (error) {
-      console.error('❌ Task evaluation failed:', error);
+      this.logger.error('❌ Task evaluation failed:', error);
       return {
         analysis: 'Unable to evaluate task at this time',
         confidence: 0,
@@ -835,7 +838,7 @@ What are your current thoughts? Respond with 2-3 brief thoughts.`;
         }
       }
     } catch (error) {
-      console.error('❌ Error in streaming generation:', error);
+      this.logger.error('❌ Error in streaming generation:', error);
       const fallback = this.getFallbackResponse(prompt);
       if (onChunk) onChunk(fallback);
       yield fallback;

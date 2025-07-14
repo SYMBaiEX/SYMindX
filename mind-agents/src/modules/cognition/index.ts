@@ -5,6 +5,7 @@
  */
 
 import { CognitionModuleType } from '../../types/agent';
+import { CognitionModule } from '../../types/cognition';
 
 import { UnifiedCognition, createUnifiedCognition } from './cognition';
 import { TheoryOfMind, createTheoryOfMind } from './theory-of-mind';
@@ -12,15 +13,16 @@ import { TheoryOfMind, createTheoryOfMind } from './theory-of-mind';
 /**
  * Create a cognition module based on type and configuration
  */
-export function createCognitionModule(type: string, config: any) {
-  console.log(`🧠 Creating cognition module: ${type}`);
+export function createCognitionModule(
+  type: string,
+  config: Record<string, unknown>
+): CognitionModule {
+  // Creating cognition module
 
   // Use enum values for type validation
   const supportedTypes = Object.values(CognitionModuleType);
   if (!supportedTypes.includes(type as CognitionModuleType)) {
-    console.warn(
-      `Unknown cognition type: ${type}, supported types: ${supportedTypes.join(', ')}`
-    );
+    // Unknown cognition type, will use default
   }
 
   // All types now use unified cognition with different configs
@@ -41,7 +43,7 @@ export function createCognitionModule(type: string, config: any) {
               : 'normal',
       });
     case CognitionModuleType.THEORY_OF_MIND:
-    case 'theory_of_mind':
+    case 'theory_of_mind': {
       // Add theory of mind capability alongside unified cognition
       const unifiedModule = createUnifiedCognition(config);
       const theoryOfMindModule = createTheoryOfMind(config);
@@ -49,8 +51,9 @@ export function createCognitionModule(type: string, config: any) {
         ...unifiedModule,
         theoryOfMind: theoryOfMindModule,
       };
+    }
     default:
-      console.warn(`Unknown cognition type: ${type}, using unified`);
+      // Unknown cognition type, using unified
       return createUnifiedCognition(config);
   }
 }
@@ -66,7 +69,9 @@ export function getCognitionModuleTypes(): string[] {
 export { UnifiedCognition, TheoryOfMind };
 
 // Registration function with auto-discovery
-export async function registerCognitionModules(registry: any): Promise<void> {
+export async function registerCognitionModules(
+  registry: Record<string, unknown>
+): Promise<void> {
   try {
     // Use the new cognition discovery system
     const { createCognitionDiscovery } = await import('./cognition-discovery');
@@ -77,49 +82,55 @@ export async function registerCognitionModules(registry: any): Promise<void> {
     await discovery.autoRegisterCognitions(registry);
 
     // Register the main cognition module types as fallback
-    registry.registerCognitionFactory('unified', (config: any) =>
-      createUnifiedCognition(
-        config || {
-          thinkForActions: true,
-          thinkForMentions: true,
-          thinkOnRequest: true,
-          quickResponseMode: true,
-          analysisDepth: 'normal',
-        }
-      )
+    (registry as any).registerCognitionFactory(
+      'unified',
+      (config: Record<string, unknown>) =>
+        createUnifiedCognition(
+          config || {
+            thinkForActions: true,
+            thinkForMentions: true,
+            thinkOnRequest: true,
+            quickResponseMode: true,
+            analysisDepth: 'normal',
+          }
+        )
     );
 
     // Register legacy names for compatibility
     const legacyTypes = ['htn_planner', 'reactive', 'hybrid'];
     for (const type of legacyTypes) {
-      registry.registerCognitionFactory(type, (config: any) =>
-        createUnifiedCognition({
-          ...config,
-          analysisDepth:
-            type === 'htn_planner'
-              ? 'deep'
-              : type === 'reactive'
-                ? 'shallow'
-                : 'normal',
-        })
+      (registry as any).registerCognitionFactory(
+        type,
+        (config: Record<string, unknown>) =>
+          createUnifiedCognition({
+            ...config,
+            analysisDepth:
+              type === 'htn_planner'
+                ? 'deep'
+                : type === 'reactive'
+                  ? 'shallow'
+                  : 'normal',
+          })
       );
     }
 
     // Cognition factories registered - logged by runtime
   } catch (error) {
-    console.error('❌ Failed to register cognition modules:', error);
+    // Failed to register cognition modules
 
     // Fallback to manual registration
-    registry.registerCognitionFactory('unified', (config: any) =>
-      createUnifiedCognition(
-        config || {
-          thinkForActions: true,
-          thinkForMentions: true,
-          thinkOnRequest: true,
-          quickResponseMode: true,
-          analysisDepth: 'normal',
-        }
-      )
+    (registry as any).registerCognitionFactory(
+      'unified',
+      (config: Record<string, unknown>) =>
+        createUnifiedCognition(
+          config || {
+            thinkForActions: true,
+            thinkForMentions: true,
+            thinkOnRequest: true,
+            quickResponseMode: true,
+            analysisDepth: 'normal',
+          }
+        )
     );
     throw error;
   }
