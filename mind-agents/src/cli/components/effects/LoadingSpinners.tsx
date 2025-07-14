@@ -83,7 +83,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   const config = sizeConfig[size];
 
   // Update animation
-  useEffect(() => {
+  useEffect((): (() => void) | undefined => {
     if (!themeEngine.areAnimationsEnabled()) return;
 
     const interval = setInterval(() => {

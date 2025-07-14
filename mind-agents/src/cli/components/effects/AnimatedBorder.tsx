@@ -96,14 +96,14 @@ export const AnimatedBorder: React.FC<AnimatedBorderProps> = ({
   const chars = borderChars[variant][cornerStyle];
 
   // Animation logic
-  useEffect(() => {
+  useEffect((): (() => void) | undefined => {
     if (!themeEngine.areAnimationsEnabled() || animation === 'none') return;
 
     const interval = setInterval(() => {
       setAnimationFrame((prev) => (prev + 1) % (width * 2 + height * 2));
     }, speed);
 
-    return () => clearInterval(interval);
+    return (): void => clearInterval(interval);
   }, [animation, speed, width, height]);
 
   // Get animated color for a position

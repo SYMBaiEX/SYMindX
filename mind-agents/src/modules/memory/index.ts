@@ -33,23 +33,23 @@ export async function registerMemoryProviders(
     // Register memory provider factories
     registry.registerMemoryFactory(
       'memory',
-      (config: any) => new InMemoryProvider(config)
+      (config: Record<string, unknown>) => new InMemoryProvider(config)
     );
     registry.registerMemoryFactory(
       'sqlite',
-      (config: any) => new SQLiteMemoryProvider(config)
+      (config: Record<string, unknown>) => new SQLiteMemoryProvider(config)
     );
     registry.registerMemoryFactory(
       'supabase',
-      (config: any) => new SupabaseMemoryProvider(config)
+      (config: Record<string, unknown>) => new SupabaseMemoryProvider(config)
     );
     registry.registerMemoryFactory(
       'neon',
-      (config: any) => new NeonMemoryProvider(config)
+      (config: Record<string, unknown>) => new NeonMemoryProvider(config)
     );
     registry.registerMemoryFactory(
       'postgres',
-      (config: any) => new PostgresMemoryProvider(config)
+      (config: Record<string, unknown>) => new PostgresMemoryProvider(config)
     );
 
     runtimeLogger.info(

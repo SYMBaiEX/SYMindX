@@ -419,17 +419,17 @@ export class ApiExtension implements Extension {
       const mapContents = Array.from(agentsMap.entries()).map(
         ([id, agent]) => ({ id, name: agent.name })
       );
-      console.log(
+      runtimeLogger.debug(
         'DEBUG: agentsMap contents:',
         JSON.stringify(mapContents, null, 2)
       );
-      console.log('DEBUG: agentsMap size:', agentsMap.size);
+      runtimeLogger.debug('DEBUG: agentsMap size:', agentsMap.size);
 
       for (const [id, agent] of agentsMap) {
         // Filter out runtime agent - only show character agents
         if (id === 'runtime') continue;
 
-        console.log(`DEBUG: Processing agent ${id} (${agent.name})`);
+        runtimeLogger.debug(`DEBUG: Processing agent ${id} (${agent.name})`);
 
         agents.push({
           id: agent.id,
@@ -443,7 +443,7 @@ export class ApiExtension implements Extension {
         });
       }
 
-      console.log('DEBUG: Final agents array length:', agents.length);
+      runtimeLogger.debug('DEBUG: Final agents array length:', agents.length);
 
       res.json({ agents });
     });
@@ -608,7 +608,7 @@ export class ApiExtension implements Extension {
           total: apiMessages.length,
         });
       } catch (error) {
-        console.error('Error fetching chat history:', error);
+        runtimeLogger.error('Error fetching chat history:', error);
         res.status(500).json({ error: 'Failed to fetch chat history' });
       }
     });
@@ -635,7 +635,7 @@ export class ApiExtension implements Extension {
 
         res.json({ success: true, agentId });
       } catch (error) {
-        console.error('Error clearing chat history:', error);
+        runtimeLogger.error('Error clearing chat history:', error);
         res.status(500).json({ error: 'Failed to clear chat history' });
       }
     });
@@ -710,7 +710,7 @@ export class ApiExtension implements Extension {
           message: `Agent spawned successfully: ${instanceName || characterId}`,
         });
       } catch (error) {
-        console.error('Error spawning agent:', error);
+        runtimeLogger.error('Error spawning agent:', error);
         res.status(500).json({
           error: 'Failed to spawn agent',
           details: error instanceof Error ? error.message : String(error),
@@ -735,7 +735,7 @@ export class ApiExtension implements Extension {
             return;
           } catch (lazyError) {
             // If lazy activation fails, continue to multi-agent manager
-            console.log(
+            runtimeLogger.debug(
               `Lazy activation failed for ${agentId}, trying multi-agent manager:`,
               lazyError
             );
@@ -756,7 +756,7 @@ export class ApiExtension implements Extension {
           message: `Agent started successfully`,
         });
       } catch (error) {
-        console.error('Error starting agent:', error);
+        runtimeLogger.error('Error starting agent:', error);
         res.status(500).json({
           error: 'Failed to start agent',
           details: error instanceof Error ? error.message : String(error),
@@ -784,7 +784,7 @@ export class ApiExtension implements Extension {
             return;
           } catch (lazyError) {
             // If lazy deactivation fails, continue to multi-agent manager
-            console.log(
+            runtimeLogger.debug(
               `Lazy deactivation failed for ${agentId}, trying multi-agent manager:`,
               lazyError
             );
@@ -805,7 +805,7 @@ export class ApiExtension implements Extension {
           message: `Agent stopped successfully`,
         });
       } catch (error) {
-        console.error('Error stopping agent:', error);
+        runtimeLogger.error('Error stopping agent:', error);
         res.status(500).json({
           error: 'Failed to stop agent',
           details: error instanceof Error ? error.message : String(error),
@@ -831,7 +831,7 @@ export class ApiExtension implements Extension {
           message: `Agent restarted successfully`,
         });
       } catch (error) {
-        console.error('Error restarting agent:', error);
+        runtimeLogger.error('Error restarting agent:', error);
         res.status(500).json({
           error: 'Failed to restart agent',
           details: error instanceof Error ? error.message : String(error),
@@ -858,7 +858,7 @@ export class ApiExtension implements Extension {
 
         res.json(health);
       } catch (error) {
-        console.error('Error getting agent health:', error);
+        runtimeLogger.error('Error getting agent health:', error);
         res.status(500).json({
           error: 'Failed to get agent health',
           details: error instanceof Error ? error.message : String(error),
@@ -877,7 +877,7 @@ export class ApiExtension implements Extension {
         const agents = this.runtime.multiAgentManager.listAgents();
         res.json({ agents });
       } catch (error) {
-        console.error('Error listing managed agents:', error);
+        runtimeLogger.error('Error listing managed agents:', error);
         res.status(500).json({
           error: 'Failed to list managed agents',
           details: error instanceof Error ? error.message : String(error),
@@ -896,7 +896,7 @@ export class ApiExtension implements Extension {
         const metrics = this.runtime.multiAgentManager.getSystemMetrics();
         res.json(metrics);
       } catch (error) {
-        console.error('Error getting system metrics:', error);
+        runtimeLogger.error('Error getting system metrics:', error);
         res.status(500).json({
           error: 'Failed to get system metrics',
           details: error instanceof Error ? error.message : String(error),
@@ -925,7 +925,7 @@ export class ApiExtension implements Extension {
           })),
         });
       } catch (error) {
-        console.error('Error finding agents by specialty:', error);
+        runtimeLogger.error('Error finding agents by specialty:', error);
         res.status(500).json({
           error: 'Failed to find agents by specialty',
           details: error instanceof Error ? error.message : String(error),
@@ -960,7 +960,7 @@ export class ApiExtension implements Extension {
           requirements,
         });
       } catch (error) {
-        console.error('Error routing conversation:', error);
+        runtimeLogger.error('Error routing conversation:', error);
         res.status(500).json({
           error: 'Failed to route conversation',
           details: error instanceof Error ? error.message : String(error),
@@ -995,7 +995,7 @@ export class ApiExtension implements Extension {
         try {
           multiAgentMetrics = this.runtime.multiAgentManager.getSystemMetrics();
         } catch (error) {
-          console.warn('Failed to get multi-agent metrics:', error);
+          runtimeLogger.warn('Failed to get multi-agent metrics:', error);
         }
       }
 
@@ -1985,7 +1985,7 @@ export class ApiExtension implements Extension {
     try {
       return await this.agent.memory.retrieve(this.agent.id, 'recent', 20);
     } catch (error) {
-      console.error('Failed to retrieve memories:', error);
+      runtimeLogger.error('Failed to retrieve memories:', error);
       return [];
     }
   }
@@ -2685,7 +2685,7 @@ export class ApiExtension implements Extension {
       description: 'Handle HTTP requests to the API',
       handler: async (_agent: Agent, event: AgentEvent): Promise<void> => {
         // Handle HTTP request events
-        console.log('HTTP request event:', event);
+        runtimeLogger.debug('HTTP request event:', event);
       },
     };
 
@@ -2694,7 +2694,7 @@ export class ApiExtension implements Extension {
       description: 'Handle WebSocket messages',
       handler: async (_agent: Agent, event: AgentEvent): Promise<void> => {
         // Handle WebSocket message events
-        console.log('WebSocket message event:', event);
+        runtimeLogger.debug('WebSocket message event:', event);
       },
     };
 
@@ -2703,7 +2703,7 @@ export class ApiExtension implements Extension {
       description: 'Handle chat messages',
       handler: async (_agent: Agent, event: AgentEvent): Promise<void> => {
         // Handle chat message events
-        console.log('Chat message event:', event);
+        runtimeLogger.debug('Chat message event:', event);
       },
     };
 
@@ -2712,7 +2712,7 @@ export class ApiExtension implements Extension {
       description: 'Handle API errors',
       handler: async (_agent: Agent, event: AgentEvent): Promise<void> => {
         // Handle API error events
-        console.error('API error event:', event);
+        runtimeLogger.error('API error event:', event);
       },
     };
   }
