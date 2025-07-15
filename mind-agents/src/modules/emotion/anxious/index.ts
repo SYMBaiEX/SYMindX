@@ -1,3 +1,4 @@
+import { EmotionResult } from '../../../types/modules/emotions';
 import { BaseEmotion, EmotionDefinition } from '../base-emotion';
 
 import { AnxiousEmotionConfig } from './types';
@@ -44,7 +45,7 @@ export class AnxiousEmotion extends BaseEmotion {
     };
   }
 
-  override processEvent(eventType: string, context?: any): any {
+  override processEvent(eventType: string, context?: unknown): EmotionResult {
     // Special processing for anxiety-specific events
     if (context?.uncertainty_level && context.uncertainty_level > 0.5) {
       this._intensity = Math.min(1.0, this._intensity + 0.2);

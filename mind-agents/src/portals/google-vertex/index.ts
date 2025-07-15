@@ -260,7 +260,7 @@ export class GoogleVertexPortal extends BasePortal {
         maxOutputTokens: 10,
       });
       return text.length > 0;
-    } catch (_error) {
+    } catch {
       // Google Vertex AI health check failed
       return false;
     }

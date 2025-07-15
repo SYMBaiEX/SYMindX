@@ -64,7 +64,7 @@ export class ConcurrentSafetyManager extends EventEmitter {
   private locks: Map<string, OperationLock> = new Map();
   private lockQueue: Map<string, LockRequest[]> = new Map();
   private operationHistory: Map<string, string[]> = new Map();
-  private deadlockTimer?: NodeJS.Timeout;
+  private deadlockTimer?: ReturnType<typeof setTimeout>;
   private requestCounter = 0;
 
   constructor(config: ConcurrentSafetyConfig) {
@@ -570,7 +570,6 @@ export class ConcurrentSafetyManager extends EventEmitter {
 
     // Build graph based on lock requests waiting for locks
     for (const [lockKey, queue] of this.lockQueue) {
-      const [_agentId, _operation] = lockKey.split(':');
       const currentLock = this.locks.get(lockKey);
 
       if (currentLock && queue.length > 0) {

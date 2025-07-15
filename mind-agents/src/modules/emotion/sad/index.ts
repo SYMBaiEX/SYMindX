@@ -50,7 +50,7 @@ export class SadEmotion extends BaseEmotion {
     };
   }
 
-  override processEvent(eventType: string, context?: any): EmotionResult {
+  override processEvent(eventType: string, context?: unknown): EmotionResult {
     // Special processing for sad-specific events
     const previousIntensity = this._intensity;
     if (context?.outcome?.success === false) {
@@ -82,6 +82,7 @@ export class SadEmotion extends BaseEmotion {
     return {
       ...result,
       changed: result.changed || previousIntensity !== this._intensity,
+      data: sadData,
     };
   }
 }

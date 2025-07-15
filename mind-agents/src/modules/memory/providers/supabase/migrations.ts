@@ -7,6 +7,8 @@
 
 import { SupabaseClient } from '@supabase/supabase-js';
 
+import { runtimeLogger } from '../../../../utils/logger';
+
 /**
  * Migration 001: Enhanced memory schema with tiers and vector support
  */
@@ -18,8 +20,8 @@ export async function migration_001_enhanced_memory_schema(
     await client.rpc('exec_sql', {
       sql: `CREATE EXTENSION IF NOT EXISTS vector;`,
     });
-  } catch (error) {
-    console.log(
+  } catch {
+    runtimeLogger.info(
       'pgvector extension may already exist or require higher privileges'
     );
   }

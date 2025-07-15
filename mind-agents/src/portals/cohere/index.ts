@@ -122,7 +122,7 @@ export class CoherePortal extends BasePortal {
         maxOutputTokens: 10,
       });
       return true;
-    } catch (_error) {
+    } catch {
       // Cohere AI health check failed
       return false;
     }

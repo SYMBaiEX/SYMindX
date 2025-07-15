@@ -73,18 +73,18 @@ export interface SerializableRule {
   conditions: Array<{
     type: string;
     expression: string;
-    parameters?: Record<string, any>;
+    parameters?: Record<string, unknown>;
   }>;
   actions: Array<{
     type: string;
     target: string;
-    parameters?: Record<string, any>;
+    parameters?: Record<string, unknown>;
   }>;
   priority: number;
   confidence: number;
   usageCount: number;
   successRate: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -117,7 +117,7 @@ export interface SerializableExperience {
   };
   action: {
     type: string;
-    parameters?: Record<string, any>;
+    parameters?: Record<string, unknown>;
   };
   reward: {
     type: string;

@@ -51,7 +51,7 @@ export class AngryEmotion extends BaseEmotion {
     };
   }
 
-  override processEvent(eventType: string, context?: any): EmotionResult {
+  override processEvent(eventType: string, context?: unknown): EmotionResult {
     // Special processing for anger-specific events
     const previousIntensity = this._intensity;
     if (context?.type === 'blocked' || context?.type === 'denied') {
@@ -85,6 +85,7 @@ export class AngryEmotion extends BaseEmotion {
     return {
       ...result,
       changed: result.changed || previousIntensity !== this._intensity,
+      data: angryData,
     };
   }
 }

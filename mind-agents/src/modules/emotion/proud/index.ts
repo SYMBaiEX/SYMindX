@@ -1,3 +1,4 @@
+import { EmotionResult } from '../../../types/modules/emotions';
 import { BaseEmotion, EmotionDefinition } from '../base-emotion';
 
 import { ProudEmotionConfig } from './types';
@@ -42,7 +43,7 @@ export class ProudEmotion extends BaseEmotion {
     };
   }
 
-  override processEvent(eventType: string, context?: any): any {
+  override processEvent(eventType: string, context?: unknown): EmotionResult {
     // Special processing for pride-specific events
     if (context?.personal_achievement) {
       this._intensity = Math.min(1.0, this._intensity + 0.3);

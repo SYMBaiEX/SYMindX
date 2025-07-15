@@ -1,3 +1,4 @@
+import { EmotionResult } from '../../../types/modules/emotions';
 import { BaseEmotion, EmotionDefinition } from '../base-emotion';
 
 import { ConfidentEmotionConfig } from './types';
@@ -43,7 +44,7 @@ export class ConfidentEmotion extends BaseEmotion {
     };
   }
 
-  override processEvent(eventType: string, context?: any): any {
+  override processEvent(eventType: string, context?: unknown): EmotionResult {
     // Special processing for confidence-specific events
     if (context?.skill_improvement) {
       this._intensity = Math.min(1.0, this._intensity + 0.15);

@@ -1,7 +1,19 @@
 import * as path from 'path';
 import { fileURLToPath } from 'url';
-
 import dotenv from 'dotenv';
+import { SYMindXRuntime } from './core/runtime';
+import type { RuntimeConfig } from './types/agent';
+import { LogLevel } from './types/agent';
+import {
+  displayBanner,
+  createSpinner,
+  animateLoading,
+  displaySuccess,
+  animateShutdown,
+  matrixRain,
+  createStatusDashboard,
+} from './utils/cli-ui';
+import { logger } from './utils/logger';
 
 // Load environment variables from root .env file
 const __filename = fileURLToPath(import.meta.url);
@@ -9,10 +21,6 @@ const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '../..');
 const envPath = path.join(rootDir, '.env');
 dotenv.config({ path: envPath });
-
-import { SYMindXRuntime } from './core/runtime';
-import type { RuntimeConfig } from './types/agent';
-import { LogLevel } from './types/agent';
 // Export types for API consumers
 export type {
   MemoryProviderType,
@@ -25,16 +33,6 @@ export type {
 // - Emotion modules: EmotionModuleType
 // - Cognition modules: CognitionModuleType
 // These types are exported for API consumers but not used directly in startup
-import {
-  displayBanner,
-  createSpinner,
-  animateLoading,
-  displaySuccess,
-  animateShutdown,
-  matrixRain,
-  createStatusDashboard,
-} from './utils/cli-ui';
-import { logger } from './utils/logger';
 
 // Export autonomous components for external use
 export { AutonomousEngine } from './core/autonomous-engine';

@@ -4,9 +4,8 @@
  */
 
 import { MemoryRecord } from '../agent.js';
-import { MemoryContext } from '../memory.js';
 
-import { DatabaseConnection, QueryResult, DatabaseError } from './database.js';
+import { DatabaseError } from './database.js';
 
 /**
  * Search options for memory queries

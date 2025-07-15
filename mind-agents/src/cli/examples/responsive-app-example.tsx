@@ -14,7 +14,6 @@ export const ResponsiveApp: React.FC = () => {
   const { exit } = useApp();
   const {
     dimensions,
-    breakpoints: _breakpoints,
     isMinimumSize,
     currentBreakpoint,
   } = useTerminalDimensions();
@@ -66,7 +65,7 @@ export const ResponsiveApp: React.FC = () => {
   }
 
   // Render current view
-  const renderView = () => {
+  const renderView = (): React.JSX.Element => {
     switch (currentView) {
       case 'dashboard':
         return <ResponsiveDashboard />;

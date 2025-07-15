@@ -25,7 +25,7 @@ export interface TheoryOfMindConfig extends BaseConfig {
 
 export interface MentalModel {
   id: string;
-  beliefs: Map<string, any>;
+  beliefs: Map<string, unknown>;
   desires: Map<string, number>;
   intentions: string[];
   emotions: Map<string, number>;

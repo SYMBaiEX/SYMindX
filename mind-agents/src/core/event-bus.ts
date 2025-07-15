@@ -6,11 +6,6 @@
 import { EventEmitter } from 'events';
 
 import { AgentEvent, EventBus } from '../types/agent';
-import {
-  EventHandler,
-  EventSubscription,
-  EventMetadata,
-} from '../types/core/events';
 
 export class SimpleEventBus implements EventBus {
   private events: AgentEvent[] = [];

@@ -1,3 +1,4 @@
+import { EmotionResult } from '../../../types/modules/emotions';
 import { BaseEmotion, EmotionDefinition } from '../base-emotion';
 
 import { CuriousEmotionConfig } from './types';
@@ -43,7 +44,7 @@ export class CuriousEmotion extends BaseEmotion {
     };
   }
 
-  override processEvent(eventType: string, context?: any): any {
+  override processEvent(eventType: string, context?: unknown): EmotionResult {
     // Special processing for curiosity-specific events
     if (context?.new_discovery) {
       this._intensity = Math.min(1.0, this._intensity + 0.25);

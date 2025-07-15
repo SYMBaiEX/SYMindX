@@ -124,7 +124,7 @@ export const ExtensionsPanel: React.FC<ExtensionsPanelProps> = ({
   ).length;
 
   // Generate extension activity data
-  const generateActivityData = (extension: ExtensionDetailData) => {
+  const generateActivityData = (extension: ExtensionDetailData): number[] => {
     return Array.from({ length: 20 }, (_) => {
       const baseActivity = extension.usage.actionsTriggered / 20;
       const variance = (Math.random() - 0.5) * baseActivity * 0.5;
@@ -239,7 +239,7 @@ export const ExtensionsPanel: React.FC<ExtensionsPanelProps> = ({
 
               {extensions.map((extension, i) => (
                 <Box
-                  key={i}
+                  key={`ext-item-${i}`}
                   flexDirection='column'
                   borderStyle={i === selectedExtension ? 'single' : undefined}
                   borderColor={
@@ -361,7 +361,7 @@ export const ExtensionsPanel: React.FC<ExtensionsPanelProps> = ({
                           (ext) => ext.type === type
                         ).length;
                         return (
-                          <Box key={i} gap={2}>
+                          <Box key={`ext-item-${i}`} gap={2}>
                             <Text color={getExtensionTypeColor(type)}>
                               {type.replace(/_/g, ' ')}:
                             </Text>
@@ -385,7 +385,7 @@ export const ExtensionsPanel: React.FC<ExtensionsPanelProps> = ({
                         (ext) => ext.status === status
                       ).length;
                       return (
-                        <Box key={i} gap={2}>
+                        <Box key={`ext-item-${i}`} gap={2}>
                           <Text color={getExtensionStatusColor(status)}>
                             {status}:
                           </Text>
@@ -499,7 +499,7 @@ export const ExtensionsPanel: React.FC<ExtensionsPanelProps> = ({
                         extensions[selectedExtension].errors
                           .slice(0, 3)
                           .map((error, i) => (
-                            <Box key={i} flexDirection='column' marginTop={1}>
+                            <Box key={`ext-item-${i}`} flexDirection='column' marginTop={1}>
                               <Box gap={1}>
                                 <Text
                                   color={getErrorSeverityColor(error.severity)}
@@ -533,7 +533,7 @@ export const ExtensionsPanel: React.FC<ExtensionsPanelProps> = ({
                       Error Summary by Extension:
                     </Text>
                     {extensions.map((ext, i) => (
-                      <Box key={i} gap={2}>
+                      <Box key={`ext-item-${i}`} gap={2}>
                         <Text color={getExtensionTypeColor(ext.type)}>
                           {ext.name}:
                         </Text>
@@ -569,7 +569,7 @@ export const ExtensionsPanel: React.FC<ExtensionsPanelProps> = ({
                       const relativeTime =
                         ext.usage.averageProcessingTime / maxTime;
                       return (
-                        <Box key={i} gap={1}>
+                        <Box key={`ext-item-${i}`} gap={1}>
                           <Text color={getExtensionTypeColor(ext.type)}>
                             {ext.name.slice(0, 8)}:
                           </Text>
@@ -600,7 +600,7 @@ export const ExtensionsPanel: React.FC<ExtensionsPanelProps> = ({
                         ext.usage.actionsTriggered + ext.usage.eventsHandled;
                       const relativeActivity = totalActivity / maxActivity;
                       return (
-                        <Box key={i} gap={1}>
+                        <Box key={`ext-item-${i}`} gap={1}>
                           <Text color={getExtensionTypeColor(ext.type)}>
                             {ext.name.slice(0, 8)}:
                           </Text>
@@ -715,7 +715,7 @@ export const ExtensionsPanel: React.FC<ExtensionsPanelProps> = ({
                 {extensions[selectedExtension].errors
                   .slice(0, 3)
                   .map((error, i) => (
-                    <Box key={i} flexDirection='column'>
+                    <Box key={`ext-item-${i}`} flexDirection='column'>
                       <Box gap={2}>
                         <Text
                           color={getErrorSeverityColor(error.severity)}

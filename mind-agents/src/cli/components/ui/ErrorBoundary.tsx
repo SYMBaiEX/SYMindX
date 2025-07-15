@@ -40,7 +40,7 @@ export class ErrorBoundary extends Component<
     return { hasError: true };
   }
 
-  override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
     // Log error to console
     console.error('ErrorBoundary caught an error:', error, errorInfo);
 
@@ -56,7 +56,7 @@ export class ErrorBoundary extends Component<
     }
   }
 
-  handleRetry = async () => {
+  handleRetry = async (): Promise<void> => {
     this.setState({ isRetrying: true });
 
     // Wait a bit before retrying
@@ -77,7 +77,7 @@ export class ErrorBoundary extends Component<
     }
   };
 
-  override render() {
+  override render(): ReactNode {
     const {
       children,
       fallback,
@@ -236,7 +236,7 @@ export const NetworkErrorFallback: React.FC<NetworkErrorFallbackProps> = ({
   endpoint,
   onRetry,
 }) => {
-  const [retrying, _setRetrying] = React.useState(false);
+  const [retrying] = React.useState(false);
 
   // const _handleRetry = async () => {
   //   if (onRetry) {
@@ -340,7 +340,7 @@ export const TimeoutErrorFallback: React.FC<TimeoutErrorFallbackProps> = ({
 /**
  * Hook to use error boundary functionality
  */
-export const useErrorHandler = () => {
+export const useErrorHandler = (): { resetError: () => void; captureError: (error: Error) => void } => {
   const [error, setError] = React.useState<Error | null>(null);
 
   const resetError = React.useCallback(() => {

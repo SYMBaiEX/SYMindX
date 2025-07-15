@@ -291,7 +291,7 @@ export class KlusterAiPortal extends BasePortal {
                 if (delta) {
                   yield delta;
                 }
-              } catch (e) {
+              } catch {
                 // Skip invalid JSON lines
               }
             }

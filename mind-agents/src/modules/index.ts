@@ -5,6 +5,7 @@
  */
 
 import { ModuleRegistry } from '../types/agent';
+import { runtimeLogger } from '../utils/logger';
 
 import { createCognitionModule } from './cognition/index';
 import { createEmotionModule } from './emotion/index';
@@ -41,8 +42,8 @@ export interface ModuleFactories {
 export function createModule(
   type: 'memory' | 'emotion' | 'cognition' | 'tools',
   moduleType: string,
-  config: any
-) {
+  config: unknown
+): unknown {
   switch (type) {
     case 'memory':
       return createMemoryProviderByName(moduleType, config);
@@ -87,7 +88,7 @@ export async function registerCoreModules(
 
     // Core modules registered - logged by runtime
   } catch (error) {
-    console.error('❌ Failed to register core modules:', error);
+    runtimeLogger.error('❌ Failed to register core modules:', error);
     throw error;
   }
 }
@@ -118,17 +119,17 @@ export async function registerExtensionFactories(
       );
       registry.registerExtensionFactory('mcp-server', createMCPServerExtension);
     } catch (error) {
-      console.warn('⚠️ MCP Server extension not available:', error);
+      runtimeLogger.warn('⚠️ MCP Server extension not available:', error);
     }
 
     try {
       const { createAPIExtension } = await import('../extensions/api/index');
       registry.registerExtensionFactory('api', createAPIExtension);
     } catch (error) {
-      console.warn('⚠️ API extension not available:', error);
+      runtimeLogger.warn('⚠️ API extension not available:', error);
     }
   } catch (error) {
-    console.error('❌ Failed to register extension factories:', error);
+    runtimeLogger.error('❌ Failed to register extension factories:', error);
     throw error;
   }
 }

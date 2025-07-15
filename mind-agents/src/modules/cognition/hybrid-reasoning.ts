@@ -92,7 +92,7 @@ export class HybridReasoningEngine implements CognitionModule {
   private policyNetwork: Map<string, Map<string, number>> = new Map();
   private patterns: Map<string, { frequency: number; success: number }> =
     new Map();
-  private metaKnowledge: Map<string, any> = new Map();
+  private metaKnowledge: Map<string, unknown> = new Map();
 
   constructor(config: Partial<HybridReasoningConfig> = {}) {
     this.id = `hybrid_reasoning_${Date.now()}`;

@@ -26,6 +26,9 @@ import {
   PDDLAction,
   PDDLProblem,
   PDDLExpression,
+  PDDLRequirement,
+  PDDLType,
+  PDDLPredicate,
   HybridReasoningConfig,
   ReasoningParadigm,
 } from '../../types/cognition';

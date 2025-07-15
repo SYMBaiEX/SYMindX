@@ -30,7 +30,7 @@ export interface Task {
   id: string;
   name: string;
   type: 'primitive' | 'compound';
-  parameters: Record<string, any>;
+  parameters: Record<string, unknown>;
   preconditions?: string[];
   effects?: string[];
 }

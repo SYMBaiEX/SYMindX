@@ -189,6 +189,7 @@ export abstract class BasePortal implements Portal {
    * @param prompt The prompt to generate text from
    * @param options Options for text generation
    */
+  // eslint-disable-next-line require-yield
   async *streamText(
     _prompt: string,
     _options?: TextGenerationOptions
@@ -201,6 +202,7 @@ export abstract class BasePortal implements Portal {
    * @param messages The chat messages to generate a response from
    * @param options Options for chat generation
    */
+  // eslint-disable-next-line require-yield
   async *streamChat(
     _messages: ChatMessage[],
     _options?: ChatGenerationOptions
@@ -321,7 +323,7 @@ export abstract class BasePortal implements Portal {
           reasoning: parsed.reasoning || '',
           recommendations: parsed.recommendations || [],
         };
-      } catch (error) {
+      } catch {
         // Fallback to text parsing if JSON parsing fails
         return this.parseTextEvaluation(text);
       }

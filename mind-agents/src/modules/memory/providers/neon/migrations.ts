@@ -102,7 +102,7 @@ export async function migration_001_enhanced_schema(
       ON memories USING hnsw (embedding vector_cosine_ops) 
       WITH (m = 16, ef_construction = 64);
     `);
-  } catch (error) {
+  } catch {
     // Fallback to IVFFlat if HNSW not available
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_memories_embedding_ivfflat 

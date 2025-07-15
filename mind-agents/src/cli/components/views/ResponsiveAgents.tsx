@@ -26,7 +26,7 @@ const ResponsiveAgentCard: React.FC<AgentCardProps> = ({
   isSelected,
   onSelect: _onSelect,
 }) => {
-  const { breakpoints: _breakpoints, currentBreakpoint } =
+  const { currentBreakpoint } =
     useTerminalDimensions();
 
   const statusColor =
@@ -136,7 +136,7 @@ export const ResponsiveAgents: React.FC = () => {
 
   // Handle keyboard navigation
   React.useEffect(() => {
-    const handleKeyPress = (key: string) => {
+    const handleKeyPress = (key: string): void => {
       if (key === 'ArrowUp' || key === 'k') {
         setSelectedIndex((prev) => Math.max(0, prev - 1));
       } else if (key === 'ArrowDown' || key === 'j') {
@@ -175,7 +175,7 @@ export const ResponsiveAgents: React.FC = () => {
     };
 
     process.stdin.on('data', handleKeyPress);
-    return () => {
+    return (): void => {
       process.stdin.off('data', handleKeyPress);
     };
   }, [agents.length, breakpoints]);

@@ -11,6 +11,8 @@ import { fileURLToPath } from 'url';
 import type { Database as DatabaseType } from 'bun:sqlite';
 import { Database } from 'bun:sqlite';
 
+import { runtimeLogger } from '../../../../utils/logger';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -95,7 +97,7 @@ export class ChatMigrationManager {
    * Run all pending migrations
    */
   async migrate(): Promise<void> {
-    console.log('🔄 Starting chat database migration...');
+    runtimeLogger.info('🔄 Starting chat database migration...');
 
     const appliedVersions = this.getAppliedVersions();
     const pendingMigrations = this.migrations.filter(
@@ -103,7 +105,7 @@ export class ChatMigrationManager {
     );
 
     if (pendingMigrations.length === 0) {
-      console.log('✅ Chat database is up to date');
+      runtimeLogger.info('✅ Chat database is up to date');
       return;
     }
 

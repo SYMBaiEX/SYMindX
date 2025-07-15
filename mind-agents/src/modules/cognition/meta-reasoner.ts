@@ -10,7 +10,6 @@ import {
   ThoughtNode,
   DecisionMatrix,
   LearningOutcome,
-  StructuredThoughtResult,
 } from '../../types';
 import {
   Agent,

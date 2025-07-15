@@ -224,7 +224,7 @@ export async function isDatabaseInitialized(db: Database): Promise<boolean> {
     const completedMigrations = db
       .prepare('SELECT name FROM knex_migrations')
       .all()
-      .map((row: any) => row.name);
+      .map((row: unknown) => (row as { name: string }).name);
     const requiredMigrations = MIGRATIONS.map((m) => m.name);
 
     return requiredMigrations.every((migration) =>

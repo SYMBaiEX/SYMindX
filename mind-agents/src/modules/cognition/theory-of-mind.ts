@@ -18,7 +18,7 @@ export interface MentalModel {
   lastUpdated: Date;
 
   // Belief tracking
-  beliefs: Map<string, { value: any; confidence: number }>;
+  beliefs: Map<string, { value: unknown; confidence: number }>;
 
   // Desire/goal tracking
   desires: Array<{ goal: string; priority: number }>;

@@ -94,7 +94,7 @@ export const MemoryPanel: React.FC<MemoryPanelProps> = ({
   const memoryTypeLabels = Object.keys(memory.memoryTypes);
 
   // Generate embedding visualization data
-  const generateEmbeddingVisualization = () => {
+  const generateEmbeddingVisualization = (): Array<{ x: number; y: number; type: string; content: string }> => {
     if (!memory.recentEntries[selectedEntry]?.embedding) {
       return Array.from({ length: 50 }, () => Math.random() * 2 - 1);
     }
@@ -110,7 +110,7 @@ export const MemoryPanel: React.FC<MemoryPanelProps> = ({
   );
 
   // Render embedding space visualization
-  const renderEmbeddingSpace = () => {
+  const renderEmbeddingSpace = (): React.JSX.Element => {
     const embedding = generateEmbeddingVisualization();
     const chunks = [];
 
@@ -300,7 +300,7 @@ export const MemoryPanel: React.FC<MemoryPanelProps> = ({
                   </Text>
                   {memory.recentEntries.slice(0, 5).map((entry, i) => (
                     <Box
-                      key={i}
+                      key={`mem-item-${i}`}
                       flexDirection='column'
                       borderStyle={i === selectedEntry ? 'single' : undefined}
                       borderColor={

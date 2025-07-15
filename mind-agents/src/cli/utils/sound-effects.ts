@@ -179,6 +179,7 @@ export class SoundEffectsManager {
         await execAsync(command);
       }
     } catch (error) {
+      void error; // Acknowledge error
       // Silently fail if sound playback fails
     }
   }

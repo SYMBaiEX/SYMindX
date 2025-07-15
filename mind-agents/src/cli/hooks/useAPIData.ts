@@ -50,7 +50,6 @@ export function useAPIData<T>(
     retryCount = 3,
     retryDelay = 1000,
     staleTime = 60000, // 1 minute
-    cacheKey: _cacheKey,
   } = options;
 
   const [data, setData] = useState<T | null>(null);
@@ -60,8 +59,8 @@ export function useAPIData<T>(
   const [lastFetchTime, setLastFetchTime] = useState<Date | null>(null);
 
   const abortControllerRef = useRef<AbortController | null>(null);
-  const pollingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pollingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMountedRef = useRef(true);
 
   // Calculate if data is stale
@@ -189,7 +188,7 @@ export function useAPIData<T>(
   useEffect(() => {
     if (!pollingInterval || !enabled) return;
 
-    const setupPolling = () => {
+    const setupPolling = (): void => {
       pollingTimeoutRef.current = setTimeout(() => {
         fetchData(false);
         setupPolling(); // Schedule next poll
@@ -198,7 +197,7 @@ export function useAPIData<T>(
 
     setupPolling();
 
-    return () => {
+    return (): void => {
       clearTimeouts();
     };
   }, [pollingInterval, enabled, fetchData, clearTimeouts]);
@@ -207,7 +206,7 @@ export function useAPIData<T>(
   useEffect(() => {
     isMountedRef.current = true;
 
-    return () => {
+    return (): void => {
       isMountedRef.current = false;
       cancel();
     };
@@ -232,7 +231,7 @@ export function useAPIData<T>(
 export function useAgentData(
   client: EnhancedRuntimeClient,
   options?: Partial<UseAPIDataOptions<AgentInfo[]>>
-) {
+): UseAPIDataResult<AgentInfo[]> {
   return useAPIData<AgentInfo[]>({
     fetchFn: () => client.getAgents(),
     pollingInterval: 5000, // Poll every 5 seconds
@@ -247,7 +246,7 @@ export function useAgentData(
 export function useSystemMetrics(
   client: EnhancedRuntimeClient,
   options?: Partial<UseAPIDataOptions<SystemMetrics>>
-) {
+): UseAPIDataResult<SystemMetrics> {
   return useAPIData<SystemMetrics>({
     fetchFn: () => client.getSystemMetrics(),
     pollingInterval: 2000, // Poll every 2 seconds
@@ -262,7 +261,7 @@ export function useSystemMetrics(
 export function useRuntimeStatus(
   client: EnhancedRuntimeClient,
   options?: Partial<UseAPIDataOptions<RuntimeStatus>>
-) {
+): UseAPIDataResult<RuntimeStatus> {
   return useAPIData<RuntimeStatus>({
     fetchFn: () => client.getRuntimeStatus(),
     pollingInterval: 3000, // Poll every 3 seconds
@@ -277,7 +276,7 @@ export function useRuntimeStatus(
 export function useRuntimeCapabilities(
   client: EnhancedRuntimeClient,
   options?: Partial<UseAPIDataOptions<RuntimeCapabilities | null>>
-) {
+): UseAPIDataResult<RuntimeCapabilities | null> {
   return useAPIData<RuntimeCapabilities | null>({
     fetchFn: () => client.getRuntimeCapabilities(),
     pollingInterval: 0, // No polling, capabilities don't change often
@@ -291,9 +290,9 @@ export function useRuntimeCapabilities(
  */
 export function useRecentEvents(
   client: EnhancedRuntimeClient,
-  limit: number = 20,
+  limit = 20,
   options?: Partial<UseAPIDataOptions<ActivityEvent[]>>
-) {
+): UseAPIDataResult<ActivityEvent[]> {
   return useAPIData<ActivityEvent[]>({
     fetchFn: () => client.getRecentEvents(limit),
     pollingInterval: 1000, // Poll every second
@@ -309,7 +308,7 @@ export function useAgentDetail(
   client: EnhancedRuntimeClient,
   agentId: string,
   options?: Partial<UseAPIDataOptions<any>>
-) {
+): UseAPIDataResult<any> {
   return useAPIData<any>({
     fetchFn: () => client.getAgent(agentId),
     dependencies: [agentId],
@@ -323,7 +322,13 @@ export function useAgentDetail(
 /**
  * Hook for managing agent state (start/stop)
  */
-export function useAgentControl(client: EnhancedRuntimeClient) {
+export function useAgentControl(client: EnhancedRuntimeClient): {
+  startAgent: (agentId: string) => Promise<void>;
+  stopAgent: (agentId: string) => Promise<void>;
+  isStarting: boolean;
+  isStopping: boolean;
+  error: Error | null;
+} {
   const [isStarting, setIsStarting] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -380,7 +385,12 @@ export function useAgentControl(client: EnhancedRuntimeClient) {
 /**
  * Hook for sending chat messages
  */
-export function useAgentChat(client: EnhancedRuntimeClient) {
+export function useAgentChat(client: EnhancedRuntimeClient): {
+  sendMessage: (agentId: string, message: string) => Promise<any>;
+  isSending: boolean;
+  error: Error | null;
+  lastResponse: any;
+} {
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [lastResponse, setLastResponse] = useState<any>(null);
@@ -423,7 +433,10 @@ export function useSmartPolling(
     activityThreshold?: number;
     inactivityMultiplier?: number;
   }
-) {
+): {
+  pollingInterval: number;
+  recordActivity: () => void;
+} {
   const {
     minInterval = 1000,
     maxInterval = 30000,

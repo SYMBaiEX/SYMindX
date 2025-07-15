@@ -1,22 +1,17 @@
 /**
- * Autonomous AI Agent Types for SYMindX
+ * @module autonomous
+ * @description Autonomous AI Agent Types for SYMindX
  *
- * Clean consolidated types for autonomous capabilities including
- * reinforcement learning, decision making, self-management, goal emergence, and meta-cognition.
+ * Clean consolidated types for autonomous capabilities including:
+ * - Reinforcement learning systems
+ * - Decision making frameworks
+ * - Self-management capabilities
+ * - Goal emergence and planning
+ * - Meta-cognition and self-awareness
  */
 
-import {
-  Agent,
-  AgentAction,
-  AgentEvent as _AgentEvent,
-  MemoryRecord as _MemoryRecord,
-} from './agent';
-import {
-  BaseConfig,
-  Context,
-  GenericData as _GenericData,
-  Metadata,
-} from './common';
+import { Agent, AgentAction } from './agent';
+import { BaseConfig, Context, Metadata } from './common';
 
 // =================== REINFORCEMENT LEARNING =================== //
 
@@ -91,7 +86,7 @@ export interface Constraint {
   severity: 'low' | 'medium' | 'high' | 'critical';
   enforceable: boolean;
   violationPenalty: number;
-  parameters: Record<string, any>;
+  parameters: Record<string, unknown>;
 }
 
 export interface Uncertainty {
@@ -124,8 +119,8 @@ export interface GoalMetric {
   id: string;
   name: string;
   type: 'quantitative' | 'qualitative';
-  target: any;
-  current: any;
+  target: unknown;
+  current: unknown;
   unit?: string;
   measurementMethod: string;
 }
@@ -220,7 +215,7 @@ export interface AdaptationAction {
     | 'strategy_change'
     | 'resource_reallocation'
     | 'capability_enhancement';
-  parameters: Record<string, any>;
+  parameters: Record<string, unknown>;
   description: string;
 }
 
@@ -338,7 +333,7 @@ export interface Concept {
 export interface PersonalityModel {
   traits: Record<string, number>;
   values: Record<string, number>;
-  preferences: Record<string, any>;
+  preferences: Record<string, unknown>;
   adaptability: number;
 }
 
@@ -528,8 +523,8 @@ export interface DecisionModule {
   id: string;
   type: DecisionModuleType;
   config: DecisionConfig;
-  decide(context: Context, options: any[]): Promise<any>;
-  evaluate(decision: any, outcome: any): Promise<void>;
+  decide(context: Context, options: unknown[]): Promise<unknown>;
+  evaluate(decision: unknown, outcome: unknown): Promise<void>;
 }
 
 export interface LearningModule {
@@ -537,7 +532,7 @@ export interface LearningModule {
   type: LearningModuleType;
   config: LearningConfig;
   learn(experience: Experience): Promise<void>;
-  predict(state: AgentStateVector): Promise<any>;
+  predict(state: AgentStateVector): Promise<unknown>;
 }
 
 export interface SelfManagementModule {
@@ -571,5 +566,5 @@ export interface MetaCognitiveModule {
   id: string;
   config: MetaCognitiveConfig;
   reflect(agent: Agent): Promise<void>;
-  adapt(performance: any): Promise<void>;
+  adapt(performance: PerformanceMetrics): Promise<void>;
 }

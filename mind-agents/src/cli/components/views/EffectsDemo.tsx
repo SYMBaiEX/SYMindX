@@ -62,7 +62,7 @@ export const EffectsDemo: React.FC = () => {
     }
   });
 
-  const renderEffect = () => {
+  const renderEffect = (): React.JSX.Element => {
     const effect = effects[selectedEffect]?.component;
 
     switch (effect) {

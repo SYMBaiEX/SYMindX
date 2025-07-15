@@ -8,6 +8,7 @@ import {
 } from '../../../types/agent';
 // Remove unused AgentAction import - actions are created inline
 import { CognitionModule } from '../../../types/cognition';
+import { runtimeLogger } from '../../../utils/logger';
 
 import { HybridCognitionConfig } from './types';
 
@@ -15,7 +16,7 @@ export class HybridCognition implements CognitionModule {
   public id: string;
   public type: string = 'hybrid';
   private config: HybridCognitionConfig;
-  private contextCache: Map<string, any> = new Map();
+  private contextCache: Map<string, unknown> = new Map();
   private performanceHistory: Array<{
     approach: 'reactive' | 'planning';
     success: boolean;
@@ -89,7 +90,9 @@ export class HybridCognition implements CognitionModule {
 
   async plan(agent: Agent, goal: string): Promise<Plan> {
     // Use a balanced approach for planning
-    console.log(`[Hybrid] Creating plan for agent ${agent.id}: ${goal}`);
+    runtimeLogger.debug(
+      `[Hybrid] Creating plan for agent ${agent.id}: ${goal}`
+    );
     const complexity = this.assessGoalComplexity(goal);
 
     if (complexity > this.config.complexityThreshold!) {
@@ -101,7 +104,7 @@ export class HybridCognition implements CognitionModule {
 
   async decide(agent: Agent, options: Decision[]): Promise<Decision> {
     // Hybrid decision making
-    console.log(
+    runtimeLogger.debug(
       `[Hybrid] Agent ${agent.id} making decision from ${options.length} options`
     );
     const urgency = this.assessUrgency(options);

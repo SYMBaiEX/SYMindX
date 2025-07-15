@@ -6,7 +6,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import type { WebSocket } from 'ws';
 
-import type { Agent, AgentEvent, EmotionState } from '../agent';
+import type { Agent, EmotionState } from '../agent';
 import type { SkillParameters } from '../common';
 
 /**

@@ -20,7 +20,10 @@ export interface ToolSystemFactory {
  * Available tool system factories
  */
 const toolSystemFactories: Map<string, ToolSystemFactory> = new Map([
-  ['dynamic', (config: ToolSystemConfig) => new DynamicToolSystem(config)],
+  [
+    'dynamic',
+    (config: ToolSystemConfig): ToolSystem => new DynamicToolSystem(config),
+  ],
 ]);
 
 /**

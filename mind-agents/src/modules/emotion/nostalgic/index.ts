@@ -1,3 +1,4 @@
+import { EmotionResult } from '../../../types/modules/emotions';
 import { BaseEmotion, EmotionDefinition } from '../base-emotion';
 
 import { NostalgicEmotionConfig } from './types';
@@ -43,7 +44,7 @@ export class NostalgicEmotion extends BaseEmotion {
     };
   }
 
-  override processEvent(eventType: string, context?: any): any {
+  override processEvent(eventType: string, context?: unknown): EmotionResult {
     // Special processing for nostalgia-specific events
     if (context?.memory_type === 'personal' || context?.memory_age > 30) {
       this._intensity = Math.min(1.0, this._intensity + 0.2);

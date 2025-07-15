@@ -168,7 +168,7 @@ export const PortalsPanel: React.FC<PortalsPanelProps> = ({ agentData }) => {
                   Portal Status:
                 </Text>
                 {portals.slice(0, 3).map((portal, i) => (
-                  <Box key={i} gap={1}>
+                  <Box key={`portal-item-${i}`} gap={1}>
                     <Text color={getPortalStatusColor(portal)}>●</Text>
                     <Text color={cyberpunkTheme.colors.text}>
                       {portal.name.slice(0, 8)}
@@ -199,7 +199,7 @@ export const PortalsPanel: React.FC<PortalsPanelProps> = ({ agentData }) => {
 
               {portals.map((portal, i) => (
                 <Box
-                  key={i}
+                  key={`portal-item-${i}`}
                   flexDirection='column'
                   borderStyle={i === selectedPortal ? 'single' : undefined}
                   borderColor={
@@ -315,7 +315,7 @@ export const PortalsPanel: React.FC<PortalsPanelProps> = ({ agentData }) => {
                       Portal Distribution:
                     </Text>
                     {portals.map((portal, i) => (
-                      <Box key={i} gap={1}>
+                      <Box key={`portal-item-${i}`} gap={1}>
                         <Text color={getPortalTypeColor(portal.type)}>
                           {portal.type}:
                         </Text>
@@ -442,7 +442,7 @@ export const PortalsPanel: React.FC<PortalsPanelProps> = ({ agentData }) => {
                       Capabilities:
                     </Text>
                     {portals[selectedPortal].capabilities.map((cap, i) => (
-                      <Text key={i} color={cyberpunkTheme.colors.matrix}>
+                      <Text key={`portal-item-${i}`} color={cyberpunkTheme.colors.matrix}>
                         • {cap.replace(/_/g, ' ')}
                       </Text>
                     ))}
@@ -470,7 +470,7 @@ export const PortalsPanel: React.FC<PortalsPanelProps> = ({ agentData }) => {
                       Cost Breakdown:
                     </Text>
                     {portals.map((portal, i) => (
-                      <Box key={i} gap={2}>
+                      <Box key={`portal-item-${i}`} gap={2}>
                         <Text color={getPortalTypeColor(portal.type)}>
                           {portal.name}:
                         </Text>
@@ -498,7 +498,7 @@ export const PortalsPanel: React.FC<PortalsPanelProps> = ({ agentData }) => {
                           ? portal.usage.costEstimate / portal.usage.tokenUsage
                           : 0;
                       return (
-                        <Box key={i} gap={2}>
+                        <Box key={`portal-item-${i}`} gap={2}>
                           <Text color={getPortalTypeColor(portal.type)}>
                             {portal.type}:
                           </Text>
@@ -574,7 +574,7 @@ export const PortalsPanel: React.FC<PortalsPanelProps> = ({ agentData }) => {
             <Box width='30%'>
               <Text color={cyberpunkTheme.colors.textDim}>Success Rates:</Text>
               {portals.map((portal, i) => (
-                <Box key={i} gap={1}>
+                <Box key={`portal-item-${i}`} gap={1}>
                   <Text color={getPortalTypeColor(portal.type)}>
                     {portal.name.slice(0, 8)}:
                   </Text>
@@ -598,7 +598,7 @@ export const PortalsPanel: React.FC<PortalsPanelProps> = ({ agentData }) => {
                 const relativeLatency =
                   portal.usage.averageResponseTime / maxLatency;
                 return (
-                  <Box key={i} gap={1}>
+                  <Box key={`portal-item-${i}`} gap={1}>
                     <Text color={getPortalTypeColor(portal.type)}>
                       {portal.name.slice(0, 8)}:
                     </Text>
@@ -622,7 +622,7 @@ export const PortalsPanel: React.FC<PortalsPanelProps> = ({ agentData }) => {
                 const relativeUsage =
                   portal.usage.totalRequests / totalRequests;
                 return (
-                  <Box key={i} gap={1}>
+                  <Box key={`portal-item-${i}`} gap={1}>
                     <Text color={getPortalTypeColor(portal.type)}>
                       {portal.name.slice(0, 10)}:
                     </Text>

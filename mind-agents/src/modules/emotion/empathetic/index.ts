@@ -1,3 +1,4 @@
+import { EmotionResult } from '../../../types/modules/emotions';
 import { BaseEmotion, EmotionDefinition } from '../base-emotion';
 
 import { EmpatheticEmotionConfig } from './types';
@@ -42,7 +43,7 @@ export class EmpatheticEmotion extends BaseEmotion {
     };
   }
 
-  override processEvent(eventType: string, context?: any): any {
+  override processEvent(eventType: string, context?: unknown): EmotionResult {
     // Special processing for empathy-specific events
     if (context?.others_emotion && context.others_emotion !== 'neutral') {
       this._intensity = Math.min(1.0, this._intensity + 0.2);

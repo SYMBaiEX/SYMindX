@@ -5,6 +5,7 @@
  */
 
 import { Extension, RuntimeConfig } from '../types/agent';
+import { runtimeLogger } from '../utils/logger';
 
 import { ApiExtension } from './api/index';
 import { MCPServerExtension } from './mcp-server/index';
@@ -67,9 +68,9 @@ export async function registerExtensions(
       };
       const apiExtension = new ApiExtension(apiConfig);
       extensions.push(apiExtension);
-      console.log('✅ API extension registered');
+      runtimeLogger.info('✅ API extension registered');
     } catch (error) {
-      console.warn('⚠️ Failed to load API extension:', error);
+      runtimeLogger.warn('⚠️ Failed to load API extension:', error);
     }
   }
 
@@ -89,40 +90,56 @@ export async function registerExtensions(
       };
 
       if (!telegramConfig.botToken) {
-        console.warn('⚠️ Telegram extension enabled but no bot token provided');
+        runtimeLogger.warn(
+          '⚠️ Telegram extension enabled but no bot token provided'
+        );
       } else {
         const telegramExtension = createTelegramExtension(telegramConfig);
         extensions.push(telegramExtension);
-        console.log('✅ Telegram extension registered');
+        runtimeLogger.info('✅ Telegram extension registered');
       }
     } catch (error) {
-      console.warn('⚠️ Failed to load Telegram extension:', error);
+      runtimeLogger.warn('⚠️ Failed to load Telegram extension:', error);
     }
   }
 
   // MCP Client extension removed - MCP tools now handled directly in portal integration
 
   // Register MCP Server extension if configured
-  if ((config.extensions as any).mcpServer?.enabled) {
+  const extensionsWithMcp = config.extensions as RuntimeConfig['extensions'] & {
+    mcpServer?: {
+      enabled?: boolean;
+      transport?: string;
+      port?: number;
+      host?: string;
+      path?: string;
+    };
+  };
+
+  if (extensionsWithMcp.mcpServer?.enabled) {
     try {
       const mcpServerConfig = {
-        transport: (config.extensions as any).mcpServer.transport || 'stdio',
-        port: (config.extensions as any).mcpServer.port || 3001,
-        host: (config.extensions as any).mcpServer.host || 'localhost',
-        path: (config.extensions as any).mcpServer.path || '/mcp',
-        ...(config.extensions as any).mcpServer,
+        enabled: true,
+        server: {
+          enabled: true,
+          transport: extensionsWithMcp.mcpServer.transport || 'stdio',
+          port: extensionsWithMcp.mcpServer.port || 3001,
+          host: extensionsWithMcp.mcpServer.host || 'localhost',
+          path: extensionsWithMcp.mcpServer.path || '/mcp',
+          ...extensionsWithMcp.mcpServer,
+        },
       };
       const mcpServerExtension = new MCPServerExtension(mcpServerConfig);
-      extensions.push(mcpServerExtension as any);
-      console.log('✅ MCP Server extension registered');
+      extensions.push(mcpServerExtension);
+      runtimeLogger.info('✅ MCP Server extension registered');
     } catch (error) {
-      console.warn('⚠️ Failed to load MCP Server extension:', error);
+      runtimeLogger.warn('⚠️ Failed to load MCP Server extension:', error);
     }
   }
 
   // Communication extension removed - not configured in RuntimeConfig
 
-  console.log(`✅ Extensions: ${extensions.length} loaded`);
+  runtimeLogger.info(`✅ Extensions: ${extensions.length} loaded`);
   return extensions;
 }
 

@@ -5,7 +5,7 @@
  * summarization strategies, prioritization algorithms, and consolidation rules.
  */
 
-import { MemoryRecord, MemoryDuration } from '../../types/agent';
+import { MemoryRecord, MemoryDuration, MemoryType } from '../../types/agent';
 import {
   MemoryManagementPolicy,
   MemoryPolicyConfig,
@@ -311,7 +311,7 @@ export class MemoryManagementEngine {
     const summarizedMemory: SummarizedMemory = {
       id: `summary_${cluster.id}`,
       agentId: cluster.memories[0]?.agentId ?? '',
-      type: cluster.memories[0]?.type ?? ('unknown' as any),
+      type: cluster.memories[0]?.type ?? ('unknown' as MemoryType),
       content: summaryContent,
       metadata: {
         ...(cluster.memories[0]?.metadata ?? {}),

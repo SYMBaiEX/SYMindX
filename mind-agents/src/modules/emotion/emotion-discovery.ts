@@ -173,7 +173,7 @@ export class EmotionDiscovery {
                   packageInfo,
                 });
               }
-            } catch (error) {
+            } catch {
               // Ignore packages with invalid package.json
             }
           }

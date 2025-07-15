@@ -302,7 +302,7 @@ export class OllamaPortal extends BasePortal {
     // Test connection to Ollama server
     try {
       await this.makeRequest('/', {}, 'GET');
-    } catch (_error) {
+    } catch {
       throw new Error(
         `Cannot connect to Ollama server at ${this.baseUrl}. Please ensure Ollama is running.`
       );
@@ -315,7 +315,7 @@ export class OllamaPortal extends BasePortal {
       const response = await this.makeRequest('/', {}, 'GET');
       this.lastHealthCheck = new Date();
       return response.status === 'ok' || typeof response === 'string';
-    } catch (_error) {
+    } catch {
       // Ollama health check failed
       return false;
     }
@@ -337,7 +337,7 @@ export class OllamaPortal extends BasePortal {
       } else {
         // Model is available
       }
-    } catch (_error) {
+    } catch {
       // Could not ensure model availability
       // Continue initialization - model might be available but not listed
     }
@@ -347,7 +347,7 @@ export class OllamaPortal extends BasePortal {
     try {
       const response = await this.makeRequest('/api/tags', {}, 'GET');
       return response.models || [];
-    } catch (_error) {
+    } catch {
       // Failed to list Ollama models
       return [];
     }
@@ -673,7 +673,7 @@ export class OllamaPortal extends BasePortal {
             if (parsed.done) {
               return;
             }
-          } catch (_e) {
+          } catch {
             // Skip invalid JSON lines
           }
         }

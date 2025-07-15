@@ -299,7 +299,7 @@ export class OpenRouterPortal extends BasePortal {
                 if (delta) {
                   yield delta;
                 }
-              } catch (e) {
+              } catch {
                 // Skip invalid JSON lines
               }
             }

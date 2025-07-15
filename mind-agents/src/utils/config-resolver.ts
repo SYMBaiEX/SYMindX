@@ -1,8 +1,14 @@
 /**
- * Configuration Resolver
+ * @module config-resolver
+ * @description Configuration Resolver - Transforms character configurations with environment variables
  *
- * Transforms clean TypeScript character configuration to runtime configuration
- * with environment variable resolution and sensible defaults
+ * This module provides a configuration resolution system that:
+ * - Validates environment variables
+ * - Merges character configurations with environment settings
+ * - Provides sensible defaults for missing values
+ * - Handles provider-specific configurations
+ * - Manages API key resolution and validation
+ * - Supports multiple memory providers and AI portals
  */
 
 import {
@@ -20,16 +26,27 @@ import {
   ValidatedEnvironmentConfig,
 } from './config-validator.js';
 
+/**
+ * ConfigResolver class for managing configuration resolution
+ */
 export class ConfigResolver {
   private envConfig: EnvironmentConfig | null = null;
   private validatedConfig: ValidatedEnvironmentConfig | null = null;
 
+  /**
+   * Creates a new ConfigResolver instance
+   * Environment configuration is loaded lazily on first use
+   */
   constructor() {
     // Don't load environment config immediately - wait until first use
   }
 
   /**
    * Load environment variables with defaults using the new validator
+   *
+   * @returns Validated environment configuration
+   * @throws Error if configuration is invalid
+   * @private
    */
   private loadEnvironmentConfig(): EnvironmentConfig {
     // Use the new validator to get a safe configuration
@@ -57,7 +74,11 @@ export class ConfigResolver {
   }
 
   /**
-   * Convert ValidatedEnvironmentConfig to EnvironmentConfig
+   * Convert ValidatedEnvironmentConfig to EnvironmentConfig format
+   *
+   * @param validated - The validated configuration object
+   * @returns Environment configuration in the expected format
+   * @private
    */
   private convertToEnvironmentConfig(
     validated: ValidatedEnvironmentConfig
@@ -99,6 +120,9 @@ export class ConfigResolver {
 
   /**
    * Get validated configuration (lazily loaded)
+   *
+   * @returns The validated environment configuration
+   * @private
    */
   private getValidatedConfig(): ValidatedEnvironmentConfig {
     if (!this.validatedConfig) {
@@ -110,6 +134,9 @@ export class ConfigResolver {
 
   /**
    * Ensure environment config is loaded
+   *
+   * @returns The loaded environment configuration
+   * @private
    */
   private ensureEnvConfig(): EnvironmentConfig {
     if (!this.envConfig) {
@@ -120,6 +147,10 @@ export class ConfigResolver {
 
   /**
    * Resolve character configuration to runtime configuration
+   *
+   * @param config - The character configuration to resolve
+   * @returns Resolved runtime configuration with environment variables applied
+   * @public
    */
   public resolveCharacterConfig(
     config: CharacterConfig
@@ -156,7 +187,11 @@ export class ConfigResolver {
   }
 
   /**
-   * Resolve autonomous configuration
+   * Resolve autonomous configuration with defaults
+   *
+   * @param config - The autonomous configuration object
+   * @returns Resolved autonomous configuration
+   * @private
    */
   private resolveAutonomousConfig(
     config: Record<string, unknown>
@@ -169,6 +204,10 @@ export class ConfigResolver {
 
   /**
    * Resolve memory configuration with environment variables
+   *
+   * @param config - The memory configuration object
+   * @returns Resolved memory configuration with env vars applied
+   * @private
    */
   private resolveMemoryConfig(
     config: Record<string, unknown>
@@ -198,6 +237,9 @@ export class ConfigResolver {
 
   /**
    * Get embedding model based on provider
+   *
+   * @returns The appropriate embedding model name
+   * @private
    */
   private getEmbeddingModel(): string {
     const validatedConfig = this.getValidatedConfig();
@@ -218,6 +260,9 @@ export class ConfigResolver {
 
   /**
    * Get embedding dimensions based on model
+   *
+   * @returns The number of dimensions for the embedding model
+   * @private
    */
   private getEmbeddingDimensions(): number {
     const validatedConfig = this.getValidatedConfig();
@@ -231,8 +276,14 @@ export class ConfigResolver {
 
   /**
    * Resolve emotion configuration
+   *
+   * @param config - The emotion configuration object
+   * @returns Resolved emotion configuration
+   * @private
    */
-  private resolveEmotionConfig(config: any): any {
+  private resolveEmotionConfig(
+    config: Record<string, unknown>
+  ): Record<string, unknown> {
     return {
       type: config.type,
       config: {
@@ -243,8 +294,14 @@ export class ConfigResolver {
 
   /**
    * Resolve cognition configuration
+   *
+   * @param config - The cognition configuration object
+   * @returns Resolved cognition configuration
+   * @private
    */
-  private resolveCognitionConfig(config: any): any {
+  private resolveCognitionConfig(
+    config: Record<string, unknown>
+  ): Record<string, unknown> {
     return {
       type: config.type,
       config: {
@@ -255,6 +312,10 @@ export class ConfigResolver {
 
   /**
    * Resolve extensions configuration
+   *
+   * @param extensions - Array of extension configurations
+   * @returns Resolved extension configurations
+   * @private
    */
   private resolveExtensionsConfig(
     extensions: ExtensionConfigArray
@@ -267,8 +328,16 @@ export class ConfigResolver {
 
   /**
    * Resolve individual extension configuration
+   *
+   * @param name - The extension name
+   * @param config - The extension configuration object
+   * @returns Resolved extension configuration
+   * @private
    */
-  private resolveExtensionConfig(name: string, config: any): any {
+  private resolveExtensionConfig(
+    name: string,
+    config: Record<string, unknown>
+  ): Record<string, unknown> {
     const validatedConfig = this.getValidatedConfig();
     switch (name) {
       case 'telegram':
@@ -283,6 +352,10 @@ export class ConfigResolver {
 
   /**
    * Resolve portals configuration with environment variables
+   *
+   * @param portals - Array of portal configurations
+   * @returns Filtered and resolved portal configurations
+   * @private
    */
   private resolvePortalsConfig(portals: PortalConfigArray): PortalConfigArray {
     return portals
@@ -292,8 +365,14 @@ export class ConfigResolver {
 
   /**
    * Resolve individual portal configuration
+   *
+   * @param portal - The portal configuration object
+   * @returns Resolved portal configuration
+   * @private
    */
-  private resolvePortalConfig(portal: any): any {
+  private resolvePortalConfig(
+    portal: PortalConfigArray[number]
+  ): PortalConfigArray[number] {
     const resolved = {
       name: portal.name,
       type: portal.type,
@@ -312,6 +391,12 @@ export class ConfigResolver {
 
   /**
    * Get portal enabled status from environment based on capabilities
+   *
+   * @param type - The portal type
+   * @param _defaultEnabled - Default enabled status (unused)
+   * @param capabilities - Array of portal capabilities
+   * @returns Whether the portal should be enabled
+   * @private
    */
   private getPortalEnabled(
     type: string,
@@ -408,8 +493,16 @@ export class ConfigResolver {
 
   /**
    * Resolve portal-specific configuration
+   *
+   * @param type - The portal type
+   * @param config - The portal configuration object
+   * @returns Resolved portal-specific configuration
+   * @private
    */
-  private resolvePortalSpecificConfig(type: string, config: any): any {
+  private resolvePortalSpecificConfig(
+    type: string,
+    config: Record<string, unknown>
+  ): Record<string, unknown> {
     const validatedConfig = this.getValidatedConfig();
     const baseConfig = {
       max_tokens: config.max_tokens || ConfigDefaults.MAX_TOKENS,
@@ -420,7 +513,7 @@ export class ConfigResolver {
     const portalName = type.toUpperCase().replace('.', '').replace('-', '_');
 
     // Build configuration with granular model controls
-    const portalConfig: any = {
+    const portalConfig: Record<string, unknown> = {
       ...baseConfig,
       apiKey:
         validatedConfig.apiKeys[
@@ -511,6 +604,9 @@ export class ConfigResolver {
 
   /**
    * Validate required environment variables
+   *
+   * @returns Validation result with valid flag and missing variables list
+   * @public
    */
   public validateEnvironment(): { valid: boolean; missing: string[] } {
     try {

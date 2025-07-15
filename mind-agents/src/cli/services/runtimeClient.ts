@@ -554,7 +554,8 @@ export class RuntimeClient {
    * Cancel all in-flight requests
    */
   public cancelAllRequests(): void {
-    for (const [_key, controller] of this.requestsInFlight) {
+    for (const [key, controller] of this.requestsInFlight) {
+      void key; // Acknowledge key without using it
       controller.abort();
     }
     this.requestsInFlight.clear();

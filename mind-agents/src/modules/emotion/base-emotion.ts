@@ -8,7 +8,6 @@ import {
   EmotionResult,
   EmotionModifier,
   EmotionTriggerEvent,
-  EmotionCalculation,
   EmotionDecayConfig,
 } from '../../types/modules/emotions';
 

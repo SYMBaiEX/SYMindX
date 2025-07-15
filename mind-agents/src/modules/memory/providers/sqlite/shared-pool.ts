@@ -59,7 +59,7 @@ export class SharedMemoryPool {
   /**
    * Get pool statistics
    */
-  getStats() {
+  getStats(): { poolId: string; totalMemories: number; sharedBy: number } {
     return {
       poolId: this.poolId,
       totalMemories: this.memories.size,

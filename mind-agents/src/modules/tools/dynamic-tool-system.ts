@@ -206,7 +206,18 @@ export class DynamicToolSystem implements ToolSystem {
     return aiSDKTools;
   }
 
-  getStatus() {
+  getStatus(): {
+    initialized: boolean;
+    toolCount: number;
+    executionCount: number;
+    errorCount: number;
+    averageExecutionTime: number;
+    servers: Array<{
+      uri: string;
+      status: 'connected' | 'disconnected' | 'error';
+      tools: number;
+    }>;
+  } {
     const serverStats = this.getServerStats();
 
     return {

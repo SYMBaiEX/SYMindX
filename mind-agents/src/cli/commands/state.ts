@@ -26,7 +26,7 @@ async function initializeRuntime(): Promise<EnhancedSYMindXRuntime> {
   const config: EnhancedRuntimeConfig = {
     tickInterval: 5000,
     maxAgents: 10,
-    logLevel: 'info' as any,
+    logLevel: 'info' as 'error' | 'warn' | 'info' | 'debug',
     persistence: {
       enabled: true,
       path: './data',
@@ -75,7 +75,7 @@ export function createStateCommand(): Command {
           const agentStatus = rt.getAgentStateStatus(options.agent);
 
           if (options.json) {
-            console.log(JSON.stringify(agentStatus, null, 2));
+            process.stdout.write(JSON.stringify(agentStatus, null, 2) + '\n');
           } else {
             displayAgentStateStatus(options.agent, agentStatus);
           }
@@ -83,13 +83,13 @@ export function createStateCommand(): Command {
           const systemStatus = rt.getStateManagementStatus();
 
           if (options.json) {
-            console.log(JSON.stringify(systemStatus, null, 2));
+            process.stdout.write(JSON.stringify(systemStatus, null, 2) + '\n');
           } else {
             displaySystemStateStatus(systemStatus);
           }
         }
       } catch (error) {
-        console.error('❌ Failed to get state status:', error);
+        process.stderr.write('❌ Failed to get state status: ' + String(error) + '\n');
         process.exit(1);
       }
     });
@@ -117,17 +117,17 @@ export function createStateCommand(): Command {
           throw new Error(`Invalid checkpoint type: ${options.type}`);
         }
 
-        console.log(
-          `📸 Creating ${checkpointType} checkpoint for agent ${agentId}...`
+        process.stdout.write(
+          `📸 Creating ${checkpointType} checkpoint for agent ${agentId}...` + '\n'
         );
         const checkpointPath = await rt.createAgentCheckpoint(
           agentId,
           checkpointType
         );
 
-        console.log(`✅ Checkpoint created: ${checkpointPath}`);
+        process.stdout.write(`✅ Checkpoint created: ${checkpointPath}` + '\n');
       } catch (error) {
-        console.error('❌ Failed to create checkpoint:', error);
+        process.stderr.write('❌ Failed to create checkpoint: ' + String(error) + '\n');
         process.exit(1);
       }
     });
@@ -142,12 +142,12 @@ export function createStateCommand(): Command {
         await initializeRuntime();
 
         // This would require exposing state manager through runtime
-        console.log(`📋 Checkpoints for agent ${agentId}:`);
-        console.log(
-          'Feature not yet implemented - requires state manager exposure'
+        process.stdout.write(`📋 Checkpoints for agent ${agentId}:` + '\n');
+        process.stdout.write(
+          'Feature not yet implemented - requires state manager exposure' + '\n'
         );
       } catch (error) {
-        console.error('❌ Failed to list checkpoints:', error);
+        process.stderr.write('❌ Failed to list checkpoints: ' + String(error) + '\n');
         process.exit(1);
       }
     });
@@ -161,15 +161,15 @@ export function createStateCommand(): Command {
       try {
         const rt = await initializeRuntime();
 
-        console.log(`🔄 Restoring agent ${agentId} from checkpoint...`);
+        process.stdout.write(`🔄 Restoring agent ${agentId} from checkpoint...` + '\n');
         const agent = await rt.restoreAgentFromCheckpoint(
           agentId,
           options.checkpoint
         );
 
-        console.log(`✅ Agent restored: ${agent.name} (${agent.id})`);
+        process.stdout.write(`✅ Agent restored: ${agent.name} (${agent.id})` + '\n');
       } catch (error) {
-        console.error('❌ Failed to restore from checkpoint:', error);
+        process.stderr.write('❌ Failed to restore from checkpoint: ' + String(error) + '\n');
         process.exit(1);
       }
     });
@@ -187,12 +187,12 @@ export function createStateCommand(): Command {
       try {
         const rt = await initializeRuntime();
 
-        console.log(`🚀 Activating agent ${agentId}...`);
+        process.stdout.write(`🚀 Activating agent ${agentId}...` + '\n');
         const agent = await rt.activateAgent(agentId);
 
-        console.log(`✅ Agent activated: ${agent.name} (${agent.status})`);
+        process.stdout.write(`✅ Agent activated: ${agent.name} (${agent.status})` + '\n');
       } catch (error) {
-        console.error('❌ Failed to activate agent:', error);
+        process.stderr.write('❌ Failed to activate agent: ' + String(error) + '\n');
         process.exit(1);
       }
     });
@@ -205,12 +205,12 @@ export function createStateCommand(): Command {
       try {
         const rt = await initializeRuntime();
 
-        console.log(`💤 Deactivating agent ${agentId}...`);
+        process.stdout.write(`💤 Deactivating agent ${agentId}...` + '\n');
         await rt.deactivateAgent(agentId);
 
-        console.log(`✅ Agent deactivated with state preserved`);
+        process.stdout.write(`✅ Agent deactivated with state preserved` + '\n');
       } catch (error) {
-        console.error('❌ Failed to deactivate agent:', error);
+        process.stderr.write('❌ Failed to deactivate agent: ' + String(error) + '\n');
         process.exit(1);
       }
     });
@@ -223,15 +223,15 @@ export function createStateCommand(): Command {
       try {
         const rt = await initializeRuntime();
 
-        console.log(`🔄 Restarting agent ${agentId}...`);
+        process.stdout.write(`🔄 Restarting agent ${agentId}...` + '\n');
 
         // Deactivate then activate
         await rt.deactivateAgent(agentId);
         const agent = await rt.activateAgent(agentId);
 
-        console.log(`✅ Agent restarted: ${agent.name} (${agent.status})`);
+        process.stdout.write(`✅ Agent restarted: ${agent.name} (${agent.status})` + '\n');
       } catch (error) {
-        console.error('❌ Failed to restart agent:', error);
+        process.stderr.write('❌ Failed to restart agent: ' + String(error) + '\n');
         process.exit(1);
       }
     });
@@ -245,26 +245,26 @@ export function createStateCommand(): Command {
     .action(async (agentId, options) => {
       try {
         if (!options.force) {
-          console.log(
-            '⚠️  This will force cleanup all resources for the agent.'
+          process.stdout.write(
+            '⚠️  This will force cleanup all resources for the agent.' + '\n'
           );
-          console.log(
-            '❓ Are you sure you want to continue? (type "yes" to confirm)'
+          process.stdout.write(
+            '❓ Are you sure you want to continue? (type "yes" to confirm)' + '\n'
           );
 
           // In a real implementation, you'd use readline for input
-          console.log('Use --force flag to skip confirmation');
+          process.stdout.write('Use --force flag to skip confirmation' + '\n');
           return;
         }
 
         const rt = await initializeRuntime();
 
-        console.log(`🚨 Performing emergency cleanup for agent ${agentId}...`);
+        process.stdout.write(`🚨 Performing emergency cleanup for agent ${agentId}...` + '\n');
         await rt.emergencyCleanupAgent(agentId);
 
-        console.log(`✅ Emergency cleanup completed`);
+        process.stdout.write(`✅ Emergency cleanup completed` + '\n');
       } catch (error) {
-        console.error('❌ Emergency cleanup failed:', error);
+        process.stderr.write('❌ Emergency cleanup failed: ' + String(error) + '\n');
         process.exit(1);
       }
     });
@@ -278,67 +278,67 @@ export function createStateCommand(): Command {
       try {
         const rt = await initializeRuntime();
 
-        console.log('🔍 Running state management diagnostics...');
+        process.stdout.write('🔍 Running state management diagnostics...' + '\n');
 
         const systemStatus = rt.getStateManagementStatus();
 
-        console.log('\n📊 System Status:');
-        console.log(
-          `  State Management: ${systemStatus.enabled ? '✅ Enabled' : '❌ Disabled'}`
+        process.stdout.write('\n📊 System Status:' + '\n');
+        process.stdout.write(
+          `  State Management: ${systemStatus.enabled ? '✅ Enabled' : '❌ Disabled'}` + '\n'
         );
 
         if (systemStatus.enabled) {
-          console.log(`  State Directory: ${systemStatus.stateDirectory}`);
-          console.log(
-            `  Active Operations: ${systemStatus.activeOperations?.length || 0}`
+          process.stdout.write(`  State Directory: ${systemStatus.stateDirectory}` + '\n');
+          process.stdout.write(
+            `  Active Operations: ${systemStatus.activeOperations?.length || 0}` + '\n'
           );
 
           if (systemStatus.checkpointSystem) {
-            console.log(`  Checkpoint System: ✅ Active`);
-            console.log(
-              `    - Total Agents: ${systemStatus.checkpointSystem.totalAgents}`
+            process.stdout.write(`  Checkpoint System: ✅ Active` + '\n');
+            process.stdout.write(
+              `    - Total Agents: ${systemStatus.checkpointSystem.totalAgents}` + '\n'
             );
-            console.log(
-              `    - Active Schedules: ${systemStatus.checkpointSystem.activeSchedules}`
+            process.stdout.write(
+              `    - Active Schedules: ${systemStatus.checkpointSystem.activeSchedules}` + '\n'
             );
-            console.log(
-              `    - Total Checkpoints: ${systemStatus.checkpointSystem.totalCheckpoints}`
+            process.stdout.write(
+              `    - Total Checkpoints: ${systemStatus.checkpointSystem.totalCheckpoints}` + '\n'
             );
           }
 
           if (systemStatus.resourceManager) {
-            console.log(`  Resource Manager: ✅ Active`);
-            console.log(
-              `    - Total Resources: ${systemStatus.resourceManager.totalResources}`
+            process.stdout.write(`  Resource Manager: ✅ Active` + '\n');
+            process.stdout.write(
+              `    - Total Resources: ${systemStatus.resourceManager.totalResources}` + '\n'
             );
-            console.log(
-              `    - Active Resources: ${systemStatus.resourceManager.activeResources}`
+            process.stdout.write(
+              `    - Active Resources: ${systemStatus.resourceManager.activeResources}` + '\n'
             );
-            console.log(
-              `    - Health Score: ${(systemStatus.resourceManager.health * 100).toFixed(1)}%`
+            process.stdout.write(
+              `    - Health Score: ${(systemStatus.resourceManager.health * 100).toFixed(1)}%` + '\n'
             );
           }
 
           if (systemStatus.concurrentSafety) {
-            console.log(`  Concurrent Safety: ✅ Active`);
-            console.log(
-              `    - Active Locks: ${systemStatus.concurrentSafety.totalActiveLocks}`
+            process.stdout.write(`  Concurrent Safety: ✅ Active` + '\n');
+            process.stdout.write(
+              `    - Active Locks: ${systemStatus.concurrentSafety.totalActiveLocks}` + '\n'
             );
-            console.log(
-              `    - Queued Requests: ${systemStatus.concurrentSafety.totalQueuedRequests}`
+            process.stdout.write(
+              `    - Queued Requests: ${systemStatus.concurrentSafety.totalQueuedRequests}` + '\n'
             );
           }
         }
 
         if (options.agent) {
-          console.log(`\n🤖 Agent ${options.agent} Status:`);
+          process.stdout.write(`\n🤖 Agent ${options.agent} Status:` + '\n');
           const agentStatus = rt.getAgentStateStatus(options.agent);
           displayAgentStateStatus(options.agent, agentStatus);
         }
 
-        console.log('\n✅ Diagnostics completed');
+        process.stdout.write('\n✅ Diagnostics completed' + '\n');
       } catch (error) {
-        console.error('❌ Diagnostics failed:', error);
+        process.stderr.write('❌ Diagnostics failed: ' + String(error) + '\n');
         process.exit(1);
       }
     });
@@ -348,124 +348,124 @@ export function createStateCommand(): Command {
 
 // Helper functions for display
 
-function displaySystemStateStatus(status: any): void {
-  console.log('🏛️  State Management System Status');
-  console.log('═'.repeat(50));
+function displaySystemStateStatus(status: { enabled: boolean; stateDirectory?: string; checkpointSystem?: any; resourceManager?: any; concurrentSafety?: any; activeOperations?: any[] }): void {
+  process.stdout.write('🏛️  State Management System Status' + '\n');
+  process.stdout.write('═'.repeat(50) + '\n');
 
   if (!status.enabled) {
-    console.log('❌ State management is disabled');
+    process.stdout.write('❌ State management is disabled' + '\n');
     return;
   }
 
-  console.log('✅ State management is enabled');
-  console.log(`📁 State Directory: ${status.stateDirectory}`);
+  process.stdout.write('✅ State management is enabled' + '\n');
+  process.stdout.write(`📁 State Directory: ${status.stateDirectory}` + '\n');
 
   if (status.checkpointSystem) {
-    console.log('\n📸 Checkpoint System:');
-    console.log(`  Total Agents: ${status.checkpointSystem.totalAgents}`);
-    console.log(
-      `  Active Schedules: ${status.checkpointSystem.activeSchedules}`
+    process.stdout.write('\n📸 Checkpoint System:' + '\n');
+    process.stdout.write(`  Total Agents: ${status.checkpointSystem.totalAgents}` + '\n');
+    process.stdout.write(
+      `  Active Schedules: ${status.checkpointSystem.activeSchedules}` + '\n'
     );
-    console.log(
-      `  Total Checkpoints: ${status.checkpointSystem.totalCheckpoints}`
+    process.stdout.write(
+      `  Total Checkpoints: ${status.checkpointSystem.totalCheckpoints}` + '\n'
     );
-    console.log(
-      `  Success Rate: ${(status.checkpointSystem.successRate * 100).toFixed(1)}%`
+    process.stdout.write(
+      `  Success Rate: ${(status.checkpointSystem.successRate * 100).toFixed(1)}%` + '\n'
     );
-    console.log(
-      `  Next Checkpoint: ${status.checkpointSystem.nextCheckpoint || 'None scheduled'}`
+    process.stdout.write(
+      `  Next Checkpoint: ${status.checkpointSystem.nextCheckpoint || 'None scheduled'}` + '\n'
     );
   }
 
   if (status.resourceManager) {
-    console.log('\n🔧 Resource Manager:');
-    console.log(`  Total Resources: ${status.resourceManager.totalResources}`);
-    console.log(
-      `  Active Resources: ${status.resourceManager.activeResources}`
+    process.stdout.write('\n🔧 Resource Manager:' + '\n');
+    process.stdout.write(`  Total Resources: ${status.resourceManager.totalResources}` + '\n');
+    process.stdout.write(
+      `  Active Resources: ${status.resourceManager.activeResources}` + '\n'
     );
-    console.log(`  Stale Resources: ${status.resourceManager.staleResources}`);
-    console.log(
-      `  Health Score: ${(status.resourceManager.health * 100).toFixed(1)}%`
+    process.stdout.write(`  Stale Resources: ${status.resourceManager.staleResources}` + '\n');
+    process.stdout.write(
+      `  Health Score: ${(status.resourceManager.health * 100).toFixed(1)}%` + '\n'
     );
   }
 
   if (status.concurrentSafety) {
-    console.log('\n🔒 Concurrent Safety:');
-    console.log(`  Active Locks: ${status.concurrentSafety.totalActiveLocks}`);
-    console.log(
-      `  Queued Requests: ${status.concurrentSafety.totalQueuedRequests}`
+    process.stdout.write('\n🔒 Concurrent Safety:' + '\n');
+    process.stdout.write(`  Active Locks: ${status.concurrentSafety.totalActiveLocks}` + '\n');
+    process.stdout.write(
+      `  Queued Requests: ${status.concurrentSafety.totalQueuedRequests}` + '\n'
     );
-    console.log(`  Unique Agents: ${status.concurrentSafety.uniqueAgents}`);
-    console.log(
-      `  Max Locks/Agent: ${status.concurrentSafety.maxLocksPerAgent}`
+    process.stdout.write(`  Unique Agents: ${status.concurrentSafety.uniqueAgents}` + '\n');
+    process.stdout.write(
+      `  Max Locks/Agent: ${status.concurrentSafety.maxLocksPerAgent}` + '\n'
     );
   }
 
   if (status.activeOperations && status.activeOperations.length > 0) {
-    console.log('\n⚡ Active Operations:');
-    status.activeOperations.forEach((op: any) => {
-      console.log(`  ${op.type} - ${op.agentId} (${op.phase})`);
+    process.stdout.write('\n⚡ Active Operations:' + '\n');
+    status.activeOperations.forEach((op: { type: string; agentId: string; phase: string }) => {
+      process.stdout.write(`  ${op.type} - ${op.agentId} (${op.phase})` + '\n');
     });
   }
 }
 
-function displayAgentStateStatus(agentId: string, status: any): void {
-  console.log(`🤖 Agent ${agentId} State Status`);
-  console.log('═'.repeat(50));
+function displayAgentStateStatus(agentId: string, status: { enabled: boolean; resourceSnapshot?: any; lockStatus?: any; checkpointMetrics?: any; lastCheckpoint?: string }): void {
+  process.stdout.write(`🤖 Agent ${agentId} State Status` + '\n');
+  process.stdout.write('═'.repeat(50) + '\n');
 
   if (!status.enabled) {
-    console.log('❌ State management not enabled for this agent');
+    process.stdout.write('❌ State management not enabled for this agent' + '\n');
     return;
   }
 
   if (status.resourceSnapshot) {
-    console.log('📊 Resource Snapshot:');
-    console.log(
-      `  Total Resources: ${status.resourceSnapshot.summary.totalResources}`
+    process.stdout.write('📊 Resource Snapshot:' + '\n');
+    process.stdout.write(
+      `  Total Resources: ${status.resourceSnapshot.summary.totalResources}` + '\n'
     );
-    console.log(
-      `  Active Resources: ${status.resourceSnapshot.summary.activeResources}`
+    process.stdout.write(
+      `  Active Resources: ${status.resourceSnapshot.summary.activeResources}` + '\n'
     );
     if (status.resourceSnapshot.summary.memoryUsage) {
-      console.log(
-        `  Memory Usage: ${(status.resourceSnapshot.summary.memoryUsage / 1024).toFixed(1)} KB`
+      process.stdout.write(
+        `  Memory Usage: ${(status.resourceSnapshot.summary.memoryUsage / 1024).toFixed(1)} KB` + '\n'
       );
     }
   }
 
   if (status.lockStatus) {
-    console.log('\n🔒 Lock Status:');
-    console.log(`  Active Locks: ${status.lockStatus.activeLocks}`);
-    console.log(`  Queued Requests: ${status.lockStatus.queuedRequests}`);
+    process.stdout.write('\n🔒 Lock Status:' + '\n');
+    process.stdout.write(`  Active Locks: ${status.lockStatus.activeLocks}` + '\n');
+    process.stdout.write(`  Queued Requests: ${status.lockStatus.queuedRequests}` + '\n');
 
     if (status.lockStatus.locks.length > 0) {
-      console.log('  Current Locks:');
-      status.lockStatus.locks.forEach((lock: any) => {
-        console.log(`    - ${lock.operation} (${lock.holderId})`);
+      process.stdout.write('  Current Locks:' + '\n');
+      status.lockStatus.locks.forEach((lock: { operation: string; holderId: string }) => {
+        process.stdout.write(`    - ${lock.operation} (${lock.holderId})` + '\n');
       });
     }
   }
 
   if (status.checkpointMetrics) {
-    console.log('\n📸 Checkpoint Metrics:');
-    console.log(
-      `  Total Checkpoints: ${status.checkpointMetrics.totalCheckpoints}`
+    process.stdout.write('\n📸 Checkpoint Metrics:' + '\n');
+    process.stdout.write(
+      `  Total Checkpoints: ${status.checkpointMetrics.totalCheckpoints}` + '\n'
     );
-    console.log(
-      `  Successful: ${status.checkpointMetrics.successfulCheckpoints}`
+    process.stdout.write(
+      `  Successful: ${status.checkpointMetrics.successfulCheckpoints}` + '\n'
     );
-    console.log(`  Failed: ${status.checkpointMetrics.failedCheckpoints}`);
-    console.log(
-      `  Average Time: ${status.checkpointMetrics.averageCheckpointTime}ms`
+    process.stdout.write(`  Failed: ${status.checkpointMetrics.failedCheckpoints}` + '\n');
+    process.stdout.write(
+      `  Average Time: ${status.checkpointMetrics.averageCheckpointTime}ms` + '\n'
     );
     if (status.checkpointMetrics.lastCheckpointSize) {
-      console.log(
-        `  Last Size: ${(status.checkpointMetrics.lastCheckpointSize / 1024).toFixed(1)} KB`
+      process.stdout.write(
+        `  Last Size: ${(status.checkpointMetrics.lastCheckpointSize / 1024).toFixed(1)} KB` + '\n'
       );
     }
   }
 
   if (status.lastCheckpoint) {
-    console.log(`\n⏰ Last Checkpoint: ${status.lastCheckpoint}`);
+    process.stdout.write(`\n⏰ Last Checkpoint: ${status.lastCheckpoint}` + '\n');
   }
 }

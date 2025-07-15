@@ -16,6 +16,7 @@ import { createSQLiteChatRepository } from './providers/sqlite/chat-repository';
 import {
   ChatRepository,
   ChatSystemConfig,
+  ConversationStatus,
 } from './providers/sqlite/chat-types';
 import {
   createSupabaseChatRepository,
@@ -151,7 +152,7 @@ export async function getChatSystemStatus(repository: ChatRepository): Promise<{
       agentId: 'test-agent',
       userId: 'test-user',
       title: 'Health Check',
-      status: 'active' as any,
+      status: 'active' as ConversationStatus,
       messageCount: 0,
       metadata: { healthCheck: true },
     });

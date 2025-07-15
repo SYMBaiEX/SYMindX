@@ -1,7 +1,6 @@
 /**
- * Configuration Validator Tests
- *
- * Comprehensive test suite for the configuration validation system
+ * @module config-validator.test
+ * @description Configuration Validator Tests - Comprehensive test suite for the configuration validation system
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
@@ -9,7 +8,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import { ConfigValidator } from './config-validator.js';
 
 describe('ConfigValidator', () => {
-  let originalEnv: NodeJS.ProcessEnv;
+  let originalEnv: typeof process.env;
 
   beforeEach(() => {
     // Save original environment

@@ -451,7 +451,7 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
 
   async callTool(
     name: string,
-    args?: Record<string, any>
+    args?: Record<string, unknown>
   ): Promise<CallToolResponse['result']> {
     return this.handleToolCall({ name, arguments: args });
   }

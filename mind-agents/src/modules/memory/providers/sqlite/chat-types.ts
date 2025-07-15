@@ -79,7 +79,7 @@ export interface Conversation {
   updatedAt: Date;
   lastMessageAt?: Date;
   messageCount: number;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   deletedAt?: Date;
   deletedBy?: string;
 }
@@ -93,7 +93,7 @@ export interface Message {
   messageType: MessageType;
   timestamp: Date;
   editedAt?: Date;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
 
   // Agent-specific fields
   emotionState?: EmotionSnapshot;
@@ -161,7 +161,7 @@ export interface MessageAttachment {
   mimeType?: string;
   size?: number;
   url?: string;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   createdAt: Date;
 }
 

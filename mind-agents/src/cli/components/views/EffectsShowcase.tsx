@@ -20,7 +20,7 @@ import {
 } from '../effects/index.js';
 
 // Demo data for charts
-const generateChartData = () => {
+const generateChartData = (): number[] => {
   return Array.from({ length: 10 }, (_, i) => ({
     value: Math.random() * 100,
     label: String.fromCharCode(65 + i),
@@ -89,11 +89,11 @@ export const EffectsShowcase: React.FC = () => {
       setLoadingProgress((prev) => (prev + 10) % 100);
     }, 2000);
 
-    return () => clearInterval(interval);
+    return (): void => clearInterval(interval);
   }, []);
 
   // Render different demo screens
-  const renderDemo = () => {
+  const renderDemo = (): React.JSX.Element => {
     switch (activeDemo) {
       case 'intro':
         return renderIntroScreen();
@@ -112,7 +112,7 @@ export const EffectsShowcase: React.FC = () => {
     }
   };
 
-  const renderIntroScreen = () => (
+  const renderIntroScreen = (): React.JSX.Element => (
     <Box flexDirection='column' alignItems='center' paddingY={2}>
       <ASCIIAnimation variant='logo' />
 
@@ -155,7 +155,7 @@ export const EffectsShowcase: React.FC = () => {
     </Box>
   );
 
-  const renderMatrixDemo = () => (
+  const renderMatrixDemo = (): React.JSX.Element => (
     <Box flexDirection='column'>
       <Box height={20}>
         <MatrixRain
@@ -187,7 +187,7 @@ export const EffectsShowcase: React.FC = () => {
     </Box>
   );
 
-  const renderParticlesDemo = () => (
+  const renderParticlesDemo = (): React.JSX.Element => (
     <Box flexDirection='column'>
       <Box height={20}>
         <ParticleSystem
@@ -216,7 +216,7 @@ export const EffectsShowcase: React.FC = () => {
     </Box>
   );
 
-  const render3DDemo = () => (
+  const render3DDemo = (): React.JSX.Element => (
     <Box flexDirection='column' gap={2} alignItems='center' paddingY={2}>
       <Text bold>3D Perspective Effects</Text>
 
@@ -243,7 +243,7 @@ export const EffectsShowcase: React.FC = () => {
     </Box>
   );
 
-  const renderChartsDemo = () => (
+  const renderChartsDemo = (): React.JSX.Element => (
     <Box flexDirection='column' gap={2} padding={1}>
       <AnimatedBorder variant='tech' animation='pulse' width={80} height={20}>
         <Box flexDirection='column' gap={1} padding={1}>
@@ -276,7 +276,7 @@ export const EffectsShowcase: React.FC = () => {
     </Box>
   );
 
-  const renderCombinedDemo = () => (
+  const renderCombinedDemo = (): React.JSX.Element => (
     <Box flexDirection='column'>
       {/* Background effects */}
       <Box height={24}>

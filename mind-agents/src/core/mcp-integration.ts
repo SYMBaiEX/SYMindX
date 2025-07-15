@@ -72,7 +72,8 @@ export class MCPIntegration {
   private resources: Map<string, MCPResource> = new Map();
   private prompts: Map<string, MCPPrompt> = new Map();
   private servers: Map<string, MCPServerConfig> = new Map();
-  private reconnectTimers: Map<string, NodeJS.Timeout> = new Map();
+  private reconnectTimers: Map<string, ReturnType<typeof setTimeout>> =
+    new Map();
 
   constructor() {
     runtimeLogger.info('🔧 Initializing MCP Integration');
@@ -191,7 +192,7 @@ export class MCPIntegration {
         ...config,
         retryAttempts: attemptsLeft,
       });
-    } catch (error) {
+    } catch {
       runtimeLogger.warn(
         `⚠️ Retry attempt failed for MCP server ${serverName}, ${attemptsLeft} attempts remaining`
       );

@@ -1,14 +1,11 @@
 import {
   HTNOperator,
-  HTNPrecondition,
   HTNEffect,
   HTNDecomposition,
   HTNSubtask,
   PlanExecutionResult,
   DecisionMatrix,
   DecisionOption,
-  DecisionCriterion,
-  StructuredThoughtResult,
   ThoughtNode,
   ReasoningPath,
 } from '../../../types';
@@ -99,7 +96,7 @@ export class HTNPlannerCognition implements CognitionModule {
     const startTime = Date.now();
 
     // Use agent context for personalized planning
-    const agentContext = {
+    const _agentContext = {
       id: agent.id,
       personality: agent.config.core.personality,
       capabilities: agent.extensions ? Object.keys(agent.extensions) : [],
@@ -613,7 +610,7 @@ export class HTNPlannerCognition implements CognitionModule {
         case 'delete':
           newState.delete(predicate);
           break;
-        case 'update':
+        case 'update': {
           // For updates, remove old value and add new
           const oldPredicate = Array.from(newState).find((p) =>
             p.startsWith(`${effect.predicate}(`)
@@ -621,6 +618,7 @@ export class HTNPlannerCognition implements CognitionModule {
           if (oldPredicate) newState.delete(oldPredicate);
           newState.add(predicate);
           break;
+        }
       }
     });
 

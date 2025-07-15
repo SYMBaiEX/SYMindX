@@ -45,7 +45,7 @@ export class NeutralEmotion extends BaseEmotion {
     };
   }
 
-  override processEvent(eventType: string, context?: any): EmotionResult {
+  override processEvent(eventType: string, context?: unknown): EmotionResult {
     // Neutral is the default state - it has very low reactivity
     const previousIntensity = this._intensity;
     if (context?.return_to_baseline) {
@@ -76,6 +76,7 @@ export class NeutralEmotion extends BaseEmotion {
     return {
       ...result,
       changed: result.changed || previousIntensity !== this._intensity,
+      data: neutralData,
     };
   }
 }

@@ -1,7 +1,7 @@
 import figlet from 'figlet';
 import gradient from 'gradient-string';
 import { Box, Text } from 'ink';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 import { cyberpunkTheme } from '../../themes/cyberpunk.js';
 import { GlitchText } from '../effects/GlitchText.js';
@@ -29,8 +29,8 @@ export const Header: React.FC<HeaderProps> = ({
     synthwave: gradient(['#FF71CE', '#B967FF', '#01CDFE']),
   };
 
-  // Generate ASCII art
-  useEffect(() => {
+  // Generate ASCII art with useCallback
+  const generateAsciiArt = useCallback((): void => {
     figlet(title, { font: 'ANSI Shadow' }, (err, data) => {
       if (!err && data) {
         setAsciiArt(data);
@@ -38,8 +38,12 @@ export const Header: React.FC<HeaderProps> = ({
     });
   }, [title]);
 
-  // Animate status
   useEffect(() => {
+    generateAsciiArt();
+  }, [generateAsciiArt]);
+
+  // Animate status with useCallback
+  const animateStatus = useCallback((): (() => void) | void => {
     if (!animated) {
       setSystemStatus('ACTIVE');
       return;
@@ -67,8 +71,13 @@ export const Header: React.FC<HeaderProps> = ({
     return () => clearInterval(interval);
   }, [animated]);
 
-  // Animation frames
   useEffect(() => {
+    const cleanup = animateStatus();
+    return cleanup;
+  }, [animateStatus]);
+
+  // Animation frames with useCallback
+  const animateFrames = useCallback((): (() => void) | void => {
     if (!animated) return;
 
     const interval = setInterval(() => {
@@ -77,6 +86,11 @@ export const Header: React.FC<HeaderProps> = ({
 
     return () => clearInterval(interval);
   }, [animated]);
+
+  useEffect(() => {
+    const cleanup = animateFrames();
+    return cleanup;
+  }, [animateFrames]);
 
   const animationChars = ['⠋', '⠙', '⠹', '⠸'];
   const progressBar = '█'.repeat(30);

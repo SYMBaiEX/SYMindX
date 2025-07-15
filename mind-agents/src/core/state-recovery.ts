@@ -3,6 +3,7 @@
  * Provides comprehensive state validation and recovery procedures
  */
 
+import { createHash } from 'crypto';
 import { EventEmitter } from 'events';
 
 import { AgentConfig } from '../types/agent';
@@ -519,10 +520,9 @@ export class StateRecoverySystem extends EventEmitter {
     );
   }
 
-  private calculateIntegrity(snapshot: any): string {
+  private calculateIntegrity(snapshot: Record<string, unknown>): string {
     // Same as StateManager implementation
-    const crypto = require('crypto');
-    const hash = crypto.createHash('sha256');
+    const hash = createHash('sha256');
     hash.update(JSON.stringify(snapshot, Object.keys(snapshot).sort()));
     return hash.digest('hex');
   }

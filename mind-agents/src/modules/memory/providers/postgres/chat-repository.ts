@@ -6,6 +6,7 @@
 
 import { Pool } from 'pg';
 
+import { runtimeLogger } from '../../../../utils/logger';
 import { buildObject } from '../../../../utils/type-helpers';
 import {
   ChatRepository,
@@ -78,10 +79,10 @@ export class PostgresChatRepository implements ChatRepository {
         );
 
         if (parseInt(result.rows[0].count) === 0) {
-          console.log(
+          runtimeLogger.warn(
             '📋 Chat tables not found. Please run the PostgreSQL chat schema SQL.'
           );
-          console.log(
+          runtimeLogger.info(
             'Schema location: src/modules/memory/providers/postgres/chat-schema.sql'
           );
         }

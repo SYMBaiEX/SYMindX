@@ -174,6 +174,7 @@ export class BackgroundMusicManager {
         console.error('Music playback error:', error);
       });
     } catch (error) {
+      void error; // Acknowledge error
       // Silently fail if music playback fails
     }
   }

@@ -7,6 +7,7 @@
 import { Database } from 'bun:sqlite';
 import type { Database as DatabaseType, Statement } from 'bun:sqlite';
 
+import { runtimeLogger } from '../../../../utils/logger';
 import { buildObject } from '../../../../utils/type-helpers';
 
 import {
@@ -45,7 +46,7 @@ export class SQLiteChatRepository implements ChatRepository {
 
     // Initialize database schema (async but constructor can't be async)
     this.initializeDatabase().catch((error) => {
-      console.error('Failed to initialize database:', error);
+      runtimeLogger.error('Failed to initialize database:', error);
       throw error;
     });
 

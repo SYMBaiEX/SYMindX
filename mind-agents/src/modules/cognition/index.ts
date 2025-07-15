@@ -82,36 +82,46 @@ export async function registerCognitionModules(
     await discovery.autoRegisterCognitions(registry);
 
     // Register the main cognition module types as fallback
-    (registry as any).registerCognitionFactory(
-      'unified',
-      (config: Record<string, unknown>) =>
-        createUnifiedCognition(
-          config || {
-            thinkForActions: true,
-            thinkForMentions: true,
-            thinkOnRequest: true,
-            quickResponseMode: true,
-            analysisDepth: 'normal',
-          }
-        )
-    );
+    if (
+      'registerCognitionFactory' in registry &&
+      typeof registry.registerCognitionFactory === 'function'
+    ) {
+      registry.registerCognitionFactory(
+        'unified',
+        (config: Record<string, unknown>) =>
+          createUnifiedCognition(
+            config || {
+              thinkForActions: true,
+              thinkForMentions: true,
+              thinkOnRequest: true,
+              quickResponseMode: true,
+              analysisDepth: 'normal',
+            }
+          )
+      );
+    }
 
     // Register legacy names for compatibility
     const legacyTypes = ['htn_planner', 'reactive', 'hybrid'];
     for (const type of legacyTypes) {
-      (registry as any).registerCognitionFactory(
-        type,
-        (config: Record<string, unknown>) =>
-          createUnifiedCognition({
-            ...config,
-            analysisDepth:
-              type === 'htn_planner'
-                ? 'deep'
-                : type === 'reactive'
-                  ? 'shallow'
-                  : 'normal',
-          })
-      );
+      if (
+        'registerCognitionFactory' in registry &&
+        typeof registry.registerCognitionFactory === 'function'
+      ) {
+        registry.registerCognitionFactory(
+          type,
+          (config: Record<string, unknown>) =>
+            createUnifiedCognition({
+              ...config,
+              analysisDepth:
+                type === 'htn_planner'
+                  ? 'deep'
+                  : type === 'reactive'
+                    ? 'shallow'
+                    : 'normal',
+            })
+        );
+      }
     }
 
     // Cognition factories registered - logged by runtime
@@ -119,19 +129,24 @@ export async function registerCognitionModules(
     // Failed to register cognition modules
 
     // Fallback to manual registration
-    (registry as any).registerCognitionFactory(
-      'unified',
-      (config: Record<string, unknown>) =>
-        createUnifiedCognition(
-          config || {
-            thinkForActions: true,
-            thinkForMentions: true,
-            thinkOnRequest: true,
-            quickResponseMode: true,
-            analysisDepth: 'normal',
-          }
-        )
-    );
+    if (
+      'registerCognitionFactory' in registry &&
+      typeof registry.registerCognitionFactory === 'function'
+    ) {
+      registry.registerCognitionFactory(
+        'unified',
+        (config: Record<string, unknown>) =>
+          createUnifiedCognition(
+            config || {
+              thinkForActions: true,
+              thinkForMentions: true,
+              thinkOnRequest: true,
+              quickResponseMode: true,
+              analysisDepth: 'normal',
+            }
+          )
+      );
+    }
     throw error;
   }
 }

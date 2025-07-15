@@ -234,7 +234,7 @@ export const AutonomyPanel: React.FC<AutonomyPanelProps> = ({ agentData }) => {
 
               {autonomy.autonomousActions.slice(0, 4).map((action, i) => (
                 <Box
-                  key={i}
+                  key={`action-${action.id}-${i}`}
                   flexDirection='column'
                   borderStyle={i === selectedAction ? 'single' : undefined}
                   borderColor={
@@ -295,7 +295,7 @@ export const AutonomyPanel: React.FC<AutonomyPanelProps> = ({ agentData }) => {
               <Box flexDirection='column' marginTop={1}>
                 <Text color={cyberpunkTheme.colors.textDim}>Schedule:</Text>
                 {autonomy.dailyRoutine.map((routine, i) => (
-                  <Box key={i} flexDirection='column' marginTop={1}>
+                  <Box key={`routine-${routine.time}-${i}`} flexDirection='column' marginTop={1}>
                     <Box gap={1}>
                       <Text
                         color={
@@ -312,7 +312,7 @@ export const AutonomyPanel: React.FC<AutonomyPanelProps> = ({ agentData }) => {
                     </Box>
                     <Box marginLeft={2}>
                       {routine.activities.slice(0, 2).map((activity, j) => (
-                        <Text key={j} color={cyberpunkTheme.colors.text}>
+                        <Text key={`activity-${routine.time}-${j}`} color={cyberpunkTheme.colors.text}>
                           • {activity.slice(0, 15)}...
                         </Text>
                       ))}
@@ -361,7 +361,7 @@ export const AutonomyPanel: React.FC<AutonomyPanelProps> = ({ agentData }) => {
               <Box flexDirection='column' marginTop={1}>
                 <Text color={cyberpunkTheme.colors.textDim}>Behaviors:</Text>
                 {autonomy.socialBehaviors.map((behavior, i) => (
-                  <Box key={i} flexDirection='column' marginTop={1}>
+                  <Box key={`behavior-${behavior.type}-${i}`} flexDirection='column' marginTop={1}>
                     <Text color={cyberpunkTheme.colors.accent}>
                       {behavior.type.slice(0, 12)}...
                     </Text>
@@ -531,7 +531,7 @@ export const AutonomyPanel: React.FC<AutonomyPanelProps> = ({ agentData }) => {
                   <Box flexDirection='row' gap={2} flexWrap='wrap'>
                     {autonomy.curiosityTopics.map((topic, i) => (
                       <Box
-                        key={i}
+                        key={`topic-${topic}-${i}`}
                         borderStyle='single'
                         borderColor={cyberpunkTheme.colors.matrix}
                         padding={1}
@@ -562,7 +562,7 @@ export const AutonomyPanel: React.FC<AutonomyPanelProps> = ({ agentData }) => {
                   Daily Schedule Breakdown:
                 </Text>
                 {autonomy.dailyRoutine.map((routine, i) => (
-                  <Box key={i} flexDirection='column' marginTop={1}>
+                  <Box key={`detailed-routine-${routine.time}-${i}`} flexDirection='column' marginTop={1}>
                     <Box gap={2}>
                       <Text
                         color={
@@ -589,7 +589,7 @@ export const AutonomyPanel: React.FC<AutonomyPanelProps> = ({ agentData }) => {
                     </Box>
                     <Box marginLeft={2} flexDirection='column'>
                       {routine.activities.map((activity, j) => (
-                        <Text key={j} color={cyberpunkTheme.colors.text}>
+                        <Text key={`detailed-activity-${routine.time}-${j}`} color={cyberpunkTheme.colors.text}>
                           • {activity}
                         </Text>
                       ))}
@@ -612,7 +612,7 @@ export const AutonomyPanel: React.FC<AutonomyPanelProps> = ({ agentData }) => {
                   Social Behavior Analysis:
                 </Text>
                 {autonomy.socialBehaviors.map((behavior, i) => (
-                  <Box key={i} flexDirection='column' marginTop={1}>
+                  <Box key={`detailed-behavior-${behavior.type}-${i}`} flexDirection='column' marginTop={1}>
                     <Box gap={2}>
                       <Text color={cyberpunkTheme.colors.accent} bold>
                         {behavior.type.replace(/_/g, ' ').toUpperCase()}

@@ -50,8 +50,8 @@ export interface MCPServerConfig {
 export interface MCPServerTool {
   name: string;
   description: string;
-  inputSchema: any;
-  handler: (args: any) => Promise<any>;
+  inputSchema: Record<string, unknown>;
+  handler: (args: Record<string, unknown>) => Promise<unknown>;
   metadata?: {
     category?: string;
     readOnly?: boolean;
@@ -65,7 +65,7 @@ export interface MCPServerResource {
   name: string;
   description?: string;
   mimeType?: string;
-  handler: () => Promise<any>;
+  handler: () => Promise<unknown>;
   metadata?: {
     cacheable?: boolean;
     refreshInterval?: number;
@@ -83,7 +83,7 @@ export interface MCPServerPrompt {
     type?: string;
     default?: any;
   }>;
-  handler: (args: any) => Promise<string>;
+  handler: (args: Record<string, unknown>) => Promise<string>;
   metadata?: {
     category?: string;
     requiresAuth?: boolean;
@@ -94,24 +94,24 @@ export interface MCPRequest {
   id: string | number;
   jsonrpc: '2.0';
   method: string;
-  params?: any;
+  params?: Record<string, unknown>;
 }
 
 export interface MCPResponse {
   id: string | number;
   jsonrpc: '2.0';
-  result?: any;
+  result?: unknown;
   error?: {
     code: number;
     message: string;
-    data?: any;
+    data?: unknown;
   };
 }
 
 export interface MCPNotification {
   jsonrpc: '2.0';
   method: string;
-  params?: any;
+  params?: Record<string, unknown>;
 }
 
 export interface MCPCapabilities {
@@ -126,7 +126,7 @@ export interface MCPCapabilities {
     listChanged?: boolean;
   };
   logging?: {};
-  experimental?: Record<string, any>;
+  experimental?: Record<string, unknown>;
 }
 
 export interface MCPServerInfo {

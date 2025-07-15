@@ -79,7 +79,7 @@ export function useConnectionMonitor(
   const connectionStartTimeRef = useRef<Date | null>(null);
   const disconnectionStartTimeRef = useRef<Date | null>(null);
   const latencyHistoryRef = useRef<number[]>([]);
-  const qualityCheckIntervalRef = useRef<NodeJS.Timer | null>(null);
+  const qualityCheckIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Add event to history
   const addEvent = useCallback(

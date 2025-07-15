@@ -1,5 +1,13 @@
 /**
- * Cognition module types for SYMindX
+ * @module cognition
+ * @description Cognition module types for SYMindX
+ *
+ * This module defines cognitive capabilities including:
+ * - Thinking patterns and processes
+ * - Planning and decision making
+ * - Belief and goal management
+ * - Meta-cognition and reasoning
+ * - Hybrid cognitive architectures
  */
 
 import { Agent, ThoughtContext, ThoughtResult, Plan, Decision } from './agent';
@@ -140,7 +148,7 @@ export interface Rule {
   actions: RuleAction[];
   priority?: number;
   confidence?: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -161,7 +169,7 @@ export interface Condition {
   value: string | number | boolean;
   negate?: boolean;
   expression?: string;
-  parameters?: Record<string, any>;
+  parameters?: Record<string, unknown>;
   confidence?: number;
 }
 
@@ -171,7 +179,7 @@ export interface Condition {
 export interface RuleAction {
   type: 'assert' | 'retract' | 'modify' | 'execute';
   target: string;
-  parameters?: Record<string, any>;
+  parameters?: Record<string, unknown>;
 }
 
 /**
@@ -244,7 +252,7 @@ export interface Pattern {
   id: string;
   name: string;
   description: string;
-  examples: any[];
+  examples: unknown[];
   confidence: number;
 }
 
@@ -252,7 +260,7 @@ export interface Model {
   id: string;
   name: string;
   type: string;
-  parameters: Record<string, any>;
+  parameters: Record<string, unknown>;
   performance: ReasoningPerformance;
 }
 

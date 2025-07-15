@@ -57,7 +57,7 @@ export class ResourceManager extends EventEmitter {
   private config: ResourceManagerConfig;
   private resources: Map<string, ResourceHandle> = new Map();
   private agentResources: Map<string, Set<string>> = new Map();
-  private cleanupTimer?: NodeJS.Timeout;
+  private cleanupTimer?: ReturnType<typeof setTimeout>;
   private resourceCounter = 0;
 
   constructor(config: ResourceManagerConfig) {
@@ -577,6 +577,12 @@ export interface ResourceHealthReport {
   staleResources: number;
   totalAgents: number;
   resourcesByType: Record<ResourceType, number>;
-  memoryUsage?: NodeJS.MemoryUsage;
+  memoryUsage?: {
+    rss: number;
+    heapTotal: number;
+    heapUsed: number;
+    external: number;
+    arrayBuffers: number;
+  };
   health: number; // 0-1 score
 }

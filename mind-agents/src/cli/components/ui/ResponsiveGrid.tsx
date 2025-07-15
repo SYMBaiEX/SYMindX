@@ -177,7 +177,7 @@ export const ResponsiveGrid: React.FC<ResponsiveGridProps> = ({
 
   // Convert children to array and filter out nulls
   const items = React.Children.toArray(children).filter(
-    (child) => child != null
+    (child) => child !== null
   );
 
   // Group items into rows
@@ -212,7 +212,7 @@ export const ResponsiveGrid: React.FC<ResponsiveGridProps> = ({
     >
       {itemRows.map((row, rowIndex) => (
         <Box
-          key={rowIndex}
+          key={`row-${rowIndex}`}
           flexDirection='row'
           gap={typeof computedColumnGap === 'number' ? computedColumnGap : 1}
           justifyContent={
@@ -245,7 +245,7 @@ export const ResponsiveGrid: React.FC<ResponsiveGridProps> = ({
               // Auto-sized items
               return (
                 <Box
-                  key={itemIndex}
+                  key={`item-${rowIndex}-${itemIndex}`}
                   width={itemDims.width}
                   height={itemDims.height}
                   flexShrink={0}
@@ -256,7 +256,7 @@ export const ResponsiveGrid: React.FC<ResponsiveGridProps> = ({
             } else {
               // Flex-based items
               return (
-                <Box key={itemIndex} flexGrow={1} flexBasis={0} flexShrink={1}>
+                <Box key={`item-${rowIndex}-${itemIndex}`} flexGrow={1} flexBasis={0} flexShrink={1}>
                   {item}
                 </Box>
               );
@@ -267,7 +267,7 @@ export const ResponsiveGrid: React.FC<ResponsiveGridProps> = ({
           {autoFill &&
             row.length < itemsPerRow &&
             Array.from({ length: Math.max(0, itemsPerRow - row.length) }).map(
-              (_, i) => <Box key={`empty-${i}`} flexGrow={1} flexBasis={0} />
+              (_, i) => <Box key={`empty-${rowIndex}-${i}`} flexGrow={1} flexBasis={0} />
             )}
         </Box>
       ))}

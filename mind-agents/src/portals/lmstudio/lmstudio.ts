@@ -1,6 +1,5 @@
 import { Agent } from '../../types/agent';
 import {
-  Portal,
   PortalConfig,
   PortalType,
   PortalStatus,
@@ -18,7 +17,6 @@ import {
 } from '../../types/portal';
 import { buildObject } from '../../utils/type-helpers';
 import { BasePortal } from '../base-portal';
-import { convertUsage } from '../utils';
 /**
  * LM Studio Local AI Portal
  *
@@ -306,7 +304,7 @@ export class LMStudioPortal extends BasePortal {
       if (!response || response.status !== 'ok') {
         throw new Error('LM Studio server is not responding correctly');
       }
-    } catch (error) {
+    } catch {
       throw new Error(
         `Cannot connect to LM Studio server at ${this.baseUrl}. Please ensure LM Studio is running with server enabled.`
       );
@@ -363,9 +361,6 @@ export class LMStudioPortal extends BasePortal {
     prompt: string,
     options?: TextGenerationOptions
   ): Promise<TextGenerationResult> {
-    const config = this.config as LMStudioConfig;
-    const model = options?.model || config.model!;
-
     // Convert to chat format for consistency
     const messages: ChatMessage[] = [
       {
@@ -438,7 +433,6 @@ export class LMStudioPortal extends BasePortal {
     text: string,
     options?: EmbeddingOptions
   ): Promise<EmbeddingResult> {
-    const config = this.config as LMStudioConfig;
     const model = options?.model || 'nomic-embed-text';
 
     const requestBody = {
@@ -477,9 +471,6 @@ export class LMStudioPortal extends BasePortal {
     prompt: string,
     options?: TextGenerationOptions
   ): AsyncGenerator<string> {
-    const config = this.config as LMStudioConfig;
-    const model = options?.model || config.model!;
-
     // Convert to chat format for streaming
     const messages: ChatMessage[] = [
       {
@@ -694,7 +685,7 @@ export class LMStudioPortal extends BasePortal {
             try {
               const parsed = JSON.parse(data);
               yield parsed;
-            } catch (e) {
+            } catch {
               // Skip invalid JSON lines
             }
           }
@@ -730,7 +721,7 @@ export class LMStudioPortal extends BasePortal {
   private parseChatResponse(
     response: LMStudioChatCompletionResponse,
     model: string,
-    originalMessages: ChatMessage[]
+    _originalMessages: ChatMessage[]
   ): ChatGenerationResult {
     if (!response.choices?.[0]?.message?.content) {
       throw new Error('Invalid response format from LM Studio');

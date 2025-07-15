@@ -170,17 +170,17 @@ export const useNavigation = (options?: Partial<NavigationHookOptions>) => {
   );
 
   // Keyboard navigation
-  if (enableKeyboardShortcuts) {
-    useInput((input, key) => {
-      if (key.escape && navigationState.canGoBack) {
-        goBack();
-      } else if (key.ctrl && input === 'r') {
-        goToRoot();
-      } else if (key.ctrl && input === 'h') {
-        // Toggle help - can be handled by parent component
-      }
-    });
-  }
+  useInput((input, key) => {
+    if (!enableKeyboardShortcuts) return;
+    
+    if (key.escape && navigationState.canGoBack) {
+      goBack();
+    } else if (key.ctrl && input === 'r') {
+      goToRoot();
+    } else if (key.ctrl && input === 'h') {
+      // Toggle help - can be handled by parent component
+    }
+  });
 
   // Convenience method for navigating with just a route and metadata
   const navigate = useCallback(

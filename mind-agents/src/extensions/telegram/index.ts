@@ -32,7 +32,7 @@ import {
 
 // Define a simple skill interface since skills/index.js doesn't exist
 interface TelegramSkill {
-  getActions(): Record<string, any>;
+  getActions(): Record<string, ExtensionAction>;
 }
 
 /**

@@ -38,10 +38,10 @@ import { buildObject } from '../../utils/type-helpers';
  * Fact base implementation for storing and querying facts
  */
 export class RuleBasedFactBase implements FactBase {
-  facts: Map<string, any> = new Map();
+  facts: Map<string, unknown> = new Map();
   rules: Map<string, Rule> = new Map();
 
-  addFact(fact: any): void {
+  addFact(fact: unknown): void {
     if (typeof fact === 'object' && fact.id) {
       // Handle structured Fact objects
       this.facts.set(fact.id, fact);

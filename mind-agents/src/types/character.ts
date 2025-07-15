@@ -134,7 +134,7 @@ export interface CapabilitiesConfig {
 export interface ExtensionConfig {
   name: string;
   enabled: boolean;
-  config: Record<string, any>;
+  config: Record<string, unknown>;
 }
 
 export interface PortalConfig {

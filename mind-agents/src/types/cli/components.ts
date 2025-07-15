@@ -1,10 +1,17 @@
 /**
- * CLI Component Types
- * Defines types for various UI components used in the CLI
+ * @module cli/components
+ * @description CLI Component Types - Defines types for various UI components used in the CLI
+ * 
+ * This module provides type definitions for:
+ * - Chart and visualization components
+ * - Dashboard components and data structures
+ * - Status monitoring components
+ * - Particle effects and animations
+ * - Loading states and UI feedback
  */
 
 import type { ReactNode } from 'react';
-import type * as React from 'react';
+import type React from 'react';
 
 /**
  * Chart data point for visualization

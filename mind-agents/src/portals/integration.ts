@@ -12,12 +12,11 @@ import {
   ChatGenerationOptions,
 } from '../types/portal';
 import { runtimeLogger } from '../utils/logger';
-import { buildObject, filterUndefined } from '../utils/type-helpers';
+import { buildObject } from '../utils/type-helpers';
 
 // import { convertUsage } from './utils'; - utility function not used in integration layer
 
 import {
-  PortalRegistry,
   createPortal,
   getAvailablePortals,
   getPortalDefaultConfig,
@@ -32,8 +31,6 @@ export async function registerPortals(
   registry: ModuleRegistry,
   apiKeys: Record<string, string> = {}
 ): Promise<void> {
-  // Portal registry instance not used directly in this function
-  const _portalRegistry = PortalRegistry.getInstance();
   const availablePortals = getAvailablePortals();
 
   let registeredCount = 0;
@@ -121,8 +118,6 @@ export function getPortalCapabilities(): Array<{
   name: string;
   capabilities: string[];
 }> {
-  // Portal registry instance not used directly in this function
-  const _portalRegistry = PortalRegistry.getInstance();
   const availablePortals = getAvailablePortals();
 
   return availablePortals.map((name) => {
@@ -153,7 +148,7 @@ export function getPortalCapabilities(): Array<{
       ].filter(Boolean) as string[];
 
       return { name, capabilities };
-    } catch (error) {
+    } catch {
       return { name, capabilities: [] };
     }
   });

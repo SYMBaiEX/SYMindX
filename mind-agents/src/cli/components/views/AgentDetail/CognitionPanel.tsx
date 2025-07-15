@@ -135,7 +135,7 @@ export const CognitionPanel: React.FC<CognitionPanelProps> = ({
   };
 
   // Generate thought-action loop visualization
-  const generateThoughtLoopData = () => {
+  const generateThoughtLoopData = (): Array<ThoughtProcess & { visualDepth: number; connections: number }> => {
     return cognition.currentThoughts.map((thought) => ({
       ...thought,
       visualDepth: Math.random() * 0.8 + 0.2,
@@ -154,7 +154,7 @@ export const CognitionPanel: React.FC<CognitionPanelProps> = ({
     (_) => cognition.planningEfficiency + (Math.random() - 0.5) * 0.2
   );
 
-  const renderThoughtLoopVisualization = () => {
+  const renderThoughtLoopVisualization = (): React.JSX.Element => {
     const loopData = generateThoughtLoopData();
 
     return (
@@ -162,7 +162,7 @@ export const CognitionPanel: React.FC<CognitionPanelProps> = ({
         <Text color={cyberpunkTheme.colors.textDim}>Thought-Action Loop:</Text>
         {loopData.map((thought, i) => (
           <Box
-            key={i}
+            key={`thought-loop-${thought.id}-${i}`}
             flexDirection='column'
             marginLeft={Math.round(thought.visualDepth * 10)}
           >
@@ -320,7 +320,7 @@ export const CognitionPanel: React.FC<CognitionPanelProps> = ({
                   </Text>
                   {cognition.currentThoughts.slice(0, 4).map((thought, i) => (
                     <Box
-                      key={i}
+                      key={`current-thought-${thought.id}-${i}`}
                       flexDirection='column'
                       borderStyle={i === selectedThought ? 'single' : undefined}
                       borderColor={
@@ -354,7 +354,7 @@ export const CognitionPanel: React.FC<CognitionPanelProps> = ({
                   </Text>
                   {cognition.activeGoals.slice(0, 3).map((goal, i) => (
                     <Box
-                      key={i}
+                      key={`active-goal-${goal.id}-${i}`}
                       flexDirection='column'
                       borderStyle={i === selectedGoal ? 'single' : undefined}
                       borderColor={
@@ -391,7 +391,7 @@ export const CognitionPanel: React.FC<CognitionPanelProps> = ({
                   </Text>
                   {cognition.decisionHistory.slice(0, 3).map((decision, i) => (
                     <Box
-                      key={i}
+                      key={`decision-history-${decision.id}-${i}`}
                       flexDirection='column'
                       borderStyle={
                         i === selectedDecision ? 'single' : undefined
@@ -682,7 +682,7 @@ export const CognitionPanel: React.FC<CognitionPanelProps> = ({
               <Box flexDirection='column' marginTop={1}>
                 <Text color={cyberpunkTheme.colors.textDim}>Steps:</Text>
                 {cognition.activeGoals[selectedGoal].steps.map((step, i) => (
-                  <Box key={i} gap={1}>
+                  <Box key={`goal-step-${step.id}-${i}`} gap={1}>
                     <Text
                       color={
                         step.completed
@@ -763,7 +763,7 @@ export const CognitionPanel: React.FC<CognitionPanelProps> = ({
                   </Text>
                   {cognition.decisionHistory[selectedDecision]?.options?.map(
                     (option, i) => (
-                      <Box key={i} gap={1}>
+                      <Box key={`decision-option-${selectedDecision}-${i}`} gap={1}>
                         <Text
                           color={
                             option ===

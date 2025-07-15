@@ -1,6 +1,15 @@
 /**
- * CLI UI Utilities
- * Beautiful terminal interface for SYMindX
+ * @module cli-ui
+ * @description CLI UI Utilities - Beautiful terminal interface for SYMindX
+ *
+ * This module provides a comprehensive set of terminal UI utilities including:
+ * - Beautiful ASCII banners and animations
+ * - Colored text output with gradients
+ * - Progress bars and spinners
+ * - Tables for structured data display
+ * - Chat message formatting
+ * - Matrix rain animation effects
+ * - System status dashboards
  */
 
 import boxen from 'boxen';
@@ -11,8 +20,20 @@ import gradient from 'gradient-string';
 import ora from 'ora';
 
 import { Extension } from '../types/agent';
-import { AgentStatusArray } from '../types/utils/arrays.js';
+import { AgentStatusArray, AgentStatus } from '../types/utils/arrays.js';
 import { TypedMap } from '../types/utils/maps.js';
+
+// Type definitions for this module
+interface DashboardUpdateData {
+  agents?: AgentStatus[];
+  metrics?: Partial<{
+    uptime: number;
+    memory: number;
+    activeAgents: number;
+    commandsProcessed: number;
+    portalRequests: number;
+  }>;
+}
 
 // Cool gradients
 const symindxGradient = gradient(['#FF006E', '#8338EC', '#3A86FF']);
@@ -21,7 +42,9 @@ const matrixGradient = gradient(['#00FF00', '#00CC00', '#009900']);
 const fireGradient = gradient(['#FF6B6B', '#FFA500', '#FFD700']);
 
 /**
- * Display the epic SYMindX banner
+ * Display the epic SYMindX banner with gradient colors
+ *
+ * @returns Promise that resolves when the banner is displayed
  */
 export async function displayBanner(): Promise<void> {
   // eslint-disable-next-line no-console
@@ -58,7 +81,11 @@ export async function displayBanner(): Promise<void> {
 }
 
 /**
- * Create a cool spinner with custom text
+ * Create a cool spinner with custom text and animation type
+ *
+ * @param text - The text to display alongside the spinner
+ * @param type - The type of spinner animation
+ * @returns An Ora spinner instance
  */
 export function createSpinner(
   text: string,
@@ -73,7 +100,9 @@ export function createSpinner(
 }
 
 /**
- * Display agent status in a beautiful table
+ * Display agent status in a beautiful table format
+ *
+ * @param agents - Array of agent status objects to display
  */
 export function displayAgentStatus(agents: AgentStatusArray): void {
   const table = new Table({
@@ -116,7 +145,10 @@ export function displayAgentStatus(agents: AgentStatusArray): void {
 }
 
 /**
- * Get color for emotion display
+ * Get color for emotion display based on emotion type
+ *
+ * @param emotion - The emotion type string
+ * @returns Chalk color function for the emotion
  */
 function getEmotionColor(emotion: string): typeof chalk {
   const emotionColors: TypedMap<typeof chalk> = {
@@ -134,13 +166,15 @@ function getEmotionColor(emotion: string): typeof chalk {
 }
 
 /**
- * Display runtime metrics
+ * Display runtime metrics in a formatted box
+ *
+ * @param metrics - Object containing runtime metrics
  */
 export function displayMetrics(metrics: Record<string, unknown>): void {
   const metricsBox = boxen(
     chalk.bold('Runtime Metrics\n\n') +
-      `${chalk.green('▲')} Uptime: ${chalk.white(formatUptime(metrics.uptime))}\n` +
-      `${chalk.blue('◆')} Memory: ${chalk.white(formatMemory(metrics.memory))}\n` +
+      `${chalk.green('▲')} Uptime: ${chalk.white(formatUptime(metrics.uptime as number))}\n` +
+      `${chalk.blue('◆')} Memory: ${chalk.white(formatMemory(metrics.memory as number))}\n` +
       `${chalk.yellow('●')} Active Agents: ${chalk.white(metrics.activeAgents)}\n` +
       `${chalk.magenta('⚡')} Commands Processed: ${chalk.white(metrics.commandsProcessed)}\n` +
       `${chalk.cyan('🔮')} Portal Requests: ${chalk.white(metrics.portalRequests)}`,
@@ -157,7 +191,10 @@ export function displayMetrics(metrics: Record<string, unknown>): void {
 }
 
 /**
- * Format uptime nicely
+ * Format uptime from milliseconds into human-readable format
+ *
+ * @param ms - Uptime in milliseconds
+ * @returns Formatted uptime string (e.g., "2d 3h", "45m 30s")
  */
 function formatUptime(ms: number): string {
   const seconds = Math.floor(ms / 1000);
@@ -172,7 +209,10 @@ function formatUptime(ms: number): string {
 }
 
 /**
- * Format memory usage
+ * Format memory usage from bytes to megabytes
+ *
+ * @param bytes - Memory usage in bytes
+ * @returns Formatted memory string in MB
  */
 function formatMemory(bytes: number): string {
   const mb = bytes / 1024 / 1024;
@@ -180,7 +220,11 @@ function formatMemory(bytes: number): string {
 }
 
 /**
- * Animated loading sequence
+ * Display an animated loading sequence with custom text
+ *
+ * @param text - The loading text to display
+ * @param duration - Duration of the loading animation in milliseconds
+ * @returns Promise that resolves when animation completes
  */
 export async function animateLoading(
   text: string,
@@ -200,7 +244,9 @@ export async function animateLoading(
 }
 
 /**
- * Display error in a cool way
+ * Display error message in a styled box
+ *
+ * @param error - The error message to display
  */
 export function displayError(error: string): void {
   // eslint-disable-next-line no-console
@@ -214,7 +260,9 @@ export function displayError(error: string): void {
 }
 
 /**
- * Display success message
+ * Display success message in a styled box
+ *
+ * @param message - The success message to display
  */
 export function displaySuccess(message: string): void {
   // eslint-disable-next-line no-console
@@ -228,9 +276,16 @@ export function displaySuccess(message: string): void {
 }
 
 /**
- * Create a progress bar
+ * Create a progress bar with update capability
+ *
+ * @param title - The title of the progress bar
+ * @param total - The total value for 100% completion
+ * @returns Object with update method to update progress
  */
-export function createProgressBar(title: string, total: number): { update: (value: number) => void } {
+export function createProgressBar(
+  title: string,
+  total: number
+): { update: (value: number) => void } {
   let current = 0;
 
   const update = (value: number): void => {
@@ -242,7 +297,6 @@ export function createProgressBar(title: string, total: number): { update: (valu
     const bar = chalk.green('█'.repeat(filled)) + chalk.gray('░'.repeat(empty));
     const text = `${title} [${bar}] ${percentage}%`;
 
-    // eslint-disable-next-line no-console
     process.stdout.write('\r' + text);
 
     if (current >= total) {
@@ -255,7 +309,11 @@ export function createProgressBar(title: string, total: number): { update: (valu
 }
 
 /**
- * Display chat message with style
+ * Display a styled chat message with timestamp
+ *
+ * @param from - The sender's name
+ * @param message - The message content
+ * @param isAgent - Whether the message is from an agent (affects styling)
  */
 export function displayChatMessage(
   from: string,
@@ -286,9 +344,12 @@ export function displayChatMessage(
 }
 
 /**
- * Matrix-style animation
+ * Display a Matrix-style rain animation
+ *
+ * @param duration - Duration of the animation in milliseconds
+ * @returns Promise that resolves when animation completes
  */
-export async function matrixRain(duration: number = 3000) {
+export async function matrixRain(duration: number = 3000): Promise<void> {
   const columns = process.stdout.columns || 80;
   const rows = process.stdout.rows || 24;
   const drops: number[] = Array(Math.floor(columns / 2)).fill(0);
@@ -318,7 +379,7 @@ export async function matrixRain(duration: number = 3000) {
           if (process.stdout.write) {
             process.stdout.write(gradientChar);
           }
-        } catch (error) {
+        } catch {
           // Silently handle cursor positioning errors
         }
       }
@@ -340,24 +401,44 @@ export async function matrixRain(duration: number = 3000) {
 }
 
 /**
- * Safe gradient function with fallback
+ * Apply gradient to text with safe fallback
+ *
+ * @param text - The text to apply gradient to
+ * @param gradientFn - The gradient function to use
+ * @returns Gradient text or plain text as fallback
  */
-function safeGradient(text: string | undefined, gradientFn: any): string {
+function safeGradient(
+  text: string | undefined,
+  gradientFn: (text: string) => string
+): string {
   if (!text || text.trim() === '') {
     return '';
   }
 
   try {
     return gradientFn(text);
-  } catch (error) {
+  } catch {
     return text; // Fallback to plain text
   }
 }
 
 /**
- * Display system status with live updates
+ * Create a system status dashboard with live update capability
+ *
+ * @returns Dashboard object with update and render methods
  */
-export function createStatusDashboard() {
+export function createStatusDashboard(): {
+  agents: Map<string, unknown>;
+  metrics: {
+    uptime: number;
+    memory: number;
+    activeAgents: number;
+    commandsProcessed: number;
+    portalRequests: number;
+  };
+  update: (data: DashboardUpdateData) => void;
+  render: () => void;
+} {
   const dashboard = {
     agents: new Map(),
     metrics: {
@@ -368,9 +449,9 @@ export function createStatusDashboard() {
       portalRequests: 0,
     },
 
-    update(data: any) {
+    update(data: DashboardUpdateData): void {
       if (data.agents) {
-        data.agents.forEach((agent: any) => {
+        data.agents.forEach((agent: AgentStatus) => {
           this.agents.set(agent.id, agent);
         });
       }
@@ -384,19 +465,24 @@ export function createStatusDashboard() {
 
     render(): void {
       // eslint-disable-next-line no-console
-    console.clear();
+      console.clear();
       displayBanner();
 
+      // eslint-disable-next-line no-console
       console.log(chalk.cyan.bold('\n📊 System Dashboard\n'));
 
       // Display metrics
       displayMetrics(this.metrics);
+      // eslint-disable-next-line no-console
       console.log();
 
       // Display agents
       if (this.agents.size > 0) {
+        // eslint-disable-next-line no-console
         console.log(chalk.cyan.bold('🤖 Active Agents\n'));
-        displayAgentStatus(Array.from(this.agents.values()));
+        displayAgentStatus(
+          Array.from(this.agents.values()) as AgentStatusArray
+        );
       }
     },
   };
@@ -405,7 +491,9 @@ export function createStatusDashboard() {
 }
 
 /**
- * Cool shutdown animation
+ * Display a cool shutdown animation sequence
+ *
+ * @returns Promise that resolves when animation completes
  */
 export async function animateShutdown(): Promise<void> {
   // eslint-disable-next-line no-console

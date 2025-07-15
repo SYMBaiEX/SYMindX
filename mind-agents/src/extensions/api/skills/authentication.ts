@@ -11,6 +11,7 @@ import {
   ActionResultType,
   ActionCategory,
 } from '../../../types/agent';
+import { SkillParameters } from '../../../types/common';
 import { ApiExtension } from '../index';
 
 export class AuthenticationSkill {
@@ -30,7 +31,10 @@ export class AuthenticationSkill {
         description: 'Validate authentication token',
         category: ActionCategory.SYSTEM,
         parameters: { token: 'string', type: 'string' },
-        execute: async (_agent: Agent, params: any): Promise<ActionResult> => {
+        execute: async (
+          _agent: Agent,
+          params: SkillParameters
+        ): Promise<ActionResult> => {
           return this.validateToken(_agent, params);
         },
       },
@@ -40,7 +44,10 @@ export class AuthenticationSkill {
         description: 'Validate API key',
         category: ActionCategory.SYSTEM,
         parameters: { apiKey: 'string', permissions: 'array' },
-        execute: async (_agent: Agent, params: any): Promise<ActionResult> => {
+        execute: async (
+          _agent: Agent,
+          params: SkillParameters
+        ): Promise<ActionResult> => {
           return this.validateApiKey(_agent, params);
         },
       },
@@ -50,7 +57,10 @@ export class AuthenticationSkill {
         description: 'Check user permissions for specific action',
         category: ActionCategory.SYSTEM,
         parameters: { userId: 'string', action: 'string', resource: 'string' },
-        execute: async (_agent: Agent, params: any): Promise<ActionResult> => {
+        execute: async (
+          _agent: Agent,
+          params: SkillParameters
+        ): Promise<ActionResult> => {
           return this.checkPermissions(_agent, params);
         },
       },
@@ -60,7 +70,10 @@ export class AuthenticationSkill {
         description: 'Generate new session for authenticated user',
         category: ActionCategory.SYSTEM,
         parameters: { userId: 'string', metadata: 'object' },
-        execute: async (_agent: Agent, params: any): Promise<ActionResult> => {
+        execute: async (
+          _agent: Agent,
+          params: SkillParameters
+        ): Promise<ActionResult> => {
           return this.generateSession(_agent, params);
         },
       },
@@ -70,7 +83,10 @@ export class AuthenticationSkill {
         description: 'Revoke user session',
         category: ActionCategory.SYSTEM,
         parameters: { sessionId: 'string', reason: 'string' },
-        execute: async (_agent: Agent, params: any): Promise<ActionResult> => {
+        execute: async (
+          _agent: Agent,
+          params: SkillParameters
+        ): Promise<ActionResult> => {
           return this.revokeSession(_agent, params);
         },
       },
@@ -82,7 +98,7 @@ export class AuthenticationSkill {
    */
   private async validateToken(
     _agent: Agent,
-    params: any
+    params: SkillParameters
   ): Promise<ActionResult> {
     try {
       const { token, type = 'bearer' } = params;
@@ -136,7 +152,7 @@ export class AuthenticationSkill {
    */
   private async validateApiKey(
     _agent: Agent,
-    params: any
+    params: SkillParameters
   ): Promise<ActionResult> {
     try {
       const { apiKey, permissions = [] } = params;
@@ -188,7 +204,7 @@ export class AuthenticationSkill {
    */
   private async checkPermissions(
     _agent: Agent,
-    params: any
+    params: SkillParameters
   ): Promise<ActionResult> {
     try {
       const { userId, action, resource } = params;
@@ -234,7 +250,7 @@ export class AuthenticationSkill {
    */
   private async generateSession(
     _agent: Agent,
-    params: any
+    params: SkillParameters
   ): Promise<ActionResult> {
     try {
       const { userId, metadata = {} } = params;
@@ -283,7 +299,7 @@ export class AuthenticationSkill {
    */
   private async revokeSession(
     _agent: Agent,
-    params: any
+    params: SkillParameters
   ): Promise<ActionResult> {
     try {
       const { sessionId, reason = 'manual_revocation' } = params;
@@ -338,7 +354,7 @@ export class AuthenticationSkill {
   /**
    * Decode token
    */
-  private decodeToken(_token: string): any {
+  private decodeToken(_token: string): Record<string, unknown> {
     // Basic decoding - in practice this would properly decode JWT
     return {
       sub: 'user123',

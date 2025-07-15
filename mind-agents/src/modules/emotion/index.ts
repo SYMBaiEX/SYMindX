@@ -26,7 +26,10 @@ export { NeutralEmotion } from './neutral/index';
 /**
  * Create an emotion module based on configuration
  */
-export function createEmotionModule(type: string, config: any): EmotionModule {
+export function createEmotionModule(
+  type: string,
+  config: unknown
+): EmotionModule {
   // Creating emotion module - logged by runtime
 
   try {
@@ -96,7 +99,7 @@ export async function registerEmotionModules(registry: any): Promise<void> {
 
     // Emotion factories registered - logged by runtime
   } catch (error) {
-    console.error('❌ Failed to register emotion modules:', error);
+    runtimeLogger.error('❌ Failed to register emotion modules:', error);
 
     // Fallback to manual registration
     const emotionTypes = getEmotionModuleTypes();

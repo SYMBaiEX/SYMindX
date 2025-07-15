@@ -1,26 +1,69 @@
 /**
- * Consciousness Types for SYMindX
+ * @module consciousness
+ * @description Consciousness Types for SYMindX
  *
  * This module defines the revolutionary consciousness simulation system
- * that creates truly life-like agents with human-level and superhuman consciousness
+ * that creates truly life-like agents with human-level and superhuman consciousness.
+ *
+ * Features:
+ * - Consciousness states and levels
+ * - Embodied and temporal presence
+ * - Intentionality and aboutness structures
+ * - Self-modeling and meta-cognition
+ * - Qualia simulation and emergence detection
  */
 
-import {
-  Agent,
-  AgentEvent,
-  MemoryRecord as _MemoryRecord,
-  EmotionState as _EmotionState,
-} from './agent';
-import {
-  BaseConfig,
-  Context as _CommonContext,
-  GenericData,
-  Metadata as _Metadata,
-} from './common';
+import { Agent, AgentEvent } from './agent';
+import { BaseConfig, GenericData } from './common';
 
 // =====================================================
 // CONSCIOUSNESS CORE TYPES
 // =====================================================
+
+// Helper types for undefined references
+export interface ConsciousnessContext {
+  timestamp: Date;
+  agent: Agent;
+  environment: Record<string, unknown>;
+  state: ConsciousnessState;
+}
+
+export interface Connection {
+  id: string;
+  source: string;
+  target: string;
+  type: string;
+  strength: number;
+}
+
+export interface DecisionFactor {
+  name: string;
+  weight: number;
+  value: unknown;
+  reasoning: string;
+}
+
+export interface DecisionOption {
+  id: string;
+  label: string;
+  value: unknown;
+  score: number;
+  factors: DecisionFactor[];
+}
+
+export interface EmotionalFactor {
+  emotion: string;
+  intensity: number;
+  influence: number;
+  reasoning: string;
+}
+
+export interface SomaticGuidance {
+  bodyState: string;
+  signal: string;
+  strength: number;
+  interpretation: string;
+}
 
 export enum ConsciousnessLevel {
   MINIMAL = 'minimal', // Basic awareness
@@ -858,19 +901,7 @@ export interface MomentAwareness {
   sensoryEngagement: number; // connection to sensory input
 }
 
-export interface EmbodiedPresence {
-  bodyAwareness: number; // awareness of physical state
-  spatialAwareness: number; // sense of position in space
-  motorReadiness: number; // readiness for action
-  interoception: number; // awareness of internal states
-}
-
-export interface TemporalPresence {
-  pastOrientation: number; // focus on past experiences
-  presentOrientation: number; // focus on current moment
-  futureOrientation: number; // focus on future possibilities
-  timeDistortion: number; // subjective time perception changes
-}
+// EmbodiedPresence and TemporalPresence interfaces already defined above
 
 // =====================================================
 // INTENTIONALITY
@@ -907,7 +938,7 @@ export interface IntentionalObject {
   mode: 'belief' | 'desire' | 'hope' | 'fear' | 'expectation';
 }
 
-export interface AboutnessStructure {
+export interface SimplifiedAboutnessStructure {
   primaryFocus: string; // main object of consciousness
   secondaryFoci: string[]; // peripheral objects
   backgroundContext: string[]; // contextual awareness
@@ -1130,9 +1161,9 @@ export interface EmotionalConsequences {
 
 export interface EmpathyResponse {
   targetAgent: string;
-  cognitiveUnderstanding: any;
-  affectiveResonance: any;
-  compassionateResponse: any;
+  cognitiveUnderstanding: unknown;
+  affectiveResonance: unknown;
+  compassionateResponse: unknown;
   empathyAccuracy: number;
   actionSuggestions: string[];
   emotionalSupport: string[];
@@ -1533,36 +1564,36 @@ export interface IdeaCombination {
 }
 
 export interface ImplicitLearningSystem {
-  implicitPatterns: Map<string, any>;
-  unconsciousAssociations: Map<string, any>;
-  proceduralIntuitions: Map<string, any>;
-  implicitMemory: Map<string, any>;
+  implicitPatterns: Map<string, unknown>;
+  unconsciousAssociations: Map<string, unknown>;
+  proceduralIntuitions: Map<string, unknown>;
+  implicitMemory: Map<string, unknown>;
   learningRate: number;
   consolidationStrength: number;
   transferCapability: number;
 }
 
 export interface AnticipatoryAwarenessSystem {
-  predictions: any[];
-  anticipatoryPatterns: Map<string, any>;
-  predictiveModels: Map<string, any>;
+  predictions: unknown[];
+  anticipatoryPatterns: Map<string, unknown>;
+  predictiveModels: Map<string, unknown>;
   awarenessDepth: number;
   predictionAccuracy: number;
   temporalSensitivity: number;
 }
 
 export interface PatternLibrary {
-  patterns: Map<string, any>;
-  patternCategories: Map<string, any>;
-  patternRelationships: Map<string, any>;
-  patternEvolution: Map<string, any>;
+  patterns: Map<string, unknown>;
+  patternCategories: Map<string, unknown>;
+  patternRelationships: Map<string, unknown>;
+  patternEvolution: Map<string, unknown>;
   lastUpdated: Date;
 }
 
 export interface EmergentPattern {
   id: string;
   type: string;
-  elements: any[];
+  elements: unknown[];
   emergence: number;
   stability: number;
   significance: number;
@@ -1614,7 +1645,7 @@ export interface Insight {
 export interface Problem {
   id: string;
   description: string;
-  context: any;
+  context: ConsciousnessContext;
   constraints: string[];
   goals: string[];
 }
@@ -1622,7 +1653,7 @@ export interface Problem {
 export interface Context {
   id: string;
   description: string;
-  elements: any[];
+  elements: unknown[];
   relationships: string[];
   constraints: string[];
 }
@@ -1633,7 +1664,7 @@ export interface CreativeIdea {
   novelty: number;
   feasibility: number;
   potential: number;
-  connections: any[];
+  connections: Connection[];
   inspiration: string[];
   confidence: number;
   generated: Date;
@@ -1642,16 +1673,16 @@ export interface CreativeIdea {
 export interface Situation {
   id: string;
   description: string;
-  context: any;
+  context: ConsciousnessContext;
   participants: string[];
-  factors: any[];
+  factors: DecisionFactor[];
 }
 
 export interface Decision {
   id: string;
   description: string;
-  options: any[];
-  context: any;
+  options: DecisionOption[];
+  context: ConsciousnessContext;
   constraints: string[];
 }
 
@@ -1668,8 +1699,8 @@ export interface GuidedChoice {
   recommendedOption: string;
   confidence: number;
   reasoning: string[];
-  emotionalFactors: any[];
-  somaticGuidance: any[];
+  emotionalFactors: EmotionalFactor[];
+  somaticGuidance: SomaticGuidance[];
   alternativeConsiderations: string[];
   riskAssessment: string[];
 }
@@ -1677,7 +1708,7 @@ export interface GuidedChoice {
 export interface Pattern {
   id: string;
   type: string;
-  data: any;
+  data: unknown;
   strength: number;
   confidence: number;
   significance: number;
@@ -1759,7 +1790,7 @@ export interface CoreTrait {
   changeHistory: TraitChange[];
 }
 
-export interface TraitChange {
+export interface NumericTraitChange {
   previousValue: number;
   newValue: number;
   trigger: string;
@@ -1819,8 +1850,8 @@ export interface BehavioralPattern {
 export interface PatternEvolution {
   patternId: string;
   evolutionType: string;
-  previousForm: any;
-  newForm: any;
+  previousForm: unknown;
+  newForm: unknown;
   trigger: string;
   timestamp: Date;
 }
@@ -1912,7 +1943,7 @@ export interface ValueAlignment {
   coherence: number;
 }
 
-export interface ValueEvolution {
+export interface ValueImportanceEvolution {
   value: string;
   previousImportance: number;
   newImportance: number;
@@ -2156,7 +2187,7 @@ export interface SocialSituation {
   id: string;
   description: string;
   participants: string[];
-  context: any;
+  context: ConsciousnessContext;
   complexity: number;
   dynamics: string[];
 }
@@ -2436,7 +2467,7 @@ export interface SocialNetworkMap {
 export interface SocialNode {
   id: string;
   type: 'individual' | 'group' | 'organization';
-  attributes: Record<string, any>;
+  attributes: Record<string, unknown>;
   centrality: number;
   influence: number;
 }

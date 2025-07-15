@@ -383,6 +383,7 @@ class AwesomeSYMindXCLI {
         console.log(chalk.red('❌ Failed to send message'));
       }
     } catch (error) {
+      void error; // Acknowledge error without using it
       console.log(chalk.red('❌ Could not connect to agent'));
     }
   }
@@ -504,6 +505,7 @@ class AwesomeSYMindXCLI {
         });
       }
     } catch (error) {
+      void error; // Acknowledge error without using it
       spinner.fail('Failed to fetch status');
       displayError('Could not connect to runtime');
     }
@@ -1015,6 +1017,7 @@ class AwesomeSYMindXCLI {
       const data = await response.json();
       return data.agents || [];
     } catch (error) {
+      void error; // Acknowledge error without using it
       return [];
     }
   }

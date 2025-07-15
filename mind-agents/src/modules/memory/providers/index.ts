@@ -42,6 +42,7 @@ export type { PostgresMemoryConfig } from './postgres/index';
 
 // Import provider types and classes for internal use
 import { MemoryProviderType } from '../../../types/enums';
+import { MemoryProvider } from '../../../types/memory';
 
 import type { InMemoryConfig } from './memory/index';
 import { InMemoryProvider } from './memory/index';
@@ -73,7 +74,7 @@ export type MemoryProviderConfig =
 export function createMemoryProvider(
   type: MemoryProviderType,
   config: MemoryProviderConfig
-) {
+): MemoryProvider {
   switch (type) {
     case MemoryProviderType.MEMORY:
       return new InMemoryProvider(config as InMemoryConfig);

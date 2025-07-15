@@ -5,7 +5,7 @@ import { useTerminalDimensions } from '../../hooks/useTerminalDimensions.js';
 import { themeEngine } from '../../themes/ThemeEngine.js';
 
 interface Particle {
-  id: number;
+  id: string;
   x: number;
   y: number;
   vx: number;
@@ -56,9 +56,16 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
   const { dimensions } = useTerminalDimensions();
   const theme = themeEngine.getTheme();
 
-  // Use responsive dimensions if enabled
-  const width = responsive ? dimensions.width : propWidth || 80;
-  const height = responsive ? dimensions.height - 2 : propHeight || 24;
+  // Use responsive dimensions if enabled (memoized)
+  const width = useMemo((): number => 
+    responsive ? dimensions.width : propWidth || 80, 
+    [responsive, dimensions.width, propWidth]
+  );
+  
+  const height = useMemo((): number => 
+    responsive ? dimensions.height - 2 : propHeight || 24, 
+    [responsive, dimensions.height, propHeight]
+  );
 
   // Particle character sets
   const particleChars = useMemo(() => ({
@@ -123,7 +130,7 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
   }, [theme.colors, colorful]);
 
   // Create new particle
-  const createParticle = useCallback((id: number): Particle => {
+  const createParticle = useCallback((baseId: number): Particle => {
     const { x, y } = getEmitterPosition();
     const type =
       particleTypes[Math.floor(Math.random() * particleTypes.length)];
@@ -131,7 +138,7 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
     const velocity = speed * (0.5 + Math.random() * 0.5);
 
     return {
-      id,
+      id: `particle-${baseId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       x,
       y,
       vx: Math.cos(angle) * velocity + wind,
@@ -173,7 +180,7 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
 
           // Reset particle if it dies or goes off screen
           if (newLife <= 0 || newY > height || newX < 0 || newX > width) {
-            return createParticle(particle.id);
+            return createParticle(parseInt(particle.id.split('-')[1] || '0', 10));
           }
 
           // Apply some randomness for organic movement
@@ -196,8 +203,8 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
     return (): void => clearInterval(updateInterval);
   }, [gravity, wind, height, width, createParticle]);
 
-  // Render particles
-  const renderParticles = (): React.ReactElement[] => {
+  // Render particles with content-based keys
+  const renderParticles = useCallback((): React.ReactElement[] => {
     const display: string[][] = Array(height)
       .fill(null)
       .map(() => Array(width).fill(' '));
@@ -218,36 +225,44 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
       }
     });
 
-    return display.map((row, y) => (
-      <Text key={`row-${y}-${row.join('')}`}>
-        {row.map((char, x) => {
-          if (char === ' ') return <Text key={`space-${y}-${x}`}> </Text>;
+    return display.map((row, y) => {
+      const rowContent = row.join('');
+      const rowKey = `row-${y}-${rowContent.length}-${rowContent.charCodeAt(0)}-${rowContent.charCodeAt(Math.floor(rowContent.length / 2))}-${rowContent.charCodeAt(rowContent.length - 1)}`;
+      
+      return (
+        <Text key={rowKey}>
+          {row.map((char, x) => {
+            const particle = particles.find(
+              (p) => Math.floor(p.x) === x && Math.floor(p.y) === y
+            );
 
-          // Find the particle at this position
-          const particle = particles.find(
-            (p) => Math.floor(p.x) === x && Math.floor(p.y) === y
-          );
+            const cellKey = particle 
+              ? `cell-${particle.id}-${y}-${x}-${char}`
+              : `empty-${y}-${x}-${char}`;
 
-          if (!particle) return <Text key={`char-${y}-${x}`}>{char}</Text>;
+            if (char === ' ') return <Text key={cellKey}> </Text>;
 
-          // Calculate opacity based on life
-          const lifeRatio = particle.life / particle.maxLife;
-          const dimmed = fadeOut && lifeRatio < 0.5;
+            if (!particle) return <Text key={cellKey}>{char}</Text>;
 
-          return (
-            <Text
-              key={`particle-${y}-${x}`}
-              color={particle.color}
-              dimColor={dimmed}
-              bold={particle.size > 1}
-            >
-              {char}
-            </Text>
-          );
-        })}
-      </Text>
-    ));
-  };
+            // Calculate opacity based on life
+            const lifeRatio = particle.life / particle.maxLife;
+            const dimmed = fadeOut && lifeRatio < 0.5;
+
+            return (
+              <Text
+                key={cellKey}
+                color={particle.color}
+                dimColor={dimmed}
+                bold={particle.size > 1}
+              >
+                {char}
+              </Text>
+            );
+          })}
+        </Text>
+      );
+    });
+  }, [particles, height, width, fadeOut]);
 
   return <Box flexDirection='column'>{renderParticles()}</Box>;
 };

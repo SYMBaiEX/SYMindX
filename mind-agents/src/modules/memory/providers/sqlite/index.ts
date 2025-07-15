@@ -77,8 +77,8 @@ export interface SQLiteMemoryRow extends MemoryRow {
 export class SQLiteMemoryProvider extends BaseMemoryProvider {
   private db: DatabaseType;
   private sharedPools: Map<string, SharedMemoryPool> = new Map();
-  private consolidationTimer?: NodeJS.Timeout;
-  private archivalTimer?: NodeJS.Timeout;
+  private consolidationTimer?: ReturnType<typeof setTimeout>;
+  private archivalTimer?: ReturnType<typeof setTimeout>;
 
   /**
    * Constructor for the SQLite memory provider

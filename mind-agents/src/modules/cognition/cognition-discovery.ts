@@ -175,7 +175,7 @@ export class CognitionDiscovery {
                   packageInfo,
                 });
               }
-            } catch (error) {
+            } catch {
               // Ignore packages with invalid package.json
             }
           }

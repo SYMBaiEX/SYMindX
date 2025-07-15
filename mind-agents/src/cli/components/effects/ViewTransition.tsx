@@ -1,5 +1,5 @@
 import { Box, Text } from 'ink';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 
 import { themeEngine } from '../../themes/ThemeEngine.js';
 
@@ -64,12 +64,12 @@ export const ViewTransition: React.FC<ViewTransitionProps> = ({
       setCurrentContent(children);
       previousKey.current = transitionKey;
     }
-  }, [transitionKey, children, duration]);
+  }, [transitionKey, children, duration, easeInOutCubic]);
 
-  // Easing function
-  const easeInOutCubic = (t: number): number => {
+  // Easing function (memoized)
+  const easeInOutCubic = useCallback((t: number): number => {
     return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-  };
+  }, []);
 
   // Render transition effect
   const renderTransition = (): React.ReactNode => {
@@ -97,13 +97,13 @@ export const ViewTransition: React.FC<ViewTransitionProps> = ({
     }
   };
 
-  const renderFadeTransition = (): React.ReactNode => {
+  const renderFadeTransition = useCallback((): React.ReactNode => {
     const showNext = progress > 0.5;
 
     return <Box>{showNext ? nextContent : currentContent}</Box>;
-  };
+  }, [progress, nextContent, currentContent]);
 
-  const renderSlideTransition = (): React.ReactNode => {
+  const renderSlideTransition = useCallback((): React.ReactNode => {
     const offset = Math.floor((1 - progress) * 20);
 
     let marginProps = {};
@@ -131,15 +131,16 @@ export const ViewTransition: React.FC<ViewTransitionProps> = ({
         )}
       </Box>
     );
-  };
+  }, [progress, direction, currentContent, nextContent]);
 
-  const renderZoomTransition = (): React.ReactNode => {
+  const zoomChars = useMemo(() => ['▪', '▫', '□', '▢'], []);
+
+  const renderZoomTransition = useCallback((): React.ReactNode => {
     const scale = progress < 0.5 ? 1 - progress : progress;
     const showNext = progress > 0.5;
 
     // Simulate zoom with ASCII art borders
     const zoomLevel = Math.floor(scale * 3);
-    const zoomChars = ['▪', '▫', '□', '▢'];
 
     return (
       <Box flexDirection='column' alignItems='center'>
@@ -160,9 +161,9 @@ export const ViewTransition: React.FC<ViewTransitionProps> = ({
         )}
       </Box>
     );
-  };
+  }, [progress, theme.colors.borderDim, zoomChars, nextContent, currentContent]);
 
-  const renderFlipTransition = (): React.ReactNode => {
+  const renderFlipTransition = useCallback((): React.ReactNode => {
     const flipProgress = progress * 180;
     const isFlipped = flipProgress > 90;
 
@@ -180,10 +181,11 @@ export const ViewTransition: React.FC<ViewTransitionProps> = ({
         )}
       </Box>
     );
-  };
+  }, [progress, currentContent, nextContent]);
 
-  const renderDissolveTransition = (): React.ReactNode => {
-    const dissolveChars = ['█', '▓', '▒', '░', ' '];
+  const dissolveChars = useMemo(() => ['█', '▓', '▒', '░', ' '], []);
+
+  const renderDissolveTransition = useCallback((): React.ReactNode => {
     const dissolveIndex = Math.floor(progress * dissolveChars.length);
 
     // Create dissolve overlay
@@ -209,8 +211,8 @@ export const ViewTransition: React.FC<ViewTransitionProps> = ({
         {progress < 0.5 ? currentContent : nextContent}
         {progress > 0.2 && progress < 0.8 && (
           <Box flexDirection='column' marginTop={-5}>
-            {overlay.map((line, i) => (
-              <Text key={`glitch-line-${i}-${line}`} color={theme.colors.glitch}>
+            {overlay.map((line) => (
+              <Text key={`dissolve-line-${line.length}-${line.charCodeAt(0)}-${line.charCodeAt(Math.floor(line.length / 2))}-${line.charCodeAt(line.length - 1)}`} color={theme.colors.glitch}>
                 {line}
               </Text>
             ))}
@@ -218,9 +220,11 @@ export const ViewTransition: React.FC<ViewTransitionProps> = ({
         )}
       </Box>
     );
-  };
+  }, [progress, dissolveChars, currentContent, nextContent, theme.colors.glitch]);
 
-  const renderGlitchTransition = (): React.ReactNode => {
+  const glitchChars = useMemo(() => '▓▒░█▄▀■□▢▣▤▥▦▧▨▩▪▫', []);
+
+  const renderGlitchTransition = useCallback((): React.ReactNode => {
     const glitchIntensity = progress < 0.5 ? progress * 2 : (1 - progress) * 2;
     const showNext = progress > 0.5;
 
@@ -228,7 +232,6 @@ export const ViewTransition: React.FC<ViewTransitionProps> = ({
     const glitchArtifacts = [];
     if (glitchIntensity > 0.3) {
       for (let i = 0; i < 3; i++) {
-        const glitchChars = '▓▒░█▄▀■□▢▣▤▥▦▧▨▩▪▫';
         const artifact = Array(10)
           .fill(null)
           .map(
@@ -237,7 +240,7 @@ export const ViewTransition: React.FC<ViewTransitionProps> = ({
           .join('');
 
         glitchArtifacts.push(
-          <Box key={`glitch-artifact-${i}`} marginTop={-1}>
+          <Box key={`glitch-artifact-${artifact}-${i}-${Date.now()}`} marginTop={-1}>
             <Text color={theme.colors.glitch}>{artifact}</Text>
           </Box>
         );
@@ -250,17 +253,17 @@ export const ViewTransition: React.FC<ViewTransitionProps> = ({
         {glitchArtifacts}
       </Box>
     );
-  };
+  }, [progress, glitchChars, nextContent, currentContent, theme.colors.glitch]);
 
-  const renderMatrixTransition = (): React.ReactNode => {
+  const matrixChars = useMemo(() => 'アイウエオカキクケコサシスセソタチツテトナニヌネノ01', []);
+
+  const renderMatrixTransition = useCallback((): React.ReactNode => {
     const matrixDensity = progress < 0.5 ? progress * 2 : (1 - progress) * 2;
     const showNext = progress > 0.5;
 
     // Generate matrix rain overlay
     const matrixOverlay = [];
     if (matrixDensity > 0.2) {
-      const matrixChars =
-        'アイウエオカキクケコサシスセソタチツテトナニヌネノ01';
       for (let i = 0; i < Math.floor(matrixDensity * 5); i++) {
         const line = Array(30)
           .fill(null)
@@ -272,7 +275,7 @@ export const ViewTransition: React.FC<ViewTransitionProps> = ({
           .join('');
 
         matrixOverlay.push(
-          <Text key={`matrix-overlay-${i}`} color={theme.colors.matrix} dimColor>
+          <Text key={`matrix-overlay-${line}-${i}-${Date.now()}`} color={theme.colors.matrix} dimColor>
             {line}
           </Text>
         );
@@ -289,7 +292,7 @@ export const ViewTransition: React.FC<ViewTransitionProps> = ({
         )}
       </Box>
     );
-  };
+  }, [progress, matrixChars, nextContent, currentContent, theme.colors.matrix]);
 
   return renderTransition();
 };

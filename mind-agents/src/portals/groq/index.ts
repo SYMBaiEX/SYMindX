@@ -115,7 +115,9 @@ export class GroqPortal extends BasePortal {
             parameters: def.parameters || z.object({}),
             execute:
               def.execute ||
-              (async (_args: Record<string, unknown>) => {
+              (async (
+                _args: Record<string, unknown>
+              ): Promise<{ error: string }> => {
                 // Tool has no execute function
                 return { error: 'Tool execution not implemented' };
               }),
@@ -468,7 +470,7 @@ export class GroqPortal extends BasePortal {
           reasoning: parsed.reasoning || '',
           recommendations: parsed.recommendations || [],
         };
-      } catch (error) {
+      } catch {
         // Fallback to text parsing if JSON parsing fails
         return this.parseTextEvaluation(text);
       }

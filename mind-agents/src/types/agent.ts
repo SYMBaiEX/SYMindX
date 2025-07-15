@@ -1,5 +1,13 @@
 /**
- * Agent types for SYMindX
+ * @module agent
+ * @description Agent types for SYMindX - Core agent interfaces and types
+ *
+ * This module defines the fundamental types for agents including:
+ * - Agent configuration and state management
+ * - Agent lifecycle interfaces
+ * - Extension and module interfaces
+ * - Action and event handling types
+ * - Multi-agent coordination types
  */
 
 import {
@@ -13,15 +21,16 @@ import {
 } from './common.js';
 import { EmotionModule } from './emotion.js';
 import {
-  AgentStateTransitionResult,
-  // ModuleManifest - type definition available but not used at runtime
-} from './results.js';
-import {
   OperationResult,
   ExecutionResult,
   AgentId,
   Timestamp,
 } from './helpers.js';
+import { Portal, PortalConfig } from './portal.js';
+import {
+  AgentStateTransitionResult,
+  // ModuleManifest - type definition available but not used at runtime
+} from './results.js';
 
 // Additional result types for agent lifecycle methods
 export interface InitializationResult {
@@ -66,15 +75,15 @@ export interface Agent {
   extensions: Extension[];
   portal?: Portal;
   portals?: Portal[]; // Multiple portals support
-  toolSystem?: any; // Dynamic tools system for Agent Zero-style capabilities
+  toolSystem?: unknown; // Dynamic tools system for Agent Zero-style capabilities
   config: AgentConfig;
   lastUpdate: Timestamp;
   eventBus?: EventBus; // Added eventBus property as optional
   character_id?: string; // Character ID for agent configuration
-  characterConfig?: any; // Character configuration object
+  characterConfig?: Record<string, unknown>; // Character configuration object
   autonomyLevel?: number; // Autonomy level (0-100)
-  learning?: any; // Learning system reference
-  decision?: any; // Decision system reference
+  learning?: unknown; // Learning system reference
+  decision?: unknown; // Decision system reference
   personality?: string[]; // Personality traits
 
   // Enhanced lifecycle methods with proper result types
@@ -134,11 +143,11 @@ export interface AgentConfig {
       goal_pursuit?: boolean;
     };
   };
-  autonomous_behaviors?: any; // Legacy support for autonomous behaviors
+  autonomous_behaviors?: Record<string, unknown>; // Legacy support for autonomous behaviors
   human_interaction?: {
     enabled: boolean;
     mode?: string;
-    settings?: any;
+    settings?: Record<string, unknown>;
     interruption_tolerance?: string;
   };
 }
@@ -169,7 +178,7 @@ export interface EmotionState {
   triggers: string[];
   history: EmotionRecord[];
   timestamp: Date;
-  metadata?: Record<string, any>; // Add metadata property
+  metadata?: Record<string, unknown>; // Add metadata property
 }
 
 export interface EmotionRecord {
@@ -522,7 +531,7 @@ export enum AgentStateType {
 
 export interface AgentState {
   location?: string;
-  inventory?: Record<string, any>;
+  inventory?: Record<string, unknown>;
   stats?: Record<string, number>;
   goals?: string[];
   context?: Context;
@@ -545,7 +554,7 @@ export interface LazyAgentState extends AgentState {
   emotionState: EmotionState; // Required emotion state
   recentMemories: MemoryRecord[]; // Required recent memories
   currentThoughts?: string[]; // Optional current thoughts
-  decisionContext?: any; // Optional decision context
+  decisionContext?: unknown; // Optional decision context
 }
 
 export enum LazyAgentStatus {
@@ -637,22 +646,43 @@ export interface ModuleRegistry {
   getPortal(name: string): Portal | undefined;
 
   // Factory registration methods
-  registerMemoryFactory(name: string, factory: any): void;
-  registerEmotionFactory(name: string, factory: any): void;
-  registerCognitionFactory(name: string, factory: any): void;
-  registerExtensionFactory(name: string, factory: any): void;
-  registerPortalFactory(name: string, factory: any): void;
-  registerAgentFactory(name: string, factory: any): void;
+  registerMemoryFactory(
+    name: string,
+    factory: (config: unknown) => MemoryProvider
+  ): void;
+  registerEmotionFactory(
+    name: string,
+    factory: (config: unknown) => EmotionModule
+  ): void;
+  registerCognitionFactory(
+    name: string,
+    factory: (config: unknown) => CognitionModule
+  ): void;
+  registerExtensionFactory(
+    name: string,
+    factory: (config: unknown) => Extension
+  ): void;
+  registerPortalFactory(
+    name: string,
+    factory: (config: unknown) => Portal
+  ): void;
+  registerAgentFactory(name: string, factory: (config: unknown) => Agent): void;
 
   // Creation methods
-  createMemoryProvider(name: string, config?: any): MemoryProvider | undefined;
-  createEmotionModule(name: string, config?: any): EmotionModule | undefined;
+  createMemoryProvider(
+    name: string,
+    config?: unknown
+  ): MemoryProvider | undefined;
+  createEmotionModule(
+    name: string,
+    config?: unknown
+  ): EmotionModule | undefined;
   createCognitionModule(
     name: string,
-    config?: any
+    config?: unknown
   ): CognitionModule | undefined;
-  createExtension(name: string, config?: any): Extension | undefined;
-  createPortal(name: string, config?: any): Portal | undefined;
+  createExtension(name: string, config?: unknown): Extension | undefined;
+  createPortal(name: string, config?: unknown): Portal | undefined;
 
   // Listing methods
   listMemoryProviders(): string[];
@@ -663,8 +693,8 @@ export interface ModuleRegistry {
   listPortalFactories(): string[];
 
   // Other methods
-  registerLazyAgent(name: string, loader: any): void;
-  getToolSystem(name: string): any;
+  registerLazyAgent(name: string, loader: () => Promise<Agent>): void;
+  getToolSystem(name: string): unknown;
   getRegisteredAgents(): Agent[]; // Add method for getting registered agents
 }
 
@@ -688,27 +718,27 @@ export interface RuntimeConfig {
     paths: string[];
     slack?: {
       enabled: boolean;
-      [key: string]: any;
+      [key: string]: unknown;
     };
     runelite?: {
       enabled: boolean;
-      [key: string]: any;
+      [key: string]: unknown;
     };
     twitter?: {
       enabled: boolean;
-      [key: string]: any;
+      [key: string]: unknown;
     };
     telegram?: {
       enabled: boolean;
-      [key: string]: any;
+      [key: string]: unknown;
     };
     mcp?: {
       enabled: boolean;
-      [key: string]: any;
+      [key: string]: unknown;
     };
     api?: {
       enabled: boolean;
-      [key: string]: any;
+      [key: string]: unknown;
     };
   };
   portals?: {
@@ -717,5 +747,3 @@ export interface RuntimeConfig {
     apiKeys?: Record<string, string>;
   };
 }
-
-import { Portal, PortalConfig } from './portal.js';

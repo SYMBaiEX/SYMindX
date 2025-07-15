@@ -2,7 +2,6 @@
  * Core event types for SYMindX event system
  */
 
-import { GenericData } from '../common.js';
 import { Timestamp } from '../helpers.js';
 
 /**
@@ -262,7 +261,7 @@ export interface EventStream {
     handler?: EventHandler
   ): AsyncIterableIterator<EventData>;
 
-  pipe<T>(transformer: EventTransformer): EventStream;
+  pipe(transformer: EventTransformer): EventStream;
 
   filter(predicate: (event: EventData) => boolean): EventStream;
 

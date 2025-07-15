@@ -15,7 +15,37 @@ import {
   MemoryRecord,
 } from '../types/agent';
 import { EmotionState } from '../types/emotion';
+import type { CharacterConfig, AgentConfig } from '../types/index';
 import { Logger } from '../utils/logger';
+
+// Additional type definitions for state management
+interface StatefulExtension {
+  id: string;
+  getState?(): Promise<Record<string, unknown>> | Record<string, unknown>;
+}
+
+interface StatefulPortal {
+  id?: string;
+  type?: string;
+  getState?(): Promise<Record<string, unknown>> | Record<string, unknown>;
+}
+
+interface ExtendedAgent extends Agent {
+  currentThoughts?: string[];
+  decisionContext?: Record<string, unknown>;
+  goals?: string[];
+  learning?: {
+    getState?(): Record<string, unknown>;
+  };
+  decision?: {
+    getHistory?(): unknown[];
+  };
+  autonomyLevel?: number;
+}
+
+interface NodeJSError extends Error {
+  code?: string;
+}
 
 export interface AgentStateSnapshot {
   // Core agent state
@@ -27,10 +57,10 @@ export interface AgentStateSnapshot {
   core: {
     name: string;
     status: AgentStatus;
-    characterConfig: unknown;
-    agentConfig: unknown;
+    characterConfig: CharacterConfig;
+    agentConfig: AgentConfig;
     lastUpdate: Date;
-    personality?: unknown; // Agent personality traits
+    personality?: Record<string, unknown>; // Agent personality traits
     goals?: string[]; // Agent goals
   };
 
@@ -39,26 +69,26 @@ export interface AgentStateSnapshot {
     emotionState: EmotionState;
     recentMemories: MemoryRecord[];
     currentThoughts?: string[];
-    decisionContext?: unknown;
+    decisionContext?: Record<string, unknown>;
     memories?: MemoryRecord[]; // Additional memories storage
-    emotions?: unknown; // Flexible emotions structure
-    plans?: unknown[]; // Plans storage
-    decisions?: unknown[]; // Decisions storage
+    emotions?: Record<string, unknown>; // Flexible emotions structure
+    plans?: Record<string, unknown>[]; // Plans storage
+    decisions?: Record<string, unknown>[]; // Decisions storage
   };
 
   // Autonomous state
   autonomous?: {
-    goals: unknown[];
-    learningState: unknown;
-    decisionHistory: unknown[];
+    goals: string[];
+    learningState: Record<string, unknown>;
+    decisionHistory: Record<string, unknown>[];
     autonomyLevel: number;
   };
 
   // Communication state
   communication: {
-    activeConversations: unknown[];
-    extensionStates: Record<string, unknown>;
-    portalStates: Record<string, unknown>;
+    activeConversations: Record<string, unknown>[];
+    extensionStates: Record<string, Record<string, unknown>>;
+    portalStates: Record<string, Record<string, unknown>>;
   };
 
   // Resource state
@@ -74,7 +104,7 @@ export interface AgentStateSnapshot {
     checkpointType: CheckpointType;
     integrity: string;
     dependencies: string[];
-    recoveryData?: unknown;
+    recoveryData?: Record<string, unknown>;
   };
 }
 
@@ -171,21 +201,22 @@ export class StateManager {
       const recentMemories = await this.getRecentMemories(agent);
 
       // Gather extension states
-      const extensionStates: Record<string, any> = {};
+      const extensionStates: Record<string, Record<string, unknown>> = {};
       for (const extension of agent.extensions) {
-        if (typeof (extension as any).getState === 'function') {
-          extensionStates[extension.id] = await (extension as any).getState();
+        const statefulExtension = extension as StatefulExtension;
+        if (typeof statefulExtension.getState === 'function') {
+          extensionStates[extension.id] = await statefulExtension.getState();
         }
       }
 
       // Gather portal states
-      const portalStates: Record<string, any> = {};
+      const portalStates: Record<string, Record<string, unknown>> = {};
       if (agent.portals) {
         for (const portal of agent.portals) {
-          if (typeof (portal as any).getState === 'function') {
-            portalStates[(portal as any).id || 'primary'] = await (
-              portal as any
-            ).getState();
+          const statefulPortal = portal as StatefulPortal;
+          if (typeof statefulPortal.getState === 'function') {
+            portalStates[statefulPortal.id || 'primary'] =
+              await statefulPortal.getState();
           }
         }
       }
@@ -230,23 +261,24 @@ export class StateManager {
       };
 
       // Add optional cognitive properties
-      const currentThoughts = (agent as any).currentThoughts;
+      const extendedAgent = agent as ExtendedAgent;
+      const currentThoughts = extendedAgent.currentThoughts;
       if (currentThoughts) {
         snapshot.cognitive.currentThoughts = currentThoughts;
       }
 
-      const decisionContext = (agent as any).decisionContext;
+      const decisionContext = extendedAgent.decisionContext;
       if (decisionContext) {
         snapshot.cognitive.decisionContext = decisionContext;
       }
 
       // Add autonomous state if present
-      if (agent.autonomyLevel) {
+      if (extendedAgent.autonomyLevel) {
         snapshot.autonomous = {
-          goals: (agent as any).goals || [],
-          learningState: (agent.learning as any)?.getState?.() || {},
-          decisionHistory: (agent.decision as any)?.getHistory?.() || [],
-          autonomyLevel: agent.autonomyLevel,
+          goals: extendedAgent.goals || [],
+          learningState: extendedAgent.learning?.getState?.() || {},
+          decisionHistory: extendedAgent.decision?.getHistory?.() || [],
+          autonomyLevel: extendedAgent.autonomyLevel,
         };
       }
 
@@ -371,7 +403,7 @@ export class StateManager {
 
       return snapshot;
     } catch (error) {
-      if ((error as any).code === 'ENOENT') {
+      if ((error as NodeJSError).code === 'ENOENT') {
         this.logger.warn(`No snapshot found for agent ${agentId}`);
         return null;
       }
@@ -477,7 +509,7 @@ export class StateManager {
         .sort()
         .reverse(); // Most recent first
     } catch (error) {
-      if ((error as any).code === 'ENOENT') {
+      if ((error as NodeJSError).code === 'ENOENT') {
         return [];
       }
       throw error;
@@ -549,7 +581,9 @@ export class StateManager {
     // Add portal dependencies
     if (agent.portals) {
       agent.portals.forEach((portal) => {
-        dependencies.push(`portal:${(portal as any).type || 'unknown'}`);
+        dependencies.push(
+          `portal:${(portal as StatefulPortal).type || 'unknown'}`
+        );
       });
     }
 
@@ -758,7 +792,7 @@ export class StateManager {
         this.logger.info(`Restored lazy agent state for ${lazyAgentId}`);
         return state;
       } catch (error) {
-        if ((error as any).code === 'ENOENT') {
+        if ((error as NodeJSError).code === 'ENOENT') {
           this.logger.info(`No saved state for lazy agent ${lazyAgentId}`);
           return null;
         }

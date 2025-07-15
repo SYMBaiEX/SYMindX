@@ -69,7 +69,7 @@ export interface NeonMemoryConfig extends BaseMemoryConfig {
 export interface NeonMemoryRow extends MemoryRow {
   embedding?: number[];
   tier?: string;
-  context?: Record<string, any>; // JSON-encoded MemoryContext
+  context?: Record<string, unknown>; // JSON-encoded MemoryContext
   created_at: Date;
   updated_at: Date;
 }

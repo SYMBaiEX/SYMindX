@@ -80,8 +80,8 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
   private isInitialized = false;
   private schemaVersion = '2.0.0';
   private sharedPools: Map<string, SharedMemoryPool> = new Map();
-  private consolidationTimer?: NodeJS.Timeout;
-  private archivalTimer?: NodeJS.Timeout;
+  private consolidationTimer?: ReturnType<typeof setTimeout>;
+  private archivalTimer?: ReturnType<typeof setTimeout>;
 
   /**
    * Constructor for the PostgreSQL memory provider

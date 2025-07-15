@@ -8,6 +8,31 @@ import { Agent } from './agent';
 import { ExtensionConfig } from './common';
 
 /**
+ * Extension action handler type
+ */
+export type ExtensionAction = (
+  agent: Agent,
+  ...args: unknown[]
+) => Promise<unknown>;
+
+/**
+ * Extension event handler type
+ */
+export type ExtensionEventHandler = (
+  event: ExtensionEvent
+) => void | Promise<void>;
+
+/**
+ * Extension event structure
+ */
+export interface ExtensionEvent {
+  type: string;
+  data: unknown;
+  timestamp: Date;
+  source: string;
+}
+
+/**
  * Extension context provided to extensions during initialization
  */
 export interface ExtensionContext {
@@ -38,9 +63,9 @@ export interface Extension {
   /** Extension configuration */
   config: ExtensionConfig;
   /** Available actions */
-  actions: Record<string, any>;
+  actions: Record<string, ExtensionAction>;
   /** Event handlers */
-  events: Record<string, any>;
+  events: Record<string, ExtensionEventHandler>;
 
   /** Initialize the extension */
   init(): Promise<void>;

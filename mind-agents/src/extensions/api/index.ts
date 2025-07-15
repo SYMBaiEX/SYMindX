@@ -41,6 +41,17 @@ import {
   AgentEvent,
 } from '../../types/agent';
 import { SkillParameters } from '../../types/common';
+import type {
+  WebSocketMessage,
+  RouteHandler,
+  ChatRequestPayload,
+  ChatResponsePayload,
+  AgentStatusPayload,
+  SystemMetricsPayload,
+  SpawnAgentPayload,
+  RouteConversationPayload,
+} from '../../types/extensions/api';
+import { MemoryTierType, MemoryDuration } from '../../types/memory';
 import { runtimeLogger } from '../../utils/logger';
 
 import {
@@ -54,22 +65,6 @@ import {
   ActionResponse,
   ConnectionInfo,
 } from './types';
-import type {
-  WebSocketMessage,
-  RouteHandler,
-  MiddlewareContext,
-  APIResponse,
-  ChatRequestPayload,
-  ChatResponsePayload,
-  ActionRequestPayload,
-  ActionResponsePayload,
-  AgentStatusPayload,
-  SystemMetricsPayload,
-  SpawnAgentPayload,
-  RouteConversationPayload,
-  BroadcastMessagePayload,
-  TransferConversationPayload,
-} from '../../types/extensions/api';
 // WebSocketServerSkill removed - using simple WebSocket server directly
 import { WebUIServer } from './webui/index';
 
@@ -99,21 +94,33 @@ export class ApiExtension implements Extension {
   private commandSystem?: CommandSystem;
   private runtime?: {
     agents?: Map<string, Agent>;
-    lazyAgents?: Map<string, { id: string; name: string; state: string; lastActivated?: Date; characterConfig?: any; config?: any }>;
+    lazyAgents?: Map<
+      string,
+      {
+        id: string;
+        name: string;
+        state: string;
+        lastActivated?: Date;
+        characterConfig?: Record<string, unknown>;
+        config?: Record<string, unknown>;
+      }
+    >;
     activateAgent?: (agentId: string) => Promise<void>;
     deactivateAgent?: (agentId: string) => Promise<void>;
     multiAgentManager?: {
-      spawnAgent: (params: any) => Promise<string>;
+      spawnAgent: (params: SpawnAgentPayload) => Promise<string>;
       startAgent: (agentId: string) => Promise<void>;
       stopAgent: (agentId: string) => Promise<void>;
       restartAgent: (agentId: string) => Promise<void>;
-      getAgentHealth: (agentId: string) => any;
-      listAgents: () => any[];
-      getSystemMetrics: () => any;
-      findAgentsBySpecialty: (specialty: string) => any[];
-      routeConversation: (requirements: any) => any;
+      getAgentHealth: (agentId: string) => AgentStatusPayload;
+      listAgents: () => AgentStatusPayload[];
+      getSystemMetrics: () => SystemMetricsPayload;
+      findAgentsBySpecialty: (specialty: string) => AgentStatusPayload[];
+      routeConversation: (
+        requirements: RouteConversationPayload
+      ) => Agent | null;
     };
-    getStats?: () => any;
+    getStats?: () => Record<string, unknown>;
   };
   private chatRepository?: SQLiteChatRepository;
   private migrationManager?: ChatMigrationManager;
@@ -338,7 +345,10 @@ export class ApiExtension implements Extension {
 
   private setupRoutes(): void {
     // Health check
-    const healthHandler: RouteHandler<void, { status: string; timestamp: string; version: string }> = (_req, res) => {
+    const healthHandler: RouteHandler<
+      void,
+      { status: string; timestamp: string; version: string }
+    > = (_req, res) => {
       res.json({
         success: true,
         data: {
@@ -352,58 +362,79 @@ export class ApiExtension implements Extension {
     this.app.get('/health', healthHandler);
 
     // Status endpoint with custom rate limiting
-    const statusHandler: RouteHandler<void, any> = (req, res): void => {
-        // Apply custom rate limiting for status endpoint
-        const clientIp = req.ip;
-        if (!this.checkCustomRateLimit(`status:${clientIp}`, 60, 60000)) {
-          // 60 requests per minute
-          res
-            .status(429)
-            .json({ error: 'Rate limit exceeded for status endpoint' });
-          return;
-        }
+    const statusHandler: RouteHandler<
+      void,
+      {
+        agent: {
+          id: string;
+          status: string;
+          uptime: number;
+        };
+        extensions: {
+          loaded: number;
+          active: number;
+        };
+        memory: {
+          used: number;
+          total: number;
+        };
+        runtime: Record<string, unknown>;
+      }
+    > = (req, res): void => {
+      // Apply custom rate limiting for status endpoint
+      const clientIp = req.ip;
+      if (!this.checkCustomRateLimit(`status:${clientIp}`, 60, 60000)) {
+        // 60 requests per minute
+        res
+          .status(429)
+          .json({ error: 'Rate limit exceeded for status endpoint' });
+        return;
+      }
 
-        // Get runtime stats if available
-        const runtimeStats = this.runtime?.getStats
-          ? this.runtime.getStats()
-          : null;
+      // Get runtime stats if available
+      const runtimeStats = this.runtime?.getStats
+        ? this.runtime.getStats()
+        : null;
 
-        res.json({
-          success: true,
-          data: {
-            agent: {
-              id: this.agent?.id || 'unknown',
-              status: this.agent?.status || 'unknown',
-              uptime: process.uptime(),
-            },
-            extensions: {
-              loaded: this.agent?.extensions?.length || 0,
-              active:
-                this.agent?.extensions?.filter((ext) => ext.enabled).length || 0,
-            },
-            memory: {
-              used: process.memoryUsage().heapUsed,
-              total: process.memoryUsage().heapTotal,
-            },
-            runtime: runtimeStats || {
-              agents: 0,
-              isRunning: false,
-              eventBus: { events: 0 },
-            },
+      res.json({
+        success: true,
+        data: {
+          agent: {
+            id: this.agent?.id || 'unknown',
+            status: this.agent?.status || 'unknown',
+            uptime: process.uptime(),
           },
-          timestamp: new Date().toISOString(),
-        });
-      };
-      this.app.get('/status', statusHandler);
+          extensions: {
+            loaded: this.agent?.extensions?.length || 0,
+            active:
+              this.agent?.extensions?.filter((ext) => ext.enabled).length || 0,
+          },
+          memory: {
+            used: process.memoryUsage().heapUsed,
+            total: process.memoryUsage().heapTotal,
+          },
+          runtime: runtimeStats || {
+            agents: 0,
+            isRunning: false,
+            eventBus: { events: 0 },
+          },
+        },
+        timestamp: new Date().toISOString(),
+      });
+    };
+    this.app.get('/status', statusHandler);
 
     // Runtime metrics endpoint
-    const metricsHandler: RouteHandler<void, SystemMetricsPayload> = (_req, res) => {
+    const metricsHandler: RouteHandler<void, SystemMetricsPayload> = (
+      _req,
+      res
+    ) => {
       const agentsMap = this.getAgentsMap();
       let totalCommands = 0;
       let totalPortalRequests = 0;
 
       // Calculate metrics from all agents
-      for (const [_id, _agent] of agentsMap) {
+      for (const _agent of agentsMap) {
         // These are placeholders - in a real system you'd track these
         totalCommands += Math.floor(Math.random() * 100); // TODO: Track real commands
         totalPortalRequests += Math.floor(Math.random() * 50); // TODO: Track real portal requests
@@ -418,9 +449,9 @@ export class ApiExtension implements Extension {
         totalAgents: agentsMap.size,
         commandsProcessed: totalCommands,
         portalRequests: totalPortalRequests,
-        runtime: this.runtime?.getStats ? this.runtime.getStats() : null,
+        runtime: this.runtime?.getStats ? this.runtime.getStats() : {},
       };
-      
+
       res.json({
         success: true,
         data: metrics,
@@ -430,7 +461,10 @@ export class ApiExtension implements Extension {
     this.app.get('/api/metrics', metricsHandler);
 
     // Agents endpoint (also available at /api/agents for consistency)
-    const agentsHandler: RouteHandler<void, { agents: AgentStatusPayload[] }> = (_req, res) => {
+    const agentsHandler: RouteHandler<
+      void,
+      { agents: AgentStatusPayload[] }
+    > = (_req, res) => {
       const agents: AgentStatusPayload[] = [];
 
       // Get all agents from the agents map
@@ -460,7 +494,10 @@ export class ApiExtension implements Extension {
     this.app.get('/agents', agentsHandler);
 
     // Also register at /api/agents for consistency with WebUI
-    const apiAgentsHandler: RouteHandler<void, { agents: AgentStatusPayload[] }> = (_req, res) => {
+    const apiAgentsHandler: RouteHandler<
+      void,
+      { agents: AgentStatusPayload[] }
+    > = (_req, res) => {
       const agents: AgentStatusPayload[] = [];
 
       // Get all agents from the agents map
@@ -516,13 +553,20 @@ export class ApiExtension implements Extension {
       }
 
       const tools = agent.toolSystem || {};
-      const toolList = Object.entries(tools).map(([name, def]) => ({
-        name,
-        type: typeof def,
-        hasDescription: !!(def as any).description,
-        hasParameters: !!(def as any).parameters,
-        hasExecute: !!(def as any).execute,
-      }));
+      const toolList = Object.entries(tools).map(([name, def]) => {
+        const tool = def as {
+          description?: string;
+          parameters?: unknown;
+          execute?: unknown;
+        };
+        return {
+          name,
+          type: typeof def,
+          hasDescription: !!tool.description,
+          hasParameters: !!tool.parameters,
+          hasExecute: !!tool.execute,
+        };
+      });
 
       res.json({
         agentId,
@@ -576,7 +620,10 @@ export class ApiExtension implements Extension {
 
     // New API chat endpoints
     // General chat endpoint
-    const chatHandler: RouteHandler<ChatRequestPayload, ChatResponsePayload> = async (req, res) => {
+    const chatHandler: RouteHandler<
+      ChatRequestPayload,
+      ChatResponsePayload
+    > = async (req, res) => {
       try {
         const chatRequest: ChatRequest = req.body;
         if (!chatRequest.message) {
@@ -592,6 +639,7 @@ export class ApiExtension implements Extension {
           timestamp: new Date().toISOString(),
         });
       } catch (error) {
+        runtimeLogger.error('Chat handler error:', error);
         res.status(500).json({
           success: false,
           error: {
@@ -605,7 +653,10 @@ export class ApiExtension implements Extension {
     this.app.post('/api/chat', chatHandler);
 
     // Agent-specific chat endpoint
-    const agentChatHandler: RouteHandler<ChatRequestPayload, ChatResponsePayload> = async (req, res) => {
+    const agentChatHandler: RouteHandler<
+      ChatRequestPayload,
+      ChatResponsePayload
+    > = async (req, res) => {
       try {
         const { agentId } = req.params;
         const chatRequest: ChatRequest = {
@@ -636,6 +687,7 @@ export class ApiExtension implements Extension {
           timestamp: new Date().toISOString(),
         });
       } catch (error) {
+        runtimeLogger.error('Chat handler error:', error);
         res.status(500).json({
           success: false,
           error: {
@@ -694,31 +746,34 @@ export class ApiExtension implements Extension {
     });
 
     // Clear chat history endpoint
-    this.app.delete('/chat/history/:agentId', async (req, res): Promise<void> => {
-      try {
-        const { agentId } = req.params;
-        const userId = (req.query.userId as string) || 'default_user';
+    this.app.delete(
+      '/chat/history/:agentId',
+      async (req, res): Promise<void> => {
+        try {
+          const { agentId } = req.params;
+          const userId = (req.query.userId as string) || 'default_user';
 
-        if (!this.chatRepository) {
-          res.status(500).json({ error: 'Chat system not available' });
-          return;
+          if (!this.chatRepository) {
+            res.status(500).json({ error: 'Chat system not available' });
+            return;
+          }
+
+          const conversationId = this.activeConversations.get(userId);
+          if (conversationId) {
+            await this.chatRepository.deleteConversation(
+              conversationId,
+              'api_user'
+            );
+            this.activeConversations.delete(userId);
+          }
+
+          res.json({ success: true, agentId });
+        } catch (error) {
+          runtimeLogger.error('Error clearing chat history:', error);
+          res.status(500).json({ error: 'Failed to clear chat history' });
         }
-
-        const conversationId = this.activeConversations.get(userId);
-        if (conversationId) {
-          await this.chatRepository.deleteConversation(
-            conversationId,
-            'api_user'
-          );
-          this.activeConversations.delete(userId);
-        }
-
-        res.json({ success: true, agentId });
-      } catch (error) {
-        runtimeLogger.error('Error clearing chat history:', error);
-        res.status(500).json({ error: 'Failed to clear chat history' });
       }
-    });
+    );
 
     // Memory endpoints
     this.app.get('/memory', async (_req, res): Promise<void> => {
@@ -754,7 +809,10 @@ export class ApiExtension implements Extension {
     // Multi-Agent Management Endpoints
 
     // Spawn new agent
-    const spawnAgentHandler: RouteHandler<SpawnAgentPayload, any> = async (req, res) => {
+    const spawnAgentHandler: RouteHandler<SpawnAgentPayload, any> = async (
+      req,
+      res
+    ) => {
       try {
         const {
           characterId,
@@ -801,125 +859,139 @@ export class ApiExtension implements Extension {
     this.app.post('/api/agents/spawn', spawnAgentHandler);
 
     // Start/Activate agent (works for both lazy and multi-agent manager)
-    this.app.post('/api/agents/:agentId/start', async (req, res): Promise<void> => {
-      try {
-        const { agentId } = req.params;
+    this.app.post(
+      '/api/agents/:agentId/start',
+      async (req, res): Promise<void> => {
+        try {
+          const { agentId } = req.params;
 
-        // First try to activate lazy agent
-        if (this.runtime && typeof this.runtime.activateAgent === 'function') {
-          try {
-            await this.runtime.activateAgent(agentId);
-            res.json({
-              success: true,
-              agentId,
-              message: `Agent activated successfully`,
-            });
-            return;
-          } catch (lazyError) {
-            // If lazy activation fails, continue to multi-agent manager
-            runtimeLogger.debug(
-              `Lazy activation failed for ${agentId}, trying multi-agent manager:`,
-              lazyError
-            );
+          // First try to activate lazy agent
+          if (
+            this.runtime &&
+            typeof this.runtime.activateAgent === 'function'
+          ) {
+            try {
+              await this.runtime.activateAgent(agentId);
+              res.json({
+                success: true,
+                agentId,
+                message: `Agent activated successfully`,
+              });
+              return;
+            } catch (lazyError) {
+              // If lazy activation fails, continue to multi-agent manager
+              runtimeLogger.debug(
+                `Lazy activation failed for ${agentId}, trying multi-agent manager:`,
+                lazyError
+              );
+            }
           }
+
+          // Fallback to multi-agent manager
+          if (!this.runtime?.multiAgentManager) {
+            res.status(503).json({ error: 'Agent management not available' });
+            return;
+          }
+
+          await this.runtime.multiAgentManager.startAgent(agentId);
+
+          res.json({
+            success: true,
+            agentId,
+            message: `Agent started successfully`,
+          });
+        } catch (error) {
+          runtimeLogger.error('Error starting agent:', error);
+          res.status(500).json({
+            error: 'Failed to start agent',
+            details: error instanceof Error ? error.message : String(error),
+          });
         }
-
-        // Fallback to multi-agent manager
-        if (!this.runtime?.multiAgentManager) {
-          res.status(503).json({ error: 'Agent management not available' });
-          return;
-        }
-
-        await this.runtime.multiAgentManager.startAgent(agentId);
-
-        res.json({
-          success: true,
-          agentId,
-          message: `Agent started successfully`,
-        });
-      } catch (error) {
-        runtimeLogger.error('Error starting agent:', error);
-        res.status(500).json({
-          error: 'Failed to start agent',
-          details: error instanceof Error ? error.message : String(error),
-        });
       }
-    });
+    );
 
     // Stop agent
-    this.app.post('/api/agents/:agentId/stop', async (req, res): Promise<void> => {
-      try {
-        const { agentId } = req.params;
+    this.app.post(
+      '/api/agents/:agentId/stop',
+      async (req, res): Promise<void> => {
+        try {
+          const { agentId } = req.params;
 
-        // First try to deactivate lazy agent
-        if (
-          this.runtime &&
-          typeof this.runtime.deactivateAgent === 'function'
-        ) {
-          try {
-            await this.runtime.deactivateAgent(agentId);
-            res.json({
-              success: true,
-              agentId,
-              message: `Agent deactivated successfully`,
-            });
-            return;
-          } catch (lazyError) {
-            // If lazy deactivation fails, continue to multi-agent manager
-            runtimeLogger.debug(
-              `Lazy deactivation failed for ${agentId}, trying multi-agent manager:`,
-              lazyError
-            );
+          // First try to deactivate lazy agent
+          if (
+            this.runtime &&
+            typeof this.runtime.deactivateAgent === 'function'
+          ) {
+            try {
+              await this.runtime.deactivateAgent(agentId);
+              res.json({
+                success: true,
+                agentId,
+                message: `Agent deactivated successfully`,
+              });
+              return;
+            } catch (lazyError) {
+              // If lazy deactivation fails, continue to multi-agent manager
+              runtimeLogger.debug(
+                `Lazy deactivation failed for ${agentId}, trying multi-agent manager:`,
+                lazyError
+              );
+            }
           }
+
+          // Fallback to multi-agent manager
+          if (!this.runtime?.multiAgentManager) {
+            res.status(503).json({ error: 'Agent management not available' });
+            return;
+          }
+
+          await this.runtime.multiAgentManager.stopAgent(agentId);
+
+          res.json({
+            success: true,
+            agentId,
+            message: `Agent stopped successfully`,
+          });
+        } catch (error) {
+          runtimeLogger.error('Error stopping agent:', error);
+          res.status(500).json({
+            error: 'Failed to stop agent',
+            details: error instanceof Error ? error.message : String(error),
+          });
         }
-
-        // Fallback to multi-agent manager
-        if (!this.runtime?.multiAgentManager) {
-          res.status(503).json({ error: 'Agent management not available' });
-          return;
-        }
-
-        await this.runtime.multiAgentManager.stopAgent(agentId);
-
-        res.json({
-          success: true,
-          agentId,
-          message: `Agent stopped successfully`,
-        });
-      } catch (error) {
-        runtimeLogger.error('Error stopping agent:', error);
-        res.status(500).json({
-          error: 'Failed to stop agent',
-          details: error instanceof Error ? error.message : String(error),
-        });
       }
-    });
+    );
 
     // Restart agent
-    this.app.post('/api/agents/:agentId/restart', async (req, res): Promise<void> => {
-      try {
-        const { agentId } = req.params;
+    this.app.post(
+      '/api/agents/:agentId/restart',
+      async (req, res): Promise<void> => {
+        try {
+          const { agentId } = req.params;
 
-        if (!this.runtime?.multiAgentManager) {
-          res.status(503).json({ error: 'Multi-Agent Manager not available' });
-          return;
+          if (!this.runtime?.multiAgentManager) {
+            res
+              .status(503)
+              .json({ error: 'Multi-Agent Manager not available' });
+            return;
+          }
+
+          await this.runtime.multiAgentManager.restartAgent(agentId);
+
+          res.json({
+            success: true,
+            agentId,
+            message: `Agent restarted successfully`,
+          });
+        } catch (error) {
+          runtimeLogger.error('Error restarting agent:', error);
+          res.status(500).json({
+            error: 'Failed to restart agent',
+            details: error instanceof Error ? error.message : String(error),
+          });
         }
-
-        await this.runtime.multiAgentManager.restartAgent(agentId);
-
-        res.json({
-          success: true,
-          agentId,
-          message: `Agent restarted successfully`,
-        });
-      } catch (error) {
-        runtimeLogger.error('Error restarting agent:', error);
-        res.status(500).json({
-          error: 'Failed to restart agent',
-          details: error instanceof Error ? error.message : String(error),
-        });
       }
-    });
+    );
 
     // Get agent health
     this.app.get('/api/agents/:agentId/health', (req, res): void => {
@@ -1016,7 +1088,10 @@ export class ApiExtension implements Extension {
     });
 
     // Route conversation to best agent
-    const routeConversationHandler: RouteHandler<RouteConversationPayload, any> = (req, res): void => {
+    const routeConversationHandler: RouteHandler<
+      RouteConversationPayload,
+      any
+    > = (req, res): void => {
       try {
         const requirements = req.body;
 
@@ -1197,28 +1272,31 @@ export class ApiExtension implements Extension {
       }
     });
 
-    this.app.get('/api/conversations/:conversationId', async (req, res): Promise<void> => {
-      try {
-        if (!this.chatRepository) {
-          res.status(500).json({ error: 'Chat system not available' });
-          return;
+    this.app.get(
+      '/api/conversations/:conversationId',
+      async (req, res): Promise<void> => {
+        try {
+          if (!this.chatRepository) {
+            res.status(500).json({ error: 'Chat system not available' });
+            return;
+          }
+
+          const { conversationId } = req.params;
+          const conversation =
+            await this.chatRepository.getConversation(conversationId);
+
+          if (!conversation) {
+            res.status(404).json({ error: 'Conversation not found' });
+            return;
+          }
+
+          res.json({ conversation });
+        } catch (error) {
+          runtimeLogger.error('Error fetching conversation:', error);
+          res.status(500).json({ error: 'Failed to fetch conversation' });
         }
-
-        const { conversationId } = req.params;
-        const conversation =
-          await this.chatRepository.getConversation(conversationId);
-
-        if (!conversation) {
-          res.status(404).json({ error: 'Conversation not found' });
-          return;
-        }
-
-        res.json({ conversation });
-      } catch (error) {
-        runtimeLogger.error('Error fetching conversation:', error);
-        res.status(500).json({ error: 'Failed to fetch conversation' });
       }
-    });
+    );
 
     this.app.get(
       '/api/conversations/:conversationId/messages',
@@ -1363,32 +1441,38 @@ export class ApiExtension implements Extension {
       }
     );
 
-    this.app.delete('/api/conversations/:conversationId', async (req, res): Promise<void> => {
-      try {
-        if (!this.chatRepository) {
-          res.status(500).json({ error: 'Chat system not available' });
-          return;
-        }
-
-        const { conversationId } = req.params;
-        const userId = (req.query.userId as string) || 'api_user';
-
-        await this.chatRepository.deleteConversation(conversationId, userId);
-
-        // Remove from active conversations if it was active
-        for (const [user, activeConvId] of this.activeConversations.entries()) {
-          if (activeConvId === conversationId) {
-            this.activeConversations.delete(user);
-            break;
+    this.app.delete(
+      '/api/conversations/:conversationId',
+      async (req, res): Promise<void> => {
+        try {
+          if (!this.chatRepository) {
+            res.status(500).json({ error: 'Chat system not available' });
+            return;
           }
-        }
 
-        res.json({ success: true });
-      } catch (error) {
-        runtimeLogger.error('Error deleting conversation:', error);
-        res.status(500).json({ error: 'Failed to delete conversation' });
+          const { conversationId } = req.params;
+          const userId = (req.query.userId as string) || 'api_user';
+
+          await this.chatRepository.deleteConversation(conversationId, userId);
+
+          // Remove from active conversations if it was active
+          for (const [
+            user,
+            activeConvId,
+          ] of this.activeConversations.entries()) {
+            if (activeConvId === conversationId) {
+              this.activeConversations.delete(user);
+              break;
+            }
+          }
+
+          res.json({ success: true });
+        } catch (error) {
+          runtimeLogger.error('Error deleting conversation:', error);
+          res.status(500).json({ error: 'Failed to delete conversation' });
+        }
       }
-    });
+    );
 
     // ========================================
     // ENHANCED MULTI-AGENT CHAT ENDPOINTS
@@ -1766,121 +1850,130 @@ export class ApiExtension implements Extension {
     );
 
     // Get chat analytics for specific agent
-    this.app.get('/api/chat/analytics/agent/:agentId', async (req, res): Promise<void> => {
-      try {
-        if (!this.chatRepository) {
-          res.status(500).json({ error: 'Chat system not available' });
-          return;
-        }
+    this.app.get(
+      '/api/chat/analytics/agent/:agentId',
+      async (req, res): Promise<void> => {
+        try {
+          if (!this.chatRepository) {
+            res.status(500).json({ error: 'Chat system not available' });
+            return;
+          }
 
-        const { agentId } = req.params;
-        const days = parseInt(req.query.days as string) || 7;
+          const { agentId } = req.params;
+          const days = parseInt(req.query.days as string) || 7;
 
-        // Get conversations for this agent
-        const conversations = await this.chatRepository.listConversations({
-          agentId,
-          limit: 1000, // Get all conversations
-        });
+          // Get conversations for this agent
+          const conversations = await this.chatRepository.listConversations({
+            agentId,
+            limit: 1000, // Get all conversations
+          });
 
-        let totalMessages = 0;
-        const totalConversations = conversations.length;
-        let avgResponseTime = 0;
-        const emotionBreakdown: Record<string, number> = {};
-        const messageTrends: Array<{ date: string; count: number }> = [];
+          let totalMessages = 0;
+          const totalConversations = conversations.length;
+          let avgResponseTime = 0;
+          const emotionBreakdown: Record<string, number> = {};
+          const messageTrends: Array<{ date: string; count: number }> = [];
 
-        // Calculate analytics from conversation stats
-        for (const conv of conversations) {
-          if (conv.lastMessageAt) {
-            const stats = await this.chatRepository.getConversationStats(
-              conv.id
-            );
-            totalMessages += stats.messageCount;
+          // Calculate analytics from conversation stats
+          for (const conv of conversations) {
+            if (conv.lastMessageAt) {
+              const stats = await this.chatRepository.getConversationStats(
+                conv.id
+              );
+              totalMessages += stats.messageCount;
 
-            if (stats.avgConfidence) {
-              avgResponseTime += stats.avgConfidence; // Approximation
+              if (stats.avgConfidence) {
+                avgResponseTime += stats.avgConfidence; // Approximation
+              }
             }
           }
-        }
 
-        res.json({
-          agentId,
-          period: `${days} days`,
-          analytics: {
-            totalConversations,
-            totalMessages,
-            averageMessagesPerConversation:
-              totalConversations > 0 ? totalMessages / totalConversations : 0,
-            avgResponseTime: avgResponseTime / Math.max(1, totalConversations),
-            emotionBreakdown,
-            messageTrends,
-            activeConversations: conversations.filter(
-              (c) => c.status === 'active'
-            ).length,
-          },
-        });
-      } catch (error) {
-        runtimeLogger.error('Error getting agent chat analytics:', error);
-        res.status(500).json({ error: 'Failed to get chat analytics' });
+          res.json({
+            agentId,
+            period: `${days} days`,
+            analytics: {
+              totalConversations,
+              totalMessages,
+              averageMessagesPerConversation:
+                totalConversations > 0 ? totalMessages / totalConversations : 0,
+              avgResponseTime:
+                avgResponseTime / Math.max(1, totalConversations),
+              emotionBreakdown,
+              messageTrends,
+              activeConversations: conversations.filter(
+                (c) => c.status === 'active'
+              ).length,
+            },
+          });
+        } catch (error) {
+          runtimeLogger.error('Error getting agent chat analytics:', error);
+          res.status(500).json({ error: 'Failed to get chat analytics' });
+        }
       }
-    });
+    );
 
     // Get system-wide chat analytics
-    this.app.get('/api/chat/analytics/system', async (req, res): Promise<void> => {
-      try {
-        if (!this.chatRepository) {
-          res.status(500).json({ error: 'Chat system not available' });
-          return;
-        }
-
-        const days = parseInt(req.query.days as string) || 7;
-
-        // Get all conversations
-        const conversations = await this.chatRepository.listConversations({
-          limit: 10000, // Get all conversations
-        });
-
-        const agentStats: Record<string, any> = {};
-        let totalMessages = 0;
-        const totalConversations = conversations.length;
-
-        for (const conv of conversations) {
-          const agentId = conv.agentId;
-          if (!agentStats[agentId]) {
-            agentStats[agentId] = {
-              conversations: 0,
-              messages: 0,
-              avgConfidence: 0,
-            };
+    this.app.get(
+      '/api/chat/analytics/system',
+      async (req, res): Promise<void> => {
+        try {
+          if (!this.chatRepository) {
+            res.status(500).json({ error: 'Chat system not available' });
+            return;
           }
 
-          agentStats[agentId].conversations++;
+          const days = parseInt(req.query.days as string) || 7;
 
-          if (conv.messageCount) {
-            agentStats[agentId].messages += conv.messageCount;
-            totalMessages += conv.messageCount;
+          // Get all conversations
+          const conversations = await this.chatRepository.listConversations({
+            limit: 10000, // Get all conversations
+          });
+
+          const agentStats: Record<string, any> = {};
+          let totalMessages = 0;
+          const totalConversations = conversations.length;
+
+          for (const conv of conversations) {
+            const agentId = conv.agentId;
+            if (!agentStats[agentId]) {
+              agentStats[agentId] = {
+                conversations: 0,
+                messages: 0,
+                avgConfidence: 0,
+              };
+            }
+
+            agentStats[agentId].conversations++;
+
+            if (conv.messageCount) {
+              agentStats[agentId].messages += conv.messageCount;
+              totalMessages += conv.messageCount;
+            }
           }
-        }
 
-        res.json({
-          period: `${days} days`,
-          systemAnalytics: {
-            totalConversations,
-            totalMessages,
-            activeAgents: Object.keys(agentStats).length,
-            averageMessagesPerConversation:
-              totalConversations > 0 ? totalMessages / totalConversations : 0,
-            agentPerformance: agentStats,
-            topAgents: Object.entries(agentStats)
-              .sort(([, a], [, b]) => (b as any).messages - (a as any).messages)
-              .slice(0, 5)
-              .map(([agentId, stats]) => ({ agentId, ...stats })),
-          },
-        });
-      } catch (error) {
-        runtimeLogger.error('Error getting system chat analytics:', error);
-        res.status(500).json({ error: 'Failed to get system analytics' });
+          res.json({
+            period: `${days} days`,
+            systemAnalytics: {
+              totalConversations,
+              totalMessages,
+              activeAgents: Object.keys(agentStats).length,
+              averageMessagesPerConversation:
+                totalConversations > 0 ? totalMessages / totalConversations : 0,
+              agentPerformance: agentStats,
+              topAgents: Object.entries(agentStats)
+                .sort(
+                  ([, a], [, b]) => (b as any).messages - (a as any).messages
+                )
+                .slice(0, 5)
+                .map(([agentId, stats]) => ({ agentId, ...stats })),
+            },
+          });
+        } catch (error) {
+          runtimeLogger.error('Error getting system chat analytics:', error);
+          res.status(500).json({ error: 'Failed to get system analytics' });
+        }
       }
-    });
+    );
   }
 
   private async processChatMessage(
@@ -2088,12 +2181,12 @@ export class ApiExtension implements Extension {
         id: 'memory-' + Date.now(),
         agentId: this.agent.id,
         content: request.content,
-        type: 'interaction' as any, // Convert string to MemoryType
+        type: MemoryTierType.INTERACTION,
         metadata: request.metadata || {},
         importance: 0.5,
         timestamp: new Date(),
         tags: [],
-        duration: 'short_term' as any,
+        duration: MemoryDuration.SHORT_TERM,
       });
 
       return {
@@ -2309,7 +2402,7 @@ export class ApiExtension implements Extension {
             })
           );
           break;
-        case 'chat':
+        case 'chat': {
           // Handle chat message - get first available agent if no specific agent requested
           const agentsMap = this.getAgentsMap();
           const firstAgent = agentsMap.values().next().value;
@@ -2322,7 +2415,8 @@ export class ApiExtension implements Extension {
           });
           ws.send(JSON.stringify({ type: 'chat_response', data: response }));
           break;
-        case 'action':
+        }
+        case 'action': {
           // Handle command execution
           if (this.commandSystem && this.agent) {
             const command = await this.commandSystem.sendCommand(
@@ -2338,11 +2432,17 @@ export class ApiExtension implements Extension {
             );
           }
           break;
+        }
         default:
           ws.send(JSON.stringify({ error: 'Unknown message type' }));
       }
     } catch (error) {
-      ws.send(JSON.stringify({ error: 'Failed to process message' }));
+      runtimeLogger.error('Failed to process WebSocket message:', error);
+      ws.send(
+        JSON.stringify({
+          error: `Failed to process message: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        })
+      );
     }
   }
 
@@ -2458,7 +2558,11 @@ export class ApiExtension implements Extension {
     return agentsMap;
   }
 
-  private getRuntimeStats(): { isRunning: boolean; agents: number; autonomousAgents: number } {
+  private getRuntimeStats(): {
+    isRunning: boolean;
+    agents: number;
+    autonomousAgents: number;
+  } {
     // Return actual runtime stats if available
     if (this.runtime && typeof this.runtime.getStats === 'function') {
       const stats = this.runtime.getStats();
@@ -2476,7 +2580,7 @@ export class ApiExtension implements Extension {
     };
   }
 
-  public setRuntime(runtime: any): void {
+  public setRuntime(runtime: Record<string, unknown>): void {
     this.runtime = runtime;
     runtimeLogger.extension('🔗 API extension connected to runtime');
   }
@@ -2514,7 +2618,10 @@ export class ApiExtension implements Extension {
       // Validate database
       const validation = await this.migrationManager.validate();
       if (!validation.valid) {
-        runtimeLogger.error('❌ Chat database validation failed:', validation.errors);
+        runtimeLogger.error(
+          '❌ Chat database validation failed:',
+          validation.errors
+        );
         throw new Error('Chat database validation failed');
       }
 

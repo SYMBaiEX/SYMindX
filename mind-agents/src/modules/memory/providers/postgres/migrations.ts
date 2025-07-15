@@ -200,7 +200,7 @@ export const migrations: Migration[] = [
  * Run a migration
  */
 export async function runMigration(
-  client: any,
+  client: unknown,
   migration: Migration,
   direction: 'up' | 'down' = 'up'
 ): Promise<void> {

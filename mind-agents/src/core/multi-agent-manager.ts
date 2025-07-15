@@ -12,9 +12,11 @@
 import { EventEmitter } from 'events';
 
 import { Agent, AgentStatus, AgentConfig, EventBus } from '../types/agent';
+import type { CharacterConfig } from '../types/character';
 import { Logger } from '../utils/logger';
 
 import { SYMindXModuleRegistry } from './registry';
+import type { SYMindXRuntime } from './runtime';
 
 export interface AgentHealthStatus {
   agentId: string;
@@ -61,13 +63,17 @@ export interface AgentCollaboration {
   consultingAgent: string;
   consultedAgent: string;
   question: string;
-  context?: any;
+  context?: Record<string, unknown>;
   timeout?: number;
+}
+
+interface ExtendedAgent extends Agent {
+  originalConfig?: CharacterConfig;
 }
 
 export class MultiAgentManager extends EventEmitter {
   private logger = new Logger('multi-agent-manager');
-  private agents: Map<string, Agent> = new Map();
+  private agents: Map<string, ExtendedAgent> = new Map();
   private agentHealth: Map<string, AgentHealthStatus> = new Map();
   private agentStartTimes: Map<string, Date> = new Map();
   private agentMetrics: Map<string, unknown> = new Map();
@@ -78,7 +84,7 @@ export class MultiAgentManager extends EventEmitter {
   constructor(
     _registry: SYMindXModuleRegistry,
     _eventBus: EventBus,
-    private runtime: unknown // SYMindXRuntime reference
+    private runtime: SYMindXRuntime
   ) {
     super();
     this.startHealthMonitoring();
@@ -98,7 +104,7 @@ export class MultiAgentManager extends EventEmitter {
       );
 
       // Generate unique agent ID
-      const agentId = `agent_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const agentId = `agent_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
       const instanceName =
         request.instanceName ||
         `${characterConfig.name}_${agentId.split('_')[2]}`;
@@ -112,10 +118,12 @@ export class MultiAgentManager extends EventEmitter {
       };
 
       // Create agent using runtime's loadAgent method
-      const agent = await this.runtime.loadAgent(finalConfig);
+      const agent = (await this.runtime.loadAgent(
+        finalConfig
+      )) as ExtendedAgent;
 
       // Store original character config for reference
-      (agent as Record<string, unknown>).originalConfig = characterConfig;
+      agent.originalConfig = characterConfig;
 
       // Register agent
       this.agents.set(agentId, agent);
@@ -187,9 +195,7 @@ export class MultiAgentManager extends EventEmitter {
       throw new Error(`Agent ${agentId} not found`);
     }
 
-    const originalConfig =
-      (agent as Record<string, unknown>).originalConfig ||
-      (agent as Record<string, unknown>).config;
+    const originalConfig = agent.originalConfig || agent.config;
     const characterId = originalConfig?.id || 'unknown';
     const instanceName = agent.name;
 
@@ -249,9 +255,7 @@ export class MultiAgentManager extends EventEmitter {
   findAgentsBySpecialty(specialty: string): Agent[] {
     return this.getAvailableAgents().filter((agent) => {
       // Check if agent config has capabilities (from original character config)
-      const originalConfig =
-        (agent as Record<string, unknown>).originalConfig ||
-        (agent as Record<string, unknown>).config;
+      const originalConfig = agent.originalConfig || agent.config;
       if (originalConfig?.capabilities) {
         return Object.values(originalConfig.capabilities).some(
           (category: unknown) =>
@@ -284,9 +288,7 @@ export class MultiAgentManager extends EventEmitter {
 
   findAgentsByPersonality(traits: string[]): Agent[] {
     return this.getAvailableAgents().filter((agent) => {
-      const originalConfig =
-        (agent as Record<string, unknown>).originalConfig ||
-        (agent as Record<string, unknown>).config;
+      const originalConfig = agent.originalConfig || agent.config;
       const personality = originalConfig?.personality?.traits;
       if (!personality) return false;
 
@@ -324,9 +326,7 @@ export class MultiAgentManager extends EventEmitter {
     requirements: ConversationRequirements
   ): number {
     let score = 0;
-    const originalConfig =
-      (agent as Record<string, unknown>).originalConfig ||
-      (agent as Record<string, unknown>).config;
+    const originalConfig = agent.originalConfig || agent.config;
 
     // Base score for availability
     if (agent.status === AgentStatus.IDLE) score += 10;
@@ -504,7 +504,9 @@ export class MultiAgentManager extends EventEmitter {
    * Utility Methods
    */
 
-  private async loadCharacterConfig(characterId: string): Promise<unknown> {
+  private async loadCharacterConfig(
+    characterId: string
+  ): Promise<CharacterConfig> {
     try {
       const fs = await import('fs/promises');
       const path = await import('path');
@@ -514,7 +516,7 @@ export class MultiAgentManager extends EventEmitter {
       const configPath = path.join(charactersDir, `${characterId}.json`);
 
       const configData = await fs.readFile(configPath, 'utf-8');
-      return JSON.parse(configData);
+      return JSON.parse(configData) as CharacterConfig;
     } catch (error) {
       throw new Error(
         `Failed to load character config for ${characterId}: ${error}`
@@ -533,9 +535,7 @@ export class MultiAgentManager extends EventEmitter {
     characterId: string;
   }> {
     return Array.from(this.agents.values()).map((agent) => {
-      const originalConfig =
-        (agent as Record<string, unknown>).originalConfig ||
-        (agent as Record<string, unknown>).config;
+      const originalConfig = agent.originalConfig || agent.config;
       return {
         id: agent.id,
         name: agent.name,
@@ -545,7 +545,7 @@ export class MultiAgentManager extends EventEmitter {
     });
   }
 
-  getAgent(agentId: string): Agent | null {
+  getAgent(agentId: string): ExtendedAgent | null {
     return this.agents.get(agentId) || null;
   }
 

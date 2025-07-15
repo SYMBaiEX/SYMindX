@@ -258,7 +258,7 @@ export class VercelAIPortal extends BasePortal {
           this.providers.set(providerName, provider);
           // Initialized provider successfully
         }
-      } catch (_error) {
+      } catch {
         // Failed to initialize provider
       }
     }
@@ -313,7 +313,7 @@ export class VercelAIPortal extends BasePortal {
         maxOutputTokens: 10,
       });
       return !!text;
-    } catch (_error) {
+    } catch {
       // Vercel AI SDK health check failed
       return false;
     }

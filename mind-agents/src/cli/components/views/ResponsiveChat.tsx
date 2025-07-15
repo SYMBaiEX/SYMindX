@@ -8,7 +8,6 @@ import { cyberpunkTheme } from '../../themes/cyberpunk.js';
 import {
   getResponsiveValueFromBreakpoints,
   responsiveTruncate,
-  shouldShowElement as _shouldShowElement,
 } from '../../utils/responsive-grid.js';
 import { GlitchText } from '../effects/GlitchText.js';
 import { Header } from '../ui/Header.js';
@@ -30,10 +29,10 @@ interface ChatMessageProps {
 }
 
 const ChatMessage: React.FC<ChatMessageProps> = ({ message, isCompact }) => {
-  const { breakpoints: _breakpoints, currentBreakpoint } =
+  const { currentBreakpoint } =
     useTerminalDimensions();
 
-  const getMessageColor = () => {
+  const getMessageColor = (): string => {
     switch (message.type) {
       case 'user':
         return cyberpunkTheme.colors.accent;
@@ -114,7 +113,7 @@ export const ResponsiveChat: React.FC = () => {
     }
   });
 
-  const handleSubmit = () => {
+  const handleSubmit = (): void => {
     if (!inputValue.trim() || !selectedAgent) return;
 
     // Add user message

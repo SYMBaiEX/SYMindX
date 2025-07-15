@@ -32,7 +32,6 @@ import {
   ImageGenerationOptions,
   ImageGenerationResult,
 } from '../../types/portal';
-import type { AIMessage as ModelMessage } from '../../types/portals/ai-sdk';
 import {
   AISDKParameterBuilder,
   handleAISDKError,
@@ -123,7 +122,7 @@ export class MistralPortal extends BasePortal {
         maxOutputTokens: 10,
       });
       return true;
-    } catch (_error) {
+    } catch {
       // Mistral AI health check failed
       return false;
     }

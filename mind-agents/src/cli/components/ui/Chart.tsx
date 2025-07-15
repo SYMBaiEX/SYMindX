@@ -1,5 +1,5 @@
 import { Box, Text } from 'ink';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 
 import { cyberpunkTheme } from '../../themes/cyberpunk.js';
 
@@ -27,8 +27,8 @@ export const Chart: React.FC<ChartProps> = ({
   const [displayData, setDisplayData] = useState<number[]>([]);
   const [animationStep, setAnimationStep] = useState(0);
 
-  // Animate data reveal
-  useEffect(() => {
+  // Animate data reveal with useCallback for optimization
+  const animateData = useCallback((): (() => void) | void => {
     if (!animated) {
       setDisplayData(data);
       return;
@@ -48,6 +48,11 @@ export const Chart: React.FC<ChartProps> = ({
   }, [data, animated]);
 
   useEffect(() => {
+    const cleanup = animateData();
+    return cleanup;
+  }, [animateData]);
+
+  useEffect(() => {
     setDisplayData(data.slice(0, animationStep));
   }, [animationStep, data]);
 
@@ -56,12 +61,12 @@ export const Chart: React.FC<ChartProps> = ({
   const minValue = Math.min(...data, 0);
   const range = maxValue - minValue || 1;
 
-  const normalizeValue = (value: number): number => {
+  const normalizeValue = useCallback((value: number): number => {
     return Math.round(((value - minValue) / range) * (height - 1));
-  };
+  }, [minValue, range, height]);
 
-  // Create chart grid
-  const createGrid = (): string[][] => {
+  // Create chart grid with memoization
+  const createGrid = useCallback((): string[][] => {
     const grid: string[][] = Array(height)
       .fill(null)
       .map(() => Array(width).fill(' '));
@@ -87,10 +92,10 @@ export const Chart: React.FC<ChartProps> = ({
     }
 
     return grid;
-  };
+  }, [height, width, showAxes]);
 
-  // Plot data on grid
-  const plotData = (grid: string[][]): void => {
+  // Plot data on grid with explicit return type
+  const plotData = useCallback((grid: string[][]): void => {
     const startX = showAxes ? 2 : 0;
     const availableWidth = width - (showAxes ? 2 : 0);
     const step = Math.max(1, Math.floor(displayData.length / availableWidth));
@@ -107,11 +112,10 @@ export const Chart: React.FC<ChartProps> = ({
 
       if (x < width && y >= 0 && y < height) {
         switch (type) {
-          case 'line':
+          case 'line': {
             // Connect points with line characters
             if (i > 0 && i - step < displayData.length) {
               const prevValue = displayData[i - step];
-              if (prevValue === undefined) continue;
               if (prevValue !== undefined) {
                 const prevY = height - 1 - normalizeValue(prevValue);
                 const currentRow = grid[y];
@@ -131,8 +135,9 @@ export const Chart: React.FC<ChartProps> = ({
               currentRow[x] = '●';
             }
             break;
+          }
 
-          case 'bar':
+          case 'bar': {
             // Draw vertical bars
             for (let barY = height - 1; barY >= y; barY--) {
               if (barY === height - 1 && showAxes) continue;
@@ -142,8 +147,9 @@ export const Chart: React.FC<ChartProps> = ({
               }
             }
             break;
+          }
 
-          case 'area':
+          case 'area': {
             // Fill area under the line
             for (let fillY = height - 1; fillY >= y; fillY--) {
               if (fillY === height - 1 && showAxes) continue;
@@ -157,14 +163,18 @@ export const Chart: React.FC<ChartProps> = ({
               }
             }
             break;
+          }
         }
       }
     }
-  };
+  }, [displayData, height, width, showAxes, type, normalizeValue]);
 
-  // Render the chart
-  const grid = createGrid();
-  plotData(grid);
+  // Render the chart with memoization
+  const grid = useMemo(() => {
+    const chartGrid = createGrid();
+    plotData(chartGrid);
+    return chartGrid;
+  }, [createGrid, plotData]);
 
   // Add value labels
   const maxLabel = maxValue.toFixed(0);
@@ -193,25 +203,25 @@ export const Chart: React.FC<ChartProps> = ({
         {/* Chart grid */}
         <Box flexDirection='column'>
           {grid.map((row, y) => (
-            <Text key={y}>
+            <Text key={`row-${y}`}>
               {row.map((cell, x) => {
                 const isAxis = showAxes && (x === 0 || y === height - 1);
                 const isData = !isAxis && cell !== ' ';
 
                 if (isAxis) {
                   return (
-                    <Text key={x} color={cyberpunkTheme.colors.border}>
+                    <Text key={`cell-${y}-${x}`} color={cyberpunkTheme.colors.border}>
                       {cell}
                     </Text>
                   );
                 } else if (isData) {
                   return (
-                    <Text key={x} color={color}>
+                    <Text key={`cell-${y}-${x}`} color={color}>
                       {cell}
                     </Text>
                   );
                 } else {
-                  return <Text key={x}> </Text>;
+                  return <Text key={`cell-${y}-${x}`}> </Text>;
                 }
               })}
             </Text>

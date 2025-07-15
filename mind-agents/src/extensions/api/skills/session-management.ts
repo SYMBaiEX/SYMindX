@@ -11,11 +11,23 @@ import {
   ActionResultType,
   ActionCategory,
 } from '../../../types/agent';
+import { SkillParameters } from '../../../types/common';
+import { runtimeLogger } from '../../../utils/logger';
 import { ApiExtension } from '../index';
+
+interface SessionData {
+  id: string;
+  userId: string;
+  agentId: string;
+  createdAt: Date;
+  lastActivity: Date;
+  expiresAt: Date;
+  metadata: Record<string, unknown>;
+}
 
 export class SessionManagementSkill {
   private _extension: ApiExtension;
-  private sessions: Map<string, any> = new Map();
+  private sessions: Map<string, SessionData> = new Map();
 
   constructor(extension: ApiExtension) {
     this._extension = extension;
@@ -31,7 +43,10 @@ export class SessionManagementSkill {
         description: 'Create a new user session',
         category: ActionCategory.SYSTEM,
         parameters: { userId: 'string', metadata: 'object', ttl: 'number' },
-        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
+        execute: async (
+          agent: Agent,
+          params: SkillParameters
+        ): Promise<ActionResult> => {
           return this.createSession(agent, params);
         },
       },
@@ -41,7 +56,10 @@ export class SessionManagementSkill {
         description: 'Retrieve session information',
         category: ActionCategory.SYSTEM,
         parameters: { sessionId: 'string' },
-        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
+        execute: async (
+          agent: Agent,
+          params: SkillParameters
+        ): Promise<ActionResult> => {
           return this.getSession(agent, params);
         },
       },
@@ -51,7 +69,10 @@ export class SessionManagementSkill {
         description: 'Update session data',
         category: ActionCategory.SYSTEM,
         parameters: { sessionId: 'string', data: 'object' },
-        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
+        execute: async (
+          agent: Agent,
+          params: SkillParameters
+        ): Promise<ActionResult> => {
           return this.updateSession(agent, params);
         },
       },
@@ -61,7 +82,10 @@ export class SessionManagementSkill {
         description: 'Extend session expiration time',
         category: ActionCategory.SYSTEM,
         parameters: { sessionId: 'string', extensionTime: 'number' },
-        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
+        execute: async (
+          agent: Agent,
+          params: SkillParameters
+        ): Promise<ActionResult> => {
           return this.extendSession(agent, params);
         },
       },
@@ -71,7 +95,10 @@ export class SessionManagementSkill {
         description: 'Destroy a session',
         category: ActionCategory.SYSTEM,
         parameters: { sessionId: 'string', reason: 'string' },
-        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
+        execute: async (
+          agent: Agent,
+          params: SkillParameters
+        ): Promise<ActionResult> => {
           return this.destroySession(agent, params);
         },
       },
@@ -81,7 +108,10 @@ export class SessionManagementSkill {
         description: 'List active sessions',
         category: ActionCategory.SYSTEM,
         parameters: { userId: 'string', includeExpired: 'boolean' },
-        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
+        execute: async (
+          agent: Agent,
+          params: SkillParameters
+        ): Promise<ActionResult> => {
           return this.listSessions(agent, params);
         },
       },
@@ -91,7 +121,10 @@ export class SessionManagementSkill {
         description: 'Clean up expired sessions',
         category: ActionCategory.SYSTEM,
         parameters: {},
-        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
+        execute: async (
+          agent: Agent,
+          params: SkillParameters
+        ): Promise<ActionResult> => {
           return this.cleanupExpired(agent, params);
         },
       },
@@ -103,7 +136,7 @@ export class SessionManagementSkill {
    */
   private async createSession(
     agent: Agent,
-    params: any
+    params: SkillParameters
   ): Promise<ActionResult> {
     try {
       const { userId, metadata = {}, ttl = 3600000 } = params; // Default 1 hour TTL
@@ -160,7 +193,10 @@ export class SessionManagementSkill {
   /**
    * Get session information
    */
-  private async getSession(agent: Agent, params: any): Promise<ActionResult> {
+  private async getSession(
+    agent: Agent,
+    params: SkillParameters
+  ): Promise<ActionResult> {
     try {
       const { sessionId } = params;
 
@@ -181,7 +217,7 @@ export class SessionManagementSkill {
 
       // Validate agent access to session
       if (session.agentId && session.agentId !== agent.id) {
-        console.log(
+        runtimeLogger.warn(
           `[Session] Agent ${agent.id} attempting to access session owned by ${session.agentId}`
         );
       }
@@ -223,7 +259,7 @@ export class SessionManagementSkill {
    */
   private async updateSession(
     _agent: Agent,
-    params: any
+    params: SkillParameters
   ): Promise<ActionResult> {
     try {
       const { sessionId, data } = params;
@@ -283,7 +319,7 @@ export class SessionManagementSkill {
    */
   private async extendSession(
     _agent: Agent,
-    params: any
+    params: SkillParameters
   ): Promise<ActionResult> {
     try {
       const { sessionId, extensionTime = 3600000 } = params; // Default 1 hour extension
@@ -347,7 +383,7 @@ export class SessionManagementSkill {
    */
   private async destroySession(
     _agent: Agent,
-    params: any
+    params: SkillParameters
   ): Promise<ActionResult> {
     try {
       const { sessionId, reason = 'manual_destruction' } = params;
@@ -400,7 +436,10 @@ export class SessionManagementSkill {
   /**
    * List sessions
    */
-  private async listSessions(agent: Agent, params: any): Promise<ActionResult> {
+  private async listSessions(
+    agent: Agent,
+    params: SkillParameters
+  ): Promise<ActionResult> {
     try {
       const { userId, includeExpired = false } = params;
 
@@ -415,7 +454,7 @@ export class SessionManagementSkill {
       const agentSessions = sessions.filter(
         (session) => !session.agentId || session.agentId === agent.id
       );
-      console.log(
+      runtimeLogger.debug(
         `[Session] Agent ${agent.id} can access ${agentSessions.length} of ${sessions.length} total sessions`
       );
 
@@ -461,7 +500,7 @@ export class SessionManagementSkill {
    */
   private async cleanupExpired(
     _agent: Agent,
-    _params: any
+    _params: SkillParameters
   ): Promise<ActionResult> {
     try {
       const now = new Date();

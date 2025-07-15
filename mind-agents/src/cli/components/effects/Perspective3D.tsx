@@ -1,5 +1,5 @@
 import { Box, Text } from 'ink';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 
 import { themeEngine } from '../../themes/ThemeEngine.js';
 
@@ -25,7 +25,7 @@ export const Perspective3D: React.FC<Perspective3DProps> = ({
   const [rotation, setRotation] = useState(0);
   const [flipAngle, setFlipAngle] = useState(0);
   const theme = themeEngine.getTheme();
-  const defaultColor = color || theme.colors.primary;
+  const defaultColor = useMemo(() => color || theme.colors.primary, [color, theme.colors.primary]);
 
   // Animation logic
   useEffect(() => {
@@ -36,21 +36,21 @@ export const Perspective3D: React.FC<Perspective3DProps> = ({
       setFlipAngle((prev) => (prev + 2) % 360);
     }, speed);
 
-    return () => clearInterval(interval);
+    return (): void => clearInterval(interval);
   }, [animated, speed]);
 
   // 3D transformation matrices (simplified for ASCII)
-  const get3DTransform = (angle: number) => {
+  const get3DTransform = useCallback((angle: number): { x: number; y: number; z: number } => {
     const rad = (angle * Math.PI) / 180;
     return {
       x: Math.cos(rad),
       y: Math.sin(rad),
       z: Math.sin(rad * 0.5),
     };
-  };
+  }, []);
 
   // Render 3D variants
-  const render3DEffect = () => {
+  const render3DEffect = useCallback((): React.ReactNode => {
     switch (variant) {
       case 'rotate':
         return renderRotating3D();
@@ -67,9 +67,9 @@ export const Perspective3D: React.FC<Perspective3DProps> = ({
       default:
         return <Text>{children}</Text>;
     }
-  };
+  }, [variant, children, renderRotating3D, renderFlipping3D, renderCube3D, renderPyramid3D, renderTunnel3D, renderGrid3D]);
 
-  const renderRotating3D = () => {
+  const renderRotating3D = useCallback((): React.ReactNode => {
     const transform = get3DTransform(rotation);
     const layers = [];
 
@@ -79,7 +79,7 @@ export const Perspective3D: React.FC<Perspective3DProps> = ({
       const offset = Math.floor(transform.x * z * 2);
 
       layers.push(
-        <Box key={z} marginLeft={Math.abs(offset)} marginTop={z > 0 ? -1 : 0}>
+        <Box key={`layer-${z}-${offset}-${opacity}`} marginLeft={Math.abs(offset)} marginTop={z > 0 ? -1 : 0}>
           <Text color={defaultColor} dimColor={opacity < 0.7} bold={z === 0}>
             {children}
           </Text>
@@ -88,9 +88,9 @@ export const Perspective3D: React.FC<Perspective3DProps> = ({
     }
 
     return <Box flexDirection='column'>{layers}</Box>;
-  };
+  }, [get3DTransform, rotation, depth, defaultColor, children]);
 
-  const renderFlipping3D = () => {
+  const renderFlipping3D = useCallback((): React.ReactNode => {
     const transform = get3DTransform(flipAngle);
     const isFlipped = Math.abs(transform.x) < 0.5;
 
@@ -123,21 +123,20 @@ export const Perspective3D: React.FC<Perspective3DProps> = ({
         </Text>
       </Box>
     );
-  };
+  }, [get3DTransform, flipAngle, children, theme.colors.textDim, defaultColor]);
 
-  const renderCube3D = () => {
+  // Cube faces (memoized outside of callback)
+  const cubeFaces = useMemo(() => ({
+    front: children,
+    back: children.split('').reverse().join(''),
+    top: '▀'.repeat(children.length),
+    bottom: '▄'.repeat(children.length),
+    left: '▐',
+    right: '▌',
+  }), [children]);
+
+  const renderCube3D = useCallback((): React.ReactNode => {
     const transform = get3DTransform(rotation);
-    const size = children.length;
-
-    // Cube faces
-    const faces = {
-      front: children,
-      back: children.split('').reverse().join(''),
-      top: '▀'.repeat(size),
-      bottom: '▄'.repeat(size),
-      left: '▐',
-      right: '▌',
-    };
 
     // Determine visible faces based on rotation
     const visibleFaces = [];
@@ -159,26 +158,26 @@ export const Perspective3D: React.FC<Perspective3DProps> = ({
       <Box flexDirection='column'>
         <Box>
           <Text color={theme.colors.borderDim}>╱</Text>
-          <Text color={theme.colors.border}>{faces.top}</Text>
+          <Text color={theme.colors.border}>{cubeFaces.top}</Text>
           <Text color={theme.colors.borderDim}>╲</Text>
         </Box>
         <Box>
           <Text color={theme.colors.border}>▐</Text>
           <Text color={defaultColor} bold>
-            {visibleFaces.includes('front') ? faces.front : faces.back}
+            {visibleFaces.includes('front') ? cubeFaces.front : cubeFaces.back}
           </Text>
           <Text color={theme.colors.border}>▌</Text>
         </Box>
         <Box>
           <Text color={theme.colors.borderDim}>╲</Text>
-          <Text color={theme.colors.border}>{faces.bottom}</Text>
+          <Text color={theme.colors.border}>{cubeFaces.bottom}</Text>
           <Text color={theme.colors.borderDim}>╱</Text>
         </Box>
       </Box>
     );
-  };
+  }, [get3DTransform, rotation, cubeFaces, theme.colors.borderDim, theme.colors.border, defaultColor]);
 
-  const renderPyramid3D = () => {
+  const renderPyramid3D = useCallback((): React.ReactNode => {
     const height = 5;
     const maxWidth = children.length + 4;
 
@@ -191,7 +190,7 @@ export const Perspective3D: React.FC<Perspective3DProps> = ({
       if (i === height - 1) {
         // Base layer with text
         layers.push(
-          <Box key={i}>
+          <Box key={`pyramid-base-${i}-${width}-${padding}`}>
             <Text color={theme.colors.border}>{'_'.repeat(padding)}</Text>
             <Text color={defaultColor} bold>
               {children}
@@ -203,7 +202,7 @@ export const Perspective3D: React.FC<Perspective3DProps> = ({
         // Pyramid layers
         const sideChar = wireframe ? '╱' : '▓';
         layers.push(
-          <Box key={i} marginLeft={padding}>
+          <Box key={`pyramid-layer-${i}-${width}-${padding}`} marginLeft={padding}>
             <Text color={theme.colors.border}>{sideChar}</Text>
             <Text color={theme.colors.borderDim}>
               {' '.repeat(Math.max(0, width - 2))}
@@ -220,9 +219,9 @@ export const Perspective3D: React.FC<Perspective3DProps> = ({
         {layers}
       </Box>
     );
-  };
+  }, [children, wireframe, theme.colors.border, theme.colors.borderDim, theme.colors.accent, defaultColor]);
 
-  const renderTunnel3D = () => {
+  const renderTunnel3D = useCallback((): React.ReactNode => {
     const tunnelDepth = 5;
     const perspective = [];
 
@@ -234,7 +233,7 @@ export const Perspective3D: React.FC<Perspective3DProps> = ({
       const frameChars = z === 0 ? ['┌', '┐', '└', '┘'] : ['╔', '╗', '╚', '╝'];
 
       perspective.push(
-        <Box key={z} flexDirection='column' marginLeft={offset}>
+        <Box key={`tunnel-layer-${z}-${size}-${offset}`} flexDirection='column' marginLeft={offset}>
           <Box>
             <Text color={theme.colors.border} dimColor={z > 2}>
               {frameChars[0] + '─'.repeat(size) + frameChars[1]}
@@ -261,9 +260,9 @@ export const Perspective3D: React.FC<Perspective3DProps> = ({
     }
 
     return <Box flexDirection='column'>{perspective}</Box>;
-  };
+  }, [children, theme.colors.border, defaultColor]);
 
-  const renderGrid3D = () => {
+  const renderGrid3D = useCallback((): React.ReactNode => {
     const gridSize = 7;
     // const _transform = get3DTransform(rotation) // Unused in current implementation
 
@@ -282,7 +281,7 @@ export const Perspective3D: React.FC<Perspective3DProps> = ({
         // Place text in center of grid
         if (x === Math.floor(centerX) && y === Math.floor(centerY)) {
           row.push(
-            <Text key={x} color={defaultColor} bold>
+            <Text key={`grid-center-${x}-${y}`} color={defaultColor} bold>
               {children.substring(0, 5)}
             </Text>
           );
@@ -296,7 +295,7 @@ export const Perspective3D: React.FC<Perspective3DProps> = ({
 
           row.push(
             <Text
-              key={x}
+              key={`grid-cell-${x}-${y}-${gridChar}`}
               color={theme.colors.borderDim}
               dimColor={Math.abs(distX) > 0.5 || Math.abs(distY) > 0.5}
             >
@@ -306,11 +305,11 @@ export const Perspective3D: React.FC<Perspective3DProps> = ({
         }
       }
 
-      grid.push(<Box key={y}>{row}</Box>);
+      grid.push(<Box key={`grid-row-${y}`}>{row}</Box>);
     }
 
     return <Box flexDirection='column'>{grid}</Box>;
-  };
+  }, [children, wireframe, defaultColor, theme.colors.borderDim]);
 
   return render3DEffect();
 };

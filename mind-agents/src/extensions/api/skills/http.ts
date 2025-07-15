@@ -14,12 +14,7 @@ import {
   ActionCategory,
 } from '../../../types/agent';
 import type { SkillParameters } from '../../../types/common';
-import type {
-  SkillExecutionContext,
-  SkillResult,
-  HTTPSkillConfig,
-  APISkillResult,
-} from '../../../types/extensions/skills';
+import type { SkillExecutionContext } from '../../../types/extensions/skills';
 import { ApiExtension } from '../index';
 
 export class HttpSkill {

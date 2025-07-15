@@ -94,16 +94,16 @@ export class MonitorCommand {
     return cmd;
   }
 
-  async monitorAgent(agentId: string, options: any): Promise<void> {
+  async monitorAgent(agentId: string, options: { events?: boolean; logs?: boolean; performance?: boolean }): Promise<void> {
     const agent = this.context.runtime.agents.get(agentId);
     if (!agent) {
-      console.log(chalk.red(`❌ Agent '${agentId}' not found`));
+      process.stderr.write(chalk.red(`❌ Agent '${agentId}' not found`) + '\n');
       return;
     }
 
-    console.log(chalk.blue.bold(`\n📊 Monitoring Agent: ${agent.name}`));
-    console.log(chalk.gray('Press Ctrl+C to stop monitoring'));
-    console.log(chalk.gray('─'.repeat(60)));
+    process.stdout.write(chalk.blue.bold(`\n📊 Monitoring Agent: ${agent.name}`) + '\n');
+    process.stdout.write(chalk.gray('Press Ctrl+C to stop monitoring') + '\n');
+    process.stdout.write(chalk.gray('─'.repeat(60)) + '\n');
 
     this.monitoring = true;
 
@@ -123,8 +123,8 @@ export class MonitorCommand {
 
     if (options.logs) {
       // Monitor logs specific to this agent
-      console.log(
-        chalk.yellow('⚠️  Agent-specific log monitoring not yet implemented')
+      process.stdout.write(
+        chalk.yellow('⚠️  Agent-specific log monitoring not yet implemented') + '\n'
       );
     }
 
@@ -133,10 +133,10 @@ export class MonitorCommand {
     this.stopMonitoring();
   }
 
-  async monitorAll(options: any): Promise<void> {
-    console.log(chalk.blue.bold('\n📊 Monitoring All Agents'));
-    console.log(chalk.gray('Press Ctrl+C to stop monitoring'));
-    console.log(chalk.gray('─'.repeat(60)));
+  async monitorAll(options: { filter?: string; verbose?: boolean }): Promise<void> {
+    process.stdout.write(chalk.blue.bold('\n📊 Monitoring All Agents') + '\n');
+    process.stdout.write(chalk.gray('Press Ctrl+C to stop monitoring') + '\n');
+    process.stdout.write(chalk.gray('─'.repeat(60)) + '\n');
 
     this.monitoring = true;
 
@@ -154,7 +154,7 @@ export class MonitorCommand {
         clearInterval(statusInterval);
         return;
       }
-      console.log(chalk.gray('\n' + '─'.repeat(60)));
+      process.stdout.write(chalk.gray('\n' + '─'.repeat(60)) + '\n');
       this.displaySystemStatus();
     }, 10000); // Every 10 seconds
 
@@ -163,10 +163,10 @@ export class MonitorCommand {
     this.stopMonitoring();
   }
 
-  async monitorEvents(options: any): Promise<void> {
-    console.log(chalk.blue.bold('\n📡 Event Monitor'));
-    console.log(chalk.gray('Press Ctrl+C to stop monitoring'));
-    console.log(chalk.gray('─'.repeat(60)));
+  async monitorEvents(options: { type?: string; source?: string; limit?: string }): Promise<void> {
+    process.stdout.write(chalk.blue.bold('\n📡 Event Monitor') + '\n');
+    process.stdout.write(chalk.gray('Press Ctrl+C to stop monitoring') + '\n');
+    process.stdout.write(chalk.gray('─'.repeat(60)) + '\n');
 
     this.monitoring = true;
 
@@ -177,12 +177,12 @@ export class MonitorCommand {
       limit: parseInt(options.limit),
     });
 
-    console.log(chalk.cyan(`\n📜 Recent Events (${recentEvents.length}):`));
+    process.stdout.write(chalk.cyan(`\n📜 Recent Events (${recentEvents.length}):`) + '\n');
     for (const event of recentEvents) {
       this.displayEvent(event, true);
     }
 
-    console.log(chalk.cyan('\n🔴 Live Events:'));
+    process.stdout.write(chalk.cyan('\n🔴 Live Events:') + '\n');
 
     // Subscribe to new events
     this.context.runtime.subscribeToEvents(
@@ -194,10 +194,10 @@ export class MonitorCommand {
     this.stopMonitoring();
   }
 
-  async monitorPerformance(options: any): Promise<void> {
-    console.log(chalk.blue.bold('\n⚡ Performance Monitor'));
-    console.log(chalk.gray('Press Ctrl+C to stop monitoring'));
-    console.log(chalk.gray('─'.repeat(60)));
+  async monitorPerformance(options: { interval?: string; agent?: string }): Promise<void> {
+    process.stdout.write(chalk.blue.bold('\n⚡ Performance Monitor') + '\n');
+    process.stdout.write(chalk.gray('Press Ctrl+C to stop monitoring') + '\n');
+    process.stdout.write(chalk.gray('─'.repeat(60)) + '\n');
 
     this.monitoring = true;
     const interval = parseInt(options.interval);
@@ -208,9 +208,9 @@ export class MonitorCommand {
         return;
       }
 
-      console.clear();
-      console.log(chalk.blue.bold('⚡ Performance Monitor'));
-      console.log(chalk.gray('─'.repeat(60)));
+      process.stdout.write('\x1Bc'); // Clear screen
+      process.stdout.write(chalk.blue.bold('⚡ Performance Monitor') + '\n');
+      process.stdout.write(chalk.gray('─'.repeat(60)) + '\n');
 
       await this.displayPerformanceMetrics(options.agent);
     }, interval);
@@ -220,10 +220,10 @@ export class MonitorCommand {
     this.stopMonitoring();
   }
 
-  async monitorCommands(options: any): Promise<void> {
-    console.log(chalk.blue.bold('\n⚡ Command Monitor'));
-    console.log(chalk.gray('Press Ctrl+C to stop monitoring'));
-    console.log(chalk.gray('─'.repeat(60)));
+  async monitorCommands(options: { agent?: string; status?: string }): Promise<void> {
+    process.stdout.write(chalk.blue.bold('\n⚡ Command Monitor') + '\n');
+    process.stdout.write(chalk.gray('Press Ctrl+C to stop monitoring') + '\n');
+    process.stdout.write(chalk.gray('─'.repeat(60)) + '\n');
 
     this.monitoring = true;
 
@@ -243,8 +243,8 @@ export class MonitorCommand {
       );
     }
 
-    console.log(
-      chalk.cyan(`\n📜 Recent Commands (${filteredCommands.length}):`)
+    process.stdout.write(
+      chalk.cyan(`\n📜 Recent Commands (${filteredCommands.length}):`) + '\n'
     );
     for (const command of filteredCommands.slice(-10)) {
       this.displayCommand(command);
@@ -253,14 +253,14 @@ export class MonitorCommand {
     // Monitor new command updates
     this.context.commandSystem.on('command_queued', (command) => {
       if (this.shouldDisplayCommand(command, options)) {
-        console.log(chalk.blue('📥 QUEUED:'));
+        process.stdout.write(chalk.blue('📥 QUEUED:') + '\n');
         this.displayCommand(command);
       }
     });
 
     this.context.commandSystem.on('command_started', (command) => {
       if (this.shouldDisplayCommand(command, options)) {
-        console.log(chalk.yellow('🔄 STARTED:'));
+        process.stdout.write(chalk.yellow('🔄 STARTED:') + '\n');
         this.displayCommand(command);
       }
     });
@@ -268,7 +268,7 @@ export class MonitorCommand {
     this.context.commandSystem.on('command_completed', (command) => {
       if (this.shouldDisplayCommand(command, options)) {
         const color = command.result?.success ? chalk.green : chalk.red;
-        console.log(color('✅ COMPLETED:'));
+        process.stdout.write(color('✅ COMPLETED:') + '\n');
         this.displayCommand(command);
       }
     });
@@ -277,14 +277,14 @@ export class MonitorCommand {
     this.stopMonitoring();
   }
 
-  async tailLogs(options: any): Promise<void> {
-    console.log(chalk.blue.bold('\n📄 Log Monitor'));
-    console.log(chalk.gray('Press Ctrl+C to stop monitoring'));
-    console.log(chalk.gray('─'.repeat(60)));
+  async tailLogs(options: { lines?: string; follow?: boolean }): Promise<void> {
+    process.stdout.write(chalk.blue.bold('\n📄 Log Monitor') + '\n');
+    process.stdout.write(chalk.gray('Press Ctrl+C to stop monitoring') + '\n');
+    process.stdout.write(chalk.gray('─'.repeat(60)) + '\n');
 
     // This would integrate with the actual logging system
-    console.log(chalk.yellow('⚠️  Log tailing not yet implemented'));
-    console.log(chalk.gray('Would display real-time application logs here'));
+    process.stdout.write(chalk.yellow('⚠️  Log tailing not yet implemented') + '\n');
+    process.stdout.write(chalk.gray('Would display real-time application logs here') + '\n');
 
     if (options.follow) {
       this.monitoring = true;
@@ -339,7 +339,7 @@ export class MonitorCommand {
     const agents = Array.from(this.context.runtime.agents.values());
 
     if (agents.length === 0) {
-      console.log(chalk.yellow('⚠️  No agents available to monitor'));
+      process.stdout.write(chalk.yellow('⚠️  No agents available to monitor') + '\n');
       return;
     }
 
@@ -397,16 +397,16 @@ export class MonitorCommand {
       const autonomousStatus =
         this.context.runtime.getAutonomousStatus(agentId);
 
-      console.log(chalk.cyan('\n🔍 Performance Snapshot:'));
-      console.log(`  Status: ${agent.status}`);
-      console.log(`  Emotion: ${agent.emotion?.current || 'unknown'}`);
-      console.log(
-        `  Extensions: ${agent.extensions.filter((e) => e.enabled).length}/${agent.extensions.length} active`
+      process.stdout.write(chalk.cyan('\n🔍 Performance Snapshot:') + '\n');
+      process.stdout.write(`  Status: ${agent.status}` + '\n');
+      process.stdout.write(`  Emotion: ${agent.emotion?.current || 'unknown'}` + '\n');
+      process.stdout.write(
+        `  Extensions: ${agent.extensions.filter((e) => e.enabled).length}/${agent.extensions.length} active` + '\n'
       );
 
       if (autonomousStatus.autonomous) {
-        console.log(
-          `  Autonomy: ${((autonomousStatus.engine?.autonomyLevel || 0) * 100).toFixed(0)}%`
+        process.stdout.write(
+          `  Autonomy: ${((autonomousStatus.engine?.autonomyLevel || 0) * 100).toFixed(0)}%` + '\n'
         );
       }
     }, 5000); // Every 5 seconds
@@ -415,16 +415,16 @@ export class MonitorCommand {
   private displaySystemStatus(): void {
     const stats = this.context.runtime.getStats();
 
-    console.log(chalk.cyan('\n📊 System Status:'));
-    console.log(
-      `  Agents: ${stats.agents} (${stats.autonomousAgents} autonomous)`
+    process.stdout.write(chalk.cyan('\n📊 System Status:') + '\n');
+    process.stdout.write(
+      `  Agents: ${stats.agents} (${stats.autonomousAgents} autonomous)` + '\n'
     );
-    console.log(`  Running: ${stats.isRunning ? '✅' : '❌'}`);
-    console.log(`  Events: ${stats.eventBus.events}`);
+    process.stdout.write(`  Running: ${stats.isRunning ? '✅' : '❌'}` + '\n');
+    process.stdout.write(`  Events: ${stats.eventBus.events}` + '\n');
 
     if (stats.autonomous) {
-      console.log(
-        `  Autonomous Engines: ${stats.autonomous.autonomousEngines}`
+      process.stdout.write(
+        `  Autonomous Engines: ${stats.autonomous.autonomousEngines}` + '\n'
       );
     }
   }
@@ -434,30 +434,30 @@ export class MonitorCommand {
     const typeColor = this.getEventTypeColor(event.type);
 
     if (verbose) {
-      console.log(
-        `[${chalk.gray(timestamp)}] ${typeColor(event.type)} ${chalk.cyan(event.source || 'system')}`
+      process.stdout.write(
+        `[${chalk.gray(timestamp)}] ${typeColor(event.type)} ${chalk.cyan(event.source || 'system')}` + '\n'
       );
       if (event.data) {
-        console.log(
-          chalk.gray(`  Data: ${JSON.stringify(event.data, null, 2)}`)
+        process.stdout.write(
+          chalk.gray(`  Data: ${JSON.stringify(event.data, null, 2)}`) + '\n'
         );
       }
     } else {
-      console.log(
-        `[${chalk.gray(timestamp)}] ${typeColor(event.type)} ${chalk.gray(event.source || 'system')}`
+      process.stdout.write(
+        `[${chalk.gray(timestamp)}] ${typeColor(event.type)} ${chalk.gray(event.source || 'system')}` + '\n'
       );
     }
   }
 
-  private displayCommand(command: any): void {
+  private displayCommand(command: { timestamp: Date; status: string; agentId: string; instruction: string; result?: { error?: string } }): void {
     const timestamp = command.timestamp.toLocaleTimeString();
     const statusColor = this.getCommandStatusColor(command.status);
 
-    console.log(
-      `[${chalk.gray(timestamp)}] ${statusColor(command.status)} ${chalk.cyan(command.agentId)} ${command.instruction}`
+    process.stdout.write(
+      `[${chalk.gray(timestamp)}] ${statusColor(command.status)} ${chalk.cyan(command.agentId)} ${command.instruction}` + '\n'
     );
     if (command.result?.error) {
-      console.log(chalk.red(`  Error: ${command.result.error}`));
+      process.stdout.write(chalk.red(`  Error: ${command.result.error}`) + '\n');
     }
   }
 
@@ -465,50 +465,50 @@ export class MonitorCommand {
     const stats = this.context.runtime.getStats();
     const commandStats = this.context.commandSystem.getStats();
 
-    console.log(chalk.cyan('🖥️  System Metrics:'));
-    console.log(
-      `  Memory: ${(process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2)} MB`
+    process.stdout.write(chalk.cyan('🖥️  System Metrics:') + '\n');
+    process.stdout.write(
+      `  Memory: ${(process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2)} MB` + '\n'
     );
-    console.log(`  Uptime: ${(process.uptime() / 60).toFixed(1)} minutes`);
+    process.stdout.write(`  Uptime: ${(process.uptime() / 60).toFixed(1)} minutes` + '\n');
 
-    console.log(chalk.cyan('\n🤖 Agent Metrics:'));
-    console.log(`  Total Agents: ${stats.agents}`);
-    console.log(`  Autonomous Agents: ${stats.autonomousAgents}`);
-    console.log(
-      `  Runtime Status: ${stats.isRunning ? '✅ Running' : '❌ Stopped'}`
+    process.stdout.write(chalk.cyan('\n🤖 Agent Metrics:') + '\n');
+    process.stdout.write(`  Total Agents: ${stats.agents}` + '\n');
+    process.stdout.write(`  Autonomous Agents: ${stats.autonomousAgents}` + '\n');
+    process.stdout.write(
+      `  Runtime Status: ${stats.isRunning ? '✅ Running' : '❌ Stopped'}` + '\n'
     );
 
-    console.log(chalk.cyan('\n⚡ Command Metrics:'));
-    console.log(`  Total Commands: ${commandStats.totalCommands}`);
-    console.log(`  Pending: ${commandStats.pendingCommands}`);
-    console.log(`  Processing: ${commandStats.processingCommands}`);
-    console.log(`  Completed: ${commandStats.completedCommands}`);
-    console.log(`  Failed: ${commandStats.failedCommands}`);
-    console.log(
-      `  Avg Execution Time: ${commandStats.averageExecutionTime.toFixed(2)}ms`
+    process.stdout.write(chalk.cyan('\n⚡ Command Metrics:') + '\n');
+    process.stdout.write(`  Total Commands: ${commandStats.totalCommands}` + '\n');
+    process.stdout.write(`  Pending: ${commandStats.pendingCommands}` + '\n');
+    process.stdout.write(`  Processing: ${commandStats.processingCommands}` + '\n');
+    process.stdout.write(`  Completed: ${commandStats.completedCommands}` + '\n');
+    process.stdout.write(`  Failed: ${commandStats.failedCommands}` + '\n');
+    process.stdout.write(
+      `  Avg Execution Time: ${commandStats.averageExecutionTime.toFixed(2)}ms` + '\n'
     );
 
     if (agentId) {
       const agent = this.context.runtime.agents.get(agentId);
       if (agent) {
-        console.log(chalk.cyan(`\n🎯 Agent ${agent.name} Metrics:`));
-        console.log(`  Status: ${agent.status}`);
-        console.log(
-          `  Last Update: ${agent.lastUpdate?.toLocaleString() || 'never'}`
+        process.stdout.write(chalk.cyan(`\n🎯 Agent ${agent.name} Metrics:`) + '\n');
+        process.stdout.write(`  Status: ${agent.status}` + '\n');
+        process.stdout.write(
+          `  Last Update: ${agent.lastUpdate?.toLocaleString() || 'never'}` + '\n'
         );
 
         const autonomousStatus =
           this.context.runtime.getAutonomousStatus(agentId);
         if (autonomousStatus.autonomous) {
-          console.log(
-            `  Autonomy Level: ${((autonomousStatus.engine?.autonomyLevel || 0) * 100).toFixed(0)}%`
+          process.stdout.write(
+            `  Autonomy Level: ${((autonomousStatus.engine?.autonomyLevel || 0) * 100).toFixed(0)}%` + '\n'
           );
         }
       }
     }
   }
 
-  private shouldDisplayCommand(command: any, options: any): boolean {
+  private shouldDisplayCommand(command: { agentId: string; status: string }, options: { agent?: string; status?: string }): boolean {
     if (options.agent && command.agentId !== options.agent) {
       return false;
     }
@@ -548,8 +548,8 @@ export class MonitorCommand {
 
   private async waitForInterrupt(): Promise<void> {
     return new Promise((resolve) => {
-      const handleInterrupt = () => {
-        console.log(chalk.yellow('\n⏹️  Monitoring stopped'));
+      const handleInterrupt = (): void => {
+        process.stdout.write(chalk.yellow('\n⏹️  Monitoring stopped') + '\n');
         process.removeListener('SIGINT', handleInterrupt);
         resolve();
       };

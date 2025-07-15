@@ -97,7 +97,7 @@ export class SimpleBayesianNetwork implements BayesianNetwork {
 
     // Count occurrences for each node
     for (const sample of data) {
-      for (const [nodeId, _value] of Object.entries(sample)) {
+      for (const [nodeId] of Object.entries(sample)) {
         const node = this.nodeMap.get(nodeId);
         if (node) {
           // Generate proper condition key using helper method

@@ -1,5 +1,5 @@
 import { Box, Text } from 'ink';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 
 import { themeEngine } from '../../themes/ThemeEngine.js';
 
@@ -25,7 +25,7 @@ export const NeonGlow: React.FC<NeonGlowProps> = ({
   const [glowPhase, setGlowPhase] = useState(0);
   const [flickerState, setFlickerState] = useState(true);
   const theme = themeEngine.getTheme();
-  const defaultColor = color ?? theme.colors.glow;
+  const defaultColor = useMemo(() => color ?? theme.colors.glow, [color, theme.colors.glow]);
 
   // Animation effects
   useEffect(() => {
@@ -54,8 +54,8 @@ export const NeonGlow: React.FC<NeonGlowProps> = ({
     return (): void => clearInterval(interval);
   }, [animation, speed, children.length]);
 
-  // Get glow characters based on variant
-  const getGlowChars = (): { left: string; right: string; top: string; bottom: string } => {
+  // Get glow characters based on variant (memoized)
+  const getGlowChars = useCallback((): { left: string; right: string; top: string; bottom: string } => {
     switch (variant) {
       case 'outline':
         return {
@@ -88,21 +88,33 @@ export const NeonGlow: React.FC<NeonGlowProps> = ({
       default:
         return { left: '[', right: ']', top: '-', bottom: '-' };
     }
-  };
+  }, [variant]);
 
-  // Get color based on animation state
-  const getAnimatedColor = (index?: number): string => {
+  // Memoized color arrays for better performance
+  const pulseColors = useMemo(() => [
+    defaultColor,
+    theme.colors.glowAlt,
+    defaultColor,
+    theme.colors.primary,
+  ], [defaultColor, theme.colors.glowAlt, theme.colors.primary]);
+
+  const rainbowColors = useMemo(() => [
+    '#FF0000',
+    '#FF7F00',
+    '#FFFF00',
+    '#00FF00',
+    '#0000FF',
+    '#4B0082',
+    '#9400D3',
+  ], []);
+
+  // Get color based on animation state (memoized)
+  const getAnimatedColor = useCallback((index?: number): string => {
     if (!flickerState && animation === 'flicker')
       return theme.colors.bgSecondary;
 
     switch (animation) {
       case 'pulse': {
-        const pulseColors = [
-          defaultColor,
-          theme.colors.glowAlt,
-          defaultColor,
-          theme.colors.primary,
-        ];
         return pulseColors[glowPhase % pulseColors.length] ?? defaultColor;
       }
 
@@ -113,25 +125,16 @@ export const NeonGlow: React.FC<NeonGlowProps> = ({
         return defaultColor;
 
       case 'rainbow': {
-        const rainbowColors = [
-          '#FF0000',
-          '#FF7F00',
-          '#FFFF00',
-          '#00FF00',
-          '#0000FF',
-          '#4B0082',
-          '#9400D3',
-        ];
         return rainbowColors[glowPhase % rainbowColors.length] ?? defaultColor;
       }
 
       default:
         return defaultColor;
     }
-  };
+  }, [flickerState, animation, theme.colors.bgSecondary, theme.colors.glowAlt, glowPhase, pulseColors, rainbowColors, defaultColor]);
 
-  // Get intensity-based styling
-  const getIntensityStyle = (): { dimColor: boolean; bold: boolean } => {
+  // Get intensity-based styling (memoized)
+  const getIntensityStyle = useCallback((): { dimColor: boolean; bold: boolean } => {
     const baseStyle = { dimColor: false, bold: bold };
 
     switch (intensity) {
@@ -144,10 +147,10 @@ export const NeonGlow: React.FC<NeonGlowProps> = ({
       default:
         return baseStyle;
     }
-  };
+  }, [intensity, bold, glowPhase]);
 
-  const glowChars = getGlowChars();
-  const style = getIntensityStyle();
+  const glowChars = useMemo(() => getGlowChars(), [getGlowChars]);
+  const style = useMemo(() => getIntensityStyle(), [getIntensityStyle]);
 
   // Render based on variant
   if (variant === 'gradient') {
@@ -180,16 +183,19 @@ export const NeonGlow: React.FC<NeonGlowProps> = ({
         >
           {glowChars.left}
         </Text>
-        {children.split('').map((char, i) => (
-          <Text
-            key={`char-${i}-${char}`}
-            color={getAnimatedColor(i)}
-            dimColor={style.dimColor}
-            bold={style.bold}
-          >
-            {char}
-          </Text>
-        ))}
+        {children.split('').map((char, i) => {
+          const charKey = `char-${char}-${children.length}-${i === 0 ? 'start' : i === children.length - 1 ? 'end' : 'mid'}-${getAnimatedColor(i)}`;
+          return (
+            <Text
+              key={charKey}
+              color={getAnimatedColor(i)}
+              dimColor={style.dimColor}
+              bold={style.bold}
+            >
+              {char}
+            </Text>
+          );
+        })}
         <Text
           color={getAnimatedColor()}
           dimColor={style.dimColor}

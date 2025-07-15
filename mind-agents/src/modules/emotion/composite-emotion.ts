@@ -13,7 +13,6 @@ import {
   EmotionResult,
   EmotionBlendResult,
   EmotionTransition,
-  EmotionModifier,
 } from '../../types/modules/emotions';
 
 // Import all emotion types
@@ -384,12 +383,8 @@ export class CompositeEmotionModule implements EmotionModule {
 
     // Log blended state
     if (components.length > 1) {
-      const componentStr = components
-        .sort((a, b) => b.weight - a.weight)
-        .slice(0, 3)
-        .map((c) => `${c.emotion}(${(c.weight * 100).toFixed(0)}%)`)
-        .join(' + ');
-      // Blended emotion calculated
+      // Multiple emotions blended - dominant emotion determined by closest match
+      // Components: ${components.length} emotions blended
     }
   }
 

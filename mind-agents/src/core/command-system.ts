@@ -429,7 +429,7 @@ export class CommandSystem extends EventEmitter {
         reject(new Error('Command timed out'));
       }, timeout);
 
-      const checkCompletion = () => {
+      const checkCompletion = (): void => {
         if (
           command.status === CommandStatus.COMPLETED ||
           command.status === CommandStatus.FAILED

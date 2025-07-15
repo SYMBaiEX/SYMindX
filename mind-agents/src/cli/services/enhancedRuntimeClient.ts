@@ -84,7 +84,7 @@ export class EnhancedRuntimeClient extends EventEmitter {
   private errorInterceptors: ErrorInterceptor[];
   private abortControllers: Map<string, AbortController>;
   private metrics: RequestMetrics;
-  private connectionCheckTimer?: NodeJS.Timeout;
+  private connectionCheckTimer?: ReturnType<typeof setTimeout>;
   private latencyHistory: number[];
   private requestTimestamps: number[];
 

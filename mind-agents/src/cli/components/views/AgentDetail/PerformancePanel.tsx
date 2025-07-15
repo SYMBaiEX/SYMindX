@@ -373,7 +373,7 @@ export const PerformancePanel: React.FC<PerformancePanelProps> = ({
                     ACTIVE ALERTS ({alerts.length})
                   </Text>
                   {alerts.map((alert, i) => (
-                    <Box key={i} flexDirection='column' marginTop={1}>
+                    <Box key={`perf-item-${i}`} flexDirection='column' marginTop={1}>
                       <Box gap={1}>
                         <Text color={cyberpunkTheme.colors.danger}>⚠</Text>
                         <Text color={cyberpunkTheme.colors.text}>{alert}</Text>

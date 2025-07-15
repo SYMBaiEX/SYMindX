@@ -17,6 +17,7 @@ import {
   MemoryProviderMetadata,
   MemoryTierType,
 } from '../../../../types/memory';
+import { runtimeLogger } from '../../../../utils/logger';
 import {
   BaseMemoryProvider,
   BaseMemoryConfig,
@@ -64,8 +65,8 @@ interface SimilarityResult {
 export class InMemoryProvider extends BaseMemoryProvider {
   private storage: MemoryStorage = {};
   declare protected config: InMemoryConfig;
-  private autoSaveTimer?: NodeJS.Timeout;
-  private cleanupTimer?: NodeJS.Timeout;
+  private autoSaveTimer?: ReturnType<typeof setTimeout>;
+  private cleanupTimer?: ReturnType<typeof setTimeout>;
 
   /**
    * Constructor for the in-memory memory provider
@@ -147,7 +148,7 @@ export class InMemoryProvider extends BaseMemoryProvider {
 
     // Only log significant memories
     if (memory.importance > 0.7 || memory.type === MemoryType.GOAL) {
-      console.log(
+      runtimeLogger.info(
         `💾 Stored significant memory: ${memory.type} for agent ${agentId}`
       );
     }
@@ -245,7 +246,7 @@ export class InMemoryProvider extends BaseMemoryProvider {
     });
 
     if (embeddedMemories.length === 0) {
-      console.warn(
+      runtimeLogger.warn(
         '⚠️ No memories with embeddings found, falling back to recent memories'
       );
       return this.retrieve(agentId, 'recent', limit);
@@ -283,7 +284,7 @@ export class InMemoryProvider extends BaseMemoryProvider {
     agentStorage.memories.delete(memoryId);
     agentStorage.lastAccessed = Date.now();
 
-    console.log(`🗑️ Deleted memory: ${memoryId} for agent ${agentId}`);
+    runtimeLogger.info(`🗑️ Deleted memory: ${memoryId} for agent ${agentId}`);
   }
 
   /**
@@ -299,7 +300,7 @@ export class InMemoryProvider extends BaseMemoryProvider {
     agentStorage.memories.clear();
     agentStorage.lastAccessed = Date.now();
 
-    console.log(`🧹 Cleared ${count} memories for agent ${agentId}`);
+    runtimeLogger.info(`🧹 Cleared ${count} memories for agent ${agentId}`);
   }
 
   /**
@@ -364,7 +365,7 @@ export class InMemoryProvider extends BaseMemoryProvider {
 
     agentStorage.lastAccessed = now;
 
-    console.log(
+    runtimeLogger.info(
       `🧹 Cleaned up ${expiredCount} expired and ${oldCount} old memories for agent ${agentId}`
     );
   }
@@ -408,7 +409,9 @@ export class InMemoryProvider extends BaseMemoryProvider {
       }
     }
 
-    console.log(`📥 Imported memories for ${Object.keys(data).length} agents`);
+    runtimeLogger.info(
+      `📥 Imported memories for ${Object.keys(data).length} agents`
+    );
   }
 
   /**
@@ -532,7 +535,7 @@ export class InMemoryProvider extends BaseMemoryProvider {
       agentStorage.memories.delete(memories[i]?.[0] ?? '');
     }
 
-    console.log(
+    runtimeLogger.info(
       `🧹 Evicted ${toRemove} memories for agent ${agentId} due to limit`
     );
   }
@@ -556,7 +559,7 @@ export class InMemoryProvider extends BaseMemoryProvider {
       }
 
       if (cleanedCount > 0) {
-        console.log(
+        runtimeLogger.info(
           `🧹 Auto-cleaned ${cleanedCount} expired memories for agent ${agentId}`
         );
       }
@@ -574,9 +577,9 @@ export class InMemoryProvider extends BaseMemoryProvider {
     try {
       const data = this.exportMemories();
       writeFileSync(this.config.persistencePath, JSON.stringify(data, null, 2));
-      console.log(`💾 Saved memories to ${this.config.persistencePath}`);
+      runtimeLogger.info(`💾 Saved memories to ${this.config.persistencePath}`);
     } catch (error) {
-      console.error('❌ Failed to save memories to disk:', error);
+      runtimeLogger.error('❌ Failed to save memories to disk:', error);
     }
   }
 
@@ -604,10 +607,12 @@ export class InMemoryProvider extends BaseMemoryProvider {
         }
 
         this.importMemories(parsed);
-        console.log(`📥 Loaded memories from ${this.config.persistencePath}`);
+        runtimeLogger.info(
+          `📥 Loaded memories from ${this.config.persistencePath}`
+        );
       }
     } catch (error) {
-      console.error('❌ Failed to load memories from disk:', error);
+      runtimeLogger.error('❌ Failed to load memories from disk:', error);
     }
   }
 
@@ -621,7 +626,7 @@ export class InMemoryProvider extends BaseMemoryProvider {
     toTier: MemoryTierType
   ): Promise<void> {
     // For in-memory provider, this is a no-op as we don't have tier separation
-    console.log(
+    runtimeLogger.info(
       `📝 Consolidating memory ${memoryId} from ${fromTier} to ${toTier} for agent ${agentId}`
     );
   }
@@ -648,7 +653,7 @@ export class InMemoryProvider extends BaseMemoryProvider {
    */
   async archiveMemories(agentId: string): Promise<void> {
     // For in-memory provider, this could move memories to a separate archive storage
-    console.log(`🗂️ Archiving memories for agent ${agentId}`);
+    runtimeLogger.info(`🗂️ Archiving memories for agent ${agentId}`);
   }
 
   /**
@@ -660,7 +665,7 @@ export class InMemoryProvider extends BaseMemoryProvider {
     poolId: string
   ): Promise<void> {
     // For in-memory provider, this could copy memories to a shared pool
-    console.log(
+    runtimeLogger.info(
       `🤝 Sharing ${memoryIds.length} memories from agent ${agentId} to pool ${poolId}`
     );
   }
@@ -699,7 +704,7 @@ export class InMemoryProvider extends BaseMemoryProvider {
       this.saveToDisk();
     }
 
-    console.log('🔌 In-memory memory provider disconnected');
+    runtimeLogger.info('🔌 In-memory memory provider disconnected');
   }
 }
 

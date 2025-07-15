@@ -600,7 +600,7 @@ export class AdvancedSearchEngine {
    */
   private applyFilters(
     memories: MemoryRecord[],
-    filters: Record<string, any>
+    filters: Record<string, unknown>
   ): MemoryRecord[] {
     return memories.filter((memory) => {
       for (const [field, filterValue] of Object.entries(filters)) {

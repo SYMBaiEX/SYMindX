@@ -151,7 +151,7 @@ export class AzureOpenAIPortal extends BasePortal {
         maxOutputTokens: 10,
       });
       return true;
-    } catch (_error) {
+    } catch {
       // Azure OpenAI health check failed
       return false;
     }

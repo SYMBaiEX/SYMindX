@@ -1,6 +1,5 @@
 import {
   ThoughtNode,
-  ReasoningPath,
   DecisionMatrix,
   DecisionOption,
   DecisionCriterion,

@@ -101,7 +101,7 @@ async function main() {
 }
 
 // Run the CLI
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   main().catch((error) => {
     console.error(chalk.red('Fatal error:'), error);
     process.exit(1);

@@ -25,7 +25,9 @@ import {
   ActionCategory,
   AgentEvent,
 } from '../../../types/agent';
+import { SkillParameters } from '../../../types/common';
 import { runtimeLogger } from '../../../utils/logger';
+import { ApiExtension } from '../index';
 import { WebSocketMessage, ConnectionInfo } from '../types';
 
 export interface WebSocketConnection {
@@ -38,7 +40,7 @@ export interface WebSocketConnection {
     lastActivity: Date;
   };
   subscriptions: Set<string>;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
 }
 
 export interface WebSocketConfig {
@@ -49,13 +51,13 @@ export interface WebSocketConfig {
 }
 
 export class WebSocketServerSkill {
-  private extension: any;
+  private extension: ApiExtension;
   private server: WebSocketServer | null = null;
   private connections = new Map<string, WebSocketConnection>();
   private config: WebSocketConfig;
-  private heartbeatInterval: NodeJS.Timeout | null = null;
+  private heartbeatInterval: ReturnType<typeof setInterval> | null = null;
 
-  constructor(extension: any, config: WebSocketConfig = {}) {
+  constructor(extension: ApiExtension, config: WebSocketConfig = {}) {
     this.extension = extension;
     this.config = {
       port: 3001,
@@ -76,7 +78,10 @@ export class WebSocketServerSkill {
         description: 'Broadcast a message to all connected WebSocket clients',
         category: ActionCategory.COMMUNICATION,
         parameters: { message: 'string', type: 'string', data: 'object' },
-        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
+        execute: async (
+          agent: Agent,
+          params: SkillParameters
+        ): Promise<ActionResult> => {
           return this.broadcastMessage(agent, params);
         },
       },
@@ -90,7 +95,10 @@ export class WebSocketServerSkill {
           type: 'string',
           data: 'object',
         },
-        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
+        execute: async (
+          agent: Agent,
+          params: SkillParameters
+        ): Promise<ActionResult> => {
           return this.sendToConnection(agent, params);
         },
       },
@@ -99,7 +107,10 @@ export class WebSocketServerSkill {
         description: 'Get information about active WebSocket connections',
         category: ActionCategory.SYSTEM,
         parameters: {},
-        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
+        execute: async (
+          agent: Agent,
+          params: SkillParameters
+        ): Promise<ActionResult> => {
           return this.getConnections(agent, params);
         },
       },
@@ -109,9 +120,11 @@ export class WebSocketServerSkill {
   /**
    * Initialize the WebSocket server
    */
-  async initialize(httpServer?: any): Promise<void> {
+  async initialize(
+    httpServer?: ReturnType<typeof createServer>
+  ): Promise<void> {
     try {
-      const serverOptions: any = {
+      const serverOptions: Record<string, unknown> = {
         path: this.config.path,
         perMessageDeflate: false, // Disable compression completely
         backlog: 511, // Increase connection backlog
@@ -201,10 +214,13 @@ export class WebSocketServerSkill {
     }
 
     // Force disable any compression extensions that might have been negotiated
-    if ((ws as any).extensions) {
-      Object.keys((ws as any).extensions).forEach((key: string) => {
+    const wsWithExtensions = ws as WebSocket & {
+      extensions?: Record<string, unknown>;
+    };
+    if (wsWithExtensions.extensions) {
+      Object.keys(wsWithExtensions.extensions).forEach((key: string) => {
         if (key.includes('deflate') || key.includes('compress')) {
-          delete (ws as any).extensions[key];
+          delete wsWithExtensions.extensions![key];
         }
       });
     }
@@ -429,7 +445,10 @@ export class WebSocketServerSkill {
   /**
    * Broadcast message to all connections
    */
-  async broadcastMessage(agent: Agent, params: any): Promise<ActionResult> {
+  async broadcastMessage(
+    agent: Agent,
+    params: SkillParameters
+  ): Promise<ActionResult> {
     try {
       const { message, type, data } = params;
 
@@ -471,7 +490,10 @@ export class WebSocketServerSkill {
   /**
    * Send message to specific connection
    */
-  async sendToConnection(agent: Agent, params: any): Promise<ActionResult> {
+  async sendToConnection(
+    agent: Agent,
+    params: SkillParameters
+  ): Promise<ActionResult> {
     try {
       const { connectionId, message, type, data } = params;
 
@@ -511,7 +533,10 @@ export class WebSocketServerSkill {
   /**
    * Get connection information
    */
-  async getConnections(agent: Agent, params: any): Promise<ActionResult> {
+  async getConnections(
+    agent: Agent,
+    params: SkillParameters
+  ): Promise<ActionResult> {
     try {
       const { includeMetadata = false, filterByAgent = false } = params || {};
 
@@ -565,7 +590,7 @@ export class WebSocketServerSkill {
                 lastActivity: info.lastActivity.toISOString(),
                 subscriptions: info.subscriptions,
                 metadata: info.metadata,
-              }) as Record<string, any>
+              }) as Record<string, unknown>
           ),
         },
       };
@@ -608,7 +633,7 @@ export class WebSocketServerSkill {
   /**
    * Send message to WebSocket
    */
-  private sendToWebSocket(ws: WebSocket, message: any): void {
+  private sendToWebSocket(ws: WebSocket, message: unknown): void {
     if (ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify(message));
     }

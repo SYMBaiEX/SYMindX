@@ -5,6 +5,8 @@
  * Each skill represents a group of related actions that the agent can perform.
  */
 
+import { ApiExtension } from '../index';
+
 import { AuthenticationSkill } from './authentication';
 import { ChatSkill } from './chat';
 import { HealthMonitoringSkill } from './health-monitoring';
@@ -25,7 +27,7 @@ export {
  * Initialize all skills with the API extension instance
  */
 export function initializeSkills(
-  extension: unknown,
+  extension: ApiExtension,
   config: Record<string, unknown> = {}
 ): {
   http: HttpSkill;
@@ -36,14 +38,14 @@ export function initializeSkills(
   healthMonitoring: HealthMonitoringSkill;
 } {
   return {
-    http: new HttpSkill(extension as any),
+    http: new HttpSkill(extension),
     websocketServer: new WebSocketServerSkill(
-      extension as any,
-      (config as any).websocket
+      extension,
+      config.websocket as WebSocketServerSkill['config'] | undefined
     ),
-    chat: new ChatSkill(extension as any),
-    authentication: new AuthenticationSkill(extension as any),
-    sessionManagement: new SessionManagementSkill(extension as any),
-    healthMonitoring: new HealthMonitoringSkill(extension as any),
+    chat: new ChatSkill(extension),
+    authentication: new AuthenticationSkill(extension),
+    sessionManagement: new SessionManagementSkill(extension),
+    healthMonitoring: new HealthMonitoringSkill(extension),
   };
 }

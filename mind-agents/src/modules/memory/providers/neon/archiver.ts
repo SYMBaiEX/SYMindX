@@ -4,7 +4,11 @@
  * Handles memory archival and compression strategies
  */
 
-import { MemoryRecord, MemoryDuration } from '../../../../types/agent';
+import {
+  MemoryRecord,
+  MemoryDuration,
+  MemoryType,
+} from '../../../../types/agent';
 import { ArchivalStrategy } from '../../../../types/memory';
 
 /**
@@ -75,7 +79,7 @@ export class MemoryArchiver {
         compressed.push({
           id: `compressed_${day}_${Date.now()}`,
           agentId: group[0]?.agentId ?? '',
-          type: group[0]?.type ?? ('unknown' as any),
+          type: group[0]?.type ?? ('unknown' as MemoryType),
           content: `Compressed memories from ${day}: ${group.map((m) => m.content).join('; ')}`,
           importance: Math.max(...group.map((m) => m.importance || 0)),
           timestamp: new Date(day),

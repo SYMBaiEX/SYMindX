@@ -78,18 +78,18 @@ export class StatusCommand {
 
   async showOverview(): Promise<void> {
     try {
-      console.log(chalk.blue.bold('\n🤖 SYMindX System Overview'));
-      console.log(chalk.gray('─'.repeat(60)));
+      process.stdout.write(chalk.blue.bold('\n🤖 SYMindX System Overview') + '\n');
+      process.stdout.write(chalk.gray('─'.repeat(60)) + '\n');
 
       // Runtime status
       const stats = this.context.runtime.getStats();
       const isRunning = stats.isRunning;
 
-      console.log(
-        `${chalk.cyan('Runtime:')} ${isRunning ? chalk.green('✅ Running') : chalk.red('❌ Stopped')}`
+      process.stdout.write(
+        `${chalk.cyan('Runtime:')} ${isRunning ? chalk.green('✅ Running') : chalk.red('❌ Stopped')}` + '\n'
       );
-      console.log(
-        `${chalk.cyan('Agents:')} ${stats.agents} total (${stats.autonomousAgents} autonomous)`
+      process.stdout.write(
+        `${chalk.cyan('Agents:')} ${stats.agents} total (${stats.autonomousAgents} autonomous)` + '\n'
       );
 
       // Agent status summary
@@ -97,84 +97,84 @@ export class StatusCommand {
       const statusCounts = this.getStatusCounts(agents);
 
       if (agents.length > 0) {
-        console.log(`${chalk.cyan('Agent Status:')}`);
+        process.stdout.write(`${chalk.cyan('Agent Status:')}` + '\n');
         for (const [status, count] of Object.entries(statusCounts)) {
           const color = this.getStatusColor(status);
-          console.log(`  ${color(status)}: ${count}`);
+          process.stdout.write(`  ${color(status)}: ${count}` + '\n');
         }
       }
 
       // Command system status
       const commandStats = this.context.commandSystem.getStats();
-      console.log(
-        `${chalk.cyan('Commands:')} ${commandStats.totalCommands} total, ${commandStats.processingCommands} active`
+      process.stdout.write(
+        `${chalk.cyan('Commands:')} ${commandStats.totalCommands} total, ${commandStats.processingCommands} active` + '\n'
       );
 
       // System resources
       const memoryUsage = process.memoryUsage();
-      console.log(
-        `${chalk.cyan('Memory:')} ${(memoryUsage.heapUsed / 1024 / 1024).toFixed(2)} MB used`
+      process.stdout.write(
+        `${chalk.cyan('Memory:')} ${(memoryUsage.heapUsed / 1024 / 1024).toFixed(2)} MB used` + '\n'
       );
-      console.log(
-        `${chalk.cyan('Uptime:')} ${(process.uptime() / 60).toFixed(1)} minutes`
+      process.stdout.write(
+        `${chalk.cyan('Uptime:')} ${(process.uptime() / 60).toFixed(1)} minutes` + '\n'
       );
 
       // Quick health indicators
       const healthIssues = await this.getQuickHealthCheck();
       if (healthIssues.length > 0) {
-        console.log(chalk.yellow('\n⚠️  Health Issues:'));
+        process.stdout.write(chalk.yellow('\n⚠️  Health Issues:') + '\n');
         for (const issue of healthIssues) {
-          console.log(chalk.yellow(`  • ${issue}`));
+          process.stdout.write(chalk.yellow(`  • ${issue}`) + '\n');
         }
-        console.log(
-          chalk.gray('Run "symindx status health" for detailed health check')
+        process.stdout.write(
+          chalk.gray('Run "symindx status health" for detailed health check') + '\n'
         );
       } else {
-        console.log(chalk.green('\n✅ All systems healthy'));
+        process.stdout.write(chalk.green('\n✅ All systems healthy') + '\n');
       }
     } catch (error) {
-      console.log(chalk.red('❌ Failed to get system overview'));
+      process.stderr.write(chalk.red('❌ Failed to get system overview') + '\n');
       this.logger.error('Overview error:', error);
     }
   }
 
   async showSystemStatus(options: { verbose?: boolean }): Promise<void> {
     try {
-      console.log(chalk.blue.bold('\n🖥️  System Status'));
-      console.log(chalk.gray('─'.repeat(60)));
+      process.stdout.write(chalk.blue.bold('\n🖥️  System Status') + '\n');
+      process.stdout.write(chalk.gray('─'.repeat(60)) + '\n');
 
       // Process information
-      console.log(chalk.cyan('Process Information:'));
-      console.log(`  PID: ${process.pid}`);
-      console.log(`  Node Version: ${process.version}`);
-      console.log(`  Platform: ${process.platform} ${process.arch}`);
-      console.log(`  Uptime: ${(process.uptime() / 60).toFixed(1)} minutes`);
+      process.stdout.write(chalk.cyan('Process Information:') + '\n');
+      process.stdout.write(`  PID: ${process.pid}` + '\n');
+      process.stdout.write(`  Node Version: ${process.version}` + '\n');
+      process.stdout.write(`  Platform: ${process.platform} ${process.arch}` + '\n');
+      process.stdout.write(`  Uptime: ${(process.uptime() / 60).toFixed(1)} minutes` + '\n');
 
       // Memory usage
       const memory = process.memoryUsage();
-      console.log(chalk.cyan('\nMemory Usage:'));
-      console.log(
-        `  Heap Used: ${(memory.heapUsed / 1024 / 1024).toFixed(2)} MB`
+      process.stdout.write(chalk.cyan('\nMemory Usage:') + '\n');
+      process.stdout.write(
+        `  Heap Used: ${(memory.heapUsed / 1024 / 1024).toFixed(2)} MB` + '\n'
       );
-      console.log(
-        `  Heap Total: ${(memory.heapTotal / 1024 / 1024).toFixed(2)} MB`
+      process.stdout.write(
+        `  Heap Total: ${(memory.heapTotal / 1024 / 1024).toFixed(2)} MB` + '\n'
       );
-      console.log(`  RSS: ${(memory.rss / 1024 / 1024).toFixed(2)} MB`);
-      console.log(
-        `  External: ${(memory.external / 1024 / 1024).toFixed(2)} MB`
+      process.stdout.write(`  RSS: ${(memory.rss / 1024 / 1024).toFixed(2)} MB` + '\n');
+      process.stdout.write(
+        `  External: ${(memory.external / 1024 / 1024).toFixed(2)} MB` + '\n'
       );
 
       // CPU usage (if available)
       if (process.cpuUsage) {
         const cpuUsage = process.cpuUsage();
-        console.log(chalk.cyan('\nCPU Usage:'));
-        console.log(`  User: ${(cpuUsage.user / 1000).toFixed(2)}ms`);
-        console.log(`  System: ${(cpuUsage.system / 1000).toFixed(2)}ms`);
+        process.stdout.write(chalk.cyan('\nCPU Usage:') + '\n');
+        process.stdout.write(`  User: ${(cpuUsage.user / 1000).toFixed(2)}ms` + '\n');
+        process.stdout.write(`  System: ${(cpuUsage.system / 1000).toFixed(2)}ms` + '\n');
       }
 
       // Environment
       if (options.verbose) {
-        console.log(chalk.cyan('\nEnvironment:'));
+        process.stdout.write(chalk.cyan('\nEnvironment:') + '\n');
         const envVars = [
           'NODE_ENV',
           'OPENAI_API_KEY',
@@ -187,66 +187,66 @@ export class StatusCommand {
         for (const envVar of envVars) {
           const value = process.env[envVar];
           const status = value ? '✅ Set' : '❌ Not set';
-          console.log(`  ${envVar}: ${status}`);
+          process.stdout.write(`  ${envVar}: ${status}` + '\n');
         }
       }
     } catch (error) {
-      console.log(chalk.red('❌ Failed to get system status'));
+      process.stderr.write(chalk.red('❌ Failed to get system status') + '\n');
       this.logger.error('System status error:', error);
     }
   }
 
   async showRuntimeStatus(): Promise<void> {
     try {
-      console.log(chalk.blue.bold('\n⚙️  Runtime Status'));
-      console.log(chalk.gray('─'.repeat(60)));
+      process.stdout.write(chalk.blue.bold('\n⚙️  Runtime Status') + '\n');
+      process.stdout.write(chalk.gray('─'.repeat(60)) + '\n');
 
       const stats = this.context.runtime.getStats();
 
       // Basic runtime info
-      console.log(
-        `${chalk.cyan('Status:')} ${stats.isRunning ? chalk.green('✅ Running') : chalk.red('❌ Stopped')}`
+      process.stdout.write(
+        `${chalk.cyan('Status:')} ${stats.isRunning ? chalk.green('✅ Running') : chalk.red('❌ Stopped')}` + '\n'
       );
-      console.log(`${chalk.cyan('Total Agents:')} ${stats.agents}`);
-      console.log(
-        `${chalk.cyan('Autonomous Agents:')} ${stats.autonomousAgents}`
+      process.stdout.write(`${chalk.cyan('Total Agents:')} ${stats.agents}` + '\n');
+      process.stdout.write(
+        `${chalk.cyan('Autonomous Agents:')} ${stats.autonomousAgents}` + '\n'
       );
 
       // Event bus status
-      console.log(chalk.cyan('\nEvent Bus:'));
-      console.log(`  Events: ${stats.eventBus.events}`);
+      process.stdout.write(chalk.cyan('\nEvent Bus:') + '\n');
+      process.stdout.write(`  Events: ${stats.eventBus.events}` + '\n');
 
       // Autonomous systems
       if (stats.autonomous && stats.autonomous.totalAutonomousAgents > 0) {
-        console.log(chalk.cyan('\nAutonomous Systems:'));
-        console.log(`  Engines: ${stats.autonomous.autonomousEngines}`);
-        console.log(`  Decision Engines: ${stats.autonomous.decisionEngines}`);
-        console.log(`  Behaviors: Integrated into autonomous engines`);
-        console.log(`  Lifecycle: Integrated into autonomous engines`);
+        process.stdout.write(chalk.cyan('\nAutonomous Systems:') + '\n');
+        process.stdout.write(`  Engines: ${stats.autonomous.autonomousEngines}` + '\n');
+        process.stdout.write(`  Decision Engines: ${stats.autonomous.decisionEngines}` + '\n');
+        process.stdout.write(`  Behaviors: Integrated into autonomous engines` + '\n');
+        process.stdout.write(`  Lifecycle: Integrated into autonomous engines` + '\n');
       }
 
       // Extension information
-      console.log(chalk.cyan('\nExtensions:'));
-      console.log(`  Loaded: ${stats.extensions?.loaded || 0}`);
-      console.log(`  Failed: ${stats.extensions?.failed || 0}`);
+      process.stdout.write(chalk.cyan('\nExtensions:') + '\n');
+      process.stdout.write(`  Loaded: ${stats.extensions?.loaded || 0}` + '\n');
+      process.stdout.write(`  Failed: ${stats.extensions?.failed || 0}` + '\n');
 
       // Runtime capabilities
       const capabilities = this.context.runtime.getRuntimeCapabilities();
-      console.log(chalk.cyan('\nAvailable Modules:'));
-      console.log(
-        `  Memory Providers: ${capabilities.modules.memory.available.join(', ')}`
+      process.stdout.write(chalk.cyan('\nAvailable Modules:') + '\n');
+      process.stdout.write(
+        `  Memory Providers: ${capabilities.modules.memory.available.join(', ')}` + '\n'
       );
-      console.log(
-        `  Emotion Modules: ${capabilities.modules.emotion.available.join(', ')}`
+      process.stdout.write(
+        `  Emotion Modules: ${capabilities.modules.emotion.available.join(', ')}` + '\n'
       );
-      console.log(
-        `  Cognition Modules: ${capabilities.modules.cognition.available.join(', ')}`
+      process.stdout.write(
+        `  Cognition Modules: ${capabilities.modules.cognition.available.join(', ')}` + '\n'
       );
-      console.log(
-        `  Portals: ${capabilities.modules.portals.available.join(', ')}`
+      process.stdout.write(
+        `  Portals: ${capabilities.modules.portals.available.join(', ')}` + '\n'
       );
     } catch (error) {
-      console.log(chalk.red('❌ Failed to get runtime status'));
+      process.stderr.write(chalk.red('❌ Failed to get runtime status') + '\n');
       this.logger.error('Runtime status error:', error);
     }
   }
@@ -255,109 +255,109 @@ export class StatusCommand {
     try {
       const agent = this.context.runtime.agents.get(agentId);
       if (!agent) {
-        console.log(chalk.red(`❌ Agent '${agentId}' not found`));
+        process.stderr.write(chalk.red(`❌ Agent '${agentId}' not found`) + '\n');
         return;
       }
 
-      console.log(chalk.blue.bold(`\n🤖 Agent Status: ${agent.name}`));
-      console.log(chalk.gray('─'.repeat(60)));
+      process.stdout.write(chalk.blue.bold(`\n🤖 Agent Status: ${agent.name}`) + '\n');
+      process.stdout.write(chalk.gray('─'.repeat(60)) + '\n');
 
       // Basic info
-      console.log(`${chalk.cyan('ID:')} ${agent.id}`);
-      console.log(`${chalk.cyan('Name:')} ${agent.name}`);
-      console.log(
-        `${chalk.cyan('Status:')} ${this.getStatusColor(agent.status)(agent.status)}`
+      process.stdout.write(`${chalk.cyan('ID:')} ${agent.id}` + '\n');
+      process.stdout.write(`${chalk.cyan('Name:')} ${agent.name}` + '\n');
+      process.stdout.write(
+        `${chalk.cyan('Status:')} ${this.getStatusColor(agent.status)(agent.status)}` + '\n'
       );
-      console.log(
-        `${chalk.cyan('Last Update:')} ${agent.lastUpdate?.toLocaleString() || 'never'}`
+      process.stdout.write(
+        `${chalk.cyan('Last Update:')} ${agent.lastUpdate?.toLocaleString() || 'never'}` + '\n'
       );
 
       // Emotion state
       if (agent.emotion) {
-        console.log(chalk.cyan('\nEmotion State:'));
-        console.log(`  Current: ${agent.emotion.current}`);
-        console.log(`  Intensity: ${agent.emotion.intensity}`);
+        process.stdout.write(chalk.cyan('\nEmotion State:') + '\n');
+        process.stdout.write(`  Current: ${agent.emotion.current}` + '\n');
+        process.stdout.write(`  Intensity: ${agent.emotion.intensity}` + '\n');
         const emotionState = agent.emotion.getCurrentState();
         if (emotionState.triggers && emotionState.triggers.length > 0) {
-          console.log(`  Triggers: ${emotionState.triggers.join(', ')}`);
+          process.stdout.write(`  Triggers: ${emotionState.triggers.join(', ')}` + '\n');
         }
       }
 
       // Extensions
-      console.log(chalk.cyan('\nExtensions:'));
+      process.stdout.write(chalk.cyan('\nExtensions:') + '\n');
       for (const ext of agent.extensions) {
         const statusIcon = ext.enabled ? '✅' : '❌';
-        console.log(`  ${statusIcon} ${ext.name} (${ext.id})`);
+        process.stdout.write(`  ${statusIcon} ${ext.name} (${ext.id})` + '\n');
       }
 
       // Portal
       if (agent.portal) {
-        console.log(chalk.cyan('\nPortal:'));
-        console.log(`  Type: ${agent.portal.name || 'configured'}`);
-        console.log(`  Enabled: ${agent.portal.enabled ? '✅' : '❌'}`);
+        process.stdout.write(chalk.cyan('\nPortal:') + '\n');
+        process.stdout.write(`  Type: ${agent.portal.name || 'configured'}` + '\n');
+        process.stdout.write(`  Enabled: ${agent.portal.enabled ? '✅' : '❌'}` + '\n');
       }
 
       // Autonomous status
       const autonomousStatus =
         this.context.runtime.getAutonomousStatus(agentId);
       if (autonomousStatus.autonomous) {
-        console.log(chalk.cyan('\nAutonomous Capabilities:'));
-        console.log(
-          `  Autonomy Level: ${((autonomousStatus.engine?.autonomyLevel || 0) * 100).toFixed(0)}%`
+        process.stdout.write(chalk.cyan('\nAutonomous Capabilities:') + '\n');
+        process.stdout.write(
+          `  Autonomy Level: ${((autonomousStatus.engine?.autonomyLevel || 0) * 100).toFixed(0)}%` + '\n'
         );
-        console.log(
-          `  Interruptible: ${autonomousStatus.engine?.interruptible ? '✅' : '❌'}`
+        process.stdout.write(
+          `  Interruptible: ${autonomousStatus.engine?.interruptible ? '✅' : '❌'}` + '\n'
         );
-        console.log(
-          `  Ethical Constraints: ${autonomousStatus.engine?.ethicalConstraints ? '✅' : '❌'}`
+        process.stdout.write(
+          `  Ethical Constraints: ${autonomousStatus.engine?.ethicalConstraints ? '✅' : '❌'}` + '\n'
         );
 
-        console.log(`  Lifecycle: Integrated into autonomous engine`);
+        process.stdout.write(`  Lifecycle: Integrated into autonomous engine` + '\n');
       }
 
       // Command queue
       const agentCommands = this.context.commandSystem.getAgentQueue(agentId);
-      console.log(
-        chalk.cyan(`\nCommand Queue: ${agentCommands.length} pending`)
+      process.stdout.write(
+        chalk.cyan(`\nCommand Queue: ${agentCommands.length} pending`) + '\n'
       );
       if (agentCommands.length > 0) {
         for (const cmd of agentCommands.slice(0, 5)) {
-          console.log(`  • ${cmd.instruction} (${cmd.priority})`);
+          process.stdout.write(`  • ${cmd.instruction} (${cmd.priority})` + '\n');
         }
         if (agentCommands.length > 5) {
-          console.log(`  ... and ${agentCommands.length - 5} more`);
+          process.stdout.write(`  ... and ${agentCommands.length - 5} more` + '\n');
         }
       }
     } catch (error) {
-      console.log(chalk.red('❌ Failed to get agent status'));
+      process.stderr.write(chalk.red('❌ Failed to get agent status') + '\n');
       this.logger.error('Agent status error:', error);
     }
   }
 
   async performHealthCheck(options: { fix?: boolean }): Promise<void> {
     try {
-      console.log(chalk.blue.bold('\n🏥 System Health Check'));
-      console.log(chalk.gray('─'.repeat(60)));
+      process.stdout.write(chalk.blue.bold('\n🏥 System Health Check') + '\n');
+      process.stdout.write(chalk.gray('─'.repeat(60)) + '\n');
 
       const issues: string[] = [];
       const warnings: string[] = [];
 
       // Check runtime
-      console.log(chalk.cyan('🔍 Checking runtime...'));
+      process.stdout.write(chalk.cyan('🔍 Checking runtime...') + '\n');
       const stats = this.context.runtime.getStats();
       if (!stats.isRunning) {
         issues.push('Runtime is not running');
       } else {
-        console.log(chalk.green('  ✅ Runtime is running'));
+        process.stdout.write(chalk.green('  ✅ Runtime is running') + '\n');
       }
 
       // Check agents
-      console.log(chalk.cyan('🔍 Checking agents...'));
+      process.stdout.write(chalk.cyan('🔍 Checking agents...') + '\n');
       const agents = Array.from(this.context.runtime.agents.values());
       if (agents.length === 0) {
         warnings.push('No agents loaded');
       } else {
-        console.log(chalk.green(`  ✅ ${agents.length} agents loaded`));
+        process.stdout.write(chalk.green(`  ✅ ${agents.length} agents loaded`) + '\n');
 
         const errorAgents = agents.filter(
           (agent) => agent.status === AgentStatus.ERROR
@@ -368,18 +368,18 @@ export class StatusCommand {
       }
 
       // Check memory usage
-      console.log(chalk.cyan('🔍 Checking memory usage...'));
+      process.stdout.write(chalk.cyan('🔍 Checking memory usage...') + '\n');
       const memory = process.memoryUsage();
       const heapUsedMB = memory.heapUsed / 1024 / 1024;
       if (heapUsedMB > 1000) {
         // > 1GB
         warnings.push(`High memory usage: ${heapUsedMB.toFixed(2)} MB`);
       } else {
-        console.log(chalk.green('  ✅ Memory usage is normal'));
+        process.stdout.write(chalk.green('  ✅ Memory usage is normal') + '\n');
       }
 
       // Check API keys
-      console.log(chalk.cyan('🔍 Checking API keys...'));
+      process.stdout.write(chalk.cyan('🔍 Checking API keys...') + '\n');
       const apiKeys = [
         { name: 'OpenAI', env: 'OPENAI_API_KEY' },
         { name: 'Anthropic', env: 'ANTHROPIC_API_KEY' },
@@ -389,7 +389,7 @@ export class StatusCommand {
       let hasApiKey = false;
       for (const apiKey of apiKeys) {
         if (process.env[apiKey.env]) {
-          console.log(chalk.green(`  ✅ ${apiKey.name} API key configured`));
+          process.stdout.write(chalk.green(`  ✅ ${apiKey.name} API key configured`) + '\n');
           hasApiKey = true;
         }
       }
@@ -399,7 +399,7 @@ export class StatusCommand {
       }
 
       // Check extensions
-      console.log(chalk.cyan('🔍 Checking extensions...'));
+      process.stdout.write(chalk.cyan('🔍 Checking extensions...') + '\n');
       const totalExtensions = agents.reduce(
         (sum, agent) => sum + agent.extensions.length,
         0
@@ -411,112 +411,112 @@ export class StatusCommand {
       );
 
       if (totalExtensions > 0) {
-        console.log(
+        process.stdout.write(
           chalk.green(
             `  ✅ ${enabledExtensions}/${totalExtensions} extensions enabled`
-          )
+          ) + '\n'
         );
       } else {
         warnings.push('No extensions loaded');
       }
 
       // Check command system
-      console.log(chalk.cyan('🔍 Checking command system...'));
+      process.stdout.write(chalk.cyan('🔍 Checking command system...') + '\n');
       const commandStats = this.context.commandSystem.getStats();
       if (commandStats.failedCommands > commandStats.completedCommands * 0.5) {
         warnings.push('High command failure rate');
       } else {
-        console.log(chalk.green('  ✅ Command system is healthy'));
+        process.stdout.write(chalk.green('  ✅ Command system is healthy') + '\n');
       }
 
       // Summary
-      console.log(chalk.cyan('\n📋 Health Check Summary:'));
+      process.stdout.write(chalk.cyan('\n📋 Health Check Summary:') + '\n');
 
       if (issues.length === 0 && warnings.length === 0) {
-        console.log(chalk.green('🎉 All systems healthy!'));
+        process.stdout.write(chalk.green('🎉 All systems healthy!') + '\n');
       } else {
         if (issues.length > 0) {
-          console.log(chalk.red('\n❌ Issues found:'));
+          process.stdout.write(chalk.red('\n❌ Issues found:') + '\n');
           for (const issue of issues) {
-            console.log(chalk.red(`  • ${issue}`));
+            process.stdout.write(chalk.red(`  • ${issue}`) + '\n');
           }
         }
 
         if (warnings.length > 0) {
-          console.log(chalk.yellow('\n⚠️  Warnings:'));
+          process.stdout.write(chalk.yellow('\n⚠️  Warnings:') + '\n');
           for (const warning of warnings) {
-            console.log(chalk.yellow(`  • ${warning}`));
+            process.stdout.write(chalk.yellow(`  • ${warning}`) + '\n');
           }
         }
 
         if (options.fix) {
-          console.log(chalk.blue('\n🔧 Attempting to fix issues...'));
+          process.stdout.write(chalk.blue('\n🔧 Attempting to fix issues...') + '\n');
           await this.attemptFixes(issues, warnings);
         } else {
-          console.log(chalk.gray('\nUse --fix to attempt automatic fixes'));
+          process.stdout.write(chalk.gray('\nUse --fix to attempt automatic fixes') + '\n');
         }
       }
     } catch (error) {
-      console.log(chalk.red('❌ Health check failed'));
+      process.stderr.write(chalk.red('❌ Health check failed') + '\n');
       this.logger.error('Health check error:', error);
     }
   }
 
   async showCapabilities(): Promise<void> {
     try {
-      console.log(chalk.blue.bold('\n🛠️  System Capabilities'));
-      console.log(chalk.gray('─'.repeat(60)));
+      process.stdout.write(chalk.blue.bold('\n🛠️  System Capabilities') + '\n');
+      process.stdout.write(chalk.gray('─'.repeat(60)) + '\n');
 
       const capabilities = this.context.runtime.getRuntimeCapabilities();
 
       // Runtime info
-      console.log(chalk.cyan('Runtime:'));
-      console.log(`  Version: ${capabilities.runtime.version}`);
-      console.log(`  Running: ${capabilities.runtime.isRunning ? '✅' : '❌'}`);
-      console.log(`  Tick Interval: ${capabilities.runtime.tickInterval}ms`);
+      process.stdout.write(chalk.cyan('Runtime:') + '\n');
+      process.stdout.write(`  Version: ${capabilities.runtime.version}` + '\n');
+      process.stdout.write(`  Running: ${capabilities.runtime.isRunning ? '✅' : '❌'}` + '\n');
+      process.stdout.write(`  Tick Interval: ${capabilities.runtime.tickInterval}ms` + '\n');
 
       // Agents
-      console.log(chalk.cyan('\nAgents:'));
-      console.log(`  Active: ${capabilities.agents.active}`);
-      console.log(`  Lazy: ${capabilities.agents.lazy}`);
-      console.log(`  Total: ${capabilities.agents.total}`);
+      process.stdout.write(chalk.cyan('\nAgents:') + '\n');
+      process.stdout.write(`  Active: ${capabilities.agents.active}` + '\n');
+      process.stdout.write(`  Lazy: ${capabilities.agents.lazy}` + '\n');
+      process.stdout.write(`  Total: ${capabilities.agents.total}` + '\n');
       if (capabilities.agents.activeList.length > 0) {
-        console.log(
-          `  Active IDs: ${capabilities.agents.activeList.join(', ')}`
+        process.stdout.write(
+          `  Active IDs: ${capabilities.agents.activeList.join(', ')}` + '\n'
         );
       }
 
       // Modules
-      console.log(chalk.cyan('\nModules:'));
-      console.log(
-        `  Memory Providers: ${capabilities.modules.memory.available.join(', ')}`
+      process.stdout.write(chalk.cyan('\nModules:') + '\n');
+      process.stdout.write(
+        `  Memory Providers: ${capabilities.modules.memory.available.join(', ')}` + '\n'
       );
-      console.log(
-        `  Emotion Modules: ${capabilities.modules.emotion.available.join(', ')}`
+      process.stdout.write(
+        `  Emotion Modules: ${capabilities.modules.emotion.available.join(', ')}` + '\n'
       );
-      console.log(
-        `  Cognition Modules: ${capabilities.modules.cognition.available.join(', ')}`
+      process.stdout.write(
+        `  Cognition Modules: ${capabilities.modules.cognition.available.join(', ')}` + '\n'
       );
 
-      console.log(chalk.cyan('\nPortals:'));
-      console.log(
-        `  Available: ${capabilities.modules.portals.available.join(', ')}`
+      process.stdout.write(chalk.cyan('\nPortals:') + '\n');
+      process.stdout.write(
+        `  Available: ${capabilities.modules.portals.available.join(', ')}` + '\n'
       );
-      console.log(
-        `  Factories: ${capabilities.modules.portals.factories.join(', ')}`
+      process.stdout.write(
+        `  Factories: ${capabilities.modules.portals.factories.join(', ')}` + '\n'
       );
 
       // Extensions
-      console.log(chalk.cyan('\nExtensions:'));
-      console.log(
-        `  Loaded: ${capabilities.extensions.loaded.join(', ') || 'none'}`
+      process.stdout.write(chalk.cyan('\nExtensions:') + '\n');
+      process.stdout.write(
+        `  Loaded: ${capabilities.extensions.loaded.join(', ') || 'none'}` + '\n'
       );
 
       // Command system capabilities
       const commandStats = this.context.commandSystem.getStats();
-      console.log(chalk.cyan('\nCommand System:'));
-      console.log(`  Total Commands Processed: ${commandStats.totalCommands}`);
-      console.log(
+      process.stdout.write(chalk.cyan('\nCommand System:') + '\n');
+      process.stdout.write(`  Total Commands Processed: ${commandStats.totalCommands}` + '\n');
+      process.stdout.write(
         `  Success Rate: ${
           commandStats.totalCommands > 0
             ? (
@@ -524,26 +524,26 @@ export class StatusCommand {
                 100
               ).toFixed(1)
             : 0
-        }%`
+        }%` + '\n'
       );
-      console.log(
-        `  Average Execution Time: ${commandStats.averageExecutionTime.toFixed(2)}ms`
+      process.stdout.write(
+        `  Average Execution Time: ${commandStats.averageExecutionTime.toFixed(2)}ms` + '\n'
       );
     } catch (error) {
-      console.log(chalk.red('❌ Failed to get capabilities'));
+      process.stderr.write(chalk.red('❌ Failed to get capabilities') + '\n');
       this.logger.error('Capabilities error:', error);
     }
   }
 
   async showDetailedStatus(): Promise<void> {
     await this.showOverview();
-    console.log('\n');
+    process.stdout.write('\n');
     await this.showSystemStatus({ verbose: false });
-    console.log('\n');
+    process.stdout.write('\n');
     await this.showRuntimeStatus();
   }
 
-  private getStatusCounts(agents: any[]): Record<string, number> {
+  private getStatusCounts(agents: { status?: string }[]): Record<string, number> {
     const counts: Record<string, number> = {};
     for (const agent of agents) {
       const status = agent.status || 'unknown';
@@ -611,15 +611,15 @@ export class StatusCommand {
     warnings: string[]
   ): Promise<void> {
     // This would implement automatic fixes for common issues
-    console.log(chalk.yellow('⚠️  Automatic fixes not yet implemented'));
-    console.log(chalk.gray('Would attempt to fix:'));
+    process.stdout.write(chalk.yellow('⚠️  Automatic fixes not yet implemented') + '\n');
+    process.stdout.write(chalk.gray('Would attempt to fix:') + '\n');
 
     for (const issue of issues) {
-      console.log(chalk.gray(`  • ${issue}`));
+      process.stdout.write(chalk.gray(`  • ${issue}`) + '\n');
     }
 
     for (const warning of warnings) {
-      console.log(chalk.gray(`  • ${warning}`));
+      process.stdout.write(chalk.gray(`  • ${warning}`) + '\n');
     }
   }
 }

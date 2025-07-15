@@ -95,7 +95,7 @@ export const EmotionPanel: React.FC<EmotionPanelProps> = ({ agentData }) => {
       : 0;
 
   // Render emotion coordinates in 3D space
-  const renderEmotionSpace = () => {
+  const renderEmotionSpace = (): React.JSX.Element | null => {
     const primary = emotion.blendedEmotions[0];
     if (!primary) return null;
 
@@ -178,7 +178,7 @@ export const EmotionPanel: React.FC<EmotionPanelProps> = ({ agentData }) => {
               <Box flexDirection='column' marginTop={1}>
                 <Text color={cyberpunkTheme.colors.textDim}>Triggers:</Text>
                 {emotion.triggers.slice(0, 3).map((trigger, i) => (
-                  <Text key={i} color={cyberpunkTheme.colors.text}>
+                  <Text key={`trigger-${trigger}-${i}`} color={cyberpunkTheme.colors.text}>
                     • {trigger}
                   </Text>
                 ))}
@@ -214,7 +214,7 @@ export const EmotionPanel: React.FC<EmotionPanelProps> = ({ agentData }) => {
             <Box flexDirection='column' gap={1}>
               <Text color={cyberpunkTheme.colors.textDim}>Active Blend:</Text>
               {emotion.blendedEmotions.map((blend, i) => (
-                <Box key={i} flexDirection='column'>
+                <Box key={`blend-${blend.emotion}-${i}`} flexDirection='column'>
                   <Box gap={2}>
                     <Text color={getEmotionColor(blend.emotion)}>
                       {blend.emotion}
@@ -264,7 +264,7 @@ export const EmotionPanel: React.FC<EmotionPanelProps> = ({ agentData }) => {
                   Recent Pattern:
                 </Text>
                 {recentEmotions.slice(-3).map((entry, i) => (
-                  <Box key={i} gap={1}>
+                  <Box key={`recent-${entry.timestamp.getTime()}-${i}`} gap={1}>
                     <Text color={getEmotionColor(entry.emotion)}>
                       {entry.emotion.slice(0, 8)}
                     </Text>
@@ -354,7 +354,7 @@ export const EmotionPanel: React.FC<EmotionPanelProps> = ({ agentData }) => {
               .slice(-4)
               .reverse()
               .map((entry, i) => (
-                <Box key={i} gap={2}>
+                <Box key={`history-${entry.timestamp.getTime()}-${i}`} gap={2}>
                   <Text color={cyberpunkTheme.colors.textDim}>
                     {entry.timestamp.toLocaleTimeString()}
                   </Text>

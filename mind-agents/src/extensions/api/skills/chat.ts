@@ -4,6 +4,8 @@
  * Handles chat-related API endpoints and WebSocket messaging
  */
 
+import { WebSocket } from 'ws';
+
 import {
   ExtensionAction,
   Agent,
@@ -11,14 +13,15 @@ import {
   ActionResultType,
   ActionCategory,
 } from '../../../types/agent';
-import { GenericData } from '../../../types/common';
+import { GenericData, SkillParameters } from '../../../types/common';
 import { runtimeLogger } from '../../../utils/logger';
+import { ApiExtension } from '../index';
 import { ChatRequest, ChatResponse, WebSocketMessage } from '../types';
 
 export class ChatSkill {
-  private extension: any;
+  private extension: ApiExtension;
 
-  constructor(extension: any) {
+  constructor(extension: ApiExtension) {
     this.extension = extension;
   }
 
@@ -36,7 +39,10 @@ export class ChatSkill {
           message: 'string',
           conversationId: 'string?',
         },
-        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
+        execute: async (
+          agent: Agent,
+          params: SkillParameters
+        ): Promise<ActionResult> => {
           return this.sendMessage(agent, params);
         },
       },
@@ -49,7 +55,10 @@ export class ChatSkill {
           conversationId: 'string?',
           limit: 'number?',
         },
-        execute: async (agent: Agent, params: any): Promise<ActionResult> => {
+        execute: async (
+          agent: Agent,
+          params: SkillParameters
+        ): Promise<ActionResult> => {
           return this.getConversationHistory(agent, params);
         },
       },
@@ -59,7 +68,10 @@ export class ChatSkill {
   /**
    * Send a message to an agent
    */
-  async sendMessage(agent: Agent, params: any): Promise<ActionResult> {
+  async sendMessage(
+    agent: Agent,
+    params: SkillParameters
+  ): Promise<ActionResult> {
     try {
       const { agentId, message, conversationId } = params;
 
@@ -110,7 +122,7 @@ export class ChatSkill {
    */
   async getConversationHistory(
     agent: Agent,
-    params: any
+    params: SkillParameters
   ): Promise<ActionResult> {
     try {
       const { agentId, conversationId, limit = 50 } = params;
@@ -148,7 +160,7 @@ export class ChatSkill {
    * Handle WebSocket chat messages
    */
   async handleWebSocketMessage(
-    ws: any,
+    ws: WebSocket,
     message: WebSocketMessage
   ): Promise<void> {
     try {
@@ -176,7 +188,7 @@ export class ChatSkill {
   }
 
   private async handleChatMessage(
-    ws: any,
+    ws: WebSocket,
     message: WebSocketMessage
   ): Promise<void> {
     const { agentId, data } = message;
@@ -196,7 +208,7 @@ export class ChatSkill {
   }
 
   private async handleGetHistory(
-    ws: any,
+    ws: WebSocket,
     message: WebSocketMessage
   ): Promise<void> {
     const { agentId, data } = message;

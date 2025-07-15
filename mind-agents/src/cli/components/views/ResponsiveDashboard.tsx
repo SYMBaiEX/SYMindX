@@ -1,5 +1,5 @@
 import { Box, Text, useApp } from 'ink';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 
 import { useAgentData } from '../../hooks/useAgentData.js';
 import { useSystemStats } from '../../hooks/useSystemStats.js';
@@ -20,24 +20,23 @@ import { ResponsiveCard3D } from '../ui/ResponsiveCard3D.js';
 import { ResponsiveGrid } from '../ui/ResponsiveGrid.js';
 
 export const ResponsiveDashboard: React.FC = () => {
-  const { exit: _exit } = useApp();
+  useApp();
   const systemStats = useSystemStats();
   const agentData = useAgentData();
   const {
     dimensions,
     breakpoints,
-    currentBreakpoint: _currentBreakpoint,
   } = useTerminalDimensions();
 
   const [cpuHistory, setCpuHistory] = useState<number[]>(Array(20).fill(0));
   const [memHistory, setMemHistory] = useState<number[]>(Array(20).fill(0));
-  const [selectedMetric, _setSelectedMetric] = useState<'cpu' | 'memory'>(
+  const [selectedMetric] = useState<'cpu' | 'memory'>(
     'cpu'
   );
   const [showMatrix, setShowMatrix] = useState(false);
 
-  // Convert SystemStats to simpler format for display
-  const displayStats = systemStats
+  // Convert SystemStats to simpler format for display with useMemo
+  const displayStats = useMemo(() => systemStats
     ? {
         cpu: systemStats.performance.cpu,
         memory: parseFloat(systemStats.performance.memory) || 0,
@@ -46,7 +45,7 @@ export const ResponsiveDashboard: React.FC = () => {
         uptime: systemStats.uptime,
         network: systemStats.isConnected ? 'CONNECTED' : 'DISCONNECTED',
       }
-    : null;
+    : null, [systemStats]);
 
   // Play startup sound and music
   useEffect(() => {
@@ -55,7 +54,7 @@ export const ResponsiveDashboard: React.FC = () => {
       musicManager.playMood('cyberpunk');
     }
 
-    return () => {
+    return (): void => {
       musicManager.stop();
     };
   }, []);
@@ -75,7 +74,7 @@ export const ResponsiveDashboard: React.FC = () => {
         setShowMatrix(true);
       }, 2000);
 
-      return () => clearTimeout(timer);
+      return (): void => clearTimeout(timer);
     }
     return undefined;
   }, [breakpoints]);

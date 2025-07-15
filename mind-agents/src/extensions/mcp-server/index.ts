@@ -214,7 +214,7 @@ export class MCPServerExtension implements Extension {
   /**
    * Validate that a value conforms to DataValue type
    */
-  private validateDataValue(value: any): DataValue {
+  private validateDataValue(value: unknown): DataValue {
     if (
       typeof value === 'string' ||
       typeof value === 'number' ||
@@ -236,7 +236,7 @@ export class MCPServerExtension implements Extension {
   /**
    * Convert any object to GenericData format
    */
-  private toGenericData(obj: any): GenericData {
+  private toGenericData(obj: Record<string, unknown>): GenericData {
     const result: GenericData = {};
 
     for (const [key, value] of Object.entries(obj)) {
@@ -254,14 +254,14 @@ export class MCPServerExtension implements Extension {
   /**
    * Get server statistics
    */
-  getServerStats() {
+  getServerStats(): ReturnType<MCPServerManager['getStats']> {
     return this.mcpServer.getStats();
   }
 
   /**
    * Get active connections
    */
-  getConnections() {
+  getConnections(): ReturnType<MCPServerManager['getConnections']> {
     return this.mcpServer.getConnections();
   }
 

@@ -1,3 +1,4 @@
+import { EmotionResult } from '../../../types/modules/emotions';
 import { BaseEmotion, EmotionDefinition } from '../base-emotion';
 
 import { ConfusedEmotionConfig } from './types';
@@ -41,7 +42,7 @@ export class ConfusedEmotion extends BaseEmotion {
     };
   }
 
-  override processEvent(eventType: string, context?: any): any {
+  override processEvent(eventType: string, context?: unknown): EmotionResult {
     // Special processing for confusion-specific events
     if (context?.contradiction_detected) {
       this._intensity = Math.min(1.0, this._intensity + 0.2);

@@ -149,7 +149,7 @@ export class GoogleGenerativePortal extends BasePortal {
         maxOutputTokens: 10,
       });
       return !!text;
-    } catch (_error) {
+    } catch {
       // Google Generative AI health check failed
       return false;
     }

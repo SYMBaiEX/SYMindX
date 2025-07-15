@@ -32,7 +32,7 @@ const debounce = <T extends (...args: any[]) => any>(
   func: T,
   delay: number
 ): ((...args: Parameters<T>) => void) => {
-  let timeoutId: NodeJS.Timeout;
+  let timeoutId: ReturnType<typeof setTimeout>;
   return (...args: Parameters<T>) => {
     clearTimeout(timeoutId);
     timeoutId = setTimeout(() => func(...args), delay);
@@ -62,7 +62,7 @@ export const useTerminalDimensions = (): TerminalResponsive => {
     // Initial dimension check
     updateDimensions();
 
-    return () => {
+    return (): void => {
       process.stdout.off('resize', handleResize);
     };
   }, [updateDimensions]);
@@ -113,7 +113,13 @@ export const useTerminalDimensions = (): TerminalResponsive => {
 export const getAdaptiveDimensions = (
   dimensions: TerminalDimensions,
   breakpoints: TerminalBreakpoints
-) => {
+): {
+  cardWidth: number;
+  cardHeight: number;
+  maxCardsPerRow: number;
+  padding: number;
+  gap: number;
+} => {
   const { width, height } = dimensions;
 
   // Card dimensions based on breakpoints

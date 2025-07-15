@@ -70,7 +70,7 @@ export interface SupabaseMemoryRow extends MemoryRow {
   type: string;
   content: string;
   embedding?: number[];
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   importance: number;
   timestamp: string;
   tags: string[];
