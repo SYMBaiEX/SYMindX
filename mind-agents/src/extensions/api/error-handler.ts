@@ -428,8 +428,8 @@ export class ExtensionErrorHandler {
   static asyncHandler(
     fn: (req: Request, res: Response, next: NextFunction) => Promise<void>
   ) {
-    return (req: Request, res: Response, next: NextFunction): void => {
-      Promise.resolve(fn(req, res, next)).catch(next);
+    return (_req: Request, _res: Response, next: NextFunction): void => {
+      Promise.resolve(fn(_req, _res, next)).catch(next);
     };
   }
 

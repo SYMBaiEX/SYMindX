@@ -120,8 +120,10 @@ export class ResourceManager extends EventEmitter {
     if (this.config.enableResourceLogging) {
       this.logger.debug(`Registered resource ${resourceId}`, {
         agentId,
-        type,
-        description,
+        metadata: {
+          type,
+          description,
+        },
       });
     }
 
@@ -154,7 +156,9 @@ export class ResourceManager extends EventEmitter {
     if (this.config.enableResourceLogging) {
       this.logger.debug(`Deactivated resource ${resourceId}`, {
         agentId: resource.agentId,
-        type: resource.type,
+        metadata: {
+          type: resource.type,
+        },
       });
     }
 
@@ -188,7 +192,9 @@ export class ResourceManager extends EventEmitter {
       if (this.config.enableResourceLogging) {
         this.logger.debug(`Unregistered resource ${resourceId}`, {
           agentId: resource.agentId,
-          type: resource.type,
+          metadata: {
+            type: resource.type,
+          },
         });
       }
 
@@ -199,6 +205,7 @@ export class ResourceManager extends EventEmitter {
 
       return true;
     } catch (error) {
+      void error;
       this.logger.error(`Failed to cleanup resource ${resourceId}:`, error);
       this.emit('resource_cleanup_failed', {
         resourceId,
@@ -234,6 +241,7 @@ export class ResourceManager extends EventEmitter {
           result.errors.push(`Resource ${resourceId} not found`);
         }
       } catch (error) {
+        void error;
         result.failed++;
         result.errors.push(`Failed to cleanup ${resourceId}: ${error}`);
       }
@@ -243,8 +251,10 @@ export class ResourceManager extends EventEmitter {
     this.agentResources.delete(agentId);
 
     this.logger.info(`Cleanup completed for agent ${agentId}`, {
-      success: result.success,
-      failed: result.failed,
+      metadata: {
+        success: result.success,
+        failed: result.failed,
+      },
     });
 
     this.emit('agent_cleanup_completed', { agentId, result });
@@ -334,6 +344,7 @@ export class ResourceManager extends EventEmitter {
           result.failed++;
         }
       } catch (error) {
+        void error;
         result.failed++;
         result.errors.push(
           `Failed to cleanup stale resource ${resource.id}: ${error}`
@@ -342,8 +353,10 @@ export class ResourceManager extends EventEmitter {
     }
 
     this.logger.info(`Stale resource cleanup completed`, {
-      success: result.success,
-      failed: result.failed,
+      metadata: {
+        success: result.success,
+        failed: result.failed,
+      },
     });
 
     return result;
@@ -424,6 +437,7 @@ export class ResourceManager extends EventEmitter {
       try {
         await this.cleanupStaleResources();
       } catch (error) {
+        void error;
         this.logger.error('Error during automatic cleanup:', error);
       }
     }, this.config.cleanupIntervalMs);

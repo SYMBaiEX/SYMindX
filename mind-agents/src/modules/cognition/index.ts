@@ -5,10 +5,11 @@
  */
 
 import { CognitionModuleType } from '../../types/agent';
+// Agent imports should come first
 import { CognitionModule } from '../../types/cognition';
 
 import { UnifiedCognition, createUnifiedCognition } from './cognition';
-import { TheoryOfMind, createTheoryOfMind } from './theory-of-mind';
+import { TheoryOfMind } from './theory-of-mind';
 
 /**
  * Create a cognition module based on type and configuration
@@ -33,7 +34,7 @@ export function createCognitionModule(
     case 'reactive': // Legacy compatibility
     case 'hybrid': // Legacy compatibility
       return createUnifiedCognition({
-        ...config,
+        ...(config as any),
         // Adjust config based on legacy type
         analysisDepth:
           type === 'htn_planner'
@@ -44,17 +45,17 @@ export function createCognitionModule(
       });
     case CognitionModuleType.THEORY_OF_MIND:
     case 'theory_of_mind': {
-      // Add theory of mind capability alongside unified cognition
-      const unifiedModule = createUnifiedCognition(config);
-      const theoryOfMindModule = createTheoryOfMind(config);
-      return {
-        ...unifiedModule,
-        theoryOfMind: theoryOfMindModule,
+      // Theory of mind is integrated into unified cognition
+      const unifiedConfig = {
+        ...(config as any),
+        enableTheoryOfMind: true,
+        theoryOfMindConfig: config,
       };
+      return createUnifiedCognition(unifiedConfig);
     }
     default:
       // Unknown cognition type, using unified
-      return createUnifiedCognition(config);
+      return createUnifiedCognition(config as any);
   }
 }
 
@@ -69,9 +70,7 @@ export function getCognitionModuleTypes(): string[] {
 export { UnifiedCognition, TheoryOfMind };
 
 // Registration function with auto-discovery
-export async function registerCognitionModules(
-  registry: Record<string, unknown>
-): Promise<void> {
+export async function registerCognitionModules(registry: any): Promise<void> {
   try {
     // Use the new cognition discovery system
     const { createCognitionDiscovery } = await import('./cognition-discovery');
@@ -90,7 +89,7 @@ export async function registerCognitionModules(
         'unified',
         (config: Record<string, unknown>) =>
           createUnifiedCognition(
-            config || {
+            (config as any) || {
               thinkForActions: true,
               thinkForMentions: true,
               thinkOnRequest: true,
@@ -126,6 +125,7 @@ export async function registerCognitionModules(
 
     // Cognition factories registered - logged by runtime
   } catch (error) {
+    void error;
     // Failed to register cognition modules
 
     // Fallback to manual registration
@@ -137,7 +137,7 @@ export async function registerCognitionModules(
         'unified',
         (config: Record<string, unknown>) =>
           createUnifiedCognition(
-            config || {
+            (config as any) || {
               thinkForActions: true,
               thinkForMentions: true,
               thinkOnRequest: true,

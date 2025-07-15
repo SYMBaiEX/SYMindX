@@ -165,6 +165,7 @@ export class CompositeEmotionModule implements EmotionModule {
       changed: transitions.length > 0 || emotionResponses.length > 0,
       previousEmotion: transitions.length > 0 ? transitions[0].from : undefined,
       transitions,
+      modifiers: undefined,
       blendResult: this._blendedState
         ? this.convertToBlendResult(this._blendedState)
         : undefined,
@@ -240,6 +241,9 @@ export class CompositeEmotionModule implements EmotionModule {
       state,
       changed: this.emotions.has(emotion),
       previousEmotion: this._current !== emotion ? this._current : undefined,
+      transitions: undefined,
+      modifiers: undefined,
+      blendResult: undefined,
       metadata: {
         processingTime: 0,
         triggersProcessed: triggers.length,

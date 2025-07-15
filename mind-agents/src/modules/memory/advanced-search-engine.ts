@@ -142,6 +142,7 @@ export class AdvancedSearchEngine {
 
       return results;
     } catch (error) {
+      void error;
       runtimeLogger.error('Search failed:', error);
       throw error;
     }
@@ -638,7 +639,9 @@ export class AdvancedSearchEngine {
 
   /**
    * Apply single filter (reserved for future filtering features)
+   * @deprecated - Currently unused, reserved for future implementation
    */
+
   private _applyFilter(
     value: any,
     operator: string,

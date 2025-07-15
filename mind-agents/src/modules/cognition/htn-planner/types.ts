@@ -1,5 +1,4 @@
 import { BaseConfig } from '../../../types/common';
-
 export interface HTNPlannerConfig extends BaseConfig {
   // Planning parameters
   maxPlanningDepth?: number;

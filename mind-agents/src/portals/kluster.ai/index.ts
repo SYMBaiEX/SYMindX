@@ -96,6 +96,7 @@ export class KlusterAiPortal extends BasePortal {
         },
       };
     } catch (error) {
+      void error;
       console.error('Kluster.ai text generation error:', error);
       throw new Error(`Kluster.ai text generation failed: ${error}`);
     }
@@ -170,6 +171,7 @@ export class KlusterAiPortal extends BasePortal {
         },
       };
     } catch (error) {
+      void error;
       console.error('Kluster.ai chat generation error:', error);
       throw new Error(`Kluster.ai chat generation failed: ${error}`);
     }
@@ -224,6 +226,7 @@ export class KlusterAiPortal extends BasePortal {
         )
         .build();
     } catch (error) {
+      void error;
       console.error('Kluster.ai embedding generation error:', error);
       throw new Error(`Kluster.ai embedding generation failed: ${error}`);
     }
@@ -301,6 +304,7 @@ export class KlusterAiPortal extends BasePortal {
         reader.releaseLock();
       }
     } catch (error) {
+      void error;
       console.error('Kluster.ai stream text error:', error);
       throw new Error(`Kluster.ai stream text failed: ${error}`);
     }

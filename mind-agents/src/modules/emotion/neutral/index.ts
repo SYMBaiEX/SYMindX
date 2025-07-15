@@ -2,7 +2,6 @@ import { EmotionResult, EmotionData } from '../../../types/modules/emotions';
 import { BaseEmotion, EmotionDefinition } from '../base-emotion';
 
 import { NeutralEmotionConfig } from './types';
-
 export class NeutralEmotion extends BaseEmotion {
   constructor(config: NeutralEmotionConfig = {}) {
     super(config);

@@ -43,7 +43,7 @@ interface ExtendedAgent extends Agent {
   autonomyLevel?: number;
 }
 
-interface NodeJSError extends Error {
+interface NodeJSError extends NodeJS.ErrnoException {
   code?: string;
 }
 
@@ -146,6 +146,24 @@ export class StateManager {
   private operationLocks: Map<string, boolean> = new Map();
   private checkpointTimers: Map<string, ReturnType<typeof setInterval>> =
     new Map();
+  
+  // Timer cleanup utility methods
+  private clearCheckpointTimer(agentId: string): void {
+    const timer = this.checkpointTimers.get(agentId);
+    if (timer) {
+      clearInterval(timer);
+      this.checkpointTimers.delete(agentId);
+    }
+  }
+  
+  private startCheckpointTimer(agentId: string, interval: number): void {
+    this.clearCheckpointTimer(agentId);
+    const timer = setInterval(() => {
+      // Placeholder for scheduled checkpoint logic
+      this.logger.debug(`Scheduled checkpoint for agent ${agentId}`);
+    }, interval);
+    this.checkpointTimers.set(agentId, timer);
+  }
 
   constructor(config: StateManagerConfig) {
     this.config = config;
@@ -163,6 +181,7 @@ export class StateManager {
         directory: this.stateDirectory,
       });
     } catch (error) {
+      void error;
       this.logger.error('Failed to initialize state manager:', error);
       throw error;
     }
@@ -352,6 +371,7 @@ export class StateManager {
 
       return filepath;
     } catch (error) {
+      void error;
       this.logger.error(
         `Failed to save snapshot for agent ${snapshot.agentId}:`,
         error
@@ -403,6 +423,7 @@ export class StateManager {
 
       return snapshot;
     } catch (error) {
+      void error;
       if ((error as NodeJSError).code === 'ENOENT') {
         this.logger.warn(`No snapshot found for agent ${agentId}`);
         return null;
@@ -483,6 +504,7 @@ export class StateManager {
         recoveryOptions,
       };
     } catch (error) {
+      void error;
       return {
         result: StateValidationResult.CORRUPTED,
         errors: [`Validation failed: ${error}`],
@@ -509,6 +531,7 @@ export class StateManager {
         .sort()
         .reverse(); // Most recent first
     } catch (error) {
+      void error;
       if ((error as NodeJSError).code === 'ENOENT') {
         return [];
       }
@@ -537,6 +560,7 @@ export class StateManager {
         this.logger.info(`Deleted all checkpoints for agent ${agentId}`);
       }
     } catch (error) {
+      void error;
       this.logger.error(
         `Failed to delete checkpoints for agent ${agentId}:`,
         error
@@ -551,6 +575,7 @@ export class StateManager {
     try {
       return await agent.memory.getRecent(agent.id, 20);
     } catch (error) {
+      void error;
       this.logger.warn(
         `Failed to get recent memories for agent ${agent.id}:`,
         error
@@ -623,6 +648,7 @@ export class StateManager {
         );
       }
     } catch (error) {
+      void error;
       this.logger.error(
         `Failed to cleanup old checkpoints for agent ${agentId}:`,
         error
@@ -657,6 +683,7 @@ export class StateManager {
         JSON.stringify(updatedMetadata, null, 2)
       );
     } catch (error) {
+      void error;
       this.logger.error(
         `Failed to update metadata for agent ${agentId}:`,
         error
@@ -740,12 +767,25 @@ export class StateManager {
 
       this.logger.info(`Saved lazy agent state for ${lazyAgent.id}`);
     } catch (error) {
+      void error;
       this.logger.error(
         `Failed to save lazy agent state for ${lazyAgent.id}:`,
         error
       );
       throw error;
     }
+  }
+
+  /**
+   * Cleanup all timers and resources
+   */
+  cleanup(): void {
+    this.checkpointTimers.forEach((timer, agentId) => {
+      clearInterval(timer);
+      this.logger.debug(`Cleared checkpoint timer for agent ${agentId}`);
+    });
+    this.checkpointTimers.clear();
+    this.operationLocks.clear();
   }
 
   /**
@@ -792,6 +832,7 @@ export class StateManager {
         this.logger.info(`Restored lazy agent state for ${lazyAgentId}`);
         return state;
       } catch (error) {
+        void error;
         if ((error as NodeJSError).code === 'ENOENT') {
           this.logger.info(`No saved state for lazy agent ${lazyAgentId}`);
           return null;
@@ -799,6 +840,7 @@ export class StateManager {
         throw error;
       }
     } catch (error) {
+      void error;
       this.logger.error(
         `Failed to restore lazy agent state for ${lazyAgentId}:`,
         error

@@ -1,14 +1,4 @@
-import {
-  HTNOperator,
-  HTNEffect,
-  HTNDecomposition,
-  HTNSubtask,
-  PlanExecutionResult,
-  DecisionMatrix,
-  DecisionOption,
-  ThoughtNode,
-  ReasoningPath,
-} from '../../../types';
+import { HTNOperator, ThoughtNode } from '../../../types';
 import {
   Agent,
   ThoughtContext,
@@ -25,6 +15,7 @@ import {
 import {
   CognitionModule,
   CognitionModuleMetadata,
+  ReasoningParadigm,
 } from '../../../types/cognition';
 import { BaseConfig } from '../../../types/common';
 
@@ -36,7 +27,6 @@ export class HTNPlannerCognition implements CognitionModule {
   private config: HTNPlannerConfig;
   private taskNetworks: Map<string, TaskNetwork> = new Map();
   private decompositionCache: Map<string, Task[]> = new Map();
-  private operators: Map<string, HTNOperator> = new Map();
   private thoughtGraph: Map<string, ThoughtNode> = new Map();
 
   constructor(config: HTNPlannerConfig = {}) {
@@ -94,15 +84,19 @@ export class HTNPlannerCognition implements CognitionModule {
 
   async plan(agent: Agent, goal: string): Promise<Plan> {
     const startTime = Date.now();
+    const thoughts: string[] = [];
 
     // Use agent context for personalized planning
-    const _agentContext = {
+    const agentContext = {
       id: agent.id,
       personality: agent.config.core.personality,
       capabilities: agent.extensions ? Object.keys(agent.extensions) : [],
     };
 
     // Planning for agent context
+    thoughts.push(
+      `Planning for agent ${agentContext.id} with ${agentContext.capabilities.length} capabilities`
+    );
 
     // Create or retrieve task network for this goal
     const network = this.getOrCreateTaskNetwork(goal);
@@ -154,7 +148,7 @@ export class HTNPlannerCognition implements CognitionModule {
       version: '1.0.0',
       description: 'Hierarchical Task Network planning cognition system',
       author: 'SYMindX',
-      paradigms: ['hierarchical', 'planning'],
+      paradigms: [ReasoningParadigm.RULE_BASED, ReasoningParadigm.MODEL_BASED],
       learningCapable: false,
     };
   }
@@ -533,7 +527,7 @@ export class HTNPlannerCognition implements CognitionModule {
     basicOperators.forEach((op) => this.operators.set(op.id, op));
   }
 
-  private createThoughtNode(
+  private _createThoughtNode(
     content: string,
     confidence: number,
     type?:
@@ -543,86 +537,17 @@ export class HTNPlannerCognition implements CognitionModule {
       | 'conclusion'
       | 'question'
   ): ThoughtNode {
-    const node: ThoughtNode = {
+    const nodeBase = {
       id: `thought_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       content,
       confidence,
-      type,
       connections: [],
       timestamp: new Date(),
     };
+
+    const node: ThoughtNode = type ? { ...nodeBase, type } : { ...nodeBase };
     this.thoughtGraph.set(node.id, node);
     return node;
-  }
-
-  private createReasoningPath(goal: string, plan: Plan): ReasoningPath {
-    return {
-      id: `path_${plan.id}`,
-      steps: plan.steps.map((step, index) => ({
-        stepNumber: index + 1,
-        thoughtNodeId: this.createThoughtNode(
-          `Execute: ${step.action}`,
-          0.8,
-          'inference'
-        ).id,
-        action: step.action,
-        justification: step.description || 'Required for goal achievement',
-        confidence: 0.8,
-        dependencies:
-          step.preconditions
-            ?.map((p) => plan.steps.findIndex((s) => s.id === p))
-            .filter((i) => i >= 0) || [],
-      })),
-      probability: 0.75,
-      outcome: `Achieve: ${goal}`,
-      evaluation: {
-        consistency: 0.85,
-        completeness: 0.8,
-        efficiency: 0.7,
-        risk: plan.priority >= 4 ? 'high' : 'medium',
-      },
-    };
-  }
-
-  private evaluateOperatorPreconditions(
-    operator: HTNOperator,
-    state: Set<string>
-  ): boolean {
-    return operator.preconditions.every((precond) => {
-      const predicate = `${precond.predicate}(${precond.parameters.join(',')})`;
-      return precond.positive ? state.has(predicate) : !state.has(predicate);
-    });
-  }
-
-  private applyOperatorEffects(
-    operator: HTNOperator,
-    state: Set<string>
-  ): Set<string> {
-    const newState = new Set(state);
-
-    operator.effects.forEach((effect) => {
-      const predicate = `${effect.predicate}(${effect.parameters.join(',')})`;
-
-      switch (effect.type) {
-        case 'add':
-          newState.add(predicate);
-          break;
-        case 'delete':
-          newState.delete(predicate);
-          break;
-        case 'update': {
-          // For updates, remove old value and add new
-          const oldPredicate = Array.from(newState).find((p) =>
-            p.startsWith(`${effect.predicate}(`)
-          );
-          if (oldPredicate) newState.delete(oldPredicate);
-          newState.add(predicate);
-          break;
-        }
-      }
-    });
-
-    return newState;
   }
 }
 

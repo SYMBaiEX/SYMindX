@@ -231,6 +231,7 @@ export async function isDatabaseInitialized(db: Database): Promise<boolean> {
       completedMigrations.includes(migration)
     );
   } catch (error) {
+    void error;
     // If we can't check, assume it needs initialization
     console.log(
       '⚠️ Could not check database status, assuming initialization needed:',

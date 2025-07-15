@@ -200,6 +200,7 @@ export class HybridReasoningEngine implements CognitionModule {
           result = await this.system1Think(agent, reasoningContext);
       }
     } catch (error) {
+      void error;
       // Fallback to System 1
       result = await this.system1Think(agent, reasoningContext);
     }

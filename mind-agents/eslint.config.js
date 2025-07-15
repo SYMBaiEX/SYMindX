@@ -12,9 +12,9 @@ export default [
   // Base JavaScript configuration
   js.configs.recommended,
 
-  // TypeScript and React configuration
+  // TypeScript files configuration
   {
-    files: ['**/*.{ts,tsx,js,jsx}'],
+    files: ['src/**/*.{ts,tsx}'],
     languageOptions: {
       parser: typescriptParser,
       ecmaVersion: 2022,
@@ -116,6 +116,98 @@ export default [
         typescript: {
           alwaysTryTypes: true,
           project: ['./tsconfig.json', './tsconfig.build.json', './tsconfig.core.json'],
+        },
+      },
+    },
+  },
+
+  // JavaScript files configuration (no TypeScript parsing)
+  {
+    files: ['**/*.{js,jsx}'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'module',
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+        Buffer: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        setTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearTimeout: 'readonly',
+        clearInterval: 'readonly',
+        fetch: 'readonly',
+        global: 'readonly',
+      },
+    },
+    plugins: {
+      react,
+      'react-hooks': reactHooks,
+      'jsx-a11y': jsxA11y,
+      import: importPlugin,
+      prettier,
+    },
+    rules: {
+      // React rules
+      'react/prop-types': 'off',
+      'react/react-in-jsx-scope': 'off',
+      'react/jsx-uses-react': 'off',
+      'react/jsx-uses-vars': 'error',
+      'react/jsx-key': 'error',
+      'react/no-unused-state': 'warn',
+      'react/no-array-index-key': 'warn',
+
+      // React Hooks rules
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
+
+      // Accessibility rules
+      'jsx-a11y/anchor-is-valid': 'warn',
+      'jsx-a11y/alt-text': 'warn',
+      'jsx-a11y/label-has-associated-control': 'warn',
+
+      // Import rules
+      'import/order': [
+        'error',
+        {
+          groups: [
+            'builtin',
+            'external',
+            'internal',
+            'parent',
+            'sibling',
+            'index',
+          ],
+          'newlines-between': 'always',
+          alphabetize: {
+            order: 'asc',
+            caseInsensitive: true,
+          },
+        },
+      ],
+      'import/no-unresolved': 'off',
+      'import/no-duplicates': 'error',
+
+      // General code quality rules
+      'no-console': 'warn',
+      'no-debugger': 'error',
+      'no-unused-vars': 'error',
+      'prefer-const': 'error',
+      'no-var': 'error',
+      'eqeqeq': ['error', 'always'],
+      'curly': ['error', 'all'],
+
+      // Prettier integration
+      'prettier/prettier': 'error',
+    },
+    settings: {
+      react: {
+        version: 'detect',
+      },
+      'import/resolver': {
+        node: {
+          extensions: ['.js', '.jsx'],
         },
       },
     },

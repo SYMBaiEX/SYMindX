@@ -1,9 +1,10 @@
 import * as path from 'path';
 import { fileURLToPath } from 'url';
+
 import dotenv from 'dotenv';
+
 import { SYMindXRuntime } from './core/runtime';
 import type { RuntimeConfig } from './types/agent';
-import { LogLevel } from './types/agent';
 import {
   displayBanner,
   createSpinner,
@@ -46,7 +47,7 @@ export * from './types/autonomous';
 const config: RuntimeConfig = {
   tickInterval: 1000,
   maxAgents: 10,
-  logLevel: LogLevel.INFO,
+  logLevel: logger.LogLevel.INFO,
   persistence: {
     enabled: true,
     path: './data',
@@ -138,6 +139,7 @@ async function start() {
     });
     dashboard.render();
   } catch (error) {
+    void error;
     logger.error('Failed to start runtime:', error);
     process.exit(1);
   }

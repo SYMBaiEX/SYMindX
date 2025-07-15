@@ -358,7 +358,7 @@ export abstract class BaseMemoryProvider implements MemoryProvider {
    * @returns The parsed memory record
    */
   protected parseMemoryFromStorage(row: MemoryRow): MemoryRecord {
-    return buildObject<MemoryRecord>({
+    return buildObject({
       id: row.id || row.memory_id || '',
       agentId: row.agent_id,
       type: (row.type as string)
@@ -393,7 +393,7 @@ export abstract class BaseMemoryProvider implements MemoryProvider {
             : new Date(row.expires_at)
           : undefined
       )
-      .build();
+      .build() as MemoryRecord;
   }
 
   /**

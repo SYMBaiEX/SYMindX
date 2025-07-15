@@ -104,6 +104,7 @@ export class CoherePortal extends BasePortal {
       this.status = PortalStatus.ACTIVE;
       // Cohere AI portal initialized successfully
     } catch (error) {
+      void error;
       this.status = PortalStatus.ERROR;
       // Failed to initialize Cohere AI portal
       throw error;
@@ -196,6 +197,7 @@ export class CoherePortal extends BasePortal {
         timestamp: new Date(),
       };
     } catch (error) {
+      void error;
       throw new Error(`Cohere AI text generation failed: ${error}`);
     }
   }
@@ -253,6 +255,7 @@ export class CoherePortal extends BasePortal {
         timestamp: new Date(),
       };
     } catch (error) {
+      void error;
       throw new Error(`Cohere AI chat generation failed: ${error}`);
     }
   }
@@ -281,6 +284,7 @@ export class CoherePortal extends BasePortal {
         },
       };
     } catch (error) {
+      void error;
       throw new Error(`Cohere AI embedding generation failed: ${error}`);
     }
   }
@@ -329,6 +333,7 @@ export class CoherePortal extends BasePortal {
         yield chunk;
       }
     } catch (error) {
+      void error;
       throw new Error(`Cohere AI text streaming failed: ${error}`);
     }
   }
@@ -375,6 +380,7 @@ export class CoherePortal extends BasePortal {
         yield chunk;
       }
     } catch (error) {
+      void error;
       throw new Error(`Cohere AI chat streaming failed: ${error}`);
     }
   }

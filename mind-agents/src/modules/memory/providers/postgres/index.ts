@@ -198,6 +198,7 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
       this.isInitialized = true;
       // Enhanced PostgreSQL memory provider initialized successfully
     } catch (error) {
+      void error;
       const dbError =
         error instanceof DatabaseError
           ? error
@@ -280,6 +281,7 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
         await client.query(`CREATE EXTENSION IF NOT EXISTS "${extension}";`);
         console.log(`📦 Enabled extension: ${extension}`);
       } catch (error) {
+        void error;
         const dbError =
           error instanceof DatabaseError
             ? error
@@ -361,6 +363,7 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
       );
       console.log('🔍 Created HNSW vector index');
     } catch (error) {
+      void error;
       try {
         await client.query(
           `CREATE INDEX IF NOT EXISTS idx_${this.tableName}_embedding_ivfflat ON ${this.tableName} USING ivfflat (embedding vector_cosine_ops);`
@@ -390,6 +393,7 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
       try {
         await client.query(indexQuery);
       } catch (error) {
+        void error;
         const dbError =
           error instanceof DatabaseError
             ? error
@@ -530,6 +534,7 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
       try {
         await client.query(func);
       } catch (error) {
+        void error;
         const dbError =
           error instanceof DatabaseError
             ? error
@@ -589,6 +594,7 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
 
       console.log('🔗 Created shared memory tables');
     } catch (error) {
+      void error;
       const dbError =
         error instanceof DatabaseError
           ? error
@@ -637,6 +643,7 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
       await client.query(createTrigger);
       console.log('⚡ Created database triggers');
     } catch (error) {
+      void error;
       const dbError =
         error instanceof DatabaseError
           ? error
@@ -672,6 +679,7 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
       await client.query(versioningQuery);
       console.log('📋 Created schema versioning');
     } catch (error) {
+      void error;
       const dbError =
         error instanceof DatabaseError
           ? error
@@ -861,6 +869,7 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
         ]);
         return result.rows.map((row) => this.rowToMemoryRecord(row));
       } catch (error) {
+        void error;
         const dbError =
           error instanceof DatabaseError
             ? error
@@ -1007,6 +1016,7 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
             ? JSON.parse(row.embedding)
             : row.embedding;
       } catch (error) {
+        void error;
         const dbError =
           error instanceof DatabaseError
             ? error
@@ -1078,6 +1088,7 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
         client.release();
       }
     } catch (error) {
+      void error;
       const dbError =
         error instanceof DatabaseError
           ? error
@@ -1374,10 +1385,11 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
     switch (rule.condition) {
       case 'importance':
         return (memory.importance || 0) >= rule.threshold;
-      case 'age':
+      case 'age': {
         const ageInDays =
           (Date.now() - memory.timestamp.getTime()) / (1000 * 60 * 60 * 24);
         return ageInDays >= rule.threshold;
+      }
       case 'emotional':
         return (memory.context?.emotionalValence || 0) >= rule.threshold;
       default:
@@ -1512,6 +1524,7 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
       await this.pool.end();
       console.log('🔌 PostgreSQL memory provider disconnected');
     } catch (error) {
+      void error;
       const dbError =
         error instanceof DatabaseError
           ? error

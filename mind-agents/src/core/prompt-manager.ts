@@ -117,9 +117,9 @@ Write a brief journal entry (max 100 words) about your growth and insights.`,
    * Create a chat prompt with full context
    */
   static createChatPrompt(
-    agent: unknown,
+    agent: any,
     message: string,
-    emotionalContext: unknown,
+    emotionalContext: any,
     conversationContext: string
   ): string {
     return this.format(this.PROMPTS.CHAT_RESPONSE, {
@@ -156,11 +156,11 @@ Write a brief journal entry (max 100 words) about your growth and insights.`,
    * Create a thinking/analysis prompt
    */
   static createThinkingPrompt(
-    agent: unknown,
-    events: unknown[],
+    agent: any,
+    events: any[],
     goal: string,
-    memories: unknown[],
-    emotionalState: unknown
+    memories: any[],
+    emotionalState: any
   ): string {
     return this.format(this.PROMPTS.THINKING_ANALYSIS, {
       name: agent.name,

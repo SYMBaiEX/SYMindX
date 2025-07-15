@@ -123,7 +123,8 @@ export class AzureOpenAIPortal extends BasePortal {
       await this.healthCheck();
       this.status = PortalStatus.ACTIVE;
       // Azure OpenAI portal initialized successfully
-    } catch (_error) {
+    } catch (error) {
+      void error;
       this.status = PortalStatus.ERROR;
       // Failed to initialize Azure OpenAI portal
       throw _error;
@@ -237,6 +238,7 @@ export class AzureOpenAIPortal extends BasePortal {
         timestamp: new Date(),
       };
     } catch (error) {
+      void error;
       throw new Error(`Azure OpenAI text generation failed: ${error}`);
     }
   }
@@ -283,6 +285,7 @@ export class AzureOpenAIPortal extends BasePortal {
         timestamp: new Date(),
       };
     } catch (error) {
+      void error;
       throw new Error(`Azure OpenAI chat generation failed: ${error}`);
     }
   }
@@ -309,6 +312,7 @@ export class AzureOpenAIPortal extends BasePortal {
         },
       };
     } catch (error) {
+      void error;
       throw new Error(`Azure OpenAI embedding generation failed: ${error}`);
     }
   }
@@ -343,6 +347,7 @@ export class AzureOpenAIPortal extends BasePortal {
         },
       };
     } catch (error) {
+      void error;
       throw new Error(`Azure OpenAI image generation failed: ${error}`);
     }
   }
@@ -375,6 +380,7 @@ export class AzureOpenAIPortal extends BasePortal {
         yield chunk;
       }
     } catch (error) {
+      void error;
       throw new Error(`Azure OpenAI text streaming failed: ${error}`);
     }
   }
@@ -403,6 +409,7 @@ export class AzureOpenAIPortal extends BasePortal {
         yield chunk;
       }
     } catch (error) {
+      void error;
       throw new Error(`Azure OpenAI chat streaming failed: ${error}`);
     }
   }

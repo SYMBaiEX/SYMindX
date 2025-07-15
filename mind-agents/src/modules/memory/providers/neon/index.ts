@@ -85,8 +85,8 @@ export class NeonMemoryProvider extends BaseMemoryProvider {
   // Schema version tracked for future migrations
   private readonly _schemaVersion = '2.0.0';
   private sharedPools: Map<string, SharedMemoryPool> = new Map();
-  private consolidationTimer?: NodeJS.Timeout;
-  private archivalTimer?: NodeJS.Timeout;
+  private consolidationTimer?: ReturnType<typeof setTimeout>;
+  private archivalTimer?: ReturnType<typeof setTimeout>;
 
   /**
    * Constructor for the Neon memory provider
@@ -200,6 +200,7 @@ export class NeonMemoryProvider extends BaseMemoryProvider {
       this.isInitialized = true;
       console.log('✅ Enhanced Neon memory provider initialized successfully');
     } catch (error) {
+      void error;
       const dbError =
         error instanceof DatabaseError
           ? error
@@ -452,6 +453,7 @@ export class NeonMemoryProvider extends BaseMemoryProvider {
         ]);
         return result.rows.map((row) => this.rowToMemoryRecord(row));
       } catch (error) {
+        void error;
         const dbError =
           error instanceof DatabaseError
             ? error
@@ -765,6 +767,7 @@ export class NeonMemoryProvider extends BaseMemoryProvider {
             ? JSON.parse(row.embedding)
             : row.embedding;
       } catch (error) {
+        void error;
         const dbError =
           error instanceof DatabaseError
             ? error
@@ -915,10 +918,11 @@ export class NeonMemoryProvider extends BaseMemoryProvider {
     switch (rule.condition_type) {
       case 'importance':
         return (memory.importance || 0) >= rule.threshold;
-      case 'age':
+      case 'age': {
         const ageInDays =
           (Date.now() - memory.timestamp.getTime()) / (1000 * 60 * 60 * 24);
         return ageInDays >= rule.threshold;
+      }
       case 'emotional':
         return (memory.context?.emotionalValence || 0) >= rule.threshold;
       case 'access_frequency':
@@ -1085,6 +1089,7 @@ export class NeonMemoryProvider extends BaseMemoryProvider {
         client.release();
       }
     } catch (error) {
+      void error;
       const dbError =
         error instanceof DatabaseError
           ? error
@@ -1125,6 +1130,7 @@ export class NeonMemoryProvider extends BaseMemoryProvider {
       await this.pool.end();
       console.log('🔌 Enhanced Neon memory provider disconnected');
     } catch (error) {
+      void error;
       const dbError =
         error instanceof DatabaseError
           ? error

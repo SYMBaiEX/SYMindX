@@ -46,13 +46,13 @@ export function createModule(
 ): unknown {
   switch (type) {
     case 'memory':
-      return createMemoryProviderByName(moduleType, config);
+      return createMemoryProviderByName(moduleType, config as any);
     case 'emotion':
-      return createEmotionModule(moduleType, config);
+      return createEmotionModule(moduleType, config as any);
     case 'cognition':
-      return createCognitionModule(moduleType, config);
+      return createCognitionModule(moduleType, config as any);
     case 'tools':
-      return createToolSystem(moduleType, config);
+      return createToolSystem(moduleType, config as any);
     default:
       throw new Error(`Unknown module type: ${type}`);
   }
@@ -80,7 +80,7 @@ export async function registerCoreModules(
     // Import and register tool systems
     const { registerToolSystemFactory } = await import('./tools/factory');
     registerToolSystemFactory('dynamic', (config) =>
-      createToolSystem('dynamic', config)
+      createToolSystem('dynamic', config as any)
     );
 
     // Register extension factories
@@ -88,6 +88,7 @@ export async function registerCoreModules(
 
     // Core modules registered - logged by runtime
   } catch (error) {
+    void error;
     runtimeLogger.error('❌ Failed to register core modules:', error);
     throw error;
   }
@@ -117,18 +118,35 @@ export async function registerExtensionFactories(
       const { createMCPServerExtension } = await import(
         '../extensions/mcp-server/index'
       );
-      registry.registerExtensionFactory('mcp-server', createMCPServerExtension);
+      registry.registerExtensionFactory('mcp-server', (config: unknown) =>
+        createMCPServerExtension(config as any)
+      );
     } catch (error) {
-      runtimeLogger.warn('⚠️ MCP Server extension not available:', error);
+      void error;
+      runtimeLogger.warn('⚠️ MCP Server extension not available:', {
+        source: 'module-index',
+        metadata: {
+          error: error instanceof Error ? error.message : String(error),
+        },
+      });
     }
 
     try {
       const { createAPIExtension } = await import('../extensions/api/index');
-      registry.registerExtensionFactory('api', createAPIExtension);
+      registry.registerExtensionFactory('api', (config: unknown) =>
+        createAPIExtension(config as any)
+      );
     } catch (error) {
-      runtimeLogger.warn('⚠️ API extension not available:', error);
+      void error;
+      runtimeLogger.warn('⚠️ API extension not available:', {
+        source: 'module-index',
+        metadata: {
+          error: error instanceof Error ? error.message : String(error),
+        },
+      });
     }
   } catch (error) {
+    void error;
     runtimeLogger.error('❌ Failed to register extension factories:', error);
     throw error;
   }

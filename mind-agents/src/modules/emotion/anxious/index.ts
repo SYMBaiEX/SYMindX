@@ -2,7 +2,6 @@ import { EmotionResult } from '../../../types/modules/emotions';
 import { BaseEmotion, EmotionDefinition } from '../base-emotion';
 
 import { AnxiousEmotionConfig } from './types';
-
 export class AnxiousEmotion extends BaseEmotion {
   constructor(config: AnxiousEmotionConfig = {}) {
     super(config);
@@ -47,12 +46,21 @@ export class AnxiousEmotion extends BaseEmotion {
 
   override processEvent(eventType: string, context?: unknown): EmotionResult {
     // Special processing for anxiety-specific events
-    if (context?.uncertainty_level && context.uncertainty_level > 0.5) {
+    const uncertaintyLevel =
+      context && typeof context === 'object' && 'uncertainty_level' in context
+        ? (context as any).uncertainty_level
+        : undefined;
+    const timePressure =
+      context && typeof context === 'object' && 'time_pressure' in context
+        ? (context as any).time_pressure
+        : undefined;
+
+    if (uncertaintyLevel && uncertaintyLevel > 0.5) {
       this._intensity = Math.min(1.0, this._intensity + 0.2);
       this.recordHistory('high_uncertainty');
     }
 
-    if (context?.time_pressure) {
+    if (timePressure) {
       this._intensity = Math.min(1.0, this._intensity + 0.15);
       this.recordHistory('time_pressure');
     }

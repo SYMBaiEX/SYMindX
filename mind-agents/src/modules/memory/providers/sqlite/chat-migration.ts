@@ -139,6 +139,7 @@ export class ChatMigrationManager {
       try {
         this.db.exec(migration.up);
       } catch (error) {
+        void error;
         console.error(`❌ Failed to execute migration SQL:`, error);
         throw error;
       }
@@ -156,6 +157,7 @@ export class ChatMigrationManager {
         `✅ Migration ${migration.version} completed in ${duration}ms`
       );
     } catch (error) {
+      void error;
       this.db.exec('ROLLBACK');
       console.error(`❌ Migration ${migration.version} failed:`, error);
       throw error;
@@ -252,6 +254,7 @@ export class ChatMigrationManager {
 
       console.log('✅ Chat database reset completed');
     } catch (error) {
+      void error;
       this.db.exec('ROLLBACK');
       throw error;
     }
@@ -319,6 +322,7 @@ export class ChatMigrationManager {
         errors,
       };
     } catch (error) {
+      void error;
       errors.push(
         `Validation error: ${error instanceof Error ? error.message : String(error)}`
       );

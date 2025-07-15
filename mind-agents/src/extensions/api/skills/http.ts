@@ -173,6 +173,7 @@ export class HttpSkill {
         },
       };
     } catch (error) {
+      void error;
       return {
         type: ActionResultType.FAILURE,
         success: false,
@@ -213,6 +214,7 @@ export class HttpSkill {
         },
       };
     } catch (error) {
+      void error;
       return {
         type: ActionResultType.FAILURE,
         success: false,
@@ -252,6 +254,7 @@ export class HttpSkill {
         },
       };
     } catch (error) {
+      void error;
       return {
         type: ActionResultType.FAILURE,
         success: false,
@@ -294,6 +297,7 @@ export class HttpSkill {
         },
       };
     } catch (error) {
+      void error;
       return {
         type: ActionResultType.FAILURE,
         success: false,
@@ -335,6 +339,7 @@ export class HttpSkill {
         },
       };
     } catch (error) {
+      void error;
       return {
         type: ActionResultType.FAILURE,
         success: false,

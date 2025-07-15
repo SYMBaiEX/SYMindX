@@ -87,7 +87,7 @@ Tools will be automatically executed and their results will be available for you
 
         // Add communication style and guidelines from character config
         if (agent.characterConfig?.communication) {
-          const comm = agent.characterConfig.communication;
+          const comm = agent.characterConfig.communication as any;
           if (comm.style) {
             systemContent += `\nCommunication style: ${comm.style}.`;
           }
@@ -178,12 +178,15 @@ Tools will be automatically executed and their results will be available for you
 
             // Get MCP tools and fix schema for OpenAI compatibility
             const rawTools = await mcpClient.tools();
-            runtimeLogger.debug('Raw MCP tools:', Object.keys(rawTools));
+            runtimeLogger.debug('Raw MCP tools:', {
+              metadata: { tools: Object.keys(rawTools) },
+            });
             mcpTools = this.fixMCPToolsForOpenAI(rawTools);
             runtimeLogger.debug('Fixed MCP tools for OpenAI');
           }
         }
       } catch (error) {
+        void error;
         runtimeLogger.error(`Failed to create MCP tools: ${error}`);
         mcpTools = undefined;
       }
@@ -200,6 +203,7 @@ Tools will be automatically executed and their results will be available for you
         try {
           await mcpClient.close();
         } catch (error) {
+          void error;
           runtimeLogger.warn(`Failed to close MCP client: ${error}`);
         }
       }
@@ -260,25 +264,40 @@ Tools will be automatically executed and their results will be available for you
       } else if (result.message?.content) {
         return result.message.content;
       } else if ((result as any).success === false) {
-        this.logger.warn(
-          '⚠️ Portal generation failed:',
-          (result as unknown).error
-        );
+        runtimeLogger.warn('⚠️ Portal generation failed:', {
+          error: {
+            code: 'PORTAL_GENERATION_ERROR',
+            message: (result as any).error || 'Unknown error',
+            cause: result,
+          },
+        });
         return this.getFallbackResponse(prompt);
       } else {
-        this.logger.warn('⚠️ Unexpected portal result format:', result);
+        runtimeLogger.warn('⚠️ Unexpected portal result format:', {
+          metadata: { result },
+        });
         return this.getFallbackResponse(prompt);
       }
     } catch (error) {
-      this.logger.error('❌ Error generating AI response:', error);
+      void error;
+      runtimeLogger.error('❌ Error generating AI response:', {
+        error: {
+          code: 'AI_GENERATION_ERROR',
+          message: error instanceof Error ? error.message : String(error),
+          ...(error instanceof Error && error.stack
+            ? { stack: error.stack }
+            : {}),
+          cause: error,
+        },
+      });
       // Log more details about the error
       if (error instanceof Error) {
-        this.logger.error('Error message:', error.message);
-        this.logger.error('Error stack:', error.stack);
+        runtimeLogger.error('Error message:', error.message);
+        runtimeLogger.error('Error stack:', error.stack);
       }
       // Log the portal and tools info for debugging
-      this.logger.error('Portal used:', chatPortal.name);
-      this.logger.error(
+      runtimeLogger.error('Portal used:', chatPortal.name);
+      runtimeLogger.error(
         'Tools available:',
         agent.toolSystem ? Object.keys(agent.toolSystem).length : 0
       );
@@ -298,8 +317,10 @@ Tools will be automatically executed and their results will be available for you
         const toolDef = tool as any;
 
         runtimeLogger.debug(`Processing MCP tool: ${toolName}`, {
-          hasParameters: !!toolDef.parameters,
-          hasExecute: typeof toolDef.execute === 'function',
+          metadata: {
+            hasParameters: !!toolDef.parameters,
+            hasExecute: typeof toolDef.execute === 'function',
+          },
         });
 
         // Convert MCP tool to AI SDK v5 format
@@ -367,6 +388,7 @@ Tools will be automatically executed and their results will be available for you
           fixedTools[toolName] = tool;
         }
       } catch (error) {
+        void error;
         runtimeLogger.warn(
           `Failed to fix schema for tool ${toolName}: ${error}`
         );
@@ -699,7 +721,8 @@ What are your current thoughts? Respond with 2-3 brief thoughts.`;
 
       return evaluation;
     } catch (error) {
-      this.logger.error('❌ Task evaluation failed:', error);
+      void error;
+      runtimeLogger.error('❌ Task evaluation failed:', error);
       return {
         analysis: 'Unable to evaluate task at this time',
         confidence: 0,
@@ -764,7 +787,7 @@ What are your current thoughts? Respond with 2-3 brief thoughts.`;
       if (agent.config?.core) {
         let systemContent = `You are ${agent.name}. `;
         if (agent.characterConfig?.communication) {
-          const comm = agent.characterConfig.communication;
+          const comm = agent.characterConfig.communication as any;
           if (comm.style)
             systemContent += `Communication style: ${comm.style}. `;
           if (comm.tone) systemContent += `Tone: ${comm.tone}. `;
@@ -838,7 +861,8 @@ What are your current thoughts? Respond with 2-3 brief thoughts.`;
         }
       }
     } catch (error) {
-      this.logger.error('❌ Error in streaming generation:', error);
+      void error;
+      runtimeLogger.error('❌ Error in streaming generation:', error);
       const fallback = this.getFallbackResponse(prompt);
       if (onChunk) onChunk(fallback);
       yield fallback;

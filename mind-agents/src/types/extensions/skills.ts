@@ -3,7 +3,7 @@
  * Provides strongly-typed interfaces for skill execution and management
  */
 
-import type { Agent, AgentAction, ActionResult } from '../agent';
+import type { Agent } from '../agent';
 import type { SkillParameters } from '../common';
 
 /**

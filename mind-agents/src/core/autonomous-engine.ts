@@ -22,7 +22,9 @@ import {
   MultiCriteriaDecision,
   PerformanceMetrics,
   CuriosityDriver,
+  DecisionCriteria,
 } from '../types/autonomous';
+import { DataValue } from '../types/common';
 import { Logger } from '../utils/logger';
 
 import {
@@ -34,6 +36,7 @@ import {
   InteractionManager,
   InteractionConfig,
   createDefaultInteractionConfig,
+  InteractionType,
 } from './interaction-manager';
 
 export interface AutonomousEngineConfig {
@@ -304,6 +307,7 @@ export class AutonomousEngine {
           await this.sleep(sleepTime);
         }
       } catch (error) {
+        void error;
         this.logger.error('Error in autonomous loop:', error);
         await this.sleep(this.config.tickInterval);
       }
@@ -555,14 +559,14 @@ export class AutonomousEngine {
     const decision: MultiCriteriaDecision = {
       id: `decision_${Date.now()}`,
       context,
-      criteria,
+      criteria: criteria as DecisionCriteria[],
       alternatives: availableActions,
       evaluation,
       recommendation,
       confidence: this.calculateDecisionConfidence(evaluation, recommendation),
       reasoning: this.generateDecisionReasoning(
         recommendation,
-        criteria,
+        criteria as DecisionCriteria[],
         evaluation
       ),
       timestamp: new Date(),
@@ -623,6 +627,7 @@ export class AutonomousEngine {
         processed: false,
       });
     } catch (error) {
+      void error;
       this.logger.error(`Action execution failed:`, error);
       action.status = ActionStatus.FAILED;
     } finally {
@@ -670,8 +675,8 @@ export class AutonomousEngine {
             agentId: this.agent.id,
             actionId: action.id,
             actionType: action.type,
-            evaluationScore: evaluation.score,
-            evaluationFlagged: evaluation.flagged,
+            evaluationScore: evaluation.score as DataValue,
+            evaluationFlagged: evaluation.flagged as DataValue,
             timestamp: new Date().toISOString(),
           },
           timestamp: new Date(),
@@ -683,6 +688,7 @@ export class AutonomousEngine {
 
       return { allowed: true };
     } catch (error) {
+      void error;
       this.logger.error('Ethics evaluation error:', error);
       // Fail safe - block action if ethics evaluation fails
       return { allowed: false, reason: 'Ethics evaluation failed' };
@@ -717,6 +723,7 @@ export class AutonomousEngine {
           }
           behavior.lastExecuted = now;
         } catch (error) {
+          void error;
           this.logger.error(
             `Behavior execution failed: ${behavior.name}`,
             error
@@ -925,7 +932,7 @@ export class AutonomousEngine {
 
   // Utility methods
   private async sleep(ms: number): Promise<void> {
-    return new Promise<void>((resolve) => global.setTimeout(resolve, ms));
+    return new Promise<void>((resolve) => setTimeout(resolve, ms));
   }
 
   private calculateCuriosityScore(): number {
@@ -1111,7 +1118,8 @@ export class AutonomousEngine {
     for (const action of actions) {
       evaluation[action.id] = {};
       for (const criterion of criteria) {
-        evaluation[action.id]![criterion.id] = Math.random(); // Simplified scoring
+        evaluation[action.id]![(criterion as DecisionCriteria).id] =
+          Math.random(); // Simplified scoring
       }
     }
 
@@ -1215,6 +1223,7 @@ export class AutonomousEngine {
           };
       }
     } catch (error) {
+      void error;
       this.logger.error(`Action failed: ${action.action}`, error);
       return {
         success: false,
@@ -1268,7 +1277,17 @@ export class AutonomousEngine {
         return { allowed: true, reason: 'Validation response parsing failed' };
       }
     } catch (error) {
-      this.logger.warn('Action validation failed:', error);
+      void error;
+      this.logger.warn('Action validation failed:', {
+        error: {
+          code: 'ACTION_VALIDATION_ERROR',
+          message: error instanceof Error ? error.message : String(error),
+          ...(error instanceof Error && error.stack
+            ? { stack: error.stack }
+            : {}),
+          cause: error,
+        },
+      });
       return { allowed: true, reason: 'Validation error' };
     }
   }
@@ -1343,6 +1362,7 @@ export class AutonomousEngine {
         result: 'Memories consolidated',
       };
     } catch (error) {
+      void error;
       return {
         success: false,
         type: ActionResultType.FAILURE,
@@ -1389,6 +1409,7 @@ export class AutonomousEngine {
         result: `Reviewed ${goals.length} goals`,
       };
     } catch (error) {
+      void error;
       return {
         success: false,
         type: ActionResultType.FAILURE,
@@ -1442,6 +1463,7 @@ export class AutonomousEngine {
         result: `Explored ${topic}`,
       };
     } catch (error) {
+      void error;
       return {
         success: false,
         type: ActionResultType.FAILURE,
@@ -1500,6 +1522,7 @@ export class AutonomousEngine {
         result: 'Social check-in complete',
       };
     } catch (error) {
+      void error;
       return {
         success: false,
         type: ActionResultType.FAILURE,
@@ -1566,6 +1589,7 @@ export class AutonomousEngine {
         result: 'Reflection complete',
       };
     } catch (error) {
+      void error;
       return {
         success: false,
         type: ActionResultType.FAILURE,
@@ -1785,7 +1809,7 @@ export class AutonomousEngine {
     return await this.interactionManager.processInteraction(
       humanId,
       content,
-      type
+      type as InteractionType | undefined
     );
   }
 

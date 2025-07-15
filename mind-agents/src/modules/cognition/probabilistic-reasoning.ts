@@ -569,6 +569,7 @@ export class ProbabilisticReasoning implements CognitionModule {
    */
   async learn(_agent: Agent, experience: Experience): Promise<void> {
     const { state, action, reward, nextState: _nextState } = experience;
+    void _nextState; // Acknowledge unused variable
 
     // Log learning from experience
     runtimeLogger.debug(

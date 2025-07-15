@@ -142,6 +142,7 @@ export class AnthropicPortal extends BasePortal {
         },
       };
     } catch (error) {
+      void error;
       throw new Error(`Anthropic text generation failed: ${error}`);
     }
   }
@@ -202,6 +203,7 @@ export class AnthropicPortal extends BasePortal {
         },
       };
     } catch (error) {
+      void error;
       throw new Error(`Anthropic chat generation failed: ${error}`);
     }
   }
@@ -265,6 +267,7 @@ export class AnthropicPortal extends BasePortal {
         yield textPart;
       }
     } catch (error) {
+      void error;
       throw new Error(`Anthropic stream text failed: ${error}`);
     }
   }
@@ -310,6 +313,7 @@ export class AnthropicPortal extends BasePortal {
         yield textPart;
       }
     } catch (error) {
+      void error;
       throw new Error(`Anthropic stream chat failed: ${error}`);
     }
   }

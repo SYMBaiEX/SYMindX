@@ -30,7 +30,7 @@ import {
 } from '../../types/cognition';
 import { BaseConfig } from '../../types/common';
 import { MemoryType, MemoryDuration } from '../../types/enums';
-import { runtimeLogger } from '../../utils/logger';
+// import { runtimeLogger } from '../../utils/logger';
 
 // Import reasoning modules
 import { PDDLPlanner } from './pddl-planner';
@@ -293,7 +293,8 @@ export class MetaReasoner implements CognitionModule {
    */
   async learn(agent: Agent, experience: Experience): Promise<void> {
     // Learn from the experience with all learning-capable reasoners
-    for (const [paradigm, reasoner] of Array.from(this.reasoners.entries())) {
+    for (const [_paradigm, reasoner] of Array.from(this.reasoners.entries())) {
+      void _paradigm; // Acknowledge unused variable
       if (reasoner.learn) {
         // Learning from experience using paradigm
         await reasoner.learn(agent, experience);

@@ -90,6 +90,7 @@ export class PostgresChatRepository implements ChatRepository {
         client.release();
       }
     } catch (error) {
+      void error;
       console.warn('⚠️ Could not verify PostgreSQL chat schema:', error);
     }
   }
@@ -155,6 +156,7 @@ export class PostgresChatRepository implements ChatRepository {
       );
       return result;
     } catch (error) {
+      void error;
       await client.query('ROLLBACK');
       throw new Error(`Failed to create conversation: ${error}`);
     } finally {
@@ -634,6 +636,7 @@ export class PostgresChatRepository implements ChatRepository {
 
       return result.rows.map((row) => this.pgToMessage(row));
     } catch (error) {
+      void error;
       await client.query('ROLLBACK');
       throw new Error(`Batch create messages failed: ${error}`);
     } finally {
@@ -869,6 +872,7 @@ export class PostgresChatRepository implements ChatRepository {
         ]
       );
     } catch (error) {
+      void error;
       console.warn('Failed to log analytics event:', error);
     } finally {
       client.release();

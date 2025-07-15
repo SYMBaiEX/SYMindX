@@ -155,6 +155,7 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
       );
       this.emit('server:started');
     } catch (error) {
+      void error;
       runtimeLogger.error('❌ Failed to start MCP Server:', error);
       throw error;
     }
@@ -182,6 +183,7 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
       runtimeLogger.info('🛑 MCP Server stopped');
       this.emit('server:stopped');
     } catch (error) {
+      void error;
       runtimeLogger.error('❌ Error stopping MCP Server:', error);
     }
   }
@@ -251,6 +253,7 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
           }
         }
       } catch (error) {
+        void error;
         runtimeLogger.error('❌ Error handling stdio request:', error);
       }
     });
@@ -274,6 +277,7 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(response));
       } catch (error) {
+        void error;
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(
           JSON.stringify({
@@ -323,6 +327,7 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
         connection.requestCount++;
         connection.lastActivity = new Date();
       } catch (error) {
+        void error;
         runtimeLogger.error('❌ Error handling WebSocket message:', error);
       }
     });
@@ -422,6 +427,7 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
 
       return response;
     } catch (error) {
+      void error;
       this.stats.errorCount++;
       runtimeLogger.error(`❌ MCP Request error for ${request.method}:`, error);
 
@@ -438,7 +444,7 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
   }
 
   // Implement MCPServer interface methods
-  async initialize(
+  async initializeMCP(
     params: InitializeRequest['params']
   ): Promise<MCPServerInfo> {
     return this.handleInitialize(params as MCPInitializeParams);
@@ -671,6 +677,7 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
                   memoryContext = `\n[Relevant memories: ${memories.map((m) => m.content).join('; ')}]\n`;
                 }
               } catch (error) {
+                void error;
                 runtimeLogger.debug(
                   'Failed to retrieve memory context:',
                   error
@@ -686,6 +693,7 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
               text: response,
             };
           } catch (error) {
+            void error;
             return {
               type: 'text',
               text: `Error processing message: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -780,6 +788,7 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
               text: JSON.stringify({ query: args.query, results }, null, 2),
             };
           } catch (error) {
+            void error;
             return {
               type: 'text',
               text: `Memory search error: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -853,6 +862,7 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
               text: `Memory stored successfully with ID: ${memoryRecord.id}`,
             };
           } catch (error) {
+            void error;
             return {
               type: 'text',
               text: `Memory storage error: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -916,6 +926,7 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
               text: JSON.stringify(result, null, 2),
             };
           } catch (error) {
+            void error;
             return {
               type: 'text',
               text: `Emotion state error: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -961,6 +972,7 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
               text: `Emotion triggered. New state: ${newState.current} (intensity: ${newState.intensity})`,
             };
           } catch (error) {
+            void error;
             return {
               type: 'text',
               text: `Emotion trigger error: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -1012,6 +1024,7 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
               text: JSON.stringify(cognitiveState, null, 2),
             };
           } catch (error) {
+            void error;
             return {
               type: 'text',
               text: `Cognitive state error: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -1075,6 +1088,7 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
               text: JSON.stringify(agentInfo, null, 2),
             };
           } catch (error) {
+            void error;
             return {
               type: 'text',
               text: `Agent info error: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -1201,6 +1215,7 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
               ),
             };
           } catch (error) {
+            void error;
             return {
               type: 'text',
               text: JSON.stringify({
@@ -1252,6 +1267,7 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
               ),
             };
           } catch (error) {
+            void error;
             return {
               type: 'text',
               text: JSON.stringify({
@@ -1416,6 +1432,7 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
             const emotionState = await this.agent.emotion.getCurrentState();
             starter += ` I'm feeling ${emotionState.current} right now.`;
           } catch (error) {
+            void error;
             runtimeLogger.debug(
               'Failed to get emotion state for conversation starter:',
               error
@@ -1479,6 +1496,7 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
                 });
               }
             } catch (error) {
+              void error;
               runtimeLogger.debug(
                 'Failed to retrieve memories for analysis prompt:',
                 error
@@ -1525,6 +1543,7 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
                 });
               }
             } catch (error) {
+              void error;
               runtimeLogger.debug(
                 'Failed to get emotion state for reflection prompt:',
                 error

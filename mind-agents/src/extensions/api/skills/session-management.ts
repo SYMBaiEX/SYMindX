@@ -178,6 +178,7 @@ export class SessionManagementSkill {
         },
       };
     } catch (error) {
+      void error;
       return {
         type: ActionResultType.FAILURE,
         success: false,
@@ -242,6 +243,7 @@ export class SessionManagementSkill {
         },
       };
     } catch (error) {
+      void error;
       return {
         type: ActionResultType.FAILURE,
         success: false,
@@ -302,6 +304,7 @@ export class SessionManagementSkill {
         },
       };
     } catch (error) {
+      void error;
       return {
         type: ActionResultType.FAILURE,
         success: false,
@@ -366,6 +369,7 @@ export class SessionManagementSkill {
         },
       };
     } catch (error) {
+      void error;
       return {
         type: ActionResultType.FAILURE,
         success: false,
@@ -421,6 +425,7 @@ export class SessionManagementSkill {
         },
       };
     } catch (error) {
+      void error;
       return {
         type: ActionResultType.FAILURE,
         success: false,
@@ -483,6 +488,7 @@ export class SessionManagementSkill {
         },
       };
     } catch (error) {
+      void error;
       return {
         type: ActionResultType.FAILURE,
         success: false,
@@ -528,6 +534,7 @@ export class SessionManagementSkill {
         },
       };
     } catch (error) {
+      void error;
       return {
         type: ActionResultType.FAILURE,
         success: false,

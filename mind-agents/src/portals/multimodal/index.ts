@@ -363,6 +363,7 @@ export class MultimodalPortal extends BasePortal {
       this.status = PortalStatus.ACTIVE;
       console.log(`✅ Multimodal AI portal initialized for ${agent.name}`);
     } catch (error) {
+      void error;
       this.status = PortalStatus.ERROR;
       console.error(`❌ Failed to initialize Multimodal AI portal:`, error);
       throw error;
@@ -713,6 +714,7 @@ export class MultimodalPortal extends BasePortal {
               analysisResults.push(analysisResult);
             }
           } catch (error) {
+            void error;
             console.error(
               `Failed to process ${attachment.type} attachment:`,
               error

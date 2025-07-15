@@ -93,8 +93,10 @@ export class CheckpointSystem extends EventEmitter {
     this.initializeMetrics(agentId);
 
     this.logger.info(`Scheduled checkpoints for agent ${agentId}`, {
-      interval: interval / 1000 / 60, // minutes
-      type,
+      metadata: {
+        interval: interval / 1000 / 60, // minutes
+        type,
+      },
     });
 
     this.emit('checkpoint_scheduled', { agentId, schedule });
@@ -123,7 +125,9 @@ export class CheckpointSystem extends EventEmitter {
 
     try {
       this.logger.info(`Creating ${type} checkpoint for agent ${agent.id}`, {
-        reason,
+        metadata: {
+          reason,
+        },
       });
 
       // Create snapshot
@@ -153,9 +157,11 @@ export class CheckpointSystem extends EventEmitter {
       this.updateStateHash(agent);
 
       this.logger.info(`Checkpoint created for agent ${agent.id}`, {
-        filepath,
-        duration: `${duration}ms`,
-        size: JSON.stringify(snapshot).length,
+        metadata: {
+          filepath,
+          duration: `${duration}ms`,
+          size: JSON.stringify(snapshot).length,
+        },
       });
 
       this.emit('checkpoint_created', {
@@ -167,6 +173,7 @@ export class CheckpointSystem extends EventEmitter {
 
       return filepath;
     } catch (error) {
+      void error;
       const duration = Date.now() - startTime;
       this.updateMetrics(agent.id, false, duration, 0);
 
@@ -314,6 +321,7 @@ export class CheckpointSystem extends EventEmitter {
         await this.createCheckpoint(agent, schedule.type, 'scheduled');
         results.successful++;
       } catch (error) {
+        void error;
         results.failed++;
         results.errors.push(`${agentId}: ${error}`);
 
@@ -330,7 +338,14 @@ export class CheckpointSystem extends EventEmitter {
       }
     }
 
-    this.logger.info(`Scheduled checkpoint run completed`, results);
+    this.logger.info(`Scheduled checkpoint run completed`, {
+      metadata: {
+        successful: results.successful,
+        failed: results.failed,
+        total: results.total,
+        duration: results.duration,
+      },
+    });
     this.emit('scheduled_run_completed', results);
 
     return results;
@@ -359,6 +374,7 @@ export class CheckpointSystem extends EventEmitter {
           );
         }
       } catch (error) {
+        void error;
         this.logger.error(`Cleanup failed for agent ${agentId}:`, error);
       }
     }
@@ -392,6 +408,7 @@ export class CheckpointSystem extends EventEmitter {
       try {
         await this.runScheduledCheckpoints();
       } catch (error) {
+        void error;
         this.logger.error('Scheduled checkpoint run failed:', error);
       }
     }, 60000); // Check every minute
@@ -522,4 +539,6 @@ export interface CheckpointRunResult {
   successful: number;
   failed: number;
   errors: string[];
+  total?: number;
+  duration?: number;
 }

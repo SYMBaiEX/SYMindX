@@ -321,6 +321,7 @@ export class EnhancedSYMindXRuntime extends SYMindXRuntime {
 
       runtimeLogger.info(`✅ Emergency cleanup completed for agent ${agentId}`);
     } catch (error) {
+      void error;
       runtimeLogger.error(
         `❌ Emergency cleanup failed for agent ${agentId}:`,
         error
@@ -418,6 +419,7 @@ export class EnhancedSYMindXRuntime extends SYMindXRuntime {
       this.stateManagementEnabled = true;
       runtimeLogger.info('🔄 State management components initialized');
     } catch (error) {
+      void error;
       runtimeLogger.error('❌ Failed to initialize state management:', error);
       this.stateManagementEnabled = false;
     }
@@ -434,6 +436,7 @@ export class EnhancedSYMindXRuntime extends SYMindXRuntime {
       // Implementation would scan state directory and restore agents
       // For now, this is a placeholder
     } catch (error) {
+      void error;
       runtimeLogger.error('❌ Failed to restore agents from state:', error);
     }
   }
@@ -464,6 +467,7 @@ export class EnhancedSYMindXRuntime extends SYMindXRuntime {
             'runtime_shutdown'
           );
         } catch (error) {
+          void error;
           runtimeLogger.error(
             `Failed to create final checkpoint for agent ${agent.id}:`,
             error
@@ -494,6 +498,7 @@ export class EnhancedSYMindXRuntime extends SYMindXRuntime {
 
       runtimeLogger.success('✅ State management systems shutdown complete');
     } catch (error) {
+      void error;
       runtimeLogger.error('❌ Error during state management shutdown:', error);
     }
   }

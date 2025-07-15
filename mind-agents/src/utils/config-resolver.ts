@@ -618,6 +618,7 @@ export class ConfigResolver {
         missing: validationResult.errors,
       };
     } catch (error) {
+      void error;
       return {
         valid: false,
         missing: [

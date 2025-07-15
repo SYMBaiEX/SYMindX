@@ -205,7 +205,7 @@ export class HealthMonitoringSkill {
       return {
         type: ActionResultType.SUCCESS,
         success: true,
-        result: healthData,
+        result: healthData as any,
         metadata: {
           action: 'get_health_status',
           status,
@@ -213,6 +213,7 @@ export class HealthMonitoringSkill {
         },
       };
     } catch (error) {
+      void error;
       return {
         type: ActionResultType.FAILURE,
         success: false,
@@ -259,8 +260,8 @@ export class HealthMonitoringSkill {
         type: ActionResultType.SUCCESS,
         success: true,
         result: {
-          metrics,
-          endpoints: endpointHealthArray,
+          metrics: metrics as any,
+          endpoints: endpointHealthArray as any,
           summary: {
             totalEndpoints: endpointHealthArray.length,
             healthyEndpoints: endpointHealthArray.filter(
@@ -281,6 +282,7 @@ export class HealthMonitoringSkill {
         },
       };
     } catch (error) {
+      void error;
       return {
         type: ActionResultType.FAILURE,
         success: false,
@@ -328,20 +330,20 @@ export class HealthMonitoringSkill {
       }
 
       const endpointHealth: EndpointHealth = {
-        endpoint,
+        endpoint: String(endpoint),
         status,
         responseTime,
         lastChecked: new Date().toISOString(),
         errorRate,
       };
 
-      this.endpointHealth.set(endpoint, endpointHealth);
+      this.endpointHealth.set(String(endpoint), endpointHealth);
 
       return {
         type: ActionResultType.SUCCESS,
         success: true,
         result: {
-          endpoint: endpointHealth,
+          endpoint: endpointHealth as any,
           timestamp: new Date().toISOString(),
         },
         metadata: {
@@ -352,6 +354,7 @@ export class HealthMonitoringSkill {
         },
       };
     } catch (error) {
+      void error;
       return {
         type: ActionResultType.FAILURE,
         success: false,
@@ -421,6 +424,7 @@ export class HealthMonitoringSkill {
         },
       };
     } catch (error) {
+      void error;
       return {
         type: ActionResultType.FAILURE,
         success: false,
@@ -481,6 +485,7 @@ export class HealthMonitoringSkill {
         },
       };
     } catch (error) {
+      void error;
       return {
         type: ActionResultType.FAILURE,
         success: false,
@@ -543,6 +548,7 @@ export class HealthMonitoringSkill {
         },
       };
     } catch (error) {
+      void error;
       return {
         type: ActionResultType.FAILURE,
         success: false,
@@ -618,6 +624,7 @@ export class HealthMonitoringSkill {
         },
       };
     } catch (error) {
+      void error;
       return {
         type: ActionResultType.FAILURE,
         success: false,

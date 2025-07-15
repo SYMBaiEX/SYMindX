@@ -401,6 +401,7 @@ export class SQLiteMemoryProvider extends BaseMemoryProvider {
 
       return results;
     } catch (error) {
+      void error;
       const dbError =
         error instanceof DatabaseError
           ? error
@@ -579,6 +580,7 @@ export class SQLiteMemoryProvider extends BaseMemoryProvider {
       );
       return Array.from(floatArray);
     } catch (error) {
+      void error;
       const dbError =
         error instanceof DatabaseError
           ? error
@@ -824,10 +826,11 @@ export class SQLiteMemoryProvider extends BaseMemoryProvider {
     switch (rule.condition) {
       case 'importance':
         return (memory.importance || 0) >= rule.threshold;
-      case 'age':
+      case 'age': {
         const ageInDays =
           (Date.now() - memory.timestamp.getTime()) / (1000 * 60 * 60 * 24);
         return ageInDays >= rule.threshold;
+      }
       case 'emotional':
         return (memory.context?.emotionalValence || 0) >= rule.threshold;
       default:

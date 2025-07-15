@@ -116,15 +116,18 @@ export class AuthenticationSkill {
       }
 
       // Basic token validation logic
-      const isValid = await this.performTokenValidation(token, type);
-      const decoded = isValid ? this.decodeToken(token) : null;
+      const isValid = await this.performTokenValidation(
+        String(token),
+        String(type)
+      );
+      const decoded = isValid ? this.decodeToken(String(token)) : null;
 
       return {
         type: ActionResultType.SUCCESS,
         success: true,
         result: {
           isValid,
-          decoded,
+          decoded: decoded as any,
           tokenType: type,
           timestamp: new Date().toISOString(),
         },
@@ -135,6 +138,7 @@ export class AuthenticationSkill {
         },
       };
     } catch (error) {
+      void error;
       return {
         type: ActionResultType.FAILURE,
         success: false,
@@ -171,7 +175,8 @@ export class AuthenticationSkill {
 
       // Check if API key exists in configuration
       const config = this.extension.config;
-      const isValid = config.settings.auth?.apiKeys?.includes(apiKey) || false;
+      const isValid =
+        config.settings.auth?.apiKeys?.includes(String(apiKey)) || false;
 
       return {
         type: ActionResultType.SUCCESS,
@@ -187,6 +192,7 @@ export class AuthenticationSkill {
         },
       };
     } catch (error) {
+      void error;
       return {
         type: ActionResultType.FAILURE,
         success: false,
@@ -211,9 +217,9 @@ export class AuthenticationSkill {
 
       // Basic permission checking logic
       const hasPermission = await this.performPermissionCheck(
-        userId,
-        action,
-        resource
+        String(userId),
+        String(action),
+        String(resource)
       );
 
       return {
@@ -233,6 +239,7 @@ export class AuthenticationSkill {
         },
       };
     } catch (error) {
+      void error;
       return {
         type: ActionResultType.FAILURE,
         success: false,
@@ -282,6 +289,7 @@ export class AuthenticationSkill {
         },
       };
     } catch (error) {
+      void error;
       return {
         type: ActionResultType.FAILURE,
         success: false,
@@ -325,6 +333,7 @@ export class AuthenticationSkill {
         },
       };
     } catch (error) {
+      void error;
       return {
         type: ActionResultType.FAILURE,
         success: false,

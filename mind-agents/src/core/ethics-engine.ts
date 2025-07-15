@@ -293,6 +293,7 @@ export class EthicsEngine {
           );
         }
       } catch (error) {
+        void error;
         this.logger.error(
           `Error evaluating constraint ${constraint.id}:`,
           error
@@ -755,6 +756,7 @@ export class EthicsEngine {
         regex.test(JSON.stringify(action.parameters))
       );
     } catch (error) {
+      void error;
       // If pattern is not a valid regex, do simple string matching
       const actionStr = (
         action.action + JSON.stringify(action.parameters)

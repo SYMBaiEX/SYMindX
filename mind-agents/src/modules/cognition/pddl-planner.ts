@@ -937,6 +937,9 @@ export class PDDLPlanner implements CognitionModule {
    * Update state model based on experience
    */
   private updateStateModel(_state: any, _action: any, _nextState: any): void {
+    void _state; // Acknowledge unused parameters
+    void _action;
+    void _nextState;
     // Learn state transitions
     // In practice, this would update the domain model
     runtimeLogger.cognition('Updated state model from experience');

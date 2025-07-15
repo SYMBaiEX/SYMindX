@@ -286,6 +286,7 @@ export class OllamaPortal extends BasePortal {
       this.status = PortalStatus.ACTIVE;
       // Ollama portal initialized successfully
     } catch (error) {
+      void error;
       this.status = PortalStatus.ERROR;
       // Failed to initialize Ollama portal
       throw error;
@@ -360,6 +361,7 @@ export class OllamaPortal extends BasePortal {
       // Note: This is a streaming endpoint, but we'll make a simple request
       await this.makeRequest('/api/pull', requestBody);
     } catch (error) {
+      void error;
       throw new Error(`Failed to pull model ${modelName}: ${error}`);
     }
   }
@@ -390,6 +392,7 @@ export class OllamaPortal extends BasePortal {
       this.activeRequests.delete(requestId);
       return this.parseGenerateResponse(response, model);
     } catch (error) {
+      void error;
       throw new Error(`Ollama text generation failed: ${error}`);
     }
   }
@@ -421,6 +424,7 @@ export class OllamaPortal extends BasePortal {
       this.activeRequests.delete(requestId);
       return this.parseChatResponse(response, model, messages);
     } catch (error) {
+      void error;
       throw new Error(`Ollama chat generation failed: ${error}`);
     }
   }
@@ -456,6 +460,7 @@ export class OllamaPortal extends BasePortal {
         },
       };
     } catch (error) {
+      void error;
       throw new Error(`Ollama embedding generation failed: ${error}`);
     }
   }
@@ -489,6 +494,7 @@ export class OllamaPortal extends BasePortal {
         }
       }
     } catch (error) {
+      void error;
       throw new Error(`Ollama text streaming failed: ${error}`);
     }
   }
@@ -520,6 +526,7 @@ export class OllamaPortal extends BasePortal {
         }
       }
     } catch (error) {
+      void error;
       throw new Error(`Ollama chat streaming failed: ${error}`);
     }
   }

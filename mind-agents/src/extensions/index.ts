@@ -70,6 +70,7 @@ export async function registerExtensions(
       extensions.push(apiExtension);
       runtimeLogger.info('✅ API extension registered');
     } catch (error) {
+      void error;
       runtimeLogger.warn('⚠️ Failed to load API extension:', error);
     }
   }
@@ -99,6 +100,7 @@ export async function registerExtensions(
         runtimeLogger.info('✅ Telegram extension registered');
       }
     } catch (error) {
+      void error;
       runtimeLogger.warn('⚠️ Failed to load Telegram extension:', error);
     }
   }
@@ -133,6 +135,7 @@ export async function registerExtensions(
       extensions.push(mcpServerExtension);
       runtimeLogger.info('✅ MCP Server extension registered');
     } catch (error) {
+      void error;
       runtimeLogger.warn('⚠️ Failed to load MCP Server extension:', error);
     }
   }

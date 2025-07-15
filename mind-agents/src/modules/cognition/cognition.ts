@@ -65,7 +65,7 @@ export interface UnifiedCognitionConfig extends BaseConfig {
 
   // Theory of mind
   enableTheoryOfMind?: boolean;
-  theoryOfMindConfig?: Record<string, unknown>;
+  theoryOfMindConfig?: BaseConfig;
 }
 
 export class UnifiedCognition implements CognitionModule {
@@ -92,7 +92,7 @@ export class UnifiedCognition implements CognitionModule {
 
   constructor(config: UnifiedCognitionConfig = {}) {
     this.id = `unified_${Date.now()}`;
-    this.config = {
+    const defaults: UnifiedCognitionConfig = {
       // Defaults
       thinkForActions: true,
       thinkForMentions: true,
@@ -111,8 +111,10 @@ export class UnifiedCognition implements CognitionModule {
       enableGoalTracking: true,
       maxActiveGoals: 5,
       goalPersistence: 86400000, // 24 hours
-      ...config,
+      enableTheoryOfMind: false,
     };
+
+    this.config = { ...defaults, ...config };
 
     // Initialize theory of mind if enabled
     if (this.config.enableTheoryOfMind) {
@@ -348,7 +350,9 @@ export class UnifiedCognition implements CognitionModule {
     const emotion = this.processEmotions(agent, situation, context);
 
     // 5. Create memories if significant
-    if (situation.significance > 0.6) {
+    const significance =
+      typeof situation.significance === 'number' ? situation.significance : 0;
+    if (significance > 0.6) {
       const memory = this.createMemory(agent, situation, thoughts);
       memories.push(memory as MemoryRecord);
     }
@@ -439,10 +443,17 @@ export class UnifiedCognition implements CognitionModule {
     // Social media response
     if (situation.type === 'social_mention') {
       // Use agent's personality to determine response style
-      const responseType =
-        agent.characterConfig?.personality?.traits?.extraversion > 0.5
-          ? 'enthusiastic'
-          : 'thoughtful';
+      const traits =
+        agent.characterConfig?.personality &&
+        typeof agent.characterConfig.personality === 'object' &&
+        'traits' in agent.characterConfig.personality
+          ? agent.characterConfig.personality.traits
+          : {};
+      const extraversion =
+        traits && typeof traits === 'object' && 'extraversion' in traits
+          ? (traits as any).extraversion
+          : 0.5;
+      const responseType = extraversion > 0.5 ? 'enthusiastic' : 'thoughtful';
 
       return {
         id: `action_${Date.now()}`,
@@ -453,7 +464,11 @@ export class UnifiedCognition implements CognitionModule {
           platform: context.events[0]?.source || 'unknown',
           responseType,
           agentPersonality:
-            agent.characterConfig?.personality?.summary || 'neutral',
+            (agent.characterConfig?.personality &&
+            typeof agent.characterConfig.personality === 'object' &&
+            'summary' in agent.characterConfig.personality
+              ? (agent.characterConfig.personality as any).summary
+              : undefined) || 'neutral',
         },
         priority: 0.8,
         status: ActionStatus.PENDING,
@@ -565,15 +580,24 @@ export class UnifiedCognition implements CognitionModule {
       id: `memory_${Date.now()}`,
       agentId: agent.id,
       type: MemoryType.EXPERIENCE,
-      content: `${situation.summary}: ${thoughts.join('. ')}`,
+      content: `${typeof situation.summary === 'string' ? situation.summary : ''}: ${thoughts.join('. ')}`,
       metadata: {
-        situationType: situation.type,
-        significance: situation.significance,
-        timestamp: new Date(),
+        situationType:
+          typeof situation.type === 'string' ? situation.type : 'unknown',
+        significance:
+          typeof situation.significance === 'number'
+            ? situation.significance
+            : 0,
+        timestamp: new Date().toISOString(),
       },
-      importance: situation.significance,
+      importance:
+        typeof situation.significance === 'number' ? situation.significance : 0,
       timestamp: new Date(),
-      tags: [situation.type, 'thinking', 'cognition'],
+      tags: [
+        typeof situation.type === 'string' ? situation.type : 'unknown',
+        'thinking',
+        'cognition',
+      ],
       duration: MemoryDuration.LONG_TERM,
     };
   }
@@ -594,7 +618,9 @@ export class UnifiedCognition implements CognitionModule {
     if (situation.type !== 'unknown') confidence += 0.2;
 
     // Lower confidence for complex situations
-    if (situation.complexity > 0.7) confidence -= 0.1;
+    const complexity =
+      typeof situation.complexity === 'number' ? situation.complexity : 0;
+    if (complexity > 0.7) confidence -= 0.1;
 
     return Math.max(0.1, Math.min(1.0, confidence));
   }
@@ -608,7 +634,9 @@ export class UnifiedCognition implements CognitionModule {
   ): Promise<ThoughtResult> {
     // Quick intuitive thinking for agent
     const startTime = Date.now();
-    const thoughts: string[] = ['[System 1] Quick intuitive response'];
+    const thoughts: string[] = [
+      `[System 1] Quick intuitive response for ${agent.id}`,
+    ];
 
     // Check cache for similar contexts
     const cacheKey = this.generateContextHash(context);
@@ -681,9 +709,12 @@ export class UnifiedCognition implements CognitionModule {
       setTimeout(() => resolve({ timedOut: true }), this.config.system2Timeout!)
     );
 
-    const analysis = await Promise.race([analysisPromise, timeoutPromise]);
+    const analysisResult = await Promise.race([
+      analysisPromise,
+      timeoutPromise,
+    ]);
 
-    if ('timedOut' in analysis && analysis.timedOut) {
+    if ('timedOut' in analysisResult && analysisResult.timedOut) {
       thoughts.push('System 2 timeout - using best available analysis');
       return {
         ...system1Result,
@@ -691,6 +722,8 @@ export class UnifiedCognition implements CognitionModule {
         confidence: system1Result.confidence * 0.8,
       };
     }
+
+    const analysis = analysisResult as ThoughtResult;
 
     // Goal management
     if (this.config.enableGoalTracking) {
@@ -964,7 +997,7 @@ export class UnifiedCognition implements CognitionModule {
 
     return {
       id: `plan_${Date.now()}`,
-      goal: situation.summary,
+      goal: typeof situation.summary === 'string' ? situation.summary : '',
       steps,
       priority: 0.7,
       estimatedDuration: 3600000, // 1 hour

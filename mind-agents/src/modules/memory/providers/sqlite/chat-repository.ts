@@ -64,6 +64,7 @@ export class SQLiteChatRepository implements ChatRepository {
 
       console.log('✅ Chat database initialized with migrations');
     } catch (error) {
+      void error;
       console.error('❌ Failed to initialize chat database:', error);
       throw error;
     }
@@ -470,6 +471,7 @@ export class SQLiteChatRepository implements ChatRepository {
           .all(searchText, conversationId, limit) as any[];
         return rows.map((row) => this.rowToMessage(row));
       } catch (error) {
+        void error;
         console.warn('FTS search failed, falling back to LIKE query:', error);
       }
     }

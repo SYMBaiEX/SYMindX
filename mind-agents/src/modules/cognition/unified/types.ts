@@ -1,5 +1,4 @@
 import { BaseConfig } from '../../../types/common';
-
 export interface UnifiedCognitionConfig extends BaseConfig {
   // When to think
   thinkForActions?: boolean; // Think before taking actions

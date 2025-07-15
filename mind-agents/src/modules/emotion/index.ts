@@ -39,12 +39,13 @@ export function createEmotionModule(
       case 'unified':
       default:
         // Creating CompositeEmotionModule - logged by runtime
-        return new CompositeEmotionModule(config);
+        return new CompositeEmotionModule(config as any);
     }
   } catch (error) {
+    void error;
     runtimeLogger.error(`❌ Failed to create emotion module ${type}:`, error);
     // Creating default CompositeEmotionModule - logged by runtime
-    return new CompositeEmotionModule(config);
+    return new CompositeEmotionModule(config as any);
   }
 }
 
@@ -99,6 +100,7 @@ export async function registerEmotionModules(registry: any): Promise<void> {
 
     // Emotion factories registered - logged by runtime
   } catch (error) {
+    void error;
     runtimeLogger.error('❌ Failed to register emotion modules:', error);
 
     // Fallback to manual registration

@@ -106,7 +106,6 @@ export type {
   LazyAgentState,
   LazyAgent,
   AgentFactory,
-  AgentAction,
   AgentEvent,
   ExtensionAction,
   ExtensionEventHandler,

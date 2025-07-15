@@ -75,6 +75,7 @@ export async function registerPortals(
       registry.registerPortal(portalName, portal);
       registeredCount++;
     } catch (error) {
+      void error;
       console.warn(
         `⚠️ Failed to register portal ${portalName}:`,
         (error as Error).message
@@ -102,6 +103,7 @@ export async function initializePortal(
       portal.enabled = true;
       // Portal initialized - logged by runtime
     } catch (error) {
+      void error;
       console.error(
         `❌ Failed to initialize portal for ${agent.name}:`,
         (error as Error).message
@@ -177,6 +179,7 @@ export async function executeToolInteraction(
     const result = await portal.generateChat(messages as any, options);
     return result;
   } catch (error) {
+    void error;
     console.error(`Tool interaction failed for portal ${portal.name}:`, error);
     throw error;
   }

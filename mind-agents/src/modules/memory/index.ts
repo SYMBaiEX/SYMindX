@@ -6,15 +6,7 @@
 
 // MemoryProviderType used in type exports but not at runtime
 import { ModuleRegistry } from '../../types/agent';
-export type { MemoryProviderType } from '../../types/agent';
 import { runtimeLogger } from '../../utils/logger';
-
-// Re-export the memory provider factory and types
-export {
-  createMemoryProvider,
-  getMemoryProviderTypes,
-} from './providers/index';
-export type { MemoryProviderConfig } from './providers/index';
 
 // Import provider classes for registration
 import { InMemoryProvider } from './providers/memory/index';
@@ -22,6 +14,14 @@ import { NeonMemoryProvider } from './providers/neon/index';
 import { PostgresMemoryProvider } from './providers/postgres/index';
 import { SQLiteMemoryProvider } from './providers/sqlite/index';
 import { SupabaseMemoryProvider } from './providers/supabase/index';
+
+// Re-export the memory provider factory and types
+export {
+  createMemoryProvider,
+  getMemoryProviderTypes,
+} from './providers/index';
+export type { MemoryProviderConfig } from './providers/index';
+export type { MemoryProviderType } from '../../types/agent';
 
 /**
  * Register all memory providers with the registry
@@ -33,23 +33,23 @@ export async function registerMemoryProviders(
     // Register memory provider factories
     registry.registerMemoryFactory(
       'memory',
-      (config: Record<string, unknown>) => new InMemoryProvider(config)
+      (config: unknown) => new InMemoryProvider(config as any)
     );
     registry.registerMemoryFactory(
       'sqlite',
-      (config: Record<string, unknown>) => new SQLiteMemoryProvider(config)
+      (config: unknown) => new SQLiteMemoryProvider(config as any)
     );
     registry.registerMemoryFactory(
       'supabase',
-      (config: Record<string, unknown>) => new SupabaseMemoryProvider(config)
+      (config: unknown) => new SupabaseMemoryProvider(config as any)
     );
     registry.registerMemoryFactory(
       'neon',
-      (config: Record<string, unknown>) => new NeonMemoryProvider(config)
+      (config: unknown) => new NeonMemoryProvider(config as any)
     );
     registry.registerMemoryFactory(
       'postgres',
-      (config: Record<string, unknown>) => new PostgresMemoryProvider(config)
+      (config: unknown) => new PostgresMemoryProvider(config as any)
     );
 
     runtimeLogger.info(
@@ -60,6 +60,7 @@ export async function registerMemoryProviders(
     const defaultProvider = new InMemoryProvider({});
     registry.registerMemoryProvider('memory', defaultProvider);
   } catch (error) {
+    void error;
     runtimeLogger.error('❌ Failed to register memory providers:', error);
     throw error;
   }

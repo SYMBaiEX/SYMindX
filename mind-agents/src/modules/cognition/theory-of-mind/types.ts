@@ -1,5 +1,4 @@
 import { BaseConfig } from '../../../types/common';
-
 export interface TheoryOfMindConfig extends BaseConfig {
   // Mental modeling
   enableMentalModeling?: boolean;

@@ -91,8 +91,8 @@ export class SupabaseMemoryProvider extends BaseMemoryProvider {
   private realtimeChannel?: RealtimeChannel;
   private tableName: string;
   private sharedPools: Map<string, SharedMemoryPool> = new Map();
-  private consolidationTimer?: NodeJS.Timeout;
-  private archivalTimer?: NodeJS.Timeout;
+  private consolidationTimer?: ReturnType<typeof setTimeout>;
+  private archivalTimer?: ReturnType<typeof setTimeout>;
 
   /**
    * Constructor for the Supabase memory provider
@@ -163,6 +163,7 @@ export class SupabaseMemoryProvider extends BaseMemoryProvider {
 
       console.log('✅ Enhanced Supabase memory provider initialized');
     } catch (error) {
+      void error;
       const dbError =
         error instanceof DatabaseError
           ? error
@@ -298,6 +299,7 @@ export class SupabaseMemoryProvider extends BaseMemoryProvider {
         );
       }
     } catch (error) {
+      void error;
       const dbError =
         error instanceof DatabaseError
           ? error
@@ -359,6 +361,7 @@ export class SupabaseMemoryProvider extends BaseMemoryProvider {
 
       return (data || []).map((row) => this.rowToMemoryRecord(row));
     } catch (error) {
+      void error;
       const dbError =
         error instanceof DatabaseError
           ? error
@@ -405,6 +408,7 @@ export class SupabaseMemoryProvider extends BaseMemoryProvider {
 
       return results;
     } catch (error) {
+      void error;
       const dbError =
         error instanceof DatabaseError
           ? error
@@ -437,6 +441,7 @@ export class SupabaseMemoryProvider extends BaseMemoryProvider {
 
       console.log(`🗑️ Deleted memory: ${memoryId} for agent ${agentId}`);
     } catch (error) {
+      void error;
       const dbError =
         error instanceof DatabaseError
           ? error
@@ -466,6 +471,7 @@ export class SupabaseMemoryProvider extends BaseMemoryProvider {
 
       console.log(`🧹 Cleared all memories for agent ${agentId}`);
     } catch (error) {
+      void error;
       const dbError =
         error instanceof DatabaseError
           ? error
@@ -515,6 +521,7 @@ export class SupabaseMemoryProvider extends BaseMemoryProvider {
 
       return { total: count || 0, byType };
     } catch (error) {
+      void error;
       const dbError =
         error instanceof DatabaseError
           ? error
@@ -569,6 +576,7 @@ export class SupabaseMemoryProvider extends BaseMemoryProvider {
         `🧹 Cleaned up old and expired memories for agent ${agentId}`
       );
     } catch (error) {
+      void error;
       const dbError =
         error instanceof DatabaseError
           ? error
@@ -837,10 +845,11 @@ export class SupabaseMemoryProvider extends BaseMemoryProvider {
     switch (rule.condition) {
       case 'importance':
         return (memory.importance || 0) >= rule.threshold;
-      case 'age':
+      case 'age': {
         const ageInDays =
           (Date.now() - memory.timestamp.getTime()) / (1000 * 60 * 60 * 24);
         return ageInDays >= rule.threshold;
+      }
       case 'emotional':
         return (memory.context?.emotionalValence || 0) >= rule.threshold;
       default:

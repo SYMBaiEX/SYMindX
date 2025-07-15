@@ -103,6 +103,7 @@ export class ExtensionDiscovery {
                 );
                 packageInfo = JSON.parse(packageContent);
               } catch (error) {
+                void error;
                 runtimeLogger.warn(
                   `⚠️ Failed to parse package.json for ${entry.name}: ${error instanceof Error ? error.message : String(error)}`
                 );
@@ -126,6 +127,7 @@ export class ExtensionDiscovery {
         }
       }
     } catch (error) {
+      void error;
       runtimeLogger.warn(
         `⚠️ Failed to discover built-in extensions: ${error instanceof Error ? error.message : String(error)}`
       );
@@ -172,6 +174,7 @@ export class ExtensionDiscovery {
                 });
               }
             } catch (error) {
+              void error;
               // Ignore packages with invalid package.json
               runtimeLogger.debug(
                 `Skipping package ${entry.name}: ${error instanceof Error ? error.message : String(error)}`
@@ -181,6 +184,7 @@ export class ExtensionDiscovery {
         }
       }
     } catch (error) {
+      void error;
       runtimeLogger.warn(
         `⚠️ Failed to discover node_modules extensions: ${error instanceof Error ? error.message : String(error)}`
       );
@@ -231,6 +235,7 @@ export class ExtensionDiscovery {
                 });
               }
             } catch (error) {
+              void error;
               runtimeLogger.warn(
                 `⚠️ Failed to parse package.json for local extension ${entry.name}: ${error instanceof Error ? error.message : String(error)}`
               );
@@ -239,6 +244,7 @@ export class ExtensionDiscovery {
         }
       }
     } catch (error) {
+      void error;
       runtimeLogger.warn(
         `⚠️ Failed to discover local extensions: ${error instanceof Error ? error.message : String(error)}`
       );
@@ -265,6 +271,7 @@ export class ExtensionDiscovery {
           registeredExtensions.push(extension.name);
         }
       } catch (error) {
+        void error;
         runtimeLogger.warn(
           `⚠️ Failed to auto-register extension ${extension.name}: ${error instanceof Error ? error.message : String(error)}`
         );
@@ -311,6 +318,7 @@ export class ExtensionDiscovery {
         );
       }
     } catch (error) {
+      void error;
       runtimeLogger.error(
         `❌ Failed to register extension ${extension.name}: ${error instanceof Error ? error.message : String(error)}`
       );

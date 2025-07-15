@@ -166,6 +166,7 @@ export class LearningPersistence {
       // This would save current learning state - implementation depends on specific data to save
       // For now, just log the event
     } catch (error) {
+      void error;
       runtimeLogger.error('❌ Failed to auto-save learning data:', error);
     }
   }
@@ -177,6 +178,7 @@ export class LearningPersistence {
     try {
       await fs.mkdir(this.dataDirectory, { recursive: true });
     } catch (error) {
+      void error;
       runtimeLogger.cognition(
         `Failed to create learning data directory: ${error}`
       );
@@ -223,6 +225,7 @@ export class LearningPersistence {
         `Saved learning state for ${agent.id}:${paradigm} to ${filename}`
       );
     } catch (error) {
+      void error;
       runtimeLogger.cognition(`Failed to save learning state: ${error}`);
     }
   }
@@ -295,6 +298,7 @@ export class LearningPersistence {
         state
       );
     } catch (error) {
+      void error;
       runtimeLogger.cognition(`Failed to save Q-table: ${error}`);
     }
   }
@@ -328,6 +332,7 @@ export class LearningPersistence {
         episodeCount: state.episodeCount || 0,
       };
     } catch (error) {
+      void error;
       runtimeLogger.cognition(`Failed to load Q-table: ${error}`);
       return null;
     }
@@ -392,6 +397,7 @@ export class LearningPersistence {
         state
       );
     } catch (error) {
+      void error;
       runtimeLogger.cognition(`Failed to save rules: ${error}`);
     }
   }
@@ -451,6 +457,7 @@ export class LearningPersistence {
 
       return { rules, performance };
     } catch (error) {
+      void error;
       runtimeLogger.cognition(`Failed to load rules: ${error}`);
       return null;
     }
@@ -497,6 +504,7 @@ export class LearningPersistence {
         state
       );
     } catch (error) {
+      void error;
       runtimeLogger.cognition(`Failed to save Bayesian network: ${error}`);
     }
   }
@@ -514,6 +522,7 @@ export class LearningPersistence {
       );
       return state?.bayesianNetwork || null;
     } catch (error) {
+      void error;
       runtimeLogger.cognition(`Failed to load Bayesian network: ${error}`);
       return null;
     }
@@ -563,6 +572,7 @@ export class LearningPersistence {
         state
       );
     } catch (error) {
+      void error;
       runtimeLogger.cognition(`Failed to save experiences: ${error}`);
     }
   }
@@ -620,6 +630,7 @@ export class LearningPersistence {
         tags: ['loaded_experience'],
       }));
     } catch (error) {
+      void error;
       runtimeLogger.cognition(`Failed to load experiences: ${error}`);
       return [];
     }
@@ -651,6 +662,7 @@ export class LearningPersistence {
       const tempAgent = { id: agentId } as Agent;
       await this.saveLearningState(tempAgent, ReasoningParadigm.HYBRID, state);
     } catch (error) {
+      void error;
       runtimeLogger.cognition(`Failed to save meta-learning data: ${error}`);
     }
   }
@@ -681,6 +693,7 @@ export class LearningPersistence {
         paradigmSelections: state.paradigmSelections || [],
       };
     } catch (error) {
+      void error;
       runtimeLogger.cognition(`Failed to load meta-learning data: ${error}`);
       return null;
     }
@@ -739,6 +752,7 @@ export class LearningPersistence {
       // Clean up old backups
       await this.cleanupOldBackups(filepath);
     } catch (error) {
+      void error;
       // Backup failure is not critical
     }
   }
@@ -772,6 +786,7 @@ export class LearningPersistence {
         await fs.unlink(file.path);
       }
     } catch (error) {
+      void error;
       // Cleanup failure is not critical
     }
   }
@@ -829,6 +844,7 @@ export class LearningPersistence {
         paradigmCounts,
       };
     } catch (error) {
+      void error;
       runtimeLogger.cognition(`Failed to get storage stats: ${error}`);
       return {
         totalFiles: 0,

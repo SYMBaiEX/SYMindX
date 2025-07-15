@@ -174,6 +174,7 @@ export class GroqPortal extends BasePortal {
         },
       };
     } catch (error) {
+      void error;
       // Groq text generation error
       throw new Error(`Groq text generation failed: ${error}`);
     }
@@ -291,6 +292,7 @@ export class GroqPortal extends BasePortal {
         },
       };
     } catch (error) {
+      void error;
       // Groq chat generation error
       throw new Error(`Groq chat generation failed: ${error}`);
     }
@@ -386,7 +388,8 @@ export class GroqPortal extends BasePortal {
         evalResult.metadata.outputFormat = options.outputFormat;
 
       return evalResult;
-    } catch (_error) {
+    } catch (error) {
+      void error;
       // Groq task evaluation error
       throw new Error(`Groq task evaluation failed: ${_error}`);
     }
@@ -514,6 +517,7 @@ export class GroqPortal extends BasePortal {
         yield delta;
       }
     } catch (error) {
+      void error;
       // Groq stream text error
       throw new Error(`Groq stream text failed: ${error}`);
     }
@@ -574,6 +578,7 @@ export class GroqPortal extends BasePortal {
         yield delta;
       }
     } catch (error) {
+      void error;
       // Groq stream chat error
       throw new Error(`Groq stream chat failed: ${error}`);
     }

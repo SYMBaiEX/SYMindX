@@ -107,9 +107,16 @@ export class CognitionDiscovery {
                 );
                 packageInfo = JSON.parse(packageContent);
               } catch (error) {
+                void error;
                 runtimeLogger.warn(
                   `⚠️ Failed to parse package.json for ${entry.name}:`,
-                  error
+                  {
+                    source: 'cognition-discovery',
+                    metadata: {
+                      error:
+                        error instanceof Error ? error.message : String(error),
+                    },
+                  }
                 );
               }
             }
@@ -127,10 +134,13 @@ export class CognitionDiscovery {
         }
       }
     } catch (error) {
-      runtimeLogger.warn(
-        '⚠️ Failed to discover built-in cognition modules:',
-        error
-      );
+      void error;
+      runtimeLogger.warn('⚠️ Failed to discover built-in cognition modules:', {
+        source: 'cognition-discovery',
+        metadata: {
+          error: error instanceof Error ? error.message : String(error),
+        },
+      });
     }
 
     return cognitions;
@@ -182,9 +192,15 @@ export class CognitionDiscovery {
         }
       }
     } catch (error) {
+      void error;
       runtimeLogger.warn(
         '⚠️ Failed to discover node_modules cognition modules:',
-        error
+        {
+          source: 'cognition-discovery',
+          metadata: {
+            error: error instanceof Error ? error.message : String(error),
+          },
+        }
       );
     }
 
@@ -236,19 +252,29 @@ export class CognitionDiscovery {
                 });
               }
             } catch (error) {
+              void error;
               runtimeLogger.warn(
                 `⚠️ Failed to parse package.json for local cognition ${entry.name}:`,
-                error
+                {
+                  source: 'cognition-discovery',
+                  metadata: {
+                    error:
+                      error instanceof Error ? error.message : String(error),
+                  },
+                }
               );
             }
           }
         }
       }
     } catch (error) {
-      runtimeLogger.warn(
-        '⚠️ Failed to discover local cognition modules:',
-        error
-      );
+      void error;
+      runtimeLogger.warn('⚠️ Failed to discover local cognition modules:', {
+        source: 'cognition-discovery',
+        metadata: {
+          error: error instanceof Error ? error.message : String(error),
+        },
+      });
     }
 
     return cognitions;
@@ -272,9 +298,15 @@ export class CognitionDiscovery {
           registeredCognitions.push(cognition.name);
         }
       } catch (error) {
+        void error;
         runtimeLogger.warn(
           `⚠️ Failed to auto-register cognition ${cognition.name}:`,
-          error
+          {
+            source: 'cognition-discovery',
+            metadata: {
+              error: error instanceof Error ? error.message : String(error),
+            },
+          }
         );
       }
     }
@@ -319,6 +351,7 @@ export class CognitionDiscovery {
         );
       }
     } catch (error) {
+      void error;
       runtimeLogger.error(
         `❌ Failed to register cognition ${cognition.name}:`,
         error

@@ -1,5 +1,4 @@
 import { BaseConfig } from '../../../types/common';
-
 export interface HybridCognitionConfig extends BaseConfig {
   // Mode balancing
   reactiveWeight?: number; // 0-1, how much to favor reactive responses

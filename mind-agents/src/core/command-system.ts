@@ -11,6 +11,7 @@ import { WebSocket } from 'ws';
 
 import { PortalRouter } from '../portals/index';
 import { Agent, MemoryType, MemoryDuration } from '../types/agent';
+import { SkillParameters } from '../types/common';
 import { Logger, runtimeLogger } from '../utils/logger';
 
 export interface Command {
@@ -395,6 +396,7 @@ export class CommandSystem extends EventEmitter {
 
       return params;
     } catch (error) {
+      void error;
       this.logger.warn(`Failed to parse parameters: ${paramString} - ${error}`);
       return { raw: paramString };
     }
@@ -419,7 +421,7 @@ export class CommandSystem extends EventEmitter {
     return new Promise((resolve, reject) => {
       const timeout = command.timeout || 30000; // 30 second default
 
-      const timeoutId = global.setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         command.status = CommandStatus.TIMEOUT;
         command.result = {
           success: false,
@@ -434,7 +436,7 @@ export class CommandSystem extends EventEmitter {
           command.status === CommandStatus.COMPLETED ||
           command.status === CommandStatus.FAILED
         ) {
-          global.clearTimeout(timeoutId);
+          clearTimeout(timeoutId);
           resolve(command);
         }
       };
@@ -530,6 +532,7 @@ export class CommandSystem extends EventEmitter {
         executionTime: Date.now() - startTime,
       };
     } catch (error) {
+      void error;
       this.logger.error(`Command ${command.id} failed:`, error);
       command.status = CommandStatus.FAILED;
       command.result = {
@@ -598,10 +601,17 @@ export class CommandSystem extends EventEmitter {
           `Agent ${agent.name} emotion updated to ${emotionResult.state.current} (${emotionResult.state.intensity.toFixed(2)}) from message: ${command.instruction}`
         );
       } catch (error) {
-        this.logger.warn(
-          'Failed to process emotion for incoming message:',
-          error
-        );
+        void error;
+        this.logger.warn('Failed to process emotion for incoming message:', {
+          error: {
+            code: 'EMOTION_PROCESSING_ERROR',
+            message: error instanceof Error ? error.message : String(error),
+            ...(error instanceof Error && error.stack
+              ? { stack: error.stack }
+              : {}),
+            cause: error,
+          },
+        });
       }
     }
 
@@ -651,7 +661,17 @@ export class CommandSystem extends EventEmitter {
               .join('\n');
           }
         } catch (error) {
-          this.logger.warn('Failed to retrieve conversation memories:', error);
+          void error;
+          this.logger.warn('Failed to retrieve conversation memories:', {
+            error: {
+              code: 'MEMORY_RETRIEVAL_ERROR',
+              message: error instanceof Error ? error.message : String(error),
+              ...(error instanceof Error && error.stack
+                ? { stack: error.stack }
+                : {}),
+              cause: error,
+            },
+          });
         }
       }
 
@@ -723,9 +743,19 @@ export class CommandSystem extends EventEmitter {
             );
           }
         } catch (error) {
+          void error;
           this.logger.warn(
             'Failed to process cognitive thinking for message:',
-            error
+            {
+              error: {
+                code: 'EMOTION_PROCESSING_ERROR',
+                message: error instanceof Error ? error.message : String(error),
+                ...(error instanceof Error && error.stack
+                  ? { stack: error.stack }
+                  : {}),
+                cause: error,
+              },
+            }
           );
           // Continue without cognitive context if thinking fails
         }
@@ -832,9 +862,20 @@ export class CommandSystem extends EventEmitter {
                 postResponseIntensity: responseEmotionResult.state.intensity,
               };
             } catch (error) {
+              void error;
               this.logger.warn(
                 'Failed to process emotion for agent response:',
-                error
+                {
+                  error: {
+                    code: 'EMOTION_PROCESSING_ERROR',
+                    message:
+                      error instanceof Error ? error.message : String(error),
+                    ...(error instanceof Error && error.stack
+                      ? { stack: error.stack }
+                      : {}),
+                    cause: error,
+                  },
+                }
               );
             }
           }
@@ -948,7 +989,17 @@ export class CommandSystem extends EventEmitter {
 
           this.logger.debug(`Stored conversation memories for ${agent.name}`);
         } catch (error) {
-          this.logger.warn('Failed to store conversation memories:', error);
+          void error;
+          this.logger.warn('Failed to store conversation memories:', {
+            error: {
+              code: 'MEMORY_STORAGE_ERROR',
+              message: error instanceof Error ? error.message : String(error),
+              ...(error instanceof Error && error.stack
+                ? { stack: error.stack }
+                : {}),
+              cause: error,
+            },
+          });
         }
       }
 
@@ -958,10 +1009,17 @@ export class CommandSystem extends EventEmitter {
         executionTime: Date.now() - startTime,
       };
     } catch (error) {
-      this.logger.warn(
-        'Portal generation failed, falling back to cognition:',
-        error
-      );
+      void error;
+      this.logger.warn('Portal generation failed, falling back to cognition:', {
+        error: {
+          code: 'PORTAL_GENERATION_ERROR',
+          message: error instanceof Error ? error.message : String(error),
+          ...(error instanceof Error && error.stack
+            ? { stack: error.stack }
+            : {}),
+          cause: error,
+        },
+      });
 
       // Fallback to cognition module if portal fails
       if (!agent.cognition) {
@@ -1071,10 +1129,17 @@ export class CommandSystem extends EventEmitter {
 
           await agent.memory.store(agent.id, agentMemory);
         } catch (memError) {
-          this.logger.warn(
-            'Failed to store fallback conversation memories:',
-            memError
-          );
+          this.logger.warn('Failed to store fallback conversation memories:', {
+            error: {
+              code: 'FALLBACK_MEMORY_ERROR',
+              message:
+                memError instanceof Error ? memError.message : String(memError),
+              ...(memError instanceof Error && memError.stack
+                ? { stack: memError.stack }
+                : {}),
+              cause: memError,
+            },
+          });
         }
       }
 
@@ -1122,7 +1187,10 @@ export class CommandSystem extends EventEmitter {
         `Action '${command.instruction}' not found in extension '${command.extension}'`
       );
     }
-    const result = await action.execute(agent, command.parameters || {});
+    const result = await action.execute(
+      agent,
+      (command.parameters || {}) as SkillParameters
+    );
 
     const commandResult: CommandResult = {
       success: result.success,
@@ -1195,9 +1263,19 @@ export class CommandSystem extends EventEmitter {
             );
           }
         } catch (error) {
+          void error;
           this.logger.warn(
             '⚠️ Failed to generate embedding, falling back to text search:',
-            error
+            {
+              error: {
+                code: 'EMBEDDING_ERROR',
+                message: error instanceof Error ? error.message : String(error),
+                ...(error instanceof Error && error.stack
+                  ? { stack: error.stack }
+                  : {}),
+                cause: error,
+              },
+            }
           );
           memories = await agent.memory.retrieve(
             agent.id,
@@ -1345,7 +1423,17 @@ export class CommandSystem extends EventEmitter {
         try {
           ws.send(JSON.stringify(update));
         } catch (error) {
-          this.logger.warn('Failed to send update to WebSocket:', error);
+          void error;
+          this.logger.warn('Failed to send update to WebSocket:', {
+            error: {
+              code: 'WEBSOCKET_SEND_ERROR',
+              message: error instanceof Error ? error.message : String(error),
+              ...(error instanceof Error && error.stack
+                ? { stack: error.stack }
+                : {}),
+              cause: error,
+            },
+          });
         }
       }
     }
@@ -1622,8 +1710,8 @@ export class CommandSystem extends EventEmitter {
 
     // Access character config properties safely
     const characterConfig = agent.characterConfig || agent.config;
-    const backstory = characterConfig.personality?.backstory || '';
-    const guidelines = characterConfig.communication?.guidelines || [];
+    const backstory = (characterConfig as any).personality?.backstory || '';
+    const guidelines = (characterConfig as any).communication?.guidelines || [];
 
     return `You are ${agent.name}. ${backstory}
 

@@ -227,6 +227,7 @@ export async function getCurrentVersion(client: any): Promise<string | null> {
     );
     return result.rows[0]?.version || null;
   } catch (error) {
+    void error;
     // Table doesn't exist yet
     return null;
   }

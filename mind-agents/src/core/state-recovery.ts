@@ -201,6 +201,7 @@ export class StateRecoverySystem extends EventEmitter {
             return result;
           }
         } catch (error) {
+          void error;
           this.logger.warn(`Recovery strategy ${strategy.name} failed:`, error);
           continue;
         }

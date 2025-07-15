@@ -119,7 +119,7 @@ export class MultiAgentManager extends EventEmitter {
 
       // Create agent using runtime's loadAgent method
       const agent = (await this.runtime.loadAgent(
-        finalConfig
+        finalConfig as AgentConfig
       )) as ExtendedAgent;
 
       // Store original character config for reference
@@ -148,6 +148,7 @@ export class MultiAgentManager extends EventEmitter {
 
       return agentId;
     } catch (error) {
+      void error;
       this.logger.error(`Failed to spawn agent ${request.characterId}:`, error);
       throw error;
     }
@@ -168,7 +169,7 @@ export class MultiAgentManager extends EventEmitter {
       }
 
       // Stop autonomous systems if present
-      await this.runtime.shutdownAgent(agent);
+      await this.runtime.unloadAgent(agentId);
 
       // Remove from runtime
       this.runtime.agents.delete(agentId);
@@ -182,6 +183,7 @@ export class MultiAgentManager extends EventEmitter {
       this.emit('agentStopped', { agentId, name: agent.name });
       this.logger.info(`Agent stopped successfully: ${agentId}`);
     } catch (error) {
+      void error;
       this.logger.error(`Failed to stop agent ${agentId}:`, error);
       throw error;
     }
@@ -195,8 +197,9 @@ export class MultiAgentManager extends EventEmitter {
       throw new Error(`Agent ${agentId} not found`);
     }
 
-    const originalConfig = agent.originalConfig || agent.config;
-    const characterId = originalConfig?.id || 'unknown';
+    const originalConfig =
+      (agent as ExtendedAgent).originalConfig || agent.config;
+    const characterId = (originalConfig as any)?.id || 'unknown';
     const instanceName = agent.name;
 
     try {
@@ -220,6 +223,7 @@ export class MultiAgentManager extends EventEmitter {
       });
       this.logger.info(`Agent restarted: ${agentId} -> ${newAgentId}`);
     } catch (error) {
+      void error;
       this.logger.error(`Failed to restart agent ${agentId}:`, error);
       throw error;
     }
@@ -255,9 +259,10 @@ export class MultiAgentManager extends EventEmitter {
   findAgentsBySpecialty(specialty: string): Agent[] {
     return this.getAvailableAgents().filter((agent) => {
       // Check if agent config has capabilities (from original character config)
-      const originalConfig = agent.originalConfig || agent.config;
-      if (originalConfig?.capabilities) {
-        return Object.values(originalConfig.capabilities).some(
+      const originalConfig =
+        (agent as ExtendedAgent).originalConfig || agent.config;
+      if ((originalConfig as any)?.capabilities) {
+        return Object.values((originalConfig as any).capabilities).some(
           (category: unknown) =>
             typeof category === 'object' &&
             category !== null &&
@@ -266,7 +271,7 @@ export class MultiAgentManager extends EventEmitter {
       }
 
       // Fallback: check personality traits that might indicate specialty
-      const personality = originalConfig?.personality?.traits;
+      const personality = (originalConfig as any)?.personality?.traits;
       if (personality) {
         const relevantTraits = {
           analytical: ['analytical', 'logical', 'methodical'],
@@ -288,8 +293,9 @@ export class MultiAgentManager extends EventEmitter {
 
   findAgentsByPersonality(traits: string[]): Agent[] {
     return this.getAvailableAgents().filter((agent) => {
-      const originalConfig = agent.originalConfig || agent.config;
-      const personality = originalConfig?.personality?.traits;
+      const originalConfig =
+        (agent as ExtendedAgent).originalConfig || agent.config;
+      const personality = (originalConfig as any)?.personality?.traits;
       if (!personality) return false;
 
       // Check if agent has high scores in desired traits
@@ -326,7 +332,8 @@ export class MultiAgentManager extends EventEmitter {
     requirements: ConversationRequirements
   ): number {
     let score = 0;
-    const originalConfig = agent.originalConfig || agent.config;
+    const originalConfig =
+      (agent as ExtendedAgent).originalConfig || agent.config;
 
     // Base score for availability
     if (agent.status === AgentStatus.IDLE) score += 10;
@@ -334,7 +341,7 @@ export class MultiAgentManager extends EventEmitter {
 
     // Specialty matching
     if (requirements.specialty) {
-      const capabilities = originalConfig?.capabilities;
+      const capabilities = (originalConfig as any)?.capabilities;
       if (capabilities) {
         requirements.specialty.forEach((spec) => {
           Object.values(capabilities).forEach((category: unknown) => {
@@ -352,7 +359,7 @@ export class MultiAgentManager extends EventEmitter {
 
     // Personality trait matching
     if (requirements.personalityTraits) {
-      const personality = originalConfig?.personality?.traits;
+      const personality = (originalConfig as any)?.personality?.traits;
       if (personality) {
         requirements.personalityTraits.forEach((trait) => {
           const traitValue = personality[trait] || 0;
@@ -362,9 +369,14 @@ export class MultiAgentManager extends EventEmitter {
     }
 
     // Response style matching
-    if (requirements.responseStyle && originalConfig?.communication?.style) {
+    if (
+      requirements.responseStyle &&
+      (originalConfig as any)?.communication?.style
+    ) {
       if (
-        originalConfig.communication.style.includes(requirements.responseStyle)
+        (originalConfig as any).communication.style.includes(
+          requirements.responseStyle
+        )
       ) {
         score += 10;
       }
@@ -518,6 +530,7 @@ export class MultiAgentManager extends EventEmitter {
       const configData = await fs.readFile(configPath, 'utf-8');
       return JSON.parse(configData) as CharacterConfig;
     } catch (error) {
+      void error;
       throw new Error(
         `Failed to load character config for ${characterId}: ${error}`
       );
@@ -535,12 +548,13 @@ export class MultiAgentManager extends EventEmitter {
     characterId: string;
   }> {
     return Array.from(this.agents.values()).map((agent) => {
-      const originalConfig = agent.originalConfig || agent.config;
+      const originalConfig =
+        (agent as ExtendedAgent).originalConfig || agent.config;
       return {
         id: agent.id,
         name: agent.name,
         status: agent.status,
-        characterId: originalConfig?.id || 'unknown',
+        characterId: (originalConfig as any)?.id || 'unknown',
       };
     });
   }

@@ -417,6 +417,7 @@ export class RuleBasedReasoning implements CognitionModule {
    */
   async learn(_agent: Agent, experience: Experience): Promise<void> {
     const { state, action, reward, nextState: _nextState } = experience;
+    void _nextState; // Acknowledge unused variable
 
     // Analyze experience for rule updates
     if (reward.value > 0.5) {
@@ -601,6 +602,7 @@ export class RuleBasedReasoning implements CognitionModule {
       // Simple evaluation (in production, use a proper expression evaluator)
       return eval(expression);
     } catch (error) {
+      void error;
       runtimeLogger.cognition(`Function evaluation error: ${error}`);
       return false;
     }
@@ -647,7 +649,7 @@ export class RuleBasedReasoning implements CognitionModule {
           current.conditions.length > best.conditions.length ? current : best
         );
 
-      case 'recent':
+      case 'recent': {
         return rules.reduce((best, current) => {
           const bestHistory = this.getRecentExecution(best.id);
           const currentHistory = this.getRecentExecution(current.id);
@@ -660,6 +662,7 @@ export class RuleBasedReasoning implements CognitionModule {
             ? current
             : best;
         });
+      }
 
       default:
         return rules[0] ?? null;
@@ -691,6 +694,7 @@ export class RuleBasedReasoning implements CognitionModule {
       runtimeLogger.cognition(`Fired rule: ${rule.name}`);
       return true;
     } catch (error) {
+      void error;
       runtimeLogger.cognition(`Rule execution failed: ${rule.name} - ${error}`);
 
       this.executionHistory.push({
@@ -733,11 +737,12 @@ export class RuleBasedReasoning implements CognitionModule {
         );
         break;
 
-      case 'modify':
+      case 'modify': {
         const currentValue = this.factBase.getFact(action.target);
         const newValue = { ...currentValue, ...action.parameters };
         this.factBase.addSimpleFact(action.target, newValue);
         break;
+      }
     }
   }
 

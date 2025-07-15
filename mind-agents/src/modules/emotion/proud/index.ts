@@ -2,7 +2,6 @@ import { EmotionResult } from '../../../types/modules/emotions';
 import { BaseEmotion, EmotionDefinition } from '../base-emotion';
 
 import { ProudEmotionConfig } from './types';
-
 export class ProudEmotion extends BaseEmotion {
   constructor(config: ProudEmotionConfig = {}) {
     super(config);

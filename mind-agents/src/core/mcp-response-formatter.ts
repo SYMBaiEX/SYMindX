@@ -495,9 +495,11 @@ export class MCPResponseFormatter {
     details: Record<string, unknown>
   ): void {
     runtimeLogger.info(`MCP Flow - ${stage}`, {
-      timestamp: new Date().toISOString(),
-      stage,
-      ...details,
+      metadata: {
+        timestamp: new Date().toISOString(),
+        stage,
+        ...details,
+      },
     });
   }
 }

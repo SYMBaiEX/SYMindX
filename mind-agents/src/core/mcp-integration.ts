@@ -97,6 +97,7 @@ export class MCPIntegration {
 
       runtimeLogger.info(`✅ Added MCP server: ${config.name}`);
     } catch (error) {
+      void error;
       runtimeLogger.error(`❌ Failed to add MCP server ${config.name}:`, error);
       throw error;
     }
@@ -150,6 +151,7 @@ export class MCPIntegration {
 
       runtimeLogger.info(`🔗 Connected to MCP server: ${serverName}`);
     } catch (error) {
+      void error;
       runtimeLogger.error(
         `❌ Failed to connect to MCP server ${serverName}:`,
         error
@@ -216,6 +218,7 @@ export class MCPIntegration {
         try {
           await this.connectToServer(serverName, client, config);
         } catch (error) {
+          void error;
           runtimeLogger.error(
             `❌ Auto-reconnect failed for MCP server ${serverName}:`,
             error
@@ -258,6 +261,7 @@ export class MCPIntegration {
         }
       }
     } catch (error) {
+      void error;
       runtimeLogger.error(
         `❌ Failed to discover tools from ${serverName}:`,
         error
@@ -291,6 +295,7 @@ export class MCPIntegration {
         }
       }
     } catch (error) {
+      void error;
       runtimeLogger.error(
         `❌ Failed to discover resources from ${serverName}:`,
         error
@@ -323,6 +328,7 @@ export class MCPIntegration {
         }
       }
     } catch (error) {
+      void error;
       runtimeLogger.error(
         `❌ Failed to discover prompts from ${serverName}:`,
         error
@@ -363,6 +369,7 @@ export class MCPIntegration {
         isError: response.isError || false,
       };
     } catch (error) {
+      void error;
       runtimeLogger.error(`❌ Tool execution failed for ${toolName}:`, error);
       throw error;
     }
@@ -400,6 +407,7 @@ export class MCPIntegration {
         isError: false,
       };
     } catch (error) {
+      void error;
       runtimeLogger.error(`❌ Resource read failed for ${resourceUri}:`, error);
       throw error;
     }
@@ -435,6 +443,7 @@ export class MCPIntegration {
 
       return response.messages?.[0]?.content?.text || '';
     } catch (error) {
+      void error;
       runtimeLogger.error(
         `❌ Prompt retrieval failed for ${promptName}:`,
         error
@@ -509,6 +518,7 @@ export class MCPIntegration {
 
         runtimeLogger.info(`🔌 Disconnected from MCP server: ${serverName}`);
       } catch (error) {
+        void error;
         runtimeLogger.error(
           `❌ Failed to disconnect from MCP server ${serverName}:`,
           error
@@ -536,7 +546,7 @@ export class MCPIntegration {
     // This is a simplified conversion - in production you might want to use
     // a more robust JSON Schema to Zod converter
     switch (jsonSchema.type) {
-      case 'object':
+      case 'object': {
         const shape: Record<string, z.ZodTypeAny> = {};
         if (jsonSchema.properties) {
           for (const [key, prop] of Object.entries(
@@ -546,6 +556,7 @@ export class MCPIntegration {
           }
         }
         return z.object(shape);
+      }
 
       case 'string':
         return z.string();

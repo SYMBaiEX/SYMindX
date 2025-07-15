@@ -615,6 +615,7 @@ export class EnhancedRuntimeClient extends EventEmitter {
 
       return response;
     } catch (error) {
+      void error; // Acknowledge unused error
       // Fallback to constructed response
       const status = await this.getRuntimeStatus();
       const agents = await this.getAgents();
@@ -678,6 +679,7 @@ export class EnhancedRuntimeClient extends EventEmitter {
 
       return response.events || [];
     } catch (error) {
+      void error;
       // Fallback to simulated events
       const status = await this.getRuntimeStatus();
       const agents = await this.getAgents();
@@ -826,7 +828,7 @@ export class EnhancedRuntimeClient extends EventEmitter {
    * Cancel all pending requests
    */
   cancelAllRequests() {
-    for (const [_id, controller] of this.abortControllers) {
+    for (const [, controller] of this.abortControllers) {
       controller.abort();
     }
     this.abortControllers.clear();

@@ -162,6 +162,7 @@ export class WebSocketServerSkill {
         `🔌 WebSocket server initialized on ${this.config.path}`
       );
     } catch (error) {
+      void error;
       runtimeLogger.error('❌ Failed to initialize WebSocket server:', error);
       throw error;
     }
@@ -302,6 +303,7 @@ export class WebSocketServerSkill {
           });
       }
     } catch (error) {
+      void error;
       runtimeLogger.error(`❌ Error handling WebSocket message:`, error);
       this.sendToWebSocket(connection.ws, {
         type: 'error',
@@ -380,6 +382,7 @@ export class WebSocketServerSkill {
         throw new Error('Chat skill not available');
       }
     } catch (error) {
+      void error;
       this.sendToWebSocket(connection.ws, {
         type: 'error',
         error:
@@ -413,6 +416,7 @@ export class WebSocketServerSkill {
         data: result,
       });
     } catch (error) {
+      void error;
       this.sendToWebSocket(connection.ws, {
         type: 'error',
         error:
@@ -466,6 +470,7 @@ export class WebSocketServerSkill {
           this.sendToWebSocket(connection.ws, wsMessage);
           sentCount++;
         } catch (error) {
+          void error;
           runtimeLogger.warn(
             `⚠️ Failed to send message to ${connection.id}:`,
             error
@@ -479,6 +484,7 @@ export class WebSocketServerSkill {
         result: { sentTo: sentCount, totalConnections: this.connections.size },
       };
     } catch (error) {
+      void error;
       return {
         success: false,
         type: ActionResultType.ERROR,
@@ -522,6 +528,7 @@ export class WebSocketServerSkill {
         result: { sentTo: connectionId },
       };
     } catch (error) {
+      void error;
       return {
         success: false,
         type: ActionResultType.ERROR,
@@ -595,6 +602,7 @@ export class WebSocketServerSkill {
         },
       };
     } catch (error) {
+      void error;
       return {
         success: false,
         type: ActionResultType.ERROR,
@@ -621,6 +629,7 @@ export class WebSocketServerSkill {
         try {
           this.sendToWebSocket(connection.ws, message);
         } catch (error) {
+          void error;
           runtimeLogger.warn(
             `⚠️ Failed to send agent event to ${connection.id}:`,
             error

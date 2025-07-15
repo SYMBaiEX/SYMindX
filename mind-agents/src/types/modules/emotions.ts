@@ -130,7 +130,7 @@ export interface EmotionBlendResult {
   /**
    * Secondary emotion (if any)
    */
-  secondary?: string;
+  secondary?: string | undefined;
 
   /**
    * Blend ratio between primary and secondary (0.0 to 1.0)
@@ -223,31 +223,33 @@ export interface EmotionResult {
   /**
    * Previous emotion (if changed)
    */
-  previousEmotion?: string;
+  previousEmotion?: string | undefined;
 
   /**
    * Any transitions that occurred
    */
-  transitions?: EmotionTransition[];
+  transitions?: EmotionTransition[] | undefined;
 
   /**
    * Active modifiers
    */
-  modifiers?: EmotionModifier[];
+  modifiers?: EmotionModifier[] | undefined;
 
   /**
    * Blend result if multiple emotions are active
    */
-  blendResult?: EmotionBlendResult;
+  blendResult?: EmotionBlendResult | undefined;
 
   /**
    * Processing metadata
    */
-  metadata?: {
-    processingTime: number;
-    triggersProcessed: number;
-    [key: string]: unknown;
-  };
+  metadata?:
+    | {
+        processingTime: number;
+        triggersProcessed: number;
+        [key: string]: unknown;
+      }
+    | undefined;
 }
 
 /**

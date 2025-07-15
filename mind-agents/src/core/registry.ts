@@ -14,6 +14,7 @@ import {
   AgentConfig,
   AgentFactory,
 } from '../types/agent';
+// Agent imports should come first
 import { CognitionModule, CognitionModuleFactory } from '../types/cognition';
 import { BaseConfig } from '../types/common';
 import { EmotionModule, EmotionModuleFactory } from '../types/emotion';
@@ -45,15 +46,30 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
   private agentFactories = new Map<string, AgentFactory>();
 
   // Lazy agent management
-  private lazyAgents = new Map<string, LazyAgent>();
+  private lazyAgents = new Map<string, LazyAgent | (() => Promise<Agent>)>();
 
-  registerLazyAgent(agentId: string, lazyAgent: LazyAgent): void {
-    this.lazyAgents.set(agentId, lazyAgent);
+  registerLazyAgent(
+    agentId: string,
+    loaderOrAgent: (() => Promise<Agent>) | LazyAgent
+  ): void {
+    // Support both the interface signature and the legacy LazyAgent object
+    if (typeof loaderOrAgent === 'function') {
+      // Store the loader function
+      this.lazyAgents.set(agentId, loaderOrAgent);
+    } else {
+      // Legacy support: store the LazyAgent object
+      this.lazyAgents.set(agentId, loaderOrAgent);
+    }
     runtimeLogger.factory(`🦥 Registered lazy agent: ${agentId}`);
   }
 
   getLazyAgent(agentId: string): LazyAgent | undefined {
-    return this.lazyAgents.get(agentId);
+    const value = this.lazyAgents.get(agentId);
+    if (typeof value === 'function') {
+      // If it's a loader function, we can't return it as LazyAgent
+      return undefined;
+    }
+    return value;
   }
 
   registerMemoryProvider(name: string, provider: any): void {
@@ -185,6 +201,7 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
       // Silent creation for cleaner startup
       return provider;
     } catch (error) {
+      void error;
       runtimeLogger.error(
         `❌ Failed to create memory provider '${type}':`,
         error
@@ -207,6 +224,7 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
       // Silent creation for cleaner startup
       return module;
     } catch (error) {
+      void error;
       runtimeLogger.error(
         `❌ Failed to create emotion module '${type}':`,
         error
@@ -229,6 +247,7 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
       runtimeLogger.factory(`✅ Created cognition module: ${type}`);
       return module;
     } catch (error) {
+      void error;
       runtimeLogger.error(
         `❌ Failed to create cognition module '${type}':`,
         error
@@ -248,6 +267,7 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
       runtimeLogger.factory(`✅ Created portal: ${type}`);
       return portal;
     } catch (error) {
+      void error;
       runtimeLogger.error(`❌ Failed to create portal '${type}':`, error);
       return undefined;
     }
@@ -372,8 +392,20 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
     // Silent registration for cleaner startup
   }
 
-  registerAgentFactory(type: string, factory: AgentFactory): void {
-    this.agentFactories.set(type, factory);
+  registerAgentFactory(
+    type: string,
+    factory: ((config: unknown) => Agent) | AgentFactory
+  ): void {
+    // Support both the interface signature and AgentFactory objects
+    if (typeof factory === 'function') {
+      // Wrap simple function as AgentFactory
+      const agentFactory: AgentFactory = {
+        create: (config: AgentConfig) => factory(config),
+      };
+      this.agentFactories.set(type, agentFactory);
+    } else {
+      this.agentFactories.set(type, factory);
+    }
     // Silent registration for cleaner startup
   }
 
@@ -388,6 +420,7 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
       const extension = factory(config);
       return extension;
     } catch (error) {
+      void error;
       runtimeLogger.error(`❌ Failed to create extension '${type}':`, error);
       return undefined;
     }
@@ -406,6 +439,7 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
       const agent = await factory.create(config);
       return agent;
     } catch (error) {
+      void error;
       runtimeLogger.error(`❌ Failed to create agent '${type}':`, error);
       throw error;
     }
@@ -414,7 +448,9 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
   // Lazy agent management methods (removed duplicate - using the first definition above)
 
   listLazyAgents(): LazyAgent[] {
-    return Array.from(this.lazyAgents.values());
+    return Array.from(this.lazyAgents.values()).filter(
+      (value): value is LazyAgent => typeof value !== 'function'
+    );
   }
 
   // Additional listing methods for new factories
@@ -432,7 +468,10 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
   getRegisteredAgents(): Agent[] {
     // Return active agents from lazy agent map
     return Array.from(this.lazyAgents.values())
-      .filter((lazyAgent) => lazyAgent.agent !== undefined)
+      .filter(
+        (value): value is LazyAgent =>
+          typeof value !== 'function' && value.agent !== undefined
+      )
       .map((lazyAgent) => lazyAgent.agent!);
   }
 

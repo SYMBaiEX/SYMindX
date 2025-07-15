@@ -180,6 +180,7 @@ export class WebUIServer {
         const response = await this.commandSystem.sendMessage(agentId, message);
         res.json({ response, timestamp: new Date().toISOString() });
       } catch (error) {
+        void error;
         res.status(500).json({
           error: 'Chat failed',
           details: error instanceof Error ? error.message : String(error),
@@ -214,6 +215,7 @@ export class WebUIServer {
           async,
         });
       } catch (error) {
+        void error;
         res.status(500).json({
           error: 'Command execution failed',
           details: error instanceof Error ? error.message : String(error),
@@ -252,6 +254,7 @@ export class WebUIServer {
                 file: file,
               });
             } catch (error) {
+              void error;
               this._logger.warn(
                 `Failed to parse character file ${file}:`,
                 error
@@ -262,6 +265,7 @@ export class WebUIServer {
 
         res.json({ characters });
       } catch (error) {
+        void error;
         res.status(500).json({
           error: 'Failed to load characters',
           details: error instanceof Error ? error.message : String(error),
@@ -318,6 +322,7 @@ export class WebUIServer {
                 file: file,
               });
             } catch (error) {
+              void error;
               this._logger.warn(
                 `Failed to parse character file ${file}:`,
                 error
@@ -328,6 +333,7 @@ export class WebUIServer {
 
         res.json({ agents: allAgents });
       } catch (error) {
+        void error;
         res.status(500).json({
           error: 'Failed to load all agents',
           details: error instanceof Error ? error.message : String(error),
@@ -378,6 +384,7 @@ export class WebUIServer {
           message: `Agent ${id} started successfully`,
         });
       } catch (error) {
+        void error;
         this._logger.error('Failed to start agent:', error);
         res.status(500).json({
           error: 'Failed to start agent',
@@ -411,6 +418,7 @@ export class WebUIServer {
           message: `Agent ${id} stopped successfully`,
         });
       } catch (error) {
+        void error;
         this._logger.error('Failed to stop agent:', error);
         res.status(500).json({
           error: 'Failed to stop agent',
@@ -1763,6 +1771,7 @@ export class WebUIServer {
                 
                 updateCount++;
             } catch (error) {
+    void error;
                 console.error('Failed to load dashboard:', error);
                 document.getElementById('system-status').innerHTML = 
                     '<span class="status-indicator status-error"></span>Error loading data';
@@ -1856,6 +1865,7 @@ export class WebUIServer {
                     \`;
                 }).join('');
             } catch (error) {
+    void error;
                 console.error('Failed to load agents:', error);
                 document.getElementById('agents-grid').innerHTML = 
                     '<div style="grid-column: 1/-1; text-align: center; color: #ef4444;">Failed to load agents</div>';
@@ -1913,6 +1923,7 @@ export class WebUIServer {
                     await createNewConversation(agentId);
                 }
             } catch (error) {
+    void error;
                 console.error('Failed to load conversations:', error);
                 showWelcomeMessage();
             }
@@ -1947,6 +1958,7 @@ export class WebUIServer {
                 
                 console.log('Created new conversation:', conversation.id);
             } catch (error) {
+    void error;
                 console.error('Failed to create conversation:', error);
                 showWelcomeMessage();
             }
@@ -1981,6 +1993,7 @@ export class WebUIServer {
                 updateActiveConversationInSidebar(conversationId);
                 
             } catch (error) {
+    void error;
                 console.error('Failed to load conversation messages:', error);
                 showWelcomeMessage();
             }
@@ -2105,6 +2118,7 @@ export class WebUIServer {
                 updateConversationsSidebar(conversations);
                 
             } catch (error) {
+    void error;
                 console.error('Failed to delete conversation:', error);
                 alert('Failed to delete conversation. Please try again.');
             }
@@ -2201,6 +2215,7 @@ export class WebUIServer {
                 await loadConversationsForAgent(selectedAgentId);
                 
             } catch (error) {
+    void error;
                 clearInterval(dotsInterval);
                 document.getElementById(typingId)?.remove();
                 console.error('Failed to send message:', error);
@@ -2285,6 +2300,7 @@ export class WebUIServer {
                     addMessage(data.message, 'agent');
                 }
             } catch (error) {
+    void error;
                 console.error('WebSocket error:', error);
             }
         };
@@ -2310,6 +2326,7 @@ export class WebUIServer {
                 const response = await fetch('/api/stats');
                 systemStats = await response.json();
             } catch (error) {
+    void error;
                 console.error('Failed to load system stats:', error);
             }
         }
@@ -2422,6 +2439,7 @@ export class WebUIServer {
                 // Load detailed info for running agents
                 agents.filter(agent => agent.isRunning).forEach(agent => loadAgentDetails(agent.id));
             } catch (error) {
+    void error;
                 console.error('Failed to load agents:', error);
                 document.getElementById('agents-list').innerHTML = 
                     '<div style="text-align: center; padding: 40px; color: #ef4444;">Failed to load agents. Please refresh the page.</div>';
@@ -2500,6 +2518,7 @@ export class WebUIServer {
                 \`;
                 
             } catch (error) {
+    void error;
                 console.error(\`Failed to load details for agent \${agentId}:\`, error);
             }
         }
@@ -2534,6 +2553,7 @@ export class WebUIServer {
                 
                 document.body.insertAdjacentHTML('beforeend', detailsHtml);
             } catch (error) {
+    void error;
                 alert('Failed to load agent details: ' + error.message);
             }
         }
@@ -2560,6 +2580,7 @@ export class WebUIServer {
                     alert('Command sent successfully!\nCommand ID: ' + result.commandId);
                 }
             } catch (error) {
+    void error;
                 alert('Failed to send command: ' + error.message);
             }
         }
@@ -2598,6 +2619,7 @@ export class WebUIServer {
                     alert(\`Failed to start agent: \${data.error}\`);
                 }
             } catch (error) {
+    void error;
                 console.error('Error starting agent:', error);
                 alert(\`Error starting agent: \${error.message}\`);
             } finally {
@@ -2636,6 +2658,7 @@ export class WebUIServer {
                     alert(\`Failed to stop agent: \${data.error}\`);
                 }
             } catch (error) {
+    void error;
                 console.error('Error stopping agent:', error);
                 alert(\`Error stopping agent: \${error.message}\`);
             } finally {
@@ -2717,6 +2740,7 @@ export class WebUIServer {
                 }
 
             } catch (error) {
+    void error;
                 console.error('Failed to load metrics:', error);
                 showError('Failed to load metrics');
             }
@@ -2985,6 +3009,7 @@ export class WebUIServer {
                 setupAutoRefresh();
                 setupWebSocket();
             } catch (error) {
+    void error;
                 console.error('Failed to initialize multi-agent manager:', error);
                 showError('Failed to initialize multi-agent manager');
             }
@@ -3009,6 +3034,7 @@ export class WebUIServer {
                 
                 console.log('Loaded', characters.length, 'characters');
             } catch (error) {
+    void error;
                 console.error('Failed to load characters:', error);
                 showError('Failed to load available characters');
             }
@@ -3026,6 +3052,7 @@ export class WebUIServer {
                 
                 console.log('Loaded', agents.length, 'managed agents');
             } catch (error) {
+    void error;
                 console.error('Failed to load managed agents:', error);
                 // Don't show error for this as it might be normal if no multi-agent system
                 if (error.message !== 'Multi-Agent Manager not available') {
@@ -3062,6 +3089,7 @@ export class WebUIServer {
                 
                 updateSystemMetrics();
             } catch (error) {
+    void error;
                 console.error('Failed to load system metrics:', error);
                 // Set default metrics
                 systemMetrics = {
@@ -3273,6 +3301,7 @@ export class WebUIServer {
                 setTimeout(loadManagedAgents, 1000);
                 
             } catch (error) {
+    void error;
                 console.error('Failed to spawn agent:', error);
                 showMessage(messageEl, \`❌ \${error.message}\`, 'error');
             }
@@ -3283,6 +3312,7 @@ export class WebUIServer {
             try {
                 await agentAction('start', agentId);
             } catch (error) {
+    void error;
                 showError(\`Failed to start agent: \${error.message}\`);
             }
         }
@@ -3291,6 +3321,7 @@ export class WebUIServer {
             try {
                 await agentAction('stop', agentId);
             } catch (error) {
+    void error;
                 showError(\`Failed to stop agent: \${error.message}\`);
             }
         }
@@ -3299,6 +3330,7 @@ export class WebUIServer {
             try {
                 await agentAction('restart', agentId);
             } catch (error) {
+    void error;
                 showError(\`Failed to restart agent: \${error.message}\`);
             }
         }
@@ -3343,6 +3375,7 @@ export class WebUIServer {
                 try {
                     await startAgent(agent.id);
                 } catch (error) {
+    void error;
                     console.error(\`Failed to start agent \${agent.id}:\`, error);
                 }
             }
@@ -3361,6 +3394,7 @@ export class WebUIServer {
                 try {
                     await stopAgent(agent.id);
                 } catch (error) {
+    void error;
                     console.error(\`Failed to stop agent \${agent.id}:\`, error);
                 }
             }
@@ -3378,6 +3412,7 @@ export class WebUIServer {
                 try {
                     await restartAgent(agent.id);
                 } catch (error) {
+    void error;
                     console.error(\`Failed to restart agent \${agent.id}:\`, error);
                 }
             }
@@ -3391,6 +3426,7 @@ export class WebUIServer {
                 await stopAllAgents();
                 showError('Emergency stop executed - all agents stopped');
             } catch (error) {
+    void error;
                 console.error('Emergency stop failed:', error);
                 showError('Emergency stop failed: ' + error.message);
             }
@@ -3425,6 +3461,7 @@ export class WebUIServer {
                     resultsEl.innerHTML = '<div style="margin-top: 10px; color: #6b7280;">No agents found for this specialty</div>';
                 }
             } catch (error) {
+    void error;
                 console.error('Failed to find agents by specialty:', error);
                 document.getElementById('specialty-results').innerHTML = '<div style="margin-top: 10px; color: #ef4444;">Failed to search agents</div>';
             }
@@ -3452,6 +3489,7 @@ export class WebUIServer {
                     alert('No suitable agent found for routing test requirements');
                 }
             } catch (error) {
+    void error;
                 console.error('Routing test failed:', error);
                 alert('Routing test failed: ' + error.message);
             }
@@ -3479,6 +3517,7 @@ export class WebUIServer {
                 
                 document.body.insertAdjacentHTML('beforeend', healthModal);
             } catch (error) {
+    void error;
                 showError(\`Failed to load agent health: \${error.message}\`);
             }
         }
@@ -3519,6 +3558,7 @@ export class WebUIServer {
                         loadSystemMetrics();
                     }
                 } catch (error) {
+    void error;
                     console.error('WebSocket error:', error);
                 }
             };

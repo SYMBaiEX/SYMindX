@@ -128,6 +128,7 @@ export abstract class BasePortal implements Portal {
       await this.validateConfig();
       console.log(`✅ ${this.name} portal initialized for ${agent.name}`);
     } catch (error) {
+      void error;
       console.error(`❌ Failed to initialize ${this.name} portal:`, error);
       throw error;
     }
@@ -266,6 +267,7 @@ export abstract class BasePortal implements Portal {
 
       return evalResult;
     } catch (error) {
+      void error;
       console.error(`${this.name} task evaluation error:`, error);
       throw new Error(`${this.name} task evaluation failed: ${error}`);
     }

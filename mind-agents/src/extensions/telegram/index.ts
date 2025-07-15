@@ -96,6 +96,7 @@ export class TelegramExtension implements Extension {
       // Register extension actions
       this.registerExtensionActions();
     } catch (error) {
+      void error;
       this.logger.error('Failed to initialize Telegram extension', error);
       this.status = ExtensionStatus.ERROR;
       throw error;
@@ -190,6 +191,7 @@ export class TelegramExtension implements Extension {
       try {
         handler(message);
       } catch (error) {
+        void error;
         this.logger.error('Error in message handler', error);
       }
     }
@@ -465,6 +467,7 @@ export class TelegramExtension implements Extension {
         metadata: { timestamp: new Date().toISOString() },
       };
     } catch (error) {
+      void error;
       this.logger.error('Failed to send message', error);
       return {
         success: false,
@@ -519,6 +522,7 @@ export class TelegramExtension implements Extension {
         metadata: { timestamp: new Date().toISOString() },
       };
     } catch (error) {
+      void error;
       this.logger.error('Failed to edit message', error);
       return {
         success: false,
@@ -553,6 +557,7 @@ export class TelegramExtension implements Extension {
         metadata: { timestamp: new Date().toISOString() },
       };
     } catch (error) {
+      void error;
       this.logger.error('Failed to delete message', error);
       return {
         success: false,
@@ -597,6 +602,7 @@ export class TelegramExtension implements Extension {
         metadata: { timestamp: new Date().toISOString() },
       };
     } catch (error) {
+      void error;
       this.logger.error('Failed to pin message', error);
       return {
         success: false,
@@ -634,6 +640,7 @@ export class TelegramExtension implements Extension {
         metadata: { timestamp: new Date().toISOString() },
       };
     } catch (error) {
+      void error;
       this.logger.error('Failed to unpin message', error);
       return {
         success: false,
@@ -665,6 +672,7 @@ export class TelegramExtension implements Extension {
         metadata: { timestamp: new Date().toISOString() },
       };
     } catch (error) {
+      void error;
       this.logger.error('Failed to get chat', error);
       return {
         success: false,
@@ -699,6 +707,7 @@ export class TelegramExtension implements Extension {
         metadata: { timestamp: new Date().toISOString() },
       };
     } catch (error) {
+      void error;
       this.logger.error('Failed to get chat member', error);
       return {
         success: false,
@@ -730,6 +739,7 @@ export class TelegramExtension implements Extension {
         metadata: { timestamp: new Date().toISOString() },
       };
     } catch (error) {
+      void error;
       this.logger.error('Failed to get chat administrators', error);
       return {
         success: false,
@@ -761,6 +771,7 @@ export class TelegramExtension implements Extension {
         metadata: { timestamp: new Date().toISOString() },
       };
     } catch (error) {
+      void error;
       this.logger.error('Failed to get chat members count', error);
       return {
         success: false,
@@ -792,6 +803,7 @@ export class TelegramExtension implements Extension {
         metadata: { timestamp: new Date().toISOString() },
       };
     } catch (error) {
+      void error;
       this.logger.error('Failed to leave chat', error);
       return {
         success: false,
@@ -837,6 +849,7 @@ export class TelegramExtension implements Extension {
         metadata: { timestamp: new Date().toISOString() },
       };
     } catch (error) {
+      void error;
       this.logger.error('Failed to ban chat member', error);
       return {
         success: false,
@@ -881,6 +894,7 @@ export class TelegramExtension implements Extension {
         metadata: { timestamp: new Date().toISOString() },
       };
     } catch (error) {
+      void error;
       this.logger.error('Failed to unban chat member', error);
       return {
         success: false,
@@ -924,6 +938,7 @@ export class TelegramExtension implements Extension {
         metadata: { timestamp: new Date().toISOString() },
       };
     } catch (error) {
+      void error;
       this.logger.error('Failed to restrict chat member', error);
       return {
         success: false,
@@ -963,6 +978,7 @@ export class TelegramExtension implements Extension {
         metadata: { timestamp: new Date().toISOString() },
       };
     } catch (error) {
+      void error;
       this.logger.error('Failed to promote chat member', error);
       return {
         success: false,
@@ -1016,6 +1032,7 @@ export class TelegramExtension implements Extension {
         metadata: { timestamp: new Date().toISOString() },
       };
     } catch (error) {
+      void error;
       this.logger.error('Failed to send photo', error);
       return {
         success: false,
@@ -1075,6 +1092,7 @@ export class TelegramExtension implements Extension {
         metadata: { timestamp: new Date().toISOString() },
       };
     } catch (error) {
+      void error;
       this.logger.error('Failed to send video', error);
       return {
         success: false,
@@ -1134,6 +1152,7 @@ export class TelegramExtension implements Extension {
         metadata: { timestamp: new Date().toISOString() },
       };
     } catch (error) {
+      void error;
       this.logger.error('Failed to send audio', error);
       return {
         success: false,
@@ -1191,6 +1210,7 @@ export class TelegramExtension implements Extension {
         metadata: { timestamp: new Date().toISOString() },
       };
     } catch (error) {
+      void error;
       this.logger.error('Failed to send document', error);
       return {
         success: false,
@@ -1244,6 +1264,7 @@ export class TelegramExtension implements Extension {
         metadata: { timestamp: new Date().toISOString() },
       };
     } catch (error) {
+      void error;
       this.logger.error('Failed to send sticker', error);
       return {
         success: false,
@@ -1299,6 +1320,7 @@ export class TelegramExtension implements Extension {
         metadata: { timestamp: new Date().toISOString() },
       };
     } catch (error) {
+      void error;
       this.logger.error('Failed to send location', error);
       return {
         success: false,

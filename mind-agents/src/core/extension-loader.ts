@@ -41,6 +41,7 @@ export class ExtensionLoader {
       this.loadedCount++;
       runtimeLogger.info(`✅ Extension loaded: ${name} v${extension.version}`);
     } catch (error) {
+      void error;
       this.failedCount++;
       runtimeLogger.error(`❌ Failed to load extension ${name}:`, error);
       throw error;

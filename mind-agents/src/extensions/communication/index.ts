@@ -117,6 +117,7 @@ export class CommunicationExtension implements Extension {
       this.status = ExtensionStatus.RUNNING;
       runtimeLogger.info('💬 Communication Extension initialized successfully');
     } catch (error) {
+      void error;
       this.status = ExtensionStatus.ERROR;
       runtimeLogger.error(
         '❌ Failed to initialize Communication Extension:',
@@ -142,6 +143,7 @@ export class CommunicationExtension implements Extension {
       // Perform periodic maintenance if needed
       // Note: cleanupOldContexts is private, so we skip that for now
     } catch (error) {
+      void error;
       runtimeLogger.error(
         '❌ Error during Communication Extension tick:',
         error
@@ -161,6 +163,7 @@ export class CommunicationExtension implements Extension {
       this.status = ExtensionStatus.STOPPED;
       runtimeLogger.info('💬 Communication Extension cleaned up');
     } catch (error) {
+      void error;
       this.status = ExtensionStatus.ERROR;
       runtimeLogger.error(
         '❌ Error during Communication Extension cleanup:',
@@ -516,6 +519,7 @@ export class CommunicationExtension implements Extension {
         `💾 Exported ${contexts.length} conversation contexts`
       );
     } catch (error) {
+      void error;
       runtimeLogger.error('❌ Failed to export contexts:', error);
     }
   }

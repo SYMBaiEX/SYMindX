@@ -100,6 +100,7 @@ export class OpenRouterPortal extends BasePortal {
         },
       };
     } catch (error) {
+      void error;
       console.error('OpenRouter text generation error:', error);
       throw new Error(`OpenRouter text generation failed: ${error}`);
     }
@@ -177,6 +178,7 @@ export class OpenRouterPortal extends BasePortal {
         },
       };
     } catch (error) {
+      void error;
       console.error('OpenRouter chat generation error:', error);
       throw new Error(`OpenRouter chat generation failed: ${error}`);
     }
@@ -230,6 +232,7 @@ export class OpenRouterPortal extends BasePortal {
             },
       };
     } catch (error) {
+      void error;
       console.error('OpenRouter embedding generation error:', error);
       throw new Error(`OpenRouter embedding generation failed: ${error}`);
     }
@@ -309,6 +312,7 @@ export class OpenRouterPortal extends BasePortal {
         reader.releaseLock();
       }
     } catch (error) {
+      void error;
       console.error('OpenRouter stream text error:', error);
       throw new Error(`OpenRouter stream text failed: ${error}`);
     }

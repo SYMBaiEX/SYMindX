@@ -107,6 +107,7 @@ export class MistralPortal extends BasePortal {
       this.status = PortalStatus.ACTIVE;
       // Mistral AI portal initialized successfully
     } catch (error) {
+      void error;
       this.status = PortalStatus.ERROR;
       // Failed to initialize Mistral AI portal
       throw error;
@@ -221,6 +222,7 @@ export class MistralPortal extends BasePortal {
         timestamp: new Date(),
       };
     } catch (error) {
+      void error;
       throw handleAISDKError(error, 'Mistral');
     }
   }
@@ -285,6 +287,7 @@ export class MistralPortal extends BasePortal {
         timestamp: new Date(),
       };
     } catch (error) {
+      void error;
       throw handleAISDKError(error, 'Mistral');
     }
   }
@@ -309,6 +312,7 @@ export class MistralPortal extends BasePortal {
         },
       };
     } catch (error) {
+      void error;
       throw new Error(`Mistral AI embedding generation failed: ${error}`);
     }
   }
@@ -350,6 +354,7 @@ export class MistralPortal extends BasePortal {
         yield chunk;
       }
     } catch (error) {
+      void error;
       throw handleAISDKError(error, 'Mistral');
     }
   }
@@ -380,6 +385,7 @@ export class MistralPortal extends BasePortal {
         yield chunk;
       }
     } catch (error) {
+      void error;
       throw handleAISDKError(error, 'Mistral');
     }
   }

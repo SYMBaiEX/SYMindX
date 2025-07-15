@@ -511,6 +511,7 @@ export async function runMigrations(client: SupabaseClient): Promise<void> {
         console.log(`✅ Migration completed: ${migration.name}`);
         migrationsRun++;
       } catch (error) {
+        void error;
         console.error(`❌ Migration failed: ${migration.name}`, error);
         throw error;
       }

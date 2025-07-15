@@ -65,7 +65,7 @@ export class Logger implements ILogger {
 
   constructor(prefix: string = '', options: LoggerOptions = {}) {
     this.prefix = prefix;
-    this.level = options.level || LogLevel.INFO;
+    this.level = options.level || logger.LogLevel.INFO;
     this.useColors = options.colors !== false && process.stdout.isTTY;
     this.transports = options.transports || [];
     this.defaultContext = options.defaultContext;
@@ -102,19 +102,19 @@ export class Logger implements ILogger {
 
     if (this.useColors) {
       switch (level) {
-        case LogLevel.DEBUG:
+        case logger.LogLevel.DEBUG:
           coloredLevel = `${colors.gray}${levelUpper}${colors.reset}`;
           break;
-        case LogLevel.INFO:
+        case logger.LogLevel.INFO:
           coloredLevel = `${colors.blue}${levelUpper}${colors.reset}`;
           break;
-        case LogLevel.WARN:
+        case logger.LogLevel.WARN:
           coloredLevel = `${colors.yellow}${levelUpper}${colors.reset}`;
           break;
-        case LogLevel.ERROR:
+        case logger.LogLevel.ERROR:
           coloredLevel = `${colors.red}${levelUpper}${colors.reset}`;
           break;
-        case LogLevel.FATAL:
+        case logger.LogLevel.FATAL:
           coloredLevel = `${colors.red}${colors.bright}${levelUpper}${colors.reset}`;
           break;
       }
@@ -141,15 +141,15 @@ export class Logger implements ILogger {
 
   // Core logging methods
   debug(message: string, context?: LogContext): void {
-    this.log(LogLevel.DEBUG, message, context);
+    this.log(logger.LogLevel.DEBUG, message, context);
   }
 
   info(message: string, context?: LogContext): void {
-    this.log(LogLevel.INFO, message, context);
+    this.log(logger.LogLevel.INFO, message, context);
   }
 
   warn(message: string, context?: LogContext): void {
-    this.log(LogLevel.WARN, message, context);
+    this.log(logger.LogLevel.WARN, message, context);
   }
 
   error(message: string, error?: Error | unknown, context?: LogContext): void {
@@ -168,7 +168,7 @@ export class Logger implements ILogger {
               message: String(error),
             },
     };
-    this.log(LogLevel.ERROR, message, errorContext);
+    this.log(logger.LogLevel.ERROR, message, errorContext);
   }
 
   fatal(message: string, error?: Error | unknown, context?: LogContext): void {
@@ -187,7 +187,7 @@ export class Logger implements ILogger {
               message: String(error),
             },
     };
-    this.log(LogLevel.FATAL, message, errorContext);
+    this.log(logger.LogLevel.FATAL, message, errorContext);
   }
 
   private log(level: LogLevel, message: string, context?: LogContext): void {
@@ -206,20 +206,20 @@ export class Logger implements ILogger {
 
     // Console output
     switch (level) {
-      case LogLevel.DEBUG:
+      case logger.LogLevel.DEBUG:
         // eslint-disable-next-line no-console
         console.debug(formattedMessage);
         break;
-      case LogLevel.INFO:
+      case logger.LogLevel.INFO:
         // eslint-disable-next-line no-console
         console.info(formattedMessage);
         break;
-      case LogLevel.WARN:
+      case logger.LogLevel.WARN:
         // eslint-disable-next-line no-console
         console.warn(formattedMessage);
         break;
-      case LogLevel.ERROR:
-      case LogLevel.FATAL:
+      case logger.LogLevel.ERROR:
+      case logger.LogLevel.FATAL:
         // eslint-disable-next-line no-console
         console.error(formattedMessage);
         break;

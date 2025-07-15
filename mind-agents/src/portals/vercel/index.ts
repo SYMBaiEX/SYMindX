@@ -290,6 +290,7 @@ export class VercelAIPortal extends BasePortal {
       this.status = PortalStatus.ACTIVE;
       // Vercel AI SDK portal initialized successfully
     } catch (error) {
+      void error;
       this.status = PortalStatus.ERROR;
       // Failed to initialize Vercel AI SDK portal
       throw error;
@@ -419,6 +420,7 @@ export class VercelAIPortal extends BasePortal {
         timestamp: new Date(),
       };
     } catch (error) {
+      void error;
       throw new Error(`Vercel AI SDK text generation failed: ${error}`);
     }
   }
@@ -485,6 +487,7 @@ export class VercelAIPortal extends BasePortal {
         timestamp: new Date(),
       };
     } catch (error) {
+      void error;
       throw new Error(`Vercel AI SDK chat generation failed: ${error}`);
     }
   }
@@ -516,6 +519,7 @@ export class VercelAIPortal extends BasePortal {
 
       return result;
     } catch (error) {
+      void error;
       throw new Error(`Vercel AI SDK embedding generation failed: ${error}`);
     }
   }
@@ -554,6 +558,7 @@ export class VercelAIPortal extends BasePortal {
         },
       };
     } catch (error) {
+      void error;
       throw new Error(`Vercel AI SDK image generation failed: ${error}`);
     }
   }
@@ -597,6 +602,7 @@ export class VercelAIPortal extends BasePortal {
         yield textPart;
       }
     } catch (error) {
+      void error;
       throw new Error(`Vercel AI SDK text streaming failed: ${error}`);
     }
   }
@@ -639,6 +645,7 @@ export class VercelAIPortal extends BasePortal {
         yield textPart;
       }
     } catch (error) {
+      void error;
       throw new Error(`Vercel AI SDK chat streaming failed: ${error}`);
     }
   }

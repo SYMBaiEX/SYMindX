@@ -3,7 +3,6 @@ import {
   DecisionMatrix,
   DecisionOption,
   DecisionCriterion,
-  StructuredThoughtResult,
 } from '../../../types';
 import {
   Agent,
@@ -12,7 +11,6 @@ import {
   Plan,
   Decision,
   EmotionState,
-  AgentAction,
   PlanStatus,
   PlanStepStatus,
   ActionStatus,

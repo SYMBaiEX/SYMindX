@@ -197,6 +197,7 @@ export class OpenAIPortal extends BasePortal {
         },
       };
     } catch (error) {
+      void error;
       // OpenAI text generation error
       throw new Error(`OpenAI text generation failed: ${error}`);
     }
@@ -269,6 +270,7 @@ export class OpenAIPortal extends BasePortal {
         },
       };
     } catch (error) {
+      void error;
       // OpenAI chat generation error
       throw new Error(`OpenAI chat generation failed: ${error}`);
     }
@@ -305,6 +307,7 @@ export class OpenAIPortal extends BasePortal {
         },
       };
     } catch (error) {
+      void error;
       // OpenAI embedding generation error
       throw new Error(`OpenAI embedding generation failed: ${error}`);
     }
@@ -360,6 +363,7 @@ export class OpenAIPortal extends BasePortal {
         },
       };
     } catch (error) {
+      void error;
       // OpenAI image generation error
       throw new Error(`OpenAI image generation failed: ${error}`);
     }
@@ -398,6 +402,7 @@ export class OpenAIPortal extends BasePortal {
         yield delta;
       }
     } catch (error) {
+      void error;
       // OpenAI stream text error
       throw new Error(`OpenAI stream text failed: ${error}`);
     }
@@ -456,6 +461,7 @@ export class OpenAIPortal extends BasePortal {
         yield delta;
       }
     } catch (error) {
+      void error;
       // OpenAI stream chat error
       throw new Error(`OpenAI stream chat failed: ${error}`);
     }

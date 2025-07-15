@@ -2,7 +2,14 @@
  * Interaction Manager - Handles human-agent interactions and interrupts
  */
 
-import { Agent, AgentEvent, AgentAction, EventBus } from '../types/agent';
+import {
+  Agent,
+  AgentEvent,
+  AgentAction,
+  EventBus,
+  ActionStatus,
+} from '../types/agent';
+import { DataValue } from '../types/common';
 import { Logger } from '../utils/logger';
 
 export interface InteractionConfig {
@@ -416,7 +423,7 @@ export class InteractionManager {
           agentId: this.agent.id,
           humanId: interaction.humanId,
           interactionId: interaction.id,
-          response,
+          response: response as DataValue,
           timestamp: new Date(),
         },
         timestamp: new Date(),
@@ -425,6 +432,7 @@ export class InteractionManager {
 
       return response;
     } catch (error) {
+      void error;
       this.logger.error(
         `Failed to generate response for interaction ${interaction.id}:`,
         error
@@ -540,7 +548,7 @@ export class InteractionManager {
           priority: interaction.priority,
         },
         priority: this.mapPriorityToNumber(interaction.priority),
-        status: 'pending',
+        status: ActionStatus.PENDING,
         timestamp: new Date(),
       });
     }

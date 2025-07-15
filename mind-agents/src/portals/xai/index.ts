@@ -231,6 +231,7 @@ export class XAIPortal extends BasePortal {
         },
       };
     } catch (error) {
+      void error;
       throw handleAISDKError(error, 'XAI');
     }
   }
@@ -276,6 +277,7 @@ export class XAIPortal extends BasePortal {
         },
       };
     } catch (error) {
+      void error;
       throw handleAISDKError(error, 'XAI');
     }
   }
@@ -336,6 +338,7 @@ export class XAIPortal extends BasePortal {
         yield chunk;
       }
     } catch (error) {
+      void error;
       throw handleAISDKError(error, 'XAI');
     }
   }
@@ -371,6 +374,7 @@ export class XAIPortal extends BasePortal {
         yield chunk;
       }
     } catch (error) {
+      void error;
       throw handleAISDKError(error, 'XAI');
     }
   }

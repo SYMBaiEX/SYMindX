@@ -158,7 +158,7 @@ export async function getChatSystemStatus(repository: ChatRepository): Promise<{
     });
     details.canCreateConversation = true;
 
-    const _testMessage = await repository.createMessage({
+    await repository.createMessage({
       conversationId: testConversation.id,
       senderType: 'system' as any,
       senderId: 'system',
@@ -189,6 +189,7 @@ export async function getChatSystemStatus(repository: ChatRepository): Promise<{
 
     return { provider, status, details };
   } catch (error) {
+    void error;
     details.error = error instanceof Error ? error.message : String(error);
     return { provider, status: 'unhealthy', details };
   }

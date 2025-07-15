@@ -21,6 +21,7 @@ import {
   ActionCategory,
   PlanStep,
   PlanStepStatus,
+  PlanStatus,
 } from '../../../types/agent';
 import {
   CognitionModule,
@@ -1049,9 +1050,6 @@ export class UnifiedCognition implements CognitionModule {
     return bestOption;
   }
 }
-
-// Add missing import
-import { PlanStatus } from '../../../types/agent';
 
 // Factory function
 export function createUnifiedCognition(

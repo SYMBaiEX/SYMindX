@@ -174,6 +174,7 @@ export class LifecycleManager extends EventEmitter {
                 await (extension as any).cleanup();
               }
             } catch (error) {
+              void error;
               this.logger.error(
                 `Extension cleanup failed for ${extension.name}:`,
                 error
@@ -192,6 +193,7 @@ export class LifecycleManager extends EventEmitter {
                   await (portal as any).disconnect();
                 }
               } catch (error) {
+                void error;
                 this.logger.error(`Portal disconnect failed:`, error);
                 operation.errors.push('Portal disconnect failed');
               }
@@ -220,7 +222,18 @@ export class LifecycleManager extends EventEmitter {
                 await (agent.memory as any).flush();
               }
             } catch (error) {
-              this.logger.warn(`Memory flush failed during shutdown:`, error);
+              void error;
+              this.logger.warn(`Memory flush failed during shutdown:`, {
+                error: {
+                  code: 'MEMORY_FLUSH_ERROR',
+                  message:
+                    error instanceof Error ? error.message : String(error),
+                  ...(error instanceof Error && error.stack
+                    ? { stack: error.stack }
+                    : {}),
+                  cause: error,
+                },
+              });
             }
           }
 
@@ -232,6 +245,7 @@ export class LifecycleManager extends EventEmitter {
       this.logger.info(`Graceful shutdown completed for agent ${agent.id}`);
       this.emit('shutdown_completed', { agentId: agent.id, operation });
     } catch (error) {
+      void error;
       operation.phase = LifecyclePhase.SHUTDOWN_FAILED;
       operation.errors.push(`Shutdown failed: ${error}`);
 
@@ -369,6 +383,7 @@ export class LifecycleManager extends EventEmitter {
             try {
               await extension.init(agent!);
             } catch (error) {
+              void error;
               this.logger.error(
                 `Extension init failed for ${extension.name}:`,
                 error
@@ -387,6 +402,7 @@ export class LifecycleManager extends EventEmitter {
 
       return agent!;
     } catch (error) {
+      void error;
       operation.phase = LifecyclePhase.STARTUP_FAILED;
       operation.errors.push(`Startup failed: ${error}`);
 
@@ -462,6 +478,7 @@ export class LifecycleManager extends EventEmitter {
 
       return newAgent;
     } catch (error) {
+      void error;
       this.logger.error(`Agent restart failed for ${agent.id}:`, error);
       this.emit('restart_failed', { agentId: agent.id, error });
       throw error;
@@ -533,6 +550,7 @@ export class LifecycleManager extends EventEmitter {
       await execution();
       this.emit('phase_completed', { operation, phase });
     } catch (error) {
+      void error;
       this.emit('phase_failed', { operation, phase, error });
       throw error;
     }
@@ -557,12 +575,14 @@ export class LifecycleManager extends EventEmitter {
           );
           await this.stateManager.saveSnapshot(snapshot);
         } catch (error) {
+          void error;
           this.logger.error('Emergency checkpoint failed:', error);
         }
       }
 
       operation.metadata.emergencyCleanup = true;
     } catch (error) {
+      void error;
       this.logger.error('Emergency cleanup failed:', error);
     }
   }
@@ -613,6 +633,7 @@ export class LifecycleManager extends EventEmitter {
 
       this.emit('rollback_attempted', { agentId: lazyAgent.id });
     } catch (error) {
+      void error;
       this.logger.error(`Rollback failed for agent ${lazyAgent.id}:`, error);
       this.emit('rollback_failed', { agentId: lazyAgent.id, error });
     }

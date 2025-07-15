@@ -142,12 +142,9 @@ export class ExtensionMiddleware {
       res.send = function (data: any) {
         if (config.logResponses) {
           const duration = Date.now() - req.startTime;
-          runtimeLogger.info('API Response', {
-            requestId: req.requestId,
-            statusCode: res.statusCode,
-            duration: `${duration}ms`,
-            success: res.statusCode >= 200 && res.statusCode < 300,
-          });
+          runtimeLogger.info(
+            `API Response (${req.requestId}): ${res.statusCode} in ${duration}ms`
+          );
         }
         return originalSend.call(this, data);
       };
@@ -484,6 +481,7 @@ export class ExtensionMiddleware {
 
           res.status(health.healthy ? 200 : 503).json(response);
         } catch (error) {
+          void error;
           res.status(503).json({
             healthy: false,
             error:

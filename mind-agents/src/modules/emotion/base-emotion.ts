@@ -160,7 +160,9 @@ export abstract class BaseEmotion implements EmotionModule {
       changed: shouldTrigger || previousIntensity !== this._intensity,
       previousEmotion:
         previousEmotion !== this.current ? previousEmotion : undefined,
+      transitions: undefined,
       modifiers: Array.from(this._contextualModifiers.values()),
+      blendResult: undefined,
       metadata: {
         processingTime: Date.now() - triggerEvent.timestamp.getTime(),
         triggersProcessed: 1,

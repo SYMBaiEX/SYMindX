@@ -239,6 +239,7 @@ export class GoogleVertexPortal extends BasePortal {
       this.status = PortalStatus.ACTIVE;
       // Google Vertex AI portal initialized successfully
     } catch (error) {
+      void error;
       this.status = PortalStatus.ERROR;
       // Failed to initialize Google Vertex AI portal
       throw error;
@@ -314,6 +315,7 @@ export class GoogleVertexPortal extends BasePortal {
         timestamp: new Date(),
       };
     } catch (error) {
+      void error;
       throw new Error(`Google Vertex AI text generation failed: ${error}`);
     }
   }
@@ -359,6 +361,7 @@ export class GoogleVertexPortal extends BasePortal {
         timestamp: new Date(),
       };
     } catch (error) {
+      void error;
       throw new Error(`Google Vertex AI chat generation failed: ${error}`);
     }
   }
@@ -382,6 +385,7 @@ export class GoogleVertexPortal extends BasePortal {
         }),
       };
     } catch (error) {
+      void error;
       throw new Error(`Google Vertex AI embedding generation failed: ${error}`);
     }
   }
@@ -404,6 +408,7 @@ export class GoogleVertexPortal extends BasePortal {
         },
       };
     } catch (error) {
+      void error;
       throw new Error(`Google Vertex AI image generation failed: ${error}`);
     }
   }
@@ -436,6 +441,7 @@ export class GoogleVertexPortal extends BasePortal {
         yield delta;
       }
     } catch (error) {
+      void error;
       throw new Error(`Google Vertex AI text streaming failed: ${error}`);
     }
   }
@@ -470,6 +476,7 @@ export class GoogleVertexPortal extends BasePortal {
         yield delta;
       }
     } catch (error) {
+      void error;
       throw new Error(`Google Vertex AI chat streaming failed: ${error}`);
     }
   }

@@ -79,6 +79,7 @@ export class NeonChatRepository implements ChatRepository {
         client.release();
       }
     } catch (error) {
+      void error;
       console.warn('⚠️ Could not verify Neon chat schema:', error);
     }
   }
@@ -144,6 +145,7 @@ export class NeonChatRepository implements ChatRepository {
       );
       return result;
     } catch (error) {
+      void error;
       await client.query('ROLLBACK');
       throw new Error(`Failed to create conversation: ${error}`);
     } finally {
@@ -542,6 +544,7 @@ export class NeonChatRepository implements ChatRepository {
         similarity: row.similarity,
       }));
     } catch (error) {
+      void error;
       console.warn('Vector similarity search failed:', error);
       return [];
     } finally {
@@ -777,6 +780,7 @@ export class NeonChatRepository implements ChatRepository {
         ]
       );
     } catch (error) {
+      void error;
       console.warn('Failed to log analytics event:', error);
     } finally {
       client.release();

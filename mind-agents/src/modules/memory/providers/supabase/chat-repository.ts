@@ -6,6 +6,7 @@
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
+import { buildObject } from '../../../../utils/type-helpers';
 import {
   ChatRepository,
   ChatSystemConfig,
@@ -68,7 +69,6 @@ interface Database {
     };
   };
 }
-import { buildObject } from '../../../../utils/type-helpers';
 
 export interface SupabaseChatConfig extends ChatSystemConfig {
   url: string;
@@ -114,6 +114,7 @@ export class SupabaseChatRepository implements ChatRepository {
         );
       }
     } catch (error) {
+      void error;
       console.warn('⚠️ Could not verify Supabase chat schema:', error);
     }
   }
@@ -167,7 +168,7 @@ export class SupabaseChatRepository implements ChatRepository {
       status: ParticipantStatus.ACTIVE,
     });
 
-    const result = this.supabaseToConversation(data);
+    const _result = this.supabaseToConversation(data);
     console.log(
       `💬 Created conversation ${result.id} between user ${conversation.userId} and agent ${conversation.agentId}`
     );
@@ -311,7 +312,7 @@ export class SupabaseChatRepository implements ChatRepository {
       throw new Error(`Failed to create message: ${error.message}`);
     }
 
-    const result = this.supabaseToMessage(data);
+    const _result = this.supabaseToMessage(data);
     console.log(
       `📝 Created message ${result.id} in conversation ${message.conversationId}`
     );
@@ -462,6 +463,7 @@ export class SupabaseChatRepository implements ChatRepository {
         }
       }
     } catch (error) {
+      void error;
       console.warn(
         'Semantic search failed, falling back to text search:',
         error
@@ -514,6 +516,7 @@ export class SupabaseChatRepository implements ChatRepository {
 
       return results;
     } catch (error) {
+      void error;
       console.warn('Vector similarity search failed:', error);
       return [];
     }

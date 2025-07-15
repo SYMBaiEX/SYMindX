@@ -63,6 +63,7 @@ export class DynamicToolSystem implements ToolSystem {
         `🔧 Dynamic tool system initialized with ${this.tools.size} tools`
       );
     } catch (error) {
+      void error;
       runtimeLogger.error('❌ Failed to initialize tool system:', error);
       throw error;
     }
@@ -158,6 +159,7 @@ export class DynamicToolSystem implements ToolSystem {
         },
       };
     } catch (error) {
+      void error;
       const executionTime = Date.now() - startTime;
       this.executionStats.errorCount++;
 
@@ -372,6 +374,7 @@ export class DynamicToolSystem implements ToolSystem {
         `🔧 Auto-registered ${totalToolsRegistered} tools from ${this.getUniqueServerCount(mcpTools)} MCP servers`
       );
     } catch (error) {
+      void error;
       runtimeLogger.error('❌ Failed to discover MCP tools:', error);
     }
   }
@@ -442,6 +445,7 @@ export class DynamicToolSystem implements ToolSystem {
         }
       }
     } catch (error) {
+      void error;
       throw new Error(
         `Argument validation failed: ${error instanceof Error ? error.message : String(error)}`
       );

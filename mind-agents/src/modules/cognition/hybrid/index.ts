@@ -7,6 +7,7 @@ import {
   EmotionState,
 } from '../../../types/agent';
 // Remove unused AgentAction import - actions are created inline
+// Agent imports should come first
 import { CognitionModule } from '../../../types/cognition';
 import { runtimeLogger } from '../../../utils/logger';
 
@@ -58,6 +59,7 @@ export class HybridCognition implements CognitionModule {
       // Record successful approach
       this.recordPerformance(approach, true);
     } catch (error) {
+      void error;
       // Fallback to reactive if planning fails
       if (approach === 'planning' && this.config.fallbackToReactive) {
         result = await this.reactiveThinking(agent, context, contextAnalysis);
@@ -206,7 +208,17 @@ export class HybridCognition implements CognitionModule {
 
     // Adjust confidence based on agent's experience level and personality
     let confidence = 0.7 - analysis.complexity * 0.2;
-    if (agent.characterConfig?.personality?.traits?.conscientiousness > 0.7) {
+    const traits =
+      agent.characterConfig?.personality &&
+      typeof agent.characterConfig.personality === 'object' &&
+      'traits' in agent.characterConfig.personality
+        ? agent.characterConfig.personality.traits
+        : {};
+    const conscientiousness =
+      traits && typeof traits === 'object' && 'conscientiousness' in traits
+        ? (traits as any).conscientiousness
+        : 0.5;
+    if (conscientiousness > 0.7) {
       confidence += 0.1; // More conscientious agents are more confident in quick decisions
     }
     confidence = Math.max(0.1, Math.min(1.0, confidence));
@@ -250,10 +262,24 @@ export class HybridCognition implements CognitionModule {
     ];
 
     // Use agent's planning style based on personality
-    if (agent.characterConfig?.personality?.traits?.openness > 0.7) {
+    const traits =
+      agent.characterConfig?.personality &&
+      typeof agent.characterConfig.personality === 'object' &&
+      'traits' in agent.characterConfig.personality
+        ? agent.characterConfig.personality.traits
+        : {};
+    const openness =
+      traits && typeof traits === 'object' && 'openness' in traits
+        ? (traits as any).openness
+        : 0.5;
+    const conscientiousnessPlanning =
+      traits && typeof traits === 'object' && 'conscientiousness' in traits
+        ? (traits as any).conscientiousness
+        : 0.5;
+    if (openness > 0.7) {
       thoughts.push('Exploring creative planning alternatives');
     }
-    if (agent.characterConfig?.personality?.traits?.conscientiousness > 0.7) {
+    if (conscientiousnessPlanning > 0.7) {
       thoughts.push('Applying systematic planning methodology');
     }
 

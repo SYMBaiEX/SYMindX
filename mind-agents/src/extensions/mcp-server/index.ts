@@ -145,6 +145,7 @@ export class MCPServerExtension implements Extension {
       this.status = ExtensionStatus.RUNNING;
       runtimeLogger.info('🎯 MCP Server Extension initialized successfully');
     } catch (error) {
+      void error;
       runtimeLogger.error(
         '❌ Failed to initialize MCP Server Extension:',
         error
@@ -158,6 +159,7 @@ export class MCPServerExtension implements Extension {
       await this.mcpServer.stop();
       runtimeLogger.info('🎯 MCP Server Extension cleaned up');
     } catch (error) {
+      void error;
       runtimeLogger.error(
         '❌ Error during MCP Server Extension cleanup:',
         error

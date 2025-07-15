@@ -96,8 +96,10 @@ export class ConcurrentSafetyManager extends EventEmitter {
 
     this.logger.debug(`Lock request: ${requestId}`, {
       agentId,
-      operation,
-      requesterId,
+      metadata: {
+        operation,
+        requesterId,
+      },
     });
 
     // Check if lock is immediately available
@@ -168,7 +170,9 @@ export class ConcurrentSafetyManager extends EventEmitter {
 
     this.logger.debug(`Releasing lock: ${lockId}`, {
       agentId: lock.agentId,
-      operation: lock.operation,
+      metadata: {
+        operation: lock.operation,
+      },
     });
 
     this.locks.delete(lockId);
@@ -270,7 +274,12 @@ export class ConcurrentSafetyManager extends EventEmitter {
         resolution,
       });
 
-      this.logger.warn('Deadlock detected', { cycle, resolution });
+      this.logger.warn('Deadlock detected', {
+        metadata: {
+          cycle,
+          resolution: JSON.stringify(resolution),
+        },
+      });
       this.emit('deadlock_detected', { cycle, resolution });
     }
 
@@ -393,8 +402,10 @@ export class ConcurrentSafetyManager extends EventEmitter {
 
     this.logger.debug(`Lock granted: ${lockId}`, {
       agentId,
-      operation,
-      requesterId,
+      metadata: {
+        operation,
+        requesterId,
+      },
     });
     this.emit('lock_granted', requestId, lockId);
 
@@ -432,8 +443,10 @@ export class ConcurrentSafetyManager extends EventEmitter {
 
     this.logger.debug(`Lock request queued: ${request.requestId}`, {
       agentId: request.agentId,
-      operation: request.operation,
-      queuePosition: queue.length,
+      metadata: {
+        operation: request.operation,
+        queuePosition: queue.length,
+      },
     });
   }
 
@@ -560,6 +573,7 @@ export class ConcurrentSafetyManager extends EventEmitter {
           await this.resolveDeadlock(deadlock);
         }
       } catch (error) {
+        void error;
         this.logger.error('Deadlock detection failed:', error);
       }
     }, this.config.deadlockDetectionInterval);

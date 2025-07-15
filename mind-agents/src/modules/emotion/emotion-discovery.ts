@@ -108,6 +108,7 @@ export class EmotionDiscovery {
                 );
                 packageInfo = JSON.parse(packageContent);
               } catch (error) {
+                void error;
                 runtimeLogger.warn(
                   `⚠️ Failed to parse package.json for ${entry.name}:`,
                   error
@@ -128,6 +129,7 @@ export class EmotionDiscovery {
         }
       }
     } catch (error) {
+      void error;
       runtimeLogger.warn('⚠️ Failed to discover built-in emotions:', error);
     }
 
@@ -180,6 +182,7 @@ export class EmotionDiscovery {
         }
       }
     } catch (error) {
+      void error;
       runtimeLogger.warn('⚠️ Failed to discover node_modules emotions:', error);
     }
 
@@ -229,6 +232,7 @@ export class EmotionDiscovery {
                 });
               }
             } catch (error) {
+              void error;
               runtimeLogger.warn(
                 `⚠️ Failed to parse package.json for local emotion ${entry.name}:`,
                 error
@@ -238,6 +242,7 @@ export class EmotionDiscovery {
         }
       }
     } catch (error) {
+      void error;
       runtimeLogger.warn('⚠️ Failed to discover local emotions:', error);
     }
 
@@ -262,6 +267,7 @@ export class EmotionDiscovery {
           registeredEmotions.push(emotion.name);
         }
       } catch (error) {
+        void error;
         runtimeLogger.warn(
           `⚠️ Failed to auto-register emotion ${emotion.name}:`,
           error
@@ -309,6 +315,7 @@ export class EmotionDiscovery {
         );
       }
     } catch (error) {
+      void error;
       runtimeLogger.error(
         `❌ Failed to register emotion ${emotion.name}:`,
         error

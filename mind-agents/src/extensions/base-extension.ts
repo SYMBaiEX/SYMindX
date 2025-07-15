@@ -138,6 +138,7 @@ export abstract class BaseExtension extends EventEmitter implements Extension {
 
       this.emit('initialized', { extensionId: this.id, agentId: agent.id });
     } catch (error) {
+      void error;
       this.status = ExtensionStatus.ERROR;
       this.healthInfo.healthy = false;
       this.healthInfo.lastError = error as Error;
@@ -167,6 +168,7 @@ export abstract class BaseExtension extends EventEmitter implements Extension {
 
       await this.onTick(agent);
     } catch (error) {
+      void error;
       this.metrics.errorCount++;
       this.healthInfo.lastError = error as Error;
 
@@ -200,6 +202,7 @@ export abstract class BaseExtension extends EventEmitter implements Extension {
 
       this.emit('started', { extensionId: this.id });
     } catch (error) {
+      void error;
       this.status = ExtensionStatus.ERROR;
       this.healthInfo.healthy = false;
       this.healthInfo.lastError = error as Error;
@@ -253,6 +256,7 @@ export abstract class BaseExtension extends EventEmitter implements Extension {
 
       this.emit('stopped', { extensionId: this.id });
     } catch (error) {
+      void error;
       this.status = ExtensionStatus.ERROR;
       this.healthInfo.healthy = false;
       this.healthInfo.lastError = error as Error;
@@ -279,6 +283,7 @@ export abstract class BaseExtension extends EventEmitter implements Extension {
     try {
       await this.onEvent(event);
     } catch (error) {
+      void error;
       this.metrics.errorCount++;
       this.healthInfo.lastError = error as Error;
 
@@ -329,6 +334,7 @@ export abstract class BaseExtension extends EventEmitter implements Extension {
 
       return result;
     } catch (error) {
+      void error;
       this.metrics.errorCount++;
       this.healthInfo.lastError = error as Error;
 
@@ -359,6 +365,7 @@ export abstract class BaseExtension extends EventEmitter implements Extension {
       try {
         return await operation();
       } catch (error) {
+        void error;
         lastError = error as Error;
 
         if (i === maxRetries) {
@@ -423,6 +430,7 @@ export abstract class BaseExtension extends EventEmitter implements Extension {
           throw new Error(`Dependency ${dependency} is not available`);
         }
       } catch (error) {
+        void error;
         dependencyStatus[dependency] = false;
         throw new Error(`Failed to check dependency ${dependency}: ${error}`);
       }

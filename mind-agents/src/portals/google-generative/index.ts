@@ -127,6 +127,7 @@ export class GoogleGenerativePortal extends BasePortal {
       this.status = PortalStatus.ACTIVE;
       // Google Generative AI portal initialized successfully
     } catch (error) {
+      void error;
       this.status = PortalStatus.ERROR;
       // Failed to initialize Google Generative AI portal
       throw error;
@@ -202,6 +203,7 @@ export class GoogleGenerativePortal extends BasePortal {
         timestamp: new Date(),
       };
     } catch (error) {
+      void error;
       throw new Error(`Google Generative AI text generation failed: ${error}`);
     }
   }
@@ -253,6 +255,7 @@ export class GoogleGenerativePortal extends BasePortal {
         timestamp: new Date(),
       };
     } catch (error) {
+      void error;
       throw new Error(`Google Generative AI chat generation failed: ${error}`);
     }
   }
@@ -276,6 +279,7 @@ export class GoogleGenerativePortal extends BasePortal {
         },
       };
     } catch (error) {
+      void error;
       throw new Error(
         `Google Generative AI embedding generation failed: ${error}`
       );
@@ -316,6 +320,7 @@ export class GoogleGenerativePortal extends BasePortal {
         yield textPart;
       }
     } catch (error) {
+      void error;
       throw new Error(`Google Generative AI text streaming failed: ${error}`);
     }
   }
@@ -356,6 +361,7 @@ export class GoogleGenerativePortal extends BasePortal {
         yield textPart;
       }
     } catch (error) {
+      void error;
       throw new Error(`Google Generative AI chat streaming failed: ${error}`);
     }
   }

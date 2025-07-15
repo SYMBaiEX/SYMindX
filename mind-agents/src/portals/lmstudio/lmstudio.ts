@@ -285,6 +285,7 @@ export class LMStudioPortal extends BasePortal {
       this.status = PortalStatus.ACTIVE;
       console.log(`✅ LM Studio portal initialized for ${agent.name}`);
     } catch (error) {
+      void error;
       this.status = PortalStatus.ERROR;
       console.error(`❌ Failed to initialize LM Studio portal:`, error);
       throw error;
@@ -323,6 +324,7 @@ export class LMStudioPortal extends BasePortal {
 
       return response.status === 'ok';
     } catch (error) {
+      void error;
       console.error('LM Studio health check failed:', error);
       return false;
     }
@@ -339,6 +341,7 @@ export class LMStudioPortal extends BasePortal {
 
       console.log(`📚 Loaded ${models.length} available models`);
     } catch (error) {
+      void error;
       console.warn(`⚠️ Could not load model list: ${error}`);
     }
   }
@@ -352,6 +355,7 @@ export class LMStudioPortal extends BasePortal {
       );
       return response.data || [];
     } catch (error) {
+      void error;
       console.error('Failed to list LM Studio models:', error);
       return [];
     }
@@ -425,6 +429,7 @@ export class LMStudioPortal extends BasePortal {
       this.activeRequests.delete(requestId);
       return this.parseChatResponse(response, model, messages);
     } catch (error) {
+      void error;
       throw new Error(`LM Studio chat generation failed: ${error}`);
     }
   }
@@ -463,6 +468,7 @@ export class LMStudioPortal extends BasePortal {
         },
       };
     } catch (error) {
+      void error;
       throw new Error(`LM Studio embedding generation failed: ${error}`);
     }
   }
@@ -519,6 +525,7 @@ export class LMStudioPortal extends BasePortal {
         }
       }
     } catch (error) {
+      void error;
       throw new Error(`LM Studio chat streaming failed: ${error}`);
     }
   }

@@ -579,6 +579,7 @@ export class InMemoryProvider extends BaseMemoryProvider {
       writeFileSync(this.config.persistencePath, JSON.stringify(data, null, 2));
       runtimeLogger.info(`💾 Saved memories to ${this.config.persistencePath}`);
     } catch (error) {
+      void error;
       runtimeLogger.error('❌ Failed to save memories to disk:', error);
     }
   }
@@ -612,6 +613,7 @@ export class InMemoryProvider extends BaseMemoryProvider {
         );
       }
     } catch (error) {
+      void error;
       runtimeLogger.error('❌ Failed to load memories from disk:', error);
     }
   }
