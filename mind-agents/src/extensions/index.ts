@@ -9,6 +9,7 @@ import { runtimeLogger } from '../utils/logger';
 
 import { ApiExtension } from './api/index';
 import { MCPServerExtension } from './mcp-server/index';
+import { createRuneLiteExtension } from './runelite/index';
 import { createTelegramExtension } from './telegram/index';
 
 export async function registerExtensions(
@@ -105,6 +106,26 @@ export async function registerExtensions(
     }
   }
 
+  // Register RuneLite extension if configured
+  if (config.extensions.runelite?.enabled) {
+    try {
+      const runeliteConfig = {
+        enabled: true,
+        settings: {
+          port: config.extensions.runelite.settings?.port || 8081,
+          events: config.extensions.runelite.settings?.events || [],
+          ...config.extensions.runelite.settings,
+        },
+      };
+      const runeliteExtension = createRuneLiteExtension(runeliteConfig);
+      extensions.push(runeliteExtension);
+      runtimeLogger.info('✅ RuneLite extension registered');
+    } catch (error) {
+      void error;
+      runtimeLogger.warn('⚠️ Failed to load RuneLite extension:', error);
+    }
+  }
+
   // MCP Client extension removed - MCP tools now handled directly in portal integration
 
   // Register MCP Server extension if configured
@@ -153,6 +174,11 @@ export {
   createTelegramExtension,
   type TelegramConfig,
 } from './telegram/index';
+export {
+  RuneLiteExtension,
+  createRuneLiteExtension,
+  type RuneLiteConfig,
+} from './runelite/index';
 // export { MCPClientExtension, type MCPClientConfig } from './mcp-client/index'
 // export { MCPServerExtension, type MCPServerConfig } from './mcp-server/index'
 // export { CommunicationExtension, type CommunicationConfig } from './communication/index'
