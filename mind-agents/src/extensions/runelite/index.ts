@@ -21,7 +21,7 @@ import { RuneLiteConfig, GameEvent, RuneLiteCommand } from './types.js';
 export class RuneLiteExtension implements Extension {
   public readonly id = 'runelite';
   public readonly name = 'RuneLite Extension';
-  public readonly version = '1.0.0';
+  public readonly version = '1.2.0';
   public readonly type = ExtensionType.GAME_INTEGRATION;
   public enabled = true;
   public status = ExtensionStatus.STOPPED;
@@ -99,6 +99,14 @@ export class RuneLiteExtension implements Extension {
   ): Promise<void> {
     if (!this.agent) return;
 
+    // Filter events if a whitelist is configured
+    const allowedEvents = this.config.settings.events;
+    if (Array.isArray(allowedEvents) && allowedEvents.length > 0) {
+      if (!event.type || !allowedEvents.includes(event.type)) {
+        return;
+      }
+    }
+
     const agentEvent: AgentEvent = {
       id: `${clientId}-${Date.now()}`,
       type: 'game_event',
@@ -145,6 +153,80 @@ export class RuneLiteExtension implements Extension {
         this.sendCommand({
           name: params.command as string,
           args: params.args as Record<string, unknown> | undefined,
+        });
+        return { success: true, type: ActionResultType.SUCCESS };
+      },
+    };
+
+    this.actions['broadcastMessage'] = {
+      name: 'broadcastMessage',
+      description: 'Broadcast a chat message to all RuneLite clients',
+      category: ActionCategory.INTERACTION,
+      parameters: {
+        message: {
+          type: 'string',
+          required: true,
+          description: 'Message text',
+        },
+      },
+      execute: async (
+        _agent: Agent,
+        params: SkillParameters
+      ): Promise<ActionResult> => {
+        this.sendCommand({
+          name: 'broadcast_message',
+          args: { text: params.message },
+        });
+        return { success: true, type: ActionResultType.SUCCESS };
+      },
+    };
+
+    this.actions['moveTo'] = {
+      name: 'moveTo',
+      description: 'Move the player to specific coordinates',
+      category: ActionCategory.INTERACTION,
+      parameters: {
+        x: {
+          type: 'number',
+          required: true,
+          description: 'X coordinate',
+        },
+        y: {
+          type: 'number',
+          required: true,
+          description: 'Y coordinate',
+        },
+      },
+      execute: async (
+        _agent: Agent,
+        params: SkillParameters
+      ): Promise<ActionResult> => {
+        this.sendCommand({
+          name: 'move_to',
+          args: { x: params.x, y: params.y },
+        });
+        return { success: true, type: ActionResultType.SUCCESS };
+      },
+    };
+
+    this.actions['farmResource'] = {
+      name: 'farmResource',
+      description: 'Gather a specified resource',
+      category: ActionCategory.INTERACTION,
+      parameters: {
+        resource: {
+          type: 'string',
+          required: true,
+          description: 'Resource name',
+        },
+      },
+      execute: async (
+        _agent: Agent,
+        params: SkillParameters
+      ): Promise<ActionResult> => {
+        this.sendCommand({
+          name: 'farm_resource',
+          args: { type: params.resource },
         });
         return { success: true, type: ActionResultType.SUCCESS };
       },

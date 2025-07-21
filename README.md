@@ -538,7 +538,7 @@ bun start
 SYMindX is designed to integrate with games like RuneScape:
 
 ```typescript
-// Future RuneLite integration
+// RuneLite integration example
 {
   "extensions": [{
     "name": "runelite",
@@ -552,6 +552,7 @@ SYMindX is designed to integrate with games like RuneScape:
 ```
 
 Agents will respond to in-game events, chat messages, and player actions with reactive design.
+The extension supports event filtering via the `events` array and includes actions like `broadcastMessage`, `moveTo`, and `farmResource` for chat, movement, and resource gathering.
 
 ## 📊 API Reference
 
