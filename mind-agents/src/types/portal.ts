@@ -119,7 +119,7 @@ export interface PortalUsage {
 /**
  * Configuration for a portal
  */
-export interface PortalConfig {
+export interface PortalConfig extends Record<string, unknown> {
   apiKey?: string;
   baseUrl?: string;
   organization?: string;
@@ -167,7 +167,7 @@ export enum FinishReason {
 /**
  * Result of text generation
  */
-export interface TextGenerationResult {
+export interface TextGenerationResult extends Record<string, unknown> {
   text: string;
   usage?: {
     promptTokens: number;
@@ -298,7 +298,7 @@ export interface EmbeddingOptions {
 /**
  * Result of embedding generation
  */
-export interface EmbeddingResult {
+export interface EmbeddingResult extends Record<string, unknown> {
   embedding: number[];
   dimensions: number;
   model: string;
@@ -324,7 +324,7 @@ export interface ImageGenerationOptions {
 /**
  * Result of image generation
  */
-export interface ImageGenerationResult {
+export interface ImageGenerationResult extends Record<string, unknown> {
   images: Array<{
     url?: string;
     b64_json?: string;
@@ -352,7 +352,7 @@ export interface ToolEvaluationOptions {
 /**
  * Result of tool evaluation
  */
-export interface ToolEvaluationResult {
+export interface ToolEvaluationResult extends Record<string, unknown> {
   analysis: string;
   score?: number;
   confidence?: number;

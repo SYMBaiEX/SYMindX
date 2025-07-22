@@ -130,7 +130,7 @@ export interface LMStudioServerStatus {
   errors: number;
 }
 
-export interface LMStudioChatCompletionRequest {
+export interface LMStudioChatCompletionRequest extends Record<string, unknown> {
   model: string;
   messages: Array<{
     role: 'system' | 'user' | 'assistant';
@@ -265,7 +265,6 @@ export class LMStudioPortal extends BasePortal {
   private activeRequests: Set<string> = new Set();
   private modelCache: Map<string, LMStudioModelInfo> = new Map();
   private serverStatus: LMStudioServerStatus | null = null;
-  private lastHealthCheck: Date | null = null;
 
   constructor(config: LMStudioConfig) {
     super('lmstudio-local', 'LM Studio Local AI', '1.0.0', config);
@@ -315,7 +314,6 @@ export class LMStudioPortal extends BasePortal {
   async healthCheck(): Promise<boolean> {
     try {
       const response = await this.makeRequest('/health', {}, 'GET');
-      this.lastHealthCheck = new Date();
 
       // Update server status if available
       if (response.server_status) {
