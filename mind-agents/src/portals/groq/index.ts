@@ -390,7 +390,7 @@ export class GroqPortal extends BasePortal {
       return evalResult;
     } catch (error) {
       // Groq task evaluation error
-      throw new Error(`Groq task evaluation failed: ${(error as Error).message}`);
+      throw new Error(`Groq task evaluation failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
