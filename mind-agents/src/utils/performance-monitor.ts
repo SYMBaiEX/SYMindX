@@ -3,10 +3,10 @@
  * @description Comprehensive performance monitoring and metrics collection system for SYMindX
  */
 
-import { performance, PerformanceObserver, PerformanceEntry } from 'perf_hooks';
+import { performance, PerformanceObserver } from 'perf_hooks';
 import { EventEmitter } from 'events';
 import { runtimeLogger } from './logger.js';
-import type { LogContext, Timestamp } from '../types/index.js';
+import type { LogContext } from '../types/index.js';
 
 /**
  * Performance metric types
@@ -331,9 +331,9 @@ export class PerformanceMonitor extends EventEmitter {
   private readonly alerts = new Map<string, AlertConfig>();
   private readonly activeAlerts = new Map<string, PerformanceAlert>();
   
-  private systemMetricsInterval?: NodeJS.Timeout;
-  private alertCheckInterval?: NodeJS.Timeout;
-  private performanceObserver?: PerformanceObserver;
+  private systemMetricsInterval: NodeJS.Timeout | undefined;
+  private alertCheckInterval: NodeJS.Timeout | undefined;
+  private performanceObserver: PerformanceObserver | undefined;
   
   private readonly config = {
     systemMetricsInterval: 5000, // 5 seconds

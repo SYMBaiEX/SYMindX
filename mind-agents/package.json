@@ -58,7 +58,8 @@
     "./src/extensions/telegram",
     "./src/extensions/mcp-server",
     "./src/extensions/mcp-client",
-    "./src/extensions/communication"
+    "./src/extensions/communication",
+    "./src/extensions/runelite"
   ],
   "scripts": {
     "preinstall": "echo '📦 Installing workspace dependencies...'",

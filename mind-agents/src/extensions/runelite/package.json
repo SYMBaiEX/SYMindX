@@ -1,0 +1,25 @@
+{
+  "name": "@symindx/extension-runelite",
+  "version": "1.2.0",
+  "type": "module",
+  "private": true,
+  "main": "index.ts",
+  "dependencies": {
+    "ws": "^8.18.2",
+    "uuid": "^11.0.0"
+  },
+  "symindx": {
+    "type": "extension",
+    "displayName": "RuneLite Integration",
+    "description": "Connect SYMindX agents to RuneLite for real-time game automation",
+    "category": "game",
+    "extension": {
+      "type": "runelite",
+      "factory": "createRuneLiteExtension",
+      "autoRegister": true
+    }
+  },
+  "peerDependencies": {
+    "@symindx/types": "workspace:*"
+  }
+}
