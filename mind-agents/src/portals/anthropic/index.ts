@@ -5,8 +5,14 @@
  * Supports Claude's advanced reasoning and safety features.
  */
 
-import { anthropic } from '@ai-sdk/anthropic';
-import { generateText, streamText } from 'ai';
+import { anthropic, createAnthropic } from '@ai-sdk/anthropic';
+import {
+  generateText,
+  streamText,
+  tool,
+  // CoreTool, // Not available in current version
+  // stepCountIs, // Not available in ai@5.0.0-canary.24
+} from 'ai';
 
 import {
   PortalConfig,
@@ -26,21 +32,19 @@ import {
   ModelType,
 } from '../../types/portal';
 import type {
-  LanguageModel,
   AIMessage as ModelMessage,
-  GenerateTextParamsWithTools,
   AIContentPart,
 } from '../../types/portals/ai-sdk';
 import { BasePortal } from '../base-portal';
-import {
-  buildAISDKParams,
-  // buildProviderSettings - utility function not used in this implementation
-  convertUsage,
-} from '../utils';
+import { convertUsage } from '../utils';
 
 export interface AnthropicConfig extends PortalConfig {
   model?: string;
   baseURL?: string;
+  // Advanced AI SDK v5 features
+  enableToolStreaming?: boolean;
+  maxSteps?: number;
+  enableComputerUse?: boolean; // Claude's computer use capability
 }
 
 export class AnthropicPortal extends BasePortal {
@@ -50,35 +54,38 @@ export class AnthropicPortal extends BasePortal {
     ModelType.CHAT,
     ModelType.MULTIMODAL,
   ];
-  private anthropicProvider: typeof anthropic;
+  private anthropicProvider: ReturnType<typeof createAnthropic>;
 
   constructor(config: AnthropicConfig) {
     super('anthropic', 'Anthropic', '1.0.0', config);
 
-    // Store the anthropic function
-    this.anthropicProvider = anthropic;
+    // Create Anthropic provider with proper AI SDK v5 configuration
+    const apiKey = config.apiKey || process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      throw new Error('Anthropic API key is required');
+    }
+
+    const providerConfig: any = {
+      apiKey,
+    };
+
+    if (config.baseURL) {
+      providerConfig.baseURL = config.baseURL;
+    }
+
+    this.anthropicProvider = createAnthropic(providerConfig);
   }
 
   /**
-   * Get language model instance
+   * Get language model instance using AI SDK v5 patterns
    */
-  private getLanguageModel(modelId?: string): LanguageModel {
+  private getLanguageModel(modelId?: string) {
     const model =
-      modelId || (this.config as AnthropicConfig).model || 'claude-4-sonnet';
-    const config = this.config as AnthropicConfig;
+      modelId ||
+      (this.config as AnthropicConfig).model ||
+      'claude-3-5-sonnet-20241022';
 
-    const providerSettings: { apiKey?: string; baseURL?: string } = {};
-
-    const apiKey = config.apiKey || process.env.ANTHROPIC_API_KEY;
-    if (apiKey) {
-      providerSettings.apiKey = apiKey;
-    }
-
-    if (config.baseURL) {
-      providerSettings.baseURL = config.baseURL;
-    }
-
-    return this.anthropicProvider(model, providerSettings);
+    return this.anthropicProvider(model);
   }
 
   /**
@@ -114,21 +121,34 @@ export class AnthropicPortal extends BasePortal {
       const model =
         options?.model ||
         (this.config as AnthropicConfig).model ||
-        'claude-4-sonnet';
+        'claude-3-5-sonnet-20241022';
 
       const baseParams = {
         model: this.getLanguageModel(model),
         prompt,
       };
 
-      const params = buildAISDKParams(baseParams, {
-        maxOutputTokens:
+      const params: any = { ...baseParams };
+
+      // Use maxOutputTokens (AI SDK v5) instead of maxTokens
+      if (
+        options?.maxOutputTokens ??
+        options?.maxTokens ??
+        this.config.maxTokens
+      ) {
+        params.maxOutputTokens =
           options?.maxOutputTokens ??
           options?.maxTokens ??
-          this.config.maxTokens,
-        temperature: options?.temperature ?? this.config.temperature,
-        topP: options?.topP,
-      });
+          this.config.maxTokens;
+      }
+
+      if (options?.temperature ?? this.config.temperature) {
+        params.temperature = options?.temperature ?? this.config.temperature;
+      }
+
+      if (options?.topP) {
+        params.topP = options.topP;
+      }
 
       const result = await generateText(params);
 
@@ -158,7 +178,7 @@ export class AnthropicPortal extends BasePortal {
       const model =
         options?.model ||
         (this.config as AnthropicConfig).model ||
-        'claude-4-sonnet';
+        'claude-3-5-sonnet-20241022';
       const modelMessages = this.convertToModelMessages(messages);
 
       const baseOptions = {
@@ -166,20 +186,38 @@ export class AnthropicPortal extends BasePortal {
         messages: modelMessages,
       };
 
-      const generateOptions = buildAISDKParams(baseOptions, {
-        maxOutputTokens:
+      const generateOptions: any = { ...baseOptions };
+
+      // Use maxOutputTokens (AI SDK v5) instead of maxTokens
+      if (
+        options?.maxOutputTokens ??
+        options?.maxTokens ??
+        this.config.maxTokens
+      ) {
+        generateOptions.maxOutputTokens =
           options?.maxOutputTokens ??
           options?.maxTokens ??
-          this.config.maxTokens,
-        temperature: options?.temperature ?? this.config.temperature,
-        topP: options?.topP,
-      });
+          this.config.maxTokens;
+      }
+
+      if (options?.temperature ?? this.config.temperature) {
+        generateOptions.temperature =
+          options?.temperature ?? this.config.temperature;
+      }
+
+      if (options?.topP) {
+        generateOptions.topP = options.topP;
+      }
 
       // Add tools if provided (native AI SDK v5 tools)
       if (options?.tools) {
-        const optionsWithTools = generateOptions as GenerateTextParamsWithTools;
-        optionsWithTools.tools = options.tools;
-        optionsWithTools.maxSteps = 5; // Enable multi-step tool execution
+        generateOptions.tools = options.tools;
+        generateOptions.maxSteps = options?.maxSteps || 5; // Enable multi-step tool execution
+
+        // Add comprehensive tool streaming callbacks
+        if (options?.onStepFinish) {
+          generateOptions.onStepFinish = options.onStepFinish;
+        }
       }
 
       const result = await generateText(generateOptions);
@@ -245,21 +283,34 @@ export class AnthropicPortal extends BasePortal {
       const model =
         options?.model ||
         (this.config as AnthropicConfig).model ||
-        'claude-4-sonnet';
+        'claude-3-5-sonnet-20241022';
 
       const baseParams = {
         model: this.getLanguageModel(model),
         prompt,
       };
 
-      const params = buildAISDKParams(baseParams, {
-        maxOutputTokens:
+      const params: any = { ...baseParams };
+
+      // Use maxOutputTokens (AI SDK v5) instead of maxTokens
+      if (
+        options?.maxOutputTokens ??
+        options?.maxTokens ??
+        this.config.maxTokens
+      ) {
+        params.maxOutputTokens =
           options?.maxOutputTokens ??
           options?.maxTokens ??
-          this.config.maxTokens,
-        temperature: options?.temperature ?? this.config.temperature,
-        topP: options?.topP,
-      });
+          this.config.maxTokens;
+      }
+
+      if (options?.temperature ?? this.config.temperature) {
+        params.temperature = options?.temperature ?? this.config.temperature;
+      }
+
+      if (options?.topP) {
+        params.topP = options.topP;
+      }
 
       const result = await streamText(params);
 
@@ -283,7 +334,7 @@ export class AnthropicPortal extends BasePortal {
       const model =
         options?.model ||
         (this.config as AnthropicConfig).model ||
-        'claude-4-sonnet';
+        'claude-3-5-sonnet-20241022';
       const modelMessages = this.convertToModelMessages(messages);
 
       const baseOptions = {
@@ -291,20 +342,41 @@ export class AnthropicPortal extends BasePortal {
         messages: modelMessages,
       };
 
-      const streamOptions = buildAISDKParams(baseOptions, {
-        maxOutputTokens:
+      const streamOptions: any = { ...baseOptions };
+
+      // Use maxOutputTokens (AI SDK v5) instead of maxTokens
+      if (
+        options?.maxOutputTokens ??
+        options?.maxTokens ??
+        this.config.maxTokens
+      ) {
+        streamOptions.maxOutputTokens =
           options?.maxOutputTokens ??
           options?.maxTokens ??
-          this.config.maxTokens,
-        temperature: options?.temperature ?? this.config.temperature,
-        topP: options?.topP,
-      });
+          this.config.maxTokens;
+      }
 
-      // Add tools if provided (native AI SDK v5 tools)
+      if (options?.temperature ?? this.config.temperature) {
+        streamOptions.temperature =
+          options?.temperature ?? this.config.temperature;
+      }
+
+      if (options?.topP) {
+        streamOptions.topP = options.topP;
+      }
+
+      // Add tools if provided with comprehensive AI SDK v5 streaming support
       if (options?.tools) {
-        const optionsWithTools = streamOptions as GenerateTextParamsWithTools;
-        optionsWithTools.tools = options.tools;
-        optionsWithTools.maxSteps = 5; // Enable multi-step tool execution
+        streamOptions.tools = options.tools;
+        streamOptions.maxSteps = options?.maxSteps || 5; // Enable multi-step tool execution
+
+        // Add comprehensive tool streaming callbacks for AI SDK v5
+        if (options?.onStepFinish) {
+          streamOptions.onStepFinish = options.onStepFinish;
+        }
+
+        // Enable tool call streaming (default in AI SDK v5)
+        streamOptions.toolCallStreaming = true;
       }
 
       const result = await streamText(streamOptions);
@@ -358,11 +430,14 @@ export class AnthropicPortal extends BasePortal {
         for (const attachment of msg.attachments) {
           if (attachment.type === 'image') {
             if (attachment.data) {
-              content.push({
+              const imagePart: any = {
                 type: 'image',
                 image: attachment.data,
-                mimeType: attachment.mimeType,
-              });
+              };
+              if (attachment.mimeType) {
+                imagePart.mimeType = attachment.mimeType;
+              }
+              content.push(imagePart);
             } else if (attachment.url) {
               content.push({
                 type: 'image',
@@ -405,6 +480,98 @@ export class AnthropicPortal extends BasePortal {
   }
 
   /**
+   * Stream text generation with full stream access for advanced tool calling
+   * Provides access to all stream events including tool calls, tool results, and text
+   */
+  async *streamTextWithFullAccess(
+    prompt: string,
+    options?: TextGenerationOptions & {
+      onToolCall?: (toolCall: any) => void;
+      onToolResult?: (toolResult: any) => void;
+      onStepFinish?: (step: any) => void;
+    }
+  ): AsyncGenerator<{
+    type: 'text' | 'tool-call' | 'tool-result' | 'finish' | 'error';
+    content: any;
+  }> {
+    try {
+      const model =
+        options?.model ||
+        (this.config as AnthropicConfig).model ||
+        'claude-3-5-sonnet-20241022';
+
+      const baseParams = {
+        model: this.getLanguageModel(model),
+        prompt,
+      };
+
+      const params: any = { ...baseParams };
+
+      if (
+        options?.maxOutputTokens ??
+        options?.maxTokens ??
+        this.config.maxTokens
+      ) {
+        params.maxOutputTokens =
+          options?.maxOutputTokens ??
+          options?.maxTokens ??
+          this.config.maxTokens;
+      }
+
+      if (options?.temperature ?? this.config.temperature) {
+        params.temperature = options?.temperature ?? this.config.temperature;
+      }
+
+      if (options?.topP) {
+        params.topP = options.topP;
+      }
+
+      // Add tools with full streaming support
+      if (options?.tools) {
+        params.tools = options.tools;
+        params.maxSteps = options?.maxSteps || 5;
+        params.toolCallStreaming = true;
+
+        if (options?.onStepFinish) {
+          params.onStepFinish = options.onStepFinish;
+        }
+      }
+
+      const result = await streamText(params);
+
+      // Stream all events from the full stream
+      for await (const part of result.fullStream) {
+        switch (part.type) {
+          case 'text':
+            yield { type: 'text', content: part.text };
+            break;
+          case 'tool-call':
+            if (options?.onToolCall) {
+              options.onToolCall(part);
+            }
+            yield { type: 'tool-call', content: part };
+            break;
+          case 'tool-result':
+            if (options?.onToolResult) {
+              options.onToolResult(part);
+            }
+            yield { type: 'tool-result', content: part };
+            break;
+          case 'finish':
+            yield { type: 'finish', content: part };
+            break;
+          case 'error':
+            yield { type: 'error', content: part };
+            break;
+        }
+      }
+    } catch (error) {
+      void error;
+      yield { type: 'error', content: error };
+    }
+  }
+
+  /**
    * Check if the portal supports a specific capability
    */
   override hasCapability(capability: PortalCapability): boolean {
@@ -414,6 +581,8 @@ export class AnthropicPortal extends BasePortal {
       case PortalCapability.STREAMING:
       case PortalCapability.FUNCTION_CALLING:
       case PortalCapability.VISION:
+      case PortalCapability.TOOL_USAGE:
+      case PortalCapability.EVALUATION:
         return true;
       case PortalCapability.EMBEDDING_GENERATION:
       case PortalCapability.IMAGE_GENERATION:
@@ -421,6 +590,312 @@ export class AnthropicPortal extends BasePortal {
         return false;
       default:
         return false;
+    }
+  }
+
+  /**
+   * Generate text with multi-step support (AI SDK v5 feature)
+   * Supports tool calling with multiple steps
+   */
+  override async generateTextMultiStep(
+    prompt: string,
+    options?: TextGenerationOptions & {
+      tools?: Record<string, any>;
+      maxSteps?: number;
+      onStepFinish?: (step: number, result: any) => void;
+    }
+  ): Promise<TextGenerationResult> {
+    const config = this.config as AnthropicConfig;
+    const maxSteps = options?.maxSteps || config.maxSteps || 5;
+
+    try {
+      const params: any = {
+        model: this.getLanguageModel(
+          options?.model || this.resolveModel('chat')
+        ),
+        messages: [{ role: 'user' as const, content: prompt }],
+        maxOutputTokens:
+          options?.maxOutputTokens ??
+          options?.maxTokens ??
+          this.config.maxTokens,
+        temperature: options?.temperature ?? this.config.temperature,
+      };
+
+      // Add tools if provided
+      if (options?.tools) {
+        params.tools = options.tools;
+        params.toolChoice = 'auto';
+        // TODO: Re-enable when stepCountIs is available in stable AI SDK v5
+        // params.stopWhen = stepCountIs(maxSteps);
+        params.maxSteps = maxSteps; // Fallback to maxSteps
+      }
+
+      // Add step callbacks
+      if (options?.onStepFinish) {
+        params.onStepFinish = async ({
+          stepType,
+          stepCount,
+          toolCalls,
+          toolResults,
+        }: any) => {
+          options.onStepFinish!(stepCount, {
+            stepType,
+            toolCalls,
+            toolResults,
+          });
+        };
+      }
+
+      // Add computer use support for Claude if enabled
+      if (config.enableComputerUse && params.tools) {
+        params.providerOptions = {
+          anthropic: {
+            betaVersion: 'computer-use-2024-10-22',
+          },
+        };
+      }
+
+      const { text, usage, finishReason, steps } = await generateText(params);
+
+      return {
+        text,
+        model: options?.model || this.resolveModel('chat'),
+        usage: convertUsage(usage),
+        finishReason: this.mapFinishReason(finishReason),
+        timestamp: new Date(),
+        metadata: {
+          steps: steps?.length || 1,
+          toolCalls: steps?.flatMap((s) => s.toolCalls || []),
+        },
+      };
+    } catch (error) {
+      throw new Error(`Anthropic multi-step text generation failed: ${error}`);
+    }
+  }
+
+  /**
+   * Generate chat with multi-step support (AI SDK v5 feature)
+   */
+  override async generateChatMultiStep(
+    messages: ChatMessage[],
+    options?: ChatGenerationOptions & {
+      tools?: Record<string, any>;
+      maxSteps?: number;
+      onStepFinish?: (step: number, result: any) => void;
+    }
+  ): Promise<ChatGenerationResult> {
+    const config = this.config as AnthropicConfig;
+    const maxSteps = options?.maxSteps || config.maxSteps || 5;
+
+    try {
+      const modelMessages = this.convertToModelMessages(messages);
+
+      const params: any = {
+        model: this.getLanguageModel(
+          options?.model || this.resolveModel('chat')
+        ),
+        messages: modelMessages,
+        maxOutputTokens:
+          options?.maxOutputTokens ??
+          options?.maxTokens ??
+          this.config.maxTokens,
+        temperature: options?.temperature ?? this.config.temperature,
+      };
+
+      // Add tools if provided
+      if (options?.tools) {
+        params.tools = options.tools;
+        params.toolChoice = 'auto';
+        // TODO: Re-enable when stepCountIs is available in stable AI SDK v5
+        // params.stopWhen = stepCountIs(maxSteps);
+        params.maxSteps = maxSteps; // Fallback to maxSteps
+      }
+
+      // Add step callbacks
+      if (options?.onStepFinish) {
+        params.onStepFinish = async ({
+          stepType,
+          stepCount,
+          toolCalls,
+          toolResults,
+        }: any) => {
+          options.onStepFinish!(stepCount, {
+            stepType,
+            toolCalls,
+            toolResults,
+          });
+        };
+      }
+
+      // Add computer use support for Claude if enabled
+      if (config.enableComputerUse && params.tools) {
+        params.providerOptions = {
+          anthropic: {
+            betaVersion: 'computer-use-2024-10-22',
+          },
+        };
+      }
+
+      const { text, usage, finishReason, steps } = await generateText(params);
+
+      const message: ChatMessage = {
+        role: MessageRole.ASSISTANT,
+        content: text,
+        timestamp: new Date(),
+      };
+
+      return {
+        text,
+        model: options?.model || this.resolveModel('chat'),
+        message,
+        usage: convertUsage(usage),
+        finishReason: this.mapFinishReason(finishReason),
+        timestamp: new Date(),
+        metadata: {
+          steps: steps?.length || 1,
+          toolCalls: steps?.flatMap((s) => s.toolCalls || []),
+        },
+      };
+    } catch (error) {
+      throw new Error(`Anthropic multi-step chat generation failed: ${error}`);
+    }
+  }
+
+  /**
+   * Stream text with enhanced tool support (AI SDK v5 feature)
+   */
+  override async *streamTextEnhanced(
+    prompt: string,
+    options?: TextGenerationOptions & {
+      tools?: Record<string, any>;
+      onToolCallStart?: (toolCallId: string, toolName: string) => void;
+      onToolCallFinish?: (toolCallId: string, result: any) => void;
+    }
+  ): AsyncGenerator<string> {
+    const config = this.config as AnthropicConfig;
+
+    try {
+      const params: any = {
+        model: this.getLanguageModel(
+          options?.model || this.resolveModel('chat')
+        ),
+        messages: [{ role: 'user' as const, content: prompt }],
+        maxOutputTokens:
+          options?.maxOutputTokens ??
+          options?.maxTokens ??
+          this.config.maxTokens,
+        temperature: options?.temperature ?? this.config.temperature,
+      };
+
+      // Add tools if provided
+      if (options?.tools) {
+        params.tools = options.tools;
+        params.toolChoice = 'auto';
+        params.toolCallStreaming = config.enableToolStreaming !== false;
+      }
+
+      // Add computer use support for Claude if enabled
+      if (config.enableComputerUse && params.tools) {
+        params.providerOptions = {
+          anthropic: {
+            betaVersion: 'computer-use-2024-10-22',
+          },
+        };
+      }
+
+      const { textStream, fullStream } = await streamText(params);
+
+      // Process the full stream to handle tool calls
+      if (options?.onToolCallStart || options?.onToolCallFinish) {
+        const streamIterator = fullStream[Symbol.asyncIterator]();
+
+        while (true) {
+          const { done, value } = await streamIterator.next();
+          if (done) break;
+
+          switch (value.type) {
+            case 'text':
+              yield value.text;
+              break;
+            case 'tool-call':
+              if (options.onToolCallStart) {
+                options.onToolCallStart(value.toolCallId, value.toolName);
+              }
+              break;
+            case 'tool-result':
+              if (options.onToolCallFinish) {
+                options.onToolCallFinish(value.toolCallId, value.result);
+              }
+              break;
+          }
+        }
+      } else {
+        // Just yield text chunks
+        for await (const chunk of textStream) {
+          yield chunk;
+        }
+      }
+    } catch (error) {
+      throw new Error(`Anthropic enhanced text streaming failed: ${error}`);
+    }
+  }
+
+  /**
+   * Get supported models for different capabilities
+   */
+  override getSupportedModelsForCapability(
+    capability: PortalCapability
+  ): string[] {
+    switch (capability) {
+      case PortalCapability.TEXT_GENERATION:
+      case PortalCapability.CHAT_GENERATION:
+        return [
+          'claude-3-7-sonnet-20250219',
+          'claude-3-5-sonnet-20241022',
+          'claude-3-5-sonnet-20240620',
+          'claude-3-opus-20240229',
+          'claude-3-sonnet-20240229',
+          'claude-3-haiku-20240307',
+        ];
+      case PortalCapability.VISION:
+        return [
+          'claude-3-7-sonnet-20250219',
+          'claude-3-5-sonnet-20241022',
+          'claude-3-5-sonnet-20240620',
+          'claude-3-opus-20240229',
+          'claude-3-sonnet-20240229',
+          'claude-3-haiku-20240307',
+        ];
+      case PortalCapability.FUNCTION_CALLING:
+      case PortalCapability.TOOL_USAGE:
+        return [
+          'claude-3-7-sonnet-20250219',
+          'claude-3-5-sonnet-20241022',
+          'claude-3-5-sonnet-20240620',
+          'claude-3-opus-20240229',
+        ];
+      default:
+        return [];
+    }
+  }
+
+  /**
+   * Get the optimal model for a specific capability
+   */
+  override getOptimalModelForCapability(
+    capability: PortalCapability
+  ): string | null {
+    switch (capability) {
+      case PortalCapability.TEXT_GENERATION:
+      case PortalCapability.CHAT_GENERATION:
+        return 'claude-3-5-sonnet-20241022'; // Latest and most capable
+      case PortalCapability.VISION:
+        return 'claude-3-5-sonnet-20241022'; // Best vision capabilities
+      case PortalCapability.FUNCTION_CALLING:
+      case PortalCapability.TOOL_USAGE:
+        return 'claude-3-5-sonnet-20241022'; // Best tool support
+      default:
+        return null;
     }
   }
 }
@@ -434,24 +909,22 @@ export function createAnthropicPortal(
 
 // Export default configuration
 export const defaultAnthropicConfig: Partial<AnthropicConfig> = {
-  model: 'claude-4-sonnet',
+  model: 'claude-3-5-sonnet-20241022',
   maxTokens: 1000, // Keep as config property, map to maxOutputTokens in calls
   temperature: 0.7,
   timeout: 30000,
 };
 
-// Available Anthropic models (Updated with Claude 4)
+// Available Anthropic models
 export const anthropicModels = {
-  // Claude 4 Series (Latest - Best coding and reasoning models)
-  'claude-4-opus':
-    "Claude 4 Opus - World's best coding model with sustained performance",
-  'claude-4-sonnet':
-    'Claude 4 Sonnet - Significant upgrade with superior coding and reasoning',
+  // Claude 3.5 Series (Latest)
+  'claude-3-5-sonnet-20241022': 'Claude 3.5 Sonnet (Latest) - Best performance',
+  'claude-3-5-sonnet-20241120':
+    'Claude 3.5 Sonnet (November) - Enhanced capabilities',
+  'claude-3-5-haiku-20241022': 'Claude 3.5 Haiku - Fast and efficient',
 
-  // Claude 3.7 Series
-  'claude-3.7-sonnet': 'Claude 3.7 Sonnet - Enhanced capabilities',
-
-  // Claude 3.5 Series
-  'claude-3-5-sonnet-20241022': 'Claude 3.5 Sonnet (Latest)',
-  'claude-3-5-haiku-20241022': 'Claude 3.5 Haiku',
+  // Claude 3 Series
+  'claude-3-opus-20240229': 'Claude 3 Opus - Highest intelligence',
+  'claude-3-sonnet-20240229': 'Claude 3 Sonnet - Balanced performance',
+  'claude-3-haiku-20240307': 'Claude 3 Haiku - Speed optimized',
 };

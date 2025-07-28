@@ -15,9 +15,10 @@ import {
   AgentFactory,
 } from '../types/agent';
 // Agent imports should come first
-import { CognitionModule, CognitionModuleFactory } from '../types/cognition';
+import { CognitionModule } from '../types/cognition';
 import { BaseConfig } from '../types/common';
-import { EmotionModule, EmotionModuleFactory } from '../types/emotion';
+import { EmotionModule } from '../types/emotion';
+import { ModuleFactory } from '../types/index';
 import { Portal, PortalConfig } from '../types/portal';
 import { runtimeLogger } from '../utils/logger';
 
@@ -37,12 +38,15 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
   private observabilityModules = new Map<string, any>();
   private streamingInterfaces = new Map<string, any>();
 
-  // Factory storage maps
-  private memoryFactories = new Map<string, any>();
-  private emotionFactories = new Map<string, EmotionModuleFactory>();
-  private cognitionFactories = new Map<string, CognitionModuleFactory>();
+  // Factory storage maps with improved type safety
+  private memoryFactories = new Map<string, ModuleFactory<MemoryProvider>>();
+  private emotionFactories = new Map<string, ModuleFactory<EmotionModule>>();
+  private cognitionFactories = new Map<
+    string,
+    ModuleFactory<CognitionModule>
+  >();
   private portalFactories = new Map<string, PortalFactory>();
-  private extensionFactories = new Map<string, any>();
+  private extensionFactories = new Map<string, ModuleFactory<Extension>>();
   private agentFactories = new Map<string, AgentFactory>();
 
   // Lazy agent management
@@ -166,19 +170,25 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
   }
 
   // Factory registration methods
-  registerMemoryFactory(type: string, factory: any): void {
+  registerMemoryFactory(
+    type: string,
+    factory: ModuleFactory<MemoryProvider>
+  ): void {
     this.memoryFactories.set(type, factory);
     // Silent registration for cleaner startup
   }
 
-  registerEmotionFactory(type: string, factory: EmotionModuleFactory): void {
+  registerEmotionFactory(
+    type: string,
+    factory: ModuleFactory<EmotionModule>
+  ): void {
     this.emotionFactories.set(type, factory);
     // Silent registration for cleaner startup
   }
 
   registerCognitionFactory(
     type: string,
-    factory: CognitionModuleFactory
+    factory: ModuleFactory<CognitionModule>
   ): void {
     this.cognitionFactories.set(type, factory);
     // Silent registration for cleaner startup
@@ -190,15 +200,56 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
   }
 
   // Factory creation methods
-  createMemoryProvider(type: string, config: any): any {
+  createMemoryProvider(type: string, config: any): MemoryProvider | undefined {
     const factory = this.memoryFactories.get(type);
     if (!factory) {
       runtimeLogger.warn(`⚠️ Memory factory for type '${type}' not found`);
       return undefined;
     }
     try {
-      const provider = factory(config);
+      const result = factory(config);
+      // Handle both sync and async factories
+      if (result instanceof Promise) {
+        runtimeLogger.warn(
+          `⚠️ Async memory factories not supported in sync context for type '${type}'`
+        );
+        return undefined;
+      }
+      const provider = result as MemoryProvider;
       // Silent creation for cleaner startup
+      return provider;
+    } catch (error) {
+      void error;
+      runtimeLogger.error(
+        `❌ Failed to create memory provider '${type}':`,
+        error
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Async version of createMemoryProvider for async factories
+   */
+  async createMemoryProviderAsync(
+    type: string,
+    config: any
+  ): Promise<MemoryProvider | undefined> {
+    const factory = this.memoryFactories.get(type);
+    if (!factory) {
+      runtimeLogger.warn(`⚠️ Memory factory for type '${type}' not found`);
+      return undefined;
+    }
+    try {
+      const result = factory(config);
+      // Handle both sync and async factories
+      if (result instanceof Promise) {
+        const provider = await result;
+        runtimeLogger.factory(`✅ Created async memory provider: ${type}`);
+        return provider;
+      }
+      const provider = result as MemoryProvider;
+      runtimeLogger.factory(`✅ Created memory provider: ${type}`);
       return provider;
     } catch (error) {
       void error;
@@ -220,7 +271,17 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
       return undefined;
     }
     try {
-      const module = factory(config);
+      const result = factory(config);
+      // Handle both sync and async factories
+      if (result instanceof Promise) {
+        // For async factories, we need to return a promise, but the interface expects sync
+        // This is a limitation we need to address
+        runtimeLogger.warn(
+          `⚠️ Async emotion factories not supported in sync context for type '${type}'`
+        );
+        return undefined;
+      }
+      const module = result as EmotionModule;
       // Silent creation for cleaner startup
       return module;
     } catch (error) {
@@ -243,7 +304,50 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
       return undefined;
     }
     try {
-      const module = factory(config);
+      const result = factory(config);
+      // Handle both sync and async factories
+      if (result instanceof Promise) {
+        // For async factories, we need to return a promise, but the interface expects sync
+        // This is a limitation we need to address
+        runtimeLogger.warn(
+          `⚠️ Async cognition factories not supported in sync context for type '${type}'`
+        );
+        return undefined;
+      }
+      const module = result as CognitionModule;
+      // Silent creation for cleaner startup
+      return module;
+    } catch (error) {
+      void error;
+      runtimeLogger.error(
+        `❌ Failed to create cognition module '${type}':`,
+        error
+      );
+      return undefined;
+    }
+  }
+
+  /**
+   * Async version of createCognitionModule for async factories
+   */
+  async createCognitionModuleAsync(
+    type: string,
+    config: BaseConfig
+  ): Promise<CognitionModule | undefined> {
+    const factory = this.cognitionFactories.get(type);
+    if (!factory) {
+      runtimeLogger.warn(`⚠️ Cognition factory for type '${type}' not found`);
+      return undefined;
+    }
+    try {
+      const result = factory(config);
+      // Handle both sync and async factories
+      if (result instanceof Promise) {
+        const module = await result;
+        runtimeLogger.factory(`✅ Created async cognition module: ${type}`);
+        return module;
+      }
+      const module = result as CognitionModule;
       runtimeLogger.factory(`✅ Created cognition module: ${type}`);
       return module;
     } catch (error) {
@@ -387,14 +491,17 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
   }
 
   // New factory registration methods
-  registerExtensionFactory(type: string, factory: any): void {
+  registerExtensionFactory(
+    type: string,
+    factory: ModuleFactory<Extension>
+  ): void {
     this.extensionFactories.set(type, factory);
     // Silent registration for cleaner startup
   }
 
   registerAgentFactory(
     type: string,
-    factory: ((config: unknown) => Agent) | AgentFactory
+    factory: ((config: unknown) => Agent | Promise<Agent>) | AgentFactory
   ): void {
     // Support both the interface signature and AgentFactory objects
     if (typeof factory === 'function') {
@@ -417,7 +524,45 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
       return undefined;
     }
     try {
-      const extension = factory(config);
+      const result = factory(config);
+      // Handle both sync and async factories
+      if (result instanceof Promise) {
+        runtimeLogger.warn(
+          `⚠️ Async extension factories not supported in sync context for type '${type}'`
+        );
+        return undefined;
+      }
+      const extension = result as Extension;
+      return extension;
+    } catch (error) {
+      void error;
+      runtimeLogger.error(`❌ Failed to create extension '${type}':`, error);
+      return undefined;
+    }
+  }
+
+  /**
+   * Async version of createExtension for async factories
+   */
+  async createExtensionAsync(
+    type: string,
+    config: any
+  ): Promise<Extension | undefined> {
+    const factory = this.extensionFactories.get(type);
+    if (!factory) {
+      runtimeLogger.warn(`⚠️ Extension factory for type '${type}' not found`);
+      return undefined;
+    }
+    try {
+      const result = factory(config);
+      // Handle both sync and async factories
+      if (result instanceof Promise) {
+        const extension = await result;
+        runtimeLogger.factory(`✅ Created async extension: ${type}`);
+        return extension;
+      }
+      const extension = result as Extension;
+      runtimeLogger.factory(`✅ Created extension: ${type}`);
       return extension;
     } catch (error) {
       void error;
@@ -520,5 +665,18 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
     this.agentFactories.forEach((_, name) => allNames.add(name));
     this.lazyAgents.forEach((_, name) => allNames.add(name));
     return Array.from(allNames);
+  }
+
+  getStats() {
+    return {
+      memoryProviders: this.memoryProviders.size,
+      emotionModules: this.emotionModules.size,
+      cognitionModules: this.cognitionModules.size,
+      extensions: this.extensions.size,
+      portals: this.portals.size,
+      toolSystems: this.toolSystems.size,
+      observabilityModules: this.observabilityModules.size,
+      streamingInterfaces: this.streamingInterfaces.size,
+    };
   }
 }

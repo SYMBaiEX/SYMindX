@@ -5,6 +5,7 @@
  * and provide better type safety throughout the system.
  */
 
+import type { BaseConfig, GenericData, Context, Metadata } from './common';
 import type { CommunicationStyle } from './communication';
 
 /**
@@ -14,14 +15,14 @@ import type { CommunicationStyle } from './communication';
 export type VoidResult = {
   success: true;
   timestamp: Date;
-  metadata?: Record<string, any>;
+  metadata?: Metadata;
 };
 
 export type VoidError = {
   success: false;
   error: string;
   timestamp: Date;
-  metadata?: Record<string, any>;
+  metadata?: Metadata;
 };
 
 export type OperationResult = VoidResult | VoidError;
@@ -39,7 +40,7 @@ export interface InitializationResult {
     moduleId: string;
     version: string;
     dependencies?: string[];
-    [key: string]: any;
+    [key: string]: BaseConfig[string];
   };
 }
 
@@ -55,7 +56,7 @@ export interface CleanupResult {
   metadata?: {
     moduleId: string;
     cleanupType: 'graceful' | 'forced' | 'emergency';
-    [key: string]: any;
+    [key: string]: BaseConfig[string];
   };
 }
 
@@ -72,8 +73,8 @@ export interface EventProcessingResult {
   metadata?: {
     processingTime: number;
     actionsTriggered: string[];
-    stateChanges?: Record<string, any>;
-    [key: string]: any;
+    stateChanges?: GenericData;
+    [key: string]: BaseConfig[string];
   };
 }
 
@@ -87,13 +88,13 @@ export interface StateUpdateResult {
   timestamp: Date;
   changes: {
     field: string;
-    oldValue: any;
-    newValue: any;
+    oldValue: BaseConfig[string];
+    newValue: BaseConfig[string];
   }[];
   metadata?: {
     updateType: 'single' | 'batch' | 'cascade';
     conflictsResolved?: number;
-    [key: string]: any;
+    [key: string]: BaseConfig[string];
   };
 }
 
@@ -109,7 +110,7 @@ export interface ValidationResult {
   metadata?: {
     validatorId: string;
     validationType: string;
-    [key: string]: any;
+    [key: string]: BaseConfig[string];
   };
 }
 
@@ -117,7 +118,7 @@ export interface ValidationError {
   field: string;
   message: string;
   code: string;
-  value?: any;
+  value?: BaseConfig[string];
   severity: 'error' | 'critical';
   suggestion?: string;
 }
@@ -126,7 +127,7 @@ export interface ValidationWarning {
   field: string;
   message: string;
   code: string;
-  value?: any;
+  value?: BaseConfig[string];
   severity: 'warning' | 'info';
   suggestion?: string;
 }
@@ -142,13 +143,13 @@ export interface ConfigurationResult {
   configId: string;
   changes: {
     key: string;
-    oldValue: any;
-    newValue: any;
+    oldValue: BaseConfig[string];
+    newValue: BaseConfig[string];
   }[];
   metadata?: {
     source: 'file' | 'environment' | 'runtime' | 'default';
     validation: ValidationResult;
-    [key: string]: any;
+    [key: string]: BaseConfig[string];
   };
 }
 
@@ -156,7 +157,7 @@ export interface ConfigurationResult {
  * Execution Result Types
  * For command and action execution
  */
-export interface ExecutionResult<T = any> {
+export interface ExecutionResult<T = GenericData> {
   success: boolean;
   data?: T;
   error?: string;
@@ -166,7 +167,7 @@ export interface ExecutionResult<T = any> {
     commandId: string;
     executorId: string;
     retryCount?: number;
-    [key: string]: any;
+    [key: string]: BaseConfig[string];
   };
 }
 
@@ -174,7 +175,7 @@ export interface ExecutionResult<T = any> {
  * Async Operation Result Types
  * For long-running operations
  */
-export interface AsyncOperationResult<T = any> {
+export interface AsyncOperationResult<T = GenericData> {
   success: boolean;
   data?: T;
   error?: string;
@@ -192,7 +193,7 @@ export interface AsyncOperationResult<T = any> {
     startTime: Date;
     endTime?: Date;
     checkpoints?: string[];
-    [key: string]: any;
+    [key: string]: BaseConfig[string];
   };
 }
 
@@ -215,7 +216,7 @@ export interface ResourceResult {
       storage?: number;
       network?: number;
     };
-    [key: string]: any;
+    [key: string]: BaseConfig[string];
   };
 }
 
@@ -231,9 +232,9 @@ export interface FactoryResult<T> {
   factoryId: string;
   metadata?: {
     factoryType: string;
-    config: Record<string, any>;
+    config: BaseConfig;
     dependencies?: string[];
-    [key: string]: any;
+    [key: string]: BaseConfig[string];
   };
 }
 
@@ -251,7 +252,7 @@ export interface RegistryResult {
   metadata?: {
     registrySize: number;
     conflicts?: string[];
-    [key: string]: any;
+    [key: string]: BaseConfig[string];
   };
 }
 
@@ -262,21 +263,28 @@ export interface RegistryResult {
 export interface HealthCheckResult {
   healthy: boolean;
   status: 'healthy' | 'degraded' | 'unhealthy' | 'unknown';
+  message?: string;
   timestamp: Date;
+  checkId?: string;
   componentId: string;
-  details: {
+  responseTime?: number;
+  attempt?: number;
+  error?: string;
+  details?: {
     message?: string;
     uptime?: number;
     responseTime?: number;
+    retries?: number;
     memory?: number;
     cpu?: number;
     errors?: string[];
     warnings?: string[];
+    [key: string]: BaseConfig[string];
   };
   metadata?: {
     checkType: 'basic' | 'detailed' | 'comprehensive';
     dependencies?: HealthCheckResult[];
-    [key: string]: any;
+    [key: string]: BaseConfig[string];
   };
 }
 
@@ -294,7 +302,7 @@ export interface LifecycleEventResult {
     previousState: string;
     newState: string;
     stateTransitionTime: number;
-    [key: string]: any;
+    [key: string]: BaseConfig[string];
   };
 }
 
@@ -368,17 +376,19 @@ export type SymbolKeys<T> = Extract<keyof T, symbol>;
 /**
  * Function types for better type safety
  */
-export type AsyncFunction<T = any, R = any> = (args: T) => Promise<R>;
+export type AsyncFunction<T = unknown, R = unknown> = (args: T) => Promise<R>;
 
-export type SyncFunction<T = any, R = any> = (args: T) => R;
+export type SyncFunction<T = unknown, R = unknown> = (args: T) => R;
 
-export type EventHandler<T = any> = (event: T) => OperationResult;
+export type EventHandler<T = GenericData> = (event: T) => OperationResult;
 
-export type AsyncEventHandler<T = any> = (event: T) => Promise<OperationResult>;
+export type AsyncEventHandler<T = GenericData> = (
+  event: T
+) => Promise<OperationResult>;
 
-export type Factory<T, C = any> = (config: C) => T;
+export type Factory<T, C = BaseConfig> = (config: C) => T;
 
-export type AsyncFactory<T, C = any> = (config: C) => Promise<T>;
+export type AsyncFactory<T, C = BaseConfig> = (config: C) => Promise<T>;
 
 export type Validator<T> = (value: T) => ValidationResult;
 
@@ -419,7 +429,7 @@ export type FluentBuilder<T> = {
 export type State<T> = {
   name: string;
   value: T;
-  metadata?: Record<string, any>;
+  metadata?: Metadata;
 };
 
 export type Transition<T> = {
@@ -453,13 +463,13 @@ export type ObservableSubject<T> = {
 /**
  * Command pattern types
  */
-export type Command<T = any> = {
+export type Command<T = Context> = {
   execute: (context: T) => OperationResult;
   undo?: (context: T) => OperationResult;
   redo?: (context: T) => OperationResult;
 };
 
-export type CommandInvoker<T = any> = {
+export type CommandInvoker<T = Context> = {
   execute: (command: Command<T>, context: T) => OperationResult;
   undo: () => OperationResult;
   redo: () => OperationResult;
@@ -481,12 +491,12 @@ export type StrategyContext<T, R> = {
 /**
  * Error handling types
  */
-export type ErrorHandler<T = any> = (
+export type ErrorHandler<T = Context> = (
   error: Error,
   context?: T
 ) => OperationResult;
 
-export type AsyncErrorHandler<T = any> = (
+export type AsyncErrorHandler<T = Context> = (
   error: Error,
   context?: T
 ) => Promise<OperationResult>;
@@ -544,24 +554,24 @@ export type LogEntry = {
   level: LogLevel;
   message: string;
   timestamp: Timestamp;
-  metadata?: Record<string, any>;
+  metadata?: Metadata;
   correlationId?: CorrelationId;
 };
 
 export type Logger = {
   log: (entry: LogEntry) => OperationResult;
-  debug: (message: string, metadata?: Record<string, any>) => OperationResult;
-  info: (message: string, metadata?: Record<string, any>) => OperationResult;
-  warn: (message: string, metadata?: Record<string, any>) => OperationResult;
+  debug: (message: string, metadata?: Metadata) => OperationResult;
+  info: (message: string, metadata?: Metadata) => OperationResult;
+  warn: (message: string, metadata?: Metadata) => OperationResult;
   error: (
     message: string,
     error?: Error,
-    metadata?: Record<string, any>
+    metadata?: Metadata
   ) => OperationResult;
   fatal: (
     message: string,
     error?: Error,
-    metadata?: Record<string, any>
+    metadata?: Metadata
   ) => OperationResult;
 };
 
@@ -573,7 +583,7 @@ export type Metric = {
   value: number;
   timestamp: Timestamp;
   tags?: Record<string, string>;
-  metadata?: Record<string, any>;
+  metadata?: Metadata;
 };
 
 export type Counter = {
@@ -633,28 +643,25 @@ export type Resource = {
   id: string;
   type: string;
   status: 'available' | 'allocated' | 'locked' | 'released';
-  metadata?: Record<string, any>;
+  metadata?: Metadata;
 };
 
 export type ResourceManager = {
-  allocate: (
-    type: string,
-    requirements?: Record<string, any>
-  ) => Promise<Resource>;
+  allocate: (type: string, requirements?: BaseConfig) => Promise<Resource>;
   deallocate: (resourceId: string) => Promise<OperationResult>;
-  query: (type: string, filters?: Record<string, any>) => Promise<Resource[]>;
+  query: (type: string, filters?: BaseConfig) => Promise<Resource[]>;
   getStatus: (resourceId: string) => Promise<Resource>;
   // Additional methods required by the codebase
   allocateResources: (
     agentId: string,
-    requirements: Record<string, any>
+    requirements: BaseConfig
   ) => Promise<OperationResult>;
   releaseResources: (agentId: string) => Promise<OperationResult>;
   checkAvailability: (
     type: string,
-    requirements?: Record<string, any>
+    requirements?: BaseConfig
   ) => Promise<boolean>;
-  getCurrentUsage: (agentId?: string) => Promise<Record<string, any>>;
+  getCurrentUsage: (agentId?: string) => Promise<GenericData>;
 };
 
 /**
@@ -676,7 +683,7 @@ export type Plugin = {
   version: string;
   initialize: (container: Container) => Promise<OperationResult>;
   cleanup: () => Promise<OperationResult>;
-  metadata?: Record<string, any>;
+  metadata?: Metadata;
 };
 
 export type PluginManager = {
@@ -721,13 +728,13 @@ export type AuthenticationResult = {
   subject?: SecuritySubject;
   token?: string;
   error?: string;
-  metadata?: Record<string, any>;
+  metadata?: Metadata;
 };
 
 export type AuthorizationResult = {
   authorized: boolean;
   reason?: string;
-  metadata?: Record<string, any>;
+  metadata?: Metadata;
 };
 
 /**
@@ -741,15 +748,36 @@ export interface EventDispatchResult {
   eventId: EventId;
   handlersTriggered: number;
   errors?: string[];
-  metadata?: Record<string, any>;
+  metadata?: Metadata;
 }
 
 export interface SystemHealthResult {
   success: boolean;
-  overall: 'healthy' | 'degraded' | 'unhealthy';
+  status: 'healthy' | 'degraded' | 'unhealthy' | 'critical';
   timestamp: Date;
-  components: HealthCheckResult[];
-  metadata?: Record<string, any>;
+  uptime: number;
+  components: ComponentHealth[];
+  metrics: {
+    totalChecks: number;
+    healthyChecks: number;
+    degradedChecks: number;
+    unhealthyChecks: number;
+    criticalChecks: number;
+    averageResponseTime: number;
+    successRate: number;
+  };
+  details?: GenericData;
+  metadata?: Metadata;
+}
+
+export interface ComponentHealth {
+  component: string;
+  status: 'healthy' | 'degraded' | 'unhealthy' | 'critical';
+  details: GenericData;
+  lastChecked: Date;
+  responseTime: number;
+  uptime: number;
+  dependencies: ComponentHealth[];
 }
 
 export interface ConfigurationUpdateResult {
@@ -757,18 +785,18 @@ export interface ConfigurationUpdateResult {
   message?: string;
   timestamp: Date;
   key: string;
-  oldValue?: any;
-  newValue?: any;
-  metadata?: Record<string, any>;
+  oldValue?: BaseConfig[string];
+  newValue?: BaseConfig[string];
+  metadata?: Metadata;
 }
 
 export interface ConfigurationLoadResult {
   success: boolean;
-  configuration?: Record<string, any>;
+  configuration?: BaseConfig;
   error?: string;
   timestamp: Date;
   source: 'file' | 'environment' | 'remote' | 'default';
-  metadata?: Record<string, any>;
+  metadata?: Metadata;
 }
 
 export interface LoggingResult {
@@ -777,7 +805,7 @@ export interface LoggingResult {
   timestamp: Date;
   logLevel: string;
   logMessage: string;
-  metadata?: Record<string, any>;
+  metadata?: Metadata;
 }
 
 export interface ConfigurationSchema {
@@ -787,8 +815,8 @@ export interface ConfigurationSchema {
       type: string;
       description?: string;
       required?: boolean;
-      default?: any;
-      enum?: any[];
+      default?: BaseConfig[string];
+      enum?: BaseConfig[string][];
     }
   >;
   required: string[];

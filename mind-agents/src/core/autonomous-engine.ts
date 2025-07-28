@@ -14,6 +14,7 @@ import {
   MemoryType,
   MemoryDuration,
   EventBus,
+  ActionResult,
 } from '../types/agent';
 import {
   AutonomousAgent,
@@ -23,9 +24,10 @@ import {
   PerformanceMetrics,
   CuriosityDriver,
   DecisionCriteria,
+  AutonomousEngineState,
 } from '../types/autonomous';
 import { DataValue } from '../types/common';
-import { Logger } from '../utils/logger';
+import { Logger } from '../utils/logger.js';
 
 import {
   EthicsEngine,
@@ -38,6 +40,8 @@ import {
   createDefaultInteractionConfig,
   InteractionType,
 } from './interaction-manager';
+import { PortalIntegration } from './portal-integration.js';
+import { PromptManager } from './prompt-manager.js';
 
 export interface AutonomousEngineConfig {
   enabled: boolean;
@@ -1177,7 +1181,7 @@ export class AutonomousEngine {
     ];
   }
 
-  private async performAction(action: AgentAction): Promise<any> {
+  private async performAction(action: AgentAction): Promise<ActionResult> {
     try {
       // 1. Validate action using TOOL_MODEL if available
       const validation = await this.validateAction(action);
@@ -1219,7 +1223,7 @@ export class AutonomousEngine {
           return {
             success: true,
             type: ActionResultType.SUCCESS,
-            result: `Completed ${action.action}`,
+            result: { message: `Completed ${action.action}` },
           };
       }
     } catch (error) {
@@ -1247,7 +1251,6 @@ export class AutonomousEngine {
       return { allowed: true, reason: 'No validation portal available' };
 
     try {
-      const { PromptManager } = await import('./prompt-manager');
       const prompt = PromptManager.format(
         PromptManager.PROMPTS.ACTION_VALIDATION,
         {
@@ -1259,7 +1262,6 @@ export class AutonomousEngine {
         }
       );
 
-      const { PortalIntegration } = await import('./portal-integration');
       const response = await PortalIntegration.generateResponse(
         this.agent,
         prompt,
@@ -1295,7 +1297,7 @@ export class AutonomousEngine {
   /**
    * Consolidate memories - review and organize important memories
    */
-  private async consolidateMemories(): Promise<any> {
+  private async consolidateMemories(): Promise<ActionResult> {
     if (!this.agent.memory) {
       return {
         success: false,
@@ -1314,12 +1316,11 @@ export class AutonomousEngine {
         return {
           success: true,
           type: ActionResultType.SUCCESS,
-          result: 'No memories to consolidate',
+          result: { message: 'No memories to consolidate' },
         };
       }
 
       // Use main model to identify important memories
-      const { PromptManager } = await import('./prompt-manager');
       const prompt = PromptManager.format(
         PromptManager.PROMPTS.MEMORY_CONSOLIDATION,
         {
@@ -1330,7 +1331,6 @@ export class AutonomousEngine {
       );
 
       if (this.agent.portal) {
-        const { PortalIntegration } = await import('./portal-integration');
         const analysis = await PortalIntegration.generateResponse(
           this.agent,
           prompt
@@ -1359,7 +1359,7 @@ export class AutonomousEngine {
       return {
         success: true,
         type: ActionResultType.SUCCESS,
-        result: 'Memories consolidated',
+        result: { message: 'Memories consolidated' },
       };
     } catch (error) {
       void error;
@@ -1374,14 +1374,14 @@ export class AutonomousEngine {
   /**
    * Review and update goals
    */
-  private async reviewGoals(): Promise<any> {
+  private async reviewGoals(): Promise<ActionResult> {
     try {
       const goals = (this.agent.config as any).personality?.goals || [];
       if (goals.length === 0) {
         return {
           success: true,
           type: ActionResultType.SUCCESS,
-          result: 'No goals to review',
+          result: { message: 'No goals to review' },
         };
       }
 
@@ -1406,7 +1406,7 @@ export class AutonomousEngine {
       return {
         success: true,
         type: ActionResultType.SUCCESS,
-        result: `Reviewed ${goals.length} goals`,
+        result: { message: `Reviewed ${goals.length} goals` },
       };
     } catch (error) {
       void error;
@@ -1421,7 +1421,7 @@ export class AutonomousEngine {
   /**
    * Explore topics based on curiosity
    */
-  private async exploreCuriosity(): Promise<any> {
+  private async exploreCuriosity(): Promise<ActionResult> {
     try {
       const topics =
         (this.agent.config as any).autonomous_behaviors?.curiosity_driven
@@ -1430,7 +1430,7 @@ export class AutonomousEngine {
         return {
           success: true,
           type: ActionResultType.SUCCESS,
-          result: 'No curiosity topics configured',
+          result: { message: 'No curiosity topics configured' },
         };
       }
 
@@ -1460,7 +1460,7 @@ export class AutonomousEngine {
       return {
         success: true,
         type: ActionResultType.SUCCESS,
-        result: `Explored ${topic}`,
+        result: { message: `Explored ${topic}` },
       };
     } catch (error) {
       void error;
@@ -1475,10 +1475,8 @@ export class AutonomousEngine {
   /**
    * Perform social check-in
    */
-  private async performSocialCheckIn(): Promise<any> {
+  private async performSocialCheckIn(): Promise<ActionResult> {
     try {
-      const { PromptManager } = await import('./prompt-manager');
-
       if (this.agent.portal) {
         const prompt = PromptManager.format(
           PromptManager.PROMPTS.SOCIAL_CHECKIN,
@@ -1490,7 +1488,6 @@ export class AutonomousEngine {
           }
         );
 
-        const { PortalIntegration } = await import('./portal-integration');
         const message = await PortalIntegration.generateResponse(
           this.agent,
           prompt
@@ -1519,7 +1516,7 @@ export class AutonomousEngine {
       return {
         success: true,
         type: ActionResultType.SUCCESS,
-        result: 'Social check-in complete',
+        result: { message: 'Social check-in complete' },
       };
     } catch (error) {
       void error;
@@ -1534,10 +1531,8 @@ export class AutonomousEngine {
   /**
    * Perform reflection on recent experiences
    */
-  private async performReflection(): Promise<any> {
+  private async performReflection(): Promise<ActionResult> {
     try {
-      const { PromptManager } = await import('./prompt-manager');
-
       // Get recent activities from memory
       const recentMemories = this.agent.memory
         ? await this.agent.memory.getRecent(this.agent.id, 10)
@@ -1560,7 +1555,6 @@ export class AutonomousEngine {
             ' new learnings',
         });
 
-        const { PortalIntegration } = await import('./portal-integration');
         const reflection = await PortalIntegration.generateResponse(
           this.agent,
           prompt
@@ -1586,7 +1580,7 @@ export class AutonomousEngine {
       return {
         success: true,
         type: ActionResultType.SUCCESS,
-        result: 'Reflection complete',
+        result: { message: 'Reflection complete' },
       };
     } catch (error) {
       void error;
@@ -1601,65 +1595,65 @@ export class AutonomousEngine {
   /**
    * Synthesize knowledge from experiences
    */
-  private async synthesizeKnowledge(): Promise<any> {
+  private async synthesizeKnowledge(): Promise<ActionResult> {
     this.logger.info('Synthesizing knowledge from recent experiences');
     // This would analyze patterns in memories and create higher-level insights
     return {
       success: true,
       type: ActionResultType.SUCCESS,
-      result: 'Knowledge synthesized',
+      result: { message: 'Knowledge synthesized' },
     };
   }
 
   /**
    * Engage in creative work
    */
-  private async doCreativeWork(): Promise<any> {
+  private async doCreativeWork(): Promise<ActionResult> {
     this.logger.info('Engaging in creative work');
     // This could generate creative content based on agent's personality
     return {
       success: true,
       type: ActionResultType.SUCCESS,
-      result: 'Creative work session complete',
+      result: { message: 'Creative work session complete' },
     };
   }
 
   /**
    * Integrate new learnings
    */
-  private async integrateLearning(): Promise<any> {
+  private async integrateLearning(): Promise<ActionResult> {
     this.logger.info('Integrating recent learnings');
     // This would consolidate new information into long-term knowledge
     return {
       success: true,
       type: ActionResultType.SUCCESS,
-      result: 'Learning integrated',
+      result: { message: 'Learning integrated' },
     };
   }
 
   /**
    * Generate new insights
    */
-  private async generateInsights(): Promise<any> {
+  private async generateInsights(): Promise<ActionResult> {
     this.logger.info('Generating insights from experiences');
     // This would create novel connections between memories
     return {
       success: true,
       type: ActionResultType.SUCCESS,
-      result: 'Insights generated',
+      result: { message: 'Insights generated' },
     };
   }
 
   /**
    * Develop wisdom from experiences
    */
-  private async developWisdom(): Promise<any> {
+  private async developWisdom(): Promise<ActionResult> {
     this.logger.info('Developing wisdom from accumulated experiences');
     // This would extract deep patterns and principles
     return {
       success: true,
       type: ActionResultType.SUCCESS,
-      result: 'Wisdom development session complete',
+      result: { message: 'Wisdom development session complete' },
     };
   }
 
@@ -1782,7 +1776,7 @@ export class AutonomousEngine {
   /**
    * Get current autonomous state
    */
-  getAutonomousState() {
+  getAutonomousState(): AutonomousEngineState {
     return {
       isRunning: this.isRunning,
       currentPhase: this.currentPhase?.name || 'none',

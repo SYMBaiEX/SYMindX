@@ -33,9 +33,8 @@ import {
   FinishReason,
 } from '../../types/portal';
 import type { AIMessage as ModelMessage } from '../../types/portals/ai-sdk';
-import { AISDKParameterBuilder } from '../ai-sdk-utils';
 import { BasePortal } from '../base-portal';
-import { convertUsage, buildAISDKParams } from '../utils';
+import { convertUsage } from '../utils';
 
 export interface AzureOpenAIConfig extends PortalConfig {
   apiKey: string;
@@ -83,24 +82,27 @@ export class AzureOpenAIPortal extends BasePortal {
   ];
 
   private azure: ReturnType<typeof createAzure>;
-  private model: ReturnType<ReturnType<typeof createAzure>>;
-  private embedModel: ReturnType<ReturnType<typeof createAzure>>;
-  private imageModel: ReturnType<ReturnType<typeof createAzure>>;
+  private model: any;
+  private embedModel: any;
+  private imageModel: any;
 
   constructor(config: AzureOpenAIConfig) {
     super('azure-openai', 'Azure OpenAI', '1.0.0', config);
 
     // Create Azure client with proper null checking
-    const azureConfig = AISDKParameterBuilder.buildSafeObject({
+    const azureConfig: any = {
       apiKey: config.apiKey,
       resourceName: config.resourceName,
       apiVersion: config.apiVersion || '2024-06-01',
-      baseURL: config.baseURL,
-    });
+    };
+
+    if (config.baseURL) {
+      azureConfig.baseURL = config.baseURL;
+    }
 
     this.azure = createAzure(azureConfig);
 
-    // Create model instances
+    // Create model instances using AI SDK v5 methods
     const deploymentName = config.deploymentName || 'gpt-4';
     this.model = this.azure(deploymentName);
 
@@ -127,7 +129,7 @@ export class AzureOpenAIPortal extends BasePortal {
       void error;
       this.status = PortalStatus.ERROR;
       // Failed to initialize Azure OpenAI portal
-      throw _error;
+      throw error;
     }
   }
 
@@ -255,18 +257,42 @@ export class AzureOpenAIPortal extends BasePortal {
         messages: modelMessages,
       };
 
-      const params = buildAISDKParams(baseParams, {
-        maxOutputTokens:
+      const params: any = { ...baseParams };
+
+      if (
+        options?.maxOutputTokens ??
+        options?.maxTokens ??
+        this.config.maxTokens
+      ) {
+        params.maxOutputTokens =
           options?.maxOutputTokens ??
           options?.maxTokens ??
-          this.config.maxTokens,
-        temperature: options?.temperature ?? this.config.temperature,
-        topP: options?.topP,
-        frequencyPenalty: options?.frequencyPenalty,
-        presencePenalty: options?.presencePenalty,
-        stopSequences: options?.stop,
-        tools: options?.tools,
-      });
+          this.config.maxTokens;
+      }
+
+      if (options?.temperature ?? this.config.temperature) {
+        params.temperature = options?.temperature ?? this.config.temperature;
+      }
+
+      if (options?.topP) {
+        params.topP = options.topP;
+      }
+
+      if (options?.frequencyPenalty) {
+        params.frequencyPenalty = options.frequencyPenalty;
+      }
+
+      if (options?.presencePenalty) {
+        params.presencePenalty = options.presencePenalty;
+      }
+
+      if (options?.stop) {
+        params.stopSequences = options.stop;
+      }
+
+      if (options?.tools) {
+        params.tools = options.tools;
+      }
 
       const { text, usage, finishReason } = await aiGenerateText(params);
 
@@ -323,7 +349,7 @@ export class AzureOpenAIPortal extends BasePortal {
   ): Promise<ImageGenerationResult> {
     try {
       const { images } = await aiGenerateImage({
-        model: this.imageModel,
+        model: this.imageModel as any,
         prompt,
         n: options?.n || 1,
         size: (options?.size || '1024x1024') as `${number}x${number}`,
@@ -331,13 +357,9 @@ export class AzureOpenAIPortal extends BasePortal {
       });
 
       return {
-        images: images.map((img) => ({
-          url:
-            'url' in img && typeof img.url === 'string' ? img.url : undefined,
-          b64_json:
-            'base64' in img && typeof img.base64 === 'string'
-              ? img.base64
-              : undefined,
+        images: images.map((img: any) => ({
+          url: img.url || undefined,
+          b64_json: img.base64 || undefined,
         })),
         model:
           (this.config as AzureOpenAIConfig).imageDeploymentName || 'dall-e-3',
@@ -362,17 +384,38 @@ export class AzureOpenAIPortal extends BasePortal {
         messages: [{ role: 'user' as const, content: prompt }],
       };
 
-      const params = buildAISDKParams(baseParams, {
-        maxOutputTokens:
+      const params: any = { ...baseParams };
+
+      if (
+        options?.maxOutputTokens ??
+        options?.maxTokens ??
+        this.config.maxTokens
+      ) {
+        params.maxOutputTokens =
           options?.maxOutputTokens ??
           options?.maxTokens ??
-          this.config.maxTokens,
-        temperature: options?.temperature ?? this.config.temperature,
-        topP: options?.topP,
-        frequencyPenalty: options?.frequencyPenalty,
-        presencePenalty: options?.presencePenalty,
-        stopSequences: options?.stop,
-      });
+          this.config.maxTokens;
+      }
+
+      if (options?.temperature ?? this.config.temperature) {
+        params.temperature = options?.temperature ?? this.config.temperature;
+      }
+
+      if (options?.topP) {
+        params.topP = options.topP;
+      }
+
+      if (options?.frequencyPenalty) {
+        params.frequencyPenalty = options.frequencyPenalty;
+      }
+
+      if (options?.presencePenalty) {
+        params.presencePenalty = options.presencePenalty;
+      }
+
+      if (options?.stop) {
+        params.stopSequences = options.stop;
+      }
 
       const { textStream } = await aiStreamText(params);
 
@@ -397,11 +440,43 @@ export class AzureOpenAIPortal extends BasePortal {
         messages: modelMessages,
       };
 
-      const streamParams = AISDKParameterBuilder.buildChatGenerationParams(
-        baseParams,
-        options,
-        AISDKParameterBuilder.getProviderDefaults('azure-openai')
-      );
+      const streamParams: any = { ...baseParams };
+
+      if (
+        options?.maxOutputTokens ??
+        options?.maxTokens ??
+        this.config.maxTokens
+      ) {
+        streamParams.maxTokens =
+          options?.maxOutputTokens ??
+          options?.maxTokens ??
+          this.config.maxTokens;
+      }
+
+      if (options?.temperature ?? this.config.temperature) {
+        streamParams.temperature =
+          options?.temperature ?? this.config.temperature;
+      }
+
+      if (options?.topP) {
+        streamParams.topP = options.topP;
+      }
+
+      if (options?.frequencyPenalty) {
+        streamParams.frequencyPenalty = options.frequencyPenalty;
+      }
+
+      if (options?.presencePenalty) {
+        streamParams.presencePenalty = options.presencePenalty;
+      }
+
+      if (options?.stop) {
+        streamParams.stopSequences = options.stop;
+      }
+
+      if (options?.tools) {
+        streamParams.tools = options.tools;
+      }
 
       const { textStream } = await aiStreamText(streamParams);
 

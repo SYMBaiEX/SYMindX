@@ -16,6 +16,24 @@ import { WebSocket } from 'ws';
 import { AgentEvent } from '../../types/agent';
 import { CLIContext } from '../index';
 
+// Interfaces for runtime stats
+interface RuntimeStats {
+  agents?: number;
+  autonomousAgents?: number;
+  isRunning?: boolean;
+  eventBus?: { events?: number };
+  autonomous?: { autonomousEngines?: number };
+}
+
+interface CommandStats {
+  totalCommands: number;
+  pendingCommands: number;
+  processingCommands: number;
+  completedCommands: number;
+  failedCommands: number;
+  averageExecutionTime: number;
+}
+
 export class MonitorCommand {
   private monitoring = false;
   private ws?: WebSocket;
@@ -94,7 +112,7 @@ export class MonitorCommand {
     return cmd;
   }
 
-  async monitorAgent(agentId: string, options: { events?: boolean; logs?: boolean; performance?: boolean }): Promise<void> {
+  async monitorAgent(agentId: string, options: { events?: boolean; logs?: boolean; performance?: boolean } = {}): Promise<void> {
     const agent = this.context.runtime.agents.get(agentId);
     if (!agent) {
       process.stderr.write(chalk.red(`❌ Agent '${agentId}' not found`) + '\n');
@@ -133,7 +151,7 @@ export class MonitorCommand {
     this.stopMonitoring();
   }
 
-  async monitorAll(options: { filter?: string; verbose?: boolean }): Promise<void> {
+  async monitorAll(options: { filter?: string; verbose?: boolean } = {}): Promise<void> {
     process.stdout.write(chalk.blue.bold('\n📊 Monitoring All Agents') + '\n');
     process.stdout.write(chalk.gray('Press Ctrl+C to stop monitoring') + '\n');
     process.stdout.write(chalk.gray('─'.repeat(60)) + '\n');
@@ -141,8 +159,9 @@ export class MonitorCommand {
     this.monitoring = true;
 
     // Subscribe to global events
-    this.context.runtime.subscribeToEvents({ type: options.filter }, (event) =>
-      this.displayEvent(event, options.verbose)
+    this.context.runtime.subscribeToEvents(
+      options.filter ? { type: options.filter } : {},
+      (event) => this.displayEvent(event, options.verbose ?? false)
     );
 
     // Show initial status
@@ -163,7 +182,7 @@ export class MonitorCommand {
     this.stopMonitoring();
   }
 
-  async monitorEvents(options: { type?: string; source?: string; limit?: string }): Promise<void> {
+  async monitorEvents(options: { type?: string; source?: string; limit?: string } = {}): Promise<void> {
     process.stdout.write(chalk.blue.bold('\n📡 Event Monitor') + '\n');
     process.stdout.write(chalk.gray('Press Ctrl+C to stop monitoring') + '\n');
     process.stdout.write(chalk.gray('─'.repeat(60)) + '\n');
@@ -171,11 +190,12 @@ export class MonitorCommand {
     this.monitoring = true;
 
     // Show recent events first
-    const recentEvents = await this.context.runtime.getEventHistory({
-      type: options.type,
-      source: options.source,
-      limit: parseInt(options.limit),
-    });
+    const historyFilter: { type?: string; source?: string; limit?: number } = {};
+    if (options.type) historyFilter.type = options.type;
+    if (options.source) historyFilter.source = options.source;
+    if (options.limit) historyFilter.limit = parseInt(options.limit);
+    
+    const recentEvents = await this.context.runtime.getEventHistory(historyFilter);
 
     process.stdout.write(chalk.cyan(`\n📜 Recent Events (${recentEvents.length}):`) + '\n');
     for (const event of recentEvents) {
@@ -185,8 +205,12 @@ export class MonitorCommand {
     process.stdout.write(chalk.cyan('\n🔴 Live Events:') + '\n');
 
     // Subscribe to new events
+    const eventFilter: { type?: string; source?: string } = {};
+    if (options.type) eventFilter.type = options.type;
+    if (options.source) eventFilter.source = options.source;
+    
     this.context.runtime.subscribeToEvents(
-      { type: options.type, source: options.source },
+      eventFilter,
       (event) => this.displayEvent(event, true)
     );
 
@@ -194,13 +218,13 @@ export class MonitorCommand {
     this.stopMonitoring();
   }
 
-  async monitorPerformance(options: { interval?: string; agent?: string }): Promise<void> {
+  async monitorPerformance(options: { interval?: string; agent?: string } = {}): Promise<void> {
     process.stdout.write(chalk.blue.bold('\n⚡ Performance Monitor') + '\n');
     process.stdout.write(chalk.gray('Press Ctrl+C to stop monitoring') + '\n');
     process.stdout.write(chalk.gray('─'.repeat(60)) + '\n');
 
     this.monitoring = true;
-    const interval = parseInt(options.interval);
+    const interval = options.interval ? parseInt(options.interval) : 5000;
 
     const performanceInterval = setInterval(async () => {
       if (!this.monitoring) {
@@ -220,64 +244,33 @@ export class MonitorCommand {
     this.stopMonitoring();
   }
 
-  async monitorCommands(options: { agent?: string; status?: string }): Promise<void> {
+  async monitorCommands(options: { agent?: string; status?: string } = {}): Promise<void> {
     process.stdout.write(chalk.blue.bold('\n⚡ Command Monitor') + '\n');
     process.stdout.write(chalk.gray('Press Ctrl+C to stop monitoring') + '\n');
     process.stdout.write(chalk.gray('─'.repeat(60)) + '\n');
 
     this.monitoring = true;
 
-    // Show recent commands
-    const commands = this.context.commandSystem.getAllCommands();
-    let filteredCommands = commands;
+    // Command system not available in current implementation
+    process.stdout.write(
+      chalk.yellow('⚠️  Command monitoring not available in current implementation') + '\n'
+    );
+    process.stdout.write(
+      chalk.gray('   Command tracking would need to be implemented in the API extension') + '\n'
+    );
 
     if (options.agent) {
-      filteredCommands = filteredCommands.filter(
-        (cmd) => cmd.agentId === options.agent
-      );
+      process.stdout.write(chalk.gray(`   Requested agent filter: ${options.agent}`) + '\n');
     }
-
     if (options.status) {
-      filteredCommands = filteredCommands.filter(
-        (cmd) => cmd.status === options.status
-      );
+      process.stdout.write(chalk.gray(`   Requested status filter: ${options.status}`) + '\n');
     }
-
-    process.stdout.write(
-      chalk.cyan(`\n📜 Recent Commands (${filteredCommands.length}):`) + '\n'
-    );
-    for (const command of filteredCommands.slice(-10)) {
-      this.displayCommand(command);
-    }
-
-    // Monitor new command updates
-    this.context.commandSystem.on('command_queued', (command) => {
-      if (this.shouldDisplayCommand(command, options)) {
-        process.stdout.write(chalk.blue('📥 QUEUED:') + '\n');
-        this.displayCommand(command);
-      }
-    });
-
-    this.context.commandSystem.on('command_started', (command) => {
-      if (this.shouldDisplayCommand(command, options)) {
-        process.stdout.write(chalk.yellow('🔄 STARTED:') + '\n');
-        this.displayCommand(command);
-      }
-    });
-
-    this.context.commandSystem.on('command_completed', (command) => {
-      if (this.shouldDisplayCommand(command, options)) {
-        const color = command.result?.success ? chalk.green : chalk.red;
-        process.stdout.write(color('✅ COMPLETED:') + '\n');
-        this.displayCommand(command);
-      }
-    });
 
     await this.waitForInterrupt();
     this.stopMonitoring();
   }
 
-  async tailLogs(options: { lines?: string; follow?: boolean }): Promise<void> {
+  async tailLogs(options: { lines?: string; follow?: boolean } = {}): Promise<void> {
     process.stdout.write(chalk.blue.bold('\n📄 Log Monitor') + '\n');
     process.stdout.write(chalk.gray('Press Ctrl+C to stop monitoring') + '\n');
     process.stdout.write(chalk.gray('─'.repeat(60)) + '\n');
@@ -394,37 +387,38 @@ export class MonitorCommand {
       const agent = this.context.runtime.agents.get(agentId);
       if (!agent) return;
 
-      const autonomousStatus =
-        this.context.runtime.getAutonomousStatus(agentId);
+      const autonomousStatus = this.context.runtime.getAutonomousStatus(agentId);
+      const isAutonomous = autonomousStatus.autonomous || false;
 
       process.stdout.write(chalk.cyan('\n🔍 Performance Snapshot:') + '\n');
       process.stdout.write(`  Status: ${agent.status}` + '\n');
-      process.stdout.write(`  Emotion: ${agent.emotion?.current || 'unknown'}` + '\n');
+      process.stdout.write(`  Emotion: ${agent.emotion?.current ?? 'unknown'}` + '\n');
       process.stdout.write(
         `  Extensions: ${agent.extensions.filter((e) => e.enabled).length}/${agent.extensions.length} active` + '\n'
       );
 
-      if (autonomousStatus.autonomous) {
+      if (isAutonomous) {
+        const autonomyLevel = autonomousStatus.engine?.autonomyLevel || 0;
         process.stdout.write(
-          `  Autonomy: ${((autonomousStatus.engine?.autonomyLevel || 0) * 100).toFixed(0)}%` + '\n'
+          `  Autonomy: ${(autonomyLevel * 100).toFixed(0)}%` + '\n'
         );
       }
     }, 5000); // Every 5 seconds
   }
 
   private displaySystemStatus(): void {
-    const stats = this.context.runtime.getStats();
+    const stats = this.context.runtime.getStats() as RuntimeStats;
 
     process.stdout.write(chalk.cyan('\n📊 System Status:') + '\n');
     process.stdout.write(
-      `  Agents: ${stats.agents} (${stats.autonomousAgents} autonomous)` + '\n'
+      `  Agents: ${stats.agents ?? 0} (${stats.autonomousAgents ?? 0} autonomous)` + '\n'
     );
     process.stdout.write(`  Running: ${stats.isRunning ? '✅' : '❌'}` + '\n');
-    process.stdout.write(`  Events: ${stats.eventBus.events}` + '\n');
+    process.stdout.write(`  Events: ${stats.eventBus?.events ?? 0}` + '\n');
 
     if (stats.autonomous) {
       process.stdout.write(
-        `  Autonomous Engines: ${stats.autonomous.autonomousEngines}` + '\n'
+        `  Autonomous Engines: ${stats.autonomous.autonomousEngines ?? 0}` + '\n'
       );
     }
   }
@@ -449,7 +443,7 @@ export class MonitorCommand {
     }
   }
 
-  private displayCommand(command: { timestamp: Date; status: string; agentId: string; instruction: string; result?: { error?: string } }): void {
+  private displayCommand(command: { timestamp: Date; status: string; agentId: string; instruction: string; result?: { error?: string; success?: boolean } | undefined }): void {
     const timestamp = command.timestamp.toLocaleTimeString();
     const statusColor = this.getCommandStatusColor(command.status);
 
@@ -462,8 +456,16 @@ export class MonitorCommand {
   }
 
   private async displayPerformanceMetrics(agentId?: string): Promise<void> {
-    const stats = this.context.runtime.getStats();
-    const commandStats = this.context.commandSystem.getStats();
+    const stats = this.context.runtime.getStats() as RuntimeStats;
+    // Command system not available in current implementation
+    const commandStats = {
+      totalCommands: 0,
+      pendingCommands: 0,
+      processingCommands: 0,
+      completedCommands: 0,
+      failedCommands: 0,
+      averageExecutionTime: 0,
+    } as CommandStats;
 
     process.stdout.write(chalk.cyan('🖥️  System Metrics:') + '\n');
     process.stdout.write(
@@ -472,21 +474,14 @@ export class MonitorCommand {
     process.stdout.write(`  Uptime: ${(process.uptime() / 60).toFixed(1)} minutes` + '\n');
 
     process.stdout.write(chalk.cyan('\n🤖 Agent Metrics:') + '\n');
-    process.stdout.write(`  Total Agents: ${stats.agents}` + '\n');
-    process.stdout.write(`  Autonomous Agents: ${stats.autonomousAgents}` + '\n');
+    process.stdout.write(`  Total Agents: ${stats.agents ?? 0}` + '\n');
+    process.stdout.write(`  Autonomous Agents: ${stats.autonomousAgents ?? 0}` + '\n');
     process.stdout.write(
       `  Runtime Status: ${stats.isRunning ? '✅ Running' : '❌ Stopped'}` + '\n'
     );
 
     process.stdout.write(chalk.cyan('\n⚡ Command Metrics:') + '\n');
-    process.stdout.write(`  Total Commands: ${commandStats.totalCommands}` + '\n');
-    process.stdout.write(`  Pending: ${commandStats.pendingCommands}` + '\n');
-    process.stdout.write(`  Processing: ${commandStats.processingCommands}` + '\n');
-    process.stdout.write(`  Completed: ${commandStats.completedCommands}` + '\n');
-    process.stdout.write(`  Failed: ${commandStats.failedCommands}` + '\n');
-    process.stdout.write(
-      `  Avg Execution Time: ${commandStats.averageExecutionTime.toFixed(2)}ms` + '\n'
-    );
+    process.stdout.write(`  Status: Not available in current implementation` + '\n');
 
     if (agentId) {
       const agent = this.context.runtime.agents.get(agentId);
@@ -494,21 +489,22 @@ export class MonitorCommand {
         process.stdout.write(chalk.cyan(`\n🎯 Agent ${agent.name} Metrics:`) + '\n');
         process.stdout.write(`  Status: ${agent.status}` + '\n');
         process.stdout.write(
-          `  Last Update: ${agent.lastUpdate?.toLocaleString() || 'never'}` + '\n'
+          `  Last Update: ${agent.lastUpdate?.toLocaleString() ?? 'never'}` + '\n'
         );
 
-        const autonomousStatus =
-          this.context.runtime.getAutonomousStatus(agentId);
-        if (autonomousStatus.autonomous) {
+        const autonomousStatus = this.context.runtime.getAutonomousStatus(agentId);
+        const isAutonomous = autonomousStatus.autonomous || false;
+        if (isAutonomous) {
+          const autonomyLevel = autonomousStatus.engine?.autonomyLevel || 0;
           process.stdout.write(
-            `  Autonomy Level: ${((autonomousStatus.engine?.autonomyLevel || 0) * 100).toFixed(0)}%` + '\n'
+            `  Autonomy Level: ${(autonomyLevel * 100).toFixed(0)}%` + '\n'
           );
         }
       }
     }
   }
 
-  private shouldDisplayCommand(command: { agentId: string; status: string }, options: { agent?: string; status?: string }): boolean {
+  private shouldDisplayCommand(command: { agentId?: string | undefined; status?: string | undefined }, options: { agent?: string | undefined; status?: string | undefined }): boolean {
     if (options.agent && command.agentId !== options.agent) {
       return false;
     }

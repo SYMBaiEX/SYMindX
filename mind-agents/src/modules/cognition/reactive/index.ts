@@ -1,9 +1,51 @@
-import {
-  ThoughtNode,
-  DecisionMatrix,
-  DecisionOption,
-  DecisionCriterion,
-} from '../../../types';
+// Local type definitions for reactive cognition
+interface ThoughtNode {
+  id: string;
+  content: string;
+  confidence: number;
+  connections: string[];
+  timestamp: Date;
+  type?: 'observation' | 'inference' | 'hypothesis' | 'conclusion' | 'question';
+}
+
+interface DecisionMatrix {
+  options: DecisionOption[];
+  criteria: DecisionCriterion[];
+  weights: Record<string, number>;
+  scores: DecisionScore[][];
+  method: 'weighted_sum' | 'ahp' | 'topsis' | 'electre';
+  rankings?: OptionRanking[];
+}
+
+interface DecisionOption {
+  id: string;
+  name?: string;
+  description: string;
+  cost?: number;
+}
+
+interface DecisionCriterion {
+  id: string;
+  name: string;
+  type: 'benefit' | 'cost';
+  unit?: string;
+  isConstraint?: boolean;
+}
+
+interface DecisionScore {
+  value: number;
+  normalized: number;
+  confidence: number;
+  justification?: string;
+}
+
+interface OptionRanking {
+  optionId: string;
+  rank: number;
+  score: number;
+  strengths: string[];
+  weaknesses: string[];
+}
 import {
   Agent,
   ThoughtContext,
@@ -18,6 +60,7 @@ import {
 import {
   CognitionModule,
   CognitionModuleMetadata,
+  ReasoningParadigm,
 } from '../../../types/cognition';
 import { BaseConfig } from '../../../types/common';
 
@@ -148,7 +191,7 @@ export class ReactiveCognition implements CognitionModule {
       version: '1.0.0',
       description: 'Fast pattern-based reactive response system',
       author: 'SYMindX',
-      paradigms: ['reactive'],
+      paradigms: [ReasoningParadigm.RULE_BASED, ReasoningParadigm.CASE_BASED],
       learningCapable: this.config.enableLearning || false,
     };
   }
@@ -184,7 +227,8 @@ export class ReactiveCognition implements CognitionModule {
     }
 
     // Look for partial matches
-    for (const [patternKey, patternData] of this.responsePatterns) {
+    const patterns = Array.from(this.responsePatterns.entries());
+    for (const [patternKey, patternData] of patterns) {
       if (stimulus.includes(patternKey) || patternKey.includes(stimulus)) {
         return patternData.response;
       }

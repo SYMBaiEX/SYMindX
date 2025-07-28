@@ -11,11 +11,51 @@
 import chalk from 'chalk';
 import { Command } from 'commander';
 
-import { Logger } from '../../utils/logger';
+import { runtimeLogger } from '../../utils/logger';
 import { CLIContext } from '../index';
 
+// Interfaces for runtime capabilities
+interface RuntimeCapabilities {
+  runtime?: {
+    version?: string;
+    isRunning?: boolean;
+    tickInterval?: number;
+  };
+  agents?: {
+    total?: number;
+    activeList?: string[];
+  };
+  modules?: {
+    memory?: { available?: string[] };
+    emotion?: { available?: string[] };
+    cognition?: { available?: string[] };
+    portals?: { available?: string[]; factories?: string[] };
+  };
+  extensions?: {
+    loaded?: string[];
+    available?: string[];
+  };
+}
+
+interface RuntimeStats {
+  agents?: number;
+  autonomousAgents?: number;
+  isRunning?: boolean;
+  eventBus?: { events?: number };
+  autonomous?: { autonomousEngines?: number };
+}
+
+interface CommandStats {
+  totalCommands: number;
+  pendingCommands: number;
+  processingCommands: number;
+  completedCommands: number;
+  failedCommands: number;
+  averageExecutionTime: number;
+}
+
 export class ListCommand {
-  private logger = new Logger('cli:list');
+  private logger = runtimeLogger;
 
   constructor(private context: CLIContext) {}
 
@@ -187,8 +227,8 @@ export class ListCommand {
 
           const name = agent.name.padEnd(20).substring(0, 20);
           const status = statusColor(agent.status.padEnd(10));
-          const emotion = (agent.emotion || 'unknown').padEnd(10);
-          const extensions = (agent.extensionCount || 0).toString().padEnd(10);
+          const emotion = (agent.emotion ?? 'unknown').padEnd(10);
+          const extensions = (agent.extensionCount ?? 0).toString().padEnd(10);
           const id = chalk.gray(agent.id.substring(0, 12) + '...');
 
           process.stdout.write(
@@ -207,12 +247,16 @@ export class ListCommand {
       process.stdout.write(chalk.blue.bold('\n🧩 Available Modules'));
       process.stdout.write(chalk.gray('─'.repeat(60)));
 
-      const capabilities = this.context.runtime.getRuntimeCapabilities();
+      const capabilities = this.context.runtime.getRuntimeCapabilities() as RuntimeCapabilities;
+      
+      // Type guard to ensure capabilities.modules exists and has the expected structure
+      const modules = capabilities.modules ?? {};
 
       // Memory modules
       if (!options.type || options.type === 'memory') {
         process.stdout.write(chalk.cyan('\n💾 Memory Providers:'));
-        for (const provider of capabilities.modules.memory.available) {
+        const memoryProviders = modules.memory?.available ?? [];
+        for (const provider of memoryProviders) {
           process.stdout.write(`  • ${provider}`);
         }
       }
@@ -220,7 +264,8 @@ export class ListCommand {
       // Emotion modules
       if (!options.type || options.type === 'emotion') {
         process.stdout.write(chalk.cyan('\n😊 Emotion Modules:'));
-        for (const module of capabilities.modules.emotion.available) {
+        const emotionModules = modules.emotion?.available ?? [];
+        for (const module of emotionModules) {
           process.stdout.write(`  • ${module}`);
         }
       }
@@ -228,7 +273,8 @@ export class ListCommand {
       // Cognition modules
       if (!options.type || options.type === 'cognition') {
         process.stdout.write(chalk.cyan('\n🧠 Cognition Modules:'));
-        for (const module of capabilities.modules.cognition.available) {
+        const cognitionModules = modules.cognition?.available ?? [];
+        for (const module of cognitionModules) {
           process.stdout.write(`  • ${module}`);
         }
       }
@@ -236,13 +282,15 @@ export class ListCommand {
       // Portal modules
       if (!options.type || options.type === 'portal') {
         process.stdout.write(chalk.cyan('\n🔮 Portals:'));
-        for (const portal of capabilities.modules.portals.available) {
+        const portalModules = modules.portals?.available ?? [];
+        for (const portal of portalModules) {
           process.stdout.write(`  • ${portal}`);
         }
 
-        if (capabilities.modules.portals.factories.length > 0) {
+        const portalFactories = modules.portals?.factories ?? [];
+        if (portalFactories.length > 0) {
           process.stdout.write(chalk.gray('\n  Portal Factories:'));
-          for (const factory of capabilities.modules.portals.factories) {
+          for (const factory of portalFactories) {
             process.stdout.write(chalk.gray(`    • ${factory}`));
           }
         }
@@ -289,7 +337,9 @@ export class ListCommand {
           { extension: any; agents: string[] }
         >();
 
-        for (const agent of this.context.runtime.agents.values()) {
+        // Use Array.from to get all agents
+        const agents = Array.from(this.context.runtime.agents.values());
+        for (const agent of agents) {
           for (const ext of agent.extensions) {
             if (options.enabled && !ext.enabled) continue;
 
@@ -324,7 +374,7 @@ export class ListCommand {
           if (actions.length > 0) {
             process.stdout.write(chalk.gray(`    Actions: ${actions.join(', ')}`));
           }
-          process.stdout.write();
+          process.stdout.write('\n');
         }
       }
     } catch (error) {
@@ -335,66 +385,18 @@ export class ListCommand {
 
   async listCommands(options: any): Promise<void> {
     try {
-      let commands = this.context.commandSystem.getAllCommands();
-
-      // Apply filters
+      // Command system is no longer available, show message
+      process.stdout.write(chalk.yellow('⚠️  Command history feature not available in current implementation') + '\n');
+      process.stdout.write(chalk.gray('   Command tracking would need to be implemented in the API extension') + '\n');
+      
       if (options.agent) {
-        commands = commands.filter((cmd) => cmd.agentId === options.agent);
+        process.stdout.write(chalk.gray(`   Requested agent filter: ${options.agent}`) + '\n');
       }
-
       if (options.status) {
-        commands = commands.filter((cmd) => cmd.status === options.status);
-      }
-
-      if (options.active) {
-        commands = commands.filter(
-          (cmd) => cmd.status === 'pending' || cmd.status === 'processing'
-        );
-      }
-
-      // Limit and sort
-      const limit = parseInt(options.limit);
-      commands = commands
-        .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
-        .slice(0, limit);
-
-      if (commands.length === 0) {
-        process.stdout.write(chalk.yellow('No commands found matching criteria'));
-        return;
-      }
-
-      process.stdout.write(chalk.blue.bold(`\n⚡ Commands (${commands.length})`));
-      process.stdout.write(chalk.gray('─'.repeat(80)));
-      process.stdout.write(
-        chalk.cyan(
-          'TIME     AGENT           STATUS      TYPE         INSTRUCTION'
-        )
-      );
-      process.stdout.write(chalk.gray('─'.repeat(80)));
-
-      for (const cmd of commands) {
-        const time = cmd.timestamp.toLocaleTimeString().padEnd(8);
-        const agentName = this.getAgentName(cmd.agentId)
-          .padEnd(14)
-          .substring(0, 14);
-        const statusColor = this.getCommandStatusColor(cmd.status);
-        const status = statusColor(cmd.status.padEnd(10));
-        const type = cmd.type.padEnd(12);
-        const instruction =
-          cmd.instruction.length > 30
-            ? cmd.instruction.substring(0, 27) + '...'
-            : cmd.instruction;
-
-        process.stdout.write(
-          `${chalk.gray(time)} ${chalk.cyan(agentName)} ${status} ${type} ${instruction}`
-        );
-
-        if (cmd.result?.error) {
-          process.stdout.write(chalk.red(`         Error: ${cmd.result.error}`));
-        }
+        process.stdout.write(chalk.gray(`   Requested status filter: ${options.status}`) + '\n');
       }
     } catch (error) {
-      process.stdout.write(chalk.red('❌ Failed to list commands'));
+      process.stdout.write(chalk.red('❌ Failed to list commands') + '\n');
       this.logger.error('List commands error:', error);
     }
   }
@@ -404,9 +406,10 @@ export class ListCommand {
       process.stdout.write(chalk.blue.bold('\n🔮 AI Portals'));
       process.stdout.write(chalk.gray('─'.repeat(60)));
 
-      const capabilities = this.context.runtime.getRuntimeCapabilities();
-      const availablePortals = capabilities.modules.portals.available;
-      const factories = capabilities.modules.portals.factories;
+      const capabilities = this.context.runtime.getRuntimeCapabilities() as RuntimeCapabilities;
+      const modules = capabilities.modules ?? {};
+      const availablePortals = modules.portals?.available ?? [];
+      const factories = modules.portals?.factories ?? [];
 
       process.stdout.write(chalk.cyan('Available Portals:'));
       for (const portal of availablePortals) {
@@ -507,24 +510,43 @@ export class ListCommand {
 
   async listCapabilities(options: any): Promise<void> {
     try {
-      const capabilities = this.context.runtime.getRuntimeCapabilities();
-      const stats = this.context.runtime.getStats();
-      const commandStats = this.context.commandSystem.getStats();
+      const capabilities = this.context.runtime.getRuntimeCapabilities() as RuntimeCapabilities;
+      const stats = this.context.runtime.getStats() as RuntimeStats;
+      // Command system stats not available in current implementation
+      const commandStats = {
+        totalCommands: 0,
+        pendingCommands: 0,
+        processingCommands: 0,
+        completedCommands: 0,
+        failedCommands: 0,
+        averageExecutionTime: 0,
+      } as CommandStats;
+
+      // Extract typed properties with defaults
+      const runtime = capabilities.runtime ?? {};
+      const agents = capabilities.agents ?? {};
+      const modules = capabilities.modules ?? {};
+      const extensions = capabilities.extensions ?? {};
 
       const capabilityData = {
         runtime: {
-          version: capabilities.runtime.version,
-          isRunning: capabilities.runtime.isRunning,
-          tickInterval: capabilities.runtime.tickInterval,
+          version: runtime.version ?? '1.0.0',
+          isRunning: runtime.isRunning ?? false,
+          tickInterval: runtime.tickInterval ?? 1000,
           uptime: process.uptime(),
         },
         agents: {
-          total: capabilities.agents.total,
-          autonomous: stats.autonomousAgents,
-          list: capabilities.agents.activeList,
+          total: agents.total ?? 0,
+          autonomous: stats.autonomousAgents ?? 0,
+          list: agents.activeList ?? [],
         },
-        modules: capabilities.modules,
-        extensions: capabilities.extensions,
+        modules: {
+          memory: modules.memory ?? { available: [] },
+          emotion: modules.emotion ?? { available: [] },
+          cognition: modules.cognition ?? { available: [] },
+          portals: modules.portals ?? { available: [], factories: [] },
+        },
+        extensions: extensions ?? { loaded: [], available: [] },
         commands: {
           total: commandStats.totalCommands,
           pending: commandStats.pendingCommands,
@@ -564,16 +586,16 @@ export class ListCommand {
 
         process.stdout.write(chalk.cyan('\nModules:'));
         process.stdout.write(
-          `  Memory: ${capabilityData.modules.memory.available.join(', ')}`
+          `  Memory: ${capabilityData.modules.memory.available?.join(', ') ?? 'none'}`
         );
         process.stdout.write(
-          `  Emotion: ${capabilityData.modules.emotion.available.join(', ')}`
+          `  Emotion: ${capabilityData.modules.emotion.available?.join(', ') ?? 'none'}`
         );
         process.stdout.write(
-          `  Cognition: ${capabilityData.modules.cognition.available.join(', ')}`
+          `  Cognition: ${capabilityData.modules.cognition.available?.join(', ') ?? 'none'}`
         );
         process.stdout.write(
-          `  Portals: ${capabilityData.modules.portals.available.join(', ')}`
+          `  Portals: ${capabilityData.modules.portals.available?.join(', ') ?? 'none'}`
         );
 
         process.stdout.write(chalk.cyan('\nCommands:'));
@@ -612,9 +634,9 @@ export class ListCommand {
         chalk.gray('(' + agent.id + ')')
     );
     process.stdout.write('  Status: ' + statusColor(agent.status));
-    process.stdout.write('  Emotion: ' + (agent.emotion || 'unknown'));
-    process.stdout.write('  Last Update: ' + (agent.lastUpdate || 'never'));
-    process.stdout.write('  Extensions: ' + (agent.extensionCount || 0));
+    process.stdout.write('  Emotion: ' + (agent.emotion ?? 'unknown'));
+    process.stdout.write('  Last Update: ' + (agent.lastUpdate ?? 'never'));
+    process.stdout.write('  Extensions: ' + (agent.extensionCount ?? 0));
 
     if (agent.hasPortal) {
       process.stdout.write('  Portal: configured');

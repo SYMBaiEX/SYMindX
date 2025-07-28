@@ -30,7 +30,9 @@ export enum PortalType {
   // Specialized AI Portals
   MISTRAL = 'mistral',
   COHERE = 'cohere',
+  PERPLEXITY = 'perplexity',
   MULTIMODAL = 'multimodal',
+  UNIFIED_MULTIMODAL = 'unified_multimodal',
 
   // Local AI Portals
   OLLAMA = 'ollama',
@@ -153,6 +155,12 @@ export interface TextGenerationOptions {
   stop?: string[];
   stream?: boolean;
   logitBias?: Record<string, number>;
+
+  // AI SDK v5 tool calling and streaming support
+  tools?: AISDKToolSet;
+  maxSteps?: number;
+  onStepFinish?: (step: any) => void;
+  functions?: FunctionDefinition[]; // Legacy function calling support
 }
 
 export enum FinishReason {

@@ -28,8 +28,8 @@ export function convertUsage(usage?: LanguageModelUsage | AIUsage): {
   }
 
   // Handle different usage formats
-  const promptTokens = usage.promptTokens || 0;
-  const completionTokens = usage.completionTokens || 0;
+  const promptTokens = (usage as any).promptTokens || 0;
+  const completionTokens = (usage as any).completionTokens || 0;
 
   return {
     promptTokens,
@@ -42,6 +42,7 @@ export function convertUsage(usage?: LanguageModelUsage | AIUsage): {
  * Safely build AI SDK v5 parameters with conditional inclusion
  * This helper ensures that optional parameters are only included when they have values
  * Prevents TypeScript exactOptionalPropertyTypes errors by only including defined values
+ * Handles maxTokens -> maxOutputTokens conversion for AI SDK v5 compatibility
  */
 export function buildAISDKParams<T extends Record<string, unknown>>(
   baseParams: T,
@@ -54,6 +55,17 @@ export function buildAISDKParams<T extends Record<string, unknown>>(
   // Dynamically add only defined and non-null properties
   for (const [key, value] of Object.entries(options)) {
     if (value !== undefined && value !== null) {
+      // Handle maxTokens -> maxOutputTokens conversion for AI SDK v5
+      if (key === 'maxTokens') {
+        (params as Record<string, unknown>)['maxOutputTokens'] = value;
+        continue;
+      }
+
+      // Skip maxOutputTokens if it was already handled as maxTokens
+      if (key === 'maxOutputTokens' && 'maxTokens' in options) {
+        continue;
+      }
+
       // Special handling for arrays - only include if not empty
       if (Array.isArray(value)) {
         if (value.length > 0) {
@@ -107,7 +119,7 @@ export function buildProviderSettings(
       value !== null &&
       !['apiKey', 'baseURL', 'organization'].includes(key)
     ) {
-      result[key] = value;
+      (result as any)[key] = value;
     }
   }
 

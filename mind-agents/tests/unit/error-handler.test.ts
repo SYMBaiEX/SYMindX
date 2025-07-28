@@ -14,12 +14,14 @@ import {
   createConfigurationError,
   createSystemError,
   handleErrors,
-} from './error-handler.js';
+} from '../../src/utils/error-handler.js';
 
 describe('ErrorHandler', () => {
   let errorHandler: ErrorHandler;
 
   beforeEach(() => {
+    // Reset the singleton instance for each test to ensure clean state
+    (ErrorHandler as any).instance = null;
     errorHandler = ErrorHandler.getInstance({
       retryAttempts: 2,
       retryDelay: 100,
@@ -150,8 +152,8 @@ describe('ErrorHandler', () => {
       const result = await errorHandler.handleError(error, failingOperation);
 
       expect(result.success).toBe(false);
-      expect(result.error).toContain('Recovery failed');
-      expect(failingOperation).toHaveBeenCalledTimes(2); // Initial + 1 retry
+      expect(result.error).toContain('All retry attempts failed');
+      expect(failingOperation).toHaveBeenCalledTimes(2); // 2 retry attempts total
     });
 
     it('should handle graceful degradation', async () => {
@@ -235,9 +237,9 @@ describe('ErrorHandler', () => {
 
       expect(result.valid).toBe(false);
       expect(result.errors.length).toBeGreaterThan(0);
-      expect(result.errors).toContain('Configuration must have a valid name');
-      expect(result.errors).toContain("Field 'port' must be a positive number");
-      expect(result.errors).toContain("Field 'enabled' must be a boolean");
+      expect(result.errors.some(e => e.message === 'Configuration must have a valid name')).toBe(true);
+      expect(result.errors.some(e => e.message === "Field 'port' must be a positive number")).toBe(true);
+      expect(result.errors.some(e => e.message === "Field 'enabled' must be a boolean")).toBe(true);
     });
 
     it('should detect warnings for empty API keys', () => {
@@ -252,40 +254,52 @@ describe('ErrorHandler', () => {
       const result = errorHandler.validateConfig(configWithEmptyKeys);
 
       expect(result.valid).toBe(true); // No errors, just warnings
-      expect(result.warnings).toContain("API key 'openai' is empty or invalid");
-      expect(result.warnings).not.toContain("API key 'groq' is empty or invalid");
+      expect(result.warnings.some(w => w.message === "API key 'openai' is empty or invalid")).toBe(true);
+      expect(result.warnings.some(w => w.message === "API key 'groq' is empty or invalid")).toBe(false);
     });
   });
 
   describe('Circuit Breaker', () => {
     it('should track failure count and open circuit', async () => {
+      // Create handler with circuit breaker enabled and minimal retries
+      const testHandler = ErrorHandler.createTestInstance({
+        enableCircuitBreaker: true,
+        circuitBreakerThreshold: 3,
+        retryAttempts: 1, // Need at least 1 retry for circuit breaker to track failures
+        retryDelay: 10, // Very short delay for fast test execution
+      });
+      
       const failingOperation = mock(async () => {
         throw new Error('Service down');
       });
 
-      const error = errorHandler.createError(
+      const error = testHandler.createError(
         'Service error',
         'SERVICE_ERROR',
         ErrorCategory.NETWORK,
         ErrorSeverity.HIGH
       );
 
-      // Make multiple failed attempts
-      for (let i = 0; i < 6; i++) {
-        await errorHandler.handleError(error, failingOperation);
+      // Make failed attempts to trigger circuit breaker
+      for (let i = 0; i < 3; i++) {
+        await testHandler.handleError(error, failingOperation);
       }
 
-      const status = errorHandler.getCircuitBreakerStatus('test-operation');
-      expect(status.failureCount).toBeGreaterThan(0);
+      const status = testHandler.getCircuitBreakerStatus('network-SERVICE_ERROR');
+      expect(status.failureCount).toBe(3);
+      expect(status.state).toBe('open');
     });
 
     it('should prevent execution when circuit is open', async () => {
       const operation = mock(async () => 'should not execute');
 
       // Simulate circuit breaker being open by creating handler with low threshold
-      const testHandler = ErrorHandler.getInstance({
+      const testHandler = ErrorHandler.createTestInstance({
         circuitBreakerThreshold: 1,
         circuitBreakerTimeout: 1000,
+        enableCircuitBreaker: true,
+        retryAttempts: 1, // Need at least 1 retry for circuit breaker to work
+        retryDelay: 10, // Very short delay for fast test execution
       });
 
       const error = testHandler.createError(
@@ -296,14 +310,16 @@ describe('ErrorHandler', () => {
       );
 
       // First failure should open the circuit
-      await testHandler.handleError(error, async () => {
+      const firstResult = await testHandler.handleError(error, async () => {
         throw new Error('Failure');
       });
+      expect(firstResult.success).toBe(false);
 
-      // Second attempt should be blocked
+      // Second attempt should be blocked by circuit breaker
       const result = await testHandler.handleError(error, operation);
       expect(result.success).toBe(false);
-      expect(result.metadata?.recovery?.strategy).toBe(RecoveryStrategy.CIRCUIT_BREAKER);
+      expect(result.error).toContain('Circuit breaker is open');
+      expect(operation).not.toHaveBeenCalled();
     });
   });
 
@@ -422,7 +438,7 @@ describe('ErrorHandler', () => {
     it('should apply default error category and severity', async () => {
       const service = new TestService();
 
-      await expect(service.processData({ shouldFail: true })).rejects.toThrow();
+      await expect(service.processData({ shouldFail: true })).rejects.toThrow('All retry attempts failed');
     });
   });
 

@@ -150,7 +150,18 @@ export class RuntimeClient {
   async getAgents(): Promise<AgentInfo[]> {
     try {
       const response = await this.makeRequest('/agents');
-      return response.agents || [];
+      
+      // Handle both response formats
+      if (response.data && response.data.agents) {
+        // New format: { success: true, data: { agents: [...] } }
+        return response.data.agents || [];
+      } else if (response.agents) {
+        // Old format: { agents: [...] }
+        return response.agents || [];
+      }
+      
+      // Fallback
+      return [];
     } catch (error) {
       // Log detailed error for debugging
       if (this.connectionAttempts > 2) {

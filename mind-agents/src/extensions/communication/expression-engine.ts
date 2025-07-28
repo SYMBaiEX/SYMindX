@@ -79,10 +79,10 @@ export class ExpressionEngine {
    */
   async initialize(agent: Agent): Promise<void> {
     this.agent = agent;
-    runtimeLogger.debug(
-      '🎭 Expression Engine initialized for agent',
-      agent.name
-    );
+    runtimeLogger.debug('🎭 Expression Engine initialized for agent', {
+      agentId: agent.id,
+      metadata: { agentName: agent.name },
+    });
   }
 
   /**
@@ -207,10 +207,10 @@ export class ExpressionEngine {
   async generateVariations(
     content: string,
     options?: {
-      emotion?: string;
+      emotion?: string | undefined;
       style?: any;
       context?: any;
-      count?: number;
+      count?: number | undefined;
     }
   ): Promise<string[]> {
     const variations: string[] = [];
@@ -246,9 +246,9 @@ export class ExpressionEngine {
   async enhanceExpression(
     content: string,
     options?: {
-      emotion?: string;
+      emotion?: string | undefined;
       context?: any;
-      variation?: 'subtle' | 'balanced' | 'expressive';
+      variation?: 'subtle' | 'balanced' | 'expressive' | undefined;
     }
   ): Promise<string> {
     const variation = options?.variation || 'balanced';

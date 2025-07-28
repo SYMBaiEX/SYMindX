@@ -1,4 +1,4 @@
-import { HTNOperator, ThoughtNode } from '../../../types';
+// Import types properly from centralized system
 import {
   Agent,
   ThoughtContext,
@@ -21,13 +21,46 @@ import { BaseConfig } from '../../../types/common';
 
 import { HTNPlannerConfig, TaskNetwork, Task } from './types';
 
+// Local type definitions for HTN Planner
+
+interface HTNOperator {
+  id: string;
+  name: string;
+  type: 'primitive' | 'compound';
+  preconditions: Array<{
+    type: string;
+    predicate: string;
+    parameters: string[];
+    positive: boolean;
+  }>;
+  effects: Array<{
+    type: string;
+    predicate: string;
+    parameters: string[];
+  }>;
+  cost: number;
+  decomposition?: {
+    method: string;
+    subtasks: Array<{
+      id: string;
+      task: string;
+      parameters: string[];
+    }>;
+    ordering: Array<{
+      type: string;
+      first: string;
+      second: string;
+    }>;
+  };
+}
+
 export class HTNPlannerCognition implements CognitionModule {
   public id: string;
   public type: string = 'htn_planner';
   private config: HTNPlannerConfig;
   private taskNetworks: Map<string, TaskNetwork> = new Map();
   private decompositionCache: Map<string, Task[]> = new Map();
-  private thoughtGraph: Map<string, ThoughtNode> = new Map();
+  private operators: Map<string, HTNOperator> = new Map();
 
   constructor(config: HTNPlannerConfig = {}) {
     this.id = `htn_planner_${Date.now()}`;
@@ -167,8 +200,8 @@ export class HTNPlannerCognition implements CognitionModule {
       ];
 
       for (const pattern of goalPatterns) {
-        const matches = context.goal.matchAll(pattern);
-        for (const match of matches) {
+        let match;
+        while ((match = pattern.exec(context.goal)) !== null) {
           const captured = match[1];
           if (captured) {
             goals.push(captured.trim());
@@ -525,29 +558,6 @@ export class HTNPlannerCognition implements CognitionModule {
     ];
 
     basicOperators.forEach((op) => this.operators.set(op.id, op));
-  }
-
-  private _createThoughtNode(
-    content: string,
-    confidence: number,
-    type?:
-      | 'observation'
-      | 'inference'
-      | 'hypothesis'
-      | 'conclusion'
-      | 'question'
-  ): ThoughtNode {
-    const nodeBase = {
-      id: `thought_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      content,
-      confidence,
-      connections: [],
-      timestamp: new Date(),
-    };
-
-    const node: ThoughtNode = type ? { ...nodeBase, type } : { ...nodeBase };
-    this.thoughtGraph.set(node.id, node);
-    return node;
   }
 }
 

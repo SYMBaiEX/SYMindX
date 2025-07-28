@@ -473,6 +473,48 @@ export interface AutonomousConfig {
   };
 }
 
+// =================== AUTONOMOUS STATUS =================== //
+
+export interface AutonomousEngineState {
+  isRunning: boolean;
+  currentPhase: string;
+  activeGoals: number;
+  activeActions: number;
+  queuedInterruptions: number;
+  performanceMetrics: PerformanceMetrics;
+  autonomyLevel: number;
+  ethics: {
+    enabled: boolean;
+    strictMode: boolean;
+    totalEvaluations: number;
+    allowedActions: number;
+    blockedActions: number;
+    allowanceRate: number;
+    principles: number;
+    constraints: number;
+    safetyLimits: any; // SafetyLimits from ethics-engine
+    violationsByPrinciple: Record<string, number>;
+    recentAudits: any[]; // EthicsAuditRecord[] from ethics-engine
+  };
+  ethicalConstraints: boolean;
+  interactions: {
+    totalInteractions: number;
+    activeInteractions: number;
+    totalRelationships: number;
+    priorityDistribution: Record<string, number>;
+    typeDistribution: Record<string, number>;
+    averageResponseTime: number;
+    config: any; // InteractionConfig from interaction-manager
+  };
+  interruptible: boolean;
+}
+
+export interface AutonomousStatus {
+  autonomous: boolean;
+  engine?: AutonomousEngineState;
+  decisions?: Record<string, unknown>;
+}
+
 // =================== MISSING EXPORTS =================== //
 
 export interface AutonomousAgent extends Agent {

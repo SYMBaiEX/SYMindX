@@ -3,10 +3,12 @@
  * @description Comprehensive performance monitoring and metrics collection system for SYMindX
  */
 
-import { performance, PerformanceObserver } from 'perf_hooks';
 import { EventEmitter } from 'events';
-import { runtimeLogger } from './logger.js';
+import { performance, PerformanceObserver } from 'perf_hooks';
+
 import type { LogContext } from '../types/index.js';
+
+import { runtimeLogger } from './logger.js';
 
 /**
  * Performance metric types
@@ -143,8 +145,12 @@ export class Timer {
    * Get duration since start or between marks
    */
   public getDuration(fromMark?: string, toMark?: string): number {
-    const startTime = fromMark ? this.marks.get(fromMark) ?? this.startTime : this.startTime;
-    const endTime = toMark ? this.marks.get(toMark) ?? performance.now() : performance.now();
+    const startTime = fromMark
+      ? (this.marks.get(fromMark) ?? this.startTime)
+      : this.startTime;
+    const endTime = toMark
+      ? (this.marks.get(toMark) ?? performance.now())
+      : performance.now();
     return endTime - startTime;
   }
 
@@ -154,9 +160,9 @@ export class Timer {
   public stop(labels?: Record<string, string>): number {
     this.endTime = performance.now();
     const duration = this.endTime - this.startTime;
-    
+
     this.monitor.recordTimer(this.name, duration, labels);
-    
+
     return duration;
   }
 
@@ -176,10 +182,12 @@ export class Histogram {
   private buckets: Map<number, number> = new Map();
 
   constructor(
-    private readonly bucketBounds: number[] = [1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000]
+    private readonly bucketBounds: number[] = [
+      1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000,
+    ]
   ) {
     // Initialize buckets
-    this.bucketBounds.forEach(bound => this.buckets.set(bound, 0));
+    this.bucketBounds.forEach((bound) => this.buckets.set(bound, 0));
     this.buckets.set(Infinity, 0);
   }
 
@@ -188,7 +196,7 @@ export class Histogram {
    */
   public record(value: number): void {
     this.values.push(value);
-    
+
     // Update buckets
     for (const bound of this.bucketBounds) {
       if (value <= bound) {
@@ -196,12 +204,12 @@ export class Histogram {
         break;
       }
     }
-    
+
     // If value exceeds all bounds, add to infinity bucket
     if (value > Math.max(...this.bucketBounds)) {
       this.buckets.set(Infinity, (this.buckets.get(Infinity) || 0) + 1);
     }
-    
+
     // Keep only recent values (last 1000)
     if (this.values.length > 1000) {
       this.values = this.values.slice(-1000);
@@ -213,7 +221,7 @@ export class Histogram {
    */
   public getPercentile(percentile: number): number {
     if (this.values.length === 0) return 0;
-    
+
     const sorted = [...this.values].sort((a, b) => a - b);
     const index = Math.ceil((percentile / 100) * sorted.length) - 1;
     return sorted[Math.max(0, index)] || 0;
@@ -251,7 +259,7 @@ export class Histogram {
       buckets: Object.fromEntries(
         Array.from(this.buckets.entries()).map(([k, v]) => [
           k === Infinity ? '+Inf' : k.toString(),
-          v
+          v,
         ])
       ),
     };
@@ -263,7 +271,7 @@ export class Histogram {
   public reset(): void {
     this.values = [];
     this.buckets.clear();
-    this.bucketBounds.forEach(bound => this.buckets.set(bound, 0));
+    this.bucketBounds.forEach((bound) => this.buckets.set(bound, 0));
     this.buckets.set(Infinity, 0);
   }
 }
@@ -275,7 +283,8 @@ export class RateTracker {
   private events: Date[] = [];
   private readonly windowMs: number;
 
-  constructor(windowMs: number = 60000) { // Default 1 minute window
+  constructor(windowMs: number = 60000) {
+    // Default 1 minute window
     this.windowMs = windowMs;
   }
 
@@ -315,7 +324,7 @@ export class RateTracker {
    */
   private cleanup(): void {
     const cutoff = new Date(Date.now() - this.windowMs);
-    this.events = this.events.filter(event => event > cutoff);
+    this.events = this.events.filter((event) => event > cutoff);
   }
 }
 
@@ -324,17 +333,17 @@ export class RateTracker {
  */
 export class PerformanceMonitor extends EventEmitter {
   private static instance: PerformanceMonitor;
-  
+
   private readonly metrics = new Map<string, PerformanceMetric>();
   private readonly histograms = new Map<string, Histogram>();
   private readonly rateTrackers = new Map<string, RateTracker>();
   private readonly alerts = new Map<string, AlertConfig>();
   private readonly activeAlerts = new Map<string, PerformanceAlert>();
-  
-  private systemMetricsInterval: NodeJS.Timeout | undefined;
-  private alertCheckInterval: NodeJS.Timeout | undefined;
+
+  private systemMetricsInterval: NodeJS.Timeout | undefined; // eslint-disable-line no-undef
+  private alertCheckInterval: NodeJS.Timeout | undefined; // eslint-disable-line no-undef
   private performanceObserver: PerformanceObserver | undefined;
-  
+
   private readonly config = {
     systemMetricsInterval: 5000, // 5 seconds
     alertCheckInterval: 1000, // 1 second
@@ -366,9 +375,9 @@ export class PerformanceMonitor extends EventEmitter {
     if (this.config.enableNodeMetrics) {
       this.startSystemMetrics();
     }
-    
+
     this.startAlertChecking();
-    
+
     runtimeLogger.info('Performance monitoring started', {
       metadata: {
         systemMetricsInterval: this.config.systemMetricsInterval,
@@ -385,17 +394,17 @@ export class PerformanceMonitor extends EventEmitter {
       clearInterval(this.systemMetricsInterval);
       this.systemMetricsInterval = undefined;
     }
-    
+
     if (this.alertCheckInterval) {
       clearInterval(this.alertCheckInterval);
       this.alertCheckInterval = undefined;
     }
-    
+
     if (this.performanceObserver) {
       this.performanceObserver.disconnect();
       this.performanceObserver = undefined;
     }
-    
+
     runtimeLogger.info('Performance monitoring stopped');
   }
 
@@ -410,21 +419,26 @@ export class PerformanceMonitor extends EventEmitter {
    * Record a counter metric
    */
   public recordCounter(
-    name: string, 
-    value: number = 1, 
+    name: string,
+    value: number = 1,
     labels?: Record<string, string>
   ): void {
-    const metric = this.getOrCreateMetric(name, MetricType.COUNTER, 'Counter metric', 'count');
+    const metric = this.getOrCreateMetric(
+      name,
+      MetricType.COUNTER,
+      'Counter metric',
+      'count'
+    );
     const dataPoint: MetricDataPoint = {
       timestamp: new Date(),
       value,
       labels: labels || undefined,
     };
-    
+
     metric.data.push(dataPoint);
     (metric as any).currentValue += value;
     (metric as any).lastUpdated = dataPoint.timestamp;
-    
+
     this.trimMetricData(metric);
     this.emit('metricUpdated', { name, type: MetricType.COUNTER, value });
   }
@@ -433,21 +447,26 @@ export class PerformanceMonitor extends EventEmitter {
    * Record a gauge metric
    */
   public recordGauge(
-    name: string, 
-    value: number, 
+    name: string,
+    value: number,
     labels?: Record<string, string>
   ): void {
-    const metric = this.getOrCreateMetric(name, MetricType.GAUGE, 'Gauge metric', 'value');
+    const metric = this.getOrCreateMetric(
+      name,
+      MetricType.GAUGE,
+      'Gauge metric',
+      'value'
+    );
     const dataPoint: MetricDataPoint = {
       timestamp: new Date(),
       value,
       labels: labels || undefined,
     };
-    
+
     metric.data.push(dataPoint);
     (metric as any).currentValue = value;
     (metric as any).lastUpdated = dataPoint.timestamp;
-    
+
     this.trimMetricData(metric);
     this.emit('metricUpdated', { name, type: MetricType.GAUGE, value });
   }
@@ -456,25 +475,30 @@ export class PerformanceMonitor extends EventEmitter {
    * Record a histogram metric
    */
   public recordHistogram(
-    name: string, 
-    value: number, 
+    name: string,
+    value: number,
     labels?: Record<string, string>
   ): void {
     const histogram = this.getOrCreateHistogram(name);
     histogram.record(value);
-    
-    const metric = this.getOrCreateMetric(name, MetricType.HISTOGRAM, 'Histogram metric', 'value');
+
+    const metric = this.getOrCreateMetric(
+      name,
+      MetricType.HISTOGRAM,
+      'Histogram metric',
+      'value'
+    );
     const dataPoint: MetricDataPoint = {
       timestamp: new Date(),
       value,
       labels: labels || undefined,
       metadata: histogram.getSummary(),
     };
-    
+
     metric.data.push(dataPoint);
     (metric as any).currentValue = histogram.getSummary().average;
     (metric as any).lastUpdated = dataPoint.timestamp;
-    
+
     this.trimMetricData(metric);
     this.emit('metricUpdated', { name, type: MetricType.HISTOGRAM, value });
   }
@@ -483,8 +507,8 @@ export class PerformanceMonitor extends EventEmitter {
    * Record a timer metric
    */
   public recordTimer(
-    name: string, 
-    durationMs: number, 
+    name: string,
+    durationMs: number,
     labels?: Record<string, string>
   ): void {
     this.recordHistogram(`${name}_duration`, durationMs, labels);
@@ -497,21 +521,30 @@ export class PerformanceMonitor extends EventEmitter {
   public recordRate(name: string, labels?: Record<string, string>): void {
     const tracker = this.getOrCreateRateTracker(name);
     tracker.record();
-    
-    const metric = this.getOrCreateMetric(name, MetricType.RATE, 'Rate metric', 'events/sec');
+
+    const metric = this.getOrCreateMetric(
+      name,
+      MetricType.RATE,
+      'Rate metric',
+      'events/sec'
+    );
     const dataPoint: MetricDataPoint = {
       timestamp: new Date(),
       value: tracker.getRate(),
       labels: labels || undefined,
       metadata: { count: tracker.getCount() },
     };
-    
+
     metric.data.push(dataPoint);
     (metric as any).currentValue = tracker.getRate();
     (metric as any).lastUpdated = dataPoint.timestamp;
-    
+
     this.trimMetricData(metric);
-    this.emit('metricUpdated', { name, type: MetricType.RATE, value: tracker.getRate() });
+    this.emit('metricUpdated', {
+      name,
+      type: MetricType.RATE,
+      value: tracker.getRate(),
+    });
   }
 
   /**
@@ -520,14 +553,16 @@ export class PerformanceMonitor extends EventEmitter {
   public getSystemMetrics(): SystemMetrics {
     const memUsage = process.memoryUsage();
     const cpuUsage = process.cpuUsage();
-    
+
     return {
       cpu: {
         usage: 0, // Would need additional calculation for actual CPU usage
         user: cpuUsage.user / 1000000, // Convert microseconds to seconds
         system: cpuUsage.system / 1000000,
         idle: 0,
-        loadAverage: process.platform !== 'win32' ? require('os').loadavg() : [0, 0, 0],
+        loadAverage:
+          // eslint-disable-next-line no-undef
+          process.platform !== 'win32' ? require('os').loadavg() : [0, 0, 0],
       },
       memory: {
         heapUsed: memUsage.heapUsed,
@@ -548,34 +583,44 @@ export class PerformanceMonitor extends EventEmitter {
    */
   public getAgentMetrics(agentId: string): AgentMetrics | undefined {
     const thinkTimeMetric = this.metrics.get(`agent_${agentId}_think_time`);
-    const responseTimeMetric = this.metrics.get(`agent_${agentId}_response_time`);
+    const responseTimeMetric = this.metrics.get(
+      `agent_${agentId}_response_time`
+    );
     const actionCountMetric = this.metrics.get(`agent_${agentId}_actions`);
     const errorCountMetric = this.metrics.get(`agent_${agentId}_errors`);
-    
+
     if (!thinkTimeMetric && !responseTimeMetric) {
       return undefined;
     }
-    
-    const thinkTimeHistogram = this.histograms.get(`agent_${agentId}_think_time`);
-    const responseTimeHistogram = this.histograms.get(`agent_${agentId}_response_time`);
-    
+
+    const thinkTimeHistogram = this.histograms.get(
+      `agent_${agentId}_think_time`
+    );
+    const responseTimeHistogram = this.histograms.get(
+      `agent_${agentId}_response_time`
+    );
+
     return {
       agentId,
       agentName: agentId, // Would get actual name from agent registry
-      thinkTime: thinkTimeHistogram ? {
-        average: thinkTimeHistogram.getSummary().average,
-        min: thinkTimeHistogram.getSummary().min,
-        max: thinkTimeHistogram.getSummary().max,
-        p95: thinkTimeHistogram.getSummary().p95,
-        p99: thinkTimeHistogram.getSummary().p99,
-      } : { average: 0, min: 0, max: 0, p95: 0, p99: 0 },
-      responseTime: responseTimeHistogram ? {
-        average: responseTimeHistogram.getSummary().average,
-        min: responseTimeHistogram.getSummary().min,
-        max: responseTimeHistogram.getSummary().max,
-        p95: responseTimeHistogram.getSummary().p95,
-        p99: responseTimeHistogram.getSummary().p99,
-      } : { average: 0, min: 0, max: 0, p95: 0, p99: 0 },
+      thinkTime: thinkTimeHistogram
+        ? {
+            average: thinkTimeHistogram.getSummary().average,
+            min: thinkTimeHistogram.getSummary().min,
+            max: thinkTimeHistogram.getSummary().max,
+            p95: thinkTimeHistogram.getSummary().p95,
+            p99: thinkTimeHistogram.getSummary().p99,
+          }
+        : { average: 0, min: 0, max: 0, p95: 0, p99: 0 },
+      responseTime: responseTimeHistogram
+        ? {
+            average: responseTimeHistogram.getSummary().average,
+            min: responseTimeHistogram.getSummary().min,
+            max: responseTimeHistogram.getSummary().max,
+            p95: responseTimeHistogram.getSummary().p95,
+            p99: responseTimeHistogram.getSummary().p99,
+          }
+        : { average: 0, min: 0, max: 0, p95: 0, p99: 0 },
       actionCount: actionCountMetric?.currentValue || 0,
       errorCount: errorCountMetric?.currentValue || 0,
       memoryUsage: 0, // Would calculate agent-specific memory usage
@@ -601,10 +646,7 @@ export class PerformanceMonitor extends EventEmitter {
   /**
    * Configure alert
    */
-  public configureAlert(
-    metricName: string,
-    config: AlertConfig
-  ): void {
+  public configureAlert(metricName: string, config: AlertConfig): void {
     this.alerts.set(metricName, config);
   }
 
@@ -642,24 +684,28 @@ export class PerformanceMonitor extends EventEmitter {
    */
   public exportPrometheusMetrics(): string {
     const lines: string[] = [];
-    
+
     for (const metric of this.metrics.values()) {
       // Add metric help and type
       lines.push(`# HELP ${metric.name} ${metric.description}`);
       lines.push(`# TYPE ${metric.name} ${metric.type}`);
-      
+
       // Add metric value
       if (metric.data.length > 0) {
         const latest = metric.data[metric.data.length - 1];
         if (latest) {
-          const labelsStr = latest.labels 
-            ? '{' + Object.entries(latest.labels).map(([k, v]) => `${k}="${v}"`).join(',') + '}'
+          const labelsStr = latest.labels
+            ? '{' +
+              Object.entries(latest.labels)
+                .map(([k, v]) => `${k}="${v}"`)
+                .join(',') +
+              '}'
             : '';
           lines.push(`${metric.name}${labelsStr} ${latest.value}`);
         }
       }
     }
-    
+
     return lines.join('\n') + '\n';
   }
 
@@ -686,15 +732,19 @@ export class PerformanceMonitor extends EventEmitter {
    * Create decorator for automatic performance measurement
    */
   public createMeasureDecorator(metricName?: string) {
-    return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+    return function (
+      target: any,
+      propertyKey: string,
+      descriptor: PropertyDescriptor
+    ) {
       const originalMethod = descriptor.value;
       const name = metricName || `${target.constructor.name}_${propertyKey}`;
-      
+
       descriptor.value = async function (...args: any[]) {
         const monitor = PerformanceMonitor.getInstance();
         return monitor.measure(name, () => originalMethod.apply(this, args));
       };
-      
+
       return descriptor;
     };
   }
@@ -704,11 +754,26 @@ export class PerformanceMonitor extends EventEmitter {
    */
   private initializeSystemMetrics(): void {
     if (!this.config.enableNodeMetrics) return;
-    
+
     // Initialize basic system metrics
-    this.getOrCreateMetric('system_uptime', MetricType.GAUGE, 'System uptime', 'seconds');
-    this.getOrCreateMetric('system_memory_usage', MetricType.GAUGE, 'Memory usage', 'bytes');
-    this.getOrCreateMetric('system_cpu_usage', MetricType.GAUGE, 'CPU usage', 'percent');
+    this.getOrCreateMetric(
+      'system_uptime',
+      MetricType.GAUGE,
+      'System uptime',
+      'seconds'
+    );
+    this.getOrCreateMetric(
+      'system_memory_usage',
+      MetricType.GAUGE,
+      'Memory usage',
+      'bytes'
+    );
+    this.getOrCreateMetric(
+      'system_cpu_usage',
+      MetricType.GAUGE,
+      'CPU usage',
+      'percent'
+    );
   }
 
   /**
@@ -717,24 +782,26 @@ export class PerformanceMonitor extends EventEmitter {
   private startSystemMetrics(): void {
     this.systemMetricsInterval = setInterval(() => {
       const metrics = this.getSystemMetrics();
-      
+
       this.recordGauge('system_uptime', metrics.uptime);
       this.recordGauge('system_memory_usage', metrics.memory.heapUsed);
-      this.recordGauge('system_memory_usage_percent', metrics.memory.usage * 100);
+      this.recordGauge(
+        'system_memory_usage_percent',
+        metrics.memory.usage * 100
+      );
       this.recordGauge('system_rss', metrics.memory.rss);
       this.recordGauge('system_external', metrics.memory.external);
-      
+
       // CPU metrics
       this.recordGauge('system_cpu_user', metrics.cpu.user);
       this.recordGauge('system_cpu_system', metrics.cpu.system);
-      
+
       // Load average (Unix only)
       if (metrics.cpu.loadAverage.length > 0) {
         this.recordGauge('system_load_1m', metrics.cpu.loadAverage[0] || 0);
         this.recordGauge('system_load_5m', metrics.cpu.loadAverage[1] || 0);
         this.recordGauge('system_load_15m', metrics.cpu.loadAverage[2] || 0);
       }
-      
     }, this.config.systemMetricsInterval);
   }
 
@@ -743,7 +810,7 @@ export class PerformanceMonitor extends EventEmitter {
    */
   private setupPerformanceObserver(): void {
     if (typeof PerformanceObserver === 'undefined') return;
-    
+
     this.performanceObserver = new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
         this.recordHistogram(`node_${entry.entryType}`, entry.duration, {
@@ -751,8 +818,10 @@ export class PerformanceMonitor extends EventEmitter {
         });
       }
     });
-    
-    this.performanceObserver.observe({ entryTypes: ['measure', 'function', 'http', 'net'] });
+
+    this.performanceObserver.observe({
+      entryTypes: ['measure', 'function', 'http', 'net'],
+    });
   }
 
   /**
@@ -770,29 +839,36 @@ export class PerformanceMonitor extends EventEmitter {
   private checkAlerts(): void {
     for (const [metricName, alertConfig] of this.alerts) {
       if (!alertConfig.enabled) continue;
-      
+
       const metric = this.metrics.get(metricName);
       if (!metric || metric.data.length === 0) continue;
-      
+
       const currentValue = metric.currentValue;
-      const shouldAlert = this.evaluateAlertCondition(currentValue, alertConfig);
-      
+      const shouldAlert = this.evaluateAlertCondition(
+        currentValue,
+        alertConfig
+      );
+
       if (shouldAlert) {
         const alertId = `${metricName}_${Date.now()}`;
         const alert: PerformanceAlert = {
           id: alertId,
           metricName,
           message: `Metric ${metricName} ${alertConfig.comparison} ${alertConfig.threshold}`,
-          severity: this.determineSeverity(metricName, currentValue, alertConfig.threshold),
+          severity: this.determineSeverity(
+            metricName,
+            currentValue,
+            alertConfig.threshold
+          ),
           value: currentValue,
           threshold: alertConfig.threshold,
           timestamp: new Date(),
           acknowledged: false,
         };
-        
+
         this.activeAlerts.set(alertId, alert);
         this.emit('alert', alert);
-        
+
         runtimeLogger.warn(`Performance alert: ${alert.message}`, {
           metadata: {
             metricName,
@@ -810,12 +886,18 @@ export class PerformanceMonitor extends EventEmitter {
    */
   private evaluateAlertCondition(value: number, config: AlertConfig): boolean {
     switch (config.comparison) {
-      case 'gt': return value > config.threshold;
-      case 'gte': return value >= config.threshold;
-      case 'lt': return value < config.threshold;
-      case 'lte': return value <= config.threshold;
-      case 'eq': return value === config.threshold;
-      default: return false;
+      case 'gt':
+        return value > config.threshold;
+      case 'gte':
+        return value >= config.threshold;
+      case 'lt':
+        return value < config.threshold;
+      case 'lte':
+        return value <= config.threshold;
+      case 'eq':
+        return value === config.threshold;
+      default:
+        return false;
     }
   }
 
@@ -823,12 +905,12 @@ export class PerformanceMonitor extends EventEmitter {
    * Determine alert severity
    */
   private determineSeverity(
-    _metricName: string, 
-    value: number, 
+    _metricName: string,
+    value: number,
     threshold: number
   ): 'info' | 'warning' | 'error' | 'critical' {
     const ratio = Math.abs(value - threshold) / threshold;
-    
+
     if (ratio > 2) return 'critical';
     if (ratio > 1) return 'error';
     if (ratio > 0.5) return 'warning';
@@ -884,7 +966,10 @@ export class PerformanceMonitor extends EventEmitter {
    */
   private trimMetricData(metric: PerformanceMetric): void {
     if (metric.data.length > this.config.maxDataPoints) {
-      (metric.data as MetricDataPoint[]).splice(0, metric.data.length - this.config.maxDataPoints);
+      (metric.data as MetricDataPoint[]).splice(
+        0,
+        metric.data.length - this.config.maxDataPoints
+      );
     }
   }
 }
@@ -903,7 +988,9 @@ export const measure = performanceMonitor.createMeasureDecorator();
  * Helper functions for common monitoring patterns
  */
 export const monitorAgentAction = (agentId: string, actionType: string) => {
-  return performanceMonitor.createTimer(`agent_${agentId}_action_${actionType}`);
+  return performanceMonitor.createTimer(
+    `agent_${agentId}_action_${actionType}`
+  );
 };
 
 export const monitorAgentThinking = (agentId: string) => {
@@ -919,7 +1006,9 @@ export const monitorPortalRequest = (portalType: string, model?: string) => {
 };
 
 export const recordAgentError = (agentId: string, errorType: string) => {
-  performanceMonitor.recordCounter(`agent_${agentId}_errors`, 1, { type: errorType });
+  performanceMonitor.recordCounter(`agent_${agentId}_errors`, 1, {
+    type: errorType,
+  });
 };
 
 export const recordMemoryOperation = (operation: string, duration: number) => {
@@ -932,20 +1021,20 @@ export const recordMemoryOperation = (operation: string, duration: number) => {
 export const createPerformanceMiddleware = () => {
   return (req: any, res: any, next: any) => {
     const timer = performanceMonitor.createTimer('http_request');
-    
+
     res.on('finish', () => {
       timer.stop({
         method: req.method,
         route: req.route?.path || req.url,
         status: res.statusCode.toString(),
       });
-      
+
       performanceMonitor.recordRate('http_requests', {
         method: req.method,
         status: res.statusCode.toString(),
       });
     });
-    
+
     next();
   };
 };

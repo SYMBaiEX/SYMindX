@@ -139,36 +139,47 @@ export class SessionManagementSkill {
     params: SkillParameters
   ): Promise<ActionResult> {
     try {
-      const { userId, metadata = {}, ttl = 3600000 } = params; // Default 1 hour TTL
+      const userId = params.userId;
+      const metadata =
+        params.metadata && typeof params.metadata === 'object'
+          ? (params.metadata as Record<string, unknown>)
+          : {};
+      const ttl = typeof params.ttl === 'number' ? params.ttl : 3600000; // Default 1 hour TTL
 
       const sessionId = this.generateSessionId();
       const now = new Date();
       const expiresAt = new Date(now.getTime() + ttl);
 
-      const session = {
-        sessionId,
-        userId,
+      const session: SessionData = {
+        id: sessionId,
+        userId: typeof userId === 'string' ? userId : String(userId),
         agentId: agent.id,
-        agentName: agent.name,
-        createdAt: now.toISOString(),
-        updatedAt: now.toISOString(),
-        expiresAt: expiresAt.toISOString(),
+        createdAt: now,
+        lastActivity: now,
+        expiresAt: expiresAt,
         metadata: {
-          ...metadata,
+          ...(typeof metadata === 'object' && metadata !== null
+            ? metadata
+            : {}),
           extensionId: this._extension.name,
           extensionVersion: this._extension.version,
-        },
-        isActive: true,
-        lastActivity: now.toISOString(),
+          agentName: agent.name,
+          isActive: true,
+        } as Record<string, unknown>,
       };
 
-      this.sessions.set(sessionId, session);
+      this.sessions.set(session.id, session);
 
       return {
         type: ActionResultType.SUCCESS,
         success: true,
         result: {
-          session,
+          id: session.id,
+          userId: session.userId,
+          agentId: session.agentId,
+          createdAt: session.createdAt.toISOString(),
+          lastActivity: session.lastActivity.toISOString(),
+          expiresAt: session.expiresAt.toISOString(),
           timestamp: new Date().toISOString(),
         },
         metadata: {
@@ -199,7 +210,10 @@ export class SessionManagementSkill {
     params: SkillParameters
   ): Promise<ActionResult> {
     try {
-      const { sessionId } = params;
+      const sessionId =
+        typeof params.sessionId === 'string'
+          ? params.sessionId
+          : String(params.sessionId);
 
       const session = this.sessions.get(sessionId);
 
@@ -230,10 +244,13 @@ export class SessionManagementSkill {
         type: ActionResultType.SUCCESS,
         success: true,
         result: {
-          session: {
-            ...session,
-            isExpired,
-          },
+          id: session.id,
+          userId: session.userId,
+          agentId: session.agentId,
+          createdAt: session.createdAt.toISOString(),
+          lastActivity: session.lastActivity.toISOString(),
+          expiresAt: session.expiresAt.toISOString(),
+          isExpired,
           timestamp: new Date().toISOString(),
         },
         metadata: {
@@ -264,7 +281,11 @@ export class SessionManagementSkill {
     params: SkillParameters
   ): Promise<ActionResult> {
     try {
-      const { sessionId, data } = params;
+      const sessionId =
+        typeof params.sessionId === 'string'
+          ? params.sessionId
+          : String(params.sessionId);
+      const data = params.data;
 
       const session = this.sessions.get(sessionId);
 
@@ -282,11 +303,12 @@ export class SessionManagementSkill {
       }
 
       // Update session data
-      const updatedSession = {
+      const updatedSession: SessionData = {
         ...session,
-        ...data,
-        updatedAt: new Date().toISOString(),
-        lastActivity: new Date().toISOString(),
+        ...(typeof data === 'object' && data !== null
+          ? (data as Partial<SessionData>)
+          : {}),
+        lastActivity: new Date(),
       };
 
       this.sessions.set(sessionId, updatedSession);
@@ -295,7 +317,12 @@ export class SessionManagementSkill {
         type: ActionResultType.SUCCESS,
         success: true,
         result: {
-          session: updatedSession,
+          id: updatedSession.id,
+          userId: updatedSession.userId,
+          agentId: updatedSession.agentId,
+          createdAt: updatedSession.createdAt.toISOString(),
+          lastActivity: updatedSession.lastActivity.toISOString(),
+          expiresAt: updatedSession.expiresAt.toISOString(),
           timestamp: new Date().toISOString(),
         },
         metadata: {
@@ -325,7 +352,14 @@ export class SessionManagementSkill {
     params: SkillParameters
   ): Promise<ActionResult> {
     try {
-      const { sessionId, extensionTime = 3600000 } = params; // Default 1 hour extension
+      const sessionId =
+        typeof params.sessionId === 'string'
+          ? params.sessionId
+          : String(params.sessionId);
+      const extensionTime =
+        typeof params.extensionTime === 'number'
+          ? params.extensionTime
+          : 3600000; // Default 1 hour extension
 
       const session = this.sessions.get(sessionId);
 
@@ -342,14 +376,13 @@ export class SessionManagementSkill {
         };
       }
 
-      const currentExpiry = new Date(session.expiresAt);
-      const newExpiry = new Date(currentExpiry.getTime() + extensionTime);
+      const newExpiry = new Date(session.expiresAt.getTime() + extensionTime);
+      const now = new Date();
 
-      const extendedSession = {
+      const extendedSession: SessionData = {
         ...session,
-        expiresAt: newExpiry.toISOString(),
-        updatedAt: new Date().toISOString(),
-        lastActivity: new Date().toISOString(),
+        expiresAt: newExpiry,
+        lastActivity: now,
       };
 
       this.sessions.set(sessionId, extendedSession);
@@ -358,7 +391,10 @@ export class SessionManagementSkill {
         type: ActionResultType.SUCCESS,
         success: true,
         result: {
-          session: extendedSession,
+          id: extendedSession.id,
+          userId: extendedSession.userId,
+          agentId: extendedSession.agentId,
+          expiresAt: extendedSession.expiresAt.toISOString(),
           extensionTime,
           timestamp: new Date().toISOString(),
         },
@@ -390,7 +426,14 @@ export class SessionManagementSkill {
     params: SkillParameters
   ): Promise<ActionResult> {
     try {
-      const { sessionId, reason = 'manual_destruction' } = params;
+      const sessionId =
+        typeof params.sessionId === 'string'
+          ? params.sessionId
+          : String(params.sessionId);
+      const reason =
+        typeof params.reason === 'string'
+          ? params.reason
+          : 'manual_destruction';
 
       const session = this.sessions.get(sessionId);
 
@@ -477,7 +520,14 @@ export class SessionManagementSkill {
         type: ActionResultType.SUCCESS,
         success: true,
         result: {
-          sessions,
+          sessions: sessions.map((s) => ({
+            id: s.id,
+            userId: s.userId,
+            agentId: s.agentId,
+            createdAt: s.createdAt.toISOString(),
+            lastActivity: s.lastActivity.toISOString(),
+            expiresAt: s.expiresAt.toISOString(),
+          })),
           count: sessions.length,
           timestamp: new Date().toISOString(),
         },

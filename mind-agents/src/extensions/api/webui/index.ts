@@ -255,10 +255,19 @@ export class WebUIServer {
               });
             } catch (error) {
               void error;
-              this._logger.warn(
-                `Failed to parse character file ${file}:`,
-                error
-              );
+              this._logger.warn(`Failed to parse character file ${file}:`, {
+                error: {
+                  code: error instanceof Error ? error.name : 'UnknownError',
+                  message:
+                    error instanceof Error ? error.message : String(error),
+                  ...(error instanceof Error && error.stack
+                    ? { stack: error.stack }
+                    : {}),
+                  ...(error instanceof Error && error.cause !== undefined
+                    ? { cause: error.cause }
+                    : {}),
+                },
+              });
             }
           }
         }
@@ -323,10 +332,19 @@ export class WebUIServer {
               });
             } catch (error) {
               void error;
-              this._logger.warn(
-                `Failed to parse character file ${file}:`,
-                error
-              );
+              this._logger.warn(`Failed to parse character file ${file}:`, {
+                error: {
+                  code: error instanceof Error ? error.name : 'UnknownError',
+                  message:
+                    error instanceof Error ? error.message : String(error),
+                  ...(error instanceof Error && error.stack
+                    ? { stack: error.stack }
+                    : {}),
+                  ...(error instanceof Error && error.cause !== undefined
+                    ? { cause: error.cause }
+                    : {}),
+                },
+              });
             }
           }
         }

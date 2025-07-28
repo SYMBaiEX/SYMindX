@@ -82,6 +82,7 @@ export interface Conversation {
   metadata: Record<string, unknown>;
   deletedAt?: Date;
   deletedBy?: string;
+  [key: string]: any;
 }
 
 export interface Message {
@@ -111,6 +112,7 @@ export interface Message {
   // Soft delete
   deletedAt?: Date;
   deletedBy?: string;
+  [key: string]: any;
 }
 
 export interface EmotionSnapshot {
@@ -135,6 +137,7 @@ export interface Participant {
   notificationsEnabled: boolean;
   preferences: Record<string, any>;
   status: ParticipantStatus;
+  [key: string]: any;
 }
 
 export interface MessageReaction {
@@ -176,6 +179,7 @@ export interface ChatSession {
   clientInfo: Record<string, any>;
   ipAddress?: string;
   userAgent?: string;
+  [key: string]: any;
 }
 
 export interface AnalyticsEvent {
@@ -225,6 +229,7 @@ export interface ConversationWithLastMessage extends Conversation {
   lastMessageTimestamp?: Date;
   participantCount: number;
   activeParticipantCount: number;
+  [key: string]: any;
 }
 
 export interface ConversationStats {
@@ -238,6 +243,7 @@ export interface ConversationStats {
   agentMessageCount: number;
   commandCount: number;
   failedMessageCount: number;
+  [key: string]: any;
 }
 
 // ===================================================================

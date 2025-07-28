@@ -15,6 +15,13 @@ import {
   CharacterConfig,
   EnvironmentConfig,
   ConfigDefaults,
+  AutonomousConfig,
+  MemoryConfig,
+  EmotionConfig,
+  CognitionConfig,
+  ExtensionConfig,
+  PortalConfig,
+  PortalSpecificConfig,
 } from '../types/character.js';
 import {
   ExtensionConfigArray,
@@ -193,9 +200,7 @@ export class ConfigResolver {
    * @returns Resolved autonomous configuration
    * @private
    */
-  private resolveAutonomousConfig(
-    config: Record<string, unknown>
-  ): Record<string, unknown> {
+  private resolveAutonomousConfig(config: AutonomousConfig): AutonomousConfig {
     return {
       ...config,
       enabled: config.enabled ?? true,
@@ -209,17 +214,13 @@ export class ConfigResolver {
    * @returns Resolved memory configuration with env vars applied
    * @private
    */
-  private resolveMemoryConfig(
-    config: Record<string, unknown>
-  ): Record<string, unknown> {
+  private resolveMemoryConfig(config: MemoryConfig): MemoryConfig {
     const validatedConfig = this.getValidatedConfig();
     const resolved = {
       type: config.type,
       config: {
-        ...config.config,
-        enable_embeddings: validatedConfig.ENABLE_OPENAI_EMBEDDINGS
-          ? 'true'
-          : 'false',
+        ...(config.config || {}),
+        enable_embeddings: validatedConfig.ENABLE_OPENAI_EMBEDDINGS,
         embedding_provider: validatedConfig.EMBEDDING_PROVIDER,
         embedding_model: this.getEmbeddingModel(),
         embedding_dimensions: this.getEmbeddingDimensions(),
@@ -229,7 +230,7 @@ export class ConfigResolver {
     // Add provider-specific configuration
     if (config.type === 'sqlite') {
       resolved.config.database_path =
-        config.config.database_path || './data/memories.db';
+        config.config?.database_path || './data/memories.db';
     }
 
     return resolved;
@@ -281,13 +282,11 @@ export class ConfigResolver {
    * @returns Resolved emotion configuration
    * @private
    */
-  private resolveEmotionConfig(
-    config: Record<string, unknown>
-  ): Record<string, unknown> {
+  private resolveEmotionConfig(config: EmotionConfig): EmotionConfig {
     return {
       type: config.type,
       config: {
-        ...config.config,
+        ...(config.config || {}),
       },
     };
   }
@@ -299,13 +298,11 @@ export class ConfigResolver {
    * @returns Resolved cognition configuration
    * @private
    */
-  private resolveCognitionConfig(
-    config: Record<string, unknown>
-  ): Record<string, unknown> {
+  private resolveCognitionConfig(config: CognitionConfig): CognitionConfig {
     return {
       type: config.type,
       config: {
-        ...config.config,
+        ...(config.config || {}),
       },
     };
   }
@@ -318,8 +315,8 @@ export class ConfigResolver {
    * @private
    */
   private resolveExtensionsConfig(
-    extensions: ExtensionConfigArray
-  ): ExtensionConfigArray {
+    extensions: ExtensionConfig[]
+  ): ExtensionConfig[] {
     return extensions.map((ext) => ({
       ...ext,
       config: this.resolveExtensionConfig(ext.name, ext.config),
@@ -357,7 +354,7 @@ export class ConfigResolver {
    * @returns Filtered and resolved portal configurations
    * @private
    */
-  private resolvePortalsConfig(portals: PortalConfigArray): PortalConfigArray {
+  private resolvePortalsConfig(portals: PortalConfig[]): PortalConfig[] {
     return portals
       .map((portal) => this.resolvePortalConfig(portal))
       .filter((portal) => portal.enabled !== false);
@@ -370,10 +367,8 @@ export class ConfigResolver {
    * @returns Resolved portal configuration
    * @private
    */
-  private resolvePortalConfig(
-    portal: PortalConfigArray[number]
-  ): PortalConfigArray[number] {
-    const resolved = {
+  private resolvePortalConfig(portal: PortalConfig): PortalConfig {
+    const resolved: PortalConfig = {
       name: portal.name,
       type: portal.type,
       enabled: this.getPortalEnabled(
@@ -501,8 +496,8 @@ export class ConfigResolver {
    */
   private resolvePortalSpecificConfig(
     type: string,
-    config: Record<string, unknown>
-  ): Record<string, unknown> {
+    config: PortalSpecificConfig
+  ): PortalSpecificConfig {
     const validatedConfig = this.getValidatedConfig();
     const baseConfig = {
       max_tokens: config.max_tokens || ConfigDefaults.MAX_TOKENS,
@@ -513,7 +508,7 @@ export class ConfigResolver {
     const portalName = type.toUpperCase().replace('.', '').replace('-', '_');
 
     // Build configuration with granular model controls
-    const portalConfig: Record<string, unknown> = {
+    const portalConfig: PortalSpecificConfig = {
       ...baseConfig,
       apiKey:
         validatedConfig.apiKeys[

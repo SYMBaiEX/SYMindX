@@ -5,8 +5,17 @@
  * It supports text generation, chat completion, embeddings, and image generation.
  */
 
-import { openai } from '@ai-sdk/openai';
-import { generateText, streamText, embed } from 'ai';
+import { openai, createOpenAI } from '@ai-sdk/openai';
+import {
+  generateText,
+  streamText,
+  embed,
+  embedMany,
+  experimental_generateImage as generateImage,
+  tool,
+  // stepCountIs, // Not available in ai@5.0.0-canary.24
+} from 'ai';
+import type { ModelMessage as AIMessage } from 'ai';
 
 import {
   PortalConfig,
@@ -42,6 +51,10 @@ export interface OpenAIConfig extends PortalConfig {
   imageModel?: string;
   organization?: string;
   baseURL?: string;
+  // Advanced AI SDK v5 features
+  enableToolStreaming?: boolean;
+  maxSteps?: number;
+  parallelToolCalls?: boolean;
 }
 
 // Using shared convertUsage function from utils
@@ -56,45 +69,46 @@ export class OpenAIPortal extends BasePortal {
     ModelType.MULTIMODAL,
     ModelType.CODE_GENERATION,
   ];
-  private openaiProvider: typeof openai;
+  private openaiProvider: ReturnType<typeof createOpenAI>;
 
   constructor(config: OpenAIConfig) {
     super('openai', 'OpenAI', '1.0.0', config);
 
-    // Create OpenAI provider with proper configuration
-    this.openaiProvider = openai;
+    // Create OpenAI provider with proper AI SDK v5 configuration
+    const apiKey = config.apiKey || process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      throw new Error('OpenAI API key is required');
+    }
+
+    const providerConfig: any = {
+      apiKey,
+    };
+
+    if (config.organization) {
+      providerConfig.organization = config.organization;
+    }
+
+    if (config.baseURL) {
+      providerConfig.baseURL = config.baseURL;
+    }
+
+    this.openaiProvider = createOpenAI(providerConfig);
   }
 
   /**
-   * Get language model instance
+   * Get language model instance using AI SDK v5 patterns
    */
-  private getLanguageModel(modelId?: string): LanguageModel {
+  private getLanguageModel(modelId?: string) {
     const model =
-      modelId || (this.config as OpenAIConfig).model || 'gpt-4.1-mini';
-    const config = this.config as OpenAIConfig;
+      modelId || (this.config as OpenAIConfig).model || 'gpt-4o-mini';
 
-    const configObj: {
-      apiKey?: string;
-      organization?: string;
-      baseURL?: string;
-    } = {};
-    const apiKey = config.apiKey || process.env.OPENAI_API_KEY;
-    if (apiKey) configObj.apiKey = apiKey;
-    if (config.organization) configObj.organization = config.organization;
-    if (config.baseURL) configObj.baseURL = config.baseURL;
-
-    const providerSettings = AISDKParameterBuilder.buildProviderConfig(
-      {},
-      configObj
-    );
-
-    return this.openaiProvider(model, providerSettings);
+    return this.openaiProvider(model);
   }
 
   /**
    * Convert ChatMessage array to message format for AI SDK v5
    */
-  private convertToModelMessages(messages: ChatMessage[]): ModelMessage[] {
+  private convertToModelMessages(messages: ChatMessage[]): AIMessage[] {
     return messages.map((msg) => {
       switch (msg.role) {
         case MessageRole.SYSTEM:
@@ -103,12 +117,15 @@ export class OpenAIPortal extends BasePortal {
         case MessageRole.USER: {
           // Handle attachments for multimodal support
           if (msg.attachments && msg.attachments.length > 0) {
-            const content: Array<{
-              type: string;
-              text?: string;
-              image?: string | URL;
+            type TextPart = { type: 'text'; text: string };
+            type ImagePart = {
+              type: 'image';
+              image: string | URL;
               mediaType?: string;
-            }> = [{ type: 'text', text: msg.content }];
+            };
+            const content: Array<TextPart | ImagePart> = [
+              { type: 'text', text: msg.content },
+            ];
 
             for (const attachment of msg.attachments) {
               if (attachment.type === 'image') {
@@ -168,23 +185,42 @@ export class OpenAIPortal extends BasePortal {
   ): Promise<TextGenerationResult> {
     try {
       const model =
-        options?.model || (this.config as OpenAIConfig).model || 'gpt-4.1-mini';
+        options?.model || (this.config as OpenAIConfig).model || 'gpt-4o-mini';
 
       const baseParams = {
         model: this.getLanguageModel(model),
         prompt,
       };
 
-      const params = buildAISDKParams(baseParams, {
-        maxOutputTokens:
+      const params: any = { ...baseParams };
+
+      // Use maxOutputTokens (AI SDK v5) instead of maxTokens
+      if (
+        options?.maxOutputTokens ??
+        options?.maxTokens ??
+        this.config.maxTokens
+      ) {
+        params.maxOutputTokens =
           options?.maxOutputTokens ??
           options?.maxTokens ??
-          this.config.maxTokens,
-        temperature: options?.temperature ?? this.config.temperature,
-        topP: options?.topP,
-        frequencyPenalty: options?.frequencyPenalty,
-        presencePenalty: options?.presencePenalty,
-      });
+          this.config.maxTokens;
+      }
+
+      if (options?.temperature ?? this.config.temperature) {
+        params.temperature = options?.temperature ?? this.config.temperature;
+      }
+
+      if (options?.topP) {
+        params.topP = options.topP;
+      }
+
+      if (options?.frequencyPenalty) {
+        params.frequencyPenalty = options.frequencyPenalty;
+      }
+
+      if (options?.presencePenalty) {
+        params.presencePenalty = options.presencePenalty;
+      }
 
       const result = await generateText(params);
 
@@ -219,13 +255,13 @@ export class OpenAIPortal extends BasePortal {
         model = options.model;
       } else if (options?.functions && options.functions.length > 0) {
         // Use tool model for function calling (faster, cheaper)
-        model = (this.config as OpenAIConfig).toolModel || 'gpt-4.1-mini';
+        model = (this.config as OpenAIConfig).toolModel || 'gpt-4o-mini';
       } else {
         // Use chat model for regular conversations
         model =
           (this.config as OpenAIConfig).chatModel ||
           (this.config as OpenAIConfig).model ||
-          'gpt-4.1-mini';
+          'gpt-4o-mini';
       }
 
       const modelMessages = this.convertToModelMessages(messages);
@@ -235,23 +271,46 @@ export class OpenAIPortal extends BasePortal {
         messages: modelMessages,
       };
 
-      const generateOptions = buildAISDKParams(baseOptions, {
-        maxOutputTokens:
+      const generateOptions: any = { ...baseOptions };
+
+      // Use maxOutputTokens (AI SDK v5) instead of maxTokens
+      if (
+        options?.maxOutputTokens ??
+        options?.maxTokens ??
+        this.config.maxTokens
+      ) {
+        generateOptions.maxOutputTokens =
           options?.maxOutputTokens ??
           options?.maxTokens ??
-          this.config.maxTokens,
-        temperature: options?.temperature ?? this.config.temperature,
-        topP: options?.topP,
-        frequencyPenalty: options?.frequencyPenalty,
-        presencePenalty: options?.presencePenalty,
-      });
+          this.config.maxTokens;
+      }
+
+      if (options?.temperature ?? this.config.temperature) {
+        generateOptions.temperature =
+          options?.temperature ?? this.config.temperature;
+      }
+
+      if (options?.topP) {
+        generateOptions.topP = options.topP;
+      }
+
+      if (options?.frequencyPenalty) {
+        generateOptions.frequencyPenalty = options.frequencyPenalty;
+      }
+
+      if (options?.presencePenalty) {
+        generateOptions.presencePenalty = options.presencePenalty;
+      }
 
       // Add tools if provided (native AI SDK v5 tools)
       if (options?.tools) {
-        // Native AI SDK v5 MCP tools - pass directly
-        const optionsWithTools = generateOptions as GenerateTextParamsWithTools;
-        optionsWithTools.tools = options.tools;
-        optionsWithTools.maxSteps = 5; // Enable multi-step tool execution
+        generateOptions.tools = options.tools;
+        generateOptions.maxSteps = options?.maxSteps || 5; // Enable multi-step tool execution
+
+        // Add comprehensive tool streaming callbacks
+        if (options?.onStepFinish) {
+          generateOptions.onStepFinish = options.onStepFinish;
+        }
       }
 
       const result = await generateText(generateOptions);
@@ -290,7 +349,7 @@ export class OpenAIPortal extends BasePortal {
         'text-embedding-3-large';
 
       const { embedding, usage } = await embed({
-        model: this.openaiProvider.embedding(model),
+        model: this.openaiProvider.textEmbeddingModel(model) as any,
         value: _text,
       });
 
@@ -317,54 +376,46 @@ export class OpenAIPortal extends BasePortal {
    * Generate images using OpenAI's DALL-E API
    */
   override async generateImage(
-    _prompt: string,
-    _options?: ImageGenerationOptions
+    prompt: string,
+    options?: ImageGenerationOptions
   ): Promise<ImageGenerationResult> {
     try {
       const model =
-        _options?.model ||
+        options?.model ||
         (this.config as OpenAIConfig).imageModel ||
         'dall-e-3';
 
-      const response = await fetch(
-        'https://api.openai.com/v1/images/generations',
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${this.config.apiKey}`,
-            'Content-Type': 'application/json',
+      // Use AI SDK v5 native image generation
+      const result = await generateImage({
+        model: this.openaiProvider.image(model) as any,
+        prompt,
+        size: (options?.size || '1024x1024') as `${number}x${number}`,
+        n: options?.n || 1,
+        providerOptions: {
+          openai: {
+            quality: options?.quality || 'standard',
+            style: options?.style,
+            response_format: options?.responseFormat || 'url',
           },
-          body: JSON.stringify({
-            model,
-            prompt: _prompt,
-            size: _options?.size || '1024x1024',
-            quality: _options?.quality || 'standard',
-            response_format: _options?.responseFormat || 'url',
-            n: _options?.n || 1,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.statusText}`);
-      }
-
-      const data = await response.json();
+        },
+      });
 
       return {
-        images: data.data.map((img: { url?: string; b64_json?: string }) => ({
-          url: img.url,
-          b64_json: img.b64_json,
+        images: result.images.map((img) => ({
+          url: undefined, // AI SDK v5 doesn't return URLs directly
+          b64_json: img.base64,
         })),
         model,
         metadata: {
           provider: 'openai',
-          revised_prompt: data.data[0]?.revised_prompt,
+          revised_prompt: (result.providerMetadata as any)?.openai
+            ?.revisedPrompt,
+          timestamp: new Date(),
         },
       };
     } catch (error) {
       void error;
-      // OpenAI image generation error
+      // OpenAI image generation error using AI SDK v5
       throw new Error(`OpenAI image generation failed: ${error}`);
     }
   }
@@ -378,23 +429,42 @@ export class OpenAIPortal extends BasePortal {
   ): AsyncGenerator<string> {
     try {
       const model =
-        options?.model || (this.config as OpenAIConfig).model || 'gpt-4.1-mini';
+        options?.model || (this.config as OpenAIConfig).model || 'gpt-4o-mini';
 
       const baseParams = {
         model: this.getLanguageModel(model),
         prompt,
       };
 
-      const params = buildAISDKParams(baseParams, {
-        maxOutputTokens:
+      const params: any = { ...baseParams };
+
+      // Use maxOutputTokens (AI SDK v5) instead of maxTokens
+      if (
+        options?.maxOutputTokens ??
+        options?.maxTokens ??
+        this.config.maxTokens
+      ) {
+        params.maxOutputTokens =
           options?.maxOutputTokens ??
           options?.maxTokens ??
-          this.config.maxTokens,
-        temperature: options?.temperature ?? this.config.temperature,
-        topP: options?.topP,
-        frequencyPenalty: options?.frequencyPenalty,
-        presencePenalty: options?.presencePenalty,
-      });
+          this.config.maxTokens;
+      }
+
+      if (options?.temperature ?? this.config.temperature) {
+        params.temperature = options?.temperature ?? this.config.temperature;
+      }
+
+      if (options?.topP) {
+        params.topP = options.topP;
+      }
+
+      if (options?.frequencyPenalty) {
+        params.frequencyPenalty = options.frequencyPenalty;
+      }
+
+      if (options?.presencePenalty) {
+        params.presencePenalty = options.presencePenalty;
+      }
 
       const { textStream } = await streamText(params);
 
@@ -422,12 +492,12 @@ export class OpenAIPortal extends BasePortal {
       if (options?.model) {
         model = options.model;
       } else if (options?.functions && options.functions.length > 0) {
-        model = (this.config as OpenAIConfig).toolModel || 'gpt-4.1-mini';
+        model = (this.config as OpenAIConfig).toolModel || 'gpt-4o-mini';
       } else {
         model =
           (this.config as OpenAIConfig).chatModel ||
           (this.config as OpenAIConfig).model ||
-          'gpt-4.1-mini';
+          'gpt-4o-mini';
       }
 
       const modelMessages = this.convertToModelMessages(messages);
@@ -437,22 +507,49 @@ export class OpenAIPortal extends BasePortal {
         messages: modelMessages,
       };
 
-      const streamOptions = buildAISDKParams(baseOptions, {
-        maxOutputTokens:
+      const streamOptions: any = { ...baseOptions };
+
+      // Use maxOutputTokens (AI SDK v5) instead of maxTokens
+      if (
+        options?.maxOutputTokens ??
+        options?.maxTokens ??
+        this.config.maxTokens
+      ) {
+        streamOptions.maxOutputTokens =
           options?.maxOutputTokens ??
           options?.maxTokens ??
-          this.config.maxTokens,
-        temperature: options?.temperature ?? this.config.temperature,
-        topP: options?.topP,
-        frequencyPenalty: options?.frequencyPenalty,
-        presencePenalty: options?.presencePenalty,
-      });
+          this.config.maxTokens;
+      }
 
-      // Add tools if provided
+      if (options?.temperature ?? this.config.temperature) {
+        streamOptions.temperature =
+          options?.temperature ?? this.config.temperature;
+      }
+
+      if (options?.topP) {
+        streamOptions.topP = options.topP;
+      }
+
+      if (options?.frequencyPenalty) {
+        streamOptions.frequencyPenalty = options.frequencyPenalty;
+      }
+
+      if (options?.presencePenalty) {
+        streamOptions.presencePenalty = options.presencePenalty;
+      }
+
+      // Add tools if provided with comprehensive AI SDK v5 streaming support
       if (options?.tools) {
-        const optionsWithTools = streamOptions as GenerateTextParamsWithTools;
-        optionsWithTools.tools = options.tools;
-        optionsWithTools.maxSteps = 5; // Enable multi-step tool execution for streaming
+        streamOptions.tools = options.tools;
+        streamOptions.maxSteps = options?.maxSteps || 5; // Enable multi-step tool execution for streaming
+
+        // Add comprehensive tool streaming callbacks for AI SDK v5
+        if (options?.onStepFinish) {
+          streamOptions.onStepFinish = options.onStepFinish;
+        }
+
+        // Enable tool call streaming (default in AI SDK v5)
+        streamOptions.toolCallStreaming = true;
       }
 
       const { textStream } = await streamText(streamOptions);
@@ -464,6 +561,96 @@ export class OpenAIPortal extends BasePortal {
       void error;
       // OpenAI stream chat error
       throw new Error(`OpenAI stream chat failed: ${error}`);
+    }
+  }
+
+  /**
+   * Stream text generation with full stream access for advanced tool calling
+   * Provides access to all stream events including tool calls, tool results, and text
+   */
+  async *streamTextWithFullAccess(
+    prompt: string,
+    options?: TextGenerationOptions & {
+      onToolCall?: (toolCall: any) => void;
+      onToolResult?: (toolResult: any) => void;
+      onStepFinish?: (step: any) => void;
+    }
+  ): AsyncGenerator<{
+    type: 'text' | 'tool-call' | 'tool-result' | 'finish' | 'error';
+    content: any;
+  }> {
+    try {
+      const model =
+        options?.model || (this.config as OpenAIConfig).model || 'gpt-4o-mini';
+
+      const baseParams = {
+        model: this.getLanguageModel(model),
+        prompt,
+      };
+
+      const params: any = { ...baseParams };
+
+      if (
+        options?.maxOutputTokens ??
+        options?.maxTokens ??
+        this.config.maxTokens
+      ) {
+        params.maxOutputTokens =
+          options?.maxOutputTokens ??
+          options?.maxTokens ??
+          this.config.maxTokens;
+      }
+
+      if (options?.temperature ?? this.config.temperature) {
+        params.temperature = options?.temperature ?? this.config.temperature;
+      }
+
+      if (options?.topP) {
+        params.topP = options.topP;
+      }
+
+      // Add tools with full streaming support
+      if (options?.tools) {
+        params.tools = options.tools;
+        params.maxSteps = options?.maxSteps || 5;
+        params.toolCallStreaming = true;
+
+        if (options?.onStepFinish) {
+          params.onStepFinish = options.onStepFinish;
+        }
+      }
+
+      const result = await streamText(params);
+
+      // Stream all events from the full stream
+      for await (const part of result.fullStream) {
+        switch (part.type) {
+          case 'text':
+            yield { type: 'text', content: part.text };
+            break;
+          case 'tool-call':
+            if (options?.onToolCall) {
+              options.onToolCall(part);
+            }
+            yield { type: 'tool-call', content: part };
+            break;
+          case 'tool-result':
+            if (options?.onToolResult) {
+              options.onToolResult(part);
+            }
+            yield { type: 'tool-result', content: part };
+            break;
+          case 'finish':
+            yield { type: 'finish', content: part };
+            break;
+          case 'error':
+            yield { type: 'error', content: part };
+            break;
+        }
+      }
+    } catch (error) {
+      void error;
+      yield { type: 'error', content: error };
     }
   }
 
@@ -487,6 +674,319 @@ export class OpenAIPortal extends BasePortal {
         return false;
       default:
         return false;
+    }
+  }
+
+  /**
+   * Generate text with multi-step support (AI SDK v5 feature)
+   * Supports tool calling with multiple steps
+   */
+  override async generateTextMultiStep(
+    prompt: string,
+    options?: TextGenerationOptions & {
+      tools?: Record<string, any>;
+      maxSteps?: number;
+      onStepFinish?: (step: number, result: any) => void;
+    }
+  ): Promise<TextGenerationResult> {
+    const config = this.config as OpenAIConfig;
+    const maxSteps = options?.maxSteps || config.maxSteps || 5;
+
+    try {
+      const params: any = {
+        model: this.getLanguageModel(
+          options?.model || this.resolveModel('tool')
+        ),
+        messages: [{ role: 'user' as const, content: prompt }],
+        maxOutputTokens:
+          options?.maxOutputTokens ??
+          options?.maxTokens ??
+          this.config.maxTokens,
+        temperature: options?.temperature ?? this.config.temperature,
+      };
+
+      // Add tools if provided
+      if (options?.tools) {
+        params.tools = options.tools;
+        params.toolChoice = 'auto';
+        // TODO: Re-enable when stepCountIs is available in stable AI SDK v5
+        // params.stopWhen = stepCountIs(maxSteps);
+        params.maxSteps = maxSteps; // Fallback to maxSteps
+      }
+
+      // Add step callbacks
+      if (options?.onStepFinish) {
+        params.onStepFinish = async ({
+          stepType,
+          stepCount,
+          toolCalls,
+          toolResults,
+        }: any) => {
+          options.onStepFinish!(stepCount, {
+            stepType,
+            toolCalls,
+            toolResults,
+          });
+        };
+      }
+
+      const { text, usage, finishReason, steps } = await generateText(params);
+
+      return {
+        text,
+        model: options?.model || this.resolveModel('tool'),
+        usage: convertUsage(usage),
+        finishReason: this.mapFinishReason(finishReason),
+        timestamp: new Date(),
+        metadata: {
+          steps: steps?.length || 1,
+          toolCalls: steps?.flatMap((s) => s.toolCalls || []),
+        },
+      };
+    } catch (error) {
+      throw new Error(`OpenAI multi-step text generation failed: ${error}`);
+    }
+  }
+
+  /**
+   * Generate chat with multi-step support (AI SDK v5 feature)
+   */
+  override async generateChatMultiStep(
+    messages: ChatMessage[],
+    options?: ChatGenerationOptions & {
+      tools?: Record<string, any>;
+      maxSteps?: number;
+      onStepFinish?: (step: number, result: any) => void;
+    }
+  ): Promise<ChatGenerationResult> {
+    const config = this.config as OpenAIConfig;
+    const maxSteps = options?.maxSteps || config.maxSteps || 5;
+
+    try {
+      const modelMessages = this.convertToModelMessages(messages);
+
+      const params: any = {
+        model: this.getLanguageModel(
+          options?.model || this.resolveModel('tool')
+        ),
+        messages: modelMessages,
+        maxOutputTokens:
+          options?.maxOutputTokens ??
+          options?.maxTokens ??
+          this.config.maxTokens,
+        temperature: options?.temperature ?? this.config.temperature,
+      };
+
+      // Add tools if provided
+      if (options?.tools) {
+        params.tools = options.tools;
+        params.toolChoice = 'auto';
+        // TODO: Re-enable when stepCountIs is available in stable AI SDK v5
+        // params.stopWhen = stepCountIs(maxSteps);
+        params.maxSteps = maxSteps; // Fallback to maxSteps
+      }
+
+      // Add step callbacks
+      if (options?.onStepFinish) {
+        params.onStepFinish = async ({
+          stepType,
+          stepCount,
+          toolCalls,
+          toolResults,
+        }: any) => {
+          options.onStepFinish!(stepCount, {
+            stepType,
+            toolCalls,
+            toolResults,
+          });
+        };
+      }
+
+      const { text, usage, finishReason, steps } = await generateText(params);
+
+      const message: ChatMessage = {
+        role: MessageRole.ASSISTANT,
+        content: text,
+        timestamp: new Date(),
+      };
+
+      return {
+        text,
+        model: options?.model || this.resolveModel('tool'),
+        message,
+        usage: convertUsage(usage),
+        finishReason: this.mapFinishReason(finishReason),
+        timestamp: new Date(),
+        metadata: {
+          steps: steps?.length || 1,
+          toolCalls: steps?.flatMap((s) => s.toolCalls || []),
+        },
+      };
+    } catch (error) {
+      throw new Error(`OpenAI multi-step chat generation failed: ${error}`);
+    }
+  }
+
+  /**
+   * Generate multiple embeddings in batch (AI SDK v5 feature)
+   * Uses embedMany for optimized batch processing
+   */
+  override async generateEmbeddingBatch(
+    texts: string[],
+    options?: EmbeddingOptions
+  ): Promise<EmbeddingResult[]> {
+    try {
+      const embeddingModel =
+        options?.model ||
+        (this.config as OpenAIConfig).embeddingModel ||
+        'text-embedding-3-small';
+
+      const { embeddings, usage } = await embedMany({
+        model: this.openaiProvider.textEmbeddingModel(embeddingModel) as any,
+        values: texts,
+      });
+
+      return embeddings.map((embedding, index) => ({
+        embedding,
+        dimensions: embedding.length,
+        model: embeddingModel,
+        usage: {
+          promptTokens: Math.floor((usage?.tokens || 0) / texts.length),
+          totalTokens: Math.floor((usage?.tokens || 0) / texts.length),
+        },
+        metadata: {
+          index,
+          batchSize: texts.length,
+        },
+      }));
+    } catch (error) {
+      throw new Error(`OpenAI batch embedding generation failed: ${error}`);
+    }
+  }
+
+  /**
+   * Stream text with enhanced tool support (AI SDK v5 feature)
+   */
+  override async *streamTextEnhanced(
+    prompt: string,
+    options?: TextGenerationOptions & {
+      tools?: Record<string, any>;
+      onToolCallStart?: (toolCallId: string, toolName: string) => void;
+      onToolCallFinish?: (toolCallId: string, result: any) => void;
+    }
+  ): AsyncGenerator<string> {
+    const config = this.config as OpenAIConfig;
+
+    try {
+      const params: any = {
+        model: this.getLanguageModel(
+          options?.model || this.resolveModel('tool')
+        ),
+        messages: [{ role: 'user' as const, content: prompt }],
+        maxOutputTokens:
+          options?.maxOutputTokens ??
+          options?.maxTokens ??
+          this.config.maxTokens,
+        temperature: options?.temperature ?? this.config.temperature,
+      };
+
+      // Add tools if provided
+      if (options?.tools) {
+        params.tools = options.tools;
+        params.toolChoice = 'auto';
+        params.toolCallStreaming = config.enableToolStreaming !== false;
+      }
+
+      const { textStream, fullStream } = await streamText(params);
+
+      // Process the full stream to handle tool calls
+      if (options?.onToolCallStart || options?.onToolCallFinish) {
+        const streamIterator = fullStream[Symbol.asyncIterator]();
+
+        while (true) {
+          const { done, value } = await streamIterator.next();
+          if (done) break;
+
+          switch (value.type) {
+            case 'text':
+              yield value.text;
+              break;
+            case 'tool-call':
+              if (options.onToolCallStart) {
+                options.onToolCallStart(value.toolCallId, value.toolName);
+              }
+              break;
+            case 'tool-result':
+              if (options.onToolCallFinish) {
+                options.onToolCallFinish(value.toolCallId, value.result);
+              }
+              break;
+          }
+        }
+      } else {
+        // Just yield text chunks
+        for await (const chunk of textStream) {
+          yield chunk;
+        }
+      }
+    } catch (error) {
+      throw new Error(`OpenAI enhanced text streaming failed: ${error}`);
+    }
+  }
+
+  /**
+   * Get supported models for different capabilities
+   */
+  override getSupportedModelsForCapability(
+    capability: PortalCapability
+  ): string[] {
+    switch (capability) {
+      case PortalCapability.TEXT_GENERATION:
+      case PortalCapability.CHAT_GENERATION:
+        return ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'];
+      case PortalCapability.EMBEDDING_GENERATION:
+        return [
+          'text-embedding-3-large',
+          'text-embedding-3-small',
+          'text-embedding-ada-002',
+        ];
+      case PortalCapability.IMAGE_GENERATION:
+        return ['dall-e-3', 'dall-e-2'];
+      case PortalCapability.VISION:
+        return ['gpt-4o', 'gpt-4-turbo'];
+      case PortalCapability.FUNCTION_CALLING:
+      case PortalCapability.TOOL_USAGE:
+        return ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'];
+      case PortalCapability.REASONING:
+        return ['o1', 'o1-mini', 'o1-preview'];
+      default:
+        return [];
+    }
+  }
+
+  /**
+   * Get the optimal model for a specific capability
+   */
+  override getOptimalModelForCapability(
+    capability: PortalCapability
+  ): string | null {
+    switch (capability) {
+      case PortalCapability.TEXT_GENERATION:
+      case PortalCapability.CHAT_GENERATION:
+        return 'gpt-4o-mini'; // Balance of quality and cost
+      case PortalCapability.EMBEDDING_GENERATION:
+        return 'text-embedding-3-small'; // Good balance
+      case PortalCapability.IMAGE_GENERATION:
+        return 'dall-e-3'; // Latest and best
+      case PortalCapability.VISION:
+        return 'gpt-4o'; // Best vision capabilities
+      case PortalCapability.FUNCTION_CALLING:
+      case PortalCapability.TOOL_USAGE:
+        return 'gpt-4o-mini'; // Fast and capable
+      case PortalCapability.REASONING:
+        return 'o1-mini'; // Good reasoning at lower cost
+      default:
+        return null;
     }
   }
 
@@ -521,9 +1021,9 @@ export function createOpenAIPortal(config: OpenAIConfig): OpenAIPortal {
 
 // Export default configuration
 export const defaultOpenAIConfig: Partial<OpenAIConfig> = {
-  model: 'gpt-4.1-mini',
-  chatModel: 'gpt-4.1-mini', // Default for regular chat
-  toolModel: 'gpt-4.1-mini', // Fast model for tools/functions (updated based on user edit)
+  model: 'gpt-4o-mini',
+  chatModel: 'gpt-4o-mini', // Default for regular chat
+  toolModel: 'gpt-4o-mini', // Fast model for tools/functions
   embeddingModel: 'text-embedding-3-large',
   imageModel: 'dall-e-3',
   maxTokens: 1000,
@@ -534,14 +1034,12 @@ export const defaultOpenAIConfig: Partial<OpenAIConfig> = {
 // Available OpenAI models
 export const openAIModels = {
   // Latest GPT-4 Series
-  'gpt-4.1': 'GPT-4.1 - Latest flagship model with enhanced capabilities',
   'gpt-4o': 'GPT-4o - Advanced multimodal model',
-  'gpt-4.1-mini': 'GPT-4o Mini - Fast and cost-effective',
+  'gpt-4o-mini': 'GPT-4o Mini - Fast and cost-effective',
   'gpt-4-turbo': 'GPT-4 Turbo - Enhanced performance',
   'gpt-4': 'GPT-4 - Original flagship model',
 
   // Advanced Reasoning Models
-  o3: 'o3 - State-of-the-art reasoning model',
   'o1-preview': 'o1 Preview - Advanced reasoning',
   'o1-mini': 'o1 Mini - Compact reasoning model',
 

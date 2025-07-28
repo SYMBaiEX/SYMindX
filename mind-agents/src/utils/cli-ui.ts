@@ -20,12 +20,26 @@ import gradient from 'gradient-string';
 import ora from 'ora';
 
 import { Extension } from '../types/agent';
-import { AgentStatusArray, AgentStatus } from '../types/utils/arrays.js';
+import { AgentStatusArray } from '../types/utils/arrays.js';
+
+type AgentStatus = AgentStatusArray[number];
 import { TypedMap } from '../types/utils/maps.js';
+
+// Extended agent status for CLI display
+interface ExtendedAgentStatus extends AgentStatus {
+  emotion?: {
+    current: string;
+    intensity: number;
+  };
+  portal?: {
+    name: string;
+  };
+  extensions?: Extension[];
+}
 
 // Type definitions for this module
 interface DashboardUpdateData {
-  agents?: AgentStatus[];
+  agents?: ExtendedAgentStatus[];
   metrics?: Partial<{
     uptime: number;
     memory: number;
@@ -91,10 +105,19 @@ export function createSpinner(
   text: string,
   type: 'dots' | 'line' | 'star' | 'bouncingBar' = 'dots'
 ): ReturnType<typeof ora> {
+  // Check if we can safely use interactive spinners
+  const canUseSpinner =
+    process.stdout.isTTY &&
+    process.stdin.isTTY &&
+    !process.env.CI &&
+    process.stdin.readable;
+
   const spinner = ora({
     text: chalk.cyan(text),
     spinner: type,
     color: 'cyan',
+    // Disable spinner if we can't safely use TTY features
+    isEnabled: canUseSpinner,
   });
   return spinner;
 }
@@ -104,7 +127,7 @@ export function createSpinner(
  *
  * @param agents - Array of agent status objects to display
  */
-export function displayAgentStatus(agents: AgentStatusArray): void {
+export function displayAgentStatus(agents: ExtendedAgentStatus[]): void {
   const table = new Table({
     head: [
       chalk.cyan('Agent'),
@@ -231,16 +254,52 @@ export async function animateLoading(
   duration: number = 2000
 ): Promise<void> {
   const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
-  const spinner = ora({
-    text: chalk.cyan(text),
-    spinner: {
-      interval: 80,
-      frames,
-    },
-  }).start();
 
-  await new Promise((resolve) => setTimeout(resolve, duration));
-  spinner.succeed(chalk.green(text + ' ✓'));
+  // Check if we can safely use interactive spinners
+  const canUseSpinner =
+    process.stdout.isTTY &&
+    process.stdin.isTTY &&
+    !process.env.CI &&
+    process.stdin.readable;
+
+  if (!canUseSpinner) {
+    // Fallback to simple text output without spinner
+    // eslint-disable-next-line no-console
+    console.log(chalk.cyan(text));
+    await new Promise((resolve) => setTimeout(resolve, duration));
+    // eslint-disable-next-line no-console
+    console.log(chalk.green(text + ' ✓'));
+    return;
+  }
+
+  let spinner;
+  try {
+    spinner = ora({
+      text: chalk.cyan(text),
+      spinner: {
+        interval: 80,
+        frames,
+      },
+    });
+
+    spinner.start();
+    await new Promise((resolve) => setTimeout(resolve, duration));
+    spinner.succeed(chalk.green(text + ' ✓'));
+  } catch (error) {
+    // Fallback if spinner fails (e.g., stdin issues)
+    if (spinner) {
+      try {
+        spinner.stop();
+      } catch {
+        // Ignore cleanup errors
+      }
+    }
+    // eslint-disable-next-line no-console
+    console.log(chalk.cyan(text));
+    await new Promise((resolve) => setTimeout(resolve, duration));
+    // eslint-disable-next-line no-console
+    console.log(chalk.green(text + ' ✓'));
+  }
 }
 
 /**
@@ -481,7 +540,7 @@ export function createStatusDashboard(): {
         // eslint-disable-next-line no-console
         console.log(chalk.cyan.bold('🤖 Active Agents\n'));
         displayAgentStatus(
-          Array.from(this.agents.values()) as AgentStatusArray
+          Array.from(this.agents.values()) as ExtendedAgentStatus[]
         );
       }
     },

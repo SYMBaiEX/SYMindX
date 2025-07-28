@@ -50,7 +50,7 @@ export class HappyEmotion extends BaseEmotion {
     };
   }
 
-  override processEvent(eventType: string, context?: unknown): EmotionResult {
+  override processEvent(eventType: string, context?: any): EmotionResult {
     // Special processing for happy-specific events
     const previousIntensity = this._intensity;
     if (context?.outcome?.success === true) {
@@ -90,4 +90,9 @@ export function createHappyEmotion(
   config: HappyEmotionConfig = {}
 ): HappyEmotion {
   return new HappyEmotion(config);
+}
+
+// Export module factory for registry
+export function createHappyEmotionModule(config?: any): HappyEmotion {
+  return new HappyEmotion(config || {});
 }

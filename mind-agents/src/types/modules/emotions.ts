@@ -250,6 +250,11 @@ export interface EmotionResult {
         [key: string]: unknown;
       }
     | undefined;
+
+  /**
+   * Emotion-specific data
+   */
+  data?: EmotionData | undefined;
 }
 
 /**
@@ -473,7 +478,7 @@ export interface EmotionModuleRegistration {
   /**
    * Factory function to create the module
    */
-  factory: () => any;
+  factory: () => unknown;
 
   /**
    * Dependencies on other emotions
@@ -495,7 +500,7 @@ export function isEmotionResult(value: unknown): value is EmotionResult {
     value !== null &&
     'state' in value &&
     'changed' in value &&
-    typeof (value as any).changed === 'boolean'
+    typeof (value as Record<string, unknown>).changed === 'boolean'
   );
 }
 
@@ -511,8 +516,8 @@ export function isEmotionTriggerEvent(
     'type' in value &&
     'source' in value &&
     'intensity' in value &&
-    typeof (value as any).type === 'string' &&
-    typeof (value as any).source === 'string' &&
-    typeof (value as any).intensity === 'number'
+    typeof (value as Record<string, unknown>).type === 'string' &&
+    typeof (value as Record<string, unknown>).source === 'string' &&
+    typeof (value as Record<string, unknown>).intensity === 'number'
   );
 }

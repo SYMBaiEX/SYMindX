@@ -289,7 +289,7 @@ export class TheoryOfMind {
     const confidence = baseBelief.confidence * Math.pow(0.8, depth - 1);
 
     return {
-      belief: baseBelief.value,
+      belief: String(baseBelief.value),
       confidence,
       depth,
     };

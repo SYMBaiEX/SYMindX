@@ -44,7 +44,7 @@ export class AnxiousEmotion extends BaseEmotion {
     };
   }
 
-  override processEvent(eventType: string, context?: unknown): EmotionResult {
+  override processEvent(eventType: string, context?: any): EmotionResult {
     // Special processing for anxiety-specific events
     const uncertaintyLevel =
       context && typeof context === 'object' && 'uncertainty_level' in context
@@ -76,4 +76,9 @@ export function createAnxiousEmotion(
   config: AnxiousEmotionConfig = {}
 ): AnxiousEmotion {
   return new AnxiousEmotion(config);
+}
+
+// Export module factory for registry
+export function createAnxiousEmotionModule(config?: any): AnxiousEmotion {
+  return new AnxiousEmotion(config || {});
 }

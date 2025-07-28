@@ -6,6 +6,9 @@
 
 import { MemoryProvider, MemoryRecord } from './agent';
 
+// Re-export for external usage
+export type { MemoryProvider, MemoryRecord };
+
 /**
  * Memory tier types for multi-level memory architecture
  */
@@ -124,6 +127,11 @@ export interface MemoryProviderMetadata {
   author: string;
 
   /**
+   * Type of the memory provider (e.g., 'sqlite', 'postgres', 'neon', 'supabase')
+   */
+  type: string;
+
+  /**
    * Whether the memory provider supports vector search
    */
   supportsVectorSearch: boolean;
@@ -147,7 +155,9 @@ export interface MemoryProviderMetadata {
 /**
  * Factory function for creating a memory provider
  */
-export type MemoryProviderFactory = (config: any) => MemoryProvider;
+export type MemoryProviderFactory = (
+  config: MemoryProviderConfig
+) => MemoryProvider;
 
 /**
  * Configuration for a memory provider
@@ -191,7 +201,7 @@ export interface MemoryProviderConfig {
   /**
    * Provider-specific configuration
    */
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**
@@ -213,7 +223,7 @@ export enum SearchQueryType {
 export interface SearchQuery {
   type: SearchQueryType;
   query: string;
-  filters?: Record<string, any>;
+  filters?: Record<string, unknown>;
   boost?: BoostFactors;
   boostFactors?: BoostFactors;
   timeRange?: TimeRange;
@@ -286,7 +296,7 @@ export interface MemoryRelationship {
   targetId: string;
   targetMemoryId?: string; // Alias for targetId
   strength: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -337,5 +347,5 @@ export interface PolicyCondition {
  */
 export interface PolicyAction {
   type: 'archive' | 'compress' | 'delete' | 'move_tier';
-  parameters?: Record<string, any>;
+  parameters?: Record<string, unknown>;
 }

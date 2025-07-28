@@ -235,7 +235,8 @@ export class HttpSkill {
     params: SkillParameters
   ): Promise<ActionResult> {
     try {
-      const { request, schema } = params;
+      const request = params.request as Record<string, unknown> | undefined;
+      const schema = params.schema as Record<string, unknown> | undefined;
 
       // Basic validation logic
       const isValid = this.performValidation(request, schema);
@@ -275,7 +276,14 @@ export class HttpSkill {
     params: SkillParameters
   ): Promise<ActionResult> {
     try {
-      const { origin, methods = ['GET', 'POST'], headers = [] } = params;
+      const origin =
+        typeof params.origin === 'string' ? params.origin : undefined;
+      const methods = Array.isArray(params.methods)
+        ? (params.methods as string[])
+        : ['GET', 'POST'];
+      const headers = Array.isArray(params.headers)
+        ? (params.headers as string[])
+        : [];
 
       const corsHeaders = {
         'Access-Control-Allow-Origin': origin || '*',
@@ -356,16 +364,16 @@ export class HttpSkill {
    * Perform basic validation
    */
   private performValidation(
-    request: Record<string, unknown>,
-    schema: Record<string, unknown>
+    request?: Record<string, unknown>,
+    schema?: Record<string, unknown>
   ): boolean {
     // Basic validation logic - in practice this would use a proper validation library
     if (!request || !schema) return false;
 
     // Check required fields
-    if (schema.required) {
+    if (Array.isArray(schema.required)) {
       for (const field of schema.required) {
-        if (!(field in request)) return false;
+        if (typeof field === 'string' && !(field in request)) return false;
       }
     }
 

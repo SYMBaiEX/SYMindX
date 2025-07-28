@@ -49,7 +49,7 @@ export class SadEmotion extends BaseEmotion {
     };
   }
 
-  override processEvent(eventType: string, context?: unknown): EmotionResult {
+  override processEvent(eventType: string, context?: any): EmotionResult {
     // Special processing for sad-specific events
     const previousIntensity = this._intensity;
     if (context?.outcome?.success === false) {
@@ -91,4 +91,9 @@ export default SadEmotion;
 // Export factory function for easy instantiation
 export function createSadEmotion(config: SadEmotionConfig = {}): SadEmotion {
   return new SadEmotion(config);
+}
+
+// Export module factory for registry
+export function createSadEmotionModule(config?: any): SadEmotion {
+  return new SadEmotion(config || {});
 }

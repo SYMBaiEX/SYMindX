@@ -4,6 +4,8 @@
  * Database migrations for the enhanced PostgreSQL memory provider
  */
 
+import type { PoolClient } from 'pg';
+
 export interface Migration {
   version: string;
   description: string;
@@ -200,7 +202,7 @@ export const migrations: Migration[] = [
  * Run a migration
  */
 export async function runMigration(
-  client: unknown,
+  client: PoolClient,
   migration: Migration,
   direction: 'up' | 'down' = 'up'
 ): Promise<void> {
@@ -220,7 +222,9 @@ export async function runMigration(
 /**
  * Get current schema version
  */
-export async function getCurrentVersion(client: any): Promise<string | null> {
+export async function getCurrentVersion(
+  client: PoolClient
+): Promise<string | null> {
   try {
     const result = await client.query(
       'SELECT version FROM schema_versions ORDER BY applied_at DESC LIMIT 1'
@@ -237,7 +241,7 @@ export async function getCurrentVersion(client: any): Promise<string | null> {
  * Record migration as applied
  */
 export async function recordMigration(
-  client: any,
+  client: PoolClient,
   migration: Migration
 ): Promise<void> {
   await client.query(

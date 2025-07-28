@@ -6,7 +6,8 @@
   "main": "index.ts",
   "dependencies": {
     "ws": "^8.18.2",
-    "uuid": "^11.0.0"
+    "uuid": "^11.0.0",
+    "pako": "^2.1.0"
   },
   "symindx": {
     "type": "extension",

@@ -44,7 +44,7 @@ export class NeutralEmotion extends BaseEmotion {
     };
   }
 
-  override processEvent(eventType: string, context?: unknown): EmotionResult {
+  override processEvent(eventType: string, context?: any): EmotionResult {
     // Neutral is the default state - it has very low reactivity
     const previousIntensity = this._intensity;
     if (context?.return_to_baseline) {
@@ -87,4 +87,9 @@ export function createNeutralEmotion(
   config: NeutralEmotionConfig = {}
 ): NeutralEmotion {
   return new NeutralEmotion(config);
+}
+
+// Export module factory for registry
+export function createNeutralEmotionModule(config?: any): NeutralEmotion {
+  return new NeutralEmotion(config || {});
 }

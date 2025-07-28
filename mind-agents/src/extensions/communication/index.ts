@@ -21,6 +21,7 @@ import {
   ExtensionConfig,
   ExtensionMetadata,
   SkillParameters,
+  GenericData,
 } from '../../types/common';
 import { runtimeLogger } from '../../utils/logger';
 
@@ -226,7 +227,7 @@ export class CommunicationExtension implements Extension {
       context,
       participantId,
       message,
-      metadata?.emotion
+      typeof metadata?.emotion === 'string' ? metadata.emotion : undefined
     );
 
     // Get context summary
@@ -237,8 +238,12 @@ export class CommunicationExtension implements Extension {
     if (this.communicationConfig.enableStyleAdaptation && contextSummary) {
       adaptedStyle = await this.styleAdapter.adaptStyle({
         mood: contextSummary.mood,
-        formality: metadata?.formality || 0.5,
-        participantStyle: metadata?.participantStyle,
+        formality:
+          typeof metadata?.formality === 'number' ? metadata.formality : 0.5,
+        participantStyle:
+          typeof metadata?.participantStyle === 'string'
+            ? metadata.participantStyle
+            : undefined,
         topics: contextSummary.topics,
         conversationPhase: contextSummary.phase,
       });
@@ -250,22 +255,26 @@ export class CommunicationExtension implements Extension {
       expressionVariations = await this.expressionEngine.generateVariations(
         message,
         {
-          emotion: metadata?.emotion,
+          emotion:
+            typeof metadata?.emotion === 'string'
+              ? metadata.emotion
+              : undefined,
           style: adaptedStyle,
           context: contextSummary,
+          count: 3,
         }
       );
     }
 
     // Generate recommendations
     const recommendations = this.generateCommunicationRecommendations(
-      context,
-      contextSummary,
+      context as any,
+      contextSummary as any,
       adaptedStyle
     );
 
     return {
-      contextSummary,
+      contextSummary: contextSummary as any,
       adaptedStyle,
       expressionVariations,
       recommendations,
@@ -299,8 +308,12 @@ export class CommunicationExtension implements Extension {
     if (this.communicationConfig.enableStyleAdaptation) {
       adaptedResponse = await this.styleAdapter.applyStyle(baseResponse, {
         mood: contextSummary.mood,
-        formality: metadata?.formality || 0.5,
-        participantStyle: metadata?.participantStyle,
+        formality:
+          typeof metadata?.formality === 'number' ? metadata.formality : 0.5,
+        participantStyle:
+          typeof metadata?.participantStyle === 'string'
+            ? metadata.participantStyle
+            : undefined,
         topics: contextSummary.topics,
         conversationPhase: contextSummary.phase,
       });
@@ -311,9 +324,21 @@ export class CommunicationExtension implements Extension {
       adaptedResponse = await this.expressionEngine.enhanceExpression(
         adaptedResponse,
         {
-          emotion: metadata?.emotion,
+          emotion:
+            typeof metadata?.emotion === 'string'
+              ? metadata.emotion
+              : undefined,
           context: contextSummary,
-          variation: metadata?.expressionVariation || 'balanced',
+          variation:
+            typeof metadata?.expressionVariation === 'string' &&
+            ['balanced', 'expressive', 'subtle'].includes(
+              metadata.expressionVariation
+            )
+              ? (metadata.expressionVariation as
+                  | 'balanced'
+                  | 'expressive'
+                  | 'subtle')
+              : 'balanced',
         }
       );
     }
@@ -323,7 +348,7 @@ export class CommunicationExtension implements Extension {
       context,
       this.agent.id,
       adaptedResponse,
-      metadata?.emotion
+      typeof metadata?.emotion === 'string' ? metadata.emotion : undefined
     );
 
     return adaptedResponse;
@@ -376,7 +401,7 @@ export class CommunicationExtension implements Extension {
         return {
           success: true,
           type: ActionResultType.SUCCESS,
-          result,
+          result: result as GenericData,
           timestamp: new Date(),
         };
       },
@@ -535,7 +560,7 @@ export class CommunicationExtension implements Extension {
     const recommendations: string[] = [];
 
     // Context-based recommendations
-    if (context?.messages?.length > 0) {
+    if (Array.isArray(context?.messages) && context.messages.length > 0) {
       const messageCount = context.messages.length;
       if (messageCount > 50) {
         recommendations.push(
@@ -545,24 +570,40 @@ export class CommunicationExtension implements Extension {
     }
 
     // Style-based recommendations
-    if (adaptedStyle?.formality < 0.3 && context?.participants?.size > 2) {
+    if (
+      typeof adaptedStyle?.formality === 'number' &&
+      adaptedStyle.formality < 0.3 &&
+      Array.isArray(context?.participants) &&
+      context.participants.length > 2
+    ) {
       recommendations.push(
         'Consider increasing formality for multi-participant conversations'
       );
     }
 
     // Pending questions
-    if (contextSummary?.pendingQuestions?.length > 0) {
+    if (
+      Array.isArray(contextSummary?.pendingQuestions) &&
+      contextSummary.pendingQuestions.length > 0
+    ) {
       recommendations.push(
         `Address ${contextSummary.pendingQuestions.length} pending questions`
       );
     }
 
     // Topic continuity
-    if (contextSummary?.topics?.length > 0) {
-      recommendations.push(
-        `Continue discussion on: ${contextSummary.topics.slice(0, 2).join(', ')}`
+    if (
+      Array.isArray(contextSummary?.topics) &&
+      contextSummary.topics.length > 0
+    ) {
+      const topicStrings = contextSummary.topics.filter(
+        (t): t is string => typeof t === 'string'
       );
+      if (topicStrings.length > 0) {
+        recommendations.push(
+          `Continue discussion on: ${topicStrings.slice(0, 2).join(', ')}`
+        );
+      }
     }
 
     // Mood adaptation

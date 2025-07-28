@@ -123,7 +123,9 @@ export class StyleAdapter {
    */
   async initialize(agent: Agent): Promise<void> {
     this.agent = agent;
-    runtimeLogger.debug('🎨 Style Adapter initialized for agent', agent.name);
+    runtimeLogger.debug('🎨 Style Adapter initialized for agent', {
+      agentId: agent.id,
+    });
   }
 
   /**
@@ -139,10 +141,14 @@ export class StyleAdapter {
     const adaptedStyle = { ...this.defaultStyle };
 
     // Apply agent personality traits if available
-    if (this.agent?.characterConfig?.personality?.traits) {
+    if (
+      this.agent?.characterConfig?.personality &&
+      typeof this.agent.characterConfig.personality === 'object' &&
+      'traits' in this.agent.characterConfig.personality
+    ) {
       const personalityAdaptedStyle = this.applyPersonalityTraits(
         adaptedStyle,
-        this.agent.characterConfig.personality.traits
+        this.agent.characterConfig.personality.traits as PersonalityTraits
       );
       Object.assign(adaptedStyle, personalityAdaptedStyle);
     }
@@ -397,9 +403,7 @@ export class StyleAdapter {
     // Store user preference for future reference
     const userHistory = this.learningHistory.get(userId) || [];
     if (userHistory.length > 0) {
-      runtimeLogger.style(
-        `Analyzing style for user ${userId} with ${userHistory.length} historical interactions`
-      );
+      runtimeLogger.debug(`Analyzing style for user ${userId}`, { userId });
     }
 
     // Update user style if we inferred new preferences
@@ -407,10 +411,9 @@ export class StyleAdapter {
       const currentStyle = this.getStyle(userId);
       const merged = { ...currentStyle, ...inferred };
       this.userStyles.set(userId, merged);
-      runtimeLogger.style(
-        `Updated style preferences for user ${userId}`,
-        inferred
-      );
+      runtimeLogger.debug(`Updated style preferences for user ${userId}`, {
+        userId,
+      });
     }
 
     return inferred;
@@ -748,7 +751,7 @@ export class StyleAdapter {
     });
 
     this.userStyles.set(userId, current);
-    runtimeLogger.style(
+    runtimeLogger.debug(
       `Adjusted style for user ${userId} away from unsuccessful pattern`
     );
   }
@@ -758,7 +761,7 @@ export class StyleAdapter {
    */
   exportStyles(): Record<string, CommunicationStyle> {
     const exported: Record<string, CommunicationStyle> = {};
-    for (const [userId, style] of this.userStyles) {
+    for (const [userId, style] of Array.from(this.userStyles)) {
       exported[userId] = { ...style };
     }
     return exported;

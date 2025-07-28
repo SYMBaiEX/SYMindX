@@ -19,8 +19,15 @@ import {
   themeEngine,
 } from '../effects/index.js';
 
+// DataPoint interface for AnimatedChart
+interface DataPoint {
+  value: number;
+  label?: string;
+  color?: string;
+}
+
 // Demo data for charts
-const generateChartData = (): number[] => {
+const generateChartData = (): DataPoint[] => {
   return Array.from({ length: 10 }, (_, i) => ({
     value: Math.random() * 100,
     label: String.fromCharCode(65 + i),

@@ -3,13 +3,21 @@
  * @description Advanced debugging and diagnostic utilities for SYMindX
  */
 
-import { performance } from 'perf_hooks';
-import { inspect } from 'util';
 import { writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
+import { performance } from 'perf_hooks';
+import { inspect } from 'util';
+
+import type {
+  Agent,
+  AgentEvent,
+  MemoryRecord,
+  ThoughtResult,
+  LogContext,
+} from '../types/index.js';
+
 import { runtimeLogger } from './logger.js';
 import { performanceMonitor } from './performance-monitor.js';
-import type { Agent, AgentEvent, MemoryRecord, ThoughtResult, LogContext } from '../types/index.js';
 
 /**
  * Debug levels
@@ -189,7 +197,8 @@ export class MemoryProfiler {
     const heapTotalDiff = afterSnapshot.heapTotal - beforeSnapshot.heapTotal;
     const rssDiff = afterSnapshot.rss - beforeSnapshot.rss;
     const externalDiff = afterSnapshot.external - beforeSnapshot.external;
-    const arrayBuffersDiff = afterSnapshot.arrayBuffers - beforeSnapshot.arrayBuffers;
+    const arrayBuffersDiff =
+      afterSnapshot.arrayBuffers - beforeSnapshot.arrayBuffers;
 
     const summary = [
       `Heap Used: ${this.formatBytes(heapUsedDiff)}`,
@@ -247,10 +256,14 @@ export class MemoryProfiler {
       recommendations.push('Check for native memory leaks or large buffers');
     }
 
-    const growthRate = heapGrowth / (Date.now() - (this.leakDetector.get(label) || Date.now()));
-    if (growthRate > 1000) { // 1KB per millisecond
+    const growthRate =
+      heapGrowth / (Date.now() - (this.leakDetector.get(label) || Date.now()));
+    if (growthRate > 1000) {
+      // 1KB per millisecond
       hasLeak = true;
-      details.push(`High memory growth rate: ${this.formatBytes(growthRate * 1000)}/second`);
+      details.push(
+        `High memory growth rate: ${this.formatBytes(growthRate * 1000)}/second`
+      );
       recommendations.push('Monitor for continuous memory allocation patterns');
     }
 
@@ -280,7 +293,7 @@ export class MemoryProfiler {
   private formatBytes(bytes: number): string {
     const sign = bytes >= 0 ? '+' : '';
     const abs = Math.abs(bytes);
-    
+
     if (abs >= 1024 * 1024 * 1024) {
       return `${sign}${(bytes / (1024 * 1024 * 1024)).toFixed(2)}GB`;
     } else if (abs >= 1024 * 1024) {
@@ -318,11 +331,13 @@ export class CallStackTracer {
 
     const stack = new Error().stack;
     const caller = stack?.split('\n')[3]?.trim() || 'unknown';
-    
+
     const trace = this.traces.get(traceId) || [];
-    const argsStr = args ? ` with args: ${inspect(args, { depth: 2, maxArrayLength: 5 })}` : '';
+    const argsStr = args
+      ? ` with args: ${inspect(args, { depth: 2, maxArrayLength: 5 })}`
+      : '';
     trace.push(`${functionName}${argsStr} (called from ${caller})`);
-    
+
     this.traces.set(traceId, trace);
   }
 
@@ -355,12 +370,12 @@ export class CallStackTracer {
  */
 export class DebugUtilities {
   private static instance: DebugUtilities;
-  
+
   private sessions: Map<string, DebugSession> = new Map();
   private traces: DebugTrace[] = [];
   private memoryProfiler = new MemoryProfiler();
   private callStackTracer = new CallStackTracer();
-  
+
   private readonly config = {
     maxTraces: 10000,
     maxSessionDuration: 24 * 60 * 60 * 1000, // 24 hours
@@ -393,31 +408,40 @@ export class DebugUtilities {
     outputs: DebugOutput[] = []
   ): string {
     const sessionId = `debug_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    
+
     const session: DebugSession = {
       id: sessionId,
       name,
       startTime: new Date(),
       level,
       filters,
-      outputs: outputs.length > 0 ? outputs : [
-        {
-          type: 'console',
-          config: {},
-          enabled: true,
-        },
-      ],
+      outputs:
+        outputs.length > 0
+          ? outputs
+          : [
+              {
+                type: 'console',
+                config: {},
+                enabled: true,
+              },
+            ],
       active: true,
     };
 
     this.sessions.set(sessionId, session);
-    
-    this.trace(DebugLevel.INFO, 'debug', `Debug session '${name}' started`, {
-      sessionId,
-      level: DebugLevel[level],
-      filters: filters.length,
-      outputs: outputs.length,
-    }, { sessionId });
+
+    this.trace(
+      DebugLevel.INFO,
+      'debug',
+      `Debug session '${name}' started`,
+      {
+        sessionId,
+        level: DebugLevel[level],
+        filters: filters.length,
+        outputs: outputs.length,
+      },
+      { sessionId }
+    );
 
     // Auto-cleanup after max duration
     setTimeout(() => {
@@ -437,11 +461,17 @@ export class DebugUtilities {
     }
 
     session.active = false;
-    
-    this.trace(DebugLevel.INFO, 'debug', `Debug session '${session.name}' ended`, {
-      sessionId,
-      duration: Date.now() - session.startTime.getTime(),
-    }, { sessionId });
+
+    this.trace(
+      DebugLevel.INFO,
+      'debug',
+      `Debug session '${session.name}' ended`,
+      {
+        sessionId,
+        duration: Date.now() - session.startTime.getTime(),
+      },
+      { sessionId }
+    );
 
     // Generate session report
     this.generateSessionReport(session);
@@ -468,14 +498,12 @@ export class DebugUtilities {
       data,
       context,
       stack: level >= DebugLevel.ERROR ? new Error().stack : undefined,
+      performance: this.config.enablePerformanceTracing
+        ? {
+            memory: process.memoryUsage().heapUsed,
+          }
+        : undefined,
     };
-
-    // Add performance information if enabled
-    if (this.config.enablePerformanceTracing) {
-      trace.performance = {
-        memory: process.memoryUsage().heapUsed,
-      };
-    }
 
     this.traces.push(trace);
 
@@ -521,11 +549,17 @@ export class DebugUtilities {
           nodeVersion: process.version,
           platform: process.platform,
         },
-        extensions: agent.extensions?.map(ext => ext.name) || [],
+        extensions: agent.extensions?.map((ext) => ext.name) || [],
       },
     };
 
-    this.trace(DebugLevel.DEBUG, 'agent', `Agent snapshot taken for ${agent.name}`, snapshot, context);
+    this.trace(
+      DebugLevel.DEBUG,
+      'agent',
+      `Agent snapshot taken for ${agent.name}`,
+      snapshot,
+      context
+    );
 
     return snapshot;
   }
@@ -535,7 +569,7 @@ export class DebugUtilities {
    */
   public debugSystem(agents: Agent[] = []): SystemDebugSnapshot {
     const systemMetrics = performanceMonitor.getSystemMetrics();
-    
+
     const snapshot: SystemDebugSnapshot = {
       timestamp: new Date(),
       system: {
@@ -547,7 +581,9 @@ export class DebugUtilities {
       },
       runtime: {
         agentCount: agents.length,
-        activeAgents: agents.filter(a => a.status === 'active').map(a => a.id),
+        activeAgents: agents
+          .filter((a) => a.status === 'active')
+          .map((a) => a.id),
         lazyAgents: [], // Would get from runtime
         extensions: [], // Would get from runtime
         portals: [], // Would get from runtime
@@ -558,7 +594,7 @@ export class DebugUtilities {
         errorRate: 0,
         memoryUsage: systemMetrics.memory.usage,
       },
-      agents: agents.map(agent => this.debugAgent(agent)),
+      agents: agents.map((agent) => this.debugAgent(agent)),
     };
 
     this.trace(DebugLevel.DEBUG, 'system', 'System snapshot taken', snapshot);
@@ -575,28 +611,43 @@ export class DebugUtilities {
     context?: DebugContext
   ): Promise<{ result: T; profile: any }> {
     this.memoryProfiler.takeSnapshot(`${name}_before`);
-    
+
     const startTime = performance.now();
-    
+
     try {
       const result = await fn();
       const endTime = performance.now();
-      
+
       this.memoryProfiler.takeSnapshot(`${name}_after`);
-      const comparison = this.memoryProfiler.compareSnapshots(`${name}_before`, `${name}_after`);
+      const comparison = this.memoryProfiler.compareSnapshots(
+        `${name}_before`,
+        `${name}_after`
+      );
       const leakCheck = this.memoryProfiler.checkForLeaks(`${name}_before`);
-      
+
       const profile = {
         duration: endTime - startTime,
         memory: comparison,
         leakCheck,
       };
 
-      this.trace(DebugLevel.DEBUG, 'memory', `Memory profile for ${name}`, profile, context);
+      this.trace(
+        DebugLevel.DEBUG,
+        'memory',
+        `Memory profile for ${name}`,
+        profile,
+        context
+      );
 
       return { result, profile };
     } catch (error) {
-      this.trace(DebugLevel.ERROR, 'memory', `Memory profiling failed for ${name}`, { error }, context);
+      this.trace(
+        DebugLevel.ERROR,
+        'memory',
+        `Memory profiling failed for ${name}`,
+        { error },
+        context
+      );
       throw error;
     }
   }
@@ -610,42 +661,70 @@ export class DebugUtilities {
     context?: DebugContext
   ): Promise<{ result: T; trace: string[] }> | { result: T; trace: string[] } {
     const traceId = `exec_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    
+
     this.callStackTracer.startTrace(traceId);
     this.callStackTracer.addCall(traceId, name);
 
-    const executeWithTrace = async (): Promise<{ result: T; trace: string[] }> => {
+    const executeWithTrace = async (): Promise<{
+      result: T;
+      trace: string[];
+    }> => {
       try {
         const result = await fn();
         const trace = this.callStackTracer.endTrace(traceId);
-        
-        this.trace(DebugLevel.DEBUG, 'execution', `Execution trace for ${name}`, { trace }, context);
-        
+
+        this.trace(
+          DebugLevel.DEBUG,
+          'execution',
+          `Execution trace for ${name}`,
+          { trace },
+          context
+        );
+
         return { result, trace };
       } catch (error) {
         const trace = this.callStackTracer.endTrace(traceId);
-        this.trace(DebugLevel.ERROR, 'execution', `Execution failed for ${name}`, { error, trace }, context);
+        this.trace(
+          DebugLevel.ERROR,
+          'execution',
+          `Execution failed for ${name}`,
+          { error, trace },
+          context
+        );
         throw error;
       }
     };
 
     // Handle both sync and async functions
-    const isAsync = fn.constructor.name === 'AsyncFunction' || 
-                   (typeof fn === 'function' && fn.toString().includes('async'));
-    
+    const isAsync =
+      fn.constructor.name === 'AsyncFunction' ||
+      (typeof fn === 'function' && fn.toString().includes('async'));
+
     if (isAsync) {
       return executeWithTrace();
     } else {
       try {
         const result = fn() as T;
         const trace = this.callStackTracer.endTrace(traceId);
-        
-        this.trace(DebugLevel.DEBUG, 'execution', `Execution trace for ${name}`, { trace }, context);
-        
+
+        this.trace(
+          DebugLevel.DEBUG,
+          'execution',
+          `Execution trace for ${name}`,
+          { trace },
+          context
+        );
+
         return { result, trace };
       } catch (error) {
         const trace = this.callStackTracer.endTrace(traceId);
-        this.trace(DebugLevel.ERROR, 'execution', `Execution failed for ${name}`, { error, trace }, context);
+        this.trace(
+          DebugLevel.ERROR,
+          'execution',
+          `Execution failed for ${name}`,
+          { error, trace },
+          context
+        );
         throw error;
       }
     }
@@ -658,7 +737,9 @@ export class DebugUtilities {
     const data = {
       sessions: Array.from(this.sessions.values()),
       traces: this.traces,
-      memorySnapshots: Array.from(this.memoryProfiler.getAllSnapshots().entries()),
+      memorySnapshots: Array.from(
+        this.memoryProfiler.getAllSnapshots().entries()
+      ),
       systemInfo: {
         platform: process.platform,
         nodeVersion: process.version,
@@ -672,13 +753,13 @@ export class DebugUtilities {
     switch (format) {
       case 'json':
         return JSON.stringify(data, null, 2);
-      
+
       case 'csv':
         return this.convertToCSV(data);
-      
+
       case 'html':
         return this.convertToHTML(data);
-      
+
       default:
         return JSON.stringify(data, null, 2);
     }
@@ -691,12 +772,12 @@ export class DebugUtilities {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const file = filename || `debug-report-${timestamp}.json`;
     const filepath = join(this.config.outputDirectory, file);
-    
+
     const data = this.exportData('json');
     writeFileSync(filepath, data, 'utf8');
-    
+
     this.trace(DebugLevel.INFO, 'debug', `Debug report saved to ${filepath}`);
-    
+
     return filepath;
   }
 
@@ -712,14 +793,19 @@ export class DebugUtilities {
     topCategories: Array<{ category: string; count: number }>;
     errorRate: number;
   } {
-    const activeSessions = Array.from(this.sessions.values()).filter(s => s.active).length;
-    
+    const activeSessions = Array.from(this.sessions.values()).filter(
+      (s) => s.active
+    ).length;
+
     const categoryCount = new Map<string, number>();
     let totalLevel = 0;
     let errorCount = 0;
 
     for (const trace of this.traces) {
-      categoryCount.set(trace.category, (categoryCount.get(trace.category) || 0) + 1);
+      categoryCount.set(
+        trace.category,
+        (categoryCount.get(trace.category) || 0) + 1
+      );
       totalLevel += trace.level;
       if (trace.level >= DebugLevel.ERROR) {
         errorCount++;
@@ -736,7 +822,8 @@ export class DebugUtilities {
       activeSession: activeSessions,
       traces: this.traces.length,
       memorySnapshots: this.memoryProfiler.getAllSnapshots().size,
-      averageTraceLevel: this.traces.length > 0 ? totalLevel / this.traces.length : 0,
+      averageTraceLevel:
+        this.traces.length > 0 ? totalLevel / this.traces.length : 0,
       topCategories,
       errorRate: this.traces.length > 0 ? errorCount / this.traces.length : 0,
     };
@@ -750,7 +837,7 @@ export class DebugUtilities {
     this.traces = [];
     this.memoryProfiler.clearSnapshots();
     this.callStackTracer.clearTraces();
-    
+
     this.trace(DebugLevel.INFO, 'debug', 'All debug data cleared');
   }
 
@@ -767,9 +854,10 @@ export class DebugUtilities {
       let shouldInclude = true;
       for (const filter of session.filters) {
         const fieldValue = this.getFilterFieldValue(trace, filter.field);
-        const matches = typeof filter.pattern === 'string' 
-          ? fieldValue.includes(filter.pattern)
-          : filter.pattern.test(fieldValue);
+        const matches =
+          typeof filter.pattern === 'string'
+            ? fieldValue.includes(filter.pattern)
+            : filter.pattern.test(fieldValue);
 
         if (filter.type === 'include' && !matches) {
           shouldInclude = false;
@@ -798,22 +886,29 @@ export class DebugUtilities {
   /**
    * Output trace to specific output type
    */
-  private outputTrace(trace: DebugTrace, output: DebugOutput, session: DebugSession): void {
+  private outputTrace(
+    trace: DebugTrace,
+    output: DebugOutput,
+    session: DebugSession
+  ): void {
     const formatted = this.formatTrace(trace);
 
     switch (output.type) {
       case 'console':
         console.log(`[${session.name}] ${formatted}`);
         break;
-        
+
       case 'file':
-        this.writeToFile(formatted, output.config.filename || `debug-${session.id}.log`);
+        this.writeToFile(
+          formatted,
+          output.config.filename || `debug-${session.id}.log`
+        );
         break;
-        
+
       case 'memory':
         // Store in memory buffer (implemented in output.config.buffer)
         break;
-        
+
       case 'websocket':
         // Send via WebSocket (would need WebSocket connection)
         break;
@@ -827,25 +922,25 @@ export class DebugUtilities {
     const timestamp = trace.timestamp.toISOString();
     const level = DebugLevel[trace.level].padEnd(5);
     const category = trace.category.padEnd(10);
-    
+
     let formatted = `${timestamp} [${level}] [${category}] ${trace.message}`;
-    
+
     if (trace.data) {
       formatted += `\n  Data: ${inspect(trace.data, { depth: 3, colors: false })}`;
     }
-    
+
     if (trace.context) {
       formatted += `\n  Context: ${inspect(trace.context, { depth: 2, colors: false })}`;
     }
-    
+
     if (trace.performance) {
       formatted += `\n  Performance: ${inspect(trace.performance, { depth: 1, colors: false })}`;
     }
-    
+
     if (trace.stack) {
       formatted += `\n  Stack: ${trace.stack}`;
     }
-    
+
     return formatted;
   }
 
@@ -858,12 +953,18 @@ export class DebugUtilities {
     }
 
     switch (field) {
-      case 'category': return trace.category;
-      case 'message': return trace.message;
-      case 'level': return DebugLevel[trace.level];
-      case 'data': return JSON.stringify(trace.data || {});
-      case 'context': return JSON.stringify(trace.context || {});
-      default: return trace.message;
+      case 'category':
+        return trace.category;
+      case 'message':
+        return trace.message;
+      case 'level':
+        return DebugLevel[trace.level];
+      case 'data':
+        return JSON.stringify(trace.data || {});
+      case 'context':
+        return JSON.stringify(trace.context || {});
+      default:
+        return trace.message;
     }
   }
 
@@ -871,9 +972,9 @@ export class DebugUtilities {
    * Generate session report
    */
   private generateSessionReport(session: DebugSession): void {
-    const sessionTraces = this.traces.filter(t => 
-      t.context?.sessionId === session.id ||
-      t.timestamp >= session.startTime
+    const sessionTraces = this.traces.filter(
+      (t) =>
+        t.context?.sessionId === session.id || t.timestamp >= session.startTime
     );
 
     const report = {
@@ -881,15 +982,16 @@ export class DebugUtilities {
       summary: {
         duration: Date.now() - session.startTime.getTime(),
         traceCount: sessionTraces.length,
-        errorCount: sessionTraces.filter(t => t.level >= DebugLevel.ERROR).length,
-        categories: [...new Set(sessionTraces.map(t => t.category))],
+        errorCount: sessionTraces.filter((t) => t.level >= DebugLevel.ERROR)
+          .length,
+        categories: [...new Set(sessionTraces.map((t) => t.category))],
       },
       traces: sessionTraces,
     };
 
     const filename = `session-report-${session.id}.json`;
     const filepath = join(this.config.outputDirectory, filename);
-    
+
     writeFileSync(filepath, JSON.stringify(report, null, 2), 'utf8');
   }
 
@@ -899,16 +1001,20 @@ export class DebugUtilities {
   private sanitizeConfig(config: any): any {
     const sanitized = { ...config };
     const sensitiveKeys = ['apiKey', 'password', 'token', 'secret', 'key'];
-    
+
     const sanitizeObject = (obj: any): any => {
       if (typeof obj !== 'object' || obj === null) {
         return obj;
       }
 
       const result: any = Array.isArray(obj) ? [] : {};
-      
+
       for (const [key, value] of Object.entries(obj)) {
-        if (sensitiveKeys.some(sensitive => key.toLowerCase().includes(sensitive))) {
+        if (
+          sensitiveKeys.some((sensitive) =>
+            key.toLowerCase().includes(sensitive)
+          )
+        ) {
           result[key] = '[REDACTED]';
         } else if (typeof value === 'object') {
           result[key] = sanitizeObject(value);
@@ -945,8 +1051,15 @@ export class DebugUtilities {
    */
   private convertToCSV(data: any): string {
     const traces = data.traces;
-    const headers = ['timestamp', 'level', 'category', 'message', 'sessionId', 'agentId'];
-    
+    const headers = [
+      'timestamp',
+      'level',
+      'category',
+      'message',
+      'sessionId',
+      'agentId',
+    ];
+
     const rows = traces.map((trace: DebugTrace) => [
       trace.timestamp.toISOString(),
       DebugLevel[trace.level],
@@ -956,7 +1069,7 @@ export class DebugUtilities {
       trace.context?.agentId || '',
     ]);
 
-    return [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
+    return [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
   }
 
   /**
@@ -984,13 +1097,17 @@ export class DebugUtilities {
       <h2>System Info</h2>
       <pre>${JSON.stringify(data.systemInfo, null, 2)}</pre>
       <h2>Debug Traces</h2>
-      ${data.traces.map((trace: DebugTrace) => `
+      ${data.traces
+        .map(
+          (trace: DebugTrace) => `
         <div class="trace ${DebugLevel[trace.level].toLowerCase()}">
           <strong>${trace.timestamp.toISOString()} [${DebugLevel[trace.level]}] [${trace.category}]</strong><br>
           ${trace.message}
           ${trace.data ? `<pre>${JSON.stringify(trace.data, null, 2)}</pre>` : ''}
         </div>
-      `).join('')}
+      `
+        )
+        .join('')}
     </body>
     </html>
     `;
@@ -1005,23 +1122,36 @@ export const debugUtilities = DebugUtilities.getInstance();
 /**
  * Convenience functions for common debugging patterns
  */
-export const debugAgent = (agent: Agent, context?: DebugContext) => 
+export const debugAgent = (agent: Agent, context?: DebugContext) =>
   debugUtilities.debugAgent(agent, context);
 
-export const debugSystem = (agents?: Agent[]) => 
+export const debugSystem = (agents?: Agent[]) =>
   debugUtilities.debugSystem(agents);
 
-export const traceExecution = <T>(name: string, fn: () => Promise<T> | T, context?: DebugContext) =>
-  debugUtilities.traceExecution(name, fn, context);
+export const traceExecution = <T>(
+  name: string,
+  fn: () => Promise<T> | T,
+  context?: DebugContext
+) => debugUtilities.traceExecution(name, fn, context);
 
-export const profileMemory = <T>(name: string, fn: () => Promise<T> | T, context?: DebugContext) =>
-  debugUtilities.profileMemory(name, fn, context);
+export const profileMemory = <T>(
+  name: string,
+  fn: () => Promise<T> | T,
+  context?: DebugContext
+) => debugUtilities.profileMemory(name, fn, context);
 
 /**
  * Debug decorator for automatic method tracing
  */
-export function debug(category: string = 'method', level: DebugLevel = DebugLevel.DEBUG) {
-  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+export function debug(
+  category: string = 'method',
+  level: DebugLevel = DebugLevel.DEBUG
+) {
+  return function (
+    target: any,
+    propertyKey: string,
+    descriptor: PropertyDescriptor
+  ) {
     const originalMethod = descriptor.value;
     const methodName = `${target.constructor.name}.${propertyKey}`;
 
@@ -1029,17 +1159,38 @@ export function debug(category: string = 'method', level: DebugLevel = DebugLeve
       const context: DebugContext = {
         operationId: `${methodName}_${Date.now()}`,
         tags: ['decorated-method'],
-        metadata: { className: target.constructor.name, methodName: propertyKey },
+        metadata: {
+          className: target.constructor.name,
+          methodName: propertyKey,
+        },
       };
 
-      debugUtilities.trace(level, category, `Starting ${methodName}`, { args }, context);
+      debugUtilities.trace(
+        level,
+        category,
+        `Starting ${methodName}`,
+        { args },
+        context
+      );
 
       try {
         const result = await originalMethod.apply(this, args);
-        debugUtilities.trace(level, category, `Completed ${methodName}`, { result }, context);
+        debugUtilities.trace(
+          level,
+          category,
+          `Completed ${methodName}`,
+          { result },
+          context
+        );
         return result;
       } catch (error) {
-        debugUtilities.trace(DebugLevel.ERROR, category, `Failed ${methodName}`, { error }, context);
+        debugUtilities.trace(
+          DebugLevel.ERROR,
+          category,
+          `Failed ${methodName}`,
+          { error },
+          context
+        );
         throw error;
       }
     };

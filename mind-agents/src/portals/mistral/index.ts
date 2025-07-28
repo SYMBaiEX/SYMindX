@@ -118,7 +118,7 @@ export class MistralPortal extends BasePortal {
     try {
       // Try a simple text generation to verify the API is working
       await aiGenerateText({
-        model: this.model,
+        model: this.model as any, // Cast to resolve v1/v2 compatibility
         messages: [{ role: 'user', content: 'Hello' }],
         maxOutputTokens: 10,
       });
@@ -211,8 +211,9 @@ export class MistralPortal extends BasePortal {
       // Build parameters conditionally to satisfy exactOptionalPropertyTypes
       const generateParams = this.buildMistralParams(baseParams, options);
 
-      const { text, usage, finishReason } =
-        await aiGenerateText(generateParams);
+      const { text, usage, finishReason } = await aiGenerateText(
+        generateParams as any
+      );
 
       return {
         text,
@@ -269,8 +270,9 @@ export class MistralPortal extends BasePortal {
       // Build parameters conditionally to satisfy exactOptionalPropertyTypes
       const generateParams = this.buildMistralChatParams(baseParams, options);
 
-      const { text, usage, finishReason } =
-        await aiGenerateText(generateParams);
+      const { text, usage, finishReason } = await aiGenerateText(
+        generateParams as any
+      );
 
       const message: ChatMessage = {
         role: MessageRole.ASSISTANT,
@@ -298,7 +300,7 @@ export class MistralPortal extends BasePortal {
   ): Promise<EmbeddingResult> {
     try {
       const { embedding, usage } = await aiEmbed({
-        model: this.embedModel,
+        model: this.embedModel as any, // Cast to resolve v1/v2 compatibility
         value: text,
       });
 
@@ -348,7 +350,7 @@ export class MistralPortal extends BasePortal {
       // Build parameters conditionally to satisfy exactOptionalPropertyTypes
       const streamParams = this.buildMistralParams(baseParams, options);
 
-      const { textStream } = await aiStreamText(streamParams);
+      const { textStream } = await aiStreamText(streamParams as any);
 
       for await (const chunk of textStream) {
         yield chunk;
@@ -379,7 +381,7 @@ export class MistralPortal extends BasePortal {
       // Build parameters conditionally to satisfy exactOptionalPropertyTypes
       const streamParams = this.buildMistralChatParams(baseParams, options);
 
-      const { textStream } = await aiStreamText(streamParams);
+      const { textStream } = await aiStreamText(streamParams as any);
 
       for await (const chunk of textStream) {
         yield chunk;

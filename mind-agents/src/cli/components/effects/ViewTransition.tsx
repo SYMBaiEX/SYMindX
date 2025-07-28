@@ -32,6 +32,11 @@ export const ViewTransition: React.FC<ViewTransitionProps> = ({
   const previousKey = useRef(transitionKey);
   const theme = themeEngine.getTheme();
 
+  // Easing function (defined early to avoid hoisting issues)
+  const easeInOutCubic = useCallback((t: number): number => {
+    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  }, []);
+
   // Handle transition when key changes
   useEffect(() => {
     if (
@@ -65,11 +70,6 @@ export const ViewTransition: React.FC<ViewTransitionProps> = ({
       previousKey.current = transitionKey;
     }
   }, [transitionKey, children, duration, easeInOutCubic]);
-
-  // Easing function (memoized)
-  const easeInOutCubic = useCallback((t: number): number => {
-    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-  }, []);
 
   // Render transition effect
   const renderTransition = (): React.ReactNode => {

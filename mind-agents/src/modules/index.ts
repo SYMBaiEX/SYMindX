@@ -4,7 +4,9 @@
  * Simplified module loading with core modules only
  */
 
-import { ModuleRegistry } from '../types/agent';
+import { ModuleRegistry, MemoryProvider } from '../types/agent';
+import { CognitionModule } from '../types/cognition';
+import { EmotionModule } from '../types/emotion';
 import { runtimeLogger } from '../utils/logger';
 
 import { createCognitionModule } from './cognition/index';
@@ -43,7 +45,7 @@ export function createModule(
   type: 'memory' | 'emotion' | 'cognition' | 'tools',
   moduleType: string,
   config: unknown
-): unknown {
+): MemoryProvider | EmotionModule | CognitionModule | unknown {
   switch (type) {
     case 'memory':
       return createMemoryProviderByName(moduleType, config as any);

@@ -42,7 +42,7 @@ export class ProudEmotion extends BaseEmotion {
     };
   }
 
-  override processEvent(eventType: string, context?: unknown): EmotionResult {
+  override processEvent(eventType: string, context?: any): EmotionResult {
     // Special processing for pride-specific events
     if (context?.personal_achievement) {
       this._intensity = Math.min(1.0, this._intensity + 0.3);
@@ -65,4 +65,9 @@ export function createProudEmotion(
   config: ProudEmotionConfig = {}
 ): ProudEmotion {
   return new ProudEmotion(config);
+}
+
+// Export module factory for registry
+export function createProudEmotionModule(config?: any): ProudEmotion {
+  return new ProudEmotion(config || {});
 }

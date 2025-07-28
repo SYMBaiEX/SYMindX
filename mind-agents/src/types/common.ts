@@ -2,7 +2,7 @@
  * Common Types
  *
  * This file defines common interfaces and types used throughout the system
- * to replace generic Record<string, any> and any types for better type safety.
+ * to replace generic Record<string, any> and untyped values for better type safety.
  */
 
 // Configuration Types
@@ -16,6 +16,7 @@ export type ConfigValue =
   | boolean
   | ConfigValue[]
   | BaseConfig
+  | { [key: string]: any } // Allow complex object types
   | null
   | undefined;
 
@@ -136,14 +137,14 @@ export interface LegacyValidationError {
   field: string;
   message: string;
   code: string;
-  value?: any;
+  value?: ConfigValue;
 }
 
 export interface LegacyValidationWarning {
   field: string;
   message: string;
   code: string;
-  value?: any;
+  value?: ConfigValue;
 }
 
 // Skill/Action Parameter Types
@@ -460,7 +461,7 @@ export interface JsonSchemaProperty {
   type: string;
   description?: string;
   enum?: string[];
-  default?: any;
+  default?: ConfigValue;
   minimum?: number;
   maximum?: number;
   pattern?: string;
@@ -486,7 +487,7 @@ export interface McpPromptArgument {
 }
 
 // Enhanced Result Types for better API consistency
-export interface ServiceResult<T = any> {
+export interface ServiceResult<T = GenericData> {
   success: boolean;
   data?: T;
   error?: string;
@@ -497,7 +498,7 @@ export interface ServiceResult<T = any> {
     operation: string;
     duration?: number;
     version?: string;
-    [key: string]: any;
+    [key: string]: MetadataValue;
   };
 }
 
@@ -511,8 +512,8 @@ export interface ServiceError {
   metadata?: {
     serviceId: string;
     operation: string;
-    context?: Record<string, any>;
-    [key: string]: any;
+    context?: Context;
+    [key: string]: MetadataValue;
   };
 }
 
@@ -523,12 +524,12 @@ export interface ConfigurationSchema {
     [key: string]: {
       type: 'string' | 'number' | 'boolean' | 'object' | 'array';
       required?: boolean;
-      default?: any;
+      default?: ConfigValue;
       validation?: {
         min?: number;
         max?: number;
         pattern?: string;
-        enum?: any[];
+        enum?: ConfigValue[];
       };
       description?: string;
     };
@@ -556,7 +557,7 @@ export interface ModuleConfigManifest {
     tags?: string[];
     homepage?: string;
     repository?: string;
-    [key: string]: any;
+    [key: string]: MetadataValue;
   };
 }
 
@@ -583,7 +584,7 @@ export interface RuntimeContext {
       loadAverage: number[];
     };
   };
-  metadata?: Record<string, any>;
+  metadata?: Metadata;
 }
 
 // Enhanced Event Types
@@ -593,12 +594,12 @@ export interface SystemEvent {
   category: 'system' | 'agent' | 'user' | 'external';
   source: string;
   timestamp: Date;
-  data: Record<string, any>;
+  data: GenericData;
   metadata?: {
     priority: 'low' | 'medium' | 'high' | 'critical';
     tags?: string[];
     correlationId?: string;
-    [key: string]: any;
+    [key: string]: MetadataValue;
   };
 }
 
@@ -607,7 +608,7 @@ export interface ServiceConfiguration {
   id: string;
   name: string;
   enabled: boolean;
-  config: Record<string, any>;
+  config: BaseConfig;
   dependencies?: string[];
   healthCheck?: {
     enabled: boolean;
@@ -619,7 +620,7 @@ export interface ServiceConfiguration {
     version: string;
     description?: string;
     tags?: string[];
-    [key: string]: any;
+    [key: string]: MetadataValue;
   };
 }
 
@@ -629,7 +630,7 @@ export interface Message {
   type: string;
   source: string;
   target: string;
-  content: string | Record<string, any>;
+  content: string | GenericData;
   timestamp: Date;
   metadata?: {
     priority: 'low' | 'medium' | 'high' | 'urgent';
@@ -637,7 +638,7 @@ export interface Message {
     compression?: boolean;
     ttl?: number;
     correlationId?: string;
-    [key: string]: any;
+    [key: string]: MetadataValue;
   };
 }
 
@@ -648,8 +649,8 @@ export interface Task {
   type: string;
   status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
   priority: number;
-  parameters: Record<string, any>;
-  result?: any;
+  parameters: ActionParameters;
+  result?: GenericData;
   error?: string;
   createdAt: Date;
   startedAt?: Date;
@@ -659,7 +660,7 @@ export interface Task {
     retryCount?: number;
     timeout?: number;
     tags?: string[];
-    [key: string]: any;
+    [key: string]: MetadataValue;
   };
 }
 
@@ -670,13 +671,13 @@ export interface WorkflowStep {
   type: string;
   status: 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
   dependencies?: string[];
-  parameters: Record<string, any>;
-  result?: any;
+  parameters: ActionParameters;
+  result?: GenericData;
   error?: string;
   metadata?: {
     retryCount?: number;
     timeout?: number;
-    [key: string]: any;
+    [key: string]: MetadataValue;
   };
 }
 
@@ -686,7 +687,7 @@ export interface Workflow {
   description?: string;
   status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
   steps: WorkflowStep[];
-  context: Record<string, any>;
+  context: Context;
   createdAt: Date;
   startedAt?: Date;
   completedAt?: Date;
@@ -694,7 +695,7 @@ export interface Workflow {
     agentId?: string;
     version?: string;
     tags?: string[];
-    [key: string]: any;
+    [key: string]: MetadataValue;
   };
 }
 

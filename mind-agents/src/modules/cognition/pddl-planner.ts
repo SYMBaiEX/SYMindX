@@ -22,18 +22,20 @@ import { Experience } from '../../types/autonomous';
 import {
   CognitionModule,
   CognitionModuleMetadata,
-  PDDLDomain,
-  PDDLAction,
-  PDDLProblem,
-  PDDLExpression,
-  PDDLRequirement,
-  PDDLType,
-  PDDLPredicate,
   HybridReasoningConfig,
   ReasoningParadigm,
 } from '../../types/cognition';
 import { BaseConfig } from '../../types/common';
 import { MemoryType, MemoryDuration } from '../../types/enums';
+import {
+  PDDLDomain,
+  PDDLAction,
+  PDDLRequirement,
+  PDDLType,
+  PDDLPredicate,
+  PDDLExpression,
+  PDDLProblem,
+} from '../../types/modules/planning';
 import { runtimeLogger } from '../../utils/logger';
 
 /**
@@ -770,11 +772,11 @@ export class PDDLPlanner implements CognitionModule {
       name: action.name,
       parameters: {},
       precondition:
-        action.precondition.expressions?.map((e) => e.predicate || '') ||
+        action.precondition.operands?.map((e) => e.predicate || '') ||
         [action.precondition.predicate || ''].filter(Boolean),
-      effects: action.effects
-        ? action.effects.map((e) => e.predicate || '')
-        : [],
+      effects:
+        action.effect.operands?.map((e) => e.predicate || '') ||
+        [action.effect.predicate || ''].filter(Boolean),
       cost: 1,
     };
 

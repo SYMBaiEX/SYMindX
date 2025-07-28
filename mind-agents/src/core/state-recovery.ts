@@ -6,7 +6,8 @@
 import { createHash } from 'crypto';
 import { EventEmitter } from 'events';
 
-import { AgentConfig } from '../types/agent';
+import { CharacterConfig } from '../types';
+import { AgentConfig, AgentStatus } from '../types/agent';
 import { Logger } from '../utils/logger';
 
 import { ResourceManager } from './resource-manager';
@@ -128,10 +129,13 @@ export class StateRecoverySystem extends EventEmitter {
     };
 
     this.logger.info(`Recovery plan created for agent ${snapshot.agentId}`, {
-      corruption: primaryCorruption.type,
-      severity: primaryCorruption.severity,
-      strategies: applicableStrategies.length,
-      dataLoss: estimatedDataLoss,
+      agentId: snapshot.agentId,
+      metadata: {
+        corruption: primaryCorruption.type,
+        severity: primaryCorruption.severity,
+        strategies: applicableStrategies.length,
+        dataLoss: estimatedDataLoss,
+      },
     });
 
     this.emit('recovery_plan_created', { agentId: snapshot.agentId, plan });
@@ -147,8 +151,11 @@ export class StateRecoverySystem extends EventEmitter {
     snapshot: AgentStateSnapshot
   ): Promise<RecoveryResult> {
     this.logger.info(`Executing recovery for agent ${snapshot.agentId}`, {
-      corruption: plan.corruption.type,
-      strategies: plan.strategies.length,
+      agentId: snapshot.agentId,
+      metadata: {
+        corruption: plan.corruption.type,
+        strategies: plan.strategies.length,
+      },
     });
 
     // Allocate resources for recovery operation
@@ -202,7 +209,11 @@ export class StateRecoverySystem extends EventEmitter {
           }
         } catch (error) {
           void error;
-          this.logger.warn(`Recovery strategy ${strategy.name} failed:`, error);
+          this.logger.warn(`Recovery strategy ${strategy.name} failed:`, {
+            metadata: {
+              error: error instanceof Error ? error.message : String(error),
+            },
+          });
           continue;
         }
       }
@@ -257,8 +268,8 @@ export class StateRecoverySystem extends EventEmitter {
 
       core: {
         name: `${agentId}_recovered`,
-        status: 'idle' as any,
-        characterConfig: originalConfig || {},
+        status: AgentStatus.IDLE,
+        characterConfig: (originalConfig || {}) as CharacterConfig,
         agentConfig: originalConfig || ({} as any),
         lastUpdate: now,
       },
@@ -301,8 +312,9 @@ export class StateRecoverySystem extends EventEmitter {
     };
 
     // Calculate integrity
-    fallbackSnapshot.metadata.integrity =
-      this.calculateIntegrity(fallbackSnapshot);
+    fallbackSnapshot.metadata.integrity = this.calculateIntegrity(
+      fallbackSnapshot as unknown as Record<string, unknown>
+    );
 
     this.logger.info(`Fallback state created for agent ${agentId}`);
     this.emit('fallback_state_created', {

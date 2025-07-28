@@ -21,8 +21,10 @@ export {
   PlanStatus,
   PlanStepStatus,
   EnvironmentType,
-  LogLevel,
 } from './agent';
+
+// Export LogLevel from its actual location
+export { LogLevel } from './utils/logger';
 
 // Re-export portal enums
 export {

@@ -1,8 +1,15 @@
 /**
- * API Extension Skills
+ * API Extension Skills v2.0
  *
  * This module exports all the skills available in the API extension.
  * Each skill represents a group of related actions that the agent can perform.
+ *
+ * Enhanced with:
+ * - Advanced Agent Management
+ * - Real-time Streaming
+ * - Comprehensive Security
+ * - Performance Monitoring
+ * - Multi-agent Coordination
  */
 
 import { ApiExtension } from '../index';

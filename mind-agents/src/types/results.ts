@@ -5,6 +5,7 @@
  * replacing generic void returns with meaningful, typed results.
  */
 
+import { BaseConfig, GenericData, ActionParameters, Metadata } from './common';
 import {
   // OperationResult,
   // ExecutionResult,
@@ -30,10 +31,10 @@ export interface AgentCreationResult {
   timestamp: Timestamp;
   metadata?: {
     characterId: string;
-    configurationUsed: Record<string, any>;
+    configurationUsed: BaseConfig;
     modulesLoaded: string[];
     initializationTime: Duration;
-    [key: string]: any;
+    [key: string]: BaseConfig[string];
   };
 }
 
@@ -45,9 +46,9 @@ export interface AgentDestructionResult {
   metadata?: {
     cleanupSteps: string[];
     resourcesReleased: string[];
-    finalState: Record<string, any>;
+    finalState: GenericData;
     cleanupTime: Duration;
-    [key: string]: any;
+    [key: string]: BaseConfig[string];
   };
 }
 
@@ -65,7 +66,7 @@ export interface AgentStateTransitionResult {
   metadata?: {
     sideEffects: string[];
     validationResults: ValidationResult[];
-    [key: string]: any;
+    [key: string]: BaseConfig[string];
   };
 }
 
@@ -87,7 +88,7 @@ export interface MemoryStorageResult {
       dimensions: number;
       similarity?: number;
     };
-    [key: string]: any;
+    [key: string]: BaseConfig[string];
   };
 }
 
@@ -97,7 +98,7 @@ export interface MemoryRetrievalResult {
     id: MemoryId;
     content: string;
     score: number;
-    metadata: Record<string, any>;
+    metadata: Metadata;
   }>;
   error?: string;
   timestamp: Timestamp;
@@ -107,7 +108,7 @@ export interface MemoryRetrievalResult {
     searchType: string;
     totalResults: number;
     searchTime: Duration;
-    [key: string]: any;
+    [key: string]: BaseConfig[string];
   };
 }
 
@@ -126,7 +127,7 @@ export interface MemoryConsolidationResult {
   metadata?: {
     tier: string;
     strategy: string;
-    [key: string]: any;
+    [key: string]: BaseConfig[string];
   };
 }
 
@@ -148,8 +149,8 @@ export interface EmotionUpdateResult {
   metadata?: {
     moduleType: string;
     blendingEnabled: boolean;
-    contextFactors: Record<string, any>;
-    [key: string]: any;
+    contextFactors: GenericData;
+    [key: string]: BaseConfig[string];
   };
 }
 
@@ -172,7 +173,7 @@ export interface EmotionProcessingResult {
   metadata?: {
     processingTime: Duration;
     contextSensitivity: number;
-    [key: string]: any;
+    [key: string]: BaseConfig[string];
   };
 }
 
@@ -192,10 +193,10 @@ export interface ThoughtProcessingResult {
     processingTime: Duration;
   };
   metadata?: {
-    contextFactors: Record<string, any>;
+    contextFactors: GenericData;
     memoryInfluence: number;
     emotionalInfluence: number;
-    [key: string]: any;
+    [key: string]: BaseConfig[string];
   };
 }
 
@@ -207,7 +208,7 @@ export interface PlanningResult {
     steps: Array<{
       id: string;
       description: string;
-      parameters: Record<string, any>;
+      parameters: ActionParameters;
       estimatedDuration: Duration;
       dependencies: string[];
     }>;
@@ -221,7 +222,7 @@ export interface PlanningResult {
     planningTime: Duration;
     complexity: number;
     strategy: string;
-    [key: string]: any;
+    [key: string]: BaseConfig[string];
   };
 }
 
@@ -245,8 +246,8 @@ export interface DecisionMakingResult {
   metadata?: {
     decisionTime: Duration;
     ethicalConstraints: boolean;
-    riskAssessment: Record<string, any>;
-    [key: string]: any;
+    riskAssessment: GenericData;
+    [key: string]: BaseConfig[string];
   };
 }
 
@@ -264,26 +265,26 @@ export interface ExtensionLoadResult {
     dependencies: string[];
     capabilities: string[];
     loadTime: Duration;
-    [key: string]: any;
+    [key: string]: BaseConfig[string];
   };
 }
 
 export interface ExtensionExecutionResult {
   success: boolean;
-  result?: any;
+  result?: GenericData;
   error?: string;
   timestamp: Timestamp;
   execution: {
     extensionId: string;
     action: string;
-    parameters: Record<string, any>;
+    parameters: ActionParameters;
     duration: Duration;
   };
   metadata?: {
     agentId: AgentId;
     correlationId?: CorrelationId;
     retryCount?: number;
-    [key: string]: any;
+    [key: string]: BaseConfig[string];
   };
 }
 
@@ -305,7 +306,7 @@ export interface PortalConnectionResult {
     provider: string;
     model: string;
     capabilities: string[];
-    [key: string]: any;
+    [key: string]: BaseConfig[string];
   };
 }
 
@@ -333,7 +334,7 @@ export interface PortalGenerationResult {
     agentId: AgentId;
     temperature: number;
     maxTokens: number;
-    [key: string]: any;
+    [key: string]: BaseConfig[string];
   };
 }
 
@@ -355,7 +356,7 @@ export interface EventDispatchResult {
     handlersTriggered: number;
     processingTime: Duration;
     errors: string[];
-    [key: string]: any;
+    [key: string]: BaseConfig[string];
   };
 }
 
@@ -366,12 +367,12 @@ export interface EventSubscriptionResult {
   subscription: {
     subscriberId: string;
     eventTypes: string[];
-    filters?: Record<string, any>;
+    filters?: BaseConfig;
   };
   metadata?: {
     subscriptionId: string;
     priority: number;
-    [key: string]: any;
+    [key: string]: BaseConfig[string];
   };
 }
 
@@ -380,13 +381,13 @@ export interface EventSubscriptionResult {
  */
 export interface CommandExecutionResult {
   success: boolean;
-  result?: any;
+  result?: GenericData;
   error?: string;
   timestamp: Timestamp;
   command: {
     id: string;
     name: string;
-    parameters: Record<string, any>;
+    parameters: ActionParameters;
     executor: string;
     duration: Duration;
   };
@@ -395,7 +396,7 @@ export interface CommandExecutionResult {
     correlationId?: CorrelationId;
     retryCount?: number;
     validation: ValidationResult;
-    [key: string]: any;
+    [key: string]: BaseConfig[string];
   };
 }
 
@@ -406,13 +407,13 @@ export interface CommandValidationResult {
   command: {
     id: string;
     name: string;
-    parameters: Record<string, any>;
+    parameters: ActionParameters;
   };
   validation: ValidationResult;
   metadata?: {
     validatorId: string;
-    schema: Record<string, any>;
-    [key: string]: any;
+    schema: BaseConfig;
+    [key: string]: BaseConfig[string];
   };
 }
 
@@ -438,7 +439,7 @@ export interface ResourceAllocationResult {
     requesterId: string;
     allocationTime: Duration;
     quotaUsage: Record<string, number>;
-    [key: string]: any;
+    [key: string]: BaseConfig[string];
   };
 }
 
@@ -473,7 +474,7 @@ export interface ResourceMonitoringResult {
   metadata?: {
     monitoringInterval: Duration;
     alertThresholds: Record<string, number>;
-    [key: string]: any;
+    [key: string]: BaseConfig[string];
   };
 }
 
@@ -494,7 +495,7 @@ export interface AuthenticationResult {
     method: string;
     expiresAt: Timestamp;
     sessionId: string;
-    [key: string]: any;
+    [key: string]: BaseConfig[string];
   };
 }
 
@@ -513,7 +514,7 @@ export interface AuthorizationResult {
   metadata?: {
     policyId: string;
     enforcementPoint: string;
-    [key: string]: any;
+    [key: string]: BaseConfig[string];
   };
 }
 
@@ -522,7 +523,7 @@ export interface AuthorizationResult {
  */
 export interface ConfigurationLoadResult {
   success: boolean;
-  configuration?: Record<string, any>;
+  configuration?: BaseConfig;
   error?: string;
   timestamp: Timestamp;
   metadata?: {
@@ -530,7 +531,7 @@ export interface ConfigurationLoadResult {
     version: string;
     validation: ValidationResult;
     loadTime: Duration;
-    [key: string]: any;
+    [key: string]: BaseConfig[string];
   };
 }
 
@@ -540,15 +541,15 @@ export interface ConfigurationUpdateResult {
   timestamp: Timestamp;
   update: {
     key: string;
-    oldValue: any;
-    newValue: any;
+    oldValue: BaseConfig[string];
+    newValue: BaseConfig[string];
     source: string;
   };
   metadata?: {
     validation: ValidationResult;
     propagated: boolean;
     affectedModules: string[];
-    [key: string]: any;
+    [key: string]: BaseConfig[string];
   };
 }
 
@@ -557,14 +558,35 @@ export interface ConfigurationUpdateResult {
  */
 export interface SystemHealthResult {
   success: boolean;
-  overall: 'healthy' | 'degraded' | 'unhealthy';
-  timestamp: Timestamp;
-  components: HealthCheckResult[];
-  metadata?: {
-    checkDuration: Duration;
-    checkType: 'basic' | 'detailed' | 'comprehensive';
-    [key: string]: any;
+  status: 'healthy' | 'degraded' | 'unhealthy' | 'critical';
+  timestamp: Date;
+  uptime: number;
+  components: ComponentHealth[];
+  metrics: {
+    totalChecks: number;
+    healthyChecks: number;
+    degradedChecks: number;
+    unhealthyChecks: number;
+    criticalChecks: number;
+    averageResponseTime: number;
+    successRate: number;
   };
+  details?: GenericData;
+  metadata?: {
+    checkDuration?: Duration;
+    checkType?: 'basic' | 'detailed' | 'comprehensive';
+    [key: string]: BaseConfig[string];
+  };
+}
+
+export interface ComponentHealth {
+  component: string;
+  status: 'healthy' | 'degraded' | 'unhealthy' | 'critical';
+  details: GenericData;
+  lastChecked: Date;
+  responseTime: number;
+  uptime: number;
+  dependencies: ComponentHealth[];
 }
 
 export interface ComponentHealthResult extends HealthCheckResult {
@@ -612,7 +634,7 @@ export interface SystemLifecycleResult extends LifecycleEventResult {
 /**
  * Batch Operation Result Types
  */
-export interface BatchOperationResult<T = any> {
+export interface BatchOperationResult<T = GenericData> {
   success: boolean;
   results: T[];
   errors: string[];
@@ -627,7 +649,7 @@ export interface BatchOperationResult<T = any> {
   metadata?: {
     batchId: string;
     operationType: string;
-    [key: string]: any;
+    [key: string]: BaseConfig[string];
   };
 }
 
@@ -649,7 +671,7 @@ export interface MigrationResult {
     recordsAffected: number;
     backupCreated: boolean;
     rollbackAvailable: boolean;
-    [key: string]: any;
+    [key: string]: BaseConfig[string];
   };
 }
 
@@ -672,7 +694,7 @@ export interface BackupResult {
     duration: Duration;
     compression: boolean;
     encryption: boolean;
-    [key: string]: any;
+    [key: string]: BaseConfig[string];
   };
 }
 
@@ -689,7 +711,7 @@ export interface RestoreResult {
   metadata?: {
     verification: ValidationResult;
     conflicts: string[];
-    [key: string]: any;
+    [key: string]: BaseConfig[string];
   };
 }
 
@@ -715,7 +737,7 @@ export interface AuditResult {
     auditorId: string;
     scope: string[];
     standards: string[];
-    [key: string]: any;
+    [key: string]: BaseConfig[string];
   };
 }
 
@@ -733,7 +755,7 @@ export interface LoggingResult {
   metadata?: {
     loggerId: string;
     destination: string;
-    [key: string]: any;
+    [key: string]: BaseConfig[string];
   };
 }
 

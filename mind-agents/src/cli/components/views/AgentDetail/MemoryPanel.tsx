@@ -96,11 +96,32 @@ export const MemoryPanel: React.FC<MemoryPanelProps> = ({
   // Generate embedding visualization data
   const generateEmbeddingVisualization = (): Array<{ x: number; y: number; type: string; content: string }> => {
     if (!memory.recentEntries[selectedEntry]?.embedding) {
-      return Array.from({ length: 50 }, () => Math.random() * 2 - 1);
+      return Array.from({ length: 50 }, (_, i) => ({
+        x: Math.random() * 100,
+        y: Math.random() * 100,
+        type: 'random',
+        content: `Point ${i}`
+      }));
     }
 
     // Sample first 50 dimensions for visualization
-    return memory.recentEntries[selectedEntry].embedding.slice(0, 50);
+    const selectedMemoryEntry = memory.recentEntries[selectedEntry];
+    if (!selectedMemoryEntry) {
+      return Array.from({ length: 50 }, (_, i) => ({
+        x: Math.random() * 100,
+        y: Math.random() * 100,
+        type: 'unknown',
+        content: `Point ${i}`
+      }));
+    }
+
+    const embedding = selectedMemoryEntry.embedding!.slice(0, 50);
+    return embedding.map((value, i) => ({
+      x: i * 2,
+      y: (value + 1) * 50, // Normalize to 0-100 range
+      type: selectedMemoryEntry.type,
+      content: `Dim ${i}: ${value.toFixed(3)}`
+    }));
   };
 
   // Calculate memory clustering data
@@ -128,20 +149,20 @@ export const MemoryPanel: React.FC<MemoryPanelProps> = ({
             <Text color={cyberpunkTheme.colors.textDim}>
               {String(rowIndex * 10).padStart(3, '0')}:
             </Text>
-            {chunk.map((value, colIndex) => (
+            {chunk.map((point, colIndex) => (
               <Text
                 key={colIndex}
                 color={
-                  value > 0.5
+                  point.y > 75
                     ? cyberpunkTheme.colors.success
-                    : value > 0
+                    : point.y > 50
                       ? cyberpunkTheme.colors.primary
-                      : value > -0.5
+                      : point.y > 25
                         ? cyberpunkTheme.colors.warning
                         : cyberpunkTheme.colors.danger
                 }
               >
-                {value > 0 ? '▲' : value < -0.5 ? '▼' : '●'}
+                {point.y > 75 ? '▲' : point.y > 25 ? '●' : '▼'}
               </Text>
             ))}
           </Box>

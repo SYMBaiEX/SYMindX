@@ -10,7 +10,6 @@ import { CommunicationStyle } from '../types/communication';
 import { PersonalityTraits } from '../types/emotion';
 import { FeedbackEntry } from '../types/helpers';
 import { runtimeLogger } from '../utils/logger';
-import { buildObject } from '../utils/type-helpers';
 
 /**
  * Style adaptation configuration
@@ -165,8 +164,8 @@ export class StyleAdapter {
     const currentStyle = this.getStyle(userId);
     const history = this.learningHistory.get(userId) || [];
 
-    // Record feedback with context - use buildObject to avoid undefined assignment
-    const styleBuilder = buildObject<CommunicationStyle>({
+    // Record feedback with context - create style object directly
+    const styleForFeedback: CommunicationStyle = {
       formality: currentStyle.formality,
       verbosity: currentStyle.verbosity,
       emotionality: currentStyle.emotionality,
@@ -176,38 +175,29 @@ export class StyleAdapter {
       empathy: currentStyle.empathy,
       responseSpeed: currentStyle.responseSpeed,
       preferredLength: currentStyle.preferredLength,
-    })
-      .addOptional(
-        'culturalContext',
-        typeof currentStyle.culturalContext === 'string'
-          ? currentStyle.culturalContext
-          : undefined
-      )
-      .addOptional(
-        'personalityAdaptation',
-        (currentStyle as any).personalityAdaptation
-      )
-      .addOptional(
-        'contextSensitivity',
-        (currentStyle as any).contextSensitivity
-      );
+      ...(currentStyle.culturalContext && {
+        culturalContext: currentStyle.culturalContext,
+      }),
+      ...(currentStyle.personalityAdaptation !== undefined && {
+        personalityAdaptation: currentStyle.personalityAdaptation,
+      }),
+      ...(currentStyle.contextSensitivity !== undefined && {
+        contextSensitivity: currentStyle.contextSensitivity,
+      }),
+    };
 
-    const feedbackEntry = buildObject<FeedbackEntry>({
+    const feedbackEntry: FeedbackEntry = {
       feedback,
-      style: styleBuilder.build(),
+      style: styleForFeedback,
       timestamp: new Date(),
-    })
-      .addOptional(
-        'context',
-        messageContext
-          ? {
-              originalLength: messageContext.originalMessage.length,
-              adaptedLength: messageContext.adaptedMessage.length,
-              styleUsed: messageContext.style,
-            }
-          : undefined
-      )
-      .build();
+      ...(messageContext && {
+        context: {
+          originalLength: messageContext.originalMessage.length,
+          adaptedLength: messageContext.adaptedMessage.length,
+          styleUsed: messageContext.style,
+        },
+      }),
+    };
 
     history.push(feedbackEntry);
 
@@ -325,10 +315,13 @@ export class StyleAdapter {
       const currentStyle = this.getStyle(userId);
       const merged = { ...currentStyle, ...inferred };
       this.userStyles.set(userId, merged);
-      runtimeLogger.style(
-        `Updated style preferences for user ${userId}`,
-        inferred
-      );
+      runtimeLogger.style(`Updated style preferences for user ${userId}`, {
+        userId,
+        metadata: {
+          ...inferred,
+          module: 'style-adapter',
+        },
+      });
     }
 
     return inferred;
@@ -549,7 +542,12 @@ export class StyleAdapter {
   private addEmpathy(
     message: string,
     empathyLevel: number,
-    context?: any
+    context?: {
+      emotion?: string;
+      mood?: string;
+      topic?: string;
+      phase?: string;
+    }
   ): string {
     if (empathyLevel > 0.7 && context?.emotion) {
       const empathetic = {
@@ -602,7 +600,14 @@ export class StyleAdapter {
         const targetVal = style[key as keyof CommunicationStyle] as number;
         const newVal =
           currentVal + (targetVal - currentVal) * this.config.learningRate!;
-        (current as any)[key] = Math.max(0, Math.min(1, newVal));
+        // Type-safe assignment for numeric properties
+        const typedKey = key as keyof CommunicationStyle;
+        if (typedKey in current) {
+          (current as unknown as Record<string, unknown>)[typedKey] = Math.max(
+            0,
+            Math.min(1, newVal)
+          );
+        }
       }
     });
   }
@@ -627,7 +632,14 @@ export class StyleAdapter {
         const randomness =
           (Math.random() - 0.5) * this.config.learningRate! * 0.05;
         const newVal = currentVal + adjustment + randomness;
-        (current as any)[key] = Math.max(0, Math.min(1, newVal));
+        // Type-safe assignment for numeric properties
+        const typedKey = key as keyof CommunicationStyle;
+        if (typedKey in current) {
+          (current as unknown as Record<string, unknown>)[typedKey] = Math.max(
+            0,
+            Math.min(1, newVal)
+          );
+        }
       }
     });
 

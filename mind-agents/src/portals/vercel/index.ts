@@ -19,6 +19,7 @@ import {
   createProviderRegistry,
   type EmbeddingModel,
   type ImageModel,
+  CoreMessage as AIMessage,
 } from 'ai';
 import { z } from 'zod';
 
@@ -136,8 +137,8 @@ export class VercelAIPortal extends BasePortal {
     ModelType.IMAGE_GENERATION,
   ];
 
-  private registry: unknown;
-  private providers: Map<string, unknown> = new Map();
+  private registry: any;
+  private providers: Map<string, any> = new Map();
   private tools: Map<string, ToolDefinition> = new Map();
   private enabledProviders: Set<string> = new Set();
 
@@ -271,13 +272,13 @@ export class VercelAIPortal extends BasePortal {
   }
 
   private setupProviderRegistry(): void {
-    const registryConfig: Record<string, unknown> = {};
+    const registryConfig: Record<string, any> = {};
 
     for (const [name, provider] of Array.from(this.providers.entries())) {
       registryConfig[name] = provider;
     }
 
-    this.registry = createProviderRegistry(registryConfig);
+    this.registry = createProviderRegistry(registryConfig as any);
   }
 
   override async init(_agent: Agent): Promise<void> {
@@ -320,12 +321,12 @@ export class VercelAIPortal extends BasePortal {
     }
   }
 
-  private getLanguageModel(modelSpec: string): LanguageModel {
+  private getLanguageModel(modelSpec: string): any {
     if (modelSpec.includes(':')) {
       const [providerName, modelId] = modelSpec.split(':');
       if (providerName && modelId) {
         const provider = this.providers.get(providerName);
-        if (provider) {
+        if (provider && typeof provider === 'function') {
           return provider(modelId);
         }
       }
@@ -333,7 +334,7 @@ export class VercelAIPortal extends BasePortal {
 
     // Fallback to registry
     if (this.registry) {
-      return this.registry.languageModel(modelSpec);
+      return (this.registry as any).languageModel(modelSpec);
     }
 
     throw new Error(`Model not found: ${modelSpec}`);
@@ -343,7 +344,7 @@ export class VercelAIPortal extends BasePortal {
     if (modelSpec.includes(':')) {
       const [providerName, modelId] = modelSpec.split(':');
       if (providerName && modelId) {
-        const provider = this.providers.get(providerName);
+        const provider = this.providers.get(providerName) as any;
         if (provider && provider.textEmbeddingModel) {
           return provider.textEmbeddingModel(modelId);
         }
@@ -357,7 +358,7 @@ export class VercelAIPortal extends BasePortal {
     if (modelSpec.includes(':')) {
       const [providerName, modelId] = modelSpec.split(':');
       if (providerName && modelId) {
-        const provider = this.providers.get(providerName);
+        const provider = this.providers.get(providerName) as any;
         if (provider && provider.imageModel) {
           return provider.imageModel(modelId);
         }
@@ -376,7 +377,7 @@ export class VercelAIPortal extends BasePortal {
     try {
       const toolsToUse = this.buildTools();
 
-      const params: Record<string, unknown> = {
+      const params: any = {
         model: this.getLanguageModel(model),
         prompt,
       };
@@ -435,7 +436,7 @@ export class VercelAIPortal extends BasePortal {
       const modelMessages = this.convertToModelMessages(messages);
       const toolsToUse = this.buildTools();
 
-      const params: Record<string, unknown> = {
+      const params: any = {
         model: this.getLanguageModel(model),
         messages: modelMessages,
       };
@@ -546,8 +547,8 @@ export class VercelAIPortal extends BasePortal {
         images: [
           {
             url:
-              (image as Record<string, unknown>).url ||
-              (image as Record<string, unknown>).b64_json ||
+              (image as any).url ||
+              (image as any).b64_json ||
               'data:image/png;base64,' + image,
           },
         ],
@@ -617,7 +618,7 @@ export class VercelAIPortal extends BasePortal {
       const modelMessages = this.convertToModelMessages(messages);
       const toolsToUse = this.buildTools();
 
-      const streamParams: Record<string, unknown> = {
+      const streamParams: any = {
         model: this.getLanguageModel(model),
         messages: modelMessages,
       };
@@ -679,7 +680,7 @@ export class VercelAIPortal extends BasePortal {
     }
   }
 
-  private convertToModelMessages(messages: ChatMessage[]): ModelMessage[] {
+  private convertToModelMessages(messages: ChatMessage[]): AIMessage[] {
     return messages.map((msg) => {
       switch (msg.role) {
         case MessageRole.SYSTEM:
@@ -688,14 +689,15 @@ export class VercelAIPortal extends BasePortal {
         case MessageRole.USER: {
           // Handle attachments for multimodal support
           if (msg.attachments && msg.attachments.length > 0) {
-            const content: Array<
-              | { type: 'text'; text: string }
-              | {
-                  type: 'image';
-                  image: string | Uint8Array | URL;
-                  mediaType?: string;
-                }
-            > = [{ type: 'text', text: msg.content }];
+            type TextPart = { type: 'text'; text: string };
+            type ImagePart = {
+              type: 'image';
+              image: string | URL;
+              mediaType?: string;
+            };
+            const content: Array<TextPart | ImagePart> = [
+              { type: 'text', text: msg.content },
+            ];
 
             for (const attachment of msg.attachments) {
               if (attachment.type === 'image') {
@@ -703,9 +705,7 @@ export class VercelAIPortal extends BasePortal {
                   content.push({
                     type: 'image',
                     image: attachment.data,
-                    ...(attachment.mimeType && {
-                      mediaType: attachment.mimeType,
-                    }),
+                    mediaType: attachment.mimeType,
                   });
                 } else if (attachment.url) {
                   content.push({

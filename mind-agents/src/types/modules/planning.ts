@@ -2,6 +2,9 @@
  * Planning-specific types for HTN and PDDL planning systems
  */
 
+// Re-export from cognition module to maintain compatibility
+export type { PDDLExpression, PDDLProblem } from '../cognition';
+
 /**
  * HTN (Hierarchical Task Network) Operator
  */
@@ -86,7 +89,7 @@ export interface HTNPrecondition {
    */
   comparison?: {
     operator: '=' | '!=' | '<' | '>' | '<=' | '>=';
-    value: any;
+    value: string | number | boolean;
   };
 }
 
@@ -112,7 +115,7 @@ export interface HTNEffect {
   /**
    * For update effects, the new value
    */
-  value?: any;
+  value?: string | number | boolean | Record<string, unknown>;
 
   /**
    * Probability of this effect occurring (default 1.0)
@@ -147,7 +150,7 @@ export interface HTNParameter {
   /**
    * Default value if not required
    */
-  defaultValue?: any;
+  defaultValue?: string | number | boolean | null;
 
   /**
    * Constraints on valid values

@@ -6,15 +6,20 @@
  */
 
 // Global type definitions
-import './globals';
+/// <reference path="./globals.d.ts" />
 
 // Import types needed for local interface definitions
+import type { CognitionModule } from './cognition';
+import type { Metadata } from './common';
+import type { EmotionModule } from './emotion';
+import type { Extension } from './extensions';
 import type {
   OperationResult,
   EventProcessingResult,
   EventDispatchResult,
   HealthCheckResult,
   SystemHealthResult,
+  ComponentHealth,
   Duration,
   ConfigurationUpdateResult,
   ConfigurationLoadResult,
@@ -23,6 +28,12 @@ import type {
   CleanupResult,
   ValidationResult,
 } from './helpers';
+
+// Import types from common for use in interface definitions
+
+// Import module types for factory interfaces
+import type { MemoryProvider } from './memory';
+import type { Portal } from './portal';
 
 // Core types - selective exports to avoid conflicts
 export type {
@@ -35,6 +46,7 @@ export type {
   ExtensionConfig,
   ConfigValue,
   ConfigurationSchema,
+  Message,
 } from './common';
 export { LogLevel, Priority, Status } from './enums';
 export type {
@@ -52,6 +64,9 @@ export type {
   EventId,
   ModuleId,
   CorrelationId,
+  ValidationResult,
+  ValidationError,
+  ValidationWarning,
 } from './helpers';
 export type {
   AgentCreationResult,
@@ -61,6 +76,7 @@ export type {
   MemoryRetrievalResult,
   ThoughtProcessingResult,
   SystemHealthResult,
+  ComponentHealth,
   EventDispatchResult,
   PerformanceMetrics,
   ConfigurationLoadResult,
@@ -101,7 +117,6 @@ export type {
 export type {
   Agent,
   AgentConfig,
-  AgentStatus,
   AgentState,
   LazyAgentState,
   LazyAgent,
@@ -110,8 +125,14 @@ export type {
   ExtensionAction,
   ExtensionEventHandler,
   ActionResult,
+  MemoryProvider,
+  MemoryRecord,
+  AgentAction,
+  ThoughtContext,
+  ThoughtResult,
 } from './agent';
 export {
+  AgentStatus,
   LazyAgentStatus,
   ActionStatus,
   MemoryType,
@@ -148,7 +169,14 @@ export type {
   EmotionDecayConfig,
   EmotionModuleRegistration,
 } from './modules/emotions';
-export type { CognitionModule } from './cognition';
+export type {
+  CognitionModule,
+  SerializableRule,
+  PDDLExpression,
+  ReasoningParadigm,
+  ContextAnalysis,
+  ReasoningState,
+} from './cognition';
 
 // Memory types (selective exports)
 export type {
@@ -427,31 +455,23 @@ export interface EnhancedConfigProvider {
  * @deprecated Use enhanced logger interface with proper result types
  */
 export interface ILogger {
-  debug(message: string, ...args: any[]): void;
-  info(message: string, ...args: any[]): void;
-  warn(message: string, ...args: any[]): void;
-  error(message: string, error?: Error, ...args: any[]): void;
-  child(metadata: Record<string, any>): ILogger;
+  debug(message: string, ...args: unknown[]): void;
+  info(message: string, ...args: unknown[]): void;
+  warn(message: string, ...args: unknown[]): void;
+  error(message: string, error?: Error, ...args: unknown[]): void;
+  child(metadata: Metadata): ILogger;
 }
 
 /**
  * Enhanced logger interface with proper result types
  */
 export interface EnhancedLogger {
-  debug(message: string, metadata?: Record<string, any>): LoggingResult;
-  info(message: string, metadata?: Record<string, any>): LoggingResult;
-  warn(message: string, metadata?: Record<string, any>): LoggingResult;
-  error(
-    message: string,
-    error?: Error,
-    metadata?: Record<string, any>
-  ): LoggingResult;
-  fatal(
-    message: string,
-    error?: Error,
-    metadata?: Record<string, any>
-  ): LoggingResult;
-  child(metadata: Record<string, any>): EnhancedLogger;
+  debug(message: string, metadata?: Metadata): LoggingResult;
+  info(message: string, metadata?: Metadata): LoggingResult;
+  warn(message: string, metadata?: Metadata): LoggingResult;
+  error(message: string, error?: Error, metadata?: Metadata): LoggingResult;
+  fatal(message: string, error?: Error, metadata?: Metadata): LoggingResult;
+  child(metadata: Metadata): EnhancedLogger;
   setLevel(
     level: 'debug' | 'info' | 'warn' | 'error' | 'fatal'
   ): OperationResult;
@@ -486,17 +506,29 @@ export interface EnhancedAsyncDisposable {
  * @deprecated Use enhanced factory registry with proper result types
  */
 export interface FactoryRegistry {
-  registerMemoryFactory(name: string, factory: ModuleFactory<any>): void;
-  registerEmotionFactory(name: string, factory: ModuleFactory<any>): void;
-  registerCognitionFactory(name: string, factory: ModuleFactory<any>): void;
-  registerExtensionFactory(name: string, factory: ModuleFactory<any>): void;
-  registerPortalFactory(name: string, factory: ModuleFactory<any>): void;
+  registerMemoryFactory(
+    name: string,
+    factory: ModuleFactory<MemoryProvider>
+  ): void;
+  registerEmotionFactory(
+    name: string,
+    factory: ModuleFactory<EmotionModule>
+  ): void;
+  registerCognitionFactory(
+    name: string,
+    factory: ModuleFactory<CognitionModule>
+  ): void;
+  registerExtensionFactory(
+    name: string,
+    factory: ModuleFactory<Extension>
+  ): void;
+  registerPortalFactory(name: string, factory: ModuleFactory<Portal>): void;
 
-  getMemoryFactory(name: string): ModuleFactory<any> | undefined;
-  getEmotionFactory(name: string): ModuleFactory<any> | undefined;
-  getCognitionFactory(name: string): ModuleFactory<any> | undefined;
-  getExtensionFactory(name: string): ModuleFactory<any> | undefined;
-  getPortalFactory(name: string): ModuleFactory<any> | undefined;
+  getMemoryFactory(name: string): ModuleFactory<MemoryProvider> | undefined;
+  getEmotionFactory(name: string): ModuleFactory<EmotionModule> | undefined;
+  getCognitionFactory(name: string): ModuleFactory<CognitionModule> | undefined;
+  getExtensionFactory(name: string): ModuleFactory<Extension> | undefined;
+  getPortalFactory(name: string): ModuleFactory<Portal> | undefined;
 }
 
 /**
@@ -505,37 +537,37 @@ export interface FactoryRegistry {
 export interface EnhancedFactoryRegistry {
   registerMemoryFactory(
     name: string,
-    factory: ModuleFactory<any>
+    factory: ModuleFactory<MemoryProvider>
   ): OperationResult;
   registerEmotionFactory(
     name: string,
-    factory: ModuleFactory<any>
+    factory: ModuleFactory<EmotionModule>
   ): OperationResult;
   registerCognitionFactory(
     name: string,
-    factory: ModuleFactory<any>
+    factory: ModuleFactory<CognitionModule>
   ): OperationResult;
   registerExtensionFactory(
     name: string,
-    factory: ModuleFactory<any>
+    factory: ModuleFactory<Extension>
   ): OperationResult;
   registerPortalFactory(
     name: string,
-    factory: ModuleFactory<any>
+    factory: ModuleFactory<Portal>
   ): OperationResult;
 
-  getMemoryFactory(name: string): ModuleFactory<any> | undefined;
-  getEmotionFactory(name: string): ModuleFactory<any> | undefined;
-  getCognitionFactory(name: string): ModuleFactory<any> | undefined;
-  getExtensionFactory(name: string): ModuleFactory<any> | undefined;
-  getPortalFactory(name: string): ModuleFactory<any> | undefined;
+  getMemoryFactory(name: string): ModuleFactory<MemoryProvider> | undefined;
+  getEmotionFactory(name: string): ModuleFactory<EmotionModule> | undefined;
+  getCognitionFactory(name: string): ModuleFactory<CognitionModule> | undefined;
+  getExtensionFactory(name: string): ModuleFactory<Extension> | undefined;
+  getPortalFactory(name: string): ModuleFactory<Portal> | undefined;
 
   validateFactory(name: string): EnhancedValidationResult;
   listFactories(type?: string): string[];
   getFactoryMetadata(name: string): ModuleManifest | undefined;
 }
 
-// Export strict types to replace any usage
+// Export strict types to replace untyped usage
 export type {
   LoggerMetadata,
   LoggerArgs,

@@ -89,6 +89,7 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
   constructor(config: PostgresMemoryConfig) {
     const metadata: MemoryProviderMetadata = {
       id: 'postgres',
+      type: 'postgres',
       name: 'PostgreSQL Memory Provider',
       description:
         'Enhanced PostgreSQL provider with multi-tier memory, vector search, and shared pools',
@@ -1067,11 +1068,7 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
   /**
    * Check database connection health
    */
-  async healthCheck(): Promise<{
-    healthy: boolean;
-    latency: number;
-    version?: string;
-  }> {
+  async healthCheck(): Promise<{ status: string; details?: any }> {
     const start = Date.now();
 
     try {
@@ -1083,7 +1080,15 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
           ?.split(' ')
           .slice(0, 2)
           .join(' ');
-        return { healthy: true, latency, version };
+        return {
+          status: 'healthy',
+          details: {
+            latency,
+            version,
+            type: 'postgres',
+            poolStatus: this.getPoolStatus(),
+          },
+        };
       } finally {
         client.release();
       }
@@ -1097,7 +1102,14 @@ export class PostgresMemoryProvider extends BaseMemoryProvider {
               error instanceof Error ? error : new Error(String(error))
             );
       console.error('❌ PostgreSQL health check failed:', dbError);
-      return { healthy: false, latency: -1 };
+      return {
+        status: 'unhealthy',
+        details: {
+          error: dbError.message,
+          latency: -1,
+          type: 'postgres',
+        },
+      };
     }
   }
 

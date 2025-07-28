@@ -31,9 +31,9 @@ export interface MCPParameterSchema {
   /** Parameter description */
   description?: string;
   /** Default value */
-  default?: any;
+  default?: unknown;
   /** Enum values for validation */
-  enum?: any[];
+  enum?: unknown[];
   /** Array items schema */
   items?: MCPParameterSchema;
   /** Object properties schema */
@@ -197,7 +197,7 @@ export interface CallToolRequest {
   method: 'tools/call';
   params: {
     name: string;
-    arguments?: Record<string, any>;
+    arguments?: Record<string, unknown>;
   };
 }
 
@@ -332,7 +332,7 @@ export interface ErrorResponse {
   error: {
     code: number;
     message: string;
-    data?: any;
+    data?: unknown;
   };
 }
 
@@ -354,7 +354,7 @@ export interface MCPServer {
   /** Call a tool */
   callTool(
     name: string,
-    args?: Record<string, any>
+    args?: Record<string, unknown>
   ): Promise<CallToolResponse['result']>;
 
   /** List available resources */
@@ -395,7 +395,7 @@ export interface MCPClient {
   /** Call tool */
   callTool(
     name: string,
-    args?: Record<string, any>
+    args?: Record<string, unknown>
   ): Promise<CallToolResponse['result']>;
 
   /** List resources */
@@ -450,31 +450,67 @@ export interface MCPServerConfig {
   prompts?: MCPPrompt[];
   /** Custom handlers */
   handlers?: {
-    onToolCall?: (name: string, args: any, agent: Agent) => Promise<any>;
-    onResourceRead?: (uri: string, agent: Agent) => Promise<any>;
-    onPromptGet?: (name: string, args: any, agent: Agent) => Promise<any>;
+    onToolCall?: (
+      name: string,
+      args: unknown,
+      agent: Agent
+    ) => Promise<unknown>;
+    onResourceRead?: (uri: string, agent: Agent) => Promise<unknown>;
+    onPromptGet?: (
+      name: string,
+      args: unknown,
+      agent: Agent
+    ) => Promise<unknown>;
   };
 }
 
 /**
  * Type guards for MCP types
  */
-export const isMCPRequest = (obj: any): obj is MCPRequest => {
-  return obj && obj.jsonrpc === '2.0' && 'method' in obj;
+export const isMCPRequest = (obj: unknown): obj is MCPRequest => {
+  return (
+    obj !== null &&
+    typeof obj === 'object' &&
+    'jsonrpc' in obj &&
+    (obj as Record<string, unknown>).jsonrpc === '2.0' &&
+    'method' in obj
+  );
 };
 
-export const isMCPResponse = (obj: any): obj is MCPResponse => {
-  return obj && obj.jsonrpc === '2.0' && ('result' in obj || 'error' in obj);
+export const isMCPResponse = (obj: unknown): obj is MCPResponse => {
+  return (
+    obj !== null &&
+    typeof obj === 'object' &&
+    'jsonrpc' in obj &&
+    (obj as Record<string, unknown>).jsonrpc === '2.0' &&
+    ('result' in obj || 'error' in obj)
+  );
 };
 
-export const isErrorResponse = (obj: any): obj is ErrorResponse => {
-  return obj && obj.jsonrpc === '2.0' && 'error' in obj;
+export const isErrorResponse = (obj: unknown): obj is ErrorResponse => {
+  return (
+    obj !== null &&
+    typeof obj === 'object' &&
+    'jsonrpc' in obj &&
+    (obj as Record<string, unknown>).jsonrpc === '2.0' &&
+    'error' in obj
+  );
 };
 
-export const isToolCallRequest = (obj: any): obj is CallToolRequest => {
-  return isMCPRequest(obj) && obj.method === 'tools/call';
+export const isToolCallRequest = (obj: unknown): obj is CallToolRequest => {
+  return (
+    isMCPRequest(obj) &&
+    'method' in obj &&
+    (obj as MCPRequest).method === 'tools/call'
+  );
 };
 
-export const isResourceReadRequest = (obj: any): obj is ReadResourceRequest => {
-  return isMCPRequest(obj) && obj.method === 'resources/read';
+export const isResourceReadRequest = (
+  obj: unknown
+): obj is ReadResourceRequest => {
+  return (
+    isMCPRequest(obj) &&
+    'method' in obj &&
+    (obj as MCPRequest).method === 'resources/read'
+  );
 };

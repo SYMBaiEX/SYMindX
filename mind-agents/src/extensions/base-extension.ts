@@ -115,9 +115,12 @@ export abstract class BaseExtension extends EventEmitter implements Extension {
       this.status = ExtensionStatus.INITIALIZING;
 
       runtimeLogger.info(`Initializing extension: ${this.name}`, {
-        extensionId: this.id,
+        source: `extension:${this.id}`,
         agentId: agent.id,
-        version: this.version,
+        metadata: {
+          source: `extension:${this.id}`,
+          version: this.version,
+        },
       });
 
       // Check dependencies
@@ -132,7 +135,7 @@ export abstract class BaseExtension extends EventEmitter implements Extension {
       this.retryCount = 0;
 
       runtimeLogger.info(`Extension initialized successfully: ${this.name}`, {
-        extensionId: this.id,
+        source: `extension:${this.id}`,
         agentId: agent.id,
       });
 
@@ -145,7 +148,7 @@ export abstract class BaseExtension extends EventEmitter implements Extension {
       this.metrics.errorCount++;
 
       runtimeLogger.error(`Failed to initialize extension: ${this.name}`, {
-        extensionId: this.id,
+        source: `extension:${this.id}`,
         error: error instanceof Error ? error.message : String(error),
       });
 
@@ -173,7 +176,7 @@ export abstract class BaseExtension extends EventEmitter implements Extension {
       this.healthInfo.lastError = error as Error;
 
       runtimeLogger.error(`Extension tick error: ${this.name}`, {
-        extensionId: this.id,
+        source: `extension:${this.id}`,
         error: error instanceof Error ? error.message : String(error),
       });
 
@@ -197,7 +200,7 @@ export abstract class BaseExtension extends EventEmitter implements Extension {
       this.healthInfo.status = this.status;
 
       runtimeLogger.info(`Extension started: ${this.name}`, {
-        extensionId: this.id,
+        source: `extension:${this.id}`,
       });
 
       this.emit('started', { extensionId: this.id });
@@ -209,7 +212,7 @@ export abstract class BaseExtension extends EventEmitter implements Extension {
       this.metrics.errorCount++;
 
       runtimeLogger.error(`Failed to start extension: ${this.name}`, {
-        extensionId: this.id,
+        source: `extension:${this.id}`,
         error: error instanceof Error ? error.message : String(error),
       });
 
@@ -242,7 +245,7 @@ export abstract class BaseExtension extends EventEmitter implements Extension {
       this.status = ExtensionStatus.STOPPING;
 
       runtimeLogger.info(`Stopping extension: ${this.name}`, {
-        extensionId: this.id,
+        source: `extension:${this.id}`,
       });
 
       await this.onStop();
@@ -251,7 +254,7 @@ export abstract class BaseExtension extends EventEmitter implements Extension {
       this.healthInfo.status = this.status;
 
       runtimeLogger.info(`Extension stopped: ${this.name}`, {
-        extensionId: this.id,
+        source: `extension:${this.id}`,
       });
 
       this.emit('stopped', { extensionId: this.id });
@@ -263,7 +266,7 @@ export abstract class BaseExtension extends EventEmitter implements Extension {
       this.metrics.errorCount++;
 
       runtimeLogger.error(`Failed to stop extension: ${this.name}`, {
-        extensionId: this.id,
+        source: `extension:${this.id}`,
         error: error instanceof Error ? error.message : String(error),
       });
 
@@ -288,7 +291,7 @@ export abstract class BaseExtension extends EventEmitter implements Extension {
       this.healthInfo.lastError = error as Error;
 
       runtimeLogger.error(`Extension event handling error: ${this.name}`, {
-        extensionId: this.id,
+        source: `extension:${this.id}`,
         eventType: event.type,
         error: error instanceof Error ? error.message : String(error),
       });
@@ -341,7 +344,7 @@ export abstract class BaseExtension extends EventEmitter implements Extension {
       runtimeLogger.error(
         `Extension action failed: ${this.name}.${actionName}`,
         {
-          extensionId: this.id,
+          source: `extension:${this.id}`,
           actionName,
           error: error instanceof Error ? error.message : String(error),
         }
@@ -375,10 +378,21 @@ export abstract class BaseExtension extends EventEmitter implements Extension {
         runtimeLogger.warn(
           `Extension operation failed, retrying: ${this.name}`,
           {
-            extensionId: this.id,
-            attempt: i + 1,
-            maxRetries,
-            error: error instanceof Error ? error.message : String(error),
+            source: `extension:${this.id}`,
+            metadata: {
+              attempt: i + 1,
+              maxRetries,
+            },
+            error: {
+              code: error instanceof Error ? error.name : 'UnknownError',
+              message: error instanceof Error ? error.message : String(error),
+              ...(error instanceof Error && error.stack
+                ? { stack: error.stack }
+                : {}),
+              ...(error instanceof Error && error.cause !== undefined
+                ? { cause: error.cause }
+                : {}),
+            },
           }
         );
 

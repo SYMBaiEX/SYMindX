@@ -8,7 +8,6 @@ import {
   EmotionResult,
   EmotionModifier,
   EmotionTriggerEvent,
-  EmotionDecayConfig,
 } from '../../types/modules/emotions';
 
 export interface EmotionDefinition {
@@ -352,9 +351,11 @@ export abstract class BaseEmotion implements EmotionModule {
   // Get emotional context for decision making
   getEmotionalContext(): Record<string, any> {
     const modifiers: Record<string, number> = {};
-    for (const [key, modifier] of this._contextualModifiers) {
-      modifiers[key] = modifier.factor;
-    }
+    Array.from(this._contextualModifiers.entries()).forEach(
+      ([key, modifier]) => {
+        modifiers[key] = modifier.factor;
+      }
+    );
     return {
       emotion: this.current,
       intensity: this._intensity,

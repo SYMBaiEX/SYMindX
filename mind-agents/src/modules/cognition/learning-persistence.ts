@@ -16,7 +16,9 @@ import {
   RuleAction,
   BayesianNetwork,
   ReasoningPerformance,
+  SerializableRule,
 } from '../../types/cognition';
+import { ActionParameters } from '../../types/common';
 // import type { LearningCapability } from '../../types/cognition'; - type not used at runtime
 // import type { BaseConfig } from '../../types/common'; - type not used at runtime
 import { MemoryType } from '../../types/index';
@@ -62,29 +64,6 @@ export interface LearningState {
     success: boolean;
     timestamp: Date;
   }>;
-}
-
-/**
- * Serializable rule format
- */
-export interface SerializableRule {
-  id: string;
-  name: string;
-  conditions: Array<{
-    type: string;
-    expression: string;
-    parameters?: Record<string, unknown>;
-  }>;
-  actions: Array<{
-    type: string;
-    target: string;
-    parameters?: Record<string, unknown>;
-  }>;
-  priority: number;
-  confidence: number;
-  usageCount: number;
-  successRate: number;
-  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -355,33 +334,16 @@ export class LearningPersistence {
         const serializableRule = buildObject<SerializableRule>({
           id: rule.id,
           name: rule.name,
-          conditions: rule.conditions.map((c) => ({
-            type: c.type,
-            expression:
-              c.expression || `${c.property} ${c.operator} ${c.value}`,
-            parameters: {
-              property: c.property,
-              operator: c.operator,
-              value: c.value,
-            },
-          })),
-          actions: rule.actions.map((a) => {
-            const action: any = {
-              type: a.type,
-              target: a.target,
-            };
-            if (a.parameters !== undefined) {
-              action.parameters = a.parameters;
-            }
-            return action;
-          }),
+          conditions: rule.conditions,
+          actions: rule.actions,
           priority: rule.priority || 1,
           confidence: (rule as any).confidence || 0.5,
-          usageCount: perf.usageCount,
-          successRate: perf.successRate,
-        })
-          .addOptional('metadata', rule.metadata)
-          .build();
+          metadata: {
+            ...rule.metadata,
+            usageCount: perf.usageCount,
+            successRate: perf.successRate,
+          },
+        }).build();
 
         serializableRules.push(serializableRule);
       }
@@ -426,23 +388,8 @@ export class LearningPersistence {
         const rule = buildObject<Rule>({
           id: serializableRule.id,
           name: serializableRule.name,
-          conditions: serializableRule.conditions.map((c) => ({
-            type: c.type as any,
-            property: (c.parameters?.property as string) || 'unknown',
-            operator: (c.parameters?.operator as any) || 'equals',
-            value: c.parameters?.value || '',
-            expression: c.expression,
-          })),
-          actions: serializableRule.actions.map((a) => {
-            const action: RuleAction = {
-              type: a.type as any,
-              target: a.target,
-            };
-            if (a.parameters !== undefined) {
-              action.parameters = a.parameters;
-            }
-            return action;
-          }),
+          conditions: serializableRule.conditions,
+          actions: serializableRule.actions,
           priority: serializableRule.priority,
         })
           .addOptional('metadata', serializableRule.metadata)
@@ -450,8 +397,8 @@ export class LearningPersistence {
 
         rules.set(rule.id, rule);
         performance.set(rule.id, {
-          usageCount: serializableRule.usageCount,
-          successRate: serializableRule.successRate,
+          usageCount: (serializableRule.metadata as any)?.usageCount || 0,
+          successRate: (serializableRule.metadata as any)?.successRate || 0.5,
         });
       }
 
@@ -604,7 +551,9 @@ export class LearningPersistence {
           type: exp.action.type,
           extension: 'learning_persistence',
           action: exp.action.type,
-          parameters: exp.action.parameters || {},
+          parameters: this.convertToActionParameters(
+            exp.action.parameters || {}
+          ),
           timestamp: new Date(exp.timestamp),
           status: 'completed' as any,
         },
@@ -697,6 +646,35 @@ export class LearningPersistence {
       runtimeLogger.cognition(`Failed to load meta-learning data: ${error}`);
       return null;
     }
+  }
+
+  /**
+   * Helper method to convert Record<string, unknown> to ActionParameters
+   */
+  private convertToActionParameters(
+    params: Record<string, unknown>
+  ): ActionParameters {
+    const result: ActionParameters = {};
+    for (const [key, value] of Object.entries(params)) {
+      // Convert unknown values to ParameterValue types
+      if (value === null || value === undefined) {
+        result[key] = '';
+      } else if (
+        typeof value === 'string' ||
+        typeof value === 'number' ||
+        typeof value === 'boolean'
+      ) {
+        result[key] = value;
+      } else if (Array.isArray(value)) {
+        result[key] = value;
+      } else if (typeof value === 'object') {
+        result[key] = value as ActionParameters;
+      } else {
+        // Fallback: convert to string
+        result[key] = String(value);
+      }
+    }
+    return result;
   }
 
   /**

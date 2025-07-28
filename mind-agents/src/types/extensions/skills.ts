@@ -56,7 +56,7 @@ export interface SkillExecutionContext {
 /**
  * Generic skill result with typed data
  */
-export interface SkillResult<T = any> {
+export interface SkillResult<T = unknown> {
   /** Execution success */
   success: boolean;
   /** Result data */
@@ -66,7 +66,7 @@ export interface SkillResult<T = any> {
     code: string;
     message: string;
     stack?: string;
-    details?: any;
+    details?: Record<string, unknown>;
   };
   /** Execution metadata */
   metadata: {
@@ -81,13 +81,13 @@ export interface SkillResult<T = any> {
     /** Warnings generated */
     warnings?: string[];
     /** Debug information */
-    debug?: Record<string, any>;
+    debug?: Record<string, unknown>;
   };
   /** Side effects produced */
   sideEffects?: Array<{
     type: 'memory' | 'state' | 'external' | 'event';
     description: string;
-    data?: any;
+    data?: unknown;
   }>;
   /** Follow-up actions suggested */
   suggestions?: Array<{
@@ -104,17 +104,17 @@ export interface SkillParameter {
   /** Parameter name */
   name: string;
   /** Parameter type */
-  type: 'string' | 'number' | 'boolean' | 'object' | 'array' | 'any';
+  type: 'string' | 'number' | 'boolean' | 'object' | 'array' | 'unknown';
   /** Is parameter required */
   required: boolean;
   /** Parameter description */
   description: string;
   /** Default value if not provided */
-  default?: any;
+  default?: unknown;
   /** Validation rules */
   validation?: SkillValidation;
   /** Example values */
-  examples?: any[];
+  examples?: unknown[];
   /** Deprecated warning */
   deprecated?: string;
 }
@@ -134,9 +134,9 @@ export interface SkillValidation {
   /** Pattern match (for strings) */
   pattern?: string;
   /** Enum values */
-  enum?: any[];
+  enum?: unknown[];
   /** Custom validation function */
-  custom?: (value: any) => boolean | string;
+  custom?: (value: unknown) => boolean | string;
   /** Format validation (email, url, etc) */
   format?:
     | 'email'
@@ -177,15 +177,15 @@ export interface HTTPSkillConfig {
     headerName?: string;
   };
   /** Request interceptor */
-  interceptor?: (config: any) => any;
+  interceptor?: (config: Record<string, unknown>) => Record<string, unknown>;
   /** Response transformer */
-  transformer?: (response: any) => any;
+  transformer?: (response: unknown) => unknown;
 }
 
 /**
  * Database skill result
  */
-export interface DatabaseSkillResult<T = any> {
+export interface DatabaseSkillResult<T = unknown> {
   /** Query success */
   success: boolean;
   /** Result rows */
@@ -229,7 +229,7 @@ export interface FileSkillResult {
 /**
  * External API skill result
  */
-export interface APISkillResult<T = any> {
+export interface APISkillResult<T = unknown> {
   /** Request success */
   success: boolean;
   /** Response data */
@@ -254,7 +254,7 @@ export interface APISkillResult<T = any> {
 /**
  * Computation skill result
  */
-export interface ComputationSkillResult<T = any> {
+export interface ComputationSkillResult<T = unknown> {
   /** Computation success */
   success: boolean;
   /** Computation result */
@@ -293,7 +293,7 @@ export interface CommunicationSkillResult {
   receipt?: {
     timestamp: Date;
     status: string;
-    details?: any;
+    details?: Record<string, unknown>;
   };
 }
 
@@ -338,7 +338,7 @@ export interface SkillDefinition {
     context: SkillExecutionContext
   ) => Promise<SkillResult>;
   /** Skill configuration */
-  config?: any;
+  config?: Record<string, unknown>;
   /** Skill dependencies */
   dependencies?: string[];
   /** Deprecated flag */
@@ -403,28 +403,36 @@ export interface SkillExecutionOptions {
 /**
  * Type guards for skill results
  */
-export const isSkillResult = <T>(obj: any): obj is SkillResult<T> => {
+export const isSkillResult = <T>(obj: unknown): obj is SkillResult<T> => {
   return (
-    obj && typeof obj === 'object' && 'success' in obj && 'metadata' in obj
+    obj !== null &&
+    typeof obj === 'object' &&
+    'success' in obj &&
+    'metadata' in obj
   );
 };
 
 export const isDatabaseResult = <T>(
-  obj: any
+  obj: unknown
 ): obj is DatabaseSkillResult<T> => {
   return isSkillResult(obj) && ('rows' in obj || 'affectedRows' in obj);
 };
 
-export const isFileResult = (obj: any): obj is FileSkillResult => {
+export const isFileResult = (obj: unknown): obj is FileSkillResult => {
   return isSkillResult(obj) && 'operation' in obj;
 };
 
-export const isAPIResult = <T>(obj: any): obj is APISkillResult<T> => {
-  return isSkillResult(obj) && 'status' in obj.metadata;
+export const isAPIResult = <T>(obj: unknown): obj is APISkillResult<T> => {
+  return (
+    isSkillResult(obj) &&
+    obj.metadata &&
+    typeof obj.metadata === 'object' &&
+    'status' in obj.metadata
+  );
 };
 
 export const isCommunicationResult = (
-  obj: any
+  obj: unknown
 ): obj is CommunicationSkillResult => {
   return isSkillResult(obj) && ('messageId' in obj || 'recipient' in obj);
 };

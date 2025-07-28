@@ -364,14 +364,15 @@ export class WebSocketServerSkill {
     const { agentId, data } = message;
 
     try {
-      // Use the chat skill to handle the message
-      const chatSkill = this.extension.skills?.chat;
-      if (chatSkill) {
-        const response = await chatSkill.sendMessage({ id: agentId } as Agent, {
+      // Handle chat message through direct action execution
+      const chatAction = this.extension.actions.sendMessage;
+      if (chatAction) {
+        const response = await (chatAction as any)(
+          { id: agentId } as Agent,
           agentId,
-          message: data.message,
-          conversationId: data.conversationId,
-        });
+          data.message,
+          data.conversationId
+        );
 
         this.sendToWebSocket(connection.ws, {
           type: 'chat_response',
@@ -403,9 +404,13 @@ export class WebSocketServerSkill {
     const { agentId, data } = message;
 
     try {
-      // Execute command through the extension's command system
-      const result = await this.extension.executeCommand(
-        agentId,
+      // Execute command through available actions
+      const commandAction = this.extension.actions.executeCommand;
+      if (!commandAction) {
+        throw new Error('Command execution not available');
+      }
+      const result = await (commandAction as any)(
+        { id: agentId } as Agent,
         data.command,
         data.parameters
       );
@@ -471,10 +476,18 @@ export class WebSocketServerSkill {
           sentCount++;
         } catch (error) {
           void error;
-          runtimeLogger.warn(
-            `⚠️ Failed to send message to ${connection.id}:`,
-            error
-          );
+          runtimeLogger.warn(`⚠️ Failed to send message to ${connection.id}:`, {
+            error: {
+              code: error instanceof Error ? error.name : 'UnknownError',
+              message: error instanceof Error ? error.message : String(error),
+              ...(error instanceof Error && error.stack
+                ? { stack: error.stack }
+                : {}),
+              ...(error instanceof Error && error.cause !== undefined
+                ? { cause: error.cause }
+                : {}),
+            },
+          });
         }
       }
 
@@ -501,7 +514,13 @@ export class WebSocketServerSkill {
     params: SkillParameters
   ): Promise<ActionResult> {
     try {
-      const { connectionId, message, type, data } = params;
+      const connectionId =
+        typeof params.connectionId === 'string'
+          ? params.connectionId
+          : String(params.connectionId);
+      const message = params.message;
+      const type = typeof params.type === 'string' ? params.type : 'message';
+      const data = params.data;
 
       const connection = this.connections.get(connectionId);
       if (!connection) {
@@ -586,19 +605,7 @@ export class WebSocketServerSkill {
         type: ActionResultType.SUCCESS,
         result: {
           totalConnections: this.connections.size,
-          connections: connectionInfo.map(
-            (info) =>
-              ({
-                id: info.id,
-                readyState: info.readyState,
-                ip: info.ip,
-                userAgent: info.userAgent,
-                connectedAt: info.connectedAt.toISOString(),
-                lastActivity: info.lastActivity.toISOString(),
-                subscriptions: info.subscriptions,
-                metadata: info.metadata,
-              }) as Record<string, unknown>
-          ),
+          count: connectionInfo.length,
         },
       };
     } catch (error) {
@@ -632,7 +639,18 @@ export class WebSocketServerSkill {
           void error;
           runtimeLogger.warn(
             `⚠️ Failed to send agent event to ${connection.id}:`,
-            error
+            {
+              error: {
+                code: error instanceof Error ? error.name : 'UnknownError',
+                message: error instanceof Error ? error.message : String(error),
+                ...(error instanceof Error && error.stack
+                  ? { stack: error.stack }
+                  : {}),
+                ...(error instanceof Error && error.cause !== undefined
+                  ? { cause: error.cause }
+                  : {}),
+              },
+            }
           );
         }
       }

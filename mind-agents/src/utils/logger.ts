@@ -17,8 +17,8 @@ export interface LoggerOptions {
   prefix?: string;
   colors?: boolean;
   transports?: LogTransport[];
-  defaultContext?: LogContext;
-  formatter?: LogFormatter;
+  defaultContext?: LogContext | undefined;
+  formatter?: LogFormatter | undefined;
 }
 
 // ANSI color codes for console output
@@ -68,8 +68,8 @@ export class Logger implements ILogger {
     this.level = options.level || LogLevel.INFO;
     this.useColors = options.colors !== false && process.stdout.isTTY;
     this.transports = options.transports || [];
-    this.defaultContext = options.defaultContext ?? undefined;
-    this.formatter = options.formatter ?? undefined;
+    this.defaultContext = options.defaultContext;
+    this.formatter = options.formatter;
   }
 
   child(context: LogContext): ILogger {
@@ -81,8 +81,8 @@ export class Logger implements ILogger {
       colors: this.useColors,
       transports: this.transports,
       defaultContext: {
-        ...(this.defaultContext ?? {}),
-        ...(context ?? {}),
+        ...(this.defaultContext || {}),
+        ...(context || {}),
       } as LogContext,
     };
     if (this.formatter) {
@@ -204,8 +204,8 @@ export class Logger implements ILogger {
       message,
       timestamp: new Date(),
       context: {
-        ...(this.defaultContext ?? {}),
-        ...(context ?? {}),
+        ...(this.defaultContext || {}),
+        ...(context || {}),
       },
       category: this.prefix,
     };

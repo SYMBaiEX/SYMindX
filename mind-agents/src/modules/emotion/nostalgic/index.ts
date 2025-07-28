@@ -43,7 +43,7 @@ export class NostalgicEmotion extends BaseEmotion {
     };
   }
 
-  override processEvent(eventType: string, context?: unknown): EmotionResult {
+  override processEvent(eventType: string, context?: any): EmotionResult {
     // Special processing for nostalgia-specific events
     if (context?.memory_type === 'personal' || context?.memory_age > 30) {
       this._intensity = Math.min(1.0, this._intensity + 0.2);
@@ -66,4 +66,9 @@ export function createNostalgicEmotion(
   config: NostalgicEmotionConfig = {}
 ): NostalgicEmotion {
   return new NostalgicEmotion(config);
+}
+
+// Export module factory for registry
+export function createNostalgicEmotionModule(config?: any): NostalgicEmotion {
+  return new NostalgicEmotion(config || {});
 }

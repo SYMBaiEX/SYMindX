@@ -341,12 +341,16 @@ export class MetaReasoner implements CognitionModule {
     return {
       complexity,
       uncertainty,
-      timeConstraint,
-      knowledgeAvailable,
-      adaptationNeeded,
+      timeConstraint: timeConstraint > 0.7,
+      resourceConstraint: false,
+      ethicalConsiderations: false,
+      multiAgent: false,
+      dynamicEnvironment: false,
       goalOriented,
       probabilisticNature,
       rulesApplicable,
+      knowledgeAvailable,
+      adaptationNeeded,
     };
   }
 
@@ -354,7 +358,7 @@ export class MetaReasoner implements CognitionModule {
    * Select the best reasoning paradigm
    */
   private selectReasoner(
-    analysis: ContextAnalysis,
+    analysis: ExtendedContextAnalysis,
     context: ThoughtContext
   ): MetaDecision {
     const scores = new Map<ReasoningParadigm, number>();
@@ -365,7 +369,7 @@ export class MetaReasoner implements CognitionModule {
       analysis.rulesApplicable * 0.4 +
       (1 - analysis.uncertainty) * 0.3 +
       analysis.knowledgeAvailable * 0.3;
-    if (analysis.timeConstraint > 0.7) ruleBasedScore *= 1.2; // Good for quick decisions
+    if (analysis.timeConstraint) ruleBasedScore *= 1.2; // Good for quick decisions
 
     // Boost rule-based scoring if context contains clear patterns
     if (
@@ -383,7 +387,7 @@ export class MetaReasoner implements CognitionModule {
     let pddlScore =
       analysis.goalOriented * 0.5 +
       analysis.complexity * 0.3 +
-      (1 - analysis.timeConstraint) * 0.2;
+      (analysis.timeConstraint ? 0 : 1) * 0.2;
     if (analysis.goalOriented > 0.7) pddlScore *= 1.3; // Excellent for goal-oriented tasks
     scores.set(ReasoningParadigm.PDDL_PLANNING, pddlScore);
 
@@ -400,7 +404,7 @@ export class MetaReasoner implements CognitionModule {
       analysis.adaptationNeeded * 0.4 +
       (1 - analysis.knowledgeAvailable) * 0.3 +
       analysis.complexity * 0.3;
-    if (analysis.adaptationNeeded > 0.7) rlScore *= 1.3; // Excellent for learning situations
+    if (analysis.adaptationNeeded > 0.6) rlScore *= 1.3; // Excellent for learning situations
     scores.set(ReasoningParadigm.REINFORCEMENT_LEARNING, rlScore);
 
     // Adjust scores based on historical performance
@@ -517,10 +521,11 @@ export class MetaReasoner implements CognitionModule {
     let knowledge = 0.5; // Base knowledge
 
     // Agent's experience level affects knowledge availability
-    if (agent.characterConfig?.personality?.traits?.openness > 0.7) {
+    const traits = (agent.characterConfig as any)?.personality?.traits;
+    if (traits?.openness > 0.7) {
       knowledge += 0.1; // More open agents tend to have broader knowledge
     }
-    if (agent.characterConfig?.personality?.traits?.conscientiousness > 0.7) {
+    if (traits?.conscientiousness > 0.7) {
       knowledge += 0.1; // More conscientious agents retain knowledge better
     }
 
@@ -805,115 +810,6 @@ export class MetaReasoner implements CognitionModule {
     };
     this.thoughtGraph.set(node.id, node);
     return node;
-  }
-
-  private createReasoningPath(
-    paradigm: ReasoningParadigm,
-    result: ThoughtResult
-  ): ReasoningPath {
-    const steps = result.thoughts.map((thought, index) => ({
-      stepNumber: index + 1,
-      thoughtNodeId: this.createThoughtNode(thought, result.confidence).id,
-      action: `Apply ${paradigm} reasoning`,
-      justification: `Step ${index + 1} of ${paradigm} reasoning process`,
-      confidence: result.confidence,
-      dependencies: index > 0 ? [index - 1] : [],
-    }));
-
-    const path: ReasoningPath = {
-      id: `path_${Date.now()}`,
-      steps,
-      probability: result.confidence,
-      outcome: `${paradigm} reasoning completed`,
-      evaluation: {
-        consistency: 0.85,
-        completeness: 0.8,
-        efficiency: 0.75,
-        risk: 'low',
-      },
-    };
-
-    this.reasoningPaths.push(path);
-    return path;
-  }
-
-  private createDecisionMatrix(
-    paradigms: Array<{ paradigm: ReasoningParadigm; score: number }>
-  ): DecisionMatrix {
-    const options = paradigms.map((p) => ({
-      id: p.paradigm,
-      name: p.paradigm,
-      description: `Use ${p.paradigm} reasoning approach`,
-    }));
-
-    const criteria = [
-      { id: 'score', name: 'Suitability Score', type: 'benefit' as const },
-      {
-        id: 'performance',
-        name: 'Historical Performance',
-        type: 'benefit' as const,
-      },
-      { id: 'speed', name: 'Expected Speed', type: 'benefit' as const },
-    ];
-
-    const weights = { score: 0.5, performance: 0.3, speed: 0.2 };
-
-    const scores = paradigms.map((p) => {
-      const perf = this.performanceHistory.get(p.paradigm);
-      return [
-        { value: p.score, normalized: p.score, confidence: 0.9 },
-        {
-          value: perf?.successRate || 0.5,
-          normalized: perf?.successRate || 0.5,
-          confidence: 0.8,
-        },
-        {
-          value: 1 - (perf?.averageTime || 0.5) / 1000,
-          normalized: 0.7,
-          confidence: 0.7,
-        },
-      ];
-    });
-
-    return {
-      options,
-      criteria,
-      weights,
-      scores,
-      method: 'weighted_sum',
-      rankings: paradigms.map((p, idx) => ({
-        optionId: p.paradigm,
-        rank: idx + 1,
-        score: p.score,
-        strengths: [`Suitable for current context`],
-        weaknesses: [],
-      })),
-    };
-  }
-
-  private recordLearning(
-    paradigm: ReasoningParadigm,
-    performance: ReasoningPerformance
-  ): void {
-    const outcome: LearningOutcome = {
-      concept: `${paradigm} performance pattern`,
-      category: 'pattern',
-      confidence: performance.confidence,
-      retention: 0.9,
-      reinforcements: 1,
-      learnedAt: new Date(),
-      lastAccessed: new Date(),
-      relatedConcepts: [paradigm],
-      examples: [
-        {
-          content: `Performance: ${performance.accuracy}`,
-          context: 'Meta-reasoning evaluation',
-          type: 'positive',
-        },
-      ],
-    };
-
-    this.learningHistory.push(outcome);
   }
 }
 

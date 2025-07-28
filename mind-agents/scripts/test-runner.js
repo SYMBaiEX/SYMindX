@@ -323,7 +323,7 @@ class TestRunner {
       }
     };
 
-    await findTestFiles('./src');
+    await findTestFiles('./tests');
     
     return testFiles;
   }

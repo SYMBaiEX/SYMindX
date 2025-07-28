@@ -3,9 +3,16 @@
  * Handles comprehensive state persistence, checkpoints, and recovery
  */
 
-import { createHash } from 'crypto';
+import {
+  createHash,
+  createCipheriv,
+  createDecipheriv,
+  randomBytes,
+} from 'crypto';
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import { promisify } from 'util';
+import { gzip, gunzip } from 'zlib';
 
 import {
   Agent,
@@ -16,7 +23,7 @@ import {
 } from '../types/agent';
 import { EmotionState } from '../types/emotion';
 import type { CharacterConfig, AgentConfig } from '../types/index';
-import { Logger } from '../utils/logger';
+import { Logger } from '../utils/logger.js';
 
 // Additional type definitions for state management
 interface StatefulExtension {
@@ -43,8 +50,33 @@ interface ExtendedAgent extends Agent {
   autonomyLevel?: number;
 }
 
-interface NodeJSError extends NodeJS.ErrnoException {
+interface StateManagerError extends Error {
   code?: string;
+  path?: string;
+  operation?: string;
+  isOperational?: boolean;
+}
+
+class StateManagementError extends Error {
+  public readonly isOperational: boolean;
+  public readonly code?: string;
+  public readonly path?: string;
+  public readonly operation?: string;
+
+  constructor(
+    message: string,
+    code?: string,
+    path?: string,
+    operation?: string
+  ) {
+    super(message);
+    this.name = 'StateManagementError';
+    this.isOperational = true;
+    this.code = code;
+    this.path = path;
+    this.operation = operation;
+    Error.captureStackTrace(this, StateManagementError);
+  }
 }
 
 export interface AgentStateSnapshot {
@@ -146,24 +178,8 @@ export class StateManager {
   private operationLocks: Map<string, boolean> = new Map();
   private checkpointTimers: Map<string, ReturnType<typeof setInterval>> =
     new Map();
-  
-  // Timer cleanup utility methods
-  private clearCheckpointTimer(agentId: string): void {
-    const timer = this.checkpointTimers.get(agentId);
-    if (timer) {
-      clearInterval(timer);
-      this.checkpointTimers.delete(agentId);
-    }
-  }
-  
-  private startCheckpointTimer(agentId: string, interval: number): void {
-    this.clearCheckpointTimer(agentId);
-    const timer = setInterval(() => {
-      // Placeholder for scheduled checkpoint logic
-      this.logger.debug(`Scheduled checkpoint for agent ${agentId}`);
-    }, interval);
-    this.checkpointTimers.set(agentId, timer);
-  }
+
+  // Timer cleanup utility methods (removed unused method)
 
   constructor(config: StateManagerConfig) {
     this.config = config;
@@ -178,12 +194,19 @@ export class StateManager {
     try {
       await fs.mkdir(this.stateDirectory, { recursive: true });
       this.logger.info('State manager initialized', {
-        directory: this.stateDirectory,
+        metadata: {
+          directory: this.stateDirectory,
+        },
       });
     } catch (error) {
-      void error;
-      this.logger.error('Failed to initialize state manager:', error);
-      throw error;
+      const initError = new StateManagementError(
+        `Failed to initialize state manager directory: ${error instanceof Error ? error.message : String(error)}`,
+        (error as StateManagerError).code,
+        this.stateDirectory,
+        'initialize'
+      );
+      this.logger.error('Failed to initialize state manager:', initError);
+      throw initError;
     }
   }
 
@@ -249,7 +272,7 @@ export class StateManager {
         core: {
           name: agent.name,
           status: agent.status,
-          characterConfig: agent.characterConfig,
+          characterConfig: agent.characterConfig as unknown as CharacterConfig,
           agentConfig: agent.config,
           lastUpdate: agent.lastUpdate,
         },
@@ -296,7 +319,8 @@ export class StateManager {
         snapshot.autonomous = {
           goals: extendedAgent.goals || [],
           learningState: extendedAgent.learning?.getState?.() || {},
-          decisionHistory: extendedAgent.decision?.getHistory?.() || [],
+          decisionHistory: (extendedAgent.decision?.getHistory?.() ||
+            []) as Record<string, unknown>[],
           autonomyLevel: extendedAgent.autonomyLevel,
         };
       }
@@ -313,8 +337,11 @@ export class StateManager {
       snapshot.metadata.integrity = this.calculateIntegrity(snapshot);
 
       this.logger.info(`Snapshot created for agent ${agentId}`, {
-        type,
-        size: JSON.stringify(snapshot).length,
+        agentId,
+        metadata: {
+          type,
+          size: JSON.stringify(snapshot).length,
+        },
       });
 
       return snapshot;
@@ -340,20 +367,21 @@ export class StateManager {
       const data = JSON.stringify(snapshot, null, 2);
 
       // Apply compression if enabled
+      let processedData = data;
       if (this.config.compressionEnabled) {
-        // TODO: Implement compression
+        processedData = await this.compressData(processedData);
       }
 
       // Apply encryption if enabled
       if (this.config.encryptionEnabled) {
-        // TODO: Implement encryption
+        processedData = await this.encryptData(processedData);
       }
 
-      await fs.writeFile(filepath, data);
+      await fs.writeFile(filepath, processedData);
 
       // Update latest snapshot link
       const latestPath = path.join(checkpointDir, 'latest.json');
-      await fs.writeFile(latestPath, data);
+      await fs.writeFile(latestPath, processedData);
 
       // Update metadata
       await this.updateMetadata(snapshot.agentId, {
@@ -363,7 +391,10 @@ export class StateManager {
       });
 
       this.logger.info(`Snapshot saved for agent ${snapshot.agentId}`, {
-        filename,
+        agentId: snapshot.agentId,
+        metadata: {
+          filename,
+        },
       });
 
       // Cleanup old checkpoints
@@ -371,12 +402,17 @@ export class StateManager {
 
       return filepath;
     } catch (error) {
-      void error;
+      const saveError = new StateManagementError(
+        `Failed to save snapshot for agent ${snapshot.agentId}: ${error instanceof Error ? error.message : String(error)}`,
+        (error as StateManagerError).code,
+        filepath,
+        'saveSnapshot'
+      );
       this.logger.error(
         `Failed to save snapshot for agent ${snapshot.agentId}:`,
-        error
+        saveError
       );
-      throw error;
+      throw saveError;
     }
   }
 
@@ -393,44 +429,56 @@ export class StateManager {
       'checkpoints'
     );
 
+    let filepath: string;
+
+    if (specific) {
+      filepath = path.join(checkpointDir, specific);
+    } else {
+      filepath = path.join(checkpointDir, 'latest.json');
+    }
+
     try {
-      let filepath: string;
-
-      if (specific) {
-        filepath = path.join(checkpointDir, specific);
-      } else {
-        filepath = path.join(checkpointDir, 'latest.json');
-      }
-
       const data = await fs.readFile(filepath, 'utf-8');
 
       // Apply decryption if needed
+      let processedData = data;
       if (this.config.encryptionEnabled) {
-        // TODO: Implement decryption
+        processedData = await this.decryptData(processedData);
       }
 
       // Apply decompression if needed
       if (this.config.compressionEnabled) {
-        // TODO: Implement decompression
+        processedData = await this.decompressData(processedData);
       }
 
-      const snapshot = JSON.parse(data) as AgentStateSnapshot;
+      const snapshot = JSON.parse(processedData) as AgentStateSnapshot;
 
       this.logger.info(`Snapshot loaded for agent ${agentId}`, {
-        timestamp: snapshot.timestamp,
-        type: snapshot.metadata.checkpointType,
+        agentId,
+        metadata: {
+          timestamp: snapshot.timestamp.toISOString(),
+          type: snapshot.metadata.checkpointType,
+        },
       });
 
       return snapshot;
     } catch (error) {
-      void error;
-      if ((error as NodeJSError).code === 'ENOENT') {
+      if ((error as StateManagerError).code === 'ENOENT') {
         this.logger.warn(`No snapshot found for agent ${agentId}`);
         return null;
       }
 
-      this.logger.error(`Failed to load snapshot for agent ${agentId}:`, error);
-      throw error;
+      const loadError = new StateManagementError(
+        `Failed to load snapshot for agent ${agentId}: ${error instanceof Error ? error.message : String(error)}`,
+        (error as StateManagerError).code,
+        filepath,
+        'loadSnapshot'
+      );
+      this.logger.error(
+        `Failed to load snapshot for agent ${agentId}:`,
+        loadError
+      );
+      throw loadError;
     }
   }
 
@@ -531,11 +579,20 @@ export class StateManager {
         .sort()
         .reverse(); // Most recent first
     } catch (error) {
-      void error;
-      if ((error as NodeJSError).code === 'ENOENT') {
+      if ((error as StateManagerError).code === 'ENOENT') {
         return [];
       }
-      throw error;
+      const listError = new StateManagementError(
+        `Failed to list checkpoints for agent ${agentId}: ${error instanceof Error ? error.message : String(error)}`,
+        (error as StateManagerError).code,
+        checkpointDir,
+        'listCheckpoints'
+      );
+      this.logger.error(
+        `Failed to list checkpoints for agent ${agentId}:`,
+        listError
+      );
+      throw listError;
     }
   }
 
@@ -560,12 +617,17 @@ export class StateManager {
         this.logger.info(`Deleted all checkpoints for agent ${agentId}`);
       }
     } catch (error) {
-      void error;
+      const deleteError = new StateManagementError(
+        `Failed to delete checkpoints for agent ${agentId}: ${error instanceof Error ? error.message : String(error)}`,
+        (error as StateManagerError).code,
+        specific ? path.join(checkpointDir, specific) : checkpointDir,
+        'deleteCheckpoints'
+      );
       this.logger.error(
         `Failed to delete checkpoints for agent ${agentId}:`,
-        error
+        deleteError
       );
-      throw error;
+      throw deleteError;
     }
   }
 
@@ -573,12 +635,17 @@ export class StateManager {
 
   private async getRecentMemories(agent: Agent): Promise<MemoryRecord[]> {
     try {
-      return await agent.memory.getRecent(agent.id, 20);
+      const memories = await agent.memory.getRecent(agent.id, 20);
+      return memories as MemoryRecord[];
     } catch (error) {
-      void error;
       this.logger.warn(
-        `Failed to get recent memories for agent ${agent.id}:`,
-        error
+        `Failed to get recent memories for agent ${agent.id}: ${error instanceof Error ? error.message : String(error)}`,
+        {
+          agentId: agent.id,
+          metadata: {
+            error: error instanceof Error ? error.message : String(error),
+          },
+        }
       );
       return [];
     }
@@ -586,7 +653,13 @@ export class StateManager {
 
   private calculateIntegrity(snapshot: unknown): string {
     const hash = createHash('sha256');
-    hash.update(JSON.stringify(snapshot, Object.keys(snapshot).sort()));
+    // Create a sorted JSON string for consistent hashing
+    const sortedSnapshot = JSON.parse(JSON.stringify(snapshot));
+    const sortedJson = JSON.stringify(
+      sortedSnapshot,
+      Object.keys(sortedSnapshot as object).sort()
+    );
+    hash.update(sortedJson);
     return hash.digest('hex');
   }
 
@@ -648,10 +721,20 @@ export class StateManager {
         );
       }
     } catch (error) {
-      void error;
       this.logger.error(
         `Failed to cleanup old checkpoints for agent ${agentId}:`,
-        error
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          agentId,
+          metadata: {
+            operation: 'cleanupOldCheckpoints',
+            checkpointDir: path.join(
+              this.stateDirectory,
+              agentId,
+              'checkpoints'
+            ),
+          },
+        }
       );
     }
   }
@@ -673,8 +756,10 @@ export class StateManager {
       }
 
       const updatedMetadata = {
-        ...existingMetadata,
-        ...metadata,
+        ...(typeof existingMetadata === 'object' && existingMetadata !== null
+          ? existingMetadata
+          : {}),
+        ...(typeof metadata === 'object' && metadata !== null ? metadata : {}),
         lastUpdated: new Date(),
       };
 
@@ -683,10 +768,20 @@ export class StateManager {
         JSON.stringify(updatedMetadata, null, 2)
       );
     } catch (error) {
-      void error;
       this.logger.error(
         `Failed to update metadata for agent ${agentId}:`,
-        error
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          agentId,
+          metadata: {
+            operation: 'updateMetadata',
+            metadataPath: path.join(
+              this.stateDirectory,
+              agentId,
+              'metadata.json'
+            ),
+          },
+        }
       );
     }
   }
@@ -706,11 +801,17 @@ export class StateManager {
       core: {
         name: lazyAgent.name,
         status: AgentStatus.DISABLED,
-        characterConfig: lazyAgent.config,
+        characterConfig: (lazyAgent.characterConfig ||
+          {}) as unknown as CharacterConfig,
         agentConfig: lazyAgent.config,
         lastUpdate: new Date(),
         ...(lazyAgent.config.personality && {
-          personality: lazyAgent.config.personality,
+          personality: Array.isArray(lazyAgent.config.personality)
+            ? lazyAgent.config.personality.reduce(
+                (acc, trait) => ({ ...acc, [trait]: true }),
+                {} as Record<string, unknown>
+              )
+            : (lazyAgent.config.personality as Record<string, unknown>),
         }),
         ...(lazyAgent.config.goals && { goals: lazyAgent.config.goals }),
       },
@@ -719,7 +820,10 @@ export class StateManager {
         emotionState: state.emotionState,
         recentMemories: state.recentMemories,
         memories: [],
-        emotions: state.emotions || { currentEmotions: [] },
+        emotions: (state.emotions || { currentEmotions: [] }) as Record<
+          string,
+          unknown
+        >,
         plans: [],
         decisions: [],
       },
@@ -747,9 +851,9 @@ export class StateManager {
     // Calculate integrity
     snapshot.metadata.integrity = this.calculateIntegrity(snapshot);
 
-    this.logger.info(`Created lazy snapshot for agent ${lazyAgent.id}`, {
-      size: JSON.stringify(snapshot).length,
-    });
+    this.logger.info(
+      `Created lazy snapshot for agent ${lazyAgent.id} (size: ${JSON.stringify(snapshot).length} bytes)`
+    );
 
     return snapshot;
   }
@@ -767,12 +871,17 @@ export class StateManager {
 
       this.logger.info(`Saved lazy agent state for ${lazyAgent.id}`);
     } catch (error) {
-      void error;
+      const saveError = new StateManagementError(
+        `Failed to save lazy agent state for ${lazyAgent.id}: ${error instanceof Error ? error.message : String(error)}`,
+        (error as StateManagerError).code,
+        undefined,
+        'saveLazyAgentState'
+      );
       this.logger.error(
         `Failed to save lazy agent state for ${lazyAgent.id}:`,
-        error
+        saveError
       );
-      throw error;
+      throw saveError;
     }
   }
 
@@ -825,27 +934,141 @@ export class StateManager {
           },
           recentMemories: snapshot.cognitive.recentMemories || [],
           lastActivity: snapshot.timestamp,
-          emotions: snapshot.cognitive.emotions,
           memoryUsage: snapshot.resources.memoryUsage,
         };
+
+        // Add optional properties if they exist
+        if (snapshot.cognitive.emotions) {
+          state.emotions = snapshot.cognitive
+            .emotions as unknown as EmotionState;
+        }
 
         this.logger.info(`Restored lazy agent state for ${lazyAgentId}`);
         return state;
       } catch (error) {
-        void error;
-        if ((error as NodeJSError).code === 'ENOENT') {
+        if ((error as StateManagerError).code === 'ENOENT') {
           this.logger.info(`No saved state for lazy agent ${lazyAgentId}`);
           return null;
         }
-        throw error;
+        const restoreError = new StateManagementError(
+          `Failed to restore lazy agent state for ${lazyAgentId}: ${error instanceof Error ? error.message : String(error)}`,
+          (error as StateManagerError).code,
+          latestPath,
+          'restoreLazyAgentState'
+        );
+        throw restoreError;
       }
     } catch (error) {
-      void error;
+      const restoreError =
+        error instanceof StateManagementError
+          ? error
+          : new StateManagementError(
+              `Failed to restore lazy agent state for ${lazyAgentId}: ${error instanceof Error ? error.message : String(error)}`,
+              (error as StateManagerError).code,
+              undefined,
+              'restoreLazyAgentState'
+            );
       this.logger.error(
         `Failed to restore lazy agent state for ${lazyAgentId}:`,
-        error
+        restoreError
       );
-      throw error;
+      throw restoreError;
     }
+  }
+
+  /**
+   * Compress data using gzip
+   */
+  private async compressData(data: string): Promise<string> {
+    try {
+      const gzipAsync = promisify(gzip);
+      const compressed = await gzipAsync(Buffer.from(data, 'utf-8'));
+      return compressed.toString('base64');
+    } catch (error) {
+      this.logger.error('Failed to compress data:', error);
+      throw new Error(
+        `Compression failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * Decompress data using gunzip
+   */
+  private async decompressData(data: string): Promise<string> {
+    try {
+      const gunzipAsync = promisify(gunzip);
+      const buffer = Buffer.from(data, 'base64');
+      const decompressed = await gunzipAsync(buffer);
+      return decompressed.toString('utf-8');
+    } catch (error) {
+      this.logger.error('Failed to decompress data:', error);
+      throw new Error(
+        `Decompression failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * Encrypt data using AES-256-CBC
+   */
+  private async encryptData(data: string): Promise<string> {
+    try {
+      const algorithm = 'aes-256-cbc';
+      const key = this.getEncryptionKey();
+      const iv = randomBytes(16);
+
+      const cipher = createCipheriv(algorithm, key, iv);
+      let encrypted = cipher.update(data, 'utf-8', 'hex');
+      encrypted += cipher.final('hex');
+
+      // Prepend IV to encrypted data
+      return iv.toString('hex') + ':' + encrypted;
+    } catch (error) {
+      this.logger.error('Failed to encrypt data:', error);
+      throw new Error(
+        `Encryption failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * Decrypt data using AES-256-CBC
+   */
+  private async decryptData(data: string): Promise<string> {
+    try {
+      const algorithm = 'aes-256-cbc';
+      const key = this.getEncryptionKey();
+
+      // Extract IV and encrypted data
+      const [ivHex, encryptedData] = data.split(':');
+      const iv = Buffer.from(ivHex, 'hex');
+
+      const decipher = createDecipheriv(algorithm, key, iv);
+      let decrypted = decipher.update(encryptedData, 'hex', 'utf-8');
+      decrypted += decipher.final('utf-8');
+
+      return decrypted;
+    } catch (error) {
+      this.logger.error('Failed to decrypt data:', error);
+      throw new Error(
+        `Decryption failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * Get encryption key from environment or generate a default one
+   */
+  private getEncryptionKey(): string {
+    const envKey = process.env.STATE_ENCRYPTION_KEY;
+    if (envKey) {
+      return envKey;
+    }
+
+    // Generate a deterministic key based on the config directory
+    // In production, you should use a proper key management system
+    const baseKey = this.config.stateDirectory + 'default-encryption-salt';
+    return createHash('sha256').update(baseKey).digest('hex').substring(0, 32);
   }
 }

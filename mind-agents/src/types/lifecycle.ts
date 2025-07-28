@@ -11,7 +11,12 @@ import {
   AgentEvent as _AgentEvent,
   Agent as _Agent,
 } from './agent';
-import { BaseConfig, Metadata as _Metadata } from './common';
+import {
+  BaseConfig,
+  Metadata as _Metadata,
+  GenericData,
+  ActionParameters,
+} from './common';
 
 // =============================================================================
 // LIFECYCLE ENUMS
@@ -76,7 +81,7 @@ export interface AgentTemplate {
   optionalModules: string[];
   previewImage?: string;
   documentation?: string;
-  customFields?: Record<string, any>;
+  customFields?: BaseConfig;
 }
 
 export interface AgentBuilder {
@@ -219,14 +224,14 @@ export interface MockResponse {
   id: string;
   status: number;
   headers: Record<string, string>;
-  body: any;
+  body: GenericData;
   delay?: number;
 }
 
 export interface DataFixture {
   name: string;
   type: string;
-  data: any;
+  data: GenericData;
   description?: string;
 }
 
@@ -234,7 +239,7 @@ export interface TestSetup {
   agents: AgentConfig[];
   extensions: string[];
   portals: string[];
-  environment: Record<string, any>;
+  environment: BaseConfig;
   mocks: string[];
   fixtures: string[];
 }
@@ -243,7 +248,7 @@ export interface TestStep {
   id: string;
   name: string;
   action: string;
-  parameters: Record<string, any>;
+  parameters: ActionParameters;
   expectedOutcome?: string;
   timeout?: number;
 }
@@ -253,8 +258,8 @@ export interface TestAssertion {
   type: AssertionType;
   target: string;
   condition: string;
-  expected: any;
-  actual?: any;
+  expected: BaseConfig[string];
+  actual?: BaseConfig[string];
   message?: string;
 }
 
@@ -297,15 +302,15 @@ export interface TestStepResult {
   startTime: Date;
   endTime?: Date;
   duration?: number;
-  output?: any;
+  output?: GenericData;
   error?: string;
 }
 
 export interface TestAssertionResult {
   assertionId: string;
   status: TestStatus;
-  actual: any;
-  expected: any;
+  actual: BaseConfig[string];
+  expected: BaseConfig[string];
   message?: string;
 }
 
@@ -321,7 +326,7 @@ export interface TestLog {
   level: string;
   message: string;
   source: string;
-  metadata?: Record<string, any>;
+  metadata?: _Metadata;
 }
 
 export interface TestMetrics {
@@ -457,7 +462,7 @@ export interface LoggingConfig {
 
 export interface LogOutput {
   type: 'console' | 'file' | 'syslog' | 'remote';
-  config: Record<string, any>;
+  config: BaseConfig;
 }
 
 export interface AlertingConfig {
@@ -469,7 +474,7 @@ export interface AlertingConfig {
 
 export interface AlertChannel {
   type: 'email' | 'slack' | 'webhook' | 'pagerduty';
-  config: Record<string, any>;
+  config: BaseConfig;
   enabled: boolean;
 }
 
@@ -587,7 +592,7 @@ export interface SecurityConfig {
 export interface AuthConfig {
   enabled: boolean;
   type: 'jwt' | 'oauth2' | 'api_key' | 'mtls';
-  config: Record<string, any>;
+  config: BaseConfig;
 }
 
 export interface AuthzConfig {
@@ -793,7 +798,7 @@ export interface NotificationConfig {
 
 export interface NotificationChannel {
   type: 'email' | 'slack' | 'teams' | 'webhook';
-  config: Record<string, any>;
+  config: BaseConfig;
 }
 
 export interface NotificationEvent {
@@ -904,7 +909,7 @@ export interface AggregationConfig {
 
 export interface VisualizationConfig {
   type: string;
-  options: Record<string, any>;
+  options: BaseConfig;
   thresholds: Threshold[];
   colors: ColorConfig;
 }
@@ -924,7 +929,7 @@ export interface DashboardFilter {
   key: string;
   type: 'text' | 'select' | 'multi_select' | 'date_range';
   options: string[];
-  default?: any;
+  default?: BaseConfig[string];
 }
 
 export interface TimeRange {
@@ -1018,7 +1023,7 @@ export interface LogConfig {
 
 export interface LogOutput {
   type: 'file' | 'console' | 'syslog' | 'remote';
-  config: Record<string, any>;
+  config: BaseConfig;
 }
 
 export interface RetentionPolicy {
@@ -1042,7 +1047,7 @@ export interface LogPattern {
 export interface LogExtractor {
   field: string;
   type: 'regex' | 'json' | 'grok' | 'csv';
-  config: Record<string, any>;
+  config: BaseConfig;
 }
 
 export interface TracingConfig {
@@ -1084,7 +1089,7 @@ export interface AnomalyDetectionConfig {
 export interface AnomalyAlgorithm {
   name: string;
   type: 'statistical' | 'ml' | 'rule_based';
-  config: Record<string, any>;
+  config: BaseConfig;
   metrics: string[];
 }
 
@@ -1155,7 +1160,7 @@ export interface TrafficSplit {
 
 export interface AllocationStrategy {
   type: 'random' | 'hash' | 'sticky' | 'geolocation';
-  config: Record<string, any>;
+  config: BaseConfig;
 }
 
 export interface ExperimentMetric {
@@ -1230,7 +1235,7 @@ export interface Parameter {
   name: string;
   type: ParameterType;
   range: ParameterRange;
-  default: any;
+  default: BaseConfig[string];
   description: string;
 }
 
@@ -1245,7 +1250,7 @@ export interface ParameterRange {
   min?: number;
   max?: number;
   step?: number;
-  choices?: any[];
+  choices?: BaseConfig[string][];
 }
 
 export interface ParameterConstraint {
@@ -1274,7 +1279,7 @@ export interface TuningAlgorithm {
     | 'bayesian'
     | 'evolutionary'
     | 'tree_parzen';
-  config: Record<string, any>;
+  config: BaseConfig;
 }
 
 export interface TuningBudget {
@@ -1292,7 +1297,7 @@ export interface EarlyStopConfig {
 }
 
 export interface TuningResults {
-  bestParams: Record<string, any>;
+  bestParams: BaseConfig;
   bestScore: number;
   history: TuningIteration[];
   convergence: ConvergenceMetrics;
@@ -1300,7 +1305,7 @@ export interface TuningResults {
 
 export interface TuningIteration {
   iteration: number;
-  params: Record<string, any>;
+  params: BaseConfig;
   score: number;
   duration: number;
   timestamp: Date;
@@ -1330,7 +1335,7 @@ export interface PerformanceProfile {
   memory: MemoryProfile;
   network: NetworkProfile;
   disk: DiskProfile;
-  custom: Record<string, any>;
+  custom: BaseConfig;
 }
 
 export interface CpuProfile {
@@ -1425,7 +1430,7 @@ export interface KnowledgeNode {
   id: string;
   type: string;
   label: string;
-  properties: Record<string, any>;
+  properties: BaseConfig;
   connections: number;
   importance: number;
 }
@@ -1457,8 +1462,8 @@ export interface AdaptationRecord {
 export interface ConfigurationChange {
   module: string;
   parameter: string;
-  oldValue: any;
-  newValue: any;
+  oldValue: BaseConfig[string];
+  newValue: BaseConfig[string];
   reason: string;
 }
 
@@ -1482,7 +1487,7 @@ export interface LearningInsight {
 export interface Evidence {
   type: 'metric' | 'event' | 'pattern' | 'correlation';
   description: string;
-  data: any;
+  data: GenericData;
   confidence: number;
 }
 
@@ -1733,7 +1738,7 @@ export interface PipelineConfig {
 export interface PipelineStageConfig {
   name: string;
   type: StageType;
-  config: Record<string, any>;
+  config: BaseConfig;
   dependencies: string[];
 }
 

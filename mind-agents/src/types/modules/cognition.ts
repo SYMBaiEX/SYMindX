@@ -41,7 +41,7 @@ export interface ThoughtNode {
   /**
    * Metadata associated with this thought
    */
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -197,7 +197,7 @@ export interface PlanExecutionResult {
   /**
    * Final state after execution
    */
-  finalState?: Record<string, any>;
+  finalState?: Record<string, unknown>;
 
   /**
    * Execution metrics
@@ -222,7 +222,7 @@ export interface CompletedStep {
   /**
    * Actual result of the step
    */
-  result: any;
+  result: unknown;
 
   /**
    * Time taken to complete
@@ -287,7 +287,7 @@ export interface ExecutionError {
   /**
    * Additional context
    */
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
 }
 
 /**

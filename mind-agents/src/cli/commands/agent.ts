@@ -19,12 +19,14 @@ import {
   MemoryProviderType,
   CognitionModuleType,
   EmotionModuleType,
+  Agent,
+  Extension,
 } from '../../types/agent';
-import { Logger } from '../../utils/logger';
+import { runtimeLogger } from '../../utils/logger';
 import { CLIContext } from '../index';
 
 export class AgentCommand {
-  private logger = new Logger('cli:agent');
+  private logger = runtimeLogger;
   private spinner = ora();
 
   constructor(private context: CLIContext) {}
@@ -153,10 +155,9 @@ export class AgentCommand {
 
       for (const agent of filteredAgents) {
         const statusColor = this.getStatusColor(agent.status);
-        const autonomousStatus = this.context.runtime.getAutonomousStatus(
-          agent.id
-        );
-        const isAutonomous = autonomousStatus.autonomous;
+        // Check if agent has autonomous status
+        const autonomousStatus = this.context.runtime.getAutonomousStatus(agent.id);
+        const isAutonomous = autonomousStatus.autonomous || false;
 
         if (options?.verbose) {
           process.stdout.write(
@@ -188,12 +189,13 @@ export class AgentCommand {
             '  ' + chalk.white('Extensions:') + ' ' + agent.extensions.length + '\n'
           );
 
-          if (isAutonomous && autonomousStatus.engine) {
+          if (isAutonomous) {
+            const autonomyLevel = autonomousStatus.engine?.autonomyLevel || 0;
             process.stdout.write(
               '  ' +
                 chalk.white('Autonomy Level:') +
                 ' ' +
-                (autonomousStatus.engine.autonomyLevel * 100).toFixed(0) +
+                (autonomyLevel * 100).toFixed(0) +
                 '%' + '\n'
             );
           }
@@ -245,16 +247,12 @@ export class AgentCommand {
 
       // Initialize any stopped extensions
       for (const extension of agent.extensions) {
-        if (!extension.enabled) {
-          try {
+        try {
+          if (typeof extension.init === 'function') {
             await extension.init(agent);
-            extension.enabled = true;
-          } catch (error) {
-            this.logger.warn(
-              `Failed to start extension ${extension.name}:`,
-              error
-            );
           }
+        } catch (error) {
+          this.logger.warn(`Failed to start extension ${extension.id}: ${error instanceof Error ? error.message : String(error)}`);
         }
       }
 
@@ -312,21 +310,13 @@ export class AgentCommand {
       // Stop agent
       agent.status = AgentStatus.IDLE;
 
-      // Stop extensions gracefully
-      for (const extension of agent.extensions) {
-        if (extension.enabled) {
-          try {
-            if ('stop' in extension && typeof extension.stop === 'function') {
-              await extension.stop();
-            }
-            extension.enabled = false;
-          } catch (error) {
-            this.logger.warn(
-              `Failed to stop extension ${extension.name}:`,
-              error
-            );
-          }
+      // Stop autonomous systems if agent is autonomous
+      try {
+        if (this.context.runtime.getAutonomousStatus(agentId).autonomous) {
+          await this.context.runtime.deactivateAgent(agentId);
         }
+      } catch (error) {
+        this.logger.warn(`Failed to stop autonomous systems: ${error instanceof Error ? error.message : String(error)}`);
       }
 
       this.spinner.succeed(`Agent ${agent.name} stopped successfully`);
@@ -427,8 +417,8 @@ export class AgentCommand {
         return;
       }
 
-      const autonomousStatus =
-        this.context.runtime.getAutonomousStatus(agentId);
+      const autonomousStatus = this.context.runtime.getAutonomousStatus(agentId);
+      const isAutonomous = autonomousStatus.autonomous || false;
       const statusColor = this.getStatusColor(agent.status);
 
       process.stdout.write(chalk.blue.bold(`\n🤖 Agent Information`) + '\n');
@@ -437,7 +427,7 @@ export class AgentCommand {
       process.stdout.write(`${chalk.cyan('ID:')} ${agent.id}` + '\n');
       process.stdout.write(`${chalk.cyan('Status:')} ${statusColor}` + '\n');
       process.stdout.write(
-        `${chalk.cyan('Autonomous:')} ${autonomousStatus.autonomous ? '✅ Yes' : '❌ No'}` + '\n'
+        `${chalk.cyan('Autonomous:')} ${isAutonomous ? '✅ Yes' : '❌ No'}` + '\n'
       );
       process.stdout.write(
         `${chalk.cyan('Emotion:')} ${agent.emotion?.current || 'unknown'}` + '\n'
@@ -456,24 +446,24 @@ export class AgentCommand {
       process.stdout.write(chalk.blue('\n📦 Extensions') + '\n');
       process.stdout.write(chalk.gray('─'.repeat(50)) + '\n');
       for (const ext of agent.extensions) {
-        const statusIcon = ext.enabled ? '✅' : '❌';
-        process.stdout.write(`${statusIcon} ${ext.name} (${ext.id})` + '\n');
+        const statusIcon = '✅'; // Extensions in the array are considered active
+        process.stdout.write(`${statusIcon} ${ext.id}` + '\n');
       }
 
       // Autonomous information
-      if (autonomousStatus.autonomous && autonomousStatus.engine) {
+      if (isAutonomous) {
         process.stdout.write(chalk.blue('\n🤖 Autonomous Status') + '\n');
         process.stdout.write(chalk.gray('─'.repeat(50)) + '\n');
+        const autonomyLevel = autonomousStatus.engine?.autonomyLevel || 0;
         process.stdout.write(
-          `${chalk.cyan('Autonomy Level:')} ${(autonomousStatus.engine.autonomyLevel * 100).toFixed(0)}%` + '\n'
+          `${chalk.cyan('Autonomy Level:')} ${(autonomyLevel * 100).toFixed(0)}%` + '\n'
         );
         process.stdout.write(
-          `${chalk.cyan('Interruptible:')} ${autonomousStatus.engine.interruptible ? '✅' : '❌'}` + '\n'
+          `${chalk.cyan('Enabled:')} ${isAutonomous ? '✅' : '❌'}` + '\n'
         );
         process.stdout.write(
-          `${chalk.cyan('Ethical Constraints:')} ${autonomousStatus.engine.ethicalConstraints ? '✅' : '❌'}` + '\n'
+          `${chalk.cyan('State:')} ${autonomousStatus.engine?.currentPhase || 'unknown'}` + '\n'
         );
-
         process.stdout.write(
           chalk.cyan('Lifecycle:') + ' Integrated into autonomous engine' + '\n'
         );

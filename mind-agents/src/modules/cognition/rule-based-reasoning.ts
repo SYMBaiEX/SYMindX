@@ -27,6 +27,7 @@ import {
   Condition,
   RuleAction,
   FactBase,
+  Fact,
   HybridReasoningConfig,
 } from '../../types/cognition';
 import { BaseConfig } from '../../types/common';
@@ -38,27 +39,26 @@ import { buildObject } from '../../utils/type-helpers';
  * Fact base implementation for storing and querying facts
  */
 export class RuleBasedFactBase implements FactBase {
-  facts: Map<string, unknown> = new Map();
+  facts: Map<string, Fact> = new Map();
   rules: Map<string, Rule> = new Map();
 
-  addFact(fact: unknown): void {
-    if (typeof fact === 'object' && fact.id) {
-      // Handle structured Fact objects
-      this.facts.set(fact.id, fact);
-      runtimeLogger.cognition(
-        `Added fact: ${fact.id} = ${JSON.stringify(fact)}`
-      );
-    } else {
-      // Handle simple key-value facts (for backward compatibility)
-      const id = `fact_${Date.now()}_${Math.random()}`;
-      this.facts.set(id, fact);
-      runtimeLogger.cognition(`Added fact: ${id} = ${JSON.stringify(fact)}`);
-    }
+  addFact(fact: Fact): void {
+    // Handle structured Fact objects
+    this.facts.set(fact.id, fact);
+    runtimeLogger.cognition(`Added fact: ${fact.id} = ${JSON.stringify(fact)}`);
   }
 
   // Convenience method for simple key-value facts
   addSimpleFact(key: string, value: any): void {
-    this.facts.set(key, value);
+    const fact: Fact = {
+      id: key,
+      subject: key,
+      predicate: 'hasValue',
+      object: String(value),
+      confidence: 1.0,
+      timestamp: new Date(),
+    };
+    this.facts.set(key, fact);
     runtimeLogger.cognition(`Added fact: ${key} = ${JSON.stringify(value)}`);
   }
 
@@ -789,43 +789,41 @@ export class RuleBasedReasoning implements CognitionModule {
 
     // Check if rule suggests response
     if (this.factBase.hasFact('response_generated')) {
-      const action = buildObject<AgentAction>({
+      const action: AgentAction = {
         id: `action_${Date.now()}`,
         agentId: agent.id,
         type: ActionCategory.COMMUNICATION,
+        extension: 'rule-based',
         action: 'respond',
         parameters: {
           ruleId: rule.id,
           ruleName: rule.name,
           confidence: rule.confidence || 0.5,
         },
-        status: ActionStatus.PENDING,
-        extension: 'rule_engine',
         timestamp: new Date(),
-      })
-        .addOptional('priority', rule.priority)
-        .build();
+        status: ActionStatus.PENDING,
+        ...(rule.priority && { priority: rule.priority }),
+      };
 
       actions.push(action);
     }
 
     // Check if rule suggests goal work
     if (this.factBase.hasFact('working_on_goal')) {
-      const action = buildObject<AgentAction>({
+      const action: AgentAction = {
         id: `action_${Date.now()}`,
         agentId: agent.id,
         type: ActionCategory.COGNITIVE,
+        extension: 'rule-based',
         action: 'work_on_goal',
         parameters: {
           goal: this.factBase.getFact('current_goal'),
           ruleId: rule.id,
         },
-        status: ActionStatus.PENDING,
-        extension: 'rule_engine',
         timestamp: new Date(),
-      })
-        .addOptional('priority', rule.priority)
-        .build();
+        status: ActionStatus.PENDING,
+        ...(rule.priority && { priority: rule.priority }),
+      };
 
       actions.push(action);
     }

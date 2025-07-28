@@ -234,8 +234,8 @@ export const EnhancedDashboard: React.FC<EnhancedDashboardProps> = ({
                 </Text>
               ) : events.data && events.data.length > 0 ? (
                 <Box flexDirection='column'>
-                  {events.data.slice(0, 5).map((event) => (
-                    <Box key={`event-${event.type}-${event.timestamp}-${event.id || Date.now()}`}>
+                  {events.data.slice(0, 5).map((event, index) => (
+                    <Box key={`event-${event.type}-${event.timestamp}-${index}`}>
                       <Text color='gray' dimColor>
                         {event.timestamp}
                       </Text>

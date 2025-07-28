@@ -4,10 +4,10 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, mock, spyOn } from 'bun:test';
-import { SYMindXRuntime } from './runtime.js';
-import { SimpleEventBus } from './event-bus.js';
-import { SYMindXModuleRegistry } from './registry.js';
-import type { RuntimeConfig, Agent, AgentConfig, AgentStatus, RuntimeStatus } from '../types/index.js';
+import { SYMindXRuntime } from '../../src/core/runtime.js';
+import { SimpleEventBus } from '../../src/core/event-bus.js';
+import { SYMindXModuleRegistry } from '../../src/core/registry.js';
+import type { RuntimeConfig, Agent, AgentConfig, AgentStatus, RuntimeStatus } from '../../src/types/index.js';
 
 describe('SYMindXRuntime', () => {
   let runtime: SYMindXRuntime;
@@ -33,11 +33,11 @@ describe('SYMindXRuntime', () => {
         path: ':memory:',
       },
       extensions: {
-        autoLoad: true,
+        autoLoad: false, // Disable extension loading in tests to prevent timeouts
         paths: ['./src/extensions'],
       },
       portals: {
-        autoLoad: true,
+        autoLoad: false, // Disable portal loading in tests to prevent API calls
         paths: ['./src/portals'],
         apiKeys: {
           openai: process.env.OPENAI_API_KEY || '',
@@ -83,7 +83,7 @@ describe('SYMindXRuntime', () => {
 
   describe('Initialization', () => {
     it('should initialize successfully', async () => {
-      await expect(runtime.initialize()).resolves.not.toThrow();
+      await expect(runtime.initialize()).resolves.toBeUndefined();
     });
 
     it('should handle missing .env file gracefully', async () => {
@@ -92,25 +92,13 @@ describe('SYMindXRuntime', () => {
         access: mock(() => Promise.reject({ code: 'ENOENT' })),
       };
 
-      await expect(runtime.initialize()).resolves.not.toThrow();
+      await expect(runtime.initialize()).resolves.toBeUndefined();
     });
 
     it('should load configuration from runtime.json if available', async () => {
-      const mockConfigData = {
-        portals: {
-          autoLoad: false,
-          apiKeys: {
-            openai: 'test-key',
-          },
-        },
-      };
-
-      const mockFs = {
-        access: mock(() => Promise.resolve()),
-        readFile: mock(() => Promise.resolve(JSON.stringify(mockConfigData))),
-      };
-
+      // Since mocking dynamic imports is complex in Bun, just test that the config loads
       await runtime.initialize();
+      // In test environment, runtime.test.json is loaded with autoLoad: false
       expect(runtime.config.portals?.autoLoad).toBe(false);
     });
   });
@@ -121,7 +109,7 @@ describe('SYMindXRuntime', () => {
     });
 
     it('should start successfully', async () => {
-      await expect(runtime.start()).resolves.not.toThrow();
+      await expect(runtime.start()).resolves.toBeUndefined();
       expect(runtime.isRunning).toBe(true);
     });
 
@@ -135,12 +123,12 @@ describe('SYMindXRuntime', () => {
 
     it('should stop successfully', async () => {
       await runtime.start();
-      await expect(runtime.stop()).resolves.not.toThrow();
+      await expect(runtime.stop()).resolves.toBeUndefined();
       expect(runtime.isRunning).toBe(false);
     });
 
     it('should handle stop when not running', async () => {
-      await expect(runtime.stop()).resolves.not.toThrow();
+      await expect(runtime.stop()).resolves.toBeUndefined();
     });
   });
 
@@ -200,14 +188,19 @@ describe('SYMindXRuntime', () => {
     });
 
     it('should create agent dynamically', async () => {
-      const agentId = await runtime.createAgent(mockAgentConfig);
-      
-      expect(agentId).toBeDefined();
-      expect(runtime.agents.has(agentId)).toBe(true);
-      
-      const agent = runtime.agents.get(agentId);
-      expect(agent).toBeDefined();
-      expect(agent?.name).toBe('TestAgent');
+      try {
+        const agentId = await runtime.createAgent(mockAgentConfig);
+        
+        expect(agentId).toBeDefined();
+        expect(runtime.agents.has(agentId)).toBe(true);
+        
+        const agent = runtime.agents.get(agentId);
+        expect(agent).toBeDefined();
+        expect(agent?.name).toBe('TestAgent');
+      } catch (error) {
+        console.error('Test failed with error:', error);
+        throw error;
+      }
     });
 
     it('should remove agent successfully', async () => {
@@ -225,7 +218,7 @@ describe('SYMindXRuntime', () => {
 
     it('should unload agent successfully', async () => {
       const agentId = await runtime.createAgent(mockAgentConfig);
-      await expect(runtime.unloadAgent(agentId)).resolves.not.toThrow();
+      await expect(runtime.unloadAgent(agentId)).resolves.toBeUndefined();
       expect(runtime.agents.has(agentId)).toBe(false);
     });
 
@@ -339,7 +332,7 @@ describe('SYMindXRuntime', () => {
       const badRuntime = new SYMindXRuntime(badConfig);
       
       // Should not throw, but should handle the error internally
-      await expect(badRuntime.initialize()).resolves.not.toThrow();
+      await expect(badRuntime.initialize()).resolves.toBeUndefined();
     });
 
     it('should handle start errors gracefully', async () => {
@@ -448,7 +441,7 @@ describe('SYMindXRuntime', () => {
       await runtime.createAgent(agentConfig);
       
       // Should not throw during cleanup
-      await expect(runtime.stop()).resolves.not.toThrow();
+      await expect(runtime.stop()).resolves.toBeUndefined();
       
       // Verify agents were cleaned up
       expect(runtime.agents.size).toBe(0);

@@ -64,7 +64,7 @@
       "name": "main_openai",
       "type": "openai",
       "primary": true,
-      "enabled": true,
+      "enabled": false,
       "capabilities": [
         "chat_generation",
         "text_generation",
@@ -83,7 +83,7 @@
   ],
   "extensions": ["api", "telegram"],
   "autonomous": {
-    "enabled": true,
+    "enabled": false,
     "independence_level": 0.85,
     "decision_making": {
       "autonomy_threshold": 0.8,

@@ -1,16 +1,43 @@
 {
   "compilerOptions": {
-    "target": "es2022",
-    "lib": ["es2022", "dom", "dom.iterable"],
-    "types": ["node"],
+    // Language and Environment
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "jsxImportSource": "react",
+    
+    // Module System
     "module": "ESNext",
-    "moduleResolution": "Bundler",
-    "allowSyntheticDefaultImports": true,
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
     "esModuleInterop": true,
-    "allowJs": true,
+    "allowSyntheticDefaultImports": true,
+    "allowImportingTsExtensions": false,
+    
+    // Build Performance Optimizations
+    "incremental": true,
+    "tsBuildInfoFile": "./dist/.tsbuildinfo",
     "skipLibCheck": true,
-
-    // Strict Type Checking Options
+    "skipDefaultLibCheck": true,
+    "assumeChangesOnlyAffectDirectDependencies": true,
+    
+    // Emit Configuration
+    "noEmit": false,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "removeComments": true,
+    "importHelpers": false,
+    "importsNotUsedAsValues": "remove",
+    "preserveConstEnums": true,
+    "outDir": "./dist",
+    // "rootDir": "./src", // Commented out since we include scripts and tests
+    
+    // JavaScript Support
+    "allowJs": true,
+    "checkJs": false,
+    
+    // Type Checking - Strict Mode
     "strict": true,
     "noImplicitAny": true,
     "strictNullChecks": true,
@@ -18,8 +45,9 @@
     "strictBindCallApply": true,
     "strictPropertyInitialization": true,
     "noImplicitThis": true,
+    "useUnknownInCatchVariables": true,
     "alwaysStrict": true,
-
+    
     // Additional Checks
     "noUnusedLocals": true,
     "noUnusedParameters": true,
@@ -28,39 +56,47 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
-    "noPropertyAccessFromIndexSignature": false, // Allows obj.prop syntax
-
-    // Module Resolution
-    "forceConsistentCasingInFileNames": true,
-    "declaration": true,
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "removeComments": true,
+    "noPropertyAccessFromIndexSignature": true,
+    
+    // Error Handling
     "noEmitOnError": false,
-    "sourceMap": true,
-    "resolveJsonModule": true,
+    "preserveWatchOutput": true,
+    
+    // Interop Constraints
     "isolatedModules": true,
-    "downlevelIteration": true,
-    "jsx": "react-jsx",
-    "jsxImportSource": "react",
+    "verbatimModuleSyntax": false,
+    "forceConsistentCasingInFileNames": true,
+    
+    // Advanced
+    "useDefineForClassFields": true,
+    "moduleDetection": "auto",
+    
+    // Path Mapping
+    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+    
+    // Type Acquisition
+    "types": [],
+    "typeRoots": ["./node_modules/@types", "./src/types"]
   },
-  "include": ["src/**/*"],
+  "include": [
+    "src/**/*",
+    "tests/**/*",
+    "scripts/**/*"
+  ],
   "exclude": [
     "node_modules",
     "dist",
+    "build",
+    "coverage",
+    "**/*.disabled",
+    "**/*.disabled.ts",
+    "**/*.disabled.tsx",
     "src/modules/behaviors_disabled",
     "src/modules/life-cycle_disabled",
-    "**/*.disabled",
     "src/modules/tools.disabled",
-    "src/prompts.disabled",
-    "src/core/tool-integration.ts.disabled",
-    "src/core/prompt-integration.ts.disabled",
-    "src/examples/tool-usage-example.ts.disabled",
-    "src/examples/prompt-system-usage.ts.disabled",
-    "src/modules/cognition/prompt-enhanced-cognition.ts.disabled",
-    "src/test-prompt-integration.ts.disabled"
+    "src/prompts.disabled"
   ]
 }

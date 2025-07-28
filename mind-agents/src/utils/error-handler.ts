@@ -3,13 +3,17 @@
  * @description Comprehensive error handling and recovery system for SYMindX
  */
 
-import { runtimeLogger } from './logger.js';
-import type { 
-  OperationResult, 
-  ExecutionResult, 
-  ValidationResult, 
-  LogContext 
+import type {
+  OperationResult,
+  ExecutionResult,
+  ValidationResult,
+  ValidationError,
+  ValidationWarning,
+  LogContext,
+  LogMetadata,
 } from '../types/index.js';
+
+import { runtimeLogger } from './logger.js';
 
 /**
  * Error severity levels
@@ -181,11 +185,14 @@ export class ErrorHandler {
   private static instance: ErrorHandler;
   private readonly config: ErrorHandlerConfig;
   private readonly circuitBreakers = new Map<string, CircuitBreaker>();
-  private readonly errorMetrics = new Map<string, {
-    count: number;
-    lastOccurrence: Date;
-    severity: ErrorSeverity;
-  }>();
+  private readonly errorMetrics = new Map<
+    string,
+    {
+      count: number;
+      lastOccurrence: Date;
+      severity: ErrorSeverity;
+    }
+  >();
 
   private constructor(config: Partial<ErrorHandlerConfig> = {}) {
     this.config = {
@@ -205,11 +212,22 @@ export class ErrorHandler {
   /**
    * Get singleton instance
    */
-  public static getInstance(config?: Partial<ErrorHandlerConfig>): ErrorHandler {
+  public static getInstance(
+    config?: Partial<ErrorHandlerConfig>
+  ): ErrorHandler {
     if (!ErrorHandler.instance) {
       ErrorHandler.instance = new ErrorHandler(config);
     }
     return ErrorHandler.instance;
+  }
+
+  /**
+   * Create a new instance for testing
+   */
+  public static createTestInstance(
+    config?: Partial<ErrorHandlerConfig>
+  ): ErrorHandler {
+    return new ErrorHandler(config);
   }
 
   /**
@@ -260,29 +278,39 @@ export class ErrorHandler {
     operation: () => Promise<T>,
     context?: Record<string, unknown>
   ): Promise<ExecutionResult<T>> {
-    const errorInfo = error instanceof Error 
-      ? this.createError(
-          error.message, 
-          'UNHANDLED_ERROR', 
-          ErrorCategory.RUNTIME, 
-          ErrorSeverity.MEDIUM,
-          context,
-          error
-        )
-      : error;
+    const errorInfo =
+      error instanceof Error
+        ? this.createError(
+            error.message,
+            'UNHANDLED_ERROR',
+            ErrorCategory.RUNTIME,
+            ErrorSeverity.MEDIUM,
+            context,
+            error
+          )
+        : error;
 
     const startTime = Date.now();
     const operationId = this.generateOperationId();
 
     try {
-      const recovery = await this.attemptRecovery(errorInfo, operation, context);
-      
+      const recovery = await this.attemptRecovery(
+        errorInfo,
+        operation,
+        context
+      );
+
       return {
         success: recovery.success,
         data: recovery.success ? (recovery as any).data : undefined,
+        error: recovery.success
+          ? undefined
+          : recovery.message || 'Recovery failed',
         timestamp: new Date(),
         duration: Date.now() - startTime,
         metadata: {
+          commandId: operationId,
+          executorId: 'error-handler',
           operationId,
           recovery: {
             strategy: recovery.strategy,
@@ -307,6 +335,8 @@ export class ErrorHandler {
         duration: Date.now() - startTime,
         error: finalError.message,
         metadata: {
+          commandId: operationId,
+          executorId: 'error-handler',
           operationId,
           errorInfo: finalError,
         },
@@ -318,21 +348,34 @@ export class ErrorHandler {
    * Validate operation result and handle errors
    */
   public async validateAndHandle<T>(
-    result: OperationResult<T>,
+    result: OperationResult,
     operation: () => Promise<T>,
     context?: Record<string, unknown>
   ): Promise<ExecutionResult<T>> {
     if (result.success) {
+      // Execute the operation to get the actual data
+      const startTime = Date.now();
+      const data = await operation();
       return {
         success: true,
-        data: result.data,
+        data,
         timestamp: new Date(),
-        duration: 0,
+        duration: Date.now() - startTime,
+        metadata: {
+          commandId: this.generateOperationId(),
+          executorId: 'error-handler',
+        },
       };
     }
 
+    const errorMessage =
+      'success' in result && result.success
+        ? 'Operation failed'
+        : 'error' in result
+          ? result.error
+          : 'Operation failed';
     const error = this.createError(
-      result.error || 'Operation failed',
+      errorMessage,
       'OPERATION_FAILURE',
       ErrorCategory.RUNTIME,
       ErrorSeverity.MEDIUM,
@@ -362,8 +405,12 @@ export class ErrorHandler {
           error instanceof Error ? error : undefined
         );
 
-        const result = await this.handleError(errorInfo, () => fn(...args), context);
-        
+        const result = await this.handleError(
+          errorInfo,
+          () => fn(...args),
+          context
+        );
+
         if (!result.success) {
           throw new Error(result.error || 'Function execution failed');
         }
@@ -376,11 +423,14 @@ export class ErrorHandler {
   /**
    * Get error metrics
    */
-  public getMetrics(): Record<string, {
-    count: number;
-    lastOccurrence: Date;
-    severity: ErrorSeverity;
-  }> {
+  public getMetrics(): Record<
+    string,
+    {
+      count: number;
+      lastOccurrence: Date;
+      severity: ErrorSeverity;
+    }
+  > {
     return Object.fromEntries(this.errorMetrics);
   }
 
@@ -419,12 +469,18 @@ export class ErrorHandler {
    * Validate configuration
    */
   public validateConfig(config: Record<string, unknown>): ValidationResult {
-    const errors: string[] = [];
-    const warnings: string[] = [];
+    const errors: ValidationError[] = [];
+    const warnings: ValidationWarning[] = [];
 
     // Check required fields
     if (!config.name || typeof config.name !== 'string') {
-      errors.push('Configuration must have a valid name');
+      errors.push({
+        field: 'name',
+        message: 'Configuration must have a valid name',
+        code: 'CONFIG_NAME_REQUIRED',
+        value: config.name,
+        severity: 'error',
+      });
     }
 
     // Check API keys
@@ -432,7 +488,13 @@ export class ErrorHandler {
       const apiKeys = config.apiKeys as Record<string, string>;
       for (const [key, value] of Object.entries(apiKeys)) {
         if (typeof value !== 'string' || value.length === 0) {
-          warnings.push(`API key '${key}' is empty or invalid`);
+          warnings.push({
+            field: `apiKeys.${key}`,
+            message: `API key '${key}' is empty or invalid`,
+            code: 'API_KEY_INVALID',
+            value: value as any,
+            severity: 'warning',
+          });
         }
       }
     }
@@ -443,7 +505,13 @@ export class ErrorHandler {
       if (config[field] !== undefined) {
         const value = config[field];
         if (typeof value !== 'number' || value < 0) {
-          errors.push(`Field '${field}' must be a positive number`);
+          errors.push({
+            field,
+            message: `Field '${field}' must be a positive number`,
+            code: 'NUMERIC_VALUE_INVALID',
+            value: value as any,
+            severity: 'error',
+          });
         }
       }
     }
@@ -454,7 +522,13 @@ export class ErrorHandler {
       if (config[field] !== undefined) {
         const value = config[field];
         if (typeof value !== 'boolean') {
-          errors.push(`Field '${field}' must be a boolean`);
+          errors.push({
+            field,
+            message: `Field '${field}' must be a boolean`,
+            code: 'BOOLEAN_VALUE_INVALID',
+            value: value as any,
+            severity: 'error',
+          });
         }
       }
     }
@@ -476,10 +550,11 @@ export class ErrorHandler {
     context?: Record<string, unknown>
   ): Promise<RecoveryResult & { data?: T }> {
     const startTime = Date.now();
-    const operationId = this.generateOperationId();
+    // Use a consistent circuit breaker ID based on error category and code
+    const circuitBreakerId = `${error.category}-${error.code}`;
 
     if (this.config.enableCircuitBreaker) {
-      const breaker = this.getOrCreateCircuitBreaker(operationId);
+      const breaker = this.getOrCreateCircuitBreaker(circuitBreakerId);
       if (!breaker.canExecute()) {
         return {
           success: false,
@@ -494,23 +569,38 @@ export class ErrorHandler {
 
     switch (error.recoveryStrategy) {
       case RecoveryStrategy.RETRY:
-        return this.retryOperation(operation, error, context);
-      
+        return this.retryOperation(operation, error, context, circuitBreakerId);
+
       case RecoveryStrategy.FALLBACK:
         return this.fallbackOperation(operation, error, context);
-      
+
       case RecoveryStrategy.GRACEFUL_DEGRADATION:
         return this.gracefulDegradation(operation, error, context);
-      
+
       default:
-        return {
-          success: false,
-          recovered: false,
-          strategy: RecoveryStrategy.NONE,
-          attempts: 0,
-          duration: Date.now() - startTime,
-          message: 'No recovery strategy available',
-        };
+        // For NONE strategy, try to execute the operation once
+        try {
+          const result = await operation();
+          return {
+            success: true,
+            recovered: true,
+            strategy: RecoveryStrategy.NONE,
+            attempts: 1,
+            duration: Date.now() - startTime,
+            message: 'Operation executed without recovery',
+            data: result,
+          };
+        } catch {
+          return {
+            success: false,
+            recovered: false,
+            strategy: RecoveryStrategy.NONE,
+            attempts: 1,
+            duration: Date.now() - startTime,
+            message: 'Operation failed without recovery strategy',
+            data: undefined,
+          };
+        }
     }
   }
 
@@ -520,7 +610,8 @@ export class ErrorHandler {
   private async retryOperation<T>(
     operation: () => Promise<T>,
     error: ErrorInfo,
-    context?: Record<string, unknown>
+    context?: Record<string, unknown>,
+    circuitBreakerId?: string
   ): Promise<RecoveryResult & { data?: T }> {
     const startTime = Date.now();
     let lastError: Error | undefined;
@@ -530,13 +621,16 @@ export class ErrorHandler {
       try {
         if (attempt > 1) {
           await this.sleep(delay);
-          delay = Math.min(delay * this.config.backoffMultiplier, this.config.maxRetryDelay);
+          delay = Math.min(
+            delay * this.config.backoffMultiplier,
+            this.config.maxRetryDelay
+          );
         }
 
         const result = await operation();
-        
-        if (this.config.enableCircuitBreaker) {
-          const breaker = this.getOrCreateCircuitBreaker(this.generateOperationId());
+
+        if (this.config.enableCircuitBreaker && circuitBreakerId) {
+          const breaker = this.getOrCreateCircuitBreaker(circuitBreakerId);
           breaker.onSuccess();
         }
 
@@ -550,16 +644,23 @@ export class ErrorHandler {
         };
       } catch (err) {
         lastError = err instanceof Error ? err : new Error(String(err));
-        
-        if (this.config.enableCircuitBreaker) {
-          const breaker = this.getOrCreateCircuitBreaker(this.generateOperationId());
+
+        if (this.config.enableCircuitBreaker && circuitBreakerId) {
+          const breaker = this.getOrCreateCircuitBreaker(circuitBreakerId);
           breaker.onFailure();
         }
 
         if (this.config.enableLogging) {
           runtimeLogger.warn(
             `Retry attempt ${attempt}/${this.config.retryAttempts} failed`,
-            { error: lastError.message, context } as LogContext
+            {
+              error: {
+                code: 'RETRY_ATTEMPT_FAILED',
+                message: lastError.message,
+                stack: lastError.stack,
+              },
+              metadata: context,
+            } as LogContext
           );
         }
       }
@@ -607,12 +708,20 @@ export class ErrorHandler {
     } catch (primaryError) {
       // Implement fallback logic here
       // This is a simplified example - in practice, you'd have specific fallback operations
-      
+
       if (this.config.enableLogging) {
-        runtimeLogger.warn(
-          'Primary operation failed, attempting fallback',
-          { error: primaryError, context } as LogContext
-        );
+        const primaryErrorObj =
+          primaryError instanceof Error
+            ? primaryError
+            : new Error(String(primaryError));
+        runtimeLogger.warn('Primary operation failed, attempting fallback', {
+          error: {
+            code: 'FALLBACK_PRIMARY_ERROR',
+            message: primaryErrorObj.message,
+            stack: primaryErrorObj.stack,
+          },
+          metadata: context,
+        } as LogContext);
       }
 
       return {
@@ -649,9 +758,17 @@ export class ErrorHandler {
     } catch (err) {
       // Provide degraded functionality
       if (this.config.enableLogging) {
+        const errorObj = err instanceof Error ? err : new Error(String(err));
         runtimeLogger.warn(
           'Operation failed, providing degraded functionality',
-          { error: err, context } as LogContext
+          {
+            error: {
+              code: 'GRACEFUL_DEGRADATION_ERROR',
+              message: errorObj.message,
+              stack: errorObj.stack,
+            },
+            metadata: context,
+          } as LogContext
         );
       }
 
@@ -714,7 +831,7 @@ export class ErrorHandler {
   private updateMetrics(error: ErrorInfo): void {
     const key = `${error.category}:${error.code}`;
     const existing = this.errorMetrics.get(key);
-    
+
     this.errorMetrics.set(key, {
       count: existing ? existing.count + 1 : 1,
       lastOccurrence: error.timestamp,
@@ -727,23 +844,38 @@ export class ErrorHandler {
    */
   private logError(error: ErrorInfo): void {
     const logContext: LogContext = {
+      correlationId: error.id,
       error: {
-        id: error.id,
         code: error.code,
-        category: error.category,
-        severity: error.severity,
         message: error.message,
         stack: error.stack || '',
       },
-      metadata: error.metadata,
+      metadata: {
+        module: 'error-handler',
+        operation: 'error-logging',
+        tags: [error.severity, error.category],
+        errorDetails: JSON.stringify({
+          ...error.metadata,
+          severity: error.severity,
+          category: error.category,
+        }),
+      } as LogMetadata,
     };
 
     switch (error.severity) {
       case ErrorSeverity.CRITICAL:
-        runtimeLogger.error(`CRITICAL ERROR: ${error.message}`, new Error(error.message), logContext);
+        runtimeLogger.error(
+          `CRITICAL ERROR: ${error.message}`,
+          new Error(error.message),
+          logContext
+        );
         break;
       case ErrorSeverity.HIGH:
-        runtimeLogger.error(`HIGH SEVERITY: ${error.message}`, new Error(error.message), logContext);
+        runtimeLogger.error(
+          `HIGH SEVERITY: ${error.message}`,
+          new Error(error.message),
+          logContext
+        );
         break;
       case ErrorSeverity.MEDIUM:
         runtimeLogger.warn(`MEDIUM SEVERITY: ${error.message}`, logContext);
@@ -772,7 +904,7 @@ export class ErrorHandler {
    * Sleep utility
    */
   private sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
 
@@ -784,23 +916,77 @@ export const errorHandler = ErrorHandler.getInstance();
 /**
  * Convenience functions for creating specific error types
  */
-export const createValidationError = (message: string, context?: Record<string, unknown>): ErrorInfo =>
-  errorHandler.createError(message, 'VALIDATION_ERROR', ErrorCategory.VALIDATION, ErrorSeverity.MEDIUM, context);
+export const createValidationError = (
+  message: string,
+  context?: Record<string, unknown>
+): ErrorInfo =>
+  errorHandler.createError(
+    message,
+    'VALIDATION_ERROR',
+    ErrorCategory.VALIDATION,
+    ErrorSeverity.MEDIUM,
+    context
+  );
 
-export const createNetworkError = (message: string, context?: Record<string, unknown>): ErrorInfo =>
-  errorHandler.createError(message, 'NETWORK_ERROR', ErrorCategory.NETWORK, ErrorSeverity.HIGH, context);
+export const createNetworkError = (
+  message: string,
+  context?: Record<string, unknown>
+): ErrorInfo =>
+  errorHandler.createError(
+    message,
+    'NETWORK_ERROR',
+    ErrorCategory.NETWORK,
+    ErrorSeverity.HIGH,
+    context
+  );
 
-export const createConfigurationError = (message: string, context?: Record<string, unknown>): ErrorInfo =>
-  errorHandler.createError(message, 'CONFIG_ERROR', ErrorCategory.CONFIGURATION, ErrorSeverity.HIGH, context);
+export const createConfigurationError = (
+  message: string,
+  context?: Record<string, unknown>
+): ErrorInfo =>
+  errorHandler.createError(
+    message,
+    'CONFIG_ERROR',
+    ErrorCategory.CONFIGURATION,
+    ErrorSeverity.HIGH,
+    context
+  );
 
-export const createSystemError = (message: string, context?: Record<string, unknown>): ErrorInfo =>
-  errorHandler.createError(message, 'SYSTEM_ERROR', ErrorCategory.SYSTEM, ErrorSeverity.CRITICAL, context);
+export const createSystemError = (
+  message: string,
+  context?: Record<string, unknown>
+): ErrorInfo =>
+  errorHandler.createError(
+    message,
+    'SYSTEM_ERROR',
+    ErrorCategory.SYSTEM,
+    ErrorSeverity.CRITICAL,
+    context
+  );
 
-export const createAuthenticationError = (message: string, context?: Record<string, unknown>): ErrorInfo =>
-  errorHandler.createError(message, 'AUTH_ERROR', ErrorCategory.AUTHENTICATION, ErrorSeverity.HIGH, context);
+export const createAuthenticationError = (
+  message: string,
+  context?: Record<string, unknown>
+): ErrorInfo =>
+  errorHandler.createError(
+    message,
+    'AUTH_ERROR',
+    ErrorCategory.AUTHENTICATION,
+    ErrorSeverity.HIGH,
+    context
+  );
 
-export const createResourceError = (message: string, context?: Record<string, unknown>): ErrorInfo =>
-  errorHandler.createError(message, 'RESOURCE_ERROR', ErrorCategory.RESOURCE, ErrorSeverity.MEDIUM, context);
+export const createResourceError = (
+  message: string,
+  context?: Record<string, unknown>
+): ErrorInfo =>
+  errorHandler.createError(
+    message,
+    'RESOURCE_ERROR',
+    ErrorCategory.RESOURCE,
+    ErrorSeverity.MEDIUM,
+    context
+  );
 
 /**
  * Decorator for automatic error handling
@@ -809,7 +995,11 @@ export function handleErrors(
   category: ErrorCategory = ErrorCategory.RUNTIME,
   severity: ErrorSeverity = ErrorSeverity.MEDIUM
 ) {
-  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+  return function (
+    target: any,
+    propertyKey: string,
+    descriptor: PropertyDescriptor
+  ) {
     const originalMethod = descriptor.value;
 
     descriptor.value = async function (...args: any[]) {

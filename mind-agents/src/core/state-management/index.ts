@@ -11,8 +11,7 @@ export * from '../checkpoint-system';
 export * from '../state-recovery';
 export * from '../concurrent-safety';
 
-// Enhanced runtime
-export * from '../enhanced-runtime';
+// Enhanced runtime - archived (use main runtime.ts instead)
 
 // Re-export types and interfaces from state-manager
 export type {

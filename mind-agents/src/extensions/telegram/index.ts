@@ -18,8 +18,10 @@ import {
   ActionCategory,
   ExtensionStatus,
   AgentEvent,
+  ThoughtContext,
 } from '../../types/agent.js';
 import { GenericData, SkillParameters } from '../../types/common.js';
+import { LogContext } from '../../types/index.js';
 import { Logger } from '../../utils/logger.js';
 
 import {
@@ -141,19 +143,25 @@ export class TelegramExtension implements Extension {
 
     // Handle text messages
     this.bot.on(message('text'), (ctx) => {
-      const message = this.convertToTelegramMessage(ctx.message);
+      const message = this.convertToTelegramMessage(
+        ctx.message as unknown as Record<string, unknown>
+      );
       this.notifyMessageHandlers(message);
     });
 
     // Handle photo messages
     this.bot.on(message('photo'), (ctx) => {
-      const message = this.convertToTelegramMessage(ctx.message);
+      const message = this.convertToTelegramMessage(
+        ctx.message as unknown as Record<string, unknown>
+      );
       this.notifyMessageHandlers(message);
     });
 
     // Handle document messages
     this.bot.on(message('document'), (ctx) => {
-      const message = this.convertToTelegramMessage(ctx.message);
+      const message = this.convertToTelegramMessage(
+        ctx.message as unknown as Record<string, unknown>
+      );
       this.notifyMessageHandlers(message);
     });
 
@@ -173,11 +181,11 @@ export class TelegramExtension implements Extension {
   ): TelegramMessage {
     // Basic conversion - would need to be expanded for a complete implementation
     return {
-      messageId: telegrafMessage.message_id,
+      messageId: telegrafMessage.message_id as number,
       from: telegrafMessage.from as TelegramUser,
       chat: telegrafMessage.chat as TelegramChat,
-      date: telegrafMessage.date,
-      text: telegrafMessage.text || '',
+      date: telegrafMessage.date as number,
+      text: String(telegrafMessage.text || ''),
       // Other fields would be added here
     };
   }
@@ -408,10 +416,144 @@ export class TelegramExtension implements Extension {
     this.events['message'] = {
       event: 'message',
       description: 'Handle incoming Telegram messages',
-      handler: async (_agent: Agent, event: AgentEvent): Promise<void> => {
+      handler: async (agent: Agent, event: AgentEvent): Promise<void> => {
         // Handle incoming message events
         this.logger.info('Received message event', event);
-        // TODO: Forward message to agent for processing
+
+        // Extract message data from event
+        const messageData = event.data as any;
+        if (!messageData || !messageData.text) {
+          this.logger.warn('Received message event without text content');
+          return;
+        }
+
+        const chatId = messageData.chat?.id || messageData.from?.id;
+        const messageText = messageData.text;
+        const userId = messageData.from?.id?.toString() || 'unknown';
+        const username =
+          messageData.from?.username || messageData.from?.first_name || 'User';
+
+        if (!chatId) {
+          this.logger.error('No chat ID found in message event');
+          return;
+        }
+
+        try {
+          // Forward message to agent for processing
+          if (agent.cognition && agent.cognition.think) {
+            // Create a thought context for the agent
+            const thoughtContext: ThoughtContext = {
+              events: [
+                {
+                  id: `telegram-${messageData.message_id}`,
+                  agentId: agent.id,
+                  type: 'message_received',
+                  source: 'telegram',
+                  data: {
+                    extension: 'telegram',
+                    message: messageText,
+                    userId,
+                    username,
+                    chatId: chatId.toString(),
+                    platform: 'telegram',
+                    messageId: messageData.message_id,
+                    isPrivate: messageData.chat?.type === 'private',
+                    chatType: messageData.chat?.type || 'private',
+                  },
+                  timestamp: new Date(),
+                  processed: false,
+                },
+              ],
+              memories: [],
+              currentState: {
+                location: 'telegram',
+                context: {
+                  chatId: chatId.toString(),
+                  userId,
+                  username,
+                },
+              },
+              environment: {
+                type: 'virtual' as any, // Virtual environment type for online platforms
+                time: new Date(),
+                location: 'telegram',
+              },
+              goal: `respond_to_message`,
+            };
+
+            // Let the agent think about the message
+            const thoughtResult = await agent.cognition.think(
+              agent,
+              thoughtContext
+            );
+
+            // Process the agent's response
+            if (thoughtResult.thoughts && thoughtResult.thoughts.length > 0) {
+              // Get the primary thought as the response
+              const response = thoughtResult.thoughts[0];
+
+              // Send the response back to Telegram
+              await this.sendMessage(
+                chatId,
+                response,
+                'Markdown', // Enable markdown parsing
+                false, // Don't disable web page preview
+                false, // Don't disable notification
+                messageData.message_id // Reply to the original message
+              );
+
+              // Log the interaction
+              this.logger.info('Agent responded to Telegram message', {
+                metadata: {
+                  userId,
+                  username,
+                  message: messageText.substring(0, 50) + '...',
+                  response: response.substring(0, 50) + '...',
+                },
+              } as LogContext);
+            }
+          } else {
+            // Fallback if agent doesn't have cognition module
+            this.logger.warn(
+              'Agent does not have cognition module, using fallback response'
+            );
+
+            // Use the agent's portal for a simple response
+            if (agent.portal) {
+              const portal = agent.portal;
+              if (portal) {
+                const response = await portal.generateText(
+                  `You are ${agent.name}, an AI assistant on Telegram. Respond to this message: "${messageText}"`,
+                  {
+                    maxOutputTokens: 500,
+                    temperature: 0.7,
+                  }
+                );
+
+                await this.sendMessage(
+                  chatId,
+                  response.text,
+                  'Markdown',
+                  false,
+                  false,
+                  messageData.message_id
+                );
+              }
+            }
+          }
+        } catch (error) {
+          this.logger.error('Error processing Telegram message', error);
+
+          // Send error message to user
+          await this.sendMessage(
+            chatId,
+            'I apologize, but I encountered an error processing your message. Please try again later.',
+            undefined,
+            false,
+            false,
+            messageData.message_id
+          );
+        }
       },
     };
 
@@ -839,7 +981,7 @@ export class TelegramExtension implements Extension {
       const result = await this.bot.telegram.banChatMember(
         chatId,
         userId,
-        options
+        untilDate
       );
 
       return {
@@ -922,13 +1064,17 @@ export class TelegramExtension implements Extension {
         throw new Error('Bot is not initialized');
       }
 
+      const restrictOptions: any = {
+        ...permissions,
+      };
+      if (untilDate !== undefined) {
+        restrictOptions.until_date = untilDate;
+      }
+
       const result = await this.bot.telegram.restrictChatMember(
         chatId,
         userId,
-        {
-          ...permissions,
-          until_date: untilDate,
-        }
+        restrictOptions
       );
 
       return {
@@ -1341,7 +1487,33 @@ export class TelegramExtension implements Extension {
 export function createTelegramExtension(
   config?: TelegramConfig
 ): TelegramExtension {
-  return new TelegramExtension(config);
+  const defaultConfig: TelegramConfig = {
+    enabled: true,
+    priority: 1,
+    token: '',
+    settings: {
+      token: '',
+      allowedUsers: [],
+      commandPrefix: '/',
+      messageHandlers: [],
+      commandHandlers: [],
+      errorHandlers: [],
+      chatWhitelist: [],
+      chatBlacklist: [],
+      enableLogging: true,
+      responseTimeout: 30000,
+      rateLimitPerUser: 10,
+      rateLimitWindow: 60000,
+      maxMessageLength: 4096,
+      enableMarkdown: true,
+      enableInlineMode: false,
+      enableWebhook: false,
+      webhookPath: '/telegram-webhook',
+      webhookPort: 3001,
+    },
+  };
+
+  return new TelegramExtension(config || defaultConfig);
 }
 
 // Re-export TelegramConfig for external use

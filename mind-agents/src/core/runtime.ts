@@ -151,20 +151,62 @@ export class SYMindXRuntime implements AgentRuntime {
       const fs = await import('fs/promises');
       const path = await import('path');
 
-      // Get the project root directory (go up from dist/core to project root)
+      // Get the project root directory
       const __dirname = path.dirname(new URL(import.meta.url).pathname);
-      const projectRoot = path.resolve(__dirname, '..', '..');
-      const configPath = path.join(
-        projectRoot,
-        'src',
-        'core',
-        'config',
-        'runtime.json'
-      );
+
+      // Determine project root based on where we're running from
+      let projectRoot: string;
+      if (__dirname.endsWith('/dist')) {
+        // Running from bundled dist/index.js
+        projectRoot = path.resolve(__dirname, '..');
+      } else if (__dirname.includes('/dist/core')) {
+        // Running from dist/core/runtime.js
+        projectRoot = path.resolve(__dirname, '..', '..');
+      } else if (__dirname.includes('/src/core')) {
+        // Running from src/core/runtime.ts
+        projectRoot = path.resolve(__dirname, '..', '..');
+      } else {
+        // Fallback
+        projectRoot = path.resolve(__dirname, '..', '..');
+      }
+
+      console.log('__dirname:', __dirname);
+      console.log('projectRoot:', projectRoot);
+
+      // Try multiple paths for runtime.json
+      const configPaths = [
+        // When running from bundled dist/index.js
+        path.join(projectRoot, 'dist', 'core', 'config', 'runtime.json'),
+        // When running from src
+        path.join(projectRoot, 'src', 'core', 'config', 'runtime.json'),
+        // Legacy paths
+        path.join(__dirname, 'config', 'runtime.json'),
+        path.join(__dirname, 'core', 'config', 'runtime.json'),
+      ];
+
+      let configPath = '';
+      let configFound = false;
+
+      // Try each path until we find the config
+      for (const testPath of configPaths) {
+        console.log('Checking config path:', testPath);
+        try {
+          await fs.access(testPath);
+          configPath = testPath;
+          configFound = true;
+          console.log('Found config at:', configPath);
+          break;
+        } catch (e) {
+          console.log('Not found:', testPath);
+          // Continue to next path
+        }
+      }
 
       // Check if the config file exists
       try {
-        await fs.access(configPath);
+        if (!configFound) {
+          throw new Error('Config file not found in any expected location');
+        }
         // Loading configuration - logged by UI
 
         // Read and parse the config file
@@ -182,6 +224,10 @@ export class SYMindXRuntime implements AgentRuntime {
           extensions: {
             ...this.config.extensions,
             ...fileConfig.extensions,
+          },
+          agents: {
+            ...this.config.agents,
+            ...fileConfig.agents,
           },
           portals: {
             // Ensure boolean values for autoLoad and proper array for paths
@@ -238,7 +284,7 @@ export class SYMindXRuntime implements AgentRuntime {
         }
       }
     } catch (error) {
-      void error;
+      console.error('Configuration error details:', error);
       runtimeLogger.error(
         '❌ Error loading configuration:',
         error as Error,
@@ -370,20 +416,59 @@ export class SYMindXRuntime implements AgentRuntime {
       const fs = await import('fs/promises');
       const path = await import('path');
 
-      // Get the characters directory path
+      // Get the characters directory path from config or use defaults
       const __dirname = path.dirname(new URL(import.meta.url).pathname);
-      // Look for characters in src/characters first, then dist/characters
-      const srcCharactersDir = path.resolve(__dirname, '../../src/characters');
-      const distCharactersDir = path.resolve(__dirname, '../characters');
 
-      let charactersDir = srcCharactersDir;
-      try {
-        await fs.access(srcCharactersDir);
-      } catch {
-        charactersDir = distCharactersDir;
+      // Determine project root based on where we're running from
+      let projectRoot: string;
+      if (__dirname.endsWith('/dist')) {
+        // Running from bundled dist/index.js
+        projectRoot = path.resolve(__dirname, '..');
+      } else if (__dirname.includes('/dist/core')) {
+        // Running from dist/core/runtime.js
+        projectRoot = path.resolve(__dirname, '..', '..');
+      } else if (__dirname.includes('/src/core')) {
+        // Running from src/core/runtime.ts
+        projectRoot = path.resolve(__dirname, '..', '..');
+      } else {
+        // Fallback
+        projectRoot = path.resolve(__dirname, '..', '..');
+      }
+
+      let charactersDir: string;
+
+      // Use configured path if available
+      if (this.config.agents?.charactersPath) {
+        // Resolve relative to project root
+        charactersDir = path.resolve(
+          projectRoot,
+          this.config.agents.charactersPath
+        );
+        runtimeLogger.debug(
+          `Using configured characters path: ${charactersDir}`
+        );
+      } else {
+        // Fall back to checking src/characters first, then dist/characters
+        const srcCharactersDir = path.resolve(projectRoot, 'src', 'characters');
+        const distCharactersDir = path.resolve(
+          projectRoot,
+          'dist',
+          'characters'
+        );
+
+        charactersDir = srcCharactersDir;
+        try {
+          await fs.access(srcCharactersDir);
+        } catch {
+          charactersDir = distCharactersDir;
+        }
       }
 
       // Check if the characters directory exists
+      console.log('Checking for characters in:', charactersDir);
+      console.log('Config agents enabled:', this.config.agents?.enabled);
+      console.log('Config charactersPath:', this.config.agents?.charactersPath);
+
       try {
         await fs.access(charactersDir);
 
@@ -1085,7 +1170,20 @@ export class SYMindXRuntime implements AgentRuntime {
           const standardExtension = extension as Extension & {
             init(agent: Agent): Promise<void>;
           };
-          await standardExtension.init(agent);
+          // Add timeout wrapper to prevent hanging
+          const initPromise = standardExtension.init(agent);
+          const timeoutPromise = new Promise<never>((_, reject) => {
+            setTimeout(
+              () =>
+                reject(
+                  new Error(
+                    `Extension ${extension.name} initialization timeout`
+                  )
+                ),
+              30000 // 30 second timeout
+            );
+          });
+          await Promise.race([initPromise, timeoutPromise]);
         }
         runtimeLogger.info(`✅ Initialized extension: ${extension.name}`);
       } catch (error) {
@@ -2004,7 +2102,16 @@ export class SYMindXRuntime implements AgentRuntime {
               status: 'active',
               config: {},
             };
-            await extension.init(dummyAgent as Agent);
+            // Add timeout to prevent hanging
+            const initPromise = extension.init(dummyAgent as Agent);
+            const timeoutPromise = new Promise<never>((_, reject) => {
+              setTimeout(
+                () => reject(new Error('API extension initialization timeout')),
+                10000
+              );
+            });
+
+            await Promise.race([initPromise, timeoutPromise]);
             runtimeLogger.info(
               '🌐 API extension: Initialized on runtime level'
             );
@@ -2015,6 +2122,8 @@ export class SYMindXRuntime implements AgentRuntime {
               error as Error,
               {} as LogContext
             );
+            // Don't fail the entire runtime if API extension fails
+            // Just log the error and continue
           }
         }
       }

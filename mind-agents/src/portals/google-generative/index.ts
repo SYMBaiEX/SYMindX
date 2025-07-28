@@ -4,7 +4,7 @@
  * Advanced AI portal using Vercel AI SDK for Google's Generative AI models
  */
 
-import { google } from '@ai-sdk/google';
+import { google, createGoogleGenerativeAI } from '@ai-sdk/google';
 import { generateText, streamText } from 'ai';
 
 import { Agent } from '../../types/agent';
@@ -26,12 +26,9 @@ import {
   MessageRole,
   FinishReason,
 } from '../../types/portal';
-import type {
-  LanguageModel,
-  AIMessage as ModelMessage,
-} from '../../types/portals/ai-sdk';
+import type { AIMessage as ModelMessage } from '../../types/portals/ai-sdk';
 import { BasePortal } from '../base-portal';
-import { convertUsage, buildAISDKParams } from '../utils';
+import { convertUsage } from '../utils';
 
 export interface GoogleGenerativeConfig extends PortalConfig {
   apiKey: string;
@@ -97,7 +94,12 @@ export class GoogleGenerativePortal extends BasePortal {
   constructor(config: GoogleGenerativeConfig) {
     super('google-generative', 'Google Generative AI', '1.0.0', config);
 
-    this.googleProvider = google;
+    // Create properly configured Google provider
+    const providerConfig: { apiKey?: string } = {};
+    const apiKey = config.apiKey || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+    if (apiKey) providerConfig.apiKey = apiKey;
+
+    this.googleProvider = createGoogleGenerativeAI(providerConfig);
   }
 
   protected override getDefaultModel(
@@ -145,7 +147,7 @@ export class GoogleGenerativePortal extends BasePortal {
     try {
       const model = this.getLanguageModel('gemini-1.5-flash');
       const { text } = await generateText({
-        model,
+        model: model as any,
         prompt: 'Hello',
         maxOutputTokens: 10,
       });
@@ -156,13 +158,9 @@ export class GoogleGenerativePortal extends BasePortal {
     }
   }
 
-  private getLanguageModel(modelId?: string): LanguageModel {
+  private getLanguageModel(modelId?: string) {
     const model = modelId || this.resolveModel('chat');
-    return this.googleProvider(model, {
-      apiKey:
-        (this.config as GoogleGenerativeConfig).apiKey ||
-        process.env.GOOGLE_GENERATIVE_AI_API_KEY,
-    });
+    return this.googleProvider(model);
   }
 
   override async generateText(
@@ -174,24 +172,51 @@ export class GoogleGenerativePortal extends BasePortal {
     try {
       const config = this.config as GoogleGenerativeConfig;
       const baseParams = {
-        model: this.getLanguageModel(model),
+        model: this.getLanguageModel(model) as any,
         prompt,
       };
 
-      const params = buildAISDKParams(baseParams, {
-        maxOutputTokens:
-          options?.maxTokens ??
-          config.generationConfig?.maxOutputTokens ??
-          this.config.maxTokens,
-        temperature:
-          options?.temperature ??
-          config.generationConfig?.temperature ??
-          this.config.temperature,
-        topP: options?.topP ?? config.generationConfig?.topP,
-        frequencyPenalty: options?.frequencyPenalty,
-        presencePenalty: options?.presencePenalty,
-        stopSequences: options?.stop ?? config.generationConfig?.stopSequences,
-      });
+      const params: any = { ...baseParams };
+
+      const maxTokens =
+        options?.maxOutputTokens ??
+        options?.maxTokens ??
+        config.generationConfig?.maxOutputTokens ??
+        this.config.maxTokens;
+      if (maxTokens) {
+        params.maxTokens = maxTokens;
+      }
+
+      const temperature =
+        options?.temperature ??
+        config.generationConfig?.temperature ??
+        this.config.temperature;
+      if (temperature !== undefined) {
+        params.temperature = temperature;
+      }
+
+      const topP = options?.topP ?? config.generationConfig?.topP;
+      if (topP !== undefined) {
+        params.topP = topP;
+      }
+
+      if (config.generationConfig?.topK !== undefined) {
+        params.topK = config.generationConfig.topK;
+      }
+
+      if (options?.frequencyPenalty !== undefined) {
+        params.frequencyPenalty = options.frequencyPenalty;
+      }
+
+      if (options?.presencePenalty !== undefined) {
+        params.presencePenalty = options.presencePenalty;
+      }
+
+      const stopSequences =
+        options?.stop ?? config.generationConfig?.stopSequences;
+      if (stopSequences && stopSequences.length > 0) {
+        params.stopSequences = stopSequences;
+      }
 
       const { text, usage, finishReason } = await generateText(params);
 
@@ -219,24 +244,51 @@ export class GoogleGenerativePortal extends BasePortal {
       const modelMessages = this.convertToModelMessages(messages);
 
       const baseParams = {
-        model: this.getLanguageModel(model),
+        model: this.getLanguageModel(model) as any,
         messages: modelMessages,
       };
 
-      const params = buildAISDKParams(baseParams, {
-        maxOutputTokens:
-          options?.maxTokens ??
-          config.generationConfig?.maxOutputTokens ??
-          this.config.maxTokens,
-        temperature:
-          options?.temperature ??
-          config.generationConfig?.temperature ??
-          this.config.temperature,
-        topP: options?.topP ?? config.generationConfig?.topP,
-        frequencyPenalty: options?.frequencyPenalty,
-        presencePenalty: options?.presencePenalty,
-        stopSequences: options?.stop ?? config.generationConfig?.stopSequences,
-      });
+      const params: any = { ...baseParams };
+
+      const maxTokens =
+        options?.maxOutputTokens ??
+        options?.maxTokens ??
+        config.generationConfig?.maxOutputTokens ??
+        this.config.maxTokens;
+      if (maxTokens) {
+        params.maxTokens = maxTokens;
+      }
+
+      const temperature =
+        options?.temperature ??
+        config.generationConfig?.temperature ??
+        this.config.temperature;
+      if (temperature !== undefined) {
+        params.temperature = temperature;
+      }
+
+      const topP = options?.topP ?? config.generationConfig?.topP;
+      if (topP !== undefined) {
+        params.topP = topP;
+      }
+
+      if (config.generationConfig?.topK !== undefined) {
+        params.topK = config.generationConfig.topK;
+      }
+
+      if (options?.frequencyPenalty !== undefined) {
+        params.frequencyPenalty = options.frequencyPenalty;
+      }
+
+      if (options?.presencePenalty !== undefined) {
+        params.presencePenalty = options.presencePenalty;
+      }
+
+      const stopSequences =
+        options?.stop ?? config.generationConfig?.stopSequences;
+      if (stopSequences && stopSequences.length > 0) {
+        params.stopSequences = stopSequences;
+      }
 
       const { text, usage, finishReason } = await generateText(params);
 
@@ -295,24 +347,51 @@ export class GoogleGenerativePortal extends BasePortal {
     try {
       const config = this.config as GoogleGenerativeConfig;
       const baseParams = {
-        model: this.getLanguageModel(model),
+        model: this.getLanguageModel(model) as any,
         prompt,
       };
 
-      const params = buildAISDKParams(baseParams, {
-        maxOutputTokens:
-          options?.maxTokens ??
-          config.generationConfig?.maxOutputTokens ??
-          this.config.maxTokens,
-        temperature:
-          options?.temperature ??
-          config.generationConfig?.temperature ??
-          this.config.temperature,
-        topP: options?.topP ?? config.generationConfig?.topP,
-        frequencyPenalty: options?.frequencyPenalty,
-        presencePenalty: options?.presencePenalty,
-        stopSequences: options?.stop ?? config.generationConfig?.stopSequences,
-      });
+      const params: any = { ...baseParams };
+
+      const maxTokens =
+        options?.maxOutputTokens ??
+        options?.maxTokens ??
+        config.generationConfig?.maxOutputTokens ??
+        this.config.maxTokens;
+      if (maxTokens) {
+        params.maxTokens = maxTokens;
+      }
+
+      const temperature =
+        options?.temperature ??
+        config.generationConfig?.temperature ??
+        this.config.temperature;
+      if (temperature !== undefined) {
+        params.temperature = temperature;
+      }
+
+      const topP = options?.topP ?? config.generationConfig?.topP;
+      if (topP !== undefined) {
+        params.topP = topP;
+      }
+
+      if (config.generationConfig?.topK !== undefined) {
+        params.topK = config.generationConfig.topK;
+      }
+
+      if (options?.frequencyPenalty !== undefined) {
+        params.frequencyPenalty = options.frequencyPenalty;
+      }
+
+      if (options?.presencePenalty !== undefined) {
+        params.presencePenalty = options.presencePenalty;
+      }
+
+      const stopSequences =
+        options?.stop ?? config.generationConfig?.stopSequences;
+      if (stopSequences && stopSequences.length > 0) {
+        params.stopSequences = stopSequences;
+      }
 
       const { textStream } = await streamText(params);
 
@@ -336,24 +415,51 @@ export class GoogleGenerativePortal extends BasePortal {
       const modelMessages = this.convertToModelMessages(messages);
 
       const baseParams = {
-        model: this.getLanguageModel(model),
+        model: this.getLanguageModel(model) as any,
         messages: modelMessages,
       };
 
-      const params = buildAISDKParams(baseParams, {
-        maxOutputTokens:
-          options?.maxTokens ??
-          config.generationConfig?.maxOutputTokens ??
-          this.config.maxTokens,
-        temperature:
-          options?.temperature ??
-          config.generationConfig?.temperature ??
-          this.config.temperature,
-        topP: options?.topP ?? config.generationConfig?.topP,
-        frequencyPenalty: options?.frequencyPenalty,
-        presencePenalty: options?.presencePenalty,
-        stopSequences: options?.stop ?? config.generationConfig?.stopSequences,
-      });
+      const params: any = { ...baseParams };
+
+      const maxTokens =
+        options?.maxOutputTokens ??
+        options?.maxTokens ??
+        config.generationConfig?.maxOutputTokens ??
+        this.config.maxTokens;
+      if (maxTokens) {
+        params.maxTokens = maxTokens;
+      }
+
+      const temperature =
+        options?.temperature ??
+        config.generationConfig?.temperature ??
+        this.config.temperature;
+      if (temperature !== undefined) {
+        params.temperature = temperature;
+      }
+
+      const topP = options?.topP ?? config.generationConfig?.topP;
+      if (topP !== undefined) {
+        params.topP = topP;
+      }
+
+      if (config.generationConfig?.topK !== undefined) {
+        params.topK = config.generationConfig.topK;
+      }
+
+      if (options?.frequencyPenalty !== undefined) {
+        params.frequencyPenalty = options.frequencyPenalty;
+      }
+
+      if (options?.presencePenalty !== undefined) {
+        params.presencePenalty = options.presencePenalty;
+      }
+
+      const stopSequences =
+        options?.stop ?? config.generationConfig?.stopSequences;
+      if (stopSequences && stopSequences.length > 0) {
+        params.stopSequences = stopSequences;
+      }
 
       const { textStream } = await streamText(params);
 
@@ -395,21 +501,26 @@ export class GoogleGenerativePortal extends BasePortal {
         case MessageRole.USER: {
           // Handle attachments for multimodal support
           if (msg.attachments && msg.attachments.length > 0) {
-            const content: Array<{
-              type: string;
-              text?: string;
-              image?: string | URL;
-              mediaType?: string;
-            }> = [{ type: 'text', text: msg.content }];
+            const content: Array<
+              | { type: 'text'; text: string }
+              | { type: 'image'; image: string | URL; mediaType?: string }
+            > = [{ type: 'text', text: msg.content }];
 
             for (const attachment of msg.attachments) {
               if (attachment.type === 'image') {
                 if (attachment.data) {
-                  content.push({
+                  const imagePart: {
+                    type: 'image';
+                    image: string;
+                    mediaType?: string;
+                  } = {
                     type: 'image',
                     image: attachment.data,
-                    mediaType: attachment.mimeType,
-                  });
+                  };
+                  if (attachment.mimeType) {
+                    imagePart.mediaType = attachment.mimeType;
+                  }
+                  content.push(imagePart);
                 } else if (attachment.url) {
                   content.push({
                     type: 'image',
@@ -419,7 +530,7 @@ export class GoogleGenerativePortal extends BasePortal {
               }
             }
 
-            return { role: 'user', content };
+            return { role: 'user', content: content as any };
           } else {
             return { role: 'user', content: msg.content };
           }

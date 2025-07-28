@@ -1,0 +1,23 @@
+{
+  "tickInterval": 100,
+  "maxAgents": 2,
+  "logLevel": "error",
+  "persistence": {
+    "enabled": false,
+    "type": "memory",
+    "path": ":memory:"
+  },
+  "extensions": {
+    "autoLoad": false,
+    "paths": []
+  },
+  "portals": {
+    "autoLoad": false,
+    "paths": [],
+    "apiKeys": {}
+  },
+  "agents": {
+    "enabled": false,
+    "paths": []
+  }
+}

@@ -18,6 +18,7 @@ import { SupabaseMemoryProvider } from './providers/supabase/index';
 // Re-export the memory provider factory and types
 export {
   createMemoryProvider,
+  createMemoryProviderByName,
   getMemoryProviderTypes,
 } from './providers/index';
 export type { MemoryProviderConfig } from './providers/index';
@@ -30,26 +31,24 @@ export async function registerMemoryProviders(
   registry: ModuleRegistry
 ): Promise<void> {
   try {
-    // Register memory provider factories
-    registry.registerMemoryFactory(
-      'memory',
-      (config: unknown) => new InMemoryProvider(config as any)
+    // Import the string-based factory function
+    const { createMemoryProviderByName } = await import('./providers/index');
+
+    // Register memory provider factories using the string-based factory
+    registry.registerMemoryFactory('memory', (config: unknown) =>
+      createMemoryProviderByName('memory', config as any)
     );
-    registry.registerMemoryFactory(
-      'sqlite',
-      (config: unknown) => new SQLiteMemoryProvider(config as any)
+    registry.registerMemoryFactory('sqlite', (config: unknown) =>
+      createMemoryProviderByName('sqlite', config as any)
     );
-    registry.registerMemoryFactory(
-      'supabase',
-      (config: unknown) => new SupabaseMemoryProvider(config as any)
+    registry.registerMemoryFactory('supabase', (config: unknown) =>
+      createMemoryProviderByName('supabase', config as any)
     );
-    registry.registerMemoryFactory(
-      'neon',
-      (config: unknown) => new NeonMemoryProvider(config as any)
+    registry.registerMemoryFactory('neon', (config: unknown) =>
+      createMemoryProviderByName('neon', config as any)
     );
-    registry.registerMemoryFactory(
-      'postgres',
-      (config: unknown) => new PostgresMemoryProvider(config as any)
+    registry.registerMemoryFactory('postgres', (config: unknown) =>
+      createMemoryProviderByName('postgres', config as any)
     );
 
     runtimeLogger.info(

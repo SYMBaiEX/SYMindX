@@ -1,0 +1,88 @@
+# Bun configuration for optimized builds
+
+# Telemetry
+telemetry = false
+
+# Runtime
+[runtime]
+# Use all available CPU cores
+processorCount = 0
+
+# Transpiler settings
+[transpiler]
+# Target environment
+target = "bun"
+
+# Optimization settings
+minifyWhitespace = false
+minifyIdentifiers = false
+minifySyntax = false
+
+# Module settings
+[module]
+# Prefer ESM
+type = "module"
+
+# Development settings
+[dev]
+# Faster HMR
+hmr = true
+
+# Install settings
+[install]
+# Lockfile
+lockfile = { save = true }
+
+# Package manager
+packageManager = "bun"
+
+# Cache settings
+cache = { dir = ".bun-cache" }
+
+# Parallel installs
+concurrent = 16
+
+# Global cache
+globalDir = "~/.bun/install/global"
+
+# Save exact versions
+exact = false
+
+# Registry
+registry = "https://registry.npmjs.org"
+
+# Test settings
+[test]
+# Test runner settings
+root = "./tests"
+timeout = 60000
+coverage = false
+bail = 1
+
+# Build cache
+[build]
+# Enable build cache
+cache = true
+
+# Sourcemap settings
+sourcemap = "external"
+
+# Bundle settings
+splitting = false
+treeShaking = false
+
+# TypeScript settings
+[typescript]
+# Use .d.ts files for types only
+types = true
+
+# JSX settings
+[jsx]
+# React JSX runtime
+runtime = "automatic"
+importSource = "react"
+
+# Macro settings
+[macro]
+# Disable macros for security
+disabled = true

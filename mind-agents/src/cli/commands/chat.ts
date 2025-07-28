@@ -13,11 +13,11 @@ import { Command } from 'commander';
 import inquirer from 'inquirer';
 import { WebSocket } from 'ws';
 
-import { Logger } from '../../utils/logger';
+import { runtimeLogger } from '../../utils/logger';
 import { CLIContext } from '../index';
 
 export class ChatCommand {
-  private logger = new Logger('cli:chat');
+  private logger = runtimeLogger;
   private chatActive = false;
   private ws?: WebSocket;
 
@@ -242,8 +242,8 @@ export class ChatCommand {
 
       this.ws.on('open', () => {
         process.stdout.write(chalk.green('✅ Connected to WebSocket') + '\n');
-        this.context.commandSystem.addWebSocketConnection(this.ws!);
-
+        // WebSocket connection handled directly by chat command
+        
         // Start interactive chat with WebSocket support
         this.startInteractiveChat();
       });
@@ -253,7 +253,7 @@ export class ChatCommand {
           const message = JSON.parse(data.toString());
           this.handleWebSocketMessage(message);
         } catch (error) {
-          this.logger.warn('Failed to parse WebSocket message:', error);
+          this.logger.warn(`Failed to parse WebSocket message: ${error instanceof Error ? error.message : String(error)}`);
         }
       });
 
@@ -356,28 +356,32 @@ export class ChatCommand {
         return;
       }
 
-      const priority = this.parsePriority(options.priority || 'normal');
-      const cmd = await this.context.commandSystem.sendCommand(
-        agentId,
-        command,
-        {
-          priority,
-          async: options.async,
-        }
-      );
+      // Send command via API since command system is deprecated
+      const response = await fetch(`${this.context.config.apiUrl}/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          agentId,
+          message: command,
+        }),
+      });
 
       if (options.async) {
         process.stdout.write(
-          chalk.green(`✅ Command queued for ${agent.name} (ID: ${cmd.id})`) + '\n'
+          chalk.green(`✅ Command queued for ${agent.name}`) + '\n'
         );
       } else {
-        if (cmd.result?.success) {
+        if (response.ok) {
+          const data = await response.json();
           process.stdout.write(chalk.green(`✅ Command executed successfully`) + '\n');
-          if (cmd.result.response) {
-            process.stdout.write(chalk.white(cmd.result.response) + '\n');
+          if (data.response) {
+            process.stdout.write(chalk.white(data.response) + '\n');
           }
         } else {
-          process.stdout.write(chalk.red(`❌ Command failed: ${cmd.result?.error}`) + '\n');
+          const errorData = await response.json().catch(() => ({ error: response.statusText }));
+          process.stdout.write(chalk.red(`❌ Command failed: ${errorData.error}`) + '\n');
         }
       }
     } catch (error) {
@@ -405,43 +409,14 @@ export class ChatCommand {
 
       const limit = parseInt(options?.limit || '20');
 
-      // Get chat history from command system
-      const commands = this.context.commandSystem
-        .getAllCommands()
-        .filter((cmd) => cmd.agentId === targetAgent)
-        .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime())
-        .slice(-limit);
-
-      if (commands.length === 0) {
-        process.stdout.write(
-          chalk.yellow(`⚠️  No chat history found for ${agent.name}`) + '\n'
-        );
-        return;
-      }
-
+      // Chat history not available without command system
+      // Could be enhanced to fetch from API if available
       process.stdout.write(
-        chalk.blue.bold(
-          `\n📝 Chat History with ${agent.name} (last ${commands.length} messages)`
-        ) + '\n'
+        chalk.yellow(`⚠️  Chat history feature not available in current implementation`) + '\n'
       );
-      process.stdout.write(chalk.gray('─'.repeat(60)) + '\n');
-
-      for (const cmd of commands) {
-        const timestamp = cmd.timestamp.toLocaleTimeString();
-        process.stdout.write(chalk.gray(`[${timestamp}]`) + '\n');
-        process.stdout.write(chalk.cyan('You: ') + cmd.instruction + '\n');
-
-        if (cmd.result?.response) {
-          process.stdout.write(chalk.green(`${agent.name}: `) + cmd.result.response + '\n');
-        } else if (cmd.status === 'failed') {
-          process.stdout.write(
-            chalk.red(`${agent.name}: `) + (cmd.result?.error || 'Command failed') + '\n'
-          );
-        } else if (cmd.status === 'pending' || cmd.status === 'processing') {
-          process.stdout.write(chalk.yellow(`${agent.name}: `) + 'Processing...' + '\n');
-        }
-        process.stdout.write('\n');
-      }
+      process.stdout.write(
+        chalk.gray('   Chat history would need to be stored in the API extension') + '\n'
+      );
     } catch (error) {
       process.stdout.write(chalk.red('❌ Failed to show chat history') + '\n');
       this.logger.error('Show history error:', error);
@@ -619,11 +594,24 @@ export class ChatCommand {
     if (!this.context.selectedAgent) return;
 
     try {
-      const response = await this.context.commandSystem.sendMessage(
-        this.context.selectedAgent,
-        `/memory ${query}`
-      );
-      process.stdout.write(chalk.blue('🧠 Memory: ') + response + '\n');
+      // Send memory query via API
+      const response = await fetch(`${this.context.config.apiUrl}/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          agentId: this.context.selectedAgent,
+          message: `/memory ${query}`,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        process.stdout.write(chalk.blue('🧠 Memory: ') + data.response + '\n');
+      } else {
+        process.stdout.write(chalk.red('❌ Failed to query memory') + '\n');
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       process.stdout.write(chalk.red('❌ Failed to query memory ') + errorMessage + '\n');
@@ -706,14 +694,10 @@ export class ChatCommand {
     }
   }
 
-  private parsePriority(priority: string): number {
-    const priorities: Record<string, number> = {
-      low: 1,
-      normal: 2,
-      high: 3,
-      urgent: 4,
-    };
-    return priorities[priority.toLowerCase()] || 2;
+  private parsePriority(priority: string): string {
+    const validPriorities = ['low', 'normal', 'high', 'urgent'];
+    const normalizedPriority = priority.toLowerCase();
+    return validPriorities.includes(normalizedPriority) ? normalizedPriority : 'normal';
   }
 
   stopChat(): void {

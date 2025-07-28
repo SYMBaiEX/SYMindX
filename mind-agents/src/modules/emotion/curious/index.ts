@@ -43,7 +43,7 @@ export class CuriousEmotion extends BaseEmotion {
     };
   }
 
-  override processEvent(eventType: string, context?: unknown): EmotionResult {
+  override processEvent(eventType: string, context?: any): EmotionResult {
     // Special processing for curiosity-specific events
     if (context?.new_discovery) {
       this._intensity = Math.min(1.0, this._intensity + 0.25);
@@ -66,4 +66,9 @@ export function createCuriousEmotion(
   config: CuriousEmotionConfig = {}
 ): CuriousEmotion {
   return new CuriousEmotion(config);
+}
+
+// Export module factory for registry
+export function createCuriousEmotionModule(config?: any): CuriousEmotion {
+  return new CuriousEmotion(config || {});
 }

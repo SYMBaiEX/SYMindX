@@ -6,6 +6,13 @@
  */
 
 import {
+  BaseConfig,
+  ActionParameters,
+  Metadata,
+  Context,
+  GenericData,
+} from './common';
+import {
   OperationResult,
   ExecutionResult,
   ValidationResult,
@@ -40,14 +47,14 @@ import {
  * Initialization function signatures
  */
 export type InitializationFunction = (
-  config?: Record<string, any>
+  config?: BaseConfig
 ) => Promise<InitializationResult>;
 export type SyncInitializationFunction = (
-  config?: Record<string, any>
+  config?: BaseConfig
 ) => InitializationResult;
 export type ModuleInitializationFunction = (
   moduleId: string,
-  config?: Record<string, any>
+  config?: BaseConfig
 ) => Promise<InitializationResult>;
 
 /**
@@ -62,13 +69,13 @@ export type ModuleCleanupFunction = (
 /**
  * Event handling function signatures
  */
-export type EventHandlerFunction<T = any> = (
+export type EventHandlerFunction<T = GenericData> = (
   event: T
 ) => Promise<EventProcessingResult>;
-export type SyncEventHandlerFunction<T = any> = (
+export type SyncEventHandlerFunction<T = GenericData> = (
   event: T
 ) => EventProcessingResult;
-export type EventDispatchFunction<T = any> = (
+export type EventDispatchFunction<T = GenericData> = (
   eventType: string,
   data: T
 ) => Promise<EventDispatchResult>;
@@ -77,21 +84,25 @@ export type EventProcessingFunction = EventHandlerFunction;
 /**
  * State management function signatures
  */
-export type StateUpdateFunction<T = any> = (
+export type StateUpdateFunction<T = GenericData> = (
   state: T
 ) => Promise<StateUpdateResult>;
-export type SyncStateUpdateFunction<T = any> = (state: T) => StateUpdateResult;
-export type StateValidationFunction<T = any> = (state: T) => ValidationResult;
+export type SyncStateUpdateFunction<T = GenericData> = (
+  state: T
+) => StateUpdateResult;
+export type StateValidationFunction<T = GenericData> = (
+  state: T
+) => ValidationResult;
 
 /**
  * Configuration function signatures
  */
 export type ConfigurationSetFunction = (
   key: string,
-  value: any
+  value: BaseConfig[string]
 ) => OperationResult;
 export type ConfigurationValidationFunction = (
-  config: Record<string, any>
+  config: BaseConfig
 ) => ValidationResult;
 export type ConfigurationReloadFunction = () => Promise<OperationResult>;
 
@@ -111,7 +122,7 @@ export type SystemHealthCheckFunction = () => Promise<HealthCheckResult>;
  * Agent lifecycle function signatures
  */
 export type AgentCreationFunction = (
-  config: Record<string, any>
+  config: BaseConfig
 ) => Promise<AgentCreationResult>;
 export type AgentDestructionFunction = (
   agentId: AgentId
@@ -127,7 +138,7 @@ export type AgentStateTransitionFunction = (
 export type AgentActionFunction = (
   agentId: AgentId,
   action: string,
-  parameters: Record<string, any>
+  parameters: ActionParameters
 ) => Promise<ExecutionResult>;
 export type AgentTickFunction = (agentId: AgentId) => Promise<OperationResult>;
 
@@ -140,7 +151,7 @@ export type AgentTickFunction = (agentId: AgentId) => Promise<OperationResult>;
  */
 export type MemoryStoreFunction = (
   agentId: AgentId,
-  memory: Record<string, any>
+  memory: GenericData
 ) => Promise<MemoryStorageResult>;
 export type MemoryRetrieveFunction = (
   agentId: AgentId,
@@ -159,7 +170,7 @@ export type MemoryConsolidationFunction = (
 ) => Promise<OperationResult>;
 export type MemoryArchiveFunction = (
   agentId: AgentId,
-  criteria: Record<string, any>
+  criteria: BaseConfig
 ) => Promise<OperationResult>;
 
 /**
@@ -177,7 +188,7 @@ export type EmotionUpdateFunction = (
 export type EmotionProcessingFunction = (
   agentId: AgentId,
   eventType: string,
-  context: Record<string, any>
+  context: Context
 ) => Promise<EmotionUpdateResult>;
 export type EmotionResetFunction = (
   agentId: AgentId
@@ -192,7 +203,7 @@ export type EmotionResetFunction = (
  */
 export type ThoughtProcessingFunction = (
   agentId: AgentId,
-  context: Record<string, any>
+  context: Context
 ) => Promise<ThoughtProcessingResult>;
 export type PlanningFunction = (
   agentId: AgentId,
@@ -200,7 +211,7 @@ export type PlanningFunction = (
 ) => Promise<ExecutionResult>;
 export type DecisionMakingFunction = (
   agentId: AgentId,
-  options: any[]
+  options: GenericData[]
 ) => Promise<ExecutionResult>;
 
 /**
@@ -212,7 +223,7 @@ export type DecisionMakingFunction = (
  */
 export type ExtensionInitializationFunction = (
   extensionId: string,
-  config: Record<string, any>
+  config: BaseConfig
 ) => Promise<InitializationResult>;
 export type ExtensionCleanupFunction = (
   extensionId: string
@@ -220,7 +231,7 @@ export type ExtensionCleanupFunction = (
 export type ExtensionExecutionFunction = (
   extensionId: string,
   action: string,
-  parameters: Record<string, any>
+  parameters: ActionParameters
 ) => Promise<ExtensionExecutionResult>;
 
 /**
@@ -232,12 +243,12 @@ export type ExtensionExecutionFunction = (
  */
 export type PortalGenerationFunction = (
   portalId: string,
-  messages: any[],
-  options?: Record<string, any>
+  messages: GenericData[],
+  options?: BaseConfig
 ) => Promise<PortalGenerationResult>;
 export type PortalInitializationFunction = (
   portalId: string,
-  config: Record<string, any>
+  config: BaseConfig
 ) => Promise<InitializationResult>;
 export type PortalHealthCheckFunction = (
   portalId: string
@@ -260,7 +271,7 @@ export type EventUnsubscriptionFunction = (
 ) => OperationResult;
 export type EventEmissionFunction = (
   eventType: string,
-  data: any
+  data: GenericData
 ) => Promise<EventDispatchResult>;
 
 /**
@@ -272,11 +283,11 @@ export type EventEmissionFunction = (
  */
 export type CommandExecutionFunction = (
   commandId: string,
-  parameters: Record<string, any>
+  parameters: ActionParameters
 ) => Promise<CommandExecutionResult>;
 export type CommandValidationFunction = (
   commandId: string,
-  parameters: Record<string, any>
+  parameters: ActionParameters
 ) => ValidationResult;
 export type CommandRegistrationFunction = (
   commandId: string,
@@ -292,7 +303,7 @@ export type CommandRegistrationFunction = (
  */
 export type ResourceAllocationFunction = (
   resourceType: string,
-  requirements: Record<string, any>
+  requirements: BaseConfig
 ) => Promise<ExecutionResult>;
 export type ResourceDeallocationFunction = (
   resourceId: string
@@ -309,7 +320,7 @@ export type ResourceMonitoringFunction = (
  * Authentication function signatures
  */
 export type AuthenticationFunction = (
-  credentials: Record<string, any>
+  credentials: BaseConfig
 ) => Promise<ExecutionResult>;
 export type AuthorizationFunction = (
   subject: string,
@@ -329,11 +340,11 @@ export type ConfigurationLoadFunction = (
   source: string
 ) => Promise<ExecutionResult>;
 export type ConfigurationSaveFunction = (
-  config: Record<string, any>,
+  config: BaseConfig,
   destination: string
 ) => Promise<OperationResult>;
 export type ConfigurationMergeFunction = (
-  configs: Record<string, any>[]
+  configs: BaseConfig[]
 ) => ExecutionResult;
 
 /**
@@ -346,10 +357,10 @@ export type ConfigurationMergeFunction = (
 export type LoggingFunction = (
   level: string,
   message: string,
-  metadata?: Record<string, any>
+  metadata?: Metadata
 ) => OperationResult;
-export type LogFormattingFunction = (entry: Record<string, any>) => string;
-export type LogFilteringFunction = (entry: Record<string, any>) => boolean;
+export type LogFormattingFunction = (entry: Metadata) => string;
+export type LogFilteringFunction = (entry: Metadata) => boolean;
 
 /**
  * Monitoring System Function Signatures
@@ -361,9 +372,11 @@ export type LogFilteringFunction = (entry: Record<string, any>) => boolean;
 export type MetricsCollectionFunction = (
   componentId: string
 ) => Promise<ExecutionResult>;
-export type MetricsAggregationFunction = (metrics: any[]) => ExecutionResult;
+export type MetricsAggregationFunction = (
+  metrics: Metadata[]
+) => ExecutionResult;
 export type AlertingFunction = (
-  condition: Record<string, any>
+  condition: BaseConfig
 ) => Promise<OperationResult>;
 
 /**
@@ -375,11 +388,11 @@ export type AlertingFunction = (
  */
 export type BackupFunction = (
   type: string,
-  options: Record<string, any>
+  options: BaseConfig
 ) => Promise<ExecutionResult>;
 export type RestoreFunction = (
   backupId: string,
-  options: Record<string, any>
+  options: BaseConfig
 ) => Promise<ExecutionResult>;
 export type BackupVerificationFunction = (
   backupId: string
@@ -412,7 +425,7 @@ export type MigrationRollbackFunction = (
  */
 export type TestFunction = (
   testId: string,
-  parameters: Record<string, any>
+  parameters: ActionParameters
 ) => Promise<ExecutionResult>;
 export type TestValidationFunction = (
   result: ExecutionResult
@@ -431,7 +444,7 @@ export type TestTeardownFunction = (testId: string) => Promise<CleanupResult>;
  */
 export type PluginLoadFunction = (
   pluginId: string,
-  config: Record<string, any>
+  config: BaseConfig
 ) => Promise<InitializationResult>;
 export type PluginUnloadFunction = (pluginId: string) => Promise<CleanupResult>;
 export type PluginValidationFunction = (
@@ -453,8 +466,8 @@ export type DeserializationFunction<T> = (data: string) => ExecutionResult<T>;
  */
 export type GenericValidationFunction<T> = (data: T) => ValidationResult;
 export type SchemaValidationFunction = (
-  data: any,
-  schema: Record<string, any>
+  data: GenericData,
+  schema: BaseConfig
 ) => ValidationResult;
 
 /**
@@ -502,12 +515,12 @@ export type QueueSizeFunction = () => number;
  */
 export type WorkerStartFunction = (
   workerId: string,
-  config: Record<string, any>
+  config: BaseConfig
 ) => Promise<InitializationResult>;
 export type WorkerStopFunction = (workerId: string) => Promise<CleanupResult>;
 export type WorkerTaskFunction = (
   workerId: string,
-  task: Record<string, any>
+  task: ActionParameters
 ) => Promise<ExecutionResult>;
 
 /**
@@ -534,9 +547,11 @@ export type SchedulerTickFunction = () => Promise<OperationResult>;
  */
 export type NetworkRequestFunction = (
   url: string,
-  options: Record<string, any>
+  options: BaseConfig
 ) => Promise<ExecutionResult>;
-export type NetworkResponseFunction = (response: any) => ExecutionResult;
+export type NetworkResponseFunction = (
+  response: GenericData
+) => ExecutionResult;
 export type NetworkErrorHandlerFunction = (error: Error) => OperationResult;
 
 /**
@@ -552,7 +567,7 @@ export type DatabaseConnectFunction = (
 export type DatabaseDisconnectFunction = () => Promise<CleanupResult>;
 export type DatabaseQueryFunction = (
   query: string,
-  parameters?: any[]
+  parameters?: Array<BaseConfig[string]>
 ) => Promise<ExecutionResult>;
 export type DatabaseTransactionFunction = (
   operations: (() => Promise<ExecutionResult>)[]
@@ -589,11 +604,11 @@ export type BatchOperationFunction<T> = (
 ) => Promise<ExecutionResult<T[]>>;
 export type PipelineFunction<T, R> = (
   input: T,
-  transformations: TransformationFunction<any, any>[]
+  transformations: TransformationFunction<unknown, unknown>[]
 ) => Promise<ExecutionResult<R>>;
 export type WorkflowFunction = (
   workflowId: string,
-  steps: Record<string, any>[]
+  steps: ActionParameters[]
 ) => Promise<ExecutionResult>;
 
 /**
@@ -605,15 +620,15 @@ export type WorkflowFunction = (
  */
 export type ErrorHandlerFunction = (
   error: Error,
-  context?: Record<string, any>
+  context?: Context
 ) => OperationResult;
 export type ErrorRecoveryFunction = (
   error: Error,
-  context?: Record<string, any>
+  context?: Context
 ) => Promise<OperationResult>;
 export type ErrorReportingFunction = (
   error: Error,
-  context?: Record<string, any>
+  context?: Context
 ) => Promise<OperationResult>;
 
 /**
@@ -623,15 +638,13 @@ export type ErrorReportingFunction = (
 /**
  * Lifecycle hook function signatures
  */
-export type BeforeHookFunction = (
-  context: Record<string, any>
-) => Promise<OperationResult>;
+export type BeforeHookFunction = (context: Context) => Promise<OperationResult>;
 export type AfterHookFunction = (
-  context: Record<string, any>,
+  context: Context,
   result: ExecutionResult
 ) => Promise<OperationResult>;
 export type ErrorHookFunction = (
-  context: Record<string, any>,
+  context: Context,
   error: Error
 ) => Promise<OperationResult>;
 
@@ -643,12 +656,12 @@ export type ErrorHookFunction = (
  * Middleware function signatures
  */
 export type MiddlewareFunction = (
-  context: Record<string, any>,
+  context: Context,
   next: () => Promise<ExecutionResult>
 ) => Promise<ExecutionResult>;
 
 export type MiddlewareChainFunction = (
-  context: Record<string, any>,
+  context: Context,
   middlewares: MiddlewareFunction[]
 ) => Promise<ExecutionResult>;
 
@@ -659,14 +672,12 @@ export type MiddlewareChainFunction = (
 /**
  * Factory function signatures with proper result types
  */
-export type FactoryFunction<T> = (
-  config: Record<string, any>
-) => ExecutionResult<T>;
+export type FactoryFunction<T> = (config: BaseConfig) => ExecutionResult<T>;
 export type AsyncFactoryFunction<T> = (
-  config: Record<string, any>
+  config: BaseConfig
 ) => Promise<ExecutionResult<T>>;
 export type FactoryValidationFunction = (
-  config: Record<string, any>
+  config: BaseConfig
 ) => ValidationResult;
 
 /**
@@ -694,7 +705,7 @@ export type RegistryHasFunction = (key: string) => boolean;
  */
 export type ServiceStartFunction = (
   serviceId: string,
-  config: Record<string, any>
+  config: BaseConfig
 ) => Promise<InitializationResult>;
 export type ServiceStopFunction = (serviceId: string) => Promise<CleanupResult>;
 export type ServiceRestartFunction = (
@@ -705,5 +716,5 @@ export type ServiceHealthCheckFunction = (
 ) => Promise<HealthCheckResult>;
 export type ServiceConfigurationFunction = (
   serviceId: string,
-  config: Record<string, any>
+  config: BaseConfig
 ) => Promise<OperationResult>;

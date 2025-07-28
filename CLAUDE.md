@@ -5,13 +5,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Development Commands
 
 ### Project Structure
+
 SYMindX is a monorepo with multiple components:
+
 - `mind-agents/` - Core agent runtime system (TypeScript)
 - `website/` - React web interface (TypeScript + Vite)
 - `docs-site/` - Documentation site (Docusaurus)
 - `cli/` - Build outputs for CLI tools (not committed to git)
 
 ### Root Level Commands
+
 ```bash
 # Development
 bun dev:agent      # Agent system (TypeScript watch mode)
@@ -39,6 +42,7 @@ bun cli:status     # System status
 ```
 
 ### Mind-Agents Specific Commands
+
 ```bash
 cd mind-agents
 bun run build          # Compile TypeScript (uses --skipLibCheck)
@@ -48,6 +52,7 @@ bun test               # Run Bun tests
 ```
 
 ### Website Specific Commands
+
 ```bash
 cd website
 bun dev                # Vite development server
@@ -170,28 +175,33 @@ Web Interface (website/)
 ## Recent Architecture Changes
 
 ### 1. Reactive Design
+
 - Agents now sit idle until they receive messages
 - No autonomous behaviors by default (can be enabled per agent)
 - Memory storage only logs conversation interactions
 
 ### 2. Emotion System Refactor
+
 - Removed monolithic rune-emotion-stack
 - Each emotion is now its own module with dedicated folder
 - CompositeEmotionModule manages all emotions
 - Emotions trigger based on events, messages, and context
 
 ### 3. Core Consolidation
+
 - Removed duplicate enhanced-event-bus.ts
 - Merged dynamic-portal-selector.ts into portal-integration.ts
 - Removed unused /src/lib/ directory with UI utilities
 - Archived unused utilities for potential future use
 
 ### 4. Ethics System
+
 - Ethics can now be disabled per agent via `ethics.enabled` flag
 - NyX configured with ethics disabled for unrestricted decision-making
 - Ethics status displayed in CLI and API responses
 
 ### 5. AI SDK v5 Integration
+
 - **CRITICAL**: All portal implementations now use AI SDK v5
 - New imports: `@ai-sdk/openai`, `@ai-sdk/anthropic`, etc.
 - Enhanced streaming with tool call support
@@ -201,6 +211,7 @@ Web Interface (website/)
 ## Key Development Patterns
 
 ### Clean Architecture Principles
+
 1. **Centralized Type System**: All types exported from `src/types/index.ts`
 2. **Factory Pattern**: Consistent factory functions for all modules
 3. **Barrel Exports**: Clean module exports through index.ts files
@@ -208,6 +219,7 @@ Web Interface (website/)
 5. **Public API**: Clean interface through `src/api.ts`
 
 ### Module Factory Pattern
+
 ```typescript
 // Emotion modules use composite pattern
 createEmotionModule('composite', config)
@@ -225,7 +237,9 @@ createCognitionModule('hybrid', config)
 ```
 
 ### Character Configuration
+
 Characters are defined in JSON with:
+
 - **personality**: Traits, backstory, goals, values
 - **autonomous**: Decision making settings (can disable ethics)
 - **memory**: Provider type and configuration
@@ -236,7 +250,9 @@ Characters are defined in JSON with:
 - **portals**: AI provider configuration
 
 ### Emotion System
+
 Each emotion module extends BaseEmotion and includes:
+
 - Specific triggers (success, failure, praise, etc.)
 - Intensity management with decay
 - Emotion-specific modifiers
@@ -245,6 +261,7 @@ Each emotion module extends BaseEmotion and includes:
 ## AI SDK v5 Implementation Guidelines
 
 ### Core AI SDK v5 Features Used
+
 ```typescript
 // Text generation with multi-step support
 import { generateText, streamText } from 'ai'
@@ -267,6 +284,7 @@ const stream = streamText({
 ```
 
 ### Portal Implementation Pattern
+
 ```typescript
 // Each portal follows this structure:
 export class PortalProvider implements Portal {
@@ -282,6 +300,7 @@ export class PortalProvider implements Portal {
 ```
 
 ### Tool Integration Best Practices
+
 - Use `tool()` helper for type inference
 - Implement streaming callbacks: `onInputStart`, `onInputDelta`, `onInputAvailable`
 - Leverage provider-specific tools (OpenAI file_search, web_search_preview)
@@ -322,6 +341,7 @@ TWITTER_PASSWORD=...
 ## TypeScript Configuration
 
 ### Strict Type Checking
+
 - All modules must implement proper interfaces
 - Use `AgentAction[]` for action returns, not `string[]`
 - Emotion methods return `EmotionState` objects, not strings
@@ -329,6 +349,7 @@ TWITTER_PASSWORD=...
 - PlanStep objects require: `id`, `action`, `description`, `status`, `parameters`, `preconditions`, `effects`
 
 ### Common Type Fixes
+
 ```typescript
 // ✅ Correct ThoughtResult structure
 return {
@@ -365,18 +386,22 @@ return {
 ## Important Notes
 
 ### Git Ignore Patterns
+
 - `/cli/` directory contains build outputs and should not be committed
 - `mind-agents/src/core/config/runtime.json` is user-specific and not tracked
 - Database files (*.db, *.sqlite) are not tracked
 - Memory modules ARE tracked (exception to usual patterns)
 
 ### Current Agent Status
+
 - **NyX**: Active with ethics disabled, primary agent
 - **Aria, Rex, Nova**: Disabled for testing
 - Other agents in characters/ are available but not configured
 
 ### Reactive Behavior
+
 Agents only respond to:
+
 - Direct messages via extensions (Telegram, Slack, API)
 - CLI commands
 - Game events (future: RuneLite integration)
@@ -386,6 +411,7 @@ No autonomous actions unless explicitly enabled in character config.
 ## Testing Guidelines
 
 ### Running Tests
+
 ```bash
 # From mind-agents directory
 npm test
@@ -398,6 +424,7 @@ npm test -- --coverage
 ```
 
 ### Test Structure
+
 - Unit tests alongside source files as `*.test.ts`
 - Integration tests in `__tests__/` directories
 - Mock providers for external services
@@ -409,11 +436,13 @@ npm test -- --coverage
 When implementing multi-agent workflows with Claude Code, follow these architecture patterns:
 
 #### Lead Agent Pattern
+
 - **Lead Agent**: Analyzes queries, develops strategies, and spawns subagents
 - **Subagents**: Act as intelligent filters, explore specific aspects simultaneously  
 - **Results Compilation**: Subagents return results to lead agent for synthesis
 
 #### Task Division Strategy
+
 ```typescript
 // GOOD: Specific, detailed task descriptions
 interface AgentTask {
@@ -431,6 +460,7 @@ interface AgentTask {
 ### Multi-Agent Development Patterns
 
 #### 1. Git Worktrees for Parallel Development
+
 ```bash
 # Create separate worktrees for parallel agent development
 git worktree add ../symindx-feature-a feature/agent-a
@@ -442,6 +472,7 @@ cd ../symindx-feature-b && claude "Implement feature B"
 ```
 
 #### 2. Autonomous Feedback Loops
+
 ```typescript
 // Design agents with complete feedback loops
 interface AutonomousAgent {
@@ -453,6 +484,7 @@ interface AutonomousAgent {
 ```
 
 #### 3. Test-Driven Multi-Agent Development
+
 ```bash
 # Have each agent write tests based on expected input/output
 claude "Write comprehensive tests for user authentication, use TDD approach"
@@ -463,6 +495,7 @@ claude "Create notification system tests, then implement"
 ### Extended Thinking Integration
 
 #### Trigger Words for Thinking Levels
+
 Use progressive thinking triggers for complex multi-agent tasks:
 
 ```bash
@@ -482,11 +515,13 @@ claude "ultrathink this distributed system design"
 ### Resource Management
 
 #### Token Usage Optimization
+
 - **Single Agent**: ~1x baseline token usage
 - **Multi-Agent**: ~15x baseline token usage (monitor carefully)
 - **Scaling Strategy**: Scale effort proportional to query complexity
 
 #### Cost Considerations
+
 ```bash
 # Recommended subscription tiers for multi-agent development
 # Claude Max ($100-200/month) for generous Claude Code usage
@@ -499,6 +534,7 @@ claude --track-usage "complex multi-agent task"
 ### MCP Integration for Multi-Agent Systems
 
 #### Multiple MCP Servers Configuration
+
 ```json
 {
   "mcpServers": {
@@ -524,6 +560,7 @@ claude --track-usage "complex multi-agent task"
 ## Troubleshooting
 
 ### Common Issues
+
 1. **Agent not responding**: Check if ethics or autonomous behaviors are blocking
 2. **Memory errors**: Ensure database path exists and is writable
 3. **Portal errors**: Verify API keys are set correctly
@@ -533,6 +570,7 @@ claude --track-usage "complex multi-agent task"
 7. **AI SDK v5 compatibility**: Update imports and message conversion methods
 
 ### Debug Commands
+
 ```bash
 # Check system status
 npm run cli status
@@ -553,6 +591,7 @@ npm run cli multi-agent tasks
 ## Special Warnings and Guidelines
 
 ### Git and Commit Policies
+
 - **CRITICAL GUIDELINE**: NEVER MAKE COMMITS AS CLAUDE, ONLY MAKE COMMITS AS THE USER'S DEFAULT GITHUB CONFIG
 - **NEVER MENTION AI ASSISTANCE**: Never include "Co-Authored-By: Claude" or any mention of AI assistance in commits
 - **USER'S CONFIG ONLY**: All commits must use the user's git configuration strictly with no additional Co-Authored-By lines
@@ -560,12 +599,14 @@ npm run cli multi-agent tasks
 - **CLEAN COMMITS**: Commit messages should appear as if written entirely by the user
 
 ### Latest Technology Integration
+
 - **ALWAYS USE CONTEXT7 MCP TO GET UPDATED DOCUMENTATION** for any tech stack, library, or tool
 - Stay current with AI SDK v5 features and best practices
 - Monitor breaking changes in dependencies
 - Use TypeScript strict mode for all new code
 
 ### Performance Optimization
+
 - Prefer reactive patterns over polling
 - Use streaming for real-time updates
 - Implement proper error boundaries
@@ -573,5 +614,3 @@ npm run cli multi-agent tasks
 - Cache expensive computations appropriately
 
 ---
-
-*Last updated: 2025-01-07 | AI SDK v5 | TypeScript 5.8 | Node.js 22+ | SYMindX v1.0*

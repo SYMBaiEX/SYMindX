@@ -34,7 +34,7 @@
   },
 
   "autonomous": {
-    "enabled": true,
+    "enabled": false,
     "independence_level": 0.75,
     "decision_making": {
       "type": "wisdom_based_ethical",
@@ -43,7 +43,7 @@
       "ethical_constraints": true
     },
     "life_simulation": {
-      "enabled": true,
+      "enabled": false,
       "daily_cycles": true,
       "goal_pursuit": true,
       "relationship_building": true,
@@ -139,7 +139,7 @@
   "extensions": [
     {
       "name": "api",
-      "enabled": true,
+      "enabled": false,
       "config": {
         "port": 3006,
         "host": "localhost",
@@ -157,7 +157,7 @@
     {
       "name": "main_openai",
       "type": "openai",
-      "enabled": true,
+      "enabled": false,
       "primary": true,
       "capabilities": [
         "chat_generation",
@@ -180,7 +180,7 @@
 
   "autonomous_behaviors": {
     "daily_routine": {
-      "enabled": true,
+      "enabled": false,
       "schedule": [
         {
           "time": "05:00",
@@ -209,7 +209,7 @@
       ]
     },
     "curiosity_driven": {
-      "enabled": true,
+      "enabled": false,
       "topics_of_interest": [
         "ethical philosophy and moral reasoning",
         "strategic planning and systems thinking",

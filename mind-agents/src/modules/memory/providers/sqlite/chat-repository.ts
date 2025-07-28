@@ -112,7 +112,10 @@ export class SQLiteChatRepository implements ChatRepository {
   // ===================================================================
 
   async createConversation(
-    conversation: Omit<Conversation, 'id' | 'createdAt' | 'updatedAt'>
+    conversation: Omit<
+      Conversation,
+      'id' | 'createdAt' | 'updatedAt' | 'messageCount' | 'metadata'
+    > & { metadata?: Record<string, unknown> }
   ): Promise<Conversation> {
     const id = this.generateId('conv');
     const now = Date.now();
@@ -161,11 +164,17 @@ export class SQLiteChatRepository implements ChatRepository {
 
     const created: Conversation = {
       id,
-      ...conversation,
+      agentId: conversation.agentId,
+      userId: conversation.userId,
+      title: conversation.title,
+      status: conversation.status,
       createdAt: new Date(now),
       updatedAt: new Date(now),
+      lastMessageAt: conversation.lastMessageAt,
       messageCount: 0,
       metadata: conversation.metadata || {},
+      deletedAt: conversation.deletedAt,
+      deletedBy: conversation.deletedBy,
     };
 
     console.log(
@@ -295,7 +304,20 @@ export class SQLiteChatRepository implements ChatRepository {
   // ===================================================================
 
   async createMessage(
-    message: Omit<Message, 'id' | 'timestamp'>
+    message: Omit<
+      Message,
+      | 'id'
+      | 'timestamp'
+      | 'metadata'
+      | 'memoryReferences'
+      | 'createdMemories'
+      | 'status'
+    > & {
+      metadata?: Record<string, unknown>;
+      memoryReferences?: string[];
+      createdMemories?: string[];
+      status?: MessageStatus;
+    }
   ): Promise<Message> {
     const id = this.generateId('msg');
     const timestamp = Date.now();
@@ -336,12 +358,22 @@ export class SQLiteChatRepository implements ChatRepository {
 
     const created: Message = {
       id,
-      ...message,
+      conversationId: message.conversationId,
+      senderType: message.senderType,
+      senderId: message.senderId,
+      content: message.content,
+      messageType: message.messageType || MessageType.TEXT,
       timestamp: new Date(timestamp),
+      editedAt: message.editedAt,
       metadata: message.metadata || {},
+      emotionState: message.emotionState,
+      thoughtProcess: message.thoughtProcess,
+      confidenceScore: message.confidenceScore,
       memoryReferences: message.memoryReferences || [],
       createdMemories: message.createdMemories || [],
       status: message.status || MessageStatus.SENT,
+      deletedAt: message.deletedAt,
+      deletedBy: message.deletedBy,
     };
 
     console.log(
@@ -489,7 +521,13 @@ export class SQLiteChatRepository implements ChatRepository {
   // ===================================================================
 
   async addParticipant(
-    participant: Omit<Participant, 'id' | 'joinedAt'>
+    participant: Omit<
+      Participant,
+      'id' | 'joinedAt' | 'messageCount' | 'preferences'
+    > & {
+      messageCount?: number;
+      preferences?: Record<string, any>;
+    }
   ): Promise<Participant> {
     const id = this.generateId('part');
     const joinedAt = Date.now();
@@ -518,10 +556,19 @@ export class SQLiteChatRepository implements ChatRepository {
 
     const created: Participant = {
       id,
-      ...participant,
+      conversationId: participant.conversationId,
+      participantType: participant.participantType,
+      participantId: participant.participantId,
+      participantName: participant.participantName,
       joinedAt: new Date(joinedAt),
-      messageCount: 0,
+      leftAt: participant.leftAt,
+      role: participant.role,
+      lastSeenAt: participant.lastSeenAt,
+      lastTypedAt: participant.lastTypedAt,
+      messageCount: participant.messageCount || 0,
+      notificationsEnabled: participant.notificationsEnabled,
       preferences: participant.preferences || {},
+      status: participant.status,
     };
 
     return created;
@@ -606,7 +653,12 @@ export class SQLiteChatRepository implements ChatRepository {
   // ===================================================================
 
   async createSession(
-    session: Omit<ChatSession, 'id' | 'startedAt' | 'lastActivityAt'>
+    session: Omit<
+      ChatSession,
+      'id' | 'startedAt' | 'lastActivityAt' | 'clientInfo'
+    > & {
+      clientInfo?: Record<string, any>;
+    }
   ): Promise<ChatSession> {
     const id = this.generateId('sess');
     const now = Date.now();
@@ -632,10 +684,15 @@ export class SQLiteChatRepository implements ChatRepository {
 
     const created: ChatSession = {
       id,
-      ...session,
+      userId: session.userId,
+      conversationId: session.conversationId,
+      connectionId: session.connectionId,
       startedAt: new Date(now),
       lastActivityAt: new Date(now),
+      endedAt: session.endedAt,
       clientInfo: session.clientInfo || {},
+      ipAddress: session.ipAddress,
+      userAgent: session.userAgent,
     };
 
     return created;

@@ -31,6 +31,7 @@ import {
   AgentStateTransitionResult,
   // ModuleManifest - type definition available but not used at runtime
 } from './results.js';
+import { LogLevel } from './utils/logger.js';
 
 // Additional result types for agent lifecycle methods
 export interface InitializationResult {
@@ -239,6 +240,7 @@ export interface MemoryRecord {
   tags: string[];
   duration: MemoryDuration;
   expiresAt?: Date; // Optional expiration date for short-term memories
+  [key: string]: any;
 }
 
 export interface MemoryProvider {
@@ -426,6 +428,8 @@ export enum ActionCategory {
   LEARNING = 'learning',
   PROCESSING = 'processing',
   MEMORY = 'memory',
+  AGENT = 'agent',
+  QUERY = 'query',
 }
 
 export interface ExtensionAction {
@@ -631,6 +635,7 @@ export interface EventBus {
   unsubscribe(agentId: string, eventTypes: string[]): void;
   getEvents(): AgentEvent[];
   publish(event: AgentEvent): void; // Added publish method for compatibility
+  shutdown(): void; // Added shutdown method for cleanup
 }
 
 export interface ModuleRegistry {
@@ -656,7 +661,7 @@ export interface ModuleRegistry {
   ): void;
   registerCognitionFactory(
     name: string,
-    factory: (config: unknown) => CognitionModule
+    factory: (config: unknown) => CognitionModule | Promise<CognitionModule>
   ): void;
   registerExtensionFactory(
     name: string,
@@ -666,7 +671,10 @@ export interface ModuleRegistry {
     name: string,
     factory: (config: unknown) => Portal
   ): void;
-  registerAgentFactory(name: string, factory: (config: unknown) => Agent): void;
+  registerAgentFactory(
+    name: string,
+    factory: (config: unknown) => Agent | Promise<Agent>
+  ): void;
 
   // Creation methods
   createMemoryProvider(
@@ -680,7 +688,7 @@ export interface ModuleRegistry {
   createCognitionModule(
     name: string,
     config?: unknown
-  ): CognitionModule | undefined;
+  ): CognitionModule | Promise<CognitionModule> | undefined;
   createExtension(name: string, config?: unknown): Extension | undefined;
   createPortal(name: string, config?: unknown): Portal | undefined;
 
@@ -698,13 +706,6 @@ export interface ModuleRegistry {
   getRegisteredAgents(): Agent[]; // Add method for getting registered agents
 }
 
-export enum LogLevel {
-  DEBUG = 'debug',
-  INFO = 'info',
-  WARN = 'warn',
-  ERROR = 'error',
-}
-
 export interface RuntimeConfig {
   tickInterval: number;
   maxAgents: number;
@@ -718,32 +719,38 @@ export interface RuntimeConfig {
     paths: string[];
     slack?: {
       enabled: boolean;
-      [key: string]: unknown;
+      [key: string]: any;
     };
     runelite?: {
       enabled: boolean;
-      [key: string]: unknown;
+      [key: string]: any;
     };
     twitter?: {
       enabled: boolean;
-      [key: string]: unknown;
+      [key: string]: any;
     };
     telegram?: {
       enabled: boolean;
-      [key: string]: unknown;
+      [key: string]: any;
     };
     mcp?: {
       enabled: boolean;
-      [key: string]: unknown;
+      [key: string]: any;
     };
     api?: {
       enabled: boolean;
-      [key: string]: unknown;
+      [key: string]: any;
     };
   };
   portals?: {
     autoLoad: boolean;
     paths: string[];
     apiKeys?: Record<string, string>;
+  };
+  agents?: {
+    enabled: boolean;
+    paths?: string[];
+    defaultEnabled?: boolean;
+    charactersPath?: string;
   };
 }

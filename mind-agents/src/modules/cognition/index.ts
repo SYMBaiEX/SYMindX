@@ -69,6 +69,11 @@ export function getCognitionModuleTypes(): string[] {
 // Export the cognition modules
 export { UnifiedCognition, TheoryOfMind };
 
+// Export factory functions for individual modules
+export { createHtnPlannerCognition } from './htn-planner/index';
+export { createReactiveCognition } from './reactive/index';
+export { createHybridCognition } from './hybrid/index';
+
 // Registration function with auto-discovery
 export async function registerCognitionModules(registry: any): Promise<void> {
   try {

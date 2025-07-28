@@ -16,21 +16,21 @@ import {
 } from '../../types/modules/emotions';
 
 // Import all emotion types
-import { AngryEmotion } from './angry/index';
-import { AnxiousEmotion } from './anxious/index';
-import { BaseEmotion } from './base-emotion';
-import { ConfidentEmotion } from './confident/index';
-import { ConfusedEmotion } from './confused/index';
-import { CuriousEmotion } from './curious/index';
-import { EmpatheticEmotion } from './empathetic/index';
-import { HappyEmotion } from './happy/index';
-import { NeutralEmotion } from './neutral/index';
-import { NostalgicEmotion } from './nostalgic/index';
-import { ProudEmotion } from './proud/index';
-import { SadEmotion } from './sad/index';
+import { AngryEmotion } from './angry/index.js';
+import { AnxiousEmotion } from './anxious/index.js';
+import { BaseEmotion } from './base-emotion.js';
+import { ConfidentEmotion } from './confident/index.js';
+import { ConfusedEmotion } from './confused/index.js';
+import { CuriousEmotion } from './curious/index.js';
+import { EmpatheticEmotion } from './empathetic/index.js';
+import { HappyEmotion } from './happy/index.js';
+import { NeutralEmotion } from './neutral/index.js';
+import { NostalgicEmotion } from './nostalgic/index.js';
+import { ProudEmotion } from './proud/index.js';
+import { SadEmotion } from './sad/index.js';
 
 export class CompositeEmotionModule implements EmotionModule {
-  private emotions: Map<string, BaseEmotion> = new Map();
+  private emotions: Map<string, BaseEmotion>;
   private _current: string = 'neutral';
   private _intensity: number = 0;
   private _history: EmotionRecord[] = [];
@@ -54,6 +54,9 @@ export class CompositeEmotionModule implements EmotionModule {
     }
   ) {
     this.config = config;
+
+    // Initialize Map to avoid Bun class property initialization issues
+    this.emotions = new Map();
 
     // CompositeEmotion initialized with configuration
     if (config.personalityTraits !== undefined) {
@@ -108,11 +111,15 @@ export class CompositeEmotionModule implements EmotionModule {
       intensity: number;
     }> = [];
 
-    for (const [name, emotion] of this.emotions) {
-      const state = emotion.processEvent(eventType, context);
-      if (state.intensity > 0.1) {
+    for (const [name, emotion] of Array.from(this.emotions.entries())) {
+      const result = emotion.processEvent(eventType, context);
+      if (result.state.intensity > 0.1) {
         // Only consider emotions with meaningful intensity
-        emotionResponses.push({ name, emotion, intensity: state.intensity });
+        emotionResponses.push({
+          name,
+          emotion,
+          intensity: result.state.intensity,
+        });
       }
     }
 
@@ -150,7 +157,7 @@ export class CompositeEmotionModule implements EmotionModule {
     // Check if we had any transitions
     if (this._history.length > 0) {
       const lastEntry = this._history[this._history.length - 1];
-      if (lastEntry.emotion !== this._current) {
+      if (lastEntry && lastEntry.emotion !== this._current) {
         transitions.push({
           from: lastEntry.emotion,
           to: this._current,
@@ -163,7 +170,8 @@ export class CompositeEmotionModule implements EmotionModule {
     return {
       state,
       changed: transitions.length > 0 || emotionResponses.length > 0,
-      previousEmotion: transitions.length > 0 ? transitions[0].from : undefined,
+      previousEmotion:
+        transitions.length > 0 ? transitions[0]?.from : undefined,
       transitions,
       modifiers: undefined,
       blendResult: this._blendedState
@@ -255,7 +263,7 @@ export class CompositeEmotionModule implements EmotionModule {
     // Combine history from all emotions
     const allHistory: EmotionRecord[] = [];
 
-    for (const emotion of this.emotions.values()) {
+    for (const emotion of Array.from(this.emotions.values())) {
       allHistory.push(...emotion.getHistory());
     }
 
@@ -267,7 +275,7 @@ export class CompositeEmotionModule implements EmotionModule {
 
   reset(): EmotionResult {
     // Reset all emotions
-    for (const emotion of this.emotions.values()) {
+    for (const emotion of Array.from(this.emotions.values())) {
       emotion.reset();
     }
 
@@ -317,7 +325,7 @@ export class CompositeEmotionModule implements EmotionModule {
     const states: Record<string, { intensity: number; state: EmotionState }> =
       {};
 
-    for (const [name, emotion] of this.emotions) {
+    for (const [name, emotion] of Array.from(this.emotions.entries())) {
       const state = emotion.getCurrentState();
       states[name] = {
         intensity: state.intensity,
@@ -400,7 +408,7 @@ export class CompositeEmotionModule implements EmotionModule {
   }): { name: string; distance: number } {
     let closestEmotion = { name: 'neutral', distance: Infinity };
 
-    for (const [name, emotion] of this.emotions) {
+    for (const [name, emotion] of Array.from(this.emotions.entries())) {
       const emotionCoords = emotion.getCoordinates();
       const distance = Math.sqrt(
         Math.pow(coords.valence - emotionCoords.valence, 2) +
@@ -435,7 +443,7 @@ export class CompositeEmotionModule implements EmotionModule {
     this._personalityTraits = traits;
 
     // Update all emotion modules
-    for (const emotion of this.emotions.values()) {
+    for (const emotion of Array.from(this.emotions.values())) {
       emotion.setPersonalityTraits(traits);
     }
   }
@@ -464,8 +472,11 @@ export class CompositeEmotionModule implements EmotionModule {
     return {
       primary: this._current,
       secondary:
-        blend.components.length > 1 ? blend.components[1].emotion : undefined,
-      ratio: blend.components.length > 1 ? blend.components[0].weight : 1.0,
+        blend.components.length > 1 ? blend.components[1]?.emotion : undefined,
+      ratio:
+        blend.components.length > 1
+          ? (blend.components[0]?.weight ?? 1.0)
+          : 1.0,
       coordinates: blend.coordinates,
       intensity: blend.intensity,
       components: blend.components.map((c) => ({
@@ -475,4 +486,11 @@ export class CompositeEmotionModule implements EmotionModule {
       })),
     };
   }
+}
+
+// Export factory function for registry
+export function createCompositeEmotionModule(
+  config?: any
+): CompositeEmotionModule {
+  return new CompositeEmotionModule(config);
 }

@@ -94,6 +94,7 @@ export class NeonMemoryProvider extends BaseMemoryProvider {
   constructor(config: NeonMemoryConfig) {
     const metadata: MemoryProviderMetadata = {
       id: 'neon',
+      type: 'neon',
       name: 'Neon Memory Provider',
       description:
         'Enhanced Neon PostgreSQL provider with multi-tier memory, vector search, and shared pools',
@@ -1076,7 +1077,7 @@ export class NeonMemoryProvider extends BaseMemoryProvider {
   /**
    * Check database connection health
    */
-  async healthCheck(): Promise<{ healthy: boolean; latency: number }> {
+  async healthCheck(): Promise<{ status: string; details?: any }> {
     const start = Date.now();
 
     try {
@@ -1084,7 +1085,14 @@ export class NeonMemoryProvider extends BaseMemoryProvider {
       try {
         await client.query('SELECT 1');
         const latency = Date.now() - start;
-        return { healthy: true, latency };
+        return {
+          status: 'healthy',
+          details: {
+            latency,
+            type: 'neon',
+            poolStatus: this.getPoolStatus(),
+          },
+        };
       } finally {
         client.release();
       }
@@ -1098,7 +1106,14 @@ export class NeonMemoryProvider extends BaseMemoryProvider {
               error instanceof Error ? error : new Error(String(error))
             );
       console.error('❌ Neon health check failed:', dbError);
-      return { healthy: false, latency: -1 };
+      return {
+        status: 'unhealthy',
+        details: {
+          error: dbError.message,
+          latency: -1,
+          type: 'neon',
+        },
+      };
     }
   }
 

@@ -5,20 +5,24 @@
  * with the agent through the Model Context Protocol standard.
  */
 
+import {
+  Extension,
+  ExtensionAction,
+  ExtensionEventHandler,
+} from '../../types/agent';
 import { SkillParameters, GenericData, DataValue } from '../../types/common';
+import { MemoryDuration } from '../../types/enums';
 import {
   ExtensionConfig,
-  Extension,
   ExtensionMetadata,
   Agent,
   ExtensionType,
   ExtensionStatus,
-  ExtensionAction,
-  ExtensionEventHandler,
   ActionCategory,
   ActionResult,
   ActionResultType,
   AgentEvent,
+  MemoryType,
 } from '../../types/index';
 import { runtimeLogger } from '../../utils/logger';
 
@@ -98,27 +102,7 @@ export class MCPServerExtension implements Extension {
     runtimeLogger.info('🎯 MCP Server Extension initialized');
   }
 
-  async init(): Promise<void> {
-    // Initialize without agent parameter for Extension interface compatibility
-    this.status = ExtensionStatus.INITIALIZING;
-    // Note: initialize method still needs agent, so this will be called from runtime
-  }
-
-  async tick(agent: Agent): Promise<void> {
-    // Periodic tick - could be used for health checks
-    if (this.status === ExtensionStatus.ACTIVE && this.mcpServer) {
-      // Log agent activity for MCP debugging
-      if (Date.now() - this.lastActivityTime > 60000) {
-        // Every minute
-        runtimeLogger.debug(
-          `[MCP] Agent ${agent.name} is active with MCP server`
-        );
-        this.lastActivityTime = Date.now();
-      }
-    }
-  }
-
-  async initialize(agent: Agent): Promise<void> {
+  async init(agent: Agent): Promise<void> {
     if (!this.config.enabled || !this.config.server.enabled) {
       runtimeLogger.info('⏸️ MCP Server Extension is disabled');
       return;
@@ -128,7 +112,7 @@ export class MCPServerExtension implements Extension {
 
     try {
       // Initialize the MCP server manager
-      await this.mcpServer.initialize(agent);
+      await this.mcpServer.initializeWithAgent(agent);
 
       // Register agent-specific tools, resources, and prompts
       await this.registerAgentCapabilities();
@@ -151,6 +135,20 @@ export class MCPServerExtension implements Extension {
         error
       );
       throw error;
+    }
+  }
+
+  async tick(agent: Agent): Promise<void> {
+    // Periodic tick - could be used for health checks
+    if (this.status === ExtensionStatus.RUNNING && this.mcpServer) {
+      // Log agent activity for MCP debugging
+      if (Date.now() - this.lastActivityTime > 60000) {
+        // Every minute
+        runtimeLogger.debug(
+          `[MCP] Agent ${agent.name} is active with MCP server`
+        );
+        this.lastActivityTime = Date.now();
+      }
     }
   }
 
@@ -304,13 +302,33 @@ export class MCPServerExtension implements Extension {
           required: ['message'],
         },
         handler: async (args) => {
-          // TODO: Integrate with actual agent chat system
-          const response = `Advanced agent response to: ${args.message}`;
+          try {
+            if (!this.agent) {
+              throw new Error('Agent not initialized');
+            }
 
-          return {
-            type: 'text',
-            text: response,
-          };
+            // Get the agent's portal for text generation
+            const portal = this.agent.portal;
+            if (!portal) {
+              throw new Error('No active portal available');
+            }
+
+            // Generate response using the agent's portal
+            const result = await portal.generateText(String(args.message), {
+              maxOutputTokens: 1000,
+              temperature: 0.7,
+            });
+
+            return {
+              type: 'text',
+              text: result.text,
+            };
+          } catch (error) {
+            return {
+              type: 'text',
+              text: `Error generating response: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            };
+          }
         },
         metadata: {
           category: 'communication',
@@ -345,11 +363,33 @@ export class MCPServerExtension implements Extension {
           required: ['prompt'],
         },
         handler: async (args) => {
-          // TODO: Integrate with actual agent text generation
-          return {
-            type: 'text',
-            text: `Generated text for prompt: ${args.prompt}`,
-          };
+          try {
+            if (!this.agent) {
+              throw new Error('Agent not initialized');
+            }
+
+            // Get the agent's portal for text generation
+            const portal = this.agent.portal;
+            if (!portal) {
+              throw new Error('No active portal available');
+            }
+
+            // Generate text using the agent's portal
+            const result = await portal.generateText(String(args.prompt), {
+              maxOutputTokens: Number(args.maxTokens) || 1000,
+              temperature: Number(args.temperature) || 0.7,
+            });
+
+            return {
+              type: 'text',
+              text: result.text,
+            };
+          } catch (error) {
+            return {
+              type: 'text',
+              text: `Error generating text: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            };
+          }
         },
         metadata: {
           category: 'generation',
@@ -384,11 +424,44 @@ export class MCPServerExtension implements Extension {
           required: ['content'],
         },
         handler: async (args) => {
-          // TODO: Integrate with actual agent memory system
-          return {
-            type: 'text',
-            text: `Stored in memory: ${args.content}`,
-          };
+          try {
+            if (!this.agent) {
+              throw new Error('Agent not initialized');
+            }
+
+            // Get the agent's memory provider
+            const memoryProvider = this.agent.memory;
+            if (!memoryProvider) {
+              throw new Error('No memory provider available');
+            }
+
+            // Store the content in memory
+            await memoryProvider.store(this.agent.id, {
+              id: `memory-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+              agentId: this.agent.id,
+              type: MemoryType.EXPERIENCE,
+              content: String(args.content),
+              metadata: {
+                source: 'mcp_server',
+                timestamp: new Date(),
+                tags: Array.isArray(args.tags) ? args.tags : [],
+              },
+              importance: 0.5,
+              timestamp: new Date(),
+              tags: Array.isArray(args.tags) ? args.tags : [],
+              duration: MemoryDuration.LONG_TERM,
+            });
+
+            return {
+              type: 'text',
+              text: `Stored in memory successfully`,
+            };
+          } catch (error) {
+            return {
+              type: 'text',
+              text: `Error storing in memory: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            };
+          }
         },
         metadata: {
           category: 'memory',
@@ -405,20 +478,50 @@ export class MCPServerExtension implements Extension {
         description: 'Real-time emotional state of the agent',
         mimeType: 'application/json',
         handler: async () => {
-          // TODO: Integrate with actual emotion system
-          return {
-            type: 'text',
-            text: JSON.stringify(
-              {
-                primary: 'neutral',
-                intensity: 0.5,
-                secondary: ['curious'],
-                timestamp: new Date().toISOString(),
-              },
-              null,
-              2
-            ),
-          };
+          try {
+            if (!this.agent) {
+              throw new Error('Agent not initialized');
+            }
+
+            // Get the agent's emotion state
+            const emotionModule = this.agent.emotion;
+            if (!emotionModule) {
+              return {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    primary: 'neutral',
+                    intensity: 0.5,
+                    secondary: [],
+                    timestamp: new Date().toISOString(),
+                    note: 'No emotion module available',
+                  },
+                  null,
+                  2
+                ),
+              };
+            }
+
+            // Get current emotion state
+            const currentState = emotionModule.getCurrentState();
+
+            return {
+              type: 'text',
+              text: JSON.stringify(currentState, null, 2),
+            };
+          } catch (error) {
+            return {
+              type: 'text',
+              text: JSON.stringify(
+                {
+                  error: `Error retrieving emotion state: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                  timestamp: new Date().toISOString(),
+                },
+                null,
+                2
+              ),
+            };
+          }
         },
         metadata: {
           cacheable: false,
@@ -431,23 +534,121 @@ export class MCPServerExtension implements Extension {
         description: 'Historical emotional states and transitions',
         mimeType: 'application/json',
         handler: async () => {
-          // TODO: Integrate with actual emotion system
-          return {
-            type: 'text',
-            text: JSON.stringify(
-              {
-                timeline: [
+          try {
+            if (!this.agent) {
+              throw new Error('Agent not initialized');
+            }
+
+            // Get the agent's emotion module
+            const emotionModule = this.agent.emotion;
+            if (!emotionModule) {
+              return {
+                type: 'text',
+                text: JSON.stringify(
                   {
-                    emotion: 'neutral',
+                    history: [],
+                    transitions: [],
+                    summary: {
+                      totalChanges: 0,
+                      averageIntensity: 0,
+                      dominantEmotion: 'neutral',
+                    },
                     timestamp: new Date().toISOString(),
-                    duration: 3600,
+                    note: 'No emotion module available',
                   },
-                ],
-              },
-              null,
-              2
-            ),
-          };
+                  null,
+                  2
+                ),
+              };
+            }
+
+            // Get emotion history
+            const history = emotionModule.getHistory
+              ? emotionModule.getHistory()
+              : [];
+            const transitions = [];
+
+            // Calculate summary statistics
+            const emotionCounts: Record<string, number> = {};
+            let totalIntensity = 0;
+            let totalEntries = 0;
+
+            history.forEach((entry: any) => {
+              if (entry.state?.primaryEmotion) {
+                emotionCounts[entry.state.primaryEmotion] =
+                  (emotionCounts[entry.state.primaryEmotion] || 0) + 1;
+                totalIntensity += entry.state.intensity || 0;
+                totalEntries++;
+              }
+            });
+
+            const dominantEmotion =
+              Object.entries(emotionCounts).sort(
+                ([, a], [, b]) => b - a
+              )[0]?.[0] || 'neutral';
+
+            const averageIntensity =
+              totalEntries > 0 ? totalIntensity / totalEntries : 0;
+
+            // Format history timeline
+            const timeline = history.slice(-50).map((entry: any) => ({
+              emotion: entry.state?.primaryEmotion || 'neutral',
+              intensity: entry.state?.intensity || 0.5,
+              secondaryEmotions: entry.state?.secondaryEmotions || [],
+              timestamp: entry.timestamp || new Date().toISOString(),
+              duration: entry.duration || 0,
+              trigger: entry.trigger || 'unknown',
+              context: entry.context || {},
+            }));
+
+            // Format transitions
+            const formattedTransitions = transitions
+              .slice(-20)
+              .map((transition: any) => ({
+                from: transition.from || 'neutral',
+                to: transition.to || 'neutral',
+                timestamp: transition.timestamp || new Date().toISOString(),
+                reason: transition.reason || 'context_change',
+                intensity: transition.intensity || 0.5,
+              }));
+
+            return {
+              type: 'text',
+              text: JSON.stringify(
+                {
+                  timeline,
+                  transitions: formattedTransitions,
+                  summary: {
+                    totalChanges: transitions.length,
+                    averageIntensity: Math.round(averageIntensity * 100) / 100,
+                    dominantEmotion,
+                    emotionDistribution: emotionCounts,
+                    historyLength: history.length,
+                    oldestEntry:
+                      history[0]?.timestamp || new Date().toISOString(),
+                    newestEntry:
+                      history[history.length - 1]?.timestamp ||
+                      new Date().toISOString(),
+                  },
+                  timestamp: new Date().toISOString(),
+                },
+                null,
+                2
+              ),
+            };
+          } catch (error) {
+            return {
+              type: 'text',
+              text: JSON.stringify(
+                {
+                  error: `Error retrieving emotion history: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                  timestamp: new Date().toISOString(),
+                },
+                null,
+                2
+              ),
+            };
+          }
         },
         metadata: {
           cacheable: true,
@@ -464,20 +665,136 @@ export class MCPServerExtension implements Extension {
         description: 'Current cognitive processing state and capabilities',
         mimeType: 'application/json',
         handler: async () => {
-          // TODO: Integrate with actual cognition system
-          return {
-            type: 'text',
-            text: JSON.stringify(
-              {
-                mode: 'reactive',
-                processing: 'idle',
-                capabilities: ['reasoning', 'planning', 'learning'],
-                load: 0.2,
-              },
-              null,
-              2
-            ),
-          };
+          try {
+            if (!this.agent) {
+              throw new Error('Agent not initialized');
+            }
+
+            // Get the agent's cognition module
+            const cognitionModule = this.agent.cognition;
+            if (!cognitionModule) {
+              return {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    mode: 'reactive',
+                    processing: 'idle',
+                    capabilities: [],
+                    load: 0,
+                    timestamp: new Date().toISOString(),
+                    note: 'No cognition module available',
+                  },
+                  null,
+                  2
+                ),
+              };
+            }
+
+            // Get current cognitive state
+            const currentMode = 'reactive';
+            const processingState = 'idle';
+            const capabilities = ['reasoning', 'planning', 'learning'];
+            const cognitiveLoad = 0.2;
+            const activeThoughts = [];
+            const recentPlans = [];
+            const decisionHistory = [];
+
+            // Calculate cognitive metrics
+            const thoughtPatterns: Record<string, number> = {};
+            activeThoughts.forEach((thought: any) => {
+              const category = thought.category || 'general';
+              thoughtPatterns[category] = (thoughtPatterns[category] || 0) + 1;
+            });
+
+            const successfulPlans = recentPlans.filter(
+              (plan: any) => plan.status === 'completed'
+            ).length;
+            const planSuccessRate =
+              recentPlans.length > 0 ? successfulPlans / recentPlans.length : 0;
+
+            const averageDecisionConfidence =
+              decisionHistory.length > 0
+                ? decisionHistory.reduce(
+                    (sum: number, decision: any) =>
+                      sum + (decision.confidence || 0.5),
+                    0
+                  ) / decisionHistory.length
+                : 0.5;
+
+            // Get cognitive performance metrics
+            const performanceMetrics = {
+              responseTime:
+                (cognitionModule as any).getAverageResponseTime?.() || 0,
+              memoryUtilization:
+                (cognitionModule as any).getMemoryUtilization?.() || 0,
+              learningRate: (cognitionModule as any).getLearningRate?.() || 0,
+              adaptationScore:
+                (cognitionModule as any).getAdaptationScore?.() || 0,
+            };
+
+            return {
+              type: 'text',
+              text: JSON.stringify(
+                {
+                  mode: currentMode,
+                  processing: processingState,
+                  capabilities,
+                  load: Math.round(cognitiveLoad * 100) / 100,
+                  activeThoughts: activeThoughts
+                    .slice(-10)
+                    .map((thought: any) => ({
+                      id: thought.id || Math.random().toString(36).slice(2),
+                      category: thought.category || 'general',
+                      content: thought.content || '',
+                      confidence: thought.confidence || 0.5,
+                      timestamp: thought.timestamp || new Date().toISOString(),
+                    })),
+                  thoughtPatterns,
+                  recentPlans: recentPlans.slice(-5).map((plan: any) => ({
+                    id: plan.id || Math.random().toString(36).slice(2),
+                    goal: plan.goal || 'unknown',
+                    status: plan.status || 'pending',
+                    steps: plan.steps?.length || 0,
+                    priority: plan.priority || 5,
+                    estimatedDuration: plan.estimatedDuration || 0,
+                    createdAt: plan.createdAt || new Date().toISOString(),
+                  })),
+                  planSuccessRate: Math.round(planSuccessRate * 100) / 100,
+                  decisionMetrics: {
+                    totalDecisions: decisionHistory.length,
+                    averageConfidence:
+                      Math.round(averageDecisionConfidence * 100) / 100,
+                    recentDecisions: decisionHistory
+                      .slice(-5)
+                      .map((decision: any) => ({
+                        id: decision.id || Math.random().toString(36).slice(2),
+                        type: decision.type || 'general',
+                        confidence: decision.confidence || 0.5,
+                        outcome: decision.outcome || 'pending',
+                        timestamp:
+                          decision.timestamp || new Date().toISOString(),
+                      })),
+                  },
+                  performanceMetrics,
+                  timestamp: new Date().toISOString(),
+                },
+                null,
+                2
+              ),
+            };
+          } catch (error) {
+            return {
+              type: 'text',
+              text: JSON.stringify(
+                {
+                  error: `Error retrieving cognitive state: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                  timestamp: new Date().toISOString(),
+                },
+                null,
+                2
+              ),
+            };
+          }
         },
         metadata: {
           cacheable: false,
@@ -542,11 +859,72 @@ export class MCPServerExtension implements Extension {
   }
 
   /**
+   * Convert ExtensionAction to MCP Tool format
+   */
+  private convertAgentActionToMCPTool(
+    agentAction: ExtensionAction
+  ): MCPServerTool {
+    return {
+      name: agentAction.name,
+      description: agentAction.description,
+      inputSchema: {
+        type: 'object',
+        properties: agentAction.parameters,
+        required: Object.entries(agentAction.parameters)
+          .filter(
+            ([, param]) =>
+              typeof param === 'object' &&
+              param !== null &&
+              'required' in param &&
+              param.required
+          )
+          .map(([name]) => name),
+      },
+      handler: async (args: Record<string, unknown>) => {
+        if (!this.agent) {
+          throw new Error('Agent not initialized');
+        }
+        const result = await agentAction.execute(
+          this.agent,
+          args as SkillParameters
+        );
+        return result;
+      },
+    };
+  }
+
+  /**
+   * Handle MCP server events
+   */
+  private handleMCPEvent(eventType: string, eventData: unknown): void {
+    if (!this.agent) return;
+
+    const agentEvent: AgentEvent = {
+      id: Date.now().toString(),
+      type: eventType,
+      source: 'mcp-server',
+      data: eventData as GenericData,
+      timestamp: new Date(),
+      processed: false,
+      agentId: this.agent.id,
+    };
+
+    // Handle the event through the agent's event bus if available
+    if (this.agent.eventBus) {
+      try {
+        this.agent.eventBus.emit(agentEvent);
+      } catch (error) {
+        runtimeLogger.error('Failed to emit MCP event:', error);
+      }
+    }
+  }
+
+  /**
    * Register extension actions and events
    */
   private registerExtensionActions(): void {
     // Register MCP server actions
-    this.actions['registerTool'] = {
+    const registerToolAction: ExtensionAction = {
       name: 'registerTool',
       description: 'Register a custom tool to be exposed via MCP',
       category: ActionCategory.SYSTEM,
@@ -571,8 +949,9 @@ export class MCPServerExtension implements Extension {
         };
       },
     };
+    this.actions['registerTool'] = registerToolAction;
 
-    this.actions['registerResource'] = {
+    const registerResourceAction: ExtensionAction = {
       name: 'registerResource',
       description: 'Register a custom resource to be exposed via MCP',
       category: ActionCategory.SYSTEM,
@@ -599,8 +978,9 @@ export class MCPServerExtension implements Extension {
         };
       },
     };
+    this.actions['registerResource'] = registerResourceAction;
 
-    this.actions['getServerStats'] = {
+    const getServerStatsAction: ExtensionAction = {
       name: 'getServerStats',
       description: 'Get MCP server statistics',
       category: ActionCategory.SYSTEM,
@@ -613,13 +993,16 @@ export class MCPServerExtension implements Extension {
         return {
           success: true,
           type: ActionResultType.SUCCESS,
-          result: this.toGenericData(stats),
+          result: this.toGenericData(
+            stats as unknown as Record<string, unknown>
+          ),
           timestamp: new Date(),
         };
       },
     };
+    this.actions['getServerStats'] = getServerStatsAction;
 
-    this.actions['getConnections'] = {
+    const getConnectionsAction: ExtensionAction = {
       name: 'getConnections',
       description: 'Get active MCP connections',
       category: ActionCategory.SYSTEM,
@@ -637,6 +1020,7 @@ export class MCPServerExtension implements Extension {
         };
       },
     };
+    this.actions['getConnections'] = getConnectionsAction;
 
     // Register event handlers
     this.events['server_started'] = {
@@ -701,7 +1085,7 @@ export class MCPServerExtension implements Extension {
       this.mcpServer = new MCPServerManager(this.config.server);
 
       if (this.agent) {
-        await this.mcpServer.initialize(this.agent);
+        await this.mcpServer.initializeWithAgent(this.agent);
         await this.registerAgentCapabilities();
         await this.mcpServer.start();
       }

@@ -8,7 +8,11 @@ import {
 } from '../../../types/agent';
 // Remove unused AgentAction import - actions are created inline
 // Agent imports should come first
-import { CognitionModule } from '../../../types/cognition';
+import {
+  CognitionModule,
+  CognitionModuleMetadata,
+  ReasoningParadigm,
+} from '../../../types/cognition';
 import { runtimeLogger } from '../../../utils/logger';
 
 import { HybridCognitionConfig } from './types';
@@ -124,14 +128,14 @@ export class HybridCognition implements CognitionModule {
     this.config = { ...this.config, ...config };
   }
 
-  getMetadata() {
+  getMetadata(): CognitionModuleMetadata {
     return {
       id: `hybrid_${Date.now()}`,
       name: 'Hybrid Cognition',
       version: '1.0.0',
       description: 'Hybrid reactive and planning cognition system',
       author: 'SYMindX',
-      paradigms: ['hybrid', 'reactive', 'planning'] as any,
+      paradigms: [ReasoningParadigm.HYBRID, ReasoningParadigm.RULE_BASED],
       learningCapable: this.config.enableAdaptation || false,
     };
   }

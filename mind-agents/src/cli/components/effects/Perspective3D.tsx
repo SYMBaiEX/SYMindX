@@ -49,26 +49,6 @@ export const Perspective3D: React.FC<Perspective3DProps> = ({
     };
   }, []);
 
-  // Render 3D variants
-  const render3DEffect = useCallback((): React.ReactNode => {
-    switch (variant) {
-      case 'rotate':
-        return renderRotating3D();
-      case 'flip':
-        return renderFlipping3D();
-      case 'cube':
-        return renderCube3D();
-      case 'pyramid':
-        return renderPyramid3D();
-      case 'tunnel':
-        return renderTunnel3D();
-      case 'grid':
-        return renderGrid3D();
-      default:
-        return <Text>{children}</Text>;
-    }
-  }, [variant, children, renderRotating3D, renderFlipping3D, renderCube3D, renderPyramid3D, renderTunnel3D, renderGrid3D]);
-
   const renderRotating3D = useCallback((): React.ReactNode => {
     const transform = get3DTransform(rotation);
     const layers = [];
@@ -310,6 +290,25 @@ export const Perspective3D: React.FC<Perspective3DProps> = ({
 
     return <Box flexDirection='column'>{grid}</Box>;
   }, [children, wireframe, defaultColor, theme.colors.borderDim]);
+
+  const render3DEffect = useCallback((): React.ReactNode => {
+    switch (variant) {
+      case 'rotate':
+        return renderRotating3D();
+      case 'flip':
+        return renderFlipping3D();
+      case 'cube':
+        return renderCube3D();
+      case 'pyramid':
+        return renderPyramid3D();
+      case 'tunnel':
+        return renderTunnel3D();
+      case 'grid':
+        return renderGrid3D();
+      default:
+        return renderRotating3D();
+    }
+  }, [variant, renderRotating3D, renderFlipping3D, renderCube3D, renderPyramid3D, renderTunnel3D, renderGrid3D]);
 
   return render3DEffect();
 };

@@ -358,7 +358,7 @@ export abstract class BaseMemoryProvider implements MemoryProvider {
    * @returns The parsed memory record
    */
   protected parseMemoryFromStorage(row: MemoryRow): MemoryRecord {
-    return buildObject({
+    const record: MemoryRecord = {
       id: row.id || row.memory_id || '',
       agentId: row.agent_id,
       type: (row.type as string)
@@ -380,20 +380,21 @@ export abstract class BaseMemoryProvider implements MemoryProvider {
             ? row.tags
             : [],
       duration: (row.duration || MemoryDuration.LONG_TERM) as MemoryDuration,
-    })
-      .addOptional(
-        'embedding',
-        Array.isArray(row.embedding) ? row.embedding : undefined
-      )
-      .addOptional(
-        'expiresAt',
-        row.expires_at
-          ? row.expires_at instanceof Date
-            ? row.expires_at
-            : new Date(row.expires_at)
-          : undefined
-      )
-      .build() as MemoryRecord;
+    };
+
+    // Add optional properties
+    if (Array.isArray(row.embedding)) {
+      record.embedding = row.embedding;
+    }
+
+    if (row.expires_at) {
+      record.expiresAt =
+        row.expires_at instanceof Date
+          ? row.expires_at
+          : new Date(row.expires_at);
+    }
+
+    return record;
   }
 
   /**
@@ -632,5 +633,30 @@ export abstract class BaseMemoryProvider implements MemoryProvider {
     }
 
     return dotProduct / (norm1 * norm2);
+  }
+
+  /**
+   * Health check for the memory provider
+   * @returns Health check result
+   */
+  async healthCheck(): Promise<{ status: string; details?: any }> {
+    try {
+      // Basic health check - subclasses can override
+      return {
+        status: 'healthy',
+        details: {
+          type: this.metadata.type,
+          initialized: true,
+          tiers: Array.from(this.tiers.keys()),
+        },
+      };
+    } catch (error) {
+      return {
+        status: 'unhealthy',
+        details: {
+          error: error instanceof Error ? error.message : String(error),
+        },
+      };
+    }
   }
 }

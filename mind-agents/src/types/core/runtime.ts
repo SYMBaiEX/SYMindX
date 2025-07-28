@@ -2,8 +2,8 @@
  * Core runtime types for SYMindX
  */
 
-import { LogLevel } from '../agent.js';
 import { ExtensionConfig } from '../common.js';
+import { LogLevel } from '../enums.js';
 import { Timestamp } from '../helpers.js';
 
 /**

@@ -79,6 +79,7 @@ export class InMemoryProvider extends BaseMemoryProvider {
         'A fast in-memory provider with vector search and optional persistence',
       version: '1.0.0',
       author: 'SYMindX Team',
+      type: 'memory',
       supportsVectorSearch: true,
       isPersistent: config.enablePersistence || false,
     };

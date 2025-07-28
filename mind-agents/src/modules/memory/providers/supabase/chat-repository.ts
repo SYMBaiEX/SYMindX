@@ -78,14 +78,14 @@ export interface SupabaseChatConfig extends ChatSystemConfig {
 }
 
 export class SupabaseChatRepository implements ChatRepository {
-  private client: SupabaseClient<Database, 'public', Database['public']>;
+  private client: SupabaseClient<Database>;
   private config: SupabaseChatConfig;
 
   constructor(config: SupabaseChatConfig) {
     this.config = config;
 
     // Use service role key for admin operations, anon key for regular operations
-    this.client = createClient(
+    this.client = createClient<Database>(
       config.url,
       config.serviceRoleKey || config.anonKey
     );
@@ -168,7 +168,7 @@ export class SupabaseChatRepository implements ChatRepository {
       status: ParticipantStatus.ACTIVE,
     });
 
-    const _result = this.supabaseToConversation(data);
+    const result = this.supabaseToConversation(data);
     console.log(
       `💬 Created conversation ${result.id} between user ${conversation.userId} and agent ${conversation.agentId}`
     );
@@ -312,7 +312,7 @@ export class SupabaseChatRepository implements ChatRepository {
       throw new Error(`Failed to create message: ${error.message}`);
     }
 
-    const _result = this.supabaseToMessage(data);
+    const result = this.supabaseToMessage(data);
     console.log(
       `📝 Created message ${result.id} in conversation ${message.conversationId}`
     );

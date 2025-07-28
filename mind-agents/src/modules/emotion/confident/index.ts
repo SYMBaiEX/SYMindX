@@ -43,7 +43,7 @@ export class ConfidentEmotion extends BaseEmotion {
     };
   }
 
-  override processEvent(eventType: string, context?: unknown): EmotionResult {
+  override processEvent(eventType: string, context?: any): EmotionResult {
     // Special processing for confidence-specific events
     if (context?.skill_improvement) {
       this._intensity = Math.min(1.0, this._intensity + 0.15);
@@ -66,4 +66,9 @@ export function createConfidentEmotion(
   config: ConfidentEmotionConfig = {}
 ): ConfidentEmotion {
   return new ConfidentEmotion(config);
+}
+
+// Export module factory for registry
+export function createConfidentEmotionModule(config?: any): ConfidentEmotion {
+  return new ConfidentEmotion(config || {});
 }

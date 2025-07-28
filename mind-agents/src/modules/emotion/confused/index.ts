@@ -41,7 +41,7 @@ export class ConfusedEmotion extends BaseEmotion {
     };
   }
 
-  override processEvent(eventType: string, context?: unknown): EmotionResult {
+  override processEvent(eventType: string, context?: any): EmotionResult {
     // Special processing for confusion-specific events
     if (context?.contradiction_detected) {
       this._intensity = Math.min(1.0, this._intensity + 0.2);
@@ -64,4 +64,9 @@ export function createConfusedEmotion(
   config: ConfusedEmotionConfig = {}
 ): ConfusedEmotion {
   return new ConfusedEmotion(config);
+}
+
+// Export module factory for registry
+export function createConfusedEmotionModule(config?: any): ConfusedEmotion {
+  return new ConfusedEmotion(config || {});
 }

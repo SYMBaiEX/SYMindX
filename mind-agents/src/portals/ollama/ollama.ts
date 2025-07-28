@@ -140,6 +140,9 @@ export interface OllamaResponse {
   done: boolean;
   context?: number[];
   total_duration?: number;
+  status?: string;
+  models?: OllamaModelInfo[];
+  embedding?: number[];
   load_duration?: number;
   prompt_eval_count?: number;
   prompt_eval_duration?: number;
@@ -315,7 +318,7 @@ export class OllamaPortal extends BasePortal {
     try {
       const response = await this.makeRequest('/', {}, 'GET');
       this.lastHealthCheck = new Date();
-      return response.status === 'ok' || typeof response === 'string';
+      return typeof response === 'string' || response.status === 'ok';
     } catch {
       // Ollama health check failed
       return false;
@@ -347,7 +350,7 @@ export class OllamaPortal extends BasePortal {
   async listModels(): Promise<OllamaModelInfo[]> {
     try {
       const response = await this.makeRequest('/api/tags', {}, 'GET');
-      return response.models || [];
+      return typeof response === 'string' ? [] : response.models || [];
     } catch {
       // Failed to list Ollama models
       return [];
@@ -390,6 +393,11 @@ export class OllamaPortal extends BasePortal {
       const response = await this.makeRequest('/api/generate', requestBody);
 
       this.activeRequests.delete(requestId);
+
+      if (typeof response === 'string') {
+        throw new Error('Invalid response from Ollama API');
+      }
+
       return this.parseGenerateResponse(response, model);
     } catch (error) {
       void error;
@@ -422,6 +430,11 @@ export class OllamaPortal extends BasePortal {
       const response = await this.makeRequest('/api/chat', requestBody);
 
       this.activeRequests.delete(requestId);
+
+      if (typeof response === 'string') {
+        throw new Error('Invalid response from Ollama API');
+      }
+
       return this.parseChatResponse(response, model, messages);
     } catch (error) {
       void error;
@@ -446,7 +459,7 @@ export class OllamaPortal extends BasePortal {
     try {
       const response = await this.makeRequest('/api/embeddings', requestBody);
 
-      if (!response.embedding) {
+      if (typeof response === 'string' || !response.embedding) {
         throw new Error('Invalid embedding response format');
       }
 
@@ -596,7 +609,7 @@ export class OllamaPortal extends BasePortal {
 
   private async makeRequest(
     endpoint: string,
-    body: Record<string, unknown>,
+    body: OllamaRequest | Record<string, unknown>,
     method: string = 'POST'
   ): Promise<OllamaResponse | string> {
     const config = this.config as OllamaConfig;
@@ -633,7 +646,7 @@ export class OllamaPortal extends BasePortal {
 
   private async makeStreamRequest(
     endpoint: string,
-    body: Record<string, unknown>
+    body: OllamaRequest | Record<string, unknown>
   ): Promise<AsyncGenerator<OllamaResponse>> {
     const config = this.config as OllamaConfig;
     const url = `${this.baseUrl}${endpoint}`;

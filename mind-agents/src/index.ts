@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 
 import { SYMindXRuntime } from './core/runtime';
 import type { RuntimeConfig } from './types/agent';
+import { LogLevel } from './types/utils/logger';
 import {
   displayBanner,
   createSpinner,
@@ -47,7 +48,7 @@ export * from './types/autonomous';
 const config: RuntimeConfig = {
   tickInterval: 1000,
   maxAgents: 10,
-  logLevel: logger.LogLevel.INFO,
+  logLevel: LogLevel.INFO,
   persistence: {
     enabled: true,
     path: './data',
@@ -111,9 +112,21 @@ async function start() {
     );
     startSpinner.start();
 
-    await runtime.start();
+    try {
+      // Don't await - runtime.start() starts the runtime loop which runs indefinitely
+      runtime.start().catch((err) => {
+        startSpinner.fail(`Runtime failed: ${err}`);
+        logger.error('Runtime error:', err);
+      });
 
-    startSpinner.succeed('Runtime engine started!');
+      // Give it a moment to start up
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      startSpinner.succeed('Runtime engine started!');
+    } catch (err) {
+      startSpinner.fail(`Failed to start runtime: ${err}`);
+      throw err;
+    }
 
     console.log();
     displaySuccess('SYMindX is now running! All systems operational.');
@@ -151,13 +164,37 @@ start();
 
 // Handle graceful shutdown
 process.on('SIGINT', async () => {
-  await animateShutdown();
-  await runtime.stop();
+  try {
+    await animateShutdown();
+  } catch (error) {
+    // Fallback to simple shutdown message if animation fails
+    // eslint-disable-next-line no-console
+    console.log('\n🔌 Shutting down SYMindX...');
+  }
+
+  try {
+    await runtime.stop();
+  } catch (error) {
+    logger.error('Error during runtime shutdown:', error);
+  }
+
   process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
-  await animateShutdown();
-  await runtime.stop();
+  try {
+    await animateShutdown();
+  } catch (error) {
+    // Fallback to simple shutdown message if animation fails
+    // eslint-disable-next-line no-console
+    console.log('\n🔌 Shutting down SYMindX...');
+  }
+
+  try {
+    await runtime.stop();
+  } catch (error) {
+    logger.error('Error during runtime shutdown:', error);
+  }
+
   process.exit(0);
 });

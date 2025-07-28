@@ -448,6 +448,5 @@ export class ConfigValidator {
 /**
  * Global configuration validator instance
  */
-export const validateEnvironmentConfig =
-  (): SchemaValidationResult<ValidatedEnvironmentConfig> =>
-    ConfigValidator.validateEnvironmentConfig();
+export const validateEnvironmentConfig = (): ConfigValidationResult =>
+  ConfigValidator.validateEnvironmentConfig();

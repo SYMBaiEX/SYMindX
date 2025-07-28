@@ -19,5 +19,7 @@ export type {
   ExtensionStatus,
   ExtensionAction,
   ExtensionEventHandler,
-  ExtensionConfig,
 } from '../agent';
+
+// Re-export ExtensionConfig from common
+export type { ExtensionConfig } from '../common';

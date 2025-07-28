@@ -92,6 +92,7 @@ export class SQLiteMemoryProvider extends BaseMemoryProvider {
         'Enhanced SQLite provider with multi-tier memory, vector search, and shared pools',
       version: '2.0.0',
       author: 'SYMindX Team',
+      type: 'sqlite',
       supportsVectorSearch: true,
       isPersistent: true,
       supportedTiers: [

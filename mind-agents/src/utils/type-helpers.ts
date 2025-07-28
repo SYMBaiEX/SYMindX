@@ -20,8 +20,8 @@
  * );
  */
 export function withOptionalProperties<
-  T extends Record<string, unknown>,
-  O extends Record<string, unknown>,
+  T extends Record<string, any>,
+  O extends Record<string, any>,
 >(base: T, optionals: O): T & Partial<O> {
   const result = { ...base } as T & Partial<O>;
 
@@ -47,7 +47,7 @@ export function withOptionalProperties<
  * .addOptional('deletedAt', row.deleted_at ? new Date(row.deleted_at) : undefined)
  * .build();
  */
-export class ObjectBuilder<T extends Record<string, unknown>> {
+export class ObjectBuilder<T> {
   private obj: Partial<T>;
 
   constructor(base: Partial<T>) {
@@ -74,9 +74,7 @@ export class ObjectBuilder<T extends Record<string, unknown>> {
 /**
  * Creates an object builder instance
  */
-export function buildObject<T extends Record<string, unknown>>(
-  base: Partial<T>
-): ObjectBuilder<T> {
+export function buildObject<T>(base: Partial<T>): ObjectBuilder<T> {
   return new ObjectBuilder<T>(base);
 }
 
@@ -94,8 +92,8 @@ export function buildObject<T extends Record<string, unknown>>(
  * );
  */
 export function mapRowToObject<
-  TRow extends Record<string, unknown>,
-  TResult extends Record<string, unknown>,
+  TRow extends Record<string, any>,
+  TResult extends Record<string, any>,
 >(
   row: TRow,
   mapping: { [K in keyof TResult]: (row: TRow) => TResult[K] | undefined }

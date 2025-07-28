@@ -76,8 +76,24 @@ export function getEmotionTypes(): string[] {
 }
 
 // Export the composite implementation
-export { CompositeEmotionModule } from './composite-emotion';
+export {
+  CompositeEmotionModule,
+  createCompositeEmotionModule,
+} from './composite-emotion';
 export { BaseEmotion } from './base-emotion';
+
+// Export factory functions for registry
+export { createHappyEmotionModule } from './happy/index';
+export { createSadEmotionModule } from './sad/index';
+export { createAngryEmotionModule } from './angry/index';
+export { createAnxiousEmotionModule } from './anxious/index';
+export { createConfidentEmotionModule } from './confident/index';
+export { createNostalgicEmotionModule } from './nostalgic/index';
+export { createEmpatheticEmotionModule } from './empathetic/index';
+export { createCuriousEmotionModule } from './curious/index';
+export { createProudEmotionModule } from './proud/index';
+export { createConfusedEmotionModule } from './confused/index';
+export { createNeutralEmotionModule } from './neutral/index';
 
 // Registration function with auto-discovery
 export async function registerEmotionModules(registry: any): Promise<void> {

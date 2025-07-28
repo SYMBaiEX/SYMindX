@@ -12,7 +12,7 @@ import type { SkillParameters } from '../common';
 /**
  * Generic API request wrapper with typed payload
  */
-export interface APIRequest<T = any> {
+export interface APIRequest<T = unknown> {
   /** Unique request ID for tracking */
   id?: string;
   /** Request timestamp */
@@ -20,7 +20,7 @@ export interface APIRequest<T = any> {
   /** Request payload data */
   data: T;
   /** Request metadata */
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   /** Authentication token if required */
   auth?: {
     type: 'bearer' | 'apikey' | 'basic';
@@ -31,7 +31,7 @@ export interface APIRequest<T = any> {
 /**
  * Generic API response wrapper with typed payload
  */
-export interface APIResponse<T = any> {
+export interface APIResponse<T = unknown> {
   /** Response success status */
   success: boolean;
   /** Response payload data */
@@ -40,7 +40,7 @@ export interface APIResponse<T = any> {
   error?: {
     code: string;
     message: string;
-    details?: any;
+    details?: Record<string, unknown>;
   };
   /** Response timestamp */
   timestamp: string;
@@ -55,7 +55,7 @@ export interface APIResponse<T = any> {
 /**
  * WebSocket message structure for bidirectional communication
  */
-export interface WebSocketMessage<T = any> {
+export interface WebSocketMessage<T = unknown> {
   /** Message type identifier */
   type:
     | 'ping'
@@ -83,6 +83,30 @@ export interface WebSocketMessage<T = any> {
 }
 
 /**
+ * WebSocket response structure for outbound communication
+ */
+export interface WebSocketResponse<T = unknown> {
+  /** Response type identifier */
+  type:
+    | 'pong'
+    | 'chat_response'
+    | 'command_response'
+    | 'welcome'
+    | 'error'
+    | 'event';
+  /** Response payload */
+  data?: T;
+  /** Error message for error responses */
+  error?: string;
+  /** Connection ID for routing */
+  connectionId?: string;
+  /** Response timestamp */
+  timestamp?: string;
+  /** Additional response metadata */
+  metadata?: Record<string, unknown>;
+}
+
+/**
  * Session data for maintaining state across requests
  */
 export interface SessionData {
@@ -105,14 +129,14 @@ export interface SessionData {
     /** Session source */
     source: 'http' | 'websocket';
     /** Custom session data */
-    custom?: Record<string, any>;
+    custom?: Record<string, unknown>;
   };
   /** Session state data */
   state?: {
     /** Current conversation ID */
     conversationId?: string;
     /** Session preferences */
-    preferences?: Record<string, any>;
+    preferences?: Record<string, unknown>;
     /** Session flags */
     flags?: string[];
   };
@@ -149,7 +173,7 @@ export interface MiddlewareContext extends Request {
 /**
  * Express route handler with proper typing
  */
-export type RouteHandler<TReq = any, TRes = any> = (
+export type RouteHandler<TReq = unknown, TRes = unknown> = (
   req: MiddlewareContext & {
     body: TReq;
     params: Record<string, string>;
@@ -215,7 +239,7 @@ export class APIError extends Error {
     public code: APIErrorCode,
     message: string,
     public statusCode: number,
-    public details?: any
+    public details?: Record<string, unknown>
   ) {
     super(message);
     this.name = 'APIError';
@@ -235,7 +259,7 @@ export interface ChatRequestPayload {
     conversationId?: string;
     sessionId?: string;
     userId?: string;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
   };
 }
 
@@ -282,7 +306,7 @@ export interface ActionResponsePayload {
   /** Action ID for tracking */
   actionId?: string;
   /** Execution result */
-  result?: any;
+  result?: unknown;
   /** Error if failed */
   error?: string;
   /** Execution time in ms */
@@ -355,7 +379,7 @@ export interface SpawnAgentPayload {
   /** Instance name override */
   instanceName?: string;
   /** Agent configuration override */
-  config?: Record<string, any>;
+  config?: Record<string, unknown>;
   /** Agent priority */
   priority?: number;
   /** Auto start agent */
@@ -408,18 +432,28 @@ export interface TransferConversationPayload {
 /**
  * Type guards for API payloads
  */
-export const isAPIRequest = <T>(obj: any): obj is APIRequest<T> => {
-  return obj && typeof obj === 'object' && 'data' in obj;
+export const isAPIRequest = <T>(obj: unknown): obj is APIRequest<T> => {
+  return obj !== null && typeof obj === 'object' && 'data' in obj;
 };
 
-export const isWebSocketMessage = (obj: any): obj is WebSocketMessage => {
-  return obj && typeof obj === 'object' && 'type' in obj;
+export const isWebSocketMessage = (obj: unknown): obj is WebSocketMessage => {
+  return obj !== null && typeof obj === 'object' && 'type' in obj;
 };
 
-export const isChatRequest = (obj: any): obj is ChatRequestPayload => {
-  return obj && typeof obj === 'object' && typeof obj.message === 'string';
+export const isChatRequest = (obj: unknown): obj is ChatRequestPayload => {
+  return (
+    obj !== null &&
+    typeof obj === 'object' &&
+    'message' in obj &&
+    typeof (obj as Record<string, unknown>).message === 'string'
+  );
 };
 
-export const isActionRequest = (obj: any): obj is ActionRequestPayload => {
-  return obj && typeof obj === 'object' && typeof obj.action === 'string';
+export const isActionRequest = (obj: unknown): obj is ActionRequestPayload => {
+  return (
+    obj !== null &&
+    typeof obj === 'object' &&
+    'action' in obj &&
+    typeof (obj as Record<string, unknown>).action === 'string'
+  );
 };

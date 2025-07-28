@@ -11,7 +11,14 @@
 
 import { EventEmitter } from 'events';
 
-import { Agent, AgentStatus, AgentConfig, EventBus } from '../types/agent';
+import {
+  Agent,
+  AgentStatus,
+  AgentConfig,
+  EventBus,
+  MemoryType,
+  MemoryDuration,
+} from '../types/agent';
 import type { CharacterConfig } from '../types/character';
 import { Logger } from '../utils/logger';
 
@@ -62,9 +69,17 @@ export interface ConversationRequirements {
 export interface AgentCollaboration {
   consultingAgent: string;
   consultedAgent: string;
-  question: string;
+  topic: string;
   context?: Record<string, unknown>;
   timeout?: number;
+}
+
+export interface CollaborationRelationship {
+  consultingAgent: string;
+  consultedAgent: string;
+  permissions: string[];
+  lastInteraction: Date;
+  interactionCount: number;
 }
 
 interface ExtendedAgent extends Agent {
@@ -80,6 +95,14 @@ export class MultiAgentManager extends EventEmitter {
   private healthCheckInterval?: ReturnType<typeof setInterval>;
   private collaborationTimeouts: Map<string, ReturnType<typeof setTimeout>> =
     new Map();
+
+  // Agent metrics tracking
+  private agentErrorCounts: Map<string, number> = new Map();
+  private agentMessageCounts: Map<string, number> = new Map();
+  private agentResponseTimes: Map<string, number[]> = new Map();
+
+  // Collaboration tracking
+  private collaborations: Map<string, CollaborationRelationship> = new Map();
 
   constructor(
     _registry: SYMindXModuleRegistry,
@@ -443,9 +466,9 @@ export class MultiAgentManager extends EventEmitter {
         uptime,
         memoryUsage,
         lastHeartbeat: new Date(),
-        errorCount: 0, // TODO: Implement error tracking
-        messageCount: 0, // TODO: Implement message counting
-        averageResponseTime: 0, // TODO: Implement response time tracking
+        errorCount: this.getAgentErrorCount(agentId),
+        messageCount: this.getAgentMessageCount(agentId),
+        averageResponseTime: this.getAgentAverageResponseTime(agentId),
         isHealthy: agent.status !== AgentStatus.ERROR,
       };
 
@@ -498,18 +521,143 @@ export class MultiAgentManager extends EventEmitter {
       `Agent consultation: ${collaboration.consultingAgent} consulting ${collaboration.consultedAgent}`
     );
 
-    // TODO: Implement actual agent-to-agent communication
-    // This would involve sending a special message type to the consulted agent
-    // and waiting for a response
+    try {
+      // Create a consultation message for the consulted agent
+      const consultationMessage = {
+        id: `consultation-${Date.now()}`,
+        content: `Consultation request from ${consultingAgent.name}: ${collaboration.topic}`,
+        role: 'user' as const,
+        timestamp: new Date(),
+        metadata: {
+          type: 'consultation',
+          requestingAgent: consultingAgent.id,
+          originalTopic: collaboration.topic,
+        },
+      };
 
-    return `Consultation response from ${consultedAgent.name}: [This would be the actual response]`;
+      // Get the consulted agent's portal for processing
+      const portal = consultedAgent.portal;
+      if (!portal) {
+        throw new Error(
+          `No active portal available for agent ${consultedAgent.name}`
+        );
+      }
+
+      // Generate response using the consulted agent's portal
+      const result = await portal.generateText(consultationMessage.content, {
+        maxOutputTokens: 500,
+        temperature: 0.7,
+      });
+
+      // Store the consultation in both agents' memories if available
+      if (consultingAgent.memory) {
+        await consultingAgent.memory.store(consultingAgent.id, {
+          id: `memory-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+          agentId: consultingAgent.id,
+          type: MemoryType.EXPERIENCE,
+          content: `Consulted ${consultedAgent.name} about: ${collaboration.topic}`,
+          metadata: {
+            consultedAgent: consultedAgent.id,
+            response: result.text,
+            timestamp: new Date(),
+          },
+          importance: 0.7,
+          timestamp: new Date(),
+          tags: ['consultation', 'collaboration'],
+          duration: MemoryDuration.LONG_TERM,
+        });
+      }
+
+      if (consultedAgent.memory) {
+        await consultedAgent.memory.store(consultedAgent.id, {
+          id: `memory-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+          agentId: consultedAgent.id,
+          type: MemoryType.EXPERIENCE,
+          content: `Provided consultation to ${consultingAgent.name} about: ${collaboration.topic}`,
+          metadata: {
+            requestingAgent: consultingAgent.id,
+            response: result.text,
+            timestamp: new Date(),
+          },
+          importance: 0.6,
+          timestamp: new Date(),
+          tags: ['consultation', 'collaboration'],
+          duration: MemoryDuration.LONG_TERM,
+        });
+      }
+
+      return `Consultation response from ${consultedAgent.name}: ${result.text}`;
+    } catch (error) {
+      this.logger.error('Failed to perform agent consultation:', error);
+      return `Consultation with ${consultedAgent.name} failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
+    }
   }
 
   enableAgentCollaboration(agentIds: string[]): void {
-    // TODO: Implement collaboration network setup
-    this.logger.info(
-      `Enabling collaboration between agents: ${agentIds.join(', ')}`
-    );
+    try {
+      // Validate all agent IDs exist
+      const agents = agentIds.map((id) => {
+        const agent = this.runtime.agents?.get(id);
+        if (!agent) {
+          throw new Error(`Agent with ID ${id} not found`);
+        }
+        return agent;
+      });
+
+      // Create collaboration network
+      for (let i = 0; i < agents.length; i++) {
+        for (let j = i + 1; j < agents.length; j++) {
+          const agent1 = agents[i];
+          const agent2 = agents[j];
+
+          // Add bidirectional collaboration relationships
+          this.collaborations.set(`${agent1.id}-${agent2.id}`, {
+            consultingAgent: agent1.id,
+            consultedAgent: agent2.id,
+            permissions: ['consult', 'share_memory', 'delegate_tasks'],
+            lastInteraction: new Date(),
+            interactionCount: 0,
+          });
+
+          this.collaborations.set(`${agent2.id}-${agent1.id}`, {
+            consultingAgent: agent2.id,
+            consultedAgent: agent1.id,
+            permissions: ['consult', 'share_memory', 'delegate_tasks'],
+            lastInteraction: new Date(),
+            interactionCount: 0,
+          });
+        }
+      }
+
+      this.logger.info(
+        `Enabled collaboration network between ${agentIds.length} agents: ${agentIds.join(', ')}`
+      );
+
+      // Store collaboration network info in agent memories
+      agents.forEach(async (agent) => {
+        if (agent.memory) {
+          const collaborators = agentIds.filter((id) => id !== agent.id);
+          await agent.memory.store(agent.id, {
+            id: `memory-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+            agentId: agent.id,
+            type: MemoryType.CONTEXT,
+            content: `Collaboration network established with agents: ${collaborators.join(', ')}`,
+            metadata: {
+              collaborators,
+              permissions: ['consult', 'share_memory', 'delegate_tasks'],
+              establishedAt: new Date(),
+            },
+            importance: 0.8,
+            timestamp: new Date(),
+            tags: ['collaboration', 'network', 'system'],
+            duration: MemoryDuration.PERMANENT,
+          });
+        }
+      });
+    } catch (error) {
+      this.logger.error('Failed to enable agent collaboration:', error);
+      throw error;
+    }
   }
 
   /**
@@ -585,5 +733,47 @@ export class MultiAgentManager extends EventEmitter {
 
     await Promise.all(stopPromises);
     this.logger.info('Multi-Agent Manager shutdown complete');
+  }
+
+  /**
+   * Metrics tracking helper methods
+   */
+  private getAgentErrorCount(agentId: string): number {
+    return this.agentErrorCounts.get(agentId) || 0;
+  }
+
+  private getAgentMessageCount(agentId: string): number {
+    return this.agentMessageCounts.get(agentId) || 0;
+  }
+
+  private getAgentAverageResponseTime(agentId: string): number {
+    const responseTimes = this.agentResponseTimes.get(agentId) || [];
+    if (responseTimes.length === 0) return 0;
+
+    const sum = responseTimes.reduce((acc, time) => acc + time, 0);
+    return sum / responseTimes.length;
+  }
+
+  // Public methods to update metrics
+  incrementAgentErrorCount(agentId: string): void {
+    const currentCount = this.agentErrorCounts.get(agentId) || 0;
+    this.agentErrorCounts.set(agentId, currentCount + 1);
+  }
+
+  incrementAgentMessageCount(agentId: string): void {
+    const currentCount = this.agentMessageCounts.get(agentId) || 0;
+    this.agentMessageCounts.set(agentId, currentCount + 1);
+  }
+
+  recordAgentResponseTime(agentId: string, responseTime: number): void {
+    const responseTimes = this.agentResponseTimes.get(agentId) || [];
+    responseTimes.push(responseTime);
+
+    // Keep only the last 100 response times to avoid memory issues
+    if (responseTimes.length > 100) {
+      responseTimes.shift();
+    }
+
+    this.agentResponseTimes.set(agentId, responseTimes);
   }
 }

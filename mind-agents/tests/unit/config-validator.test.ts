@@ -5,7 +5,7 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
 
-import { ConfigValidator } from './config-validator.js';
+import { ConfigValidator } from '../../src/utils/config-validator.js';
 
 describe('ConfigValidator', () => {
   let originalEnv: typeof process.env;
@@ -44,7 +44,7 @@ describe('ConfigValidator', () => {
     it('should create valid configuration with defaults when no environment variables are set', () => {
       const result = ConfigValidator.validateEnvironmentConfig();
 
-      expect(result.isValid).toBe(false); // Should be false because no AI providers are configured
+      expect(result.valid).toBe(false); // Should be false because no AI providers are configured
       expect(result.config.OLLAMA_BASE_URL).toBe('http://localhost:11434');
       expect(result.config.ENABLE_OPENAI_EMBEDDINGS).toBe(true);
       expect(result.config.EMBEDDING_PROVIDER).toBe('openai');
@@ -61,7 +61,7 @@ describe('ConfigValidator', () => {
 
       const result = ConfigValidator.validateEnvironmentConfig();
 
-      expect(result.isValid).toBe(true);
+      expect(result.valid).toBe(true);
       expect(result.config.apiKeys.GROQ_API_KEY).toBe(
         'gsk_test_key_1234567890123456789012345678901234'
       );
@@ -77,8 +77,8 @@ describe('ConfigValidator', () => {
 
       const result = ConfigValidator.validateEnvironmentConfig();
 
-      expect(result.warnings).toContain('Invalid format for GROQ_API_KEY');
-      expect(result.warnings).toContain('Invalid format for OPENAI_API_KEY');
+      expect(result.warnings.some(w => w.message === 'Invalid format for GROQ_API_KEY')).toBe(true);
+      expect(result.warnings.some(w => w.message === 'Invalid format for OPENAI_API_KEY')).toBe(true);
       expect(result.config.apiKeys.GROQ_API_KEY).toBeUndefined();
       expect(result.config.apiKeys.OPENAI_API_KEY).toBeUndefined();
     });
@@ -133,8 +133,8 @@ describe('ConfigValidator', () => {
 
       const result = ConfigValidator.validateEnvironmentConfig();
 
-      expect(result.isValid).toBe(false);
-      expect(result.errors).toContain('Invalid Ollama base URL format');
+      expect(result.valid).toBe(false);
+      expect(result.errors.some(e => e.message === 'Invalid Ollama base URL format')).toBe(true);
     });
 
     it('should validate telegram bot token format', () => {
@@ -153,9 +153,7 @@ describe('ConfigValidator', () => {
 
       const result = ConfigValidator.validateEnvironmentConfig();
 
-      expect(result.warnings).toContain(
-        'Invalid format for TELEGRAM_BOT_TOKEN'
-      );
+      expect(result.warnings.some(w => w.message === 'Invalid format for TELEGRAM_BOT_TOKEN')).toBe(true);
       expect(result.config.apiKeys.TELEGRAM_BOT_TOKEN).toBeUndefined();
     });
 
@@ -163,10 +161,8 @@ describe('ConfigValidator', () => {
       // No AI providers configured
       const result = ConfigValidator.validateEnvironmentConfig();
 
-      expect(result.isValid).toBe(false);
-      expect(result.errors).toContain(
-        'At least one AI provider must be configured with valid API key'
-      );
+      expect(result.valid).toBe(false);
+      expect(result.errors.some(e => e.message === 'At least one AI provider must be configured with valid API key')).toBe(true);
     });
 
     it('should pass validation with Ollama enabled', () => {
@@ -174,7 +170,7 @@ describe('ConfigValidator', () => {
 
       const result = ConfigValidator.validateEnvironmentConfig();
 
-      expect(result.isValid).toBe(true);
+      expect(result.valid).toBe(true);
       expect(result.config.portalSettings.OLLAMA_ENABLED).toBe(true);
     });
 
@@ -185,10 +181,8 @@ describe('ConfigValidator', () => {
 
       const result = ConfigValidator.validateEnvironmentConfig();
 
-      expect(result.isValid).toBe(false);
-      expect(result.errors).toContain(
-        'OpenAI API key required when using OpenAI embeddings'
-      );
+      expect(result.valid).toBe(false);
+      expect(result.errors.some(e => e.message === 'OpenAI API key required when using OpenAI embeddings')).toBe(true);
     });
 
     it('should handle portal capability settings correctly', () => {
@@ -226,7 +220,7 @@ describe('ConfigValidator', () => {
 
       const result = ConfigValidator.validateEnvironmentConfig();
 
-      expect(result.isValid).toBe(false);
+      expect(result.valid).toBe(false);
       expect(result.warnings.length).toBeGreaterThan(0);
       expect(result.errors.length).toBeGreaterThan(0);
     });

@@ -5,7 +5,7 @@
  * Groq specializes in fast inference with open-source models.
  */
 
-import { groq } from '@ai-sdk/groq';
+import { groq, createGroq } from '@ai-sdk/groq';
 import { generateText, streamText, tool } from 'ai';
 import { z } from 'zod';
 
@@ -46,13 +46,26 @@ export class GroqPortal extends BasePortal {
     ModelType.CHAT,
     ModelType.CODE_GENERATION,
   ];
-  private groqProvider: typeof groq;
+  private groqProvider: ReturnType<typeof createGroq>;
 
   constructor(config: GroqConfig) {
     super('groq', 'Groq', '1.0.0', config);
 
-    // Initialize the Groq provider with configuration
-    this.groqProvider = groq;
+    // Create Groq provider with proper AI SDK v5 configuration
+    const apiKey = config.apiKey || process.env.GROQ_API_KEY;
+    if (!apiKey) {
+      throw new Error('Groq API key is required');
+    }
+
+    const providerConfig: any = {
+      apiKey,
+    };
+
+    if (config.baseURL) {
+      providerConfig.baseURL = config.baseURL;
+    }
+
+    this.groqProvider = createGroq(providerConfig);
   }
 
   /**
@@ -112,7 +125,7 @@ export class GroqPortal extends BasePortal {
 
           tools[toolName] = tool({
             description: def.description || toolName,
-            parameters: def.parameters || z.object({}),
+            parameters: (def.parameters as any) || z.object({}),
             execute:
               def.execute ||
               (async (
@@ -146,7 +159,7 @@ export class GroqPortal extends BasePortal {
       if (config.baseURL) providerSettings.baseURL = config.baseURL;
 
       const baseParams = {
-        model: this.groqProvider(model, providerSettings),
+        model: this.groqProvider(model, providerSettings as any),
         prompt,
       };
 
@@ -161,7 +174,7 @@ export class GroqPortal extends BasePortal {
         presencePenalty: options?.presencePenalty,
       });
 
-      const result = await generateText(params);
+      const result = await generateText(params as any);
 
       return {
         text: result.text,
@@ -222,7 +235,7 @@ export class GroqPortal extends BasePortal {
       if (config.baseURL) providerSettings.baseURL = config.baseURL;
 
       const baseOptions = {
-        model: this.groqProvider(model, providerSettings),
+        model: this.groqProvider(model, providerSettings as any),
         messages: aiMessages,
       };
 
@@ -237,14 +250,19 @@ export class GroqPortal extends BasePortal {
         presencePenalty: options?.presencePenalty,
       });
 
-      // Add tools if provided
+      // Add tools if provided with comprehensive AI SDK v5 support
       if (tools) {
-        const optionsWithTools = generateOptions as GenerateTextParamsWithTools;
+        const optionsWithTools = generateOptions as any;
         optionsWithTools.tools = tools;
-        optionsWithTools.maxSteps = 5; // Add maxSteps when tools are present
+        optionsWithTools.maxSteps = options?.maxSteps || 5; // Enable configurable multi-step tool execution
+
+        // Add comprehensive tool streaming callbacks
+        if (options?.onStepFinish) {
+          optionsWithTools.onStepFinish = options.onStepFinish;
+        }
       }
 
-      const result = await generateText(generateOptions);
+      const result = await generateText(generateOptions as any);
 
       // Handle the case where the model wants to use tools but hasn't generated final text yet
       if (
@@ -345,7 +363,7 @@ export class GroqPortal extends BasePortal {
       if (config.baseURL) providerSettings.baseURL = config.baseURL;
 
       const baseParams = {
-        model: this.groqProvider(toolModel, providerSettings),
+        model: this.groqProvider(toolModel, providerSettings as any),
         prompt: evaluationPrompt,
       };
 
@@ -357,7 +375,7 @@ export class GroqPortal extends BasePortal {
         topP: 0.9,
       });
 
-      const result = await generateText(params);
+      const result = await generateText(params as any);
 
       const processingTime = Date.now() - startTime;
 
@@ -390,7 +408,9 @@ export class GroqPortal extends BasePortal {
       return evalResult;
     } catch (error) {
       // Groq task evaluation error
-      throw new Error(`Groq task evaluation failed: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `Groq task evaluation failed: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -498,7 +518,7 @@ export class GroqPortal extends BasePortal {
       if (config.baseURL) providerSettings.baseURL = config.baseURL;
 
       const baseParams = {
-        model: this.groqProvider(model, providerSettings),
+        model: this.groqProvider(model, providerSettings as any),
         prompt,
       };
 
@@ -510,7 +530,22 @@ export class GroqPortal extends BasePortal {
         temperature: options?.temperature ?? this.config.temperature,
       });
 
-      const result = await streamText(params);
+      // Add tools if provided with comprehensive AI SDK v5 streaming support
+      const hasTools =
+        options?.functions && Object.keys(options.functions).length > 0;
+      if (hasTools) {
+        const tools = this.convertFunctionsToTools(options.functions!);
+        const streamOptionsWithTools = params as any;
+        streamOptionsWithTools.tools = tools;
+        streamOptionsWithTools.maxSteps = options?.maxSteps || 5;
+        streamOptionsWithTools.toolCallStreaming = true;
+
+        if (options?.onStepFinish) {
+          streamOptionsWithTools.onStepFinish = options.onStepFinish;
+        }
+      }
+
+      const result = await streamText(params as any);
 
       for await (const delta of result.textStream) {
         yield delta;
@@ -556,7 +591,7 @@ export class GroqPortal extends BasePortal {
       if (config.baseURL) providerSettings.baseURL = config.baseURL;
 
       const baseParams = {
-        model: this.groqProvider(model, providerSettings),
+        model: this.groqProvider(model, providerSettings as any),
         messages: aiMessages,
       };
 
@@ -571,7 +606,22 @@ export class GroqPortal extends BasePortal {
         presencePenalty: options?.presencePenalty,
       });
 
-      const result = await streamText(params);
+      // Add tools if provided with comprehensive AI SDK v5 streaming support
+      const hasTools =
+        options?.functions && Object.keys(options.functions).length > 0;
+      if (hasTools) {
+        const tools = this.convertFunctionsToTools(options.functions!);
+        const streamOptionsWithTools = params as any;
+        streamOptionsWithTools.tools = tools;
+        streamOptionsWithTools.maxSteps = options?.maxSteps || 5;
+        streamOptionsWithTools.toolCallStreaming = true;
+
+        if (options?.onStepFinish) {
+          streamOptionsWithTools.onStepFinish = options.onStepFinish;
+        }
+      }
+
+      const result = await streamText(params as any);
 
       for await (const delta of result.textStream) {
         yield delta;

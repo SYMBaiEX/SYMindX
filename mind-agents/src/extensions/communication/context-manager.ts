@@ -646,7 +646,7 @@ export class ContextManager {
     const now = Date.now();
     const toDelete: string[] = [];
 
-    for (const [id, context] of this.contexts) {
+    for (const [id, context] of Array.from(this.contexts)) {
       if (
         now - context.lastActive.getTime() >
         this.config.maxContextDuration! * 2

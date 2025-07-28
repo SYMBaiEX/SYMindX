@@ -27,6 +27,7 @@ import {
 import {
   CognitionModule,
   CognitionModuleMetadata,
+  ReasoningParadigm,
 } from '../../types/cognition';
 import { BaseConfig, ActionParameters } from '../../types/common';
 import { MemoryType, MemoryDuration } from '../../types/enums';
@@ -139,6 +140,8 @@ export class UnifiedCognition implements CognitionModule {
       version: '1.0.0',
       description: 'Unified cognition with conditional thinking',
       author: 'SYMindX',
+      paradigms: [ReasoningParadigm.UNIFIED, ReasoningParadigm.DUAL_PROCESS],
+      learningCapable: this.config.enableDualProcess || false,
     };
   }
 
@@ -946,7 +949,8 @@ export class UnifiedCognition implements CognitionModule {
 
     // Clean up old goals
     const now = Date.now();
-    for (const [id, goal] of this.activeGoals) {
+    const goals = Array.from(this.activeGoals.entries());
+    for (const [id, goal] of goals) {
       if (now - goal.created.getTime() > this.config.goalPersistence!) {
         this.activeGoals.delete(id);
       }

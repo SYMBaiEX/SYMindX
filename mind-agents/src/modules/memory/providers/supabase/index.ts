@@ -16,6 +16,7 @@ import {
   MemoryType,
   MemoryDuration,
 } from '../../../../types/agent';
+import { Metadata } from '../../../../types/common';
 import {
   MemoryProviderMetadata,
   MemoryTierType,
@@ -101,6 +102,7 @@ export class SupabaseMemoryProvider extends BaseMemoryProvider {
     const metadata: MemoryProviderMetadata = {
       id: 'supabase',
       name: 'Supabase Memory Provider',
+      type: 'memory',
       description:
         'Enhanced Supabase provider with multi-tier memory, vector search, and shared pools',
       version: '2.0.0',
@@ -601,7 +603,7 @@ export class SupabaseMemoryProvider extends BaseMemoryProvider {
         MemoryType[row.type.toUpperCase() as keyof typeof MemoryType] ||
         MemoryType.EXPERIENCE,
       content: row.content,
-      metadata: row.metadata || {},
+      metadata: (row.metadata || {}) as Metadata,
       importance: row.importance,
       timestamp: new Date(row.timestamp),
       tags: row.tags || [],

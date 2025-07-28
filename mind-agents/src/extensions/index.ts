@@ -24,12 +24,17 @@ export async function registerExtensions(
         enabled: true,
         settings: {
           port:
-            config.extensions.api?.settings?.port ||
-            parseInt(process.env.API_PORT || '8000'),
+            typeof config.extensions.api?.settings === 'object' &&
+            config.extensions.api.settings &&
+            'port' in config.extensions.api.settings
+              ? (config.extensions.api.settings.port as number)
+              : parseInt(process.env.API_PORT || '8000'),
           host:
-            config.extensions.api?.settings?.host ||
-            process.env.API_HOST ||
-            'localhost',
+            typeof config.extensions.api?.settings === 'object' &&
+            config.extensions.api.settings &&
+            'host' in config.extensions.api.settings
+              ? (config.extensions.api.settings.host as string)
+              : process.env.API_HOST || 'localhost',
           cors: {
             enabled: true,
             origins: ['*'],
@@ -72,7 +77,21 @@ export async function registerExtensions(
       runtimeLogger.info('✅ API extension registered');
     } catch (error) {
       void error;
-      runtimeLogger.warn('⚠️ Failed to load API extension:', error);
+      runtimeLogger.warn('⚠️ Failed to load API extension:', {
+        error:
+          error instanceof Error
+            ? {
+                code: error.name,
+                message: error.message,
+                ...(error.stack ? { stack: error.stack } : {}),
+                cause: undefined,
+              }
+            : {
+                code: 'UnknownError',
+                message: String(error),
+                cause: undefined,
+              },
+      });
     }
   }
 
@@ -80,18 +99,32 @@ export async function registerExtensions(
   if (config.extensions.telegram?.enabled) {
     try {
       const telegramConfig = {
-        botToken:
-          config.extensions.telegram.botToken ||
+        enabled: true,
+        token:
+          (typeof config.extensions.telegram.botToken === 'string'
+            ? config.extensions.telegram.botToken
+            : '') ||
           process.env.TELEGRAM_BOT_TOKEN ||
           '',
-        allowedUsers: config.extensions.telegram.allowedUsers || [],
-        commandPrefix: config.extensions.telegram.commandPrefix || '/',
-        maxMessageLength: config.extensions.telegram.maxMessageLength || 4096,
+        allowedUsers: Array.isArray(config.extensions.telegram.allowedUsers)
+          ? config.extensions.telegram.allowedUsers
+          : [],
+        commandPrefix:
+          typeof config.extensions.telegram.commandPrefix === 'string'
+            ? config.extensions.telegram.commandPrefix
+            : '/',
+        maxMessageLength:
+          typeof config.extensions.telegram.maxMessageLength === 'number'
+            ? config.extensions.telegram.maxMessageLength
+            : 4096,
         enableLogging: config.extensions.telegram.enableLogging !== false,
-        ...config.extensions.telegram,
+        settings: {},
+        priority: 1,
+        dependencies: [],
+        capabilities: [],
       };
 
-      if (!telegramConfig.botToken) {
+      if (!telegramConfig.token) {
         runtimeLogger.warn(
           '⚠️ Telegram extension enabled but no bot token provided'
         );
@@ -102,7 +135,21 @@ export async function registerExtensions(
       }
     } catch (error) {
       void error;
-      runtimeLogger.warn('⚠️ Failed to load Telegram extension:', error);
+      runtimeLogger.warn('⚠️ Failed to load Telegram extension:', {
+        error:
+          error instanceof Error
+            ? {
+                code: error.name,
+                message: error.message,
+                ...(error.stack ? { stack: error.stack } : {}),
+                cause: undefined,
+              }
+            : {
+                code: 'UnknownError',
+                message: String(error),
+                cause: undefined,
+              },
+      });
     }
   }
 
@@ -112,17 +159,45 @@ export async function registerExtensions(
       const runeliteConfig = {
         enabled: true,
         settings: {
-          port: config.extensions.runelite.settings?.port || 8081,
-          events: config.extensions.runelite.settings?.events || [],
-          ...config.extensions.runelite.settings,
+          port:
+            typeof config.extensions.runelite.settings === 'object' &&
+            config.extensions.runelite.settings &&
+            'port' in config.extensions.runelite.settings
+              ? (config.extensions.runelite.settings.port as number)
+              : 8081,
+          events:
+            typeof config.extensions.runelite.settings === 'object' &&
+            config.extensions.runelite.settings &&
+            'events' in config.extensions.runelite.settings &&
+            Array.isArray(config.extensions.runelite.settings.events)
+              ? config.extensions.runelite.settings.events
+              : [],
+          ...(typeof config.extensions.runelite.settings === 'object' &&
+          config.extensions.runelite.settings
+            ? config.extensions.runelite.settings
+            : {}),
         },
       };
       const runeliteExtension = createRuneLiteExtension(runeliteConfig);
-      extensions.push(runeliteExtension);
+      extensions.push(runeliteExtension as unknown as Extension);
       runtimeLogger.info('✅ RuneLite extension registered');
     } catch (error) {
       void error;
-      runtimeLogger.warn('⚠️ Failed to load RuneLite extension:', error);
+      runtimeLogger.warn('⚠️ Failed to load RuneLite extension:', {
+        error:
+          error instanceof Error
+            ? {
+                code: error.name,
+                message: error.message,
+                ...(error.stack ? { stack: error.stack } : {}),
+                cause: undefined,
+              }
+            : {
+                code: 'UnknownError',
+                message: String(error),
+                cause: undefined,
+              },
+      });
     }
   }
 
@@ -143,21 +218,50 @@ export async function registerExtensions(
     try {
       const mcpServerConfig = {
         enabled: true,
+        settings: {},
+        priority: 1,
+        dependencies: [],
+        capabilities: [],
         server: {
           enabled: true,
-          transport: extensionsWithMcp.mcpServer.transport || 'stdio',
-          port: extensionsWithMcp.mcpServer.port || 3001,
-          host: extensionsWithMcp.mcpServer.host || 'localhost',
-          path: extensionsWithMcp.mcpServer.path || '/mcp',
-          ...extensionsWithMcp.mcpServer,
+          transport:
+            typeof extensionsWithMcp.mcpServer.transport === 'string'
+              ? extensionsWithMcp.mcpServer.transport
+              : 'stdio',
+          port:
+            typeof extensionsWithMcp.mcpServer.port === 'number'
+              ? extensionsWithMcp.mcpServer.port
+              : 3001,
+          host:
+            typeof extensionsWithMcp.mcpServer.host === 'string'
+              ? extensionsWithMcp.mcpServer.host
+              : 'localhost',
+          path:
+            typeof extensionsWithMcp.mcpServer.path === 'string'
+              ? extensionsWithMcp.mcpServer.path
+              : '/mcp',
         },
       };
       const mcpServerExtension = new MCPServerExtension(mcpServerConfig);
-      extensions.push(mcpServerExtension);
+      extensions.push(mcpServerExtension as unknown as Extension);
       runtimeLogger.info('✅ MCP Server extension registered');
     } catch (error) {
       void error;
-      runtimeLogger.warn('⚠️ Failed to load MCP Server extension:', error);
+      runtimeLogger.warn('⚠️ Failed to load MCP Server extension:', {
+        error:
+          error instanceof Error
+            ? {
+                code: error.name,
+                message: error.message,
+                ...(error.stack ? { stack: error.stack } : {}),
+                cause: undefined,
+              }
+            : {
+                code: 'UnknownError',
+                message: String(error),
+                cause: undefined,
+              },
+      });
     }
   }
 
@@ -174,11 +278,7 @@ export {
   createTelegramExtension,
   type TelegramConfig,
 } from './telegram/index';
-export {
-  RuneLiteExtension,
-  createRuneLiteExtension,
-  type RuneLiteConfig,
-} from './runelite/index';
+export { RuneLiteExtension, createRuneLiteExtension } from './runelite/index';
 // export { MCPClientExtension, type MCPClientConfig } from './mcp-client/index'
 // export { MCPServerExtension, type MCPServerConfig } from './mcp-server/index'
 // export { CommunicationExtension, type CommunicationConfig } from './communication/index'

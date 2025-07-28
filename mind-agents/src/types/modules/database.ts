@@ -18,7 +18,7 @@ export interface DatabaseConnection {
 
   connect(): Promise<void>;
   disconnect(): Promise<void>;
-  query<T = any>(sql: string, params?: any[]): Promise<QueryResult<T>>;
+  query<T = unknown>(sql: string, params?: unknown[]): Promise<QueryResult<T>>;
   beginTransaction(): Promise<TransactionScope>;
   isHealthy(): Promise<boolean>;
 }
@@ -26,7 +26,7 @@ export interface DatabaseConnection {
 /**
  * Generic query result interface
  */
-export interface QueryResult<T = any> {
+export interface QueryResult<T = unknown> {
   rows: T[];
   rowCount: number;
   fields?: Array<{
@@ -47,7 +47,7 @@ export interface TransactionScope {
   inTransaction: boolean;
   savepoints: string[];
 
-  query<T = any>(sql: string, params?: any[]): Promise<QueryResult<T>>;
+  query<T = unknown>(sql: string, params?: unknown[]): Promise<QueryResult<T>>;
   commit(): Promise<void>;
   rollback(): Promise<void>;
   savepoint(name: string): Promise<void>;
@@ -237,7 +237,7 @@ export interface PreparedStatement {
   text: string;
   paramTypes?: string[];
 
-  execute<T = any>(params?: any[]): Promise<QueryResult<T>>;
+  execute<T = unknown>(params?: unknown[]): Promise<QueryResult<T>>;
   deallocate(): Promise<void>;
 }
 
@@ -270,7 +270,7 @@ export interface ColumnMetadata {
   name: string;
   dataType: string;
   nullable: boolean;
-  defaultValue?: any;
+  defaultValue?: unknown;
   maxLength?: number;
   precision?: number;
   scale?: number;

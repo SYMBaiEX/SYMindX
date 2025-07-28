@@ -5,7 +5,7 @@
  * embeddings, classification, and semantic search using AI SDK v5
  */
 
-import { cohere } from '@ai-sdk/cohere';
+import { cohere, createCohere } from '@ai-sdk/cohere';
 import {
   generateText as aiGenerateText,
   streamText as aiStreamText,
@@ -33,7 +33,7 @@ import {
 } from '../../types/portal';
 import type { AIMessage as ModelMessage } from '../../types/portals/ai-sdk';
 import { BasePortal } from '../base-portal';
-import { convertUsage, buildAISDKParams } from '../utils';
+import { convertUsage } from '../utils';
 
 export interface CohereConfig extends PortalConfig {
   apiKey: string;
@@ -91,7 +91,14 @@ export class CoherePortal extends BasePortal {
 
   constructor(config: CohereConfig) {
     super('cohere-ai', 'Cohere AI', '1.0.0', config);
-    this.cohereProvider = cohere;
+
+    // Create properly configured Cohere provider
+    const providerConfig: { apiKey?: string; baseURL?: string } = {};
+    const apiKey = config.apiKey || process.env.COHERE_API_KEY;
+    if (apiKey) providerConfig.apiKey = apiKey;
+    if (config.baseUrl) providerConfig.baseURL = config.baseUrl;
+
+    this.cohereProvider = createCohere(providerConfig);
   }
 
   override async init(_agent: Agent): Promise<void> {
@@ -118,7 +125,7 @@ export class CoherePortal extends BasePortal {
         model: this.cohereProvider('command-r-plus', {
           apiKey: (this.config as CohereConfig).apiKey,
           baseURL: (this.config as CohereConfig).baseUrl,
-        }),
+        }) as any,
         messages: [{ role: 'user' as const, content: 'Hello' }],
         maxOutputTokens: 10,
       });
@@ -174,18 +181,42 @@ export class CoherePortal extends BasePortal {
             apiKey: (this.config as CohereConfig).apiKey,
             baseURL: (this.config as CohereConfig).baseUrl,
           }
-        ),
+        ) as any,
         messages: [{ role: 'user' as const, content: prompt }],
       };
 
-      const params = buildAISDKParams(baseParams, {
-        maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
-        temperature: options?.temperature ?? this.config.temperature,
-        topP: options?.topP,
-        frequencyPenalty: options?.frequencyPenalty,
-        presencePenalty: options?.presencePenalty,
-        stopSequences: options?.stop,
-      });
+      const params: any = { ...baseParams };
+
+      if (
+        options?.maxOutputTokens ??
+        options?.maxTokens ??
+        this.config.maxTokens
+      ) {
+        params.maxOutputTokens =
+          options?.maxOutputTokens ??
+          options?.maxTokens ??
+          this.config.maxTokens;
+      }
+
+      if (options?.temperature ?? this.config.temperature) {
+        params.temperature = options?.temperature ?? this.config.temperature;
+      }
+
+      if (options?.topP) {
+        params.topP = options.topP;
+      }
+
+      if (options?.frequencyPenalty) {
+        params.frequencyPenalty = options.frequencyPenalty;
+      }
+
+      if (options?.presencePenalty) {
+        params.presencePenalty = options.presencePenalty;
+      }
+
+      if (options?.stop) {
+        params.stopSequences = options.stop;
+      }
 
       const { text, usage, finishReason } = await aiGenerateText(params);
 
@@ -224,19 +255,46 @@ export class CoherePortal extends BasePortal {
             apiKey: (this.config as CohereConfig).apiKey,
             baseURL: (this.config as CohereConfig).baseUrl,
           }
-        ),
+        ) as any,
         messages: modelMessages,
       };
 
-      const params = buildAISDKParams(baseParams, {
-        maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
-        temperature: options?.temperature ?? this.config.temperature,
-        topP: options?.topP,
-        frequencyPenalty: options?.frequencyPenalty,
-        presencePenalty: options?.presencePenalty,
-        stopSequences: options?.stop,
-        tools: options?.tools,
-      });
+      const params: any = { ...baseParams };
+
+      if (
+        options?.maxOutputTokens ??
+        options?.maxTokens ??
+        this.config.maxTokens
+      ) {
+        params.maxOutputTokens =
+          options?.maxOutputTokens ??
+          options?.maxTokens ??
+          this.config.maxTokens;
+      }
+
+      if (options?.temperature ?? this.config.temperature) {
+        params.temperature = options?.temperature ?? this.config.temperature;
+      }
+
+      if (options?.topP) {
+        params.topP = options.topP;
+      }
+
+      if (options?.frequencyPenalty) {
+        params.frequencyPenalty = options.frequencyPenalty;
+      }
+
+      if (options?.presencePenalty) {
+        params.presencePenalty = options.presencePenalty;
+      }
+
+      if (options?.stop) {
+        params.stopSequences = options.stop;
+      }
+
+      if (options?.tools) {
+        params.tools = options.tools;
+      }
 
       const { text, usage, finishReason } = await aiGenerateText(params);
 
@@ -267,10 +325,7 @@ export class CoherePortal extends BasePortal {
     try {
       const modelName = options?.model || 'embed-english-v3.0';
       const { embedding, usage } = await aiEmbed({
-        model: this.cohereProvider.textEmbedding(modelName, {
-          apiKey: (this.config as CohereConfig).apiKey,
-          baseURL: (this.config as CohereConfig).baseUrl,
-        }),
+        model: this.cohereProvider.textEmbeddingModel(modelName) as any,
         value: text,
       });
 
@@ -314,18 +369,42 @@ export class CoherePortal extends BasePortal {
             apiKey: (this.config as CohereConfig).apiKey,
             baseURL: (this.config as CohereConfig).baseUrl,
           }
-        ),
+        ) as any,
         messages: [{ role: 'user' as const, content: prompt }],
       };
 
-      const params = buildAISDKParams(baseParams, {
-        maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
-        temperature: options?.temperature ?? this.config.temperature,
-        topP: options?.topP,
-        frequencyPenalty: options?.frequencyPenalty,
-        presencePenalty: options?.presencePenalty,
-        stopSequences: options?.stop,
-      });
+      const params: any = { ...baseParams };
+
+      if (
+        options?.maxOutputTokens ??
+        options?.maxTokens ??
+        this.config.maxTokens
+      ) {
+        params.maxOutputTokens =
+          options?.maxOutputTokens ??
+          options?.maxTokens ??
+          this.config.maxTokens;
+      }
+
+      if (options?.temperature ?? this.config.temperature) {
+        params.temperature = options?.temperature ?? this.config.temperature;
+      }
+
+      if (options?.topP) {
+        params.topP = options.topP;
+      }
+
+      if (options?.frequencyPenalty) {
+        params.frequencyPenalty = options.frequencyPenalty;
+      }
+
+      if (options?.presencePenalty) {
+        params.presencePenalty = options.presencePenalty;
+      }
+
+      if (options?.stop) {
+        params.stopSequences = options.stop;
+      }
 
       const { textStream } = await aiStreamText(params);
 
@@ -360,19 +439,46 @@ export class CoherePortal extends BasePortal {
             apiKey: (this.config as CohereConfig).apiKey,
             baseURL: (this.config as CohereConfig).baseUrl,
           }
-        ),
+        ) as any,
         messages: modelMessages,
       };
 
-      const params = buildAISDKParams(baseParams, {
-        maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
-        temperature: options?.temperature ?? this.config.temperature,
-        topP: options?.topP,
-        frequencyPenalty: options?.frequencyPenalty,
-        presencePenalty: options?.presencePenalty,
-        stopSequences: options?.stop,
-        tools: options?.tools,
-      });
+      const params: any = { ...baseParams };
+
+      if (
+        options?.maxOutputTokens ??
+        options?.maxTokens ??
+        this.config.maxTokens
+      ) {
+        params.maxOutputTokens =
+          options?.maxOutputTokens ??
+          options?.maxTokens ??
+          this.config.maxTokens;
+      }
+
+      if (options?.temperature ?? this.config.temperature) {
+        params.temperature = options?.temperature ?? this.config.temperature;
+      }
+
+      if (options?.topP) {
+        params.topP = options.topP;
+      }
+
+      if (options?.frequencyPenalty) {
+        params.frequencyPenalty = options.frequencyPenalty;
+      }
+
+      if (options?.presencePenalty) {
+        params.presencePenalty = options.presencePenalty;
+      }
+
+      if (options?.stop) {
+        params.stopSequences = options.stop;
+      }
+
+      if (options?.tools) {
+        params.tools = options.tools;
+      }
 
       const { textStream } = await aiStreamText(params);
 

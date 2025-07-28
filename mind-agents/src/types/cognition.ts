@@ -113,8 +113,11 @@ export interface CognitionModuleMetadata {
 
 /**
  * Factory function type for creating cognition modules
+ * This factory is synchronous and returns the module directly
  */
-export type CognitionModuleFactory = (config?: BaseConfig) => CognitionModule;
+export type CognitionModuleFactory = (
+  config?: BaseConfig
+) => CognitionModule | Promise<CognitionModule>;
 
 /**
  * Reasoning paradigm types
@@ -142,6 +145,21 @@ export enum ReasoningParadigm {
  * Rule for rule-based reasoning
  */
 export interface Rule {
+  [key: string]: unknown;
+  id: string;
+  name: string;
+  conditions: Condition[];
+  actions: RuleAction[];
+  priority?: number;
+  confidence?: number;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Serializable rule for storage and transfer
+ */
+export interface SerializableRule {
+  [key: string]: unknown;
   id: string;
   name: string;
   conditions: Condition[];
@@ -320,10 +338,37 @@ export interface HybridReasoningConfig {
 /**
  * PDDL types for planning
  */
+export type PDDLRequirement =
+  | ':strips'
+  | ':typing'
+  | ':negative-preconditions'
+  | ':disjunctive-preconditions'
+  | ':equality'
+  | ':existential-preconditions'
+  | ':universal-preconditions'
+  | ':quantified-preconditions'
+  | ':conditional-effects'
+  | ':fluents'
+  | ':adl'
+  | ':durative-actions'
+  | ':duration-inequalities'
+  | ':continuous-effects'
+  | ':derived-predicates'
+  | ':timed-initial-literals'
+  | ':preferences'
+  | ':constraints'
+  | ':action-costs';
+
+export interface PDDLType {
+  name: string;
+  parent?: string;
+  hierarchy?: string[];
+}
+
 export interface PDDLDomain {
   name: string;
-  requirements: string[];
-  types: string[];
+  requirements: PDDLRequirement[];
+  types: PDDLType[];
   predicates: PDDLPredicate[];
   actions: PDDLAction[];
 }
@@ -331,6 +376,7 @@ export interface PDDLDomain {
 export interface PDDLPredicate {
   name: string;
   parameters: PDDLParameter[];
+  description?: string;
 }
 
 export interface PDDLParameter {
@@ -393,6 +439,17 @@ export interface ContextAnalysis {
   ethicalConsiderations: boolean;
   multiAgent: boolean;
   dynamicEnvironment: boolean;
+}
+
+/**
+ * Extended context analysis with additional properties for meta-reasoner
+ */
+export interface ExtendedContextAnalysis extends ContextAnalysis {
+  goalOriented: boolean;
+  probabilisticNature: number;
+  rulesApplicable: number;
+  knowledgeAvailable: number;
+  adaptationNeeded: boolean;
 }
 
 /**

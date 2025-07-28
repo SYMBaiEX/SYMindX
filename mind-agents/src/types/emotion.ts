@@ -138,7 +138,9 @@ export interface EmotionModuleMetadata {
 /**
  * Factory function type for creating emotion modules
  */
-export type EmotionModuleFactory = (config?: BaseConfig) => EmotionModule;
+export type EmotionModuleFactory = (
+  config?: BaseConfig
+) => EmotionModule | Promise<EmotionModule>;
 
 /**
  * Personality traits based on Big Five model

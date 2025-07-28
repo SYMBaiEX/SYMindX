@@ -214,11 +214,8 @@ export class DynamicToolSystem implements ToolSystem {
     executionCount: number;
     errorCount: number;
     averageExecutionTime: number;
-    servers: Array<{
-      uri: string;
-      status: 'connected' | 'disconnected' | 'error';
-      tools: number;
-    }>;
+    activeExecutions: number;
+    servers: Record<string, { toolCount: number; tools: string[] }>;
   } {
     const serverStats = this.getServerStats();
 

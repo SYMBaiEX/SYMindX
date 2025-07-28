@@ -3,8 +3,15 @@ node_modules/
 */node_modules/
 bun.lockb
 
+#Claude
+.claude/
+Claude.local.md
+
 # Trae IDE
 .trae/
+
+#debug reports 
+debug-reports/
 
 # Documentation
 mind-agents/docs/

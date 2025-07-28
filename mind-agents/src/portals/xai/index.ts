@@ -58,13 +58,10 @@ export class XAIPortal extends BasePortal {
   /**
    * Get language model instance
    */
-  private getLanguageModel(modelId?: string): LanguageModel {
+  private getLanguageModel(modelId?: string): any {
     const model = modelId || (this.config as XAIConfig).model || 'grok-2';
     const config = this.config as XAIConfig;
-    return this.xaiProvider(model, {
-      apiKey: config.apiKey || process.env.XAI_API_KEY,
-      baseURL: config.baseURL,
-    });
+    return this.xaiProvider(model);
   }
 
   /**
@@ -261,7 +258,7 @@ export class XAIPortal extends BasePortal {
       // Build parameters conditionally to satisfy exactOptionalPropertyTypes
       const generateParams = this.buildXAIChatParams(baseParams, options);
 
-      const result = await aiGenerateText(generateParams);
+      const result = await aiGenerateText(generateParams as any);
 
       return {
         text: result.text,
@@ -368,7 +365,7 @@ export class XAIPortal extends BasePortal {
       // Build parameters conditionally to satisfy exactOptionalPropertyTypes
       const streamParams = this.buildXAIChatParams(baseParams, options);
 
-      const result = await aiStreamText(streamParams);
+      const result = await aiStreamText(streamParams as any);
 
       for await (const chunk of result.textStream) {
         yield chunk;

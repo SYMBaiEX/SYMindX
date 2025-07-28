@@ -12,11 +12,11 @@ import chalk from 'chalk';
 import { Command } from 'commander';
 
 import { AgentStatus } from '../../types/agent';
-import { Logger } from '../../utils/logger';
+import { runtimeLogger } from '../../utils/logger';
 import { CLIContext } from '../index';
 
 export class StatusCommand {
-  private logger = new Logger('cli:status');
+  private logger = runtimeLogger;
 
   constructor(private context: CLIContext) {}
 
@@ -82,7 +82,18 @@ export class StatusCommand {
       process.stdout.write(chalk.gray('─'.repeat(60)) + '\n');
 
       // Runtime status
-      const stats = this.context.runtime.getStats();
+      const stats = this.context.runtime.getStats() as {
+        isRunning: boolean;
+        agents: number;
+        autonomousAgents: number;
+        extensions?: { loaded?: number; failed?: number };
+        autonomous?: {
+          totalAutonomousAgents?: number;
+          autonomousEngines?: number;
+          decisionEngines?: number;
+        };
+        eventBus?: { events?: number };
+      };
       const isRunning = stats.isRunning;
 
       process.stdout.write(
@@ -104,10 +115,9 @@ export class StatusCommand {
         }
       }
 
-      // Command system status
-      const commandStats = this.context.commandSystem.getStats();
+      // Command system status - not available in current implementation
       process.stdout.write(
-        `${chalk.cyan('Commands:')} ${commandStats.totalCommands} total, ${commandStats.processingCommands} active` + '\n'
+        `${chalk.cyan('Commands:')} Command tracking not available` + '\n'
       );
 
       // System resources
@@ -201,7 +211,18 @@ export class StatusCommand {
       process.stdout.write(chalk.blue.bold('\n⚙️  Runtime Status') + '\n');
       process.stdout.write(chalk.gray('─'.repeat(60)) + '\n');
 
-      const stats = this.context.runtime.getStats();
+      const stats = this.context.runtime.getStats() as {
+        isRunning: boolean;
+        agents: number;
+        autonomousAgents: number;
+        extensions?: { loaded?: number; failed?: number };
+        autonomous?: {
+          totalAutonomousAgents?: number;
+          autonomousEngines?: number;
+          decisionEngines?: number;
+        };
+        eventBus?: { events?: number };
+      };
 
       // Basic runtime info
       process.stdout.write(
@@ -214,13 +235,13 @@ export class StatusCommand {
 
       // Event bus status
       process.stdout.write(chalk.cyan('\nEvent Bus:') + '\n');
-      process.stdout.write(`  Events: ${stats.eventBus.events}` + '\n');
+      process.stdout.write(`  Events: ${stats.eventBus?.events || 0}` + '\n');
 
       // Autonomous systems
-      if (stats.autonomous && stats.autonomous.totalAutonomousAgents > 0) {
+      if (stats.autonomous && (stats.autonomous.totalAutonomousAgents || 0) > 0) {
         process.stdout.write(chalk.cyan('\nAutonomous Systems:') + '\n');
-        process.stdout.write(`  Engines: ${stats.autonomous.autonomousEngines}` + '\n');
-        process.stdout.write(`  Decision Engines: ${stats.autonomous.decisionEngines}` + '\n');
+        process.stdout.write(`  Engines: ${stats.autonomous.autonomousEngines || 0}` + '\n');
+        process.stdout.write(`  Decision Engines: ${stats.autonomous.decisionEngines || 0}` + '\n');
         process.stdout.write(`  Behaviors: Integrated into autonomous engines` + '\n');
         process.stdout.write(`  Lifecycle: Integrated into autonomous engines` + '\n');
       }
@@ -231,7 +252,14 @@ export class StatusCommand {
       process.stdout.write(`  Failed: ${stats.extensions?.failed || 0}` + '\n');
 
       // Runtime capabilities
-      const capabilities = this.context.runtime.getRuntimeCapabilities();
+      const capabilities = this.context.runtime.getRuntimeCapabilities() as {
+        modules: {
+          memory: { available: string[] };
+          emotion: { available: string[] };
+          cognition: { available: string[] };
+          portals: { available: string[]; factories: string[] };
+        };
+      };
       process.stdout.write(chalk.cyan('\nAvailable Modules:') + '\n');
       process.stdout.write(
         `  Memory Providers: ${capabilities.modules.memory.available.join(', ')}` + '\n'
@@ -298,36 +326,24 @@ export class StatusCommand {
       }
 
       // Autonomous status
-      const autonomousStatus =
-        this.context.runtime.getAutonomousStatus(agentId);
-      if (autonomousStatus.autonomous) {
+      const autonomousStatus = this.context.runtime.getAutonomousStatus(agentId);
+      const isAutonomous = autonomousStatus.autonomous || false;
+      if (isAutonomous) {
         process.stdout.write(chalk.cyan('\nAutonomous Capabilities:') + '\n');
+        const autonomyLevel = autonomousStatus.engine?.autonomyLevel || 0;
         process.stdout.write(
-          `  Autonomy Level: ${((autonomousStatus.engine?.autonomyLevel || 0) * 100).toFixed(0)}%` + '\n'
+          `  Autonomy Level: ${(autonomyLevel * 100).toFixed(0)}%` + '\n'
         );
         process.stdout.write(
-          `  Interruptible: ${autonomousStatus.engine?.interruptible ? '✅' : '❌'}` + '\n'
+          `  Enabled: ${isAutonomous ? '✅' : '❌'}` + '\n'
         );
-        process.stdout.write(
-          `  Ethical Constraints: ${autonomousStatus.engine?.ethicalConstraints ? '✅' : '❌'}` + '\n'
-        );
-
         process.stdout.write(`  Lifecycle: Integrated into autonomous engine` + '\n');
       }
 
-      // Command queue
-      const agentCommands = this.context.commandSystem.getAgentQueue(agentId);
+      // Command queue - not available in current implementation
       process.stdout.write(
-        chalk.cyan(`\nCommand Queue: ${agentCommands.length} pending`) + '\n'
+        chalk.cyan(`\nCommand Queue: Not available in current implementation`) + '\n'
       );
-      if (agentCommands.length > 0) {
-        for (const cmd of agentCommands.slice(0, 5)) {
-          process.stdout.write(`  • ${cmd.instruction} (${cmd.priority})` + '\n');
-        }
-        if (agentCommands.length > 5) {
-          process.stdout.write(`  ... and ${agentCommands.length - 5} more` + '\n');
-        }
-      }
     } catch (error) {
       process.stderr.write(chalk.red('❌ Failed to get agent status') + '\n');
       this.logger.error('Agent status error:', error);
@@ -344,7 +360,18 @@ export class StatusCommand {
 
       // Check runtime
       process.stdout.write(chalk.cyan('🔍 Checking runtime...') + '\n');
-      const stats = this.context.runtime.getStats();
+      const stats = this.context.runtime.getStats() as {
+        isRunning: boolean;
+        agents: number;
+        autonomousAgents: number;
+        extensions?: { loaded?: number; failed?: number };
+        autonomous?: {
+          totalAutonomousAgents?: number;
+          autonomousEngines?: number;
+          decisionEngines?: number;
+        };
+        eventBus?: { events?: number };
+      };
       if (!stats.isRunning) {
         issues.push('Runtime is not running');
       } else {
@@ -420,14 +447,9 @@ export class StatusCommand {
         warnings.push('No extensions loaded');
       }
 
-      // Check command system
+      // Check command system - not available in current implementation
       process.stdout.write(chalk.cyan('🔍 Checking command system...') + '\n');
-      const commandStats = this.context.commandSystem.getStats();
-      if (commandStats.failedCommands > commandStats.completedCommands * 0.5) {
-        warnings.push('High command failure rate');
-      } else {
-        process.stdout.write(chalk.green('  ✅ Command system is healthy') + '\n');
-      }
+      process.stdout.write(chalk.gray('  ⚠️  Command system not available in current implementation') + '\n');
 
       // Summary
       process.stdout.write(chalk.cyan('\n📋 Health Check Summary:') + '\n');
@@ -467,7 +489,17 @@ export class StatusCommand {
       process.stdout.write(chalk.blue.bold('\n🛠️  System Capabilities') + '\n');
       process.stdout.write(chalk.gray('─'.repeat(60)) + '\n');
 
-      const capabilities = this.context.runtime.getRuntimeCapabilities();
+      const capabilities = this.context.runtime.getRuntimeCapabilities() as {
+        runtime: { version: string; isRunning: boolean; tickInterval: number };
+        agents: { active: number; lazy: number; total: number; activeList: string[] };
+        modules: {
+          memory: { available: string[] };
+          emotion: { available: string[] };
+          cognition: { available: string[] };
+          portals: { available: string[]; factories: string[] };
+        };
+        extensions: { loaded: string[] };
+      };
 
       // Runtime info
       process.stdout.write(chalk.cyan('Runtime:') + '\n');
@@ -512,23 +544,9 @@ export class StatusCommand {
         `  Loaded: ${capabilities.extensions.loaded.join(', ') || 'none'}` + '\n'
       );
 
-      // Command system capabilities
-      const commandStats = this.context.commandSystem.getStats();
+      // Command system capabilities - not available in current implementation
       process.stdout.write(chalk.cyan('\nCommand System:') + '\n');
-      process.stdout.write(`  Total Commands Processed: ${commandStats.totalCommands}` + '\n');
-      process.stdout.write(
-        `  Success Rate: ${
-          commandStats.totalCommands > 0
-            ? (
-                (commandStats.completedCommands / commandStats.totalCommands) *
-                100
-              ).toFixed(1)
-            : 0
-        }%` + '\n'
-      );
-      process.stdout.write(
-        `  Average Execution Time: ${commandStats.averageExecutionTime.toFixed(2)}ms` + '\n'
-      );
+      process.stdout.write(`  Status: Not available in current implementation` + '\n');
     } catch (error) {
       process.stderr.write(chalk.red('❌ Failed to get capabilities') + '\n');
       this.logger.error('Capabilities error:', error);
@@ -572,7 +590,18 @@ export class StatusCommand {
 
     try {
       // Check if runtime is running
-      const stats = this.context.runtime.getStats();
+      const stats = this.context.runtime.getStats() as {
+        isRunning: boolean;
+        agents: number;
+        autonomousAgents: number;
+        extensions?: { loaded?: number; failed?: number };
+        autonomous?: {
+          totalAutonomousAgents?: number;
+          autonomousEngines?: number;
+          decisionEngines?: number;
+        };
+        eventBus?: { events?: number };
+      };
       if (!stats.isRunning) {
         issues.push('Runtime is stopped');
       }
@@ -590,14 +619,8 @@ export class StatusCommand {
         issues.push('High memory usage');
       }
 
-      // Check command failure rate
-      const commandStats = this.context.commandSystem.getStats();
-      if (
-        commandStats.totalCommands > 0 &&
-        commandStats.failedCommands / commandStats.totalCommands > 0.5
-      ) {
-        issues.push('High command failure rate');
-      }
+      // Command system not available in current implementation
+      // No command failure rate check available
     } catch (error) {
       this.logger.error('Health check failed', error instanceof Error ? error : new Error('Unknown error'));
       issues.push('Health check failed');

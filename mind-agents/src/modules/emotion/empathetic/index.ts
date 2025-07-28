@@ -42,7 +42,7 @@ export class EmpatheticEmotion extends BaseEmotion {
     };
   }
 
-  override processEvent(eventType: string, context?: unknown): EmotionResult {
+  override processEvent(eventType: string, context?: any): EmotionResult {
     // Special processing for empathy-specific events
     if (context?.others_emotion && context.others_emotion !== 'neutral') {
       this._intensity = Math.min(1.0, this._intensity + 0.2);
@@ -65,4 +65,9 @@ export function createEmpatheticEmotion(
   config: EmpatheticEmotionConfig = {}
 ): EmpatheticEmotion {
   return new EmpatheticEmotion(config);
+}
+
+// Export module factory for registry
+export function createEmpatheticEmotionModule(config?: any): EmpatheticEmotion {
+  return new EmpatheticEmotion(config || {});
 }

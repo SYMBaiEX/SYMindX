@@ -14,16 +14,20 @@ import { WebSocket, WebSocketServer } from 'ws';
 import { Agent } from '../../types/agent';
 import type {
   MCPServer,
+  MCPServerInfo as GlobalMCPServerInfo,
   MCPTool,
   MCPResource,
   MCPPrompt,
   InitializeRequest,
+  InitializeResponse,
   ListToolsResponse,
   CallToolResponse,
   ListResourcesResponse,
   ReadResourceResponse,
   ListPromptsResponse,
   GetPromptResponse,
+  MCPRequest as GlobalMCPRequest,
+  MCPResponse as GlobalMCPResponse,
 } from '../../types/extensions/mcp';
 import { runtimeLogger } from '../../utils/logger';
 
@@ -42,7 +46,7 @@ import {
 } from './types';
 
 export class MCPServerManager extends EventEmitter implements MCPServer {
-  serverInfo: MCPServerInfo;
+  serverInfo: GlobalMCPServerInfo;
   private config: MCPServerConfig;
   private agent?: Agent;
   private httpServer?: Server;
@@ -110,7 +114,7 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
       name: this.config.name!,
       version: this.config.version!,
       protocolVersion: '2024-11-05',
-      capabilities: this.getServerCapabilities(),
+      capabilities: this.getGlobalServerCapabilities(),
     };
   }
 
@@ -121,7 +125,50 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
     return `req_${++this._requestId}_${Date.now()}`;
   }
 
-  async initialize(agent: Agent): Promise<void> {
+  /**
+   * Convert global capabilities to local capabilities format
+   */
+  private convertGlobalToLocalCapabilities(globalCaps?: {
+    tools?: boolean;
+    resources?: boolean;
+    prompts?: boolean;
+  }): MCPCapabilities {
+    const capabilities: MCPCapabilities = {
+      logging: {},
+    };
+
+    if (globalCaps?.tools) {
+      capabilities.tools = { listChanged: true };
+    }
+    if (globalCaps?.resources) {
+      capabilities.resources = { subscribe: false, listChanged: true };
+    }
+    if (globalCaps?.prompts) {
+      capabilities.prompts = { listChanged: true };
+    }
+
+    return capabilities;
+  }
+
+  /**
+   * Convert global initialize params to local format
+   */
+  private convertGlobalInitializeParams(
+    globalParams: InitializeRequest['params']
+  ): MCPInitializeParams {
+    return {
+      protocolVersion: globalParams.protocolVersion,
+      capabilities: this.convertGlobalToLocalCapabilities(
+        globalParams.capabilities
+      ),
+      clientInfo: globalParams.clientInfo || {
+        name: 'unknown-client',
+        version: '1.0.0',
+      },
+    };
+  }
+
+  async initializeWithAgent(agent: Agent): Promise<void> {
     this.agent = agent;
     this.registerDefaultTools();
     this.registerDefaultResources();
@@ -130,6 +177,25 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
     runtimeLogger.info(
       `🎯 MCP Server Manager initialized for agent: ${agent.name}`
     );
+  }
+
+  async initialize(
+    params: InitializeRequest['params']
+  ): Promise<InitializeResponse['result']> {
+    // Handle MCP protocol initialization
+    const localParams = this.convertGlobalInitializeParams(params);
+    void localParams; // Use the converted params if needed for internal logic
+
+    return {
+      protocolVersion: '2024-11-05',
+      capabilities: {
+        tools: true,
+        resources: true,
+        prompts: true,
+        logging: true,
+      },
+      serverInfo: this.serverInfo,
+    };
   }
 
   async start(): Promise<void> {
@@ -156,7 +222,7 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
       this.emit('server:started');
     } catch (error) {
       void error;
-      runtimeLogger.error('❌ Failed to start MCP Server:', error);
+      runtimeLogger.error('❌ Failed to start MCP Server:', { error });
       throw error;
     }
   }
@@ -184,7 +250,7 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
       this.emit('server:stopped');
     } catch (error) {
       void error;
-      runtimeLogger.error('❌ Error stopping MCP Server:', error);
+      runtimeLogger.error('❌ Error stopping MCP Server:', { error });
     }
   }
 
@@ -254,7 +320,7 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
         }
       } catch (error) {
         void error;
-        runtimeLogger.error('❌ Error handling stdio request:', error);
+        runtimeLogger.error('❌ Error handling stdio request:', { error });
       }
     });
   }
@@ -301,8 +367,8 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
     const connection: MCPConnectionInfo = {
       id: connectionId,
       type: 'websocket',
-      remoteAddress: req.socket.remoteAddress,
-      userAgent: req.headers['user-agent'],
+      remoteAddress: req.socket.remoteAddress || 'unknown',
+      userAgent: req.headers['user-agent'] || 'unknown',
       connectedAt: new Date(),
       requestCount: 0,
       lastActivity: new Date(),
@@ -328,7 +394,7 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
         connection.lastActivity = new Date();
       } catch (error) {
         void error;
-        runtimeLogger.error('❌ Error handling WebSocket message:', error);
+        runtimeLogger.error('❌ Error handling WebSocket message:', { error });
       }
     });
 
@@ -338,8 +404,15 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
     });
   }
 
-  async handleRequest(request: MCPRequest): Promise<MCPResponse> {
-    const response = await this.handleRequestInternal(request, 'unknown');
+  async handleRequest(request: GlobalMCPRequest): Promise<GlobalMCPResponse> {
+    const localRequest: MCPRequest = {
+      id: request.id,
+      jsonrpc: request.jsonrpc,
+      method: request.method,
+      params: (request as any).params,
+    };
+
+    const response = await this.handleRequestInternal(localRequest, 'unknown');
     if (!response) {
       return {
         id: request.id,
@@ -350,7 +423,7 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
         },
       };
     }
-    return response;
+    return response as GlobalMCPResponse;
   }
 
   private async handleRequestInternal(
@@ -377,7 +450,10 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
 
       switch (method) {
         case 'initialize':
-          result = await this.handleInitialize(params as MCPInitializeParams);
+          const initParams = params as InitializeRequest['params'];
+          result = await this.handleInitializeInternal(
+            this.convertGlobalInitializeParams(initParams)
+          );
           break;
 
         case 'tools/list':
@@ -385,7 +461,9 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
           break;
 
         case 'tools/call':
-          result = await this.handleToolCall(params);
+          result = await this.handleToolCall(
+            params as { name: string; arguments?: Record<string, unknown> }
+          );
           this.stats.toolExecutions++;
           break;
 
@@ -394,7 +472,7 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
           break;
 
         case 'resources/read':
-          result = await this.handleResourceRead(params);
+          result = await this.handleResourceRead(params as { uri: string });
           this.stats.resourceAccesses++;
           break;
 
@@ -403,7 +481,9 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
           break;
 
         case 'prompts/get':
-          result = await this.handlePromptGet(params);
+          result = await this.handlePromptGet(
+            params as { name: string; arguments?: Record<string, string> }
+          );
           this.stats.promptRequests++;
           break;
 
@@ -422,14 +502,18 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
       };
 
       if (this.config.logging?.enabled && this.config.logging.includeResults) {
-        runtimeLogger.debug(`📤 MCP Response:`, result);
+        runtimeLogger.debug(
+          `📤 MCP Response: ${JSON.stringify(result, null, 2)}`
+        );
       }
 
       return response;
     } catch (error) {
       void error;
       this.stats.errorCount++;
-      runtimeLogger.error(`❌ MCP Request error for ${request.method}:`, error);
+      runtimeLogger.error(`❌ MCP Request error for ${request.method}:`, {
+        error,
+      });
 
       return {
         id: request.id,
@@ -443,12 +527,7 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
     }
   }
 
-  // Implement MCPServer interface methods
-  async initializeMCP(
-    params: InitializeRequest['params']
-  ): Promise<MCPServerInfo> {
-    return this.handleInitialize(params as MCPInitializeParams);
-  }
+  // Implement MCPServer interface methods - removed duplicate method as initialize() already exists
 
   async listTools(): Promise<MCPTool[]> {
     const result = await this.handleToolsList();
@@ -459,7 +538,11 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
     name: string,
     args?: Record<string, unknown>
   ): Promise<CallToolResponse['result']> {
-    return this.handleToolCall({ name, arguments: args });
+    const params: any = { name };
+    if (args !== undefined) {
+      params.arguments = args;
+    }
+    return this.handleToolCall(params);
   }
 
   async listResources(): Promise<MCPResource[]> {
@@ -480,24 +563,38 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
     name: string,
     args?: Record<string, string>
   ): Promise<GetPromptResponse['result']> {
-    return this.handlePromptGet({ name, arguments: args });
+    const params: any = { name };
+    if (args !== undefined) {
+      params.arguments = args;
+    }
+    return this.handlePromptGet(params);
   }
 
   async close(): Promise<void> {
     await this.stop();
   }
 
-  private async handleInitialize(
+  private async handleInitializeInternal(
     _params: MCPInitializeParams
   ): Promise<MCPServerInfo> {
-    return this.serverInfo;
+    return {
+      name: this.serverInfo.name,
+      version: this.serverInfo.version,
+      protocolVersion: this.serverInfo.protocolVersion,
+      capabilities: this.getLocalServerCapabilities(),
+    };
   }
 
   private async handleToolsList(): Promise<ListToolsResponse['result']> {
     const tools = Array.from(this.tools.values()).map((tool) => ({
       name: tool.name,
       description: tool.description,
-      inputSchema: tool.inputSchema,
+      inputSchema: {
+        type: 'object' as const,
+        properties: tool.inputSchema as Record<string, any>,
+        required: [],
+        additionalProperties: true,
+      },
     }));
 
     return { tools };
@@ -506,7 +603,7 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
   private async handleToolCall(params: {
     name: string;
     arguments?: Record<string, unknown>;
-  }): Promise<unknown> {
+  }): Promise<CallToolResponse['result']> {
     const { name, arguments: args } = params;
     const tool = this.tools.get(name);
 
@@ -514,23 +611,52 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
       throw new Error(`Tool not found: ${name}`);
     }
 
-    return await tool.handler(args);
+    const result = await tool.handler(args || {});
+
+    // Ensure the result matches the expected format
+    if (result && typeof result === 'object' && 'type' in result) {
+      return {
+        content: [result as any],
+        isError: false,
+      };
+    }
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: typeof result === 'string' ? result : JSON.stringify(result),
+        },
+      ],
+      isError: false,
+    };
   }
 
   private async handleResourcesList(): Promise<
     ListResourcesResponse['result']
   > {
-    const resources = Array.from(this.resources.values()).map((resource) => ({
-      uri: resource.uri,
-      name: resource.name,
-      description: resource.description,
-      mimeType: resource.mimeType,
-    }));
+    const resources = Array.from(this.resources.values()).map((resource) => {
+      const result: MCPResource = {
+        uri: resource.uri,
+        name: resource.name,
+      };
+
+      if (resource.description) {
+        result.description = resource.description;
+      }
+      if (resource.mimeType) {
+        result.mimeType = resource.mimeType;
+      }
+
+      return result;
+    });
 
     return { resources };
   }
 
-  private async handleResourceRead(params: { uri: string }): Promise<unknown> {
+  private async handleResourceRead(params: {
+    uri: string;
+  }): Promise<ReadResourceResponse['result']> {
     const { uri } = params;
     const resource = this.resources.get(uri);
 
@@ -539,23 +665,47 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
     }
 
     const contents = await resource.handler();
-    return { contents: [contents] };
+
+    // Ensure proper format for resource response
+    const formattedContent = {
+      uri,
+      mimeType: resource.mimeType || 'text/plain',
+      ...(contents && typeof contents === 'object' && 'text' in contents
+        ? (contents as any)
+        : {
+            text:
+              typeof contents === 'string'
+                ? contents
+                : JSON.stringify(contents),
+          }),
+    };
+
+    return { contents: [formattedContent] };
   }
 
   private async handlePromptsList(): Promise<ListPromptsResponse['result']> {
-    const prompts = Array.from(this.prompts.values()).map((prompt) => ({
-      name: prompt.name,
-      description: prompt.description,
-      arguments: prompt.arguments,
-    }));
+    const prompts = Array.from(this.prompts.values()).map((prompt) => {
+      const result: MCPPrompt = {
+        name: prompt.name,
+      };
+
+      if (prompt.description) {
+        result.description = prompt.description;
+      }
+      if (prompt.arguments) {
+        result.arguments = prompt.arguments;
+      }
+
+      return result;
+    });
 
     return { prompts };
   }
 
   private async handlePromptGet(params: {
     name: string;
-    arguments?: Record<string, unknown>;
-  }): Promise<unknown> {
+    arguments?: Record<string, string>;
+  }): Promise<GetPromptResponse['result']> {
     const { name, arguments: args } = params;
     const prompt = this.prompts.get(name);
 
@@ -563,8 +713,8 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
       throw new Error(`Prompt not found: ${name}`);
     }
 
-    const content = await prompt.handler(args);
-    return {
+    const content = await prompt.handler(args || {});
+    const result: GetPromptResponse['result'] = {
       messages: [
         {
           role: 'user',
@@ -572,6 +722,12 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
         },
       ],
     };
+
+    if (prompt.description) {
+      result.description = prompt.description;
+    }
+
+    return result;
   }
 
   private handleHealthCheck(
@@ -612,7 +768,21 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
     res.end(JSON.stringify(statsWithMemory));
   }
 
-  private getServerCapabilities(): MCPCapabilities {
+  private getGlobalServerCapabilities(): {
+    tools?: boolean;
+    resources?: boolean;
+    prompts?: boolean;
+    logging?: boolean;
+  } {
+    return {
+      tools: true,
+      resources: true,
+      prompts: true,
+      logging: true,
+    };
+  }
+
+  private getLocalServerCapabilities(): MCPCapabilities {
     return {
       tools: { listChanged: true },
       resources: { subscribe: false, listChanged: true },
@@ -670,7 +840,7 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
               try {
                 const memories = await this.agent.memory.retrieve(
                   this.agent.id,
-                  args.message,
+                  args.message as string,
                   3
                 );
                 if (memories.length > 0) {
@@ -679,8 +849,7 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
               } catch (error) {
                 void error;
                 runtimeLogger.debug(
-                  'Failed to retrieve memory context:',
-                  error
+                  `Failed to retrieve memory context: ${error instanceof Error ? error.message : String(error)}`
                 );
               }
             }
@@ -750,8 +919,8 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
 
             const memories = await this.agent.memory.retrieve(
               this.agent.id,
-              args.query,
-              args.limit || 10
+              args.query as string,
+              (args.limit as number) || 10
             );
 
             // Filter by type and importance if specified
@@ -763,7 +932,7 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
             }
             if (args.importance) {
               filteredMemories = filteredMemories.filter(
-                (m) => m.importance >= args.importance
+                (m) => m.importance >= (args.importance as number)
               );
             }
 
@@ -846,16 +1015,16 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
             const memoryRecord = {
               id: `mem-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
               agentId: this.agent.id,
-              type: args.memoryType || 'interaction',
-              content: args.content,
-              importance: args.importance || 5,
+              type: (args.memoryType as string) || 'interaction',
+              content: args.content as string,
+              importance: (args.importance as number) || 5,
               timestamp: new Date(),
-              tags: args.tags || [],
-              duration: 'long_term',
+              tags: (args.tags as string[]) || [],
+              duration: 'long_term' as const,
               metadata: { source: 'mcp_client', stored_via: 'mcp_server' },
             };
 
-            await this.agent.memory.store(this.agent.id, memoryRecord);
+            await this.agent.memory.store(this.agent.id, memoryRecord as any);
 
             return {
               type: 'text',
@@ -1434,8 +1603,7 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
           } catch (error) {
             void error;
             runtimeLogger.debug(
-              'Failed to get emotion state for conversation starter:',
-              error
+              `Failed to get emotion state for conversation starter: ${error instanceof Error ? error.message : String(error)}`
             );
           }
         }
@@ -1498,8 +1666,7 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
             } catch (error) {
               void error;
               runtimeLogger.debug(
-                'Failed to retrieve memories for analysis prompt:',
-                error
+                `Failed to retrieve memories for analysis prompt: ${error instanceof Error ? error.message : String(error)}`
               );
             }
           }
@@ -1545,8 +1712,7 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
             } catch (error) {
               void error;
               runtimeLogger.debug(
-                'Failed to get emotion state for reflection prompt:',
-                error
+                `Failed to get emotion state for reflection prompt: ${error instanceof Error ? error.message : String(error)}`
               );
             }
           }

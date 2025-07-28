@@ -14,7 +14,6 @@ import figlet from 'figlet';
 import gradient from 'gradient-string';
 import inquirer from 'inquirer';
 
-import { CommandSystem } from '../core/command-system';
 import { SYMindXRuntime } from '../core/runtime';
 import {
   displayBanner,
@@ -34,7 +33,6 @@ export interface CLIContext {
   runtime: SYMindXRuntime;
   config: CLIConfig;
   selectedAgent?: string;
-  commandSystem: CommandSystem;
 }
 
 // Cool gradients

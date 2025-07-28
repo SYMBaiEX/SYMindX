@@ -480,4 +480,105 @@ export abstract class BasePortal implements Portal {
         return false;
     }
   }
+
+  /**
+   * Generate text with multi-step support (AI SDK v5 feature)
+   * This is a placeholder that child classes can override to implement
+   * multi-step generation with tools
+   */
+  async generateTextMultiStep(
+    prompt: string,
+    options?: TextGenerationOptions & {
+      tools?: Record<string, any>;
+      maxSteps?: number;
+      onStepFinish?: (step: number, result: any) => void;
+    }
+  ): Promise<TextGenerationResult> {
+    // Default implementation falls back to regular generation
+    return this.generateText(prompt, options);
+  }
+
+  /**
+   * Generate chat with multi-step support (AI SDK v5 feature)
+   * This is a placeholder that child classes can override to implement
+   * multi-step generation with tools
+   */
+  async generateChatMultiStep(
+    messages: ChatMessage[],
+    options?: ChatGenerationOptions & {
+      tools?: Record<string, any>;
+      maxSteps?: number;
+      onStepFinish?: (step: number, result: any) => void;
+    }
+  ): Promise<ChatGenerationResult> {
+    // Default implementation falls back to regular generation
+    return this.generateChat(messages, options);
+  }
+
+  /**
+   * Generate multiple embeddings in batch (AI SDK v5 feature)
+   * This is a placeholder that child classes can override for optimized batch processing
+   */
+  async generateEmbeddingBatch(
+    texts: string[],
+    options?: EmbeddingOptions
+  ): Promise<EmbeddingResult[]> {
+    // Default implementation processes sequentially
+    const results: EmbeddingResult[] = [];
+    for (const text of texts) {
+      results.push(await this.generateEmbedding(text, options));
+    }
+    return results;
+  }
+
+  /**
+   * Stream text with enhanced tool support (AI SDK v5 feature)
+   * This is a placeholder that child classes can override
+   */
+  async *streamTextEnhanced(
+    prompt: string,
+    options?: TextGenerationOptions & {
+      tools?: Record<string, any>;
+      onToolCallStart?: (toolCallId: string, toolName: string) => void;
+      onToolCallFinish?: (toolCallId: string, result: any) => void;
+    }
+  ): AsyncGenerator<string> {
+    // Default implementation falls back to regular streaming
+    yield* this.streamText(prompt, options);
+  }
+
+  /**
+   * Stream chat with enhanced tool support (AI SDK v5 feature)
+   * This is a placeholder that child classes can override
+   */
+  async *streamChatEnhanced(
+    messages: ChatMessage[],
+    options?: ChatGenerationOptions & {
+      tools?: Record<string, any>;
+      onToolCallStart?: (toolCallId: string, toolName: string) => void;
+      onToolCallFinish?: (toolCallId: string, result: any) => void;
+    }
+  ): AsyncGenerator<string> {
+    // Default implementation falls back to regular streaming
+    yield* this.streamChat(messages, options);
+  }
+
+  /**
+   * Get supported models for different use cases
+   * This helps with model selection based on the task
+   */
+  getSupportedModelsForCapability(capability: PortalCapability): string[] {
+    // Base implementation returns empty array
+    // Child classes should override this
+    return [];
+  }
+
+  /**
+   * Get the optimal model for a specific capability
+   * This helps with automatic model selection
+   */
+  getOptimalModelForCapability(capability: PortalCapability): string | null {
+    const models = this.getSupportedModelsForCapability(capability);
+    return models.length > 0 ? models[0] : null;
+  }
 }

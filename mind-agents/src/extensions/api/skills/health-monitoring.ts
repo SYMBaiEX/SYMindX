@@ -375,7 +375,14 @@ export class HealthMonitoringSkill {
     params: SkillParameters
   ): Promise<ActionResult> {
     try {
-      const { endpoint, responseTime, success = true } = params;
+      const endpoint =
+        typeof params.endpoint === 'string' ? params.endpoint : undefined;
+      const responseTime =
+        typeof params.responseTime === 'number'
+          ? params.responseTime
+          : undefined;
+      const success =
+        typeof params.success === 'boolean' ? params.success : true;
 
       this.requestCount++;
 
@@ -383,7 +390,7 @@ export class HealthMonitoringSkill {
         this.errorCount++;
       }
 
-      if (responseTime) {
+      if (responseTime !== undefined) {
         this.responseTimes.push(responseTime);
 
         // Keep only last 1000 response times to prevent memory issues
@@ -569,7 +576,12 @@ export class HealthMonitoringSkill {
     params: SkillParameters
   ): Promise<ActionResult> {
     try {
-      const { metric, threshold, operator = 'gt' } = params;
+      const metric =
+        typeof params.metric === 'string' ? params.metric : undefined;
+      const threshold =
+        typeof params.threshold === 'number' ? params.threshold : undefined;
+      const operator =
+        typeof params.operator === 'string' ? params.operator : 'gt';
 
       // This would typically be stored in a configuration system
       // For now, we'll just acknowledge the setting
@@ -582,7 +594,7 @@ export class HealthMonitoringSkill {
       ];
       const validOperators = ['gt', 'lt', 'eq', 'gte', 'lte'];
 
-      if (!validMetrics.includes(metric)) {
+      if (!metric || !validMetrics.includes(metric)) {
         return {
           type: ActionResultType.FAILURE,
           success: false,
