@@ -14,6 +14,7 @@ import {
   ToolEvaluationOptions,
   ToolEvaluationResult,
 } from '../types/portal';
+import { standardLoggers } from '../utils/standard-logging.js';
 
 // Import all portal implementations
 export {
@@ -555,13 +556,14 @@ export class PortalRouter {
 
 // Initialize skills function for agent integration
 export function initializePortals(): PortalRegistry {
-  console.log('🔮 Initializing portals system...');
+  const logger = standardLoggers.portal;
+  logger.start('Initializing portals system');
   const registry = PortalRegistry.getInstance();
   const availablePortals = registry.getAvailablePortals();
-  console.log(
-    `✅ Portals system initialized with ${availablePortals.length} providers:`,
-    availablePortals
-  );
+  logger.success(`Portals system initialized with ${availablePortals.length} providers`, {
+    portalCount: availablePortals.length,
+    providers: availablePortals
+  });
   return registry;
 }
 

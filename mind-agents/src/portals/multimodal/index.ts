@@ -1012,7 +1012,7 @@ Format as JSON for easy parsing.`,
 
             // Extract structured data from text response
             const descMatch = analysisText.match(/description[:\s]+([^\n]+)/i);
-            const description = descMatch
+            const description = descMatch && descMatch[1]
               ? descMatch[1].trim()
               : analysisText.split('\n')[0];
 
@@ -1020,7 +1020,7 @@ Format as JSON for easy parsing.`,
             const objectsMatch = analysisText.match(
               /objects?[:\s]+([\s\S]*?)(?=\n\n|\n[A-Z]|$)/i
             );
-            const objectsList = objectsMatch
+            const objectsList = objectsMatch && objectsMatch[1]
               ? objectsMatch[1]
                   .split(/[-•*\n]/)
                   .filter((item) => item.trim())
@@ -1029,25 +1029,25 @@ Format as JSON for easy parsing.`,
 
             // Extract scene
             const sceneMatch = analysisText.match(/scene[:\s]+([^\n]+)/i);
-            const scene = sceneMatch ? sceneMatch[1].trim() : '';
+            const scene = sceneMatch && sceneMatch[1] ? sceneMatch[1].trim() : '';
 
             // Extract text
             const textMatch = analysisText.match(
               /text[:\s]+([\s\S]*?)(?=\n\n|\n[A-Z]|$)/i
             );
-            const extractedText = textMatch ? textMatch[1].trim() : '';
+            const extractedText = textMatch && textMatch[1] ? textMatch[1].trim() : '';
 
             // Extract faces/people count
             const peopleMatch = analysisText.match(
               /(\d+)\s*(?:people|person|faces?)/i
             );
-            const peopleCount = peopleMatch ? parseInt(peopleMatch[1], 10) : 0;
+            const peopleCount = peopleMatch && peopleMatch[1] ? parseInt(peopleMatch[1], 10) : 0;
 
             // Extract mood/emotion
             const moodMatch = analysisText.match(
               /(?:mood|emotion)[:\s]+([^\n]+)/i
             );
-            const mood = moodMatch ? moodMatch[1].trim() : '';
+            const mood = moodMatch && moodMatch[1] ? moodMatch[1].trim() : '';
 
             analysisResult = {
               description,
@@ -1310,12 +1310,12 @@ Please provide:
           const langMatch = responseText.match(
             /language[:\s]+([a-z]{2}-[A-Z]{2})/i
           );
-          if (langMatch) {
+          if (langMatch && langMatch[1]) {
             language = langMatch[1];
           }
 
           const confMatch = responseText.match(/confidence[:\s]+([\d.]+)/i);
-          if (confMatch) {
+          if (confMatch && confMatch[1]) {
             confidence = parseFloat(confMatch[1]);
           }
 
@@ -1323,7 +1323,7 @@ Please provide:
           const transcriptMatch = responseText.match(
             /transcript[:\s]+([\s\S]+?)(?:\n\n|$)/i
           );
-          if (transcriptMatch) {
+          if (transcriptMatch && transcriptMatch[1]) {
             transcript = transcriptMatch[1].trim();
           }
 

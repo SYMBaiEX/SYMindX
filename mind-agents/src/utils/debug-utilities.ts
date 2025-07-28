@@ -496,13 +496,13 @@ export class DebugUtilities {
       category,
       message,
       data,
-      context,
-      stack: level >= DebugLevel.ERROR ? new Error().stack : undefined,
-      performance: this.config.enablePerformanceTracing
-        ? {
-            memory: process.memoryUsage().heapUsed,
-          }
-        : undefined,
+      ...(context !== undefined ? { context } : {}),
+      ...(level >= DebugLevel.ERROR && new Error().stack ? { stack: new Error().stack } : {}),
+      ...(this.config.enablePerformanceTracing ? {
+        performance: {
+          memory: process.memoryUsage().heapUsed,
+        }
+      } : {}),
     };
 
     this.traces.push(trace);
@@ -998,16 +998,16 @@ export class DebugUtilities {
   /**
    * Sanitize configuration for debugging (remove sensitive data)
    */
-  private sanitizeConfig(config: any): any {
+  private sanitizeConfig(config: Record<string, unknown>): Record<string, unknown> {
     const sanitized = { ...config };
     const sensitiveKeys = ['apiKey', 'password', 'token', 'secret', 'key'];
 
-    const sanitizeObject = (obj: any): any => {
+    const sanitizeObject = (obj: unknown): unknown => {
       if (typeof obj !== 'object' || obj === null) {
         return obj;
       }
 
-      const result: any = Array.isArray(obj) ? [] : {};
+      const result: Record<string, unknown> | unknown[] = Array.isArray(obj) ? [] : {};
 
       for (const [key, value] of Object.entries(obj)) {
         if (

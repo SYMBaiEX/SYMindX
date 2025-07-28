@@ -109,8 +109,12 @@ export class DatabaseError extends Error {
     this.code = code;
     this.severity = severity;
     this.isRetryable = isRetryable;
-    this.originalError = originalError;
-    this.context = context;
+    if (originalError !== undefined) {
+      this.originalError = originalError;
+    }
+    if (context !== undefined) {
+      this.context = context;
+    }
 
     // Maintains proper stack trace for where our error was thrown
     if (Error.captureStackTrace) {

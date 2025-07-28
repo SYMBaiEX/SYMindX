@@ -373,16 +373,16 @@ export class MCPResponseFormatter {
       const obj = data as Record<string, unknown>;
 
       // Look for common result patterns
-      if ('message' in obj && typeof obj.message === 'string') {
-        return obj.message;
+      if ('message' in obj && typeof obj['message'] === 'string') {
+        return obj['message'];
       }
 
-      if ('result' in obj && typeof obj.result === 'string') {
-        return obj.result;
+      if ('result' in obj && typeof obj['result'] === 'string') {
+        return obj['result'];
       }
 
-      if ('data' in obj && typeof obj.data === 'string') {
-        return obj.data;
+      if ('data' in obj && typeof obj['data'] === 'string') {
+        return obj['data'];
       }
     }
 

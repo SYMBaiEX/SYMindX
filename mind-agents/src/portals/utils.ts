@@ -10,6 +10,9 @@ import type {
 } from '../types/portal';
 import type { AIUsage, ProviderConfig } from '../types/portals/ai-sdk';
 
+// Re-export shared utilities for backwards compatibility
+export * from './shared';
+
 /**
  * Convert AI SDK v5 usage to our internal format
  * Returns a guaranteed usage object (never undefined) for type safety

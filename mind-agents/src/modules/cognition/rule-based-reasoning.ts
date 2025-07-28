@@ -449,16 +449,16 @@ export class RuleBasedReasoning implements CognitionModule {
       this.factBase.addSimpleFact(`event_${index}`, event);
 
       // Check for questions
-      if (event.data?.message && typeof event.data.message === 'string') {
+      if (event.data?.['message'] && typeof event.data['message'] === 'string') {
         this.factBase.addSimpleFact('has_message', true);
         this.factBase.addSimpleFact(
           'message_contains_question',
-          event.data.message.includes('?')
+          event.data['message'].includes('?')
         );
       }
 
       // Check for mentions
-      if (event.data?.mentioned || event.type.includes('mention')) {
+      if (event.data?.['mentioned'] || event.type.includes('mention')) {
         this.factBase.addSimpleFact('was_mentioned', true);
       }
     });
@@ -617,7 +617,7 @@ export class RuleBasedReasoning implements CognitionModule {
   ): boolean {
     // Simple temporal evaluation
     const now = Date.now();
-    const timeWindow = parameters?.timeWindow || 60000; // 1 minute default
+    const timeWindow = parameters?.['timeWindow'] || 60000; // 1 minute default
 
     switch (expression) {
       case 'recently':
@@ -720,7 +720,7 @@ export class RuleBasedReasoning implements CognitionModule {
       case 'assert':
         this.factBase.addSimpleFact(
           action.target,
-          action.parameters?.value || true
+          action.parameters?.['value'] || true
         );
         break;
 

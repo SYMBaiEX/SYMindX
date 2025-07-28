@@ -173,7 +173,7 @@ export class WebSocketServerSkill {
    */
   private handleConnection(ws: WebSocket, req: IncomingMessage): void {
     const connectionId = this.generateConnectionId();
-    const ip = req.socket.remoteAddress || 'unknown';
+    const ip = req.socket['remoteAddress'] || 'unknown';
     const userAgent = req.headers['user-agent'];
 
     // Parse URL for additional connection metadata

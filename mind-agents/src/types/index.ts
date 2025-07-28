@@ -11,6 +11,7 @@
 // Import types needed for local interface definitions
 import type { CognitionModule } from './cognition';
 import type { Metadata } from './common';
+import type { PortalContext, ToolResult, MCPToolSet } from './context';
 import type { EmotionModule } from './emotion';
 import type { Extension } from './extensions';
 import type {
@@ -148,6 +149,13 @@ export * from './portals/responses';
 
 // Export ExtensionMetadata from common (ExtensionConfig already exported above)
 export type { ExtensionMetadata } from './common';
+
+// Context types for improved type safety
+export * from './context';
+
+// Runtime configuration and stats
+export * from './runtime-config';
+export * from './runtime-stats';
 
 // Advanced module types (selective exports)
 export type {

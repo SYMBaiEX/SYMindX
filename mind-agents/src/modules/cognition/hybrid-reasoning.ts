@@ -597,8 +597,8 @@ export class HybridReasoningEngine implements CognitionModule {
 
     // Simple pattern matching
     for (const event of context.events) {
-      if (event.type.includes('message') && event.data?.message) {
-        const message = String(event.data.message).toLowerCase();
+      if (event.type.includes('message') && event.data?.['message']) {
+        const message = String(event.data['message']).toLowerCase();
 
         if (message.includes('hello') || message.includes('hi')) {
           patterns.push({
@@ -651,8 +651,8 @@ export class HybridReasoningEngine implements CognitionModule {
   private fastEmotionalAssessment(context: ReasoningContext): string | null {
     // Simple emotional assessment based on context
     for (const event of context.events) {
-      if (event.data?.sentiment) {
-        return String(event.data.sentiment);
+      if (event.data?.['sentiment']) {
+        return String(event.data['sentiment']);
       }
 
       if (event.type.includes('error')) {

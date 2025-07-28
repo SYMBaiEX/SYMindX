@@ -8,6 +8,7 @@ import { SYMindXRuntime } from '../../src/core/runtime.js';
 import { SimpleEventBus } from '../../src/core/event-bus.js';
 import { SYMindXModuleRegistry } from '../../src/core/registry.js';
 import type { RuntimeConfig, Agent, AgentConfig, AgentStatus, RuntimeStatus } from '../../src/types/index.js';
+import { MemoryProviderType, EmotionModuleType, CognitionModuleType } from '../../src/types/index.js';
 
 describe('SYMindXRuntime', () => {
   let runtime: SYMindXRuntime;
@@ -19,9 +20,9 @@ describe('SYMindXRuntime', () => {
     originalEnv = { ...process.env };
 
     // Set up test environment
-    process.env.GROQ_API_KEY = 'gsk_test_key_1234567890123456789012345678901234';
-    process.env.OPENAI_API_KEY = 'sk-test_key_1234567890123456789012345678901234';
-    process.env.NODE_ENV = 'test';
+    process.env['GROQ_API_KEY'] = 'gsk_test_key_1234567890123456789012345678901234';
+    process.env['OPENAI_API_KEY'] = 'sk-test_key_1234567890123456789012345678901234';
+    process.env['NODE_ENV'] = 'test';
 
     // Create mock runtime config
     mockConfig = {
@@ -40,8 +41,8 @@ describe('SYMindXRuntime', () => {
         autoLoad: false, // Disable portal loading in tests to prevent API calls
         paths: ['./src/portals'],
         apiKeys: {
-          openai: process.env.OPENAI_API_KEY || '',
-          groq: process.env.GROQ_API_KEY || '',
+          openai: process.env['OPENAI_API_KEY'] || '',
+          groq: process.env['GROQ_API_KEY'] || '',
         },
       },
       debug: {
@@ -161,20 +162,20 @@ describe('SYMindXRuntime', () => {
         modules: {
           extensions: ['api'],
           memory: {
-            provider: 'sqlite',
+            provider: MemoryProviderType.SQLITE,
             maxRecords: 100,
             config: {
               path: ':memory:',
             },
           },
           emotion: {
-            type: 'composite',
+            type: EmotionModuleType.COMPOSITE,
             sensitivity: 0.5,
             decayRate: 0.1,
             transitionSpeed: 0.3,
           },
           cognition: {
-            type: 'hybrid',
+            type: CognitionModuleType.HYBRID,
             planningDepth: 3,
             memoryIntegration: true,
             creativityLevel: 0.5,
@@ -359,7 +360,7 @@ describe('SYMindXRuntime', () => {
       
       // Create multiple agents concurrently
       for (let i = 0; i < 5; i++) {
-        const agentConfig = {
+        const agentConfig: AgentConfig = {
           core: {
             name: `Agent-${i}`,
             tone: 'neutral',

@@ -103,10 +103,10 @@ export class StreamingSkill {
           priority: 'string',
         },
         execute: async (
-          agent: Agent,
+          _agent: Agent,
           params: SkillParameters
         ): Promise<ActionResult> => {
-          return this.sendStreamEvent(agent, params);
+          return this.sendStreamEvent(_agent, params);
         },
       },
 
@@ -120,10 +120,10 @@ export class StreamingSkill {
           priority: 'string',
         },
         execute: async (
-          agent: Agent,
+          _agent: Agent,
           params: SkillParameters
         ): Promise<ActionResult> => {
-          return this.broadcastEvent(agent, params);
+          return this.broadcastEvent(_agent, params);
         },
       },
 
@@ -136,10 +136,10 @@ export class StreamingSkill {
           includeBuffer: 'boolean',
         },
         execute: async (
-          agent: Agent,
+          _agent: Agent,
           params: SkillParameters
         ): Promise<ActionResult> => {
-          return this.getStreamStatus(agent, params);
+          return this.getStreamStatus(_agent, params);
         },
       },
 
@@ -153,10 +153,10 @@ export class StreamingSkill {
           includeMetrics: 'boolean',
         },
         execute: async (
-          agent: Agent,
+          _agent: Agent,
           params: SkillParameters
         ): Promise<ActionResult> => {
-          return this.listStreams(agent, params);
+          return this.listStreams(_agent, params);
         },
       },
 
@@ -170,10 +170,10 @@ export class StreamingSkill {
           streamId: 'string',
         },
         execute: async (
-          agent: Agent,
+          _agent: Agent,
           params: SkillParameters
         ): Promise<ActionResult> => {
-          return this.streamAgentEvents(agent, params);
+          return this.streamAgentEvents(_agent, params);
         },
       },
 
@@ -186,10 +186,10 @@ export class StreamingSkill {
           streamId: 'string',
         },
         execute: async (
-          agent: Agent,
+          _agent: Agent,
           params: SkillParameters
         ): Promise<ActionResult> => {
-          return this.streamChat(agent, params);
+          return this.streamChat(_agent, params);
         },
       },
 
@@ -203,10 +203,10 @@ export class StreamingSkill {
           streamId: 'string',
         },
         execute: async (
-          agent: Agent,
+          _agent: Agent,
           params: SkillParameters
         ): Promise<ActionResult> => {
-          return this.streamMetrics(agent, params);
+          return this.streamMetrics(_agent, params);
         },
       },
 
@@ -220,10 +220,10 @@ export class StreamingSkill {
           operation: 'string',
         },
         execute: async (
-          agent: Agent,
+          _agent: Agent,
           params: SkillParameters
         ): Promise<ActionResult> => {
-          return this.configureStreamFilters(agent, params);
+          return this.configureStreamFilters(_agent, params);
         },
       },
 
@@ -237,10 +237,10 @@ export class StreamingSkill {
           since: 'string',
         },
         execute: async (
-          agent: Agent,
+          _agent: Agent,
           params: SkillParameters
         ): Promise<ActionResult> => {
-          return this.getStreamBuffer(agent, params);
+          return this.getStreamBuffer(_agent, params);
         },
       },
 
@@ -253,10 +253,10 @@ export class StreamingSkill {
           confirm: 'boolean',
         },
         execute: async (
-          agent: Agent,
+          _agent: Agent,
           params: SkillParameters
         ): Promise<ActionResult> => {
-          return this.clearStreamBuffer(agent, params);
+          return this.clearStreamBuffer(_agent, params);
         },
       },
 
@@ -268,10 +268,10 @@ export class StreamingSkill {
           detailed: 'boolean',
         },
         execute: async (
-          agent: Agent,
+          _agent: Agent,
           params: SkillParameters
         ): Promise<ActionResult> => {
-          return this.streamHealthCheck(agent, params);
+          return this.streamHealthCheck(_agent, params);
         },
       },
     };
@@ -285,12 +285,12 @@ export class StreamingSkill {
     params: SkillParameters
   ): Promise<ActionResult> {
     try {
-      const type = String(params.type || 'sse');
-      const endpoint = String(params.endpoint);
-      const filters = Array.isArray(params.filters)
-        ? (params.filters as string[])
+      const type = String(params['type'] || 'sse');
+      const endpoint = String(params['endpoint']);
+      const filters = Array.isArray(params['filters'])
+        ? (params['filters'] as string[])
         : [];
-      const clientId = String(params.clientId || agent.id);
+      const clientId = String(params['clientId'] || agent.id);
 
       if (!endpoint) {
         return {
@@ -319,6 +319,26 @@ export class StreamingSkill {
 
       this.streams.set(streamId, stream);
       this.eventBuffer.set(streamId, []);
+
+      // Emit event about stream creation using the agent's event bus if available
+      if (agent.eventBus) {
+        const streamEvent: AgentEvent = {
+          id: `stream-created-${streamId}`,
+          agentId: agent.id,
+          type: 'stream:created',
+          timestamp: new Date(),
+          source: 'api',
+          processed: false,
+          data: {
+            streamId,
+            agentId: agent.id,
+            type,
+            endpoint,
+            timestamp: new Date().toISOString()
+          }
+        };
+        agent.eventBus.emit(streamEvent);
+      }
 
       runtimeLogger.extension(`📡 Stream created: ${streamId} (${type})`);
 
@@ -358,8 +378,8 @@ export class StreamingSkill {
     params: SkillParameters
   ): Promise<ActionResult> {
     try {
-      const streamId = String(params.streamId);
-      const reason = String(params.reason || 'manual_close');
+      const streamId = String(params['streamId']);
+      const reason = String(params['reason'] || 'manual_close');
 
       const stream = this.streams.get(streamId);
       if (!stream) {
@@ -374,6 +394,25 @@ export class StreamingSkill {
       stream.isActive = false;
       this.streams.delete(streamId);
       this.eventBuffer.delete(streamId);
+
+      // Emit event about stream closure using the agent's event bus if available
+      if (agent.eventBus) {
+        const streamClosedEvent: AgentEvent = {
+          id: `stream-closed-${streamId}`,
+          agentId: agent.id,
+          type: 'stream:closed',
+          timestamp: new Date(),
+          source: 'api',
+          processed: false,
+          data: {
+            streamId,
+            agentId: agent.id,
+            reason,
+            timestamp: new Date().toISOString()
+          }
+        };
+        agent.eventBus.emit(streamClosedEvent);
+      }
 
       runtimeLogger.extension(`📡 Stream closed: ${streamId} (${reason})`);
 
@@ -406,13 +445,13 @@ export class StreamingSkill {
    * Send event to specific stream
    */
   private async sendStreamEvent(
-    agent: Agent,
+    _agent: Agent,
     params: SkillParameters
   ): Promise<ActionResult> {
     try {
-      const streamId = String(params.streamId);
-      const eventData = params.event || {};
-      const priority = String(params.priority || 'normal') as
+      const streamId = String(params['streamId']);
+      const eventData = params['event'] || {};
+      const priority = String(params['priority'] || 'normal') as
         | 'low'
         | 'normal'
         | 'high'
@@ -430,10 +469,10 @@ export class StreamingSkill {
 
       const event: StreamEvent = {
         id: this.generateEventId(),
-        type: (eventData as any).type || 'custom',
+        type: (eventData as any)['type'] || 'custom',
         data: eventData,
         timestamp: new Date(),
-        source: agent.id,
+        source: _agent.id,
         priority,
       };
 
@@ -483,15 +522,15 @@ export class StreamingSkill {
    * Broadcast event to all matching streams
    */
   private async broadcastEvent(
-    agent: Agent,
+    _agent: Agent,
     params: SkillParameters
   ): Promise<ActionResult> {
     try {
-      const eventData = params.event || {};
-      const filters = Array.isArray(params.filters)
-        ? (params.filters as string[])
+      const eventData = params['event'] || {};
+      const filters = Array.isArray(params['filters'])
+        ? (params['filters'] as string[])
         : [];
-      const priority = String(params.priority || 'normal') as
+      const priority = String(params['priority'] || 'normal') as
         | 'low'
         | 'normal'
         | 'high'
@@ -499,10 +538,10 @@ export class StreamingSkill {
 
       const event: StreamEvent = {
         id: this.generateEventId(),
-        type: (eventData as any).type || 'broadcast',
+        type: (eventData as any)['type'] || 'broadcast',
         data: eventData,
         timestamp: new Date(),
-        source: agent.id,
+        source: _agent.id,
         priority,
       };
 
@@ -538,7 +577,14 @@ export class StreamingSkill {
         } catch (error) {
           runtimeLogger.warn(
             `Failed to deliver event to stream ${streamId}:`,
-            error
+            {
+              error: {
+                code: 'STREAM_DELIVERY_FAILED',
+                message: error instanceof Error ? error.message : String(error),
+                ...(error instanceof Error && error.stack ? { stack: error.stack } : {}),
+                cause: error
+              }
+            }
           );
         }
       }
@@ -578,12 +624,12 @@ export class StreamingSkill {
    * Get stream status
    */
   private async getStreamStatus(
-    agent: Agent,
+    _agent: Agent,
     params: SkillParameters
   ): Promise<ActionResult> {
     try {
-      const streamId = params.streamId ? String(params.streamId) : undefined;
-      const includeBuffer = Boolean(params.includeBuffer ?? false);
+      const streamId = params['streamId'] ? String(params['streamId']) : undefined;
+      const includeBuffer = Boolean(params['includeBuffer'] ?? false);
 
       if (streamId) {
         // Get specific stream status
@@ -610,7 +656,7 @@ export class StreamingSkill {
         };
 
         if (includeBuffer) {
-          status.buffer = this.eventBuffer.get(streamId) || [];
+          status['buffer'] = this.eventBuffer.get(streamId) || [];
         }
 
         return {
@@ -663,15 +709,15 @@ export class StreamingSkill {
    * List all streams
    */
   private async listStreams(
-    agent: Agent,
+    _agent: Agent,
     params: SkillParameters
   ): Promise<ActionResult> {
     try {
-      const typeFilter = params.type ? String(params.type) : undefined;
-      const clientIdFilter = params.clientId
-        ? String(params.clientId)
+      const typeFilter = params['type'] ? String(params['type']) : undefined;
+      const clientIdFilter = params['clientId']
+        ? String(params['clientId'])
         : undefined;
-      const includeMetrics = Boolean(params.includeMetrics ?? false);
+      const includeMetrics = Boolean(params['includeMetrics'] ?? false);
 
       let streams = Array.from(this.streams.values());
 
@@ -697,12 +743,12 @@ export class StreamingSkill {
 
         if (includeMetrics) {
           const buffer = this.eventBuffer.get(stream.id);
-          streamInfo.metrics = {
+          streamInfo['metrics'] = {
             bufferSize: buffer?.length || 0,
             uptime: Date.now() - stream.createdAt.getTime(),
             lastEventTime:
               buffer && buffer.length > 0
-                ? buffer[buffer.length - 1].timestamp.toISOString()
+                ? buffer[buffer.length - 1]?.timestamp.toISOString()
                 : null,
           };
         }
@@ -742,15 +788,15 @@ export class StreamingSkill {
    * Stream agent events
    */
   private async streamAgentEvents(
-    agent: Agent,
+    _agent: Agent,
     params: SkillParameters
   ): Promise<ActionResult> {
     try {
-      const agentId = params.agentId ? String(params.agentId) : agent.id;
-      const eventTypes = Array.isArray(params.eventTypes)
-        ? (params.eventTypes as string[])
+      const agentId = params['agentId'] ? String(params['agentId']) : _agent.id;
+      const eventTypes = Array.isArray(params['eventTypes'])
+        ? (params['eventTypes'] as string[])
         : ['all'];
-      const streamId = String(params.streamId);
+      const streamId = String(params['streamId']);
 
       const stream = this.streams.get(streamId);
       if (!stream) {
@@ -807,12 +853,12 @@ export class StreamingSkill {
    * Stream chat messages
    */
   private async streamChat(
-    agent: Agent,
+    _agent: Agent,
     params: SkillParameters
   ): Promise<ActionResult> {
     try {
-      const conversationId = String(params.conversationId);
-      const streamId = String(params.streamId);
+      const conversationId = String(params['conversationId']);
+      const streamId = String(params['streamId']);
 
       const stream = this.streams.get(streamId);
       if (!stream) {
@@ -860,16 +906,16 @@ export class StreamingSkill {
    * Stream system metrics
    */
   private async streamMetrics(
-    agent: Agent,
+    _agent: Agent,
     params: SkillParameters
   ): Promise<ActionResult> {
     try {
-      const metrics = Array.isArray(params.metrics)
-        ? (params.metrics as string[])
+      const metrics = Array.isArray(params['metrics'])
+        ? (params['metrics'] as string[])
         : ['all'];
       const interval =
-        typeof params.interval === 'number' ? params.interval : 30000; // 30 seconds
-      const streamId = String(params.streamId);
+        typeof params['interval'] === 'number' ? params['interval'] : 30000; // 30 seconds
+      const streamId = String(params['streamId']);
 
       const stream = this.streams.get(streamId);
       if (!stream) {
@@ -890,8 +936,8 @@ export class StreamingSkill {
       }
 
       // Store interval in metadata for periodic updates
-      stream.metadata.metricsInterval = interval;
-      stream.metadata.metricsTypes = metrics;
+      stream.metadata['metricsInterval'] = interval;
+      stream.metadata['metricsTypes'] = metrics;
 
       return {
         type: ActionResultType.SUCCESS,
@@ -924,15 +970,15 @@ export class StreamingSkill {
    * Configure stream filters
    */
   private async configureStreamFilters(
-    agent: Agent,
+    _agent: Agent,
     params: SkillParameters
   ): Promise<ActionResult> {
     try {
-      const streamId = String(params.streamId);
-      const filters = Array.isArray(params.filters)
-        ? (params.filters as string[])
+      const streamId = String(params['streamId']);
+      const filters = Array.isArray(params['filters'])
+        ? (params['filters'] as string[])
         : [];
-      const operation = String(params.operation || 'replace'); // replace, add, remove
+      const operation = String(params['operation'] || 'replace'); // replace, add, remove
 
       const stream = this.streams.get(streamId);
       if (!stream) {
@@ -1000,13 +1046,13 @@ export class StreamingSkill {
    * Get stream buffer
    */
   private async getStreamBuffer(
-    agent: Agent,
+    _agent: Agent,
     params: SkillParameters
   ): Promise<ActionResult> {
     try {
-      const streamId = String(params.streamId);
-      const limit = typeof params.limit === 'number' ? params.limit : 100;
-      const since = params.since ? new Date(String(params.since)) : undefined;
+      const streamId = String(params['streamId']);
+      const limit = typeof params['limit'] === 'number' ? params['limit'] : 100;
+      const since = params['since'] ? new Date(String(params['since'])) : undefined;
 
       const buffer = this.eventBuffer.get(streamId);
       if (!buffer) {
@@ -1070,12 +1116,12 @@ export class StreamingSkill {
    * Clear stream buffer
    */
   private async clearStreamBuffer(
-    agent: Agent,
+    _agent: Agent,
     params: SkillParameters
   ): Promise<ActionResult> {
     try {
-      const streamId = String(params.streamId);
-      const confirm = Boolean(params.confirm ?? false);
+      const streamId = String(params['streamId']);
+      const confirm = Boolean(params['confirm'] ?? false);
 
       if (!confirm) {
         return {
@@ -1128,11 +1174,11 @@ export class StreamingSkill {
    * Stream health check
    */
   private async streamHealthCheck(
-    agent: Agent,
+    _agent: Agent,
     params: SkillParameters
   ): Promise<ActionResult> {
     try {
-      const detailed = Boolean(params.detailed ?? false);
+      const detailed = Boolean(params['detailed'] ?? false);
 
       const activeStreams = Array.from(this.streams.values()).filter(
         (s) => s.isActive
@@ -1154,15 +1200,15 @@ export class StreamingSkill {
 
       // Determine health status
       if (activeStreams.length === 0) {
-        health.status = 'warning';
-        health.message = 'No active streams';
+        health['status'] = 'warning';
+        health['message'] = 'No active streams';
       } else if (totalBufferSize > this.maxBufferSize * 0.8) {
-        health.status = 'warning';
-        health.message = 'High buffer usage';
+        health['status'] = 'warning';
+        health['message'] = 'High buffer usage';
       }
 
       if (detailed) {
-        health.detailed = {
+        health['detailed'] = {
           streamsById: Object.fromEntries(
             activeStreams.map((stream) => [
               stream.id,
@@ -1190,7 +1236,7 @@ export class StreamingSkill {
         result: health,
         metadata: {
           action: 'stream_health_check',
-          status: health.status,
+          status: health['status'],
         },
       };
     } catch (error) {
@@ -1298,7 +1344,7 @@ export class StreamingSkill {
       type: `agent_${event.type}`,
       data: event,
       timestamp: new Date(),
-      source: event.agentId,
+      source: event.agentId || 'unknown',
       priority: 'normal',
     };
 

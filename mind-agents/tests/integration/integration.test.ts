@@ -197,8 +197,8 @@ describe('Utility Systems Integration', () => {
       // The health check status should match the memory usage thresholds
       // Note: memoryUsage in details is a percentage (0-100), but in the check it's a ratio (0-1)
       const memUsage = checkResult.details?.memoryUsage as number;
-      if (memUsage > 90 || checkResult.status === 'critical') {
-        expect(checkResult.status).toBe('critical');
+      if (memUsage > 90) {
+        expect(checkResult.status).toBe('unhealthy');
       } else if (memUsage > 80 || checkResult.status === 'degraded') {
         expect(checkResult.status).toBe('degraded');
       } else {

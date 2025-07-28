@@ -10,7 +10,6 @@ import { Command } from 'commander';
 import inquirer from 'inquirer';
 import ora from 'ora';
 
-import { AgentStatus } from '../../types/agent.js';
 import { runtimeClient } from '../services/runtimeClient.js';
 
 export class AgentCommand {

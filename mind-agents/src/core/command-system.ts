@@ -1064,8 +1064,8 @@ export class CommandSystem extends EventEmitter {
       if (communicationActions.length > 0) {
         const firstComm = communicationActions[0];
         response = String(
-          firstComm?.parameters?.message ||
-            firstComm?.parameters?.text ||
+          firstComm?.parameters?.['message'] ||
+            firstComm?.parameters?.['text'] ||
             response
         );
       }
@@ -1226,7 +1226,7 @@ export class CommandSystem extends EventEmitter {
     const useEmbeddings =
       memoryConfig.enable_embeddings === 'true' ||
       memoryConfig.enable_embeddings === true ||
-      process.env.ENABLE_OPENAI_EMBEDDINGS === 'true';
+      process.env["ENABLE_OPENAI_EMBEDDINGS"] === 'true';
 
     let memories;
     if (useEmbeddings) {

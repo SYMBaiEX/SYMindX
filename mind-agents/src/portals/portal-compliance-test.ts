@@ -271,6 +271,14 @@ export class PortalComplianceTester {
       }
 
       const chunks: string[] = [];
+      if (!portal.streamText) {
+        return {
+          name: 'Streaming',
+          passed: false,
+          error: 'streamText method not available',
+        };
+      }
+      
       const stream = portal.streamText('Count from 1 to 5', {
         maxOutputTokens: 100,
       });
@@ -384,6 +392,14 @@ export class PortalComplianceTester {
     portal: Portal
   ): Promise<PortalComplianceTestResult['tests'][0]> {
     try {
+      if (!portal.generateImage) {
+        return {
+          name: 'Image Generation',
+          passed: false,
+          error: 'generateImage method not available',
+        };
+      }
+      
       const result = await portal.generateImage('A beautiful sunset', {
         size: '1024x1024',
         quality: 'standard',

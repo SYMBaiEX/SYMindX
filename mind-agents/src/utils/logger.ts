@@ -68,8 +68,12 @@ export class Logger implements ILogger {
     this.level = options.level || LogLevel.INFO;
     this.useColors = options.colors !== false && process.stdout.isTTY;
     this.transports = options.transports || [];
-    this.defaultContext = options.defaultContext;
-    this.formatter = options.formatter;
+    if (options.defaultContext !== undefined) {
+      this.defaultContext = options.defaultContext;
+    }
+    if (options.formatter !== undefined) {
+      this.formatter = options.formatter;
+    }
   }
 
   child(context: LogContext): ILogger {

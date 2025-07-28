@@ -367,7 +367,7 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
     const connection: MCPConnectionInfo = {
       id: connectionId,
       type: 'websocket',
-      remoteAddress: req.socket.remoteAddress || 'unknown',
+      remoteAddress: req.socket['remoteAddress'] || 'unknown',
       userAgent: req.headers['user-agent'] || 'unknown',
       connectedAt: new Date(),
       requestCount: 0,

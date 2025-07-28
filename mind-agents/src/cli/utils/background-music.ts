@@ -242,7 +242,7 @@ export class BackgroundMusicManager {
 
 // Global music manager instance
 export const musicManager = new BackgroundMusicManager(
-  process.env.SYMINDX_BACKGROUND_MUSIC === 'true'
+  process.env["SYMINDX_BACKGROUND_MUSIC"] === 'true'
 );
 
 // Helper function to play background music

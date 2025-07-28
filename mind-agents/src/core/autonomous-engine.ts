@@ -679,8 +679,8 @@ export class AutonomousEngine {
             agentId: this.agent.id,
             actionId: action.id,
             actionType: action.type,
-            evaluationScore: evaluation.score as DataValue,
-            evaluationFlagged: evaluation.flagged as DataValue,
+            evaluationScore: evaluation['score'] as DataValue,
+            evaluationFlagged: evaluation['flagged'] as DataValue,
             timestamp: new Date().toISOString(),
           },
           timestamp: new Date(),
@@ -1681,7 +1681,7 @@ export class AutonomousEngine {
         );
       case 'curiosity':
         return (
-          this.calculateCuriosityScore() > (trigger.parameters.threshold || 0.5)
+          this.calculateCuriosityScore() > (trigger.parameters['threshold'] || 0.5)
         );
       case 'state':
         return Math.random() > 0.7; // Simplified

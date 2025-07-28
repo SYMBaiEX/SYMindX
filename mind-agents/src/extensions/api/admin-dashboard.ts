@@ -3,11 +3,11 @@
  * Provides a comprehensive web-based administration interface
  */
 
-import path from 'path';
+// import path from 'path';
 
 import { Request, Response, Router } from 'express';
 
-import { runtimeLogger } from '../../utils/logger.js';
+// import { runtimeLogger } from '../../utils/logger.js';
 
 export class AdminDashboard {
   private router: Router;
@@ -19,13 +19,13 @@ export class AdminDashboard {
 
   private setupRoutes(): void {
     // Serve dashboard HTML
-    this.router.get('/', (req: Request, res: Response) => {
+    this.router.get('/', (_req: Request, res: Response) => {
       res.send(this.getDashboardHTML());
     });
 
     // Serve dashboard assets
     this.router.get('/assets/:file', (req: Request, res: Response) => {
-      const file = req.params.file;
+      const file = req.params['file'];
       if (file === 'style.css') {
         res.type('text/css').send(this.getDashboardCSS());
       } else if (file === 'script.js') {

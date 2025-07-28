@@ -13,6 +13,7 @@ import { Command } from 'commander';
 
 import { runtimeLogger } from '../../utils/logger';
 import { CLIContext } from '../index';
+import type { LogContext } from '../../types/index.js';
 
 // Interfaces for runtime capabilities
 interface RuntimeCapabilities {
@@ -385,19 +386,73 @@ export class ListCommand {
 
   async listCommands(options: any): Promise<void> {
     try {
-      // Command system is no longer available, show message
-      process.stdout.write(chalk.yellow('⚠️  Command history feature not available in current implementation') + '\n');
-      process.stdout.write(chalk.gray('   Command tracking would need to be implemented in the API extension') + '\n');
+      process.stdout.write(chalk.blue.bold('\n📋 Command History'));
+      process.stdout.write(chalk.gray('─'.repeat(60)));
+
+      // Get command history from runtime (if available)
+      const commandHistory = await this.getCommandHistory(options);
+      
+      if (commandHistory.length === 0) {
+        process.stdout.write(chalk.yellow('⚠️  No command history available') + '\n');
+        process.stdout.write(chalk.gray('   Commands will appear here as they are executed') + '\n');
+      } else {
+        process.stdout.write(chalk.cyan(`\nFound ${commandHistory.length} commands:`));
+        
+        for (const command of commandHistory) {
+          const statusColor = this._getCommandStatusColor(command.status);
+          const timeStr = command.timestamp ? new Date(command.timestamp).toLocaleString() : 'Unknown';
+          const agentName = command.agentId || 'System';
+          
+          process.stdout.write(
+            `  ${statusColor(command.status.padEnd(12))} ${chalk.white(command.command.padEnd(30))} ` +
+            `${chalk.gray(agentName.padEnd(15))} ${chalk.dim(timeStr)}`
+          );
+        }
+      }
       
       if (options.agent) {
-        process.stdout.write(chalk.gray(`   Requested agent filter: ${options.agent}`) + '\n');
+        process.stdout.write(chalk.gray(`\n   Filtered by agent: ${options.agent}`) + '\n');
       }
       if (options.status) {
-        process.stdout.write(chalk.gray(`   Requested status filter: ${options.status}`) + '\n');
+        const statusColor = this._getCommandStatusColor(options.status);
+        process.stdout.write(chalk.gray(`   Filtered by status: `) + statusColor(options.status) + '\n');
       }
     } catch (error) {
       process.stdout.write(chalk.red('❌ Failed to list commands') + '\n');
       this.logger.error('List commands error:', error);
+    }
+  }
+
+  private async getCommandHistory(options: any): Promise<any[]> {
+    try {
+      // Try to get command history from runtime or extensions
+      const history: any[] = [];
+      
+      // Check if API extension has command tracking
+      const apiExtension = this.context.runtime.registry.getExtension('api');
+      if (apiExtension && typeof (apiExtension as any).getCommandHistory === 'function') {
+        const apiHistory = await (apiExtension as any).getCommandHistory(options);
+        history.push(...apiHistory);
+      }
+      
+      // Filter by agent if specified
+      if (options.agent) {
+        return history.filter(cmd => cmd.agentId === options.agent);
+      }
+      
+      // Filter by status if specified
+      if (options.status) {
+        return history.filter(cmd => cmd.status.toLowerCase() === options.status.toLowerCase());
+      }
+      
+      return history;
+    } catch (error) {
+      // Convert unknown error to proper LogContext format
+      const logContext: LogContext = error instanceof Error 
+        ? { error: { code: 'HISTORY_RETRIEVAL_ERROR', message: error.message, ...(error.stack ? { stack: error.stack } : {}) } }
+        : { error: { code: 'UNKNOWN_ERROR', message: String(error) } };
+      this.logger.debug('Could not retrieve command history:', logContext);
+      return [];
     }
   }
 
@@ -651,11 +706,6 @@ export class ListCommand {
     }
   }
 
-  private getAgentName(agentId: string): string {
-    const agent = this.context.runtime.agents.get(agentId);
-    return agent ? agent.name : agentId.substring(0, 12);
-  }
-
   private isPortalConfigured(portalName: string): boolean {
     // Simple check for common portal configurations
     const portalEnvMap: Record<string, string> = {
@@ -685,7 +735,7 @@ export class ListCommand {
     }
   }
 
-  private getCommandStatusColor(status: string): (text: string) => string {
+  private _getCommandStatusColor(status: string): (text: string) => string {
     switch (status.toLowerCase()) {
       case 'completed':
         return chalk.green;

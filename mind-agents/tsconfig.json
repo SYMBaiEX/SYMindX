@@ -14,12 +14,11 @@
     "allowSyntheticDefaultImports": true,
     "allowImportingTsExtensions": false,
     
-    // Build Performance Optimizations
+    // Build Configuration
     "incremental": true,
     "tsBuildInfoFile": "./dist/.tsbuildinfo",
-    "skipLibCheck": true,
-    "skipDefaultLibCheck": true,
-    "assumeChangesOnlyAffectDirectDependencies": true,
+    "composite": false,
+    "disableReferencedProjectLoad": false,
     
     // Emit Configuration
     "noEmit": false,
@@ -31,11 +30,11 @@
     "importsNotUsedAsValues": "remove",
     "preserveConstEnums": true,
     "outDir": "./dist",
-    // "rootDir": "./src", // Commented out since we include scripts and tests
+    "rootDir": "./",
     
     // JavaScript Support
     "allowJs": true,
-    "checkJs": false,
+    "checkJs": false, // Temporarily disabled to fix TypeScript errors first
     
     // Type Checking - Strict Mode
     "strict": true,
@@ -57,9 +56,11 @@
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true,
+    "allowUnusedLabels": false,
+    "allowUnreachableCode": false,
     
     // Error Handling
-    "noEmitOnError": false,
+    "noEmitOnError": true,
     "preserveWatchOutput": true,
     
     // Interop Constraints
@@ -67,9 +68,14 @@
     "verbatimModuleSyntax": false,
     "forceConsistentCasingInFileNames": true,
     
+    // Library Checking
+    "skipLibCheck": true, // Temporarily enabled to focus on our code
+    "skipDefaultLibCheck": false,
+    
     // Advanced
     "useDefineForClassFields": true,
     "moduleDetection": "auto",
+    "assumeChangesOnlyAffectDirectDependencies": false,
     
     // Path Mapping
     "baseUrl": ".",
@@ -78,7 +84,7 @@
     },
     
     // Type Acquisition
-    "types": [],
+    "types": ["node"],
     "typeRoots": ["./node_modules/@types", "./src/types"]
   },
   "include": [
@@ -97,6 +103,11 @@
     "src/modules/behaviors_disabled",
     "src/modules/life-cycle_disabled",
     "src/modules/tools.disabled",
-    "src/prompts.disabled"
-  ]
+    "src/prompts.disabled",
+    "src/core/archived"
+  ],
+  "ts-node": {
+    "esm": true,
+    "experimentalSpecifierResolution": "node"
+  }
 }

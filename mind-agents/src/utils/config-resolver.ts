@@ -11,6 +11,11 @@
  * - Supports multiple memory providers and AI portals
  */
 
+import { 
+  standardLoggers, 
+  createStandardLoggingPatterns,
+  StandardLogContext 
+} from './standard-logging.js';
 import {
   CharacterConfig,
   EnvironmentConfig,
@@ -36,6 +41,8 @@ import {
 /**
  * ConfigResolver class for managing configuration resolution
  */
+const logger = standardLoggers.config;
+
 export class ConfigResolver {
   private envConfig: EnvironmentConfig | null = null;
   private validatedConfig: ValidatedEnvironmentConfig | null = null;
@@ -64,13 +71,15 @@ export class ConfigResolver {
 
     // Log validation results
     if (validationResult.warnings.length > 0) {
-      // eslint-disable-next-line no-console
-      console.warn('Configuration warnings:', validationResult.warnings);
+      logger.warn('Configuration validation warnings', { 
+        warnings: validationResult.warnings 
+      });
     }
 
     if (!validationResult.valid) {
-      // eslint-disable-next-line no-console
-      console.error('Configuration errors:', validationResult.errors);
+      logger.error('Configuration validation failed', undefined, { 
+        errors: validationResult.errors 
+      });
       throw new Error(
         'Invalid environment configuration. Please check your environment variables.'
       );
@@ -510,11 +519,14 @@ export class ConfigResolver {
     // Build configuration with granular model controls
     const portalConfig: PortalSpecificConfig = {
       ...baseConfig,
-      apiKey:
-        validatedConfig.apiKeys[
-          `${portalName}_API_KEY` as keyof typeof validatedConfig.apiKeys
-        ],
     };
+    
+    const apiKey = validatedConfig.apiKeys[
+      `${portalName}_API_KEY` as keyof typeof validatedConfig.apiKeys
+    ];
+    if (apiKey !== undefined) {
+      portalConfig.apiKey = apiKey;
+    }
 
     // Add granular model configurations
     const chatModel = validatedConfig.portalModels[`${portalName}_CHAT_MODEL`];
@@ -610,7 +622,7 @@ export class ConfigResolver {
 
       return {
         valid: validationResult.valid,
-        missing: validationResult.errors,
+        missing: validationResult.errors.map(error => error.message),
       };
     } catch (error) {
       void error;

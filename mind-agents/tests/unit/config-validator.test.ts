@@ -45,10 +45,10 @@ describe('ConfigValidator', () => {
       const result = ConfigValidator.validateEnvironmentConfig();
 
       expect(result.valid).toBe(false); // Should be false because no AI providers are configured
-      expect(result.config.OLLAMA_BASE_URL).toBe('http://localhost:11434');
-      expect(result.config.ENABLE_OPENAI_EMBEDDINGS).toBe(true);
-      expect(result.config.EMBEDDING_PROVIDER).toBe('openai');
-      expect(result.config.EMBEDDING_DIMENSIONS).toBe(3072);
+      expect(result.config['OLLAMA_BASE_URL']).toBe('http://localhost:11434');
+      expect(result.config['ENABLE_OPENAI_EMBEDDINGS']).toBe(true);
+      expect(result.config['EMBEDDING_PROVIDER']).toBe('openai');
+      expect(result.config['EMBEDDING_DIMENSIONS']).toBe(3072);
     });
 
     it('should include valid API keys when provided', () => {
@@ -62,10 +62,10 @@ describe('ConfigValidator', () => {
       const result = ConfigValidator.validateEnvironmentConfig();
 
       expect(result.valid).toBe(true);
-      expect(result.config.apiKeys.GROQ_API_KEY).toBe(
+      expect(result.config['apiKeys']['GROQ_API_KEY']).toBe(
         'gsk_test_key_1234567890123456789012345678901234'
       );
-      expect(result.config.apiKeys.OPENAI_API_KEY).toBe(
+      expect(result.config['apiKeys']['OPENAI_API_KEY']).toBe(
         'sk-test_key_1234567890123456789012345678901234'
       );
       expect(result.errors).toHaveLength(0);
@@ -77,10 +77,10 @@ describe('ConfigValidator', () => {
 
       const result = ConfigValidator.validateEnvironmentConfig();
 
-      expect(result.warnings.some(w => w.message === 'Invalid format for GROQ_API_KEY')).toBe(true);
-      expect(result.warnings.some(w => w.message === 'Invalid format for OPENAI_API_KEY')).toBe(true);
-      expect(result.config.apiKeys.GROQ_API_KEY).toBeUndefined();
-      expect(result.config.apiKeys.OPENAI_API_KEY).toBeUndefined();
+      expect(result.warnings.some(w => w['message'] === 'Invalid format for GROQ_API_KEY')).toBe(true);
+      expect(result.warnings.some(w => w['message'] === 'Invalid format for OPENAI_API_KEY')).toBe(true);
+      expect(result.config['apiKeys']['GROQ_API_KEY']).toBeUndefined();
+      expect(result.config['apiKeys']['OPENAI_API_KEY']).toBeUndefined();
     });
 
     it('should handle boolean environment variables correctly', () => {
@@ -90,9 +90,9 @@ describe('ConfigValidator', () => {
 
       const result = ConfigValidator.validateEnvironmentConfig();
 
-      expect(result.config.ENABLE_OPENAI_EMBEDDINGS).toBe(false);
-      expect(result.config.portalSettings.GROQ_ENABLED).toBe(true);
-      expect(result.config.portalSettings.OPENAI_ENABLED).toBe(true);
+      expect(result.config['ENABLE_OPENAI_EMBEDDINGS']).toBe(false);
+      expect(result.config['portalSettings']['GROQ_ENABLED']).toBe(true);
+      expect(result.config['portalSettings']['OPENAI_ENABLED']).toBe(true);
     });
 
     it('should validate positive integer values', () => {
@@ -100,7 +100,7 @@ describe('ConfigValidator', () => {
 
       const result = ConfigValidator.validateEnvironmentConfig();
 
-      expect(result.config.EMBEDDING_DIMENSIONS).toBe(1536);
+      expect(result.config['EMBEDDING_DIMENSIONS']).toBe(1536);
     });
 
     it('should handle invalid integer values gracefully', () => {
@@ -108,7 +108,7 @@ describe('ConfigValidator', () => {
 
       const result = ConfigValidator.validateEnvironmentConfig();
 
-      expect(result.config.EMBEDDING_DIMENSIONS).toBe(3072); // Should use default
+      expect(result.config['EMBEDDING_DIMENSIONS']).toBe(3072); // Should use default
     });
 
     it('should validate embedding provider values', () => {
@@ -116,7 +116,7 @@ describe('ConfigValidator', () => {
 
       const result = ConfigValidator.validateEnvironmentConfig();
 
-      expect(result.config.EMBEDDING_PROVIDER).toBe('ollama');
+      expect(result.config['EMBEDDING_PROVIDER']).toBe('ollama');
     });
 
     it('should handle invalid embedding provider values', () => {
@@ -124,7 +124,7 @@ describe('ConfigValidator', () => {
 
       const result = ConfigValidator.validateEnvironmentConfig();
 
-      expect(result.config.EMBEDDING_PROVIDER).toBe('openai'); // Should use default
+      expect(result.config['EMBEDDING_PROVIDER']).toBe('openai'); // Should use default
     });
 
     it('should validate Ollama URL format', () => {
@@ -134,7 +134,7 @@ describe('ConfigValidator', () => {
       const result = ConfigValidator.validateEnvironmentConfig();
 
       expect(result.valid).toBe(false);
-      expect(result.errors.some(e => e.message === 'Invalid Ollama base URL format')).toBe(true);
+      expect(result.errors.some(e => e['message'] === 'Invalid Ollama base URL format')).toBe(true);
     });
 
     it('should validate telegram bot token format', () => {
@@ -143,7 +143,7 @@ describe('ConfigValidator', () => {
 
       const result = ConfigValidator.validateEnvironmentConfig();
 
-      expect(result.config.apiKeys.TELEGRAM_BOT_TOKEN).toBe(
+      expect(result.config['apiKeys']['TELEGRAM_BOT_TOKEN']).toBe(
         '1234567890:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghX'
       );
     });
@@ -153,8 +153,8 @@ describe('ConfigValidator', () => {
 
       const result = ConfigValidator.validateEnvironmentConfig();
 
-      expect(result.warnings.some(w => w.message === 'Invalid format for TELEGRAM_BOT_TOKEN')).toBe(true);
-      expect(result.config.apiKeys.TELEGRAM_BOT_TOKEN).toBeUndefined();
+      expect(result.warnings.some(w => w['message'] === 'Invalid format for TELEGRAM_BOT_TOKEN')).toBe(true);
+      expect(result.config['apiKeys']['TELEGRAM_BOT_TOKEN']).toBeUndefined();
     });
 
     it('should require at least one AI provider', () => {
@@ -162,7 +162,7 @@ describe('ConfigValidator', () => {
       const result = ConfigValidator.validateEnvironmentConfig();
 
       expect(result.valid).toBe(false);
-      expect(result.errors.some(e => e.message === 'At least one AI provider must be configured with valid API key')).toBe(true);
+      expect(result.errors.some(e => e['message'] === 'At least one AI provider must be configured with valid API key')).toBe(true);
     });
 
     it('should pass validation with Ollama enabled', () => {
@@ -171,7 +171,7 @@ describe('ConfigValidator', () => {
       const result = ConfigValidator.validateEnvironmentConfig();
 
       expect(result.valid).toBe(true);
-      expect(result.config.portalSettings.OLLAMA_ENABLED).toBe(true);
+      expect(result.config['portalSettings']['OLLAMA_ENABLED']).toBe(true);
     });
 
     it('should validate OpenAI embeddings configuration', () => {
@@ -182,7 +182,7 @@ describe('ConfigValidator', () => {
       const result = ConfigValidator.validateEnvironmentConfig();
 
       expect(result.valid).toBe(false);
-      expect(result.errors.some(e => e.message === 'OpenAI API key required when using OpenAI embeddings')).toBe(true);
+      expect(result.errors.some(e => e['message'] === 'OpenAI API key required when using OpenAI embeddings')).toBe(true);
     });
 
     it('should handle portal capability settings correctly', () => {
@@ -194,9 +194,9 @@ describe('ConfigValidator', () => {
 
       const result = ConfigValidator.validateEnvironmentConfig();
 
-      expect(result.config.portalSettings.GROQ_ENABLED).toBe(true);
-      expect(result.config.portalSettings.GROQ_CHAT_ENABLED).toBe(true);
-      expect(result.config.portalSettings.GROQ_EMBEDDING_ENABLED).toBe(false);
+      expect(result.config['portalSettings']['GROQ_ENABLED']).toBe(true);
+      expect(result.config['portalSettings']['GROQ_CHAT_ENABLED']).toBe(true);
+      expect(result.config['portalSettings']['GROQ_EMBEDDING_ENABLED']).toBe(false);
     });
 
     it('should include portal models when configured', () => {
@@ -205,10 +205,10 @@ describe('ConfigValidator', () => {
 
       const result = ConfigValidator.validateEnvironmentConfig();
 
-      expect(result.config.portalModels.GROQ_CHAT_MODEL).toBe(
+      expect(result.config['portalModels']['GROQ_CHAT_MODEL']).toBe(
         'llama-3.1-70b-versatile'
       );
-      expect(result.config.portalModels.OPENAI_CHAT_MODEL).toBe('gpt-4.1-mini');
+      expect(result.config['portalModels']['OPENAI_CHAT_MODEL']).toBe('gpt-4.1-mini');
     });
 
     it('should provide comprehensive error and warning information', () => {

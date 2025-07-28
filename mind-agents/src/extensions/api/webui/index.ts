@@ -17,14 +17,19 @@ import express from 'express';
 
 import { CommandSystem } from '../../../core/command-system';
 import { Agent } from '../../../types/agent';
-import { Logger } from '../../../utils/logger';
+import { 
+  standardLoggers, 
+  createStandardLoggingPatterns,
+  StandardLogContext 
+} from '../../../utils/standard-logging.js';
 
 // Handle ES module __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export class WebUIServer {
-  private _logger = new Logger('webui');
+  private logger = standardLoggers.webui;
+  private loggingPatterns = createStandardLoggingPatterns(this.logger);
   private app: express.Application;
 
   constructor(
@@ -91,7 +96,7 @@ export class WebUIServer {
     });
 
     this.app.get('/api/agent/:id', (req, res) => {
-      const agent = this.getAgents().get(req.params.id);
+      const agent = this.getAgents().get(req.params['id']);
       if (!agent) {
         res.status(404).json({ error: 'Agent not found' });
         return;
@@ -140,8 +145,8 @@ export class WebUIServer {
     });
 
     this.app.get('/api/commands', (req, res) => {
-      const agentId = req.query.agent as string;
-      const limit = parseInt(req.query.limit as string) || 20;
+      const agentId = req.query['agent'] as string;
+      const limit = parseInt(req.query['limit'] as string) || 20;
 
       let commands = this.commandSystem.getAllCommands();
 
@@ -1790,7 +1795,7 @@ export class WebUIServer {
                 updateCount++;
             } catch (error) {
     void error;
-                console.error('Failed to load dashboard:', error);
+                this.logger.error('Failed to load dashboard', error as Error);
                 document.getElementById('system-status').innerHTML = 
                     '<span class="status-indicator status-error"></span>Error loading data';
             }
@@ -1805,7 +1810,7 @@ export class WebUIServer {
         const ws = new WebSocket(protocol + '//' + window.location.host + '/ws');
         
         ws.onopen = () => {
-            console.log('WebSocket connected for real-time updates');
+            this.logger.info('WebSocket connected for real-time updates');
         };
         
         ws.onmessage = (event) => {
@@ -1815,12 +1820,12 @@ export class WebUIServer {
                     loadDashboard(); // Trigger immediate update
                 }
             } catch (err) {
-                console.error('WebSocket message error:', err);
+                this.logger.error('WebSocket message error', err as Error);
             }
         };
         
         ws.onerror = (error) => {
-            console.error('WebSocket error:', error);
+            this.logger.error('WebSocket error', error as Error);
         };
     `;
   }
@@ -1974,10 +1979,10 @@ export class WebUIServer {
                 // Update sidebar
                 updateConversationsSidebar(conversations);
                 
-                console.log('Created new conversation:', conversation.id);
+                this.logger.info('Created new conversation', { conversationId: conversation.id });
             } catch (error) {
     void error;
-                console.error('Failed to create conversation:', error);
+                this.logger.error('Failed to create conversation', error as Error);
                 showWelcomeMessage();
             }
         }
@@ -2319,7 +2324,7 @@ export class WebUIServer {
                 }
             } catch (error) {
     void error;
-                console.error('WebSocket error:', error);
+                this.logger.error('WebSocket error', error as Error);
             }
         };
     `;
@@ -3577,12 +3582,12 @@ export class WebUIServer {
                     }
                 } catch (error) {
     void error;
-                    console.error('WebSocket error:', error);
+                    this.logger.error('WebSocket error', error as Error);
                 }
             };
             
             ws.onerror = (error) => {
-                console.error('WebSocket error:', error);
+                this.logger.error('WebSocket error', error as Error);
             };
         }
 

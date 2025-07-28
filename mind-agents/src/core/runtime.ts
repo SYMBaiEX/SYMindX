@@ -50,9 +50,23 @@ import { Timestamp, OperationResult, ExecutionResult } from '../types/helpers';
 import { Portal, PortalConfig, PortalCapability } from '../types/portal';
 import { AgentStateTransitionResult } from '../types/results';
 import { LogContext } from '../types/utils/logger';
+import type { ConfigValue, ProcessedEnvironmentConfig, ModuleConfig, CharacterConfigWithModules } from '../types/runtime-config';
 // Utility imports
 import { configResolver } from '../utils/config-resolver';
-import { runtimeLogger } from '../utils/logger';
+import { 
+  standardLoggers, 
+  createStandardLoggingPatterns,
+  StandardLogContext 
+} from '../utils/standard-logging.js';
+import { 
+  createRuntimeError, 
+  createConfigurationError, 
+  createAgentError,
+  createExtensionError,
+  safeAsync,
+  formatError
+} from '../utils/standard-errors';
+import { errorHandler } from '../utils/error-handler';
 
 // Core system imports
 import { AutonomousEngine, AutonomousEngineConfig } from './autonomous-engine';
@@ -73,6 +87,10 @@ export class SYMindXRuntime implements AgentRuntime {
   private tickTimer?: ReturnType<typeof setInterval>;
   private isRunning = false;
   private runtimeState: RuntimeState;
+  
+  // Standardized logging
+  private logger = standardLoggers.runtime;
+  private loggingPatterns = createStandardLoggingPatterns(this.logger);
 
   // Multi-Agent Manager
   public multiAgentManager?: MultiAgentManager;
@@ -170,8 +188,10 @@ export class SYMindXRuntime implements AgentRuntime {
         projectRoot = path.resolve(__dirname, '..', '..');
       }
 
-      console.log('__dirname:', __dirname);
-      console.log('projectRoot:', projectRoot);
+      this.logger.debug('Resolving config paths', { 
+        __dirname, 
+        projectRoot 
+      });
 
       // Try multiple paths for runtime.json
       const configPaths = [
@@ -189,15 +209,15 @@ export class SYMindXRuntime implements AgentRuntime {
 
       // Try each path until we find the config
       for (const testPath of configPaths) {
-        console.log('Checking config path:', testPath);
+        this.logger.debug('Checking config path', { path: testPath });
         try {
           await fs.access(testPath);
           configPath = testPath;
           configFound = true;
-          console.log('Found config at:', configPath);
+          this.logger.config('Found configuration file', { path: configPath });
           break;
         } catch (e) {
-          console.log('Not found:', testPath);
+          this.logger.debug('Config not found at path', { path: testPath });
           // Continue to next path
         }
       }
@@ -225,10 +245,22 @@ export class SYMindXRuntime implements AgentRuntime {
             ...this.config.extensions,
             ...fileConfig.extensions,
           },
-          agents: {
-            ...this.config.agents,
-            ...fileConfig.agents,
-          },
+          agents: (() => {
+            const agentsConfig: { enabled: boolean; paths?: string[]; defaultEnabled?: boolean; charactersPath?: string } = {
+              enabled: fileConfig.agents?.enabled ?? this.config.agents?.enabled ?? true
+            };
+            
+            const paths = fileConfig.agents?.paths ?? this.config.agents?.paths;
+            if (paths) agentsConfig.paths = paths;
+            
+            const defaultEnabled = fileConfig.agents?.defaultEnabled ?? this.config.agents?.defaultEnabled;
+            if (defaultEnabled !== undefined) agentsConfig.defaultEnabled = defaultEnabled;
+            
+            const charactersPath = fileConfig.agents?.charactersPath ?? this.config.agents?.charactersPath;
+            if (charactersPath) agentsConfig.charactersPath = charactersPath;
+            
+            return agentsConfig;
+          })(),
           portals: {
             // Ensure boolean values for autoLoad and proper array for paths
             autoLoad:
@@ -239,13 +271,13 @@ export class SYMindXRuntime implements AgentRuntime {
               this.config.portals?.paths ?? ['./portals'],
             apiKeys: {
               // Default API keys from environment variables
-              openai: process.env.OPENAI_API_KEY || '',
-              anthropic: process.env.ANTHROPIC_API_KEY || '',
-              groq: process.env.GROQ_API_KEY || '',
-              xai: process.env.XAI_API_KEY || '',
-              google: process.env.GOOGLE_API_KEY || '',
-              openrouter: process.env.OPENROUTER_API_KEY || '',
-              'kluster.ai': process.env.KLUSTER_AI_API_KEY || '',
+              openai: process.env["OPENAI_API_KEY"] || '',
+              anthropic: process.env["ANTHROPIC_API_KEY"] || '',
+              groq: process.env["GROQ_API_KEY"] || '',
+              xai: process.env["XAI_API_KEY"] || '',
+              google: process.env["GOOGLE_API_KEY"] || '',
+              openrouter: process.env["OPENROUTER_API_KEY"] || '',
+              'kluster.ai': process.env["KLUSTER_AI_API_KEY"] || '',
               // Override with any explicit config values
               ...this.config.portals?.apiKeys,
               ...fileConfig.portals?.apiKeys,
@@ -267,13 +299,13 @@ export class SYMindXRuntime implements AgentRuntime {
               paths: this.config.portals?.paths ?? ['./portals'],
               apiKeys: {
                 // Default API keys from environment variables
-                openai: process.env.OPENAI_API_KEY || '',
-                anthropic: process.env.ANTHROPIC_API_KEY || '',
-                groq: process.env.GROQ_API_KEY || '',
-                xai: process.env.XAI_API_KEY || '',
-                google: process.env.GOOGLE_API_KEY || '',
-                openrouter: process.env.OPENROUTER_API_KEY || '',
-                'kluster.ai': process.env.KLUSTER_AI_API_KEY || '',
+                openai: process.env["OPENAI_API_KEY"] || '',
+                anthropic: process.env["ANTHROPIC_API_KEY"] || '',
+                groq: process.env["GROQ_API_KEY"] || '',
+                xai: process.env["XAI_API_KEY"] || '',
+                google: process.env["GOOGLE_API_KEY"] || '',
+                openrouter: process.env["OPENROUTER_API_KEY"] || '',
+                'kluster.ai': process.env["KLUSTER_AI_API_KEY"] || '',
                 // Override with any existing config values
                 ...this.config.portals?.apiKeys,
               },
@@ -284,12 +316,19 @@ export class SYMindXRuntime implements AgentRuntime {
         }
       }
     } catch (error) {
-      console.error('Configuration error details:', error);
-      runtimeLogger.error(
-        '❌ Error loading configuration:',
-        error as Error,
-        {} as LogContext
+      const configError = createConfigurationError(
+        'Failed to load runtime configuration',
+        this.configPath,
+        'unknown',
+        'CONFIG_LOAD_ERROR',
+        {
+          configPath: this.configPath,
+          fallbackToDefaults: true,
+        },
+        error instanceof Error ? error : new Error(String(error))
       );
+
+      runtimeLogger.error(formatError(configError));
       runtimeLogger.warn('⚠️ Falling back to default configuration');
     }
 
@@ -465,9 +504,11 @@ export class SYMindXRuntime implements AgentRuntime {
       }
 
       // Check if the characters directory exists
-      console.log('Checking for characters in:', charactersDir);
-      console.log('Config agents enabled:', this.config.agents?.enabled);
-      console.log('Config charactersPath:', this.config.agents?.charactersPath);
+      this.logger.debug('Loading characters', {
+        charactersDir,
+        enabled: this.config.agents?.enabled,
+        configuredPath: this.config.agents?.charactersPath
+      });
 
       try {
         await fs.access(charactersDir);
@@ -477,7 +518,7 @@ export class SYMindXRuntime implements AgentRuntime {
         let jsonFiles = files.filter((file) => file.endsWith('.json'));
 
         // Check if we should load only a specific agent
-        const forceSingleAgent = process.env.FORCE_SINGLE_AGENT;
+        const forceSingleAgent = process.env["FORCE_SINGLE_AGENT"];
         if (forceSingleAgent) {
           const singleAgentFile = `${forceSingleAgent}.json`;
           if (jsonFiles.includes(singleAgentFile)) {
@@ -657,17 +698,17 @@ export class SYMindXRuntime implements AgentRuntime {
   private isCleanCharacterConfig(config: Record<string, unknown>): boolean {
     // Clean configs have specific fields and structure
     return Boolean(
-      config.personality &&
-        config.autonomous &&
-        config.memory &&
-        config.emotion &&
-        config.cognition &&
-        config.communication &&
-        config.capabilities &&
-        config.portals &&
-        Array.isArray(config.portals) &&
+      config['personality'] &&
+        config['autonomous'] &&
+        config['memory'] &&
+        config['emotion'] &&
+        config['cognition'] &&
+        config['communication'] &&
+        config['capabilities'] &&
+        config['portals'] &&
+        Array.isArray(config['portals']) &&
         // Old configs have psyche.defaults, new ones don't
-        !config.psyche
+        !config['psyche']
     ) as boolean;
   }
 
@@ -686,7 +727,7 @@ export class SYMindXRuntime implements AgentRuntime {
   /**
    * Process environment variables in legacy format
    */
-  private processEnvironmentVariables(obj: any): any {
+  private processEnvironmentVariables(obj: ConfigValue): ProcessedEnvironmentConfig {
     if (typeof obj === 'string') {
       // Handle ${ENV_VAR:default} syntax
       return obj.replace(
@@ -750,55 +791,75 @@ export class SYMindXRuntime implements AgentRuntime {
             'groq',
         },
       },
-      modules: {
-        extensions:
-          charConfig.extensions?.map(
+      modules: (() => {
+        const modulesConfig: { 
+          extensions: string[]; 
+          memory?: MemoryConfig; 
+          emotion?: EmotionConfig; 
+          cognition?: CognitionConfig; 
+          portal?: Record<string, ConfigValue>; 
+          tools?: Record<string, ConfigValue>; 
+        } = {
+          extensions: charConfig.extensions?.map(
             (ext: CharacterExtensionConfig) => ext.name
-          ) || [],
-        memory: charConfig.memory
-          ? ({
-              provider: charConfig.memory.type as MemoryProviderType,
-              maxRecords: 1000,
-              ...charConfig.memory.config,
-            } as MemoryConfig)
-          : undefined,
-        emotion: charConfig.emotion
-          ? ({
-              type: charConfig.emotion.type as EmotionModuleType,
-              sensitivity: 0.7,
-              decayRate: 0.1,
-              transitionSpeed: 0.3,
-              ...charConfig.emotion.config,
-            } as EmotionConfig)
-          : undefined,
-        cognition: charConfig.cognition
-          ? ({
-              type: charConfig.cognition.type as CognitionModuleType,
-              planningDepth: 5,
-              memoryIntegration: true,
-              creativityLevel: 0.7,
-              ...charConfig.cognition.config,
-            } as CognitionConfig)
-          : undefined,
-        portal: charConfig.portals?.[0]?.config,
-        tools: (charConfig as any).modules?.tools,
-      },
-      autonomous: charConfig.autonomous
-        ? {
-            enabled: charConfig.autonomous.enabled,
-            independence_level: charConfig.autonomous.independence_level,
-            decision_making: charConfig.autonomous.decision_making,
-            life_simulation: charConfig.autonomous.life_simulation,
-          }
-        : undefined,
-      human_interaction: charConfig.human_interaction
-        ? {
-            enabled: true,
-            mode: charConfig.human_interaction.response_style,
-            interruption_tolerance:
-              charConfig.human_interaction.interruption_tolerance,
-          }
-        : undefined,
+          ) || []
+        };
+        
+        if (charConfig.memory) {
+          modulesConfig.memory = {
+            provider: charConfig.memory.type as MemoryProviderType,
+            maxRecords: 1000,
+            ...charConfig.memory.config,
+          } as MemoryConfig;
+        }
+        
+        if (charConfig.emotion) {
+          modulesConfig.emotion = {
+            type: charConfig.emotion.type as EmotionModuleType,
+            sensitivity: 0.7,
+            decayRate: 0.1,
+            transitionSpeed: 0.3,
+            ...charConfig.emotion.config,
+          } as EmotionConfig;
+        }
+        
+        if (charConfig.cognition) {
+          modulesConfig.cognition = {
+            type: charConfig.cognition.type as CognitionModuleType,
+            planningDepth: 5,
+            memoryIntegration: true,
+            creativityLevel: 0.7,
+            ...charConfig.cognition.config,
+          } as CognitionConfig;
+        }
+        
+        if (charConfig.portals?.[0]?.config) {
+          modulesConfig.portal = charConfig.portals[0].config as Record<string, ConfigValue>;
+        }
+        
+        const tools = (charConfig as CharacterConfigWithModules).modules?.tools;
+        if (tools) {
+          modulesConfig.tools = tools;
+        }
+        
+        return modulesConfig;
+      })(),
+      ...(charConfig.autonomous && {
+        autonomous: {
+          enabled: charConfig.autonomous.enabled,
+          independence_level: charConfig.autonomous.independence_level,
+          decision_making: charConfig.autonomous.decision_making,
+          life_simulation: charConfig.autonomous.life_simulation,
+        }
+      }),
+      ...(charConfig.human_interaction && {
+        human_interaction: {
+          enabled: true,
+          mode: charConfig.human_interaction.response_style,
+          interruption_tolerance:
+            charConfig.human_interaction.interruption_tolerance,
+        }
+      }),
     };
   }
 
@@ -851,7 +912,7 @@ export class SYMindXRuntime implements AgentRuntime {
         agentId: agentId,
         agentName: agentConfig.core.name,
       };
-      cognitionModule = this.registry.createCognitionModule(
+      cognitionModule = await this.registry.createCognitionModule(
         agentConfig.psyche.defaults.cognition,
         cognitionConfig
       );
@@ -1188,11 +1249,13 @@ export class SYMindXRuntime implements AgentRuntime {
         runtimeLogger.info(`✅ Initialized extension: ${extension.name}`);
       } catch (error) {
         void error;
+        const errorMessage = error instanceof Error ? error.message : String(error);
         runtimeLogger.error(
-          `❌ Failed to initialize extension ${extension.name}:`,
-          error as Error,
-          {} as LogContext
+          `❌ Failed to initialize extension ${extension.name}: ${errorMessage}`
         );
+        if (error instanceof Error && error.stack) {
+          runtimeLogger.debug(`Extension ${extension.name} error stack: ${error.stack}`);
+        }
       }
     }
 
@@ -1790,7 +1853,7 @@ export class SYMindXRuntime implements AgentRuntime {
             batchSize: 32,
             targetUpdateFrequency: 100,
             curiosityWeight:
-              (config.autonomous_behaviors?.curiosity_driven as any)
+              (config['autonomous_behaviors']?.['curiosity_driven'] as any)
                 ?.exploration_rate || 0.3,
           },
           selfManagement: {
@@ -1854,7 +1917,7 @@ export class SYMindXRuntime implements AgentRuntime {
         goalGenerationEnabled:
           config.autonomous?.life_simulation?.goal_pursuit !== false,
         curiosityWeight:
-          (config.autonomous_behaviors?.curiosity_driven as any)
+          (config['autonomous_behaviors']?.['curiosity_driven'] as any)
             ?.exploration_rate || 0.3,
         maxConcurrentActions: 3,
         planningHorizon: 60 * 60 * 1000, // 1 hour
@@ -1993,32 +2056,32 @@ export class SYMindXRuntime implements AgentRuntime {
       const extensionConfigs: Record<string, ExtensionConfig> = {};
 
       // API extension config (always enabled by default)
-      extensionConfigs.api = {
+      extensionConfigs['api'] = {
         enabled: true,
         priority: 1,
         settings: {
-          port: parseInt(process.env.API_PORT || '8000'),
-          host: process.env.API_HOST || 'localhost',
+          port: parseInt(process.env["API_PORT"] || '8000'),
+          host: process.env["API_HOST"] || 'localhost',
           cors_enabled: true,
           rate_limiting: true,
           websocket_enabled: true,
           webui_enabled: true,
-          auth_required: process.env.API_AUTH_REQUIRED === 'true',
-          max_connections: parseInt(process.env.API_MAX_CONNECTIONS || '100'),
+          auth_required: process.env["API_AUTH_REQUIRED"] === 'true',
+          max_connections: parseInt(process.env["API_MAX_CONNECTIONS"] || '100'),
         },
         dependencies: [],
         capabilities: ['http', 'websocket', 'webui', 'api'],
       };
 
       // Slack extension config
-      if (process.env.SLACK_BOT_TOKEN) {
-        extensionConfigs.slack = {
+      if (process.env["SLACK_BOT_TOKEN"]) {
+        extensionConfigs['slack'] = {
           enabled: true,
           priority: 2,
           settings: {
-            botToken: process.env.SLACK_BOT_TOKEN,
-            signingSecret: process.env.SLACK_SIGNING_SECRET,
-            appToken: process.env.SLACK_APP_TOKEN,
+            botToken: process.env["SLACK_BOT_TOKEN"],
+            signingSecret: process.env["SLACK_SIGNING_SECRET"],
+            appToken: process.env["SLACK_APP_TOKEN"],
           },
           dependencies: [],
           capabilities: ['messaging', 'channels'],
@@ -2026,8 +2089,8 @@ export class SYMindXRuntime implements AgentRuntime {
       }
 
       // RuneLite extension config
-      if (process.env.RUNELITE_ENABLED === 'true') {
-        extensionConfigs.runelite = {
+      if (process.env["RUNELITE_ENABLED"] === 'true') {
+        extensionConfigs['runelite'] = {
           enabled: true,
           priority: 3,
           settings: {
@@ -2039,15 +2102,15 @@ export class SYMindXRuntime implements AgentRuntime {
       }
 
       // Twitter extension config
-      if (process.env.TWITTER_API_KEY) {
-        extensionConfigs.twitter = {
+      if (process.env["TWITTER_API_KEY"]) {
+        extensionConfigs['twitter'] = {
           enabled: true,
           priority: 4,
           settings: {
-            apiKey: process.env.TWITTER_API_KEY,
-            apiSecret: process.env.TWITTER_API_SECRET,
-            accessToken: process.env.TWITTER_ACCESS_TOKEN,
-            accessTokenSecret: process.env.TWITTER_ACCESS_TOKEN_SECRET,
+            apiKey: process.env["TWITTER_API_KEY"],
+            apiSecret: process.env["TWITTER_API_SECRET"],
+            accessToken: process.env["TWITTER_ACCESS_TOKEN"],
+            accessTokenSecret: process.env["TWITTER_ACCESS_TOKEN_SECRET"],
           },
           dependencies: [],
           capabilities: ['social-media', 'posting'],
@@ -2055,13 +2118,13 @@ export class SYMindXRuntime implements AgentRuntime {
       }
 
       // Telegram extension config
-      if (process.env.TELEGRAM_BOT_TOKEN) {
-        extensionConfigs.telegram = {
+      if (process.env["TELEGRAM_BOT_TOKEN"]) {
+        extensionConfigs['telegram'] = {
           enabled: true,
           priority: 5,
           settings: {
-            botToken: process.env.TELEGRAM_BOT_TOKEN,
-            webhookUrl: process.env.TELEGRAM_WEBHOOK_URL,
+            botToken: process.env["TELEGRAM_BOT_TOKEN"],
+            webhookUrl: process.env["TELEGRAM_WEBHOOK_URL"],
           },
           dependencies: [],
           capabilities: ['messaging', 'webhook'],
@@ -2117,11 +2180,13 @@ export class SYMindXRuntime implements AgentRuntime {
             );
           } catch (error) {
             void error;
+            const errorMessage = error instanceof Error ? error.message : String(error);
             runtimeLogger.error(
-              '❌ Failed to initialize API extension at runtime level:',
-              error as Error,
-              {} as LogContext
+              `❌ Failed to initialize API extension at runtime level: ${errorMessage}`
             );
+            if (error instanceof Error && error.stack) {
+              runtimeLogger.debug(`API extension error stack: ${error.stack}`);
+            }
             // Don't fail the entire runtime if API extension fails
             // Just log the error and continue
           }
@@ -2203,7 +2268,7 @@ export class SYMindXRuntime implements AgentRuntime {
 
     // Agents
     runtimeLogger.info(
-      `🤖 Agents: ${stats.agents} active / ${stats.lazyAgents} registered`
+      `🤖 Agents: ${stats['agents']} active / ${stats['lazyAgents']} registered`
     );
 
     // Tool System - MCP Integration
@@ -2587,7 +2652,7 @@ export class SYMindXRuntime implements AgentRuntime {
         (event) =>
           event.targetAgentId === agentId ||
           event.type.includes(lazyAgent.name.toLowerCase()) ||
-          (event.data && event.data.agentId === agentId)
+          (event.data && event.data['agentId'] === agentId)
       );
 
       if (relevantEvents.length > 0) {

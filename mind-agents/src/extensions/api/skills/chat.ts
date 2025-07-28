@@ -97,9 +97,9 @@ export class ChatSkill {
         timestamp: response.timestamp,
       };
 
-      if (response.sessionId) result.sessionId = response.sessionId;
+      if (response.sessionId) result['sessionId'] = response.sessionId;
       if (response.metadata) {
-        result.metadata = JSON.stringify(response.metadata);
+        result['metadata'] = JSON.stringify(response.metadata);
       }
 
       return {

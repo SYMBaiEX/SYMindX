@@ -19,8 +19,17 @@ import {
   AISDKToolSet,
 } from '../types/portal';
 import { runtimeLogger } from '../utils/logger';
+import { errorHandler } from '../utils/error-handler';
+import { 
+  createPortalError, 
+  createRuntimeError, 
+  createNetworkError,
+  safeAsync,
+  formatError
+} from '../utils/standard-errors';
 
 import { MCPResponseFormatter } from './mcp-response-formatter';
+import type { PortalContext, ToolResult, MCPToolSet } from '../types/context';
 
 export interface PortalSelectionCriteria {
   capability: PortalCapability;
@@ -49,7 +58,7 @@ export class PortalIntegration {
   static async generateResponse(
     agent: Agent,
     prompt: string,
-    context?: Record<string, any>,
+    context?: PortalContext,
     criteria?: PortalSelectionCriteria
   ): Promise<string> {
     // Use dynamic portal selection if criteria provided
@@ -59,7 +68,7 @@ export class PortalIntegration {
     } else {
       // Default selection
       chatPortal =
-        (agent as any).findPortalByCapability?.('chat_generation') ||
+        (agent as Agent & { findPortalByCapability?: (cap: string) => Portal | undefined }).findPortalByCapability?.('chat_generation') ||
         agent.portal;
     }
 
@@ -86,8 +95,8 @@ Your personality traits: ${agent.config.core.personality?.join(', ') || 'helpful
 Tools will be automatically executed and their results will be available for you to use in your response.`;
 
         // Add communication style and guidelines from character config
-        if (agent.characterConfig?.communication) {
-          const comm = agent.characterConfig.communication as any;
+        if (agent.characterConfig?.['communication']) {
+          const comm = agent.characterConfig['communication'] as any;
           if (comm.style) {
             systemContent += `\nCommunication style: ${comm.style}.`;
           }
@@ -108,22 +117,22 @@ Tools will be automatically executed and their results will be available for you
         }
 
         // Add enhanced system prompt that includes emotional and cognitive context
-        if (context?.systemPrompt) {
-          systemContent += `\n\n${context.systemPrompt}`;
+        if (context?.['systemPrompt']) {
+          systemContent += `\n\n${context['systemPrompt']}`;
         }
 
         // Add cognitive insights if available
         if (
           context &&
-          context.cognitiveContext &&
-          context.cognitiveContext.thoughts &&
-          context.cognitiveContext.thoughts.length > 0
+          context['cognitiveContext'] &&
+          context['cognitiveContext']['thoughts'] &&
+          context['cognitiveContext']['thoughts'].length > 0
         ) {
           systemContent += `\n\nYour recent cognitive analysis:`;
-          systemContent += `\n- Thoughts: ${context.cognitiveContext.thoughts.join(', ')}`;
+          systemContent += `\n- Thoughts: ${context['cognitiveContext']['thoughts'].join(', ')}`;
 
-          if (context.cognitiveContext.cognitiveConfidence !== undefined) {
-            systemContent += `\n- Analysis confidence: ${(context.cognitiveContext.cognitiveConfidence * 100).toFixed(0)}%`;
+          if (context['cognitiveContext']['cognitiveConfidence'] !== undefined) {
+            systemContent += `\n- Analysis confidence: ${(context['cognitiveContext']['cognitiveConfidence'] * 100).toFixed(0)}%`;
           }
 
           systemContent += `\nIncorporate these insights naturally into your response.`;
@@ -136,10 +145,10 @@ Tools will be automatically executed and their results will be available for you
       }
 
       // Add context as assistant message if provided
-      if (context?.previousThoughts) {
+      if (context?.['previousThoughts']) {
         messages.push({
           role: MessageRole.ASSISTANT,
-          content: `My recent thoughts: ${context.previousThoughts}`,
+          content: `My recent thoughts: ${context['previousThoughts']}`,
         });
       }
 
@@ -186,8 +195,17 @@ Tools will be automatically executed and their results will be available for you
           }
         }
       } catch (error) {
-        void error;
-        runtimeLogger.error(`Failed to create MCP tools: ${error}`);
+        const mcpError = createRuntimeError(
+          'Failed to create MCP tools',
+          'MCP_TOOLS_CREATION_ERROR',
+          {
+            agentName: agent.name,
+            mcpServers: mcpServers ? Object.keys(mcpServers) : [],
+          },
+          error instanceof Error ? error : new Error(String(error))
+        );
+
+        runtimeLogger.error(formatError(mcpError));
         mcpTools = undefined;
       }
 
@@ -203,8 +221,14 @@ Tools will be automatically executed and their results will be available for you
         try {
           await mcpClient.close();
         } catch (error) {
-          void error;
-          runtimeLogger.warn(`Failed to close MCP client: ${error}`);
+          const cleanupError = createRuntimeError(
+            'Failed to close MCP client',
+            'MCP_CLIENT_CLEANUP_ERROR',
+            { agentName: agent.name },
+            error instanceof Error ? error : new Error(String(error))
+          );
+          
+          runtimeLogger.warn(formatError(cleanupError));
         }
       }
 
@@ -224,7 +248,7 @@ Tools will be automatically executed and their results will be available for you
 
         // Format tool results naturally
         const formattedToolResults = MCPResponseFormatter.formatToolResults(
-          toolResults.map((tr: any) => ({
+          toolResults.map((tr: ToolResult) => ({
             toolName: tr.toolName,
             args: tr.args,
             result: tr.result,
@@ -279,28 +303,34 @@ Tools will be automatically executed and their results will be available for you
         return this.getFallbackResponse(prompt);
       }
     } catch (error) {
-      void error;
-      runtimeLogger.error('❌ Error generating AI response:', {
-        error: {
-          code: 'AI_GENERATION_ERROR',
-          message: error instanceof Error ? error.message : String(error),
-          ...(error instanceof Error && error.stack
-            ? { stack: error.stack }
-            : {}),
-          cause: error,
+      const portalError = createPortalError(
+        'AI response generation failed',
+        chatPortal.name,
+        (chatPortal as any).model || 'unknown',
+        'AI_GENERATION_ERROR',
+        {
+          agentName: agent.name,
+          promptLength: prompt.length,
+          toolsAvailable: agent.toolSystem ? Object.keys(agent.toolSystem).length : 0,
+          hasContext: !!context,
         },
-      });
-      // Log more details about the error
-      if (error instanceof Error) {
-        runtimeLogger.error('Error message:', error.message);
-        runtimeLogger.error('Error stack:', error.stack);
-      }
-      // Log the portal and tools info for debugging
-      runtimeLogger.error('Portal used:', chatPortal.name);
-      runtimeLogger.error(
-        'Tools available:',
-        agent.toolSystem ? Object.keys(agent.toolSystem).length : 0
+        error instanceof Error ? error : new Error(String(error))
       );
+
+      // Use error handler for consistent logging and potential recovery
+      await errorHandler.handleError(
+        portalError.toErrorInfo(),
+        async () => {
+          // This is a fallback operation - we don't actually retry the main operation
+          return this.getFallbackResponse(prompt);
+        },
+        {
+          agentId: agent.id,
+          portalName: chatPortal.name,
+          operation: 'generateResponse',
+        }
+      );
+
       return this.getFallbackResponse(prompt);
     }
   }
@@ -309,8 +339,8 @@ Tools will be automatically executed and their results will be available for you
    * Fix MCP tools schemas for OpenAI compatibility
    * Convert raw MCP schemas to proper AI SDK v5 tool format
    */
-  private static fixMCPToolsForOpenAI(tools: any): AISDKToolSet {
-    const fixedTools: any = {};
+  private static fixMCPToolsForOpenAI(tools: MCPToolSet): AISDKToolSet {
+    const fixedTools: AISDKToolSet = {};
 
     for (const [toolName, tool] of Object.entries(tools)) {
       try {
@@ -372,7 +402,7 @@ Tools will be automatically executed and their results will be available for you
             parameters: zodSchema,
             execute:
               toolDef.execute ||
-              (async (_args: any) => {
+              (async (_args: Record<string, unknown>) => {
                 runtimeLogger.warn(
                   `Tool ${toolName} executed without implementation`
                 );
@@ -430,11 +460,11 @@ Tools will be automatically executed and their results will be available for you
    */
   static async generateThoughts(
     agent: Agent,
-    context: Record<string, any>
+    context: PortalContext
   ): Promise<string[]> {
     const prompt = `Given the current context:
-- Environment: ${context.environment?.location || 'unknown'}
-- Recent events: ${context.events?.length || 0} events
+- Environment: ${context['environment']?.location || 'unknown'}
+- Recent events: ${context['events']?.length || 0} events
 - Emotional state: ${agent.emotion?.current || 'neutral'}
 
 What are your current thoughts? Respond with 2-3 brief thoughts.`;
@@ -458,7 +488,7 @@ What are your current thoughts? Respond with 2-3 brief thoughts.`;
   static async generateFastResponse(
     agent: Agent,
     prompt: string,
-    context?: Record<string, any>
+    context?: PortalContext
   ): Promise<string> {
     return this.generateResponse(
       agent,
@@ -474,7 +504,7 @@ What are your current thoughts? Respond with 2-3 brief thoughts.`;
   static async generateQualityResponse(
     agent: Agent,
     prompt: string,
-    context?: Record<string, any>
+    context?: PortalContext
   ): Promise<string> {
     return this.generateResponse(
       agent,
@@ -490,7 +520,7 @@ What are your current thoughts? Respond with 2-3 brief thoughts.`;
   static async generateCreativeResponse(
     agent: Agent,
     prompt: string,
-    context?: Record<string, any>
+    context?: PortalContext
   ): Promise<string> {
     return this.generateResponse(
       agent,
@@ -721,8 +751,20 @@ What are your current thoughts? Respond with 2-3 brief thoughts.`;
 
       return evaluation;
     } catch (error) {
-      void error;
-      runtimeLogger.error('❌ Task evaluation failed:', error);
+      const evaluationError = createPortalError(
+        'Task evaluation failed',
+        'PortalRouter',
+        'unknown',
+        'TASK_EVALUATION_ERROR',
+        {
+          task: task.substring(0, 100) + (task.length > 100 ? '...' : ''),
+          agentName: agent.name,
+        },
+        error instanceof Error ? error : new Error(String(error))
+      );
+
+      runtimeLogger.error(formatError(evaluationError));
+      
       return {
         analysis: 'Unable to evaluate task at this time',
         confidence: 0,
@@ -766,14 +808,16 @@ What are your current thoughts? Respond with 2-3 brief thoughts.`;
   static async *generateStreamingResponse(
     agent: Agent,
     prompt: string,
-    context?: Record<string, any>,
+    context?: PortalContext,
     onChunk?: (chunk: string) => void
   ): AsyncGenerator<string, void, unknown> {
+    type AgentWithFindPortal = Agent & { findPortalByCapability?: (cap: string) => Portal | undefined };
     const chatPortal =
-      (agent as any).findPortalByCapability?.('chat_generation') ||
+      (agent as AgentWithFindPortal).findPortalByCapability?.('chat_generation') ||
       agent.portal;
 
-    if (!chatPortal || !(chatPortal as any).generateChatStream) {
+    type PortalWithStream = Portal & { generateChatStream?: (messages: ChatMessage[], opts: any) => Promise<AsyncIterable<any>> };
+    if (!chatPortal || !(chatPortal as PortalWithStream).generateChatStream) {
       // Fallback to non-streaming
       const response = await this.generateResponse(agent, prompt, context);
       yield response;
@@ -786,8 +830,8 @@ What are your current thoughts? Respond with 2-3 brief thoughts.`;
       // Build messages array (same as generateResponse)
       if (agent.config?.core) {
         let systemContent = `You are ${agent.name}. `;
-        if (agent.characterConfig?.communication) {
-          const comm = agent.characterConfig.communication as any;
+        if (agent.characterConfig?.['communication']) {
+          const comm = agent.characterConfig['communication'] as any;
           if (comm.style)
             systemContent += `Communication style: ${comm.style}. `;
           if (comm.tone) systemContent += `Tone: ${comm.tone}. `;
@@ -809,14 +853,14 @@ What are your current thoughts? Respond with 2-3 brief thoughts.`;
         agent.toolSystem && Object.keys(agent.toolSystem).length > 0;
 
       // Stream the response
-      const stream = await (chatPortal as any).generateChatStream(messages, {
+      const stream = await (chatPortal as PortalWithStream).generateChatStream!(messages, {
         maxTokens: 2048,
         temperature: 0.4,
         functions: hasMCPTools ? agent.toolSystem : undefined,
       });
 
       let buffer = '';
-      const toolResults: any[] = [];
+      const toolResults: ToolResult[] = [];
 
       // Process the stream following AI SDK v5 patterns
       for await (const chunk of stream) {
@@ -861,8 +905,21 @@ What are your current thoughts? Respond with 2-3 brief thoughts.`;
         }
       }
     } catch (error) {
-      void error;
-      runtimeLogger.error('❌ Error in streaming generation:', error);
+      const streamingError = createPortalError(
+        'Streaming response generation failed',
+        chatPortal?.name || 'unknown',
+        (chatPortal as any)?.model || 'unknown',
+        'STREAMING_ERROR',
+        {
+          agentName: agent.name,
+          promptLength: prompt.length,
+          hasContext: !!context,
+        },
+        error instanceof Error ? error : new Error(String(error))
+      );
+
+      runtimeLogger.error(formatError(streamingError));
+      
       const fallback = this.getFallbackResponse(prompt);
       if (onChunk) onChunk(fallback);
       yield fallback;

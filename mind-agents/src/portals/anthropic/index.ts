@@ -60,7 +60,7 @@ export class AnthropicPortal extends BasePortal {
     super('anthropic', 'Anthropic', '1.0.0', config);
 
     // Create Anthropic provider with proper AI SDK v5 configuration
-    const apiKey = config.apiKey || process.env.ANTHROPIC_API_KEY;
+    const apiKey = config.apiKey || process.env["ANTHROPIC_API_KEY"];
     if (!apiKey) {
       throw new Error('Anthropic API key is required');
     }
@@ -73,7 +73,7 @@ export class AnthropicPortal extends BasePortal {
       providerConfig.baseURL = config.baseURL;
     }
 
-    this.anthropicProvider = createAnthropic(providerConfig);
+    this.anthropicProvider = anthropic;
   }
 
   /**
@@ -86,6 +86,17 @@ export class AnthropicPortal extends BasePortal {
       'claude-3-5-sonnet-20241022';
 
     return this.anthropicProvider(model);
+  }
+
+  /**
+   * Create a tool using AI SDK v5 tool function
+   */
+  createTool(name: string, description: string, parameters: any, execute: Function) {
+    return tool({
+      description,
+      parameters,
+      execute
+    });
   }
 
   /**

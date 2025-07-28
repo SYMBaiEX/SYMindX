@@ -9,22 +9,15 @@
 
 import chalk from 'chalk';
 import { Command } from 'commander';
-import figlet from 'figlet';
-import gradient from 'gradient-string';
 
 import { 
   displayBanner,
   createSpinner,
-  displayError,
-  displaySuccess
+  displayError
 } from '../utils/cli-ui.js';
 
 import { AgentCommand } from './commands/agent-api.js';
 import { runtimeClient } from './services/runtimeClient.js';
-
-// Cool gradients
-const coolGradient = gradient(['#FF006E', '#8338EC', '#3A86FF']);
-const neonGradient = gradient(['#00F5FF', '#FF00FF', '#FFFF00']);
 
 class SYMindXAPICLI {
   private program: Command;
@@ -43,7 +36,7 @@ class SYMindXAPICLI {
       )
       .version('1.0.0')
       .option('-v, --verbose', 'Enable verbose output')
-      .option('--api-url <url>', 'API server URL', process.env.SYMINDX_API_URL || 'http://localhost:8000');
+      .option('--api-url <url>', 'API server URL', process.env['SYMINDX_API_URL'] || 'http://localhost:8000');
   }
   
   private setupCommands(): void {

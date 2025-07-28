@@ -106,6 +106,11 @@ if (fs.existsSync(charactersSourceDir)) {
   }
   
   // Copy entire characters directory
+  /**
+   * @param {string} src - Source directory
+   * @param {string} dest - Destination directory
+   * @returns {number} Number of files copied
+   */
   function copyDir(src, dest) {
     if (!fs.existsSync(dest)) {
       fs.mkdirSync(dest, { recursive: true });

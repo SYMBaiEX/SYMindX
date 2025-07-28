@@ -251,19 +251,62 @@ export class MonitorCommand {
 
     this.monitoring = true;
 
-    // Command system not available in current implementation
-    process.stdout.write(
-      chalk.yellow('⚠️  Command monitoring not available in current implementation') + '\n'
-    );
-    process.stdout.write(
-      chalk.gray('   Command tracking would need to be implemented in the API extension') + '\n'
-    );
-
     if (options.agent) {
-      process.stdout.write(chalk.gray(`   Requested agent filter: ${options.agent}`) + '\n');
+      process.stdout.write(chalk.gray(`   Monitoring agent: ${options.agent}`) + '\n');
     }
     if (options.status) {
-      process.stdout.write(chalk.gray(`   Requested status filter: ${options.status}`) + '\n');
+      process.stdout.write(chalk.gray(`   Filtering status: ${options.status}`) + '\n');
+    }
+
+    // Try to get command history and monitor for new commands
+    try {
+      const apiExtension = this.context.runtime.registry.getExtension('api');
+      if (apiExtension && typeof (apiExtension as any).getCommandHistory === 'function') {
+        // Display initial command history
+        const history = await (apiExtension as any).getCommandHistory({ limit: 10 });
+        for (const command of history) {
+          if (this._shouldDisplayCommand(command, options)) {
+            this._displayCommand(command);
+          }
+        }
+
+        // Start monitoring for new commands
+        process.stdout.write(chalk.cyan('\nWatching for new commands...\n'));
+        const monitorInterval = setInterval(async () => {
+          if (!this.monitoring) {
+            clearInterval(monitorInterval);
+            return;
+          }
+
+          try {
+            const recentCommands = await (apiExtension as any).getCommandHistory({ 
+              since: Date.now() - 5000, // Last 5 seconds
+              limit: 100 
+            });
+            
+            for (const command of recentCommands) {
+              if (this._shouldDisplayCommand(command, options)) {
+                this._displayCommand(command);
+              }
+            }
+          } catch (error) {
+            // Silently handle errors in monitoring loop
+          }
+        }, 1000);
+      } else {
+        process.stdout.write(
+          chalk.yellow('⚠️  Command monitoring requires API extension with command tracking') + '\n'
+        );
+        process.stdout.write(
+          chalk.gray('   Live command monitoring will be available when extension is enhanced') + '\n'
+        );
+      }
+    } catch (error) {
+      process.stdout.write(chalk.red('❌ Failed to initialize command monitoring') + '\n');
+      // Log error using runtime logger instead
+      if (error instanceof Error) {
+        console.error('Command monitoring error:', error.message);
+      }
     }
 
     await this.waitForInterrupt();
@@ -388,7 +431,7 @@ export class MonitorCommand {
       if (!agent) return;
 
       const autonomousStatus = this.context.runtime.getAutonomousStatus(agentId);
-      const isAutonomous = autonomousStatus.autonomous || false;
+      const isAutonomous = autonomousStatus['autonomous'] || false;
 
       process.stdout.write(chalk.cyan('\n🔍 Performance Snapshot:') + '\n');
       process.stdout.write(`  Status: ${agent.status}` + '\n');
@@ -398,7 +441,8 @@ export class MonitorCommand {
       );
 
       if (isAutonomous) {
-        const autonomyLevel = autonomousStatus.engine?.autonomyLevel || 0;
+        const engine = autonomousStatus['engine'] as { autonomyLevel?: number } | undefined;
+        const autonomyLevel = engine?.autonomyLevel || 0;
         process.stdout.write(
           `  Autonomy: ${(autonomyLevel * 100).toFixed(0)}%` + '\n'
         );
@@ -443,7 +487,7 @@ export class MonitorCommand {
     }
   }
 
-  private displayCommand(command: { timestamp: Date; status: string; agentId: string; instruction: string; result?: { error?: string; success?: boolean } | undefined }): void {
+  private _displayCommand(command: { timestamp: Date; status: string; agentId: string; instruction: string; result?: { error?: string; success?: boolean } | undefined }): void {
     const timestamp = command.timestamp.toLocaleTimeString();
     const statusColor = this.getCommandStatusColor(command.status);
 
@@ -457,15 +501,8 @@ export class MonitorCommand {
 
   private async displayPerformanceMetrics(agentId?: string): Promise<void> {
     const stats = this.context.runtime.getStats() as RuntimeStats;
-    // Command system not available in current implementation
-    const commandStats = {
-      totalCommands: 0,
-      pendingCommands: 0,
-      processingCommands: 0,
-      completedCommands: 0,
-      failedCommands: 0,
-      averageExecutionTime: 0,
-    } as CommandStats;
+    // Get command statistics from API extension or fallback to defaults
+    const _commandStats = await this.getCommandStats() as CommandStats;
 
     process.stdout.write(chalk.cyan('🖥️  System Metrics:') + '\n');
     process.stdout.write(
@@ -481,7 +518,14 @@ export class MonitorCommand {
     );
 
     process.stdout.write(chalk.cyan('\n⚡ Command Metrics:') + '\n');
-    process.stdout.write(`  Status: Not available in current implementation` + '\n');
+    process.stdout.write(`  Total Commands: ${_commandStats.totalCommands}` + '\n');
+    process.stdout.write(`  Pending: ${chalk.blue(_commandStats.pendingCommands.toString())}` + '\n');
+    process.stdout.write(`  Processing: ${chalk.yellow(_commandStats.processingCommands.toString())}` + '\n');
+    process.stdout.write(`  Completed: ${chalk.green(_commandStats.completedCommands.toString())}` + '\n');
+    process.stdout.write(`  Failed: ${chalk.red(_commandStats.failedCommands.toString())}` + '\n');
+    if (_commandStats.averageExecutionTime > 0) {
+      process.stdout.write(`  Avg Execution Time: ${_commandStats.averageExecutionTime.toFixed(2)}ms` + '\n');
+    }
 
     if (agentId) {
       const agent = this.context.runtime.agents.get(agentId);
@@ -493,9 +537,10 @@ export class MonitorCommand {
         );
 
         const autonomousStatus = this.context.runtime.getAutonomousStatus(agentId);
-        const isAutonomous = autonomousStatus.autonomous || false;
+        const isAutonomous = autonomousStatus['autonomous'] || false;
         if (isAutonomous) {
-          const autonomyLevel = autonomousStatus.engine?.autonomyLevel || 0;
+          const engine = autonomousStatus['engine'] as { autonomyLevel?: number } | undefined;
+          const autonomyLevel = engine?.autonomyLevel || 0;
           process.stdout.write(
             `  Autonomy Level: ${(autonomyLevel * 100).toFixed(0)}%` + '\n'
           );
@@ -504,7 +549,7 @@ export class MonitorCommand {
     }
   }
 
-  private shouldDisplayCommand(command: { agentId?: string | undefined; status?: string | undefined }, options: { agent?: string | undefined; status?: string | undefined }): boolean {
+  private _shouldDisplayCommand(command: { agentId?: string | undefined; status?: string | undefined }, options: { agent?: string | undefined; status?: string | undefined }): boolean {
     if (options.agent && command.agentId !== options.agent) {
       return false;
     }
@@ -539,6 +584,57 @@ export class MonitorCommand {
         return chalk.magenta;
       default:
         return chalk.gray;
+    }
+  }
+
+  private async getCommandStats(): Promise<CommandStats> {
+    try {
+      const apiExtension = this.context.runtime.registry.getExtension('api');
+      if (apiExtension && typeof (apiExtension as any).getCommandStats === 'function') {
+        return await (apiExtension as any).getCommandStats();
+      }
+      
+      // Fallback to basic stats if available through other means
+      const history = await this.getCommandHistory();
+      const stats: CommandStats = {
+        totalCommands: history.length,
+        pendingCommands: history.filter(cmd => cmd.status === 'pending').length,
+        processingCommands: history.filter(cmd => cmd.status === 'processing').length,
+        completedCommands: history.filter(cmd => cmd.status === 'completed').length,
+        failedCommands: history.filter(cmd => cmd.status === 'failed').length,
+        averageExecutionTime: 0
+      };
+      
+      // Calculate average execution time if timestamp and completion data available
+      const completedCommands = history.filter(cmd => cmd.status === 'completed' && cmd.executionTime);
+      if (completedCommands.length > 0) {
+        const totalTime = completedCommands.reduce((sum, cmd) => sum + (cmd.executionTime || 0), 0);
+        stats.averageExecutionTime = totalTime / completedCommands.length;
+      }
+      
+      return stats;
+    } catch (error) {
+      // Return default stats if unable to retrieve
+      return {
+        totalCommands: 0,
+        pendingCommands: 0,
+        processingCommands: 0,
+        completedCommands: 0,
+        failedCommands: 0,
+        averageExecutionTime: 0
+      };
+    }
+  }
+
+  private async getCommandHistory(): Promise<any[]> {
+    try {
+      const apiExtension = this.context.runtime.registry.getExtension('api');
+      if (apiExtension && typeof (apiExtension as any).getCommandHistory === 'function') {
+        return await (apiExtension as any).getCommandHistory({ limit: 1000 });
+      }
+      return [];
+    } catch (error) {
+      return [];
     }
   }
 

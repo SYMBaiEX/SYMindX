@@ -96,7 +96,7 @@ export class GoogleGenerativePortal extends BasePortal {
 
     // Create properly configured Google provider
     const providerConfig: { apiKey?: string } = {};
-    const apiKey = config.apiKey || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+    const apiKey = config.apiKey || process.env["GOOGLE_GENERATIVE_AI_API_KEY"];
     if (apiKey) providerConfig.apiKey = apiKey;
 
     this.googleProvider = createGoogleGenerativeAI(providerConfig);
@@ -138,7 +138,7 @@ export class GoogleGenerativePortal extends BasePortal {
 
   protected override async validateConfig(): Promise<void> {
     const config = this.config as GoogleGenerativeConfig;
-    if (!config.apiKey && !process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+    if (!config.apiKey && !process.env["GOOGLE_GENERATIVE_AI_API_KEY"]) {
       throw new Error('API key is required for Google Generative AI portal');
     }
   }

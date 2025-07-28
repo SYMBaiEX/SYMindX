@@ -20,7 +20,7 @@ program
   .name('symindx-cli')
   .description('SYMindX CLI - Connect to and manage your AI agents')
   .version('1.0.0')
-  .option('--api-url <url>', 'API URL', process.env.SYMINDX_API_URL || 'http://localhost:8000');
+  .option('--api-url <url>', 'API URL', process.env["SYMINDX_API_URL"] || 'http://localhost:8000');
 
 // Agent command
 const agentCmd = program

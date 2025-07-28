@@ -14,6 +14,11 @@ import {
   EmotionBlendResult,
   EmotionTransition,
 } from '../../types/modules/emotions';
+import { 
+  standardLoggers, 
+  createStandardLoggingPatterns,
+  StandardLogContext 
+} from '../../utils/standard-logging.js';
 
 // Import all emotion types
 import { AngryEmotion } from './angry/index.js';
@@ -36,6 +41,10 @@ export class CompositeEmotionModule implements EmotionModule {
   private _history: EmotionRecord[] = [];
   // Config is stored and used throughout the module
   private config: AdvancedEmotionConfig;
+  
+  // Standardized logging
+  private logger = standardLoggers.emotion;
+  private loggingPatterns = createStandardLoggingPatterns(this.logger);
 
   // Continuous emotion space tracking
   private _currentCoordinates = { valence: 0, arousal: 0, dominance: 0 };

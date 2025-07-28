@@ -54,11 +54,11 @@ program.parse(process.argv);
 const options = program.opts();
 
 // Configure sound and music
-if (!options.sound) {
+if (!options['sound']) {
   soundManager.toggle();
 }
 
-if (options.music) {
+if (options['music']) {
   musicManager.toggle();
 }
 
@@ -101,14 +101,14 @@ const main = async (): Promise<void> => {
 
   // Clear console and show banner
   console.clear();
-  if (!options.noAnimations) {
+  if (!options['noAnimations']) {
     await showBanner();
   }
 
   try {
     // Render the Ink app
 
-    const { waitUntilExit } = render(<App initialView={options.view} />, {
+    const { waitUntilExit } = render(<App initialView={options['view']} />, {
       exitOnCtrlC: false, // We handle exit in the app
     });
 

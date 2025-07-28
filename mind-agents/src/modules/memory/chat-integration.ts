@@ -63,57 +63,57 @@ export function createChatRepository(
  */
 export function createChatRepositoryFromEnv(): ChatRepository | null {
   // Check for SQLite (default)
-  if (process.env.CHAT_SQLITE_PATH) {
+  if (process.env["CHAT_SQLITE_PATH"]) {
     return createChatRepository({
       provider: 'sqlite',
       config: {
-        dbPath: process.env.CHAT_SQLITE_PATH,
-        enableAnalytics: process.env.CHAT_ENABLE_ANALYTICS === 'true',
-        enableFullTextSearch: process.env.CHAT_ENABLE_FTS !== 'false',
+        dbPath: process.env["CHAT_SQLITE_PATH"],
+        enableAnalytics: process.env["CHAT_ENABLE_ANALYTICS"] === 'true',
+        enableFullTextSearch: process.env["CHAT_ENABLE_FTS"] !== 'false',
       },
     });
   }
 
   // Check for Supabase
-  if (process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY) {
+  if (process.env["SUPABASE_URL"] && process.env["SUPABASE_ANON_KEY"]) {
     return createChatRepository({
       provider: 'supabase',
       config: {
         dbPath: '', // Not used for Supabase
-        url: process.env.SUPABASE_URL,
-        anonKey: process.env.SUPABASE_ANON_KEY,
-        serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
-        schema: process.env.SUPABASE_SCHEMA || 'public',
-        enableAnalytics: process.env.CHAT_ENABLE_ANALYTICS === 'true',
+        url: process.env["SUPABASE_URL"],
+        anonKey: process.env["SUPABASE_ANON_KEY"],
+        serviceRoleKey: process.env["SUPABASE_SERVICE_ROLE_KEY"],
+        schema: process.env["SUPABASE_SCHEMA"] || 'public',
+        enableAnalytics: process.env["CHAT_ENABLE_ANALYTICS"] === 'true',
       },
     });
   }
 
   // Check for Neon
-  if (process.env.NEON_DATABASE_URL) {
+  if (process.env["NEON_DATABASE_URL"]) {
     return createChatRepository({
       provider: 'neon',
       config: {
         dbPath: '', // Not used for Neon
-        connectionString: process.env.NEON_DATABASE_URL,
-        ssl: process.env.NEON_SSL !== 'false',
-        maxConnections: parseInt(process.env.NEON_MAX_CONNECTIONS || '10'),
-        enableAnalytics: process.env.CHAT_ENABLE_ANALYTICS === 'true',
+        connectionString: process.env["NEON_DATABASE_URL"],
+        ssl: process.env["NEON_SSL"] !== 'false',
+        maxConnections: parseInt(process.env["NEON_MAX_CONNECTIONS"] || '10'),
+        enableAnalytics: process.env["CHAT_ENABLE_ANALYTICS"] === 'true',
       },
     });
   }
 
   // Check for PostgreSQL
-  const postgresUrl = process.env.POSTGRES_URL || process.env.DATABASE_URL;
+  const postgresUrl = process.env["POSTGRES_URL"] || process.env["DATABASE_URL"];
   if (postgresUrl) {
     return createChatRepository({
       provider: 'postgres',
       config: {
         dbPath: '', // Not used for PostgreSQL
         connectionString: postgresUrl,
-        ssl: process.env.POSTGRES_SSL !== 'false',
-        maxConnections: parseInt(process.env.POSTGRES_MAX_CONNECTIONS || '20'),
-        enableAnalytics: process.env.CHAT_ENABLE_ANALYTICS === 'true',
+        ssl: process.env["POSTGRES_SSL"] !== 'false',
+        maxConnections: parseInt(process.env["POSTGRES_MAX_CONNECTIONS"] || '20'),
+        enableAnalytics: process.env["CHAT_ENABLE_ANALYTICS"] === 'true',
       },
     });
   }

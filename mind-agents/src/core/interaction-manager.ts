@@ -494,7 +494,7 @@ export class InteractionManager {
   private determineEmotionalTone(interaction: HumanInteraction): string {
     const relationship = interaction.context.relationship;
     const agentEmotion = String(
-      interaction.context.emotionalState?.current || 'neutral'
+      interaction.context.emotionalState?.['current'] || 'neutral'
     );
 
     // Base tone on relationship and current emotion
@@ -659,13 +659,13 @@ export class InteractionManager {
   private setupEventListeners(): void {
     // Listen for relevant events that might affect interactions
     this.eventBus.on('agent_status_change', (event) => {
-      if (event.data.agentId === this.agent.id) {
+      if (event.data['agentId'] === this.agent.id) {
         this.handleAgentStatusChange(event);
       }
     });
 
     this.eventBus.on('human_message', (event) => {
-      if (event.data.targetAgentId === this.agent.id) {
+      if (event.data['targetAgentId'] === this.agent.id) {
         this.handleIncomingMessage(event);
       }
     });
@@ -673,7 +673,7 @@ export class InteractionManager {
 
   private handleAgentStatusChange(event: AgentEvent): void {
     // Update current activity based on agent status
-    this.logger.debug(`Agent status changed: ${event.data.newStatus}`);
+    this.logger.debug(`Agent status changed: ${event.data['newStatus']}`);
   }
 
   private async handleIncomingMessage(event: AgentEvent): Promise<void> {

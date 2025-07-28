@@ -389,7 +389,7 @@ export class ExtensionErrorHandler {
    */
   static validateAgentExists(getAgent: (agentId: string) => any) {
     return (req: Request, res: Response, next: NextFunction): void => {
-      const agentId = req.params.agentId;
+      const agentId = req.params['agentId'];
 
       if (!agentId) {
         const error = new ExtensionApiError(

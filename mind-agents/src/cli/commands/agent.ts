@@ -19,8 +19,6 @@ import {
   MemoryProviderType,
   CognitionModuleType,
   EmotionModuleType,
-  Agent,
-  Extension,
 } from '../../types/agent';
 import { runtimeLogger } from '../../utils/logger';
 import { CLIContext } from '../index';
@@ -157,7 +155,7 @@ export class AgentCommand {
         const statusColor = this.getStatusColor(agent.status);
         // Check if agent has autonomous status
         const autonomousStatus = this.context.runtime.getAutonomousStatus(agent.id);
-        const isAutonomous = autonomousStatus.autonomous || false;
+        const isAutonomous = autonomousStatus['autonomous'] || false;
 
         if (options?.verbose) {
           process.stdout.write(
@@ -190,7 +188,8 @@ export class AgentCommand {
           );
 
           if (isAutonomous) {
-            const autonomyLevel = autonomousStatus.engine?.autonomyLevel || 0;
+            const engine = autonomousStatus['engine'] as { autonomyLevel?: number } | undefined;
+            const autonomyLevel = engine?.autonomyLevel || 0;
             process.stdout.write(
               '  ' +
                 chalk.white('Autonomy Level:') +
@@ -312,7 +311,7 @@ export class AgentCommand {
 
       // Stop autonomous systems if agent is autonomous
       try {
-        if (this.context.runtime.getAutonomousStatus(agentId).autonomous) {
+        if (this.context.runtime.getAutonomousStatus(agentId)['autonomous']) {
           await this.context.runtime.deactivateAgent(agentId);
         }
       } catch (error) {
@@ -418,7 +417,7 @@ export class AgentCommand {
       }
 
       const autonomousStatus = this.context.runtime.getAutonomousStatus(agentId);
-      const isAutonomous = autonomousStatus.autonomous || false;
+      const isAutonomous = autonomousStatus['autonomous'] || false;
       const statusColor = this.getStatusColor(agent.status);
 
       process.stdout.write(chalk.blue.bold(`\n🤖 Agent Information`) + '\n');
@@ -454,7 +453,8 @@ export class AgentCommand {
       if (isAutonomous) {
         process.stdout.write(chalk.blue('\n🤖 Autonomous Status') + '\n');
         process.stdout.write(chalk.gray('─'.repeat(50)) + '\n');
-        const autonomyLevel = autonomousStatus.engine?.autonomyLevel || 0;
+        const engine = autonomousStatus['engine'] as { autonomyLevel?: number; currentPhase?: string } | undefined;
+        const autonomyLevel = engine?.autonomyLevel || 0;
         process.stdout.write(
           `${chalk.cyan('Autonomy Level:')} ${(autonomyLevel * 100).toFixed(0)}%` + '\n'
         );
@@ -462,7 +462,7 @@ export class AgentCommand {
           `${chalk.cyan('Enabled:')} ${isAutonomous ? '✅' : '❌'}` + '\n'
         );
         process.stdout.write(
-          `${chalk.cyan('State:')} ${autonomousStatus.engine?.currentPhase || 'unknown'}` + '\n'
+          `${chalk.cyan('State:')} ${engine?.currentPhase || 'unknown'}` + '\n'
         );
         process.stdout.write(
           chalk.cyan('Lifecycle:') + ' Integrated into autonomous engine' + '\n'

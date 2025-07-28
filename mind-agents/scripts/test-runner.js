@@ -292,8 +292,8 @@ class TestRunner {
     await fs.mkdir(this.config.outputDir, { recursive: true });
     
     // Set test environment variables
-    process.env.NODE_ENV = 'test';
-    process.env.LOG_LEVEL = 'error'; // Reduce noise during testing
+    process.env["NODE_ENV"] = 'test';
+    process.env["LOG_LEVEL"] = 'error'; // Reduce noise during testing
     
     utils.logSuccess('Test environment prepared');
   }
@@ -609,7 +609,7 @@ class TestRunner {
         utils.logWarning('Coverage thresholds not met:');
         failures.forEach(failure => utils.logWarning(`  ${failure}`));
         
-        if (process.env.STRICT_COVERAGE === 'true') {
+        if (process.env["STRICT_COVERAGE"] === 'true') {
           throw new Error('Coverage thresholds not met');
         }
       }

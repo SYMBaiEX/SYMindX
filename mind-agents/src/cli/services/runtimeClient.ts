@@ -103,7 +103,7 @@ export class RuntimeClient {
 
   constructor(config: Partial<RuntimeClientConfig> = {}) {
     this.config = {
-      apiUrl: process.env.SYMINDX_API_URL || 'http://localhost:8000',
+      apiUrl: process.env["SYMINDX_API_URL"] || 'http://localhost:8000',
       timeout: 5000,
       retryAttempts: 3,
       retryDelay: 1000,

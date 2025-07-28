@@ -63,7 +63,7 @@ const BUILD_CONFIG = {
   
   // Output options
   generateSourceMaps: true,
-  minify: process.env.NODE_ENV === 'production',
+  minify: process.env["NODE_ENV"] === 'production',
   enableAnalysis: true,
   enableReports: true,
 };

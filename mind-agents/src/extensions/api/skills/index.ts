@@ -48,7 +48,7 @@ export function initializeSkills(
     http: new HttpSkill(extension),
     websocketServer: new WebSocketServerSkill(
       extension,
-      config.websocket as WebSocketServerSkill['config'] | undefined
+      config['websocket'] as WebSocketServerSkill['config'] | undefined
     ),
     chat: new ChatSkill(extension),
     authentication: new AuthenticationSkill(extension),

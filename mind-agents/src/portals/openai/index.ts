@@ -5,17 +5,16 @@
  * It supports text generation, chat completion, embeddings, and image generation.
  */
 
-import { openai, createOpenAI } from '@ai-sdk/openai';
+import { createOpenAI } from '@ai-sdk/openai';
 import {
   generateText,
   streamText,
   embed,
   embedMany,
   experimental_generateImage as generateImage,
-  tool,
-  // stepCountIs, // Not available in ai@5.0.0-canary.24
 } from 'ai';
-import type { ModelMessage as AIMessage } from 'ai';
+import type { CoreMessage } from 'ai';
+import { runtimeLogger } from '../../utils/logger';
 
 import {
   PortalConfig,
@@ -30,18 +29,18 @@ import {
   ImageGenerationResult,
   PortalCapability,
   MessageRole,
-  FinishReason,
   PortalType,
   ModelType,
 } from '../../types/portal';
-import type {
-  LanguageModel,
-  AIMessage as ModelMessage,
-  GenerateTextParamsWithTools,
-} from '../../types/portals/ai-sdk';
-import { AISDKParameterBuilder } from '../ai-sdk-utils';
 import { BasePortal } from '../base-portal';
-import { convertUsage, buildAISDKParams } from '../utils';
+import { convertUsage } from '../utils';
+
+// Import shared utilities
+import {
+  createPortalHelper,
+  validateApiKey,
+  type ProviderConfig,
+} from '../shared';
 
 export interface OpenAIConfig extends PortalConfig {
   model?: string;
@@ -70,250 +69,111 @@ export class OpenAIPortal extends BasePortal {
     ModelType.CODE_GENERATION,
   ];
   private openaiProvider: ReturnType<typeof createOpenAI>;
+  private helper: ReturnType<typeof createPortalHelper>;
 
   constructor(config: OpenAIConfig) {
     super('openai', 'OpenAI', '1.0.0', config);
 
-    // Create OpenAI provider with proper AI SDK v5 configuration
-    const apiKey = config.apiKey || process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      throw new Error('OpenAI API key is required');
-    }
+    // Create portal helper with shared utilities
+    this.helper = createPortalHelper('openai', config);
 
-    const providerConfig: any = {
+    // Validate and create provider using shared utilities
+    const apiKey = config.apiKey || process.env["OPENAI_API_KEY"];
+    validateApiKey(apiKey, 'openai');
+
+    const providerConfig: ProviderConfig = {
       apiKey,
+      organization: config.organization,
+      baseURL: config.baseURL,
     };
 
-    if (config.organization) {
-      providerConfig.organization = config.organization;
+    try {
+      this.openaiProvider = this.helper.createProvider(providerConfig) as ReturnType<typeof createOpenAI>;
+      runtimeLogger.debug('OpenAI provider created successfully');
+    } catch (error) {
+      runtimeLogger.error(`Failed to create OpenAI provider: ${error instanceof Error ? error.message : String(error)}`);
+      throw error;
     }
-
-    if (config.baseURL) {
-      providerConfig.baseURL = config.baseURL;
-    }
-
-    this.openaiProvider = createOpenAI(providerConfig);
   }
 
   /**
-   * Get language model instance using AI SDK v5 patterns
+   * Get language model instance using shared utilities
    */
   private getLanguageModel(modelId?: string) {
-    const model =
-      modelId || (this.config as OpenAIConfig).model || 'gpt-4o-mini';
-
-    return this.openaiProvider(model);
+    const model = this.helper.resolveModel('chat', modelId);
+    runtimeLogger.debug(`Creating OpenAI language model with ID: ${model}`);
+    
+    try {
+      const languageModel = this.helper.getLanguageModel(this.openaiProvider, model);
+      runtimeLogger.debug(`Successfully created language model for: ${model}`);
+      return languageModel;
+    } catch (error) {
+      runtimeLogger.error(`Failed to create language model for ${model}: ${error instanceof Error ? error.message : String(error)}`);
+      throw error;
+    }
   }
 
   /**
-   * Convert ChatMessage array to message format for AI SDK v5
+   * Convert ChatMessage array to AI SDK format using shared utilities
    */
-  private convertToModelMessages(messages: ChatMessage[]): AIMessage[] {
-    return messages.map((msg) => {
-      switch (msg.role) {
-        case MessageRole.SYSTEM:
-          return { role: 'system', content: msg.content };
-
-        case MessageRole.USER: {
-          // Handle attachments for multimodal support
-          if (msg.attachments && msg.attachments.length > 0) {
-            type TextPart = { type: 'text'; text: string };
-            type ImagePart = {
-              type: 'image';
-              image: string | URL;
-              mediaType?: string;
-            };
-            const content: Array<TextPart | ImagePart> = [
-              { type: 'text', text: msg.content },
-            ];
-
-            for (const attachment of msg.attachments) {
-              if (attachment.type === 'image') {
-                if (attachment.data) {
-                  content.push({
-                    type: 'image',
-                    image: attachment.data,
-                    mediaType: attachment.mimeType,
-                  });
-                } else if (attachment.url) {
-                  content.push({
-                    type: 'image',
-                    image: new URL(attachment.url),
-                  });
-                }
-              }
-            }
-
-            return { role: 'user', content };
-          } else {
-            return { role: 'user', content: msg.content };
-          }
-        }
-
-        case MessageRole.ASSISTANT:
-          return { role: 'assistant', content: msg.content };
-
-        case MessageRole.TOOL:
-          return {
-            role: 'tool',
-            content: [
-              {
-                type: 'tool-result',
-                toolCallId: '',
-                toolName: '',
-                result: msg.content,
-              },
-            ],
-          };
-
-        case MessageRole.FUNCTION:
-          // Convert function messages to assistant messages for compatibility
-          return { role: 'assistant', content: msg.content };
-
-        default:
-          return { role: 'user', content: msg.content };
-      }
-    });
+  private convertToModelMessages(messages: ChatMessage[]): CoreMessage[] {
+    return this.helper.convertMessages(messages);
   }
 
   /**
-   * Generate text using OpenAI's completion API
+   * Generate text using OpenAI's completion API with shared utilities
    */
   override async generateText(
     prompt: string,
     options?: TextGenerationOptions
   ): Promise<TextGenerationResult> {
-    try {
-      const model =
-        options?.model || (this.config as OpenAIConfig).model || 'gpt-4o-mini';
+    return this.helper.withRetry(async () => {
+      const model = this.helper.resolveModel('chat', options?.model);
+      const languageModel = this.getLanguageModel(model);
 
       const baseParams = {
-        model: this.getLanguageModel(model),
+        model: languageModel,
         prompt,
       };
 
-      const params: any = { ...baseParams };
-
-      // Use maxOutputTokens (AI SDK v5) instead of maxTokens
-      if (
-        options?.maxOutputTokens ??
-        options?.maxTokens ??
-        this.config.maxTokens
-      ) {
-        params.maxOutputTokens =
-          options?.maxOutputTokens ??
-          options?.maxTokens ??
-          this.config.maxTokens;
-      }
-
-      if (options?.temperature ?? this.config.temperature) {
-        params.temperature = options?.temperature ?? this.config.temperature;
-      }
-
-      if (options?.topP) {
-        params.topP = options.topP;
-      }
-
-      if (options?.frequencyPenalty) {
-        params.frequencyPenalty = options.frequencyPenalty;
-      }
-
-      if (options?.presencePenalty) {
-        params.presencePenalty = options.presencePenalty;
-      }
-
+      const params = this.helper.buildTextParams(baseParams, options);
       const result = await generateText(params);
 
       return {
         text: result.text,
         usage: convertUsage(result.usage),
+        finishReason: this.helper.mapFinishReason(result.finishReason),
         metadata: {
           model,
           provider: 'openai',
         },
       };
-    } catch (error) {
-      void error;
-      // OpenAI text generation error
-      throw new Error(`OpenAI text generation failed: ${error}`);
-    }
+    }, 'generateText', options?.model);
   }
 
   /**
-   * Generate chat response using OpenAI's chat completion API
+   * Generate chat response using OpenAI's chat completion API with shared utilities
    */
   override async generateChat(
     messages: ChatMessage[],
     options?: ChatGenerationOptions
   ): Promise<ChatGenerationResult> {
-    try {
+    return this.helper.withRetry(async () => {
       // Intelligent model selection based on use case
-      let model: string;
-
-      if (options?.model) {
-        // Use explicitly specified model
-        model = options.model;
-      } else if (options?.functions && options.functions.length > 0) {
-        // Use tool model for function calling (faster, cheaper)
-        model = (this.config as OpenAIConfig).toolModel || 'gpt-4o-mini';
-      } else {
-        // Use chat model for regular conversations
-        model =
-          (this.config as OpenAIConfig).chatModel ||
-          (this.config as OpenAIConfig).model ||
-          'gpt-4o-mini';
-      }
-
+      const modelType = (options?.functions && options.functions.length > 0) || 
+                       (options?.tools && Object.keys(options.tools).length > 0) ? 'tool' : 'chat';
+      const model = this.helper.resolveModel(modelType, options?.model);
+      
+      const languageModel = this.getLanguageModel(model);
       const modelMessages = this.convertToModelMessages(messages);
 
       const baseOptions = {
-        model: this.getLanguageModel(model),
+        model: languageModel,
         messages: modelMessages,
       };
 
-      const generateOptions: any = { ...baseOptions };
-
-      // Use maxOutputTokens (AI SDK v5) instead of maxTokens
-      if (
-        options?.maxOutputTokens ??
-        options?.maxTokens ??
-        this.config.maxTokens
-      ) {
-        generateOptions.maxOutputTokens =
-          options?.maxOutputTokens ??
-          options?.maxTokens ??
-          this.config.maxTokens;
-      }
-
-      if (options?.temperature ?? this.config.temperature) {
-        generateOptions.temperature =
-          options?.temperature ?? this.config.temperature;
-      }
-
-      if (options?.topP) {
-        generateOptions.topP = options.topP;
-      }
-
-      if (options?.frequencyPenalty) {
-        generateOptions.frequencyPenalty = options.frequencyPenalty;
-      }
-
-      if (options?.presencePenalty) {
-        generateOptions.presencePenalty = options.presencePenalty;
-      }
-
-      // Add tools if provided (native AI SDK v5 tools)
-      if (options?.tools) {
-        generateOptions.tools = options.tools;
-        generateOptions.maxSteps = options?.maxSteps || 5; // Enable multi-step tool execution
-
-        // Add comprehensive tool streaming callbacks
-        if (options?.onStepFinish) {
-          generateOptions.onStepFinish = options.onStepFinish;
-        }
-      }
-
-      const result = await generateText(generateOptions);
+      const params = this.helper.buildChatParams(baseOptions, options);
+      const result = await generateText(params);
 
       return {
         text: result.text,
@@ -322,17 +182,13 @@ export class OpenAIPortal extends BasePortal {
           content: result.text,
         },
         usage: convertUsage(result.usage),
-        finishReason: this.mapFinishReason(result.finishReason),
+        finishReason: this.helper.mapFinishReason(result.finishReason),
         metadata: {
           model,
           provider: 'openai',
         },
       };
-    } catch (error) {
-      void error;
-      // OpenAI chat generation error
-      throw new Error(`OpenAI chat generation failed: ${error}`);
-    }
+    }, 'generateChat', options?.model);
   }
 
   /**
@@ -394,7 +250,7 @@ export class OpenAIPortal extends BasePortal {
         providerOptions: {
           openai: {
             quality: options?.quality || 'standard',
-            style: options?.style,
+            ...(options?.style && { style: options.style }),
             response_format: options?.responseFormat || 'url',
           },
         },
@@ -402,7 +258,6 @@ export class OpenAIPortal extends BasePortal {
 
       return {
         images: result.images.map((img) => ({
-          url: undefined, // AI SDK v5 doesn't return URLs directly
           b64_json: img.base64,
         })),
         model,
@@ -421,147 +276,61 @@ export class OpenAIPortal extends BasePortal {
   }
 
   /**
-   * Stream text generation for real-time responses
+   * Stream text generation for real-time responses using shared utilities
    */
   override async *streamText(
     prompt: string,
     options?: TextGenerationOptions
   ): AsyncGenerator<string> {
-    try {
-      const model =
-        options?.model || (this.config as OpenAIConfig).model || 'gpt-4o-mini';
+    const model = this.helper.resolveModel('chat', options?.model);
+    const languageModel = this.getLanguageModel(model);
 
-      const baseParams = {
-        model: this.getLanguageModel(model),
-        prompt,
-      };
+    const baseParams = {
+      model: languageModel,
+      prompt,
+    };
 
-      const params: any = { ...baseParams };
-
-      // Use maxOutputTokens (AI SDK v5) instead of maxTokens
-      if (
-        options?.maxOutputTokens ??
-        options?.maxTokens ??
-        this.config.maxTokens
-      ) {
-        params.maxOutputTokens =
-          options?.maxOutputTokens ??
-          options?.maxTokens ??
-          this.config.maxTokens;
+    const params = this.helper.buildTextParams(baseParams, options);
+    
+    yield* this.helper.createTextStream(languageModel, params, {
+      callbacks: {
+        onError: (error) => {
+          throw this.helper.handleError(error, 'streamText', model);
+        }
       }
-
-      if (options?.temperature ?? this.config.temperature) {
-        params.temperature = options?.temperature ?? this.config.temperature;
-      }
-
-      if (options?.topP) {
-        params.topP = options.topP;
-      }
-
-      if (options?.frequencyPenalty) {
-        params.frequencyPenalty = options.frequencyPenalty;
-      }
-
-      if (options?.presencePenalty) {
-        params.presencePenalty = options.presencePenalty;
-      }
-
-      const { textStream } = await streamText(params);
-
-      for await (const delta of textStream) {
-        yield delta;
-      }
-    } catch (error) {
-      void error;
-      // OpenAI stream text error
-      throw new Error(`OpenAI stream text failed: ${error}`);
-    }
+    });
   }
 
   /**
-   * Stream chat generation for real-time responses
+   * Stream chat generation for real-time responses using shared utilities
    */
   override async *streamChat(
     messages: ChatMessage[],
     options?: ChatGenerationOptions
   ): AsyncGenerator<string> {
-    try {
-      // Intelligent model selection for streaming
-      let model: string;
+    // Intelligent model selection for streaming
+    const modelType = (options?.functions && options.functions.length > 0) || 
+                     (options?.tools && Object.keys(options.tools).length > 0) ? 'tool' : 'chat';
+    const model = this.helper.resolveModel(modelType, options?.model);
+    
+    const languageModel = this.getLanguageModel(model);
+    const modelMessages = this.convertToModelMessages(messages);
 
-      if (options?.model) {
-        model = options.model;
-      } else if (options?.functions && options.functions.length > 0) {
-        model = (this.config as OpenAIConfig).toolModel || 'gpt-4o-mini';
-      } else {
-        model =
-          (this.config as OpenAIConfig).chatModel ||
-          (this.config as OpenAIConfig).model ||
-          'gpt-4o-mini';
-      }
+    const baseOptions = {
+      model: languageModel,
+      messages: modelMessages,
+    };
 
-      const modelMessages = this.convertToModelMessages(messages);
-
-      const baseOptions = {
-        model: this.getLanguageModel(model),
-        messages: modelMessages,
-      };
-
-      const streamOptions: any = { ...baseOptions };
-
-      // Use maxOutputTokens (AI SDK v5) instead of maxTokens
-      if (
-        options?.maxOutputTokens ??
-        options?.maxTokens ??
-        this.config.maxTokens
-      ) {
-        streamOptions.maxOutputTokens =
-          options?.maxOutputTokens ??
-          options?.maxTokens ??
-          this.config.maxTokens;
-      }
-
-      if (options?.temperature ?? this.config.temperature) {
-        streamOptions.temperature =
-          options?.temperature ?? this.config.temperature;
-      }
-
-      if (options?.topP) {
-        streamOptions.topP = options.topP;
-      }
-
-      if (options?.frequencyPenalty) {
-        streamOptions.frequencyPenalty = options.frequencyPenalty;
-      }
-
-      if (options?.presencePenalty) {
-        streamOptions.presencePenalty = options.presencePenalty;
-      }
-
-      // Add tools if provided with comprehensive AI SDK v5 streaming support
-      if (options?.tools) {
-        streamOptions.tools = options.tools;
-        streamOptions.maxSteps = options?.maxSteps || 5; // Enable multi-step tool execution for streaming
-
-        // Add comprehensive tool streaming callbacks for AI SDK v5
-        if (options?.onStepFinish) {
-          streamOptions.onStepFinish = options.onStepFinish;
+    const params = this.helper.buildChatParams(baseOptions, options);
+    
+    yield* this.helper.createChatStream(languageModel, params, {
+      enableToolStreaming: true,
+      callbacks: {
+        onError: (error) => {
+          throw this.helper.handleError(error, 'streamChat', model);
         }
-
-        // Enable tool call streaming (default in AI SDK v5)
-        streamOptions.toolCallStreaming = true;
       }
-
-      const { textStream } = await streamText(streamOptions);
-
-      for await (const delta of textStream) {
-        yield delta;
-      }
-    } catch (error) {
-      void error;
-      // OpenAI stream chat error
-      throw new Error(`OpenAI stream chat failed: ${error}`);
-    }
+    });
   }
 
   /**
@@ -695,7 +464,7 @@ export class OpenAIPortal extends BasePortal {
     try {
       const params: any = {
         model: this.getLanguageModel(
-          options?.model || this.resolveModel('tool')
+          options?.model || this.helper.resolveModel('tool')
         ),
         messages: [{ role: 'user' as const, content: prompt }],
         maxOutputTokens:
@@ -734,9 +503,9 @@ export class OpenAIPortal extends BasePortal {
 
       return {
         text,
-        model: options?.model || this.resolveModel('tool'),
+        model: options?.model || this.helper.resolveModel('tool'),
         usage: convertUsage(usage),
-        finishReason: this.mapFinishReason(finishReason),
+        finishReason: this.helper.mapFinishReason(finishReason),
         timestamp: new Date(),
         metadata: {
           steps: steps?.length || 1,
@@ -767,7 +536,7 @@ export class OpenAIPortal extends BasePortal {
 
       const params: any = {
         model: this.getLanguageModel(
-          options?.model || this.resolveModel('tool')
+          options?.model || this.helper.resolveModel('tool')
         ),
         messages: modelMessages,
         maxOutputTokens:
@@ -812,10 +581,10 @@ export class OpenAIPortal extends BasePortal {
 
       return {
         text,
-        model: options?.model || this.resolveModel('tool'),
+        model: options?.model || this.helper.resolveModel('tool'),
         message,
         usage: convertUsage(usage),
-        finishReason: this.mapFinishReason(finishReason),
+        finishReason: this.helper.mapFinishReason(finishReason),
         timestamp: new Date(),
         metadata: {
           steps: steps?.length || 1,
@@ -880,7 +649,7 @@ export class OpenAIPortal extends BasePortal {
     try {
       const params: any = {
         model: this.getLanguageModel(
-          options?.model || this.resolveModel('tool')
+          options?.model || this.helper.resolveModel('tool')
         ),
         messages: [{ role: 'user' as const, content: prompt }],
         maxOutputTokens:
@@ -935,83 +704,23 @@ export class OpenAIPortal extends BasePortal {
   }
 
   /**
-   * Get supported models for different capabilities
+   * Get supported models for different capabilities using shared utilities
    */
   override getSupportedModelsForCapability(
     capability: PortalCapability
   ): string[] {
-    switch (capability) {
-      case PortalCapability.TEXT_GENERATION:
-      case PortalCapability.CHAT_GENERATION:
-        return ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'];
-      case PortalCapability.EMBEDDING_GENERATION:
-        return [
-          'text-embedding-3-large',
-          'text-embedding-3-small',
-          'text-embedding-ada-002',
-        ];
-      case PortalCapability.IMAGE_GENERATION:
-        return ['dall-e-3', 'dall-e-2'];
-      case PortalCapability.VISION:
-        return ['gpt-4o', 'gpt-4-turbo'];
-      case PortalCapability.FUNCTION_CALLING:
-      case PortalCapability.TOOL_USAGE:
-        return ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'];
-      case PortalCapability.REASONING:
-        return ['o1', 'o1-mini', 'o1-preview'];
-      default:
-        return [];
-    }
+    return this.helper.modelResolver.getSupportedModels(capability);
   }
 
   /**
-   * Get the optimal model for a specific capability
+   * Get the optimal model for a specific capability using shared utilities
    */
   override getOptimalModelForCapability(
     capability: PortalCapability
   ): string | null {
-    switch (capability) {
-      case PortalCapability.TEXT_GENERATION:
-      case PortalCapability.CHAT_GENERATION:
-        return 'gpt-4o-mini'; // Balance of quality and cost
-      case PortalCapability.EMBEDDING_GENERATION:
-        return 'text-embedding-3-small'; // Good balance
-      case PortalCapability.IMAGE_GENERATION:
-        return 'dall-e-3'; // Latest and best
-      case PortalCapability.VISION:
-        return 'gpt-4o'; // Best vision capabilities
-      case PortalCapability.FUNCTION_CALLING:
-      case PortalCapability.TOOL_USAGE:
-        return 'gpt-4o-mini'; // Fast and capable
-      case PortalCapability.REASONING:
-        return 'o1-mini'; // Good reasoning at lower cost
-      default:
-        return null;
-    }
+    return this.helper.modelResolver.getOptimalModel(capability);
   }
 
-  /**
-   * Map finish reason from AI SDK to our internal enum
-   */
-  private mapFinishReason(reason?: string): FinishReason {
-    switch (reason) {
-      case 'stop':
-        return FinishReason.STOP;
-      case 'length':
-        return FinishReason.LENGTH;
-      case 'content-filter':
-        return FinishReason.CONTENT_FILTER;
-      case 'tool-calls':
-      case 'function-call':
-        return FinishReason.FUNCTION_CALL;
-      case 'error':
-        return FinishReason.ERROR;
-      case 'cancelled':
-        return FinishReason.CANCELLED;
-      default:
-        return FinishReason.STOP;
-    }
-  }
 }
 
 // Export factory function for easy instantiation

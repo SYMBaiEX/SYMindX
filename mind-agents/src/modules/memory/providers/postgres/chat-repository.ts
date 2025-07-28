@@ -576,7 +576,7 @@ export class PostgresChatRepository implements ChatRepository {
       const result = await client.query(sql, params);
       return result.rows.map((row) => ({
         message: this.pgToMessage(row),
-        relevanceScore: parseFloat(row.relevance_score) || 0,
+        relevanceScore: parseFloat(row['relevance_score']) || 0,
       }));
     } finally {
       client.release();
@@ -904,12 +904,12 @@ export class PostgresChatRepository implements ChatRepository {
       const row = result.rows[0];
       return buildObject<ConversationStats>({
         conversationId,
-        messageCount: row.message_count || 0,
-        uniqueSenders: row.unique_senders || 0,
-        userMessageCount: row.user_message_count || 0,
-        agentMessageCount: row.agent_message_count || 0,
-        commandCount: row.command_count || 0,
-        failedMessageCount: row.failed_message_count || 0,
+        messageCount: row['message_count'] || 0,
+        uniqueSenders: row['unique_senders'] || 0,
+        userMessageCount: row['user_message_count'] || 0,
+        agentMessageCount: row['agent_message_count'] || 0,
+        commandCount: row['command_count'] || 0,
+        failedMessageCount: row['failed_message_count'] || 0,
       })
         .addOptional(
           'firstMessageAt',

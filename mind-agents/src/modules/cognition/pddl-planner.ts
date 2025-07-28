@@ -510,7 +510,7 @@ export class PDDLPlanner implements CognitionModule {
     context.events.forEach((event, index) => {
       this.currentState.predicates.add(`event(event_${index}, ${event.type})`);
 
-      if (event.data?.message) {
+      if (event.data?.['message']) {
         this.currentState.predicates.add(`has_message(event_${index})`);
       }
     });

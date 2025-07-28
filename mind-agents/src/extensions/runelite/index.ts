@@ -101,8 +101,8 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
   constructor(config: RuneLiteConfig) {
     super();
     this.config = {
-      enabled: config.enabled ?? true,
-      priority: config.priority ?? 1,
+      enabled: config['enabled'] ?? true,
+      priority: config['priority'] ?? 1,
       settings: {
         port: 8081,
         host: 'localhost',
@@ -120,7 +120,7 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
         eventWhitelist: [],
         eventBlacklist: [],
         maxEventQueueSize: 1000,
-        ...config.settings,
+        ...config['settings'],
       },
     } as RuneLiteConfig;
 
@@ -131,12 +131,12 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
     // Set protocol capabilities
     this.protocolCapabilities = {
       version: '2.0.0',
-      compression: this.config.settings.enableCompression ?? true,
-      batching: this.config.settings.enableBatching ?? true,
-      eventRecording: this.config.settings.enableEventRecording ?? true,
-      macroSystem: this.config.settings.enableMacroSystem ?? true,
-      pathfinding: this.config.settings.enablePathfinding ?? true,
-      pluginBridge: this.config.settings.enablePluginBridge ?? true,
+      compression: this.config['settings']['enableCompression'] ?? true,
+      batching: this.config['settings']['enableBatching'] ?? true,
+      eventRecording: this.config['settings']['enableEventRecording'] ?? true,
+      macroSystem: this.config['settings']['enableMacroSystem'] ?? true,
+      pathfinding: this.config['settings']['enablePathfinding'] ?? true,
+      pluginBridge: this.config['settings']['enablePluginBridge'] ?? true,
       stateSync: true,
       acknowledgments: true,
       priorities: true,
@@ -149,24 +149,24 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
 
   private initializeAdvancedSystems(): void {
     // Initialize pathfinding
-    if (this.config.settings.enablePathfinding !== false) {
+    if (this.config['settings']['enablePathfinding'] !== false) {
       this.pathfinding = new PathfindingSystem(this.gameState);
       runtimeLogger.info('🗺️ Pathfinding system initialized');
     }
 
     // Initialize macro system
-    if (this.config.settings.enableMacroSystem !== false) {
+    if (this.config['settings']['enableMacroSystem'] !== false) {
       this.macroSystem = new MacroSystem();
       this.macroSystem.on('action:execute', (action: MacroAction) => {
-        this.queueCommand(action.type, action.parameters);
+        this.queueCommand(action['type'], action['parameters']);
       });
       runtimeLogger.info('📹 Macro system initialized');
     }
 
     // Initialize automation system
-    if (this.config.settings.enableAutomation !== false) {
-      const safetyConfig: AutomationSafetyConfig = this.config.settings
-        .automationSafety || {
+    if (this.config['settings']['enableAutomation'] !== false) {
+      const safetyConfig: AutomationSafetyConfig = this.config['settings']
+        ['automationSafety'] || {
         enableAntiPattern: true,
         minActionDelay: 600,
         maxActionDelay: 3000,
@@ -185,21 +185,21 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
     }
 
     // Initialize event recording
-    if (this.config.settings.enableEventRecording !== false) {
+    if (this.config['settings']['enableEventRecording'] !== false) {
       this.eventRecording = new EventRecordingSystem();
       runtimeLogger.info('🔴 Event recording system initialized');
     }
 
     // Initialize plugin bridge
-    if (this.config.settings.enablePluginBridge !== false) {
+    if (this.config['settings']['enablePluginBridge'] !== false) {
       this.pluginBridge = new PluginBridgeSystem();
       runtimeLogger.info('🔌 Plugin bridge system initialized');
     }
 
     // Initialize event batching
-    if (this.config.settings.enableBatching !== false) {
-      const batchSize = this.config.settings.eventBatchSize || 50;
-      const batchInterval = this.config.settings.eventBatchInterval || 100;
+    if (this.config['settings']['enableBatching'] !== false) {
+      const batchSize = this.config['settings']['eventBatchSize'] || 50;
+      const batchInterval = this.config['settings']['eventBatchInterval'] || 100;
       this.eventBatching = new EventBatchingSystem(batchSize, batchInterval);
       this.eventBatching.on('batch:ready', (batch: EventBatch) => {
         this.processBatch(batch);
@@ -216,7 +216,7 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
   }
 
   async init(agent: Agent): Promise<void> {
-    if (!this.config.enabled) {
+    if (!this.config['enabled']) {
       runtimeLogger.info('⏸️ RuneLite extension is disabled');
       return;
     }
@@ -240,8 +240,8 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
   }
 
   private async initializeServer(): Promise<void> {
-    const port = this.config.settings.port ?? 8081;
-    const host = this.config.settings.host ?? 'localhost';
+    const port = this.config['settings']['port'] ?? 8081;
+    const host = this.config['settings']['host'] ?? 'localhost';
 
     this.wss = new WebSocketServer({
       port,
@@ -268,17 +268,17 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
     const id = uuidv4();
     const clientInfo = {
       id,
-      remoteAddress: request.socket.remoteAddress,
-      userAgent: request.headers['user-agent'],
+      remoteAddress: request.socket['remoteAddress'],
+      userAgent: request['headers']['user-agent'],
       connectedAt: Date.now(),
       lastHeartbeat: Date.now(),
       authenticated: false,
     };
 
     // Security validation
-    if (this.config.settings.enableSecurityValidation) {
-      const origin = request.headers.origin;
-      const allowedOrigins = this.config.settings.allowedOrigins ?? [];
+    if (this.config['settings']['enableSecurityValidation']) {
+      const origin = request['headers']['origin'];
+      const allowedOrigins = this.config['settings']['allowedOrigins'] ?? [];
 
       if (
         allowedOrigins.length > 0 &&
@@ -287,18 +287,18 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
         runtimeLogger.warn(
           `🚫 Rejected connection from unauthorized origin: ${origin}`
         );
-        ws.close(1008, 'Unauthorized origin');
+        ws['close'](1008, 'Unauthorized origin');
         return;
       }
     }
 
     this.clients.set(id, ws);
     runtimeLogger.info(
-      `🔗 New RuneLite client connected: ${id} from ${clientInfo.remoteAddress}`
+      `🔗 New RuneLite client connected: ${id} from ${clientInfo['remoteAddress']}`
     );
 
     // Set up client event handlers
-    ws.on('message', (data) => {
+    ws['on']('message', (data) => {
       try {
         this.handleWebSocketMessage(id, data);
       } catch (err) {
@@ -306,30 +306,30 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
         this.sendError(
           ws,
           'MESSAGE_PARSE_ERROR',
-          err instanceof Error ? err.message : String(err)
+          err instanceof Error ? err['message'] : String(err)
         );
       }
     });
 
-    ws.on('close', (code, reason) => {
-      this.clients.delete(id);
+    ws['on']('close', (code, reason) => {
+      this.clients['delete'](id);
       runtimeLogger.info(
-        `🔌 RuneLite client disconnected: ${id} (${code}: ${reason.toString()})`
+        `🔌 RuneLite client disconnected: ${id} (${code}: ${reason['toString']()})`
       );
-      this.emit('client:disconnected', { id, code, reason: reason.toString() });
+      this.emit('client:disconnected', { id, code, reason: reason['toString']() });
     });
 
-    ws.on('error', (error) => {
+    ws['on']('error', (error) => {
       runtimeLogger.error(`🔴 Client ${id} error:`, error);
-      this.sendError(ws, 'CONNECTION_ERROR', error.message);
+      this.sendError(ws, 'CONNECTION_ERROR', error['message']);
     });
 
-    ws.on('pong', () => {
-      clientInfo.lastHeartbeat = Date.now();
+    ws['on']('pong', () => {
+      clientInfo['lastHeartbeat'] = Date.now();
     });
 
     // Store client info for heartbeat tracking
-    (ws as any).clientInfo = clientInfo;
+    (ws as any)['clientInfo'] = clientInfo;
 
     // Send welcome message with protocol capabilities
     this.sendMessage(ws, {
@@ -351,7 +351,7 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
 
   private processBatch(batch: EventBatch): void {
     // Process event batch based on priority
-    for (const event of batch.events) {
+    for (const event of batch['events']) {
       this.handleGameEvent('batch', event);
     }
   }
@@ -368,7 +368,7 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
     if (this.protocolCapabilities.compression) {
       // Compress the delta
       const compressed = CompressionUtils.compressJSON(delta);
-      message.data = compressed;
+      message['data'] = compressed;
     }
 
     this.broadcastMessage(message);
@@ -379,7 +379,7 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
     await this.processCommandQueue();
 
     // Update game state tracking
-    if (this.config.settings.enableGameStateTracking) {
+    if (this.config['settings']['enableGameStateTracking']) {
       this.updateGameStateTracking();
     }
 
@@ -396,9 +396,9 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
     const now = Date.now();
     const readyCommands = this.commandQueue.filter(
       (cmd) =>
-        !cmd.timeout ||
-        now - cmd.timestamp <
-          (cmd.timeout || this.config.settings.commandTimeout || 10000)
+        !cmd['timeout'] ||
+        now - cmd['timestamp'] <
+          (cmd['timeout'] || this.config['settings']['commandTimeout'] || 10000)
     );
 
     for (const command of readyCommands.slice(0, 10)) {
@@ -406,60 +406,60 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
       try {
         await this.executeCommand(command);
         this.commandQueue = this.commandQueue.filter(
-          (c) => c.id !== command.id
+          (c) => c['id'] !== command['id']
         );
       } catch (error) {
         runtimeLogger.error(
-          `Failed to execute command ${command.name}:`,
+          `Failed to execute command ${command['name']}:`,
           error
         );
-        if (command.callback) {
-          command.callback({
+        if (command['callback']) {
+          command['callback']({
             success: false,
-            error: error instanceof Error ? error.message : String(error),
+            error: error instanceof Error ? error['message'] : String(error),
           });
         }
         this.commandQueue = this.commandQueue.filter(
-          (c) => c.id !== command.id
+          (c) => c['id'] !== command['id']
         );
       }
     }
 
     // Remove timed out commands
-    const timeoutLimit = now - (this.config.settings.commandTimeout || 10000);
+    const timeoutLimit = now - (this.config['settings']['commandTimeout'] || 10000);
     this.commandQueue = this.commandQueue.filter(
-      (cmd) => cmd.timestamp > timeoutLimit
+      (cmd) => cmd['timestamp'] > timeoutLimit
     );
   }
 
   private updateGameStateTracking(): void {
     // Update game state timestamp
-    this.gameState.timestamp = Date.now();
+    this.gameState['timestamp'] = Date.now();
 
     // Emit game state update event
     this.emit('gamestate:updated', this.gameState);
   }
 
   private cleanupEventQueue(): void {
-    const maxSize = this.config.settings.maxEventQueueSize || 1000;
+    const maxSize = this.config['settings']['maxEventQueueSize'] || 1000;
     // This would clean up any event queues if we were maintaining them
   }
 
   private checkClientHealth(): void {
-    if (!this.config.settings.enableHeartbeat) return;
+    if (!this.config['settings']['enableHeartbeat']) return;
 
     const now = Date.now();
     const heartbeatTimeout =
-      (this.config.settings.heartbeatInterval || 30000) * 2; // 2x heartbeat interval
+      (this.config['settings']['heartbeatInterval'] || 30000) * 2; // 2x heartbeat interval
 
     for (const [clientId, ws] of this.clients.entries()) {
-      const clientInfo = (ws as any).clientInfo;
-      if (clientInfo && now - clientInfo.lastHeartbeat > heartbeatTimeout) {
+      const clientInfo = (ws as any)['clientInfo'];
+      if (clientInfo && now - clientInfo['lastHeartbeat'] > heartbeatTimeout) {
         runtimeLogger.warn(
           `💔 Client ${clientId} heartbeat timeout, closing connection`
         );
-        ws.close(1001, 'Heartbeat timeout');
-        this.clients.delete(clientId);
+        ws['close'](1001, 'Heartbeat timeout');
+        this.clients['delete'](clientId);
       }
     }
   }
@@ -477,14 +477,14 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
 
     // Close all client connections
     for (const [clientId, ws] of this.clients.entries()) {
-      ws.close(1001, 'Server shutting down');
+      ws['close'](1001, 'Server shutting down');
     }
     this.clients.clear();
 
     // Close WebSocket server
     if (this.wss) {
       await new Promise<void>((resolve) => {
-        this.wss?.close(() => {
+        this.wss?.['close'](() => {
           resolve();
         });
       });
@@ -526,15 +526,15 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
 
   private setupEventHandlers(): void {
     // Register handlers for all event types
-    Object.values(EventType).forEach((eventType) => {
+    Object.values(EventType)['forEach']((eventType) => {
       this.eventHandlers.set(eventType, new Set());
     });
   }
 
   private setupHeartbeat(): void {
-    if (!this.config.settings.enableHeartbeat) return;
+    if (!this.config['settings']['enableHeartbeat']) return;
 
-    const interval = this.config.settings.heartbeatInterval || 30000;
+    const interval = this.config['settings']['heartbeatInterval'] || 30000;
     this.heartbeatInterval = setInterval(() => {
       this.sendHeartbeatToClients();
     }, interval);
@@ -543,7 +543,7 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
   }
 
   private setupAutoReconnect(): void {
-    if (!this.config.settings.enableAutoReconnect) return;
+    if (!this.config['settings']['enableAutoReconnect']) return;
 
     // This would be used if we were a client connecting to RuneLite
     // For now, we're the server, so this is for future client-side functionality
@@ -554,7 +554,7 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
       type: 'heartbeat' as const,
       data: {
         timestamp: Date.now(),
-        gameState: this.config.settings.enableGameStateTracking
+        gameState: this.config['settings']['enableGameStateTracking']
           ? this.gameState
           : undefined,
       },
@@ -566,13 +566,13 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
   }
 
   private handleWebSocketMessage(clientId: string, data: any): void {
-    const message = JSON.parse(data.toString()) as any;
+    const message = JSON.parse(data['toString']()) as any;
 
-    runtimeLogger.debug(`📨 Received message from ${clientId}:`, message.type);
+    runtimeLogger.debug(`📨 Received message from ${clientId}:`, message['type']);
 
-    switch (message.type) {
+    switch (message['type']) {
       case 'event':
-        this.handleGameEvent(clientId, message.data);
+        this.handleGameEvent(clientId, message['data']);
         break;
       case 'command':
         this.handleCommandResponse(clientId, message);
@@ -587,7 +587,7 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
         this.handleClientError(clientId, message);
         break;
       case 'batch':
-        this.handleEventBatch(clientId, message.data);
+        this.handleEventBatch(clientId, message['data']);
         break;
       case 'plugin':
         this.handlePluginMessage(clientId, message);
@@ -599,12 +599,12 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
         this.handleStateUpdate(clientId, message);
         break;
       default:
-        runtimeLogger.warn(`❓ Unknown message type: ${message.type}`);
+        runtimeLogger.warn(`❓ Unknown message type: ${message['type']}`);
     }
 
     // Send acknowledgment if required
     if ((message as any).requiresAck) {
-      this.sendAcknowledgment(clientId, (message as any).id!);
+      this.sendAcknowledgment(clientId, (message as any)['id']!);
     }
   }
 
@@ -626,13 +626,13 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
 
     if (this.eventBatching) {
       // Process through batching system
-      for (const event of batch.events) {
-        const priority = batch.priority || EventPriority.NORMAL;
+      for (const event of batch['events']) {
+        const priority = batch['priority'] || EventPriority.NORMAL;
         this.eventBatching.addEvent(event, priority);
       }
     } else {
       // Process directly
-      for (const event of batch.events) {
+      for (const event of batch['events']) {
         this.handleGameEvent(clientId, event);
       }
     }
@@ -644,28 +644,28 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
       return;
     }
 
-    const pluginMessage = message.data as any;
+    const pluginMessage = message['data'] as any;
     this.pluginBridge.sendMessage({
       source: `client-${clientId}`,
       target: pluginMessage.target,
-      type: pluginMessage.type,
-      data: pluginMessage.data,
+      type: pluginMessage['type'],
+      data: pluginMessage['data'],
       timestamp: Date.now(),
     });
   }
 
   private handleAcknowledgment(clientId: string, message: any): void {
-    const ackData = message.data as any;
+    const ackData = message['data'] as any;
     const handler = this.acknowledgments.get(ackData.messageId);
 
     if (handler) {
       handler(true, ackData);
-      this.acknowledgments.delete(ackData.messageId);
+      this.acknowledgments['delete'](ackData['messageId']);
     }
   }
 
   private handleStateUpdate(clientId: string, message: any): void {
-    const newState = message.data as GameState;
+    const newState = message['data'] as GameState;
 
     // Update game state
     this.gameState = newState;
@@ -687,9 +687,9 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
     const ws = this.clients.get(clientId);
     if (!ws) return;
 
-    const clientInfo = (ws as any).clientInfo;
+    const clientInfo = (ws as any)['clientInfo'];
     if (clientInfo) {
-      clientInfo.authenticated = true;
+      clientInfo['authenticated'] = true;
       runtimeLogger.info(`✅ Client ${clientId} authenticated`);
 
       this.sendMessage(ws, {
@@ -705,9 +705,9 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
     const ws = this.clients.get(clientId);
     if (!ws) return;
 
-    const clientInfo = (ws as any).clientInfo;
+    const clientInfo = (ws as any)['clientInfo'];
     if (clientInfo) {
-      clientInfo.lastHeartbeat = Date.now();
+      clientInfo['lastHeartbeat'] = Date.now();
     }
 
     // Respond with heartbeat ack
@@ -715,35 +715,35 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
       type: 'heartbeat',
       data: { ack: true, timestamp: Date.now() },
       timestamp: Date.now(),
-      id: message.id || uuidv4(),
+      id: message['id'] || uuidv4(),
     });
   }
 
   private handleCommandResponse(clientId: string, message: any): void {
     // Handle responses to commands we sent
-    const commandId = message.data?.commandId;
+    const commandId = message['data']?.['commandId'];
     if (commandId) {
-      const command = this.commandQueue.find((c) => c.id === commandId);
-      if (command && command.callback) {
-        command.callback(message.data);
-        this.commandQueue = this.commandQueue.filter((c) => c.id !== commandId);
+      const command = this.commandQueue.find((c) => c['id'] === commandId);
+      if (command && command['callback']) {
+        command['callback'](message['data']);
+        this.commandQueue = this.commandQueue.filter((c) => c['id'] !== commandId);
       }
     }
   }
 
   private handleClientError(clientId: string, message: any): void {
-    runtimeLogger.error(`🔴 Client ${clientId} reported error:`, message.data);
-    this.emit('client:error', { clientId, error: message.data });
+    runtimeLogger.error(`🔴 Client ${clientId} reported error:`, message['data']);
+    this.emit('client:error', { clientId, error: message['data'] });
   }
 
   private async executeCommand(command: RuneLiteCommand): Promise<void> {
     const message = {
       type: 'command' as const,
       data: {
-        commandId: command.id,
-        action: command.action,
-        args: command.args,
-        timestamp: command.timestamp,
+        commandId: command['id'],
+        action: command['action'],
+        args: command['args'],
+        timestamp: command['timestamp'],
       },
       timestamp: Date.now(),
       id: uuidv4(),
@@ -751,21 +751,21 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
 
     this.broadcastMessage(message);
     runtimeLogger.debug(
-      `🎮 Executed command: ${command.name} (${command.action})`
+      `🎮 Executed command: ${command['name']} (${command['action']})`
     );
   }
 
   private sendMessage(ws: WebSocket, message: any): void {
-    if (ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify(message));
+    if (ws['readyState'] === WebSocket.OPEN) {
+      ws['send'](JSON.stringify(message));
     }
   }
 
   private broadcastMessage(message: any): void {
     const messageStr = JSON.stringify(message);
     for (const ws of this.clients.values()) {
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.send(messageStr);
+      if (ws['readyState'] === WebSocket.OPEN) {
+        ws['send'](messageStr);
       }
     }
   }
@@ -791,13 +791,13 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
       'authentication',
     ];
 
-    if (this.config.settings.enableGameStateTracking) {
+    if (this.config['settings']['enableGameStateTracking']) {
       capabilities.push('game_state_tracking');
     }
-    if (this.config.settings.enableAdvancedCommands) {
+    if (this.config['settings']['enableAdvancedCommands']) {
       capabilities.push('advanced_commands');
     }
-    if (this.config.settings.enableEventFiltering) {
+    if (this.config['settings']['enableEventFiltering']) {
       capabilities.push('event_filtering');
     }
 
@@ -810,21 +810,21 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
   }
 
   public updatePlayerInfo(playerInfo: Partial<PlayerInfo>): void {
-    if (this.gameState.player) {
-      this.gameState.player = { ...this.gameState.player, ...playerInfo };
+    if (this.gameState['player']) {
+      this.gameState['player'] = { ...this.gameState['player'], ...playerInfo };
     } else {
-      this.gameState.player = playerInfo as PlayerInfo;
+      this.gameState['player'] = playerInfo as PlayerInfo;
     }
-    this.emit('gamestate:player_updated', this.gameState.player);
+    this.emit('gamestate:player_updated', this.gameState['player']);
   }
 
   public updateInventory(inventory: InventoryItem[]): void {
-    this.gameState.inventory = inventory;
+    this.gameState['inventory'] = inventory;
     this.emit('gamestate:inventory_updated', inventory);
   }
 
   public updateSkills(skills: SkillInfo[]): void {
-    this.gameState.skills = skills;
+    this.gameState['skills'] = skills;
     this.emit('gamestate:skills_updated', skills);
   }
 
@@ -835,7 +835,7 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
   ): void {
     const handlers = this.eventHandlers.get(eventType);
     if (handlers) {
-      handlers.add(handler);
+      handlers['add'](handler);
     }
   }
 
@@ -845,7 +845,7 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
   ): void {
     const handlers = this.eventHandlers.get(eventType);
     if (handlers) {
-      handlers.delete(handler);
+      handlers['delete'](handler);
     }
   }
 
@@ -863,16 +863,16 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
       id: uuidv4(),
       name: action,
       action,
-      args,
       timestamp: Date.now(),
-      timeout: options?.timeout,
-      priority: options?.priority || 1,
-      callback: options?.callback,
+      priority: options?.['priority'] || 1,
+      ...(args !== undefined ? { args } : {}),
+      ...(options?.['timeout'] !== undefined ? { timeout: options['timeout'] } : {}),
+      ...(options?.['callback'] !== undefined ? { callback: options['callback'] } : {}),
     };
 
     // Insert based on priority
     const insertIndex = this.commandQueue.findIndex(
-      (c) => (c.priority || 1) < command.priority!
+      (c) => (c['priority'] || 1) < command['priority']!
     );
     if (insertIndex === -1) {
       this.commandQueue.push(command);
@@ -880,8 +880,8 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
       this.commandQueue.splice(insertIndex, 0, command);
     }
 
-    runtimeLogger.debug(`📋 Queued command: ${action} (ID: ${command.id})`);
-    return command.id;
+    runtimeLogger.debug(`📋 Queued command: ${action} (ID: ${command['id']})`);
+    return command['id'];
   }
 
   // Client Management
@@ -891,7 +891,7 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
 
   public getClientInfo(clientId: string): any {
     const ws = this.clients.get(clientId);
-    return ws ? (ws as any).clientInfo : null;
+    return ws ? (ws as any)['clientInfo'] : null;
   }
 
   public disconnectClient(
@@ -900,7 +900,7 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
   ): boolean {
     const ws = this.clients.get(clientId);
     if (ws) {
-      ws.close(1000, reason);
+      ws['close'](1000, reason);
       this.clients.delete(clientId);
       return true;
     }
@@ -914,37 +914,37 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
     if (!this.agent) return;
 
     // Enhanced event filtering
-    if (this.config.settings.enableEventFiltering) {
-      const whitelist = this.config.settings.eventWhitelist;
-      const blacklist = this.config.settings.eventBlacklist;
+    if (this.config['settings']['enableEventFiltering']) {
+      const whitelist = this.config['settings']['eventWhitelist'];
+      const blacklist = this.config['settings']['eventBlacklist'];
 
       if (
         whitelist &&
         whitelist.length > 0 &&
-        !whitelist.includes(event.type)
+        !whitelist.includes(event['type'])
       ) {
         return; // Event not in whitelist
       }
 
-      if (blacklist && blacklist.includes(event.type)) {
+      if (blacklist && blacklist.includes(event['type'])) {
         return; // Event is blacklisted
       }
     }
 
     // Update game state based on event
-    if (this.config.settings.enableGameStateTracking) {
+    if (this.config['settings']['enableGameStateTracking']) {
       this.updateGameStateFromEvent(event);
     }
 
     // Trigger event handlers
-    const handlers = this.eventHandlers.get(event.type);
+    const handlers = this.eventHandlers.get(event['type']);
     if (handlers) {
-      handlers.forEach((handler) => {
+      handlers['forEach']((handler) => {
         try {
           handler(event);
         } catch (error) {
           runtimeLogger.error(
-            `Error in event handler for ${event.type}:`,
+            `Error in event handler for ${event['type']}:`,
             error
           );
         }
@@ -953,19 +953,19 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
 
     // Create agent event
     const agentEvent: AgentEvent = {
-      id: event.id || `${clientId}-${Date.now()}`,
+      id: event['id'] || `${clientId}-${Date.now()}`,
       type: 'game_event',
       source: 'runelite',
       data: {
         clientId,
-        eventType: event.type,
-        eventData: event.data,
-        timestamp: event.timestamp,
-        player: event.player,
+        eventType: event['type'],
+        eventData: event['data'],
+        timestamp: event['timestamp'],
+        player: event['player'],
       } as unknown as GenericData,
-      timestamp: new Date(event.timestamp),
+      timestamp: new Date(event['timestamp']),
       processed: false,
-      agentId: this.agent.id,
+      agentId: this.agent['id'],
     };
 
     // Emit to agent event bus
@@ -973,7 +973,7 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
       try {
         await this.agent.eventBus.emit(agentEvent);
         runtimeLogger.debug(
-          `🎯 Processed game event: ${event.type} from client ${clientId}`
+          `🎯 Processed game event: ${event['type']} from client ${clientId}`
         );
       } catch (error) {
         runtimeLogger.error(`Failed to emit game event to agent:`, error);
@@ -985,50 +985,50 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
   }
 
   private updateGameStateFromEvent(event: GameEvent): void {
-    switch (event.type) {
+    switch (event['type']) {
       case EventType.PLAYER_LOGIN:
-        if (event.player) {
-          this.gameState.player = event.player;
-          this.gameState.isLoggedIn = true;
+        if (event['player']) {
+          this.gameState['player'] = event['player'];
+          this.gameState['isLoggedIn'] = true;
         }
         break;
 
       case EventType.PLAYER_LOGOUT:
-        this.gameState.isLoggedIn = false;
+        this.gameState['isLoggedIn'] = false;
         break;
 
       case EventType.LOCATION_CHANGED:
-        if (event.data.location) {
-          this.gameState.location = event.data.location as any;
+        if (event['data']['location']) {
+          this.gameState['location'] = event['data']['location'] as any;
         }
         break;
 
       case EventType.ITEM_ADDED:
       case EventType.ITEM_REMOVED:
-        if (event.data.inventory) {
-          this.gameState.inventory = event.data.inventory as InventoryItem[];
+        if (event['data']['inventory']) {
+          this.gameState['inventory'] = event['data']['inventory'] as InventoryItem[];
         }
         break;
 
       case EventType.SKILL_EXP_GAINED:
       case EventType.PLAYER_LEVEL_UP:
-        if (event.data.skills) {
-          this.gameState.skills = event.data.skills as SkillInfo[];
+        if (event['data']['skills']) {
+          this.gameState['skills'] = event['data']['skills'] as SkillInfo[];
         }
         break;
 
       case EventType.COMBAT_START:
-        if (event.data.combat) {
-          this.gameState.combat = event.data.combat as CombatInfo;
+        if (event['data']['combat']) {
+          this.gameState['combat'] = event['data']['combat'] as CombatInfo;
         }
         break;
 
       case EventType.COMBAT_END:
-        this.gameState.combat = null;
+        this.gameState['combat'] = null;
         break;
     }
 
-    this.gameState.timestamp = Date.now();
+    this.gameState['timestamp'] = Date.now();
   }
 
   private registerExtensionActions(): void {
@@ -1054,9 +1054,9 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
         params: SkillParameters
       ): Promise<ActionResult> => {
         const commandId = this.queueCommand(ActionType.WALK_TO, {
-          x: params.x,
-          y: params.y,
-          plane: params.plane,
+          x: params['x'],
+          y: params['y'],
+          plane: params['plane'],
         });
         return {
           success: true,
@@ -1084,9 +1084,9 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
         params: SkillParameters
       ): Promise<ActionResult> => {
         const commandId = this.queueCommand(ActionType.RUN_TO, {
-          x: params.x,
-          y: params.y,
-          plane: params.plane,
+          x: params['x'],
+          y: params['y'],
+          plane: params['plane'],
         });
         return {
           success: true,
@@ -1123,10 +1123,10 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
         params: SkillParameters
       ): Promise<ActionResult> => {
         const commandId = this.queueCommand(ActionType.CLICK_OBJECT, {
-          objectId: params.objectId,
-          action: params.action,
-          x: params.x,
-          y: params.y,
+          objectId: params['objectId'],
+          action: params['action'],
+          x: params['x'],
+          y: params['y'],
         });
         return {
           success: true,
@@ -1153,8 +1153,8 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
         params: SkillParameters
       ): Promise<ActionResult> => {
         const commandId = this.queueCommand(ActionType.CLICK_NPC, {
-          npcId: params.npcId,
-          action: params.action,
+          npcId: params['npcId'],
+          action: params['action'],
         });
         return {
           success: true,
@@ -1186,9 +1186,9 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
         params: SkillParameters
       ): Promise<ActionResult> => {
         const commandId = this.queueCommand(ActionType.USE_ITEM, {
-          itemId: params.itemId,
-          slot: params.slot,
-          target: params.target,
+          itemId: params['itemId'],
+          slot: params['slot'],
+          target: params['target'],
         });
         return {
           success: true,
@@ -1220,9 +1220,9 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
         params: SkillParameters
       ): Promise<ActionResult> => {
         const commandId = this.queueCommand(ActionType.DROP_ITEM, {
-          itemId: params.itemId,
-          slot: params.slot,
-          quantity: params.quantity,
+          itemId: params['itemId'],
+          slot: params['slot'],
+          quantity: params['quantity'],
         });
         return {
           success: true,
@@ -1258,8 +1258,8 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
         params: SkillParameters
       ): Promise<ActionResult> => {
         const commandId = this.queueCommand(ActionType.ATTACK_NPC, {
-          npcId: params.npcId,
-          combatStyle: params.combatStyle,
+          npcId: params['npcId'],
+          combatStyle: params['combatStyle'],
         });
         return {
           success: true,
@@ -1281,7 +1281,7 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
         params: SkillParameters
       ): Promise<ActionResult> => {
         const commandId = this.queueCommand(ActionType.ACTIVATE_PRAYER, {
-          prayer: params.prayer,
+          prayer: params['prayer'],
         });
         return {
           success: true,
@@ -1308,8 +1308,8 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
         params: SkillParameters
       ): Promise<ActionResult> => {
         const commandId = this.queueCommand(ActionType.EAT_FOOD, {
-          foodId: params.foodId,
-          slot: params.slot,
+          foodId: params['foodId'],
+          slot: params['slot'],
         });
         return {
           success: true,
@@ -1340,8 +1340,8 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
         params: SkillParameters
       ): Promise<ActionResult> => {
         const commandId = this.queueCommand(ActionType.FISH, {
-          spotId: params.spotId,
-          tool: params.tool,
+          spotId: params['spotId'],
+          tool: params['tool'],
         });
         return {
           success: true,
@@ -1364,8 +1364,8 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
         params: SkillParameters
       ): Promise<ActionResult> => {
         const commandId = this.queueCommand(ActionType.MINE, {
-          rockId: params.rockId,
-          tool: params.tool,
+          rockId: params['rockId'],
+          tool: params['tool'],
         });
         return {
           success: true,
@@ -1392,8 +1392,8 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
         params: SkillParameters
       ): Promise<ActionResult> => {
         const commandId = this.queueCommand(ActionType.WOODCUT, {
-          treeId: params.treeId,
-          tool: params.tool,
+          treeId: params['treeId'],
+          tool: params['tool'],
         });
         return {
           success: true,
@@ -1428,8 +1428,8 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
         params: SkillParameters
       ): Promise<ActionResult> => {
         const commandId = this.queueCommand(ActionType.OPEN_BANK, {
-          bankerId: params.bankerId,
-          boothId: params.boothId,
+          bankerId: params['bankerId'],
+          boothId: params['boothId'],
         });
         return {
           success: true,
@@ -1460,8 +1460,8 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
         params: SkillParameters
       ): Promise<ActionResult> => {
         const commandId = this.queueCommand(ActionType.DEPOSIT_ITEM, {
-          itemId: params.itemId,
-          quantity: params.quantity,
+          itemId: params['itemId'],
+          quantity: params['quantity'],
         });
         return {
           success: true,
@@ -1497,9 +1497,9 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
         params: SkillParameters
       ): Promise<ActionResult> => {
         const commandId = this.queueCommand(ActionType.WITHDRAW_ITEM, {
-          itemId: params.itemId,
-          quantity: params.quantity,
-          noted: params.noted,
+          itemId: params['itemId'],
+          quantity: params['quantity'],
+          noted: params['noted'],
         });
         return {
           success: true,
@@ -1529,7 +1529,7 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
         params: SkillParameters
       ): Promise<ActionResult> => {
         const commandId = this.queueCommand(ActionType.TRADE_PLAYER, {
-          playerName: params.playerName,
+          playerName: params['playerName'],
         });
         return {
           success: true,
@@ -1569,9 +1569,9 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
         params: SkillParameters
       ): Promise<ActionResult> => {
         const commandId = this.queueCommand(ActionType.GE_BUY, {
-          itemId: params.itemId,
-          quantity: params.quantity,
-          price: params.price,
+          itemId: params['itemId'],
+          quantity: params['quantity'],
+          price: params['price'],
         });
         return {
           success: true,
@@ -1607,9 +1607,9 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
         params: SkillParameters
       ): Promise<ActionResult> => {
         const commandId = this.queueCommand(ActionType.GE_SELL, {
-          itemId: params.itemId,
-          quantity: params.quantity,
-          price: params.price,
+          itemId: params['itemId'],
+          quantity: params['quantity'],
+          price: params['price'],
         });
         return {
           success: true,
@@ -1677,12 +1677,12 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
         }
 
         const path = await this.pathfinding.findPath(
-          { x: params.startX as number, y: params.startY as number, plane: 0 },
-          { x: params.endX as number, y: params.endY as number, plane: 0 },
+          { x: params['startX'] as number, y: params['startY'] as number, plane: 0 },
+          { x: params['endX'] as number, y: params['endY'] as number, plane: 0 },
           {
-            avoidPlayers: params.avoidPlayers as boolean,
-            avoidCombat: params.avoidCombat as boolean,
-            allowTeleports: params.allowTeleports as boolean,
+            avoidPlayers: params['avoidPlayers'] as boolean,
+            avoidCombat: params['avoidCombat'] as boolean,
+            allowTeleports: params['allowTeleports'] as boolean,
           }
         );
 
@@ -1723,8 +1723,8 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
         }
 
         this.macroSystem.startRecording(
-          params.name as string,
-          params.description as string
+          params['name'] as string,
+          params['description'] as string
         );
         return { success: true, type: ActionResultType.SUCCESS };
       },
@@ -1790,16 +1790,16 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
         }
 
         try {
-          await this.macroSystem.playMacro(params.macroId as string, {
-            speed: params.speed as number,
-            loop: params.loop as boolean,
+          await this.macroSystem.playMacro(params['macroId'] as string, {
+            speed: params['speed'] as number,
+            loop: params['loop'] as boolean,
           });
           return { success: true, type: ActionResultType.SUCCESS };
         } catch (error) {
           return {
             success: false,
             type: ActionResultType.FAILURE,
-            error: error instanceof Error ? error.message : String(error),
+            error: error instanceof Error ? error['message'] : String(error),
           };
         }
       },
@@ -1844,10 +1844,10 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
         }
 
         const task = this.automationSystem.createTask(
-          params.type as any,
-          params.name as string,
-          params.actions as ActionType[],
-          params.config as Record<string, unknown>
+          params['type'] as any,
+          params['name'] as string,
+          params['actions'] as ActionType[],
+          params['config'] as Record<string, unknown>
         );
 
         return {
@@ -1892,7 +1892,7 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
         return {
           success: true,
           type: ActionResultType.SUCCESS,
-          result: { player: this.gameState.player } as unknown as GenericData,
+          result: { player: this.gameState['player'] } as unknown as GenericData,
         };
       },
     };
@@ -1910,7 +1910,7 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
           success: true,
           type: ActionResultType.SUCCESS,
           result: {
-            inventory: this.gameState.inventory,
+            inventory: this.gameState['inventory'],
           } as unknown as GenericData,
         };
       },
@@ -1928,7 +1928,7 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
         return {
           success: true,
           type: ActionResultType.SUCCESS,
-          result: { skills: this.gameState.skills } as unknown as GenericData,
+          result: { skills: this.gameState['skills'] } as unknown as GenericData,
         };
       },
     };
@@ -1980,8 +1980,8 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
         params: SkillParameters
       ): Promise<ActionResult> => {
         const success = this.disconnectClient(
-          params.clientId as string,
-          params.reason as string
+          params['clientId'] as string,
+          params['reason'] as string
         );
         return {
           success,
@@ -2016,8 +2016,8 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
         params: SkillParameters
       ): Promise<ActionResult> => {
         const commandId = this.queueCommand(ActionType.TAKE_SCREENSHOT, {
-          filename: params.filename,
-          format: params.format || 'png',
+          filename: params['filename'],
+          format: params['format'] || 'png',
         });
         return {
           success: true,
@@ -2048,8 +2048,8 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
         params: SkillParameters
       ): Promise<ActionResult> => {
         const commandId = this.queueCommand(ActionType.SEND_CHAT, {
-          message: params.message,
-          type: params.type || 'public',
+          message: params['message'],
+          type: params['type'] || 'public',
         });
         return {
           success: true,
@@ -2082,8 +2082,8 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
         params: SkillParameters
       ): Promise<ActionResult> => {
         const commandId = this.queueCommand(ActionType.CUSTOM_ACTION, {
-          command: params.command,
-          args: params.args,
+          command: params['command'],
+          args: params['args'],
         });
         return {
           success: true,
@@ -2112,7 +2112,7 @@ export class RuneLiteExtension extends EventEmitter implements Extension {
         _agent: Agent,
         params: SkillParameters
       ): Promise<ActionResult> => {
-        const eventType = params.eventType as EventType;
+        const eventType = params['eventType'] as EventType;
         // This would register a listener - for API use, the agent would handle this differently
         return {
           success: true,

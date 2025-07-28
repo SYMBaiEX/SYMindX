@@ -200,15 +200,15 @@ export class UnifiedCognition implements CognitionModule {
     // Check for mentions/tags
     const hasMention = context.events.some(
       (e) =>
-        e.data?.mentioned === true ||
-        e.data?.tagged === true ||
+        e.data?.['mentioned'] === true ||
+        e.data?.['tagged'] === true ||
         e.type.includes('mention')
     );
     if (hasMention && this.config.thinkForMentions) return false;
 
     // Check for explicit thinking requests
     const hasThinkRequest = context.events.some((e) => {
-      const message = e.data?.message;
+      const message = e.data?.['message'];
       if (typeof message !== 'string') return false;
       const lowerMessage = message.toLowerCase();
       return (
@@ -261,7 +261,7 @@ export class UnifiedCognition implements CognitionModule {
     // Shallow thinking for simple queries
     const simplePatterns = ['hello', 'hi', 'thanks', 'okay', 'yes', 'no'];
     const hasSimpleMessage = context.events.some((e) => {
-      const msg = e.data?.message;
+      const msg = e.data?.['message'];
       if (typeof msg !== 'string') return false;
       return simplePatterns.some((p) => msg.toLowerCase().includes(p));
     });
@@ -313,7 +313,7 @@ export class UnifiedCognition implements CognitionModule {
 
     // 1. Analyze the situation
     const situation = this.analyzeSituation(context);
-    thoughts.push(`Situation: ${situation.summary}`);
+    thoughts.push(`Situation: ${situation['summary']}`);
 
     // 2. Retrieve relevant memories if enabled
     let relevantMemories: MemoryRecord[] = [];
@@ -325,7 +325,7 @@ export class UnifiedCognition implements CognitionModule {
     }
 
     // 3. Determine if action is needed
-    if (situation.requiresAction) {
+    if (situation['requiresAction']) {
       const action = this.determineAction(agent, situation, context);
       if (action) {
         actions.push(action);
@@ -334,7 +334,7 @@ export class UnifiedCognition implements CognitionModule {
     }
 
     // 3a. Generate plan if needed
-    if (situation.requiresPlanning) {
+    if (situation['requiresPlanning']) {
       const plan = this._createSimplePlan(situation);
       if (plan) {
         thoughts.push(
@@ -354,7 +354,7 @@ export class UnifiedCognition implements CognitionModule {
 
     // 5. Create memories if significant
     const significance =
-      typeof situation.significance === 'number' ? situation.significance : 0;
+      typeof situation['significance'] === 'number' ? situation['significance'] : 0;
     if (significance > 0.6) {
       const memory = this.createMemory(agent, situation, thoughts);
       memories.push(memory as MemoryRecord);
@@ -397,7 +397,7 @@ export class UnifiedCognition implements CognitionModule {
         situation.significance = 0.6;
 
         // Check if it's a question
-        const message = event.data?.message;
+        const message = event.data?.['message'];
         if (typeof message === 'string' && message.includes('?')) {
           situation.requiresAction = true;
           situation.significance = 0.7;
@@ -413,7 +413,7 @@ export class UnifiedCognition implements CognitionModule {
       }
 
       // Mentions/tags (social media)
-      if (event.data?.mentioned || event.type.includes('mention')) {
+      if (event.data?.['mentioned'] || event.type.includes('mention')) {
         situation.type = 'social_mention';
         situation.summary = 'Mentioned on social media';
         situation.requiresAction = true;
@@ -439,18 +439,18 @@ export class UnifiedCognition implements CognitionModule {
     context: ThoughtContext
   ): AgentAction | null {
     // Don't create actions for simple communication
-    if (situation.type === 'communication' && !situation.requiresAction) {
+    if (situation['type'] === 'communication' && !situation['requiresAction']) {
       return null;
     }
 
     // Social media response
-    if (situation.type === 'social_mention') {
+    if (situation['type'] === 'social_mention') {
       // Use agent's personality to determine response style
       const traits =
-        agent.characterConfig?.personality &&
-        typeof agent.characterConfig.personality === 'object' &&
-        'traits' in agent.characterConfig.personality
-          ? agent.characterConfig.personality.traits
+        agent.characterConfig?.['personality'] &&
+        typeof agent.characterConfig['personality'] === 'object' &&
+        'traits' in agent.characterConfig['personality']
+          ? agent.characterConfig['personality']['traits']
           : {};
       const extraversion =
         traits && typeof traits === 'object' && 'extraversion' in traits
@@ -467,10 +467,10 @@ export class UnifiedCognition implements CognitionModule {
           platform: context.events[0]?.source || 'unknown',
           responseType,
           agentPersonality:
-            (agent.characterConfig?.personality &&
-            typeof agent.characterConfig.personality === 'object' &&
-            'summary' in agent.characterConfig.personality
-              ? (agent.characterConfig.personality as any).summary
+            (agent.characterConfig?.['personality'] &&
+            typeof agent.characterConfig['personality'] === 'object' &&
+            'summary' in agent.characterConfig['personality']
+              ? (agent.characterConfig['personality'] as any)['summary']
               : undefined) || 'neutral',
         },
         priority: 0.8,
@@ -481,19 +481,19 @@ export class UnifiedCognition implements CognitionModule {
     }
 
     // Action request
-    if (situation.type === 'action_request') {
+    if (situation['type'] === 'action_request') {
       const event = context.events.find((e) => e.type.includes('action'));
       return {
         id: `action_${Date.now()}`,
         agentId: agent.id,
         type: ActionCategory.COMMUNICATION,
-        action: (event?.data?.action as string) || 'process_request',
+        action: (event?.data?.['action'] as string) || 'process_request',
         parameters:
-          typeof event?.data?.parameters === 'object' &&
-          event?.data?.parameters !== null &&
-          !(event?.data?.parameters instanceof Date) &&
-          !Array.isArray(event?.data?.parameters)
-            ? (event.data.parameters as ActionParameters)
+          typeof event?.data?.['parameters'] === 'object' &&
+          event?.data?.['parameters'] !== null &&
+          !(event?.data?.['parameters'] instanceof Date) &&
+          !Array.isArray(event?.data?.['parameters'])
+            ? (event.data['parameters'] as ActionParameters)
             : {},
         priority: 0.9,
         status: ActionStatus.PENDING,
@@ -526,14 +526,14 @@ export class UnifiedCognition implements CognitionModule {
     const triggers: string[] = [];
 
     // Adjust based on situation
-    if (situation.type === 'social_mention') {
+    if (situation['type'] === 'social_mention') {
       emotion = 'excited';
       intensity = 0.7;
       triggers.push('social_interaction');
-    } else if (situation.type === 'communication') {
+    } else if (situation['type'] === 'communication') {
       // Check sentiment of messages
       const hasPositive = context.events.some((e) => {
-        const msg = e.data?.message;
+        const msg = e.data?.['message'];
         if (typeof msg !== 'string') return false;
         const lowerMsg = msg.toLowerCase();
         return (
@@ -583,21 +583,21 @@ export class UnifiedCognition implements CognitionModule {
       id: `memory_${Date.now()}`,
       agentId: agent.id,
       type: MemoryType.EXPERIENCE,
-      content: `${typeof situation.summary === 'string' ? situation.summary : ''}: ${thoughts.join('. ')}`,
+      content: `${typeof situation['summary'] === 'string' ? situation['summary'] : ''}: ${thoughts.join('. ')}`,
       metadata: {
         situationType:
-          typeof situation.type === 'string' ? situation.type : 'unknown',
+          typeof situation['type'] === 'string' ? situation['type'] : 'unknown',
         significance:
-          typeof situation.significance === 'number'
-            ? situation.significance
+          typeof situation['significance'] === 'number'
+            ? situation['significance']
             : 0,
         timestamp: new Date().toISOString(),
       },
       importance:
-        typeof situation.significance === 'number' ? situation.significance : 0,
+        typeof situation['significance'] === 'number' ? situation['significance'] : 0,
       timestamp: new Date(),
       tags: [
-        typeof situation.type === 'string' ? situation.type : 'unknown',
+        typeof situation['type'] === 'string' ? situation['type'] : 'unknown',
         'thinking',
         'cognition',
       ],
@@ -618,11 +618,11 @@ export class UnifiedCognition implements CognitionModule {
     if (memories.length > 3) confidence += 0.2;
 
     // Higher confidence for clear situation types
-    if (situation.type !== 'unknown') confidence += 0.2;
+    if (situation['type'] !== 'unknown') confidence += 0.2;
 
     // Lower confidence for complex situations
     const complexity =
-      typeof situation.complexity === 'number' ? situation.complexity : 0;
+      typeof situation['complexity'] === 'number' ? situation['complexity'] : 0;
     if (complexity > 0.7) confidence -= 0.1;
 
     return Math.max(0.1, Math.min(1.0, confidence));
@@ -825,7 +825,7 @@ export class UnifiedCognition implements CognitionModule {
     };
 
     for (const event of context.events) {
-      const message = event.data?.message;
+      const message = event.data?.['message'];
       if (typeof message === 'string') {
         const lower = message.toLowerCase();
         patterns.greeting =
@@ -847,7 +847,7 @@ export class UnifiedCognition implements CognitionModule {
    */
   private generateContextHash(context: ThoughtContext): string {
     const key = context.events
-      .map((e) => `${e.type}:${e.data?.message || ''}`)
+      .map((e) => `${e.type}:${e.data?.['message'] || ''}`)
       .join('|');
     return key.substring(0, 100); // Limit length
   }
@@ -884,23 +884,23 @@ export class UnifiedCognition implements CognitionModule {
     // For questions, consider multiple interpretations
     const questions = context.events.filter(
       (e) =>
-        e.data?.message &&
-        typeof e.data.message === 'string' &&
-        e.data.message.includes('?')
+        e.data?.['message'] &&
+        typeof e.data['message'] === 'string' &&
+        e.data['message'].includes('?')
     );
 
     for (const q of questions) {
       if (
-        q.data?.message &&
-        typeof q.data.message === 'string' &&
-        q.data.message.includes('or')
+        q.data?.['message'] &&
+        typeof q.data['message'] === 'string' &&
+        q.data['message'].includes('or')
       ) {
         alternatives.push('Multiple choice detected');
       }
       if (
-        q.data?.message &&
-        typeof q.data.message === 'string' &&
-        q.data.message.includes('why')
+        q.data?.['message'] &&
+        typeof q.data['message'] === 'string' &&
+        q.data['message'].includes('why')
       ) {
         alternatives.push('Causal explanation needed');
       }
@@ -976,7 +976,7 @@ export class UnifiedCognition implements CognitionModule {
    * Create a simple plan
    */
   private _createSimplePlan(situation: Record<string, unknown>): Plan | null {
-    if (!situation.requiresPlanning) return null;
+    if (!situation['requiresPlanning']) return null;
 
     const steps: PlanStep[] = [
       {
@@ -1001,7 +1001,7 @@ export class UnifiedCognition implements CognitionModule {
 
     return {
       id: `plan_${Date.now()}`,
-      goal: typeof situation.summary === 'string' ? situation.summary : '',
+      goal: typeof situation['summary'] === 'string' ? situation['summary'] : '',
       steps,
       priority: 0.7,
       estimatedDuration: 3600000, // 1 hour
@@ -1023,11 +1023,11 @@ export class UnifiedCognition implements CognitionModule {
       (e) =>
         e.type.includes('social') ||
         e.type.includes('communication') ||
-        e.data?.fromAgent
+        e.data?.['fromAgent']
     );
 
     for (const event of socialEvents) {
-      const otherAgentId = event.data?.fromAgent || event.source;
+      const otherAgentId = event.data?.['fromAgent'] || event.source;
       if (!otherAgentId) continue;
 
       // Theory of mind analysis (placeholder implementation)
@@ -1038,7 +1038,7 @@ export class UnifiedCognition implements CognitionModule {
         insights.push(`[ToM] ${otherAgentId} likely expects a response`);
       }
 
-      if (event.data?.message) {
+      if (event.data?.['message']) {
         insights.push(`[ToM] ${otherAgentId} is communicating`);
       }
     }

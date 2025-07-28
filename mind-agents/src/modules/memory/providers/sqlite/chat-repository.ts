@@ -788,22 +788,22 @@ export class SQLiteChatRepository implements ChatRepository {
 
     return buildObject<ConversationStats>({
       conversationId,
-      messageCount: row.message_count || 0,
-      uniqueSenders: row.unique_senders || 0,
-      userMessageCount: row.user_message_count || 0,
-      agentMessageCount: row.agent_message_count || 0,
-      commandCount: row.command_count || 0,
-      failedMessageCount: row.failed_message_count || 0,
+      messageCount: row['message_count'] || 0,
+      uniqueSenders: row['unique_senders'] || 0,
+      userMessageCount: row['user_message_count'] || 0,
+      agentMessageCount: row['agent_message_count'] || 0,
+      commandCount: row['command_count'] || 0,
+      failedMessageCount: row['failed_message_count'] || 0,
     })
       .addOptional(
         'firstMessageAt',
-        row.first_message_at ? new Date(row.first_message_at) : undefined
+        row['first_message_at'] ? new Date(row['first_message_at']) : undefined
       )
       .addOptional(
         'lastMessageAt',
-        row.last_message_at ? new Date(row.last_message_at) : undefined
+        row['last_message_at'] ? new Date(row['last_message_at']) : undefined
       )
-      .addOptional('avgConfidence', row.avg_confidence || undefined)
+      .addOptional('avgConfidence', row['avg_confidence'] || undefined)
       .build();
   }
 
@@ -851,25 +851,25 @@ export class SQLiteChatRepository implements ChatRepository {
 
   private rowToConversation(row: any): Conversation {
     return buildObject<Conversation>({
-      id: row.id,
-      agentId: row.agent_id,
-      userId: row.user_id,
-      title: row.title,
-      status: row.status as ConversationStatus,
-      createdAt: new Date(row.created_at),
-      updatedAt: new Date(row.updated_at),
-      messageCount: row.message_count,
-      metadata: JSON.parse(row.metadata || '{}'),
+      id: row['id'],
+      agentId: row['agent_id'],
+      userId: row['user_id'],
+      title: row['title'],
+      status: row['status'] as ConversationStatus,
+      createdAt: new Date(row['created_at']),
+      updatedAt: new Date(row['updated_at']),
+      messageCount: row['message_count'],
+      metadata: JSON.parse(row['metadata'] || '{}'),
     })
       .addOptional(
         'lastMessageAt',
-        row.last_message_at ? new Date(row.last_message_at) : undefined
+        row['last_message_at'] ? new Date(row['last_message_at']) : undefined
       )
       .addOptional(
         'deletedAt',
-        row.deleted_at ? new Date(row.deleted_at) : undefined
+        row['deleted_at'] ? new Date(row['deleted_at']) : undefined
       )
-      .addOptional('deletedBy', row.deleted_by)
+      .addOptional('deletedBy', row['deleted_by'])
       .build();
   }
 
@@ -878,15 +878,15 @@ export class SQLiteChatRepository implements ChatRepository {
   ): ConversationWithLastMessage {
     return buildObject<ConversationWithLastMessage>({
       ...this.rowToConversation(row),
-      lastMessageContent: row.last_message_content,
-      lastMessageSenderType: row.last_message_sender_type as SenderType,
-      participantCount: row.participant_count || 0,
-      activeParticipantCount: row.active_participant_count || 0,
+      lastMessageContent: row['last_message_content'],
+      lastMessageSenderType: row['last_message_sender_type'] as SenderType,
+      participantCount: row['participant_count'] || 0,
+      activeParticipantCount: row['active_participant_count'] || 0,
     })
       .addOptional(
         'lastMessageTimestamp',
-        row.last_message_timestamp
-          ? new Date(row.last_message_timestamp)
+        row['last_message_timestamp']
+          ? new Date(row['last_message_timestamp'])
           : undefined
       )
       .build();
@@ -894,79 +894,79 @@ export class SQLiteChatRepository implements ChatRepository {
 
   private rowToMessage(row: any): Message {
     return buildObject<Message>({
-      id: row.id,
-      conversationId: row.conversation_id,
-      senderType: row.sender_type as SenderType,
-      senderId: row.sender_id,
-      content: row.content,
-      messageType: row.message_type as MessageType,
-      timestamp: new Date(row.timestamp),
-      metadata: JSON.parse(row.metadata || '{}'),
-      memoryReferences: JSON.parse(row.memory_references || '[]'),
-      createdMemories: JSON.parse(row.created_memories || '[]'),
-      status: row.status as MessageStatus,
+      id: row['id'],
+      conversationId: row['conversation_id'],
+      senderType: row['sender_type'] as SenderType,
+      senderId: row['sender_id'],
+      content: row['content'],
+      messageType: row['message_type'] as MessageType,
+      timestamp: new Date(row['timestamp']),
+      metadata: JSON.parse(row['metadata'] || '{}'),
+      memoryReferences: JSON.parse(row['memory_references'] || '[]'),
+      createdMemories: JSON.parse(row['created_memories'] || '[]'),
+      status: row['status'] as MessageStatus,
     })
       .addOptional(
         'editedAt',
-        row.edited_at ? new Date(row.edited_at) : undefined
+        row['edited_at'] ? new Date(row['edited_at']) : undefined
       )
       .addOptional(
         'emotionState',
-        row.emotion_state ? JSON.parse(row.emotion_state) : undefined
+        row['emotion_state'] ? JSON.parse(row['emotion_state']) : undefined
       )
       .addOptional(
         'thoughtProcess',
-        row.thought_process ? JSON.parse(row.thought_process) : undefined
+        row['thought_process'] ? JSON.parse(row['thought_process']) : undefined
       )
-      .addOptional('confidenceScore', row.confidence_score)
-      .addOptional('readAt', row.read_at ? new Date(row.read_at) : undefined)
+      .addOptional('confidenceScore', row['confidence_score'])
+      .addOptional('readAt', row['read_at'] ? new Date(row['read_at']) : undefined)
       .addOptional(
         'deletedAt',
-        row.deleted_at ? new Date(row.deleted_at) : undefined
+        row['deleted_at'] ? new Date(row['deleted_at']) : undefined
       )
-      .addOptional('deletedBy', row.deleted_by)
+      .addOptional('deletedBy', row['deleted_by'])
       .build();
   }
 
   private rowToParticipant(row: any): Participant {
     return buildObject<Participant>({
-      id: row.id,
-      conversationId: row.conversation_id,
-      participantType: row.participant_type as ParticipantType,
-      participantId: row.participant_id,
-      joinedAt: new Date(row.joined_at),
-      role: row.role as ParticipantRole,
-      messageCount: row.message_count,
-      notificationsEnabled: Boolean(row.notifications_enabled),
-      preferences: JSON.parse(row.preferences || '{}'),
-      status: row.status as ParticipantStatus,
+      id: row['id'],
+      conversationId: row['conversation_id'],
+      participantType: row['participant_type'] as ParticipantType,
+      participantId: row['participant_id'],
+      joinedAt: new Date(row['joined_at']),
+      role: row['role'] as ParticipantRole,
+      messageCount: row['message_count'],
+      notificationsEnabled: Boolean(row['notifications_enabled']),
+      preferences: JSON.parse(row['preferences'] || '{}'),
+      status: row['status'] as ParticipantStatus,
     })
-      .addOptional('participantName', row.participant_name)
-      .addOptional('leftAt', row.left_at ? new Date(row.left_at) : undefined)
+      .addOptional('participantName', row['participant_name'])
+      .addOptional('leftAt', row['left_at'] ? new Date(row['left_at']) : undefined)
       .addOptional(
         'lastSeenAt',
-        row.last_seen_at ? new Date(row.last_seen_at) : undefined
+        row['last_seen_at'] ? new Date(row['last_seen_at']) : undefined
       )
       .addOptional(
         'lastTypedAt',
-        row.last_typed_at ? new Date(row.last_typed_at) : undefined
+        row['last_typed_at'] ? new Date(row['last_typed_at']) : undefined
       )
       .build();
   }
 
   private rowToSession(row: any): ChatSession {
     return buildObject<ChatSession>({
-      id: row.id,
-      userId: row.user_id,
-      conversationId: row.conversation_id,
-      startedAt: new Date(row.started_at),
-      lastActivityAt: new Date(row.last_activity_at),
-      clientInfo: JSON.parse(row.client_info || '{}'),
+      id: row['id'],
+      userId: row['user_id'],
+      conversationId: row['conversation_id'],
+      startedAt: new Date(row['started_at']),
+      lastActivityAt: new Date(row['last_activity_at']),
+      clientInfo: JSON.parse(row['client_info'] || '{}'),
     })
-      .addOptional('connectionId', row.connection_id)
-      .addOptional('endedAt', row.ended_at ? new Date(row.ended_at) : undefined)
-      .addOptional('ipAddress', row.ip_address)
-      .addOptional('userAgent', row.user_agent)
+      .addOptional('connectionId', row['connection_id'])
+      .addOptional('endedAt', row['ended_at'] ? new Date(row['ended_at']) : undefined)
+      .addOptional('ipAddress', row['ip_address'])
+      .addOptional('userAgent', row['user_agent'])
       .build();
   }
 

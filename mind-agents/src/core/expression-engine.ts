@@ -588,7 +588,7 @@ export class ExpressionEngine {
       neutral: ['.', '.', '.', '.'],
     };
 
-    const options = punctuation[emotion] || punctuation.neutral;
+    const options = punctuation[emotion] || punctuation['neutral'];
     const index = Math.floor(
       intensity * Math.max(0, (options?.length ?? 1) - 1)
     );

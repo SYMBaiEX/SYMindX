@@ -3,7 +3,7 @@
  * Provides a modern GraphQL interface alongside REST API
  */
 
-import { createServer } from 'http';
+// import { createServer } from 'http';
 
 import {
   GraphQLSchema,
@@ -17,26 +17,28 @@ import {
   GraphQLInputObjectType,
   GraphQLEnumType,
   GraphQLID,
-  GraphQLScalarType,
-  buildSchema,
+  // GraphQLScalarType,
+  // buildSchema,
   execute,
   subscribe,
-  parse,
-  validate,
-  ExecutionResult,
+  // parse,
+  // validate,
+  // ExecutionResult,
 } from 'graphql';
 import { DateTimeResolver } from 'graphql-scalars';
 import { PubSub } from 'graphql-subscriptions';
-import { GraphQLJSON, GraphQLJSONObject } from 'graphql-type-json';
+import { /* GraphQLJSON, */ GraphQLJSONObject } from 'graphql-type-json';
 import { SubscriptionServer } from 'subscriptions-transport-ws';
+import { ApolloServer } from 'apollo-server-express';
+import { ApolloServerPluginDrainHttpServer } from 'apollo-server-core';
 
-import { Agent, AgentStatus } from '../../types/agent.js';
-import { EmotionState } from '../../types/emotion.js';
-import { MemoryRecord } from '../../types/memory.js';
+import { /* Agent, */ AgentStatus } from '../../types/agent.js';
+// import { EmotionState } from '../../types/emotion.js';
+// import { MemoryRecord } from '../../types/memory.js';
 import { runtimeLogger } from '../../utils/logger.js';
 
 // Create PubSub instance for real-time subscriptions
-const pubsub = new PubSub();
+const pubsub = new PubSub<any>();
 
 // Subscription topics
 export enum SubscriptionTopic {
@@ -240,7 +242,7 @@ const RootQueryType = new GraphQLObjectType({
       args: {
         id: { type: new GraphQLNonNull(GraphQLID) },
       },
-      resolve: async (parent, args, context) => {
+      resolve: async (_parent, args, context) => {
         return context.getAgent(args.id);
       },
     },
@@ -251,7 +253,7 @@ const RootQueryType = new GraphQLObjectType({
         type: { type: AgentTypeEnum },
         enabled: { type: GraphQLBoolean },
       },
-      resolve: async (parent, args, context) => {
+      resolve: async (_parent, args, context) => {
         return context.getAgents(args);
       },
     },
@@ -265,7 +267,7 @@ const RootQueryType = new GraphQLObjectType({
         type: { type: GraphQLString },
         search: { type: GraphQLString },
       },
-      resolve: async (parent, args, context) => {
+      resolve: async (_parent, args, context) => {
         return context.getMemories(args);
       },
     },
@@ -283,7 +285,7 @@ const RootQueryType = new GraphQLObjectType({
           metrics: { type: PerformanceMetricsType },
         },
       }),
-      resolve: async (parent, args, context) => {
+      resolve: async (_parent, _args, context) => {
         return context.getSystemStatus();
       },
     },
@@ -301,7 +303,7 @@ const RootMutationType = new GraphQLObjectType({
         agentId: { type: new GraphQLNonNull(GraphQLID) },
         message: { type: new GraphQLNonNull(ChatMessageInput) },
       },
-      resolve: async (parent, args, context) => {
+      resolve: async (_parent, args, context) => {
         const response = await context.sendMessage(args.agentId, args.message);
 
         // Publish to subscriptions
@@ -318,7 +320,7 @@ const RootMutationType = new GraphQLObjectType({
       args: {
         id: { type: new GraphQLNonNull(GraphQLID) },
       },
-      resolve: async (parent, args, context) => {
+      resolve: async (_parent, args, context) => {
         return context.startAgent(args.id);
       },
     },
@@ -327,7 +329,7 @@ const RootMutationType = new GraphQLObjectType({
       args: {
         id: { type: new GraphQLNonNull(GraphQLID) },
       },
-      resolve: async (parent, args, context) => {
+      resolve: async (_parent, args, context) => {
         return context.stopAgent(args.id);
       },
     },
@@ -336,7 +338,7 @@ const RootMutationType = new GraphQLObjectType({
       args: {
         id: { type: new GraphQLNonNull(GraphQLID) },
       },
-      resolve: async (parent, args, context) => {
+      resolve: async (_parent, args, context) => {
         return context.restartAgent(args.id);
       },
     },
@@ -347,7 +349,7 @@ const RootMutationType = new GraphQLObjectType({
         agentId: { type: new GraphQLNonNull(GraphQLID) },
         action: { type: new GraphQLNonNull(ActionInput) },
       },
-      resolve: async (parent, args, context) => {
+      resolve: async (_parent, args, context) => {
         return context.executeAction(args.agentId, args.action);
       },
     },
@@ -361,7 +363,7 @@ const RootMutationType = new GraphQLObjectType({
         importance: { type: GraphQLFloat },
         metadata: { type: GraphQLJSONObject },
       },
-      resolve: async (parent, args, context) => {
+      resolve: async (_parent, args, context) => {
         const memory = await context.addMemory(args);
 
         // Publish to subscriptions
@@ -381,7 +383,7 @@ const RootMutationType = new GraphQLObjectType({
         character: { type: GraphQLString },
         config: { type: GraphQLJSONObject },
       },
-      resolve: async (parent, args, context) => {
+      resolve: async (_parent, args, context) => {
         return context.spawnAgent(args);
       },
     },
@@ -398,7 +400,7 @@ const RootSubscriptionType = new GraphQLObjectType({
       args: {
         agentId: { type: GraphQLID },
       },
-      subscribe: (parent, args) => {
+      subscribe: (_parent, args) => {
         const topic = args.agentId
           ? SubscriptionTopic.AGENT_UPDATE
           : SubscriptionTopic.AGENT_UPDATE;
@@ -412,7 +414,7 @@ const RootSubscriptionType = new GraphQLObjectType({
         agentId: { type: GraphQLID },
         conversationId: { type: GraphQLID },
       },
-      subscribe: (parent, args) => {
+      subscribe: (_parent, args) => {
         const topics = [SubscriptionTopic.CHAT_MESSAGE];
         if (args.agentId) {
           topics.push(SubscriptionTopic.CHAT_MESSAGE);
@@ -429,7 +431,7 @@ const RootSubscriptionType = new GraphQLObjectType({
       args: {
         agentId: { type: new GraphQLNonNull(GraphQLID) },
       },
-      subscribe: (parent, args) => {
+      subscribe: (_parent, _args) => {
         return pubsub.asyncIterator(SubscriptionTopic.MEMORY_ADDED);
       },
     },
@@ -448,7 +450,7 @@ const RootSubscriptionType = new GraphQLObjectType({
       args: {
         agentId: { type: GraphQLID },
       },
-      subscribe: (parent, args) => {
+      subscribe: (_parent, args) => {
         const topic = args.agentId
           ? SubscriptionTopic.EMOTION_CHANGED
           : SubscriptionTopic.EMOTION_CHANGED;
@@ -462,7 +464,7 @@ const RootSubscriptionType = new GraphQLObjectType({
         type: { type: GraphQLString },
         source: { type: GraphQLString },
       },
-      subscribe: (parent, args) => {
+      subscribe: (_parent, args) => {
         const topics = [SubscriptionTopic.SYSTEM_EVENT];
         if (args.type) {
           topics.push(SubscriptionTopic.SYSTEM_EVENT);
@@ -489,7 +491,7 @@ const RootSubscriptionType = new GraphQLObjectType({
         agentId: { type: GraphQLID },
         metric: { type: GraphQLString },
       },
-      subscribe: (parent, args) => {
+      subscribe: (_parent, args) => {
         const topics = [SubscriptionTopic.PERFORMANCE_METRIC];
         if (args.agentId) {
           topics.push(SubscriptionTopic.PERFORMANCE_METRIC);
@@ -518,7 +520,7 @@ const RootSubscriptionType = new GraphQLObjectType({
         agentId: { type: GraphQLID },
         severity: { type: GraphQLString },
       },
-      subscribe: (parent, args) => {
+      subscribe: (_parent, args) => {
         const topics = [SubscriptionTopic.ERROR_OCCURRED];
         if (args.agentId) {
           topics.push(SubscriptionTopic.ERROR_OCCURRED);
@@ -570,7 +572,7 @@ export interface GraphQLContext {
 
 // GraphQL Server Setup
 export class GraphQLServer {
-  private server?: any;
+  private _server?: any;
   private subscriptionServer?: SubscriptionServer;
 
   constructor(
@@ -579,6 +581,28 @@ export class GraphQLServer {
   ) {}
 
   async start(path = '/graphql'): Promise<void> {
+    // Create Apollo Server instance
+    this._server = new ApolloServer({
+      schema,
+      context: this.contextBuilder,
+      introspection: true,
+      plugins: [
+        ApolloServerPluginDrainHttpServer({ httpServer: this.httpServer }),
+        {
+          async serverWillStart() {
+            return {
+              async drainServer() {
+                // Properly close subscription server
+              },
+            };
+          },
+        },
+      ],
+    });
+
+    // Start the server
+    await this._server.start();
+
     // Set up subscription server
     this.subscriptionServer = new SubscriptionServer(
       {
@@ -603,11 +627,17 @@ export class GraphQLServer {
     );
 
     runtimeLogger.info(
+      `🚀 GraphQL server ready at http://localhost:${this.httpServer.address()?.port}${path}`
+    );
+    runtimeLogger.info(
       `🚀 GraphQL subscriptions ready at ws://localhost:${this.httpServer.address()?.port}${path}-subscriptions`
     );
   }
 
   async stop(): Promise<void> {
+    if (this._server) {
+      await this._server.stop();
+    }
     if (this.subscriptionServer) {
       this.subscriptionServer.close();
     }

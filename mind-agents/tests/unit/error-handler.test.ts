@@ -63,7 +63,11 @@ describe('ErrorHandler', () => {
       );
 
       expect(error.cause).toBe(causeError);
-      expect(error.stack).toBe(causeError.stack);
+      if (causeError.stack) {
+        expect(error.stack).toBe(causeError.stack);
+      } else {
+        expect(error.stack).toBeUndefined();
+      }
     });
 
     it('should determine appropriate recovery strategy', () => {
@@ -133,8 +137,8 @@ describe('ErrorHandler', () => {
       expect(result.success).toBe(true);
       expect(result.data).toBe('success after retry');
       expect(retryableOperation).toHaveBeenCalledTimes(2);
-      expect(result.metadata?.recovery?.strategy).toBe(RecoveryStrategy.RETRY);
-      expect(result.metadata?.recovery?.attempts).toBe(2);
+      expect((result.metadata?.recovery as any)?.strategy).toBe(RecoveryStrategy.RETRY);
+      expect((result.metadata?.recovery as any)?.attempts).toBe(2);
     });
 
     it('should fail after exhausting retry attempts', async () => {
@@ -171,7 +175,7 @@ describe('ErrorHandler', () => {
       const result = await errorHandler.handleError(error, degradableOperation);
 
       expect(result.success).toBe(true); // Graceful degradation succeeds
-      expect(result.metadata?.recovery?.strategy).toBe(RecoveryStrategy.GRACEFUL_DEGRADATION);
+      expect((result.metadata?.recovery as any)?.strategy).toBe(RecoveryStrategy.GRACEFUL_DEGRADATION);
     });
   });
 
@@ -348,10 +352,10 @@ describe('ErrorHandler', () => {
 
       const metrics = errorHandler.getMetrics();
 
-      expect(metrics['validation:ERROR_1'].count).toBe(2);
-      expect(metrics['network:ERROR_2'].count).toBe(1);
-      expect(metrics['validation:ERROR_1'].severity).toBe(ErrorSeverity.LOW);
-      expect(metrics['network:ERROR_2'].severity).toBe(ErrorSeverity.HIGH);
+      expect(metrics['validation:ERROR_1']?.count).toBe(2);
+      expect(metrics['network:ERROR_2']?.count).toBe(1);
+      expect(metrics['validation:ERROR_1']?.severity).toBe(ErrorSeverity.LOW);
+      expect(metrics['network:ERROR_2']?.severity).toBe(ErrorSeverity.HIGH);
     });
 
     it('should reset metrics', () => {
@@ -461,7 +465,7 @@ describe('ErrorHandler', () => {
 
       expect(duration).toBeLessThan(100); // Should complete within 100ms
       expect(Object.keys(errorHandler.getMetrics())).toHaveLength(1);
-      expect(errorHandler.getMetrics()['runtime:BATCH_ERROR'].count).toBe(100);
+      expect(errorHandler.getMetrics()['runtime:BATCH_ERROR']?.count).toBe(100);
     });
 
     it('should handle concurrent error operations', async () => {

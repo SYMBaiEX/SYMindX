@@ -474,7 +474,7 @@ export class MetaReasoner implements CognitionModule {
     let uncertainty = 0.3; // Base uncertainty
 
     // Lack of clear patterns increases uncertainty
-    const messageEvents = context.events.filter((e) => e.data?.message);
+    const messageEvents = context.events.filter((e) => e.data?.['message']);
     if (messageEvents.length === 0) uncertainty += 0.2;
 
     // Conflicting events increase uncertainty
@@ -494,7 +494,7 @@ export class MetaReasoner implements CognitionModule {
     // Check for urgency indicators
     const urgentWords = ['urgent', 'immediate', 'now', 'quickly', 'asap'];
     const hasUrgentMessage = context.events.some((e) => {
-      const message = e.data?.message;
+      const message = e.data?.['message'];
       return (
         typeof message === 'string' &&
         urgentWords.some((word) => message.toLowerCase().includes(word))
@@ -575,7 +575,7 @@ export class MetaReasoner implements CognitionModule {
       'uncertain',
     ];
     const hasUncertainty = context.events.some((e) => {
-      const message = e.data?.message;
+      const message = e.data?.['message'];
       return (
         typeof message === 'string' &&
         uncertaintyWords.some((word) => message.toLowerCase().includes(word))
@@ -591,7 +591,7 @@ export class MetaReasoner implements CognitionModule {
   private assessRulesApplicability(context: ThoughtContext): number {
     // Clear patterns and structure suggest rule applicability
     const hasQuestions = context.events.some(
-      (e) => typeof e.data?.message === 'string' && e.data.message.includes('?')
+      (e) => typeof e.data?.['message'] === 'string' && e.data['message'].includes('?')
     );
 
     const hasCommands = context.events.some(

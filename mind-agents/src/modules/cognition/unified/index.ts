@@ -193,15 +193,15 @@ export class UnifiedCognition implements CognitionModule {
     // Check for mentions/tags
     const hasMention = context.events.some(
       (e) =>
-        e.data?.mentioned === true ||
-        e.data?.tagged === true ||
+        e.data?.['mentioned'] === true ||
+        e.data?.['tagged'] === true ||
         e.type.includes('mention')
     );
     if (hasMention && this.config.thinkForMentions) return false;
 
     // Check for explicit thinking requests
     const hasThinkRequest = context.events.some((e) => {
-      const message = e.data?.message;
+      const message = e.data?.['message'];
       if (typeof message !== 'string') return false;
       const lowerMessage = message.toLowerCase();
       return (
@@ -254,7 +254,7 @@ export class UnifiedCognition implements CognitionModule {
     // Shallow thinking for simple queries
     const simplePatterns = ['hello', 'hi', 'thanks', 'okay', 'yes', 'no'];
     const hasSimpleMessage = context.events.some((e) => {
-      const msg = e.data?.message;
+      const msg = e.data?.['message'];
       if (typeof msg !== 'string') return false;
       return simplePatterns.some((p) => msg.toLowerCase().includes(p));
     });
@@ -370,7 +370,7 @@ export class UnifiedCognition implements CognitionModule {
         situation.significance = 0.6;
 
         // Check if it's a question
-        const message = event.data?.message;
+        const message = event.data?.['message'];
         if (typeof message === 'string' && message.includes('?')) {
           situation.requiresAction = true;
           situation.significance = 0.7;
@@ -386,7 +386,7 @@ export class UnifiedCognition implements CognitionModule {
       }
 
       // Mentions/tags (social media)
-      if (event.data?.mentioned || event.type.includes('mention')) {
+      if (event.data?.['mentioned'] || event.type.includes('mention')) {
         situation.type = 'social_mention';
         situation.summary = 'Mentioned on social media';
         situation.requiresAction = true;
@@ -441,13 +441,13 @@ export class UnifiedCognition implements CognitionModule {
         id: `action_${Date.now()}`,
         agentId: agent.id,
         type: ActionCategory.COMMUNICATION,
-        action: (event?.data?.action as string) || 'process_request',
+        action: (event?.data?.['action'] as string) || 'process_request',
         parameters:
-          typeof event?.data?.parameters === 'object' &&
-          event?.data?.parameters !== null &&
-          !(event?.data?.parameters instanceof Date) &&
-          !Array.isArray(event?.data?.parameters)
-            ? (event.data.parameters as ActionParameters)
+          typeof event?.data?.['parameters'] === 'object' &&
+          event?.data?.['parameters'] !== null &&
+          !(event?.data?.['parameters'] instanceof Date) &&
+          !Array.isArray(event?.data?.['parameters'])
+            ? (event.data['parameters'] as ActionParameters)
             : {},
         priority: 0.9,
         status: ActionStatus.PENDING,
@@ -480,7 +480,7 @@ export class UnifiedCognition implements CognitionModule {
     } else if (situation.type === 'communication') {
       // Check sentiment of messages
       const hasPositive = context.events.some((e) => {
-        const msg = e.data?.message;
+        const msg = e.data?.['message'];
         if (typeof msg !== 'string') return false;
         const lowerMsg = msg.toLowerCase();
         return (
@@ -735,7 +735,7 @@ export class UnifiedCognition implements CognitionModule {
     };
 
     for (const event of context.events) {
-      const message = event.data?.message;
+      const message = event.data?.['message'];
       if (typeof message === 'string') {
         const lower = message.toLowerCase();
         patterns.greeting =
@@ -757,7 +757,7 @@ export class UnifiedCognition implements CognitionModule {
    */
   private generateContextHash(context: ThoughtContext): string {
     const key = context.events
-      .map((e) => `${e.type}:${e.data?.message || ''}`)
+      .map((e) => `${e.type}:${e.data?.['message'] || ''}`)
       .join('|');
     return key.substring(0, 100); // Limit length
   }
@@ -794,23 +794,23 @@ export class UnifiedCognition implements CognitionModule {
     // For questions, consider multiple interpretations
     const questions = context.events.filter(
       (e) =>
-        e.data?.message &&
-        typeof e.data.message === 'string' &&
-        e.data.message.includes('?')
+        e.data?.['message'] &&
+        typeof e.data['message'] === 'string' &&
+        e.data['message'].includes('?')
     );
 
     for (const q of questions) {
       if (
-        q.data?.message &&
-        typeof q.data.message === 'string' &&
-        q.data.message.includes('or')
+        q.data?.['message'] &&
+        typeof q.data['message'] === 'string' &&
+        q.data['message'].includes('or')
       ) {
         alternatives.push('Multiple choice detected');
       }
       if (
-        q.data?.message &&
-        typeof q.data.message === 'string' &&
-        q.data.message.includes('why')
+        q.data?.['message'] &&
+        typeof q.data['message'] === 'string' &&
+        q.data['message'].includes('why')
       ) {
         alternatives.push('Causal explanation needed');
       }
@@ -926,18 +926,18 @@ export class UnifiedCognition implements CognitionModule {
       (e) =>
         e.type.includes('social') ||
         e.type.includes('communication') ||
-        e.data?.fromAgent
+        e.data?.['fromAgent']
     );
 
     for (const event of socialEvents) {
-      const otherAgentId = event.data?.fromAgent || event.source;
+      const otherAgentId = event.data?.['fromAgent'] || event.source;
       if (!otherAgentId) continue;
 
       // Update mental model
       this.theoryOfMind.updateModel(otherAgentId, {
-        message: event.data?.message,
-        action: event.data?.action,
-        emotion: event.data?.emotion,
+        message: event.data?.['message'],
+        action: event.data?.['action'],
+        emotion: event.data?.['emotion'],
         context: event.data,
       });
 

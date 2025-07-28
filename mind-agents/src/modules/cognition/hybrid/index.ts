@@ -124,7 +124,7 @@ export class HybridCognition implements CognitionModule {
     }
   }
 
-  initialize(config: any): void {
+  initialize(config: Record<string, unknown>): void {
     this.config = { ...this.config, ...config };
   }
 
@@ -213,10 +213,10 @@ export class HybridCognition implements CognitionModule {
     // Adjust confidence based on agent's experience level and personality
     let confidence = 0.7 - analysis.complexity * 0.2;
     const traits =
-      agent.characterConfig?.personality &&
-      typeof agent.characterConfig.personality === 'object' &&
-      'traits' in agent.characterConfig.personality
-        ? agent.characterConfig.personality.traits
+      agent.characterConfig?.['personality'] &&
+      typeof agent.characterConfig['personality'] === 'object' &&
+      'traits' in agent.characterConfig['personality']
+        ? agent.characterConfig['personality'].traits
         : {};
     const conscientiousness =
       traits && typeof traits === 'object' && 'conscientiousness' in traits
@@ -267,10 +267,10 @@ export class HybridCognition implements CognitionModule {
 
     // Use agent's planning style based on personality
     const traits =
-      agent.characterConfig?.personality &&
-      typeof agent.characterConfig.personality === 'object' &&
-      'traits' in agent.characterConfig.personality
-        ? agent.characterConfig.personality.traits
+      agent.characterConfig?.['personality'] &&
+      typeof agent.characterConfig['personality'] === 'object' &&
+      'traits' in agent.characterConfig['personality']
+        ? agent.characterConfig['personality'].traits
         : {};
     const openness =
       traits && typeof traits === 'object' && 'openness' in traits

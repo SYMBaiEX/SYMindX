@@ -1024,7 +1024,7 @@ export function createDefaultEthicsConfig(): EthicsConfig {
         type: 'hard',
         condition: (action) =>
           action.action.includes('delete') &&
-          action.parameters.permanent === true,
+          action.parameters['permanent'] === true,
         description: 'Prevent permanent data deletion',
         severity: 'high',
         remediation: 'Use soft deletion or move to trash',
@@ -1034,7 +1034,7 @@ export function createDefaultEthicsConfig(): EthicsConfig {
         principle: 'protect_privacy',
         type: 'hard',
         condition: (action) =>
-          action.action.includes('share_data') && !action.parameters.consent,
+          action.action.includes('share_data') && !action.parameters['consent'],
         description: 'Prevent sharing data without consent',
         severity: 'high',
         remediation: 'Obtain explicit consent before sharing',

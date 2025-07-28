@@ -311,7 +311,7 @@ export class ContextManager {
     memory: MemoryRecord
   ): ConversationContext | null {
     if (memory.type !== MemoryType.INTERACTION) return null;
-    if (!memory.metadata?.contextId) return null;
+    if (!memory.metadata?.['contextId']) return null;
 
     // Helper function to safely extract string from MetadataValue
     const getString = (value: any): string => {
@@ -338,12 +338,12 @@ export class ContextManager {
 
     // Create restored context
     const context: ConversationContext = {
-      id: getString(memory.metadata.contextId),
+      id: getString(memory.metadata['contextId']),
       agentId,
       startedAt: memory.timestamp,
       lastActive: new Date(),
-      participants: getStringSet(memory.metadata.participants),
-      topics: getStringArray(memory.metadata.topics).map((topic: string) => ({
+      participants: getStringSet(memory.metadata['participants']),
+      topics: getStringArray(memory.metadata['topics']).map((topic: string) => ({
         topic,
         mentions: 1,
         firstMentioned: memory.timestamp,
@@ -353,7 +353,7 @@ export class ContextManager {
       state: {
         phase: 'active' as const,
         mood:
-          (getString(memory.metadata.mood) as
+          (getString(memory.metadata['mood']) as
             | 'positive'
             | 'negative'
             | 'neutral') || 'neutral',
@@ -361,8 +361,8 @@ export class ContextManager {
         engagement: 0.5,
       },
       pendingQuestions: [],
-      followUpTopics: getStringArray(memory.metadata.topics),
-      previousContextId: getString(memory.metadata.contextId),
+      followUpTopics: getStringArray(memory.metadata['topics']),
+      previousContextId: getString(memory.metadata['contextId']),
       metadata: {
         restored: true,
         restoredFrom: memory.id,

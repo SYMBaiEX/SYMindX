@@ -13,6 +13,16 @@ import rateLimit from 'express-rate-limit';
 import { WebSocket, WebSocketServer } from 'ws';
 
 import { CommandSystem } from '../../core/command-system';
+import { 
+  createExtensionError, 
+  createConfigurationError, 
+  createNetworkError,
+  createValidationError,
+  createRuntimeError,
+  safeAsync,
+  formatError
+} from '../../utils/standard-errors';
+import { errorHandler } from '../../utils/error-handler';
 import {
   ChatMigrationManager,
   createChatMigrationManager,
@@ -50,7 +60,12 @@ import type {
   RouteConversationPayload,
 } from '../../types/extensions/api';
 import { MemoryTierType, MemoryDuration } from '../../types/memory';
-import { runtimeLogger } from '../../utils/logger';
+import { 
+  standardLoggers, 
+  createStandardLoggingPatterns,
+  StandardLogContext 
+} from '../../utils/standard-logging.js';
+import type { RuntimeStats } from '../../types/runtime-stats';
 
 import AdminDashboard from './admin-dashboard';
 import {
@@ -84,6 +99,10 @@ export class ApiExtension implements Extension {
   private app: express.Application;
   private server?: http.Server;
   private wss?: WebSocketServer;
+  
+  // Standardized logging
+  private logger = standardLoggers.api;
+  private loggingPatterns = createStandardLoggingPatterns(this.logger);
   private apiConfig: ApiSettings;
   private connections = new Map<string, WebSocket>();
   private _rateLimiters = new Map<
@@ -266,7 +285,13 @@ export class ApiExtension implements Extension {
    */
   async handleChatRequest(request: ChatRequest): Promise<ChatResponse> {
     if (!this.agent) {
-      throw new Error('No agent connected to API extension');
+      throw createExtensionError(
+        'No agent connected to API extension',
+        'AGENT_NOT_CONNECTED',
+        'api',
+        'connectAgent',
+        { requiredForAPI: true }
+      );
     }
 
     // Basic chat handling - delegate to agent's portal or cognition
@@ -292,7 +317,7 @@ export class ApiExtension implements Extension {
   private getDefaultSettings(): ApiSettings {
     return {
       port: parseInt(
-        process.env.API_PORT || String(this.config.settings?.port) || '8000'
+        process.env["API_PORT"] || String(this.config.settings?.port) || '8000'
       ),
       host: this.config.settings?.host || '0.0.0.0',
       cors: {
@@ -314,7 +339,7 @@ export class ApiExtension implements Extension {
       auth: {
         enabled: false,
         type: 'bearer',
-        secret: process.env.API_SECRET || 'default-secret',
+        secret: process.env["API_SECRET"] || 'default-secret',
       },
       logging: {
         enabled: true,
@@ -329,7 +354,7 @@ export class ApiExtension implements Extension {
     this.app.use(express.json({ limit: '10mb' }));
 
     // Add middleware to track HTTP requests
-    this.app.use((req, res, next) => {
+    this.app.use((_req, _res, next) => {
       this.metrics.httpRequests++;
       next();
     });
@@ -375,7 +400,7 @@ export class ApiExtension implements Extension {
     res: express.Response,
     next: express.NextFunction
   ): void {
-    const authHeader = req.headers.authorization;
+    const authHeader = req.headers['authorization'];
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       res.status(401).json({ error: 'Unauthorized' });
       return;
@@ -467,8 +492,8 @@ export class ApiExtension implements Extension {
         }
 
         // Get runtime stats if available
-        const runtimeStats = this.runtime?.getStats
-          ? this.runtime.getStats()
+        const runtimeStats: RuntimeStats | null = this.runtime?.getStats
+          ? this.runtime.getStats() as RuntimeStats
           : null;
 
         res.json({
@@ -495,10 +520,10 @@ export class ApiExtension implements Extension {
             },
             runtime: runtimeStats
               ? {
-                  isRunning: Boolean((runtimeStats as any).isRunning),
-                  agents: Number((runtimeStats as any).agents) || 0,
+                  isRunning: Boolean(runtimeStats.isRunning),
+                  agents: Number(runtimeStats.agents) || 0,
                   autonomousAgents:
-                    Number((runtimeStats as any).autonomousAgents) || 0,
+                    Number(runtimeStats.autonomousAgents) || 0,
                 }
               : {
                   agents: 0,
@@ -646,7 +671,7 @@ export class ApiExtension implements Extension {
     this.app.get(
       '/api/agent/:agentId/tools',
       (req: express.Request, res: express.Response): void => {
-        const { agentId } = req.params;
+        const agentId = req.params['agentId'];
         if (!agentId) {
           res.status(400).json({
             success: false,
@@ -702,7 +727,7 @@ export class ApiExtension implements Extension {
     this.app.get(
       '/api/agent/:agentId',
       (req: express.Request, res: express.Response): void => {
-        const { agentId } = req.params;
+        const agentId = req.params['agentId'];
         if (!agentId) {
           res.status(400).json({
             success: false,
@@ -791,13 +816,25 @@ export class ApiExtension implements Extension {
             timestamp: new Date().toISOString(),
           });
         } catch (error) {
-          void error;
-          runtimeLogger.error('Chat handler error:', error);
+          const chatError = createExtensionError(
+            'Chat request processing failed',
+            'CHAT_PROCESSING_ERROR',
+            'api',
+            'processChatMessage',
+            {
+              hasMessage: !!chatRequest?.message,
+              messageLength: chatRequest?.message?.length || 0,
+            },
+            error instanceof Error ? error : new Error(String(error))
+          );
+
+          runtimeLogger.error(formatError(chatError));
+          
           res.status(500).json({
             success: false,
             error: {
-              code: 'INTERNAL_ERROR',
-              message: 'Internal server error',
+              code: chatError.code,
+              message: 'Chat processing failed',
             },
             timestamp: new Date().toISOString(),
           });
@@ -810,7 +847,7 @@ export class ApiExtension implements Extension {
       '/api/chat/:agentId',
       async (req: express.Request, res: express.Response): Promise<void> => {
         try {
-          const { agentId } = req.params;
+          const agentId = req.params['agentId'];
           const chatRequest: ChatRequest = {
             ...req.body,
             agentId: agentId!, // Override any agentId in body with URL param
@@ -873,9 +910,9 @@ export class ApiExtension implements Extension {
       '/chat/history/:agentId',
       async (req: express.Request, res: express.Response): Promise<void> => {
         try {
-          const { agentId } = req.params;
-          const limit = parseInt(req.query.limit as string) || 50;
-          const userId = (req.query.userId as string) || 'default_user';
+          const agentId = req.params['agentId'];
+          const limit = parseInt(req.query['limit'] as string) || 50;
+          const userId = (req.query['userId'] as string) || 'default_user';
 
           if (!this.chatRepository) {
             res.status(500).json({ error: 'Chat system not available' });
@@ -922,8 +959,8 @@ export class ApiExtension implements Extension {
       '/chat/history/:agentId',
       async (req: express.Request, res: express.Response): Promise<void> => {
         try {
-          const { agentId } = req.params;
-          const userId = (req.query.userId as string) || 'default_user';
+          const agentId = req.params['agentId'];
+          const userId = (req.query['userId'] as string) || 'default_user';
 
           if (!this.chatRepository) {
             res.status(500).json({ error: 'Chat system not available' });
@@ -1066,7 +1103,7 @@ export class ApiExtension implements Extension {
       '/api/agents/:agentId/start',
       async (req: express.Request, res: express.Response): Promise<void> => {
         try {
-          const { agentId } = req.params;
+          const agentId = req.params['agentId'];
 
           if (!agentId) {
             res.status(400).json({
@@ -1126,7 +1163,7 @@ export class ApiExtension implements Extension {
       '/api/agents/:agentId/stop',
       async (req: express.Request, res: express.Response): Promise<void> => {
         try {
-          const { agentId } = req.params;
+          const agentId = req.params['agentId'];
 
           if (!agentId) {
             res.status(400).json({
@@ -1186,7 +1223,7 @@ export class ApiExtension implements Extension {
       '/api/agents/:agentId/restart',
       async (req: express.Request, res: express.Response): Promise<void> => {
         try {
-          const { agentId } = req.params;
+          const agentId = req.params['agentId'];
 
           if (!agentId) {
             res.status(400).json({
@@ -1226,7 +1263,7 @@ export class ApiExtension implements Extension {
       '/api/agents/:agentId/health',
       (req: express.Request, res: express.Response): void => {
         try {
-          const { agentId } = req.params;
+          const agentId = req.params['agentId'];
 
           if (!agentId) {
             res.status(400).json({
@@ -1429,8 +1466,8 @@ export class ApiExtension implements Extension {
 
     // Commands endpoint for recent command history
     this.app.get('/api/commands', (req, res): void => {
-      const agentId = req.query.agent as string | undefined;
-      const limit = parseInt(req.query.limit as string) || 20;
+      const agentId = req.query['agent'] as string | undefined;
+      const limit = parseInt(req.query['limit'] as string) || 20;
 
       if (!this.commandSystem) {
         res.json([]);
@@ -1470,10 +1507,10 @@ export class ApiExtension implements Extension {
           return;
         }
 
-        const userId = (req.query.userId as string) || 'default_user';
-        const agentId = req.query.agentId as string;
-        const status = req.query.status as ConversationStatus;
-        const limit = parseInt(req.query.limit as string) || 50;
+        const userId = (req.query['userId'] as string) || 'default_user';
+        const agentId = req.query['agentId'] as string;
+        const status = req.query['status'] as ConversationStatus;
+        const limit = parseInt(req.query['limit'] as string) || 50;
 
         const conversations = await this.chatRepository.listConversations({
           userId,
@@ -1566,8 +1603,8 @@ export class ApiExtension implements Extension {
           }
 
           const { conversationId } = req.params;
-          const limit = parseInt(req.query.limit as string) || 50;
-          const offset = parseInt(req.query.offset as string) || 0;
+          const limit = parseInt(req.query['limit'] as string) || 50;
+          const offset = parseInt(req.query['offset'] as string) || 0;
 
           const messages = await this.chatRepository.listMessages({
             conversationId,
@@ -1711,7 +1748,7 @@ export class ApiExtension implements Extension {
           }
 
           const { conversationId } = req.params;
-          const userId = (req.query.userId as string) || 'api_user';
+          const userId = (req.query['userId'] as string) || 'api_user';
 
           await this.chatRepository.deleteConversation(conversationId, userId);
 
@@ -2128,8 +2165,8 @@ export class ApiExtension implements Extension {
             return;
           }
 
-          const { agentId } = req.params;
-          const days = parseInt(req.query.days as string) || 7;
+          const agentId = req.params['agentId'];
+          const days = parseInt(req.query['days'] as string) || 7;
 
           // Get conversations for this agent
           const conversations = await this.chatRepository.listConversations({
@@ -2192,7 +2229,7 @@ export class ApiExtension implements Extension {
             return;
           }
 
-          const days = parseInt(req.query.days as string) || 7;
+          const days = parseInt(req.query['days'] as string) || 7;
 
           // Get all conversations
           const conversations = await this.chatRepository.listConversations({
@@ -2274,7 +2311,7 @@ export class ApiExtension implements Extension {
     //   return {
     //     schema,
     //     context,
-    //     graphiql: process.env.NODE_ENV !== 'production',
+    //     graphiql: process.env["NODE_ENV"] !== 'production',
     //     introspection: true,
     //   };
     // }));
@@ -2655,8 +2692,23 @@ export class ApiExtension implements Extension {
           resolve();
         });
 
-        this.server.on('error', (error) => {
-          runtimeLogger.error('❌ API Server error:', error);
+        this.server.on('error', (error: any) => {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          
+          // Check for specific error types
+          if (error.code === 'EADDRINUSE') {
+            runtimeLogger.error(`❌ API Server error: Port ${this.apiConfig.port} is already in use`);
+            runtimeLogger.info(`🔧 Try killing the process using: lsof -ti :${this.apiConfig.port} | xargs kill -9`);
+          } else if (error.code === 'EACCES') {
+            runtimeLogger.error(`❌ API Server error: Permission denied for port ${this.apiConfig.port}`);
+            runtimeLogger.info(`🔧 Try using a port number above 1024 or run with elevated permissions`);
+          } else {
+            runtimeLogger.error(`❌ API Server error: ${errorMessage}`);
+          }
+          
+          if (error instanceof Error && error.stack) {
+            runtimeLogger.debug(`API Server error stack: ${error.stack}`);
+          }
           this.status = ExtensionStatus.ERROR;
           reject(error);
         });
@@ -2686,7 +2738,7 @@ export class ApiExtension implements Extension {
 
     this.wss.on('connection', (ws: WebSocket, req) => {
       const connectionId = this.generateConnectionId();
-      const clientIP = req.socket.remoteAddress || 'unknown';
+      const clientIP = req.socket['remoteAddress'] || 'unknown';
 
       // Set additional WebSocket options to prevent compression
       if ((ws as any).extensions) {
@@ -2765,7 +2817,10 @@ export class ApiExtension implements Extension {
     });
 
     this.wss.on('error', (error) => {
-      runtimeLogger.error('❌ WebSocket Server error:', error);
+      runtimeLogger.error(`❌ WebSocket Server error: ${error instanceof Error ? error.message : String(error)}`);
+      if (error instanceof Error && error.stack) {
+        runtimeLogger.debug(`WebSocket error stack: ${error.stack}`);
+      }
     });
   }
 
@@ -3006,7 +3061,7 @@ export class ApiExtension implements Extension {
   private async initializeChatPersistence(): Promise<void> {
     try {
       // Determine database path
-      const dbPath = process.env.CHAT_DB_PATH || './data/chat.db';
+      const dbPath = process.env["CHAT_DB_PATH"] || './data/chat.db';
 
       // Ensure directory exists
       const { dirname } = await import('path');
@@ -3138,7 +3193,11 @@ export class ApiExtension implements Extension {
         }
       } catch (error) {
         void error;
-        runtimeLogger.error('❌ Error during chat cleanup:', error);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        runtimeLogger.error(`❌ Error during chat cleanup: ${errorMessage}`);
+        if (error instanceof Error && error.stack) {
+          runtimeLogger.debug(`Chat cleanup error stack: ${error.stack}`);
+        }
       }
     }
   }
@@ -3323,7 +3382,11 @@ export class ApiExtension implements Extension {
     return new Promise((resolve) => {
       // Cleanup chat resources
       this.cleanupChatResources().catch((error) => {
-        runtimeLogger.error('Error during chat cleanup:', error);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        runtimeLogger.error(`Error during chat cleanup: ${errorMessage}`);
+        if (error instanceof Error && error.stack) {
+          runtimeLogger.debug(`Chat cleanup error stack: ${error.stack}`);
+        }
       });
 
       // Close database connections

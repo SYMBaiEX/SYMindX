@@ -72,9 +72,15 @@ class StateManagementError extends Error {
     super(message);
     this.name = 'StateManagementError';
     this.isOperational = true;
-    this.code = code;
-    this.path = path;
-    this.operation = operation;
+    if (code !== undefined) {
+      this.code = code;
+    }
+    if (path !== undefined) {
+      this.path = path;
+    }
+    if (operation !== undefined) {
+      this.operation = operation;
+    }
     Error.captureStackTrace(this, StateManagementError);
   }
 }
@@ -1041,11 +1047,15 @@ export class StateManager {
       const key = this.getEncryptionKey();
 
       // Extract IV and encrypted data
-      const [ivHex, encryptedData] = data.split(':');
+      const parts = data.split(':');
+      if (parts.length !== 2 || !parts[0] || !parts[1]) {
+        throw new Error('Invalid encrypted data format');
+      }
+      const [ivHex, encryptedData] = parts;
       const iv = Buffer.from(ivHex, 'hex');
 
       const decipher = createDecipheriv(algorithm, key, iv);
-      let decrypted = decipher.update(encryptedData, 'hex', 'utf-8');
+      let decrypted: string = decipher.update(encryptedData, 'hex', 'utf-8');
       decrypted += decipher.final('utf-8');
 
       return decrypted;
@@ -1061,7 +1071,7 @@ export class StateManager {
    * Get encryption key from environment or generate a default one
    */
   private getEncryptionKey(): string {
-    const envKey = process.env.STATE_ENCRYPTION_KEY;
+    const envKey = process.env["STATE_ENCRYPTION_KEY"];
     if (envKey) {
       return envKey;
     }

@@ -18,6 +18,11 @@ import {
   ToolEvaluationOptions,
   ToolEvaluationResult,
 } from '../types/portal';
+import { 
+  standardLoggers, 
+  createStandardLoggingPatterns,
+  StandardLogContext 
+} from '../utils/standard-logging.js';
 import { buildObject } from '../utils/type-helpers';
 
 /**
@@ -37,6 +42,10 @@ export abstract class BasePortal implements Portal {
   status: PortalStatus = PortalStatus.INACTIVE;
   config: PortalConfig;
   abstract supportedModels: ModelType[];
+  
+  // Standardized logging
+  protected logger = standardLoggers.portal;
+  protected loggingPatterns = createStandardLoggingPatterns(this.logger);
 
   constructor(id: string, name: string, version: string, config: PortalConfig) {
     this.id = id;
@@ -122,14 +131,25 @@ export abstract class BasePortal implements Portal {
    * @param agent The agent to initialize with
    */
   async init(agent: Agent): Promise<void> {
-    console.log(`🔮 Initializing ${this.name} portal for agent ${agent.name}`);
+    this.loggingPatterns.logInitialization(`${this.name} portal`, { 
+      portalId: this.id,
+      agentId: agent.id,
+      agentName: agent.name 
+    });
 
     try {
       await this.validateConfig();
-      console.log(`✅ ${this.name} portal initialized for ${agent.name}`);
+      this.loggingPatterns.logInitializationSuccess(`${this.name} portal`, undefined, {
+        portalId: this.id,
+        agentId: agent.id,
+        agentName: agent.name
+      });
     } catch (error) {
-      void error;
-      console.error(`❌ Failed to initialize ${this.name} portal:`, error);
+      this.loggingPatterns.logInitializationFailure(`${this.name} portal`, error as Error, {
+        portalId: this.id,
+        agentId: agent.id,
+        agentName: agent.name
+      });
       throw error;
     }
   }
@@ -579,6 +599,6 @@ export abstract class BasePortal implements Portal {
    */
   getOptimalModelForCapability(capability: PortalCapability): string | null {
     const models = this.getSupportedModelsForCapability(capability);
-    return models.length > 0 ? models[0] : null;
+    return models.length > 0 ? models[0] ?? null : null;
   }
 }

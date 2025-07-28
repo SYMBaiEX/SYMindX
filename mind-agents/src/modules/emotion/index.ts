@@ -109,7 +109,7 @@ export async function registerEmotionModules(registry: any): Promise<void> {
     // Register the main emotion module types as fallback
     const emotionTypes = getEmotionModuleTypes();
     for (const type of emotionTypes) {
-      registry.registerEmotionFactory(type, (config: any) =>
+      registry.registerEmotionFactory(type, (config: Record<string, unknown>) =>
         createEmotionModule(type, config)
       );
     }
@@ -122,7 +122,7 @@ export async function registerEmotionModules(registry: any): Promise<void> {
     // Fallback to manual registration
     const emotionTypes = getEmotionModuleTypes();
     for (const type of emotionTypes) {
-      registry.registerEmotionFactory(type, (config: any) =>
+      registry.registerEmotionFactory(type, (config: Record<string, unknown>) =>
         createEmotionModule(type, config)
       );
     }

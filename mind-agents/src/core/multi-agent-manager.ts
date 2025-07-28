@@ -596,19 +596,25 @@ export class MultiAgentManager extends EventEmitter {
   enableAgentCollaboration(agentIds: string[]): void {
     try {
       // Validate all agent IDs exist
-      const agents = agentIds.map((id) => {
+      const agents: Agent[] = [];
+      for (const id of agentIds) {
         const agent = this.runtime.agents?.get(id);
         if (!agent) {
           throw new Error(`Agent with ID ${id} not found`);
         }
-        return agent;
-      });
+        agents.push(agent);
+      }
 
       // Create collaboration network
       for (let i = 0; i < agents.length; i++) {
         for (let j = i + 1; j < agents.length; j++) {
           const agent1 = agents[i];
           const agent2 = agents[j];
+
+          // Ensure agents are defined (they should be based on our validation above)
+          if (!agent1 || !agent2) {
+            throw new Error(`Unexpected undefined agent in collaboration setup`);
+          }
 
           // Add bidirectional collaboration relationships
           this.collaborations.set(`${agent1.id}-${agent2.id}`, {

@@ -492,25 +492,36 @@ export class TelegramExtension implements Extension {
               // Get the primary thought as the response
               const response = thoughtResult.thoughts[0];
 
-              // Send the response back to Telegram
-              await this.sendMessage(
-                chatId,
-                response,
-                'Markdown', // Enable markdown parsing
-                false, // Don't disable web page preview
-                false, // Don't disable notification
-                messageData.message_id // Reply to the original message
-              );
+              // Only send response if it's defined and not empty
+              if (response) {
+                // Send the response back to Telegram
+                await this.sendMessage(
+                  chatId,
+                  response,
+                  'Markdown', // Enable markdown parsing
+                  false, // Don't disable web page preview
+                  false, // Don't disable notification
+                  messageData.message_id // Reply to the original message
+                );
 
-              // Log the interaction
-              this.logger.info('Agent responded to Telegram message', {
-                metadata: {
-                  userId,
-                  username,
-                  message: messageText.substring(0, 50) + '...',
-                  response: response.substring(0, 50) + '...',
-                },
-              } as LogContext);
+                // Log the interaction
+                this.logger.info('Agent responded to Telegram message', {
+                  metadata: {
+                    userId,
+                    username,
+                    message: messageText.substring(0, 50) + '...',
+                    response: response.substring(0, 50) + '...',
+                  },
+                } as LogContext);
+              } else {
+                this.logger.warn('Agent returned empty response', {
+                  metadata: {
+                    userId,
+                    username,
+                    message: messageText.substring(0, 50) + '...',
+                  },
+                } as LogContext);
+              }
             }
           } else {
             // Fallback if agent doesn't have cognition module

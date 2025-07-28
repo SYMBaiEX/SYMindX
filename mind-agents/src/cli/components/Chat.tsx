@@ -25,7 +25,7 @@ export const Chat: React.FC<ChatProps> = ({ agentId }) => {
   const [isLoading, setIsLoading] = useState(false);
   const { agents } = useAgentData();
 
-  const apiUrl = process.env.SYMINDX_API_URL || 'http://localhost:8000';
+  const apiUrl = process.env['SYMINDX_API_URL'] || 'http://localhost:8000';
 
   useInput((input, key) => {
     if (key.escape) {

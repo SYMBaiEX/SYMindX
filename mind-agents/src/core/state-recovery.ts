@@ -293,7 +293,7 @@ export class StateRecoverySystem extends EventEmitter {
 
       resources: {
         memoryUsage:
-          (await this._resourceManager.getCurrentUsage()).memory || 0,
+          (await this._resourceManager.getCurrentUsage())['memory'] || 0,
         connections: [],
         fileHandles: [],
         timers: [],

@@ -47,7 +47,7 @@ export abstract class BaseEmotion implements EmotionModule {
   protected _contextualModifiers: Map<string, EmotionModifier> = new Map();
   protected _emotionalInertia: number = 0.3; // Resistance to change
 
-  constructor(protected config: any) {
+  constructor(protected config: Record<string, unknown>) {
     this._intensity = this.getDefinition().intensity;
     this._personalityTraits = config.personalityTraits;
     this._emotionalInertia = config.emotionalInertia ?? 0.3;

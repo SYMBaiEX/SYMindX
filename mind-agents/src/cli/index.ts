@@ -60,15 +60,15 @@ class AwesomeSYMindXCLI {
   }
 
   private getDefaultConfig(): CLIConfig {
-    const port = process.env.API_PORT || '8000';
+    const port = process.env["API_PORT"] || '8000';
     return {
-      apiUrl: process.env.SYMINDX_API_URL || `http://localhost:${port}`,
-      autoConnect: process.env.SYMINDX_AUTO_CONNECT === 'true',
-      ...(process.env.SYMINDX_DEFAULT_AGENT && {
-        defaultAgent: process.env.SYMINDX_DEFAULT_AGENT,
+      apiUrl: process.env["SYMINDX_API_URL"] || `http://localhost:${port}`,
+      autoConnect: process.env["SYMINDX_AUTO_CONNECT"] === 'true',
+      ...(process.env["SYMINDX_DEFAULT_AGENT"] && {
+        defaultAgent: process.env["SYMINDX_DEFAULT_AGENT"],
       }),
-      colors: process.env.NO_COLOR !== 'true',
-      verbose: process.env.SYMINDX_VERBOSE === 'true',
+      colors: process.env["NO_COLOR"] !== 'true',
+      verbose: process.env["SYMINDX_VERBOSE"] === 'true',
     };
   }
 

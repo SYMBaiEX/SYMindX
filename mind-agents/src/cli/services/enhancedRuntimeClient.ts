@@ -92,7 +92,7 @@ export class EnhancedRuntimeClient extends EventEmitter {
     super();
 
     this.config = {
-      apiUrl: process.env.SYMINDX_API_URL || 'http://localhost:8000',
+      apiUrl: process.env["SYMINDX_API_URL"] || 'http://localhost:8000',
       timeout: 5000,
       retryAttempts: 3,
       retryDelay: 1000,
@@ -102,7 +102,7 @@ export class EnhancedRuntimeClient extends EventEmitter {
       cacheTTL: 60000, // 1 minute default
       connectionCheckInterval: 10000, // 10 seconds
       enableMetrics: true,
-      enableLogging: process.env.NODE_ENV !== 'production',
+      enableLogging: process.env["NODE_ENV"] !== 'production',
       ...config,
     };
 

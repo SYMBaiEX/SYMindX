@@ -21,7 +21,12 @@ import {
   MemoryPermission,
 } from '../../../../types/memory';
 import { DatabaseError } from '../../../../types/modules/database';
-import { runtimeLogger } from '../../../../utils/logger';
+import { 
+  standardLoggers, 
+  createStandardLoggingPatterns,
+  StandardLogContext 
+} from '../../../../utils/standard-logging.js';
+import { runtimeLogger } from '../../../../utils/logger.js';
 import { buildObject } from '../../../../utils/type-helpers';
 import {
   BaseMemoryProvider,
@@ -79,6 +84,10 @@ export class SQLiteMemoryProvider extends BaseMemoryProvider {
   private sharedPools: Map<string, SharedMemoryPool> = new Map();
   private consolidationTimer?: ReturnType<typeof setTimeout>;
   private archivalTimer?: ReturnType<typeof setTimeout>;
+  
+  // Standardized logging
+  private logger = standardLoggers.memory;
+  private loggingPatterns = createStandardLoggingPatterns(this.logger);
 
   /**
    * Constructor for the SQLite memory provider

@@ -25,7 +25,7 @@ async function main() {
     .option(
       '--api-url <url>',
       'Runtime API URL',
-      process.env.SYMINDX_API_URL || 'http://localhost:8000'
+      process.env["SYMINDX_API_URL"] || 'http://localhost:8000'
     )
     .option('--no-color', 'Disable colored output');
 
@@ -33,7 +33,7 @@ async function main() {
     try {
       // Set up environment
       if (options.apiUrl) {
-        process.env.SYMINDX_API_URL = options.apiUrl;
+        process.env["SYMINDX_API_URL"] = options.apiUrl;
       }
 
       // Import React and Ink components
@@ -47,7 +47,7 @@ async function main() {
       // Show a brief startup message
       console.log(chalk.cyan('🚀 Starting SYMindX Dashboard...'));
       console.log(
-        chalk.gray(`Connecting to runtime at: ${process.env.SYMINDX_API_URL}`)
+        chalk.gray(`Connecting to runtime at: ${process.env["SYMINDX_API_URL"]}`)
       );
       console.log();
 
@@ -82,13 +82,13 @@ async function main() {
       console.log(
         chalk.gray(
           '• Check that the API is accessible at:',
-          process.env.SYMINDX_API_URL || 'http://localhost:8000'
+          process.env["SYMINDX_API_URL"] || 'http://localhost:8000'
         )
       );
       console.log(
         chalk.gray(
           '• Try running: curl ' +
-            (process.env.SYMINDX_API_URL || 'http://localhost:8000') +
+            (process.env["SYMINDX_API_URL"] || 'http://localhost:8000') +
             '/health'
         )
       );

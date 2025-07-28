@@ -111,7 +111,14 @@ export class EmotionDiscovery {
                 void error;
                 runtimeLogger.warn(
                   `⚠️ Failed to parse package.json for ${entry.name}:`,
-                  error
+                  {
+                    error: {
+                      code: 'PARSE_ERROR',
+                      message: error instanceof Error ? error.message : String(error),
+                      ...(error instanceof Error && error.stack ? { stack: error.stack } : {}),
+                    },
+                    metadata: { emotion: entry.name },
+                  }
                 );
               }
             }
@@ -130,7 +137,14 @@ export class EmotionDiscovery {
       }
     } catch (error) {
       void error;
-      runtimeLogger.warn('⚠️ Failed to discover built-in emotions:', error);
+      runtimeLogger.warn('⚠️ Failed to discover built-in emotions:', {
+        error: {
+          code: 'DISCOVERY_ERROR',
+          message: error instanceof Error ? error.message : String(error),
+          ...(error instanceof Error && error.stack ? { stack: error.stack } : {}),
+        },
+        metadata: { directory: this.emotionsDir },
+      });
     }
 
     return emotions;
@@ -183,7 +197,14 @@ export class EmotionDiscovery {
       }
     } catch (error) {
       void error;
-      runtimeLogger.warn('⚠️ Failed to discover node_modules emotions:', error);
+      runtimeLogger.warn('⚠️ Failed to discover node_modules emotions:', {
+        error: {
+          code: 'NODE_MODULES_DISCOVERY_ERROR',
+          message: error instanceof Error ? error.message : String(error),
+          ...(error instanceof Error && error.stack ? { stack: error.stack } : {}),
+        },
+        metadata: { directory: this.nodeModulesDir },
+      });
     }
 
     return emotions;
@@ -235,7 +256,14 @@ export class EmotionDiscovery {
               void error;
               runtimeLogger.warn(
                 `⚠️ Failed to parse package.json for local emotion ${entry.name}:`,
-                error
+                {
+                  error: {
+                    code: 'LOCAL_PARSE_ERROR',
+                    message: error instanceof Error ? error.message : String(error),
+                    ...(error instanceof Error && error.stack ? { stack: error.stack } : {}),
+                  },
+                  metadata: { emotion: entry.name, path: packageJsonPath },
+                }
               );
             }
           }
@@ -243,7 +271,14 @@ export class EmotionDiscovery {
       }
     } catch (error) {
       void error;
-      runtimeLogger.warn('⚠️ Failed to discover local emotions:', error);
+      runtimeLogger.warn('⚠️ Failed to discover local emotions:', {
+        error: {
+          code: 'LOCAL_DISCOVERY_ERROR',
+          message: error instanceof Error ? error.message : String(error),
+          ...(error instanceof Error && error.stack ? { stack: error.stack } : {}),
+        },
+        metadata: { directory: localEmotionsDir },
+      });
     }
 
     return emotions;
@@ -270,7 +305,14 @@ export class EmotionDiscovery {
         void error;
         runtimeLogger.warn(
           `⚠️ Failed to auto-register emotion ${emotion.name}:`,
-          error
+          {
+            error: {
+              code: 'AUTO_REGISTER_ERROR',
+              message: error instanceof Error ? error.message : String(error),
+              ...(error instanceof Error && error.stack ? { stack: error.stack } : {}),
+            },
+            metadata: { emotion: emotion.name, path: emotion.path },
+          }
         );
       }
     }
@@ -318,7 +360,14 @@ export class EmotionDiscovery {
       void error;
       runtimeLogger.error(
         `❌ Failed to register emotion ${emotion.name}:`,
-        error
+        error,
+        {
+          metadata: { 
+            emotion: emotion.name, 
+            path: emotion.path,
+            factory: emotion.factory
+          },
+        }
       );
       throw error;
     }

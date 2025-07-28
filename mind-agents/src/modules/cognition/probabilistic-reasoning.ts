@@ -603,9 +603,9 @@ export class ProbabilisticReasoning implements CognitionModule {
     evidence['context_clear'] = context.events.length > 0 ? 'true' : 'false';
 
     // Message analysis
-    const messageEvents = context.events.filter((e) => e.data?.message);
+    const messageEvents = context.events.filter((e) => e.data?.['message']);
     if (messageEvents.length > 0) {
-      const message = messageEvents[0]?.data?.message as string;
+      const message = messageEvents[0]?.data?.['message'] as string;
       evidence['message_type'] = this.classifyMessage(message);
     }
 

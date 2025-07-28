@@ -1,5 +1,6 @@
 import figlet from 'figlet';
 import gradient from 'gradient-string';
+import { createProgressBar } from '../../utils/cli-ui.js';
 
 // ASCII Art configurations
 export const ASCII_FONTS = {
@@ -139,20 +140,8 @@ export function createLoadingFrames(): string[] {
   return ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
 }
 
-// Create progress bar
-export function createProgressBar(
-  progress: number,
-  width: number = 30,
-  showPercentage: boolean = true
-): string {
-  const filled = Math.floor((progress / 100) * width);
-  const empty = width - filled;
-
-  const bar = `█`.repeat(filled) + `░`.repeat(empty);
-  const percentage = showPercentage ? ` ${progress}%` : '';
-
-  return `[${bar}]${percentage}`;
-}
+// Progress bar creation has been moved to cli-ui.ts
+// Import createProgressBar from '../../utils/cli-ui.js' instead
 
 // Create cyberpunk-style header
 export async function createCyberpunkHeader(): Promise<string> {
@@ -163,7 +152,7 @@ export async function createCyberpunkHeader(): Promise<string> {
   return [
     title,
     '',
-    `${' '.repeat(15)}${GRADIENTS.neon?.(subtitle) ?? subtitle}`,
-    `${' '.repeat(10)}[SYSTEM STATUS] ${GRADIENTS.synthwave?.(status) ?? status}`,
+    `${' '.repeat(15)}${GRADIENTS['neon']?.(subtitle) ?? subtitle}`,
+    `${' '.repeat(10)}[SYSTEM STATUS] ${GRADIENTS['synthwave']?.(status) ?? status}`,
   ].join('\n');
 }

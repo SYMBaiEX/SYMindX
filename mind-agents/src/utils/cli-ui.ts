@@ -109,7 +109,7 @@ export function createSpinner(
   const canUseSpinner =
     process.stdout.isTTY &&
     process.stdin.isTTY &&
-    !process.env.CI &&
+    !process.env["CI"] &&
     process.stdin.readable;
 
   const spinner = ora({
@@ -259,7 +259,7 @@ export async function animateLoading(
   const canUseSpinner =
     process.stdout.isTTY &&
     process.stdin.isTTY &&
-    !process.env.CI &&
+    !process.env["CI"] &&
     process.stdin.readable;
 
   if (!canUseSpinner) {
@@ -335,13 +335,13 @@ export function displaySuccess(message: string): void {
 }
 
 /**
- * Create a progress bar with update capability
+ * Create an interactive progress bar that can be updated
  *
  * @param title - The title of the progress bar
  * @param total - The total value for 100% completion
  * @returns Object with update method to update progress
  */
-export function createProgressBar(
+export function createInteractiveProgressBar(
   title: string,
   total: number
 ): { update: (value: number) => void } {
@@ -366,6 +366,31 @@ export function createProgressBar(
 
   return { update };
 }
+
+/**
+ * Create a static string representation of a progress bar
+ *
+ * @param progress - Progress percentage (0-100)
+ * @param width - Width of the progress bar (default: 30)
+ * @param showPercentage - Whether to show percentage text (default: true)
+ * @returns String representation of the progress bar
+ */
+export function createProgressBar(
+  progress: number,
+  width: number = 30,
+  showPercentage: boolean = true
+): string {
+  const filled = Math.floor((progress / 100) * width);
+  const empty = width - filled;
+
+  const bar = chalk.green('█'.repeat(filled)) + chalk.gray('░'.repeat(empty));
+  const percentage = showPercentage ? ` ${progress}%` : '';
+
+  return `[${bar}]${percentage}`;
+}
+
+// Legacy export - keeping original function name for backward compatibility
+export { createInteractiveProgressBar as createProgressBarWithUpdate }
 
 /**
  * Display a styled chat message with timestamp

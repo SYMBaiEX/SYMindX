@@ -537,15 +537,15 @@ export class ResourceManager extends EventEmitter {
     }
 
     // Check type-specific availability
-    if (type === 'memory' && requirements?.memoryMB) {
+    if (type === 'memory' && requirements?.['memoryMB']) {
       const currentMemoryUsage = process.memoryUsage().heapUsed / 1024 / 1024;
-      const requiredMemory = requirements.memoryMB;
+      const requiredMemory = requirements['memoryMB'];
       return currentMemoryUsage + requiredMemory < 1024; // 1GB limit
     }
 
-    if (type === 'processing' && requirements?.cpuTime) {
+    if (type === 'processing' && requirements?.['cpuTime']) {
       // Simple CPU availability check
-      return requirements.cpuTime < 5000; // Max 5 seconds
+      return requirements['cpuTime'] < 5000; // Max 5 seconds
     }
 
     // Default to available if no specific requirements

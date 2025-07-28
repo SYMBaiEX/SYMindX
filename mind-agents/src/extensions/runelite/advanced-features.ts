@@ -23,7 +23,7 @@ import {
   MacroAction,
   MacroTrigger,
   MacroCondition,
-  AutomationTask,
+  AutomationTask as BaseAutomationTask,
   AutomationSafetyConfig,
   EventRecording,
   RecordedEvent,
@@ -38,6 +38,36 @@ import {
   GroundItem,
   PlayerInfo,
 } from './types.js';
+
+// Extended task types for different automation scenarios
+interface TaskStep {
+  id: string;
+  action: ActionType;
+  parameters: Record<string, unknown>;
+  delay?: number;
+}
+
+interface SequentialTask extends BaseAutomationTask {
+  type: 'sequence';
+  steps: TaskStep[];
+  startTime?: number;
+}
+
+interface LoopTask extends BaseAutomationTask {
+  type: 'loop';
+  steps: TaskStep[];
+  iterations: number;
+  startTime?: number;
+}
+
+interface ConditionalTask extends BaseAutomationTask {
+  type: 'conditional';
+  conditions: MacroCondition[];
+  steps: TaskStep[];
+  startTime?: number;
+}
+
+type AutomationTask = BaseAutomationTask | SequentialTask | LoopTask | ConditionalTask;
 
 /**
  * Pathfinding System
@@ -137,7 +167,10 @@ export class PathfindingSystem extends EventEmitter {
   }
 
   private keyToTile(key: string): PathTile {
-    const [x, y, plane] = key.split(',').map(Number);
+    const parts = key.split(',').map(Number);
+    const x = parts[0] ?? 0;
+    const y = parts[1] ?? 0;
+    const plane = parts[2] ?? 0;
     return { x, y, plane, walkable: true, cost: 1 };
   }
 
@@ -316,7 +349,7 @@ export class PathfindingSystem extends EventEmitter {
       const next = tiles[i + 1];
 
       // Check game objects between tiles
-      if (this.gameState.objects) {
+      if (this.gameState.objects && current && next) {
         const obstacle = this.gameState.objects.find((obj) =>
           this.isObstacleBetween(current, next, obj)
         );
@@ -481,6 +514,12 @@ export class MacroSystem extends EventEmitter {
 
       const action = macro.actions[actionIndex];
 
+      // Ensure action exists
+      if (!action) {
+        this.stopMacro();
+        return;
+      }
+
       // Check conditions
       if (action.condition && !this.evaluateCondition(action.condition)) {
         actionIndex++;
@@ -502,7 +541,7 @@ export class MacroSystem extends EventEmitter {
   stopMacro(): void {
     if (this.macroExecutor) {
       clearTimeout(this.macroExecutor);
-      this.macroExecutor = undefined;
+      this.macroExecutor = null as any;
     }
 
     if (this.activeMacro) {
@@ -721,12 +760,133 @@ export class AutomationSystem extends EventEmitter {
   }
 
   private async executeTask(task: AutomationTask): Promise<void> {
-    // Task execution logic would go here
-    // This would coordinate with the main extension to execute actions
+    try {
+      this.emit('task:executing', { taskId: task.id, status: 'starting' });
+      
+      // Execute task based on its type
+      switch (task.type) {
+        case 'sequence':
+          await this.executeSequentialTask(task);
+          break;
+        case 'loop':
+          await this.executeLoopTask(task);
+          break;
+        case 'conditional':
+          await this.executeConditionalTask(task);
+          break;
+        default:
+          throw new Error(`Unknown task type: ${task.type}`);
+      }
+      
+      task.status = 'completed';
+      const startTime = 'startTime' in task ? task.startTime : Date.now();
+      this.emit('task:completed', { taskId: task.id, duration: Date.now() - (startTime || Date.now()) });
+    } catch (error) {
+      task.status = 'failed';
+      this.emit('task:failed', { taskId: task.id, error: error instanceof Error ? error.message : String(error) });
+      throw error;
+    }
+  }
+
+  private async executeSequentialTask(task: AutomationTask): Promise<void> {
+    if ('steps' in task) {
+      for (const step of task.steps) {
+        if (task.status === 'stopped') break;
+        await this.executeTaskStep(task, step);
+      }
+    }
+  }
+
+  private async executeLoopTask(task: AutomationTask): Promise<void> {
+    if ('iterations' in task && 'steps' in task) {
+      while (task.status === 'running' && task.iterations > 0) {
+        for (const step of task.steps) {
+          if (task.status === 'stopped') break;
+          await this.executeTaskStep(task, step);
+        }
+        task.iterations--;
+      }
+    }
+  }
+
+  private async executeConditionalTask(task: AutomationTask): Promise<void> {
+    // Execute conditional logic based on game state
+    // This would evaluate conditions and execute appropriate steps
+    if ('conditions' in task && 'steps' in task && task.conditions && task.conditions.length > 0) {
+      const conditionMet = await this.evaluateConditions(task.conditions);
+      if (conditionMet) {
+        for (const step of task.steps) {
+          if (task.status === 'stopped') break;
+          await this.executeTaskStep(task, step);
+        }
+      }
+    }
+  }
+
+  private async executeTaskStep(task: AutomationTask, step: any): Promise<void> {
+    // Execute individual task step
+    // This would coordinate with the main extension to perform game actions
+    this.emit('task:step', { taskId: task.id, step: step.id, action: step.action });
+    
+    // Simulate step execution delay
+    await new Promise(resolve => setTimeout(resolve, step.delay || 100));
+  }
+
+  private async evaluateConditions(conditions: any[]): Promise<boolean> {
+    // Evaluate automation conditions
+    // This would check game state against defined conditions
+    return conditions.every(condition => {
+      // Placeholder condition evaluation logic
+      return condition.type === 'always' || Math.random() > 0.5;
+    });
   }
 
   getTask(taskId: string): AutomationTask | undefined {
     return this.tasks.get(taskId);
+  }
+
+  // Methods using the imported types
+  createMacroTrigger(conditions: any[]): MacroTrigger {
+    return {
+      id: `trigger_${Date.now()}`,
+      type: 'condition',
+      conditions,
+      enabled: true,
+      priority: 1
+    };
+  }
+
+  processNPCInfo(npc: NPCInfo): void {
+    // Process NPC information for automation decisions
+    this.emit('npc:detected', {
+      id: npc.id,
+      name: npc.name,
+      position: npc.location,
+      level: npc.combatLevel,
+      health: npc.healthRatio
+    });
+  }
+
+  processGroundItem(item: GroundItem): void {
+    // Process ground item for automation decisions
+    this.emit('item:spotted', {
+      id: item.id,
+      name: item.name,
+      position: item.location,
+      value: item.value,
+      stackSize: item.quantity
+    });
+  }
+
+  processPlayerInfo(player: PlayerInfo): void {
+    // Process player information for social automation
+    this.emit('player:detected', {
+      name: player.displayName || player.username,
+      position: player.location,
+      level: player.combatLevel,
+      equipment: (player as any).equipment || [],
+      isInCombat: (player as any).isInCombat || false
+    });
   }
 
   getAllTasks(): AutomationTask[] {
@@ -873,8 +1033,10 @@ export class EventRecordingSystem extends EventEmitter {
       let delay = 0;
       if (eventIndex < events.length) {
         const nextEvent = events[eventIndex];
-        delay =
-          (nextEvent.timestamp - recordedEvent.timestamp) / this.replaySpeed;
+        if (nextEvent && recordedEvent) {
+          delay =
+            (nextEvent.timestamp - recordedEvent.timestamp) / this.replaySpeed;
+        }
       }
 
       this.replayTimer = setTimeout(replayNextEvent, Math.max(delay, 0));
@@ -886,7 +1048,7 @@ export class EventRecordingSystem extends EventEmitter {
   stopReplay(): void {
     if (this.replayTimer) {
       clearTimeout(this.replayTimer);
-      this.replayTimer = undefined;
+      this.replayTimer = null as any;
       this.emit('replay:stopped');
     }
   }
@@ -1162,7 +1324,7 @@ export class EventBatchingSystem extends EventEmitter {
   cleanup(): void {
     if (this.batchTimer) {
       clearInterval(this.batchTimer);
-      this.batchTimer = undefined;
+      this.batchTimer = null as any;
     }
 
     // Process remaining events

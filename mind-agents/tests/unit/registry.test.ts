@@ -22,6 +22,7 @@ import type {
   EmotionState,
   InitializationResult,
   CleanupResult,
+  ToolSystem,
   OperationResult,
   ExecutionResult,
   EventProcessingResult,
@@ -551,10 +552,31 @@ describe('SYMindXModuleRegistry', () => {
 
   describe('Tool System Registration', () => {
     it('should register tool system', () => {
-      const mockToolSystem = {
+      const mockToolSystem: ToolSystem = {
         name: 'test-tools',
         version: '1.0.0',
-        tools: {},
+        config: {
+          enabled: true,
+          autoDiscovery: false,
+          validationEnabled: true,
+          executionTimeout: 30000,
+          maxConcurrentExecutions: 5,
+          errorHandling: {
+            retryAttempts: 3,
+            retryDelay: 1000,
+            fallbackEnabled: true,
+          },
+        },
+        initialize: jest.fn(),
+        cleanup: jest.fn(),
+        registerTool: jest.fn(),
+        unregisterTool: jest.fn(),
+        getTool: jest.fn(),
+        listTools: jest.fn(),
+        executeTool: jest.fn(),
+        validateTool: jest.fn(),
+        getUsageMetrics: jest.fn(),
+        resetMetrics: jest.fn(),
       };
       
       registry.registerToolSystem('test-tools', mockToolSystem);
@@ -565,8 +587,35 @@ describe('SYMindXModuleRegistry', () => {
     });
 
     it('should list tool systems', () => {
-      const mockToolSystem1 = { name: 'tools1', version: '1.0.0', tools: {} };
-      const mockToolSystem2 = { name: 'tools2', version: '1.0.0', tools: {} };
+      const createMockToolSystem = (name: string): ToolSystem => ({
+        name,
+        version: '1.0.0',
+        config: {
+          enabled: true,
+          autoDiscovery: false,
+          validationEnabled: true,
+          executionTimeout: 30000,
+          maxConcurrentExecutions: 5,
+          errorHandling: {
+            retryAttempts: 3,
+            retryDelay: 1000,
+            fallbackEnabled: true,
+          },
+        },
+        initialize: jest.fn(),
+        cleanup: jest.fn(),
+        registerTool: jest.fn(),
+        unregisterTool: jest.fn(),
+        getTool: jest.fn(),
+        listTools: jest.fn(),
+        executeTool: jest.fn(),
+        validateTool: jest.fn(),
+        getUsageMetrics: jest.fn(),
+        resetMetrics: jest.fn(),
+      });
+      
+      const mockToolSystem1 = createMockToolSystem('tools1');
+      const mockToolSystem2 = createMockToolSystem('tools2');
       
       registry.registerToolSystem('tools1', mockToolSystem1);
       registry.registerToolSystem('tools2', mockToolSystem2);

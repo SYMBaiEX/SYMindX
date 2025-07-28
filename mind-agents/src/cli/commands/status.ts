@@ -327,10 +327,11 @@ export class StatusCommand {
 
       // Autonomous status
       const autonomousStatus = this.context.runtime.getAutonomousStatus(agentId);
-      const isAutonomous = autonomousStatus.autonomous || false;
+      const isAutonomous = autonomousStatus['autonomous'] || false;
       if (isAutonomous) {
         process.stdout.write(chalk.cyan('\nAutonomous Capabilities:') + '\n');
-        const autonomyLevel = autonomousStatus.engine?.autonomyLevel || 0;
+        const engine = autonomousStatus['engine'] as { autonomyLevel?: number } | undefined;
+        const autonomyLevel = engine?.autonomyLevel || 0;
         process.stdout.write(
           `  Autonomy Level: ${(autonomyLevel * 100).toFixed(0)}%` + '\n'
         );

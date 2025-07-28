@@ -74,25 +74,25 @@ export class ConfigValidator {
     // Build base configuration with safe defaults
     const config: ValidatedEnvironmentConfig = {
       OLLAMA_BASE_URL:
-        process.env.OLLAMA_BASE_URL || ConfigDefaults.OLLAMA_BASE_URL,
+        process.env["OLLAMA_BASE_URL"] || ConfigDefaults.OLLAMA_BASE_URL,
       ENABLE_OPENAI_EMBEDDINGS: this.parseBoolean(
-        process.env.ENABLE_OPENAI_EMBEDDINGS,
+        process.env["ENABLE_OPENAI_EMBEDDINGS"],
         ConfigDefaults.ENABLE_OPENAI_EMBEDDINGS
       ),
       EMBEDDING_PROVIDER: this.validateEmbeddingProvider(
-        process.env.EMBEDDING_PROVIDER,
+        process.env["EMBEDDING_PROVIDER"],
         ConfigDefaults.EMBEDDING_PROVIDER
       ),
       EMBEDDING_DIMENSIONS: this.parsePositiveInteger(
-        process.env.EMBEDDING_DIMENSIONS,
+        process.env["EMBEDDING_DIMENSIONS"],
         ConfigDefaults.EMBEDDING_DIMENSIONS
       ),
 
       // Legacy model support
-      GROQ_MODEL: process.env.GROQ_MODEL || ConfigDefaults.GROQ_MODEL,
-      OLLAMA_MODEL: process.env.OLLAMA_MODEL || ConfigDefaults.OLLAMA_MODEL,
+      GROQ_MODEL: process.env["GROQ_MODEL"] || ConfigDefaults.GROQ_MODEL,
+      OLLAMA_MODEL: process.env["OLLAMA_MODEL"] || ConfigDefaults.OLLAMA_MODEL,
       ANTHROPIC_MODEL:
-        process.env.ANTHROPIC_MODEL || ConfigDefaults.ANTHROPIC_MODEL,
+        process.env["ANTHROPIC_MODEL"] || ConfigDefaults.ANTHROPIC_MODEL,
 
       // Initialize collections
       apiKeys: {},
@@ -313,7 +313,7 @@ export class ConfigValidator {
     // Handle OpenAI special case
     const openaiEnabled = config.portalSettings.OPENAI_ENABLED ?? false;
     config.portalSettings.OPENAI_EMBEDDINGS_ENABLED = this.parseBoolean(
-      process.env.OPENAI_EMBEDDINGS_ENABLED,
+      process.env["OPENAI_EMBEDDINGS_ENABLED"],
       openaiEnabled
     );
   }

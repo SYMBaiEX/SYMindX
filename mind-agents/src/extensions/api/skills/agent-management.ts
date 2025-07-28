@@ -19,7 +19,7 @@ import {
   ActionResultType,
   ActionCategory,
   AgentStatus,
-  AgentEvent,
+  // AgentEvent,
 } from '../../../types/agent';
 import { SkillParameters } from '../../../types/common';
 import { runtimeLogger } from '../../../utils/logger';
@@ -62,8 +62,8 @@ export class AgentManagementSkill {
   private monitoringInterval?: ReturnType<typeof setInterval>;
 
   constructor(extension: ApiExtension) {
-    this.extension = extension;
-    this.startMonitoring();
+    this['extension'] = extension;
+    this['startMonitoring']();
   }
 
   /**
@@ -83,10 +83,10 @@ export class AgentManagementSkill {
           priority: 'number',
         },
         execute: async (
-          agent: Agent,
+          _agent: Agent,
           params: SkillParameters
         ): Promise<ActionResult> => {
-          return this.spawnAgent(agent, params);
+          return this['spawnAgent'](_agent, params);
         },
       },
 
@@ -100,10 +100,10 @@ export class AgentManagementSkill {
           graceful: 'boolean',
         },
         execute: async (
-          agent: Agent,
+          _agent: Agent,
           params: SkillParameters
         ): Promise<ActionResult> => {
-          return this.terminateAgent(agent, params);
+          return this['terminateAgent'](_agent, params);
         },
       },
 
@@ -117,10 +117,10 @@ export class AgentManagementSkill {
           preserveState: 'boolean',
         },
         execute: async (
-          agent: Agent,
+          _agent: Agent,
           params: SkillParameters
         ): Promise<ActionResult> => {
-          return this.restartAgent(agent, params);
+          return this['restartAgent'](_agent, params);
         },
       },
 
@@ -134,10 +134,10 @@ export class AgentManagementSkill {
           includeHistory: 'boolean',
         },
         execute: async (
-          agent: Agent,
+          _agent: Agent,
           params: SkillParameters
         ): Promise<ActionResult> => {
-          return this.getAgentStatus(agent, params);
+          return this['getAgentStatus'](_agent, params);
         },
       },
 
@@ -151,10 +151,10 @@ export class AgentManagementSkill {
           includeMetrics: 'boolean',
         },
         execute: async (
-          agent: Agent,
+          _agent: Agent,
           params: SkillParameters
         ): Promise<ActionResult> => {
-          return this.listAgents(agent, params);
+          return this['listAgents'](_agent, params);
         },
       },
 
@@ -168,10 +168,10 @@ export class AgentManagementSkill {
           metrics: 'array',
         },
         execute: async (
-          agent: Agent,
+          _agent: Agent,
           params: SkillParameters
         ): Promise<ActionResult> => {
-          return this.getAgentMetrics(agent, params);
+          return this['getAgentMetrics'](_agent, params);
         },
       },
 
@@ -185,10 +185,10 @@ export class AgentManagementSkill {
           restart: 'boolean',
         },
         execute: async (
-          agent: Agent,
+          _agent: Agent,
           params: SkillParameters
         ): Promise<ActionResult> => {
-          return this.updateAgentConfig(agent, params);
+          return this['updateAgentConfig'](_agent, params);
         },
       },
 
@@ -202,10 +202,10 @@ export class AgentManagementSkill {
           strategy: 'string',
         },
         execute: async (
-          agent: Agent,
+          _agent: Agent,
           params: SkillParameters
         ): Promise<ActionResult> => {
-          return this.scaleAgents(agent, params);
+          return this['scaleAgents'](_agent, params);
         },
       },
 
@@ -219,10 +219,10 @@ export class AgentManagementSkill {
           strategy: 'string',
         },
         execute: async (
-          agent: Agent,
+          _agent: Agent,
           params: SkillParameters
         ): Promise<ActionResult> => {
-          return this.coordinateAgents(agent, params);
+          return this['coordinateAgents'](_agent, params);
         },
       },
 
@@ -235,10 +235,10 @@ export class AgentManagementSkill {
           deep: 'boolean',
         },
         execute: async (
-          agent: Agent,
+          _agent: Agent,
           params: SkillParameters
         ): Promise<ActionResult> => {
-          return this.agentHealthCheck(agent, params);
+          return this['agentHealthCheck'](_agent, params);
         },
       },
 
@@ -252,10 +252,10 @@ export class AgentManagementSkill {
           compress: 'boolean',
         },
         execute: async (
-          agent: Agent,
+          _agent: Agent,
           params: SkillParameters
         ): Promise<ActionResult> => {
-          return this.backupAgentState(agent, params);
+          return this['backupAgentState'](_agent, params);
         },
       },
 
@@ -269,10 +269,10 @@ export class AgentManagementSkill {
           overwrite: 'boolean',
         },
         execute: async (
-          agent: Agent,
+          _agent: Agent,
           params: SkillParameters
         ): Promise<ActionResult> => {
-          return this.restoreAgentState(agent, params);
+          return this['restoreAgentState'](_agent, params);
         },
       },
     };
@@ -282,22 +282,22 @@ export class AgentManagementSkill {
    * Spawn a new agent instance
    */
   private async spawnAgent(
-    agent: Agent,
+    _agent: Agent,
     params: SkillParameters
   ): Promise<ActionResult> {
     try {
       const config: AgentConfiguration = {
-        characterId: String(params.characterId),
-        instanceName: params.instanceName
-          ? String(params.instanceName)
+        characterId: String(params['characterId']),
+        instanceName: params['instanceName']
+          ? String(params['instanceName'])
           : undefined,
-        autoStart: Boolean(params.autoStart ?? true),
-        priority: typeof params.priority === 'number' ? params.priority : 1,
-        ...((params.config as any) || {}),
+        autoStart: Boolean(params['autoStart'] ?? true),
+        priority: typeof params['priority'] === 'number' ? params['priority'] : 1,
+        ...((params['config'] as any) || {}),
       };
 
       // Validate configuration
-      if (!config.characterId) {
+      if (!config['characterId']) {
         return {
           type: ActionResultType.FAILURE,
           success: false,
@@ -307,8 +307,8 @@ export class AgentManagementSkill {
       }
 
       // Get runtime reference
-      const runtime = (this.extension as any).runtime;
-      if (!runtime?.multiAgentManager) {
+      const runtime = (this['extension'] as any)['runtime'];
+      if (!runtime?.['multiAgentManager']) {
         return {
           type: ActionResultType.FAILURE,
           success: false,
@@ -318,7 +318,7 @@ export class AgentManagementSkill {
       }
 
       // Spawn the agent
-      const agentId = await runtime.multiAgentManager.spawnAgent(config);
+      const agentId = await runtime['multiAgentManager']['spawnAgent'](config);
 
       if (!agentId) {
         return {
@@ -330,10 +330,10 @@ export class AgentManagementSkill {
       }
 
       // Initialize metrics for the new agent
-      this.initializeAgentMetrics(agentId, config.characterId);
+      this['initializeAgentMetrics'](agentId, config['characterId']);
 
-      runtimeLogger.extension(
-        `🚀 Agent spawned: ${agentId} (${config.characterId})`
+      runtimeLogger['extension'](
+        `🚀 Agent spawned: ${agentId} (${config['characterId']})`
       );
 
       return {
@@ -341,24 +341,24 @@ export class AgentManagementSkill {
         success: true,
         result: {
           agentId,
-          characterId: config.characterId,
-          instanceName: config.instanceName,
+          characterId: config['characterId'],
+          instanceName: config['instanceName'],
           status: 'spawned',
-          timestamp: new Date().toISOString(),
+          timestamp: new Date()['toISOString'](),
         },
         metadata: {
           action: 'spawn_agent',
           agentId,
-          characterId: config.characterId,
+          characterId: config['characterId'],
         },
       };
     } catch (error) {
       void error;
-      runtimeLogger.error('Failed to spawn agent:', error);
+      runtimeLogger['error']('Failed to spawn agent:', error);
       return {
         type: ActionResultType.FAILURE,
         success: false,
-        error: `Failed to spawn agent: ${error instanceof Error ? error.message : String(error)}`,
+        error: `Failed to spawn agent: ${error instanceof Error ? error['message'] : String(error)}`,
         metadata: { action: 'spawn_agent' },
       };
     }
@@ -368,16 +368,16 @@ export class AgentManagementSkill {
    * Terminate an agent instance
    */
   private async terminateAgent(
-    agent: Agent,
+    _agent: Agent,
     params: SkillParameters
   ): Promise<ActionResult> {
     try {
-      const agentId = String(params.agentId);
-      const reason = String(params.reason || 'manual_termination');
-      const graceful = Boolean(params.graceful ?? true);
+      const agentId = String(params['agentId']);
+      const reason = String(params['reason'] || 'manual_termination');
+      const graceful = Boolean(params['graceful'] ?? true);
 
-      const runtime = (this.extension as any).runtime;
-      if (!runtime?.multiAgentManager) {
+      const runtime = (this['extension'] as any)['runtime'];
+      if (!runtime?.['multiAgentManager']) {
         return {
           type: ActionResultType.FAILURE,
           success: false,
@@ -387,12 +387,12 @@ export class AgentManagementSkill {
       }
 
       // Terminate the agent
-      await runtime.multiAgentManager.terminateAgent(agentId, reason, graceful);
+      await runtime['multiAgentManager']['terminateAgent'](agentId, reason, graceful);
 
       // Clean up metrics
-      this.agentMetrics.delete(agentId);
+      this['agentMetrics']['delete'](agentId);
 
-      runtimeLogger.extension(`🛑 Agent terminated: ${agentId} (${reason})`);
+      runtimeLogger['extension'](`🛑 Agent terminated: ${agentId} (${reason})`);
 
       return {
         type: ActionResultType.SUCCESS,
@@ -401,7 +401,7 @@ export class AgentManagementSkill {
           agentId,
           reason,
           graceful,
-          terminatedAt: new Date().toISOString(),
+          terminatedAt: new Date()['toISOString'](),
         },
         metadata: {
           action: 'terminate_agent',
@@ -414,7 +414,7 @@ export class AgentManagementSkill {
       return {
         type: ActionResultType.FAILURE,
         success: false,
-        error: `Failed to terminate agent: ${error instanceof Error ? error.message : String(error)}`,
+        error: `Failed to terminate agent: ${error instanceof Error ? error['message'] : String(error)}`,
         metadata: { action: 'terminate_agent' },
       };
     }
@@ -424,16 +424,16 @@ export class AgentManagementSkill {
    * Restart an agent
    */
   private async restartAgent(
-    agent: Agent,
+    _agent: Agent,
     params: SkillParameters
   ): Promise<ActionResult> {
     try {
-      const agentId = String(params.agentId);
-      const config = (params.config || {}) as Record<string, unknown>;
-      const preserveState = Boolean(params.preserveState ?? true);
+      const agentId = String(params['agentId']);
+      const config = (params['config'] || {}) as Record<string, unknown>;
+      const preserveState = Boolean(params['preserveState'] ?? true);
 
       // First terminate, then spawn with new config
-      await this.terminateAgent(agent, {
+      await this['terminateAgent'](_agent, {
         agentId,
         reason: 'restart',
         graceful: true,
@@ -443,7 +443,7 @@ export class AgentManagementSkill {
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // Respawn with new config
-      const spawnResult = await this.spawnAgent(agent, {
+      const spawnResult = await this['spawnAgent'](_agent, {
         ...config,
         preserveState,
       });
@@ -455,8 +455,8 @@ export class AgentManagementSkill {
           agentId,
           restarted: true,
           preserveState,
-          newAgent: spawnResult.result,
-          timestamp: new Date().toISOString(),
+          newAgent: spawnResult['result'],
+          timestamp: new Date()['toISOString'](),
         },
         metadata: {
           action: 'restart_agent',
@@ -468,7 +468,7 @@ export class AgentManagementSkill {
       return {
         type: ActionResultType.FAILURE,
         success: false,
-        error: `Failed to restart agent: ${error instanceof Error ? error.message : String(error)}`,
+        error: `Failed to restart agent: ${error instanceof Error ? error['message'] : String(error)}`,
         metadata: { action: 'restart_agent' },
       };
     }
@@ -478,17 +478,17 @@ export class AgentManagementSkill {
    * Get agent status
    */
   private async getAgentStatus(
-    agent: Agent,
+    _agent: Agent,
     params: SkillParameters
   ): Promise<ActionResult> {
     try {
-      const agentId = String(params.agentId);
-      const includeMetrics = Boolean(params.includeMetrics ?? true);
-      const includeHistory = Boolean(params.includeHistory ?? false);
+      const agentId = String(params['agentId']);
+      const includeMetrics = Boolean(params['includeMetrics'] ?? true);
+      const includeHistory = Boolean(params['includeHistory'] ?? false);
 
-      const runtime = (this.extension as any).runtime;
+      const runtime = (this['extension'] as any)['runtime'];
       const targetAgent =
-        runtime?.agents?.get(agentId) || runtime?.lazyAgents?.get(agentId);
+        runtime?.['agents']?.['get'](agentId) || runtime?.['lazyAgents']?.['get'](agentId);
 
       if (!targetAgent) {
         return {
@@ -499,24 +499,24 @@ export class AgentManagementSkill {
         };
       }
 
-      const metrics = this.agentMetrics.get(agentId);
+      const metrics = this['agentMetrics']['get'](agentId);
       const status = {
         id: agentId,
-        name: targetAgent.name || agentId,
-        status: targetAgent.status || 'unknown',
-        type: targetAgent.agent ? 'active' : 'lazy',
-        lastActivity: metrics?.lastActivity || new Date(),
+        name: targetAgent['name'] || agentId,
+        status: targetAgent['status'] || 'unknown',
+        type: targetAgent['agent'] ? 'active' : 'lazy',
+        lastActivity: metrics?.['lastActivity'] || new Date(),
         timestamp: new Date().toISOString(),
       };
 
       if (includeMetrics && metrics) {
         (status as any).metrics = {
-          uptime: metrics.uptime,
-          memoryUsage: metrics.memoryUsage,
-          cpuUsage: metrics.cpuUsage,
-          requestCount: metrics.requestCount,
-          errorCount: metrics.errorCount,
-          performance: metrics.performance,
+          uptime: metrics['uptime'],
+          memoryUsage: metrics['memoryUsage'],
+          cpuUsage: metrics['cpuUsage'],
+          requestCount: metrics['requestCount'],
+          errorCount: metrics['errorCount'],
+          performance: metrics['performance'],
         };
       }
 
@@ -539,7 +539,7 @@ export class AgentManagementSkill {
       return {
         type: ActionResultType.FAILURE,
         success: false,
-        error: `Failed to get agent status: ${error instanceof Error ? error.message : String(error)}`,
+        error: `Failed to get agent status: ${error instanceof Error ? error['message'] : String(error)}`,
         metadata: { action: 'get_agent_status' },
       };
     }
@@ -549,41 +549,41 @@ export class AgentManagementSkill {
    * List all agents
    */
   private async listAgents(
-    agent: Agent,
+    _agent: Agent,
     params: SkillParameters
   ): Promise<ActionResult> {
     try {
-      const statusFilter = params.status ? String(params.status) : undefined;
-      const characterFilter = params.character
-        ? String(params.character)
+      const statusFilter = params['status'] ? String(params['status']) : undefined;
+      const characterFilter = params['character']
+        ? String(params['character'])
         : undefined;
-      const includeMetrics = Boolean(params.includeMetrics ?? false);
+      const includeMetrics = Boolean(params['includeMetrics'] ?? false);
 
-      const runtime = (this.extension as any).runtime;
+      const runtime = (this['extension'] as any)['runtime'];
       const agents: any[] = [];
 
       // Get active agents
-      if (runtime?.agents) {
-        for (const [id, agentData] of runtime.agents) {
-          if (statusFilter && agentData.status !== statusFilter) continue;
-          if (characterFilter && !agentData.name.includes(characterFilter))
+      if (runtime?.['agents']) {
+        for (const [id, agentData] of runtime['agents']) {
+          if (statusFilter && agentData['status'] !== statusFilter) continue;
+          if (characterFilter && !agentData['name']['includes'](characterFilter))
             continue;
 
           const agentInfo: any = {
             id,
-            name: agentData.name,
-            status: agentData.status,
+            name: agentData['name'],
+            status: agentData['status'],
             type: 'active',
           };
 
           if (includeMetrics) {
-            const metrics = this.agentMetrics.get(id);
+            const metrics = this['agentMetrics']['get'](id);
             if (metrics) {
-              agentInfo.metrics = {
-                uptime: metrics.uptime,
-                requestCount: metrics.requestCount,
-                errorCount: metrics.errorCount,
-                lastActivity: metrics.lastActivity,
+              agentInfo['metrics'] = {
+                uptime: metrics['uptime'],
+                requestCount: metrics['requestCount'],
+                errorCount: metrics['errorCount'],
+                lastActivity: metrics['lastActivity'],
               };
             }
           }
@@ -593,16 +593,16 @@ export class AgentManagementSkill {
       }
 
       // Get lazy agents
-      if (runtime?.lazyAgents) {
-        for (const [id, lazyAgent] of runtime.lazyAgents) {
-          if (statusFilter && lazyAgent.state !== statusFilter) continue;
-          if (characterFilter && !lazyAgent.name.includes(characterFilter))
+      if (runtime?.['lazyAgents']) {
+        for (const [id, lazyAgent] of runtime['lazyAgents']) {
+          if (statusFilter && lazyAgent['state'] !== statusFilter) continue;
+          if (characterFilter && !lazyAgent['name']['includes'](characterFilter))
             continue;
 
           agents.push({
             id,
-            name: lazyAgent.name,
-            status: lazyAgent.state,
+            name: lazyAgent['name'],
+            status: lazyAgent['state'],
             type: 'lazy',
           });
         }
@@ -613,16 +613,16 @@ export class AgentManagementSkill {
         success: true,
         result: {
           agents,
-          count: agents.length,
+          count: agents['length'],
           filters: {
             status: statusFilter,
             character: characterFilter,
           },
-          timestamp: new Date().toISOString(),
+          timestamp: new Date()['toISOString'](),
         },
         metadata: {
           action: 'list_agents',
-          count: agents.length,
+          count: agents['length'],
         },
       };
     } catch (error) {
@@ -630,7 +630,7 @@ export class AgentManagementSkill {
       return {
         type: ActionResultType.FAILURE,
         success: false,
-        error: `Failed to list agents: ${error instanceof Error ? error.message : String(error)}`,
+        error: `Failed to list agents: ${error instanceof Error ? error['message'] : String(error)}`,
         metadata: { action: 'list_agents' },
       };
     }
@@ -640,28 +640,28 @@ export class AgentManagementSkill {
    * Get agent metrics
    */
   private async getAgentMetrics(
-    agent: Agent,
+    _agent: Agent,
     params: SkillParameters
   ): Promise<ActionResult> {
     try {
-      const agentId = params.agentId ? String(params.agentId) : undefined;
-      const timeRange = String(params.timeRange || 'hour');
-      const requestedMetrics = Array.isArray(params.metrics)
-        ? (params.metrics as string[])
+      const agentId = params['agentId'] ? String(params['agentId']) : undefined;
+      const timeRange = String(params['timeRange'] || 'hour');
+      const requestedMetrics = Array['isArray'](params['metrics'])
+        ? (params['metrics'] as string[])
         : [];
 
       const results: Record<string, any> = {};
 
       if (agentId) {
         // Get metrics for specific agent
-        const metrics = this.agentMetrics.get(agentId);
+        const metrics = this['agentMetrics']['get'](agentId);
         if (metrics) {
-          results[agentId] = this.filterMetrics(metrics, requestedMetrics);
+          results[agentId] = this['filterMetrics'](metrics, requestedMetrics);
         }
       } else {
         // Get metrics for all agents
-        for (const [id, metrics] of this.agentMetrics) {
-          results[id] = this.filterMetrics(metrics, requestedMetrics);
+        for (const [id, metrics] of this['agentMetrics']) {
+          results[id] = this['filterMetrics'](metrics, requestedMetrics);
         }
       }
 
@@ -671,11 +671,11 @@ export class AgentManagementSkill {
         result: {
           metrics: results,
           timeRange,
-          timestamp: new Date().toISOString(),
+          timestamp: new Date()['toISOString'](),
         },
         metadata: {
           action: 'get_agent_metrics',
-          agentCount: Object.keys(results).length,
+          agentCount: Object.keys(results)['length'],
         },
       };
     } catch (error) {
@@ -683,7 +683,7 @@ export class AgentManagementSkill {
       return {
         type: ActionResultType.FAILURE,
         success: false,
-        error: `Failed to get agent metrics: ${error instanceof Error ? error.message : String(error)}`,
+        error: `Failed to get agent metrics: ${error instanceof Error ? error['message'] : String(error)}`,
         metadata: { action: 'get_agent_metrics' },
       };
     }
@@ -693,19 +693,19 @@ export class AgentManagementSkill {
    * Update agent configuration
    */
   private async updateAgentConfig(
-    agent: Agent,
+    _agent: Agent,
     params: SkillParameters
   ): Promise<ActionResult> {
     try {
-      const agentId = String(params.agentId);
-      const config = (params.config || {}) as Record<string, unknown>;
-      const restart = Boolean(params.restart ?? false);
+      const agentId = String(params['agentId']);
+      const config = (params['config'] || {}) as Record<string, unknown>;
+      const restart = Boolean(params['restart'] ?? false);
 
       // Placeholder for configuration update
       // In a real implementation, this would update the agent's configuration
 
       if (restart) {
-        return this.restartAgent(agent, {
+        return this['restartAgent'](_agent, {
           agentId,
           config: config as SkillParameters,
         });
@@ -718,7 +718,7 @@ export class AgentManagementSkill {
           agentId,
           configUpdated: true,
           restart,
-          timestamp: new Date().toISOString(),
+          timestamp: new Date()['toISOString'](),
         },
         metadata: {
           action: 'update_agent_config',
@@ -730,7 +730,7 @@ export class AgentManagementSkill {
       return {
         type: ActionResultType.FAILURE,
         success: false,
-        error: `Failed to update agent config: ${error instanceof Error ? error.message : String(error)}`,
+        error: `Failed to update agent config: ${error instanceof Error ? error['message'] : String(error)}`,
         metadata: { action: 'update_agent_config' },
       };
     }
@@ -740,56 +740,56 @@ export class AgentManagementSkill {
    * Scale agents up or down
    */
   private async scaleAgents(
-    agent: Agent,
+    _agent: Agent,
     params: SkillParameters
   ): Promise<ActionResult> {
     try {
-      const characterId = String(params.characterId);
+      const characterId = String(params['characterId']);
       const targetCount =
-        typeof params.targetCount === 'number' ? params.targetCount : 1;
-      const strategy = String(params.strategy || 'balanced');
+        typeof params['targetCount'] === 'number' ? params['targetCount'] : 1;
+      const strategy = String(params['strategy'] || 'balanced');
 
       // Count current agents for this character
-      const runtime = (this.extension as any).runtime;
-      const currentAgents = Array.from(runtime?.agents?.values() || []).filter(
-        (a: any) => a.name.includes(characterId)
+      const runtime = (this['extension'] as any)['runtime'];
+      const currentAgents = Array['from'](runtime?.['agents']?.['values']() || [])['filter'](
+        (a: any) => a['name']['includes'](characterId)
       );
 
-      const currentCount = currentAgents.length;
+      const currentCount = currentAgents['length'];
       const scalingOperations: any[] = [];
 
       if (targetCount > currentCount) {
         // Scale up
         const toSpawn = targetCount - currentCount;
         for (let i = 0; i < toSpawn; i++) {
-          const spawnResult = await this.spawnAgent(agent, {
+          const spawnResult = await this['spawnAgent'](_agent, {
             characterId,
             instanceName: `${characterId}_${currentCount + i + 1}`,
             autoStart: true,
           });
           scalingOperations.push({
             operation: 'spawn',
-            result: spawnResult.success,
-            agentId: spawnResult.success
-              ? (spawnResult.result as any).agentId
+            result: spawnResult['success'],
+            agentId: spawnResult['success']
+              ? (spawnResult['result'] as any)['agentId']
               : null,
           });
         }
       } else if (targetCount < currentCount) {
         // Scale down
         const toTerminate = currentCount - targetCount;
-        const agentsToTerminate = currentAgents.slice(-toTerminate);
+        const agentsToTerminate = currentAgents['slice'](-toTerminate);
 
         for (const agentToTerminate of agentsToTerminate) {
-          const terminateResult = await this.terminateAgent(agent, {
-            agentId: (agentToTerminate as any).id,
+          const terminateResult = await this['terminateAgent'](_agent, {
+            agentId: (agentToTerminate as any)['id'],
             reason: 'scaling_down',
             graceful: true,
           });
           scalingOperations.push({
             operation: 'terminate',
-            result: terminateResult.success,
-            agentId: (agentToTerminate as any).id,
+            result: terminateResult['success'],
+            agentId: (agentToTerminate as any)['id'],
           });
         }
       }
@@ -803,12 +803,12 @@ export class AgentManagementSkill {
           targetCount,
           strategy,
           operations: scalingOperations,
-          timestamp: new Date().toISOString(),
+          timestamp: new Date()['toISOString'](),
         },
         metadata: {
           action: 'scale_agents',
           characterId,
-          operationCount: scalingOperations.length,
+          operationCount: scalingOperations['length'],
         },
       };
     } catch (error) {
@@ -816,7 +816,7 @@ export class AgentManagementSkill {
       return {
         type: ActionResultType.FAILURE,
         success: false,
-        error: `Failed to scale agents: ${error instanceof Error ? error.message : String(error)}`,
+        error: `Failed to scale agents: ${error instanceof Error ? error['message'] : String(error)}`,
         metadata: { action: 'scale_agents' },
       };
     }
@@ -826,28 +826,28 @@ export class AgentManagementSkill {
    * Coordinate multiple agents
    */
   private async coordinateAgents(
-    agent: Agent,
+    _agent: Agent,
     params: SkillParameters
   ): Promise<ActionResult> {
     try {
-      const agentIds = Array.isArray(params.agentIds)
-        ? (params.agentIds as string[])
+      const agentIds = Array['isArray'](params['agentIds'])
+        ? (params['agentIds'] as string[])
         : [];
-      const task = params.task || {};
-      const strategy = String(params.strategy || 'parallel');
+      const task = params['task'] || {};
+      const strategy = String(params['strategy'] || 'parallel');
 
       // Placeholder for agent coordination logic
       const coordination = {
-        coordinatorId: agent.id,
+        coordinatorId: _agent['id'],
         participantIds: agentIds,
         task,
         strategy,
         status: 'initiated',
-        createdAt: new Date().toISOString(),
+        createdAt: new Date()['toISOString'](),
       };
 
-      runtimeLogger.extension(
-        `🤝 Coordinating ${agentIds.length} agents for task`
+      runtimeLogger['extension'](
+        `🤝 Coordinating ${agentIds['length']} agents for task`
       );
 
       return {
@@ -856,7 +856,7 @@ export class AgentManagementSkill {
         result: coordination,
         metadata: {
           action: 'coordinate_agents',
-          participantCount: agentIds.length,
+          participantCount: agentIds['length'],
         },
       };
     } catch (error) {
@@ -864,7 +864,7 @@ export class AgentManagementSkill {
       return {
         type: ActionResultType.FAILURE,
         success: false,
-        error: `Failed to coordinate agents: ${error instanceof Error ? error.message : String(error)}`,
+        error: `Failed to coordinate agents: ${error instanceof Error ? error['message'] : String(error)}`,
         metadata: { action: 'coordinate_agents' },
       };
     }
@@ -874,25 +874,25 @@ export class AgentManagementSkill {
    * Perform agent health check
    */
   private async agentHealthCheck(
-    agent: Agent,
+    _agent: Agent,
     params: SkillParameters
   ): Promise<ActionResult> {
     try {
-      const agentId = params.agentId ? String(params.agentId) : undefined;
-      const deep = Boolean(params.deep ?? false);
+      const agentId = params['agentId'] ? String(params['agentId']) : undefined;
+      const deep = Boolean(params['deep'] ?? false);
 
       const healthResults: Record<string, any> = {};
 
       if (agentId) {
         // Check specific agent
-        healthResults[agentId] = await this.performSingleAgentHealthCheck(
+        healthResults[agentId] = await this['performSingleAgentHealthCheck'](
           agentId,
           deep
         );
       } else {
         // Check all agents
-        for (const id of this.agentMetrics.keys()) {
-          healthResults[id] = await this.performSingleAgentHealthCheck(
+        for (const id of this['agentMetrics']['keys']()) {
+          healthResults[id] = await this['performSingleAgentHealthCheck'](
             id,
             deep
           );
@@ -904,11 +904,11 @@ export class AgentManagementSkill {
         success: true,
         result: {
           healthChecks: healthResults,
-          timestamp: new Date().toISOString(),
+          timestamp: new Date()['toISOString'](),
         },
         metadata: {
           action: 'agent_health_check',
-          checkedCount: Object.keys(healthResults).length,
+          checkedCount: Object.keys(healthResults)['length'],
         },
       };
     } catch (error) {
@@ -916,7 +916,7 @@ export class AgentManagementSkill {
       return {
         type: ActionResultType.FAILURE,
         success: false,
-        error: `Failed to perform health check: ${error instanceof Error ? error.message : String(error)}`,
+        error: `Failed to perform health check: ${error instanceof Error ? error['message'] : String(error)}`,
         metadata: { action: 'agent_health_check' },
       };
     }
@@ -926,16 +926,16 @@ export class AgentManagementSkill {
    * Backup agent state
    */
   private async backupAgentState(
-    agent: Agent,
+    _agent: Agent,
     params: SkillParameters
   ): Promise<ActionResult> {
     try {
-      const agentId = String(params.agentId);
-      const includeMemory = Boolean(params.includeMemory ?? true);
-      const compress = Boolean(params.compress ?? true);
+      const agentId = String(params['agentId']);
+      const includeMemory = Boolean(params['includeMemory'] ?? true);
+      const compress = Boolean(params['compress'] ?? true);
 
       // Placeholder for state backup logic
-      const backupId = `backup_${agentId}_${Date.now()}`;
+      const backupId = `backup_${agentId}_${Date['now']()}`;
 
       return {
         type: ActionResultType.SUCCESS,
@@ -945,7 +945,7 @@ export class AgentManagementSkill {
           agentId,
           includeMemory,
           compress,
-          createdAt: new Date().toISOString(),
+          createdAt: new Date()['toISOString'](),
         },
         metadata: {
           action: 'backup_agent_state',
@@ -958,7 +958,7 @@ export class AgentManagementSkill {
       return {
         type: ActionResultType.FAILURE,
         success: false,
-        error: `Failed to backup agent state: ${error instanceof Error ? error.message : String(error)}`,
+        error: `Failed to backup agent state: ${error instanceof Error ? error['message'] : String(error)}`,
         metadata: { action: 'backup_agent_state' },
       };
     }
@@ -968,13 +968,13 @@ export class AgentManagementSkill {
    * Restore agent state
    */
   private async restoreAgentState(
-    agent: Agent,
+    _agent: Agent,
     params: SkillParameters
   ): Promise<ActionResult> {
     try {
-      const agentId = String(params.agentId);
-      const backupId = String(params.backupId);
-      const overwrite = Boolean(params.overwrite ?? false);
+      const agentId = String(params['agentId']);
+      const backupId = String(params['backupId']);
+      const overwrite = Boolean(params['overwrite'] ?? false);
 
       // Placeholder for state restoration logic
 
@@ -986,7 +986,7 @@ export class AgentManagementSkill {
           backupId,
           restored: true,
           overwrite,
-          restoredAt: new Date().toISOString(),
+          restoredAt: new Date()['toISOString'](),
         },
         metadata: {
           action: 'restore_agent_state',
@@ -999,7 +999,7 @@ export class AgentManagementSkill {
       return {
         type: ActionResultType.FAILURE,
         success: false,
-        error: `Failed to restore agent state: ${error instanceof Error ? error.message : String(error)}`,
+        error: `Failed to restore agent state: ${error instanceof Error ? error['message'] : String(error)}`,
         metadata: { action: 'restore_agent_state' },
       };
     }
@@ -1009,7 +1009,7 @@ export class AgentManagementSkill {
    * Initialize metrics for a new agent
    */
   private initializeAgentMetrics(agentId: string, characterId: string): void {
-    this.agentMetrics.set(agentId, {
+    this['agentMetrics']['set'](agentId, {
       id: agentId,
       name: characterId,
       status: AgentStatus.ACTIVE,
@@ -1034,11 +1034,11 @@ export class AgentManagementSkill {
     metrics: AgentMetrics,
     requestedMetrics: string[]
   ): any {
-    if (requestedMetrics.length === 0) {
+    if (requestedMetrics['length'] === 0) {
       return metrics;
     }
 
-    const filtered: any = { id: metrics.id };
+    const filtered: any = { id: metrics['id'] };
     for (const metric of requestedMetrics) {
       if (metric in metrics) {
         filtered[metric] = (metrics as any)[metric];
@@ -1054,7 +1054,7 @@ export class AgentManagementSkill {
     agentId: string,
     deep: boolean
   ): Promise<any> {
-    const metrics = this.agentMetrics.get(agentId);
+    const metrics = this['agentMetrics']['get'](agentId);
     if (!metrics) {
       return {
         status: 'not_found',
@@ -1067,30 +1067,30 @@ export class AgentManagementSkill {
       uptime: metrics.uptime,
       lastActivity: metrics.lastActivity,
       memoryUsage: metrics.memoryUsage,
-      errorRate: metrics.performance.errorRate,
+      errorRate: metrics['performance']['errorRate'],
       checks: {
-        responsive: Date.now() - metrics.lastActivity.getTime() < 300000, // 5 minutes
-        memoryOk: metrics.memoryUsage < 500 * 1024 * 1024, // 500MB threshold
-        errorRateOk: metrics.performance.errorRate < 5, // 5% threshold
+        responsive: Date['now']() - metrics['lastActivity']['getTime']() < 300000, // 5 minutes
+        memoryOk: metrics['memoryUsage'] < 500 * 1024 * 1024, // 500MB threshold
+        errorRateOk: metrics['performance']['errorRate'] < 5, // 5% threshold
       },
     };
 
     // Determine overall status
-    const checks = Object.values(healthStatus.checks);
-    if (checks.every((check) => check)) {
-      healthStatus.status = 'healthy';
-    } else if (checks.some((check) => check)) {
-      healthStatus.status = 'degraded';
+    const checks = Object['values'](healthStatus['checks']);
+    if (checks['every']((check) => check)) {
+      healthStatus['status'] = 'healthy';
+    } else if (checks['some']((check) => check)) {
+      healthStatus['status'] = 'degraded';
     } else {
-      healthStatus.status = 'unhealthy';
+      healthStatus['status'] = 'unhealthy';
     }
 
     if (deep) {
       // Add more detailed checks for deep health check
       (healthStatus as any).detailed = {
         requestCount: metrics.requestCount,
-        averageResponseTime: metrics.performance.averageResponseTime,
-        throughput: metrics.performance.throughput,
+        averageResponseTime: metrics['performance']['averageResponseTime'],
+        throughput: metrics['performance']['throughput'],
         cpuUsage: metrics.cpuUsage,
       };
     }
@@ -1102,8 +1102,8 @@ export class AgentManagementSkill {
    * Start monitoring all agents
    */
   private startMonitoring(): void {
-    this.monitoringInterval = setInterval(() => {
-      this.updateAgentMetrics();
+    this['monitoringInterval'] = setInterval(() => {
+      this['updateAgentMetrics']();
     }, 30000); // Update every 30 seconds
   }
 
@@ -1113,20 +1113,20 @@ export class AgentManagementSkill {
   private updateAgentMetrics(): void {
     const now = new Date();
 
-    for (const [agentId, metrics] of this.agentMetrics) {
+    for (const [_agentId, metrics] of this['agentMetrics']) {
       // Update uptime
-      metrics.uptime = now.getTime() - (now.getTime() - metrics.uptime);
+      metrics['uptime'] = now['getTime']() - (now['getTime']() - metrics['uptime']);
 
       // Update memory usage (placeholder - would get real data)
-      metrics.memoryUsage = process.memoryUsage().heapUsed;
+      metrics['memoryUsage'] = process['memoryUsage']()['heapUsed'];
 
       // Update CPU usage (placeholder)
-      metrics.cpuUsage = Math.random() * 10; // Simulated CPU usage
+      metrics['cpuUsage'] = Math['random']() * 10; // Simulated CPU usage
 
       // Calculate error rate
-      if (metrics.requestCount > 0) {
-        metrics.performance.errorRate =
-          (metrics.errorCount / metrics.requestCount) * 100;
+      if (metrics['requestCount'] > 0) {
+        metrics['performance']['errorRate'] =
+          (metrics['errorCount'] / metrics['requestCount']) * 100;
       }
     }
   }
@@ -1135,9 +1135,9 @@ export class AgentManagementSkill {
    * Stop monitoring
    */
   stopMonitoring(): void {
-    if (this.monitoringInterval) {
-      clearInterval(this.monitoringInterval);
-      this.monitoringInterval = undefined;
+    if (this['monitoringInterval']) {
+      clearInterval(this['monitoringInterval']);
+      delete this['monitoringInterval'];
     }
   }
 
@@ -1145,13 +1145,13 @@ export class AgentManagementSkill {
    * Record agent activity
    */
   recordAgentActivity(agentId: string, success: boolean = true): void {
-    const metrics = this.agentMetrics.get(agentId);
+    const metrics = this['agentMetrics']['get'](agentId);
     if (metrics) {
-      metrics.requestCount++;
+      metrics['requestCount']++;
       if (!success) {
-        metrics.errorCount++;
+        metrics['errorCount']++;
       }
-      metrics.lastActivity = new Date();
+      metrics['lastActivity'] = new Date();
     }
   }
 
@@ -1162,9 +1162,9 @@ export class AgentManagementSkill {
     return {
       status: 'healthy',
       details: {
-        monitoredAgents: this.agentMetrics.size,
-        monitoringActive: !!this.monitoringInterval,
-        lastUpdate: new Date().toISOString(),
+        monitoredAgents: this['agentMetrics']['size'],
+        monitoringActive: !!this['monitoringInterval'],
+        lastUpdate: new Date()['toISOString'](),
       },
     };
   }

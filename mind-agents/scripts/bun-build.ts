@@ -21,12 +21,12 @@ const config = {
     "./src/cli/standalone.ts"
   ],
   outdir: "./dist",
-  target: "bun",
-  format: "esm",
+  target: "bun" as const,
+  format: "esm" as const,
   
   // Performance optimizations
   minify: false, // Disabled for max speed
-  sourcemap: "external",
+  sourcemap: "external" as const,
   splitting: false,
   
   // TypeScript handling
@@ -62,11 +62,11 @@ const config = {
   
   // Loader configuration
   loader: {
-    ".ts": "ts",
-    ".tsx": "tsx",
-    ".js": "js",
-    ".jsx": "jsx",
-    ".json": "json"
+    ".ts": "ts" as const,
+    ".tsx": "tsx" as const,
+    ".js": "js" as const,
+    ".jsx": "jsx" as const,
+    ".json": "json" as const
   }
 };
 
@@ -101,8 +101,8 @@ async function build() {
         asset: "[name]-[hash].[ext]"
       },
       define: {
-        "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV || "development"),
-        "Bun.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV || "development")
+        "process.env.NODE_ENV": JSON.stringify(process.env["NODE_ENV"] || "development"),
+        "Bun.env.NODE_ENV": JSON.stringify(process.env["NODE_ENV"] || "development")
       }
     });
 
@@ -175,7 +175,10 @@ async function build() {
     }
 
   } catch (error) {
-    console.error("\n❌ Build error:", error);
+    console.error("\n❌ Build error:", error instanceof Error ? error.message : String(error));
+    if (error instanceof Error && error.stack) {
+      console.error(error.stack);
+    }
     process.exit(1);
   }
 }

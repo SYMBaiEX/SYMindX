@@ -11,6 +11,7 @@ import type {
   ValidationWarning,
   LogContext,
   LogMetadata,
+  ConfigValue,
 } from '../types/index.js';
 
 import { runtimeLogger } from './logger.js';
@@ -248,15 +249,15 @@ export class ErrorHandler {
       category,
       severity,
       timestamp: new Date(),
-      stack: cause instanceof Error ? cause.stack : undefined,
-      context,
-      cause,
       recoveryStrategy: this.determineRecoveryStrategy(category, severity),
       metadata: {
-        environment: process.env.NODE_ENV || 'development',
+        environment: process.env["NODE_ENV"] || 'development',
         nodeVersion: process.version,
         platform: process.platform,
       },
+      ...(cause instanceof Error && cause.stack ? { stack: cause.stack } : {}),
+      ...(context !== undefined ? { context } : {}),
+      ...(cause !== undefined ? { cause } : {}),
     };
 
     if (this.config.enableMetrics) {
@@ -300,12 +301,8 @@ export class ErrorHandler {
         context
       );
 
-      return {
+      const result: ExecutionResult<T> = {
         success: recovery.success,
-        data: recovery.success ? (recovery as any).data : undefined,
-        error: recovery.success
-          ? undefined
-          : recovery.message || 'Recovery failed',
         timestamp: new Date(),
         duration: Date.now() - startTime,
         metadata: {
@@ -319,6 +316,16 @@ export class ErrorHandler {
           },
         },
       };
+      
+      if (recovery.success && 'data' in recovery && recovery.data !== undefined) {
+        result.data = recovery.data;
+      }
+      
+      if (!recovery.success) {
+        result.error = recovery.message || 'Recovery failed';
+      }
+      
+      return result;
     } catch (recoveryError) {
       const finalError = this.createError(
         'Recovery failed',
@@ -388,11 +395,11 @@ export class ErrorHandler {
   /**
    * Wrap function with error handling
    */
-  public wrap<T extends (...args: any[]) => Promise<any>>(
-    fn: T,
+  public wrap<TArgs extends unknown[], TReturn>(
+    fn: (...args: TArgs) => Promise<TReturn>,
     context?: Record<string, unknown>
-  ): T {
-    return (async (...args: Parameters<T>) => {
+  ): (...args: TArgs) => Promise<TReturn> {
+    return async (...args: TArgs) => {
       try {
         return await fn(...args);
       } catch (error) {
@@ -417,7 +424,7 @@ export class ErrorHandler {
 
         return result.data;
       }
-    }) as T;
+    };
   }
 
   /**
@@ -478,7 +485,7 @@ export class ErrorHandler {
         field: 'name',
         message: 'Configuration must have a valid name',
         code: 'CONFIG_NAME_REQUIRED',
-        value: config.name,
+        value: config.name as ConfigValue,
         severity: 'error',
       });
     }
@@ -492,7 +499,7 @@ export class ErrorHandler {
             field: `apiKeys.${key}`,
             message: `API key '${key}' is empty or invalid`,
             code: 'API_KEY_INVALID',
-            value: value as any,
+            value: value as ConfigValue,
             severity: 'warning',
           });
         }
@@ -509,7 +516,7 @@ export class ErrorHandler {
             field,
             message: `Field '${field}' must be a positive number`,
             code: 'NUMERIC_VALUE_INVALID',
-            value: value as any,
+            value: value as ConfigValue,
             severity: 'error',
           });
         }
@@ -526,7 +533,7 @@ export class ErrorHandler {
             field,
             message: `Field '${field}' must be a boolean`,
             code: 'BOOLEAN_VALUE_INVALID',
-            value: value as any,
+            value: value as ConfigValue,
             severity: 'error',
           });
         }
@@ -598,7 +605,7 @@ export class ErrorHandler {
             attempts: 1,
             duration: Date.now() - startTime,
             message: 'Operation failed without recovery strategy',
-            data: undefined,
+            // data omitted when undefined
           };
         }
     }
@@ -778,8 +785,8 @@ export class ErrorHandler {
         strategy: RecoveryStrategy.GRACEFUL_DEGRADATION,
         attempts: 1,
         duration: Date.now() - startTime,
-        data: undefined, // Degraded response
         message: 'Providing degraded functionality',
+        // data omitted when undefined
       };
     }
   }
@@ -996,13 +1003,13 @@ export function handleErrors(
   severity: ErrorSeverity = ErrorSeverity.MEDIUM
 ) {
   return function (
-    target: any,
+    target: unknown,
     propertyKey: string,
     descriptor: PropertyDescriptor
   ) {
     const originalMethod = descriptor.value;
 
-    descriptor.value = async function (...args: any[]) {
+    descriptor.value = async function (this: unknown, ...args: unknown[]) {
       try {
         return await originalMethod.apply(this, args);
       } catch (error) {
@@ -1011,7 +1018,7 @@ export function handleErrors(
           'DECORATED_METHOD_ERROR',
           category,
           severity,
-          { methodName: propertyKey, className: target.constructor.name },
+          { methodName: propertyKey, className: (target as any).constructor.name },
           error instanceof Error ? error : undefined
         );
 

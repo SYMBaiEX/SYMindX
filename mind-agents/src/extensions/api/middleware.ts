@@ -159,7 +159,7 @@ export class ExtensionMiddleware {
   static validateAgent(getAgent: (agentId: string) => Agent | undefined) {
     return (req: ExtensionRequest, res: Response, next: NextFunction): void => {
       const agentId =
-        req.params.agentId || req.body.agentId || (req.query.agentId as string);
+        req.params['agentId'] || req.body.agentId || (req.query['agentId'] as string);
 
       if (!agentId) {
         const error = new ExtensionApiError(
@@ -389,7 +389,7 @@ export class ExtensionMiddleware {
 
       // CORS headers
       if (options.cors) {
-        const origin = req.headers.origin;
+        const origin = req.headers['origin'];
         if (origin && options.cors.origins.includes(origin)) {
           res.set('Access-Control-Allow-Origin', origin);
         }

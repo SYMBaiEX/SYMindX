@@ -234,8 +234,8 @@ export class ChatCommand {
     try {
       process.stdout.write(chalk.blue('🔌 Connecting to WebSocket...') + '\n');
 
-      const port = process.env.API_PORT || '8000';
-      const wsUrl = process.env.SYMINDX_WS_URL || `ws://localhost:${port}/ws`;
+      const port = process.env["API_PORT"] || '8000';
+      const wsUrl = process.env["SYMINDX_WS_URL"] || `ws://localhost:${port}/ws`;
       this.ws = new WebSocket(wsUrl, [], {
         perMessageDeflate: false, // Disable compression to match server
       });
@@ -392,7 +392,7 @@ export class ChatCommand {
 
   async showHistory(
     agentId?: string,
-    options?: { limit?: string }
+    _options?: { limit?: string }
   ): Promise<void> {
     try {
       const targetAgent = agentId || this.context.selectedAgent;
@@ -407,7 +407,8 @@ export class ChatCommand {
         return;
       }
 
-      const limit = parseInt(options?.limit || '20');
+      // Note: limit parameter from options could be used when chat history is implemented
+      // const limit = parseInt(options?.limit || '20');
 
       // Chat history not available without command system
       // Could be enhanced to fetch from API if available
@@ -692,12 +693,6 @@ export class ChatCommand {
         }
       }
     }
-  }
-
-  private parsePriority(priority: string): string {
-    const validPriorities = ['low', 'normal', 'high', 'urgent'];
-    const normalizedPriority = priority.toLowerCase();
-    return validPriorities.includes(normalizedPriority) ? normalizedPriority : 'normal';
   }
 
   stopChat(): void {

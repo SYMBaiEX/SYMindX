@@ -234,7 +234,7 @@ export class SoundEffectsManager {
 
 // Global sound manager instance
 export const soundManager = new SoundEffectsManager(
-  process.env.SYMINDX_SOUND_EFFECTS !== 'false'
+  process.env["SYMINDX_SOUND_EFFECTS"] !== 'false'
 );
 
 // Helper function to play sounds
