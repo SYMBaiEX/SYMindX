@@ -17,7 +17,7 @@ export interface CacheEntry<T> {
   hits: number;
   size: number;
   ttl?: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -157,7 +157,7 @@ export class LRUCache<T> {
   /**
    * Estimate size of value
    */
-  private estimateSize(value: any): number {
+  private estimateSize(value: T): number {
     try {
       return JSON.stringify(value).length;
     } catch {
@@ -202,8 +202,8 @@ export class LRUCache<T> {
 /**
  * Multi-level context cache
  */
-export class ContextCache {
-  private l1Cache: LRUCache<any>; // Hot cache - in memory
+export class ContextCache<T = unknown> {
+  private l1Cache: LRUCache<T>; // Hot cache - in memory
   private l2Cache: LRUCache<string>; // Warm cache - compressed
   private cleanupInterval?: NodeJS.Timeout;
 
@@ -229,7 +229,7 @@ export class ContextCache {
   /**
    * Get context from cache
    */
-  async get(key: string): Promise<any | undefined> {
+  async get(key: string): Promise<T | undefined> {
     // Check L1 first
     const l1Result = this.l1Cache.get(key);
     if (l1Result) {
@@ -256,7 +256,11 @@ export class ContextCache {
   /**
    * Set context in cache
    */
-  async set(key: string, value: any, options: { ttl?: number; priority?: 'high' | 'normal' } = {}): Promise<void> {
+  async set(
+    key: string,
+    value: T,
+    options: { ttl?: number; priority?: 'high' | 'normal' } = {}
+  ): Promise<void> {
     // Always set in L1 for immediate access
     this.l1Cache.set(key, value, options.ttl);
 

@@ -24,10 +24,10 @@ interface LeakDetectionResult {
   recommendations: string[];
 }
 
-interface ManagedResource {
+interface ManagedResource<T = unknown> {
   id: string;
   type: string;
-  resource: any;
+  resource: T;
   cleanup: () => Promise<void> | void;
   createdAt: number;
   lastAccessed: number;
@@ -35,12 +35,12 @@ interface ManagedResource {
   ttl?: number;
 }
 
-export class MemoryManager extends EventEmitter {
+export class MemoryManager<T = unknown> extends EventEmitter {
   private snapshots: MemorySnapshot[] = [];
   private maxSnapshots = 100;
   private snapshotInterval = 30000; // 30 seconds
-  private resources = new Map<string, ManagedResource>();
-  private weakRefs = new Set<WeakRef<any>>();
+  private resources = new Map<string, ManagedResource<T>>();
+  private weakRefs = new Set<WeakRef<T>>();
   private isMonitoring = false;
   private monitoringTimer?: NodeJS.Timer;
   private cleanupTimer?: NodeJS.Timer;
@@ -131,7 +131,7 @@ export class MemoryManager extends EventEmitter {
    */
   registerResource(
     type: string,
-    resource: any,
+    resource: T,
     cleanup: () => Promise<void> | void,
     options?: {
       ttl?: number;
@@ -140,7 +140,7 @@ export class MemoryManager extends EventEmitter {
   ): string {
     const id = options?.id || this.generateResourceId();
     
-    const managedResource: ManagedResource = {
+    const managedResource: ManagedResource<T> = {
       id,
       type,
       resource,
@@ -185,7 +185,7 @@ export class MemoryManager extends EventEmitter {
   /**
    * Access a registered resource (updates access tracking)
    */
-  accessResource(id: string): any {
+  accessResource(id: string): T | null {
     const resource = this.resources.get(id);
     if (!resource) return null;
 
@@ -476,7 +476,7 @@ export class MemoryManager extends EventEmitter {
 
   private cleanupWeakRefs(): void {
     const initialSize = this.weakRefs.size;
-    const toRemove: WeakRef<any>[] = [];
+    const toRemove: WeakRef<T>[] = [];
 
     for (const weakRef of this.weakRefs) {
       if (weakRef.deref() === undefined) {
