@@ -1,4 +1,4 @@
-export { Dashboard } from './dashboard';
-export { AgentList } from './agent-list';
-export { SystemStatus } from './system-status';
-export { Chat } from './chat';
+export { Dashboard } from './Dashboard';
+export { AgentList } from './AgentList';
+export { SystemStatus } from './SystemStatus';
+export { Chat } from './Chat';

@@ -73,12 +73,16 @@ import {
   createStandardLoggingPatterns,
   StandardLogContext,
 } from '../utils/standard-logging.js';
+import { performanceMonitor } from '../utils/PerformanceMonitor';
+import { memoryManager } from '../utils/MemoryManager';
+import { globalQueue } from '../utils/AsyncQueue';
 
 
 // Core system imports
 import { AutonomousEngine, AutonomousEngineConfig } from './autonomous-engine';
 import { DecisionEngine } from './decision-engine';
 import { SimpleEventBus } from './event-bus';
+import { OptimizedEventBus } from './OptimizedEventBus';
 import { ExtensionLoader, createExtensionLoader } from './extension-loader';
 import { MultiAgentManager } from './multi-agent-manager';
 import { SYMindXModuleRegistry } from './registry';
@@ -98,6 +102,12 @@ import {
   ContextEnhancementOptions 
 } from './context-service';
 
+// Compliance system imports
+import { 
+  ComplianceIntegration, 
+  createComplianceIntegration 
+} from './compliance-integration';
+
 export class SYMindXRuntime implements AgentRuntime {
   public agents: Map<string, Agent> = new Map();
   public lazyAgents: Map<string, LazyAgent> = new Map();
@@ -106,6 +116,7 @@ export class SYMindXRuntime implements AgentRuntime {
   public extensionLoader: ExtensionLoader;
   public config: RuntimeConfig;
   private tickTimer?: ReturnType<typeof setInterval>;
+  private tickTaskId?: string;
   private isRunning = false;
   private runtimeState: RuntimeState;
   
@@ -128,9 +139,22 @@ export class SYMindXRuntime implements AgentRuntime {
   private runtimeAdapter?: RuntimeContextAdapter;
   private contextService: ContextService;
 
+  // Compliance system
+  private complianceIntegration?: ComplianceIntegration;
+
   constructor(config: RuntimeConfig) {
     this.config = config;
-    this.eventBus = new SimpleEventBus();
+    
+    // Use optimized event bus for better performance
+    const useOptimizedEventBus = config.performance?.useOptimizedEventBus ?? true;
+    this.eventBus = useOptimizedEventBus 
+      ? new OptimizedEventBus({
+          maxEvents: config.performance?.maxEvents || 10000,
+          compressionEnabled: config.performance?.compression ?? true,
+          batchingEnabled: config.performance?.batching ?? true
+        })
+      : new SimpleEventBus();
+    
     this.registry = new SYMindXModuleRegistry();
 
     // Create extension context for plugin loader
@@ -370,6 +394,9 @@ export class SYMindXRuntime implements AgentRuntime {
       runtimeLogger.warn('⚠️ Falling back to default configuration');
     }
 
+    // Initialize compliance system if enabled
+    await this.initializeComplianceSystem();
+
     // Runtime initialized - logged by UI
   }
 
@@ -402,6 +429,21 @@ export class SYMindXRuntime implements AgentRuntime {
       // Phase 3: Initialization - Initialize runtime services
       runtimeLogger.info('⚙️ Initializing runtime services...');
 
+      // Initialize performance monitoring
+      if (this.config.performance?.enableMonitoring !== false) {
+        runtimeLogger.info('📊 Starting performance monitoring...');
+        performanceMonitor.start();
+        memoryManager.start();
+        
+        // Register runtime for automatic cleanup
+        memoryManager.registerResource(
+          'runtime',
+          this,
+          () => this.cleanup(),
+          { ttl: undefined } // No TTL for runtime
+        );
+      }
+
       // Initialize Multi-Agent Manager
       this.multiAgentManager = new MultiAgentManager(
         this.registry as SYMindXModuleRegistry,
@@ -423,20 +465,41 @@ export class SYMindXRuntime implements AgentRuntime {
       this.isRunning = true;
       this.runtimeState.status = RuntimeStatus.RUNNING;
       this.runtimeState.startTime = new Date();
-      this.tickTimer = setInterval(() => {
-        this.tick().catch((error) => {
-          runtimeLogger.error(
-            '❌ Runtime tick error:',
-            error as Error,
-            {} as LogContext
-          );
-          this.runtimeState.errors.push(
-            new RuntimeError('Runtime tick error', 'TICK_ERROR', {
-              error: error instanceof Error ? error.message : String(error),
-            })
-          );
+      // Use optimized async queue for ticking if enabled
+      if (this.config.performance?.useAsyncQueue !== false) {
+        this.tickTaskId = globalQueue.addRecurring(() => {
+          return this.tick().catch((error) => {
+            runtimeLogger.error(
+              '❌ Runtime tick error:',
+              error as Error,
+              {} as LogContext
+            );
+            this.runtimeState.errors.push(
+              new RuntimeError('Runtime tick error', 'TICK_ERROR', {
+                error: error instanceof Error ? error.message : String(error),
+              })
+            );
+          });
+        }, this.config.tickInterval, {
+          priority: 10, // High priority for runtime tick
+          tags: { component: 'runtime', operation: 'tick' }
         });
-      }, this.config.tickInterval);
+      } else {
+        this.tickTimer = setInterval(() => {
+          this.tick().catch((error) => {
+            runtimeLogger.error(
+              '❌ Runtime tick error:',
+              error as Error,
+              {} as LogContext
+            );
+            this.runtimeState.errors.push(
+              new RuntimeError('Runtime tick error', 'TICK_ERROR', {
+                error: error instanceof Error ? error.message : String(error),
+              })
+            );
+          });
+        }, this.config.tickInterval);
+      }
 
       // Phase 6: Final status report
       this.logStartupSummary();
@@ -474,7 +537,10 @@ export class SYMindXRuntime implements AgentRuntime {
       await this.multiAgentManager.shutdown();
     }
 
-    if (this.tickTimer) {
+    if (this.tickTaskId) {
+      globalQueue.remove(this.tickTaskId);
+      this.tickTaskId = undefined;
+    } else if (this.tickTimer) {
       clearInterval(this.tickTimer);
       delete this.tickTimer;
     }
@@ -486,6 +552,27 @@ export class SYMindXRuntime implements AgentRuntime {
 
     // Shutdown context service
     this.shutdownContextService();
+
+    // Shutdown performance monitoring
+    if (this.config.performance?.enableMonitoring !== false) {
+      runtimeLogger.info('📊 Stopping performance monitoring...');
+      performanceMonitor.stop();
+      memoryManager.stop();
+      await globalQueue.shutdown(5000);
+    }
+
+    // Shutdown compliance system
+    if (this.complianceIntegration) {
+      try {
+        await this.complianceIntegration.shutdown();
+        runtimeLogger.info('🔒 Compliance system shutdown completed');
+      } catch (error) {
+        runtimeLogger.error(
+          '❌ Failed to shutdown compliance system cleanly',
+          error as Error
+        );
+      }
+    }
 
     // Shutdown context system
     if (this.contextBootstrapper) {
@@ -1460,6 +1547,8 @@ export class SYMindXRuntime implements AgentRuntime {
   async tick(): Promise<void> {
     if (!this.isRunning) return;
 
+    // Use performance monitoring for tick timing
+    const timer = performanceMonitor.createTimer('runtime.tick');
     const startTime = Date.now();
 
     // Check for lazy agents that need activation based on events
@@ -1497,10 +1586,17 @@ export class SYMindXRuntime implements AgentRuntime {
     }
 
     const duration = Date.now() - startTime;
+    timer.end();
+    
+    // Record tick performance metrics
+    performanceMonitor.recordMetric('runtime.tick.agents_processed', this.agents.size);
+    performanceMonitor.recordMetric('runtime.tick.lazy_agents', this.lazyAgents.size);
+    
     if (duration > this.config.tickInterval * 0.8) {
       runtimeLogger.warn(
         `⚠️ Tick took ${duration}ms (${this.config.tickInterval}ms interval)`
       );
+      performanceMonitor.recordMetric('runtime.tick.slow', 1);
     }
   }
 
@@ -1834,6 +1930,58 @@ export class SYMindXRuntime implements AgentRuntime {
         type: ActionResultType.FAILURE,
         error: error instanceof Error ? error.message : String(error),
       };
+    }
+  }
+
+  /**
+   * Initialize the compliance system if enabled
+   */
+  private async initializeComplianceSystem(): Promise<void> {
+    if (!this.config.compliance?.enabled) {
+      runtimeLogger.info('🔒 Compliance system disabled');
+      return;
+    }
+
+    try {
+      runtimeLogger.info('🔒 Initializing compliance system...');
+
+      // Get memory provider from the registry
+      const memoryProvider = this.registry.getMemoryProvider('sqlite') || 
+                            this.registry.getMemoryProvider('postgres') ||
+                            this.registry.getMemoryProvider('supabase') ||
+                            this.registry.getMemoryProvider('neon');
+
+      if (!memoryProvider) {
+        runtimeLogger.warn('⚠️ No memory provider available for compliance system');
+        return;
+      }
+
+      // Create compliance integration
+      this.complianceIntegration = createComplianceIntegration(
+        memoryProvider,
+        this.eventBus,
+        {
+          enabled: true,
+          gdpr: this.config.compliance.gdpr,
+          hipaa: this.config.compliance.hipaa,
+          sox: this.config.compliance.sox,
+          strictMode: this.config.compliance.strictMode || false,
+          autoClassifyData: this.config.compliance.autoClassifyData || false,
+          enableRealTimeMonitoring: this.config.compliance.enableRealTimeMonitoring || false,
+        }
+      );
+
+      // Initialize the compliance integration
+      await this.complianceIntegration.initialize();
+
+      runtimeLogger.success('🔒 Compliance system initialized');
+    } catch (error) {
+      runtimeLogger.error('❌ Failed to initialize compliance system', error as Error, {});
+      
+      // In strict mode, throw the error to prevent startup
+      if (this.config.compliance?.strictMode) {
+        throw error;
+      }
     }
   }
 
@@ -3473,6 +3621,20 @@ export class SYMindXRuntime implements AgentRuntime {
    */
   getContextPerformanceMetrics(): Record<string, { avg: number; min: number; max: number; count: number }> {
     return this.contextService.getPerformanceStats();
+  }
+
+  /**
+   * Get compliance integration instance
+   */
+  getComplianceIntegration(): ComplianceIntegration | undefined {
+    return this.complianceIntegration;
+  }
+
+  /**
+   * Check if compliance is enabled
+   */
+  isComplianceEnabled(): boolean {
+    return this.config.compliance?.enabled === true;
   }
 
   /**

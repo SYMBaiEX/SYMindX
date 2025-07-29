@@ -492,9 +492,25 @@ export interface AutonomousEngineState {
     allowanceRate: number;
     principles: number;
     constraints: number;
-    safetyLimits: any; // SafetyLimits from ethics-engine
+    safetyLimits: {
+      maxActionsPerMinute?: number;
+      requireHumanApproval?: string[];
+      forbiddenActions?: string[];
+      resourceLimits?: {
+        memory?: number;
+        cpu?: number;
+        apiCalls?: number;
+      };
+    };
     violationsByPrinciple: Record<string, number>;
-    recentAudits: any[]; // EthicsAuditRecord[] from ethics-engine
+    recentAudits: Array<{
+      id: string;
+      timestamp: Date;
+      action: string;
+      result: 'approved' | 'rejected' | 'flagged';
+      reason?: string;
+      severity?: 'low' | 'medium' | 'high' | 'critical';
+    }>;
   };
   ethicalConstraints: boolean;
   interactions: {
@@ -504,7 +520,14 @@ export interface AutonomousEngineState {
     priorityDistribution: Record<string, number>;
     typeDistribution: Record<string, number>;
     averageResponseTime: number;
-    config: any; // InteractionConfig from interaction-manager
+    config: {
+      mode?: 'passive' | 'reactive' | 'proactive';
+      responseDelay?: number;
+      typingSimulation?: boolean;
+      emotionalMirroring?: boolean;
+      interruptionTolerance?: 'low' | 'medium' | 'high';
+      contextAwareness?: boolean;
+    };
   };
   interruptible: boolean;
 }

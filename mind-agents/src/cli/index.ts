@@ -11,7 +11,7 @@ import gradient from 'gradient-string';
 import inquirer from 'inquirer';
 
 import { SYMindXRuntime } from '../core/runtime';
-import { createRuntimeClient, RuntimeClient, RuntimeClientConfig } from './services/runtime-client';
+import { createRuntimeClient, RuntimeClient, RuntimeClientConfig } from './services/runtimeClient';
 import {
   displayBanner,
   createSpinner,

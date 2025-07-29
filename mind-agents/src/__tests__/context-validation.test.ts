@@ -8,16 +8,13 @@
 
 import { describe, test as it, expect, beforeEach, afterEach, beforeAll, afterAll } from 'bun:test';
 import {
-  ContextManager,
-  createContextManager,
-  type ContextManagerConfig,
-} from '../core/context/context-manager.js';
+  createContextLifecycleManager,
+  type ContextLifecycleManager,
+  type ContextLifecycleManagerConfig,
+} from '../core/context/context-lifecycle-manager.js';
 import { EnrichmentPipeline } from '../core/context/enrichment-pipeline.js';
-import { ContextValidator } from '../core/context/validation/context-validator.js';
-import { ContextTransformer } from '../core/context/transformers/base-transformer.js';
-import { MemoryContextTransformer } from '../core/context/transformers/MemoryContextTransformer.js';
-import { CognitionContextTransformer } from '../core/context/transformers/CognitionContextTransformer.js';
-import { PortalContextTransformer } from '../core/context/transformers/PortalContextTransformer.js';
+import { ContextValidator } from '../core/context/context-validator.js';
+// Context transformers are now part of the enrichment pipeline
 import {
   ContextFactory,
   ConfigFactory,
@@ -27,15 +24,13 @@ import {
   MockUtilities,
 } from '../core/context/__tests__/utils/index.js';
 import type {
-  Context,
+  UnifiedContext,
   ContextEnrichment,
-  ContextValidationResult,
-  ContextTransformationOptions,
-} from '../types/context/index.js';
+} from '../types/context/unified-context.js';
 import type { Agent } from '../types/agent.js';
 
 describe('Context Validation Test Suite', () => {
-  let contextManager: ContextManager;
+  let contextManager: ContextLifecycleManager;
   let enrichmentPipeline: EnrichmentPipeline;
   let contextValidator: ContextValidator;
   let testEnv: ReturnType<typeof createTestEnvironment>;

@@ -9,7 +9,7 @@ import {
   ResponsiveSpacing,
 } from '../../utils/responsive-grid.js';
 
-import { ResponsiveBox } from './responsive-box.js';
+import { ResponsiveBox } from './ResponsiveBox.js';
 
 interface ResponsiveGridProps {
   children: React.ReactNode;

@@ -10,7 +10,14 @@ import * as os from 'os';
 import cors from 'cors';
 import express from 'express';
 import rateLimit from 'express-rate-limit';
+import helmet from 'helmet';
 import { WebSocket, WebSocketServer } from 'ws';
+
+// Security imports
+import { JWTManager } from '../../core/security/auth/jwt-manager';
+import { SessionManager } from '../../core/security/auth/session-manager';
+import { AuthMiddleware } from '../../core/security/middleware/auth-middleware';
+import { InputValidator } from '../../core/security/middleware/input-validation';
 
 import { CommandSystem } from '../../core/command-system';
 import { 
@@ -98,6 +105,12 @@ export class ApiExtension implements Extension {
   private agent?: Agent;
   private app: express.Application;
   private server?: http.Server;
+  
+  // Security components
+  private jwtManager: JWTManager;
+  private sessionManager: SessionManager;
+  private authMiddleware: AuthMiddleware;
+  private inputValidator: InputValidator;
   private wss?: WebSocketServer;
   // Context-aware properties
   context?: any;
@@ -345,9 +358,11 @@ export class ApiExtension implements Extension {
       host: this.config.settings?.host || '0.0.0.0',
       cors: {
         enabled: true,
-        origins: ['*'],
+        origins: process.env.NODE_ENV === 'production' 
+          ? ['https://symindx.ai', 'https://api.symindx.ai']
+          : ['http://localhost:3000', 'http://localhost:8000'],
         methods: ['GET', 'POST', 'PUT', 'DELETE'],
-        headers: ['Content-Type', 'Authorization'],
+        headers: ['Content-Type', 'Authorization', 'X-API-Key'],
       },
       rateLimit: {
         enabled: true,
@@ -360,7 +375,7 @@ export class ApiExtension implements Extension {
         heartbeatInterval: 30000,
       },
       auth: {
-        enabled: false,
+        enabled: true,
         type: 'bearer',
         secret: process.env["API_SECRET"] || 'default-secret',
       },
@@ -373,43 +388,97 @@ export class ApiExtension implements Extension {
   }
 
   private setupMiddleware(): void {
-    // JSON parsing
-    this.app.use(express.json({ limit: '10mb' }));
+    // Security headers (must be first)
+    this.app.use(helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          scriptSrc: ["'self'"],
+          imgSrc: ["'self'", "data:", "https:"],
+          connectSrc: ["'self'", "wss:", "ws:"],
+          fontSrc: ["'self'"],
+          objectSrc: ["'none'"],
+          mediaSrc: ["'self'"],
+          frameSrc: ["'none'"],
+        },
+      },
+      hsts: {
+        maxAge: 31536000,
+        includeSubDomains: true,
+        preload: true
+      }
+    }));
 
-    // Add middleware to track HTTP requests
+    // Trust proxy if in production
+    if (process.env.NODE_ENV === 'production') {
+      this.app.set('trust proxy', 1);
+    }
+
+    // Request tracking middleware
     this.app.use((_req, _res, next) => {
       this.metrics.httpRequests++;
       next();
     });
-    this.app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-    // CORS
+    // JSON parsing with size limits and verification
+    this.app.use(express.json({ 
+      limit: '1mb', // Reduced from 10mb for security
+      verify: (req, res, buf) => {
+        // Store raw body for signature verification if needed
+        (req as any).rawBody = buf;
+      }
+    }));
+    
+    this.app.use(express.urlencoded({ 
+      extended: true, 
+      limit: '1mb' // Reduced from 10mb
+    }));
+
+    // CORS with secure settings
     if (this.apiConfig.cors.enabled) {
       this.app.use(
         cors({
-          origin: this.apiConfig.cors.origins,
+          origin: (origin, callback) => {
+            // Allow requests with no origin (mobile apps, etc.)
+            if (!origin) return callback(null, true);
+            
+            if (this.apiConfig.cors.origins.includes(origin) || 
+                this.apiConfig.cors.origins.includes('*')) {
+              return callback(null, true);
+            }
+            
+            return callback(new Error('Not allowed by CORS'));
+          },
           methods: this.apiConfig.cors.methods,
           allowedHeaders: this.apiConfig.cors.headers,
-          credentials: true,
+          credentials: false, // Disable credentials when using wildcards
+          maxAge: 86400 // Cache preflight for 24 hours
         })
       );
     }
 
-    // Rate limiting
+    // Enhanced rate limiting
     if (this.apiConfig.rateLimit.enabled) {
       const limiter = rateLimit({
         windowMs: this.apiConfig.rateLimit.windowMs,
         max: this.apiConfig.rateLimit.maxRequests,
-        message: { error: 'Too many requests, please try again later.' },
+        message: { 
+          error: 'Too many requests, please try again later.',
+          code: 'RATE_LIMIT_EXCEEDED',
+          retryAfter: Math.ceil(this.apiConfig.rateLimit.windowMs / 1000)
+        },
         standardHeaders: true,
         legacyHeaders: false,
+        keyGenerator: (req) => {
+          // Use forwarded IP if behind proxy, fallback to connection IP
+          return req.ip || req.socket.remoteAddress || 'unknown';
+        },
+        onLimitReached: (req) => {
+          console.warn(`Rate limit exceeded for IP: ${req.ip}`);
+        }
       });
       this.app.use(limiter);
-    }
-
-    // Authentication middleware
-    if (this.apiConfig.auth.enabled) {
-      this.app.use(this.authMiddleware.bind(this));
     }
 
     // Set up periodic cleanup of rate limiters
@@ -418,25 +487,8 @@ export class ApiExtension implements Extension {
     }, 60000); // Every minute
   }
 
-  private authMiddleware(
-    req: express.Request,
-    res: express.Response,
-    next: express.NextFunction
-  ): void {
-    const authHeader = req.headers['authorization'];
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      res.status(401).json({ error: 'Unauthorized' });
-      return;
-    }
-
-    const token = authHeader.substring(7);
-    if (token !== this.apiConfig.auth.secret) {
-      res.status(401).json({ error: 'Invalid token' });
-      return;
-    }
-
-    next();
-  }
+  // Removed insecure authentication - now using secure AuthMiddleware class
+  // The secure authentication is handled in setupRoutes() method
 
   /**
    * Custom rate limiting for specific endpoints

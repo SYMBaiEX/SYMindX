@@ -233,8 +233,8 @@ export type {
 } from './character';
 export { ConfigDefaults } from './character';
 
-// Lifecycle and operations (commented out due to conflicts)
-// export * from './lifecycle';
+// Lifecycle and operations
+export * from './lifecycle';
 
 // EventSource types (for server-sent events)
 // Note: eventsource.d.ts is a type declaration file, not exported
@@ -621,3 +621,70 @@ export * from './utils/logger';
 export * from './utils/validation';
 export * from './utils/arrays';
 export * from './utils/maps';
+
+// Type safety enhancements
+export * from './type-guards';
+export * from './naming-migration';
+export * from './api-versioning';
+export * from './validation-utils';
+export * from './agent-interfaces';
+
+// Compliance types
+export type {
+  ComplianceConfig,
+  DataClassification,
+  DataHandlingRule,
+  DataAction,
+  DataRestriction,
+  RetentionPolicy,
+  AuditEntry,
+  GDPRConfig,
+  ConsentPurpose,
+  ConsentRecord,
+  ConsentStatus,
+  UserDataExport,
+  GDPRService,
+  DataSubjectRequest,
+  DataSubjectResponse,
+  PrivacyPolicy,
+  ThirdParty,
+  HIPAAConfig,
+  PHIClassification,
+  HIPAAAuditLog,
+  HIPAAService,
+  EncryptedData,
+  PHIAuthorization,
+  BreachIncident,
+  SecurityTraining,
+  TrainingStatus,
+  AuditFilter,
+  AuditReport,
+  AuditAnomaly,
+  SOXConfig,
+  SOXControl,
+  FinancialDataTag,
+  ChangeRequest,
+  ChangeApproval,
+  ChangeTest,
+  SOXService,
+  ChangeImplementation,
+  ChangeSet,
+  SOXAuditFilter,
+  SOXAuditEntry,
+  ControlTestResult,
+  ControlEffectivenessReport,
+  ControlCategoryStats,
+  ReportPeriod,
+  SOXComplianceReport,
+  MaterialWeakness,
+  SignificantDeficiency,
+  RemediationPlan,
+  RemediationAction,
+  CertificationStatus,
+  ComplianceManager,
+  ComplianceStatus,
+  ComplianceReport,
+  GDPRComplianceReport,
+  HIPAAComplianceReport,
+  ComplianceServiceFactory,
+} from './compliance';

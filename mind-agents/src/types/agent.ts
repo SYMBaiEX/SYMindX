@@ -250,7 +250,6 @@ export interface MemoryRecord {
   tags: string[];
   duration: MemoryDuration;
   expiresAt?: Date; // Optional expiration date for short-term memories
-  [key: string]: any;
 }
 
 export interface MemoryProvider {
@@ -504,7 +503,7 @@ export interface ExtensionAction {
   contextRequirements?: {
     requiredFields?: string[];
     sensitiveFields?: string[];
-    validationRules?: Record<string, (value: any) => boolean>;
+    validationRules?: Record<string, (value: unknown) => boolean>;
   };
 }
 
@@ -836,27 +835,64 @@ export interface RuntimeConfig {
     paths: string[];
     slack?: {
       enabled: boolean;
-      [key: string]: any;
+      token?: string;
+      channels?: string[];
+      botToken?: string;
+      signingSecret?: string;
+      appToken?: string;
     };
     runelite?: {
       enabled: boolean;
-      [key: string]: any;
+      port?: number;
+      host?: string;
+      autoConnect?: boolean;
+      gameMode?: string;
+      credentials?: {
+        username?: string;
+        password?: string;
+      };
     };
     twitter?: {
       enabled: boolean;
-      [key: string]: any;
+      apiKey?: string;
+      apiSecret?: string;
+      accessToken?: string;
+      accessTokenSecret?: string;
+      bearerToken?: string;
+      username?: string;
+      password?: string;
     };
     telegram?: {
       enabled: boolean;
-      [key: string]: any;
+      botToken?: string;
+      allowedUsers?: string[];
+      webhookUrl?: string;
+      parseMode?: 'HTML' | 'MarkdownV2' | 'Markdown';
     };
     mcp?: {
       enabled: boolean;
-      [key: string]: any;
+      servers?: Record<string, {
+        command: string;
+        args?: string[];
+        env?: Record<string, string>;
+        timeout?: number;
+      }>;
+      defaultTimeout?: number;
     };
     api?: {
       enabled: boolean;
-      [key: string]: any;
+      port?: number;
+      host?: string;
+      cors?: boolean;
+      rateLimiting?: {
+        windowMs?: number;
+        maxRequests?: number;
+        skipSuccessfulRequests?: boolean;
+      };
+      authentication?: {
+        type?: 'none' | 'bearer' | 'apikey';
+        key?: string;
+      };
     };
   };
   portals?: {
@@ -869,5 +905,51 @@ export interface RuntimeConfig {
     paths?: string[];
     defaultEnabled?: boolean;
     charactersPath?: string;
+  };
+  performance?: {
+    enableMonitoring?: boolean;
+    useOptimizedEventBus?: boolean;
+    useAsyncQueue?: boolean;
+    maxEvents?: number;
+    compression?: boolean;
+    batching?: boolean;
+    memoryLeakDetection?: boolean;
+    circuitBreakers?: boolean;
+  };
+  compliance?: {
+    enabled: boolean;
+    gdpr?: {
+      enabled: boolean;
+      dataProtectionOfficer?: {
+        name: string;
+        email: string;
+        phone?: string;
+      };
+      retentionPeriods?: Record<string, number>;
+      legalBasis?: 'consent' | 'contract' | 'legal_obligation' | 'vital_interests' | 'public_task' | 'legitimate_interests';
+    };
+    hipaa?: {
+      enabled: boolean;
+      coveredEntity?: boolean;
+      businessAssociate?: boolean;
+      encryptionRequired?: boolean;
+      minimumPasswordLength?: number;
+      sessionTimeout?: number;
+      auditLogRetention?: number;
+    };
+    sox?: {
+      enabled: boolean;
+      fiscalYearEnd?: Date;
+      materialityThreshold?: number;
+      controlFramework?: 'COSO' | 'COBIT';
+      requiredApprovals?: number;
+      changeWindowHours?: {
+        start: number;
+        end: number;
+      };
+    };
+    strictMode?: boolean;
+    autoClassifyData?: boolean;
+    enableRealTimeMonitoring?: boolean;
   };
 }

@@ -461,7 +461,7 @@ export interface ContextLifecycleManager {
   /**
    * Import context data from persistence
    */
-  importContext(data: any): Promise<string>;
+  importContext(data: unknown): Promise<string>;
   
   /**
    * Initialize the lifecycle manager

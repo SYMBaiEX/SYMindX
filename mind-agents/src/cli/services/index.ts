@@ -5,7 +5,5 @@ export {
   type RuntimeClientConfig,
   type AgentInfo,
   type SystemMetrics,
-  type RuntimeStatus,
-  type RuntimeCapabilities,
-  type ActivityEvent,
-} from './runtime-client';
+  type ConnectionStatus,
+} from './runtimeClient';

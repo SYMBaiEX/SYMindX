@@ -13,6 +13,8 @@ import {
 } from '../../../types/agent';
 import { SkillParameters } from '../../../types/common';
 import { ApiExtension } from '../index';
+import { JWTManager } from '../../../core/security/auth/jwt-manager';
+import { SessionManager } from '../../../core/security/auth/session-manager';
 
 export class AuthenticationSkill {
   private extension: ApiExtension;
@@ -115,12 +117,12 @@ export class AuthenticationSkill {
         };
       }
 
-      // Basic token validation logic
+      // JWT token validation
       const isValid = await this.performTokenValidation(
         String(token),
         String(type)
       );
-      const decoded = isValid ? this.decodeToken(String(token)) : null;
+      const decoded = isValid ? await this.decodeToken(String(token)) : null;
 
       return {
         type: ActionResultType.SUCCESS,
@@ -347,29 +349,53 @@ export class AuthenticationSkill {
   }
 
   /**
-   * Perform token validation
+   * Perform token validation using JWT
    */
   private async performTokenValidation(
     token: string,
     type: string
   ): Promise<boolean> {
-    // Basic validation - in practice this would use JWT verification or similar
-    if (type === 'bearer') {
-      return token.length > 10 && token.startsWith('sk-');
+    if (type !== 'bearer') {
+      return false;
     }
-    return false;
+
+    try {
+      // Get JWT manager from extension
+      const jwtManager = (this.extension as any).jwtManager as JWTManager;
+      if (!jwtManager) {
+        console.warn('JWT manager not available');
+        return false;
+      }
+
+      await jwtManager.verifyToken(token, 'access');
+      return true;
+    } catch (error) {
+      console.warn('Token validation failed:', error);
+      return false;
+    }
   }
 
   /**
-   * Decode token
+   * Decode token using JWT
    */
-  private decodeToken(_token: string): Record<string, unknown> {
-    // Basic decoding - in practice this would properly decode JWT
-    return {
-      sub: 'user123',
-      iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + 3600,
-    };
+  private async decodeToken(token: string): Promise<Record<string, unknown> | null> {
+    try {
+      const jwtManager = (this.extension as any).jwtManager as JWTManager;
+      if (!jwtManager) {
+        return null;
+      }
+
+      const payload = await jwtManager.verifyToken(token, 'access');
+      return {
+        sub: payload.sub,
+        iat: payload.iat,
+        exp: payload.exp,
+        scopes: payload.scopes || [],
+        type: payload.type
+      };
+    } catch (error) {
+      return null;
+    }
   }
 
   /**

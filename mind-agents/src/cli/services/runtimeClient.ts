@@ -425,3 +425,10 @@ class APIClient extends EventEmitter {
 export function createRuntimeClient(config: RuntimeClientConfig): RuntimeClient {
   return new RuntimeClient(config);
 }
+
+// Default runtime client instance
+export const runtimeClient = createRuntimeClient({
+  mode: 'hybrid',
+  apiUrl: process.env.SYMINDX_API_URL || 'http://localhost:8000',
+  autoConnect: true,
+});

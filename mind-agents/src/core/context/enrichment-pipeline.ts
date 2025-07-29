@@ -25,6 +25,7 @@ import {
 import { Context } from '../../types/common';
 import { OperationResult } from '../../types/helpers';
 import { runtimeLogger } from '../../utils/logger';
+import { LRUCache } from '../../utils/LRUCache';
 
 /**
  * Context Enrichment Pipeline
@@ -39,11 +40,24 @@ import { runtimeLogger } from '../../utils/logger';
 export class EnrichmentPipeline extends EventEmitter {
   private enrichers = new Map<string, ContextEnricher>();
   private enricherRegistry = new Map<string, EnricherRegistryEntry>();
-  private cache = new Map<string, EnrichmentCacheEntry>();
+  private enricherResultCache: LRUCache<string, ContextEnrichmentResult>;
   private metrics = new Map<string, EnrichmentMetrics>();
   private dependencyGraph = new Map<string, DependencyGraphNode>();
   private config: EnrichmentPipelineConfig;
   private isInitialized = false;
+  
+  // Performance optimizations
+  private executionQueue: Array<{
+    request: EnrichmentRequest;
+    resolve: (result: PipelineExecutionResult) => void;
+    reject: (error: Error) => void;
+  }> = [];
+  private isProcessingQueue = false;
+  private circuitBreakers = new Map<string, {
+    failures: number;
+    lastFailure: number;
+    isOpen: boolean;
+  }>();
 
   constructor(config?: Partial<EnrichmentPipelineConfig>) {
     super();
@@ -63,8 +77,17 @@ export class EnrichmentPipeline extends EventEmitter {
       ...config,
     };
 
-    // Set up cache cleanup interval
-    setInterval(() => this.cleanupCache(), 60000); // Every minute
+    // Initialize optimized LRU cache
+    this.enricherResultCache = new LRUCache<string, ContextEnrichmentResult>({
+      maxSize: 1000,
+      ttl: this.config.cacheTtl * 1000, // Convert to milliseconds
+      onEvict: (key, value) => {
+        this.emit('cacheEvict', { key, value });
+      }
+    });
+
+    // Set up cache cleanup interval with auto-tuning
+    this.setupCacheCleanup();
   }
 
   /**
@@ -206,9 +229,20 @@ export class EnrichmentPipeline extends EventEmitter {
   }
 
   /**
-   * Execute the enrichment pipeline for a given context
+   * Execute the enrichment pipeline for a given context with queueing
    */
   async enrich(request: EnrichmentRequest): Promise<PipelineExecutionResult> {
+    // Use queue for better resource management
+    return new Promise((resolve, reject) => {
+      this.executionQueue.push({ request, resolve, reject });
+      this.processQueue();
+    });
+  }
+
+  /**
+   * Execute the enrichment pipeline directly (optimized version)
+   */
+  private async enrichInternal(request: EnrichmentRequest): Promise<PipelineExecutionResult> {
     const startTime = Date.now();
     const result: PipelineExecutionResult = {
       success: false,
@@ -660,41 +694,16 @@ export class EnrichmentPipeline extends EventEmitter {
     return Math.abs(hash).toString(36);
   }
 
-  private getCachedResult(key: string): EnrichmentCacheEntry | null {
-    const entry = this.cache.get(key);
-    if (!entry) return null;
-
-    if (entry.expiresAt < new Date()) {
-      this.cache.delete(key);
-      return null;
-    }
-
-    entry.accessCount++;
-    entry.lastAccessed = new Date();
-    return entry;
+  private getCachedResult(key: string): ContextEnrichmentResult | null {
+    return this.enricherResultCache.get(key);
   }
 
   private cacheResult(key: string, result: ContextEnrichmentResult, ttlSeconds: number): void {
-    const now = new Date();
-    const entry: EnrichmentCacheEntry = {
-      key,
-      result,
-      createdAt: now,
-      expiresAt: new Date(now.getTime() + ttlSeconds * 1000),
-      accessCount: 0,
-      lastAccessed: now,
-    };
-
-    this.cache.set(key, entry);
+    this.enricherResultCache.set(key, result);
   }
 
   private cleanupCache(): void {
-    const now = new Date();
-    for (const [key, entry] of this.cache) {
-      if (entry.expiresAt < now) {
-        this.cache.delete(key);
-      }
-    }
+    this.enricherResultCache.prune();
   }
 
   private updateMetrics(enricherId: string, duration: number, success: boolean, cached: boolean): void {
@@ -733,5 +742,149 @@ export class EnrichmentPipeline extends EventEmitter {
         setTimeout(() => reject(new Error(`Operation timed out after ${timeoutMs}ms`)), timeoutMs)
       ),
     ]);
+  }
+
+  // New optimized methods
+
+  /**
+   * Process execution queue with concurrency control
+   */
+  private async processQueue(): Promise<void> {
+    if (this.isProcessingQueue || this.executionQueue.length === 0) {
+      return;
+    }
+
+    this.isProcessingQueue = true;
+
+    try {
+      // Process up to maxConcurrency items at once
+      const batch = this.executionQueue.splice(0, this.config.maxConcurrency);
+      
+      await Promise.allSettled(
+        batch.map(async ({ request, resolve, reject }) => {
+          try {
+            const result = await this.enrichInternal(request);
+            resolve(result);
+          } catch (error) {
+            reject(error);
+          }
+        })
+      );
+
+      // Continue processing if more items in queue
+      if (this.executionQueue.length > 0) {
+        setImmediate(() => this.processQueue());
+      }
+    } finally {
+      this.isProcessingQueue = false;
+    }
+  }
+
+  /**
+   * Setup cache cleanup with auto-tuning
+   */
+  private setupCacheCleanup(): void {
+    let cleanupInterval = 60000; // Start with 1 minute
+    
+    const adaptiveCleanup = () => {
+      const stats = this.enricherResultCache.getStats();
+      
+      // Adjust cleanup frequency based on cache performance
+      if (stats.hitRate > 0.8 && stats.size < stats.maxSize * 0.7) {
+        // Cache is performing well, clean less frequently
+        cleanupInterval = Math.min(cleanupInterval * 1.2, 300000); // Max 5 minutes
+      } else if (stats.hitRate < 0.5 || stats.size > stats.maxSize * 0.9) {
+        // Cache needs more frequent cleanup
+        cleanupInterval = Math.max(cleanupInterval * 0.8, 30000); // Min 30 seconds
+      }
+
+      this.cleanupCache();
+      
+      setTimeout(adaptiveCleanup, cleanupInterval);
+    };
+
+    setTimeout(adaptiveCleanup, cleanupInterval);
+  }
+
+  /**
+   * Check circuit breaker status for enricher
+   */
+  private isCircuitBreakerOpen(enricherId: string): boolean {
+    const breaker = this.circuitBreakers.get(enricherId);
+    if (!breaker) return false;
+
+    // Reset if enough time has passed
+    if (breaker.isOpen && Date.now() - breaker.lastFailure > 60000) {
+      breaker.isOpen = false;
+      breaker.failures = 0;
+    }
+
+    return breaker.isOpen;
+  }
+
+  /**
+   * Record circuit breaker failure
+   */
+  private recordCircuitBreakerFailure(enricherId: string): void {
+    let breaker = this.circuitBreakers.get(enricherId);
+    if (!breaker) {
+      breaker = { failures: 0, lastFailure: 0, isOpen: false };
+      this.circuitBreakers.set(enricherId, breaker);
+    }
+
+    breaker.failures++;
+    breaker.lastFailure = Date.now();
+
+    // Open circuit after 5 failures
+    if (breaker.failures >= 5) {
+      breaker.isOpen = true;
+      runtimeLogger.warn(`Circuit breaker opened for enricher: ${enricherId}`);
+    }
+  }
+
+  /**
+   * Clear circuit breaker for enricher
+   */
+  private clearCircuitBreaker(enricherId: string): void {
+    const breaker = this.circuitBreakers.get(enricherId);
+    if (breaker) {
+      breaker.failures = 0;
+      breaker.isOpen = false;
+    }
+  }
+
+  /**
+   * Get cache statistics
+   */
+  getCacheStats(): {
+    size: number;
+    hitRate: number;
+    hits: number;
+    misses: number;
+    evictions: number;
+  } {
+    return this.enricherResultCache.getStats();
+  }
+
+  /**
+   * Warm cache with predicted patterns
+   */
+  async warmCache(patterns: Array<{ key: string; context: any }>): Promise<void> {
+    const warmingPromises = patterns.map(async ({ key, context }) => {
+      try {
+        // Pre-compute and cache common enrichment patterns
+        const request: EnrichmentRequest = {
+          context,
+          agentId: 'cache-warmer',
+          cacheKey: key
+        };
+        
+        await this.enrichInternal(request);
+      } catch (error) {
+        runtimeLogger.warn('Cache warming failed for key:', key, error);
+      }
+    });
+
+    await Promise.allSettled(warmingPromises);
   }
 }

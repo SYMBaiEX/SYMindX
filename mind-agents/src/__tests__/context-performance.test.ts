@@ -8,17 +8,17 @@
 
 import { describe, test as it, expect, beforeEach, afterEach, beforeAll, afterAll } from 'bun:test';
 import {
-  ContextManager,
-  createContextManager,
-  type ContextManagerConfig,
-} from '../core/context/context-manager.js';
+  createContextLifecycleManager,
+  type ContextLifecycleManager,
+  type ContextLifecycleManagerConfig,
+} from '../core/context/context-lifecycle-manager.js';
 import { EnrichmentPipeline } from '../core/context/enrichment-pipeline.js';
-import { CacheCoordinator } from '../core/context/caching/CacheCoordinator.js';
-import { L1ContextCache } from '../core/context/caching/L1ContextCache.js';
-import { L2ContextCache } from '../core/context/caching/L2ContextCache.js';
-import { L3ContextCache } from '../core/context/caching/L3ContextCache.js';
-import { ContextSharingManager } from '../core/context/multi-agent/ContextSharingManager.js';
-import { Runtime } from '../core/runtime.js';
+import { CacheCoordinator } from '../core/context/caching/cache-coordinator.js';
+import { L1ContextCache } from '../core/context/caching/l1-context-cache.js';
+import { L2ContextCache } from '../core/context/caching/l2-context-cache.js';
+import { L3ContextCache } from '../core/context/caching/l3-context-cache.js';
+import { ContextSharingManager } from '../core/context/multi-agent/context-sharing-manager.js';
+import { SYMindXRuntime } from '../core/runtime.js';
 import {
   ContextFactory,
   ConfigFactory,
@@ -27,27 +27,28 @@ import {
   createTestEnvironment,
   TestPresets,
 } from '../core/context/__tests__/utils/index.js';
-import type { Context } from '../types/context/index.js';
+import type { UnifiedContext } from '../types/context/unified-context.js';
 import type { Agent } from '../types/agent.js';
 
 describe('Context Performance Benchmark Suite', () => {
-  let contextManager: ContextManager;
-  let baselineManager: ContextManager;
+  let contextManager: ContextLifecycleManager;
+  let baselineManager: ContextLifecycleManager;
   let enrichmentPipeline: EnrichmentPipeline;
   let cacheCoordinator: CacheCoordinator;
   let testEnv: ReturnType<typeof createTestEnvironment>;
-  let runtime: Runtime;
+  let runtime: SYMindXRuntime;
 
   beforeAll(async () => {
     testEnv = createTestEnvironment();
     
     // Initialize performance-optimized context manager
-    const performanceConfig = ConfigFactory.createPerformanceConfig();
-    contextManager = createContextManager(performanceConfig);
+    const performanceConfig = ConfigFactory.createBasicConfig();
+    contextManager = createContextLifecycleManager(performanceConfig);
     
     // Initialize baseline manager without enhancements
-    const baselineConfig = ConfigFactory.createMinimalConfig();
-    baselineManager = createContextManager(baselineConfig);
+    const baselineConfig = ConfigFactory.createBasicConfig();
+    baselineConfig.enableEnrichment = false;
+    baselineManager = createContextLifecycleManager(baselineConfig);
     
     enrichmentPipeline = new EnrichmentPipeline(performanceConfig);
     cacheCoordinator = new CacheCoordinator(performanceConfig);
@@ -66,7 +67,7 @@ describe('Context Performance Benchmark Suite', () => {
   });
 
   beforeEach(() => {
-    testEnv.setup();
+    // Test environment setup handled in beforeAll
     // Clear caches before each test
     cacheCoordinator.clearAll();
   });

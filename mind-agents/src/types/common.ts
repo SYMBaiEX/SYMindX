@@ -16,7 +16,7 @@ export type ConfigValue =
   | boolean
   | ConfigValue[]
   | BaseConfig
-  | { [key: string]: any } // Allow complex object types
+  | { [key: string]: ConfigValue } // Allow complex object types
   | null
   | undefined;
 

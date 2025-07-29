@@ -1,0 +1,106 @@
+{
+  "session": {
+    "id": "debug_1753768999670_gtrmg73",
+    "name": "integration-test",
+    "startTime": "2025-07-29T06:03:19.670Z",
+    "level": 1,
+    "filters": [],
+    "outputs": [
+      {
+        "type": "console",
+        "config": {},
+        "enabled": true
+      }
+    ],
+    "active": false
+  },
+  "summary": {
+    "duration": 1013,
+    "traceCount": 5,
+    "errorCount": 0,
+    "categories": [
+      "debug",
+      "integration"
+    ]
+  },
+  "traces": [
+    {
+      "id": "trace_1753768999670_3liaxs1",
+      "timestamp": "2025-07-29T06:03:19.670Z",
+      "level": 2,
+      "category": "debug",
+      "message": "All debug data cleared",
+      "performance": {
+        "memory": 6386801
+      }
+    },
+    {
+      "id": "trace_1753768999670_gv3hqar",
+      "timestamp": "2025-07-29T06:03:19.670Z",
+      "level": 2,
+      "category": "debug",
+      "message": "Debug session 'integration-test' started",
+      "data": {
+        "sessionId": "debug_1753768999670_gtrmg73",
+        "level": "DEBUG",
+        "filters": 0,
+        "outputs": 0
+      },
+      "context": {
+        "sessionId": "debug_1753768999670_gtrmg73"
+      },
+      "performance": {
+        "memory": 6386801
+      }
+    },
+    {
+      "id": "trace_1753768999671_l1oarzd",
+      "timestamp": "2025-07-29T06:03:19.671Z",
+      "level": 2,
+      "category": "integration",
+      "message": "Complex operation attempt 1",
+      "data": {
+        "attempt": 1
+      },
+      "context": {
+        "sessionId": "debug_1753768999670_gtrmg73"
+      },
+      "performance": {
+        "memory": 6386801
+      }
+    },
+    {
+      "id": "trace_1753769000671_ww50ss0",
+      "timestamp": "2025-07-29T06:03:20.671Z",
+      "level": 2,
+      "category": "integration",
+      "message": "Complex operation attempt 2",
+      "data": {
+        "attempt": 2
+      },
+      "context": {
+        "sessionId": "debug_1753768999670_gtrmg73"
+      },
+      "performance": {
+        "memory": 6415809
+      }
+    },
+    {
+      "id": "trace_1753769000683_0r1g7nb",
+      "timestamp": "2025-07-29T06:03:20.683Z",
+      "level": 2,
+      "category": "debug",
+      "message": "Debug session 'integration-test' ended",
+      "data": {
+        "sessionId": "debug_1753768999670_gtrmg73",
+        "duration": 1013
+      },
+      "context": {
+        "sessionId": "debug_1753768999670_gtrmg73"
+      },
+      "performance": {
+        "memory": 6415809
+      }
+    }
+  ]
+}

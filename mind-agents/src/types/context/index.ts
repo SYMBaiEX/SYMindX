@@ -12,6 +12,9 @@
 export * from './unified-context.js';
 export * from './context-types.js';
 export * from './context-utils.js';
+export * from './context-lifecycle.js';
+export * from './context-enrichment.js';
+export * from './context-caching.js';
 
 // Context injection framework - Phase 2 Implementation
 export * from './context-injection.js';

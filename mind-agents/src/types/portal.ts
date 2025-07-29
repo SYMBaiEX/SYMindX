@@ -402,7 +402,14 @@ export interface ToolEvaluationResult extends Record<string, unknown> {
   metadata?: {
     model: string;
     processingTime: number;
-    [key: string]: any;
+    provider?: string;
+    apiVersion?: string;
+    temperature?: number;
+    maxTokens?: number;
+    finishReason?: string;
+    totalTokens?: number;
+    promptTokens?: number;
+    completionTokens?: number;
   };
 }
 

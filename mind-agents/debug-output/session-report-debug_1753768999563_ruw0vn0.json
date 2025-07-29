@@ -1,0 +1,90 @@
+{
+  "session": {
+    "id": "debug_1753768999563_ruw0vn0",
+    "name": "error-debug",
+    "startTime": "2025-07-29T06:03:19.563Z",
+    "level": 1,
+    "filters": [],
+    "outputs": [
+      {
+        "type": "console",
+        "config": {},
+        "enabled": true
+      }
+    ],
+    "active": false
+  },
+  "summary": {
+    "duration": 2,
+    "traceCount": 4,
+    "errorCount": 0,
+    "categories": [
+      "debug",
+      "test"
+    ]
+  },
+  "traces": [
+    {
+      "id": "trace_1753768999563_kqlhosd",
+      "timestamp": "2025-07-29T06:03:19.563Z",
+      "level": 2,
+      "category": "debug",
+      "message": "All debug data cleared",
+      "performance": {
+        "memory": 6103021
+      }
+    },
+    {
+      "id": "trace_1753768999563_1d7cjj3",
+      "timestamp": "2025-07-29T06:03:19.563Z",
+      "level": 2,
+      "category": "debug",
+      "message": "Debug session 'error-debug' started",
+      "data": {
+        "sessionId": "debug_1753768999563_ruw0vn0",
+        "level": "DEBUG",
+        "filters": 0,
+        "outputs": 0
+      },
+      "context": {
+        "sessionId": "debug_1753768999563_ruw0vn0"
+      },
+      "performance": {
+        "memory": 6103021
+      }
+    },
+    {
+      "id": "trace_1753768999565_xdb2bux",
+      "timestamp": "2025-07-29T06:03:19.565Z",
+      "level": 2,
+      "category": "test",
+      "message": "Operation executed during error handling",
+      "data": {
+        "success": true
+      },
+      "context": {
+        "sessionId": "debug_1753768999563_ruw0vn0"
+      },
+      "performance": {
+        "memory": 6103021
+      }
+    },
+    {
+      "id": "trace_1753768999565_ejeor7q",
+      "timestamp": "2025-07-29T06:03:19.565Z",
+      "level": 2,
+      "category": "debug",
+      "message": "Debug session 'error-debug' ended",
+      "data": {
+        "sessionId": "debug_1753768999563_ruw0vn0",
+        "duration": 2
+      },
+      "context": {
+        "sessionId": "debug_1753768999563_ruw0vn0"
+      },
+      "performance": {
+        "memory": 6103021
+      }
+    }
+  ]
+}

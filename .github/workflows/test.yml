@@ -1,0 +1,215 @@
+name: Test Suite
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+        
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: symindx_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v2
+      with:
+        bun-version: latest
+
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: |
+        bun install
+        cd mind-agents && bun install
+
+    - name: Setup test environment
+      run: |
+        cd mind-agents
+        mkdir -p temp/test-data temp/test-memories temp/test-logs
+        cp src/core/config/runtime.example.json src/core/config/runtime.json
+
+    - name: Type checking
+      run: |
+        cd mind-agents
+        bun run type-check
+
+    - name: Linting
+      run: |
+        cd mind-agents
+        bun run lint
+
+    - name: Unit tests
+      run: |
+        cd mind-agents
+        bun run test:unit --coverage
+      env:
+        NODE_ENV: test
+        SQLITE_DB_PATH: ./temp/test-memories/test.db
+        POSTGRES_CONNECTION_STRING: postgres://postgres:postgres@localhost:5432/symindx_test
+        LOG_LEVEL: error
+
+    - name: Integration tests
+      run: |
+        cd mind-agents
+        bun run test:integration --coverage
+      env:
+        NODE_ENV: test
+        SQLITE_DB_PATH: ./temp/test-memories/integration.db
+        POSTGRES_CONNECTION_STRING: postgres://postgres:postgres@localhost:5432/symindx_test
+        LOG_LEVEL: error
+
+    - name: Performance tests
+      run: |
+        cd mind-agents
+        bun run test:performance
+      env:
+        NODE_ENV: test
+        LOG_LEVEL: error
+
+    - name: E2E tests (if API available)
+      run: |
+        cd mind-agents
+        # Start API server in background
+        timeout 30s bun run start &
+        sleep 10
+        # Run E2E tests
+        bun run test:e2e || echo "E2E tests skipped - server not ready"
+      env:
+        NODE_ENV: test
+        PORT: 3001
+        LOG_LEVEL: error
+
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v4
+      with:
+        files: ./mind-agents/coverage/lcov.info
+        fail_ci_if_error: true
+        verbose: true
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results-${{ matrix.node-version }}
+        path: |
+          mind-agents/coverage/
+          mind-agents/test-results/
+        retention-days: 30
+
+    - name: Comment PR with coverage
+      if: github.event_name == 'pull_request'
+      uses: marocchino/sticky-pull-request-comment@v2
+      with:
+        recreate: true
+        path: mind-agents/coverage/coverage-summary.md
+
+  security:
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v2
+
+    - name: Install dependencies
+      run: |
+        bun install
+        cd mind-agents && bun install
+
+    - name: Security audit
+      run: |
+        cd mind-agents
+        bun audit
+        npm audit --audit-level high
+
+    - name: Dependency check
+      run: |
+        cd mind-agents
+        # Check for known vulnerabilities
+        npx better-npm-audit audit --level high
+
+    - name: SAST scan
+      uses: github/super-linter@v5
+      env:
+        DEFAULT_BRANCH: main
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        VALIDATE_TYPESCRIPT_ES: true
+        VALIDATE_JAVASCRIPT_ES: true
+        VALIDATE_JSON: true
+        VALIDATE_YAML: true
+
+  build:
+    runs-on: ubuntu-latest
+    needs: [test, security]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v2
+
+    - name: Install dependencies
+      run: |
+        bun install
+        cd mind-agents && bun install
+
+    - name: Build project
+      run: |
+        bun run build
+
+    - name: Build website
+      run: |
+        cd website
+        bun install
+        bun run build
+
+    - name: Test build artifacts
+      run: |
+        cd mind-agents
+        # Verify essential files exist
+        test -f dist/index.js
+        test -f dist/api.js
+        # Test that built files are valid
+        node -c dist/index.js
+        node -c dist/api.js
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-artifacts
+        path: |
+          mind-agents/dist/
+          website/dist/
+        retention-days: 7

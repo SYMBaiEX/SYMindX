@@ -50,9 +50,9 @@ export interface ValidationResult {
   /** Detailed error information if validation failed */
   details?: {
     field?: string;
-    value?: any;
-    expected?: any;
-    actual?: any;
+    value?: unknown;
+    expected?: unknown;
+    actual?: unknown;
     code?: string;
     path?: string;
   };
@@ -145,11 +145,29 @@ export interface ValidationSchema {
   /** Schema type (JSON Schema, Ajv, etc.) */
   type: string;
   /** The schema definition */
-  schema: any;
+  schema: ContextValidationSchema;
   /** Version of the schema */
   version: string;
   /** Whether schema is strict (no additional properties) */
   strict?: boolean;
+}
+
+/**
+ * Type-safe validation schema definition
+ */
+export interface ContextValidationSchema {
+  type: 'object' | 'array' | 'string' | 'number' | 'boolean' | 'null';
+  properties?: Record<string, ContextValidationSchema>;
+  items?: ContextValidationSchema;
+  required?: string[];
+  additionalProperties?: boolean | ContextValidationSchema;
+  enum?: unknown[];
+  minimum?: number;
+  maximum?: number;
+  minLength?: number;
+  maxLength?: number;
+  pattern?: string;
+  description?: string;
 }
 
 /**

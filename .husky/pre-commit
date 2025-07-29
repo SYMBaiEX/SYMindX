@@ -1,3 +1,63 @@
 
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Color output for better visibility
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+echo "${YELLOW}🚀 Running pre-commit checks...${NC}"
+
+# Change to mind-agents directory
 cd mind-agents
-npx lint-staged
+
+# 1. Type checking
+echo "${YELLOW}📝 Running type checks...${NC}"
+if ! bun run type-check; then
+  echo "${RED}❌ Type checking failed! Fix type errors before committing.${NC}"
+  exit 1
+fi
+echo "${GREEN}✅ Type checking passed${NC}"
+
+# 2. Linting
+echo "${YELLOW}🎨 Running linter...${NC}"
+if ! npx lint-staged; then
+  echo "${RED}❌ Linting failed! Fix linting errors before committing.${NC}"
+  exit 1
+fi
+echo "${GREEN}✅ Linting passed${NC}"
+
+# 3. Run tests
+echo "${YELLOW}🧪 Running tests...${NC}"
+if ! bun test; then
+  echo "${RED}❌ Tests failed! Fix failing tests before committing.${NC}"
+  exit 1
+fi
+echo "${GREEN}✅ All tests passed${NC}"
+
+# 4. Check test coverage
+echo "${YELLOW}📊 Checking test coverage...${NC}"
+if ! bun run test:coverage --silent; then
+  echo "${RED}❌ Test coverage check failed!${NC}"
+  exit 1
+fi
+
+# Extract coverage percentage
+COVERAGE=$(bun run test:coverage --silent | grep "All files" | awk '{print $10}' | sed 's/%//')
+if [ -z "$COVERAGE" ]; then
+  echo "${YELLOW}⚠️  Could not determine coverage percentage${NC}"
+else
+  echo "${GREEN}✅ Test coverage: ${COVERAGE}%${NC}"
+  
+  # Fail if coverage is below threshold
+  THRESHOLD=50
+  if [ $(echo "$COVERAGE < $THRESHOLD" | bc -l) -eq 1 ]; then
+    echo "${RED}❌ Coverage ${COVERAGE}% is below threshold of ${THRESHOLD}%${NC}"
+    echo "${YELLOW}💡 Add more tests to improve coverage${NC}"
+    exit 1
+  fi
+fi
+
+echo "${GREEN}✨ All pre-commit checks passed!${NC}"
