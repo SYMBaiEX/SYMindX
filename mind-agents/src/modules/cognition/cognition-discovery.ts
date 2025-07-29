@@ -407,7 +407,6 @@ export class CognitionDiscovery {
       'probabilistic-reasoning.ts',
       'reinforcement-learning.ts',
       'rule-based-reasoning.ts',
-      'theory-of-mind.ts',
     ];
     return systemFiles.includes(name);
   }

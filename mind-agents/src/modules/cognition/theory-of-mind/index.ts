@@ -78,6 +78,16 @@ export interface TheoryOfMindConfig extends BaseConfig {
 }
 
 /**
+ * Observation describing another agent's behavior
+ */
+export interface Observation {
+  action?: string;
+  message?: string;
+  emotion?: EmotionState;
+  context?: Record<string, unknown>;
+}
+
+/**
  * Theory of Mind implementation
  */
 export class TheoryOfMind {
@@ -144,12 +154,7 @@ export class TheoryOfMind {
    */
   updateModel(
     agentId: string,
-    observation: {
-      action?: string;
-      message?: string;
-      emotion?: EmotionState;
-      context?: any;
-    }
+    observation: Observation
   ): void {
     const model = this.getModel(agentId);
 
@@ -405,7 +410,7 @@ export class TheoryOfMind {
   private updateIntentions(
     model: MentalModel,
     action: string,
-    _context: any
+    _context?: Record<string, unknown>
   ): void {
     // Find existing intention
     const existing = model.intentions.find((i) => i.action === action);
@@ -432,7 +437,7 @@ export class TheoryOfMind {
   /**
    * Update relationship quality
    */
-  private updateRelationship(model: MentalModel, observation: any): void {
+  private updateRelationship(model: MentalModel, observation: Observation): void {
     // Positive interactions increase rapport
     if (
       observation.message?.toLowerCase().includes('thank') ||
@@ -520,7 +525,7 @@ export class TheoryOfMind {
   /**
    * Import mental models
    */
-  importModels(models: Record<string, any>): void {
+  importModels(models: Record<string, unknown>): void {
     for (const [id, model] of Object.entries(models)) {
       const imported: MentalModel = {
         ...model,

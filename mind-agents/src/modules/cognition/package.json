@@ -7,7 +7,7 @@
   "exports": {
     ".": "./index.ts",
     "./unified": "./cognition.ts",
-    "./theory-of-mind": "./theory-of-mind.ts",
+    "./theory-of-mind": "./theory-of-mind/index.ts",
     "./meta-reasoner": "./meta-reasoner.ts",
     "./hybrid": "./hybrid-reasoning.ts",
     "./rule-based": "./rule-based-reasoning.ts",
