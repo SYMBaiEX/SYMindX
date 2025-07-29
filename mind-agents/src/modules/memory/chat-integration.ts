@@ -17,6 +17,9 @@ import {
   ChatRepository,
   ChatSystemConfig,
   ConversationStatus,
+  MessageStatus,
+  MessageType,
+  SenderType,
 } from './providers/sqlite/chat-types';
 import {
   createSupabaseChatRepository,
@@ -152,7 +155,7 @@ export async function getChatSystemStatus(repository: ChatRepository): Promise<{
       agentId: 'test-agent',
       userId: 'test-user',
       title: 'Health Check',
-      status: 'active' as ConversationStatus,
+      status: ConversationStatus.ACTIVE,
       messageCount: 0,
       metadata: { healthCheck: true },
     });
@@ -160,14 +163,14 @@ export async function getChatSystemStatus(repository: ChatRepository): Promise<{
 
     await repository.createMessage({
       conversationId: testConversation.id,
-      senderType: 'system' as any,
+      senderType: SenderType.SYSTEM,
       senderId: 'system',
       content: 'Health check message',
-      messageType: 'text' as any,
+      messageType: MessageType.TEXT,
       metadata: {},
       memoryReferences: [],
       createdMemories: [],
-      status: 'sent' as any,
+      status: MessageStatus.SENT,
     });
     details.canCreateMessage = true;
 

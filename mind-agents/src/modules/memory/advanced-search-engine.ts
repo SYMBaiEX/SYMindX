@@ -622,7 +622,10 @@ export class AdvancedSearchEngine {
   /**
    * Get field value from memory record
    */
-  private getFieldValue(memory: MemoryRecord, field: string): any {
+  private getFieldValue(
+    memory: MemoryRecord,
+    field: string
+  ): string | number | string[] | undefined {
     switch (field) {
       case 'type':
         return memory.type;
@@ -633,7 +636,7 @@ export class AdvancedSearchEngine {
       case 'content':
         return memory.content;
       default:
-        return memory.metadata[field];
+        return memory.metadata[field] as string | number | string[] | undefined;
     }
   }
 
@@ -643,9 +646,9 @@ export class AdvancedSearchEngine {
    */
 
   private _applyFilter(
-    value: any,
+    value: string | number | boolean | string[],
     operator: string,
-    filterValue: any
+    filterValue: string | number | boolean | string[]
   ): boolean {
     switch (operator) {
       case 'eq':
