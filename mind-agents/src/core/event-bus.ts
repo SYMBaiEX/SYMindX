@@ -22,6 +22,7 @@ export class SimpleEventBus implements EventBus {
   private metrics: EventMetrics;
   private maxEvents: number = 1000; // Prevent memory leaks
   private errorHandler: (error: Error, event?: AgentEvent) => void;
+  private cleanupInterval?: NodeJS.Timeout;
 
   constructor() {
     this.emitter = new EventEmitter();
@@ -178,14 +179,12 @@ export class SimpleEventBus implements EventBus {
    * Async publish method for runtime compatibility
    */
   async publish(event: AgentEvent): Promise<void> {
-    return new Promise((resolve, reject) => {
-      try {
-        this.emit(event);
-        resolve();
-      } catch (error) {
-        reject(error);
-      }
-    });
+    try {
+      this.emit(event);
+    } catch (error) {
+      this.handleEventError(error as Error, event);
+      throw error;
+    }
   }
 
   /**
@@ -240,6 +239,11 @@ export class SimpleEventBus implements EventBus {
 
       // Clear event history
       this.clearEvents();
+
+      if (this.cleanupInterval) {
+        clearInterval(this.cleanupInterval);
+        this.cleanupInterval = undefined;
+      }
 
       // Reset metrics
       this.metrics = {
@@ -340,7 +344,7 @@ export class SimpleEventBus implements EventBus {
     ); // Every hour
 
     // Store cleanup interval for shutdown
-    (this as any).cleanupInterval = cleanupInterval;
+    this.cleanupInterval = cleanupInterval;
   }
 
   // New private methods for context support
