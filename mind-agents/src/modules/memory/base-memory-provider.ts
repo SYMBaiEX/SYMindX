@@ -80,6 +80,14 @@ export interface MemoryRow {
 }
 
 /**
+ * Basic health check result for memory providers
+ */
+export interface MemoryHealthCheckResult {
+  status: 'healthy' | 'unhealthy';
+  details?: Record<string, unknown>;
+}
+
+/**
  * Enhanced memory record with tier and context
  */
 export interface EnhancedMemoryRecord extends MemoryRecord {
@@ -902,8 +910,10 @@ export abstract class BaseMemoryProvider implements MemoryProvider {
 
     // Agent state insights
     if (context.agent?.emotionalState) {
-      const emotions = Object.entries(context.agent.emotionalState)
-        .filter(([_, value]) => (value as any)?.intensity > 0.5)
+      const emotions = Object.entries(
+        context.agent.emotionalState as Record<string, { intensity: number }>
+      )
+        .filter(([, value]) => value.intensity > 0.5)
         .map(([emotion]) => emotion);
       
       if (emotions.length > 0) {
@@ -1306,7 +1316,7 @@ export abstract class BaseMemoryProvider implements MemoryProvider {
    * Health check for the memory provider
    * @returns Health check result
    */
-  async healthCheck(): Promise<{ status: string; details?: any }> {
+  async healthCheck(): Promise<MemoryHealthCheckResult> {
     try {
       // Basic health check - subclasses can override
       return {
