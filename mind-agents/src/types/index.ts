@@ -131,6 +131,10 @@ export type {
   AgentAction,
   ThoughtContext,
   ThoughtResult,
+  EventBus,
+  EventContext,
+  EventContextFilter,
+  EventPropagationRule,
 } from './agent';
 export {
   AgentStatus,
@@ -141,6 +145,9 @@ export {
   ActionCategory,
   ActionResultType,
   ExtensionType,
+  MemoryProviderType,
+  EmotionModuleType,
+  CognitionModuleType,
 } from './agent';
 export type { Extension } from './extension';
 export type { Portal, PortalConfig, PortalType } from './portal';
@@ -152,6 +159,9 @@ export type { ExtensionMetadata } from './common';
 
 // Context types for improved type safety
 export * from './context';
+
+// Unified Context System - Phase 1 Implementation
+export * from './context/index';
 
 // Runtime configuration and stats
 export * from './runtime-config';
@@ -229,16 +239,6 @@ export { ConfigDefaults } from './character';
 // EventSource types (for server-sent events)
 // Note: eventsource.d.ts is a type declaration file, not exported
 
-/**
- * Result type for standardized error handling
- * @deprecated Use OperationResult, ExecutionResult, or specific result types from helpers/results instead
- */
-export interface Result<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
-  metadata?: Record<string, unknown>;
-}
 
 /**
  * Enhanced result types that replace the generic Result<T>
@@ -325,10 +325,6 @@ export interface SecurityContext {
   trustedPlugin: boolean;
 }
 
-/**
- * Enhanced validation result type alias
- */
-export type EnhancedValidationResult = ValidationResult;
 
 /**
  * Dependency validation result
@@ -339,20 +335,11 @@ export interface DependencyValidation {
   circular: string[];
 }
 
-/**
- * Type-safe event emitter interface
- * @deprecated Use enhanced event emitter with proper result types
- */
-export interface TypedEventEmitter<T extends Record<string, unknown>> {
-  on<K extends keyof T>(event: K, listener: (data: T[K]) => void): void;
-  off<K extends keyof T>(event: K, listener: (data: T[K]) => void): void;
-  emit<K extends keyof T>(event: K, data: T[K]): void;
-}
 
 /**
- * Enhanced type-safe event emitter with proper result types
+ * Type-safe event emitter with proper result types
  */
-export interface EnhancedTypedEventEmitter<T extends Record<string, unknown>> {
+export interface TypedEventEmitter<T extends Record<string, unknown>> {
   on<K extends keyof T>(
     event: K,
     listener: (data: T[K]) => EventProcessingResult
@@ -371,46 +358,24 @@ export interface EnhancedTypedEventEmitter<T extends Record<string, unknown>> {
   removeAllListeners<K extends keyof T>(event?: K): OperationResult;
 }
 
-/**
- * Module registry interface for type-safe module management
- * @deprecated Use enhanced registry types with proper result types
- */
-export interface ModuleRegistry {
-  register<T>(name: string, factory: ModuleFactory<T>): void;
-  get<T>(name: string): T | undefined;
-  has(name: string): boolean;
-  unregister(name: string): boolean;
-  list(): string[];
-}
 
 /**
- * Enhanced module registry with proper result types
+ * Module registry with proper result types
  */
-export interface EnhancedModuleRegistry {
+export interface ModuleRegistryV5 {
   register<T>(name: string, factory: ModuleFactory<T>): OperationResult;
   get<T>(name: string): T | undefined;
   has(name: string): boolean;
   unregister(name: string): OperationResult;
   list(): string[];
   getMetadata(name: string): ModuleManifest | undefined;
-  validate(name: string): EnhancedValidationResult;
+  validate(name: string): ValidationResult;
   healthCheck(name: string): HealthCheckResult;
 }
 
-/**
- * Health check interface for system monitoring
- * @deprecated Use HealthCheckResult from helpers instead
- */
-export interface HealthCheck {
-  name: string;
-  status: 'healthy' | 'degraded' | 'unhealthy';
-  details?: Record<string, unknown>;
-  lastChecked: Date;
-  responseTime?: number;
-}
 
 /**
- * Enhanced health monitoring service
+ * Health monitoring service
  */
 export interface HealthMonitoringService {
   checkHealth(componentId: string): Promise<HealthCheckResult>;
@@ -428,22 +393,11 @@ export interface HealthMonitoringService {
   unsubscribe(callback: (result: HealthCheckResult) => void): OperationResult;
 }
 
-/**
- * Configuration provider interface
- * @deprecated Use enhanced configuration provider with proper result types
- */
-export interface ConfigProvider {
-  get<T>(key: string, defaultValue?: T): T;
-  set(key: string, value: unknown): void;
-  has(key: string): boolean;
-  getAll(): Record<string, unknown>;
-  reload(): Promise<void>;
-}
 
 /**
- * Enhanced configuration provider with proper result types
+ * Configuration provider with proper result types
  */
-export interface EnhancedConfigProvider {
+export interface ConfigProvider {
   get<T>(key: string, defaultValue?: T): T;
   set(key: string, value: unknown): ConfigurationUpdateResult;
   has(key: string): boolean;
@@ -458,28 +412,17 @@ export interface EnhancedConfigProvider {
   unwatch(key: string): OperationResult;
 }
 
-/**
- * Logger interface for consistent logging
- * @deprecated Use enhanced logger interface with proper result types
- */
-export interface ILogger {
-  debug(message: string, ...args: unknown[]): void;
-  info(message: string, ...args: unknown[]): void;
-  warn(message: string, ...args: unknown[]): void;
-  error(message: string, error?: Error, ...args: unknown[]): void;
-  child(metadata: Metadata): ILogger;
-}
 
 /**
- * Enhanced logger interface with proper result types
+ * Logger interface with proper result types
  */
-export interface EnhancedLogger {
+export interface LoggerV5 {
   debug(message: string, metadata?: Metadata): LoggingResult;
   info(message: string, metadata?: Metadata): LoggingResult;
   warn(message: string, metadata?: Metadata): LoggingResult;
   error(message: string, error?: Error, metadata?: Metadata): LoggingResult;
   fatal(message: string, error?: Error, metadata?: Metadata): LoggingResult;
-  child(metadata: Metadata): EnhancedLogger;
+  child(metadata: Metadata): LoggerV5;
   setLevel(
     level: 'debug' | 'info' | 'warn' | 'error' | 'fatal'
   ): OperationResult;
@@ -487,18 +430,11 @@ export interface EnhancedLogger {
   flush(): Promise<OperationResult>;
 }
 
-/**
- * Async disposable interface for resource cleanup
- * @deprecated Use enhanced disposable interface with proper result types
- */
-export interface AsyncDisposable {
-  dispose(): Promise<void>;
-}
 
 /**
- * Enhanced disposable interface with proper result types
+ * Disposable interface with proper result types
  */
-export interface EnhancedAsyncDisposable {
+export interface AsyncDisposable {
   dispose(): Promise<CleanupResult>;
   isDisposed(): boolean;
   getResourceInfo(): {
@@ -509,40 +445,11 @@ export interface EnhancedAsyncDisposable {
   };
 }
 
+
 /**
- * Factory registry for managing different types of factories
- * @deprecated Use enhanced factory registry with proper result types
+ * Factory registry with proper result types
  */
 export interface FactoryRegistry {
-  registerMemoryFactory(
-    name: string,
-    factory: ModuleFactory<MemoryProvider>
-  ): void;
-  registerEmotionFactory(
-    name: string,
-    factory: ModuleFactory<EmotionModule>
-  ): void;
-  registerCognitionFactory(
-    name: string,
-    factory: ModuleFactory<CognitionModule>
-  ): void;
-  registerExtensionFactory(
-    name: string,
-    factory: ModuleFactory<Extension>
-  ): void;
-  registerPortalFactory(name: string, factory: ModuleFactory<Portal>): void;
-
-  getMemoryFactory(name: string): ModuleFactory<MemoryProvider> | undefined;
-  getEmotionFactory(name: string): ModuleFactory<EmotionModule> | undefined;
-  getCognitionFactory(name: string): ModuleFactory<CognitionModule> | undefined;
-  getExtensionFactory(name: string): ModuleFactory<Extension> | undefined;
-  getPortalFactory(name: string): ModuleFactory<Portal> | undefined;
-}
-
-/**
- * Enhanced factory registry with proper result types
- */
-export interface EnhancedFactoryRegistry {
   registerMemoryFactory(
     name: string,
     factory: ModuleFactory<MemoryProvider>
@@ -570,7 +477,7 @@ export interface EnhancedFactoryRegistry {
   getExtensionFactory(name: string): ModuleFactory<Extension> | undefined;
   getPortalFactory(name: string): ModuleFactory<Portal> | undefined;
 
-  validateFactory(name: string): EnhancedValidationResult;
+  validateFactory(name: string): ValidationResult;
   listFactories(type?: string): string[];
   getFactoryMetadata(name: string): ModuleManifest | undefined;
 }

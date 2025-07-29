@@ -423,7 +423,7 @@ export function createXAIPortal(config: XAIConfig): XAIPortal {
 // Export default configuration
 export const defaultXAIConfig: Partial<XAIConfig> = {
   model: 'grok-2',
-  maxTokens: 1000, // Keep as config property, map to maxOutputTokens in calls
+  maxTokens: 1000, // Config property for backward compatibility
   temperature: 0.7,
   timeout: 30000,
   baseURL: 'https://api.x.ai/v1',

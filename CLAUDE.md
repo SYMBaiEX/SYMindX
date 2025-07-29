@@ -82,7 +82,16 @@ SYMindX Runtime (mind-agents/)
 │   │   ├── ethics-engine.ts - Ethical constraints (can be disabled per agent)
 │   │   ├── interaction-manager.ts - Human interaction handling
 │   │   ├── multi-agent-manager.ts - Multi-agent coordination
-│   │   └── prompt-manager.ts - Prompt template management
+│   │   ├── prompt-manager.ts - Prompt template management
+│   │   └── context/ - Context Integration System
+│   │       ├── context-lifecycle-manager.ts - Context lifecycle management
+│   │       ├── enrichment-pipeline.ts - Context enrichment processing
+│   │       ├── context-injector.ts - Dependency injection framework
+│   │       ├── enrichers/ - Context enricher modules
+│   │       ├── caching/ - Multi-layer caching system
+│   │       ├── observability/ - Monitoring and debugging
+│   │       ├── multi-agent/ - Multi-agent context features
+│   │       └── integration/ - Backward compatibility
 │   │
 │   ├── 📚 types/ - Centralized Type System
 │   │   ├── index.ts - Master type exports (ALL TYPES HERE)
@@ -91,6 +100,12 @@ SYMindX Runtime (mind-agents/)
 │   │   ├── emotion.ts - Emotion system types
 │   │   ├── memory.ts - Memory system types
 │   │   ├── portal.ts - AI provider types
+│   │   ├── context/ - Context system types
+│   │   │   ├── unified-context.ts - Core context interfaces
+│   │   │   ├── context-enrichment.ts - Enrichment system types
+│   │   │   ├── context-lifecycle.ts - Lifecycle management types
+│   │   │   ├── context-caching.ts - Caching system types
+│   │   │   └── multi-agent-context.ts - Multi-agent types
 │   │   └── [other type files]
 │   │
 │   ├── 🧩 modules/ - AI Module System
@@ -208,6 +223,18 @@ Web Interface (website/)
 - Improved type safety and performance
 - New multi-step execution with `stopWhen` conditions
 
+### 6. Context Integration System
+
+**NEW**: Comprehensive context awareness system for enhanced agent intelligence:
+
+- **Context Lifecycle Manager**: Complete context management from creation to disposal
+- **Enrichment Pipeline**: Memory, emotional, social, temporal, and environment context enrichers
+- **Multi-layer Caching**: Intelligent L1/L2/L3 caching for performance optimization
+- **Context Injection**: Dependency injection framework for context-aware components
+- **Observability Layer**: Rich monitoring, debugging, and performance metrics
+- **Multi-Agent Context**: Shared context management and synchronization
+- **Backward Compatibility**: Zero-downtime migration with feature flags
+
 ## Key Development Patterns
 
 ### Clean Architecture Principles
@@ -248,6 +275,7 @@ Characters are defined in JSON with:
 - **communication**: Style, tone, guidelines
 - **extensions**: Enabled integrations
 - **portals**: AI provider configuration
+- **context**: Context integration preferences and enrichment settings
 
 ### Emotion System
 
@@ -257,6 +285,42 @@ Each emotion module extends BaseEmotion and includes:
 - Intensity management with decay
 - Emotion-specific modifiers
 - History tracking
+
+### Context Integration System
+
+The context system provides comprehensive contextual awareness through:
+
+```typescript
+// Context lifecycle management
+createContextLifecycleManager({
+  maxContextsPerAgent: 10,
+  defaultTtl: 3600000,
+  enableEnrichment: true
+})
+
+// Context enrichment pipeline
+createEnrichmentPipeline({
+  enabledEnrichers: ['memory', 'emotional', 'social', 'temporal', 'environment'],
+  maxConcurrency: 5,
+  enableCaching: true
+})
+
+// Context-aware agent activation
+const contextId = await contextManager.requestContext({
+  agentId: 'agent-123',
+  requestType: 'conversation',
+  enrichment: { enabled: true, steps: ['memory_enrichment'] }
+})
+```
+
+**Key Features:**
+- **Memory Context**: Relevant historical information and learning patterns
+- **Emotional Context**: Current emotional state and trends
+- **Social Context**: Relationship mapping and interaction patterns
+- **Temporal Context**: Time-based awareness and chronological markers
+- **Environment Context**: System metrics and runtime information
+- **Multi-layer Caching**: L1/L2/L3 caching for optimal performance
+- **Context Injection**: Dependency injection for context-aware components
 
 ## AI SDK v5 Implementation Guidelines
 

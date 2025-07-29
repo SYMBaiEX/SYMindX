@@ -19,6 +19,7 @@ import {
   SkillParameters,
   ExtensionConfig,
 } from './common.js';
+import { UnifiedContext, ContextEnricher } from './context/index.js';
 import { EmotionModule } from './emotion.js';
 import {
   OperationResult,
@@ -87,6 +88,10 @@ export interface Agent {
   decision?: unknown; // Decision system reference
   personality?: string[]; // Personality traits
 
+  // Context management properties
+  currentContext?: UnifiedContext;
+  contextEnrichers?: ContextEnricher[];
+
   // Enhanced lifecycle methods with proper result types
   initialize(config: AgentConfig): Promise<InitializationResult>;
   cleanup(): Promise<CleanupResult>;
@@ -96,6 +101,12 @@ export interface Agent {
   ): Promise<AgentStateTransitionResult>;
   processEvent(event: AgentEvent): Promise<EventProcessingResult>;
   executeAction(action: AgentAction): Promise<ExecutionResult>;
+
+  // Context injection helpers
+  createContext?(baseContext?: Partial<UnifiedContext>): UnifiedContext;
+  enrichContext?(context: UnifiedContext): Promise<UnifiedContext>;
+  validateContext?(context: UnifiedContext): Promise<boolean>;
+  getContextualState?(): Promise<UnifiedContext>;
 }
 
 export interface AgentConfig {
@@ -118,7 +129,7 @@ export interface AgentConfig {
       portal?: string;
     };
   };
-  personality?: string[]; // Top-level personality access for backward compatibility
+  personality?: string[];
   goals?: string[]; // Goals list for agent objectives
   modules: {
     extensions: string[];
@@ -144,7 +155,6 @@ export interface AgentConfig {
       goal_pursuit?: boolean;
     };
   };
-  autonomous_behaviors?: Record<string, unknown>; // Legacy support for autonomous behaviors
   human_interaction?: {
     enabled: boolean;
     mode?: string;
@@ -283,6 +293,14 @@ export interface CognitionModule {
   think(agent: Agent, context: ThoughtContext): Promise<ThoughtResult>;
   plan(agent: Agent, goal: string): Promise<Plan>;
   decide(agent: Agent, options: Decision[]): Promise<Decision>;
+
+  // Context-aware methods
+  thinkWithContext?(agent: Agent, context: ThoughtContext, unifiedContext?: UnifiedContext): Promise<ThoughtResult>;
+  planWithContext?(agent: Agent, goal: string, unifiedContext?: UnifiedContext): Promise<Plan>;
+  decideWithContext?(agent: Agent, options: Decision[], unifiedContext?: UnifiedContext): Promise<Decision>;
+  
+  // Context enrichment capabilities
+  enrichThoughtContext?(thoughtContext: ThoughtContext, unifiedContext: UnifiedContext): Promise<ThoughtContext>;
 }
 
 export interface ThoughtContext {
@@ -291,6 +309,49 @@ export interface ThoughtContext {
   currentState: AgentState;
   environment: EnvironmentState;
   goal?: string;
+
+  // Unified context integration
+  unifiedContext?: UnifiedContext;
+  
+  // Context-aware fields that can be enriched from unified context
+  conversationHistory?: Array<{
+    role: 'user' | 'agent' | 'system';
+    content: string;
+    timestamp: Date;
+  }>;
+  
+  emotionalContext?: {
+    current: string;
+    intensity: number;
+    recentChanges: Array<{
+      emotion: string;
+      timestamp: Date;
+      trigger?: string;
+    }>;
+  };
+  
+  cognitiveState?: {
+    confidence: number;
+    focus: number;
+    workingMemory: string[];
+    activeGoals: string[];
+  };
+  
+  environmentalFactors?: {
+    timeOfDay?: string;
+    location?: string;
+    socialContext?: string;
+    urgency?: number;
+  };
+  
+  toolContext?: {
+    availableTools: string[];
+    recentToolUse: Array<{
+      tool: string;
+      result: string;
+      timestamp: Date;
+    }>;
+  };
 }
 
 export interface ThoughtResult {
@@ -438,13 +499,26 @@ export interface ExtensionAction {
   category: ActionCategory;
   parameters: ActionParameters;
   requiredPermissions?: string[];
-  execute(agent: Agent, params: SkillParameters): Promise<ActionResult>;
+  execute(agent: Agent, params: SkillParameters, context?: Context): Promise<ActionResult>;
+  // Context-aware action configuration
+  contextRequirements?: {
+    requiredFields?: string[];
+    sensitiveFields?: string[];
+    validationRules?: Record<string, (value: any) => boolean>;
+  };
 }
 
 export interface ExtensionEventHandler {
   event: string;
   description: string;
-  handler: (agent: Agent, event: AgentEvent) => Promise<void>;
+  handler: (agent: Agent, event: AgentEvent, context?: Context) => Promise<void>;
+  // Context-aware event handling
+  contextOptions?: {
+    injectAgentContext?: boolean;
+    injectEventContext?: boolean;
+    preserveEventData?: boolean;
+    filterSensitiveData?: boolean;
+  };
 }
 
 export enum ActionResultType {
@@ -523,6 +597,7 @@ export interface AgentEvent {
   agentId?: string;
   targetAgentId?: string;
   tags?: string[]; // Add tags property to fix TypeScript errors
+  context?: EventContext; // Optional context for propagation
 }
 
 export enum AgentStateType {
@@ -636,6 +711,12 @@ export interface EventBus {
   getEvents(): AgentEvent[];
   publish(event: AgentEvent): void; // Added publish method for compatibility
   shutdown(): void; // Added shutdown method for cleanup
+  
+  // Context-aware event methods
+  emitWithContext(event: AgentEvent, context: EventContext): void;
+  onWithContext(eventType: string, handler: (event: AgentEvent, context?: EventContext) => void): void;
+  subscribeWithFilter(agentId: string, eventTypes: string[], filter?: EventContextFilter): void;
+  getEventsWithContext(filter?: EventContextFilter): AgentEvent[];
 }
 
 export interface ModuleRegistry {
@@ -704,6 +785,42 @@ export interface ModuleRegistry {
   registerLazyAgent(name: string, loader: () => Promise<Agent>): void;
   getToolSystem(name: string): unknown;
   getRegisteredAgents(): Agent[]; // Add method for getting registered agents
+}
+
+// Event context types for enhanced event propagation
+export interface EventContext {
+  correlation_id?: string; // Track related events across the system
+  parent_event_id?: string; // Link to parent event for causality tracking
+  chain_id?: string; // Track event chains and workflows
+  origin_agent_id?: string; // Original agent that started the event chain
+  propagation_depth?: number; // Prevent infinite propagation loops
+  metadata?: Record<string, unknown>; // Flexible metadata for context
+  timestamp?: Date; // Context creation timestamp
+  expires_at?: Date; // Context expiration for cleanup
+  tags?: string[]; // Context-specific tags for filtering
+  priority?: number; // Context priority for routing decisions
+}
+
+export interface EventContextFilter {
+  correlation_id?: string;
+  chain_id?: string;
+  origin_agent_id?: string;
+  tags?: string[];
+  priority_min?: number;
+  priority_max?: number;
+  max_depth?: number;
+  include_expired?: boolean;
+}
+
+export interface EventPropagationRule {
+  event_types: string[]; // Event types this rule applies to
+  propagate: boolean; // Whether to propagate context
+  inherit_context: boolean; // Whether to inherit parent context
+  merge_strategy: 'replace' | 'merge' | 'preserve'; // How to handle context conflicts
+  max_depth?: number; // Maximum propagation depth
+  ttl_seconds?: number; // Time to live for context
+  required_tags?: string[]; // Required tags for propagation
+  excluded_tags?: string[]; // Tags that prevent propagation
 }
 
 export interface RuntimeConfig {

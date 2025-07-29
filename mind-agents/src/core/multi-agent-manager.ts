@@ -24,6 +24,7 @@ import { Logger } from '../utils/logger';
 
 import { SYMindXModuleRegistry } from './registry';
 import type { SYMindXRuntime } from './runtime';
+import { CoordinationManager } from './coordination-manager';
 
 export interface AgentHealthStatus {
   agentId: string;
@@ -104,13 +105,18 @@ export class MultiAgentManager extends EventEmitter {
   // Collaboration tracking
   private collaborations: Map<string, CollaborationRelationship> = new Map();
 
+  // Advanced coordination manager
+  private coordinationManager: CoordinationManager;
+
   constructor(
     _registry: SYMindXModuleRegistry,
-    _eventBus: EventBus,
+    private eventBus: EventBus,
     private runtime: SYMindXRuntime
   ) {
     super();
+    this.coordinationManager = new CoordinationManager(this.eventBus);
     this.startHealthMonitoring();
+    this.setupCoordinationIntegration();
   }
 
   /**
@@ -155,6 +161,9 @@ export class MultiAgentManager extends EventEmitter {
       // Initialize health tracking
       this.initializeAgentHealth(agentId, agent);
 
+      // Register with coordination manager
+      await this.coordinationManager.registerAgent(agent);
+
       // Auto-start if requested
       if (request.autoStart !== false) {
         await this.startAgent(agentId);
@@ -190,6 +199,9 @@ export class MultiAgentManager extends EventEmitter {
       if (agent.status !== AgentStatus.ERROR) {
         agent.status = AgentStatus.STOPPING;
       }
+
+      // Unregister from coordination manager
+      await this.coordinationManager.unregisterAgent(agentId);
 
       // Stop autonomous systems if present
       await this.runtime.unloadAgent(agentId);
@@ -781,5 +793,386 @@ export class MultiAgentManager extends EventEmitter {
     }
 
     this.agentResponseTimes.set(agentId, responseTimes);
+  }
+
+  // === ADVANCED COORDINATION METHODS ===
+
+  /**
+   * Setup integration with coordination manager
+   */
+  private setupCoordinationIntegration(): void {
+    // Listen to coordination events
+    this.coordinationManager.on('consensus_reached', (data) => {
+      this.logger.info(`Consensus reached: ${data.proposalId}`, {
+        metadata: {
+          accepted: data.accepted,
+          votes: data.votes,
+        },
+      });
+      this.emit('consensus_reached', data);
+    });
+
+    this.coordinationManager.on('task_assigned', (data) => {
+      this.logger.info(`Task assigned: ${data.taskId} to ${data.assigneeId}`);
+      this.emit('task_assigned', data);
+    });
+
+    this.coordinationManager.on('memory_shared', (data) => {
+      this.logger.info(`Memory shared in pool: ${data.poolId}`);
+      this.emit('memory_shared', data);
+    });
+
+    this.coordinationManager.on('channel_created', (data) => {
+      this.logger.info(`Coordination channel created: ${data.name}`);
+      this.emit('coordination_channel_created', data);
+    });
+  }
+
+  /**
+   * Create a coordination channel for agent communication
+   */
+  async createCoordinationChannel(
+    name: string,
+    type: 'broadcast' | 'direct' | 'group' | 'consensus',
+    participants: string[],
+    security?: {
+      encryption?: boolean;
+      authentication?: boolean;
+      authorization?: string[];
+    }
+  ): Promise<string> {
+    // Validate participants exist
+    for (const participantId of participants) {
+      if (!this.agents.has(participantId)) {
+        throw new Error(`Agent ${participantId} not found`);
+      }
+    }
+
+    const channelId = await this.coordinationManager.createChannel(
+      name,
+      type as any,
+      participants,
+      security as any
+    );
+
+    this.logger.info(`Created coordination channel: ${name}`, {
+      metadata: {
+        channelId,
+        type,
+        participants: participants.length,
+      },
+    });
+
+    return channelId;
+  }
+
+  /**
+   * Request consensus from a group of agents
+   */
+  async requestConsensus(
+    proposerId: string,
+    proposal: Record<string, unknown>,
+    participants: string[],
+    type: 'simple_majority' | 'super_majority' | 'unanimous' = 'simple_majority',
+    timeoutMs: number = 300000
+  ): Promise<string> {
+    // Validate proposer exists
+    if (!this.agents.has(proposerId)) {
+      throw new Error(`Proposer agent ${proposerId} not found`);
+    }
+
+    // Validate participants exist
+    for (const participantId of participants) {
+      if (!this.agents.has(participantId)) {
+        throw new Error(`Participant agent ${participantId} not found`);
+      }
+    }
+
+    const proposalId = await this.coordinationManager.createConsensusProposal(
+      proposerId,
+      type as any,
+      proposal,
+      participants,
+      timeoutMs
+    );
+
+    this.logger.info(`Consensus requested by ${proposerId}`, {
+      metadata: {
+        proposalId,
+        type,
+        participants: participants.length,
+      },
+    });
+
+    return proposalId;
+  }
+
+  /**
+   * Distribute a task among eligible agents
+   */
+  async distributeTask(
+    requesterId: string,
+    task: {
+      id: string;
+      type: string;
+      description: string;
+      requirements: {
+        capabilities: string[];
+        resources?: Array<{
+          type: string;
+          amount: number;
+          duration: number;
+          exclusive: boolean;
+        }>;
+        performance?: {
+          maxLatency: number;
+          minThroughput: number;
+          reliability: number;
+        };
+      };
+      priority: number;
+      estimatedDuration: number;
+      dependencies: string[];
+      payload: Record<string, unknown>;
+    },
+    eligibleAgents?: string[]
+  ): Promise<string> {
+    // Validate requester exists
+    if (!this.agents.has(requesterId)) {
+      throw new Error(`Requester agent ${requesterId} not found`);
+    }
+
+    // Validate eligible agents if specified
+    if (eligibleAgents) {
+      for (const agentId of eligibleAgents) {
+        if (!this.agents.has(agentId)) {
+          throw new Error(`Eligible agent ${agentId} not found`);
+        }
+      }
+    }
+
+    const distributionId = await this.coordinationManager.requestTaskDistribution(
+      requesterId,
+      task as any,
+      eligibleAgents
+    );
+
+    this.logger.info(`Task distribution requested: ${task.id}`, {
+      metadata: {
+        distributionId,
+        requesterId,
+        eligibleAgents: eligibleAgents?.length || 'auto',
+      },
+    });
+
+    return distributionId;
+  }
+
+  /**
+   * Create a shared memory pool for collaborative memory management
+   */
+  async createSharedMemoryPool(
+    name: string,
+    participants: string[],
+    config?: {
+      accessControl?: {
+        requireConsensusForWrite?: boolean;
+        auditAccess?: boolean;
+        encryptMemories?: boolean;
+      };
+      synchronization?: {
+        strategy?: 'immediate' | 'batched' | 'eventual_consistency';
+        conflictResolution?: 'last_writer_wins' | 'consensus_required';
+        syncIntervalMs?: number;
+      };
+    }
+  ): Promise<string> {
+    // Validate participants exist
+    for (const participantId of participants) {
+      if (!this.agents.has(participantId)) {
+        throw new Error(`Participant agent ${participantId} not found`);
+      }
+    }
+
+    const poolId = await this.coordinationManager.createSharedMemoryPool(
+      name,
+      participants,
+      config?.accessControl as any,
+      config?.synchronization as any
+    );
+
+    this.logger.info(`Created shared memory pool: ${name}`, {
+      metadata: {
+        poolId,
+        participants: participants.length,
+      },
+    });
+
+    return poolId;
+  }
+
+  /**
+   * Share a memory with other agents in a pool
+   */
+  async shareMemoryInPool(
+    poolId: string,
+    ownerId: string,
+    memory: MemoryRecord,
+    permissions?: {
+      read?: string[];
+      write?: string[];
+      delete?: string[];
+      share?: string[];
+    }
+  ): Promise<void> {
+    // Validate owner exists
+    if (!this.agents.has(ownerId)) {
+      throw new Error(`Owner agent ${ownerId} not found`);
+    }
+
+    await this.coordinationManager.shareMemory(
+      poolId,
+      ownerId,
+      memory,
+      permissions as any
+    );
+
+    this.logger.info(`Memory shared in pool: ${poolId}`, {
+      metadata: {
+        memoryId: memory.id,
+        ownerId,
+      },
+    });
+  }
+
+  /**
+   * Get coordination metrics and health status
+   */
+  getCoordinationMetrics(): {
+    metrics: any;
+    health: {
+      status: 'healthy' | 'degraded' | 'unhealthy';
+      issues: string[];
+    };
+  } {
+    const metrics = this.coordinationManager.getMetrics();
+    const health = this.coordinationManager.getHealthStatus();
+
+    return {
+      metrics,
+      health: {
+        status: health.status,
+        issues: health.issues,
+      },
+    };
+  }
+
+  /**
+   * Enhanced agent collaboration with advanced coordination
+   */
+  async enableAdvancedCollaboration(
+    agentIds: string[],
+    config?: {
+      communicationChannels?: boolean;
+      sharedMemory?: boolean;
+      taskDistribution?: boolean;
+      consensusDecisions?: boolean;
+    }
+  ): Promise<{
+    channelId?: string;
+    memoryPoolId?: string;
+    collaborationId: string;
+  }> {
+    // Validate all agents exist
+    for (const agentId of agentIds) {
+      if (!this.agents.has(agentId)) {
+        throw new Error(`Agent ${agentId} not found`);
+      }
+    }
+
+    const collaborationId = `collab_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+    const result: any = { collaborationId };
+
+    // Setup communication channels
+    if (config?.communicationChannels !== false) {
+      result.channelId = await this.createCoordinationChannel(
+        `collaboration-${collaborationId}`,
+        'group',
+        agentIds,
+        {
+          authentication: true,
+          authorization: agentIds,
+        }
+      );
+    }
+
+    // Setup shared memory
+    if (config?.sharedMemory !== false) {
+      result.memoryPoolId = await this.createSharedMemoryPool(
+        `collab-memory-${collaborationId}`,
+        agentIds,
+        {
+          accessControl: {
+            requireConsensusForWrite: config?.consensusDecisions !== false,
+            auditAccess: true,
+          },
+          synchronization: {
+            strategy: 'eventual_consistency',
+            conflictResolution: config?.consensusDecisions !== false ? 
+              'consensus_required' : 'last_writer_wins',
+          },
+        }
+      );
+    }
+
+    // Enable legacy collaboration as fallback
+    this.enableAgentCollaboration(agentIds);
+
+    this.logger.info(`Advanced collaboration enabled for ${agentIds.length} agents`, {
+      metadata: {
+        collaborationId,
+        agentIds,
+        config,
+      },
+    });
+
+    this.emit('advanced_collaboration_enabled', {
+      collaborationId,
+      agentIds,
+      config,
+      result,
+    });
+
+    return result;
+  }
+
+  /**
+   * Enhanced shutdown with coordination cleanup
+   */
+  async shutdown(): Promise<void> {
+    this.logger.info('Shutting down Multi-Agent Manager');
+
+    // Shutdown coordination manager first
+    await this.coordinationManager.shutdown();
+
+    // Clear health monitoring
+    if (this.healthCheckInterval) {
+      clearInterval(this.healthCheckInterval);
+    }
+
+    // Clear collaboration timeouts
+    for (const timeout of this.collaborationTimeouts.values()) {
+      clearTimeout(timeout);
+    }
+
+    // Stop all agents
+    const stopPromises = Array.from(this.agents.keys()).map((agentId) =>
+      this.stopAgent(agentId).catch((error) =>
+        this.logger.error(`Error stopping agent ${agentId}:`, error)
+      )
+    );
+
+    await Promise.all(stopPromises);
+    this.logger.info('Multi-Agent Manager shutdown complete');
   }
 }

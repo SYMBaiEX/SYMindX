@@ -155,8 +155,6 @@ export type PortalCapability =
   | 'tool_calling';
 
 export interface PortalSpecificConfig {
-  // Legacy model settings (deprecated)
-  model?: string;
 
   // Granular model control
   chatModel?: string;

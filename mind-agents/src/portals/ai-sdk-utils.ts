@@ -32,6 +32,7 @@ export class AISDKParameterBuilder {
     const params = { ...baseParams };
 
     // Apply defaults if not provided in options
+    // Handle both maxTokens (legacy) and maxOutputTokens (AI SDK v5)
     const maxTokens =
       options?.maxOutputTokens ??
       options?.maxTokens ??
@@ -93,6 +94,7 @@ export class AISDKParameterBuilder {
     const params = { ...baseParams };
 
     // Apply defaults if not provided in options
+    // Handle both maxTokens (legacy) and maxOutputTokens (AI SDK v5)
     const maxTokens =
       options?.maxOutputTokens ??
       options?.maxTokens ??

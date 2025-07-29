@@ -1,7 +1,7 @@
 import { Text, Box } from 'ink';
 import React, { useState, useEffect, useCallback } from 'react';
 
-import { themeEngine } from '../../themes/ThemeEngine.js';
+import { themeEngine } from '../../themes/theme-engine.js';
 
 interface GlitchTextProps {
   children: string;

@@ -1,7 +1,7 @@
 import { Box, Text } from 'ink';
 import React from 'react';
 
-import { ConnectionStatus as ConnectionStatusType } from '../../services/enhancedRuntimeClient.js';
+import { ConnectionStatus as ConnectionStatusType } from '../../services/enhanced-runtime-client.js';
 
 interface ConnectionStatusProps {
   status: ConnectionStatusType;

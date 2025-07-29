@@ -49,24 +49,31 @@ import { ActionResultType } from '../types/enums';
 import { Timestamp, OperationResult, ExecutionResult } from '../types/helpers';
 import { Portal, PortalConfig, PortalCapability } from '../types/portal';
 import { AgentStateTransitionResult } from '../types/results';
+import type {
+  ConfigValue,
+  ProcessedEnvironmentConfig,
+  ModuleConfig,
+  CharacterConfigWithModules,
+} from '../types/runtime-config';
 import { LogContext } from '../types/utils/logger';
-import type { ConfigValue, ProcessedEnvironmentConfig, ModuleConfig, CharacterConfigWithModules } from '../types/runtime-config';
 // Utility imports
 import { configResolver } from '../utils/config-resolver';
-import { 
-  standardLoggers, 
-  createStandardLoggingPatterns,
-  StandardLogContext 
-} from '../utils/standard-logging.js';
-import { 
-  createRuntimeError, 
-  createConfigurationError, 
+import { errorHandler } from '../utils/error-handler';
+import { runtimeLogger } from '../utils/logger';
+import {
+  createRuntimeError,
+  createConfigurationError,
   createAgentError,
   createExtensionError,
   safeAsync,
-  formatError
+  formatError,
 } from '../utils/standard-errors';
-import { errorHandler } from '../utils/error-handler';
+import { 
+  standardLoggers,
+  createStandardLoggingPatterns,
+  StandardLogContext,
+} from '../utils/standard-logging.js';
+
 
 // Core system imports
 import { AutonomousEngine, AutonomousEngineConfig } from './autonomous-engine';
@@ -76,6 +83,20 @@ import { ExtensionLoader, createExtensionLoader } from './extension-loader';
 import { MultiAgentManager } from './multi-agent-manager';
 import { SYMindXModuleRegistry } from './registry';
 // Behaviors and lifecycle systems removed - functionality integrated into autonomous engine
+
+// Context system imports
+import {
+  ContextBootstrapper,
+  ContextBootstrapperConfig,
+  RuntimeContextAdapter,
+  ContextManager,
+  createContextBootstrapper,
+} from './context/integration/index';
+import { 
+  ContextService, 
+  createContextService, 
+  ContextEnhancementOptions 
+} from './context-service';
 
 export class SYMindXRuntime implements AgentRuntime {
   public agents: Map<string, Agent> = new Map();
@@ -101,6 +122,12 @@ export class SYMindXRuntime implements AgentRuntime {
   // Behavior and lifecycle systems removed - functionality integrated into autonomous engine
   private autonomousAgents: Map<string, AutonomousAgent> = new Map();
 
+  // Context system components
+  private contextBootstrapper?: ContextBootstrapper;
+  private contextManager?: ContextManager;
+  private runtimeAdapter?: RuntimeContextAdapter;
+  private contextService: ContextService;
+
   constructor(config: RuntimeConfig) {
     this.config = config;
     this.eventBus = new SimpleEventBus();
@@ -119,6 +146,17 @@ export class SYMindXRuntime implements AgentRuntime {
     // };
     this.extensionLoader = createExtensionLoader();
     // extensionContext is available for future use
+
+    // Initialize context service
+    this.contextService = createContextService({
+      enableCaching: true,
+      enableValidation: true,
+      enablePerformanceMonitoring: config.debug?.enabled || false,
+      enableTracing: config.debug?.enabled || false,
+    });
+
+    // Initialize context system (async, but don't block constructor)
+    this.initializeContextSystemAsync();
 
     // Initialize runtime state
     this.runtimeState = {
@@ -143,7 +181,7 @@ export class SYMindXRuntime implements AgentRuntime {
   }
 
   async initialize(): Promise<void> {
-    runtimeLogger.start('Initializing SYMindX Runtime...');
+    this.logger.start('Initializing SYMindX Runtime...');
 
     // Load environment variables from .env file if it exists
     try {
@@ -159,7 +197,7 @@ export class SYMindXRuntime implements AgentRuntime {
       configDotenv({ path: envPath });
       // Environment variables loaded - logged by UI
     } catch {
-      runtimeLogger.warn(
+      this.logger.warn(
         '⚠️ No .env file found or dotenv not available, using system environment variables'
       );
     }
@@ -444,6 +482,22 @@ export class SYMindXRuntime implements AgentRuntime {
     // Gracefully shutdown all agents
     for (const agent of this.agents.values()) {
       await this.shutdownAgent(agent);
+    }
+
+    // Shutdown context service
+    this.shutdownContextService();
+
+    // Shutdown context system
+    if (this.contextBootstrapper) {
+      try {
+        await this.contextBootstrapper.shutdown();
+        runtimeLogger.info('Context system shutdown completed');
+      } catch (error) {
+        runtimeLogger.error(
+          'Failed to shutdown context system cleanly',
+          error as Error
+        );
+      }
     }
 
     this.runtimeState.status = RuntimeStatus.STOPPED;
@@ -923,6 +977,7 @@ export class SYMindXRuntime implements AgentRuntime {
       );
     }
 
+
     // Create emotion module (try factory first, then fallback to registry)
     let emotionModule = this.registry.getEmotionModule(
       agentConfig.psyche.defaults.emotion
@@ -1329,6 +1384,12 @@ export class SYMindXRuntime implements AgentRuntime {
 
     this.agents.set(agentId, finalAgent);
 
+    // Register agent with context system
+    await this.registerAgentWithContext(finalAgent);
+
+    // Inject context into agent lifecycle
+    await this.injectContextIntoLifecycle(finalAgent);
+
     // Emit agent loaded event
     this.eventBus.emit({
       id: `event_${Date.now()}`,
@@ -1361,6 +1422,12 @@ export class SYMindXRuntime implements AgentRuntime {
 
     await this.shutdownAgent(agent);
     this.agents.delete(agentId);
+
+    // Clear context cache for unloaded agent
+    this.contextService.clearContextCache(agentId);
+
+    // Unregister agent from context system
+    await this.unregisterAgentFromContext(agentId);
 
     // Emit agent unloaded event
     this.eventBus.emit({
@@ -1424,6 +1491,11 @@ export class SYMindXRuntime implements AgentRuntime {
       });
     }
 
+    // Periodically clear context cache for inactive agents (every 5 minutes)
+    if (startTime % (5 * 60 * 1000) < this.config.tickInterval) {
+      this.cleanupContextCache();
+    }
+
     const duration = Date.now() - startTime;
     if (duration > this.config.tickInterval * 0.8) {
       runtimeLogger.warn(
@@ -1472,13 +1544,65 @@ export class SYMindXRuntime implements AgentRuntime {
       }
     }
 
-    // 1. Gather context
-    const context: ThoughtContext = {
-      events: this.getUnprocessedEvents(agent.id),
-      memories: await this.getRecentMemories(agent),
-      currentState: this.getCurrentState(agent),
-      environment: this.getEnvironmentState(),
-    };
+    // 1. Gather context using enhanced context system
+    const context: ThoughtContext = await this.createAgentContext(agent);
+
+    // 1.5. Enrich context with real-time data and tracing
+    if (this.config.debug?.enabled) {
+      // Add context tracing for debugging
+      const contextTrace = {
+        agentId: agent.id,
+        agentName: agent.name,
+        contextCreatedAt: new Date(),
+        eventCount: context.events.length,
+        memoryCount: context.memories.length,
+        hasGoal: !!context.goal,
+        environmentType: context.environment.type,
+      };
+      
+      runtimeLogger.debug('Context created for thought process', contextTrace);
+      
+      // Add performance monitoring for context usage
+      const contextStartTime = performance.now();
+      (context as any).__contextMetrics = {
+        startTime: contextStartTime,
+        trace: contextTrace,
+      };
+    }
+
+    // 1.6. Add social and emotional context enrichment
+    try {
+      // Enrich context with emotional state
+      if (agent.emotion) {
+        const emotionalContext = {
+          currentEmotion: agent.emotion.current,
+          emotionIntensity: agent.emotion.intensity,
+          emotionHistory: agent.emotion.history?.slice(-5) || [], // Last 5 emotions
+          emotionalTriggers: agent.emotion.triggers || [],
+        };
+        (context as any).emotional = emotionalContext;
+        
+        runtimeLogger.debug(`Emotional context added for ${agent.name}`, {
+          emotion: emotionalContext.currentEmotion,
+          intensity: emotionalContext.emotionIntensity,
+        });
+      }
+
+      // Enrich context with social data (other agents, recent interactions)
+      const socialContext = {
+        activeAgents: Array.from(this.agents.keys()).filter(id => id !== agent.id),
+        recentInteractions: context.events
+          .filter(event => event.type.includes('interaction') || event.type.includes('message'))
+          .slice(-3), // Last 3 interactions
+        collaborativeGoals: context.goal ? [context.goal] : [],
+      };
+      (context as any).social = socialContext;
+    } catch (error) {
+      runtimeLogger.warn(
+        `Failed to enrich context for ${agent.name}`,
+        { error: (error as Error).message }
+      );
+    }
 
     // TEMPORARILY DISABLED - Enhanced thinking prompt generation
     /*
@@ -1511,8 +1635,38 @@ export class SYMindXRuntime implements AgentRuntime {
     }
     */
 
-    // 2. Think and plan
+    // 2. Think and plan with enhanced context
+    const thinkingStartTime = performance.now();
     const thoughtResult = await agent.cognition.think(agent, context);
+    const thinkingDuration = performance.now() - thinkingStartTime;
+
+    // 2.1. Add thought result metrics and validation
+    if (this.config.debug?.enabled) {
+      const contextMetrics = (context as any).__contextMetrics;
+      if (contextMetrics) {
+        const totalContextDuration = performance.now() - contextMetrics.startTime;
+        
+        runtimeLogger.debug(`Thought process completed for ${agent.name}`, {
+          thinkingDuration: `${thinkingDuration.toFixed(2)}ms`,
+          totalContextDuration: `${totalContextDuration.toFixed(2)}ms`,
+          thoughtsGenerated: thoughtResult.thoughts.length,
+          actionsPlanned: thoughtResult.actions.length,
+          memoriesFormed: thoughtResult.memories.length,
+          confidence: thoughtResult.confidence,
+        });
+      }
+
+      // Validate thought result structure
+      if (!thoughtResult.thoughts || !Array.isArray(thoughtResult.thoughts)) {
+        runtimeLogger.warn(`Invalid thoughts array for agent ${agent.name}`);
+      }
+      if (!thoughtResult.actions || !Array.isArray(thoughtResult.actions)) {
+        runtimeLogger.warn(`Invalid actions array for agent ${agent.name}`);
+      }
+      if (typeof thoughtResult.confidence !== 'number' || thoughtResult.confidence < 0 || thoughtResult.confidence > 1) {
+        runtimeLogger.warn(`Invalid confidence value for agent ${agent.name}: ${thoughtResult.confidence}`);
+      }
+    }
 
     // 2.5. Handle autonomous processing for autonomous agents
     if (this.autonomousAgents.has(agent.id)) {
@@ -1680,6 +1834,152 @@ export class SYMindXRuntime implements AgentRuntime {
         type: ActionResultType.FAILURE,
         error: error instanceof Error ? error.message : String(error),
       };
+    }
+  }
+
+  /**
+   * Initialize the context system asynchronously
+   */
+  private async initializeContextSystemAsync(): Promise<void> {
+    try {
+      // Create context bootstrapper with configuration
+      const contextConfig: Partial<ContextBootstrapperConfig> = {
+        enableUnifiedContext: true,
+        enableMigration: true,
+        enableBackwardCompatibility: true,
+        autoMigrateOnStartup: false, // Start conservative
+        migrationBatchSize: 3,
+        enableHealthChecks: true,
+        enablePerformanceMonitoring: true,
+      };
+
+      this.contextBootstrapper = createContextBootstrapper(contextConfig);
+
+      // Initialize the context system
+      const initResult = await this.contextBootstrapper.initialize(this.config);
+      
+      if (!initResult.success) {
+        runtimeLogger.warn(
+          `Context system initialization had issues: ${initResult.message}`,
+          { warnings: initResult.warnings, errors: initResult.components_failed }
+        );
+      } else {
+        runtimeLogger.info(
+          `Context system initialized successfully in ${initResult.duration_ms}ms`,
+          { components: initResult.components_initialized }
+        );
+      }
+
+      // Get context system components
+      const contextSystem = this.contextBootstrapper.getContextSystem();
+      if (contextSystem) {
+        this.contextManager = contextSystem.contextManager;
+        this.runtimeAdapter = contextSystem.runtimeAdapter;
+      }
+
+    } catch (error) {
+      runtimeLogger.error(
+        'Failed to initialize context system - falling back to legacy mode',
+        error as Error
+      );
+      // Context system initialization failure is not fatal
+      // The runtime will continue to work in legacy mode
+    }
+  }
+
+  /**
+   * Create enhanced context for agent processing
+   */
+  private async createAgentContext(agent: Agent): Promise<ThoughtContext> {
+    // Create basic legacy context
+    const basicContext: ThoughtContext = {
+      events: this.getUnprocessedEvents(agent.id),
+      memories: await this.getRecentMemories(agent),
+      currentState: this.getCurrentState(agent),
+      environment: this.getEnvironmentState(),
+    };
+
+    // Enhance context using the context service
+    try {
+      const enhancementOptions: ContextEnhancementOptions = {
+        includeMemory: true,
+        includeEmotions: true,
+        includeTemporal: true,
+        includePerformance: this.config.debug?.enabled,
+        cache: true,
+        cacheTtl: 300000, // 5 minutes
+      };
+
+      const enhancedContext = await this.contextService.enhanceThoughtContext(
+        agent,
+        basicContext,
+        enhancementOptions
+      );
+
+      // Add context validation if enabled
+      if (this.config.debug?.enabled) {
+        await this.validateContextForAgent(agent, enhancedContext);
+      }
+
+      return enhancedContext;
+    } catch (error) {
+      runtimeLogger.warn(
+        `Failed to enhance context for agent ${agent.name}, using basic context`,
+        { error: (error as Error).message }
+      );
+    }
+
+    // If unified context system is available, try legacy enhancement
+    if (this.runtimeAdapter && this.contextManager) {
+      try {
+        // Get or create unified context
+        const unifiedContext = this.runtimeAdapter.getOrCreateUnifiedContext(agent, basicContext);
+
+        // Otherwise, extract legacy context from unified context
+        return this.runtimeAdapter.extractThoughtContext(unifiedContext);
+      } catch (error) {
+        runtimeLogger.warn(
+          `Failed to create unified context for agent ${agent.name}, using legacy context`,
+          { error: (error as Error).message }
+        );
+      }
+    }
+
+    // Fallback to basic context
+    return basicContext;
+  }
+
+  /**
+   * Register agent with context system
+   */
+  private async registerAgentWithContext(agent: Agent): Promise<void> {
+    if (this.contextBootstrapper) {
+      try {
+        await this.contextBootstrapper.registerAgent(agent);
+        runtimeLogger.debug(`Agent ${agent.name} registered with context system`);
+      } catch (error) {
+        runtimeLogger.warn(
+          `Failed to register agent ${agent.name} with context system`,
+          { error: (error as Error).message }
+        );
+      }
+    }
+  }
+
+  /**
+   * Unregister agent from context system
+   */
+  private async unregisterAgentFromContext(agentId: string): Promise<void> {
+    if (this.contextBootstrapper) {
+      try {
+        await this.contextBootstrapper.unregisterAgent(agentId);
+        runtimeLogger.debug(`Agent ${agentId} unregistered from context system`);
+      } catch (error) {
+        runtimeLogger.warn(
+          `Failed to unregister agent ${agentId} from context system`,
+          { error: (error as Error).message }
+        );
+      }
     }
   }
 
@@ -2503,11 +2803,8 @@ export class SYMindXRuntime implements AgentRuntime {
       // Use the new portal integration module
       const { registerPortals } = await import('../portals/integration');
 
-      // Get API keys from environment variables or config
-      const apiKeys: Record<string, string> = {};
-      if (this.config.portals && this.config.portals.apiKeys) {
-        Object.assign(apiKeys, this.config.portals.apiKeys);
-      }
+      // Load API keys with proper hierarchy: characters -> .env -> config
+      const apiKeys = await this.loadApiKeys();
 
       // Register all available portals
       await registerPortals(this.registry, apiKeys);
@@ -2887,6 +3184,9 @@ export class SYMindXRuntime implements AgentRuntime {
       // Remove from active agents
       this.agents.delete(agentId);
 
+      // Unregister agent from context system
+      await this.unregisterAgentFromContext(agentId);
+
       // Create lazy agent entry for future activation
       const lazyAgent = this.createLazyAgent(
         agent.config,
@@ -2981,6 +3281,214 @@ export class SYMindXRuntime implements AgentRuntime {
       },
       timestamp: new Date(),
     };
+  }
+
+  private async loadApiKeys(): Promise<Record<string, string>> {
+    const apiKeys: Record<string, string> = {};
+    
+    // 1. Start with config defaults
+    if (this.config.portals?.apiKeys) {
+      Object.assign(apiKeys, this.config.portals.apiKeys);
+    }
+    
+    // 2. Override with environment variables
+    const envKeys = [
+      'OPENAI_API_KEY',
+      'ANTHROPIC_API_KEY', 
+      'GROQ_API_KEY',
+      'XAI_API_KEY',
+      'OPENROUTER_API_KEY',
+      'KLUSTERAI_API_KEY',
+      'GOOGLE_API_KEY',
+      'MISTRAL_API_KEY',
+      'COHERE_API_KEY',
+      'AZURE_OPENAI_API_KEY'
+    ];
+    
+    for (const envKey of envKeys) {
+      const value = process.env[envKey];
+      if (value && value.trim()) {
+        // Convert env key to portal key format
+        const portalKey = envKey.toLowerCase().replace('_api_key', '');
+        apiKeys[portalKey] = value;
+      }
+    }
+    
+    // 3. Override with character-specific keys (if any characters are loaded)
+    try {
+      const characters = await this.loadCharacterApiKeys();
+      Object.assign(apiKeys, characters);
+    } catch (error) {
+      this.logger.debug('No character API keys found', { error: String(error) });
+    }
+    
+    this.logger.info('API Keys loaded', { 
+      availableKeys: Object.keys(apiKeys).filter(key => apiKeys[key] && apiKeys[key].trim()),
+      totalKeys: Object.keys(apiKeys).length
+    });
+    
+    return apiKeys;
+  }
+  
+  private async loadCharacterApiKeys(): Promise<Record<string, string>> {
+    const characterKeys: Record<string, string> = {};
+    
+    try {
+      const fs = await import('fs/promises');
+      const path = await import('path');
+      
+      // Look for character files that might contain API keys
+      const characterPaths = [
+        path.join(process.cwd(), 'dist', 'characters'),
+        path.join(process.cwd(), 'src', 'characters'),
+        path.join(process.cwd(), 'characters')
+      ];
+      
+      for (const charPath of characterPaths) {
+        try {
+          const files = await fs.readdir(charPath);
+          for (const file of files) {
+            if (file.endsWith('.json')) {
+              const charConfig = JSON.parse(await fs.readFile(path.join(charPath, file), 'utf-8'));
+              if (charConfig.apiKeys && typeof charConfig.apiKeys === 'object') {
+                Object.assign(characterKeys, charConfig.apiKeys);
+              }
+            }
+          }
+        } catch (e) {
+          // Character path doesn't exist, continue
+        }
+      }
+    } catch (error) {
+      this.logger.debug('Error loading character API keys', { error: String(error) });
+    }
+    
+    return characterKeys;
+  }
+
+  /**
+   * Context Management Helper Methods
+   */
+
+  /**
+   * Validate context for agent processing
+   */
+  private async validateContextForAgent(agent: Agent, context: ThoughtContext): Promise<void> {
+    try {
+      // Convert ThoughtContext to UnifiedContext for validation
+      // This is a simplified validation - the context service handles full validation
+      if (!context.events || !Array.isArray(context.events)) {
+        runtimeLogger.warn(`Invalid context events for agent ${agent.name}`);
+      }
+      
+      if (!context.memories || !Array.isArray(context.memories)) {
+        runtimeLogger.warn(`Invalid context memories for agent ${agent.name}`);
+      }
+      
+      if (!context.currentState) {
+        runtimeLogger.warn(`Missing current state for agent ${agent.name}`);
+      }
+      
+      if (!context.environment) {
+        runtimeLogger.warn(`Missing environment state for agent ${agent.name}`);
+      }
+      
+      runtimeLogger.debug(`Context validated for agent ${agent.name}`, {
+        events: context.events.length,
+        memories: context.memories.length,
+        hasState: !!context.currentState,
+        hasEnvironment: !!context.environment,
+      });
+    } catch (error) {
+      runtimeLogger.error(
+        `Context validation failed for agent ${agent.name}`,
+        error as Error,
+        {} as LogContext
+      );
+    }
+  }
+
+  /**
+   * Clean up context cache for inactive agents
+   */
+  private cleanupContextCache(): void {
+    try {
+      const activeAgentIds = new Set(this.agents.keys());
+      
+      // Clear cache for agents that are no longer active
+      for (const agentId of this.agents.keys()) {
+        if (!activeAgentIds.has(agentId)) {
+          this.contextService.clearContextCache(agentId);
+        }
+      }
+      
+      runtimeLogger.debug('Context cache cleanup completed');
+    } catch (error) {
+      runtimeLogger.error(
+        'Context cache cleanup failed',
+        error as Error,
+        {} as LogContext
+      );
+    }
+  }
+
+  /**
+   * Inject context into agent lifecycle
+   * 
+   * This method integrates context lifecycle with agent activation and deactivation
+   */
+  private async injectContextIntoLifecycle(agent: Agent): Promise<void> {
+    try {
+      // Clear any existing context cache when agent is reactivated
+      this.contextService.clearContextCache(agent.id);
+      
+      // Pre-warm context cache if agent has recent activity
+      const hasRecentActivity = this.getUnprocessedEvents(agent.id).length > 0;
+      if (hasRecentActivity) {
+        const basicContext: ThoughtContext = {
+          events: this.getUnprocessedEvents(agent.id),
+          memories: await this.getRecentMemories(agent),
+          currentState: this.getCurrentState(agent),
+          environment: this.getEnvironmentState(),
+        };
+        
+        // Pre-warm cache with enhanced context
+        await this.contextService.enhanceThoughtContext(agent, basicContext, {
+          cache: true,
+          cacheTtl: 600000, // 10 minutes for pre-warmed cache
+        });
+        
+        runtimeLogger.debug(`Context cache pre-warmed for agent ${agent.name}`);
+      }
+    } catch (error) {
+      runtimeLogger.warn(
+        `Failed to inject context into lifecycle for agent ${agent.name}`,
+        { error: (error as Error).message }
+      );
+    }
+  }
+
+  /**
+   * Get context performance metrics
+   */
+  getContextPerformanceMetrics(): Record<string, { avg: number; min: number; max: number; count: number }> {
+    return this.contextService.getPerformanceStats();
+  }
+
+  /**
+   * Shutdown context service
+   */
+  private shutdownContextService(): void {
+    try {
+      this.contextService.shutdown();
+      runtimeLogger.info('Context service shutdown completed');
+    } catch (error) {
+      runtimeLogger.error(
+        'Context service shutdown failed',
+        error as Error,
+        {} as LogContext
+      );
+    }
   }
 }
 

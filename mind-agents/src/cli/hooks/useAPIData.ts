@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
-import { EnhancedRuntimeClient } from '../services/enhancedRuntimeClient.js';
+import { EnhancedRuntimeClient } from '../services/enhanced-runtime-client.js';
 import {
   AgentInfo,
   SystemMetrics,
   RuntimeStatus,
   RuntimeCapabilities,
   ActivityEvent,
-} from '../services/runtimeClient.js';
+} from '../services/runtime-client.js';
 
 export interface UseAPIDataOptions<T> {
   fetchFn: () => Promise<T>;

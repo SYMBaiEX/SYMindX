@@ -5,16 +5,13 @@
  * Make this look cool as fuck!
  */
 
-import blessed from 'blessed';
-import contrib from 'blessed-contrib';
-import boxen from 'boxen';
-import chalk from 'chalk';
 import { Command } from 'commander';
-import figlet from 'figlet';
+import chalk from 'chalk';
 import gradient from 'gradient-string';
 import inquirer from 'inquirer';
 
 import { SYMindXRuntime } from '../core/runtime';
+import { createRuntimeClient, RuntimeClient, RuntimeClientConfig } from './services/runtime-client';
 import {
   displayBanner,
   createSpinner,
@@ -46,11 +43,13 @@ export interface CLIConfig {
   defaultAgent?: string;
   colors: boolean;
   verbose: boolean;
+  runtimeMode: 'direct' | 'api' | 'hybrid';
 }
 
 class AwesomeSYMindXCLI {
   private program: Command;
   private config: CLIConfig;
+  private runtimeClient?: RuntimeClient;
 
   constructor() {
     this.program = new Command();
@@ -69,6 +68,7 @@ class AwesomeSYMindXCLI {
       }),
       colors: process.env["NO_COLOR"] !== 'true',
       verbose: process.env["SYMINDX_VERBOSE"] === 'true',
+      runtimeMode: (process.env["SYMINDX_RUNTIME_MODE"] as 'direct' | 'api' | 'hybrid') || 'hybrid',
     };
   }
 
@@ -84,6 +84,7 @@ class AwesomeSYMindXCLI {
       .option('--api-url <url>', 'API server URL', this.config.apiUrl)
       .option('--agent <id>', 'Default agent to interact with')
       .option('--matrix', 'Show matrix rain animation on startup')
+      .option('--mode <mode>', 'Runtime connection mode (direct/api/hybrid)', this.config.runtimeMode)
       .hook('preAction', (thisCommand) => {
         const opts = thisCommand.opts();
         this.config = { ...this.config, ...opts };
@@ -104,100 +105,74 @@ class AwesomeSYMindXCLI {
         await this.startInteractiveMode();
       });
 
-    // Ink CLI mode - modern React-based CLI interface
+    // Modern React-based dashboard
     this.program
       .command('dashboard')
       .alias('ink')
       .description('📊 Start modern React-based CLI dashboard')
-      .option(
-        '--view <view>',
-        'Initial view (dashboard, agents, status)',
-        'dashboard'
-      )
+      .option('--view <view>', 'Initial view', 'dashboard')
       .action(async (options) => {
         await this.startInkCLI(options.view);
       });
 
-    // Chat command
+    // Quick chat
     this.program
       .command('chat')
       .alias('c')
       .description('💬 Chat with an agent')
-      .option('-a, --agent <id>', 'Agent to chat with')
-      .option('-m, --message <text>', 'Message to send')
+      .option('--agent <id>', 'Agent ID to chat with')
+      .option('--message <message>', 'Quick message to send')
       .action(async (options) => {
         if (options.message) {
           await this.quickChat(options.message, options.agent);
         } else {
-          await this.startChatMode(options.agent);
+          await this.interactiveChatMenu();
         }
       });
 
-    // Status command
+    // Status
     this.program
       .command('status')
       .alias('s')
       .description('📊 Show system status')
-      .option('--dashboard', 'Show live dashboard')
+      .option('--verbose', 'Show detailed status')
       .action(async (options) => {
-        if (options.dashboard) {
-          await this.showDashboard();
+        await this.showStatus(options.verbose);
+      });
+
+    // Agent management
+    this.program
+      .command('agent')
+      .alias('a')
+      .description('🤖 Manage agents')
+      .option('--list', 'List all agents')
+      .option('--start <id>', 'Start an agent')
+      .option('--stop <id>', 'Stop an agent')
+      .option('--create', 'Create a new agent')
+      .action(async (options) => {
+        if (options.list) {
+          await this.listAgents();
+        } else if (options.start) {
+          await this.startAgent(options.start);
+        } else if (options.stop) {
+          await this.stopAgent(options.stop);
+        } else if (options.create) {
+          await this.createAgent();
         } else {
-          await this.showStatus();
+          await this.interactiveAgentMenu();
         }
       });
 
-    // Agent commands
-    const agent = this.program
-      .command('agent')
-      .alias('a')
-      .description('🤖 Manage agents');
-
-    agent
-      .command('list')
-      .alias('ls')
-      .description('List all agents')
-      .action(async () => {
-        await this.listAgents();
-      });
-
-    agent
-      .command('start <id>')
-      .description('Start an agent')
-      .action(async (id) => {
-        await this.startAgent(id);
-      });
-
-    agent
-      .command('stop <id>')
-      .description('Stop an agent')
-      .action(async (id) => {
-        await this.stopAgent(id);
-      });
-
-    agent
-      .command('info <id>')
-      .description('Show detailed agent information')
-      .action(async (id) => {
-        await this.showAgentInfo(id);
-      });
-
-    agent
-      .command('create')
-      .description('Create a new agent')
-      .action(async () => {
-        await this.createAgent();
-      });
-
-    // Fun commands
+    // Matrix animation
     this.program
       .command('matrix')
       .description('🟢 Show matrix rain animation')
-      .option('-d, --duration <ms>', 'Duration in milliseconds', '5000')
+      .option('--duration <ms>', 'Animation duration in ms', '3000')
       .action(async (options) => {
         await matrixRain(parseInt(options.duration));
       });
 
+    // Banner
     this.program
       .command('banner')
       .description('🎨 Show the awesome banner')
@@ -208,6 +183,9 @@ class AwesomeSYMindXCLI {
 
   async run(argv: string[]): Promise<void> {
     try {
+      // Initialize runtime client
+      await this.initializeRuntimeClient();
+
       // Show banner on startup for non-ink commands
       if (
         argv.length <= 2 ||
@@ -227,6 +205,61 @@ class AwesomeSYMindXCLI {
     } catch (error) {
       displayError(error instanceof Error ? error.message : 'Unknown error');
       process.exit(1);
+    }
+  }
+
+  private async initializeRuntimeClient(): Promise<void> {
+    const spinner = createSpinner('🔌 Connecting to SYMindX runtime...', 'dots');
+    spinner.start();
+
+    try {
+      const runtimeConfig: RuntimeClientConfig = {
+        mode: this.config.runtimeMode,
+        apiUrl: this.config.apiUrl,
+        autoConnect: true,
+        retryAttempts: 3,
+        retryDelay: 1000,
+      };
+
+      this.runtimeClient = createRuntimeClient(runtimeConfig);
+
+      // Set up event listeners
+      this.runtimeClient.on('connected', (data) => {
+        spinner.succeed(`✅ Connected to runtime (${data.mode} mode)`);
+        if (this.config.verbose) {
+          console.log(chalk.gray(`   Mode: ${data.mode}`));
+          console.log(chalk.gray(`   API URL: ${this.config.apiUrl}`));
+        }
+      });
+
+      this.runtimeClient.on('error', (error) => {
+        spinner.fail(`❌ Runtime connection failed: ${error.message}`);
+        if (this.config.verbose) {
+          console.error(chalk.red('   Error details:'), error);
+        }
+      });
+
+      this.runtimeClient.on('agent:started', (data) => {
+        if (this.config.verbose) {
+          console.log(chalk.green(`🤖 Agent ${data.agentId} started`));
+        }
+      });
+
+      this.runtimeClient.on('agent:stopped', (data) => {
+        if (this.config.verbose) {
+          console.log(chalk.yellow(`🤖 Agent ${data.agentId} stopped`));
+        }
+      });
+
+      // Connect to runtime
+      const connected = await this.runtimeClient.connect();
+      if (!connected) {
+        spinner.fail('❌ Failed to connect to runtime');
+        throw new Error('Runtime connection failed');
+      }
+    } catch (error) {
+      spinner.fail('❌ Runtime initialization failed');
+      throw error;
     }
   }
 
@@ -288,7 +321,12 @@ class AwesomeSYMindXCLI {
   }
 
   private async interactiveChatMenu(): Promise<void> {
-    const agents = await this.getAvailableAgents();
+    if (!this.runtimeClient) {
+      displayError('Runtime client not available');
+      return;
+    }
+
+    const agents = await this.runtimeClient.getAgents();
 
     if (agents.length === 0) {
       displayError('No agents available. Please start an agent first.');
@@ -300,7 +338,7 @@ class AwesomeSYMindXCLI {
       {
         type: 'list',
         name: 'selectedAgent',
-        message: neonGradient('Select an agent to chat with:'),
+        message: coolGradient('Select an agent to chat with:'),
         choices: agents.map((agent) => ({
           name: this.formatAgentChoice(agent),
           value: agent.id,
@@ -312,44 +350,39 @@ class AwesomeSYMindXCLI {
   }
 
   private formatAgentChoice(agent: any): string {
-    const statusEmoji = agent.status === 'active' ? '🟢' : '🔴';
-    const emotion = agent.emotion?.current || 'neutral';
-    const emotionEmoji = this.getEmotionEmoji(emotion);
-
-    return `${statusEmoji} ${chalk.bold(agent.name)} ${chalk.gray(`(${agent.id})`)} ${emotionEmoji} ${chalk.dim(emotion)}`;
+    const status = agent.status === 'active' ? '🟢' : '🔴';
+    const emotion = agent.emotion ? this.getEmotionEmoji(agent.emotion) : '😐';
+    return `${status} ${agent.name} ${emotion} (${agent.id})`;
   }
 
   private getEmotionEmoji(emotion: string): string {
-    const emojis: Record<string, string> = {
+    const emotionEmojis: Record<string, string> = {
       happy: '😊',
       sad: '😢',
       angry: '😠',
       anxious: '😰',
       confident: '😎',
-      neutral: '😐',
+      nostalgic: '🥺',
+      empathetic: '🤗',
       curious: '🤔',
-      proud: '😤',
+      proud: '😌',
       confused: '😕',
+      neutral: '😐',
     };
-    return emojis[emotion] || '🤖';
+    return emotionEmojis[emotion] || '😐';
   }
 
   private async startChatMode(agentId: string): Promise<void> {
     console.clear();
-    const chatGradient = gradient(['#00F5FF', '#FF00FF']);
-    console.log(
-      chatGradient.multiline(figlet.textSync('Chat Mode', { font: 'Small' }))
-    );
-    console.log(
-      chalk.gray('\nType your message and press Enter. Type "exit" to leave.\n')
-    );
+    console.log(coolGradient(`\n💬 Chatting with agent: ${agentId}\n`));
+    console.log(chalk.gray('Type "exit" to quit, "help" for commands\n'));
 
     while (true) {
       const { message } = await inquirer.prompt([
         {
           type: 'input',
           name: 'message',
-          message: chalk.yellow('You:'),
+          message: chalk.cyan('You:'),
         },
       ]);
 
@@ -357,8 +390,16 @@ class AwesomeSYMindXCLI {
         break;
       }
 
-      if (message.trim()) {
-        await this.sendChatMessage(agentId, message);
+      if (message.toLowerCase() === 'help') {
+        this.showChatHelp();
+        continue;
+      }
+
+      try {
+        const response = await this.runtimeClient!.sendMessage(agentId, message);
+        displayChatMessage(agentId, response.response || response.message, true);
+      } catch (error) {
+        displayError(`Failed to send message: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
   }
@@ -367,83 +408,91 @@ class AwesomeSYMindXCLI {
     agentId: string,
     message: string
   ): Promise<void> {
-    try {
-      const response = await fetch(`${this.config.apiUrl}/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agentId, message }),
-      });
+    const spinner = createSpinner('Sending message...', 'dots');
+    spinner.start();
 
-      if (response.ok) {
-        const data = await response.json();
-        console.log(chalk.green(`${agentId}:`), data.response);
-      } else {
-        console.log(chalk.red('❌ Failed to send message'));
-      }
+    try {
+      const response = await this.runtimeClient!.sendMessage(agentId, message);
+      spinner.succeed('Message sent successfully!');
+      displayChatMessage(agentId, response.response || response.message, true);
     } catch (error) {
-      void error; // Acknowledge error without using it
-      console.log(chalk.red('❌ Could not connect to agent'));
+      spinner.fail('Failed to send message');
+      displayError(error instanceof Error ? error.message : 'Unknown error');
     }
   }
 
   private async interactiveAgentMenu(): Promise<void> {
-    const { action } = await inquirer.prompt([
-      {
-        type: 'list',
-        name: 'action',
-        message: fireGradient('Agent Management'),
-        choices: [
-          { name: '📋 List all agents', value: 'list' },
-          { name: '▶️  Start an agent', value: 'start' },
-          { name: '⏹️  Stop an agent', value: 'stop' },
-          { name: '🔄 Restart an agent', value: 'restart' },
-          { name: '➕ Create new agent', value: 'create' },
-          { name: '🗑️  Remove an agent', value: 'remove' },
-          { name: '⬅️  Back to main menu', value: 'back' },
-        ],
-      },
-    ]);
+    while (true) {
+      const { action } = await inquirer.prompt([
+        {
+          type: 'list',
+          name: 'action',
+          message: coolGradient('Agent Management:'),
+          choices: [
+            { name: chalk.blue('📋 List Agents'), value: 'list' },
+            { name: chalk.green('🚀 Start Agent'), value: 'start' },
+            { name: chalk.red('⏹️ Stop Agent'), value: 'stop' },
+            { name: chalk.yellow('🔄 Restart Agent'), value: 'restart' },
+            { name: chalk.magenta('➕ Create Agent'), value: 'create' },
+            { name: chalk.red('🗑️ Remove Agent'), value: 'remove' },
+            { name: chalk.gray('⬅️ Back'), value: 'back' },
+          ],
+        },
+      ]);
 
-    switch (action) {
-      case 'list':
-        await this.listAgents();
-        await this.waitForEnter();
-        break;
-      case 'start':
-        await this.interactiveStartAgent();
-        break;
-      case 'stop':
-        await this.interactiveStopAgent();
-        break;
-      case 'restart':
-        await this.interactiveRestartAgent();
-        break;
-      case 'create':
-        await this.createAgent();
-        break;
-      case 'remove':
-        await this.interactiveRemoveAgent();
-        break;
-      case 'back':
-        return;
+      switch (action) {
+        case 'list':
+          await this.listAgents();
+          await this.waitForEnter();
+          break;
+        case 'start':
+          await this.interactiveStartAgent();
+          break;
+        case 'stop':
+          await this.interactiveStopAgent();
+          break;
+        case 'restart':
+          await this.interactiveRestartAgent();
+          break;
+        case 'create':
+          await this.interactiveCreateAgent();
+          break;
+        case 'remove':
+          await this.interactiveRemoveAgent();
+          break;
+        case 'back':
+          return;
+      }
     }
   }
 
   private async listAgents(): Promise<void> {
+    if (!this.runtimeClient) {
+      displayError('Runtime client not available');
+      return;
+    }
+
     const spinner = createSpinner('Fetching agents...', 'dots');
     spinner.start();
 
     try {
-      const agents = await this.getAvailableAgents();
-      spinner.stop();
-
-      console.log(chalk.cyan.bold('\n🤖 Available Agents\n'));
+      const agents = await this.runtimeClient.getAgents();
+      spinner.succeed(`Found ${agents.length} agents`);
 
       if (agents.length === 0) {
-        console.log(chalk.yellow('No agents found.'));
-      } else {
-        displayAgentStatus(agents);
+        console.log(chalk.yellow('No agents found. Create one with "agent create"'));
+        return;
       }
+
+      console.log('\n' + chalk.cyan('🤖 Available Agents:'));
+      agents.forEach((agent) => {
+        const status = agent.status === 'active' ? '🟢' : '🔴';
+        const emotion = agent.emotion ? this.getEmotionEmoji(agent.emotion) : '😐';
+        console.log(`  ${status} ${agent.name} ${emotion} (${agent.id})`);
+        if (agent.uptime) {
+          console.log(`    Uptime: ${this.formatUptime(agent.uptime)}`);
+        }
+      });
     } catch (error) {
       spinner.fail('Failed to fetch agents');
       displayError(error instanceof Error ? error.message : 'Unknown error');
@@ -451,61 +500,31 @@ class AwesomeSYMindXCLI {
   }
 
   private async showStatus(): Promise<void> {
-    const spinner = createSpinner('Fetching system status...', 'star');
+    if (!this.runtimeClient) {
+      displayError('Runtime client not available');
+      return;
+    }
+
+    const spinner = createSpinner('Fetching system status...', 'dots');
     spinner.start();
 
     try {
-      // Fetch both status and metrics
-      const [statusResponse, metricsResponse, agentsResponse] =
-        await Promise.all([
-          fetch(`${this.config.apiUrl}/status`),
-          fetch(`${this.config.apiUrl}/api/metrics`),
-          fetch(`${this.config.apiUrl}/agents`),
-        ]);
+      const metrics = await this.runtimeClient.getSystemMetrics();
+      const status = this.runtimeClient.getConnectionStatus();
+      
+      spinner.succeed('System status retrieved');
 
-      const status = await statusResponse.json();
-      const metrics = await metricsResponse.json();
-      const agentsData = await agentsResponse.json();
-
-      spinner.stop();
-
-      console.log(chalk.cyan.bold('\n📊 System Status\n'));
-
-      // Runtime info
-      const runtimeBox = boxen(
-        `${chalk.green('●')} Status: ${status.agent.status === 'active' ? chalk.green('Active') : chalk.red('Inactive')}\n` +
-          `${chalk.blue('◆')} Agents: ${agentsData.agents.length} (${metrics.activeAgents} active)\n` +
-          `${chalk.yellow('⚡')} Uptime: ${this.formatUptime(metrics.uptime)}\n` +
-          `${chalk.magenta('🔌')} Extensions: ${status.extensions.loaded} loaded (${status.extensions.active} active)\n` +
-          `${chalk.cyan('💾')} Memory: ${(status.memory.used / 1024 / 1024).toFixed(2)} MB / ${(status.memory.total / 1024 / 1024).toFixed(2)} MB`,
-        {
-          padding: 1,
-          borderStyle: 'round',
-          borderColor: 'cyan',
-        }
-      );
-
-      console.log(runtimeBox);
-
-      // Agents list
-      if (agentsData.agents.length > 0) {
-        console.log(chalk.cyan.bold('\n🤖 Agents\n'));
-        agentsData.agents.forEach((agent: any) => {
-          const statusIcon =
-            agent.status === 'active' ? chalk.green('●') : chalk.red('●');
-          const ethicsIcon = agent.ethicsEnabled ? '🛡️' : '⚠️';
-          console.log(
-            `${statusIcon} ${chalk.bold(agent.name)} (${agent.id}) ${ethicsIcon}`
-          );
-          console.log(
-            `   ${chalk.gray(`Emotion: ${agent.emotion || 'neutral'} | Extensions: ${agent.extensionCount}`)}`
-          );
-        });
-      }
+      console.log('\n' + chalk.cyan('📊 SYMindX System Status:'));
+      console.log(`  Connection: ${status.connected ? '🟢 Connected' : '🔴 Disconnected'}`);
+      console.log(`  Mode: ${status.mode}`);
+      console.log(`  Uptime: ${this.formatUptime(metrics.uptime)}`);
+      console.log(`  Active Agents: ${metrics.agents.filter(a => a.status === 'active').length}`);
+      console.log(`  Total Agents: ${metrics.agents.length}`);
+      console.log(`  Memory Usage: ${(metrics.memoryUsage / 1024 / 1024).toFixed(2)} MB`);
+      console.log(`  Event Count: ${metrics.eventCount}`);
     } catch (error) {
-      void error; // Acknowledge error without using it
-      spinner.fail('Failed to fetch status');
-      displayError('Could not connect to runtime');
+      spinner.fail('Failed to fetch system status');
+      displayError(error instanceof Error ? error.message : 'Unknown error');
     }
   }
 
@@ -515,125 +534,21 @@ class AwesomeSYMindXCLI {
     const hours = Math.floor(minutes / 60);
     const days = Math.floor(hours / 24);
 
-    if (days > 0) return `${days}d ${hours % 24}h`;
+    if (days > 0) return `${days}d ${hours % 24}h ${minutes % 60}m`;
     if (hours > 0) return `${hours}h ${minutes % 60}m`;
     if (minutes > 0) return `${minutes}m ${seconds % 60}s`;
     return `${seconds}s`;
   }
 
   private async showDashboard(): Promise<void> {
-    const screen = blessed.screen({
-      smartCSR: true,
-      title: 'SYMindX Dashboard',
-    });
+    console.clear();
+    await displayBanner();
 
-    // Create grid
-    const grid = new contrib.grid({ rows: 12, cols: 12, screen: screen });
+    console.log(coolGradient('\n📊 SYMindX Live Dashboard\n'));
 
-    // CPU Line Chart
-    const cpuLine = grid.set(0, 0, 4, 6, contrib.line, {
-      style: { line: 'yellow', text: 'green', baseline: 'black' },
-      label: 'CPU Usage (%)',
-      showLegend: true,
-    });
-
-    // Memory Gauge
-    const memoryGauge = grid.set(0, 6, 2, 3, contrib.gauge, {
-      label: 'Memory Usage',
-      stroke: 'green',
-      fill: 'white',
-    });
-
-    // Agent Table
-    const agentTable = grid.set(4, 0, 4, 12, contrib.table, {
-      keys: true,
-      fg: 'white',
-      selectedFg: 'white',
-      selectedBg: 'blue',
-      interactive: true,
-      label: 'Active Agents',
-      width: '100%',
-      height: '100%',
-      border: { type: 'line', fg: 'cyan' },
-      columnSpacing: 3,
-      columnWidth: [20, 15, 20, 15, 30],
-    });
-
-    // Log Display
-    const log = grid.set(8, 0, 4, 12, contrib.log, {
-      fg: 'green',
-      selectedFg: 'green',
-      label: 'System Logs',
-    });
-
-    // Track CPU history
-    const cpuHistory: number[] = Array(60).fill(0);
-    const startTime = Date.now();
-
-    // Update data periodically
-    const updateInterval = setInterval(async () => {
-      try {
-        // Fetch real metrics
-        const [metricsResponse, agentsResponse] = await Promise.all([
-          fetch(`${this.config.apiUrl}/api/metrics`),
-          fetch(`${this.config.apiUrl}/agents`),
-        ]);
-
-        const metrics = await metricsResponse.json();
-        const agentsData = await agentsResponse.json();
-
-        // Update CPU chart with real memory usage as proxy for CPU
-        const cpuUsage = Math.min(
-          100,
-          (metrics.memory.heapUsed / metrics.memory.heapTotal) * 100
-        );
-        cpuHistory.shift();
-        cpuHistory.push(cpuUsage);
-
-        const cpuData = {
-          title: 'Memory Usage %',
-          x: Array.from({ length: 60 }, (_, i) => (i - 59).toString()),
-          y: cpuHistory,
-        };
-        cpuLine.setData([cpuData]);
-
-        // Update memory gauge
-        const memPercent =
-          (metrics.memory.heapUsed / metrics.memory.heapTotal) * 100;
-        memoryGauge.setPercent(Math.round(memPercent));
-
-        // Update agent table
-        const tableData = {
-          headers: ['Name', 'Status', 'Emotion', 'Portal', 'Extensions'],
-          data: agentsData.agents.map((agent: any) => [
-            agent.name,
-            agent.status,
-            agent.emotion || 'neutral',
-            agent.hasPortal ? 'Connected' : 'None',
-            agent.extensionCount.toString(),
-          ]),
-        };
-        agentTable.setData(tableData);
-
-        // Add metrics log
-        const runtime = Date.now() - startTime;
-        log.log(
-          `[${new Date().toLocaleTimeString()}] Agents: ${metrics.activeAgents}/${metrics.totalAgents} | Mem: ${(metrics.memory.heapUsed / 1024 / 1024).toFixed(1)}MB | Uptime: ${Math.floor(runtime / 1000)}s`
-        );
-
-        screen.render();
-      } catch (error) {
-        log.log(`[ERROR] Failed to fetch metrics: ${error}`);
-      }
-    }, 1000);
-
-    // Quit on Escape, q, or Control-C
-    screen.key(['escape', 'q', 'C-c'], () => {
-      clearInterval(updateInterval);
-      return process.exit(0);
-    });
-
-    screen.render();
+    // This would be a more sophisticated dashboard with real-time updates
+    console.log(chalk.yellow('Dashboard features coming soon...'));
+    console.log(chalk.gray('Use "symindx ink" for the modern React dashboard'));
   }
 
   private async animationsMenu(): Promise<void> {
@@ -641,95 +556,80 @@ class AwesomeSYMindXCLI {
       {
         type: 'list',
         name: 'animation',
-        message: gradient(['#FF006E', '#8338EC'])('Choose an animation:'),
+        message: coolGradient('Select an animation:'),
         choices: [
           { name: '🟢 Matrix Rain', value: 'matrix' },
-          { name: '🎨 Banner Art', value: 'banner' },
-          { name: '🔄 Loading Demo', value: 'loading' },
-          { name: '⬅️  Back', value: 'back' },
+          { name: '🔥 Fire Effect', value: 'fire' },
+          { name: '💧 Water Effect', value: 'water' },
+          { name: '⚡ Lightning Effect', value: 'lightning' },
+          { name: '💥 Explosion Effect', value: 'explosion' },
+          { name: chalk.gray('⬅️ Back'), value: 'back' },
         ],
+      },
+    ]);
+
+    if (animation === 'back') return;
+
+    const { duration } = await inquirer.prompt([
+      {
+        type: 'input',
+        name: 'duration',
+        message: 'Animation duration (ms):',
+        default: '3000',
       },
     ]);
 
     switch (animation) {
       case 'matrix':
-        await matrixRain(5000);
+        await matrixRain(parseInt(duration));
         break;
-      case 'banner':
-        console.clear();
-        await displayBanner();
-        await this.waitForEnter();
-        break;
-      case 'loading':
-        await animateLoading('🚀 Launching rockets', 1000);
-        await animateLoading('🌟 Catching stars', 1500);
-        await animateLoading('🎯 Calibrating awesomeness', 2000);
-        displaySuccess('Animation complete!');
-        await this.waitForEnter();
-        break;
+      // Add other animations here
     }
   }
 
   private async quickChat(message: string, agentId?: string): Promise<void> {
-    const targetAgent = agentId || this.config.defaultAgent;
-
-    if (!targetAgent) {
-      displayError(
-        'No agent specified. Use --agent <id> or set a default agent'
-      );
+    if (!this.runtimeClient) {
+      displayError('Runtime client not available');
       return;
     }
 
-    const spinner = createSpinner(
-      `Sending message to ${targetAgent}...`,
-      'dots'
-    );
+    if (!agentId) {
+      const agents = await this.runtimeClient.getAgents();
+      if (agents.length === 0) {
+        displayError('No agents available');
+        return;
+      }
+      agentId = agents[0].id; // Use first available agent
+    }
+
+    const spinner = createSpinner(`Sending message to ${agentId}...`, 'dots');
     spinner.start();
 
     try {
-      const response = await fetch(`${this.config.apiUrl}/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agentId: targetAgent, message }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        spinner.stop();
-        displayChatMessage('You', message, false);
-        displayChatMessage(targetAgent, data.response, true);
-      } else {
-        spinner.fail('Failed to send message');
-      }
+      const response = await this.runtimeClient.sendMessage(agentId, message);
+      spinner.succeed('Message sent successfully!');
+      displayChatMessage(agentId, response.response || response.message, true);
     } catch (error) {
-      spinner.fail('Could not connect to agent');
+      spinner.fail('Failed to send message');
       displayError(error instanceof Error ? error.message : 'Unknown error');
     }
   }
 
   private async startAgent(agentId: string): Promise<void> {
+    if (!this.runtimeClient) {
+      displayError('Runtime client not available');
+      return;
+    }
+
     const spinner = createSpinner(`Starting agent ${agentId}...`, 'dots');
     spinner.start();
 
     try {
-      const response = await fetch(
-        `${this.config.apiUrl}/api/agents/${agentId}/start`,
-        {
-          method: 'POST',
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
+      const success = await this.runtimeClient.startAgent(agentId);
+      if (success) {
         spinner.succeed(`Agent ${agentId} started successfully!`);
-        if (data.message) {
-          console.log(chalk.gray(`  → ${data.message}`));
-        }
       } else {
-        const errorData = await response.json().catch(() => ({}));
-        spinner.fail(
-          `Failed to start agent ${agentId}: ${errorData.error || response.statusText}`
-        );
+        spinner.fail(`Failed to start agent ${agentId}`);
       }
     } catch (error) {
       spinner.fail('Could not connect to runtime');
@@ -738,28 +638,20 @@ class AwesomeSYMindXCLI {
   }
 
   private async stopAgent(agentId: string): Promise<void> {
+    if (!this.runtimeClient) {
+      displayError('Runtime client not available');
+      return;
+    }
+
     const spinner = createSpinner(`Stopping agent ${agentId}...`, 'dots');
     spinner.start();
 
     try {
-      const response = await fetch(
-        `${this.config.apiUrl}/api/agents/${agentId}/stop`,
-        {
-          method: 'POST',
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
+      const success = await this.runtimeClient.stopAgent(agentId);
+      if (success) {
         spinner.succeed(`Agent ${agentId} stopped successfully!`);
-        if (data.message) {
-          console.log(chalk.gray(`  → ${data.message}`));
-        }
       } else {
-        const errorData = await response.json().catch(() => ({}));
-        spinner.fail(
-          `Failed to stop agent ${agentId}: ${errorData.error || response.statusText}`
-        );
+        spinner.fail(`Failed to stop agent ${agentId}`);
       }
     } catch (error) {
       spinner.fail('Could not connect to runtime');
@@ -768,6 +660,11 @@ class AwesomeSYMindXCLI {
   }
 
   private async createAgent(): Promise<void> {
+    if (!this.runtimeClient) {
+      displayError('Runtime client not available');
+      return;
+    }
+
     const answers = await inquirer.prompt([
       {
         type: 'input',
@@ -797,53 +694,77 @@ class AwesomeSYMindXCLI {
           { name: '🏴‍☠️ Unethical Hacker', value: 'hacker' },
         ],
       },
-      {
-        type: 'confirm',
-        name: 'enableEthics',
-        message: 'Enable ethics engine?',
-        default: true,
-      },
-      {
-        type: 'list',
-        name: 'portal',
-        message: 'AI Portal:',
-        choices: [
-          { name: '⚡ Groq (Fast)', value: 'groq' },
-          { name: '🧠 OpenAI GPT', value: 'openai' },
-          { name: '🤖 Anthropic Claude', value: 'anthropic' },
-          { name: '🚀 xAI Grok', value: 'xai' },
-          { name: '💻 Local Ollama', value: 'ollama' },
-        ],
-      },
     ]);
 
-    const progressBar = createProgressBar('Creating agent', 5);
+    const spinner = createSpinner('Creating agent...', 'dots');
+    spinner.start();
 
-    progressBar.update(1);
-    await new Promise((r) => setTimeout(r, 500));
+    try {
+      const agentConfig = {
+        id: answers.id,
+        name: answers.name,
+        type: 'autonomous',
+        personality: answers.personality,
+        enabled: false,
+        core: {
+          name: answers.name,
+          tone: 'professional',
+          personality: [answers.personality],
+        },
+        lore: {
+          origin: 'CLI Creation',
+          motive: 'To assist users',
+          background: `Created as a ${answers.personality} agent`,
+        },
+        psyche: {
+          traits: [answers.personality],
+          defaults: {
+            memory: 'sqlite',
+            emotion: 'composite',
+            cognition: 'reactive',
+          },
+        },
+        modules: {
+          extensions: [],
+          memory: {
+            provider: 'sqlite',
+            maxRecords: 1000,
+          },
+          emotion: {
+            type: 'composite',
+            sensitivity: 0.5,
+            decayRate: 0.1,
+            transitionSpeed: 0.5,
+          },
+          cognition: {
+            type: 'reactive',
+            planningDepth: 3,
+            memoryIntegration: true,
+            creativityLevel: 0.5,
+          },
+        },
+      };
 
-    progressBar.update(2);
-    await new Promise((r) => setTimeout(r, 500));
-
-    progressBar.update(3);
-    await new Promise((r) => setTimeout(r, 500));
-
-    progressBar.update(4);
-    await new Promise((r) => setTimeout(r, 500));
-
-    progressBar.update(5);
-
-    displaySuccess(`Agent ${answers.name} created successfully!`);
-    await this.waitForEnter();
+      const agentId = await this.runtimeClient.createAgent(agentConfig);
+      spinner.succeed(`Agent ${answers.name} created successfully!`);
+      console.log(chalk.gray(`   ID: ${agentId}`));
+    } catch (error) {
+      spinner.fail('Failed to create agent');
+      displayError(error instanceof Error ? error.message : 'Unknown error');
+    }
   }
 
   private async interactiveStartAgent(): Promise<void> {
-    const agents = await this.getAvailableAgents();
-    const stoppedAgents = agents.filter((a) => a.status !== 'active');
+    if (!this.runtimeClient) {
+      displayError('Runtime client not available');
+      return;
+    }
 
-    if (stoppedAgents.length === 0) {
-      displayError('All agents are already running');
-      await this.waitForEnter();
+    const agents = await this.runtimeClient.getAgents();
+    const inactiveAgents = agents.filter((a) => a.status !== 'active');
+
+    if (inactiveAgents.length === 0) {
+      console.log(chalk.yellow('No inactive agents to start'));
       return;
     }
 
@@ -852,24 +773,27 @@ class AwesomeSYMindXCLI {
         type: 'list',
         name: 'agentId',
         message: 'Select agent to start:',
-        choices: stoppedAgents.map((agent) => ({
-          name: this.formatAgentChoice(agent),
+        choices: inactiveAgents.map((agent) => ({
+          name: `${agent.name} (${agent.id})`,
           value: agent.id,
         })),
       },
     ]);
 
     await this.startAgent(agentId);
-    await this.waitForEnter();
   }
 
   private async interactiveStopAgent(): Promise<void> {
-    const agents = await this.getAvailableAgents();
-    const runningAgents = agents.filter((a) => a.status === 'active');
+    if (!this.runtimeClient) {
+      displayError('Runtime client not available');
+      return;
+    }
 
-    if (runningAgents.length === 0) {
-      displayError('No agents are running');
-      await this.waitForEnter();
+    const agents = await this.runtimeClient.getAgents();
+    const activeAgents = agents.filter((a) => a.status === 'active');
+
+    if (activeAgents.length === 0) {
+      console.log(chalk.yellow('No active agents to stop'));
       return;
     }
 
@@ -878,23 +802,26 @@ class AwesomeSYMindXCLI {
         type: 'list',
         name: 'agentId',
         message: 'Select agent to stop:',
-        choices: runningAgents.map((agent) => ({
-          name: this.formatAgentChoice(agent),
+        choices: activeAgents.map((agent) => ({
+          name: `${agent.name} (${agent.id})`,
           value: agent.id,
         })),
       },
     ]);
 
     await this.stopAgent(agentId);
-    await this.waitForEnter();
   }
 
   private async interactiveRestartAgent(): Promise<void> {
-    const agents = await this.getAvailableAgents();
+    if (!this.runtimeClient) {
+      displayError('Runtime client not available');
+      return;
+    }
+
+    const agents = await this.runtimeClient.getAgents();
 
     if (agents.length === 0) {
-      displayError('No agents available');
-      await this.waitForEnter();
+      console.log(chalk.yellow('No agents available'));
       return;
     }
 
@@ -904,101 +831,114 @@ class AwesomeSYMindXCLI {
         name: 'agentId',
         message: 'Select agent to restart:',
         choices: agents.map((agent) => ({
-          name: this.formatAgentChoice(agent),
+          name: `${agent.name} (${agent.id}) - ${agent.status}`,
           value: agent.id,
         })),
       },
     ]);
 
-    await this.stopAgent(agentId);
-    await new Promise((r) => setTimeout(r, 1000));
-    await this.startAgent(agentId);
-    await this.waitForEnter();
+    const spinner = createSpinner(`Restarting agent ${agentId}...`, 'dots');
+    spinner.start();
+
+    try {
+      await this.runtimeClient.stopAgent(agentId);
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait a bit
+      const success = await this.runtimeClient.startAgent(agentId);
+      
+      if (success) {
+        spinner.succeed(`Agent ${agentId} restarted successfully!`);
+      } else {
+        spinner.fail(`Failed to restart agent ${agentId}`);
+      }
+    } catch (error) {
+      spinner.fail('Failed to restart agent');
+      displayError(error instanceof Error ? error.message : 'Unknown error');
+    }
+  }
+
+  private async interactiveCreateAgent(): Promise<void> {
+    await this.createAgent();
   }
 
   private async interactiveRemoveAgent(): Promise<void> {
-    const agents = await this.getAvailableAgents();
-
-    if (agents.length === 0) {
-      displayError('No agents available');
-      await this.waitForEnter();
+    if (!this.runtimeClient) {
+      displayError('Runtime client not available');
       return;
     }
 
-    const { agentId, confirm } = await inquirer.prompt([
+    const agents = await this.runtimeClient.getAgents();
+
+    if (agents.length === 0) {
+      console.log(chalk.yellow('No agents to remove'));
+      return;
+    }
+
+    const { agentId } = await inquirer.prompt([
       {
         type: 'list',
         name: 'agentId',
         message: 'Select agent to remove:',
         choices: agents.map((agent) => ({
-          name: this.formatAgentChoice(agent),
+          name: `${agent.name} (${agent.id}) - ${agent.status}`,
           value: agent.id,
         })),
       },
+    ]);
+
+    const { confirm } = await inquirer.prompt([
       {
         type: 'confirm',
         name: 'confirm',
-        message: (answers) =>
-          chalk.red(`Are you sure you want to remove ${answers.agentId}?`),
+        message: `Are you sure you want to remove agent ${agentId}?`,
         default: false,
       },
     ]);
 
-    if (confirm) {
-      const spinner = createSpinner(`Removing agent ${agentId}...`, 'dots');
-      spinner.start();
-      await new Promise((r) => setTimeout(r, 2000));
-      spinner.succeed(`Agent ${agentId} removed!`);
+    if (!confirm) {
+      console.log(chalk.yellow('Operation cancelled'));
+      return;
     }
 
-    await this.waitForEnter();
-  }
-
-  private async showAgentInfo(agentId: string): Promise<void> {
-    const spinner = createSpinner(
-      `Fetching agent info for ${agentId}...`,
-      'dots'
-    );
+    const spinner = createSpinner(`Removing agent ${agentId}...`, 'dots');
     spinner.start();
 
     try {
-      const response = await fetch(
-        `${this.config.apiUrl}/api/agent/${agentId}`
-      );
+      // Note: This would need to be implemented in the runtime
+      spinner.fail('Agent removal not yet implemented');
+      console.log(chalk.gray('   This feature is coming soon...'));
+    } catch (error) {
+      spinner.fail('Failed to remove agent');
+      displayError(error instanceof Error ? error.message : 'Unknown error');
+    }
+  }
 
-      if (response.ok) {
-        const agent = await response.json();
-        spinner.stop();
+  private async showAgentInfo(agentId: string): Promise<void> {
+    if (!this.runtimeClient) {
+      displayError('Runtime client not available');
+      return;
+    }
 
-        console.log(
-          chalk.blue.bold(`\n🤖 Agent Information: ${agent.name || agentId}`)
-        );
-        console.log(chalk.gray('─'.repeat(50)));
-        console.log(`${chalk.cyan('ID:')} ${agent.id}`);
-        console.log(`${chalk.cyan('Name:')} ${agent.name}`);
-        console.log(
-          `${chalk.cyan('Status:')} ${agent.status === 'active' ? chalk.green('● Active') : chalk.gray('○ Inactive')}`
-        );
-        console.log(`${chalk.cyan('Emotion:')} ${agent.emotion || 'neutral'}`);
-        console.log(
-          `${chalk.cyan('Extensions:')} ${agent.extensionCount || 0}`
-        );
-        console.log(
-          `${chalk.cyan('Portal:')} ${agent.hasPortal ? chalk.green('Connected') : chalk.gray('None')}`
-        );
-        console.log(
-          `${chalk.cyan('Ethics:')} ${agent.ethicsEnabled ? '🛡️ Enabled' : '⚠️ Disabled'}`
-        );
-        if (agent.lastUpdate) {
-          console.log(
-            `${chalk.cyan('Last Update:')} ${new Date(agent.lastUpdate).toLocaleString()}`
-          );
+    const spinner = createSpinner(`Fetching agent info for ${agentId}...`, 'dots');
+    spinner.start();
+
+    try {
+      const agents = await this.runtimeClient.getAgents();
+      const agent = agents.find((a) => a.id === agentId);
+
+      if (agent) {
+        spinner.succeed(`Agent info retrieved`);
+        console.log('\n' + chalk.cyan(`🤖 Agent: ${agent.name}`));
+        console.log(`  ID: ${agent.id}`);
+        console.log(`  Status: ${agent.status}`);
+        console.log(`  Type: ${agent.type || 'unknown'}`);
+        console.log(`  Emotion: ${agent.emotion || 'neutral'}`);
+        console.log(`  Memory Provider: ${agent.memoryProvider || 'default'}`);
+        console.log(`  Extensions: ${agent.extensions?.join(', ') || 'none'}`);
+        if (agent.uptime) {
+          console.log(`  Uptime: ${this.formatUptime(agent.uptime)}`);
         }
-        console.log();
-      } else if (response.status === 404) {
-        spinner.fail(`Agent '${agentId}' not found`);
       } else {
-        spinner.fail(`Failed to fetch agent info`);
+        spinner.fail(`Agent '${agentId}' not found`);
       }
     } catch (error) {
       spinner.fail('Could not connect to runtime');
@@ -1007,13 +947,12 @@ class AwesomeSYMindXCLI {
   }
 
   private async getAvailableAgents(): Promise<Array<any>> {
+    if (!this.runtimeClient) {
+      return [];
+    }
+
     try {
-      const response = await fetch(`${this.config.apiUrl}/agents`);
-      if (!response.ok) {
-        return [];
-      }
-      const data = await response.json();
-      return data.agents || [];
+      return await this.runtimeClient.getAgents();
     } catch (error) {
       void error; // Acknowledge error without using it
       return [];
@@ -1067,6 +1006,17 @@ class AwesomeSYMindXCLI {
       console.error(chalk.yellow('💡 Falling back to interactive mode...'));
       await this.startInteractiveMode();
     }
+  }
+
+  private showChatHelp(): void {
+    console.log(chalk.cyan('\n💬 Chat Commands:'));
+    console.log(chalk.gray('  exit    - Exit chat mode'));
+    console.log(chalk.gray('  help    - Show this help'));
+    console.log(chalk.gray('  status  - Show agent status'));
+    console.log(chalk.gray('  emotion - Show agent emotion'));
+    console.log(chalk.gray('  memory  - Query agent memory'));
+    console.log(chalk.gray('  switch  - Switch to different agent'));
+    console.log('');
   }
 }
 

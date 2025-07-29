@@ -46,6 +46,8 @@ export function convertUsage(usage?: LanguageModelUsage | AIUsage): {
  * This helper ensures that optional parameters are only included when they have values
  * Prevents TypeScript exactOptionalPropertyTypes errors by only including defined values
  * Handles maxTokens -> maxOutputTokens conversion for AI SDK v5 compatibility
+ * 
+ * @deprecated Use the enhanced parameter builders from ai-sdk-utils.ts instead
  */
 export function buildAISDKParams<T extends Record<string, unknown>>(
   baseParams: T,

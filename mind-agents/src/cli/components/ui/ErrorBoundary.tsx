@@ -1,7 +1,7 @@
 import { Box, Text } from 'ink';
 import React, { Component, ReactNode } from 'react';
 
-import { LoadingIndicator } from './LoadingStates.js';
+import { LoadingIndicator } from './loading-states.js';
 
 interface ErrorBoundaryProps {
   children: ReactNode;

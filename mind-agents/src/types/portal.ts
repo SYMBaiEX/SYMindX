@@ -7,6 +7,8 @@
 
 import { Agent } from './agent';
 import { BaseConfig, Metadata, ActionParameters } from './common';
+import { UnifiedContext } from './context/unified-context';
+import { z } from 'zod';
 
 export enum PortalType {
   // Core AI Providers
@@ -101,6 +103,18 @@ export interface Portal {
   hasCapability(capability: PortalCapability): boolean;
   getUsage?(): Promise<PortalUsage>;
   healthCheck?(): Promise<boolean>;
+  
+  // Context-aware generation methods
+  generateTextWithContext?(
+    prompt: string,
+    context: UnifiedContext,
+    options?: Omit<TextGenerationOptions, 'context'>
+  ): Promise<TextGenerationResult>;
+  generateChatWithContext?(
+    messages: ChatMessage[],
+    context: UnifiedContext,
+    options?: Omit<ChatGenerationOptions, 'context'>
+  ): Promise<ChatGenerationResult>;
 }
 
 export enum ConfigurationLevel {
@@ -159,8 +173,21 @@ export interface TextGenerationOptions {
   // AI SDK v5 tool calling and streaming support
   tools?: AISDKToolSet;
   maxSteps?: number;
-  onStepFinish?: (step: any) => void;
-  functions?: FunctionDefinition[]; // Legacy function calling support
+  onStepFinish?: (step: {
+    text: string;
+    toolCalls?: ToolCall[];
+    toolResults?: unknown[];
+    finishReason: FinishReason;
+    usage?: {
+      promptTokens: number;
+      completionTokens: number;
+      totalTokens: number;
+    };
+  }) => void;
+  functions?: FunctionDefinition[];
+
+  // Context-aware generation support
+  context?: UnifiedContext;
 }
 
 export enum FinishReason {
@@ -242,9 +269,14 @@ export interface MessageAttachment {
 
 /**
  * AI SDK v5 ToolSet - compatible with generateText/streamText
- * Using the proper tool type from AI SDK v5
  */
-export type AISDKToolSet = Record<string, any>;
+export interface AISDKTool {
+  description?: string;
+  parameters: z.ZodTypeAny | Record<string, unknown>;
+  execute?: (...args: unknown[]) => unknown | Promise<unknown>;
+}
+
+export type AISDKToolSet = Record<string, AISDKTool>;
 
 /**
  * Options for chat generation
@@ -253,6 +285,7 @@ export interface ChatGenerationOptions extends TextGenerationOptions {
   functions?: FunctionDefinition[];
   functionCall?: string | { name: string };
   tools?: AISDKToolSet; // Native AI SDK v5 tools from MCP
+  // context is inherited from TextGenerationOptions
 }
 
 /**

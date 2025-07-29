@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   EnhancedRuntimeClient,
   ConnectionStatus,
-} from '../services/enhancedRuntimeClient.js';
+} from '../services/enhanced-runtime-client.js';
 
 export interface ConnectionEvent {
   timestamp: Date;

@@ -9,7 +9,7 @@ import React, {
 import {
   EnhancedRuntimeClient,
   EnhancedClientConfig,
-} from '../services/enhancedRuntimeClient.js';
+} from '../services/enhanced-runtime-client.js';
 
 interface RuntimeClientContextValue {
   client: EnhancedRuntimeClient;

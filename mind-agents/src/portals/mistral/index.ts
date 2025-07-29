@@ -54,7 +54,7 @@ export interface MistralConfig extends PortalConfig {
 
 export const defaultMistralConfig: Partial<MistralConfig> = {
   model: 'mistral-large-latest',
-  maxTokens: 8192, // Keep as config property, map to maxOutputTokens in calls
+  maxTokens: 8192, // Config property for backward compatibility
   temperature: 0.7,
   timeout: 30000,
   baseUrl: 'https://api.mistral.ai/v1',

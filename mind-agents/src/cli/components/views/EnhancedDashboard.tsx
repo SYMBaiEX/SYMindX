@@ -9,7 +9,7 @@ import {
 } from '../../hooks/useAPIData.js';
 import { useConnectionMonitor } from '../../hooks/useConnectionMonitor.js';
 import { useTerminalDimensions } from '../../hooks/useTerminalDimensions.js';
-import { enhancedRuntimeClient } from '../../services/enhancedRuntimeClient.js';
+import { enhancedRuntimeClient } from '../../services/enhanced-runtime-client.js';
 import { getAdaptiveSpacing } from '../../utils/responsive-grid.js';
 import {
   ConnectionStatus,

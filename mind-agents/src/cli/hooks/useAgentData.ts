@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import {
   runtimeClient,
   type AgentInfo as RuntimeAgentInfo,
-} from '../services/runtimeClient';
+} from '../services/runtime-client';
 
 export interface AgentInfo {
   id: string;

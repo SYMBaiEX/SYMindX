@@ -1,9 +1,9 @@
-export { useAgentData } from './useAgentData';
-export { useSystemStats } from './useSystemStats';
-export type { AgentInfo, ActivityEntry, AgentData } from './useAgentData';
+export { useAgentData } from './use-agent-data';
+export { useSystemStats } from './use-system-stats';
+export type { AgentInfo, ActivityEntry, AgentData } from './use-agent-data';
 export type {
   SystemStats,
   SystemComponent,
   PerformanceMetrics,
   EnvironmentInfo,
-} from './useSystemStats';
+} from './use-system-stats';

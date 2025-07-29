@@ -1,0 +1,90 @@
+{
+  "session": {
+    "id": "debug_1753745398087_l6h3ufo",
+    "name": "error-debug",
+    "startTime": "2025-07-28T23:29:58.087Z",
+    "level": 1,
+    "filters": [],
+    "outputs": [
+      {
+        "type": "console",
+        "config": {},
+        "enabled": true
+      }
+    ],
+    "active": false
+  },
+  "summary": {
+    "duration": 2,
+    "traceCount": 4,
+    "errorCount": 0,
+    "categories": [
+      "debug",
+      "test"
+    ]
+  },
+  "traces": [
+    {
+      "id": "trace_1753745398087_qz0dny6",
+      "timestamp": "2025-07-28T23:29:58.087Z",
+      "level": 2,
+      "category": "debug",
+      "message": "All debug data cleared",
+      "performance": {
+        "memory": 6075956
+      }
+    },
+    {
+      "id": "trace_1753745398087_z52ks4o",
+      "timestamp": "2025-07-28T23:29:58.087Z",
+      "level": 2,
+      "category": "debug",
+      "message": "Debug session 'error-debug' started",
+      "data": {
+        "sessionId": "debug_1753745398087_l6h3ufo",
+        "level": "DEBUG",
+        "filters": 0,
+        "outputs": 0
+      },
+      "context": {
+        "sessionId": "debug_1753745398087_l6h3ufo"
+      },
+      "performance": {
+        "memory": 6075956
+      }
+    },
+    {
+      "id": "trace_1753745398089_acnm27f",
+      "timestamp": "2025-07-28T23:29:58.089Z",
+      "level": 2,
+      "category": "test",
+      "message": "Operation executed during error handling",
+      "data": {
+        "success": true
+      },
+      "context": {
+        "sessionId": "debug_1753745398087_l6h3ufo"
+      },
+      "performance": {
+        "memory": 6075956
+      }
+    },
+    {
+      "id": "trace_1753745398089_eg2joyi",
+      "timestamp": "2025-07-28T23:29:58.089Z",
+      "level": 2,
+      "category": "debug",
+      "message": "Debug session 'error-debug' ended",
+      "data": {
+        "sessionId": "debug_1753745398087_l6h3ufo",
+        "duration": 2
+      },
+      "context": {
+        "sessionId": "debug_1753745398087_l6h3ufo"
+      },
+      "performance": {
+        "memory": 6075956
+      }
+    }
+  ]
+}

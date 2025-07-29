@@ -8,7 +8,7 @@ import { soundManager, SoundType } from '../../utils/sound-effects.js';
 import { GlitchText } from '../effects/GlitchText.js';
 import { Card3D } from '../ui/Card3D.js';
 
-import AgentDetail from './AgentDetail.js';
+import AgentDetail from './agent-detail.js';
 
 interface AgentDetailInfo {
   id: string;

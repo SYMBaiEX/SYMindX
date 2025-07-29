@@ -119,33 +119,12 @@ export interface ActionResult<T = GenericData> {
   metadata?: Metadata;
 }
 
-// Validation Types (re-exported from helpers for backward compatibility)
+// Validation Types
 export type {
   ValidationResult,
   ValidationError,
   ValidationWarning,
 } from './helpers';
-
-// Legacy validation types for backward compatibility
-export interface LegacyValidationResult {
-  valid: boolean;
-  errors: LegacyValidationError[];
-  warnings?: LegacyValidationWarning[];
-}
-
-export interface LegacyValidationError {
-  field: string;
-  message: string;
-  code: string;
-  value?: ConfigValue;
-}
-
-export interface LegacyValidationWarning {
-  field: string;
-  message: string;
-  code: string;
-  value?: ConfigValue;
-}
 
 // Skill/Action Parameter Types
 export interface SkillParameters {

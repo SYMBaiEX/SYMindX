@@ -50,7 +50,7 @@ export interface CohereConfig extends PortalConfig {
 export const defaultCohereConfig: Partial<CohereConfig> = {
   model: 'command-r-plus',
   version: '2024-04-15',
-  maxTokens: 4000, // Keep as config property, map to maxOutputTokens in calls
+  maxTokens: 4000, // Config property for backward compatibility
   temperature: 0.7,
   timeout: 30000,
   baseUrl: 'https://api.cohere.ai/v1',

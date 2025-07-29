@@ -1,26 +1,26 @@
 // Visual Effects Components
-export { MatrixRain } from './MatrixRain.js';
-export { GlitchText } from './GlitchText.js';
-export { ParticleSystem } from './ParticleSystem.js';
-export { NeonGlow } from './NeonGlow.js';
-export { AnimatedBorder } from './AnimatedBorder.js';
-export { PulsingEffect } from './PulsingEffect.js';
-export { LoadingSpinner } from './LoadingSpinners.js';
-export { ScanlineEffect } from './ScanlineEffect.js';
-export { ASCIIAnimation } from './ASCIIAnimation.js';
-export { AnimatedChart } from './AnimatedChart.js';
-export { Perspective3D } from './Perspective3D.js';
+export { MatrixRain } from './matrix-rain.js';
+export { GlitchText } from './glitch-text.js';
+export { ParticleSystem } from './particle-system.js';
+export { NeonGlow } from './neon-glow.js';
+export { AnimatedBorder } from './animated-border.js';
+export { PulsingEffect } from './pulsing-effect.js';
+export { LoadingSpinner } from './loading-spinners.js';
+export { ScanlineEffect } from './scanline-effect.js';
+export { ASCIIAnimation } from './ascii-animation.js';
+export { AnimatedChart } from './animated-chart.js';
+export { Perspective3D } from './perspective-3d.js';
 export {
   StatusAnimation,
   SuccessAnimation,
   ErrorAnimation,
   WarningAnimation,
   InfoAnimation,
-} from './StatusAnimations.js';
-export { ViewTransition } from './ViewTransition.js';
+} from './status-animations.js';
+export { ViewTransition } from './view-transition.js';
 
 // Re-export theme engine
-export { themeEngine, ThemeEngine } from '../../themes/ThemeEngine.js';
+export { themeEngine, ThemeEngine } from '../../themes/theme-engine.js';
 
 // Types
 export type { Theme } from '../../themes/cyberpunk.js';

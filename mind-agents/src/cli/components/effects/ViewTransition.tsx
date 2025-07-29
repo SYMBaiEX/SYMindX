@@ -1,7 +1,7 @@
 import { Box, Text } from 'ink';
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 
-import { themeEngine } from '../../themes/ThemeEngine.js';
+import { themeEngine } from '../../themes/theme-engine.js';
 
 interface ViewTransitionProps {
   children: React.ReactNode;

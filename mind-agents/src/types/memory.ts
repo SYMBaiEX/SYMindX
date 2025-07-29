@@ -20,10 +20,6 @@ export enum MemoryTierType {
   INTERACTION = 'interaction', // Interactive conversation memory
 }
 
-/**
- * @deprecated Use MemoryTierType instead
- */
-export type MemoryType = MemoryTierType;
 
 /**
  * Memory duration types for retention policies
@@ -240,7 +236,6 @@ export interface SearchQuery {
  */
 export interface SearchResult {
   record: MemoryRecord;
-  memory?: MemoryRecord; // Backward compatibility alias
   score: number;
   highlights?: string[];
   reason?: string;

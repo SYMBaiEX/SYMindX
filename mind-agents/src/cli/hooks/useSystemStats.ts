@@ -2,7 +2,7 @@ import * as os from 'os';
 
 import { useState, useEffect } from 'react';
 
-import { runtimeClient } from '../services/runtimeClient';
+import { runtimeClient } from '../services/runtime-client';
 
 export interface SystemComponent {
   status: 'running' | 'stopped' | 'error' | 'warning';

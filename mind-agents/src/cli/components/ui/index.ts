@@ -1,10 +1,10 @@
 // UI Components
-export { Card3D } from './Card3D.js';
-export { ResponsiveCard3D } from './ResponsiveCard3D.js';
-export { ResponsiveBox } from './ResponsiveBox.js';
-export { ResponsiveGrid, GridItem } from './ResponsiveGrid.js';
-export { Chart } from './Chart.js';
-export { Header } from './Header.js';
+export { Card3D } from './card-3d.js';
+export { ResponsiveCard3D } from './responsive-card-3d.js';
+export { ResponsiveBox } from './responsive-box.js';
+export { ResponsiveGrid, GridItem } from './responsive-grid.js';
+export { Chart } from './chart.js';
+export { Header } from './header.js';
 
 // Loading States Components
 export {
@@ -12,7 +12,7 @@ export {
   ProgressBar,
   Skeleton,
   Shimmer,
-} from './LoadingStates.js';
+} from './loading-states.js';
 
 // Re-export types
 export type {

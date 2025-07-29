@@ -31,12 +31,18 @@ import {
   PortalType,
   ModelType,
 } from '../../types/portal';
+import { UnifiedContext } from '../../types/context/unified-context.js';
 import type {
   AIMessage as ModelMessage,
   AIContentPart,
 } from '../../types/portals/ai-sdk';
 import { BasePortal } from '../base-portal';
 import { convertUsage } from '../utils';
+import { 
+  ContextPromptTransformer, 
+  ContextModelSelector, 
+  ContextPerformanceOptimizer 
+} from '../context-helpers.js';
 
 export interface AnthropicConfig extends PortalConfig {
   model?: string;
@@ -141,16 +147,13 @@ export class AnthropicPortal extends BasePortal {
 
       const params: any = { ...baseParams };
 
-      // Use maxOutputTokens (AI SDK v5) instead of maxTokens
-      if (
+      // Use maxOutputTokens for AI SDK v5
+      const maxOutputTokens =
         options?.maxOutputTokens ??
         options?.maxTokens ??
-        this.config.maxTokens
-      ) {
-        params.maxOutputTokens =
-          options?.maxOutputTokens ??
-          options?.maxTokens ??
-          this.config.maxTokens;
+        this.config.maxTokens;
+      if (maxOutputTokens !== undefined) {
+        params.maxOutputTokens = maxOutputTokens;
       }
 
       if (options?.temperature ?? this.config.temperature) {
@@ -303,16 +306,13 @@ export class AnthropicPortal extends BasePortal {
 
       const params: any = { ...baseParams };
 
-      // Use maxOutputTokens (AI SDK v5) instead of maxTokens
-      if (
+      // Use maxOutputTokens for AI SDK v5
+      const maxOutputTokens =
         options?.maxOutputTokens ??
         options?.maxTokens ??
-        this.config.maxTokens
-      ) {
-        params.maxOutputTokens =
-          options?.maxOutputTokens ??
-          options?.maxTokens ??
-          this.config.maxTokens;
+        this.config.maxTokens;
+      if (maxOutputTokens !== undefined) {
+        params.maxOutputTokens = maxOutputTokens;
       }
 
       if (options?.temperature ?? this.config.temperature) {
@@ -909,6 +909,235 @@ export class AnthropicPortal extends BasePortal {
         return null;
     }
   }
+
+  /**
+   * Generate text with context awareness (Anthropic-specific implementation)
+   * Enhances the base implementation with Claude-specific optimizations
+   */
+  override async generateTextWithContext(
+    prompt: string,
+    context: UnifiedContext,
+    options?: Omit<TextGenerationOptions, 'context'>
+  ): Promise<TextGenerationResult> {
+    try {
+      // Use context helpers to optimize for Claude
+      const contextPrompt = ContextPromptTransformer.transformToPromptContext(context);
+      const enhancedPrompt = contextPrompt ? `${contextPrompt}\n\n${prompt}` : prompt;
+      
+      // Select optimal Claude model based on context
+      const availableModels = this.getSupportedModelsForCapability(PortalCapability.TEXT_GENERATION);
+      const contextModel = ContextModelSelector.selectModel(context, availableModels, PortalCapability.TEXT_GENERATION);
+      
+      // Optimize options for Claude specifics
+      const optimizedOptions = ContextPerformanceOptimizer.optimizeOptions(context, options);
+      
+      // Use Claude-specific model selection
+      const modelToUse = contextModel || this.selectClaudeModelFromContext(context) || 
+                       (this.config as AnthropicConfig).model || 'claude-3-5-sonnet-20241022';
+
+      const baseParams = {
+        model: this.getLanguageModel(modelToUse),
+        prompt: enhancedPrompt,
+      };
+
+      const params: any = { ...baseParams };
+
+      // Apply optimized options
+      if (optimizedOptions.maxOutputTokens || optimizedOptions.maxTokens) {
+        params.maxOutputTokens = optimizedOptions.maxOutputTokens || optimizedOptions.maxTokens;
+      }
+
+      if (optimizedOptions.temperature !== undefined) {
+        params.temperature = optimizedOptions.temperature;
+      }
+
+      if (optimizedOptions.topP) {
+        params.topP = optimizedOptions.topP;
+      }
+
+      // Add context to metadata
+      (params as any).context = context;
+
+      const result = await generateText(params);
+
+      return {
+        text: result.text,
+        usage: convertUsage(result.usage),
+        finishReason: this.mapFinishReason(result.finishReason),
+        metadata: {
+          model: modelToUse,
+          provider: 'anthropic',
+          contextEnhanced: true,
+          contextScope: context.metadata.scope,
+        },
+      };
+    } catch (error) {
+      // Fallback to base implementation
+      return super.generateTextWithContext(prompt, context, options);
+    }
+  }
+
+  /**
+   * Generate chat with context awareness (Anthropic-specific implementation)
+   * Enhances the base implementation with Claude-specific optimizations
+   */
+  override async generateChatWithContext(
+    messages: ChatMessage[],
+    context: UnifiedContext,
+    options?: Omit<ChatGenerationOptions, 'context'>
+  ): Promise<ChatGenerationResult> {
+    try {
+      // Build context-enhanced messages using base implementation
+      const enhancedMessages = this.buildContextualMessages(messages, context);
+      
+      // Select optimal Claude model based on context
+      const availableModels = this.getSupportedModelsForCapability(PortalCapability.CHAT_GENERATION);
+      const contextModel = ContextModelSelector.selectModel(context, availableModels, PortalCapability.CHAT_GENERATION);
+      
+      // Optimize options for Claude specifics
+      const optimizedOptions = ContextPerformanceOptimizer.optimizeOptions(context, options);
+      
+      // Use Claude-specific model selection
+      const modelToUse = contextModel || this.selectClaudeModelFromContext(context) || 
+                       (this.config as AnthropicConfig).model || 'claude-3-5-sonnet-20241022';
+      
+      const modelMessages = this.convertToModelMessages(enhancedMessages);
+
+      const baseOptions = {
+        model: this.getLanguageModel(modelToUse),
+        messages: modelMessages,
+      };
+
+      const generateOptions: any = { ...baseOptions };
+
+      // Apply optimized options
+      if (optimizedOptions.maxOutputTokens || optimizedOptions.maxTokens) {
+        generateOptions.maxOutputTokens = optimizedOptions.maxOutputTokens || optimizedOptions.maxTokens;
+      }
+
+      if (optimizedOptions.temperature !== undefined) {
+        generateOptions.temperature = optimizedOptions.temperature;
+      }
+
+      if (optimizedOptions.topP) {
+        generateOptions.topP = optimizedOptions.topP;
+      }
+
+      // Add tools if available in context
+      if (optimizedOptions.tools || (context.tools?.available && context.tools.available.length > 0)) {
+        generateOptions.tools = optimizedOptions.tools || this.selectToolsFromContext(context);
+        generateOptions.maxSteps = optimizedOptions.maxSteps || 5;
+
+        // Add comprehensive tool streaming callbacks
+        if (optimizedOptions.onStepFinish) {
+          generateOptions.onStepFinish = optimizedOptions.onStepFinish;
+        }
+
+        // Enable computer use if configured
+        const config = this.config as AnthropicConfig;
+        if (config.enableComputerUse) {
+          generateOptions.providerOptions = {
+            anthropic: {
+              betaVersion: 'computer-use-2024-10-22',
+            },
+          };
+        }
+      }
+
+      // Add context to metadata
+      (generateOptions as any).context = context;
+
+      const result = await generateText(generateOptions);
+
+      const assistantMessage: ChatMessage = {
+        role: MessageRole.ASSISTANT,
+        content: result.text,
+        timestamp: new Date(),
+      };
+
+      return {
+        message: assistantMessage,
+        text: result.text,
+        model: modelToUse,
+        usage: convertUsage(result.usage),
+        finishReason: this.mapFinishReason(result.finishReason),
+        timestamp: new Date(),
+        metadata: {
+          model: modelToUse,
+          provider: 'anthropic',
+          contextEnhanced: true,
+          contextScope: context.metadata.scope,
+          toolsUsed: !!generateOptions.tools,
+        },
+      };
+    } catch (error) {
+      // Fallback to base implementation
+      return super.generateChatWithContext(messages, context, options);
+    }
+  }
+
+  /**
+   * Claude-specific model selection based on context
+   */
+  private selectClaudeModelFromContext(context: UnifiedContext): string | undefined {
+    // Check for Anthropic-specific context preferences
+    if (context.portal?.active && (context.portal.active as any).provider === 'anthropic') {
+      return context.portal.active.model;
+    }
+
+    // Use latest Claude for complex reasoning tasks
+    if ((context.agent?.config?.personality as any)?.reasoning === 'high' ||
+        context.communication?.conversationHistory && 
+        context.communication.conversationHistory.length > 20) {
+      return 'claude-3-5-sonnet-20241022'; // Latest Claude for complex tasks
+    }
+
+    // Use Claude with computer use for tool-heavy tasks
+    if (context.tools?.available && context.tools.available.length > 3) {
+      const config = this.config as AnthropicConfig;
+      if (config.enableComputerUse) {
+        return 'claude-3-5-sonnet-20241022'; // Computer use capable
+      }
+    }
+
+    // Use Haiku for simple, fast responses
+    if (context.communication?.style && 
+        (context.communication.style as any).speed === 'high' &&
+        (context.communication.style as any).complexity === 'low') {
+      return 'claude-3-haiku-20240307';
+    }
+
+    // Use multimodal capabilities if needed
+    if (context.communication?.channel?.capabilities?.includes('image') ||
+        context.communication?.channel?.capabilities?.includes('video')) {
+      return 'claude-3-5-sonnet-20241022'; // Best multimodal support
+    }
+
+    // Default to latest Sonnet
+    return 'claude-3-5-sonnet-20241022';
+  }
+
+  /**
+   * Context-aware temperature selection for Claude models
+   * Override base implementation with Claude-specific optimizations
+   */
+  protected override selectTemperatureFromContext(context: UnifiedContext): number {
+    // Claude works well with slightly higher temperatures for creativity
+    if (context.communication?.style) {
+      const style = context.communication.style as any;
+      if (style.creativity === 'high') return 0.9; // Higher than base implementation
+      if (style.creativity === 'low') return 0.2;
+    }
+
+    // Lower temperature for computer use tasks
+    const config = this.config as AnthropicConfig;
+    if (config.enableComputerUse && context.tools?.available && context.tools.available.length > 0) {
+      return 0.1;
+    }
+
+    // Use base implementation for other cases
+    return super.selectTemperatureFromContext(context);
+  }
 }
 
 // Export factory function for easy instantiation
@@ -921,7 +1150,7 @@ export function createAnthropicPortal(
 // Export default configuration
 export const defaultAnthropicConfig: Partial<AnthropicConfig> = {
   model: 'claude-3-5-sonnet-20241022',
-  maxTokens: 1000, // Keep as config property, map to maxOutputTokens in calls
+  maxTokens: 1000, // Config property for backward compatibility
   temperature: 0.7,
   timeout: 30000,
 };

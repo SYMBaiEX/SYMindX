@@ -620,13 +620,6 @@ export type {
 // Re-export extension types
 export type { ExtensionContext, Extension as ExtensionBase } from './extension';
 
-// Legacy compatibility exports
-export type {
-  // Legacy validation types
-  ValidationResult as LegacyValidationResult,
-  ValidationError as LegacyValidationError,
-  ValidationWarning as LegacyValidationWarning,
-} from './common';
 
 // Performance metrics
 export type { PerformanceMetrics } from './index';

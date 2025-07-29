@@ -18,6 +18,7 @@ import {
   ToolEvaluationOptions,
   ToolEvaluationResult,
 } from '../types/portal';
+import { UnifiedContext } from '../types/context/unified-context.js';
 import { 
   standardLoggers, 
   createStandardLoggingPatterns,
@@ -52,7 +53,7 @@ export abstract class BasePortal implements Portal {
     this.name = name;
     this.version = version;
     this.config = {
-      maxTokens: 1000, // Keep as config property, map to maxOutputTokens in calls
+      maxTokens: 1000, // Config property for backward compatibility
       temperature: 0.7,
       timeout: 30000,
       ...config,
@@ -182,6 +183,56 @@ export abstract class BasePortal implements Portal {
     messages: ChatMessage[],
     options?: ChatGenerationOptions
   ): Promise<ChatGenerationResult>;
+
+  /**
+   * Generate text with context awareness
+   * Enhanced version that uses context information to improve generation quality
+   * @param prompt The prompt to generate text from
+   * @param context Unified context information
+   * @param options Additional options for text generation
+   */
+  async generateTextWithContext(
+    prompt: string,
+    context: UnifiedContext,
+    options?: Omit<TextGenerationOptions, 'context'>
+  ): Promise<TextGenerationResult> {
+    // Enhance prompt with context information
+    const enhancedPrompt = this.buildContextualPrompt(prompt, context);
+    
+    // Select optimal model based on context
+    const contextualOptions = this.buildContextualOptions(context, options);
+    
+    // Use existing generateText method with enhanced prompt and options
+    return this.generateText(enhancedPrompt, {
+      ...contextualOptions,
+      context
+    });
+  }
+
+  /**
+   * Generate chat with context awareness
+   * Enhanced version that uses context information to improve generation quality
+   * @param messages The chat messages to generate a response from
+   * @param context Unified context information
+   * @param options Additional options for chat generation
+   */
+  async generateChatWithContext(
+    messages: ChatMessage[],
+    context: UnifiedContext,
+    options?: Omit<ChatGenerationOptions, 'context'>
+  ): Promise<ChatGenerationResult> {
+    // Enhance messages with context information
+    const enhancedMessages = this.buildContextualMessages(messages, context);
+    
+    // Select optimal tools and model based on context
+    const contextualOptions = this.buildContextualOptions(context, options);
+    
+    // Use existing generateChat method with enhanced messages and options
+    return this.generateChat(enhancedMessages, {
+      ...contextualOptions,
+      context
+    });
+  }
 
   /**
    * Generate an embedding for text
@@ -600,5 +651,291 @@ export abstract class BasePortal implements Portal {
   getOptimalModelForCapability(capability: PortalCapability): string | null {
     const models = this.getSupportedModelsForCapability(capability);
     return models.length > 0 ? models[0] ?? null : null;
+  }
+
+  /**
+   * Build contextual prompt by enhancing the original prompt with context information
+   * @param prompt Original prompt
+   * @param context Unified context information
+   * @returns Enhanced prompt with context
+   */
+  protected buildContextualPrompt(prompt: string, context: UnifiedContext): string {
+    let enhancedPrompt = prompt;
+
+    // Add agent context if available
+    if (context.agent) {
+      const agentContext = this.buildAgentContextString(context.agent);
+      if (agentContext) {
+        enhancedPrompt = `${agentContext}\n\n${prompt}`;
+      }
+    }
+
+    // Add memory context if available
+    if (context.memory?.relevant && context.memory.relevant.length > 0) {
+      const memoryContext = this.buildMemoryContextString(context.memory.relevant);
+      if (memoryContext) {
+        enhancedPrompt = `${memoryContext}\n\n${enhancedPrompt}`;
+      }
+    }
+
+    // Add communication context if available
+    if (context.communication?.style) {
+      const styleContext = this.buildCommunicationStyleString(context.communication.style);
+      if (styleContext) {
+        enhancedPrompt = `${styleContext}\n\n${enhancedPrompt}`;
+      }
+    }
+
+    // Add temporal context if relevant
+    if (context.temporal) {
+      const timeContext = this.buildTemporalContextString(context.temporal);
+      if (timeContext) {
+        enhancedPrompt = `${timeContext}\n\n${enhancedPrompt}`;
+      }
+    }
+
+    return enhancedPrompt;
+  }
+
+  /**
+   * Build contextual messages by enhancing chat messages with context information
+   * @param messages Original chat messages
+   * @param context Unified context information
+   * @returns Enhanced messages with context
+   */
+  protected buildContextualMessages(messages: ChatMessage[], context: UnifiedContext): ChatMessage[] {
+    const enhancedMessages = [...messages];
+
+    // Build system message with context
+    const systemMessage = this.buildSystemMessageWithContext(context);
+    if (systemMessage) {
+      // Check if first message is already a system message
+      if (enhancedMessages.length > 0 && enhancedMessages[0]?.role === 'system') {
+        // Enhance existing system message
+        enhancedMessages[0] = {
+          ...enhancedMessages[0],
+          content: `${systemMessage.content}\n\n${enhancedMessages[0].content}`
+        };
+      } else {
+        // Add new system message at the beginning
+        enhancedMessages.unshift(systemMessage);
+      }
+    }
+
+    return enhancedMessages;
+  }
+
+  /**
+   * Build contextual options by selecting optimal settings based on context
+   * @param context Unified context information
+   * @param baseOptions Base generation options
+   * @returns Enhanced options with context-based optimizations
+   */
+  protected buildContextualOptions(
+    context: UnifiedContext, 
+    baseOptions?: TextGenerationOptions | ChatGenerationOptions
+  ): TextGenerationOptions | ChatGenerationOptions {
+    const contextualOptions = { ...baseOptions };
+
+    // Model selection based on context
+    if (!contextualOptions.model) {
+      contextualOptions.model = this.selectModelFromContext(context);
+    }
+
+    // Temperature adjustment based on context
+    if (contextualOptions.temperature === undefined) {
+      contextualOptions.temperature = this.selectTemperatureFromContext(context);
+    }
+
+    // Token limit adjustment based on context
+    if (!contextualOptions.maxOutputTokens && !contextualOptions.maxTokens) {
+      contextualOptions.maxOutputTokens = this.selectTokenLimitFromContext(context);
+    }
+
+    // Tool selection based on context
+    if (!contextualOptions.tools && context.tools?.available) {
+      contextualOptions.tools = this.selectToolsFromContext(context);
+    }
+
+    return contextualOptions;
+  }
+
+  /**
+   * Build agent context string from agent context data
+   */
+  private buildAgentContextString(agentContext: any): string {
+    const parts: string[] = [];
+
+    if (agentContext.config?.personality) {
+      parts.push(`Personality: ${JSON.stringify(agentContext.config.personality)}`);
+    }
+
+    if (agentContext.emotions) {
+      const emotions = Object.entries(agentContext.emotions)
+        .filter(([_, value]) => (value as any)?.intensity > 0)
+        .map(([emotion, data]) => `${emotion}: ${(data as any).intensity}`)
+        .join(', ');
+      if (emotions) {
+        parts.push(`Current emotions: ${emotions}`);
+      }
+    }
+
+    if (agentContext.goals && agentContext.goals.length > 0) {
+      parts.push(`Goals: ${agentContext.goals.join(', ')}`);
+    }
+
+    return parts.length > 0 ? `Agent Context:\n${parts.join('\n')}` : '';
+  }
+
+  /**
+   * Build memory context string from relevant memories
+   */
+  private buildMemoryContextString(memories: any[]): string {
+    if (!memories || memories.length === 0) return '';
+
+    const relevantMemories = memories
+      .slice(0, 5) // Limit to top 5 most relevant
+      .map(memory => `- ${memory.content || memory.text || memory.description || 'Memory'}`)
+      .join('\n');
+
+    return `Relevant Context:\n${relevantMemories}`;
+  }
+
+  /**
+   * Build communication style string
+   */
+  private buildCommunicationStyleString(style: any): string {
+    const parts: string[] = [];
+
+    if (style.tone) parts.push(`Tone: ${style.tone}`);
+    if (style.formality) parts.push(`Formality: ${style.formality}`);
+    if (style.verbosity) parts.push(`Verbosity: ${style.verbosity}`);
+
+    return parts.length > 0 ? `Communication Style: ${parts.join(', ')}` : '';
+  }
+
+  /**
+   * Build temporal context string
+   */
+  private buildTemporalContextString(temporal: any): string {
+    const parts: string[] = [];
+
+    if (temporal.now) {
+      parts.push(`Current time: ${new Date(temporal.now).toISOString()}`);
+    }
+
+    if (temporal.timezone) {
+      parts.push(`Timezone: ${temporal.timezone}`);
+    }
+
+    return parts.length > 0 ? `Time Context: ${parts.join(', ')}` : '';
+  }
+
+  /**
+   * Build system message with context information
+   */
+  private buildSystemMessageWithContext(context: UnifiedContext): ChatMessage | null {
+    const contextParts: string[] = [];
+
+    // Add agent context
+    if (context.agent) {
+      const agentContext = this.buildAgentContextString(context.agent);
+      if (agentContext) contextParts.push(agentContext);
+    }
+
+    // Add memory context
+    if (context.memory?.relevant && context.memory.relevant.length > 0) {
+      const memoryContext = this.buildMemoryContextString(context.memory.relevant);
+      if (memoryContext) contextParts.push(memoryContext);
+    }
+
+    // Add communication context
+    if (context.communication?.style) {
+      const styleContext = this.buildCommunicationStyleString(context.communication.style);
+      if (styleContext) contextParts.push(styleContext);
+    }
+
+    if (contextParts.length === 0) return null;
+
+    return {
+      role: 'system' as any,
+      content: contextParts.join('\n\n'),
+      timestamp: new Date()
+    };
+  }
+
+  /**
+   * Select model based on context requirements
+   */
+  protected selectModelFromContext(context: UnifiedContext): string | undefined {
+    // Use tools model if tools are available
+    if (context.tools?.available && context.tools.available.length > 0) {
+      return this.resolveModel('tool');
+    }
+
+    // Use chat model for conversation contexts
+    if (context.communication?.conversationHistory) {
+      return this.resolveModel('chat');
+    }
+
+    // Default to chat model
+    return this.resolveModel('chat');
+  }
+
+  /**
+   * Select temperature based on context requirements
+   */
+  protected selectTemperatureFromContext(context: UnifiedContext): number {
+    // Lower temperature for tool usage or precise tasks
+    if (context.tools?.available && context.tools.available.length > 0) {
+      return 0.1;
+    }
+
+    // Adjust based on communication style
+    if (context.communication?.style) {
+      const style = context.communication.style as any;
+      if (style.creativity === 'high') return 0.8;
+      if (style.creativity === 'low') return 0.3;
+    }
+
+    // Default temperature
+    return this.config.temperature || 0.7;
+  }
+
+  /**
+   * Select token limit based on context requirements
+   */
+  protected selectTokenLimitFromContext(context: UnifiedContext): number {
+    // Higher token limit for complex conversations
+    if (context.communication?.conversationHistory && 
+        context.communication.conversationHistory.length > 10) {
+      return Math.min(4000, (this.config.maxTokens || 1000) * 2);
+    }
+
+    // Lower token limit for simple tool calls
+    if (context.tools?.available && context.tools.available.length > 0) {
+      return Math.min(1000, this.config.maxTokens || 1000);
+    }
+
+    return this.config.maxTokens || 1000;
+  }
+
+  /**
+   * Select tools based on context requirements
+   */
+  protected selectToolsFromContext(context: UnifiedContext): Record<string, any> | undefined {
+    if (!context.tools?.available) return undefined;
+
+    // Convert available tools to AI SDK format
+    const tools: Record<string, any> = {};
+    
+    for (const tool of context.tools.available) {
+      tools[tool.name] = {
+        description: tool.description,
+        parameters: tool.parameters
+      };
+    }
+
+    return Object.keys(tools).length > 0 ? tools : undefined;
   }
 }

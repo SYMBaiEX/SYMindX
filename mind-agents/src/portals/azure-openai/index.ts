@@ -48,7 +48,7 @@ export interface AzureOpenAIConfig extends PortalConfig {
 
 export const defaultAzureOpenAIConfig: Partial<AzureOpenAIConfig> = {
   apiVersion: '2024-06-01',
-  maxTokens: 4000, // Keep as config property, map to maxOutputTokens in calls
+  maxTokens: 4000, // Config property for backward compatibility
   temperature: 0.7,
   timeout: 60000,
 };

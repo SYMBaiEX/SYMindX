@@ -62,3 +62,6 @@ export interface MCPTool {
  * Type-safe MCP tools collection
  */
 export type MCPToolSet = Record<string, MCPTool>;
+
+// Note: Unified context types are available from './context/index.js'
+// This file focuses on base context types

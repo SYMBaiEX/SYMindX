@@ -1,11 +1,11 @@
 // Export all AgentDetail panel components
-export { EmotionPanel } from './EmotionPanel';
-export { MemoryPanel } from './MemoryPanel';
-export { CognitionPanel } from './CognitionPanel';
-export { PerformancePanel } from './PerformancePanel';
-export { AutonomyPanel } from './AutonomyPanel';
-export { PortalsPanel } from './PortalsPanel';
-export { ExtensionsPanel } from './ExtensionsPanel';
+export { EmotionPanel } from './emotion-panel';
+export { MemoryPanel } from './memory-panel';
+export { CognitionPanel } from './cognition-panel';
+export { PerformancePanel } from './performance-panel';
+export { AutonomyPanel } from './autonomy-panel';
+export { PortalsPanel } from './portals-panel';
+export { ExtensionsPanel } from './extensions-panel';
 
 // Export shared types
 export type {
@@ -16,4 +16,4 @@ export type {
   AutonomyDetailData,
   PortalDetailData,
   ExtensionDetailData,
-} from '../AgentDetail';
+} from '../agent-detail';

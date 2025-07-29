@@ -721,7 +721,7 @@ export function createGroqPortal(config: GroqConfig): GroqPortal {
 export const defaultGroqConfig: Partial<GroqConfig> = {
   model: 'llama-3-groq-70b-8192-tool-use-preview', // Use tool-enabled model by default
   toolModel: 'llama-3-groq-8b-8192-tool-use-preview',
-  maxTokens: 1000, // Keep as config property, map to maxOutputTokens in calls
+  maxTokens: 1000, // Config property for backward compatibility
   temperature: 0.7,
   timeout: 30000,
 };

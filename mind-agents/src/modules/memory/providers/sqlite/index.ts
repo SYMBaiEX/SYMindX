@@ -33,6 +33,7 @@ import {
   BaseMemoryConfig,
   MemoryRow,
   EnhancedMemoryRecord,
+  ContextEnhancedMemoryRecord,
 } from '../../base-memory-provider';
 
 // const sqliteAvailable = true; // Unused
@@ -41,6 +42,14 @@ import {
 
 // import { MemoryArchiver } from './archiver'; // Unused
 import { SharedMemoryPool } from './shared-pool';
+import {
+  calculateContextSimilarity,
+  createContextAwareSearchQuery,
+  optimizeContextAwareResults,
+  analyzeContextDistribution,
+  createContextQueryMetrics,
+  ContextAwareSearchOptions,
+} from '../../context-integration';
 
 /**
  * Configuration for the SQLite memory provider
@@ -74,6 +83,10 @@ export interface SQLiteMemoryRow extends MemoryRow {
   embedding?: Buffer;
   tier?: string;
   context?: string; // JSON-encoded MemoryContext
+  unified_context?: string; // JSON-encoded UnifiedContext
+  context_fingerprint?: string;
+  context_score?: number;
+  derived_insights?: string; // JSON-encoded string array
 }
 
 /**
@@ -144,7 +157,11 @@ export class SQLiteMemoryProvider extends BaseMemoryProvider {
         duration TEXT NOT NULL DEFAULT 'long_term',
         expires_at TEXT,
         tier TEXT DEFAULT 'episodic',
-        context TEXT
+        context TEXT,
+        unified_context TEXT,
+        context_fingerprint TEXT,
+        context_score REAL,
+        derived_insights TEXT
       )
     `);
 
@@ -178,6 +195,8 @@ export class SQLiteMemoryProvider extends BaseMemoryProvider {
       CREATE INDEX IF NOT EXISTS idx_memories_duration ON memories(duration);
       CREATE INDEX IF NOT EXISTS idx_memories_expires_at ON memories(expires_at);
       CREATE INDEX IF NOT EXISTS idx_memories_tier ON memories(tier);
+      CREATE INDEX IF NOT EXISTS idx_memories_context_fingerprint ON memories(context_fingerprint);
+      CREATE INDEX IF NOT EXISTS idx_memories_context_score ON memories(context_score);
       CREATE INDEX IF NOT EXISTS idx_shared_mappings_pool ON shared_memory_mappings(pool_id);
     `);
 
@@ -232,6 +251,7 @@ export class SQLiteMemoryProvider extends BaseMemoryProvider {
    */
   override async store(agentId: string, memory: MemoryRecord): Promise<void> {
     const enhanced = memory as EnhancedMemoryRecord;
+    const contextEnhanced = memory as ContextEnhancedMemoryRecord;
 
     // Generate embedding if not provided
     if (!memory.embedding && memory.content) {
@@ -240,8 +260,8 @@ export class SQLiteMemoryProvider extends BaseMemoryProvider {
 
     const stmt = this.db.prepare(`
       INSERT OR REPLACE INTO memories (
-        id, agent_id, type, content, embedding, metadata, importance, timestamp, tags, duration, expires_at, tier, context
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        id, agent_id, type, content, embedding, metadata, importance, timestamp, tags, duration, expires_at, tier, context, unified_context, context_fingerprint, context_score, derived_insights
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const embeddingBuffer = memory.embedding
@@ -251,6 +271,12 @@ export class SQLiteMemoryProvider extends BaseMemoryProvider {
     const tagsJson = JSON.stringify(memory.tags);
     const contextJson = enhanced.context
       ? JSON.stringify(enhanced.context)
+      : null;
+    const unifiedContextJson = contextEnhanced.unifiedContext
+      ? JSON.stringify(contextEnhanced.unifiedContext)
+      : null;
+    const derivedInsightsJson = contextEnhanced.derivedInsights
+      ? JSON.stringify(contextEnhanced.derivedInsights)
       : null;
 
     stmt.run(
@@ -266,7 +292,11 @@ export class SQLiteMemoryProvider extends BaseMemoryProvider {
       memory.duration || 'long_term',
       memory.expiresAt ? memory.expiresAt.getTime() : null,
       enhanced.tier || MemoryTierType.EPISODIC,
-      contextJson
+      contextJson,
+      unifiedContextJson,
+      contextEnhanced.contextFingerprint || null,
+      contextEnhanced.contextScore || null,
+      derivedInsightsJson
     );
 
     // Handle working memory specially
@@ -530,14 +560,14 @@ export class SQLiteMemoryProvider extends BaseMemoryProvider {
    * @param row The database row
    * @returns The memory record
    */
-  private rowToMemoryRecord(row: SQLiteMemoryRow): EnhancedMemoryRecord {
+  private rowToMemoryRecord(row: SQLiteMemoryRow): ContextEnhancedMemoryRecord {
     let embedding: number[] | undefined = undefined;
 
     if (row.embedding) {
       embedding = this.bufferToEmbedding(row.embedding);
     }
 
-    const builder = buildObject<EnhancedMemoryRecord>({
+    const builder = buildObject<ContextEnhancedMemoryRecord>({
       id: row.id,
       agentId: row.agent_id,
       type: (row.type as string)
@@ -571,6 +601,20 @@ export class SQLiteMemoryProvider extends BaseMemoryProvider {
     }
     if (row.context) {
       builder.addOptional('context', JSON.parse(row.context) as MemoryContext);
+    }
+    
+    // Add new context-enhanced fields
+    if (row.unified_context) {
+      builder.addOptional('unifiedContext', JSON.parse(row.unified_context));
+    }
+    if (row.context_fingerprint) {
+      builder.addOptional('contextFingerprint', row.context_fingerprint);
+    }
+    if (row.context_score !== null && row.context_score !== undefined) {
+      builder.addOptional('contextScore', row.context_score);
+    }
+    if (row.derived_insights) {
+      builder.addOptional('derivedInsights', JSON.parse(row.derived_insights) as string[]);
     }
 
     return builder.build();
@@ -832,7 +876,7 @@ export class SQLiteMemoryProvider extends BaseMemoryProvider {
   /**
    * Check if memory should be consolidated
    */
-  private shouldConsolidate(memory: EnhancedMemoryRecord, rule: any): boolean {
+  private shouldConsolidate(memory: ContextEnhancedMemoryRecord, rule: any): boolean {
     switch (rule.condition) {
       case 'importance':
         return (memory.importance || 0) >= rule.threshold;
@@ -915,10 +959,10 @@ export class SQLiteMemoryProvider extends BaseMemoryProvider {
    * Group and compress similar memories
    */
   private groupAndCompress(
-    memories: EnhancedMemoryRecord[]
-  ): EnhancedMemoryRecord[] {
+    memories: ContextEnhancedMemoryRecord[]
+  ): ContextEnhancedMemoryRecord[] {
     // Simple compression - group by day and combine
-    const grouped = new Map<string, EnhancedMemoryRecord[]>();
+    const grouped = new Map<string, ContextEnhancedMemoryRecord[]>();
 
     for (const memory of memories) {
       const day = memory.timestamp.toISOString().split('T')[0];
@@ -930,7 +974,7 @@ export class SQLiteMemoryProvider extends BaseMemoryProvider {
       }
     }
 
-    const compressed: EnhancedMemoryRecord[] = [];
+    const compressed: ContextEnhancedMemoryRecord[] = [];
     for (const [day, group] of grouped) {
       compressed.push({
         id: this.generateId(),
@@ -950,10 +994,187 @@ export class SQLiteMemoryProvider extends BaseMemoryProvider {
         context: {
           source: 'compression',
         },
+        // Merge context-enhanced fields
+        derivedInsights: [...new Set(group.flatMap(m => m.derivedInsights || []))],
+        contextScore: Math.max(...group.map(m => m.contextScore || 0)),
       });
     }
 
     return compressed;
+  }
+
+  /**
+   * Context-aware memory search with enhanced ranking
+   * @param agentId The ID of the agent
+   * @param query The search query
+   * @param context Current unified context
+   * @param options Context-aware search options
+   * @param limit Maximum number of results
+   * @returns Context-enhanced search results
+   */
+  async searchWithContext(
+    agentId: string,
+    query: string,
+    context?: UnifiedContext,
+    options: ContextAwareSearchOptions = {},
+    limit = 10
+  ): Promise<SearchResult[]> {
+    const startTime = Date.now();
+    
+    // Create enhanced search query
+    const searchQuery = createContextAwareSearchQuery(query, context, options);
+    
+    // Get base memories using existing search methods
+    let baseMemories: MemoryRecord[];
+    
+    if (searchQuery.embedding) {
+      baseMemories = await this.search(agentId, searchQuery.embedding, limit * 2);
+    } else {
+      baseMemories = await this.retrieve(agentId, searchQuery.query, limit * 2);
+    }
+
+    // Convert to search results
+    let results: SearchResult[] = baseMemories.map(memory => ({
+      record: memory,
+      score: memory.importance || 0.5,
+    }));
+
+    // Apply context-aware optimization if context is provided
+    if (context && options.useContextualRanking) {
+      results = optimizeContextAwareResults(results, context, options);
+    }
+
+    // Limit results
+    results = results.slice(0, limit);
+
+    // Create performance metrics
+    const metrics = createContextQueryMetrics(startTime, results);
+    
+    // Add metrics to results metadata (if needed for debugging)
+    results.forEach(result => {
+      if (!result.record.metadata) result.record.metadata = {};
+      result.record.metadata.queryMetrics = metrics;
+    });
+
+    return results;
+  }
+
+  /**
+   * Get context analytics for agent's memories
+   * @param agentId The ID of the agent
+   * @returns Context distribution analytics
+   */
+  async getContextAnalytics(agentId: string): Promise<any> {
+    const memories = await this.retrieve(agentId, '', 1000);
+    const contextEnhancedMemories = memories as ContextEnhancedMemoryRecord[];
+    
+    return analyzeContextDistribution(contextEnhancedMemories);
+  }
+
+  /**
+   * Find contextually similar memories
+   * @param agentId The ID of the agent
+   * @param referenceMemoryId The reference memory ID
+   * @param similarityThreshold Minimum similarity threshold (0-1)
+   * @param limit Maximum number of similar memories
+   * @returns Array of similar memories with similarity scores
+   */
+  async findSimilarContextualMemories(
+    agentId: string,
+    referenceMemoryId: string,
+    similarityThreshold = 0.7,
+    limit = 10
+  ): Promise<Array<{ memory: ContextEnhancedMemoryRecord; similarity: number }>> {
+    // Get reference memory
+    const refStmt = this.db.prepare(`
+      SELECT * FROM memories 
+      WHERE agent_id = ? AND id = ?
+    `);
+    const refRow = refStmt.get(agentId, referenceMemoryId) as SQLiteMemoryRow | undefined;
+    
+    if (!refRow || !refRow.unified_context) {
+      return [];
+    }
+
+    const referenceMemory = this.rowToMemoryRecord(refRow);
+    const referenceContext = referenceMemory.unifiedContext;
+    
+    if (!referenceContext) return [];
+
+    // Get all other memories with context
+    const allStmt = this.db.prepare(`
+      SELECT * FROM memories 
+      WHERE agent_id = ? AND id != ? AND unified_context IS NOT NULL
+      ORDER BY timestamp DESC
+      LIMIT 100
+    `);
+    const rows = allStmt.all(agentId, referenceMemoryId) as SQLiteMemoryRow[];
+
+    const similarMemories: Array<{ memory: ContextEnhancedMemoryRecord; similarity: number }> = [];
+
+    for (const row of rows) {
+      const memory = this.rowToMemoryRecord(row);
+      if (!memory.unifiedContext) continue;
+
+      const similarity = calculateContextSimilarity(referenceContext, memory.unifiedContext);
+      
+      if (similarity >= similarityThreshold) {
+        similarMemories.push({ memory, similarity });
+      }
+    }
+
+    // Sort by similarity and limit results
+    return similarMemories
+      .sort((a, b) => b.similarity - a.similarity)
+      .slice(0, limit);
+  }
+
+  /**
+   * Enhanced search with context fingerprint matching
+   * @param agentId The ID of the agent
+   * @param contextFingerprint The context fingerprint to match
+   * @param limit Maximum number of results
+   * @returns Memories with matching context fingerprints
+   */
+  async searchByContextFingerprint(
+    agentId: string,
+    contextFingerprint: string,
+    limit = 10
+  ): Promise<ContextEnhancedMemoryRecord[]> {
+    const stmt = this.db.prepare(`
+      SELECT * FROM memories 
+      WHERE agent_id = ? AND context_fingerprint = ?
+      ORDER BY context_score DESC, timestamp DESC
+      LIMIT ?
+    `);
+
+    const rows = stmt.all(agentId, contextFingerprint, limit) as SQLiteMemoryRow[];
+    return rows.map(row => this.rowToMemoryRecord(row));
+  }
+
+  /**
+   * Get memories by context score range
+   * @param agentId The ID of the agent
+   * @param minScore Minimum context score
+   * @param maxScore Maximum context score
+   * @param limit Maximum number of results
+   * @returns Memories within the context score range
+   */
+  async getMemoriesByContextScore(
+    agentId: string,
+    minScore = 0,
+    maxScore = 1,
+    limit = 10
+  ): Promise<ContextEnhancedMemoryRecord[]> {
+    const stmt = this.db.prepare(`
+      SELECT * FROM memories 
+      WHERE agent_id = ? AND context_score BETWEEN ? AND ?
+      ORDER BY context_score DESC, timestamp DESC
+      LIMIT ?
+    `);
+
+    const rows = stmt.all(agentId, minScore, maxScore, limit) as SQLiteMemoryRow[];
+    return rows.map(row => this.rowToMemoryRecord(row));
   }
 
   /**

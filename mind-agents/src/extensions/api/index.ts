@@ -99,6 +99,15 @@ export class ApiExtension implements Extension {
   private app: express.Application;
   private server?: http.Server;
   private wss?: WebSocketServer;
+  // Context-aware properties
+  context?: any;
+  contextScope = 'extension:api';
+  contextConfig = {
+    enableInjection: true,
+    scopeType: 'extension',
+    autoUpdate: true,
+    filterSensitive: true
+  };
   
   // Standardized logging
   private logger = standardLoggers.api;
@@ -170,8 +179,17 @@ export class ApiExtension implements Extension {
     this.setupRoutes();
   }
 
-  async init(agent: Agent): Promise<void> {
+  async init(agent: Agent, context?: any): Promise<void> {
     this.agent = agent;
+
+    // Store initialization context
+    if (context) {
+      this.context = context;
+      this.logger.debug('API extension initialized with context', {
+        extensionId: this.id,
+        contextKeys: Object.keys(context)
+      });
+    }
 
     // Initialize chat persistence
     await this.initializeChatPersistence();
@@ -191,7 +209,12 @@ export class ApiExtension implements Extension {
     await this.start();
   }
 
-  async tick(agent: Agent): Promise<void> {
+  async tick(agent: Agent, context?: any): Promise<void> {
+    // Update runtime context if provided
+    if (context) {
+      this.context = { ...this.context, ...context };
+    }
+
     // Broadcast agent status updates via WebSocket
     if (this.wss) {
       const agentUpdate = {
@@ -2860,15 +2883,47 @@ export class ApiExtension implements Extension {
             typeof message.data === 'string'
               ? message.data
               : message.message || '';
+          
+          // Create WebSocket context
+          const wsContext = {
+            ...this.context,
+            sessionId: connectionId,
+            messageType: 'websocket_chat',
+            timestamp: new Date(),
+            source: 'websocket',
+            clientIP: this.getConnectionIP(connectionId),
+            messageId: message.id || this.generateConnectionId()
+          };
+
+          this.logger.debug('Processing WebSocket chat with context', {
+            connectionId,
+            agentId,
+            contextKeys: Object.keys(wsContext)
+          });
+
           const chatRequest: ChatRequest = {
             message: messageText,
             ...(agentId && { agentId }),
-            context: { sessionId: connectionId },
+            context: wsContext,
           };
           const response = await this.processChatMessage(chatRequest);
+          
+          // Include context metadata in response if enabled
+          const responseData = this.contextConfig.enableInjection 
+            ? {
+                ...response,
+                contextMetadata: {
+                  hasContext: true,
+                  sessionId: connectionId,
+                  source: 'websocket',
+                  timestamp: wsContext.timestamp
+                }
+              }
+            : response;
+
           this.sendWebSocketResponse(ws, {
             type: 'chat_response',
-            data: response,
+            data: responseData,
           });
           break;
         }
@@ -2879,14 +2934,51 @@ export class ApiExtension implements Extension {
               typeof message.data === 'string'
                 ? message.data
                 : message.message || '';
+
+            // Create command context
+            const commandContext = {
+              ...this.context,
+              sessionId: connectionId,
+              messageType: 'websocket_action',
+              timestamp: new Date(),
+              source: 'websocket',
+              clientIP: this.getConnectionIP(connectionId),
+              command: commandInput,
+              messageId: message.id || this.generateConnectionId()
+            };
+
+            this.logger.debug('Processing WebSocket action with context', {
+              connectionId,
+              command: commandInput,
+              contextKeys: Object.keys(commandContext)
+            });
+
             const command = await this.commandSystem.sendCommand(
               this.agent.id,
               commandInput,
-              { priority: 2, async: true }
+              { 
+                priority: 2, 
+                async: true,
+                context: commandContext 
+              }
             );
+
+            const responseData = this.contextConfig.enableInjection
+              ? {
+                  commandId: command.id,
+                  status: command.status,
+                  contextMetadata: {
+                    hasContext: true,
+                    sessionId: connectionId,
+                    source: 'websocket',
+                    timestamp: commandContext.timestamp
+                  }
+                }
+              : { commandId: command.id, status: command.status };
+
             this.sendWebSocketResponse(ws, {
               type: 'command_response',
-              data: { commandId: command.id, status: command.status },
+              data: responseData,
             });
           }
           break;
@@ -2909,6 +3001,12 @@ export class ApiExtension implements Extension {
 
   private generateConnectionId(): string {
     return Math.random().toString(36).substring(2, 15);
+  }
+
+  private getConnectionIP(connectionId: string): string {
+    // In a full implementation, you'd store connection metadata
+    // For now, return placeholder
+    return 'unknown';
   }
 
   getConnectionInfo(): ConnectionInfo[] {
@@ -3230,13 +3328,32 @@ export class ApiExtension implements Extension {
       },
       execute: async (
         _agent: Agent,
-        params: SkillParameters
+        params: SkillParameters,
+        context?: any
       ): Promise<ActionResult> => {
-        const { agentId, message, context } = params;
+        const { agentId, message, context: paramContext } = params;
+        
+        // Merge execution context with parameter context
+        const mergedContext = {
+          ...this.context,
+          ...context,
+          ...paramContext,
+          timestamp: new Date(),
+          source: 'api-extension',
+          action: 'sendChatMessage'
+        };
+
+        this.logger.debug('Executing sendChatMessage with context', {
+          agentId,
+          contextKeys: Object.keys(mergedContext),
+          hasApiContext: !!this.context,
+          hasExecutionContext: !!context
+        });
+
         const response = await this.processChatMessage({
           message: message as string,
           agentId: (agentId as string) || '',
-          context: context as any,
+          context: mergedContext,
         });
         return {
           success: true,
@@ -3256,9 +3373,26 @@ export class ApiExtension implements Extension {
       },
       execute: async (
         _localAgent: Agent,
-        params: SkillParameters
+        params: SkillParameters,
+        context?: any
       ): Promise<ActionResult> => {
         const { agentId } = params;
+        
+        // Create context for this action
+        const actionContext = {
+          ...this.context,
+          ...context,
+          requestedAgentId: agentId,
+          requestTime: new Date(),
+          source: 'api-extension',
+          action: 'getAgentStatus'
+        };
+
+        this.logger.debug('Getting agent status with context', {
+          agentId,
+          contextKeys: Object.keys(actionContext)
+        });
+
         const agentsMap = this.getAgentsMap();
         const agent = agentsMap.get(agentId as string);
         if (!agent) {
@@ -3269,16 +3403,29 @@ export class ApiExtension implements Extension {
             timestamp: new Date(),
           };
         }
+        
+        // Include context information in result if available
+        const result: any = {
+          id: agent.id,
+          name: agent.name,
+          status: agent.status,
+          emotion: agent.emotion?.current,
+          lastUpdate: agent.lastUpdate,
+        };
+
+        // Add context metadata if context injection is enabled
+        if (this.contextConfig.enableInjection && actionContext) {
+          result.contextMetadata = {
+            hasContext: true,
+            contextSource: actionContext.source,
+            requestTime: actionContext.requestTime
+          };
+        }
+
         return {
           success: true,
           type: ActionResultType.SUCCESS,
-          result: {
-            id: agent.id,
-            name: agent.name,
-            status: agent.status,
-            emotion: agent.emotion?.current,
-            lastUpdate: agent.lastUpdate,
-          },
+          result,
           timestamp: new Date(),
         };
       },
@@ -3350,9 +3497,41 @@ export class ApiExtension implements Extension {
     this.events['websocket_message'] = {
       event: 'websocket_message',
       description: 'Handle WebSocket messages',
-      handler: async (_agent: Agent, event: AgentEvent): Promise<void> => {
-        // Handle WebSocket message events
-        runtimeLogger.debug('WebSocket message event:', event);
+      contextOptions: {
+        injectAgentContext: true,
+        injectEventContext: true,
+        preserveEventData: true,
+        filterSensitiveData: true
+      },
+      handler: async (_agent: Agent, event: AgentEvent, context?: any): Promise<void> => {
+        // Create event-specific context
+        const eventContext = {
+          ...this.context,
+          ...context,
+          eventId: event.id,
+          eventType: event.type,
+          eventSource: event.source,
+          eventTimestamp: event.timestamp,
+          source: 'api-extension-event',
+          handler: 'websocket_message'
+        };
+
+        this.logger.debug('Processing WebSocket message event with context', {
+          eventId: event.id,
+          agentId: _agent.id,
+          contextKeys: Object.keys(eventContext),
+          hasEventData: !!event.data
+        });
+
+        // Handle WebSocket message events with context
+        runtimeLogger.debug('WebSocket message event:', {
+          ...event,
+          contextMetadata: {
+            hasContext: this.contextConfig.enableInjection,
+            contextSource: eventContext.source,
+            contextTimestamp: eventContext.eventTimestamp
+          }
+        });
       },
     };
 

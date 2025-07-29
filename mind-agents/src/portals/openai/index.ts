@@ -32,8 +32,14 @@ import {
   PortalType,
   ModelType,
 } from '../../types/portal';
+import { UnifiedContext } from '../../types/context/unified-context.js';
 import { BasePortal } from '../base-portal';
 import { convertUsage } from '../utils';
+import { 
+  ContextPromptTransformer, 
+  ContextModelSelector, 
+  ContextPerformanceOptimizer 
+} from '../context-helpers.js';
 
 // Import shared utilities
 import {
@@ -719,6 +725,276 @@ export class OpenAIPortal extends BasePortal {
     capability: PortalCapability
   ): string | null {
     return this.helper.modelResolver.getOptimalModel(capability);
+  }
+
+  /**
+   * Generate text with context awareness (OpenAI-specific implementation)
+   * Enhances the base implementation with OpenAI-specific optimizations
+   */
+  override async generateTextWithContext(
+    prompt: string,
+    context: UnifiedContext,
+    options?: Omit<TextGenerationOptions, 'context'>
+  ): Promise<TextGenerationResult> {
+    try {
+      // Use context helpers to optimize for OpenAI
+      const contextPrompt = ContextPromptTransformer.transformToPromptContext(context);
+      const enhancedPrompt = contextPrompt ? `${contextPrompt}\n\n${prompt}` : prompt;
+      
+      // Select optimal OpenAI model based on context
+      const availableModels = this.getSupportedModelsForCapability(PortalCapability.TEXT_GENERATION);
+      const contextModel = ContextModelSelector.selectModel(context, availableModels, PortalCapability.TEXT_GENERATION);
+      
+      // Optimize options for OpenAI specifics
+      const optimizedOptions = ContextPerformanceOptimizer.optimizeOptions(context, options);
+      
+      // Use the selected model or fall back to helper's model resolution
+      const modelToUse = contextModel || this.helper.resolveModel('chat', options?.model);
+      const languageModel = this.getLanguageModel(modelToUse);
+
+      const baseParams = {
+        model: languageModel,
+        prompt: enhancedPrompt,
+      };
+
+      const params = this.helper.buildTextParams(baseParams, {
+        ...optimizedOptions,
+        context
+      });
+
+      const result = await generateText(params);
+
+      return {
+        text: result.text,
+        usage: convertUsage(result.usage),
+        finishReason: this.helper.mapFinishReason(result.finishReason),
+        metadata: {
+          model: modelToUse,
+          provider: 'openai',
+          contextEnhanced: true,
+          contextScope: context.metadata.scope,
+        },
+      };
+    } catch (error) {
+      runtimeLogger.error(`OpenAI context-aware text generation failed:`, error as Error);
+      // Fallback to base implementation
+      return super.generateTextWithContext(prompt, context, options);
+    }
+  }
+
+  /**
+   * Generate chat with context awareness (OpenAI-specific implementation)
+   * Enhances the base implementation with OpenAI-specific optimizations
+   */
+  override async generateChatWithContext(
+    messages: ChatMessage[],
+    context: UnifiedContext,
+    options?: Omit<ChatGenerationOptions, 'context'>
+  ): Promise<ChatGenerationResult> {
+    try {
+      // Build context-enhanced messages
+      const enhancedMessages = this.buildContextualMessages(messages, context);
+      
+      // Select optimal OpenAI model based on context
+      const availableModels = this.getSupportedModelsForCapability(PortalCapability.CHAT_GENERATION);
+      const contextModel = ContextModelSelector.selectModel(context, availableModels, PortalCapability.CHAT_GENERATION);
+      
+      // Optimize options for OpenAI specifics
+      const optimizedOptions = ContextPerformanceOptimizer.optimizeOptions(context, options);
+      
+      // Use intelligent model selection based on context
+      const hasTools = (optimizedOptions.tools && Object.keys(optimizedOptions.tools).length > 0) ||
+                      (context.tools?.available && context.tools.available.length > 0);
+      const modelType = hasTools ? 'tool' : 'chat';
+      const modelToUse = contextModel || this.helper.resolveModel(modelType, options?.model);
+      
+      const languageModel = this.getLanguageModel(modelToUse);
+      const modelMessages = this.convertToModelMessages(enhancedMessages);
+
+      const baseOptions = {
+        model: languageModel,
+        messages: modelMessages,
+      };
+
+      const params = this.helper.buildChatParams(baseOptions, {
+        ...optimizedOptions,
+        context
+      });
+
+      const result = await generateText(params);
+
+      return {
+        text: result.text,
+        message: {
+          role: MessageRole.ASSISTANT,
+          content: result.text,
+          timestamp: new Date(),
+        },
+        usage: convertUsage(result.usage),
+        finishReason: this.helper.mapFinishReason(result.finishReason),
+        metadata: {
+          model: modelToUse,
+          provider: 'openai',
+          contextEnhanced: true,
+          contextScope: context.metadata.scope,
+          toolsUsed: hasTools,
+        },
+      };
+    } catch (error) {
+      runtimeLogger.error(`OpenAI context-aware chat generation failed:`, error as Error);
+      // Fallback to base implementation
+      return super.generateChatWithContext(messages, context, options);
+    }
+  }
+
+  /**
+   * Context-aware model selection specifically for OpenAI models
+   * Override base implementation with OpenAI-specific logic
+   */
+  protected override selectModelFromContext(context: UnifiedContext): string | undefined {
+    // Check for OpenAI-specific context preferences
+    if (context.portal?.active && (context.portal.active as any).provider === 'openai') {
+      return context.portal.active.model;
+    }
+
+    // Use reasoning models for complex tasks
+    if ((context.agent?.config?.personality as any)?.reasoning === 'high' ||
+        context.communication?.conversationHistory && 
+        context.communication.conversationHistory.length > 15) {
+      return 'o1-preview'; // Use reasoning model for complex scenarios
+    }
+
+    // Use efficient models for tool usage
+    if (context.tools?.available && context.tools.available.length > 0) {
+      return this.helper.resolveModel('tool'); // gpt-4o-mini for tools
+    }
+
+    // Use multimodal model if needed
+    if (context.communication?.channel?.capabilities?.includes('image') ||
+        context.communication?.channel?.capabilities?.includes('video')) {
+      return 'gpt-4o'; // Multimodal capabilities
+    }
+
+    // Use fast model for simple conversations
+    if (context.communication?.style && 
+        (context.communication.style as any).complexity === 'low') {
+      return 'gpt-4o-mini';
+    }
+
+    // Default to chat model
+    return this.helper.resolveModel('chat');
+  }
+
+  /**
+   * Context-aware temperature selection for OpenAI models
+   * Override base implementation with OpenAI-specific optimizations
+   */
+  protected override selectTemperatureFromContext(context: UnifiedContext): number {
+    // Very low temperature for reasoning models
+    if (context.portal?.active?.model?.includes('o1')) {
+      return 0.1; // o1 models work best with low temperature
+    }
+
+    // Use base implementation for other cases
+    return super.selectTemperatureFromContext(context);
+  }
+
+  /**
+   * Context-aware streaming with OpenAI-specific optimizations
+   */
+  async *streamTextWithContext(
+    prompt: string,
+    context: UnifiedContext,
+    options?: Omit<TextGenerationOptions, 'context'>
+  ): AsyncGenerator<string> {
+    try {
+      // Build context-enhanced prompt
+      const contextPrompt = ContextPromptTransformer.transformToPromptContext(context);
+      const enhancedPrompt = contextPrompt ? `${contextPrompt}\n\n${prompt}` : prompt;
+      
+      // Optimize for streaming based on context
+      const optimizedOptions = ContextPerformanceOptimizer.optimizeOptions(context, {
+        ...options,
+        stream: true
+      });
+      
+      // Select model optimized for streaming
+      const modelToUse = this.selectModelFromContext(context) || this.helper.resolveModel('chat');
+      const languageModel = this.getLanguageModel(modelToUse);
+
+      const baseParams = {
+        model: languageModel,
+        prompt: enhancedPrompt,
+      };
+
+      const params = this.helper.buildTextParams(baseParams, {
+        ...optimizedOptions,
+        context
+      });
+      
+      yield* this.helper.createTextStream(languageModel, params, {
+        callbacks: {
+          onError: (error) => {
+            runtimeLogger.error(`OpenAI context-aware text streaming failed:`, error);
+            throw this.helper.handleError(error, 'streamTextWithContext', modelToUse);
+          }
+        }
+      });
+    } catch (error) {
+      runtimeLogger.error(`OpenAI context-aware text streaming setup failed:`, error as Error);
+      throw error;
+    }
+  }
+
+  /**
+   * Context-aware chat streaming with OpenAI-specific optimizations
+   */
+  async *streamChatWithContext(
+    messages: ChatMessage[],
+    context: UnifiedContext,
+    options?: Omit<ChatGenerationOptions, 'context'>
+  ): AsyncGenerator<string> {
+    try {
+      // Build context-enhanced messages
+      const enhancedMessages = this.buildContextualMessages(messages, context);
+      
+      // Optimize for streaming based on context
+      const optimizedOptions = ContextPerformanceOptimizer.optimizeOptions(context, {
+        ...options,
+        stream: true
+      });
+      
+      // Select model optimized for streaming and tools
+      const hasTools = optimizedOptions.tools && Object.keys(optimizedOptions.tools).length > 0;
+      const modelType = hasTools ? 'tool' : 'chat';
+      const modelToUse = this.selectModelFromContext(context) || this.helper.resolveModel(modelType);
+      
+      const languageModel = this.getLanguageModel(modelToUse);
+      const modelMessages = this.convertToModelMessages(enhancedMessages);
+
+      const baseOptions = {
+        model: languageModel,
+        messages: modelMessages,
+      };
+
+      const params = this.helper.buildChatParams(baseOptions, {
+        ...optimizedOptions,
+        context
+      });
+      
+      yield* this.helper.createChatStream(languageModel, params, {
+        enableToolStreaming: true,
+        callbacks: {
+          onError: (error) => {
+            runtimeLogger.error(`OpenAI context-aware chat streaming failed:`, error);
+            throw this.helper.handleError(error, 'streamChatWithContext', modelToUse);
+          }
+        }
+      });
+    } catch (error) {
+      runtimeLogger.error(`OpenAI context-aware chat streaming setup failed:`, error as Error);
+      throw error;
+    }
   }
 
 }

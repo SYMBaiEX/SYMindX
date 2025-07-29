@@ -2,7 +2,7 @@ import { Box, Text } from 'ink';
 import React, { useState, useEffect } from 'react';
 
 import { useTerminalDimensions } from '../../hooks/useTerminalDimensions.js';
-import { themeEngine } from '../../themes/ThemeEngine.js';
+import { themeEngine } from '../../themes/theme-engine.js';
 
 interface DataPoint {
   value: number;

@@ -1,20 +1,20 @@
 import { Box, Text, useInput } from 'ink';
 import React, { useState, useEffect, useCallback } from 'react';
 
-import { runtimeClient } from '../../services/runtimeClient.js';
+import { runtimeClient } from '../../services/runtime-client.js';
 import { cyberpunkTheme } from '../../themes/cyberpunk.js';
 import { soundManager, SoundType } from '../../utils/sound-effects.js';
 import { GlitchText } from '../effects/GlitchText.js';
 import { Card3D } from '../ui/Card3D.js';
 
 // Import all the panel components
-import { AutonomyPanel } from './AgentDetail/AutonomyPanel.js';
-import { CognitionPanel } from './AgentDetail/CognitionPanel.js';
-import { EmotionPanel } from './AgentDetail/EmotionPanel.js';
-import { ExtensionsPanel } from './AgentDetail/ExtensionsPanel.js';
-import { MemoryPanel } from './AgentDetail/MemoryPanel.js';
-import { PerformancePanel } from './AgentDetail/PerformancePanel.js';
-import { PortalsPanel } from './AgentDetail/PortalsPanel.js';
+import { AutonomyPanel } from './agent-detail/autonomy-panel.js';
+import { CognitionPanel } from './agent-detail/cognition-panel.js';
+import { EmotionPanel } from './agent-detail/emotion-panel.js';
+import { ExtensionsPanel } from './agent-detail/extensions-panel.js';
+import { MemoryPanel } from './agent-detail/memory-panel.js';
+import { PerformancePanel } from './agent-detail/performance-panel.js';
+import { PortalsPanel } from './agent-detail/portals-panel.js';
 
 // Enhanced agent data interfaces for debugging
 interface AgentDetailData {

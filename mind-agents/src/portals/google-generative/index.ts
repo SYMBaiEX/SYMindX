@@ -57,7 +57,7 @@ export interface GenerationConfig {
 
 export const defaultGenerativeConfig: Partial<GoogleGenerativeConfig> = {
   model: 'gemini-2.0-flash-exp',
-  maxTokens: 8192, // Keep as config property, map to maxOutputTokens in calls
+  maxTokens: 8192, // Config property for backward compatibility
   temperature: 0.7,
   timeout: 60000,
   apiVersion: 'v1',
@@ -178,13 +178,13 @@ export class GoogleGenerativePortal extends BasePortal {
 
       const params: any = { ...baseParams };
 
-      const maxTokens =
+      const maxOutputTokens =
         options?.maxOutputTokens ??
         options?.maxTokens ??
         config.generationConfig?.maxOutputTokens ??
         this.config.maxTokens;
-      if (maxTokens) {
-        params.maxTokens = maxTokens;
+      if (maxOutputTokens !== undefined) {
+        params.maxOutputTokens = maxOutputTokens;
       }
 
       const temperature =
@@ -250,13 +250,13 @@ export class GoogleGenerativePortal extends BasePortal {
 
       const params: any = { ...baseParams };
 
-      const maxTokens =
+      const maxOutputTokens =
         options?.maxOutputTokens ??
         options?.maxTokens ??
         config.generationConfig?.maxOutputTokens ??
         this.config.maxTokens;
-      if (maxTokens) {
-        params.maxTokens = maxTokens;
+      if (maxOutputTokens !== undefined) {
+        params.maxOutputTokens = maxOutputTokens;
       }
 
       const temperature =
@@ -353,13 +353,13 @@ export class GoogleGenerativePortal extends BasePortal {
 
       const params: any = { ...baseParams };
 
-      const maxTokens =
+      const maxOutputTokens =
         options?.maxOutputTokens ??
         options?.maxTokens ??
         config.generationConfig?.maxOutputTokens ??
         this.config.maxTokens;
-      if (maxTokens) {
-        params.maxTokens = maxTokens;
+      if (maxOutputTokens !== undefined) {
+        params.maxOutputTokens = maxOutputTokens;
       }
 
       const temperature =
@@ -421,13 +421,13 @@ export class GoogleGenerativePortal extends BasePortal {
 
       const params: any = { ...baseParams };
 
-      const maxTokens =
+      const maxOutputTokens =
         options?.maxOutputTokens ??
         options?.maxTokens ??
         config.generationConfig?.maxOutputTokens ??
         this.config.maxTokens;
-      if (maxTokens) {
-        params.maxTokens = maxTokens;
+      if (maxOutputTokens !== undefined) {
+        params.maxOutputTokens = maxOutputTokens;
       }
 
       const temperature =
