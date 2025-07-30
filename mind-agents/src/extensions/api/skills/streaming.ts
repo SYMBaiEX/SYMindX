@@ -334,8 +334,8 @@ export class StreamingSkill {
             agentId: agent.id,
             type,
             endpoint,
-            timestamp: new Date().toISOString()
-          }
+            timestamp: new Date().toISOString(),
+          },
         };
         agent.eventBus.emit(streamEvent);
       }
@@ -408,8 +408,8 @@ export class StreamingSkill {
             streamId,
             agentId: agent.id,
             reason,
-            timestamp: new Date().toISOString()
-          }
+            timestamp: new Date().toISOString(),
+          },
         };
         agent.eventBus.emit(streamClosedEvent);
       }
@@ -575,17 +575,16 @@ export class StreamingSkill {
 
           stream.lastActivity = new Date();
         } catch (error) {
-          runtimeLogger.warn(
-            `Failed to deliver event to stream ${streamId}:`,
-            {
-              error: {
-                code: 'STREAM_DELIVERY_FAILED',
-                message: error instanceof Error ? error.message : String(error),
-                ...(error instanceof Error && error.stack ? { stack: error.stack } : {}),
-                cause: error
-              }
-            }
-          );
+          runtimeLogger.warn(`Failed to deliver event to stream ${streamId}:`, {
+            error: {
+              code: 'STREAM_DELIVERY_FAILED',
+              message: error instanceof Error ? error.message : String(error),
+              ...(error instanceof Error && error.stack
+                ? { stack: error.stack }
+                : {}),
+              cause: error,
+            },
+          });
         }
       }
 
@@ -628,7 +627,9 @@ export class StreamingSkill {
     params: SkillParameters
   ): Promise<ActionResult> {
     try {
-      const streamId = params['streamId'] ? String(params['streamId']) : undefined;
+      const streamId = params['streamId']
+        ? String(params['streamId'])
+        : undefined;
       const includeBuffer = Boolean(params['includeBuffer'] ?? false);
 
       if (streamId) {
@@ -1052,7 +1053,9 @@ export class StreamingSkill {
     try {
       const streamId = String(params['streamId']);
       const limit = typeof params['limit'] === 'number' ? params['limit'] : 100;
-      const since = params['since'] ? new Date(String(params['since'])) : undefined;
+      const since = params['since']
+        ? new Date(String(params['since']))
+        : undefined;
 
       const buffer = this.eventBuffer.get(streamId);
       if (!buffer) {

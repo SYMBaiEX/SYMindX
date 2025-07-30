@@ -1,15 +1,21 @@
 /**
  * @module context-integration.test
  * @description Integration Test Suite for Context Integration Enhancements
- * 
+ *
  * Tests feature integration, performance impact, and scenarios
  * for the enhanced context system integration with SYMindX components.
  */
 
-import { describe, test as it, expect, beforeEach, afterEach, beforeAll, afterAll } from 'bun:test';
 import {
-  createContextLifecycleManager,
-} from '../core/context/context-lifecycle-manager.js';
+  describe,
+  test as it,
+  expect,
+  beforeEach,
+  afterEach,
+  beforeAll,
+  afterAll,
+} from 'bun:test';
+import { createContextLifecycleManager } from '../core/context/context-lifecycle-manager.js';
 import type {
   ContextLifecycleManager,
   ContextLifecycleManagerConfig,
@@ -40,7 +46,7 @@ describe('Context Integration Test Suite', () => {
 
   beforeAll(async () => {
     testEnv = createTestEnvironment();
-    
+
     // Initialize runtime with context enhancements
     const bootstrapper = new ContextBootstrapper();
     runtime = await bootstrapper.bootstrap({
@@ -130,8 +136,10 @@ describe('Context Integration Test Suite', () => {
 
       // Legacy memory storage should work
       await agent.memory.store(memoryRecord);
-      const retrieved = await agent.memory.retrieve(agent.id, { type: 'interaction' });
-      
+      const retrieved = await agent.memory.retrieve(agent.id, {
+        type: 'interaction',
+      });
+
       expect(retrieved).toBeDefined();
       expect(retrieved.length).toBeGreaterThan(0);
       expect(retrieved[0].content).toBe(memoryRecord.content);
@@ -162,9 +170,9 @@ describe('Context Integration Test Suite', () => {
       await runtime.registerAgent(agent);
 
       // Test portal integration through runtime
-      const response = await mockPortal.generateResponse(
-        [{ role: 'user', content: 'Test message' }]
-      );
+      const response = await mockPortal.generateResponse([
+        { role: 'user', content: 'Test message' },
+      ]);
 
       expect(response.content).toBe('Mock response');
 
@@ -189,7 +197,7 @@ describe('Context Integration Test Suite', () => {
       // Enhanced context should be available to extensions
       const agent = AgentFactory.createBasicAgent();
       await runtime.registerAgent(agent);
-      
+
       const context = contextManager.getActiveContext(agent.id);
       expect(context).toBeDefined();
     });
@@ -201,11 +209,18 @@ describe('Context Integration Test Suite', () => {
       await runtime.registerAgent(agent);
 
       const context = contextManager.getOrCreateContext(agent.id, 'user-1');
-      contextManager.addMessage(context, 'user-1', 'I am so excited about this project!', 'excited');
+      contextManager.addMessage(
+        context,
+        'user-1',
+        'I am so excited about this project!',
+        'excited'
+      );
 
       // Emotion should be captured in enrichment
       expect(context.enrichment.emotionalContext).toBeDefined();
-      expect(context.enrichment.emotionalContext.currentEmotion).toBe('excited');
+      expect(context.enrichment.emotionalContext.currentEmotion).toBe(
+        'excited'
+      );
       expect(context.enrichment.emotionalContext.intensity).toBeGreaterThan(0);
 
       // Agent emotion state should be updated
@@ -218,19 +233,38 @@ describe('Context Integration Test Suite', () => {
       await runtime.registerAgent(agent);
 
       const context = contextManager.getOrCreateContext(agent.id, 'user-1');
-      
+
       // Add messages to build context
-      contextManager.addMessage(context, 'user-1', 'I work as a software engineer');
-      contextManager.addMessage(context, 'user-1', 'I specialize in TypeScript development');
-      contextManager.addMessage(context, 'user-1', 'I love working on AI projects');
+      contextManager.addMessage(
+        context,
+        'user-1',
+        'I work as a software engineer'
+      );
+      contextManager.addMessage(
+        context,
+        'user-1',
+        'I specialize in TypeScript development'
+      );
+      contextManager.addMessage(
+        context,
+        'user-1',
+        'I love working on AI projects'
+      );
 
       // Memory enrichment should capture relevant information
       expect(context.enrichment.memoryIntegration).toBeDefined();
-      expect(context.enrichment.memoryIntegration.relevantMemories).toBeDefined();
-      expect(context.enrichment.memoryIntegration.memoryImportance).toBeGreaterThan(0);
+      expect(
+        context.enrichment.memoryIntegration.relevantMemories
+      ).toBeDefined();
+      expect(
+        context.enrichment.memoryIntegration.memoryImportance
+      ).toBeGreaterThan(0);
 
       // Context should trigger memory preservation
-      const preserved = await contextManager.preserveToMemory(agent, context.id);
+      const preserved = await contextManager.preserveToMemory(
+        agent,
+        context.id
+      );
       expect(preserved).toBeDefined();
       expect(preserved!.content).toContain('software engineer');
     });
@@ -240,12 +274,18 @@ describe('Context Integration Test Suite', () => {
       await runtime.registerAgent(agent);
 
       const context = contextManager.getOrCreateContext(agent.id, 'user-1');
-      contextManager.addMessage(context, 'user-1', 'Can you help me solve this complex problem?');
+      contextManager.addMessage(
+        context,
+        'user-1',
+        'Can you help me solve this complex problem?'
+      );
 
       // Cognition context should be enriched
       expect(context.enrichment.cognitiveContext).toBeDefined();
       expect(context.enrichment.cognitiveContext.taskType).toBeDefined();
-      expect(context.enrichment.cognitiveContext.complexityLevel).toBeGreaterThan(0);
+      expect(
+        context.enrichment.cognitiveContext.complexityLevel
+      ).toBeGreaterThan(0);
 
       // Agent cognition should use enriched context
       if (agent.cognition) {
@@ -270,12 +310,19 @@ describe('Context Integration Test Suite', () => {
       const multiAgentManager = new MultiAgentManager();
 
       // Create shared context scenario through context manager
-      const sharedContext = contextManager.getOrCreateContext('shared-context', 'user-1');
+      const sharedContext = contextManager.getOrCreateContext(
+        'shared-context',
+        'user-1'
+      );
       expect(sharedContext).toBeDefined();
 
       // Messages should be shared between agents
-      contextManager.addMessage(sharedContext, 'user-1', 'This is a shared conversation');
-      
+      contextManager.addMessage(
+        sharedContext,
+        'user-1',
+        'This is a shared conversation'
+      );
+
       const agent1Context = contextManager.getActiveContext(agent1.id);
       const agent2Context = contextManager.getActiveContext(agent2.id);
 
@@ -288,10 +335,14 @@ describe('Context Integration Test Suite', () => {
       await runtime.registerAgent(agent);
 
       const context = contextManager.getOrCreateContext(agent.id, 'user-1');
-      
+
       // Populate context with enrichment data
       for (let i = 0; i < 10; i++) {
-        contextManager.addMessage(context, 'user-1', `Message ${i} about programming`);
+        contextManager.addMessage(
+          context,
+          'user-1',
+          `Message ${i} about programming`
+        );
       }
 
       // First enrichment should populate cache
@@ -318,7 +369,11 @@ describe('Context Integration Test Suite', () => {
       await PerformanceAssertions.assertExecutionTime(
         () => {
           for (let i = 0; i < TestPresets.FAST.iterations; i++) {
-            contextManager.addMessage(context, 'user-1', `Performance test message ${i}`);
+            contextManager.addMessage(
+              context,
+              'user-1',
+              `Performance test message ${i}`
+            );
           }
         },
         TestPresets.FAST.timeout,
@@ -330,7 +385,10 @@ describe('Context Integration Test Suite', () => {
       await PerformanceAssertions.assertExecutionTime(
         () => {
           for (let i = 0; i < TestPresets.FAST.iterations; i++) {
-            const context = contextManager.getOrCreateContext(`agent-${i}`, `user-${i}`);
+            const context = contextManager.getOrCreateContext(
+              `agent-${i}`,
+              `user-${i}`
+            );
             expect(context).toBeDefined();
           }
         },
@@ -348,11 +406,18 @@ describe('Context Integration Test Suite', () => {
         agent.id = `perf-agent-${i}`;
         await runtime.registerAgent(agent);
 
-        const context = contextManager.getOrCreateContext(agent.id, `user-${i}`);
-        
+        const context = contextManager.getOrCreateContext(
+          agent.id,
+          `user-${i}`
+        );
+
         // Add messages to trigger enrichment
         for (let j = 0; j < 5; j++) {
-          contextManager.addMessage(context, `user-${i}`, `Message ${j} about topic ${j}`);
+          contextManager.addMessage(
+            context,
+            `user-${i}`,
+            `Message ${j} about topic ${j}`
+          );
         }
       }
 
@@ -390,20 +455,25 @@ describe('Context Integration Test Suite', () => {
       const agent = AgentFactory.createBasicAgent();
       await runtime.registerAgent(agent);
 
-      const operations = Array.from({ length: 50 }, (_, i) => 
-        async () => {
-          const context = contextManager.getOrCreateContext(agent.id, `user-${i}`);
-          contextManager.addMessage(context, `user-${i}`, `Concurrent message ${i}`);
-          return contextManager.getContextSummary(context.id);
-        }
-      );
+      const operations = Array.from({ length: 50 }, (_, i) => async () => {
+        const context = contextManager.getOrCreateContext(
+          agent.id,
+          `user-${i}`
+        );
+        contextManager.addMessage(
+          context,
+          `user-${i}`,
+          `Concurrent message ${i}`
+        );
+        return contextManager.getContextSummary(context.id);
+      });
 
       const startTime = performance.now();
-      const results = await Promise.all(operations.map(op => op()));
+      const results = await Promise.all(operations.map((op) => op()));
       const endTime = performance.now();
 
       expect(results).toHaveLength(50);
-      expect(results.every(result => result !== null)).toBe(true);
+      expect(results.every((result) => result !== null)).toBe(true);
       expect(endTime - startTime).toBeLessThan(2000); // Should complete in less than 2 seconds
     });
   });
@@ -441,7 +511,7 @@ describe('Context Integration Test Suite', () => {
       contextManager.addMessage(context, 'user-1', 'Test event message');
 
       // Wait for event propagation
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
       expect(eventReceived).toBe(true);
     });
 
@@ -458,11 +528,18 @@ describe('Context Integration Test Suite', () => {
       expect(updated).toBe(true);
 
       // New contexts should use updated configuration
-      const context = contextManager.getOrCreateContext('test-agent-config', 'user-1');
-      
+      const context = contextManager.getOrCreateContext(
+        'test-agent-config',
+        'user-1'
+      );
+
       // Add messages beyond new limit
       for (let i = 0; i < 25; i++) {
-        contextManager.addMessage(context, 'user-1', `Config test message ${i}`);
+        contextManager.addMessage(
+          context,
+          'user-1',
+          `Config test message ${i}`
+        );
       }
 
       expect(context.messages.length).toBeLessThanOrEqual(20);
@@ -485,7 +562,10 @@ describe('Context Integration Test Suite', () => {
       await expect(testRuntime.shutdown()).resolves.not.toThrow();
 
       // Context should be preserved if configured
-      const preserved = await testContextManager.preserveToMemory(agent, context.id);
+      const preserved = await testContextManager.preserveToMemory(
+        agent,
+        context.id
+      );
       expect(preserved).toBeDefined();
     });
   });
@@ -502,10 +582,14 @@ describe('Context Integration Test Suite', () => {
       };
 
       const context = contextManager.getOrCreateContext(agent.id, 'user-1');
-      
+
       // Should not throw and should have fallback enrichment
       expect(() => {
-        contextManager.addMessage(context, 'user-1', 'Test message with failed enrichment');
+        contextManager.addMessage(
+          context,
+          'user-1',
+          'Test message with failed enrichment'
+        );
       }).not.toThrow();
 
       expect(context.messages).toHaveLength(1);
@@ -518,19 +602,21 @@ describe('Context Integration Test Suite', () => {
     it('should handle backward compatibility layer failures', async () => {
       // Test with corrupted legacy state
       const corruptedState = { invalidProperty: 'invalid' };
-      
+
       expect(() => {
         compatibilityLayer.adaptLegacyState(corruptedState as any);
       }).not.toThrow();
 
-      const adapted = compatibilityLayer.adaptLegacyState(corruptedState as any);
+      const adapted = compatibilityLayer.adaptLegacyState(
+        corruptedState as any
+      );
       expect(adapted).toBeDefined();
       expect(adapted.isValid).toBe(false);
     });
 
     it('should recover from memory provider failures', async () => {
       const agent = AgentFactory.createBasicAgent();
-      
+
       // Mock memory provider failure
       const originalStore = agent.memory.store;
       agent.memory.store = async () => {
@@ -540,7 +626,11 @@ describe('Context Integration Test Suite', () => {
       await runtime.registerAgent(agent);
 
       const context = contextManager.getOrCreateContext(agent.id, 'user-1');
-      contextManager.addMessage(context, 'user-1', 'Message with memory failure');
+      contextManager.addMessage(
+        context,
+        'user-1',
+        'Message with memory failure'
+      );
 
       // Should not throw and should continue working
       expect(context.messages).toHaveLength(1);
@@ -584,14 +674,24 @@ describe('Context Integration Test Suite', () => {
       const legacyContext = {
         agentId: 'legacy-agent',
         messages: [
-          { from: 'user', content: 'Hello', timestamp: new Date().toISOString() },
-          { from: 'agent', content: 'Hi there', timestamp: new Date().toISOString() },
+          {
+            from: 'user',
+            content: 'Hello',
+            timestamp: new Date().toISOString(),
+          },
+          {
+            from: 'agent',
+            content: 'Hi there',
+            timestamp: new Date().toISOString(),
+          },
         ],
         state: { active: true },
       };
 
-      const migrated = compatibilityLayer.migrateLegacyContext(legacyContext as any);
-      
+      const migrated = compatibilityLayer.migrateLegacyContext(
+        legacyContext as any
+      );
+
       expect(migrated).toBeDefined();
       expect(migrated.agentId).toBe('legacy-agent');
       expect(migrated.messages).toHaveLength(2);
@@ -603,7 +703,7 @@ describe('Context Integration Test Suite', () => {
       // Create mixed environment with legacy and enhanced contexts
       const legacyAgent = AgentFactory.createBasicAgent();
       legacyAgent.id = 'legacy-agent';
-      
+
       const enhancedAgent = AgentFactory.createBasicAgent();
       enhancedAgent.id = 'enhanced-agent';
 
@@ -623,7 +723,11 @@ describe('Context Integration Test Suite', () => {
       );
 
       // Both should work in parallel
-      compatibilityLayer.addLegacyMessage(legacyContext, 'user-1', 'Legacy message');
+      compatibilityLayer.addLegacyMessage(
+        legacyContext,
+        'user-1',
+        'Legacy message'
+      );
       contextManager.addMessage(enhancedContext, 'user-1', 'Enhanced message');
 
       expect(legacyContext.messages).toHaveLength(1);
@@ -643,12 +747,14 @@ describe('Context Integration Test Suite', () => {
         state: { mood: 'positive', phase: 'active' },
       };
 
-      const migrated = compatibilityLayer.migrateLegacyContext(originalData as any);
+      const migrated = compatibilityLayer.migrateLegacyContext(
+        originalData as any
+      );
 
       // Verify data integrity
       expect(migrated.agentId).toBe(originalData.agentId);
       expect(migrated.messages).toHaveLength(originalData.messages.length);
-      expect(migrated.topics.map(t => t.topic)).toEqual(
+      expect(migrated.topics.map((t) => t.topic)).toEqual(
         expect.arrayContaining(originalData.topics)
       );
       expect(migrated.state.mood).toBe(originalData.state.mood);

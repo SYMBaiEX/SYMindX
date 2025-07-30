@@ -36,8 +36,12 @@ export class WebSocketSecurity {
   private readonly jwtManager: JWTManager;
   private readonly sessionManager: SessionManager;
   private readonly inputValidator: InputValidator;
-  private readonly connections: Map<WebSocket, SecureWebSocketConnection> = new Map();
-  private readonly rateLimiters: Map<string, { count: number; resetTime: number }> = new Map();
+  private readonly connections: Map<WebSocket, SecureWebSocketConnection> =
+    new Map();
+  private readonly rateLimiters: Map<
+    string,
+    { count: number; resetTime: number }
+  > = new Map();
 
   constructor(
     jwtManager: JWTManager,
@@ -58,7 +62,7 @@ export class WebSocketSecurity {
     this.inputValidator = new InputValidator({
       maxStringLength: this.config.maxMessageSize,
       sanitizeHtml: true,
-      preventSqlInjection: true
+      preventSqlInjection: true,
     });
 
     // Start cleanup intervals
@@ -87,7 +91,9 @@ export class WebSocketSecurity {
 
       // Check rate limiting
       if (!this.checkRateLimit(ipAddress)) {
-        console.warn(`WebSocket connection rejected: rate limit exceeded for ${ipAddress}`);
+        console.warn(
+          `WebSocket connection rejected: rate limit exceeded for ${ipAddress}`
+        );
         return false;
       }
 
@@ -99,14 +105,17 @@ export class WebSocketSecurity {
         connectedAt: new Date(),
         lastActivity: new Date(),
         messageCount: 0,
-        authenticated: !this.config.requireAuth // Default to true if auth not required
+        authenticated: !this.config.requireAuth, // Default to true if auth not required
       };
 
       // Authenticate if required
       if (this.config.requireAuth) {
-        const authenticated = await this.performAuthentication(request, connection);
+        const authenticated = await this.performAuthentication(
+          request,
+          connection
+        );
         connection.authenticated = authenticated;
-        
+
         if (!authenticated) {
           console.warn(`WebSocket authentication failed for ${ipAddress}`);
           return false;
@@ -119,9 +128,10 @@ export class WebSocketSecurity {
       // Set up connection handlers
       this.setupConnectionHandlers(ws, connection);
 
-      console.log(`WebSocket connection established: ${ipAddress} (auth: ${connection.authenticated})`);
+      console.log(
+        `WebSocket connection established: ${ipAddress} (auth: ${connection.authenticated})`
+      );
       return true;
-
     } catch (error) {
       console.error('WebSocket authentication error:', error);
       return false;
@@ -174,7 +184,6 @@ export class WebSocketSecurity {
       connection.messageCount++;
 
       return true;
-
     } catch (error) {
       console.error('Message validation error:', error);
       await this.sendError(ws, 'Internal error', 'INTERNAL_ERROR');
@@ -195,11 +204,16 @@ export class WebSocketSecurity {
   closeConnection(ws: WebSocket, reason?: string): void {
     const connection = this.connections.get(ws);
     if (connection) {
-      console.log(`Closing WebSocket connection: ${connection.ipAddress} (reason: ${reason || 'unknown'})`);
+      console.log(
+        `Closing WebSocket connection: ${connection.ipAddress} (reason: ${reason || 'unknown'})`
+      );
       this.connections.delete(ws);
     }
 
-    if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+    if (
+      ws.readyState === WebSocket.OPEN ||
+      ws.readyState === WebSocket.CONNECTING
+    ) {
       ws.close();
     }
   }
@@ -215,7 +229,7 @@ export class WebSocketSecurity {
     const stats = {
       totalConnections: this.connections.size,
       authenticatedConnections: 0,
-      connectionsByIp: {} as Record<string, number>
+      connectionsByIp: {} as Record<string, number>,
     };
 
     for (const connection of this.connections.values()) {
@@ -223,7 +237,7 @@ export class WebSocketSecurity {
         stats.authenticatedConnections++;
       }
 
-      stats.connectionsByIp[connection.ipAddress] = 
+      stats.connectionsByIp[connection.ipAddress] =
         (stats.connectionsByIp[connection.ipAddress] || 0) + 1;
     }
 
@@ -240,8 +254,9 @@ export class WebSocketSecurity {
     try {
       // Try to get token from query parameters or headers
       const url = new URL(request.url || '', 'http://localhost');
-      const token = url.searchParams.get('token') || 
-                   request.headers.authorization?.replace('Bearer ', '');
+      const token =
+        url.searchParams.get('token') ||
+        request.headers.authorization?.replace('Bearer ', '');
 
       if (!token) {
         return false;
@@ -249,7 +264,7 @@ export class WebSocketSecurity {
 
       // Verify JWT token
       const payload = await this.jwtManager.verifyToken(token, 'access');
-      
+
       // Validate session if session ID is available
       if (payload.jti) {
         const session = await this.sessionManager.validateSession(
@@ -267,7 +282,6 @@ export class WebSocketSecurity {
 
       connection.userId = payload.sub;
       return true;
-
     } catch (error) {
       console.warn('WebSocket authentication failed:', error);
       return false;
@@ -277,7 +291,10 @@ export class WebSocketSecurity {
   /**
    * Setup connection event handlers
    */
-  private setupConnectionHandlers(ws: WebSocket, connection: SecureWebSocketConnection): void {
+  private setupConnectionHandlers(
+    ws: WebSocket,
+    connection: SecureWebSocketConnection
+  ): void {
     // Heartbeat
     const heartbeatInterval = setInterval(() => {
       if (ws.readyState === WebSocket.OPEN) {
@@ -335,7 +352,8 @@ export class WebSocketSecurity {
       return true;
     }
 
-    if (limiter.count >= 10) { // Max 10 connections per minute
+    if (limiter.count >= 10) {
+      // Max 10 connections per minute
       return false;
     }
 
@@ -346,7 +364,9 @@ export class WebSocketSecurity {
   /**
    * Check message rate limit
    */
-  private checkMessageRateLimit(connection: SecureWebSocketConnection): boolean {
+  private checkMessageRateLimit(
+    connection: SecureWebSocketConnection
+  ): boolean {
     const now = Date.now();
     const windowStart = now - 60000; // 1 minute window
 
@@ -378,15 +398,19 @@ export class WebSocketSecurity {
   /**
    * Send error message to WebSocket
    */
-  private async sendError(ws: WebSocket, message: string, code: string): Promise<void> {
+  private async sendError(
+    ws: WebSocket,
+    message: string,
+    code: string
+  ): Promise<void> {
     if (ws.readyState === WebSocket.OPEN) {
       const errorResponse = {
         type: 'error',
         error: {
           message,
           code,
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
 
       ws.send(JSON.stringify(errorResponse));
@@ -416,7 +440,7 @@ export class WebSocketSecurity {
   private sanitizeString(str: string): string {
     // Remove null bytes
     str = str.replace(/\0/g, '');
-    
+
     // Basic XSS prevention
     str = str.replace(/[<>]/g, (match) => {
       return match === '<' ? '&lt;' : '&gt;';
@@ -433,8 +457,9 @@ export class WebSocketSecurity {
     const timeout = 5 * 60 * 1000; // 5 minutes
 
     for (const [ws, connection] of this.connections) {
-      const inactive = now.getTime() - connection.lastActivity.getTime() > timeout;
-      
+      const inactive =
+        now.getTime() - connection.lastActivity.getTime() > timeout;
+
       if (inactive || ws.readyState === WebSocket.CLOSED) {
         this.closeConnection(ws, 'Inactive or closed connection');
       }
@@ -446,7 +471,7 @@ export class WebSocketSecurity {
    */
   private cleanupRateLimiters(): void {
     const now = Date.now();
-    
+
     for (const [key, limiter] of this.rateLimiters) {
       if (now > limiter.resetTime) {
         this.rateLimiters.delete(key);

@@ -20,14 +20,14 @@ import { AuthMiddleware } from '../../core/security/middleware/auth-middleware';
 import { InputValidator } from '../../core/security/middleware/input-validation';
 
 import { CommandSystem } from '../../core/command-system';
-import { 
-  createExtensionError, 
-  createConfigurationError, 
+import {
+  createExtensionError,
+  createConfigurationError,
   createNetworkError,
   createValidationError,
   createRuntimeError,
   safeAsync,
-  formatError
+  formatError,
 } from '../../utils/standard-errors';
 import { errorHandler } from '../../utils/error-handler';
 import {
@@ -67,10 +67,10 @@ import type {
   RouteConversationPayload,
 } from '../../types/extensions/api';
 import { MemoryTierType, MemoryDuration } from '../../types/memory';
-import { 
-  standardLoggers, 
+import {
+  standardLoggers,
   createStandardLoggingPatterns,
-  StandardLogContext 
+  StandardLogContext,
 } from '../../utils/standard-logging.js';
 import type { RuntimeStats } from '../../types/runtime-stats';
 
@@ -105,7 +105,7 @@ export class ApiExtension implements Extension {
   private agent?: Agent;
   private app: express.Application;
   private server?: http.Server;
-  
+
   // Security components
   private jwtManager: JWTManager;
   private sessionManager: SessionManager;
@@ -119,9 +119,9 @@ export class ApiExtension implements Extension {
     enableInjection: true,
     scopeType: 'extension',
     autoUpdate: true,
-    filterSensitive: true
+    filterSensitive: true,
   };
-  
+
   // Standardized logging
   private logger = standardLoggers.api;
   private loggingPatterns = createStandardLoggingPatterns(this.logger);
@@ -200,7 +200,7 @@ export class ApiExtension implements Extension {
       this.context = context;
       this.logger.debug('API extension initialized with context', {
         extensionId: this.id,
-        contextKeys: Object.keys(context)
+        contextKeys: Object.keys(context),
       });
     }
 
@@ -353,14 +353,15 @@ export class ApiExtension implements Extension {
   private getDefaultSettings(): ApiSettings {
     return {
       port: parseInt(
-        process.env["API_PORT"] || String(this.config.settings?.port) || '8000'
+        process.env['API_PORT'] || String(this.config.settings?.port) || '8000'
       ),
       host: this.config.settings?.host || '0.0.0.0',
       cors: {
         enabled: true,
-        origins: process.env.NODE_ENV === 'production' 
-          ? ['https://symindx.ai', 'https://api.symindx.ai']
-          : ['http://localhost:3000', 'http://localhost:8000'],
+        origins:
+          process.env.NODE_ENV === 'production'
+            ? ['https://symindx.ai', 'https://api.symindx.ai']
+            : ['http://localhost:3000', 'http://localhost:8000'],
         methods: ['GET', 'POST', 'PUT', 'DELETE'],
         headers: ['Content-Type', 'Authorization', 'X-API-Key'],
       },
@@ -377,7 +378,7 @@ export class ApiExtension implements Extension {
       auth: {
         enabled: true,
         type: 'bearer',
-        secret: process.env["API_SECRET"] || 'default-secret',
+        secret: process.env['API_SECRET'] || 'default-secret',
       },
       logging: {
         enabled: true,
@@ -389,26 +390,28 @@ export class ApiExtension implements Extension {
 
   private setupMiddleware(): void {
     // Security headers (must be first)
-    this.app.use(helmet({
-      contentSecurityPolicy: {
-        directives: {
-          defaultSrc: ["'self'"],
-          styleSrc: ["'self'", "'unsafe-inline'"],
-          scriptSrc: ["'self'"],
-          imgSrc: ["'self'", "data:", "https:"],
-          connectSrc: ["'self'", "wss:", "ws:"],
-          fontSrc: ["'self'"],
-          objectSrc: ["'none'"],
-          mediaSrc: ["'self'"],
-          frameSrc: ["'none'"],
+    this.app.use(
+      helmet({
+        contentSecurityPolicy: {
+          directives: {
+            defaultSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            scriptSrc: ["'self'"],
+            imgSrc: ["'self'", 'data:', 'https:'],
+            connectSrc: ["'self'", 'wss:', 'ws:'],
+            fontSrc: ["'self'"],
+            objectSrc: ["'none'"],
+            mediaSrc: ["'self'"],
+            frameSrc: ["'none'"],
+          },
         },
-      },
-      hsts: {
-        maxAge: 31536000,
-        includeSubDomains: true,
-        preload: true
-      }
-    }));
+        hsts: {
+          maxAge: 31536000,
+          includeSubDomains: true,
+          preload: true,
+        },
+      })
+    );
 
     // Trust proxy if in production
     if (process.env.NODE_ENV === 'production') {
@@ -422,18 +425,22 @@ export class ApiExtension implements Extension {
     });
 
     // JSON parsing with size limits and verification
-    this.app.use(express.json({ 
-      limit: '1mb', // Reduced from 10mb for security
-      verify: (req, res, buf) => {
-        // Store raw body for signature verification if needed
-        (req as any).rawBody = buf;
-      }
-    }));
-    
-    this.app.use(express.urlencoded({ 
-      extended: true, 
-      limit: '1mb' // Reduced from 10mb
-    }));
+    this.app.use(
+      express.json({
+        limit: '1mb', // Reduced from 10mb for security
+        verify: (req, res, buf) => {
+          // Store raw body for signature verification if needed
+          (req as any).rawBody = buf;
+        },
+      })
+    );
+
+    this.app.use(
+      express.urlencoded({
+        extended: true,
+        limit: '1mb', // Reduced from 10mb
+      })
+    );
 
     // CORS with secure settings
     if (this.apiConfig.cors.enabled) {
@@ -442,18 +449,20 @@ export class ApiExtension implements Extension {
           origin: (origin, callback) => {
             // Allow requests with no origin (mobile apps, etc.)
             if (!origin) return callback(null, true);
-            
-            if (this.apiConfig.cors.origins.includes(origin) || 
-                this.apiConfig.cors.origins.includes('*')) {
+
+            if (
+              this.apiConfig.cors.origins.includes(origin) ||
+              this.apiConfig.cors.origins.includes('*')
+            ) {
               return callback(null, true);
             }
-            
+
             return callback(new Error('Not allowed by CORS'));
           },
           methods: this.apiConfig.cors.methods,
           allowedHeaders: this.apiConfig.cors.headers,
           credentials: false, // Disable credentials when using wildcards
-          maxAge: 86400 // Cache preflight for 24 hours
+          maxAge: 86400, // Cache preflight for 24 hours
         })
       );
     }
@@ -463,10 +472,10 @@ export class ApiExtension implements Extension {
       const limiter = rateLimit({
         windowMs: this.apiConfig.rateLimit.windowMs,
         max: this.apiConfig.rateLimit.maxRequests,
-        message: { 
+        message: {
           error: 'Too many requests, please try again later.',
           code: 'RATE_LIMIT_EXCEEDED',
-          retryAfter: Math.ceil(this.apiConfig.rateLimit.windowMs / 1000)
+          retryAfter: Math.ceil(this.apiConfig.rateLimit.windowMs / 1000),
         },
         standardHeaders: true,
         legacyHeaders: false,
@@ -476,7 +485,7 @@ export class ApiExtension implements Extension {
         },
         onLimitReached: (req) => {
           console.warn(`Rate limit exceeded for IP: ${req.ip}`);
-        }
+        },
       });
       this.app.use(limiter);
     }
@@ -568,7 +577,7 @@ export class ApiExtension implements Extension {
 
         // Get runtime stats if available
         const runtimeStats: RuntimeStats | null = this.runtime?.getStats
-          ? this.runtime.getStats() as RuntimeStats
+          ? (this.runtime.getStats() as RuntimeStats)
           : null;
 
         res.json({
@@ -597,8 +606,7 @@ export class ApiExtension implements Extension {
               ? {
                   isRunning: Boolean(runtimeStats.isRunning),
                   agents: Number(runtimeStats.agents) || 0,
-                  autonomousAgents:
-                    Number(runtimeStats.autonomousAgents) || 0,
+                  autonomousAgents: Number(runtimeStats.autonomousAgents) || 0,
                 }
               : {
                   agents: 0,
@@ -904,7 +912,7 @@ export class ApiExtension implements Extension {
           );
 
           runtimeLogger.error(formatError(chatError));
-          
+
           res.status(500).json({
             success: false,
             error: {
@@ -2768,19 +2776,28 @@ export class ApiExtension implements Extension {
         });
 
         this.server.on('error', (error: any) => {
-          const errorMessage = error instanceof Error ? error.message : String(error);
-          
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+
           // Check for specific error types
           if (error.code === 'EADDRINUSE') {
-            runtimeLogger.error(`❌ API Server error: Port ${this.apiConfig.port} is already in use`);
-            runtimeLogger.info(`🔧 Try killing the process using: lsof -ti :${this.apiConfig.port} | xargs kill -9`);
+            runtimeLogger.error(
+              `❌ API Server error: Port ${this.apiConfig.port} is already in use`
+            );
+            runtimeLogger.info(
+              `🔧 Try killing the process using: lsof -ti :${this.apiConfig.port} | xargs kill -9`
+            );
           } else if (error.code === 'EACCES') {
-            runtimeLogger.error(`❌ API Server error: Permission denied for port ${this.apiConfig.port}`);
-            runtimeLogger.info(`🔧 Try using a port number above 1024 or run with elevated permissions`);
+            runtimeLogger.error(
+              `❌ API Server error: Permission denied for port ${this.apiConfig.port}`
+            );
+            runtimeLogger.info(
+              `🔧 Try using a port number above 1024 or run with elevated permissions`
+            );
           } else {
             runtimeLogger.error(`❌ API Server error: ${errorMessage}`);
           }
-          
+
           if (error instanceof Error && error.stack) {
             runtimeLogger.debug(`API Server error stack: ${error.stack}`);
           }
@@ -2892,7 +2909,9 @@ export class ApiExtension implements Extension {
     });
 
     this.wss.on('error', (error) => {
-      runtimeLogger.error(`❌ WebSocket Server error: ${error instanceof Error ? error.message : String(error)}`);
+      runtimeLogger.error(
+        `❌ WebSocket Server error: ${error instanceof Error ? error.message : String(error)}`
+      );
       if (error instanceof Error && error.stack) {
         runtimeLogger.debug(`WebSocket error stack: ${error.stack}`);
       }
@@ -2935,7 +2954,7 @@ export class ApiExtension implements Extension {
             typeof message.data === 'string'
               ? message.data
               : message.message || '';
-          
+
           // Create WebSocket context
           const wsContext = {
             ...this.context,
@@ -2944,13 +2963,13 @@ export class ApiExtension implements Extension {
             timestamp: new Date(),
             source: 'websocket',
             clientIP: this.getConnectionIP(connectionId),
-            messageId: message.id || this.generateConnectionId()
+            messageId: message.id || this.generateConnectionId(),
           };
 
           this.logger.debug('Processing WebSocket chat with context', {
             connectionId,
             agentId,
-            contextKeys: Object.keys(wsContext)
+            contextKeys: Object.keys(wsContext),
           });
 
           const chatRequest: ChatRequest = {
@@ -2959,17 +2978,17 @@ export class ApiExtension implements Extension {
             context: wsContext,
           };
           const response = await this.processChatMessage(chatRequest);
-          
+
           // Include context metadata in response if enabled
-          const responseData = this.contextConfig.enableInjection 
+          const responseData = this.contextConfig.enableInjection
             ? {
                 ...response,
                 contextMetadata: {
                   hasContext: true,
                   sessionId: connectionId,
                   source: 'websocket',
-                  timestamp: wsContext.timestamp
-                }
+                  timestamp: wsContext.timestamp,
+                },
               }
             : response;
 
@@ -2996,22 +3015,22 @@ export class ApiExtension implements Extension {
               source: 'websocket',
               clientIP: this.getConnectionIP(connectionId),
               command: commandInput,
-              messageId: message.id || this.generateConnectionId()
+              messageId: message.id || this.generateConnectionId(),
             };
 
             this.logger.debug('Processing WebSocket action with context', {
               connectionId,
               command: commandInput,
-              contextKeys: Object.keys(commandContext)
+              contextKeys: Object.keys(commandContext),
             });
 
             const command = await this.commandSystem.sendCommand(
               this.agent.id,
               commandInput,
-              { 
-                priority: 2, 
+              {
+                priority: 2,
                 async: true,
-                context: commandContext 
+                context: commandContext,
               }
             );
 
@@ -3023,8 +3042,8 @@ export class ApiExtension implements Extension {
                     hasContext: true,
                     sessionId: connectionId,
                     source: 'websocket',
-                    timestamp: commandContext.timestamp
-                  }
+                    timestamp: commandContext.timestamp,
+                  },
                 }
               : { commandId: command.id, status: command.status };
 
@@ -3211,7 +3230,7 @@ export class ApiExtension implements Extension {
   private async initializeChatPersistence(): Promise<void> {
     try {
       // Determine database path
-      const dbPath = process.env["CHAT_DB_PATH"] || './data/chat.db';
+      const dbPath = process.env['CHAT_DB_PATH'] || './data/chat.db';
 
       // Ensure directory exists
       const { dirname } = await import('path');
@@ -3343,7 +3362,8 @@ export class ApiExtension implements Extension {
         }
       } catch (error) {
         void error;
-        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
         runtimeLogger.error(`❌ Error during chat cleanup: ${errorMessage}`);
         if (error instanceof Error && error.stack) {
           runtimeLogger.debug(`Chat cleanup error stack: ${error.stack}`);
@@ -3384,7 +3404,7 @@ export class ApiExtension implements Extension {
         context?: any
       ): Promise<ActionResult> => {
         const { agentId, message, context: paramContext } = params;
-        
+
         // Merge execution context with parameter context
         const mergedContext = {
           ...this.context,
@@ -3392,14 +3412,14 @@ export class ApiExtension implements Extension {
           ...paramContext,
           timestamp: new Date(),
           source: 'api-extension',
-          action: 'sendChatMessage'
+          action: 'sendChatMessage',
         };
 
         this.logger.debug('Executing sendChatMessage with context', {
           agentId,
           contextKeys: Object.keys(mergedContext),
           hasApiContext: !!this.context,
-          hasExecutionContext: !!context
+          hasExecutionContext: !!context,
         });
 
         const response = await this.processChatMessage({
@@ -3429,7 +3449,7 @@ export class ApiExtension implements Extension {
         context?: any
       ): Promise<ActionResult> => {
         const { agentId } = params;
-        
+
         // Create context for this action
         const actionContext = {
           ...this.context,
@@ -3437,12 +3457,12 @@ export class ApiExtension implements Extension {
           requestedAgentId: agentId,
           requestTime: new Date(),
           source: 'api-extension',
-          action: 'getAgentStatus'
+          action: 'getAgentStatus',
         };
 
         this.logger.debug('Getting agent status with context', {
           agentId,
-          contextKeys: Object.keys(actionContext)
+          contextKeys: Object.keys(actionContext),
         });
 
         const agentsMap = this.getAgentsMap();
@@ -3455,7 +3475,7 @@ export class ApiExtension implements Extension {
             timestamp: new Date(),
           };
         }
-        
+
         // Include context information in result if available
         const result: any = {
           id: agent.id,
@@ -3470,7 +3490,7 @@ export class ApiExtension implements Extension {
           result.contextMetadata = {
             hasContext: true,
             contextSource: actionContext.source,
-            requestTime: actionContext.requestTime
+            requestTime: actionContext.requestTime,
           };
         }
 
@@ -3553,9 +3573,13 @@ export class ApiExtension implements Extension {
         injectAgentContext: true,
         injectEventContext: true,
         preserveEventData: true,
-        filterSensitiveData: true
+        filterSensitiveData: true,
       },
-      handler: async (_agent: Agent, event: AgentEvent, context?: any): Promise<void> => {
+      handler: async (
+        _agent: Agent,
+        event: AgentEvent,
+        context?: any
+      ): Promise<void> => {
         // Create event-specific context
         const eventContext = {
           ...this.context,
@@ -3565,14 +3589,14 @@ export class ApiExtension implements Extension {
           eventSource: event.source,
           eventTimestamp: event.timestamp,
           source: 'api-extension-event',
-          handler: 'websocket_message'
+          handler: 'websocket_message',
         };
 
         this.logger.debug('Processing WebSocket message event with context', {
           eventId: event.id,
           agentId: _agent.id,
           contextKeys: Object.keys(eventContext),
-          hasEventData: !!event.data
+          hasEventData: !!event.data,
         });
 
         // Handle WebSocket message events with context
@@ -3581,8 +3605,8 @@ export class ApiExtension implements Extension {
           contextMetadata: {
             hasContext: this.contextConfig.enableInjection,
             contextSource: eventContext.source,
-            contextTimestamp: eventContext.eventTimestamp
-          }
+            contextTimestamp: eventContext.eventTimestamp,
+          },
         });
       },
     };
@@ -3613,7 +3637,8 @@ export class ApiExtension implements Extension {
     return new Promise((resolve) => {
       // Cleanup chat resources
       this.cleanupChatResources().catch((error) => {
-        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
         runtimeLogger.error(`Error during chat cleanup: ${errorMessage}`);
         if (error instanceof Error && error.stack) {
           runtimeLogger.debug(`Chat cleanup error stack: ${error.stack}`);

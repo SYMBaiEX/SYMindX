@@ -1,6 +1,6 @@
 /**
  * Context Integration Layer
- * 
+ *
  * Provides core integration utilities for the unified context system.
  */
 

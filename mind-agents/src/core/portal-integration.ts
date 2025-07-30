@@ -20,12 +20,12 @@ import {
 } from '../types/portal';
 import { runtimeLogger } from '../utils/logger';
 import { errorHandler } from '../utils/error-handler';
-import { 
-  createPortalError, 
-  createRuntimeError, 
+import {
+  createPortalError,
+  createRuntimeError,
   createNetworkError,
   safeAsync,
-  formatError
+  formatError,
 } from '../utils/standard-errors';
 
 import { MCPResponseFormatter } from './mcp-response-formatter';
@@ -68,8 +68,11 @@ export class PortalIntegration {
     } else {
       // Default selection
       chatPortal =
-        (agent as Agent & { findPortalByCapability?: (cap: string) => Portal | undefined }).findPortalByCapability?.('chat_generation') ||
-        agent.portal;
+        (
+          agent as Agent & {
+            findPortalByCapability?: (cap: string) => Portal | undefined;
+          }
+        ).findPortalByCapability?.('chat_generation') || agent.portal;
     }
 
     if (!chatPortal || !chatPortal.generateChat) {
@@ -131,7 +134,9 @@ Tools will be automatically executed and their results will be available for you
           systemContent += `\n\nYour recent cognitive analysis:`;
           systemContent += `\n- Thoughts: ${context['cognitiveContext']['thoughts'].join(', ')}`;
 
-          if (context['cognitiveContext']['cognitiveConfidence'] !== undefined) {
+          if (
+            context['cognitiveContext']['cognitiveConfidence'] !== undefined
+          ) {
             systemContent += `\n- Analysis confidence: ${(context['cognitiveContext']['cognitiveConfidence'] * 100).toFixed(0)}%`;
           }
 
@@ -227,7 +232,7 @@ Tools will be automatically executed and their results will be available for you
             { agentName: agent.name },
             error instanceof Error ? error : new Error(String(error))
           );
-          
+
           runtimeLogger.warn(formatError(cleanupError));
         }
       }
@@ -311,7 +316,9 @@ Tools will be automatically executed and their results will be available for you
         {
           agentName: agent.name,
           promptLength: prompt.length,
-          toolsAvailable: agent.toolSystem ? Object.keys(agent.toolSystem).length : 0,
+          toolsAvailable: agent.toolSystem
+            ? Object.keys(agent.toolSystem).length
+            : 0,
           hasContext: !!context,
         },
         error instanceof Error ? error : new Error(String(error))
@@ -764,7 +771,7 @@ What are your current thoughts? Respond with 2-3 brief thoughts.`;
       );
 
       runtimeLogger.error(formatError(evaluationError));
-      
+
       return {
         analysis: 'Unable to evaluate task at this time',
         confidence: 0,
@@ -811,12 +818,20 @@ What are your current thoughts? Respond with 2-3 brief thoughts.`;
     context?: PortalContext,
     onChunk?: (chunk: string) => void
   ): AsyncGenerator<string, void, unknown> {
-    type AgentWithFindPortal = Agent & { findPortalByCapability?: (cap: string) => Portal | undefined };
+    type AgentWithFindPortal = Agent & {
+      findPortalByCapability?: (cap: string) => Portal | undefined;
+    };
     const chatPortal =
-      (agent as AgentWithFindPortal).findPortalByCapability?.('chat_generation') ||
-      agent.portal;
+      (agent as AgentWithFindPortal).findPortalByCapability?.(
+        'chat_generation'
+      ) || agent.portal;
 
-    type PortalWithStream = Portal & { generateChatStream?: (messages: ChatMessage[], opts: any) => Promise<AsyncIterable<any>> };
+    type PortalWithStream = Portal & {
+      generateChatStream?: (
+        messages: ChatMessage[],
+        opts: any
+      ) => Promise<AsyncIterable<any>>;
+    };
     if (!chatPortal || !(chatPortal as PortalWithStream).generateChatStream) {
       // Fallback to non-streaming
       const response = await this.generateResponse(agent, prompt, context);
@@ -853,11 +868,14 @@ What are your current thoughts? Respond with 2-3 brief thoughts.`;
         agent.toolSystem && Object.keys(agent.toolSystem).length > 0;
 
       // Stream the response
-      const stream = await (chatPortal as PortalWithStream).generateChatStream!(messages, {
-        maxTokens: 2048,
-        temperature: 0.4,
-        functions: hasMCPTools ? agent.toolSystem : undefined,
-      });
+      const stream = await (chatPortal as PortalWithStream).generateChatStream!(
+        messages,
+        {
+          maxTokens: 2048,
+          temperature: 0.4,
+          functions: hasMCPTools ? agent.toolSystem : undefined,
+        }
+      );
 
       let buffer = '';
       const toolResults: ToolResult[] = [];
@@ -919,7 +937,7 @@ What are your current thoughts? Respond with 2-3 brief thoughts.`;
       );
 
       runtimeLogger.error(formatError(streamingError));
-      
+
       const fallback = this.getFallbackResponse(prompt);
       if (onChunk) onChunk(fallback);
       yield fallback;

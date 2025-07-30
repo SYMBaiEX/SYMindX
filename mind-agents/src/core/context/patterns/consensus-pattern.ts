@@ -1,6 +1,6 @@
 /**
  * Consensus Pattern for Multi-Agent Context Coordination
- * 
+ *
  * Implements distributed consensus algorithms for achieving agreement
  * on context state across multiple agents.
  */
@@ -10,7 +10,7 @@ import {
   AgentContext,
   ContextUpdate,
   ContextConsensusState,
-  ContextVote
+  ContextVote,
 } from '../../../types/context/multi-agent-context';
 import { AgentId, OperationResult } from '../../../types/helpers';
 import { runtimeLogger } from '../../../utils/logger';
@@ -64,8 +64,18 @@ export interface AgentParticipation {
  * Consensus algorithm configuration
  */
 export interface ConsensusConfig {
-  algorithm: 'simple_majority' | 'two_phase_commit' | 'raft' | 'pbft' | 'custom';
-  requirementType: 'majority' | 'super_majority' | 'unanimous' | 'quorum' | 'weighted';
+  algorithm:
+    | 'simple_majority'
+    | 'two_phase_commit'
+    | 'raft'
+    | 'pbft'
+    | 'custom';
+  requirementType:
+    | 'majority'
+    | 'super_majority'
+    | 'unanimous'
+    | 'quorum'
+    | 'weighted';
   threshold: number; // percentage for majority-based, absolute number for quorum
   maxRounds: number;
   roundTimeoutMs: number;
@@ -94,7 +104,7 @@ export class ConsensusPattern extends EventEmitter {
     roundTimeoutMs: 30000, // 30 seconds
     participantTimeoutMs: 300000, // 5 minutes
     allowPartialConsensus: false,
-    retryFailedProposals: true
+    retryFailedProposals: true,
   };
 
   constructor(config?: Partial<ConsensusConfig>) {
@@ -128,7 +138,7 @@ export class ConsensusPattern extends EventEmitter {
         proposalId,
         proposedBy,
         participants: participatingAgents.length,
-        algorithm: this.config.algorithm
+        algorithm: this.config.algorithm,
       });
 
       // Validate participants
@@ -136,7 +146,7 @@ export class ConsensusPattern extends EventEmitter {
         return {
           success: false,
           error: 'No participating agents provided',
-          metadata: { operation: 'startConsensus' }
+          metadata: { operation: 'startConsensus' },
         };
       }
 
@@ -155,7 +165,9 @@ export class ConsensusPattern extends EventEmitter {
         votes: {},
         requiredVotes,
         status: 'pending',
-        expiresAt: new Date(Date.now() + (options?.timeoutMs || this.config.roundTimeoutMs)).toISOString()
+        expiresAt: new Date(
+          Date.now() + (options?.timeoutMs || this.config.roundTimeoutMs)
+        ).toISOString(),
       };
 
       // Create proposal
@@ -169,7 +181,7 @@ export class ConsensusPattern extends EventEmitter {
         requiredVotes,
         timeoutMs: options?.timeoutMs || this.config.roundTimeoutMs,
         consensusState,
-        metadata: options?.metadata
+        metadata: options?.metadata,
       };
 
       this.activeProposals.set(proposalId, proposal);
@@ -182,7 +194,7 @@ export class ConsensusPattern extends EventEmitter {
         startedAt: now,
         votes: [],
         result: 'pending',
-        nextRoundNeeded: false
+        nextRoundNeeded: false,
       };
 
       this.consensusRounds.set(proposalId, [firstRound]);
@@ -205,7 +217,7 @@ export class ConsensusPattern extends EventEmitter {
         participatingAgents,
         requiredVotes,
         algorithm: this.config.algorithm,
-        expiresAt: consensusState.expiresAt
+        expiresAt: consensusState.expiresAt,
       });
 
       return {
@@ -214,18 +226,17 @@ export class ConsensusPattern extends EventEmitter {
           proposalId,
           requiredVotes,
           participatingAgents,
-          expiresAt: consensusState.expiresAt
+          expiresAt: consensusState.expiresAt,
         },
         metadata: {
           operation: 'startConsensus',
-          timestamp: now
-        }
+          timestamp: now,
+        },
       };
-
     } catch (error) {
       runtimeLogger.error('Failed to start consensus', error as Error, {
         proposedBy,
-        participants: participatingAgents.length
+        participants: participatingAgents.length,
       });
 
       return {
@@ -233,8 +244,8 @@ export class ConsensusPattern extends EventEmitter {
         error: `Consensus start failed: ${(error as Error).message}`,
         metadata: {
           operation: 'startConsensus',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
     }
   }
@@ -254,7 +265,7 @@ export class ConsensusPattern extends EventEmitter {
         return {
           success: false,
           error: 'Consensus proposal not found',
-          metadata: { operation: 'submitVote' }
+          metadata: { operation: 'submitVote' },
         };
       }
 
@@ -263,7 +274,7 @@ export class ConsensusPattern extends EventEmitter {
         return {
           success: false,
           error: 'Agent is not a participant in this consensus',
-          metadata: { operation: 'submitVote' }
+          metadata: { operation: 'submitVote' },
         };
       }
 
@@ -272,7 +283,7 @@ export class ConsensusPattern extends EventEmitter {
         return {
           success: false,
           error: `Consensus already ${proposal.consensusState.status}`,
-          metadata: { operation: 'submitVote' }
+          metadata: { operation: 'submitVote' },
         };
       }
 
@@ -282,7 +293,7 @@ export class ConsensusPattern extends EventEmitter {
         return {
           success: false,
           error: 'Consensus proposal has expired',
-          metadata: { operation: 'submitVote' }
+          metadata: { operation: 'submitVote' },
         };
       }
 
@@ -293,7 +304,7 @@ export class ConsensusPattern extends EventEmitter {
         agentId,
         vote,
         timestamp: now,
-        reason
+        reason,
       };
 
       // Record vote
@@ -320,7 +331,7 @@ export class ConsensusPattern extends EventEmitter {
         vote,
         currentVotes: Object.keys(proposal.consensusState.votes).length,
         requiredVotes: proposal.requiredVotes,
-        consensusReached: consensusResult.consensusReached
+        consensusReached: consensusResult.consensusReached,
       });
 
       runtimeLogger.debug('Vote submitted', {
@@ -328,7 +339,7 @@ export class ConsensusPattern extends EventEmitter {
         agentId,
         vote,
         currentVotes: Object.keys(proposal.consensusState.votes).length,
-        requiredVotes: proposal.requiredVotes
+        requiredVotes: proposal.requiredVotes,
       });
 
       return {
@@ -341,20 +352,19 @@ export class ConsensusPattern extends EventEmitter {
           votingProgress: {
             currentVotes: Object.keys(proposal.consensusState.votes).length,
             requiredVotes: proposal.requiredVotes,
-            totalParticipants: proposal.participatingAgents.length
-          }
+            totalParticipants: proposal.participatingAgents.length,
+          },
         },
         metadata: {
           operation: 'submitVote',
-          timestamp: now
-        }
+          timestamp: now,
+        },
       };
-
     } catch (error) {
       runtimeLogger.error('Failed to submit vote', error as Error, {
         proposalId,
         agentId,
-        vote
+        vote,
       });
 
       return {
@@ -362,8 +372,8 @@ export class ConsensusPattern extends EventEmitter {
         error: `Vote submission failed: ${(error as Error).message}`,
         metadata: {
           operation: 'submitVote',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
     }
   }
@@ -407,22 +417,24 @@ export class ConsensusPattern extends EventEmitter {
     switch (requirementType) {
       case 'majority':
         return Math.floor(totalParticipants / 2) + 1;
-      
+
       case 'super_majority':
         return Math.ceil(totalParticipants * (threshold / 100));
-      
+
       case 'unanimous':
         return totalParticipants;
-      
+
       case 'quorum':
         return Math.min(threshold, totalParticipants);
-      
+
       case 'weighted':
         // For weighted voting, threshold represents the required weight percentage
-        const totalWeight = Array.from(this.participants.values())
-          .reduce((sum, p) => sum + p.votingWeight, 0);
+        const totalWeight = Array.from(this.participants.values()).reduce(
+          (sum, p) => sum + p.votingWeight,
+          0
+        );
         return Math.ceil(totalWeight * (threshold / 100));
-      
+
       default:
         return Math.floor(totalParticipants / 2) + 1;
     }
@@ -431,35 +443,40 @@ export class ConsensusPattern extends EventEmitter {
   /**
    * Evaluate if consensus has been reached
    */
-  private async evaluateConsensus(proposal: ConsensusProposal): Promise<{ consensusReached: boolean; result: 'accepted' | 'rejected' | 'pending' }> {
+  private async evaluateConsensus(
+    proposal: ConsensusProposal
+  ): Promise<{
+    consensusReached: boolean;
+    result: 'accepted' | 'rejected' | 'pending';
+  }> {
     const votes = Object.values(proposal.consensusState.votes);
-    const approveVotes = votes.filter(v => v.vote === 'approve').length;
-    const rejectVotes = votes.filter(v => v.vote === 'reject').length;
+    const approveVotes = votes.filter((v) => v.vote === 'approve').length;
+    const rejectVotes = votes.filter((v) => v.vote === 'reject').length;
 
     switch (this.config.algorithm) {
       case 'simple_majority':
         return this.evaluateSimpleMajority(proposal, approveVotes, rejectVotes);
-      
+
       case 'two_phase_commit':
         return this.evaluateTwoPhaseCommit(proposal, approveVotes, rejectVotes);
-      
+
       case 'raft':
         return this.evaluateRaft(proposal, approveVotes, rejectVotes);
-      
+
       case 'pbft':
         return this.evaluatePBFT(proposal, approveVotes, rejectVotes);
-      
+
       case 'custom':
         if (this.config.customAlgorithm) {
           const result = await this.config.customAlgorithm(proposal);
           return {
             consensusReached: result.success,
-            result: result.success ? 'accepted' : 'rejected'
+            result: result.success ? 'accepted' : 'rejected',
           };
         }
         // Fallback to simple majority
         return this.evaluateSimpleMajority(proposal, approveVotes, rejectVotes);
-      
+
       default:
         return this.evaluateSimpleMajority(proposal, approveVotes, rejectVotes);
     }
@@ -472,7 +489,10 @@ export class ConsensusPattern extends EventEmitter {
     proposal: ConsensusProposal,
     approveVotes: number,
     rejectVotes: number
-  ): { consensusReached: boolean; result: 'accepted' | 'rejected' | 'pending' } {
+  ): {
+    consensusReached: boolean;
+    result: 'accepted' | 'rejected' | 'pending';
+  } {
     if (approveVotes >= proposal.requiredVotes) {
       proposal.consensusState.status = 'accepted';
       this.finalizeConsensus(proposal, 'accepted');
@@ -480,7 +500,8 @@ export class ConsensusPattern extends EventEmitter {
     }
 
     // Check if rejection is inevitable
-    const remainingVotes = proposal.participatingAgents.length - (approveVotes + rejectVotes);
+    const remainingVotes =
+      proposal.participatingAgents.length - (approveVotes + rejectVotes);
     if (approveVotes + remainingVotes < proposal.requiredVotes) {
       proposal.consensusState.status = 'rejected';
       this.finalizeConsensus(proposal, 'rejected');
@@ -497,10 +518,13 @@ export class ConsensusPattern extends EventEmitter {
     proposal: ConsensusProposal,
     approveVotes: number,
     rejectVotes: number
-  ): { consensusReached: boolean; result: 'accepted' | 'rejected' | 'pending' } {
+  ): {
+    consensusReached: boolean;
+    result: 'accepted' | 'rejected' | 'pending';
+  } {
     // In 2PC, all participants must agree (unanimous)
     const totalVotes = approveVotes + rejectVotes;
-    
+
     if (rejectVotes > 0) {
       proposal.consensusState.status = 'rejected';
       this.finalizeConsensus(proposal, 'rejected');
@@ -523,10 +547,13 @@ export class ConsensusPattern extends EventEmitter {
     proposal: ConsensusProposal,
     approveVotes: number,
     rejectVotes: number
-  ): { consensusReached: boolean; result: 'accepted' | 'rejected' | 'pending' } {
+  ): {
+    consensusReached: boolean;
+    result: 'accepted' | 'rejected' | 'pending';
+  } {
     // Raft requires majority of cluster
     const majority = Math.floor(proposal.participatingAgents.length / 2) + 1;
-    
+
     if (approveVotes >= majority) {
       proposal.consensusState.status = 'accepted';
       this.finalizeConsensus(proposal, 'accepted');
@@ -549,10 +576,14 @@ export class ConsensusPattern extends EventEmitter {
     proposal: ConsensusProposal,
     approveVotes: number,
     rejectVotes: number
-  ): { consensusReached: boolean; result: 'accepted' | 'rejected' | 'pending' } {
+  ): {
+    consensusReached: boolean;
+    result: 'accepted' | 'rejected' | 'pending';
+  } {
     // PBFT requires 2/3 + 1 votes to handle up to 1/3 Byzantine failures
-    const required = Math.floor((2 * proposal.participatingAgents.length) / 3) + 1;
-    
+    const required =
+      Math.floor((2 * proposal.participatingAgents.length) / 3) + 1;
+
     if (approveVotes >= required) {
       proposal.consensusState.status = 'accepted';
       this.finalizeConsensus(proposal, 'accepted');
@@ -560,7 +591,8 @@ export class ConsensusPattern extends EventEmitter {
     }
 
     // Check if consensus is impossible
-    const remainingVotes = proposal.participatingAgents.length - (approveVotes + rejectVotes);
+    const remainingVotes =
+      proposal.participatingAgents.length - (approveVotes + rejectVotes);
     if (approveVotes + remainingVotes < required) {
       proposal.consensusState.status = 'rejected';
       this.finalizeConsensus(proposal, 'rejected');
@@ -573,7 +605,10 @@ export class ConsensusPattern extends EventEmitter {
   /**
    * Finalize consensus and move to history
    */
-  private finalizeConsensus(proposal: ConsensusProposal, result: 'accepted' | 'rejected'): void {
+  private finalizeConsensus(
+    proposal: ConsensusProposal,
+    result: 'accepted' | 'rejected'
+  ): void {
     // Update current round
     const rounds = this.consensusRounds.get(proposal.proposalId);
     if (rounds && rounds.length > 0) {
@@ -583,15 +618,20 @@ export class ConsensusPattern extends EventEmitter {
     }
 
     // Update participant stats
-    const successfulVoters = Object.values(proposal.consensusState.votes)
-      .filter(vote => (result === 'accepted' && vote.vote === 'approve') || 
-                      (result === 'rejected' && vote.vote === 'reject'));
+    const successfulVoters = Object.values(
+      proposal.consensusState.votes
+    ).filter(
+      (vote) =>
+        (result === 'accepted' && vote.vote === 'approve') ||
+        (result === 'rejected' && vote.vote === 'reject')
+    );
 
     for (const vote of successfulVoters) {
       const participant = this.participants.get(vote.agentId);
       if (participant) {
         participant.successfulVotes++;
-        participant.reliability = participant.successfulVotes / participant.totalVotes;
+        participant.reliability =
+          participant.successfulVotes / participant.totalVotes;
       }
     }
 
@@ -617,7 +657,7 @@ export class ConsensusPattern extends EventEmitter {
       result,
       finalVotes: Object.keys(proposal.consensusState.votes).length,
       requiredVotes: proposal.requiredVotes,
-      duration: Date.now() - new Date(proposal.proposedAt).getTime()
+      duration: Date.now() - new Date(proposal.proposedAt).getTime(),
     });
 
     runtimeLogger.info('Consensus finalized', {
@@ -625,7 +665,7 @@ export class ConsensusPattern extends EventEmitter {
       result,
       algorithm: this.config.algorithm,
       participants: proposal.participatingAgents.length,
-      finalVotes: Object.keys(proposal.consensusState.votes).length
+      finalVotes: Object.keys(proposal.consensusState.votes).length,
     });
   }
 
@@ -649,7 +689,11 @@ export class ConsensusPattern extends EventEmitter {
     }
 
     // Check if we should retry or start next round
-    if (this.config.retryFailedProposals && rounds && rounds.length < this.config.maxRounds) {
+    if (
+      this.config.retryFailedProposals &&
+      rounds &&
+      rounds.length < this.config.maxRounds
+    ) {
       this.startNextRound(proposal);
     } else {
       this.finalizeConsensus(proposal, 'rejected');
@@ -659,14 +703,17 @@ export class ConsensusPattern extends EventEmitter {
       proposalId,
       votesReceived: Object.keys(proposal.consensusState.votes).length,
       requiredVotes: proposal.requiredVotes,
-      willRetry: this.config.retryFailedProposals && rounds && rounds.length < this.config.maxRounds
+      willRetry:
+        this.config.retryFailedProposals &&
+        rounds &&
+        rounds.length < this.config.maxRounds,
     });
 
     runtimeLogger.warn('Consensus timed out', {
       proposalId,
       algorithm: this.config.algorithm,
       votesReceived: Object.keys(proposal.consensusState.votes).length,
-      requiredVotes: proposal.requiredVotes
+      requiredVotes: proposal.requiredVotes,
     });
   }
 
@@ -685,7 +732,7 @@ export class ConsensusPattern extends EventEmitter {
       startedAt: now,
       votes: [],
       result: 'pending',
-      nextRoundNeeded: false
+      nextRoundNeeded: false,
     };
 
     rounds.push(nextRound);
@@ -694,7 +741,9 @@ export class ConsensusPattern extends EventEmitter {
     proposal.consensusState.votes = {};
     proposal.consensusState.status = 'pending';
     proposal.consensusState.proposedAt = now;
-    proposal.consensusState.expiresAt = new Date(Date.now() + proposal.timeoutMs).toISOString();
+    proposal.consensusState.expiresAt = new Date(
+      Date.now() + proposal.timeoutMs
+    ).toISOString();
 
     // Set new timeout
     const timeout = setTimeout(() => {
@@ -706,13 +755,13 @@ export class ConsensusPattern extends EventEmitter {
     this.emit('consensusRoundStarted', {
       proposalId: proposal.proposalId,
       roundNumber: nextRoundNumber,
-      maxRounds: this.config.maxRounds
+      maxRounds: this.config.maxRounds,
     });
 
     runtimeLogger.debug('Started next consensus round', {
       proposalId: proposal.proposalId,
       roundNumber: nextRoundNumber,
-      maxRounds: this.config.maxRounds
+      maxRounds: this.config.maxRounds,
     });
   }
 
@@ -730,7 +779,7 @@ export class ConsensusPattern extends EventEmitter {
         responseTime: 0,
         successfulVotes: 0,
         totalVotes: 0,
-        reliability: 1.0
+        reliability: 1.0,
       };
 
       this.participants.set(agentId, participant);
@@ -755,9 +804,14 @@ export class ConsensusPattern extends EventEmitter {
     const expiredProposals: string[] = [];
 
     for (const [proposalId, proposal] of this.activeProposals.entries()) {
-      const expirationTime = new Date(proposal.consensusState.expiresAt).getTime();
-      
-      if (now > expirationTime && proposal.consensusState.status === 'pending') {
+      const expirationTime = new Date(
+        proposal.consensusState.expiresAt
+      ).getTime();
+
+      if (
+        now > expirationTime &&
+        proposal.consensusState.status === 'pending'
+      ) {
         expiredProposals.push(proposalId);
       }
     }
@@ -776,13 +830,13 @@ export class ConsensusPattern extends EventEmitter {
 
     for (const [agentId, participant] of this.participants.entries()) {
       const lastActivityTime = new Date(participant.lastActivity).getTime();
-      
+
       if (now - lastActivityTime > inactiveThreshold) {
         participant.isActive = false;
-        
+
         runtimeLogger.debug('Participant marked as inactive', {
           agentId,
-          lastActivity: participant.lastActivity
+          lastActivity: participant.lastActivity,
         });
       }
     }
@@ -793,12 +847,18 @@ export class ConsensusPattern extends EventEmitter {
    */
   getStatistics() {
     const totalProposals = this.activeProposals.size;
-    const totalHistory = Array.from(this.consensusHistory.values())
-      .reduce((sum, history) => sum + history.length, 0);
-    const activeParticipants = Array.from(this.participants.values())
-      .filter(p => p.isActive).length;
-    const avgReliability = Array.from(this.participants.values())
-      .reduce((sum, p) => sum + p.reliability, 0) / this.participants.size;
+    const totalHistory = Array.from(this.consensusHistory.values()).reduce(
+      (sum, history) => sum + history.length,
+      0
+    );
+    const activeParticipants = Array.from(this.participants.values()).filter(
+      (p) => p.isActive
+    ).length;
+    const avgReliability =
+      Array.from(this.participants.values()).reduce(
+        (sum, p) => sum + p.reliability,
+        0
+      ) / this.participants.size;
 
     return {
       activeProposals: totalProposals,
@@ -808,8 +868,10 @@ export class ConsensusPattern extends EventEmitter {
       inactiveParticipants: this.participants.size - activeParticipants,
       avgReliability: avgReliability || 0,
       algorithm: this.config.algorithm,
-      consensusRounds: Array.from(this.consensusRounds.values())
-        .reduce((sum, rounds) => sum + rounds.length, 0)
+      consensusRounds: Array.from(this.consensusRounds.values()).reduce(
+        (sum, rounds) => sum + rounds.length,
+        0
+      ),
     };
   }
 

@@ -1,6 +1,6 @@
 /**
  * Unified Configuration Management System - Main Export
- * 
+ *
  * This module provides the main entry point for the unified configuration
  * management system, integrating all components for seamless usage.
  */
@@ -14,21 +14,18 @@ export {
   ConfigEnvironment,
   ConfigChangeEvent,
   ConfigSource,
-  UNIFIED_CONFIG_SCHEMA
+  UNIFIED_CONFIG_SCHEMA,
 } from './unified-config.js';
 
 // Configuration validation
-export {
-  ConfigValidator,
-  BuiltInRules
-} from './config-validator.js';
+export { ConfigValidator, BuiltInRules } from './config-validator.js';
 
 // Secure secrets management
 export {
   ConfigSecrets,
   SecretMetadata,
   EncryptedSecret,
-  SecretValidationRule
+  SecretValidationRule,
 } from './config-secrets.js';
 
 // Documentation generation
@@ -38,7 +35,7 @@ export {
   DocumentationFormat,
   DocGenerationOptions,
   SchemaDocumentation,
-  ConfigurationExample
+  ConfigurationExample,
 } from './config-docs.js';
 
 // Re-export validation types for convenience
@@ -49,18 +46,21 @@ export {
   SchemaDefinition,
   SchemaValidationResult,
   IValidator,
-  ConfigValidatorOptions
+  ConfigValidatorOptions,
 } from '../../types/utils/validation.js';
 
 import { UnifiedConfigManager, unifiedConfig } from './unified-config.js';
 import { ConfigValidator } from './config-validator.js';
 import { ConfigSecrets } from './config-secrets.js';
-import { ConfigDocumentationGenerator, configDocGenerator } from './config-docs.js';
+import {
+  ConfigDocumentationGenerator,
+  configDocGenerator,
+} from './config-docs.js';
 import { standardLoggers } from '../../utils/standard-logging.js';
 
 /**
  * Configuration Management Facade
- * 
+ *
  * Provides a simplified interface for common configuration operations
  * while maintaining access to advanced features through individual components.
  */
@@ -92,17 +92,22 @@ export class ConfigurationManager {
   /**
    * Initialize the complete configuration system
    */
-  public async initialize(options: {
-    configPath?: string;
-    environment?: 'development' | 'testing' | 'staging' | 'production';
-    secretsPath?: string;
-    enableHotReload?: boolean;
-  } = {}): Promise<void> {
+  public async initialize(
+    options: {
+      configPath?: string;
+      environment?: 'development' | 'testing' | 'staging' | 'production';
+      secretsPath?: string;
+      enableHotReload?: boolean;
+    } = {}
+  ): Promise<void> {
     try {
       this.logger.info('Initializing unified configuration system', options);
 
       // Initialize configuration manager
-      await this.configManager.initialize(options.configPath, options.environment);
+      await this.configManager.initialize(
+        options.configPath,
+        options.environment
+      );
 
       // Configure hot reload
       if (options.enableHotReload !== undefined) {
@@ -115,7 +120,6 @@ export class ConfigurationManager {
       }
 
       this.logger.info('Configuration system initialized successfully');
-
     } catch (error) {
       this.logger.error('Failed to initialize configuration system', error);
       throw error;
@@ -154,9 +158,13 @@ export class ConfigurationManager {
    * Store a secret securely
    */
   public async storeSecret(
-    name: string, 
-    value: string, 
-    classification: 'public' | 'internal' | 'confidential' | 'secret' = 'confidential'
+    name: string,
+    value: string,
+    classification:
+      | 'public'
+      | 'internal'
+      | 'confidential'
+      | 'secret' = 'confidential'
   ): Promise<void> {
     return this.secrets.storeSecret(name, value, classification);
   }
@@ -177,15 +185,17 @@ export class ConfigurationManager {
     includeExamples?: boolean;
     includeSecrets?: boolean;
   }): Promise<void> {
-    const schema = await import('./unified-config.js').then(m => m.UNIFIED_CONFIG_SCHEMA);
-    
+    const schema = await import('./unified-config.js').then(
+      (m) => m.UNIFIED_CONFIG_SCHEMA
+    );
+
     await this.docGenerator.generateDocumentation(schema, {
       format: options.format || 'markdown',
       includeExamples: options.includeExamples !== false,
       includeValidation: true,
       includeEnvironmentVars: true,
       includeSecrets: options.includeSecrets || false,
-      outputPath: options.outputPath
+      outputPath: options.outputPath,
     });
   }
 
@@ -206,7 +216,10 @@ export class ConfigurationManager {
   /**
    * Export configuration to file
    */
-  public async exportConfig(filePath: string, includeSecrets = false): Promise<void> {
+  public async exportConfig(
+    filePath: string,
+    includeSecrets = false
+  ): Promise<void> {
     return this.configManager.exportConfig(filePath, includeSecrets);
   }
 
@@ -259,7 +272,7 @@ export class ConfigurationManager {
       configManager: this.configManager,
       validator: this.validator,
       secrets: this.secrets,
-      docGenerator: this.docGenerator
+      docGenerator: this.docGenerator,
     };
   }
 }
@@ -274,79 +287,73 @@ export const config = {
   /**
    * Initialize configuration system
    */
-  init: (options?: Parameters<typeof configManager.initialize>[0]) => 
+  init: (options?: Parameters<typeof configManager.initialize>[0]) =>
     configManager.initialize(options),
 
   /**
    * Get configuration value
    */
-  get: <T = unknown>(path: string): T | undefined => 
-    configManager.get<T>(path),
+  get: <T = unknown>(path: string): T | undefined => configManager.get<T>(path),
 
   /**
    * Set configuration value
    */
-  set: (path: string, value: unknown) => 
-    configManager.set(path, value),
+  set: (path: string, value: unknown) => configManager.set(path, value),
 
   /**
    * Get complete configuration
    */
-  all: () => 
-    configManager.getConfig(),
+  all: () => configManager.getConfig(),
 
   /**
    * Validate configuration
    */
-  validate: () => 
-    configManager.validate(),
+  validate: () => configManager.validate(),
 
   /**
    * Store secret
    */
-  storeSecret: (name: string, value: string, classification?: any) => 
+  storeSecret: (name: string, value: string, classification?: any) =>
     configManager.storeSecret(name, value, classification),
 
   /**
    * Get secret
    */
-  getSecret: (name: string) => 
-    configManager.getSecret(name),
+  getSecret: (name: string) => configManager.getSecret(name),
 
   /**
    * Reload configuration
    */
-  reload: () => 
-    configManager.reload(),
+  reload: () => configManager.reload(),
 
   /**
    * Export configuration
    */
-  export: (filePath: string, includeSecrets = false) => 
+  export: (filePath: string, includeSecrets = false) =>
     configManager.exportConfig(filePath, includeSecrets),
 
   /**
    * Generate documentation
    */
-  generateDocs: (outputPath: string, format?: any) => 
+  generateDocs: (outputPath: string, format?: any) =>
     configManager.generateDocumentation({ outputPath, format }),
 
   /**
    * Listen for changes
    */
-  onChange: (callback: (event: any) => void) => 
+  onChange: (callback: (event: any) => void) =>
     configManager.onConfigChange(callback),
 
   /**
    * Listen for reloads
    */
-  onReload: (callback: (config: any) => void) => 
-    configManager.onConfigReload(callback)
+  onReload: (callback: (config: any) => void) =>
+    configManager.onConfigReload(callback),
 };
 
 /**
  * Environment-aware configuration loader
- * 
+ *
  * Automatically detects environment and loads appropriate configuration
  */
 export async function loadEnvironmentConfig(
@@ -354,7 +361,7 @@ export async function loadEnvironmentConfig(
   overridePath?: string
 ): Promise<void> {
   const environment = (process.env.NODE_ENV || 'development') as any;
-  
+
   // Determine config paths
   const configPath = baseConfigPath || `./config/config.${environment}.json`;
   const secretsPath = overridePath || `./config/secrets.${environment}.json`;
@@ -363,8 +370,10 @@ export async function loadEnvironmentConfig(
     await configManager.initialize({
       configPath,
       environment,
-      secretsPath: require('fs').existsSync(secretsPath) ? secretsPath : undefined,
-      enableHotReload: environment === 'development'
+      secretsPath: require('fs').existsSync(secretsPath)
+        ? secretsPath
+        : undefined,
+      enableHotReload: environment === 'development',
     });
 
     // Log successful initialization
@@ -372,15 +381,14 @@ export async function loadEnvironmentConfig(
     logger.info('Environment-aware configuration loaded', {
       environment,
       configPath,
-      secretsPath: require('fs').existsSync(secretsPath) ? secretsPath : 'none'
+      secretsPath: require('fs').existsSync(secretsPath) ? secretsPath : 'none',
     });
-
   } catch (error) {
     const logger = standardLoggers.config;
     logger.error('Failed to load environment configuration', {
       environment,
       configPath,
-      error
+      error,
     });
     throw error;
   }
@@ -388,7 +396,7 @@ export async function loadEnvironmentConfig(
 
 /**
  * Migration utility for existing configuration
- * 
+ *
  * Helps migrate from the old configuration system to the new unified system
  */
 export class ConfigurationMigrator {
@@ -404,16 +412,16 @@ export class ConfigurationMigrator {
     try {
       this.logger.info('Starting configuration migration', {
         from: legacyConfigPath,
-        to: outputPath
+        to: outputPath,
       });
 
       // Import the old config resolver
       const { configResolver } = await import('../../utils/config-resolver.js');
-      
+
       // Read a sample character config to extract patterns
       const sampleCharacterPath = './characters/nyx.json';
       let legacyConfig: any = {};
-      
+
       try {
         const fs = await import('fs');
         if (fs.existsSync(sampleCharacterPath)) {
@@ -422,7 +430,10 @@ export class ConfigurationMigrator {
           legacyConfig = configResolver.resolveCharacterConfig(characterConfig);
         }
       } catch (error) {
-        this.logger.warn('Could not load sample character config for migration', error);
+        this.logger.warn(
+          'Could not load sample character config for migration',
+          error
+        );
       }
 
       // Create equivalent unified config
@@ -434,23 +445,24 @@ export class ConfigurationMigrator {
 
       this.logger.info('Configuration migration completed', {
         outputPath,
-        sections: Object.keys(migratedConfig).length
+        sections: Object.keys(migratedConfig).length,
       });
-
     } catch (error) {
       this.logger.error('Configuration migration failed', error);
       throw error;
     }
   }
 
-  private transformLegacyConfig(legacyConfig: any): Partial<typeof import('./unified-config.js').UnifiedConfig> {
+  private transformLegacyConfig(
+    legacyConfig: any
+  ): Partial<typeof import('./unified-config.js').UnifiedConfig> {
     return {
       runtime: {
         environment: 'development',
         tickInterval: 1000,
         maxAgents: 10,
         logLevel: 'info',
-        version: '1.0.0'
+        version: '1.0.0',
       },
       persistence: {
         enabled: true,
@@ -458,28 +470,28 @@ export class ConfigurationMigrator {
         autoSave: true,
         saveInterval: 30000,
         maxBackups: 5,
-        compression: true
+        compression: true,
       },
       portals: {
         autoLoad: true,
         paths: ['./portals'],
         defaultPortal: 'openai',
         fallbackPortal: 'groq',
-        providers: this.extractPortalProviders(legacyConfig)
+        providers: this.extractPortalProviders(legacyConfig),
       },
       extensions: {
         autoLoad: true,
         paths: ['./extensions'],
         enabled: [],
         disabled: [],
-        config: {}
+        config: {},
       },
       multiAgent: {
         enabled: false,
         maxConcurrentAgents: 5,
         coordinationStrategy: 'centralized',
         messagingProtocol: 'direct',
-        loadBalancing: false
+        loadBalancing: false,
       },
       performance: {
         enableMetrics: true,
@@ -488,7 +500,7 @@ export class ConfigurationMigrator {
         cpuThreshold: 80,
         enableProfiling: false,
         cacheSize: 1000,
-        gcStrategy: 'balanced'
+        gcStrategy: 'balanced',
       },
       security: {
         enableAuth: false,
@@ -498,31 +510,31 @@ export class ConfigurationMigrator {
           enabled: true,
           windowMs: 60000,
           maxRequests: 100,
-          skipWhitelist: []
+          skipWhitelist: [],
         },
         secrets: {
-          apiKeys: this.extractApiKeys(legacyConfig)
-        }
+          apiKeys: this.extractApiKeys(legacyConfig),
+        },
       },
       features: {
         enabled: [],
         disabled: [],
         experimental: [],
-        beta: []
+        beta: [],
       },
       development: {
         hotReload: true,
         debugMode: false,
         verboseLogging: false,
         mockExternalServices: false,
-        testMode: false
-      }
+        testMode: false,
+      },
     };
   }
 
   private extractPortalProviders(legacyConfig: any): Record<string, any> {
     const providers: Record<string, any> = {};
-    
+
     if (legacyConfig.portals) {
       for (const portal of legacyConfig.portals) {
         if (portal.enabled) {
@@ -535,18 +547,18 @@ export class ConfigurationMigrator {
               chat: portal.config?.chatModel || portal.config?.model,
               embedding: portal.config?.embeddingModel,
               image: portal.config?.imageModel,
-              tool: portal.config?.toolModel
+              tool: portal.config?.toolModel,
             },
             settings: {
               maxTokens: portal.config?.max_tokens || 2048,
-              temperature: portal.config?.temperature || 0.7
+              temperature: portal.config?.temperature || 0.7,
             },
             rateLimits: {
               requestsPerMinute: 60,
               requestsPerHour: 1000,
-              tokensPerMinute: 10000
+              tokensPerMinute: 10000,
             },
-            fallbacks: []
+            fallbacks: [],
           };
         }
       }
@@ -557,7 +569,7 @@ export class ConfigurationMigrator {
 
   private extractApiKeys(legacyConfig: any): Record<string, string> {
     const apiKeys: Record<string, string> = {};
-    
+
     // Extract from various possible locations in legacy config
     if (legacyConfig.portals) {
       for (const portal of legacyConfig.portals) {
@@ -574,7 +586,7 @@ export class ConfigurationMigrator {
       'ANTHROPIC_API_KEY',
       'GROQ_API_KEY',
       'XAI_API_KEY',
-      'TELEGRAM_BOT_TOKEN'
+      'TELEGRAM_BOT_TOKEN',
     ];
 
     for (const key of commonKeys) {

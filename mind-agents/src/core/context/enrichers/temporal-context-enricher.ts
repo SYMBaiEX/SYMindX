@@ -1,6 +1,6 @@
 /**
  * Temporal Context Enricher for SYMindX
- * 
+ *
  * This enricher adds time-based context information including current time,
  * temporal patterns, session duration, and chronological markers to help
  * agents understand temporal context and make time-aware decisions.
@@ -27,7 +27,7 @@ export interface TemporalEnricherConfig {
   sessionTrackingEnabled: boolean;
   businessHours: {
     start: string; // HH:MM format
-    end: string;   // HH:MM format
+    end: string; // HH:MM format
     weekdays: number[]; // 0-6, Sunday = 0
   };
 }
@@ -45,7 +45,7 @@ interface SessionData {
 
 /**
  * Temporal Context Enricher
- * 
+ *
  * Enriches context with temporal information, time patterns,
  * and chronological awareness to enable time-sensitive agent behavior.
  */
@@ -55,22 +55,17 @@ export class TemporalContextEnricher extends BaseContextEnricher {
   private userSessionHistory = new Map<string, Date[]>(); // User ID -> session start times
 
   constructor(config: Partial<TemporalEnricherConfig> = {}) {
-    super(
-      'temporal-context-enricher',
-      'Temporal Context Enricher',
-      '1.0.0',
-      {
-        enabled: true,
-        priority: EnrichmentPriority.LOW,
-        stage: EnrichmentStage.PRE_PROCESSING,
-        timeout: 500,
-        maxRetries: 2,
-        cacheEnabled: true,
-        cacheTtl: 30, // 30 seconds cache for temporal data
-        dependsOn: [],
-      }
-    );
-    
+    super('temporal-context-enricher', 'Temporal Context Enricher', '1.0.0', {
+      enabled: true,
+      priority: EnrichmentPriority.LOW,
+      stage: EnrichmentStage.PRE_PROCESSING,
+      timeout: 500,
+      maxRetries: 2,
+      cacheEnabled: true,
+      cacheTtl: 30, // 30 seconds cache for temporal data
+      dependsOn: [],
+    });
+
     // Default temporal enricher configuration
     this.enricherConfig = {
       includeSeasonalContext: true,
@@ -126,7 +121,8 @@ export class TemporalContextEnricher extends BaseContextEnricher {
         message: 'Temporal context enricher initialized successfully',
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       return {
         success: false,
         error: errorMessage,
@@ -137,14 +133,16 @@ export class TemporalContextEnricher extends BaseContextEnricher {
   /**
    * Perform temporal-based context enrichment
    */
-  protected async doEnrich(request: EnrichmentRequest): Promise<Record<string, unknown>> {
+  protected async doEnrich(
+    request: EnrichmentRequest
+  ): Promise<Record<string, unknown>> {
     const now = new Date();
     const agentId = request.agentId;
     const context = request.context;
-    
+
     // Get or create session data
     const sessionData = this.getOrCreateSessionData(context, now);
-    
+
     // Build comprehensive temporal data
     const temporalData: TemporalEnrichmentData = {
       currentTimestamp: now,
@@ -177,7 +175,10 @@ export class TemporalContextEnricher extends BaseContextEnricher {
     }
 
     // Generate temporal insights
-    const temporalInsights = this.generateTemporalInsights(temporalData, context);
+    const temporalInsights = this.generateTemporalInsights(
+      temporalData,
+      context
+    );
 
     return {
       temporalContext: temporalData,
@@ -213,7 +214,7 @@ export class TemporalContextEnricher extends BaseContextEnricher {
 
       return {
         success: isValid,
-        message: isValid 
+        message: isValid
           ? 'Temporal context enricher is healthy'
           : 'Temporal context enricher has issues with time calculation',
         metadata: {
@@ -227,7 +228,8 @@ export class TemporalContextEnricher extends BaseContextEnricher {
         },
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       return {
         success: false,
         error: errorMessage,
@@ -243,13 +245,14 @@ export class TemporalContextEnricher extends BaseContextEnricher {
       // Clear session data
       this.sessionData.clear();
       this.userSessionHistory.clear();
-      
+
       return {
         success: true,
         message: 'Temporal context enricher disposed successfully',
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       return {
         success: false,
         error: errorMessage,
@@ -262,7 +265,10 @@ export class TemporalContextEnricher extends BaseContextEnricher {
   /**
    * Get or create session data
    */
-  private getOrCreateSessionData(context: Context, now: Date): SessionData | null {
+  private getOrCreateSessionData(
+    context: Context,
+    now: Date
+  ): SessionData | null {
     if (!this.enricherConfig.sessionTrackingEnabled) {
       return null;
     }
@@ -273,11 +279,11 @@ export class TemporalContextEnricher extends BaseContextEnricher {
     }
 
     let session = this.sessionData.get(sessionId);
-    
+
     if (!session) {
-      const userId = context.userId as string || 'unknown';
+      const userId = (context.userId as string) || 'unknown';
       const userSessions = this.userSessionHistory.get(userId) || [];
-      
+
       session = {
         sessionId,
         startTime: now,
@@ -287,7 +293,7 @@ export class TemporalContextEnricher extends BaseContextEnricher {
       };
 
       this.sessionData.set(sessionId, session);
-      
+
       // Track user session history
       userSessions.push(now);
       this.userSessionHistory.set(userId, userSessions);
@@ -332,7 +338,7 @@ export class TemporalContextEnricher extends BaseContextEnricher {
    */
   private getTimeOfDay(date: Date): TemporalEnrichmentData['timeOfDay'] {
     const hour = date.getHours();
-    
+
     if (hour >= 5 && hour < 12) {
       return 'morning';
     } else if (hour >= 12 && hour < 17) {
@@ -348,7 +354,15 @@ export class TemporalContextEnricher extends BaseContextEnricher {
    * Get day of week
    */
   private getDayOfWeek(date: Date): string {
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const days = [
+      'Sunday',
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+    ];
     return days[date.getDay()] || 'unknown';
   }
 
@@ -363,12 +377,14 @@ export class TemporalContextEnricher extends BaseContextEnricher {
   /**
    * Get seasonal context
    */
-  private getSeasonalContext(date: Date): TemporalEnrichmentData['seasonalContext'] {
+  private getSeasonalContext(
+    date: Date
+  ): TemporalEnrichmentData['seasonalContext'] {
     const month = date.getMonth() + 1; // 0-based to 1-based
     const quarter = Math.ceil(month / 3);
-    
+
     let season: 'spring' | 'summer' | 'fall' | 'winter';
-    
+
     // Northern hemisphere seasons (approximate)
     if (month >= 3 && month <= 5) {
       season = 'spring';
@@ -402,15 +418,22 @@ export class TemporalContextEnricher extends BaseContextEnricher {
     };
 
     if (sessionData) {
-      relativeTime.sessionDuration = now.getTime() - sessionData.startTime.getTime();
-      relativeTime.timeSinceLastInteraction = now.getTime() - sessionData.lastActivity.getTime();
+      relativeTime.sessionDuration =
+        now.getTime() - sessionData.startTime.getTime();
+      relativeTime.timeSinceLastInteraction =
+        now.getTime() - sessionData.lastActivity.getTime();
     }
 
     // Try to get conversation age from context
-    if (context.conversationStartTime && context.conversationStartTime instanceof Date) {
-      relativeTime.conversationAge = now.getTime() - context.conversationStartTime.getTime();
+    if (
+      context.conversationStartTime &&
+      context.conversationStartTime instanceof Date
+    ) {
+      relativeTime.conversationAge =
+        now.getTime() - context.conversationStartTime.getTime();
     } else if (context.timestamp && context.timestamp instanceof Date) {
-      relativeTime.conversationAge = now.getTime() - context.timestamp.getTime();
+      relativeTime.conversationAge =
+        now.getTime() - context.timestamp.getTime();
     } else if (sessionData) {
       relativeTime.conversationAge = relativeTime.sessionDuration;
     }
@@ -435,11 +458,11 @@ export class TemporalContextEnricher extends BaseContextEnricher {
     if (sessionData) {
       // Check if this is the first interaction in the session
       markers.isFirstInteraction = sessionData.interactionCount === 0;
-      
+
       // Check if this is a new session (less than 5 minutes old)
       const sessionAge = Date.now() - sessionData.startTime.getTime();
       markers.isNewSession = sessionAge < 5 * 60 * 1000; // 5 minutes
-      
+
       // Check if this is a returning user (not first session)
       markers.isReturningUser = !sessionData.isFirstSession;
     }
@@ -469,13 +492,17 @@ export class TemporalContextEnricher extends BaseContextEnricher {
   /**
    * Analyze business hours context
    */
-  private analyzeBusinessHours(temporalData: TemporalEnrichmentData): Record<string, unknown> {
+  private analyzeBusinessHours(
+    temporalData: TemporalEnrichmentData
+  ): Record<string, unknown> {
     const now = temporalData.currentTimestamp;
     const dayOfWeek = now.getDay();
     const timeString = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-    
-    const isBusinessDay = this.enricherConfig.businessHours.weekdays.includes(dayOfWeek);
-    const isBusinessHours = isBusinessDay && 
+
+    const isBusinessDay =
+      this.enricherConfig.businessHours.weekdays.includes(dayOfWeek);
+    const isBusinessHours =
+      isBusinessDay &&
       timeString >= this.enricherConfig.businessHours.start &&
       timeString <= this.enricherConfig.businessHours.end;
 
@@ -485,9 +512,10 @@ export class TemporalContextEnricher extends BaseContextEnricher {
       currentTime: timeString,
       businessStart: this.enricherConfig.businessHours.start,
       businessEnd: this.enricherConfig.businessHours.end,
-      minutesUntilBusinessStart: isBusinessDay && !isBusinessHours 
-        ? this.calculateMinutesUntilBusinessStart(now)
-        : null,
+      minutesUntilBusinessStart:
+        isBusinessDay && !isBusinessHours
+          ? this.calculateMinutesUntilBusinessStart(now)
+          : null,
       minutesUntilBusinessEnd: isBusinessHours
         ? this.calculateMinutesUntilBusinessEnd(now)
         : null,
@@ -498,15 +526,17 @@ export class TemporalContextEnricher extends BaseContextEnricher {
    * Calculate minutes until business hours start
    */
   private calculateMinutesUntilBusinessStart(now: Date): number {
-    const [startHour, startMinute] = this.enricherConfig.businessHours.start.split(':').map(Number);
+    const [startHour, startMinute] = this.enricherConfig.businessHours.start
+      .split(':')
+      .map(Number);
     const businessStart = new Date(now);
     businessStart.setHours(startHour, startMinute, 0, 0);
-    
+
     // If business start is earlier in the day, move to next business day
     if (businessStart <= now) {
       businessStart.setDate(businessStart.getDate() + 1);
     }
-    
+
     return Math.floor((businessStart.getTime() - now.getTime()) / (1000 * 60));
   }
 
@@ -514,23 +544,33 @@ export class TemporalContextEnricher extends BaseContextEnricher {
    * Calculate minutes until business hours end
    */
   private calculateMinutesUntilBusinessEnd(now: Date): number {
-    const [endHour, endMinute] = this.enricherConfig.businessHours.end.split(':').map(Number);
+    const [endHour, endMinute] = this.enricherConfig.businessHours.end
+      .split(':')
+      .map(Number);
     const businessEnd = new Date(now);
     businessEnd.setHours(endHour, endMinute, 0, 0);
-    
+
     return Math.floor((businessEnd.getTime() - now.getTime()) / (1000 * 60));
   }
 
   /**
    * Analyze session temporal data
    */
-  private analyzeSession(temporalData: TemporalEnrichmentData): Record<string, unknown> {
+  private analyzeSession(
+    temporalData: TemporalEnrichmentData
+  ): Record<string, unknown> {
     const relativeTime = temporalData.relativeTime;
-    
+
     return {
-      sessionDurationMinutes: Math.floor(relativeTime.sessionDuration / (1000 * 60)),
-      timeSinceLastInteractionSeconds: Math.floor(relativeTime.timeSinceLastInteraction / 1000),
-      conversationAgeMinutes: Math.floor(relativeTime.conversationAge / (1000 * 60)),
+      sessionDurationMinutes: Math.floor(
+        relativeTime.sessionDuration / (1000 * 60)
+      ),
+      timeSinceLastInteractionSeconds: Math.floor(
+        relativeTime.timeSinceLastInteraction / 1000
+      ),
+      conversationAgeMinutes: Math.floor(
+        relativeTime.conversationAge / (1000 * 60)
+      ),
       isLongSession: relativeTime.sessionDuration > 30 * 60 * 1000, // > 30 minutes
       isIdleSession: relativeTime.timeSinceLastInteraction > 5 * 60 * 1000, // > 5 minutes
       isNewConversation: relativeTime.conversationAge < 2 * 60 * 1000, // < 2 minutes
@@ -541,10 +581,15 @@ export class TemporalContextEnricher extends BaseContextEnricher {
   /**
    * Analyze temporal patterns
    */
-  private analyzeTemporalPatterns(temporalData: TemporalEnrichmentData): Record<string, unknown> {
+  private analyzeTemporalPatterns(
+    temporalData: TemporalEnrichmentData
+  ): Record<string, unknown> {
     const patterns = {
       timeOfDayContext: this.getTimeOfDayContext(temporalData.timeOfDay),
-      weekdayContext: this.getWeekdayContext(temporalData.dayOfWeek, temporalData.isWeekend),
+      weekdayContext: this.getWeekdayContext(
+        temporalData.dayOfWeek,
+        temporalData.isWeekend
+      ),
       seasonalContext: temporalData.seasonalContext,
       expectedActivityLevel: this.getExpectedActivityLevel(temporalData),
     };
@@ -555,7 +600,9 @@ export class TemporalContextEnricher extends BaseContextEnricher {
   /**
    * Get context for current time of day
    */
-  private getTimeOfDayContext(timeOfDay: TemporalEnrichmentData['timeOfDay']): Record<string, unknown> {
+  private getTimeOfDayContext(
+    timeOfDay: TemporalEnrichmentData['timeOfDay']
+  ): Record<string, unknown> {
     const contexts = {
       morning: {
         energy: 'rising',
@@ -589,7 +636,10 @@ export class TemporalContextEnricher extends BaseContextEnricher {
   /**
    * Get context for current day of week
    */
-  private getWeekdayContext(dayOfWeek: string, isWeekend: boolean): Record<string, unknown> {
+  private getWeekdayContext(
+    dayOfWeek: string,
+    isWeekend: boolean
+  ): Record<string, unknown> {
     return {
       dayType: isWeekend ? 'weekend' : 'weekday',
       expectedPace: isWeekend ? 'relaxed' : 'active',
@@ -601,18 +651,22 @@ export class TemporalContextEnricher extends BaseContextEnricher {
   /**
    * Get expected activity level
    */
-  private getExpectedActivityLevel(temporalData: TemporalEnrichmentData): 'low' | 'medium' | 'high' {
+  private getExpectedActivityLevel(
+    temporalData: TemporalEnrichmentData
+  ): 'low' | 'medium' | 'high' {
     // Business hours on weekdays = high activity
-    if (!temporalData.isWeekend && 
-        ['morning', 'afternoon'].includes(temporalData.timeOfDay)) {
+    if (
+      !temporalData.isWeekend &&
+      ['morning', 'afternoon'].includes(temporalData.timeOfDay)
+    ) {
       return 'high';
     }
-    
+
     // Evenings and weekends = medium activity
     if (temporalData.timeOfDay === 'evening' || temporalData.isWeekend) {
       return 'medium';
     }
-    
+
     // Night time = low activity
     return 'low';
   }
@@ -622,11 +676,16 @@ export class TemporalContextEnricher extends BaseContextEnricher {
    */
   private generateTemporalRecommendations(
     temporalData: TemporalEnrichmentData
-  ): Array<{ type: string; message: string; priority: 'low' | 'medium' | 'high' }> {
+  ): Array<{
+    type: string;
+    message: string;
+    priority: 'low' | 'medium' | 'high';
+  }> {
     const recommendations = [];
 
     // Long session recommendation
-    if (temporalData.relativeTime.sessionDuration > 45 * 60 * 1000) { // > 45 minutes
+    if (temporalData.relativeTime.sessionDuration > 45 * 60 * 1000) {
+      // > 45 minutes
       recommendations.push({
         type: 'session_length',
         message: 'Long session detected - consider break or summary',
@@ -662,7 +721,8 @@ export class TemporalContextEnricher extends BaseContextEnricher {
     }
 
     // Idle session
-    if (temporalData.relativeTime.timeSinceLastInteraction > 10 * 60 * 1000) { // > 10 minutes
+    if (temporalData.relativeTime.timeSinceLastInteraction > 10 * 60 * 1000) {
+      // > 10 minutes
       recommendations.push({
         type: 'idle_session',
         message: 'Session has been idle - provide gentle re-engagement',
@@ -676,9 +736,12 @@ export class TemporalContextEnricher extends BaseContextEnricher {
   /**
    * Calculate confidence score for temporal enrichment
    */
-  protected calculateConfidence(context: Context, enrichedData: Record<string, unknown>): number {
+  protected calculateConfidence(
+    context: Context,
+    enrichedData: Record<string, unknown>
+  ): number {
     const temporalData = enrichedData.temporalContext as TemporalEnrichmentData;
-    
+
     if (!temporalData) {
       return 0.1;
     }
@@ -691,9 +754,11 @@ export class TemporalContextEnricher extends BaseContextEnricher {
     }
 
     // Higher confidence with chronological markers
-    if (temporalData.chronologicalMarkers.isFirstInteraction ||
-        temporalData.chronologicalMarkers.isNewSession ||
-        temporalData.chronologicalMarkers.isReturningUser) {
+    if (
+      temporalData.chronologicalMarkers.isFirstInteraction ||
+      temporalData.chronologicalMarkers.isNewSession ||
+      temporalData.chronologicalMarkers.isReturningUser
+    ) {
       confidenceScore += 0.1;
     }
 

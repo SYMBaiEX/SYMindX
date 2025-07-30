@@ -15,8 +15,14 @@ import {
   BoostFactors,
   TimeRange,
 } from '../../types/memory';
-import { UnifiedContext, ContextScope } from '../../types/context/unified-context';
-import { ContextEnhancedMemoryRecord, ContextAwareSearchOptions } from './base-memory-provider';
+import {
+  UnifiedContext,
+  ContextScope,
+} from '../../types/context/unified-context';
+import {
+  ContextEnhancedMemoryRecord,
+  ContextAwareSearchOptions,
+} from './base-memory-provider';
 
 // Re-export for external usage
 export type { ContextAwareSearchOptions };
@@ -88,7 +94,8 @@ export function calculateContextSimilarity(
 
   // Session context similarity
   if (context1.session && context2.session) {
-    const sessionSimilarity = context1.session.id === context2.session.id ? 1.0 : 0.0;
+    const sessionSimilarity =
+      context1.session.id === context2.session.id ? 1.0 : 0.0;
     similarity += sessionSimilarity * sessionWeight;
     totalWeight += sessionWeight;
   }
@@ -96,11 +103,11 @@ export function calculateContextSimilarity(
   // Temporal context similarity
   if (context1.temporal && context2.temporal) {
     const timeDiff = Math.abs(
-      (context1.temporal.timestamp?.getTime() || 0) - 
-      (context2.temporal.timestamp?.getTime() || 0)
+      (context1.temporal.timestamp?.getTime() || 0) -
+        (context2.temporal.timestamp?.getTime() || 0)
     );
     const maxDiff = 24 * 60 * 60 * 1000; // 24 hours
-    const temporalSimilarity = Math.max(0, 1 - (timeDiff / maxDiff));
+    const temporalSimilarity = Math.max(0, 1 - timeDiff / maxDiff);
     similarity += temporalSimilarity * temporalWeight;
     totalWeight += temporalWeight;
   }
@@ -117,7 +124,8 @@ export function calculateContextSimilarity(
 
   // Environment context similarity
   if (context1.environment && context2.environment) {
-    const envSimilarity = context1.environment.nodeEnv === context2.environment.nodeEnv ? 1.0 : 0.0;
+    const envSimilarity =
+      context1.environment.nodeEnv === context2.environment.nodeEnv ? 1.0 : 0.0;
     similarity += envSimilarity * environmentWeight;
     totalWeight += environmentWeight;
   }
@@ -126,9 +134,10 @@ export function calculateContextSimilarity(
   if (context1.extensions && context2.extensions) {
     const ext1Keys = Object.keys(context1.extensions);
     const ext2Keys = Object.keys(context2.extensions);
-    const intersection = ext1Keys.filter(key => ext2Keys.includes(key));
+    const intersection = ext1Keys.filter((key) => ext2Keys.includes(key));
     const union = [...new Set([...ext1Keys, ...ext2Keys])];
-    const extSimilarity = union.length > 0 ? intersection.length / union.length : 0;
+    const extSimilarity =
+      union.length > 0 ? intersection.length / union.length : 0;
     similarity += extSimilarity * extensionWeight;
     totalWeight += extensionWeight;
   }
@@ -146,8 +155,10 @@ function calculateEmotionalSimilarity(
   emotions1: Record<string, any>,
   emotions2: Record<string, any>
 ): number {
-  const allEmotions = [...new Set([...Object.keys(emotions1), ...Object.keys(emotions2)])];
-  
+  const allEmotions = [
+    ...new Set([...Object.keys(emotions1), ...Object.keys(emotions2)]),
+  ];
+
   if (allEmotions.length === 0) return 1.0;
 
   let totalDifference = 0;
@@ -158,7 +169,9 @@ function calculateEmotionalSimilarity(
   }
 
   const maxPossibleDifference = allEmotions.length;
-  return maxPossibleDifference > 0 ? 1 - (totalDifference / maxPossibleDifference) : 1.0;
+  return maxPossibleDifference > 0
+    ? 1 - totalDifference / maxPossibleDifference
+    : 1.0;
 }
 
 /**
@@ -231,7 +244,7 @@ function extractContextTerms(context: UnifiedContext): string[] {
 
   // Extension-based terms
   if (context.extensions) {
-    Object.keys(context.extensions).forEach(ext => {
+    Object.keys(context.extensions).forEach((ext) => {
       terms.push(`extension:${ext}`);
     });
   }
@@ -254,17 +267,14 @@ export async function migrateMemoriesToContextEnhanced(
   memories: MemoryRecord[],
   options: MemoryMigrationOptions = {}
 ): Promise<ContextEnhancedMemoryRecord[]> {
-  const {
-    batchSize = 100,
-    addContextAnalytics = true,
-  } = options;
+  const { batchSize = 100, addContextAnalytics = true } = options;
 
   const enhancedMemories: ContextEnhancedMemoryRecord[] = [];
-  
+
   // Process in batches for performance
   for (let i = 0; i < memories.length; i += batchSize) {
     const batch = memories.slice(i, i + batchSize);
-    
+
     for (const memory of batch) {
       const enhanced: ContextEnhancedMemoryRecord = {
         ...memory,
@@ -341,8 +351,12 @@ function extractInsightsFromMetadata(memory: MemoryRecord): string[] {
 
   // Extract importance level
   if (memory.importance) {
-    const importance = memory.importance > 0.8 ? 'high' : 
-                     memory.importance > 0.5 ? 'medium' : 'low';
+    const importance =
+      memory.importance > 0.8
+        ? 'high'
+        : memory.importance > 0.5
+          ? 'medium'
+          : 'low';
     insights.push(`Importance: ${importance}`);
   }
 
@@ -377,7 +391,7 @@ function simpleHash(str: string): string {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
+    hash = (hash << 5) - hash + char;
     hash = hash & hash; // Convert to 32-bit integer
   }
   return Math.abs(hash).toString(36);
@@ -427,17 +441,22 @@ export function analyzeContextDistribution(
     if (memory.derivedInsights) {
       for (const insight of memory.derivedInsights) {
         const insightType = insight.split(':')[0]; // Extract type from "Type: value" format
-        insightCounts.set(insightType, (insightCounts.get(insightType) || 0) + 1);
+        insightCounts.set(
+          insightType,
+          (insightCounts.get(insightType) || 0) + 1
+        );
       }
     }
   }
 
   // Calculate averages
-  analytics.averageContextScore = analytics.contextEnhancedMemories > 0 
-    ? totalContextScore / analytics.contextEnhancedMemories 
-    : 0;
+  analytics.averageContextScore =
+    analytics.contextEnhancedMemories > 0
+      ? totalContextScore / analytics.contextEnhancedMemories
+      : 0;
 
-  analytics.contextCoverage = analytics.contextEnhancedMemories / analytics.totalMemories;
+  analytics.contextCoverage =
+    analytics.contextEnhancedMemories / analytics.totalMemories;
 
   // Top context scopes
   analytics.topContextScopes = Array.from(scopeCounts.entries())
@@ -471,37 +490,47 @@ export function optimizeContextAwareResults(
 
   if (!useContextualRanking) return results;
 
-  return results.map(result => {
-    const memory = result.record as ContextEnhancedMemoryRecord;
-    let contextSimilarity = 0;
+  return results
+    .map((result) => {
+      const memory = result.record as ContextEnhancedMemoryRecord;
+      let contextSimilarity = 0;
 
-    // Calculate context similarity if both contexts exist
-    if (memory.unifiedContext && context) {
-      contextSimilarity = calculateContextSimilarity(memory.unifiedContext, context);
-    }
+      // Calculate context similarity if both contexts exist
+      if (memory.unifiedContext && context) {
+        contextSimilarity = calculateContextSimilarity(
+          memory.unifiedContext,
+          context
+        );
+      }
 
-    // Apply context weight to score
-    const originalScore = result.score;
-    const enhancedScore = (originalScore * (1 - contextWeight)) + (contextSimilarity * contextWeight);
+      // Apply context weight to score
+      const originalScore = result.score;
+      const enhancedScore =
+        originalScore * (1 - contextWeight) + contextSimilarity * contextWeight;
 
-    // Filter by context similarity threshold
-    if (contextSimilarity < contextSimilarityThreshold) {
+      // Filter by context similarity threshold
+      if (contextSimilarity < contextSimilarityThreshold) {
+        return {
+          ...result,
+          score: enhancedScore * 0.5, // Penalize low context similarity
+          contextScore: contextSimilarity,
+          reason: 'Low contextual relevance',
+        };
+      }
+
       return {
         ...result,
-        score: enhancedScore * 0.5, // Penalize low context similarity
+        score: enhancedScore,
         contextScore: contextSimilarity,
-        reason: 'Low contextual relevance',
+        reason:
+          contextSimilarity > 0.8
+            ? 'High contextual similarity'
+            : contextSimilarity > 0.5
+              ? 'Moderate contextual similarity'
+              : undefined,
       };
-    }
-
-    return {
-      ...result,
-      score: enhancedScore,
-      contextScore: contextSimilarity,
-      reason: contextSimilarity > 0.8 ? 'High contextual similarity' : 
-              contextSimilarity > 0.5 ? 'Moderate contextual similarity' : undefined,
-    };
-  }).sort((a, b) => b.score - a.score);
+    })
+    .sort((a, b) => b.score - a.score);
 }
 
 /**
@@ -513,8 +542,18 @@ export function optimizeContextAwareResults(
 export function createContextBasedRelationships(
   memories: ContextEnhancedMemoryRecord[],
   similarityThreshold = 0.7
-): Array<{ sourceId: string; targetId: string; similarity: number; type: string }> {
-  const relationships: Array<{ sourceId: string; targetId: string; similarity: number; type: string }> = [];
+): Array<{
+  sourceId: string;
+  targetId: string;
+  similarity: number;
+  type: string;
+}> {
+  const relationships: Array<{
+    sourceId: string;
+    targetId: string;
+    similarity: number;
+    type: string;
+  }> = [];
 
   for (let i = 0; i < memories.length; i++) {
     for (let j = i + 1; j < memories.length; j++) {
@@ -564,17 +603,19 @@ export function createContextQueryMetrics(
   results: SearchResult[]
 ): ContextQueryMetrics {
   const queryTime = Date.now() - startTime;
-  const contextEnhancedResults = results.filter(r => 
-    (r as any).contextScore !== undefined
+  const contextEnhancedResults = results.filter(
+    (r) => (r as any).contextScore !== undefined
   ).length;
-  
+
   const contextScores = results
-    .map(r => (r as any).contextScore)
-    .filter(score => score !== undefined);
-  
-  const averageContextScore = contextScores.length > 0 
-    ? contextScores.reduce((sum, score) => sum + score, 0) / contextScores.length
-    : 0;
+    .map((r) => (r as any).contextScore)
+    .filter((score) => score !== undefined);
+
+  const averageContextScore =
+    contextScores.length > 0
+      ? contextScores.reduce((sum, score) => sum + score, 0) /
+        contextScores.length
+      : 0;
 
   return {
     queryTime,

@@ -4,7 +4,7 @@
  */
 
 import { EventEmitter } from 'events';
-import type { 
+import type {
   ContextObservabilitySystem,
   ContextObservabilityConfig,
   ContextObservabilityState,
@@ -13,7 +13,7 @@ import type {
   ContextMetricsCollector,
   ContextDebugger,
   ContextVersioning,
-  ContextVisualizer
+  ContextVisualizer,
 } from '../../../types/context/context-observability.ts';
 import { ContextTracerImpl } from './context-tracer.ts';
 import { ContextMetricsCollectorImpl } from './context-metrics-collector.ts';
@@ -31,7 +31,7 @@ const DEFAULT_CONFIG: ContextObservabilityConfig = {
     sampleRate: 1.0,
     maxContextDepth: 10,
     enableFlowVisualization: true,
-    traceRetentionMs: 24 * 60 * 60 * 1000 // 24 hours
+    traceRetentionMs: 24 * 60 * 60 * 1000, // 24 hours
   },
   metrics: {
     enabled: true,
@@ -39,7 +39,7 @@ const DEFAULT_CONFIG: ContextObservabilityConfig = {
     enableContextMetrics: true,
     enableTransformationMetrics: true,
     enableFlowMetrics: true,
-    maxMetricsPerContext: 1000
+    maxMetricsPerContext: 1000,
   },
   debug: {
     enabled: true,
@@ -47,34 +47,37 @@ const DEFAULT_CONFIG: ContextObservabilityConfig = {
     enableStepThrough: true,
     enableContextInspection: true,
     maxDebugHistorySize: 100,
-    enableConsoleIntegration: true
+    enableConsoleIntegration: true,
   },
   versioning: {
     enabled: true,
     enableDiffTracking: true,
     enableRollback: true,
     maxVersionHistory: 50,
-    compressionEnabled: true
+    compressionEnabled: true,
   },
   visualization: {
     enabled: true,
     enableRealTimeUpdates: true,
     maxNodesInGraph: 500,
     enableInteractiveMode: true,
-    renderFormat: 'svg'
+    renderFormat: 'svg',
   },
   performance: {
     maxOverheadMs: 50,
     enableProfiling: true,
     enableMemoryTracking: true,
-    enableAsyncTracking: true
-  }
+    enableAsyncTracking: true,
+  },
 };
 
 /**
  * Comprehensive context observability system implementation
  */
-export class ContextObservabilitySystemImpl extends EventEmitter implements ContextObservabilitySystem {
+export class ContextObservabilitySystemImpl
+  extends EventEmitter
+  implements ContextObservabilitySystem
+{
   public readonly tracer: ContextTracer;
   public readonly metrics: ContextMetricsCollector;
   public readonly debugger: ContextDebugger;
@@ -82,7 +85,10 @@ export class ContextObservabilitySystemImpl extends EventEmitter implements Cont
   public readonly visualizer: ContextVisualizer;
 
   private config: ContextObservabilityConfig;
-  private activeObservations = new Map<string, { startTime: Date; trace: ContextTrace }>();
+  private activeObservations = new Map<
+    string,
+    { startTime: Date; trace: ContextTrace }
+  >();
   private startTime = Date.now();
   private performanceMonitor?: NodeJS.Timeout;
 
@@ -105,7 +111,7 @@ export class ContextObservabilitySystemImpl extends EventEmitter implements Cont
       metrics: this.config.metrics.enabled,
       debug: this.config.debug.enabled,
       versioning: this.config.versioning.enabled,
-      visualization: this.config.visualization.enabled
+      visualization: this.config.visualization.enabled,
     });
   }
 
@@ -113,15 +119,19 @@ export class ContextObservabilitySystemImpl extends EventEmitter implements Cont
    * Start observability for a context instance
    */
   async startObservation(
-    contextId: string, 
+    contextId: string,
     config?: Partial<ContextObservabilityConfig>
   ): Promise<ContextTrace> {
     if (this.activeObservations.has(contextId)) {
-      runtimeLogger.warn('Observation already active for context', { contextId });
+      runtimeLogger.warn('Observation already active for context', {
+        contextId,
+      });
       return this.activeObservations.get(contextId)!.trace;
     }
 
-    const observationConfig = config ? this.mergeConfig(this.config, config) : this.config;
+    const observationConfig = config
+      ? this.mergeConfig(this.config, config)
+      : this.config;
     const startTime = Date.now();
 
     try {
@@ -142,7 +152,7 @@ export class ContextObservabilitySystemImpl extends EventEmitter implements Cont
       // Create version snapshot if enabled
       if (observationConfig.versioning.enabled) {
         await this.versioning.createVersion(
-          contextId, 
+          contextId,
           'Initial context observation started',
           ['observation_start']
         );
@@ -155,7 +165,7 @@ export class ContextObservabilitySystemImpl extends EventEmitter implements Cont
 
       this.activeObservations.set(contextId, {
         startTime: new Date(),
-        trace
+        trace,
       });
 
       const observationTime = Date.now() - startTime;
@@ -167,22 +177,27 @@ export class ContextObservabilitySystemImpl extends EventEmitter implements Cont
           tracing: observationConfig.tracing.enabled,
           metrics: observationConfig.metrics.enabled,
           versioning: observationConfig.versioning.enabled,
-          visualization: observationConfig.visualization.enabled
-        }
+          visualization: observationConfig.visualization.enabled,
+        },
       });
 
-      this.emit('observation_started', { contextId, trace, config: observationConfig });
+      this.emit('observation_started', {
+        contextId,
+        trace,
+        config: observationConfig,
+      });
 
       return trace;
-
     } catch (error) {
       runtimeLogger.error('Failed to start context observation', {
         contextId,
         error: error instanceof Error ? error.message : String(error),
-        observationTime: `${Date.now() - startTime}ms`
+        observationTime: `${Date.now() - startTime}ms`,
       });
 
-      throw new Error(`Failed to start observation for context ${contextId}: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `Failed to start observation for context ${contextId}: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -192,7 +207,9 @@ export class ContextObservabilitySystemImpl extends EventEmitter implements Cont
   async stopObservation(contextId: string): Promise<void> {
     const observation = this.activeObservations.get(contextId);
     if (!observation) {
-      runtimeLogger.warn('No active observation found for context', { contextId });
+      runtimeLogger.warn('No active observation found for context', {
+        contextId,
+      });
       return;
     }
 
@@ -215,7 +232,10 @@ export class ContextObservabilitySystemImpl extends EventEmitter implements Cont
         await this.versioning.createVersion(
           contextId,
           'Context observation completed',
-          ['observation_end', `duration_${Math.floor(totalObservationTime / 1000)}s`]
+          [
+            'observation_end',
+            `duration_${Math.floor(totalObservationTime / 1000)}s`,
+          ]
         );
       }
 
@@ -226,25 +246,26 @@ export class ContextObservabilitySystemImpl extends EventEmitter implements Cont
         traceId: observation.trace.traceId,
         totalObservationTime: `${totalObservationTime}ms`,
         transformations: observation.trace.transformations.length,
-        accesses: observation.trace.accessPatterns.length
+        accesses: observation.trace.accessPatterns.length,
       });
 
-      this.emit('observation_stopped', { 
-        contextId, 
-        trace: observation.trace, 
-        duration: totalObservationTime 
+      this.emit('observation_stopped', {
+        contextId,
+        trace: observation.trace,
+        duration: totalObservationTime,
       });
-
     } catch (error) {
       runtimeLogger.error('Failed to stop context observation', {
         contextId,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       });
 
       // Remove from active observations even if cleanup failed
       this.activeObservations.delete(contextId);
 
-      throw new Error(`Failed to stop observation for context ${contextId}: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `Failed to stop observation for context ${contextId}: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -253,7 +274,7 @@ export class ContextObservabilitySystemImpl extends EventEmitter implements Cont
    */
   getObservabilityState(contextId?: string): ContextObservabilityState {
     const now = new Date();
-    
+
     if (contextId) {
       const observation = this.activeObservations.get(contextId);
       const isTraced = observation !== undefined;
@@ -265,20 +286,20 @@ export class ContextObservabilitySystemImpl extends EventEmitter implements Cont
         metricsStatus: {
           collecting: this.config.metrics.enabled && isTraced,
           lastCollection: isTraced ? observation!.startTime : now,
-          totalMetrics: isTraced ? 1 : 0
+          totalMetrics: isTraced ? 1 : 0,
         },
         tracingStatus: {
           active: this.config.tracing.enabled && isTraced,
           sampleRate: this.config.tracing.sampleRate,
           totalTraces: isTraced ? 1 : 0,
-          activeTraces: isTraced ? 1 : 0
+          activeTraces: isTraced ? 1 : 0,
         },
         health: {
           status: 'healthy',
           issues: [],
-          lastCheck: now
+          lastCheck: now,
         },
-        resources: this.getResourceUsage()
+        resources: this.getResourceUsage(),
       };
     }
 
@@ -289,20 +310,23 @@ export class ContextObservabilitySystemImpl extends EventEmitter implements Cont
     return {
       status: activeContexts.length > 0 ? 'active' : 'paused',
       tracedContexts: activeContexts,
-      debugSessions: Array.from({ length: debugSessions }, (_, i) => `session_${i}`),
+      debugSessions: Array.from(
+        { length: debugSessions },
+        (_, i) => `session_${i}`
+      ),
       metricsStatus: {
         collecting: this.config.metrics.enabled,
         lastCollection: now,
-        totalMetrics: this.metrics.getStatistics?.()?.metricsCount || 0
+        totalMetrics: this.metrics.getStatistics?.()?.metricsCount || 0,
       },
       tracingStatus: {
         active: this.config.tracing.enabled,
         sampleRate: this.config.tracing.sampleRate,
         totalTraces: this.tracer.getStatistics?.()?.totalTraces || 0,
-        activeTraces: this.tracer.getStatistics?.()?.activeTraces || 0
+        activeTraces: this.tracer.getStatistics?.()?.activeTraces || 0,
       },
       health: this.getSystemHealth(),
-      resources: this.getResourceUsage()
+      resources: this.getResourceUsage(),
     };
   }
 
@@ -314,7 +338,7 @@ export class ContextObservabilitySystemImpl extends EventEmitter implements Cont
     this.config = this.mergeConfig(this.config, config);
 
     runtimeLogger.info('Observability configuration updated', {
-      changes: this.getConfigChanges(oldConfig, this.config)
+      changes: this.getConfigChanges(oldConfig, this.config),
     });
 
     this.emit('configuration_updated', { oldConfig, newConfig: this.config });
@@ -328,14 +352,16 @@ export class ContextObservabilitySystemImpl extends EventEmitter implements Cont
       system: {
         uptime: Date.now() - this.startTime,
         activeObservations: this.activeObservations.size,
-        totalEvents: this.listenerCount('observation_started') + this.listenerCount('observation_stopped'),
-        config: this.config
+        totalEvents:
+          this.listenerCount('observation_started') +
+          this.listenerCount('observation_stopped'),
+        config: this.config,
       },
       tracer: this.tracer.getStatistics?.() || {},
       metrics: this.metrics.getStatistics?.() || {},
       debugger: this.debugger.getStatistics?.() || {},
       versioning: this.versioning.getStatistics?.() || {},
-      visualizer: this.visualizer.getStatistics?.() || {}
+      visualizer: this.visualizer.getStatistics?.() || {},
     };
   }
 
@@ -351,7 +377,10 @@ export class ContextObservabilitySystemImpl extends EventEmitter implements Cont
       try {
         await this.stopObservation(contextId);
       } catch (error) {
-        runtimeLogger.error('Failed to stop observation during disposal', { contextId, error });
+        runtimeLogger.error('Failed to stop observation during disposal', {
+          contextId,
+          error,
+        });
       }
     }
 
@@ -391,12 +420,27 @@ export class ContextObservabilitySystemImpl extends EventEmitter implements Cont
   ): void {
     // Record in tracer
     if (this.config.tracing.enabled) {
-      this.tracer.recordAccess?.(contextId, accessor, accessType, duration, dataSize, success, error);
+      this.tracer.recordAccess?.(
+        contextId,
+        accessor,
+        accessType,
+        duration,
+        dataSize,
+        success,
+        error
+      );
     }
 
     // Record in metrics
     if (this.config.metrics.enabled) {
-      this.metrics.recordAccess?.(contextId, accessor, accessType, duration, dataSize, success);
+      this.metrics.recordAccess?.(
+        contextId,
+        accessor,
+        accessType,
+        duration,
+        dataSize,
+        success
+      );
     }
   }
 
@@ -415,26 +459,42 @@ export class ContextObservabilitySystemImpl extends EventEmitter implements Cont
     // Record in tracer
     if (this.config.tracing.enabled) {
       this.tracer.recordTransformation?.(
-        contextId, transformationType, inputSize, outputSize, duration, success, error
+        contextId,
+        transformationType,
+        inputSize,
+        outputSize,
+        duration,
+        success,
+        error
       );
     }
 
     // Record in metrics
     if (this.config.metrics.enabled) {
       this.metrics.recordTransformation?.(
-        contextId, transformationType, inputSize, outputSize, duration, success
+        contextId,
+        transformationType,
+        inputSize,
+        outputSize,
+        duration,
+        success
       );
     }
 
     // Create version snapshot for significant transformations
     if (this.config.versioning.enabled && success && outputSize !== inputSize) {
-      this.versioning.createVersion(
-        contextId,
-        `Transformation: ${transformationType}`,
-        ['transformation', transformationType]
-      ).catch(error => {
-        runtimeLogger.error('Failed to create transformation version', { contextId, transformationType, error });
-      });
+      this.versioning
+        .createVersion(contextId, `Transformation: ${transformationType}`, [
+          'transformation',
+          transformationType,
+        ])
+        .catch((error) => {
+          runtimeLogger.error('Failed to create transformation version', {
+            contextId,
+            transformationType,
+            error,
+          });
+        });
     }
   }
 
@@ -469,7 +529,7 @@ export class ContextObservabilitySystemImpl extends EventEmitter implements Cont
    */
 
   private mergeConfig(
-    base: ContextObservabilityConfig, 
+    base: ContextObservabilityConfig,
     override: Partial<ContextObservabilityConfig>
   ): ContextObservabilityConfig {
     return {
@@ -478,7 +538,7 @@ export class ContextObservabilitySystemImpl extends EventEmitter implements Cont
       debug: { ...base.debug, ...override.debug },
       versioning: { ...base.versioning, ...override.versioning },
       visualization: { ...base.visualization, ...override.visualization },
-      performance: { ...base.performance, ...override.performance }
+      performance: { ...base.performance, ...override.performance },
     };
   }
 
@@ -497,7 +557,7 @@ export class ContextObservabilitySystemImpl extends EventEmitter implements Cont
       hierarchy: {
         childContextIds: [],
         depth: 0,
-        rootContextId: contextId
+        rootContextId: contextId,
       },
       lifecycle: { created: now },
       transformations: [],
@@ -506,21 +566,21 @@ export class ContextObservabilitySystemImpl extends EventEmitter implements Cont
         shareCount: 0,
         sharedWith: [],
         shareType: 'read',
-        isolationLevel: 'weak'
+        isolationLevel: 'weak',
       },
       flow: {
         entryPoints: [],
         exitPoints: [],
         criticalPath: [],
-        bottlenecks: []
+        bottlenecks: [],
       },
       quality: {
         completeness: 1,
         consistency: 1,
         freshness: 1,
         relevance: 1,
-        reliability: 1
-      }
+        reliability: 1,
+      },
     };
   }
 
@@ -556,29 +616,30 @@ export class ContextObservabilitySystemImpl extends EventEmitter implements Cont
 
     this.performanceMonitor = setInterval(() => {
       const usage = this.getResourceUsage();
-      
+
       if (usage.overhead > this.config.performance.maxOverheadMs) {
         runtimeLogger.warn('Observability overhead exceeded threshold', {
           overhead: usage.overhead,
-          threshold: this.config.performance.maxOverheadMs
+          threshold: this.config.performance.maxOverheadMs,
         });
 
-        this.emit('performance_warning', { 
+        this.emit('performance_warning', {
           type: 'overhead',
           current: usage.overhead,
-          threshold: this.config.performance.maxOverheadMs
+          threshold: this.config.performance.maxOverheadMs,
         });
       }
 
-      if (usage.memoryUsage > 0.8) { // 80% memory usage
+      if (usage.memoryUsage > 0.8) {
+        // 80% memory usage
         runtimeLogger.warn('High memory usage detected', {
-          memoryUsage: usage.memoryUsage
+          memoryUsage: usage.memoryUsage,
         });
 
-        this.emit('performance_warning', { 
+        this.emit('performance_warning', {
           type: 'memory',
           current: usage.memoryUsage,
-          threshold: 0.8
+          threshold: 0.8,
         });
       }
     }, 10000); // Check every 10 seconds
@@ -587,12 +648,12 @@ export class ContextObservabilitySystemImpl extends EventEmitter implements Cont
   private getResourceUsage(): ContextObservabilityState['resources'] {
     const memUsage = process.memoryUsage();
     const memoryUsage = memUsage.heapUsed / memUsage.heapTotal;
-    
+
     return {
       memoryUsage,
       cpuUsage: 0, // Would need external library for accurate CPU usage
       storageUsage: 0, // Would need to calculate actual storage usage
-      overhead: this.calculateOverhead()
+      overhead: this.calculateOverhead(),
     };
   }
 
@@ -601,60 +662,73 @@ export class ContextObservabilitySystemImpl extends EventEmitter implements Cont
     const activeObservations = this.activeObservations.size;
     const baseOverhead = 5; // Base overhead in ms
     const perContextOverhead = 2; // Additional overhead per context
-    
-    return baseOverhead + (activeObservations * perContextOverhead);
+
+    return baseOverhead + activeObservations * perContextOverhead;
   }
 
   private getSystemHealth(): ContextObservabilityState['health'] {
     const issues: string[] = [];
-    
+
     // Check component health
     if (this.config.tracing.enabled && !this.tracer.getStatistics) {
       issues.push('Tracer component not responding');
     }
-    
+
     if (this.config.metrics.enabled && !this.metrics.getStatistics) {
       issues.push('Metrics collector not responding');
     }
-    
+
     // Check resource usage
     const resources = this.getResourceUsage();
     if (resources.memoryUsage > 0.9) {
       issues.push('High memory usage detected');
     }
-    
+
     if (resources.overhead > this.config.performance.maxOverheadMs * 2) {
       issues.push('Excessive observability overhead');
     }
-    
-    const status = issues.length === 0 ? 'healthy' : 
-                  issues.length <= 2 ? 'degraded' : 'unhealthy';
-    
+
+    const status =
+      issues.length === 0
+        ? 'healthy'
+        : issues.length <= 2
+          ? 'degraded'
+          : 'unhealthy';
+
     return {
       status,
       issues,
-      lastCheck: new Date()
+      lastCheck: new Date(),
     };
   }
 
   private getConfigChanges(
-    oldConfig: ContextObservabilityConfig, 
+    oldConfig: ContextObservabilityConfig,
     newConfig: ContextObservabilityConfig
   ): Record<string, any> {
     const changes: Record<string, any> = {};
-    
+
     if (oldConfig.tracing.enabled !== newConfig.tracing.enabled) {
-      changes.tracing_enabled = { from: oldConfig.tracing.enabled, to: newConfig.tracing.enabled };
+      changes.tracing_enabled = {
+        from: oldConfig.tracing.enabled,
+        to: newConfig.tracing.enabled,
+      };
     }
-    
+
     if (oldConfig.metrics.enabled !== newConfig.metrics.enabled) {
-      changes.metrics_enabled = { from: oldConfig.metrics.enabled, to: newConfig.metrics.enabled };
+      changes.metrics_enabled = {
+        from: oldConfig.metrics.enabled,
+        to: newConfig.metrics.enabled,
+      };
     }
-    
+
     if (oldConfig.debug.enabled !== newConfig.debug.enabled) {
-      changes.debug_enabled = { from: oldConfig.debug.enabled, to: newConfig.debug.enabled };
+      changes.debug_enabled = {
+        from: oldConfig.debug.enabled,
+        to: newConfig.debug.enabled,
+      };
     }
-    
+
     return changes;
   }
 }
@@ -677,7 +751,7 @@ export {
   ContextDebuggerImpl,
   ContextVersioningImpl,
   ContextVisualizerImpl,
-  DEFAULT_CONFIG
+  DEFAULT_CONFIG,
 };
 
 /**

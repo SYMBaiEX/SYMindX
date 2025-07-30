@@ -1,6 +1,6 @@
 /**
  * Basic Usage Examples for Context Injection Framework
- * 
+ *
  * This file demonstrates common usage patterns and serves as a reference
  * for developers implementing context injection in their components.
  */
@@ -9,13 +9,13 @@ import {
   createContextInjector,
   createScope,
   contextUtils,
-  ContextScopeType
+  ContextScopeType,
 } from '../index';
 import type {
   ContextProvider,
   ContextMiddleware,
   ContextEnricher,
-  ContextScope
+  ContextScope,
 } from '../../../types/context/context-injection';
 
 /**
@@ -34,18 +34,24 @@ export async function basicContextInjectionExample() {
     supportsAsync: false,
 
     provide(scope: ContextScope) {
-      if (scope.type === ContextScopeType.Module && scope.target === 'example-module') {
+      if (
+        scope.type === ContextScopeType.Module &&
+        scope.target === 'example-module'
+      ) {
         return {
           apiUrl: 'https://api.example.com',
-          timeout: 5000
+          timeout: 5000,
         };
       }
       return undefined;
     },
 
     canProvide(scope: ContextScope) {
-      return scope.type === ContextScopeType.Module && scope.target === 'example-module';
-    }
+      return (
+        scope.type === ContextScopeType.Module &&
+        scope.target === 'example-module'
+      );
+    },
   };
 
   // Register the provider
@@ -55,7 +61,7 @@ export async function basicContextInjectionExample() {
   // Create a context scope
   const scope = createScope(ContextScopeType.Module, 'example-module', {
     agentId: 'example-agent',
-    correlationId: 'example-request-123'
+    correlationId: 'example-request-123',
   });
 
   // Inject context
@@ -83,13 +89,13 @@ export async function middlewareExample() {
     provide() {
       return {
         data: 'public-data',
-        sensitive: 'secret-value'
+        sensitive: 'secret-value',
       };
     },
 
     canProvide() {
       return true;
-    }
+    },
   };
 
   // Create sanitization middleware
@@ -99,7 +105,7 @@ export async function middlewareExample() {
 
     async transform(context: any, scope: ContextScope, next: Function) {
       console.log('Sanitizing context...');
-      
+
       // Remove sensitive data
       const sanitized = { ...context };
       if ('sensitive' in sanitized) {
@@ -109,7 +115,7 @@ export async function middlewareExample() {
       // Add security metadata
       sanitized._security = {
         sanitized: true,
-        sanitizedAt: new Date()
+        sanitizedAt: new Date(),
       };
 
       return next(sanitized);
@@ -117,7 +123,7 @@ export async function middlewareExample() {
 
     shouldProcess() {
       return true;
-    }
+    },
   };
 
   // Register components
@@ -127,7 +133,7 @@ export async function middlewareExample() {
   // Inject context
   const scope = createScope(ContextScopeType.Module, 'secure-module');
   const result = await injector.inject(scope);
-  
+
   console.log('Context after sanitization:', result.context);
   console.log('Middleware applied:', result.middleware);
 }
@@ -152,7 +158,7 @@ export async function enrichmentExample() {
 
     canProvide() {
       return true;
-    }
+    },
   };
 
   // Metadata enricher
@@ -162,7 +168,7 @@ export async function enrichmentExample() {
 
     async enrich(context: any, scope: ContextScope) {
       console.log('Enriching context with metadata...');
-      
+
       return {
         ...context,
         metadata: {
@@ -170,20 +176,20 @@ export async function enrichmentExample() {
           enrichedBy: this.id,
           scope: {
             type: scope.type,
-            target: scope.target
+            target: scope.target,
           },
-          version: '1.0.0'
+          version: '1.0.0',
         },
         computed: {
           displayName: `${context.name} (${scope.target})`,
-          hash: Math.random().toString(36).substring(7)
-        }
+          hash: Math.random().toString(36).substring(7),
+        },
       };
     },
 
     shouldEnrich() {
       return true;
-    }
+    },
   };
 
   // Register components
@@ -193,7 +199,7 @@ export async function enrichmentExample() {
   // Inject context
   const scope = createScope(ContextScopeType.Extension, 'example-extension');
   const result = await injector.inject(scope);
-  
+
   console.log('Enriched context:', JSON.stringify(result.context, null, 2));
   console.log('Enrichers applied:', result.enrichers);
 }
@@ -206,11 +212,14 @@ export async function asyncProviderExample() {
 
   const injector = await createContextInjector({
     enableAsync: true,
-    asyncTimeout: 2000 // 2 second timeout
+    asyncTimeout: 2000, // 2 second timeout
   });
 
   // Async database config provider
-  const databaseConfigProvider: ContextProvider<{ connectionString: string; poolSize: number }> = {
+  const databaseConfigProvider: ContextProvider<{
+    connectionString: string;
+    poolSize: number;
+  }> = {
     id: 'database-config-provider',
     priority: 90,
     supportsAsync: true,
@@ -222,19 +231,19 @@ export async function asyncProviderExample() {
 
     async provideAsync(scope: ContextScope) {
       console.log('Loading database config asynchronously...');
-      
+
       // Simulate database lookup
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
       return {
         connectionString: `postgresql://localhost/${scope.target}_db`,
-        poolSize: 10
+        poolSize: 10,
       };
     },
 
     canProvide(scope: ContextScope) {
       return scope.type === ContextScopeType.Service;
-    }
+    },
   };
 
   // Register provider
@@ -243,7 +252,7 @@ export async function asyncProviderExample() {
   // Inject context
   const scope = createScope(ContextScopeType.Service, 'user-service');
   const result = await injector.inject(scope);
-  
+
   console.log('Async context loaded:', result.context);
   console.log('Provider time:', result.metrics.providerTime + 'ms');
 }
@@ -269,23 +278,27 @@ export async function contextAwareObjectExample() {
   const context = {
     config: {
       apiUrl: 'https://api.example.com',
-      timeout: 5000
+      timeout: 5000,
     },
     database: {
       connectionString: 'postgresql://localhost/users',
-      poolSize: 10
+      poolSize: 10,
     },
     metrics: {
       requestCount: 0,
-      errorCount: 0
-    }
+      errorCount: 0,
+    },
   };
 
   const scope = createScope(ContextScopeType.Service, 'user-service');
-  
+
   // Wrap service with context
   const userService = new UserService();
-  const contextualUserService = contextUtils.withContext(userService, context, scope);
+  const contextualUserService = contextUtils.withContext(
+    userService,
+    context,
+    scope
+  );
 
   // Use the service
   console.log('Users:', contextualUserService.getUsers());
@@ -296,11 +309,14 @@ export async function contextAwareObjectExample() {
   await contextualUserService.updateContext({
     metrics: {
       requestCount: 1,
-      errorCount: 0
-    }
+      errorCount: 0,
+    },
   });
 
-  console.log('Updated metrics:', contextualUserService.getContextValue('metrics'));
+  console.log(
+    'Updated metrics:',
+    contextualUserService.getContextValue('metrics')
+  );
 }
 
 /**
@@ -312,14 +328,17 @@ export async function providerPriorityExample() {
   const injector = await createContextInjector();
 
   // Low priority provider (default config)
-  const defaultConfigProvider: ContextProvider<{ theme: string; lang: string }> = {
+  const defaultConfigProvider: ContextProvider<{
+    theme: string;
+    lang: string;
+  }> = {
     id: 'default-config',
     priority: 50, // Lower priority
 
     provide() {
       return {
         theme: 'light',
-        lang: 'en'
+        lang: 'en',
       };
     },
 
@@ -327,7 +346,7 @@ export async function providerPriorityExample() {
       return true;
     },
 
-    supportsAsync: false
+    supportsAsync: false,
   };
 
   // High priority provider (user config)
@@ -337,7 +356,7 @@ export async function providerPriorityExample() {
 
     provide() {
       return {
-        theme: 'dark' // Should override default
+        theme: 'dark', // Should override default
       };
     },
 
@@ -345,7 +364,7 @@ export async function providerPriorityExample() {
       return true;
     },
 
-    supportsAsync: false
+    supportsAsync: false,
   };
 
   // Register providers (order doesn't matter - priority determines execution order)
@@ -355,7 +374,7 @@ export async function providerPriorityExample() {
   // Inject context
   const scope = createScope(ContextScopeType.Global, 'app');
   const result = await injector.inject(scope);
-  
+
   console.log('Final context (theme should be "dark"):', result.context);
   console.log('Provider execution order:', result.providers);
 }
@@ -367,7 +386,7 @@ export async function contextValidationExample() {
   console.log('\n=== Context Validation Example ===');
 
   const injector = await createContextInjector({
-    enableValidation: true
+    enableValidation: true,
   });
 
   // Provider that returns invalid data
@@ -380,13 +399,13 @@ export async function contextValidationExample() {
       return {
         requiredField: undefined, // Invalid - should be present
         numericField: 'not-a-number', // Invalid - should be numeric
-        email: 'invalid-email' // Invalid - should be valid email
+        email: 'invalid-email', // Invalid - should be valid email
       };
     },
 
     canProvide() {
       return true;
-    }
+    },
   };
 
   // Validation middleware
@@ -396,7 +415,7 @@ export async function contextValidationExample() {
 
     async transform(context: any, scope: ContextScope, next: Function) {
       console.log('Validating context...');
-      
+
       const errors: string[] = [];
 
       if (!context.requiredField) {
@@ -420,7 +439,7 @@ export async function contextValidationExample() {
 
     shouldProcess() {
       return true;
-    }
+    },
   };
 
   // Register components
@@ -430,9 +449,12 @@ export async function contextValidationExample() {
   // Inject context (should fail validation)
   const scope = createScope(ContextScopeType.Module, 'validated-module');
   const result = await injector.inject(scope);
-  
+
   console.log('Injection result:', result.success);
-  console.log('Validation errors:', result.errors?.map(e => e.message));
+  console.log(
+    'Validation errors:',
+    result.errors?.map((e) => e.message)
+  );
 }
 
 /**
@@ -447,7 +469,7 @@ export async function runAllExamples() {
     await contextAwareObjectExample();
     await providerPriorityExample();
     await contextValidationExample();
-    
+
     console.log('\n🎉 All examples completed successfully!');
   } catch (error) {
     console.error('❌ Example failed:', error);

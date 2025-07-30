@@ -1,6 +1,6 @@
 /**
  * Configuration Documentation Generator
- * 
+ *
  * Automatically generates comprehensive documentation for configuration
  * schemas including examples, validation rules, and deployment guides.
  */
@@ -111,7 +111,7 @@ export interface ValidationRuleDoc {
 
 /**
  * Configuration Documentation Generator
- * 
+ *
  * Generates comprehensive documentation from configuration schemas
  * with examples, validation rules, and deployment guides.
  */
@@ -127,18 +127,19 @@ export class ConfigDocumentationGenerator {
   ): Promise<SchemaDocumentation> {
     this.logger.info('Generating configuration documentation', {
       format: options.format,
-      outputPath: options.outputPath
+      outputPath: options.outputPath,
     });
 
     const documentation: SchemaDocumentation = {
       title: 'SYMindX Configuration Reference',
-      description: 'Comprehensive configuration guide for the SYMindX AI agent runtime system',
+      description:
+        'Comprehensive configuration guide for the SYMindX AI agent runtime system',
       version: '1.0.0',
       sections: [],
       examples: [],
       environmentVariables: [],
       validationRules: [],
-      generatedAt: new Date()
+      generatedAt: new Date(),
     };
 
     // Generate sections from schema
@@ -153,7 +154,8 @@ export class ConfigDocumentationGenerator {
 
     // Generate environment variables documentation
     if (options.includeEnvironmentVars) {
-      documentation.environmentVariables = this.generateEnvironmentVariables(schema);
+      documentation.environmentVariables =
+        this.generateEnvironmentVariables(schema);
     }
 
     // Generate validation rules documentation
@@ -167,7 +169,7 @@ export class ConfigDocumentationGenerator {
     this.logger.info('Configuration documentation generated successfully', {
       sections: documentation.sections.length,
       examples: documentation.examples.length,
-      envVars: documentation.environmentVariables.length
+      envVars: documentation.environmentVariables.length,
     });
 
     return documentation;
@@ -181,35 +183,35 @@ export class ConfigDocumentationGenerator {
       {
         name: 'development',
         title: 'Development Environment Setup',
-        config: this.getExampleConfig('development')
+        config: this.getExampleConfig('development'),
       },
       {
         name: 'production',
         title: 'Production Deployment Guide',
-        config: this.getExampleConfig('production')
+        config: this.getExampleConfig('production'),
       },
       {
         name: 'docker',
         title: 'Docker Deployment',
-        config: this.getDockerConfig()
+        config: this.getDockerConfig(),
       },
       {
         name: 'kubernetes',
         title: 'Kubernetes Deployment',
-        config: this.getKubernetesConfig()
-      }
+        config: this.getKubernetesConfig(),
+      },
     ];
 
     for (const guide of guides) {
       const content = this.generateDeploymentGuide(guide.title, guide.config);
       const filePath = resolve(outputDir, `${guide.name}-deployment.md`);
-      
+
       this.ensureDirectoryExists(dirname(filePath));
       writeFileSync(filePath, content);
-      
+
       this.logger.debug('Deployment guide generated', {
         name: guide.name,
-        filePath
+        filePath,
       });
     }
 
@@ -221,12 +223,12 @@ export class ConfigDocumentationGenerator {
    */
   public async generateConfigTemplates(outputDir: string): Promise<void> {
     const environments = ['development', 'testing', 'staging', 'production'];
-    
+
     for (const env of environments) {
       const config = this.getExampleConfig(env as any);
       const content = JSON.stringify(config, null, 2);
       const filePath = resolve(outputDir, `config.${env}.json`);
-      
+
       this.ensureDirectoryExists(dirname(filePath));
       writeFileSync(filePath, content);
     }
@@ -241,7 +243,9 @@ export class ConfigDocumentationGenerator {
 
   // Private methods
 
-  private generateSections(properties: Record<string, SchemaDefinition>): DocumentationSection[] {
+  private generateSections(
+    properties: Record<string, SchemaDefinition>
+  ): DocumentationSection[] {
     const sections: DocumentationSection[] = [];
 
     for (const [propName, propSchema] of Object.entries(properties)) {
@@ -249,26 +253,28 @@ export class ConfigDocumentationGenerator {
         id: propName,
         title: this.formatTitle(propName),
         description: propSchema.description || `Configuration for ${propName}`,
-        properties: []
+        properties: [],
       };
 
       if (propSchema.type === 'object' && propSchema.properties) {
         // Generate nested properties
         section.properties = this.generateProperties(propSchema.properties);
-        
+
         // Generate subsections for complex nested objects
         section.subsections = this.generateSubsections(propSchema.properties);
       } else {
         // Single property
-        section.properties = [{
-          name: propName,
-          type: propSchema.type || 'any',
-          description: propSchema.description || '',
-          required: propSchema.required || false,
-          default: propSchema.default,
-          examples: propSchema.enum || [],
-          validation: this.extractValidationInfo(propSchema)
-        }];
+        section.properties = [
+          {
+            name: propName,
+            type: propSchema.type || 'any',
+            description: propSchema.description || '',
+            required: propSchema.required || false,
+            default: propSchema.default,
+            examples: propSchema.enum || [],
+            validation: this.extractValidationInfo(propSchema),
+          },
+        ];
       }
 
       sections.push(section);
@@ -277,20 +283,23 @@ export class ConfigDocumentationGenerator {
     return sections;
   }
 
-  private generateProperties(properties: Record<string, SchemaDefinition>): PropertyDoc[] {
+  private generateProperties(
+    properties: Record<string, SchemaDefinition>
+  ): PropertyDoc[] {
     const props: PropertyDoc[] = [];
 
     for (const [propName, propSchema] of Object.entries(properties)) {
       const prop: PropertyDoc = {
         name: propName,
         type: propSchema.type || 'any',
-        description: propSchema.description || `Configuration property: ${propName}`,
+        description:
+          propSchema.description || `Configuration property: ${propName}`,
         required: propSchema.required || false,
         default: propSchema.default,
         examples: propSchema.enum ? [propSchema.enum[0]] : undefined,
         validation: this.extractValidationInfo(propSchema),
         environmentVariable: this.getEnvironmentVariable(propName),
-        sensitive: this.isSensitiveProperty(propName)
+        sensitive: this.isSensitiveProperty(propName),
       };
 
       props.push(prop);
@@ -299,7 +308,9 @@ export class ConfigDocumentationGenerator {
     return props;
   }
 
-  private generateSubsections(properties: Record<string, SchemaDefinition>): DocumentationSection[] {
+  private generateSubsections(
+    properties: Record<string, SchemaDefinition>
+  ): DocumentationSection[] {
     const subsections: DocumentationSection[] = [];
 
     for (const [propName, propSchema] of Object.entries(properties)) {
@@ -307,8 +318,9 @@ export class ConfigDocumentationGenerator {
         const subsection: DocumentationSection = {
           id: propName,
           title: this.formatTitle(propName),
-          description: propSchema.description || `${propName} configuration options`,
-          properties: this.generateProperties(propSchema.properties)
+          description:
+            propSchema.description || `${propName} configuration options`,
+          properties: this.generateProperties(propSchema.properties),
         };
 
         subsections.push(subsection);
@@ -328,8 +340,8 @@ export class ConfigDocumentationGenerator {
         notes: [
           'Uses default settings optimized for development',
           'Hot reload enabled for rapid iteration',
-          'Debug logging enabled'
-        ]
+          'Debug logging enabled',
+        ],
       },
       {
         name: 'Production Deployment',
@@ -339,8 +351,8 @@ export class ConfigDocumentationGenerator {
         notes: [
           'Security features enabled',
           'Performance optimization active',
-          'Monitoring and metrics enabled'
-        ]
+          'Monitoring and metrics enabled',
+        ],
       },
       {
         name: 'Multi-Agent Setup',
@@ -350,26 +362,29 @@ export class ConfigDocumentationGenerator {
         notes: [
           'Multiple AI providers configured',
           'Load balancing enabled',
-          'Distributed coordination'
-        ]
-      }
+          'Distributed coordination',
+        ],
+      },
     ];
   }
 
-  private generateEnvironmentVariables(schema: SchemaDefinition): EnvironmentVariableDoc[] {
+  private generateEnvironmentVariables(
+    schema: SchemaDefinition
+  ): EnvironmentVariableDoc[] {
     const envVars: EnvironmentVariableDoc[] = [];
 
     // Common environment variables
     const commonVars = [
       {
         name: 'NODE_ENV',
-        description: 'Runtime environment (development, testing, staging, production)',
+        description:
+          'Runtime environment (development, testing, staging, production)',
         configPath: 'runtime.environment',
         type: 'string',
         required: false,
         default: 'development',
         example: 'production',
-        sensitive: false
+        sensitive: false,
       },
       {
         name: 'SYMINDX_LOG_LEVEL',
@@ -379,7 +394,7 @@ export class ConfigDocumentationGenerator {
         required: false,
         default: 'info',
         example: 'debug',
-        sensitive: false
+        sensitive: false,
       },
       {
         name: 'SYMINDX_DATA_PATH',
@@ -389,8 +404,8 @@ export class ConfigDocumentationGenerator {
         required: false,
         default: './data',
         example: '/var/lib/symindx',
-        sensitive: false
-      }
+        sensitive: false,
+      },
     ];
 
     envVars.push(...commonVars);
@@ -402,7 +417,7 @@ export class ConfigDocumentationGenerator {
       'GROQ_API_KEY',
       'XAI_API_KEY',
       'GOOGLE_API_KEY',
-      'TELEGRAM_BOT_TOKEN'
+      'TELEGRAM_BOT_TOKEN',
     ];
 
     for (const keyName of apiKeys) {
@@ -413,65 +428,64 @@ export class ConfigDocumentationGenerator {
         type: 'string',
         required: false,
         example: 'sk-...',
-        sensitive: true
+        sensitive: true,
       });
     }
 
     return envVars;
   }
 
-  private generateValidationRules(schema: SchemaDefinition): ValidationRuleDoc[] {
+  private generateValidationRules(
+    schema: SchemaDefinition
+  ): ValidationRuleDoc[] {
     const rules: ValidationRuleDoc[] = [];
 
-    const extractRules = (
-      obj: SchemaDefinition,
-      path: string = ''
-    ): void => {
+    const extractRules = (obj: SchemaDefinition, path: string = ''): void => {
       if (obj.rules && obj.rules.length > 0) {
         rules.push({
           configPath: path,
-          rules: obj.rules.map(rule => ({
+          rules: obj.rules.map((rule) => ({
             name: rule.name,
-            description: rule.description || `Validation rule: ${rule.name}`
-          }))
+            description: rule.description || `Validation rule: ${rule.name}`,
+          })),
         });
       }
 
       // Extract constraint-based rules
       const constraintRules: Array<{ name: string; description: string }> = [];
-      
+
       if (obj.min !== undefined) {
         constraintRules.push({
           name: 'minimum',
-          description: `Value must be at least ${obj.min}`
+          description: `Value must be at least ${obj.min}`,
         });
       }
-      
+
       if (obj.max !== undefined) {
         constraintRules.push({
           name: 'maximum',
-          description: `Value must be at most ${obj.max}`
+          description: `Value must be at most ${obj.max}`,
         });
       }
-      
+
       if (obj.enum) {
         constraintRules.push({
           name: 'enum',
-          description: `Value must be one of: ${obj.enum.join(', ')}`
+          description: `Value must be one of: ${obj.enum.join(', ')}`,
         });
       }
-      
+
       if (obj.pattern) {
         constraintRules.push({
           name: 'pattern',
-          description: `Value must match pattern: ${obj.pattern}`
+          description: `Value must match pattern: ${obj.pattern}`,
         });
       }
 
       if (constraintRules.length > 0) {
         rules.push({
           configPath: path,
-          rules: constraintRules
+          rules: constraintRules,
         });
       }
 
@@ -544,9 +558,9 @@ export class ConfigDocumentationGenerator {
 
         for (const prop of section.properties) {
           const required = prop.required ? '✅' : '❌';
-          const defaultValue = prop.default !== undefined ? 
-            JSON.stringify(prop.default) : '-';
-          
+          const defaultValue =
+            prop.default !== undefined ? JSON.stringify(prop.default) : '-';
+
           md += `| ${prop.name} | \`${prop.type}\` | ${required} | \`${defaultValue}\` | ${prop.description} |\n`;
         }
         md += '\n';
@@ -563,9 +577,9 @@ export class ConfigDocumentationGenerator {
 
             for (const prop of subsection.properties) {
               const required = prop.required ? '✅' : '❌';
-              const defaultValue = prop.default !== undefined ? 
-                JSON.stringify(prop.default) : '-';
-              
+              const defaultValue =
+                prop.default !== undefined ? JSON.stringify(prop.default) : '-';
+
               md += `| ${prop.name} | \`${prop.type}\` | ${required} | \`${defaultValue}\` | ${prop.description} |\n`;
             }
             md += '\n';
@@ -577,12 +591,12 @@ export class ConfigDocumentationGenerator {
     // Examples
     if (doc.examples.length > 0) {
       md += '## Configuration Examples\n\n';
-      
+
       for (const example of doc.examples) {
         md += `### ${example.name}\n\n`;
         md += `${example.description}\n\n`;
         md += `**Environment:** ${example.environment}\n\n`;
-        
+
         md += '```json\n';
         md += JSON.stringify(example.config, null, 2);
         md += '\n```\n\n';
@@ -600,8 +614,10 @@ export class ConfigDocumentationGenerator {
     // Environment Variables
     if (doc.environmentVariables.length > 0) {
       md += '## Environment Variables\n\n';
-      md += '| Variable | Description | Type | Required | Default | Sensitive |\n';
-      md += '|----------|-------------|------|----------|---------|----------|\n';
+      md +=
+        '| Variable | Description | Type | Required | Default | Sensitive |\n';
+      md +=
+        '|----------|-------------|------|----------|---------|----------|\n';
 
       for (const envVar of doc.environmentVariables) {
         const required = envVar.required ? '✅' : '❌';
@@ -639,7 +655,11 @@ export class ConfigDocumentationGenerator {
     <p><strong>Version:</strong> ${doc.version}</p>
     
     <h2>Configuration Structure</h2>
-    <pre><code>${JSON.stringify(doc.sections.map(s => s.id), null, 2)}</code></pre>
+    <pre><code>${JSON.stringify(
+      doc.sections.map((s) => s.id),
+      null,
+      2
+    )}</code></pre>
 </body>
 </html>`;
   }
@@ -647,13 +667,13 @@ export class ConfigDocumentationGenerator {
   private generateYAML(doc: SchemaDocumentation): string {
     // Simple YAML generation - would need proper YAML library for production
     const yamlLines: string[] = [];
-    
+
     yamlLines.push(`title: "${doc.title}"`);
     yamlLines.push(`description: "${doc.description}"`);
     yamlLines.push(`version: "${doc.version}"`);
     yamlLines.push(`generated: "${doc.generatedAt.toISOString()}"`);
     yamlLines.push('sections:');
-    
+
     for (const section of doc.sections) {
       yamlLines.push(`  - id: "${section.id}"`);
       yamlLines.push(`    title: "${section.title}"`);
@@ -663,14 +683,16 @@ export class ConfigDocumentationGenerator {
     return yamlLines.join('\n');
   }
 
-  private getExampleConfig(environment: 'development' | 'testing' | 'staging' | 'production'): Partial<UnifiedConfig> {
+  private getExampleConfig(
+    environment: 'development' | 'testing' | 'staging' | 'production'
+  ): Partial<UnifiedConfig> {
     const baseConfig: Partial<UnifiedConfig> = {
       runtime: {
         environment,
         tickInterval: 1000,
         maxAgents: environment === 'production' ? 50 : 10,
         logLevel: environment === 'production' ? 'info' : 'debug',
-        version: '1.0.0'
+        version: '1.0.0',
       },
       persistence: {
         enabled: true,
@@ -678,15 +700,15 @@ export class ConfigDocumentationGenerator {
         autoSave: true,
         saveInterval: environment === 'production' ? 60000 : 30000,
         maxBackups: environment === 'production' ? 10 : 5,
-        compression: environment === 'production'
+        compression: environment === 'production',
       },
       development: {
         hotReload: environment === 'development',
         debugMode: environment === 'development',
         verboseLogging: environment === 'development',
         mockExternalServices: environment === 'testing',
-        testMode: environment === 'testing'
-      }
+        testMode: environment === 'testing',
+      },
     };
 
     return baseConfig;
@@ -699,7 +721,7 @@ export class ConfigDocumentationGenerator {
         maxConcurrentAgents: 10,
         coordinationStrategy: 'hybrid',
         messagingProtocol: 'pubsub',
-        loadBalancing: true
+        loadBalancing: true,
       },
       performance: {
         enableMetrics: true,
@@ -708,8 +730,8 @@ export class ConfigDocumentationGenerator {
         cpuThreshold: 70,
         enableProfiling: true,
         cacheSize: 2000,
-        gcStrategy: 'balanced'
-      }
+        gcStrategy: 'balanced',
+      },
     };
   }
 
@@ -720,7 +742,7 @@ export class ConfigDocumentationGenerator {
         tickInterval: 1000,
         maxAgents: 20,
         logLevel: 'info',
-        version: '1.0.0'
+        version: '1.0.0',
       },
       persistence: {
         enabled: true,
@@ -728,8 +750,8 @@ export class ConfigDocumentationGenerator {
         autoSave: true,
         saveInterval: 60000,
         maxBackups: 5,
-        compression: true
-      }
+        compression: true,
+      },
     };
   }
 
@@ -740,7 +762,7 @@ export class ConfigDocumentationGenerator {
         tickInterval: 1000,
         maxAgents: 100,
         logLevel: 'info',
-        version: '1.0.0'
+        version: '1.0.0',
       },
       persistence: {
         enabled: true,
@@ -748,19 +770,22 @@ export class ConfigDocumentationGenerator {
         autoSave: true,
         saveInterval: 30000,
         maxBackups: 10,
-        compression: true
+        compression: true,
       },
       multiAgent: {
         enabled: true,
         maxConcurrentAgents: 50,
         coordinationStrategy: 'distributed',
         messagingProtocol: 'queue',
-        loadBalancing: true
-      }
+        loadBalancing: true,
+      },
     };
   }
 
-  private generateDeploymentGuide(title: string, config: Partial<UnifiedConfig>): string {
+  private generateDeploymentGuide(
+    title: string,
+    config: Partial<UnifiedConfig>
+  ): string {
     return `# ${title}
 
 ## Configuration
@@ -819,12 +844,14 @@ SYMINDX_HOT_RELOAD=true
 `;
   }
 
-  private extractValidationInfo(schema: SchemaDefinition): PropertyDoc['validation'] | undefined {
+  private extractValidationInfo(
+    schema: SchemaDefinition
+  ): PropertyDoc['validation'] | undefined {
     const rules: string[] = [];
     const constraints: Record<string, unknown> = {};
 
     if (schema.rules) {
-      rules.push(...schema.rules.map(rule => rule.name));
+      rules.push(...schema.rules.map((rule) => rule.name));
     }
 
     if (schema.min !== undefined) {
@@ -852,13 +879,13 @@ SYMINDX_HOT_RELOAD=true
 
   private getEnvironmentVariable(propName: string): string | undefined {
     const envMappings: Record<string, string> = {
-      'logLevel': 'SYMINDX_LOG_LEVEL',
-      'tickInterval': 'SYMINDX_TICK_INTERVAL',
-      'maxAgents': 'SYMINDX_MAX_AGENTS',
-      'environment': 'NODE_ENV',
-      'path': 'SYMINDX_DATA_PATH',
-      'debugMode': 'SYMINDX_DEBUG',
-      'hotReload': 'SYMINDX_HOT_RELOAD'
+      logLevel: 'SYMINDX_LOG_LEVEL',
+      tickInterval: 'SYMINDX_TICK_INTERVAL',
+      maxAgents: 'SYMINDX_MAX_AGENTS',
+      environment: 'NODE_ENV',
+      path: 'SYMINDX_DATA_PATH',
+      debugMode: 'SYMINDX_DEBUG',
+      hotReload: 'SYMINDX_HOT_RELOAD',
     };
 
     return envMappings[propName];
@@ -872,10 +899,10 @@ SYMINDX_HOT_RELOAD=true
       'password',
       'key',
       'encryptionKey',
-      'jwtSecret'
+      'jwtSecret',
     ];
 
-    return sensitiveProps.some(sensitive => 
+    return sensitiveProps.some((sensitive) =>
       propName.toLowerCase().includes(sensitive.toLowerCase())
     );
   }
@@ -883,7 +910,7 @@ SYMINDX_HOT_RELOAD=true
   private formatTitle(str: string): string {
     return str
       .replace(/([A-Z])/g, ' $1')
-      .replace(/^./, str => str.toUpperCase())
+      .replace(/^./, (str) => str.toUpperCase())
       .trim();
   }
 

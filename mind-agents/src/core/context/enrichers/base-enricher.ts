@@ -1,6 +1,6 @@
 /**
  * Base Context Enricher for SYMindX
- * 
+ *
  * This module provides the base implementation for context enrichers,
  * including common functionality like initialization, health checking,
  * and configuration management.
@@ -21,7 +21,7 @@ import { runtimeLogger } from '../../../utils/logger';
 
 /**
  * Abstract base class for context enrichers
- * 
+ *
  * Provides common functionality and enforces the enricher interface.
  * Concrete enrichers should extend this class and implement the abstract methods.
  */
@@ -43,7 +43,7 @@ export abstract class BaseContextEnricher implements ContextEnricher {
     this.id = id;
     this.name = name;
     this.version = version;
-    
+
     // Merge with default configuration
     this.config = {
       enabled: true,
@@ -108,12 +108,13 @@ export abstract class BaseContextEnricher implements ContextEnricher {
         message: `Enricher '${this.id}' initialized successfully`,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       runtimeLogger.error('Failed to initialize enricher', {
         enricherId: this.id,
         error: errorMessage,
       });
-      
+
       return {
         success: false,
         error: errorMessage,
@@ -126,7 +127,7 @@ export abstract class BaseContextEnricher implements ContextEnricher {
    */
   async enrich(request: EnrichmentRequest): Promise<ContextEnrichmentResult> {
     const startTime = Date.now();
-    
+
     try {
       if (!this.isInitialized) {
         throw new Error(`Enricher '${this.id}' is not initialized`);
@@ -191,8 +192,9 @@ export abstract class BaseContextEnricher implements ContextEnricher {
       return result;
     } catch (error) {
       const duration = Date.now() - startTime;
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+
       runtimeLogger.error('Context enrichment failed', {
         enricherId: this.id,
         agentId: request.agentId,
@@ -252,7 +254,7 @@ export abstract class BaseContextEnricher implements ContextEnricher {
 
       // Perform enricher-specific health check
       const healthResult = await this.doHealthCheck();
-      
+
       return {
         success: healthResult.success,
         error: healthResult.error,
@@ -268,7 +270,8 @@ export abstract class BaseContextEnricher implements ContextEnricher {
         },
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       return {
         success: false,
         error: errorMessage,
@@ -307,12 +310,13 @@ export abstract class BaseContextEnricher implements ContextEnricher {
         message: `Enricher '${this.id}' disposed successfully`,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       runtimeLogger.error('Failed to dispose enricher', {
         enricherId: this.id,
         error: errorMessage,
       });
-      
+
       return {
         success: false,
         error: errorMessage,
@@ -340,7 +344,9 @@ export abstract class BaseContextEnricher implements ContextEnricher {
   /**
    * Perform the actual context enrichment
    */
-  protected abstract doEnrich(request: EnrichmentRequest): Promise<Record<string, unknown>>;
+  protected abstract doEnrich(
+    request: EnrichmentRequest
+  ): Promise<Record<string, unknown>>;
 
   /**
    * Perform enricher-specific checks for context compatibility
@@ -393,11 +399,14 @@ export abstract class BaseContextEnricher implements ContextEnricher {
   /**
    * Calculate confidence score for the enrichment result
    */
-  protected calculateConfidence(context: Context, enrichedData: Record<string, unknown>): number {
+  protected calculateConfidence(
+    context: Context,
+    enrichedData: Record<string, unknown>
+  ): number {
     // Default confidence calculation - can be overridden by concrete enrichers
     const contextSize = Object.keys(context).length;
     const enrichedSize = Object.keys(enrichedData).length;
-    
+
     if (enrichedSize === 0) {
       return 0;
     }
@@ -417,7 +426,11 @@ export abstract class BaseContextEnricher implements ContextEnricher {
   /**
    * Log enricher-specific information
    */
-  protected log(level: 'debug' | 'info' | 'warn' | 'error', message: string, metadata?: Record<string, unknown>): void {
+  protected log(
+    level: 'debug' | 'info' | 'warn' | 'error',
+    message: string,
+    metadata?: Record<string, unknown>
+  ): void {
     runtimeLogger[level](message, {
       enricherId: this.id,
       enricherName: this.name,

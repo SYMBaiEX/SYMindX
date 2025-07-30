@@ -1,7 +1,7 @@
 /**
  * @module observability/metrics-collector
  * @description Enhanced metrics collection system for SYMindX
- * 
+ *
  * Integrates with existing performance monitor to provide comprehensive
  * metrics collection with minimal overhead and intelligent aggregation.
  */
@@ -9,19 +9,19 @@
 import { EventEmitter } from 'events';
 import { performance } from 'perf_hooks';
 
-import type { 
+import type {
   ObservabilityConfig,
   ObservabilityMetrics,
   MetricType,
   TraceContext,
-  ObservabilityEvent 
+  ObservabilityEvent,
 } from './types.js';
 import { OBSERVABILITY_CONSTANTS } from './constants.js';
-import { 
+import {
   performanceMonitor,
   PerformanceMonitor,
   type AgentMetrics,
-  type SystemMetrics 
+  type SystemMetrics,
 } from '../../utils/performance-monitor.js';
 import { healthMonitor } from '../../utils/health-monitor.js';
 import { runtimeLogger } from '../../utils/logger.js';
@@ -33,13 +33,20 @@ class MetricAggregator {
   private buckets = new Map<string, number[]>();
   private counters = new Map<string, number>();
   private gauges = new Map<string, number>();
-  private histograms = new Map<string, { sum: number; count: number; buckets: Map<number, number> }>();
+  private histograms = new Map<
+    string,
+    { sum: number; count: number; buckets: Map<number, number> }
+  >();
   private readonly maxBucketSize = 1000;
 
   /**
    * Record a counter metric
    */
-  public recordCounter(name: string, value: number = 1, labels: Record<string, string> = {}): void {
+  public recordCounter(
+    name: string,
+    value: number = 1,
+    labels: Record<string, string> = {}
+  ): void {
     const key = this.createMetricKey(name, labels);
     this.counters.set(key, (this.counters.get(key) || 0) + value);
   }
@@ -47,7 +54,11 @@ class MetricAggregator {
   /**
    * Record a gauge metric
    */
-  public recordGauge(name: string, value: number, labels: Record<string, string> = {}): void {
+  public recordGauge(
+    name: string,
+    value: number,
+    labels: Record<string, string> = {}
+  ): void {
     const key = this.createMetricKey(name, labels);
     this.gauges.set(key, value);
   }
@@ -55,18 +66,32 @@ class MetricAggregator {
   /**
    * Record a histogram metric
    */
-  public recordHistogram(name: string, value: number, labels: Record<string, string> = {}): void {
+  public recordHistogram(
+    name: string,
+    value: number,
+    labels: Record<string, string> = {}
+  ): void {
     const key = this.createMetricKey(name, labels);
-    
+
     if (!this.histograms.has(key)) {
       this.histograms.set(key, {
         sum: 0,
         count: 0,
         buckets: new Map([
-          [1, 0], [5, 0], [10, 0], [25, 0], [50, 0], [100, 0],
-          [250, 0], [500, 0], [1000, 0], [2500, 0], [5000, 0], [10000, 0],
-          [Infinity, 0]
-        ])
+          [1, 0],
+          [5, 0],
+          [10, 0],
+          [25, 0],
+          [50, 0],
+          [100, 0],
+          [250, 0],
+          [500, 0],
+          [1000, 0],
+          [2500, 0],
+          [5000, 0],
+          [10000, 0],
+          [Infinity, 0],
+        ]),
       });
     }
 
@@ -85,7 +110,11 @@ class MetricAggregator {
   /**
    * Record a timing metric
    */
-  public recordTiming(name: string, duration: number, labels: Record<string, string> = {}): void {
+  public recordTiming(
+    name: string,
+    duration: number,
+    labels: Record<string, string> = {}
+  ): void {
     this.recordHistogram(`${name}_duration`, duration, labels);
     this.recordCounter(`${name}_total`, 1, labels);
   }
@@ -96,7 +125,10 @@ class MetricAggregator {
   public getMetrics(): {
     counters: Map<string, number>;
     gauges: Map<string, number>;
-    histograms: Map<string, { sum: number; count: number; buckets: Map<number, number> }>;
+    histograms: Map<
+      string,
+      { sum: number; count: number; buckets: Map<number, number> }
+    >;
   } {
     return {
       counters: new Map(this.counters),
@@ -118,16 +150,19 @@ class MetricAggregator {
   /**
    * Create metric key with labels
    */
-  private createMetricKey(name: string, labels: Record<string, string>): string {
+  private createMetricKey(
+    name: string,
+    labels: Record<string, string>
+  ): string {
     if (Object.keys(labels).length === 0) {
       return name;
     }
-    
+
     const labelStr = Object.entries(labels)
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([key, value]) => `${key}="${value}"`)
       .join(',');
-    
+
     return `${name}{${labelStr}}`;
   }
 }
@@ -144,11 +179,11 @@ class AgentMetricsCollector {
    */
   public startAgentOperation(agentId: string, operation: string): string {
     const operationId = `${agentId}_${operation}_${Date.now()}`;
-    
+
     if (!this.agentTimers.has(agentId)) {
       this.agentTimers.set(agentId, new Map());
     }
-    
+
     this.agentTimers.get(agentId)!.set(operationId, performance.now());
     return operationId;
   }
@@ -172,7 +207,11 @@ class AgentMetricsCollector {
   /**
    * Record agent counter
    */
-  public recordAgentCounter(agentId: string, counter: string, value: number = 1): void {
+  public recordAgentCounter(
+    agentId: string,
+    counter: string,
+    value: number = 1
+  ): void {
     if (!this.agentCounters.has(agentId)) {
       this.agentCounters.set(agentId, {});
     }
@@ -213,13 +252,16 @@ class AgentMetricsCollector {
  * Portal-specific metrics collector
  */
 class PortalMetricsCollector {
-  private portalMetrics = new Map<string, {
-    requestCount: number;
-    errorCount: number;
-    totalLatency: number;
-    tokenUsage: number;
-    modelUsage: Map<string, number>;
-  }>();
+  private portalMetrics = new Map<
+    string,
+    {
+      requestCount: number;
+      errorCount: number;
+      totalLatency: number;
+      tokenUsage: number;
+      modelUsage: Map<string, number>;
+    }
+  >();
 
   /**
    * Record portal request
@@ -258,20 +300,25 @@ class PortalMetricsCollector {
   /**
    * Get portal metrics
    */
-  public getPortalMetrics(portalId: string): {
-    requestCount: number;
-    errorCount: number;
-    averageLatency: number;
-    tokenUsage: number;
-    modelUsage: Record<string, number>;
-  } | undefined {
+  public getPortalMetrics(portalId: string):
+    | {
+        requestCount: number;
+        errorCount: number;
+        averageLatency: number;
+        tokenUsage: number;
+        modelUsage: Record<string, number>;
+      }
+    | undefined {
     const metrics = this.portalMetrics.get(portalId);
     if (!metrics) return undefined;
 
     return {
       requestCount: metrics.requestCount,
       errorCount: metrics.errorCount,
-      averageLatency: metrics.requestCount > 0 ? metrics.totalLatency / metrics.requestCount : 0,
+      averageLatency:
+        metrics.requestCount > 0
+          ? metrics.totalLatency / metrics.requestCount
+          : 0,
       tokenUsage: metrics.tokenUsage,
       modelUsage: Object.fromEntries(metrics.modelUsage),
     };
@@ -280,23 +327,29 @@ class PortalMetricsCollector {
   /**
    * Get all portal metrics
    */
-  public getAllPortalMetrics(): Record<string, {
-    requestCount: number;
-    errorCount: number;
-    averageLatency: number;
-    tokenUsage: number;
-  }> {
+  public getAllPortalMetrics(): Record<
+    string,
+    {
+      requestCount: number;
+      errorCount: number;
+      averageLatency: number;
+      tokenUsage: number;
+    }
+  > {
     const result: Record<string, any> = {};
-    
+
     for (const [portalId, metrics] of this.portalMetrics) {
       result[portalId] = {
         requestCount: metrics.requestCount,
         errorCount: metrics.errorCount,
-        averageLatency: metrics.requestCount > 0 ? metrics.totalLatency / metrics.requestCount : 0,
+        averageLatency:
+          metrics.requestCount > 0
+            ? metrics.totalLatency / metrics.requestCount
+            : 0,
         tokenUsage: metrics.tokenUsage,
       };
     }
-    
+
     return result;
   }
 
@@ -382,7 +435,7 @@ export class MetricsCollector extends EventEmitter {
 
     const labels = {
       trace_id: context.traceId.slice(-8), // Last 8 chars for cardinality control
-      operation: context.metadata.operationName as string || 'unknown',
+      operation: (context.metadata.operationName as string) || 'unknown',
     };
 
     switch (metricType) {
@@ -449,7 +502,7 @@ export class MetricsCollector extends EventEmitter {
   public getMetrics(): ObservabilityMetrics {
     const systemMetrics = performanceMonitor.getSystemMetrics();
     const healthDashboard = healthMonitor.getHealthDashboard();
-    
+
     return {
       system: {
         memory: systemMetrics.memory,
@@ -464,21 +517,22 @@ export class MetricsCollector extends EventEmitter {
       health: {
         overall: healthDashboard.overall,
         components: Object.fromEntries(
-          healthDashboard.components.map(component => [
+          healthDashboard.components.map((component) => [
             component.componentId,
             {
               status: component.status as any,
               responseTime: component.responseTime || 0,
               uptime: component.details?.uptime || 0,
-            }
+            },
           ])
         ),
       },
       observability: {
         logEntriesPerSecond: this.calculateLogRate(),
-        metricsCollected: this.aggregator.getMetrics().counters.size +
-                         this.aggregator.getMetrics().gauges.size +
-                         this.aggregator.getMetrics().histograms.size,
+        metricsCollected:
+          this.aggregator.getMetrics().counters.size +
+          this.aggregator.getMetrics().gauges.size +
+          this.aggregator.getMetrics().histograms.size,
         tracesGenerated: 0, // Would be provided by tracing system
         alertsTriggered: healthDashboard.recentAlerts.length,
         overheadMs: this.calculateOverhead(),
@@ -511,15 +565,16 @@ export class MetricsCollector extends EventEmitter {
     for (const [key, histogram] of metrics.histograms) {
       const [name, labels] = this.parseMetricKey(key);
       lines.push(`# TYPE ${name} histogram`);
-      
+
       // Export buckets
       for (const [bucket, count] of histogram.buckets) {
-        const bucketLabels = labels 
-          ? labels.slice(0, -1) + `,le="${bucket === Infinity ? '+Inf' : bucket}"}` 
+        const bucketLabels = labels
+          ? labels.slice(0, -1) +
+            `,le="${bucket === Infinity ? '+Inf' : bucket}"}`
           : `{le="${bucket === Infinity ? '+Inf' : bucket}"}`;
         lines.push(`${name}_bucket${bucketLabels} ${count}`);
       }
-      
+
       // Export sum and count
       lines.push(`${name}_sum${labels} ${histogram.sum}`);
       lines.push(`${name}_count${labels} ${histogram.count}`);
@@ -535,7 +590,7 @@ export class MetricsCollector extends EventEmitter {
     this.aggregator.reset();
     this.agentCollector.resetAgentMetrics();
     this.portalCollector.resetPortalMetrics();
-    
+
     runtimeLogger.info('Metrics reset');
   }
 
@@ -556,7 +611,9 @@ export class MetricsCollector extends EventEmitter {
   /**
    * Record agent event
    */
-  private recordAgentEvent(event: ObservabilityEvent & { type: 'agent' }): void {
+  private recordAgentEvent(
+    event: ObservabilityEvent & { type: 'agent' }
+  ): void {
     const labels = { agent_id: event.agentId, operation: event.operation };
 
     this.aggregator.recordCounter(
@@ -574,10 +631,11 @@ export class MetricsCollector extends EventEmitter {
     }
 
     if (event.duration !== undefined) {
-      const metricName = event.operation === 'think' 
-        ? OBSERVABILITY_CONSTANTS.METRICS.AGENT_THINK_TIME
-        : OBSERVABILITY_CONSTANTS.METRICS.AGENT_RESPONSE_TIME;
-      
+      const metricName =
+        event.operation === 'think'
+          ? OBSERVABILITY_CONSTANTS.METRICS.AGENT_THINK_TIME
+          : OBSERVABILITY_CONSTANTS.METRICS.AGENT_RESPONSE_TIME;
+
       this.aggregator.recordHistogram(metricName, event.duration, labels);
     }
   }
@@ -585,7 +643,9 @@ export class MetricsCollector extends EventEmitter {
   /**
    * Record portal event
    */
-  private recordPortalEvent(event: ObservabilityEvent & { type: 'portal' }): void {
+  private recordPortalEvent(
+    event: ObservabilityEvent & { type: 'portal' }
+  ): void {
     const labels = { portal_id: event.portalId };
     if (event.model) {
       labels['model'] = event.model;
@@ -634,8 +694,13 @@ export class MetricsCollector extends EventEmitter {
   /**
    * Record extension event
    */
-  private recordExtensionEvent(event: ObservabilityEvent & { type: 'extension' }): void {
-    const labels = { extension_id: event.extensionId, operation: event.operation };
+  private recordExtensionEvent(
+    event: ObservabilityEvent & { type: 'extension' }
+  ): void {
+    const labels = {
+      extension_id: event.extensionId,
+      operation: event.operation,
+    };
 
     this.aggregator.recordCounter(
       OBSERVABILITY_CONSTANTS.METRICS.EXTENSION_MESSAGES_TOTAL,
@@ -663,8 +728,13 @@ export class MetricsCollector extends EventEmitter {
   /**
    * Record memory event
    */
-  private recordMemoryEvent(event: ObservabilityEvent & { type: 'memory' }): void {
-    const labels = { provider_id: event.providerId, operation: event.operation };
+  private recordMemoryEvent(
+    event: ObservabilityEvent & { type: 'memory' }
+  ): void {
+    const labels = {
+      provider_id: event.providerId,
+      operation: event.operation,
+    };
 
     this.aggregator.recordCounter(
       OBSERVABILITY_CONSTANTS.METRICS.MEMORY_OPERATIONS_TOTAL,
@@ -684,8 +754,13 @@ export class MetricsCollector extends EventEmitter {
   /**
    * Record health event
    */
-  private recordHealthEvent(event: ObservabilityEvent & { type: 'health' }): void {
-    const labels = { component_id: event.componentId, operation: event.operation };
+  private recordHealthEvent(
+    event: ObservabilityEvent & { type: 'health' }
+  ): void {
+    const labels = {
+      component_id: event.componentId,
+      operation: event.operation,
+    };
 
     this.aggregator.recordCounter(
       OBSERVABILITY_CONSTANTS.METRICS.HEALTH_CHECKS_TOTAL,
@@ -713,7 +788,9 @@ export class MetricsCollector extends EventEmitter {
   /**
    * Record system event
    */
-  private recordSystemEvent(event: ObservabilityEvent & { type: 'system' }): void {
+  private recordSystemEvent(
+    event: ObservabilityEvent & { type: 'system' }
+  ): void {
     const labels = { operation: event.operation };
 
     if (event.value !== undefined) {
@@ -764,7 +841,10 @@ export class MetricsCollector extends EventEmitter {
       runtimeLogger.error('Failed to collect metrics', error as Error);
     } finally {
       const collectionTime = performance.now() - collectionStart;
-      this.aggregator.recordHistogram('metrics_collection_duration', collectionTime);
+      this.aggregator.recordHistogram(
+        'metrics_collection_duration',
+        collectionTime
+      );
       this.lastCollectionTime = collectionTime;
     }
   }
@@ -772,20 +852,23 @@ export class MetricsCollector extends EventEmitter {
   /**
    * Get agent metrics data
    */
-  private getAgentMetricsData(): Record<string, {
-    status: string;
-    thinkTime: number;
-    responseTime: number;
-    actionCount: number;
-    errorCount: number;
-    memoryUsage: number;
-  }> {
+  private getAgentMetricsData(): Record<
+    string,
+    {
+      status: string;
+      thinkTime: number;
+      responseTime: number;
+      actionCount: number;
+      errorCount: number;
+      memoryUsage: number;
+    }
+  > {
     const result: Record<string, any> = {};
     const agentMetrics = this.agentCollector.getAllAgentMetrics();
 
     for (const [agentId, metrics] of agentMetrics) {
       const performanceMetrics = performanceMonitor.getAgentMetrics(agentId);
-      
+
       result[agentId] = {
         status: 'active', // Would get from agent registry
         thinkTime: performanceMetrics?.thinkTime.average || 0,
@@ -802,12 +885,15 @@ export class MetricsCollector extends EventEmitter {
   /**
    * Get extension metrics data
    */
-  private getExtensionMetricsData(): Record<string, {
-    activeConnections: number;
-    messageCount: number;
-    errorCount: number;
-    latency: number;
-  }> {
+  private getExtensionMetricsData(): Record<
+    string,
+    {
+      activeConnections: number;
+      messageCount: number;
+      errorCount: number;
+      latency: number;
+    }
+  > {
     // Placeholder - would integrate with extension system
     return {};
   }
@@ -815,12 +901,15 @@ export class MetricsCollector extends EventEmitter {
   /**
    * Get memory metrics data
    */
-  private getMemoryMetricsData(): Record<string, {
-    operationCount: number;
-    averageLatency: number;
-    errorCount: number;
-    storageSize: number;
-  }> {
+  private getMemoryMetricsData(): Record<
+    string,
+    {
+      operationCount: number;
+      averageLatency: number;
+      errorCount: number;
+      storageSize: number;
+    }
+  > {
     // Placeholder - would integrate with memory providers
     return {};
   }
@@ -848,7 +937,7 @@ export class MetricsCollector extends EventEmitter {
     if (labelStart === -1) {
       return [key, ''];
     }
-    
+
     const name = key.substring(0, labelStart);
     const labels = key.substring(labelStart);
     return [name, labels];

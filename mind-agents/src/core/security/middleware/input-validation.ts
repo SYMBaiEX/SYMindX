@@ -28,10 +28,11 @@ export interface ValidationRule {
 export class InputValidator {
   private readonly config: ValidationConfig;
   private readonly commonPatterns = {
-    sqlInjection: /(\b(union|select|insert|update|delete|drop|create|alter|exec|execute|script|javascript|eval)\b)/gi,
+    sqlInjection:
+      /(\b(union|select|insert|update|delete|drop|create|alter|exec|execute|script|javascript|eval)\b)/gi,
     xss: /<script[^>]*>.*?<\/script>/gi,
     pathTraversal: /\.\.[\/\\]/g,
-    nullByte: /\0/g
+    nullByte: /\0/g,
   };
 
   constructor(config: Partial<ValidationConfig> = {}) {
@@ -42,7 +43,7 @@ export class InputValidator {
       maxObjectDepth: config.maxObjectDepth || 10,
       sanitizeHtml: config.sanitizeHtml !== false,
       preventSqlInjection: config.preventSqlInjection !== false,
-      customSanitizers: config.customSanitizers || {}
+      customSanitizers: config.customSanitizers || {},
     };
   }
 
@@ -54,15 +55,27 @@ export class InputValidator {
       try {
         // Validate each part of the request
         if (rules.body) {
-          req.body = await this.validateAndSanitize(req.body, rules.body, 'body');
+          req.body = await this.validateAndSanitize(
+            req.body,
+            rules.body,
+            'body'
+          );
         }
 
         if (rules.query) {
-          req.query = await this.validateAndSanitize(req.query, rules.query, 'query');
+          req.query = await this.validateAndSanitize(
+            req.query,
+            rules.query,
+            'query'
+          );
         }
 
         if (rules.params) {
-          req.params = await this.validateAndSanitize(req.params, rules.params, 'params');
+          req.params = await this.validateAndSanitize(
+            req.params,
+            rules.params,
+            'params'
+          );
         }
 
         if (rules.headers) {
@@ -81,14 +94,14 @@ export class InputValidator {
           return res.status(400).json({
             error: 'Validation failed',
             code: 'VALIDATION_ERROR',
-            details: this.formatZodError(error)
+            details: this.formatZodError(error),
           });
         }
 
         console.error('Validation error:', error);
         res.status(500).json({
           error: 'Internal validation error',
-          code: 'VALIDATION_INTERNAL_ERROR'
+          code: 'VALIDATION_INTERNAL_ERROR',
         });
       }
     };
@@ -142,9 +155,11 @@ export class InputValidator {
     // Handle arrays
     if (Array.isArray(obj)) {
       if (obj.length > this.config.maxArrayLength) {
-        throw new Error(`Array length exceeds maximum of ${this.config.maxArrayLength}`);
+        throw new Error(
+          `Array length exceeds maximum of ${this.config.maxArrayLength}`
+        );
       }
-      return obj.map(item => this.deepSanitize(item, depth + 1));
+      return obj.map((item) => this.deepSanitize(item, depth + 1));
     }
 
     // Handle objects
@@ -180,7 +195,7 @@ export class InputValidator {
     if (this.config.sanitizeHtml) {
       str = DOMPurify.sanitize(str, {
         ALLOWED_TAGS: [],
-        ALLOWED_ATTR: []
+        ALLOWED_ATTR: [],
       });
     }
 
@@ -218,10 +233,13 @@ export class InputValidator {
     const stringData = JSON.stringify(data);
 
     // Check for SQL injection patterns
-    if (this.config.preventSqlInjection && this.commonPatterns.sqlInjection.test(stringData)) {
+    if (
+      this.config.preventSqlInjection &&
+      this.commonPatterns.sqlInjection.test(stringData)
+    ) {
       // Log potential SQL injection attempt
       console.warn(`Potential SQL injection attempt in ${location}:`, data);
-      
+
       // Don't reject, but escape SQL strings
       this.escapeSqlStrings(data);
     }
@@ -241,7 +259,7 @@ export class InputValidator {
     }
 
     if (Array.isArray(obj)) {
-      return obj.map(item => this.escapeSqlStrings(item));
+      return obj.map((item) => this.escapeSqlStrings(item));
     }
 
     if (typeof obj === 'object' && obj !== null) {
@@ -257,10 +275,10 @@ export class InputValidator {
    * Format Zod error for response
    */
   private formatZodError(error: ZodError): any[] {
-    return error.errors.map(err => ({
+    return error.errors.map((err) => ({
       path: err.path.join('.'),
       message: err.message,
-      code: err.code
+      code: err.code,
     }));
   }
 
@@ -270,47 +288,57 @@ export class InputValidator {
   static schemas = {
     // ID validation
     id: z.string().uuid(),
-    
+
     // Email validation
     email: z.string().email().max(255),
-    
+
     // Username validation
-    username: z.string()
+    username: z
+      .string()
       .min(3)
       .max(30)
-      .regex(/^[a-zA-Z0-9_-]+$/, 'Username can only contain letters, numbers, underscores, and hyphens'),
-    
+      .regex(
+        /^[a-zA-Z0-9_-]+$/,
+        'Username can only contain letters, numbers, underscores, and hyphens'
+      ),
+
     // Password validation
-    password: z.string()
+    password: z
+      .string()
       .min(8)
       .max(128)
-      .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/, 
-        'Password must contain uppercase, lowercase, number, and special character'),
-    
+      .regex(
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
+        'Password must contain uppercase, lowercase, number, and special character'
+      ),
+
     // Pagination
     pagination: z.object({
       page: z.coerce.number().int().positive().default(1),
       limit: z.coerce.number().int().positive().max(100).default(20),
       sort: z.string().optional(),
-      order: z.enum(['asc', 'desc']).default('asc')
+      order: z.enum(['asc', 'desc']).default('asc'),
     }),
-    
+
     // Date range
-    dateRange: z.object({
-      from: z.coerce.date(),
-      to: z.coerce.date()
-    }).refine(data => data.from <= data.to, {
-      message: 'From date must be before or equal to date'
-    }),
-    
+    dateRange: z
+      .object({
+        from: z.coerce.date(),
+        to: z.coerce.date(),
+      })
+      .refine((data) => data.from <= data.to, {
+        message: 'From date must be before or equal to date',
+      }),
+
     // Safe filename
-    filename: z.string()
+    filename: z
+      .string()
       .max(255)
       .regex(/^[a-zA-Z0-9_\-\.]+$/, 'Invalid filename characters'),
-    
+
     // URL validation
     url: z.string().url().max(2048),
-    
+
     // JSON validation
     json: z.string().transform((str, ctx) => {
       try {
@@ -318,10 +346,10 @@ export class InputValidator {
       } catch (e) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: 'Invalid JSON'
+          message: 'Invalid JSON',
         });
         return z.NEVER;
       }
-    })
+    }),
   };
 }

@@ -1,6 +1,6 @@
 /**
  * RuntimeCore.ts - Core initialization and lifecycle management
- * 
+ *
  * This module handles the fundamental runtime operations including:
  * - System initialization and shutdown
  * - Core lifecycle management
@@ -20,7 +20,10 @@ import {
 } from '../../types/index';
 import { SimpleEventBus } from '../event-bus';
 import { SYMindXModuleRegistry } from '../registry';
-import { standardLoggers, createStandardLoggingPatterns } from '../../utils/standard-logging';
+import {
+  standardLoggers,
+  createStandardLoggingPatterns,
+} from '../../utils/standard-logging';
 import { runtimeLogger } from '../../utils/logger';
 
 export class RuntimeCore {
@@ -30,7 +33,7 @@ export class RuntimeCore {
   protected isRunning = false;
   protected runtimeState: RuntimeState;
   protected tickTimer?: ReturnType<typeof setInterval>;
-  
+
   // Standardized logging
   protected logger = standardLoggers.runtime;
   protected loggingPatterns = createStandardLoggingPatterns(this.logger);
@@ -69,7 +72,7 @@ export class RuntimeCore {
     try {
       // Load environment variables
       await this.loadEnvironmentVariables();
-      
+
       // Initialize event bus
       this.eventBus.emit({
         type: 'runtime.initializing',
@@ -79,7 +82,7 @@ export class RuntimeCore {
       });
 
       this.runtimeState.status = RuntimeStatus.INITIALIZING;
-      
+
       this.logger.info('Runtime Core initialized successfully');
     } catch (error) {
       this.logger.error('Failed to initialize runtime core', { error });
@@ -97,7 +100,7 @@ export class RuntimeCore {
     }
 
     this.logger.start('Starting SYMindX Runtime Core...');
-    
+
     try {
       this.isRunning = true;
       this.runtimeState.status = RuntimeStatus.RUNNING;
@@ -112,9 +115,9 @@ export class RuntimeCore {
       this.eventBus.emit({
         type: 'runtime.started',
         agentId: 'system',
-        data: { 
+        data: {
           status: 'running',
-          tickInterval: this.config.tickInterval 
+          tickInterval: this.config.tickInterval,
         },
         timestamp: new Date(),
       });
@@ -180,9 +183,10 @@ export class RuntimeCore {
   getState(): RuntimeState {
     // Update uptime
     if (this.runtimeState.status === RuntimeStatus.RUNNING) {
-      this.runtimeState.uptime = Date.now() - this.runtimeState.startTime.getTime();
+      this.runtimeState.uptime =
+        Date.now() - this.runtimeState.startTime.getTime();
     }
-    
+
     return { ...this.runtimeState };
   }
 
@@ -208,7 +212,7 @@ export class RuntimeCore {
    */
   addError(error: RuntimeError): void {
     this.runtimeState.errors.push(error);
-    
+
     // Keep only recent errors (last 100)
     if (this.runtimeState.errors.length > 100) {
       this.runtimeState.errors = this.runtimeState.errors.slice(-100);
@@ -231,7 +235,7 @@ export class RuntimeCore {
     }
 
     const interval = this.config.tickInterval || 1000;
-    
+
     this.tickTimer = setInterval(async () => {
       try {
         await this.onTick();
@@ -272,7 +276,9 @@ export class RuntimeCore {
       this.logger.debug('Environment variables loaded');
     } catch (error) {
       // Not critical if .env doesn't exist
-      this.logger.debug('No .env file found, using system environment variables');
+      this.logger.debug(
+        'No .env file found, using system environment variables'
+      );
     }
   }
 

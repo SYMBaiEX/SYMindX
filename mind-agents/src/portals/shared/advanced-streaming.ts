@@ -1,25 +1,25 @@
 /**
  * Advanced AI SDK v5 Streaming Utilities
- * 
+ *
  * Enhanced streaming patterns including buffering, throttling, merging, and state management
  * for optimal performance and user experience across all portal implementations.
  */
 
-import { 
-  streamText, 
-  StreamTextResult, 
-  LanguageModelV2StreamPart, 
-  generateId 
+import {
+  streamText,
+  StreamTextResult,
+  LanguageModelV2StreamPart,
+  generateId,
 } from 'ai';
 import { runtimeLogger } from '../../utils/logger';
 
 // === STREAM BUFFERING ===
 
 export interface StreamBufferOptions {
-  bufferSize?: number;           // Max items to buffer (default: 10)
-  flushInterval?: number;        // Auto-flush interval in ms (default: 100)
-  adaptiveBuffering?: boolean;   // Adjust buffer size based on stream velocity
-  maxBufferTime?: number;        // Max time to hold items in buffer (default: 500)
+  bufferSize?: number; // Max items to buffer (default: 10)
+  flushInterval?: number; // Auto-flush interval in ms (default: 100)
+  adaptiveBuffering?: boolean; // Adjust buffer size based on stream velocity
+  maxBufferTime?: number; // Max time to hold items in buffer (default: 500)
 }
 
 export class StreamBuffer<T> {
@@ -106,9 +106,9 @@ export class StreamBuffer<T> {
 // === STREAM THROTTLING ===
 
 export interface StreamThrottleOptions {
-  maxPerSecond?: number;         // Max items per second (default: 50)
-  burstSize?: number;            // Allow bursts up to this size (default: 10)
-  adaptiveThrottling?: boolean;  // Adjust based on downstream processing
+  maxPerSecond?: number; // Max items per second (default: 50)
+  burstSize?: number; // Allow bursts up to this size (default: 10)
+  adaptiveThrottling?: boolean; // Adjust based on downstream processing
   backpressureHandling?: 'drop' | 'buffer' | 'delay'; // How to handle overflow
 }
 
@@ -156,7 +156,7 @@ export class StreamThrottle<T> {
         case 'delay':
           // Calculate delay needed
           const delay = Math.max(0, 1000 / this.options.maxPerSecond);
-          await new Promise(resolve => setTimeout(resolve, delay));
+          await new Promise((resolve) => setTimeout(resolve, delay));
           await this.add(item); // Retry
           break;
       }
@@ -166,8 +166,10 @@ export class StreamThrottle<T> {
   private refillTokens(): void {
     const now = Date.now();
     const timePassed = now - this.lastRefill;
-    const tokensToAdd = Math.floor((timePassed / 1000) * this.options.maxPerSecond);
-    
+    const tokensToAdd = Math.floor(
+      (timePassed / 1000) * this.options.maxPerSecond
+    );
+
     if (tokensToAdd > 0) {
       this.tokenBucket = Math.min(
         this.options.burstSize,
@@ -179,30 +181,30 @@ export class StreamThrottle<T> {
 
   private async processPending(): Promise<void> {
     if (this.processing || this.pendingItems.length === 0) return;
-    
+
     this.processing = true;
-    
+
     while (this.pendingItems.length > 0) {
       this.refillTokens();
-      
+
       if (this.tokenBucket <= 0) {
         // Wait for token refill
-        await new Promise(resolve => 
+        await new Promise((resolve) =>
           setTimeout(resolve, 1000 / this.options.maxPerSecond)
         );
         continue;
       }
-      
+
       const item = this.pendingItems.shift()!;
       this.tokenBucket--;
-      
+
       try {
         await this.onEmit(item);
       } catch (error) {
         runtimeLogger.error('Stream throttle pending emit error:', error);
       }
     }
-    
+
     this.processing = false;
   }
 }
@@ -268,7 +270,7 @@ export class StreamMerger<T> {
     const fillPromises = Array.from(this.streams.entries()).map(
       async ([streamId, iterator]) => {
         const buffer = this.buffers.get(streamId)!;
-        
+
         if (buffer.length < this.options.bufferSize) {
           try {
             const { value, done } = await iterator.next();
@@ -298,7 +300,7 @@ export class StreamMerger<T> {
 
   private selectNextItem(): MergedStreamItem<T> | null {
     const allItems: MergedStreamItem<T>[] = [];
-    
+
     for (const buffer of this.buffers.values()) {
       allItems.push(...buffer);
     }
@@ -350,21 +352,21 @@ export class StreamMerger<T> {
   private selectAdaptive(items: MergedStreamItem<T>[]): MergedStreamItem<T> {
     // Adaptive strategy balances round-robin with priority and timing
     const now = Date.now();
-    
+
     return items.reduce((best, current) => {
       const currentLastEmit = this.lastEmitTimes.get(current.streamId) || 0;
       const bestLastEmit = this.lastEmitTimes.get(best.streamId) || 0;
-      
-      const currentScore = 
+
+      const currentScore =
         (current.priority || 0) * 10 +
         Math.min(100, now - currentLastEmit) / 10 +
         (now - current.timestamp) / 100;
-      
-      const bestScore = 
+
+      const bestScore =
         (best.priority || 0) * 10 +
         Math.min(100, now - bestLastEmit) / 10 +
         (now - best.timestamp) / 100;
-      
+
       return currentScore > bestScore ? current : best;
     });
   }
@@ -432,10 +434,11 @@ export class AdvancedStreamManager {
     // Update performance metrics
     const duration = Date.now() - state.progress.startTime;
     state.performance.totalDuration = duration;
-    state.performance.chunksPerSecond = 
+    state.performance.chunksPerSecond =
       state.progress.processedChunks / (duration / 1000);
-    state.performance.avgChunkSize = 
-      state.progress.bytesProcessed / Math.max(1, state.progress.processedChunks);
+    state.performance.avgChunkSize =
+      state.progress.bytesProcessed /
+      Math.max(1, state.progress.processedChunks);
 
     this.notifyCallbacks(streamId, state);
   }
@@ -460,9 +463,9 @@ export class AdvancedStreamManager {
     if (!this.callbacks.has(streamId)) {
       this.callbacks.set(streamId, new Set());
     }
-    
+
     this.callbacks.get(streamId)!.add(callback);
-    
+
     // Return cleanup function
     return () => {
       const callbacks = this.callbacks.get(streamId);
@@ -508,31 +511,31 @@ export async function* createEnhancedTextStream(
   baseStream: AsyncIterable<LanguageModelV2StreamPart>,
   options: EnhancedStreamOptions = {}
 ): AsyncGenerator<string> {
-  const streamManager = options.stateManagement ? new AdvancedStreamManager() : null;
+  const streamManager = options.stateManagement
+    ? new AdvancedStreamManager()
+    : null;
   const streamId = streamManager?.createStream() || 'anonymous';
-  
+
   let textBuffer = '';
   let processedChunks = 0;
   let totalBytes = 0;
 
   // Set up buffering if requested
-  const buffer = options.buffering ? new StreamBuffer<string>(
-    (chunks) => {
-      // Emit buffered chunks
-      for (const chunk of chunks) {
-        textBuffer += chunk;
-      }
-    },
-    options.buffering
-  ) : null;
+  const buffer = options.buffering
+    ? new StreamBuffer<string>((chunks) => {
+        // Emit buffered chunks
+        for (const chunk of chunks) {
+          textBuffer += chunk;
+        }
+      }, options.buffering)
+    : null;
 
   // Set up throttling if requested
-  const throttle = options.throttling ? new StreamThrottle<string>(
-    async (chunk) => {
-      textBuffer += chunk;
-    },
-    options.throttling
-  ) : null;
+  const throttle = options.throttling
+    ? new StreamThrottle<string>(async (chunk) => {
+        textBuffer += chunk;
+      }, options.throttling)
+    : null;
 
   try {
     streamManager?.setStreamStatus(streamId, 'streaming');
@@ -585,7 +588,6 @@ export async function* createEnhancedTextStream(
     if (textBuffer) {
       yield textBuffer;
     }
-
   } catch (error) {
     streamManager?.setStreamStatus(streamId, 'error');
     options.onError?.(error as Error);

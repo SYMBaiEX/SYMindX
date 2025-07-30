@@ -30,7 +30,7 @@ export abstract class SYMindXError extends Error {
     this.severity = severity;
     this.timestamp = new Date();
     this.context = context;
-    
+
     if (cause) {
       this.cause = cause;
       this.stack = cause.stack;
@@ -81,7 +81,14 @@ export class RuntimeError extends SYMindXError {
     context?: Record<string, unknown>,
     cause?: Error
   ) {
-    super(message, code, ErrorCategory.RUNTIME, ErrorSeverity.MEDIUM, context, cause);
+    super(
+      message,
+      code,
+      ErrorCategory.RUNTIME,
+      ErrorSeverity.MEDIUM,
+      context,
+      cause
+    );
   }
 }
 
@@ -105,9 +112,16 @@ export class PortalError extends SYMindXError {
       portalType,
       model,
     };
-    
-    super(message, code, ErrorCategory.SYSTEM, ErrorSeverity.HIGH, enrichedContext, cause);
-    
+
+    super(
+      message,
+      code,
+      ErrorCategory.SYSTEM,
+      ErrorSeverity.HIGH,
+      enrichedContext,
+      cause
+    );
+
     this.portalType = portalType;
     this.model = model;
   }
@@ -133,9 +147,16 @@ export class ExtensionError extends SYMindXError {
       extensionName,
       action,
     };
-    
-    super(message, code, ErrorCategory.SYSTEM, ErrorSeverity.MEDIUM, enrichedContext, cause);
-    
+
+    super(
+      message,
+      code,
+      ErrorCategory.SYSTEM,
+      ErrorSeverity.MEDIUM,
+      enrichedContext,
+      cause
+    );
+
     this.extensionName = extensionName;
     this.action = action;
   }
@@ -161,9 +182,16 @@ export class ConfigurationError extends SYMindXError {
       configPath,
       field,
     };
-    
-    super(message, code, ErrorCategory.CONFIGURATION, ErrorSeverity.HIGH, enrichedContext, cause);
-    
+
+    super(
+      message,
+      code,
+      ErrorCategory.CONFIGURATION,
+      ErrorSeverity.HIGH,
+      enrichedContext,
+      cause
+    );
+
     this.configPath = configPath;
     this.field = field;
   }
@@ -189,9 +217,16 @@ export class MemoryError extends SYMindXError {
       provider,
       operation,
     };
-    
-    super(message, code, ErrorCategory.RESOURCE, ErrorSeverity.MEDIUM, enrichedContext, cause);
-    
+
+    super(
+      message,
+      code,
+      ErrorCategory.RESOURCE,
+      ErrorSeverity.MEDIUM,
+      enrichedContext,
+      cause
+    );
+
     this.provider = provider;
     this.operation = operation;
   }
@@ -217,9 +252,16 @@ export class AuthError extends SYMindXError {
       operation,
       resource,
     };
-    
-    super(message, code, ErrorCategory.AUTHENTICATION, ErrorSeverity.HIGH, enrichedContext, cause);
-    
+
+    super(
+      message,
+      code,
+      ErrorCategory.AUTHENTICATION,
+      ErrorSeverity.HIGH,
+      enrichedContext,
+      cause
+    );
+
     this.operation = operation;
     this.resource = resource;
   }
@@ -248,9 +290,16 @@ export class NetworkError extends SYMindXError {
       method,
       statusCode,
     };
-    
-    super(message, code, ErrorCategory.NETWORK, ErrorSeverity.HIGH, enrichedContext, cause);
-    
+
+    super(
+      message,
+      code,
+      ErrorCategory.NETWORK,
+      ErrorSeverity.HIGH,
+      enrichedContext,
+      cause
+    );
+
     this.url = url;
     this.method = method;
     this.statusCode = statusCode;
@@ -277,9 +326,16 @@ export class ValidationError extends SYMindXError {
       field,
       value,
     };
-    
-    super(message, code, ErrorCategory.VALIDATION, ErrorSeverity.MEDIUM, enrichedContext, cause);
-    
+
+    super(
+      message,
+      code,
+      ErrorCategory.VALIDATION,
+      ErrorSeverity.MEDIUM,
+      enrichedContext,
+      cause
+    );
+
     this.field = field;
     this.value = value;
   }
@@ -305,9 +361,16 @@ export class AgentError extends SYMindXError {
       agentId,
       operation,
     };
-    
-    super(message, code, ErrorCategory.RUNTIME, ErrorSeverity.MEDIUM, enrichedContext, cause);
-    
+
+    super(
+      message,
+      code,
+      ErrorCategory.RUNTIME,
+      ErrorSeverity.MEDIUM,
+      enrichedContext,
+      cause
+    );
+
     this.agentId = agentId;
     this.operation = operation;
   }
@@ -333,9 +396,16 @@ export class ToolError extends SYMindXError {
       toolName,
       operation,
     };
-    
-    super(message, code, ErrorCategory.SYSTEM, ErrorSeverity.MEDIUM, enrichedContext, cause);
-    
+
+    super(
+      message,
+      code,
+      ErrorCategory.SYSTEM,
+      ErrorSeverity.MEDIUM,
+      enrichedContext,
+      cause
+    );
+
     this.toolName = toolName;
     this.operation = operation;
   }
@@ -442,15 +512,19 @@ export const createToolError = (
  */
 export async function safeAsync<T>(
   operation: () => Promise<T>,
-  errorFactory: (error: Error) => SYMindXError = (error) => new RuntimeError(error.message, 'SAFE_ASYNC_ERROR', {}, error)
+  errorFactory: (error: Error) => SYMindXError = (error) =>
+    new RuntimeError(error.message, 'SAFE_ASYNC_ERROR', {}, error)
 ): Promise<{ data?: T; error?: SYMindXError }> {
   try {
     const data = await operation();
     return { data };
   } catch (error) {
-    const symindxError = error instanceof SYMindXError 
-      ? error 
-      : errorFactory(error instanceof Error ? error : new Error(String(error)));
+    const symindxError =
+      error instanceof SYMindXError
+        ? error
+        : errorFactory(
+            error instanceof Error ? error : new Error(String(error))
+          );
     return { error: symindxError };
   }
 }
@@ -460,15 +534,19 @@ export async function safeAsync<T>(
  */
 export function safeSync<T>(
   operation: () => T,
-  errorFactory: (error: Error) => SYMindXError = (error) => new RuntimeError(error.message, 'SAFE_SYNC_ERROR', {}, error)
+  errorFactory: (error: Error) => SYMindXError = (error) =>
+    new RuntimeError(error.message, 'SAFE_SYNC_ERROR', {}, error)
 ): { data?: T; error?: SYMindXError } {
   try {
     const data = operation();
     return { data };
   } catch (error) {
-    const symindxError = error instanceof SYMindXError 
-      ? error 
-      : errorFactory(error instanceof Error ? error : new Error(String(error)));
+    const symindxError =
+      error instanceof SYMindXError
+        ? error
+        : errorFactory(
+            error instanceof Error ? error : new Error(String(error))
+          );
     return { error: symindxError };
   }
 }
@@ -497,11 +575,11 @@ export function formatError(error: unknown): string {
   if (isSYMindXError(error)) {
     return `[${error.code}] ${error.message} (${error.category}:${error.severity})`;
   }
-  
+
   if (error instanceof Error) {
     return `[ERROR] ${error.message}`;
   }
-  
+
   return `[UNKNOWN] ${String(error)}`;
 }
 
@@ -521,7 +599,7 @@ export function extractErrorDetails(error: unknown): Record<string, unknown> {
       stack: error.stack,
     };
   }
-  
+
   if (error instanceof Error) {
     return {
       name: error.name,
@@ -529,7 +607,7 @@ export function extractErrorDetails(error: unknown): Record<string, unknown> {
       stack: error.stack,
     };
   }
-  
+
   return {
     value: error,
     type: typeof error,

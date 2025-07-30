@@ -1,6 +1,6 @@
 /**
  * Context Caching Utilities for SYMindX
- * 
+ *
  * Provides efficient multi-level caching for context operations
  * with minimal overhead and clean integration.
  */
@@ -50,11 +50,13 @@ export class LRUCache<T> {
     hitRate: 0,
   };
 
-  constructor(options: {
-    maxSize?: number;
-    maxEntries?: number;
-    defaultTTL?: number;
-  } = {}) {
+  constructor(
+    options: {
+      maxSize?: number;
+      maxEntries?: number;
+      defaultTTL?: number;
+    } = {}
+  ) {
     this.maxSize = options.maxSize || 10 * 1024 * 1024; // 10MB default
     this.maxEntries = options.maxEntries || 1000;
     this.defaultTTL = options.defaultTTL || 300000; // 5 minutes default
@@ -65,7 +67,7 @@ export class LRUCache<T> {
    */
   get(key: string): T | undefined {
     const entry = this.cache.get(key);
-    
+
     if (!entry) {
       this.stats.misses++;
       this.updateHitRate();
@@ -96,9 +98,12 @@ export class LRUCache<T> {
    */
   set(key: string, value: T, ttl?: number): void {
     const size = this.estimateSize(value);
-    
+
     // Check if we need to evict entries
-    while (this.cache.size >= this.maxEntries || this.stats.size + size > this.maxSize) {
+    while (
+      this.cache.size >= this.maxEntries ||
+      this.stats.size + size > this.maxSize
+    ) {
       this.evictLRU();
     }
 
@@ -124,10 +129,10 @@ export class LRUCache<T> {
     if (!entry) return false;
 
     this.cache.delete(key);
-    this.accessOrder = this.accessOrder.filter(k => k !== key);
+    this.accessOrder = this.accessOrder.filter((k) => k !== key);
     this.stats.size -= entry.size;
     this.stats.entries = this.cache.size;
-    
+
     return true;
   }
 
@@ -169,7 +174,7 @@ export class LRUCache<T> {
    * Update access order for LRU
    */
   private updateAccessOrder(key: string): void {
-    this.accessOrder = this.accessOrder.filter(k => k !== key);
+    this.accessOrder = this.accessOrder.filter((k) => k !== key);
     this.accessOrder.push(key);
   }
 
@@ -181,7 +186,7 @@ export class LRUCache<T> {
 
     const lruKey = this.accessOrder.shift()!;
     const entry = this.cache.get(lruKey);
-    
+
     if (entry) {
       this.cache.delete(lruKey);
       this.stats.size -= entry.size;
@@ -245,7 +250,10 @@ export class ContextCache<T = unknown> {
         this.l1Cache.set(key, decompressed);
         return decompressed;
       } catch (error) {
-        runtimeLogger.error('Failed to decompress L2 cache entry', { key, error });
+        runtimeLogger.error('Failed to decompress L2 cache entry', {
+          key,
+          error,
+        });
         this.l2Cache.delete(key);
       }
     }
@@ -270,7 +278,10 @@ export class ContextCache<T = unknown> {
         const compressed = JSON.stringify(value);
         this.l2Cache.set(key, compressed, options.ttl);
       } catch (error) {
-        runtimeLogger.error('Failed to compress context for L2 cache', { key, error });
+        runtimeLogger.error('Failed to compress context for L2 cache', {
+          key,
+          error,
+        });
       }
     }
   }
@@ -320,10 +331,10 @@ export class ContextCache<T = unknown> {
     this.cleanupInterval = setInterval(() => {
       // Clean up expired entries
       const now = Date.now();
-      
+
       // This would be more efficient with a proper expiry index
       // For now, we rely on LRU eviction and TTL checks on access
-      
+
       // Log cache statistics periodically
       if (process.env.NODE_ENV === 'development') {
         const stats = this.getStats();
@@ -351,7 +362,9 @@ export class ContextCacheKeyGenerator {
    * Generate cache key for agent context
    */
   static forAgentContext(agentId: string, sessionId?: string): string {
-    return sessionId ? `context:agent:${agentId}:${sessionId}` : `context:agent:${agentId}`;
+    return sessionId
+      ? `context:agent:${agentId}:${sessionId}`
+      : `context:agent:${agentId}`;
   }
 
   /**

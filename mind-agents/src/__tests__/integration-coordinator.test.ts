@@ -1,10 +1,10 @@
 /**
  * @module integration-coordinator.test
  * @description Integration Test Suite for Agent Coordination
- * 
+ *
  * Validates that all improvements from the 8 agents work together seamlessly:
  * - Security enhancements (Agent 1)
- * - Performance optimizations (Agent 2)  
+ * - Performance optimizations (Agent 2)
  * - Type safety improvements (Agent 3)
  * - Module system refactoring (Agent 4)
  * - Test coverage expansion (Agent 5)
@@ -13,7 +13,15 @@
  * - Overall integration (Agent 8)
  */
 
-import { describe, test as it, expect, beforeEach, afterEach, beforeAll, afterAll } from 'bun:test';
+import {
+  describe,
+  test as it,
+  expect,
+  beforeEach,
+  afterEach,
+  beforeAll,
+  afterAll,
+} from 'bun:test';
 import { SYMindXRuntime } from '../core/runtime.js';
 import { createContextLifecycleManager } from '../core/context/context-lifecycle-manager.js';
 import { SecurityManager } from '../security/security-manager.js';
@@ -23,7 +31,11 @@ import { createRuntimeClient } from '../cli/services/runtimeClient.js';
 import type { RuntimeConfig } from '../types/runtime.js';
 import type { Agent, AgentConfig } from '../types/agent.js';
 import type { ContextLifecycleManager } from '../types/context/context-lifecycle.js';
-import { ConfigFactory, AgentFactory, PerformanceAssertions } from '../core/context/__tests__/utils/index.js';
+import {
+  ConfigFactory,
+  AgentFactory,
+  PerformanceAssertions,
+} from '../core/context/__tests__/utils/index.js';
 
 describe('Integration Coordinator Test Suite', () => {
   let runtime: SYMindXRuntime;
@@ -101,14 +113,17 @@ describe('Integration Coordinator Test Suite', () => {
       const start = performance.now();
 
       for (let i = 0; i < iterations; i++) {
-        const context = contextManager.getOrCreateContext(agent.id, `user-${i}`);
-        
+        const context = contextManager.getOrCreateContext(
+          agent.id,
+          `user-${i}`
+        );
+
         // Authenticate request
         const token = await securityManager.authenticate({
           userId: `user-${i}`,
           agentId: agent.id,
         });
-        
+
         // Add encrypted message
         await contextManager.addMessage(
           context,
@@ -131,7 +146,9 @@ describe('Integration Coordinator Test Suite', () => {
       const totalTime = end - start;
       const avgTime = totalTime / iterations;
 
-      console.log(`Security + Performance: ${avgTime.toFixed(2)}ms average per operation`);
+      console.log(
+        `Security + Performance: ${avgTime.toFixed(2)}ms average per operation`
+      );
 
       // Should maintain reasonable performance even with security
       expect(avgTime).toBeLessThan(50); // < 50ms per secure operation
@@ -145,12 +162,12 @@ describe('Integration Coordinator Test Suite', () => {
         return agent;
       });
 
-      await Promise.all(agents.map(agent => runtime.registerAgent(agent)));
+      await Promise.all(agents.map((agent) => runtime.registerAgent(agent)));
 
       // Concurrent secure operations
       const operations = agents.map(async (agent) => {
         const context = contextManager.getOrCreateContext(agent.id, 'user-1');
-        
+
         // Authenticate
         const token = await securityManager.authenticate({
           userId: 'user-1',
@@ -265,7 +282,7 @@ describe('Integration Coordinator Test Suite', () => {
 
       // Test data deletion (GDPR requirement)
       await complianceManager.deleteUserData(userId);
-      
+
       // Verify deletion
       const deletedContext = contextManager.getActiveContext(agent.id);
       expect(deletedContext).toBeNull();
@@ -282,8 +299,11 @@ describe('Integration Coordinator Test Suite', () => {
         agent.id = `compliance-agent-${i}`;
         await runtime.registerAgent(agent);
 
-        const context = contextManager.getOrCreateContext(agent.id, `user-${i}`);
-        
+        const context = contextManager.getOrCreateContext(
+          agent.id,
+          `user-${i}`
+        );
+
         // Add messages with PII
         contextManager.addMessage(
           context,
@@ -319,21 +339,21 @@ describe('Integration Coordinator Test Suite', () => {
       contextManager.addMessage(context, 'user-1', 'Test message');
 
       // Wait for event propagation
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
       expect(updateReceived).toBe(true);
     });
 
     it('should handle connection resilience', async () => {
       // Simulate disconnection
       await runtimeClient.disconnect();
-      
+
       const status1 = runtimeClient.getConnectionStatus();
       expect(status1.connected).toBe(false);
 
       // Reconnect
       await runtimeClient.connect();
-      
+
       const status2 = runtimeClient.getConnectionStatus();
       expect(status2.connected).toBe(true);
 
@@ -353,11 +373,11 @@ describe('Integration Coordinator Test Suite', () => {
         return agent;
       });
 
-      await Promise.all(agents.map(agent => runtime.registerAgent(agent)));
+      await Promise.all(agents.map((agent) => runtime.registerAgent(agent)));
 
       // Create shared secure context
       const sharedContext = await contextManager.createSharedContext(
-        agents.map(a => a.id),
+        agents.map((a) => a.id),
         'shared-secure-context'
       );
 
@@ -367,7 +387,7 @@ describe('Integration Coordinator Test Suite', () => {
 
       for (let i = 0; i < messageCount; i++) {
         const fromAgent = agents[i % agentCount];
-        
+
         // Authenticate each message
         const token = await securityManager.authenticate({
           userId: 'system',
@@ -387,8 +407,10 @@ describe('Integration Coordinator Test Suite', () => {
       const totalTime = end - start;
       const avgTime = totalTime / messageCount;
 
-      console.log(`Secure multi-agent messaging: ${avgTime.toFixed(2)}ms average`);
-      
+      console.log(
+        `Secure multi-agent messaging: ${avgTime.toFixed(2)}ms average`
+      );
+
       expect(sharedContext.messages).toHaveLength(messageCount);
       expect(avgTime).toBeLessThan(20); // < 20ms per secure multi-agent message
     });
@@ -425,7 +447,7 @@ describe('Integration Coordinator Test Suite', () => {
 
       // 4. Create context with enrichment
       const context = contextManager.getOrCreateContext(agentId, userId);
-      
+
       // 5. Send messages with security
       for (let i = 0; i < 5; i++) {
         await contextManager.addMessage(
@@ -499,7 +521,7 @@ describe('Integration Coordinator Test Suite', () => {
 
       // Run all operations concurrently
       const start = performance.now();
-      await Promise.all(operations.map(op => op()));
+      await Promise.all(operations.map((op) => op()));
       const end = performance.now();
 
       const totalTime = end - start;
@@ -507,7 +529,7 @@ describe('Integration Coordinator Test Suite', () => {
 
       // System should remain stable
       expect(totalTime).toBeLessThan(5000); // < 5 seconds for all operations
-      
+
       // Check system health
       const health = await runtime.getHealthStatus();
       expect(health.status).toBe('healthy');

@@ -52,11 +52,11 @@ export class PerformanceMonitor extends EventEmitter {
     cleanupIntervalMs?: number;
   }) {
     super();
-    
+
     if (options?.maxMetricsPerType) {
       this.maxMetricsPerType = options.maxMetricsPerType;
     }
-    
+
     // Start cleanup timer
     if (options?.cleanupIntervalMs) {
       this.cleanupInterval = setInterval(
@@ -71,18 +71,18 @@ export class PerformanceMonitor extends EventEmitter {
    */
   start(): void {
     if (this.isStarted) return;
-    
+
     this.isStarted = true;
-    
+
     // Monitor Node.js process metrics
     this.startNodeMetrics();
-    
+
     // Monitor memory usage
     this.startMemoryMonitoring();
-    
+
     // Monitor event loop lag
     this.startEventLoopMonitoring();
-    
+
     runtimeLogger.info('Performance monitoring started');
     this.emit('started');
   }
@@ -92,14 +92,14 @@ export class PerformanceMonitor extends EventEmitter {
    */
   stop(): void {
     if (!this.isStarted) return;
-    
+
     this.isStarted = false;
-    
+
     if (this.cleanupInterval) {
       clearInterval(this.cleanupInterval);
       this.cleanupInterval = undefined;
     }
-    
+
     runtimeLogger.info('Performance monitoring stopped');
     this.emit('stopped');
   }
@@ -108,8 +108,8 @@ export class PerformanceMonitor extends EventEmitter {
    * Record a performance metric
    */
   recordMetric(
-    name: string, 
-    value: number, 
+    name: string,
+    value: number,
     unit = 'count',
     tags?: Record<string, string>
   ): void {
@@ -118,17 +118,17 @@ export class PerformanceMonitor extends EventEmitter {
       value,
       unit,
       timestamp: Date.now(),
-      tags
+      tags,
     };
 
     // Store metric
     if (!this.metrics.has(name)) {
       this.metrics.set(name, []);
     }
-    
+
     const metricArray = this.metrics.get(name)!;
     metricArray.push(metric);
-    
+
     // Trim to max size
     if (metricArray.length > this.maxMetricsPerType) {
       metricArray.splice(0, metricArray.length - this.maxMetricsPerType);
@@ -150,16 +150,16 @@ export class PerformanceMonitor extends EventEmitter {
   ): Promise<T> {
     const startTime = performance.now();
     const startMemory = process.memoryUsage().heapUsed;
-    
+
     try {
       const result = await fn();
       const duration = performance.now() - startTime;
       const memoryDelta = process.memoryUsage().heapUsed - startMemory;
-      
+
       this.recordMetric(`${name}.duration`, duration, 'ms', tags);
       this.recordMetric(`${name}.memory_delta`, memoryDelta, 'bytes', tags);
       this.recordMetric(`${name}.success`, 1, 'count', tags);
-      
+
       return result;
     } catch (error) {
       const duration = performance.now() - startTime;
@@ -172,13 +172,16 @@ export class PerformanceMonitor extends EventEmitter {
   /**
    * Create a timer for manual timing
    */
-  createTimer(name: string, tags?: Record<string, string>): {
+  createTimer(
+    name: string,
+    tags?: Record<string, string>
+  ): {
     end: () => number;
     endWithMemory: () => { duration: number; memoryDelta: number };
   } {
     const startTime = performance.now();
     const startMemory = process.memoryUsage().heapUsed;
-    
+
     return {
       end: () => {
         const duration = performance.now() - startTime;
@@ -188,12 +191,12 @@ export class PerformanceMonitor extends EventEmitter {
       endWithMemory: () => {
         const duration = performance.now() - startTime;
         const memoryDelta = process.memoryUsage().heapUsed - startMemory;
-        
+
         this.recordMetric(`${name}.duration`, duration, 'ms', tags);
         this.recordMetric(`${name}.memory_delta`, memoryDelta, 'bytes', tags);
-        
+
         return { duration, memoryDelta };
-      }
+      },
     };
   }
 
@@ -209,7 +212,7 @@ export class PerformanceMonitor extends EventEmitter {
     this.thresholds.set(metricName, {
       warning,
       critical,
-      comparison
+      comparison,
     });
   }
 
@@ -222,7 +225,7 @@ export class PerformanceMonitor extends EventEmitter {
       return null;
     }
 
-    const values = metrics.map(m => m.value).sort((a, b) => a - b);
+    const values = metrics.map((m) => m.value).sort((a, b) => a - b);
     const count = values.length;
     const sum = values.reduce((a, b) => a + b, 0);
     const avg = sum / count;
@@ -235,7 +238,7 @@ export class PerformanceMonitor extends EventEmitter {
       sum,
       p50: this.percentile(values, 0.5),
       p95: this.percentile(values, 0.95),
-      p99: this.percentile(values, 0.99)
+      p99: this.percentile(values, 0.99),
     };
   }
 
@@ -292,28 +295,30 @@ export class PerformanceMonitor extends EventEmitter {
     };
   } {
     const topMetrics = this.getMetricNames()
-      .map(name => ({
+      .map((name) => ({
         name,
-        stats: this.getStats(name)!
+        stats: this.getStats(name)!,
       }))
-      .filter(item => item.stats)
+      .filter((item) => item.stats)
       .sort((a, b) => b.stats.count - a.stats.count)
       .slice(0, 10);
 
     return {
       summary: {
-        totalMetrics: Array.from(this.metrics.values())
-          .reduce((sum, metrics) => sum + metrics.length, 0),
+        totalMetrics: Array.from(this.metrics.values()).reduce(
+          (sum, metrics) => sum + metrics.length,
+          0
+        ),
         metricTypes: this.metrics.size,
         alertCount: this.alerts.length,
-        uptime: process.uptime()
+        uptime: process.uptime(),
       },
       topMetrics,
       recentAlerts: this.getAlerts(10),
       systemMetrics: {
         memory: process.memoryUsage(),
-        cpu: process.cpuUsage()
-      }
+        cpu: process.cpuUsage(),
+      },
     };
   }
 
@@ -325,10 +330,14 @@ export class PerformanceMonitor extends EventEmitter {
 
     const exceedsThreshold = (val: number, limit: number): boolean => {
       switch (threshold.comparison) {
-        case 'gt': return val > limit;
-        case 'lt': return val < limit;
-        case 'eq': return val === limit;
-        default: return false;
+        case 'gt':
+          return val > limit;
+        case 'lt':
+          return val < limit;
+        case 'eq':
+          return val === limit;
+        default:
+          return false;
       }
     };
 
@@ -342,25 +351,26 @@ export class PerformanceMonitor extends EventEmitter {
     if (severity) {
       const alert: PerformanceAlert = {
         metric: metricName,
-        threshold: severity === 'critical' ? threshold.critical : threshold.warning,
+        threshold:
+          severity === 'critical' ? threshold.critical : threshold.warning,
         currentValue: value,
         severity,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
 
       this.alerts.push(alert);
-      
+
       // Trim alerts
       if (this.alerts.length > 1000) {
         this.alerts = this.alerts.slice(-500);
       }
 
       this.emit('alert', alert);
-      
+
       runtimeLogger.warn(`Performance alert: ${metricName}`, {
         severity,
         value,
-        threshold: alert.threshold
+        threshold: alert.threshold,
       });
     }
   }
@@ -370,73 +380,77 @@ export class PerformanceMonitor extends EventEmitter {
     const lower = Math.floor(index);
     const upper = Math.ceil(index);
     const weight = index % 1;
-    
+
     if (upper >= values.length) return values[values.length - 1];
-    
+
     return values[lower] * (1 - weight) + values[upper] * weight;
   }
 
   private cleanupOldMetrics(): void {
     const cutoff = Date.now() - 24 * 60 * 60 * 1000; // 24 hours
-    
+
     for (const [name, metrics] of this.metrics) {
-      const filtered = metrics.filter(m => m.timestamp > cutoff);
+      const filtered = metrics.filter((m) => m.timestamp > cutoff);
       if (filtered.length !== metrics.length) {
         this.metrics.set(name, filtered);
       }
     }
 
     // Clean old alerts
-    this.alerts = this.alerts.filter(a => a.timestamp > cutoff);
+    this.alerts = this.alerts.filter((a) => a.timestamp > cutoff);
   }
 
   private startNodeMetrics(): void {
     const recordNodeMetrics = () => {
       if (!this.isStarted) return;
-      
+
       const memory = process.memoryUsage();
       const cpu = process.cpuUsage();
-      
+
       // Memory metrics
       this.recordMetric('node.memory.heap_used', memory.heapUsed, 'bytes');
       this.recordMetric('node.memory.heap_total', memory.heapTotal, 'bytes');
       this.recordMetric('node.memory.external', memory.external, 'bytes');
       this.recordMetric('node.memory.rss', memory.rss, 'bytes');
-      
+
       // CPU metrics
       this.recordMetric('node.cpu.user', cpu.user, 'microseconds');
       this.recordMetric('node.cpu.system', cpu.system, 'microseconds');
-      
+
       // Process metrics
       this.recordMetric('node.uptime', process.uptime(), 'seconds');
-      
+
       setTimeout(recordNodeMetrics, 5000); // Every 5 seconds
     };
-    
+
     recordNodeMetrics();
   }
 
   private startMemoryMonitoring(): void {
     // Set default memory thresholds
-    this.setThreshold('node.memory.heap_used', 100 * 1024 * 1024, 200 * 1024 * 1024); // 100MB warning, 200MB critical
+    this.setThreshold(
+      'node.memory.heap_used',
+      100 * 1024 * 1024,
+      200 * 1024 * 1024
+    ); // 100MB warning, 200MB critical
     this.setThreshold('node.memory.rss', 200 * 1024 * 1024, 500 * 1024 * 1024); // 200MB warning, 500MB critical
   }
 
   private startEventLoopMonitoring(): void {
     const measureEventLoopLag = () => {
       if (!this.isStarted) return;
-      
+
       const start = process.hrtime.bigint();
       setImmediate(() => {
         const lag = Number(process.hrtime.bigint() - start) / 1e6; // Convert to milliseconds
         this.recordMetric('node.event_loop.lag', lag, 'ms');
       });
-      
+
       setTimeout(measureEventLoopLag, 1000); // Every second
     };
-    
+
     measureEventLoopLag();
-    
+
     // Set event loop lag thresholds
     this.setThreshold('node.event_loop.lag', 10, 50); // 10ms warning, 50ms critical
   }
@@ -445,7 +459,7 @@ export class PerformanceMonitor extends EventEmitter {
 // Global performance monitor instance
 export const performanceMonitor = new PerformanceMonitor({
   maxMetricsPerType: 1000,
-  cleanupIntervalMs: 5 * 60 * 1000 // 5 minutes
+  cleanupIntervalMs: 5 * 60 * 1000, // 5 minutes
 });
 
 // Auto-start if not in test environment

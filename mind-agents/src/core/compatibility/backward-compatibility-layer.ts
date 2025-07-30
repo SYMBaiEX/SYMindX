@@ -23,40 +23,50 @@ export class LegacyAgentWrapper {
 
   // Legacy method: processMessage(message: string): string
   processMessage(message: string): string {
-    console.warn('DEPRECATED: processMessage(string) is deprecated. Use processMessage(message, context, options) instead.');
-    
+    console.warn(
+      'DEPRECATED: processMessage(string) is deprecated. Use processMessage(message, context, options) instead.'
+    );
+
     // Create temporary context for backward compatibility
     const contextManager = this.runtime.getContextManager();
-    const context = contextManager.getOrCreateContext(this.agent.id, 'legacy-user');
-    
+    const context = contextManager.getOrCreateContext(
+      this.agent.id,
+      'legacy-user'
+    );
+
     // Process message synchronously (not recommended but for compatibility)
     let response = '';
-    this.agent.processMessage(message, context, {})
-      .then(result => {
+    this.agent
+      .processMessage(message, context, {})
+      .then((result) => {
         response = typeof result === 'string' ? result : result.content || '';
       })
-      .catch(error => {
+      .catch((error) => {
         response = `Error: ${error.message}`;
       });
-    
+
     return response;
   }
 
   // Legacy method: getCurrentEmotion(): string
   getCurrentEmotion(): string {
-    console.warn('DEPRECATED: getCurrentEmotion() is deprecated. Use emotion.getCurrentState() instead.');
-    
+    console.warn(
+      'DEPRECATED: getCurrentEmotion() is deprecated. Use emotion.getCurrentState() instead.'
+    );
+
     if (!this.agent.emotion) return 'neutral';
-    
+
     return this.agent.emotion.currentEmotion || 'neutral';
   }
 
   // Legacy method: getMemories(): any[]
   getMemories(): any[] {
-    console.warn('DEPRECATED: getMemories() is deprecated. Use memory.retrieve() instead.');
-    
+    console.warn(
+      'DEPRECATED: getMemories() is deprecated. Use memory.retrieve() instead.'
+    );
+
     if (!this.agent.memory) return [];
-    
+
     // Return empty array for compatibility
     return [];
   }
@@ -80,18 +90,20 @@ export class LegacyRuntimeWrapper {
 
   // Legacy method: createAgent(config: any): LegacyAgent
   createAgent(config: any): LegacyAgentWrapper {
-    console.warn('DEPRECATED: createAgent(config) signature is deprecated. Use new agent configuration format.');
-    
+    console.warn(
+      'DEPRECATED: createAgent(config) signature is deprecated. Use new agent configuration format.'
+    );
+
     // Convert legacy config to new format
     const newConfig = this.convertLegacyConfig(config);
-    
+
     // Create new agent
     const newAgent = this.runtime.createAgent(newConfig);
-    
+
     // Wrap in compatibility layer
     const wrapper = new LegacyAgentWrapper(newAgent, this.runtime);
     this.agentWrappers.set(newAgent.id, wrapper);
-    
+
     return wrapper;
   }
 
@@ -99,7 +111,7 @@ export class LegacyRuntimeWrapper {
   getAgent(id: string): LegacyAgentWrapper | undefined {
     const wrapper = this.agentWrappers.get(id);
     if (wrapper) return wrapper;
-    
+
     // Try to get from new runtime and wrap
     const newAgent = this.runtime.getAgent(id);
     if (newAgent) {
@@ -107,14 +119,16 @@ export class LegacyRuntimeWrapper {
       this.agentWrappers.set(id, wrapper);
       return wrapper;
     }
-    
+
     return undefined;
   }
 
   // Legacy method: sendMessage(agentId: string, message: string): Promise<string>
   async sendMessage(agentId: string, message: string): Promise<string> {
-    console.warn('DEPRECATED: sendMessage(agentId, message) is deprecated. Use new message processing API.');
-    
+    console.warn(
+      'DEPRECATED: sendMessage(agentId, message) is deprecated. Use new message processing API.'
+    );
+
     const agent = this.runtime.getAgent(agentId);
     if (!agent) {
       throw new Error(`Agent ${agentId} not found`);
@@ -122,7 +136,7 @@ export class LegacyRuntimeWrapper {
 
     const contextManager = this.runtime.getContextManager();
     const context = contextManager.getOrCreateContext(agentId, 'legacy-user');
-    
+
     const result = await agent.processMessage(message, context, {});
     return typeof result === 'string' ? result : result.content || '';
   }
@@ -132,8 +146,8 @@ export class LegacyRuntimeWrapper {
     return {
       id: config.id || 'legacy-agent',
       name: config.name || 'Legacy Agent',
-      personality: Array.isArray(config.personality) 
-        ? config.personality 
+      personality: Array.isArray(config.personality)
+        ? config.personality
         : [config.personality || 'neutral'],
       memory: {
         type: config.memory?.type || 'sqlite',
@@ -177,11 +191,13 @@ export type Extension = any; // Legacy extension interface
  * Factory function for backward compatibility
  */
 export function createLegacyRuntime(config?: any): LegacyRuntimeWrapper {
-  console.warn('DEPRECATED: createLegacyRuntime is deprecated. Use SYMindXRuntime directly.');
-  
+  console.warn(
+    'DEPRECATED: createLegacyRuntime is deprecated. Use SYMindXRuntime directly.'
+  );
+
   // Convert legacy config if provided
   const newConfig = config ? convertLegacyRuntimeConfig(config) : undefined;
-  
+
   const newRuntime = new SYMindXRuntime(newConfig);
   return new LegacyRuntimeWrapper(newRuntime);
 }
@@ -220,7 +236,7 @@ export class MigrationHelper {
   static async migrateAgent(legacyAgent: any): Promise<NewAgent> {
     // Migrate a legacy agent to new format
     const config = this.convertAgentConfig(legacyAgent);
-    
+
     // Create new agent
     const runtime = new SYMindXRuntime();
     return runtime.createAgent(config);
@@ -257,7 +273,7 @@ export class MigrationHelper {
   static async migrateMemories(legacyMemories: any[]): Promise<void> {
     // Migrate legacy memories to new format
     console.log('Migrating', legacyMemories.length, 'memories...');
-    
+
     // Migration logic would go here
     // This is a placeholder for actual memory migration
   }
@@ -268,7 +284,7 @@ export class MigrationHelper {
       // Check that all agents were migrated
       const legacyAgentCount = legacySystem.agents?.length || 0;
       const newAgentCount = newSystem.agents?.size || 0;
-      
+
       if (legacyAgentCount !== newAgentCount) {
         console.warn('Agent count mismatch during migration');
         return false;
@@ -322,13 +338,13 @@ export class DeprecationManager {
 
   static warn(feature: string, replacement?: string): void {
     if (this.warnings.has(feature)) return;
-    
+
     this.warnings.add(feature);
-    
+
     const message = replacement
       ? `DEPRECATED: ${feature} is deprecated. Use ${replacement} instead.`
       : `DEPRECATED: ${feature} is deprecated and will be removed in a future version.`;
-    
+
     console.warn(message);
   }
 
@@ -347,7 +363,7 @@ export class DeprecationManager {
 export function checkVersion(): void {
   const currentVersion = '2.0.0';
   const legacyVersions = ['1.0.x', '1.1.x', '1.2.x'];
-  
+
   console.log(`SYMindX v${currentVersion} with backward compatibility support`);
   console.log(`Supported legacy versions: ${legacyVersions.join(', ')}`);
   console.log('For migration assistance, see: docs/MIGRATION_GUIDE.md');

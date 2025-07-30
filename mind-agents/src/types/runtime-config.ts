@@ -5,7 +5,13 @@
 /**
  * Configuration value that can be recursively processed
  */
-export type ConfigValue = string | number | boolean | null | ConfigValue[] | { [key: string]: ConfigValue };
+export type ConfigValue =
+  | string
+  | number
+  | boolean
+  | null
+  | ConfigValue[]
+  | { [key: string]: ConfigValue };
 
 /**
  * Processed environment variable replacement result

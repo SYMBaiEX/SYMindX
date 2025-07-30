@@ -1,14 +1,14 @@
 /**
  * Shared Parameter Builder Utilities
- * 
+ *
  * Provides standardized parameter building logic for AI SDK operations
  */
 
-import { 
-  TextGenerationOptions, 
-  ChatGenerationOptions, 
+import {
+  TextGenerationOptions,
+  ChatGenerationOptions,
   ImageGenerationOptions,
-  EmbeddingOptions
+  EmbeddingOptions,
 } from '../../types/portal';
 
 export interface ParameterBuilderOptions {
@@ -22,12 +22,12 @@ export interface ParameterBuilderOptions {
     frequencyPenalty?: number;
     presencePenalty?: number;
   };
-  
+
   /**
    * Provider-specific parameter mappings and validations
    */
   provider?: string;
-  
+
   /**
    * Whether to include provider-specific optimizations
    */
@@ -50,11 +50,11 @@ export function buildTextGenerationParams<T extends Record<string, any>>(
   const finalDefaults = { ...providerDefaults, ...defaults };
 
   // Handle maxOutputTokens (AI SDK v5 standard)
-  const maxTokens = 
-    options?.maxOutputTokens ?? 
-    options?.maxTokens ?? 
+  const maxTokens =
+    options?.maxOutputTokens ??
+    options?.maxTokens ??
     finalDefaults.maxOutputTokens;
-  
+
   if (maxTokens !== undefined && maxTokens > 0) {
     (params as any).maxOutputTokens = maxTokens;
   }
@@ -73,17 +73,25 @@ export function buildTextGenerationParams<T extends Record<string, any>>(
 
   // Handle frequency penalty (OpenAI-style providers)
   if (supportsParameter(provider, 'frequencyPenalty')) {
-    const frequencyPenalty = options?.frequencyPenalty ?? finalDefaults.frequencyPenalty;
+    const frequencyPenalty =
+      options?.frequencyPenalty ?? finalDefaults.frequencyPenalty;
     if (frequencyPenalty !== undefined) {
-      (params as any).frequencyPenalty = Math.min(Math.max(frequencyPenalty, -2), 2);
+      (params as any).frequencyPenalty = Math.min(
+        Math.max(frequencyPenalty, -2),
+        2
+      );
     }
   }
 
   // Handle presence penalty (OpenAI-style providers)
   if (supportsParameter(provider, 'presencePenalty')) {
-    const presencePenalty = options?.presencePenalty ?? finalDefaults.presencePenalty;
+    const presencePenalty =
+      options?.presencePenalty ?? finalDefaults.presencePenalty;
     if (presencePenalty !== undefined) {
-      (params as any).presencePenalty = Math.min(Math.max(presencePenalty, -2), 2);
+      (params as any).presencePenalty = Math.min(
+        Math.max(presencePenalty, -2),
+        2
+      );
     }
   }
 
@@ -110,7 +118,7 @@ export function buildChatGenerationParams<T extends Record<string, any>>(
   if (options?.tools && Object.keys(options.tools).length > 0) {
     (params as any).tools = options.tools;
     (params as any).maxSteps = options.maxSteps || 5;
-    
+
     // Add tool streaming support for compatible providers
     if (supportsParameter(config?.provider || 'openai', 'toolCallStreaming')) {
       (params as any).toolCallStreaming = true;
@@ -163,14 +171,15 @@ export function buildImageGenerationParams<T extends Record<string, any>>(
   // Provider-specific options
   if (provider === 'openai' && options) {
     const providerOptions: any = {};
-    
+
     if (options.quality) providerOptions.quality = options.quality;
     if (options.style) providerOptions.style = options.style;
-    if (options.responseFormat) providerOptions.response_format = options.responseFormat;
-    
+    if (options.responseFormat)
+      providerOptions.response_format = options.responseFormat;
+
     if (Object.keys(providerOptions).length > 0) {
       (params as any).providerOptions = {
-        openai: providerOptions
+        openai: providerOptions,
       };
     }
   }
@@ -282,7 +291,13 @@ function getProviderDefaults(provider: string): {
  */
 function supportsParameter(provider: string, parameter: string): boolean {
   const supportMatrix: Record<string, string[]> = {
-    openai: ['frequencyPenalty', 'presencePenalty', 'toolCallStreaming', 'quality', 'style'],
+    openai: [
+      'frequencyPenalty',
+      'presencePenalty',
+      'toolCallStreaming',
+      'quality',
+      'style',
+    ],
     anthropic: ['toolCallStreaming'],
     groq: ['frequencyPenalty', 'presencePenalty', 'toolCallStreaming'],
     xai: ['frequencyPenalty', 'presencePenalty'],
@@ -309,7 +324,7 @@ function convertFunctionsToTools(functions: any[]): Record<string, any> {
         execute: async (params: any) => {
           // This would need to be implemented by the specific portal
           return params;
-        }
+        },
       };
     }
   }
@@ -324,27 +339,27 @@ export function createParameterBuilder(provider: string, defaults?: any) {
   const config: ParameterBuilderOptions = {
     provider,
     defaults,
-    useProviderOptimizations: true
+    useProviderOptimizations: true,
   };
 
   return {
     buildTextParams: <T extends Record<string, any>>(
-      baseParams: T, 
+      baseParams: T,
       options?: TextGenerationOptions
     ) => buildTextGenerationParams(baseParams, options, config),
-    
+
     buildChatParams: <T extends Record<string, any>>(
-      baseParams: T, 
+      baseParams: T,
       options?: ChatGenerationOptions
     ) => buildChatGenerationParams(baseParams, options, config),
-    
+
     buildImageParams: <T extends Record<string, any>>(
-      baseParams: T, 
+      baseParams: T,
       options?: ImageGenerationOptions
     ) => buildImageGenerationParams(baseParams, options, config),
-    
+
     buildEmbeddingParams: <T extends Record<string, any>>(
-      baseParams: T, 
+      baseParams: T,
       options?: EmbeddingOptions
     ) => buildEmbeddingParams(baseParams, options, config),
   };

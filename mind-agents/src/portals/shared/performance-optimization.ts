@@ -1,6 +1,6 @@
 /**
  * Performance Optimization Utilities
- * 
+ *
  * Advanced performance optimization including connection pooling, request batching,
  * intelligent caching, and dynamic rate limiting for AI SDK v5 portals.
  */
@@ -31,11 +31,14 @@ export interface PooledConnection {
 export class ConnectionPool {
   private connections = new Map<string, PooledConnection>();
   private availableConnections = new Map<string, PooledConnection[]>();
-  private pendingRequests = new Map<string, Array<{
-    resolve: (connection: PooledConnection) => void;
-    reject: (error: Error) => void;
-    timeout: NodeJS.Timeout;
-  }>>();
+  private pendingRequests = new Map<
+    string,
+    Array<{
+      resolve: (connection: PooledConnection) => void;
+      reject: (error: Error) => void;
+      timeout: NodeJS.Timeout;
+    }>
+  >();
 
   constructor(
     private config: ConnectionPoolConfig,
@@ -43,7 +46,7 @@ export class ConnectionPool {
   ) {
     // Initialize minimum connections for each provider
     this.initializePool();
-    
+
     // Start cleanup timer
     setInterval(() => this.cleanupIdleConnections(), 60000); // Every minute
   }
@@ -53,7 +56,7 @@ export class ConnectionPool {
    */
   async getConnection(providerId: string): Promise<PooledConnection> {
     const available = this.availableConnections.get(providerId) || [];
-    
+
     // Try to get an available connection
     if (available.length > 0) {
       const connection = available.pop()!;
@@ -64,9 +67,10 @@ export class ConnectionPool {
     }
 
     // Check if we can create a new connection
-    const allConnections = Array.from(this.connections.values())
-      .filter(conn => conn.provider === providerId);
-    
+    const allConnections = Array.from(this.connections.values()).filter(
+      (conn) => conn.provider === providerId
+    );
+
     if (allConnections.length < this.config.maxConnections) {
       return await this.createNewConnection(providerId);
     }
@@ -80,7 +84,7 @@ export class ConnectionPool {
       if (!this.pendingRequests.has(providerId)) {
         this.pendingRequests.set(providerId, []);
       }
-      
+
       this.pendingRequests.get(providerId)!.push({
         resolve,
         reject,
@@ -97,7 +101,7 @@ export class ConnectionPool {
     connection.lastUsed = new Date();
 
     const providerId = connection.provider;
-    
+
     // Check if there are pending requests
     const pending = this.pendingRequests.get(providerId);
     if (pending && pending.length > 0) {
@@ -119,52 +123,66 @@ export class ConnectionPool {
   /**
    * Get pool statistics
    */
-  getStats(): Record<string, {
-    total: number;
-    active: number;
-    available: number;
-    pending: number;
-    avgUseCount: number;
-  }> {
+  getStats(): Record<
+    string,
+    {
+      total: number;
+      active: number;
+      available: number;
+      pending: number;
+      avgUseCount: number;
+    }
+  > {
     const stats: Record<string, any> = {};
-    
+
     for (const [providerId, connections] of this.availableConnections) {
-      const allConnections = Array.from(this.connections.values())
-        .filter(conn => conn.provider === providerId);
-      
-      const active = allConnections.filter(conn => conn.isActive);
+      const allConnections = Array.from(this.connections.values()).filter(
+        (conn) => conn.provider === providerId
+      );
+
+      const active = allConnections.filter((conn) => conn.isActive);
       const pending = this.pendingRequests.get(providerId) || [];
-      
+
       stats[providerId] = {
         total: allConnections.length,
         active: active.length,
         available: connections.length,
         pending: pending.length,
-        avgUseCount: allConnections.reduce((sum, conn) => sum + conn.useCount, 0) / allConnections.length,
+        avgUseCount:
+          allConnections.reduce((sum, conn) => sum + conn.useCount, 0) /
+          allConnections.length,
       };
     }
-    
+
     return stats;
   }
 
   private async initializePool(): Promise<void> {
     // Initialize minimum connections for common providers
     const commonProviders = ['openai', 'anthropic', 'google'];
-    
+
     for (const providerId of commonProviders) {
-      const connectionsToCreate = Math.min(this.config.minConnections, this.config.maxConnections);
-      
+      const connectionsToCreate = Math.min(
+        this.config.minConnections,
+        this.config.maxConnections
+      );
+
       for (let i = 0; i < connectionsToCreate; i++) {
         try {
           await this.createNewConnection(providerId);
         } catch (error) {
-          runtimeLogger.warn(`Failed to initialize connection for ${providerId}:`, error);
+          runtimeLogger.warn(
+            `Failed to initialize connection for ${providerId}:`,
+            error
+          );
         }
       }
     }
   }
 
-  private async createNewConnection(providerId: string): Promise<PooledConnection> {
+  private async createNewConnection(
+    providerId: string
+  ): Promise<PooledConnection> {
     try {
       const client = await this.createConnection(providerId);
       const connection: PooledConnection = {
@@ -180,7 +198,10 @@ export class ConnectionPool {
       this.connections.set(connection.id, connection);
       return connection;
     } catch (error) {
-      runtimeLogger.error(`Failed to create connection for ${providerId}:`, error);
+      runtimeLogger.error(
+        `Failed to create connection for ${providerId}:`,
+        error
+      );
       throw error;
     }
   }
@@ -213,7 +234,10 @@ export class ConnectionPool {
 
         // Cleanup the actual connection
         try {
-          if (connection.client && typeof connection.client.destroy === 'function') {
+          if (
+            connection.client &&
+            typeof connection.client.destroy === 'function'
+          ) {
             connection.client.destroy();
           }
         } catch (error) {
@@ -225,7 +249,9 @@ export class ConnectionPool {
     }
 
     if (expiredConnections.length > 0) {
-      runtimeLogger.debug(`Cleaned up ${expiredConnections.length} idle connections`);
+      runtimeLogger.debug(
+        `Cleaned up ${expiredConnections.length} idle connections`
+      );
     }
   }
 }
@@ -260,7 +286,9 @@ export class RequestBatcher {
   /**
    * Add a request to the batch queue
    */
-  addRequest(request: Omit<BatchableRequest, 'id' | 'timestamp'>): Promise<any> {
+  addRequest(
+    request: Omit<BatchableRequest, 'id' | 'timestamp'>
+  ): Promise<any> {
     return new Promise((resolve, reject) => {
       const batchableRequest: BatchableRequest = {
         ...request,
@@ -271,7 +299,7 @@ export class RequestBatcher {
       };
 
       const batchKey = this.getBatchKey(request);
-      
+
       if (!this.pendingRequests.has(batchKey)) {
         this.pendingRequests.set(batchKey, []);
       }
@@ -287,7 +315,7 @@ export class RequestBatcher {
         const timer = setTimeout(() => {
           this.executeBatch(batchKey);
         }, this.config.batchTimeout);
-        
+
         this.batchTimers.set(batchKey, timer);
       }
     });
@@ -310,7 +338,7 @@ export class RequestBatcher {
 
     try {
       // Group similar requests if adaptive batching is enabled
-      const groups = this.config.enableAdaptiveBatching 
+      const groups = this.config.enableAdaptiveBatching
         ? this.groupSimilarRequests(batch)
         : [batch];
 
@@ -344,7 +372,7 @@ export class RequestBatcher {
     // Multiple requests - try to batch them
     try {
       const batchResults = await this.executeBatchedRequest(group);
-      
+
       // Distribute results back to individual requests
       for (let i = 0; i < group.length; i++) {
         if (batchResults[i]) {
@@ -355,8 +383,11 @@ export class RequestBatcher {
       }
     } catch (error) {
       // Fallback: execute requests individually
-      runtimeLogger.warn('Batch execution failed, falling back to individual requests:', error);
-      
+      runtimeLogger.warn(
+        'Batch execution failed, falling back to individual requests:',
+        error
+      );
+
       for (const request of group) {
         try {
           const result = await this.executeSingleRequest(request);
@@ -372,7 +403,9 @@ export class RequestBatcher {
     return `${request.provider}:${request.model}`;
   }
 
-  private groupSimilarRequests(batch: BatchableRequest[]): BatchableRequest[][] {
+  private groupSimilarRequests(
+    batch: BatchableRequest[]
+  ): BatchableRequest[][] {
     const groups: BatchableRequest[][] = [];
     const processed = new Set<string>();
 
@@ -385,7 +418,7 @@ export class RequestBatcher {
       // Find similar requests
       for (const other of batch) {
         if (processed.has(other.id)) continue;
-        
+
         if (this.areRequestsSimilar(request, other)) {
           group.push(other);
           processed.add(other.id);
@@ -398,7 +431,10 @@ export class RequestBatcher {
     return groups;
   }
 
-  private areRequestsSimilar(req1: BatchableRequest, req2: BatchableRequest): boolean {
+  private areRequestsSimilar(
+    req1: BatchableRequest,
+    req2: BatchableRequest
+  ): boolean {
     // Check if prompts are similar based on various criteria
     const similarity = this.calculatePromptSimilarity(req1.prompt, req2.prompt);
     return similarity >= this.config.similarityThreshold;
@@ -408,10 +444,12 @@ export class RequestBatcher {
     // Simple similarity calculation based on common words
     const words1 = new Set(prompt1.toLowerCase().split(/\s+/));
     const words2 = new Set(prompt2.toLowerCase().split(/\s+/));
-    
-    const intersection = new Set([...words1].filter(word => words2.has(word)));
+
+    const intersection = new Set(
+      [...words1].filter((word) => words2.has(word))
+    );
     const union = new Set([...words1, ...words2]);
-    
+
     return intersection.size / union.size;
   }
 
@@ -420,7 +458,9 @@ export class RequestBatcher {
     throw new Error('executeSingleRequest must be implemented by the portal');
   }
 
-  private async executeBatchedRequest(group: BatchableRequest[]): Promise<any[]> {
+  private async executeBatchedRequest(
+    group: BatchableRequest[]
+  ): Promise<any[]> {
     // This would be implemented by the specific portal for batch processing
     throw new Error('executeBatchedRequest must be implemented by the portal');
   }
@@ -446,7 +486,10 @@ export class RequestBatcher {
     return {
       pendingBatches: this.pendingRequests.size,
       totalPendingRequests: totalRequests,
-      averageBatchSize: this.pendingRequests.size > 0 ? totalRequests / this.pendingRequests.size : 0,
+      averageBatchSize:
+        this.pendingRequests.size > 0
+          ? totalRequests / this.pendingRequests.size
+          : 0,
       batchesByProvider,
     };
   }
@@ -515,16 +558,17 @@ export class IntelligentCache {
   set(key: string, value: any): void {
     // Calculate size
     const size = this.calculateSize(value);
-    
+
     // Compress if enabled and beneficial
     let compressed = false;
     let finalValue = value;
-    
+
     if (this.config.enableCompression && size > 1000) {
       const compressedValue = this.compress(value);
       const compressedSize = this.calculateSize(compressedValue);
-      
-      if (compressedSize < size * 0.8) { // Only compress if significant savings
+
+      if (compressedSize < size * 0.8) {
+        // Only compress if significant savings
         finalValue = compressedValue;
         compressed = true;
       }
@@ -592,7 +636,12 @@ export class IntelligentCache {
   /**
    * Generate cache key for request
    */
-  generateKey(provider: string, model: string, prompt: string, options: any = {}): string {
+  generateKey(
+    provider: string,
+    model: string,
+    prompt: string,
+    options: any = {}
+  ): string {
     // Create a deterministic key based on request parameters
     const keyData = {
       provider,
@@ -600,7 +649,7 @@ export class IntelligentCache {
       prompt: prompt.trim(),
       options: this.normalizeOptions(options),
     };
-    
+
     return this.hash(JSON.stringify(keyData));
   }
 
@@ -616,27 +665,38 @@ export class IntelligentCache {
     compressionRatio: number;
   } {
     const entries = Array.from(this.cache.values());
-    const totalHits = entries.reduce((sum, entry) => sum + entry.accessCount, 0);
+    const totalHits = entries.reduce(
+      (sum, entry) => sum + entry.accessCount,
+      0
+    );
     const totalRequests = totalHits + this.getStats.misses || 0;
-    
-    const compressedEntries = entries.filter(e => e.compressed);
-    const compressionRatio = compressedEntries.length / Math.max(1, entries.length);
+
+    const compressedEntries = entries.filter((e) => e.compressed);
+    const compressionRatio =
+      compressedEntries.length / Math.max(1, entries.length);
 
     return {
       size: this.currentSize,
       entries: entries.length,
       hitRate: totalRequests > 0 ? totalHits / totalRequests : 0,
       averageSize: entries.length > 0 ? this.currentSize / entries.length : 0,
-      oldestEntry: entries.length > 0 
-        ? entries.reduce((oldest, entry) => 
-            entry.createdAt < oldest ? entry.createdAt : oldest, entries[0].createdAt)
-        : null,
+      oldestEntry:
+        entries.length > 0
+          ? entries.reduce(
+              (oldest, entry) =>
+                entry.createdAt < oldest ? entry.createdAt : oldest,
+              entries[0].createdAt
+            )
+          : null,
       compressionRatio,
     };
   }
 
   private makeRoom(neededSize: number): void {
-    while (this.currentSize + neededSize > this.config.maxSize && this.cache.size > 0) {
+    while (
+      this.currentSize + neededSize > this.config.maxSize &&
+      this.cache.size > 0
+    ) {
       const keyToEvict = this.selectEvictionCandidate();
       if (keyToEvict) {
         this.delete(keyToEvict);
@@ -652,11 +712,14 @@ export class IntelligentCache {
     switch (this.config.evictionPolicy) {
       case 'lru':
         return this.accessOrder[0] || null;
-      
+
       case 'lfu':
-        return Array.from(this.cache.entries())
-          .sort(([, a], [, b]) => a.accessCount - b.accessCount)[0]?.[0] || null;
-      
+        return (
+          Array.from(this.cache.entries()).sort(
+            ([, a], [, b]) => a.accessCount - b.accessCount
+          )[0]?.[0] || null
+        );
+
       case 'adaptive':
         // Combine LRU and LFU with age factor
         const entries = Array.from(this.cache.entries());
@@ -666,10 +729,10 @@ export class IntelligentCache {
           const score = age / (frequency + 1); // Higher score = better eviction candidate
           return { key, score };
         });
-        
+
         scored.sort((a, b) => b.score - a.score);
         return scored[0]?.key || null;
-      
+
       default:
         return this.accessOrder[0] || null;
     }
@@ -690,7 +753,9 @@ export class IntelligentCache {
     }
 
     if (expiredKeys.length > 0) {
-      runtimeLogger.debug(`Cleaned up ${expiredKeys.length} expired cache entries`);
+      runtimeLogger.debug(
+        `Cleaned up ${expiredKeys.length} expired cache entries`
+      );
     }
   }
 
@@ -713,14 +778,14 @@ export class IntelligentCache {
   private normalizeOptions(options: any): any {
     // Sort keys to ensure consistent cache keys
     if (typeof options !== 'object' || options === null) return options;
-    
+
     const normalized: any = {};
     const keys = Object.keys(options).sort();
-    
+
     for (const key of keys) {
       normalized[key] = options[key];
     }
-    
+
     return normalized;
   }
 
@@ -729,7 +794,7 @@ export class IntelligentCache {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32-bit integer
     }
     return hash.toString();
@@ -760,7 +825,7 @@ export class DynamicRateLimiter {
   constructor(private config: RateLimitConfig) {
     this.tokenBucket = config.burstSize;
     this.currentRate = config.requestsPerSecond;
-    
+
     // Start processing queue
     setInterval(() => this.processQueue(), 100);
   }
@@ -786,7 +851,9 @@ export class DynamicRateLimiter {
 
       // Set timeout for queued requests
       setTimeout(() => {
-        const index = this.requestQueue.findIndex(req => req.resolve === resolve);
+        const index = this.requestQueue.findIndex(
+          (req) => req.resolve === resolve
+        );
         if (index > -1) {
           this.requestQueue.splice(index, 1);
           reject(new Error('Rate limit timeout'));
@@ -801,7 +868,7 @@ export class DynamicRateLimiter {
   reportSuccess(): void {
     if (this.consecutiveFailures > 0) {
       this.consecutiveFailures = Math.max(0, this.consecutiveFailures - 1);
-      
+
       if (this.config.adaptiveRate) {
         // Gradually increase rate back to normal
         this.currentRate = Math.min(
@@ -817,15 +884,17 @@ export class DynamicRateLimiter {
    */
   reportFailure(): void {
     this.consecutiveFailures++;
-    
+
     if (this.config.adaptiveRate && this.consecutiveFailures >= 3) {
       // Reduce rate to avoid overwhelming the service
       this.currentRate = Math.max(
         this.config.requestsPerSecond * 0.1, // Minimum 10% of original rate
         this.currentRate / this.config.backoffMultiplier
       );
-      
-      runtimeLogger.warn(`Rate limited due to failures. New rate: ${this.currentRate} req/s`);
+
+      runtimeLogger.warn(
+        `Rate limited due to failures. New rate: ${this.currentRate} req/s`
+      );
     }
   }
 
@@ -850,9 +919,12 @@ export class DynamicRateLimiter {
     const now = Date.now();
     const timePassed = now - this.lastRefill;
     const tokensToAdd = Math.floor((timePassed / 1000) * this.currentRate);
-    
+
     if (tokensToAdd > 0) {
-      this.tokenBucket = Math.min(this.config.burstSize, this.tokenBucket + tokensToAdd);
+      this.tokenBucket = Math.min(
+        this.config.burstSize,
+        this.tokenBucket + tokensToAdd
+      );
       this.lastRefill = now;
     }
   }
@@ -868,8 +940,8 @@ export class DynamicRateLimiter {
 
     // Clean up old queued requests
     const cutoffTime = Date.now() - 30000; // 30 seconds ago
-    this.requestQueue = this.requestQueue.filter(req => 
-      req.timestamp.getTime() > cutoffTime
+    this.requestQueue = this.requestQueue.filter(
+      (req) => req.timestamp.getTime() > cutoffTime
     );
   }
 }
@@ -877,22 +949,21 @@ export class DynamicRateLimiter {
 // === PERFORMANCE MONITOR ===
 
 export class PerformanceMonitor {
-  private metrics = new Map<string, {
-    requestCount: number;
-    totalTime: number;
-    errors: number;
-    averageTime: number;
-    lastRequest: Date;
-  }>();
+  private metrics = new Map<
+    string,
+    {
+      requestCount: number;
+      totalTime: number;
+      errors: number;
+      averageTime: number;
+      lastRequest: Date;
+    }
+  >();
 
   /**
    * Record a request execution
    */
-  recordRequest(
-    key: string,
-    executionTime: number,
-    success: boolean
-  ): void {
+  recordRequest(key: string, executionTime: number, success: boolean): void {
     const existing = this.metrics.get(key) || {
       requestCount: 0,
       totalTime: 0,

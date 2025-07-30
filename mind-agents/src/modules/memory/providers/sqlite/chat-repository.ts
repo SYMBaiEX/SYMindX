@@ -919,7 +919,10 @@ export class SQLiteChatRepository implements ChatRepository {
         row['thought_process'] ? JSON.parse(row['thought_process']) : undefined
       )
       .addOptional('confidenceScore', row['confidence_score'])
-      .addOptional('readAt', row['read_at'] ? new Date(row['read_at']) : undefined)
+      .addOptional(
+        'readAt',
+        row['read_at'] ? new Date(row['read_at']) : undefined
+      )
       .addOptional(
         'deletedAt',
         row['deleted_at'] ? new Date(row['deleted_at']) : undefined
@@ -942,7 +945,10 @@ export class SQLiteChatRepository implements ChatRepository {
       status: row['status'] as ParticipantStatus,
     })
       .addOptional('participantName', row['participant_name'])
-      .addOptional('leftAt', row['left_at'] ? new Date(row['left_at']) : undefined)
+      .addOptional(
+        'leftAt',
+        row['left_at'] ? new Date(row['left_at']) : undefined
+      )
       .addOptional(
         'lastSeenAt',
         row['last_seen_at'] ? new Date(row['last_seen_at']) : undefined
@@ -964,7 +970,10 @@ export class SQLiteChatRepository implements ChatRepository {
       clientInfo: JSON.parse(row['client_info'] || '{}'),
     })
       .addOptional('connectionId', row['connection_id'])
-      .addOptional('endedAt', row['ended_at'] ? new Date(row['ended_at']) : undefined)
+      .addOptional(
+        'endedAt',
+        row['ended_at'] ? new Date(row['ended_at']) : undefined
+      )
       .addOptional('ipAddress', row['ip_address'])
       .addOptional('userAgent', row['user_agent'])
       .build();

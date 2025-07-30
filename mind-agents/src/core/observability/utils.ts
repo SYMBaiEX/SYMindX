@@ -1,7 +1,7 @@
 /**
  * @module observability/utils
  * @description Utility functions and middleware for the observability system
- * 
+ *
  * Provides decorators, middleware, and helper functions for easy
  * integration of observability into existing code.
  */
@@ -60,18 +60,30 @@ export function formatTraceOutput(context: TraceContext): string {
 /**
  * Extract trace context from HTTP headers
  */
-export function extractTraceFromHeaders(headers: Record<string, string>): TraceContext | undefined {
-  const traceId = headers[OBSERVABILITY_CONSTANTS.TRACE_HEADERS.TRACE_ID.toLowerCase()];
-  const spanId = headers[OBSERVABILITY_CONSTANTS.TRACE_HEADERS.SPAN_ID.toLowerCase()];
-  
+export function extractTraceFromHeaders(
+  headers: Record<string, string>
+): TraceContext | undefined {
+  const traceId =
+    headers[OBSERVABILITY_CONSTANTS.TRACE_HEADERS.TRACE_ID.toLowerCase()];
+  const spanId =
+    headers[OBSERVABILITY_CONSTANTS.TRACE_HEADERS.SPAN_ID.toLowerCase()];
+
   if (!traceId || !spanId) return undefined;
 
   return {
     traceId,
     spanId,
-    parentSpanId: headers[OBSERVABILITY_CONSTANTS.TRACE_HEADERS.PARENT_SPAN_ID.toLowerCase()],
-    sampled: headers[OBSERVABILITY_CONSTANTS.TRACE_HEADERS.SAMPLED.toLowerCase()] === 'true',
-    flags: parseInt(headers[OBSERVABILITY_CONSTANTS.TRACE_HEADERS.FLAGS.toLowerCase()] || '0', 10),
+    parentSpanId:
+      headers[
+        OBSERVABILITY_CONSTANTS.TRACE_HEADERS.PARENT_SPAN_ID.toLowerCase()
+      ],
+    sampled:
+      headers[OBSERVABILITY_CONSTANTS.TRACE_HEADERS.SAMPLED.toLowerCase()] ===
+      'true',
+    flags: parseInt(
+      headers[OBSERVABILITY_CONSTANTS.TRACE_HEADERS.FLAGS.toLowerCase()] || '0',
+      10
+    ),
     baggage: {},
     startTime: new Date(),
     metadata: {},
@@ -89,7 +101,8 @@ export function injectTraceIntoHeaders(
     ...headers,
     [OBSERVABILITY_CONSTANTS.TRACE_HEADERS.TRACE_ID]: context.traceId,
     [OBSERVABILITY_CONSTANTS.TRACE_HEADERS.SPAN_ID]: context.spanId,
-    [OBSERVABILITY_CONSTANTS.TRACE_HEADERS.PARENT_SPAN_ID]: context.parentSpanId || '',
+    [OBSERVABILITY_CONSTANTS.TRACE_HEADERS.PARENT_SPAN_ID]:
+      context.parentSpanId || '',
     [OBSERVABILITY_CONSTANTS.TRACE_HEADERS.SAMPLED]: context.sampled.toString(),
     [OBSERVABILITY_CONSTANTS.TRACE_HEADERS.FLAGS]: context.flags.toString(),
   };
@@ -127,13 +140,18 @@ export function createObservabilityLogContext(
  * Decorator for automatic tracing
  */
 export function withTracing(operationName?: string) {
-  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+  return function (
+    target: any,
+    propertyKey: string,
+    descriptor: PropertyDescriptor
+  ) {
     const originalMethod = descriptor.value;
-    const traceOperation = operationName || `${target.constructor.name}.${propertyKey}`;
+    const traceOperation =
+      operationName || `${target.constructor.name}.${propertyKey}`;
 
     descriptor.value = async function (...args: any[]) {
       const observability = ObservabilityManager.getInstance();
-      
+
       return observability.traceOperation(
         traceOperation,
         (context) => originalMethod.apply(this, args),
@@ -153,10 +171,19 @@ export function withTracing(operationName?: string) {
 /**
  * Decorator for automatic metrics collection
  */
-export function withMetrics(metricName?: string, metricType: 'counter' | 'gauge' | 'histogram' = 'histogram') {
-  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+export function withMetrics(
+  metricName?: string,
+  metricType: 'counter' | 'gauge' | 'histogram' = 'histogram'
+) {
+  return function (
+    target: any,
+    propertyKey: string,
+    descriptor: PropertyDescriptor
+  ) {
     const originalMethod = descriptor.value;
-    const metric = metricName || `${target.constructor.name.toLowerCase()}_${propertyKey}_duration`;
+    const metric =
+      metricName ||
+      `${target.constructor.name.toLowerCase()}_${propertyKey}_duration`;
 
     descriptor.value = async function (...args: any[]) {
       const observability = ObservabilityManager.getInstance();
@@ -164,7 +191,7 @@ export function withMetrics(metricName?: string, metricType: 'counter' | 'gauge'
 
       try {
         const result = await originalMethod.apply(this, args);
-        
+
         // Record success metric
         const duration = performance.now() - startTime;
         observability.recordEvent({
@@ -203,20 +230,27 @@ export function withMetrics(metricName?: string, metricType: 'counter' | 'gauge'
 /**
  * Decorator combining tracing and metrics
  */
-export function withObservability(options: {
-  operationName?: string;
-  metricName?: string;
-  metricType?: 'counter' | 'gauge' | 'histogram';
-  includeArgs?: boolean;
-  includeResult?: boolean;
-} = {}) {
-  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+export function withObservability(
+  options: {
+    operationName?: string;
+    metricName?: string;
+    metricType?: 'counter' | 'gauge' | 'histogram';
+    includeArgs?: boolean;
+    includeResult?: boolean;
+  } = {}
+) {
+  return function (
+    target: any,
+    propertyKey: string,
+    descriptor: PropertyDescriptor
+  ) {
     const originalMethod = descriptor.value;
-    const traceOperation = options.operationName || `${target.constructor.name}.${propertyKey}`;
+    const traceOperation =
+      options.operationName || `${target.constructor.name}.${propertyKey}`;
 
     descriptor.value = async function (...args: any[]) {
       const observability = ObservabilityManager.getInstance();
-      
+
       return observability.traceOperation(
         traceOperation,
         async (context) => {
@@ -224,10 +258,10 @@ export function withObservability(options: {
 
           try {
             const result = await originalMethod.apply(this, args);
-            
+
             // Record success metrics and trace data
             const duration = performance.now() - startTime;
-            
+
             const metadata: Record<string, unknown> = {
               className: target.constructor.name,
               methodName: propertyKey,
@@ -237,7 +271,10 @@ export function withObservability(options: {
 
             if (options.includeArgs) {
               metadata.argumentCount = args.length;
-              metadata.arguments = args.map((arg, i) => ({ index: i, type: typeof arg }));
+              metadata.arguments = args.map((arg, i) => ({
+                index: i,
+                type: typeof arg,
+              }));
             }
 
             if (options.includeResult && result !== undefined) {
@@ -256,7 +293,7 @@ export function withObservability(options: {
           } catch (error) {
             // Record error metrics and trace data
             const duration = performance.now() - startTime;
-            
+
             observability.recordEvent({
               type: 'system',
               operation: `${propertyKey}_error`,
@@ -266,7 +303,8 @@ export function withObservability(options: {
                 methodName: propertyKey,
                 success: false,
                 error: error instanceof Error ? error.message : String(error),
-                errorType: error instanceof Error ? error.constructor.name : 'Unknown',
+                errorType:
+                  error instanceof Error ? error.constructor.name : 'Unknown',
               },
             });
 
@@ -295,7 +333,7 @@ export function traceAgentOperation<T>(
   parentContext?: TraceContext
 ): Promise<T> {
   const observability = ObservabilityManager.getInstance();
-  
+
   return observability.traceOperation(
     OBSERVABILITY_CONSTANTS.TRACE_OPERATIONS.AGENT_THINK,
     fn,
@@ -319,7 +357,7 @@ export function tracePortalOperation<T>(
   parentContext?: TraceContext
 ): Promise<T> {
   const observability = ObservabilityManager.getInstance();
-  
+
   return observability.traceOperation(
     OBSERVABILITY_CONSTANTS.TRACE_OPERATIONS.PORTAL_REQUEST,
     fn,
@@ -343,7 +381,7 @@ export function traceExtensionOperation<T>(
   parentContext?: TraceContext
 ): Promise<T> {
   const observability = ObservabilityManager.getInstance();
-  
+
   return observability.traceOperation(
     OBSERVABILITY_CONSTANTS.TRACE_OPERATIONS.EXTENSION_MESSAGE,
     fn,
@@ -366,7 +404,7 @@ export function traceMemoryOperation<T>(
   parentContext?: TraceContext
 ): Promise<T> {
   const observability = ObservabilityManager.getInstance();
-  
+
   return observability.traceOperation(
     OBSERVABILITY_CONSTANTS.TRACE_OPERATIONS.MEMORY_STORE,
     fn,
@@ -385,59 +423,61 @@ export function traceMemoryOperation<T>(
 export function createTracingMiddleware() {
   return (req: any, res: any, next: any) => {
     const observability = ObservabilityManager.getInstance();
-    
+
     // Extract trace context from headers
     const parentContext = extractTraceFromHeaders(req.headers);
-    
+
     // Start trace for request
     const operationName = `${req.method} ${req.route?.path || req.path}`;
-    
-    observability.traceOperation(
-      operationName,
-      async (context) => {
-        // Inject trace context into request
-        req.traceContext = context;
-        
-        // Inject trace headers into response
-        const traceHeaders = injectTraceIntoHeaders(context);
-        for (const [key, value] of Object.entries(traceHeaders)) {
-          res.setHeader(key, value);
-        }
-        
-        // Continue with request processing
-        return new Promise<void>((resolve, reject) => {
-          res.on('finish', () => {
-            // Record HTTP metrics
-            observability.recordEvent({
-              type: 'system',
-              operation: 'http_request',
-              metadata: {
-                method: req.method,
-                path: req.path,
-                statusCode: res.statusCode,
-                userAgent: req.get('User-Agent'),
-                ip: req.ip,
-              },
+
+    observability
+      .traceOperation(
+        operationName,
+        async (context) => {
+          // Inject trace context into request
+          req.traceContext = context;
+
+          // Inject trace headers into response
+          const traceHeaders = injectTraceIntoHeaders(context);
+          for (const [key, value] of Object.entries(traceHeaders)) {
+            res.setHeader(key, value);
+          }
+
+          // Continue with request processing
+          return new Promise<void>((resolve, reject) => {
+            res.on('finish', () => {
+              // Record HTTP metrics
+              observability.recordEvent({
+                type: 'system',
+                operation: 'http_request',
+                metadata: {
+                  method: req.method,
+                  path: req.path,
+                  statusCode: res.statusCode,
+                  userAgent: req.get('User-Agent'),
+                  ip: req.ip,
+                },
+              });
+
+              resolve();
             });
-            
-            resolve();
+
+            res.on('error', (error: Error) => {
+              reject(error);
+            });
+
+            next();
           });
-          
-          res.on('error', (error: Error) => {
-            reject(error);
-          });
-          
-          next();
-        });
-      },
-      parentContext,
-      {
-        method: req.method,
-        path: req.path,
-        userAgent: req.get('User-Agent'),
-        ip: req.ip,
-      }
-    ).catch(next);
+        },
+        parentContext,
+        {
+          method: req.method,
+          path: req.path,
+          userAgent: req.get('User-Agent'),
+          ip: req.ip,
+        }
+      )
+      .catch(next);
   };
 }
 
@@ -455,12 +495,12 @@ export function createLoggingMiddleware(logger: ILogger = runtimeLogger) {
         userAgent: req.get('User-Agent'),
         ip: req.ip,
       });
-      
+
       req.logger = logger.child(logContext);
     } else {
       req.logger = logger;
     }
-    
+
     next();
   };
 }
@@ -486,12 +526,14 @@ export function createObservabilityMiddleware(
 /**
  * Performance monitoring middleware
  */
-export function createPerformanceMiddleware(thresholds: {
-  slowRequestMs?: number;
-  memoryWarningMb?: number;
-} = {}): ObservabilityMiddleware {
+export function createPerformanceMiddleware(
+  thresholds: {
+    slowRequestMs?: number;
+    memoryWarningMb?: number;
+  } = {}
+): ObservabilityMiddleware {
   const { slowRequestMs = 1000, memoryWarningMb = 100 } = thresholds;
-  
+
   return createObservabilityMiddleware(
     'performance-monitor',
     {
@@ -500,11 +542,12 @@ export function createPerformanceMiddleware(thresholds: {
         const memUsage = process.memoryUsage();
         context.metadata.initialMemory = memUsage.heapUsed;
       },
-      
+
       afterOperation: async (context, operation, result, duration) => {
         // Check for slow operations
         if (duration > slowRequestMs) {
-          runtimeLogger.warn(`Slow operation detected: ${operation}`, 
+          runtimeLogger.warn(
+            `Slow operation detected: ${operation}`,
             createObservabilityLogContext(context, {
               duration,
               threshold: slowRequestMs,
@@ -512,14 +555,16 @@ export function createPerformanceMiddleware(thresholds: {
             })
           );
         }
-        
+
         // Check memory usage
         const memUsage = process.memoryUsage();
-        const memoryDelta = memUsage.heapUsed - (context.metadata.initialMemory as number || 0);
+        const memoryDelta =
+          memUsage.heapUsed - ((context.metadata.initialMemory as number) || 0);
         const memoryMb = memoryDelta / 1024 / 1024;
-        
+
         if (memoryMb > memoryWarningMb) {
-          runtimeLogger.warn(`High memory usage in operation: ${operation}`,
+          runtimeLogger.warn(
+            `High memory usage in operation: ${operation}`,
             createObservabilityLogContext(context, {
               memoryUsageMb: memoryMb,
               threshold: memoryWarningMb,
@@ -528,9 +573,10 @@ export function createPerformanceMiddleware(thresholds: {
           );
         }
       },
-      
+
       onError: async (context, operation, error, duration) => {
-        runtimeLogger.error(`Operation failed: ${operation}`,
+        runtimeLogger.error(
+          `Operation failed: ${operation}`,
           error,
           createObservabilityLogContext(context, {
             duration,
@@ -553,8 +599,13 @@ export function createSecurityMiddleware(): ObservabilityMiddleware {
     {
       beforeOperation: async (context, operation, metadata) => {
         // Log security-sensitive operations
-        if (operation.includes('auth') || operation.includes('login') || operation.includes('password')) {
-          runtimeLogger.info(`Security operation started: ${operation}`,
+        if (
+          operation.includes('auth') ||
+          operation.includes('login') ||
+          operation.includes('password')
+        ) {
+          runtimeLogger.info(
+            `Security operation started: ${operation}`,
             createObservabilityLogContext(context, {
               securityOperation: true,
               sensitive: true,
@@ -562,11 +613,12 @@ export function createSecurityMiddleware(): ObservabilityMiddleware {
           );
         }
       },
-      
+
       onError: async (context, operation, error, duration) => {
         // Enhanced logging for security failures
         if (operation.includes('auth') || error.message.includes('auth')) {
-          runtimeLogger.error(`Security operation failed: ${operation}`,
+          runtimeLogger.error(
+            `Security operation failed: ${operation}`,
             error,
             createObservabilityLogContext(context, {
               securityFailure: true,
@@ -585,13 +637,15 @@ export function createSecurityMiddleware(): ObservabilityMiddleware {
 /**
  * Rate limiting monitoring middleware
  */
-export function createRateLimitMiddleware(limits: {
-  requestsPerMinute?: number;
-  burstLimit?: number;
-} = {}): ObservabilityMiddleware {
+export function createRateLimitMiddleware(
+  limits: {
+    requestsPerMinute?: number;
+    burstLimit?: number;
+  } = {}
+): ObservabilityMiddleware {
   const { requestsPerMinute = 60, burstLimit = 10 } = limits;
   const requestCounts = new Map<string, { count: number; lastReset: number }>();
-  
+
   return createObservabilityMiddleware(
     'rate-limit-monitor',
     {
@@ -599,17 +653,18 @@ export function createRateLimitMiddleware(limits: {
         const key = `${context.traceId.slice(-8)}_${operation}`;
         const now = Date.now();
         const minuteMs = 60 * 1000;
-        
+
         let requestData = requestCounts.get(key);
         if (!requestData || now - requestData.lastReset > minuteMs) {
           requestData = { count: 0, lastReset: now };
           requestCounts.set(key, requestData);
         }
-        
+
         requestData.count++;
-        
+
         if (requestData.count > requestsPerMinute) {
-          runtimeLogger.warn(`Rate limit exceeded for operation: ${operation}`,
+          runtimeLogger.warn(
+            `Rate limit exceeded for operation: ${operation}`,
             createObservabilityLogContext(context, {
               rateLimitExceeded: true,
               requestCount: requestData.count,
@@ -631,10 +686,10 @@ export function createObservabilityHealthCheck() {
   return async () => {
     const observability = ObservabilityManager.getInstance();
     const status = observability.getStatus();
-    
+
     let healthy = status.enabled;
     let message = 'Observability system is operational';
-    
+
     if (!status.enabled) {
       healthy = false;
       message = 'Observability system is disabled';
@@ -645,7 +700,7 @@ export function createObservabilityHealthCheck() {
       healthy = false;
       message = `Too many active alerts: ${status.subsystems.alerting.alerts}`;
     }
-    
+
     return {
       healthy,
       status: healthy ? 'healthy' : 'unhealthy',
@@ -673,46 +728,57 @@ export async function safeExecuteWithObservability<T>(
     metadata?: Record<string, unknown>;
   } = {}
 ): Promise<T> {
-  const { timeout = 30000, retries = 0, parentContext, metadata = {} } = options;
+  const {
+    timeout = 30000,
+    retries = 0,
+    parentContext,
+    metadata = {},
+  } = options;
   const observability = ObservabilityManager.getInstance();
-  
+
   return observability.traceOperation(
     operationName,
     async (context) => {
       let lastError: Error | undefined;
-      
+
       for (let attempt = 0; attempt <= retries; attempt++) {
         try {
           // Add timeout if specified
           const operationPromise = operation();
-          
+
           if (timeout > 0) {
             const timeoutPromise = new Promise<never>((_, reject) => {
-              setTimeout(() => reject(new Error(`Operation timeout: ${operationName}`)), timeout);
+              setTimeout(
+                () => reject(new Error(`Operation timeout: ${operationName}`)),
+                timeout
+              );
             });
-            
+
             return await Promise.race([operationPromise, timeoutPromise]);
           } else {
             return await operationPromise;
           }
         } catch (error) {
           lastError = error instanceof Error ? error : new Error(String(error));
-          
+
           if (attempt < retries) {
-            runtimeLogger.warn(`Operation failed, retrying: ${operationName}`,
+            runtimeLogger.warn(
+              `Operation failed, retrying: ${operationName}`,
               createObservabilityLogContext(context, {
                 attempt: attempt + 1,
                 maxRetries: retries,
                 error: lastError.message,
               })
             );
-            
+
             // Exponential backoff
-            await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+            await new Promise((resolve) =>
+              setTimeout(resolve, Math.pow(2, attempt) * 1000)
+            );
           }
         }
       }
-      
+
       throw lastError!;
     },
     parentContext,

@@ -44,12 +44,12 @@ export class AsyncQueue extends EventEmitter {
 
   constructor(options: QueueOptions = {}) {
     super();
-    
+
     this.options = {
       maxConcurrency: options.maxConcurrency ?? 10,
       maxQueueSize: options.maxQueueSize ?? 1000,
       defaultPriority: options.defaultPriority ?? 5,
-      enableMetrics: options.enableMetrics ?? true
+      enableMetrics: options.enableMetrics ?? true,
     };
 
     // Start processing loop
@@ -70,7 +70,7 @@ export class AsyncQueue extends EventEmitter {
   ): string {
     const taskId = this.generateTaskId();
     const now = Date.now();
-    
+
     if (this.tasks.size >= this.options.maxQueueSize) {
       throw new Error('Queue is full');
     }
@@ -83,17 +83,24 @@ export class AsyncQueue extends EventEmitter {
       createdAt: now,
       scheduledFor: now + (options?.delay || 0),
       tags: options?.tags,
-      retries: options?.retries ? {
-        maxRetries: options.retries,
-        currentRetries: 0,
-        backoffMs: 100
-      } : undefined
+      retries: options?.retries
+        ? {
+            maxRetries: options.retries,
+            currentRetries: 0,
+            backoffMs: 100,
+          }
+        : undefined,
     };
 
     this.tasks.set(taskId, task);
-    
+
     if (this.options.enableMetrics) {
-      performanceMonitor.recordMetric('async_queue.task.added', 1, 'count', task.tags);
+      performanceMonitor.recordMetric(
+        'async_queue.task.added',
+        1,
+        'count',
+        task.tags
+      );
     }
 
     this.emit('taskAdded', task);
@@ -126,14 +133,19 @@ export class AsyncQueue extends EventEmitter {
       recurring: {
         interval,
         maxExecutions: options?.maxExecutions,
-        executionCount: 0
-      }
+        executionCount: 0,
+      },
     };
 
     this.tasks.set(taskId, task);
-    
+
     if (this.options.enableMetrics) {
-      performanceMonitor.recordMetric('async_queue.recurring_task.added', 1, 'count', task.tags);
+      performanceMonitor.recordMetric(
+        'async_queue.recurring_task.added',
+        1,
+        'count',
+        task.tags
+      );
     }
 
     this.emit('recurringTaskAdded', task);
@@ -154,9 +166,14 @@ export class AsyncQueue extends EventEmitter {
     }
 
     this.tasks.delete(taskId);
-    
+
     if (this.options.enableMetrics) {
-      performanceMonitor.recordMetric('async_queue.task.removed', 1, 'count', task.tags);
+      performanceMonitor.recordMetric(
+        'async_queue.task.removed',
+        1,
+        'count',
+        task.tags
+      );
     }
 
     this.emit('taskRemoved', task);
@@ -168,7 +185,7 @@ export class AsyncQueue extends EventEmitter {
    */
   clear(): void {
     const taskCount = this.tasks.size;
-    
+
     // Only remove non-running tasks
     for (const [taskId, task] of this.tasks) {
       if (!this.runningTasks.has(taskId)) {
@@ -177,7 +194,11 @@ export class AsyncQueue extends EventEmitter {
     }
 
     if (this.options.enableMetrics) {
-      performanceMonitor.recordMetric('async_queue.tasks.cleared', taskCount, 'count');
+      performanceMonitor.recordMetric(
+        'async_queue.tasks.cleared',
+        taskCount,
+        'count'
+      );
     }
 
     this.emit('cleared', taskCount);
@@ -209,7 +230,7 @@ export class AsyncQueue extends EventEmitter {
       runningTasks: this.runningTasks.size,
       pendingTasks: this.tasks.size - this.runningTasks.size,
       recurringTasks: recurringCount,
-      overdueTasks: overdueCount
+      overdueTasks: overdueCount,
     };
   }
 
@@ -228,11 +249,13 @@ export class AsyncQueue extends EventEmitter {
     // Wait for running tasks to complete
     const startTime = Date.now();
     while (this.runningTasks.size > 0 && Date.now() - startTime < timeout) {
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
 
     if (this.runningTasks.size > 0) {
-      runtimeLogger.warn(`${this.runningTasks.size} tasks still running after shutdown timeout`);
+      runtimeLogger.warn(
+        `${this.runningTasks.size} tasks still running after shutdown timeout`
+      );
     }
 
     this.emit('shutdown');
@@ -246,10 +269,10 @@ export class AsyncQueue extends EventEmitter {
 
   private startProcessing(): void {
     const processLoop = () => {
-      this.processTasks().catch(error => {
+      this.processTasks().catch((error) => {
         runtimeLogger.error('Error in task processing loop:', error);
       });
-      
+
       this.processTimer = setTimeout(processLoop, 10); // 10ms polling
     };
 
@@ -265,11 +288,12 @@ export class AsyncQueue extends EventEmitter {
       const readyTasks = this.getReadyTasks(now);
 
       // Execute tasks up to concurrency limit
-      const availableSlots = this.options.maxConcurrency - this.runningTasks.size;
+      const availableSlots =
+        this.options.maxConcurrency - this.runningTasks.size;
       const tasksToRun = readyTasks.slice(0, availableSlots);
 
       for (const task of tasksToRun) {
-        this.executeTask(task).catch(error => {
+        this.executeTask(task).catch((error) => {
           runtimeLogger.error(`Task execution error: ${task.id}`, error);
         });
       }
@@ -282,10 +306,7 @@ export class AsyncQueue extends EventEmitter {
     const readyTasks: QueuedTask[] = [];
 
     for (const task of this.tasks.values()) {
-      if (
-        !this.runningTasks.has(task.id) &&
-        task.scheduledFor <= now
-      ) {
+      if (!this.runningTasks.has(task.id) && task.scheduledFor <= now) {
         readyTasks.push(task);
       }
     }
@@ -301,20 +322,25 @@ export class AsyncQueue extends EventEmitter {
 
   private async executeTask(task: QueuedTask): Promise<void> {
     this.runningTasks.add(task.id);
-    
-    const timer = this.options.enableMetrics 
+
+    const timer = this.options.enableMetrics
       ? performanceMonitor.createTimer('async_queue.task.execution', task.tags)
       : null;
 
     try {
       this.emit('taskStarted', task);
-      
+
       await Promise.resolve(task.fn());
-      
+
       if (timer) timer.end();
-      
+
       if (this.options.enableMetrics) {
-        performanceMonitor.recordMetric('async_queue.task.completed', 1, 'count', task.tags);
+        performanceMonitor.recordMetric(
+          'async_queue.task.completed',
+          1,
+          'count',
+          task.tags
+        );
       }
 
       this.emit('taskCompleted', task);
@@ -322,8 +348,9 @@ export class AsyncQueue extends EventEmitter {
       // Handle recurring tasks
       if (task.recurring) {
         task.recurring.executionCount++;
-        
-        const shouldContinue = !task.recurring.maxExecutions || 
+
+        const shouldContinue =
+          !task.recurring.maxExecutions ||
           task.recurring.executionCount < task.recurring.maxExecutions;
 
         if (shouldContinue) {
@@ -339,24 +366,34 @@ export class AsyncQueue extends EventEmitter {
         // Remove one-time task
         this.tasks.delete(task.id);
       }
-
     } catch (error) {
       if (timer) timer.end();
-      
+
       if (this.options.enableMetrics) {
-        performanceMonitor.recordMetric('async_queue.task.failed', 1, 'count', task.tags);
+        performanceMonitor.recordMetric(
+          'async_queue.task.failed',
+          1,
+          'count',
+          task.tags
+        );
       }
 
       this.emit('taskFailed', task, error);
 
       // Handle retries
-      if (task.retries && task.retries.currentRetries < task.retries.maxRetries) {
+      if (
+        task.retries &&
+        task.retries.currentRetries < task.retries.maxRetries
+      ) {
         task.retries.currentRetries++;
-        task.scheduledFor = Date.now() + (task.retries.backoffMs * task.retries.currentRetries);
-        
+        task.scheduledFor =
+          Date.now() + task.retries.backoffMs * task.retries.currentRetries;
+
         this.emit('taskRetried', task);
-        
-        runtimeLogger.warn(`Retrying task ${task.id} (attempt ${task.retries.currentRetries}/${task.retries.maxRetries})`);
+
+        runtimeLogger.warn(
+          `Retrying task ${task.id} (attempt ${task.retries.currentRetries}/${task.retries.maxRetries})`
+        );
       } else {
         // Remove failed task
         this.tasks.delete(task.id);
@@ -372,7 +409,7 @@ export class AsyncQueue extends EventEmitter {
 export const globalQueue = new AsyncQueue({
   maxConcurrency: 20,
   maxQueueSize: 2000,
-  enableMetrics: true
+  enableMetrics: true,
 });
 
 /**

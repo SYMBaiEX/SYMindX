@@ -1,6 +1,6 @@
 /**
  * Service Context Injection Patterns for SYMindX
- * 
+ *
  * Provides dependency injection patterns specifically for services,
  * including automatic configuration injection, health monitoring,
  * and dependency management.
@@ -12,12 +12,12 @@ import type {
   ContextEnricher,
   ContextScope,
   ContextScopeType,
-  ServiceContextInjection
+  ServiceContextInjection,
 } from '../../../types/context/context-injection';
-import type { 
+import type {
   OperationResult,
   HealthCheckResult,
-  ComponentHealth
+  ComponentHealth,
 } from '../../../types/helpers';
 import { runtimeLogger } from '../../../utils/logger';
 
@@ -41,8 +41,10 @@ export class ServiceConfigProvider implements ContextProvider<unknown> {
   }
 
   canProvide(scope: ContextScope): boolean {
-    return scope.type === ContextScopeType.Service && 
-           this.configRegistry.has(scope.target);
+    return (
+      scope.type === ContextScopeType.Service &&
+      this.configRegistry.has(scope.target)
+    );
   }
 
   /**
@@ -63,9 +65,9 @@ export class ServiceConfigProvider implements ContextProvider<unknown> {
     }
 
     Object.assign(config, updates);
-    runtimeLogger.debug('Service configuration updated', { 
-      serviceId, 
-      updates: Object.keys(updates) 
+    runtimeLogger.debug('Service configuration updated', {
+      serviceId,
+      updates: Object.keys(updates),
     });
     return true;
   }
@@ -83,13 +85,21 @@ export class ServiceConfigProvider implements ContextProvider<unknown> {
  * Service health context provider
  * Provides service health status and metrics
  */
-export class ServiceHealthProvider implements ContextProvider<ServiceContextInjection['health']> {
+export class ServiceHealthProvider
+  implements ContextProvider<ServiceContextInjection['health']>
+{
   readonly id = 'service-health';
   readonly priority = 85;
   readonly supportsAsync = true;
 
-  private readonly healthRegistry = new Map<string, ServiceContextInjection['health']>();
-  private readonly healthCheckers = new Map<string, () => Promise<HealthCheckResult>>();
+  private readonly healthRegistry = new Map<
+    string,
+    ServiceContextInjection['health']
+  >();
+  private readonly healthCheckers = new Map<
+    string,
+    () => Promise<HealthCheckResult>
+  >();
 
   provide(scope: ContextScope): ServiceContextInjection['health'] | undefined {
     if (scope.type !== ContextScopeType.Service) {
@@ -99,7 +109,9 @@ export class ServiceHealthProvider implements ContextProvider<ServiceContextInje
     return this.healthRegistry.get(scope.target);
   }
 
-  async provideAsync(scope: ContextScope): Promise<ServiceContextInjection['health'] | undefined> {
+  async provideAsync(
+    scope: ContextScope
+  ): Promise<ServiceContextInjection['health'] | undefined> {
     if (scope.type !== ContextScopeType.Service) {
       return undefined;
     }
@@ -113,7 +125,7 @@ export class ServiceHealthProvider implements ContextProvider<ServiceContextInje
         const health: ServiceContextInjection['health'] = {
           status: healthResult.healthy ? 'healthy' : 'unhealthy',
           lastCheck: new Date(),
-          metrics: healthResult.metrics || {}
+          metrics: healthResult.metrics || {},
         };
 
         this.healthRegistry.set(serviceId, health);
@@ -122,7 +134,7 @@ export class ServiceHealthProvider implements ContextProvider<ServiceContextInje
         const health: ServiceContextInjection['health'] = {
           status: 'unhealthy',
           lastCheck: new Date(),
-          metrics: { error: 1 }
+          metrics: { error: 1 },
         };
 
         this.healthRegistry.set(serviceId, health);
@@ -141,7 +153,7 @@ export class ServiceHealthProvider implements ContextProvider<ServiceContextInje
    * Register health checker for a service
    */
   registerHealthChecker(
-    serviceId: string, 
+    serviceId: string,
     checker: () => Promise<HealthCheckResult>
   ): void {
     this.healthCheckers.set(serviceId, checker);
@@ -152,13 +164,13 @@ export class ServiceHealthProvider implements ContextProvider<ServiceContextInje
    * Update service health status manually
    */
   updateHealth(
-    serviceId: string, 
+    serviceId: string,
     health: ServiceContextInjection['health']
   ): void {
     this.healthRegistry.set(serviceId, { ...health });
-    runtimeLogger.debug('Service health updated', { 
-      serviceId, 
-      status: health.status 
+    runtimeLogger.debug('Service health updated', {
+      serviceId,
+      status: health.status,
     });
   }
 
@@ -173,10 +185,10 @@ export class ServiceHealthProvider implements ContextProvider<ServiceContextInje
 
     health.metrics = { ...health.metrics, ...metrics };
     health.lastCheck = new Date();
-    
-    runtimeLogger.debug('Service metrics updated', { 
-      serviceId, 
-      metrics: Object.keys(metrics) 
+
+    runtimeLogger.debug('Service metrics updated', {
+      serviceId,
+      metrics: Object.keys(metrics),
     });
     return true;
   }
@@ -230,7 +242,10 @@ export class ServiceDependenciesProvider implements ContextProvider<string[]> {
   readonly supportsAsync = true;
 
   private readonly dependencyRegistry = new Map<string, string[]>();
-  private readonly dependencyResolvers = new Map<string, () => Promise<string[]>>();
+  private readonly dependencyResolvers = new Map<
+    string,
+    () => Promise<string[]>
+  >();
 
   provide(scope: ContextScope): string[] | undefined {
     if (scope.type !== ContextScopeType.Service) {
@@ -255,9 +270,9 @@ export class ServiceDependenciesProvider implements ContextProvider<string[]> {
           dependencies = await resolver();
           this.dependencyRegistry.set(serviceId, dependencies);
         } catch (error) {
-          runtimeLogger.warn('Failed to resolve service dependencies', { 
-            serviceId, 
-            error 
+          runtimeLogger.warn('Failed to resolve service dependencies', {
+            serviceId,
+            error,
           });
         }
       }
@@ -275,9 +290,9 @@ export class ServiceDependenciesProvider implements ContextProvider<string[]> {
    */
   registerDependencies(serviceId: string, dependencies: string[]): void {
     this.dependencyRegistry.set(serviceId, [...dependencies]);
-    runtimeLogger.debug('Service dependencies registered', { 
-      serviceId, 
-      dependencies 
+    runtimeLogger.debug('Service dependencies registered', {
+      serviceId,
+      dependencies,
     });
   }
 
@@ -285,11 +300,13 @@ export class ServiceDependenciesProvider implements ContextProvider<string[]> {
    * Register dynamic dependency resolver
    */
   registerDependencyResolver(
-    serviceId: string, 
+    serviceId: string,
     resolver: () => Promise<string[]>
   ): void {
     this.dependencyResolvers.set(serviceId, resolver);
-    runtimeLogger.debug('Service dependency resolver registered', { serviceId });
+    runtimeLogger.debug('Service dependency resolver registered', {
+      serviceId,
+    });
   }
 
   /**
@@ -303,7 +320,10 @@ export class ServiceDependenciesProvider implements ContextProvider<string[]> {
 
     if (!dependencies.includes(dependency)) {
       dependencies.push(dependency);
-      runtimeLogger.debug('Service dependency added', { serviceId, dependency });
+      runtimeLogger.debug('Service dependency added', {
+        serviceId,
+        dependency,
+      });
     }
 
     return true;
@@ -321,7 +341,10 @@ export class ServiceDependenciesProvider implements ContextProvider<string[]> {
     const index = dependencies.indexOf(dependency);
     if (index > -1) {
       dependencies.splice(index, 1);
-      runtimeLogger.debug('Service dependency removed', { serviceId, dependency });
+      runtimeLogger.debug('Service dependency removed', {
+        serviceId,
+        dependency,
+      });
       return true;
     }
 
@@ -333,12 +356,14 @@ export class ServiceDependenciesProvider implements ContextProvider<string[]> {
  * Service context enricher
  * Enriches service context with additional metadata
  */
-export class ServiceContextEnricher implements ContextEnricher<ServiceContextInjection> {
+export class ServiceContextEnricher
+  implements ContextEnricher<ServiceContextInjection>
+{
   readonly id = 'service-enricher';
   readonly priority = 70;
 
   async enrich(
-    context: ServiceContextInjection, 
+    context: ServiceContextInjection,
     scope: ContextScope
   ): Promise<ServiceContextInjection> {
     if (scope.type !== ContextScopeType.Service) {
@@ -353,8 +378,8 @@ export class ServiceContextEnricher implements ContextEnricher<ServiceContextInj
       scopeMetadata: {
         agentId: scope.agentId,
         correlationId: scope.correlationId,
-        ...scope.metadata
-      }
+        ...scope.metadata,
+      },
     };
 
     // Add health analysis
@@ -364,7 +389,7 @@ export class ServiceContextEnricher implements ContextEnricher<ServiceContextInj
         status: context.health.status,
         metricsCount: Object.keys(context.health.metrics).length,
         lastHealthyCheck: this.findLastHealthyCheck(context.health),
-        healthTrend: this.analyzeHealthTrend(context.health)
+        healthTrend: this.analyzeHealthTrend(context.health),
       };
     }
 
@@ -372,21 +397,30 @@ export class ServiceContextEnricher implements ContextEnricher<ServiceContextInj
     if (context.dependencies && context.dependencies.length > 0) {
       enriched.dependencyAnalysis = {
         totalDependencies: context.dependencies.length,
-        criticalDependencies: this.identifyCriticalDependencies(context.dependencies),
+        criticalDependencies: this.identifyCriticalDependencies(
+          context.dependencies
+        ),
         dependencyTypes: this.categorizedDependencies(context.dependencies),
         circularDependencies: await this.detectCircularDependencies(
-          context.serviceId, 
+          context.serviceId,
           context.dependencies
-        )
+        ),
       };
     }
 
     // Add service maturity indicators
     enriched.maturityIndicators = {
       hasHealthChecks: !!context.health,
-      hasDependencies: !!(context.dependencies && context.dependencies.length > 0),
-      hasMetrics: !!(context.health?.metrics && Object.keys(context.health.metrics).length > 0),
-      configurationComplexity: this.assessConfigurationComplexity(context.config)
+      hasDependencies: !!(
+        context.dependencies && context.dependencies.length > 0
+      ),
+      hasMetrics: !!(
+        context.health?.metrics &&
+        Object.keys(context.health.metrics).length > 0
+      ),
+      configurationComplexity: this.assessConfigurationComplexity(
+        context.config
+      ),
     };
 
     return enriched;
@@ -407,7 +441,9 @@ export class ServiceContextEnricher implements ContextEnricher<ServiceContextInj
   /**
    * Find last healthy check (placeholder)
    */
-  private findLastHealthyCheck(health: ServiceContextInjection['health']): Date {
+  private findLastHealthyCheck(
+    health: ServiceContextInjection['health']
+  ): Date {
     // In practice, track health check history
     return health.status === 'healthy' ? health.lastCheck : new Date(0);
   }
@@ -415,7 +451,9 @@ export class ServiceContextEnricher implements ContextEnricher<ServiceContextInj
   /**
    * Analyze health trend (placeholder)
    */
-  private analyzeHealthTrend(health: ServiceContextInjection['health']): 'improving' | 'stable' | 'degrading' {
+  private analyzeHealthTrend(
+    health: ServiceContextInjection['health']
+  ): 'improving' | 'stable' | 'degrading' {
     // In practice, analyze health check history
     return health.status === 'healthy' ? 'stable' : 'degrading';
   }
@@ -425,35 +463,49 @@ export class ServiceContextEnricher implements ContextEnricher<ServiceContextInj
    */
   private identifyCriticalDependencies(dependencies: string[]): string[] {
     // Simplified - identify database, authentication, and core services
-    return dependencies.filter(dep => 
-      dep.includes('database') || 
-      dep.includes('auth') || 
-      dep.includes('core') ||
-      dep.includes('critical')
+    return dependencies.filter(
+      (dep) =>
+        dep.includes('database') ||
+        dep.includes('auth') ||
+        dep.includes('core') ||
+        dep.includes('critical')
     );
   }
 
   /**
    * Categorize dependencies by type
    */
-  private categorizedDependencies(dependencies: string[]): Record<string, string[]> {
+  private categorizedDependencies(
+    dependencies: string[]
+  ): Record<string, string[]> {
     const categories: Record<string, string[]> = {
       database: [],
       external: [],
       internal: [],
-      infrastructure: []
+      infrastructure: [],
     };
 
     for (const dep of dependencies) {
       const lower = dep.toLowerCase();
-      
-      if (lower.includes('database') || lower.includes('db') || lower.includes('storage')) {
+
+      if (
+        lower.includes('database') ||
+        lower.includes('db') ||
+        lower.includes('storage')
+      ) {
         categories.database.push(dep);
-      } else if (lower.includes('api') || lower.includes('service') && !lower.includes('internal')) {
+      } else if (
+        lower.includes('api') ||
+        (lower.includes('service') && !lower.includes('internal'))
+      ) {
         categories.external.push(dep);
       } else if (lower.includes('internal') || lower.includes('local')) {
         categories.internal.push(dep);
-      } else if (lower.includes('redis') || lower.includes('queue') || lower.includes('cache')) {
+      } else if (
+        lower.includes('redis') ||
+        lower.includes('queue') ||
+        lower.includes('cache')
+      ) {
         categories.infrastructure.push(dep);
       }
     }
@@ -465,13 +517,13 @@ export class ServiceContextEnricher implements ContextEnricher<ServiceContextInj
    * Detect circular dependencies (simplified)
    */
   private async detectCircularDependencies(
-    serviceId: string, 
+    serviceId: string,
     dependencies: string[]
   ): Promise<string[]> {
     // Simplified circular dependency detection
     // In practice, implement proper graph traversal
     const circular: string[] = [];
-    
+
     for (const dep of dependencies) {
       if (dep === serviceId) {
         circular.push(dep);
@@ -484,7 +536,9 @@ export class ServiceContextEnricher implements ContextEnricher<ServiceContextInj
   /**
    * Assess configuration complexity
    */
-  private assessConfigurationComplexity(config: unknown): 'low' | 'medium' | 'high' {
+  private assessConfigurationComplexity(
+    config: unknown
+  ): 'low' | 'medium' | 'high' {
     if (!config || typeof config !== 'object') {
       return 'low';
     }
@@ -513,7 +567,10 @@ export class ServiceContextEnricher implements ContextEnricher<ServiceContextInj
     let maxLevel = level;
     for (const value of Object.values(obj)) {
       if (typeof value === 'object' && value !== null) {
-        maxLevel = Math.max(maxLevel, this.calculateNestingLevel(value, level + 1));
+        maxLevel = Math.max(
+          maxLevel,
+          this.calculateNestingLevel(value, level + 1)
+        );
       }
     }
 
@@ -525,7 +582,9 @@ export class ServiceContextEnricher implements ContextEnricher<ServiceContextInj
  * Service context validation middleware
  * Validates and sanitizes service context data
  */
-export class ServiceContextValidator implements ContextMiddleware<ServiceContextInjection> {
+export class ServiceContextValidator
+  implements ContextMiddleware<ServiceContextInjection>
+{
   readonly id = 'service-validator';
   readonly priority = 100;
 
@@ -569,14 +628,20 @@ export class ServiceContextValidator implements ContextMiddleware<ServiceContext
       return config;
     }
 
-    const sanitized = { ...config as Record<string, unknown> };
+    const sanitized = { ...(config as Record<string, unknown>) };
 
     // Remove sensitive fields
     const sensitiveFields = [
-      'password', 'secret', 'key', 'token', 'apiKey', 
-      'clientSecret', 'privateKey', 'connectionString'
+      'password',
+      'secret',
+      'key',
+      'token',
+      'apiKey',
+      'clientSecret',
+      'privateKey',
+      'connectionString',
     ];
-    
+
     for (const field of sensitiveFields) {
       if (field in sanitized) {
         sanitized[field] = '[REDACTED]';
@@ -589,15 +654,20 @@ export class ServiceContextValidator implements ContextMiddleware<ServiceContext
   /**
    * Validate health information
    */
-  private validateHealth(health: ServiceContextInjection['health']): ServiceContextInjection['health'] {
+  private validateHealth(
+    health: ServiceContextInjection['health']
+  ): ServiceContextInjection['health'] {
     const validated = { ...health };
 
     // Validate status
     const validStatuses = ['healthy', 'degraded', 'unhealthy'];
     if (!validStatuses.includes(validated.status)) {
-      runtimeLogger.warn('Invalid service health status, defaulting to unhealthy', { 
-        status: validated.status 
-      });
+      runtimeLogger.warn(
+        'Invalid service health status, defaulting to unhealthy',
+        {
+          status: validated.status,
+        }
+      );
       validated.status = 'unhealthy';
     }
 
@@ -619,8 +689,8 @@ export class ServiceContextValidator implements ContextMiddleware<ServiceContext
    */
   private validateDependencies(dependencies: string[]): string[] {
     return dependencies
-      .filter(dep => typeof dep === 'string' && dep.trim().length > 0)
-      .map(dep => dep.trim())
+      .filter((dep) => typeof dep === 'string' && dep.trim().length > 0)
+      .map((dep) => dep.trim())
       .filter((dep, index, arr) => arr.indexOf(dep) === index); // Remove duplicates
   }
 }
@@ -644,8 +714,8 @@ export class ServiceInjectionHelper {
       correlationId,
       metadata: {
         serviceType: this.getServiceType(serviceId),
-        createdAt: new Date().toISOString()
-      }
+        createdAt: new Date().toISOString(),
+      },
     };
   }
 
@@ -663,9 +733,9 @@ export class ServiceInjectionHelper {
       health: {
         status: 'healthy',
         lastCheck: new Date(),
-        metrics: {}
+        metrics: {},
       },
-      dependencies: dependencies || []
+      dependencies: dependencies || [],
     };
   }
 
@@ -684,15 +754,16 @@ export class ServiceInjectionHelper {
             component: serviceId,
             healthy: true,
             responseTime: Date.now(),
-            details: { status: 'operational' }
+            details: { status: 'operational' },
           };
         } catch (error) {
           return {
             component: serviceId,
             healthy: false,
             responseTime: Date.now(),
-            error: error instanceof Error ? error.message : 'Health check failed',
-            details: { status: 'failed' }
+            error:
+              error instanceof Error ? error.message : 'Health check failed',
+            details: { status: 'failed' },
           };
         }
       },
@@ -702,7 +773,11 @@ export class ServiceInjectionHelper {
        */
       recordMetric(name: string, value: number): void {
         // Implementation would use ServiceHealthProvider
-        runtimeLogger.debug('Service metric recorded', { serviceId, name, value });
+        runtimeLogger.debug('Service metric recorded', {
+          serviceId,
+          name,
+          value,
+        });
       },
 
       /**
@@ -719,7 +794,7 @@ export class ServiceInjectionHelper {
       markHealthy(): void {
         // Implementation would use ServiceHealthProvider
         runtimeLogger.info('Service marked as healthy', { serviceId });
-      }
+      },
     };
   }
 
@@ -740,13 +815,13 @@ export const serviceInjectionPatterns = {
   providers: {
     config: ServiceConfigProvider,
     health: ServiceHealthProvider,
-    dependencies: ServiceDependenciesProvider
+    dependencies: ServiceDependenciesProvider,
   },
   enrichers: {
-    context: ServiceContextEnricher
+    context: ServiceContextEnricher,
   },
   middleware: {
-    validator: ServiceContextValidator
+    validator: ServiceContextValidator,
   },
-  helpers: ServiceInjectionHelper
+  helpers: ServiceInjectionHelper,
 };

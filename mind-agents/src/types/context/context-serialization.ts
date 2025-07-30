@@ -3,7 +3,7 @@
  * @description Comprehensive type definitions for context serialization, compression,
  * versioning, and migration systems. Supports multiple formats and algorithms
  * optimized for network transmission and storage.
- * 
+ *
  * @version 1.0.0
  * @author SYMindX Core Team
  */
@@ -24,7 +24,7 @@ export enum SerializationFormat {
   /** Schema-based Protocol Buffers */
   PROTOBUF = 'protobuf',
   /** Custom compressed format */
-  CUSTOM = 'custom'
+  CUSTOM = 'custom',
 }
 
 /**
@@ -38,7 +38,7 @@ export enum CompressionLevel {
   /** Balanced compression and speed */
   BALANCED = 5,
   /** Maximum compression - slowest */
-  MAXIMUM = 9
+  MAXIMUM = 9,
 }
 
 /**
@@ -56,7 +56,7 @@ export enum CompressionAlgorithm {
   /** Balanced ZSTD compression */
   ZSTD = 'zstd',
   /** Custom algorithm */
-  CUSTOM = 'custom'
+  CUSTOM = 'custom',
 }
 
 /**
@@ -78,7 +78,7 @@ export enum SerializationErrorType {
   /** Size limit exceeded */
   SIZE_LIMIT_EXCEEDED = 'size_limit_exceeded',
   /** Hash verification failed */
-  HASH_MISMATCH = 'hash_mismatch'
+  HASH_MISMATCH = 'hash_mismatch',
 }
 
 /**
@@ -437,10 +437,7 @@ export interface ContextMigrator {
   /**
    * Get migration path
    */
-  getMigrationPath(
-    fromVersion: string,
-    toVersion: string
-  ): string[] | null;
+  getMigrationPath(fromVersion: string, toVersion: string): string[] | null;
 
   /**
    * Rollback migration
@@ -487,8 +484,8 @@ export const SERIALIZATION_CAPABILITIES = {
     compression: [
       CompressionAlgorithm.NONE,
       CompressionAlgorithm.GZIP,
-      CompressionAlgorithm.BROTLI
-    ]
+      CompressionAlgorithm.BROTLI,
+    ],
   },
   [SerializationFormat.BINARY]: {
     humanReadable: false,
@@ -498,8 +495,8 @@ export const SERIALIZATION_CAPABILITIES = {
     compression: [
       CompressionAlgorithm.NONE,
       CompressionAlgorithm.LZ4,
-      CompressionAlgorithm.ZSTD
-    ]
+      CompressionAlgorithm.ZSTD,
+    ],
   },
   [SerializationFormat.MESSAGEPACK]: {
     humanReadable: false,
@@ -509,8 +506,8 @@ export const SERIALIZATION_CAPABILITIES = {
     compression: [
       CompressionAlgorithm.NONE,
       CompressionAlgorithm.GZIP,
-      CompressionAlgorithm.ZSTD
-    ]
+      CompressionAlgorithm.ZSTD,
+    ],
   },
   [SerializationFormat.PROTOBUF]: {
     humanReadable: false,
@@ -521,9 +518,9 @@ export const SERIALIZATION_CAPABILITIES = {
       CompressionAlgorithm.NONE,
       CompressionAlgorithm.GZIP,
       CompressionAlgorithm.BROTLI,
-      CompressionAlgorithm.ZSTD
-    ]
-  }
+      CompressionAlgorithm.ZSTD,
+    ],
+  },
 } as const;
 
 /**
@@ -564,7 +561,9 @@ export namespace SerializationTypeGuards {
   /**
    * Type guard for ContextFingerprint
    */
-  export function isContextFingerprint(obj: unknown): obj is ContextFingerprint {
+  export function isContextFingerprint(
+    obj: unknown
+  ): obj is ContextFingerprint {
     return (
       typeof obj === 'object' &&
       obj !== null &&

@@ -1,6 +1,6 @@
 /**
  * IntegrationCoordinator.ts - Extension and portal coordination
- * 
+ *
  * This module handles:
  * - Extension lifecycle coordination
  * - Portal management and selection
@@ -29,10 +29,10 @@ import {
   ContextManager,
   createContextBootstrapper,
 } from '../context/integration/index';
-import { 
-  ContextService, 
-  createContextService, 
-  ContextEnhancementOptions 
+import {
+  ContextService,
+  createContextService,
+  ContextEnhancementOptions,
 } from '../context-service';
 import { standardLoggers } from '../../utils/standard-logging';
 import { createRuntimeError } from '../../utils/standard-errors';
@@ -42,7 +42,7 @@ export class IntegrationCoordinator {
   private eventBus: EventBus;
   private registry: ModuleRegistry;
   private extensionLoader: ExtensionLoader;
-  
+
   // Autonomous system components
   private autonomousEngines: Map<string, AutonomousEngine> = new Map();
   private decisionEngines: Map<string, DecisionEngine> = new Map();
@@ -107,7 +107,13 @@ export class IntegrationCoordinator {
           l3: { maxSize: 10000, ttl: 3600000 },
         },
         enrichmentSettings: {
-          enabledEnrichers: ['memory', 'emotional', 'social', 'temporal', 'environment'],
+          enabledEnrichers: [
+            'memory',
+            'emotional',
+            'social',
+            'temporal',
+            'environment',
+          ],
           maxConcurrency: 5,
           enableCaching: true,
         },
@@ -121,8 +127,8 @@ export class IntegrationCoordinator {
         this.runtimeAdapter = result.runtimeAdapter;
         this.logger.info('Context system initialized successfully');
       } else {
-        this.logger.error('Context system initialization failed', { 
-          error: result.error 
+        this.logger.error('Context system initialization failed', {
+          error: result.error,
         });
       }
     } catch (error) {
@@ -140,12 +146,14 @@ export class IntegrationCoordinator {
     try {
       // Register built-in tools
       const tools = await this.loadBuiltInTools();
-      
+
       for (const [toolId, tool] of Object.entries(tools)) {
         this.registry.registerTool?.(toolId, tool);
       }
 
-      this.logger.info(`Initialized ${Object.keys(tools).length} built-in tools`);
+      this.logger.info(
+        `Initialized ${Object.keys(tools).length} built-in tools`
+      );
     } catch (error) {
       this.logger.error('Failed to initialize tool system', { error });
       // Don't throw - tools system initialization issues shouldn't block startup
@@ -178,7 +186,6 @@ export class IntegrationCoordinator {
           return { success: true, data: null };
         },
       };
-
     } catch (error) {
       this.logger.error('Error loading built-in tools', { error });
     }
@@ -218,9 +225,9 @@ export class IntegrationCoordinator {
 
         return enhancedContext || baseContext;
       } catch (error) {
-        this.logger.error('Context enhancement failed, using base context', { 
-          agentId: agent.id, 
-          error 
+        this.logger.error('Context enhancement failed, using base context', {
+          agentId: agent.id,
+          error,
         });
       }
     }
@@ -250,7 +257,9 @@ export class IntegrationCoordinator {
 
       this.logger.debug(`Agent registered with context system: ${agent.id}`);
     } catch (error) {
-      this.logger.error(`Failed to register agent with context: ${agent.id}`, { error });
+      this.logger.error(`Failed to register agent with context: ${agent.id}`, {
+        error,
+      });
     }
   }
 
@@ -266,7 +275,9 @@ export class IntegrationCoordinator {
       await this.contextManager.unregisterAgent(agentId);
       this.logger.debug(`Agent unregistered from context system: ${agentId}`);
     } catch (error) {
-      this.logger.error(`Failed to unregister agent from context: ${agentId}`, { error });
+      this.logger.error(`Failed to unregister agent from context: ${agentId}`, {
+        error,
+      });
     }
   }
 
@@ -282,7 +293,11 @@ export class IntegrationCoordinator {
         tickInterval: 5000,
       };
 
-      const autonomousEngine = new AutonomousEngine(agentId, config, this.eventBus);
+      const autonomousEngine = new AutonomousEngine(
+        agentId,
+        config,
+        this.eventBus
+      );
       this.autonomousEngines.set(agentId, autonomousEngine);
 
       const decisionEngine = new DecisionEngine(agentId, this.eventBus);
@@ -290,7 +305,10 @@ export class IntegrationCoordinator {
 
       this.logger.info(`Autonomous systems started for agent: ${agentId}`);
     } catch (error) {
-      this.logger.error(`Failed to start autonomous systems for agent: ${agentId}`, { error });
+      this.logger.error(
+        `Failed to start autonomous systems for agent: ${agentId}`,
+        { error }
+      );
       throw error;
     }
   }
@@ -318,7 +336,10 @@ export class IntegrationCoordinator {
 
       this.logger.info(`Autonomous systems stopped for agent: ${agentId}`);
     } catch (error) {
-      this.logger.error(`Error stopping autonomous systems for agent: ${agentId}`, { error });
+      this.logger.error(
+        `Error stopping autonomous systems for agent: ${agentId}`,
+        { error }
+      );
     }
   }
 
@@ -349,7 +370,10 @@ export class IntegrationCoordinator {
   /**
    * Validate context for agent
    */
-  async validateContextForAgent(agent: Agent, context: ThoughtContext): Promise<void> {
+  async validateContextForAgent(
+    agent: Agent,
+    context: ThoughtContext
+  ): Promise<void> {
     if (!this.contextService) {
       return;
     }
@@ -360,7 +384,9 @@ export class IntegrationCoordinator {
         this.logger.warn(`Invalid context for agent: ${agent.id}`, { context });
       }
     } catch (error) {
-      this.logger.error(`Context validation failed for agent: ${agent.id}`, { error });
+      this.logger.error(`Context validation failed for agent: ${agent.id}`, {
+        error,
+      });
     }
   }
 
@@ -379,7 +405,9 @@ export class IntegrationCoordinator {
         status: agent.status,
       });
     } catch (error) {
-      this.logger.error(`Failed to inject context for agent: ${agent.id}`, { error });
+      this.logger.error(`Failed to inject context for agent: ${agent.id}`, {
+        error,
+      });
     }
   }
 

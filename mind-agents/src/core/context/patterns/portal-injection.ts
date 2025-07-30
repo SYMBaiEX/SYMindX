@@ -1,6 +1,6 @@
 /**
  * Portal Context Injection Patterns for SYMindX
- * 
+ *
  * Provides dependency injection patterns specifically for portals,
  * including automatic configuration injection, model management,
  * and token usage tracking.
@@ -12,11 +12,9 @@ import type {
   ContextEnricher,
   ContextScope,
   ContextScopeType,
-  PortalContextInjection
+  PortalContextInjection,
 } from '../../../types/context/context-injection';
-import type { 
-  OperationResult 
-} from '../../../types/helpers';
+import type { OperationResult } from '../../../types/helpers';
 import type { Portal, PortalConfig } from '../../../types/portal';
 import { runtimeLogger } from '../../../utils/logger';
 
@@ -40,8 +38,10 @@ export class PortalConfigProvider implements ContextProvider<unknown> {
   }
 
   canProvide(scope: ContextScope): boolean {
-    return scope.type === ContextScopeType.Portal && 
-           this.configRegistry.has(scope.target);
+    return (
+      scope.type === ContextScopeType.Portal &&
+      this.configRegistry.has(scope.target)
+    );
   }
 
   /**
@@ -62,7 +62,10 @@ export class PortalConfigProvider implements ContextProvider<unknown> {
     }
 
     Object.assign(config, updates);
-    runtimeLogger.debug('Portal configuration updated', { portalId, updates: Object.keys(updates) });
+    runtimeLogger.debug('Portal configuration updated', {
+      portalId,
+      updates: Object.keys(updates),
+    });
     return true;
   }
 
@@ -79,12 +82,17 @@ export class PortalConfigProvider implements ContextProvider<unknown> {
  * Portal model context provider
  * Provides current model settings and capabilities
  */
-export class PortalModelProvider implements ContextProvider<PortalContextInjection['model']> {
+export class PortalModelProvider
+  implements ContextProvider<PortalContextInjection['model']>
+{
   readonly id = 'portal-model';
   readonly priority = 85;
   readonly supportsAsync = false;
 
-  private readonly modelRegistry = new Map<string, PortalContextInjection['model']>();
+  private readonly modelRegistry = new Map<
+    string,
+    PortalContextInjection['model']
+  >();
 
   provide(scope: ContextScope): PortalContextInjection['model'] | undefined {
     if (scope.type !== ContextScopeType.Portal) {
@@ -95,22 +103,24 @@ export class PortalModelProvider implements ContextProvider<PortalContextInjecti
   }
 
   canProvide(scope: ContextScope): boolean {
-    return scope.type === ContextScopeType.Portal && 
-           this.modelRegistry.has(scope.target);
+    return (
+      scope.type === ContextScopeType.Portal &&
+      this.modelRegistry.has(scope.target)
+    );
   }
 
   /**
    * Register model information for a portal
    */
   registerModel(
-    portalId: string, 
+    portalId: string,
     model: PortalContextInjection['model']
   ): void {
     this.modelRegistry.set(portalId, { ...model });
-    runtimeLogger.debug('Portal model registered', { 
-      portalId, 
-      modelName: model.name, 
-      provider: model.provider 
+    runtimeLogger.debug('Portal model registered', {
+      portalId,
+      modelName: model.name,
+      provider: model.provider,
     });
   }
 
@@ -118,7 +128,7 @@ export class PortalModelProvider implements ContextProvider<PortalContextInjecti
    * Update model parameters
    */
   updateModelParameters(
-    portalId: string, 
+    portalId: string,
     parameters: Record<string, unknown>
   ): boolean {
     const model = this.modelRegistry.get(portalId);
@@ -127,9 +137,9 @@ export class PortalModelProvider implements ContextProvider<PortalContextInjecti
     }
 
     model.parameters = { ...model.parameters, ...parameters };
-    runtimeLogger.debug('Portal model parameters updated', { 
-      portalId, 
-      parameters: Object.keys(parameters) 
+    runtimeLogger.debug('Portal model parameters updated', {
+      portalId,
+      parameters: Object.keys(parameters),
     });
     return true;
   }
@@ -138,8 +148,8 @@ export class PortalModelProvider implements ContextProvider<PortalContextInjecti
    * Switch model for a portal
    */
   switchModel(
-    portalId: string, 
-    modelName: string, 
+    portalId: string,
+    modelName: string,
     parameters?: Record<string, unknown>
   ): boolean {
     const model = this.modelRegistry.get(portalId);
@@ -161,14 +171,21 @@ export class PortalModelProvider implements ContextProvider<PortalContextInjecti
  * Portal token usage context provider
  * Tracks and provides token usage information
  */
-export class PortalTokenUsageProvider implements ContextProvider<PortalContextInjection['tokenUsage']> {
+export class PortalTokenUsageProvider
+  implements ContextProvider<PortalContextInjection['tokenUsage']>
+{
   readonly id = 'portal-token-usage';
   readonly priority = 80;
   readonly supportsAsync = false;
 
-  private readonly usageRegistry = new Map<string, PortalContextInjection['tokenUsage']>();
+  private readonly usageRegistry = new Map<
+    string,
+    PortalContextInjection['tokenUsage']
+  >();
 
-  provide(scope: ContextScope): PortalContextInjection['tokenUsage'] | undefined {
+  provide(
+    scope: ContextScope
+  ): PortalContextInjection['tokenUsage'] | undefined {
     if (scope.type !== ContextScopeType.Portal) {
       return undefined;
     }
@@ -187,7 +204,7 @@ export class PortalTokenUsageProvider implements ContextProvider<PortalContextIn
     this.usageRegistry.set(portalId, {
       input: 0,
       output: 0,
-      total: 0
+      total: 0,
     });
     runtimeLogger.debug('Portal token usage initialized', { portalId });
   }
@@ -196,8 +213,8 @@ export class PortalTokenUsageProvider implements ContextProvider<PortalContextIn
    * Record token usage
    */
   recordUsage(
-    portalId: string, 
-    inputTokens: number, 
+    portalId: string,
+    inputTokens: number,
     outputTokens: number
   ): boolean {
     let usage = this.usageRegistry.get(portalId);
@@ -211,11 +228,11 @@ export class PortalTokenUsageProvider implements ContextProvider<PortalContextIn
     usage.output += outputTokens;
     usage.total = usage.input + usage.output;
 
-    runtimeLogger.debug('Portal token usage recorded', { 
-      portalId, 
-      inputTokens, 
-      outputTokens, 
-      totalUsage: usage.total 
+    runtimeLogger.debug('Portal token usage recorded', {
+      portalId,
+      inputTokens,
+      outputTokens,
+      totalUsage: usage.total,
     });
     return true;
   }
@@ -240,12 +257,14 @@ export class PortalTokenUsageProvider implements ContextProvider<PortalContextIn
   /**
    * Get usage statistics
    */
-  getUsageStatistics(portalId: string): {
-    usage: PortalContextInjection['tokenUsage'];
-    averageInputPerRequest: number;
-    averageOutputPerRequest: number;
-    requestCount: number;
-  } | undefined {
+  getUsageStatistics(portalId: string):
+    | {
+        usage: PortalContextInjection['tokenUsage'];
+        averageInputPerRequest: number;
+        averageOutputPerRequest: number;
+        requestCount: number;
+      }
+    | undefined {
     const usage = this.usageRegistry.get(portalId);
     if (!usage) {
       return undefined;
@@ -258,7 +277,7 @@ export class PortalTokenUsageProvider implements ContextProvider<PortalContextIn
       usage: { ...usage },
       averageInputPerRequest: usage.input / requestCount,
       averageOutputPerRequest: usage.output / requestCount,
-      requestCount
+      requestCount,
     };
   }
 }
@@ -267,31 +286,39 @@ export class PortalTokenUsageProvider implements ContextProvider<PortalContextIn
  * Portal performance context provider
  * Provides portal performance metrics
  */
-export class PortalPerformanceProvider implements ContextProvider<{
-  responseTime: number;
-  requestCount: number;
-  errorRate: number;
-  lastRequest: Date;
-}> {
+export class PortalPerformanceProvider
+  implements
+    ContextProvider<{
+      responseTime: number;
+      requestCount: number;
+      errorRate: number;
+      lastRequest: Date;
+    }>
+{
   readonly id = 'portal-performance';
   readonly priority = 75;
   readonly supportsAsync = false;
 
-  private readonly performanceRegistry = new Map<string, {
-    responseTime: number;
-    requestCount: number;
-    errorCount: number;
-    errorRate: number;
-    lastRequest: Date;
-    totalResponseTime: number;
-  }>();
+  private readonly performanceRegistry = new Map<
+    string,
+    {
+      responseTime: number;
+      requestCount: number;
+      errorCount: number;
+      errorRate: number;
+      lastRequest: Date;
+      totalResponseTime: number;
+    }
+  >();
 
-  provide(scope: ContextScope): {
-    responseTime: number;
-    requestCount: number;
-    errorRate: number;
-    lastRequest: Date;
-  } | undefined {
+  provide(scope: ContextScope):
+    | {
+        responseTime: number;
+        requestCount: number;
+        errorRate: number;
+        lastRequest: Date;
+      }
+    | undefined {
     if (scope.type !== ContextScopeType.Portal) {
       return undefined;
     }
@@ -305,7 +332,7 @@ export class PortalPerformanceProvider implements ContextProvider<{
       responseTime: metrics.responseTime,
       requestCount: metrics.requestCount,
       errorRate: metrics.errorRate,
-      lastRequest: metrics.lastRequest
+      lastRequest: metrics.lastRequest,
     };
   }
 
@@ -323,9 +350,11 @@ export class PortalPerformanceProvider implements ContextProvider<{
       errorCount: 0,
       errorRate: 0,
       lastRequest: new Date(),
-      totalResponseTime: 0
+      totalResponseTime: 0,
     });
-    runtimeLogger.debug('Portal performance tracking initialized', { portalId });
+    runtimeLogger.debug('Portal performance tracking initialized', {
+      portalId,
+    });
   }
 
   /**
@@ -341,7 +370,7 @@ export class PortalPerformanceProvider implements ContextProvider<{
         errorCount: 0,
         errorRate: 0,
         lastRequest: new Date(),
-        totalResponseTime: 0
+        totalResponseTime: 0,
       };
       this.performanceRegistry.set(portalId, metrics);
     }
@@ -375,12 +404,14 @@ export class PortalPerformanceProvider implements ContextProvider<{
  * Portal context enricher
  * Enriches portal context with additional metadata
  */
-export class PortalContextEnricher implements ContextEnricher<PortalContextInjection> {
+export class PortalContextEnricher
+  implements ContextEnricher<PortalContextInjection>
+{
   readonly id = 'portal-enricher';
   readonly priority = 70;
 
   async enrich(
-    context: PortalContextInjection, 
+    context: PortalContextInjection,
     scope: ContextScope
   ): Promise<PortalContextInjection> {
     if (scope.type !== ContextScopeType.Portal) {
@@ -395,8 +426,8 @@ export class PortalContextEnricher implements ContextEnricher<PortalContextInjec
       scopeMetadata: {
         agentId: scope.agentId,
         correlationId: scope.correlationId,
-        ...scope.metadata
-      }
+        ...scope.metadata,
+      },
     };
 
     // Add model analysis
@@ -404,8 +435,11 @@ export class PortalContextEnricher implements ContextEnricher<PortalContextInjec
       enriched.modelAnalysis = {
         providerType: this.getProviderType(context.model.provider),
         modelCategory: this.categorizeModel(context.model.name),
-        estimatedCost: this.estimateModelCost(context.model, context.tokenUsage),
-        capabilities: this.inferModelCapabilities(context.model.name)
+        estimatedCost: this.estimateModelCost(
+          context.model,
+          context.tokenUsage
+        ),
+        capabilities: this.inferModelCapabilities(context.model.name),
       };
     }
 
@@ -413,9 +447,12 @@ export class PortalContextEnricher implements ContextEnricher<PortalContextInjec
     if (context.tokenUsage) {
       enriched.usageAnalysis = {
         efficiency: this.calculateEfficiency(context.tokenUsage),
-        costEstimate: this.estimateTokenCost(context.tokenUsage, context.model?.provider),
+        costEstimate: this.estimateTokenCost(
+          context.tokenUsage,
+          context.model?.provider
+        ),
         usageLevel: this.categorizeUsage(context.tokenUsage.total),
-        recommendations: this.generateUsageRecommendations(context.tokenUsage)
+        recommendations: this.generateUsageRecommendations(context.tokenUsage),
       };
     }
 
@@ -431,13 +468,13 @@ export class PortalContextEnricher implements ContextEnricher<PortalContextInjec
    */
   private getProviderType(provider: string): string {
     const providerMap: Record<string, string> = {
-      'openai': 'commercial',
-      'anthropic': 'commercial',
-      'google': 'commercial',
-      'cohere': 'commercial',
-      'ollama': 'local',
-      'lmstudio': 'local',
-      'huggingface': 'open-source'
+      openai: 'commercial',
+      anthropic: 'commercial',
+      google: 'commercial',
+      cohere: 'commercial',
+      ollama: 'local',
+      lmstudio: 'local',
+      huggingface: 'open-source',
     };
 
     return providerMap[provider.toLowerCase()] || 'unknown';
@@ -448,8 +485,12 @@ export class PortalContextEnricher implements ContextEnricher<PortalContextInjec
    */
   private categorizeModel(modelName: string): string {
     const name = modelName.toLowerCase();
-    
-    if (name.includes('gpt-4') || name.includes('claude-3') || name.includes('gemini-pro')) {
+
+    if (
+      name.includes('gpt-4') ||
+      name.includes('claude-3') ||
+      name.includes('gemini-pro')
+    ) {
       return 'large-language-model';
     } else if (name.includes('gpt-3.5') || name.includes('claude-2')) {
       return 'medium-language-model';
@@ -460,7 +501,7 @@ export class PortalContextEnricher implements ContextEnricher<PortalContextInjec
     } else if (name.includes('vision') || name.includes('multimodal')) {
       return 'multimodal-model';
     }
-    
+
     return 'language-model';
   }
 
@@ -468,7 +509,7 @@ export class PortalContextEnricher implements ContextEnricher<PortalContextInjec
    * Estimate model cost based on usage
    */
   private estimateModelCost(
-    model: PortalContextInjection['model'], 
+    model: PortalContextInjection['model'],
     usage?: PortalContextInjection['tokenUsage']
   ): number {
     if (!usage) {
@@ -476,7 +517,10 @@ export class PortalContextEnricher implements ContextEnricher<PortalContextInjec
     }
 
     // Simplified cost estimation - in practice, use actual pricing
-    const costPer1kTokens = this.getModelCostPer1kTokens(model.provider, model.name);
+    const costPer1kTokens = this.getModelCostPer1kTokens(
+      model.provider,
+      model.name
+    );
     return (usage.total / 1000) * costPer1kTokens;
   }
 
@@ -486,16 +530,16 @@ export class PortalContextEnricher implements ContextEnricher<PortalContextInjec
   private getModelCostPer1kTokens(provider: string, modelName: string): number {
     // Simplified pricing - use actual pricing in production
     const pricingMap: Record<string, Record<string, number>> = {
-      'openai': {
+      openai: {
         'gpt-4': 0.03,
         'gpt-3.5-turbo': 0.002,
-        'text-embedding-ada-002': 0.0001
+        'text-embedding-ada-002': 0.0001,
       },
-      'anthropic': {
+      anthropic: {
         'claude-3-opus': 0.015,
         'claude-3-sonnet': 0.003,
-        'claude-3-haiku': 0.00025
-      }
+        'claude-3-haiku': 0.00025,
+      },
     };
 
     return pricingMap[provider]?.[modelName] || 0.001;
@@ -511,11 +555,11 @@ export class PortalContextEnricher implements ContextEnricher<PortalContextInjec
     if (name.includes('gpt-4') || name.includes('claude-3')) {
       capabilities.push('reasoning', 'code-generation', 'analysis');
     }
-    
+
     if (name.includes('vision') || name.includes('multimodal')) {
       capabilities.push('image-understanding', 'multimodal');
     }
-    
+
     if (name.includes('turbo') || name.includes('fast')) {
       capabilities.push('fast-inference');
     }
@@ -526,11 +570,13 @@ export class PortalContextEnricher implements ContextEnricher<PortalContextInjec
   /**
    * Calculate token usage efficiency
    */
-  private calculateEfficiency(usage: PortalContextInjection['tokenUsage']): number {
+  private calculateEfficiency(
+    usage: PortalContextInjection['tokenUsage']
+  ): number {
     if (usage.input === 0) {
       return 0;
     }
-    
+
     // Simple efficiency metric: output tokens per input token
     return usage.output / usage.input;
   }
@@ -539,7 +585,7 @@ export class PortalContextEnricher implements ContextEnricher<PortalContextInjec
    * Estimate token cost
    */
   private estimateTokenCost(
-    usage: PortalContextInjection['tokenUsage'], 
+    usage: PortalContextInjection['tokenUsage'],
     provider?: string
   ): number {
     const avgCostPer1kTokens = 0.002; // Default cost
@@ -564,19 +610,27 @@ export class PortalContextEnricher implements ContextEnricher<PortalContextInjec
   /**
    * Generate usage recommendations
    */
-  private generateUsageRecommendations(usage: PortalContextInjection['tokenUsage']): string[] {
+  private generateUsageRecommendations(
+    usage: PortalContextInjection['tokenUsage']
+  ): string[] {
     const recommendations: string[] = [];
 
     if (usage.input > usage.output * 2) {
-      recommendations.push('Consider reducing input length for better efficiency');
+      recommendations.push(
+        'Consider reducing input length for better efficiency'
+      );
     }
 
     if (usage.total > 50000) {
-      recommendations.push('High token usage detected - consider implementing caching');
+      recommendations.push(
+        'High token usage detected - consider implementing caching'
+      );
     }
 
     if (usage.output < usage.input * 0.1) {
-      recommendations.push('Low output ratio - check if prompts are too complex');
+      recommendations.push(
+        'Low output ratio - check if prompts are too complex'
+      );
     }
 
     return recommendations;
@@ -587,7 +641,9 @@ export class PortalContextEnricher implements ContextEnricher<PortalContextInjec
  * Portal context validation middleware
  * Validates and sanitizes portal context data
  */
-export class PortalContextValidator implements ContextMiddleware<PortalContextInjection> {
+export class PortalContextValidator
+  implements ContextMiddleware<PortalContextInjection>
+{
   readonly id = 'portal-validator';
   readonly priority = 100;
 
@@ -631,7 +687,7 @@ export class PortalContextValidator implements ContextMiddleware<PortalContextIn
       return config;
     }
 
-    const sanitized = { ...config as Record<string, unknown> };
+    const sanitized = { ...(config as Record<string, unknown>) };
 
     // Remove sensitive fields
     const sensitiveFields = ['apiKey', 'secret', 'token', 'password', 'key'];
@@ -647,7 +703,9 @@ export class PortalContextValidator implements ContextMiddleware<PortalContextIn
   /**
    * Validate model information
    */
-  private validateModel(model: PortalContextInjection['model']): PortalContextInjection['model'] {
+  private validateModel(
+    model: PortalContextInjection['model']
+  ): PortalContextInjection['model'] {
     const validated = { ...model };
 
     // Ensure required fields
@@ -663,11 +721,17 @@ export class PortalContextValidator implements ContextMiddleware<PortalContextIn
     if (validated.parameters) {
       // Ensure numeric parameters are within reasonable bounds
       if (typeof validated.parameters.temperature === 'number') {
-        validated.parameters.temperature = Math.max(0, Math.min(2, validated.parameters.temperature));
+        validated.parameters.temperature = Math.max(
+          0,
+          Math.min(2, validated.parameters.temperature)
+        );
       }
-      
+
       if (typeof validated.parameters.maxTokens === 'number') {
-        validated.parameters.maxTokens = Math.max(1, Math.min(100000, validated.parameters.maxTokens));
+        validated.parameters.maxTokens = Math.max(
+          1,
+          Math.min(100000, validated.parameters.maxTokens)
+        );
       }
     }
 
@@ -677,7 +741,9 @@ export class PortalContextValidator implements ContextMiddleware<PortalContextIn
   /**
    * Validate token usage
    */
-  private validateTokenUsage(usage: PortalContextInjection['tokenUsage']): PortalContextInjection['tokenUsage'] {
+  private validateTokenUsage(
+    usage: PortalContextInjection['tokenUsage']
+  ): PortalContextInjection['tokenUsage'] {
     const validated = { ...usage };
 
     // Ensure non-negative values
@@ -708,8 +774,8 @@ export class PortalInjectionHelper {
       correlationId,
       metadata: {
         portalType: this.getPortalType(portalId),
-        createdAt: new Date().toISOString()
-      }
+        createdAt: new Date().toISOString(),
+      },
     };
   }
 
@@ -724,20 +790,22 @@ export class PortalInjectionHelper {
     return {
       portalId,
       config: config || {},
-      model: model ? {
-        name: model.name || 'unknown',
-        provider: model.provider || 'unknown',
-        parameters: model.parameters || {}
-      } : {
-        name: 'unknown',
-        provider: 'unknown',
-        parameters: {}
-      },
+      model: model
+        ? {
+            name: model.name || 'unknown',
+            provider: model.provider || 'unknown',
+            parameters: model.parameters || {},
+          }
+        : {
+            name: 'unknown',
+            provider: 'unknown',
+            parameters: {},
+          },
       tokenUsage: {
         input: 0,
         output: 0,
-        total: 0
-      }
+        total: 0,
+      },
     };
   }
 
@@ -748,23 +816,27 @@ export class PortalInjectionHelper {
     portal: Portal,
     context: PortalContextInjection
   ): Promise<Portal & { context: PortalContextInjection }> {
-    const contextualPortal = portal as Portal & { 
+    const contextualPortal = portal as Portal & {
       context: PortalContextInjection;
-      updateContext?: (updates: Partial<PortalContextInjection>) => Promise<OperationResult>;
+      updateContext?: (
+        updates: Partial<PortalContextInjection>
+      ) => Promise<OperationResult>;
       recordTokenUsage?: (input: number, output: number) => void;
     };
 
     contextualPortal.context = { ...context };
-    
+
     // Add context update method
-    contextualPortal.updateContext = async (updates: Partial<PortalContextInjection>) => {
+    contextualPortal.updateContext = async (
+      updates: Partial<PortalContextInjection>
+    ) => {
       try {
         contextualPortal.context = { ...contextualPortal.context, ...updates };
         return { success: true };
       } catch (error) {
-        return { 
-          success: false, 
-          error: error instanceof Error ? error.message : 'Unknown error' 
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
         };
       }
     };
@@ -773,8 +845,9 @@ export class PortalInjectionHelper {
     contextualPortal.recordTokenUsage = (input: number, output: number) => {
       contextualPortal.context.tokenUsage.input += input;
       contextualPortal.context.tokenUsage.output += output;
-      contextualPortal.context.tokenUsage.total = 
-        contextualPortal.context.tokenUsage.input + contextualPortal.context.tokenUsage.output;
+      contextualPortal.context.tokenUsage.total =
+        contextualPortal.context.tokenUsage.input +
+        contextualPortal.context.tokenUsage.output;
     };
 
     return contextualPortal;
@@ -798,13 +871,13 @@ export const portalInjectionPatterns = {
     config: PortalConfigProvider,
     model: PortalModelProvider,
     tokenUsage: PortalTokenUsageProvider,
-    performance: PortalPerformanceProvider
+    performance: PortalPerformanceProvider,
   },
   enrichers: {
-    context: PortalContextEnricher
+    context: PortalContextEnricher,
   },
   middleware: {
-    validator: PortalContextValidator
+    validator: PortalContextValidator,
   },
-  helpers: PortalInjectionHelper
+  helpers: PortalInjectionHelper,
 };

@@ -1,6 +1,6 @@
 /**
  * Multi-Agent Context Orchestration for SYMindX
- * 
+ *
  * Provides context sharing and coordination capabilities between multiple agents
  * with security, privacy, and performance considerations.
  */
@@ -73,7 +73,10 @@ export class MultiAgentContextOrchestrator extends EventEmitter {
    * Share context between agents
    */
   async shareContext(request: ContextSharingRequest): Promise<void> {
-    const traceId = contextTracer.startTrace('context:share', request.fromAgentId);
+    const traceId = contextTracer.startTrace(
+      'context:share',
+      request.fromAgentId
+    );
 
     try {
       // Validate permissions
@@ -82,14 +85,17 @@ export class MultiAgentContextOrchestrator extends EventEmitter {
       }
 
       // Filter context based on permissions
-      const filteredContext = this.filterContext(request.contextData, request.permissions);
+      const filteredContext = this.filterContext(
+        request.contextData,
+        request.permissions
+      );
 
       // Store shared context
       const sharedKey = `shared:${request.fromAgentId}:${request.toAgentId}`;
       if (!this.sharedContexts.has(request.toAgentId)) {
         this.sharedContexts.set(request.toAgentId, new Map());
       }
-      
+
       this.sharedContexts.get(request.toAgentId)!.set(sharedKey, {
         ...filteredContext,
         _metadata: {
@@ -103,10 +109,14 @@ export class MultiAgentContextOrchestrator extends EventEmitter {
       if (!this.permissions.has(request.fromAgentId)) {
         this.permissions.set(request.fromAgentId, new Map());
       }
-      this.permissions.get(request.fromAgentId)!.set(request.toAgentId, request.permissions);
+      this.permissions
+        .get(request.fromAgentId)!
+        .set(request.toAgentId, request.permissions);
 
       // Cache shared context
-      await contextCache.set(sharedKey, filteredContext, { ttl: request.permissions.ttl });
+      await contextCache.set(sharedKey, filteredContext, {
+        ttl: request.permissions.ttl,
+      });
 
       // Emit sharing event
       this.emit('context:shared', {
@@ -121,7 +131,6 @@ export class MultiAgentContextOrchestrator extends EventEmitter {
         to: request.toAgentId,
         fields: Object.keys(filteredContext).length,
       });
-
     } catch (error) {
       contextTracer.endTrace(traceId, error as Error);
       throw error;
@@ -172,9 +181,10 @@ export class MultiAgentContextOrchestrator extends EventEmitter {
       // Collect contexts from all agents
       for (const agentId of agentIds) {
         // Get agent's own context (would need agent reference in real implementation)
-        const agentContextKey = ContextCacheKeyGenerator.forAgentContext(agentId);
+        const agentContextKey =
+          ContextCacheKeyGenerator.forAgentContext(agentId);
         const agentContext = await contextCache.get(agentContextKey);
-        
+
         if (agentContext) {
           contexts.push({
             ...agentContext,
@@ -185,13 +195,15 @@ export class MultiAgentContextOrchestrator extends EventEmitter {
         // Include shared contexts if requested
         if (options.includeShared) {
           const sharedContexts = await this.getSharedContexts(agentId);
-          contexts.push(...sharedContexts.map(ctx => ({ ...ctx, _source: agentId })));
+          contexts.push(
+            ...sharedContexts.map((ctx) => ({ ...ctx, _source: agentId }))
+          );
         }
       }
 
       // Apply aggregation strategy
       let aggregated: any = {};
-      
+
       switch (strategy) {
         case 'merge':
           aggregated = this.mergeContexts(contexts, options.conflictResolution);
@@ -211,7 +223,6 @@ export class MultiAgentContextOrchestrator extends EventEmitter {
       await contextCache.set(aggregatedKey, aggregated, { ttl: 60000 }); // 1 minute cache
 
       return aggregated;
-
     } finally {
       contextTracer.endTrace(traceId);
     }
@@ -268,15 +279,18 @@ export class MultiAgentContextOrchestrator extends EventEmitter {
     const allFields = new Set<string>();
 
     // Collect all fields
-    contexts.forEach(ctx => {
-      Object.keys(ctx).forEach(field => allFields.add(field));
+    contexts.forEach((ctx) => {
+      Object.keys(ctx).forEach((field) => allFields.add(field));
     });
 
     // Resolve each field
     for (const field of allFields) {
       const values = contexts
-        .filter(ctx => field in ctx)
-        .map(ctx => ({ value: ctx[field], source: ctx._source || 'unknown' }));
+        .filter((ctx) => field in ctx)
+        .map((ctx) => ({
+          value: ctx[field],
+          source: ctx._source || 'unknown',
+        }));
 
       if (values.length === 0) continue;
       if (values.length === 1) {
@@ -285,10 +299,10 @@ export class MultiAgentContextOrchestrator extends EventEmitter {
       }
 
       // Find resolution rule
-      const rule = rules?.find(r => r.field === field);
-      
+      const rule = rules?.find((r) => r.field === field);
+
       if (rule?.customResolver) {
-        resolved[field] = rule.customResolver(values.map(v => v.value));
+        resolved[field] = rule.customResolver(values.map((v) => v.value));
       } else if (rule) {
         resolved[field] = this.applyResolutionStrategy(values, rule.strategy);
       } else {
@@ -323,7 +337,8 @@ export class MultiAgentContextOrchestrator extends EventEmitter {
       for (const [key, context] of contexts) {
         if (context._metadata?.sharedAt) {
           const age = now - context._metadata.sharedAt.getTime();
-          if (age > 3600000) { // 1 hour
+          if (age > 3600000) {
+            // 1 hour
             contexts.delete(key);
           }
         }
@@ -338,7 +353,11 @@ export class MultiAgentContextOrchestrator extends EventEmitter {
 
   private validateSharingPermissions(request: ContextSharingRequest): boolean {
     // Basic validation
-    if (!request.permissions.read && !request.permissions.write && !request.permissions.share) {
+    if (
+      !request.permissions.read &&
+      !request.permissions.write &&
+      !request.permissions.share
+    ) {
       return false;
     }
 
@@ -356,7 +375,7 @@ export class MultiAgentContextOrchestrator extends EventEmitter {
     // Apply field filtering
     if (permissions.fields) {
       // Whitelist approach
-      permissions.fields.forEach(field => {
+      permissions.fields.forEach((field) => {
         if (field in context) {
           filtered[field] = context[field];
         }
@@ -368,17 +387,23 @@ export class MultiAgentContextOrchestrator extends EventEmitter {
 
     // Apply exclusions
     if (permissions.excludeFields) {
-      permissions.excludeFields.forEach(field => {
+      permissions.excludeFields.forEach((field) => {
         delete filtered[field];
       });
     }
 
     // Always exclude sensitive fields
-    const sensitiveFields = ['password', 'token', 'key', 'secret', 'credential'];
-    sensitiveFields.forEach(field => {
+    const sensitiveFields = [
+      'password',
+      'token',
+      'key',
+      'secret',
+      'credential',
+    ];
+    sensitiveFields.forEach((field) => {
       delete filtered[field];
       // Also check for fields containing these terms
-      Object.keys(filtered).forEach(key => {
+      Object.keys(filtered).forEach((key) => {
         if (key.toLowerCase().includes(field)) {
           delete filtered[key];
         }

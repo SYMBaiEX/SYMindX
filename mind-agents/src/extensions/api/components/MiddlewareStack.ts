@@ -1,6 +1,6 @@
 /**
  * MiddlewareStack.ts - Express middleware configuration and management
- * 
+ *
  * This module handles:
  * - Security middleware (CORS, Helmet, Rate Limiting)
  * - Authentication and authorization
@@ -28,31 +28,37 @@ import { createValidationError } from '../../../utils/standard-errors';
 export class MiddlewareStack {
   private logger = standardLoggers.api;
   private config: ApiSettings;
-  
+
   // Security components
   private jwtManager: JWTManager;
   private sessionManager: SessionManager;
   private authMiddleware: AuthMiddleware;
   private inputValidator: InputValidator;
-  
+
   // Rate limiting
-  private rateLimiters = new Map<string, { count: number; resetTime: number }>();
+  private rateLimiters = new Map<
+    string,
+    { count: number; resetTime: number }
+  >();
 
   constructor(config: ApiSettings) {
     this.config = config;
-    
+
     // Initialize security components
     this.jwtManager = new JWTManager({
       secretKey: this.config.auth?.jwtSecret || 'default-secret',
       tokenExpiry: this.config.auth?.tokenExpiry || '24h',
     });
-    
+
     this.sessionManager = new SessionManager({
       maxSessions: this.config.auth?.maxSessions || 100,
       sessionTimeout: this.config.auth?.sessionTimeout || 3600000, // 1 hour
     });
-    
-    this.authMiddleware = new AuthMiddleware(this.jwtManager, this.sessionManager);
+
+    this.authMiddleware = new AuthMiddleware(
+      this.jwtManager,
+      this.sessionManager
+    );
     this.inputValidator = new InputValidator();
   }
 
@@ -65,22 +71,22 @@ export class MiddlewareStack {
     try {
       // Security middleware
       this.applySecurityMiddleware(app);
-      
+
       // Body parsing middleware
       this.applyBodyParsingMiddleware(app);
-      
+
       // Authentication middleware
       this.applyAuthenticationMiddleware(app);
-      
+
       // Validation middleware
       this.applyValidationMiddleware(app);
-      
+
       // Logging middleware
       this.applyLoggingMiddleware(app);
-      
+
       // Rate limiting middleware
       this.applyRateLimitingMiddleware(app);
-      
+
       // Error handling middleware (must be last)
       this.applyErrorHandlingMiddleware(app);
 
@@ -98,13 +104,19 @@ export class MiddlewareStack {
     // CORS configuration
     const corsOptions: cors.CorsOptions = {
       origin: this.config.cors?.allowedOrigins || '*',
-      methods: this.config.cors?.allowedMethods || ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      methods: this.config.cors?.allowedMethods || [
+        'GET',
+        'POST',
+        'PUT',
+        'DELETE',
+        'OPTIONS',
+      ],
       allowedHeaders: this.config.cors?.allowedHeaders || [
         'Content-Type',
         'Authorization',
         'X-Requested-With',
         'Accept',
-        'Origin'
+        'Origin',
       ],
       credentials: this.config.cors?.allowCredentials ?? true,
       maxAge: this.config.cors?.maxAge || 86400, // 24 hours
@@ -113,22 +125,24 @@ export class MiddlewareStack {
     app.use(cors(corsOptions));
 
     // Helmet security headers
-    app.use(helmet({
-      contentSecurityPolicy: {
-        directives: {
-          defaultSrc: ["'self'"],
-          scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-          styleSrc: ["'self'", "'unsafe-inline'"],
-          imgSrc: ["'self'", 'data:', 'https:'],
-          connectSrc: ["'self'", 'ws:', 'wss:'],
-          fontSrc: ["'self'"],
-          objectSrc: ["'none'"],
-          mediaSrc: ["'self'"],
-          frameSrc: ["'none'"],
+    app.use(
+      helmet({
+        contentSecurityPolicy: {
+          directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            imgSrc: ["'self'", 'data:', 'https:'],
+            connectSrc: ["'self'", 'ws:', 'wss:'],
+            fontSrc: ["'self'"],
+            objectSrc: ["'none'"],
+            mediaSrc: ["'self'"],
+            frameSrc: ["'none'"],
+          },
         },
-      },
-      crossOriginEmbedderPolicy: false, // Disabled for WebSocket compatibility
-    }));
+        crossOriginEmbedderPolicy: false, // Disabled for WebSocket compatibility
+      })
+    );
 
     this.logger.debug('Security middleware applied');
   }
@@ -138,16 +152,20 @@ export class MiddlewareStack {
    */
   private applyBodyParsingMiddleware(app: express.Application): void {
     // JSON body parser with size limit
-    app.use(express.json({ 
-      limit: this.config.maxRequestSize || '10mb',
-      strict: true,
-    }));
+    app.use(
+      express.json({
+        limit: this.config.maxRequestSize || '10mb',
+        strict: true,
+      })
+    );
 
     // URL-encoded body parser
-    app.use(express.urlencoded({ 
-      extended: true, 
-      limit: this.config.maxRequestSize || '10mb',
-    }));
+    app.use(
+      express.urlencoded({
+        extended: true,
+        limit: this.config.maxRequestSize || '10mb',
+      })
+    );
 
     // Raw body parser for specific endpoints
     app.use('/api/webhooks/*', express.raw({ type: 'application/json' }));
@@ -174,7 +192,7 @@ export class MiddlewareStack {
         '/api/auth/register',
       ];
 
-      if (publicEndpoints.some(endpoint => req.path.startsWith(endpoint))) {
+      if (publicEndpoints.some((endpoint) => req.path.startsWith(endpoint))) {
         return next();
       }
 
@@ -228,7 +246,7 @@ export class MiddlewareStack {
     // Request logging
     app.use((req, res, next) => {
       const startTime = Date.now();
-      
+
       // Log request
       this.logger.debug(`${req.method} ${req.path}`, {
         method: req.method,
@@ -242,7 +260,7 @@ export class MiddlewareStack {
       res.on('finish', () => {
         const duration = Date.now() - startTime;
         const logLevel = res.statusCode >= 400 ? 'error' : 'debug';
-        
+
         this.logger[logLevel](`${req.method} ${req.path} - ${res.statusCode}`, {
           method: req.method,
           path: req.path,
@@ -284,7 +302,7 @@ export class MiddlewareStack {
           path: req.path,
           userAgent: req.get('User-Agent'),
         });
-        
+
         res.status(429).json({
           error: 'Too many requests',
           message: 'Rate limit exceeded. Please try again later.',
@@ -322,25 +340,32 @@ export class MiddlewareStack {
     });
 
     // Error handler
-    app.use((error: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-      this.logger.error('API error', {
-        error: error.message,
-        stack: error.stack,
-        path: req.path,
-        method: req.method,
-        ip: req.ip,
-      });
+    app.use(
+      (
+        error: any,
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction
+      ) => {
+        this.logger.error('API error', {
+          error: error.message,
+          stack: error.stack,
+          path: req.path,
+          method: req.method,
+          ip: req.ip,
+        });
 
-      const statusCode = error.statusCode || error.status || 500;
-      const message = error.message || 'Internal Server Error';
+        const statusCode = error.statusCode || error.status || 500;
+        const message = error.message || 'Internal Server Error';
 
-      res.status(statusCode).json({
-        error: error.name || 'Error',
-        message,
-        timestamp: new Date().toISOString(),
-        ...(process.env.NODE_ENV === 'development' && { stack: error.stack }),
-      });
-    });
+        res.status(statusCode).json({
+          error: error.name || 'Error',
+          message,
+          timestamp: new Date().toISOString(),
+          ...(process.env.NODE_ENV === 'development' && { stack: error.stack }),
+        });
+      }
+    );
 
     this.logger.debug('Error handling middleware applied');
   }
@@ -370,11 +395,13 @@ export class MiddlewareStack {
       enabled: this.config.rateLimit?.enabled ?? false,
       windowMs: this.config.rateLimit?.windowMs || 15 * 60 * 1000,
       maxRequests: this.config.rateLimit?.maxRequests || 100,
-      currentLimits: Array.from(this.rateLimiters.entries()).map(([ip, data]) => ({
-        ip,
-        count: data.count,
-        resetTime: data.resetTime,
-      })),
+      currentLimits: Array.from(this.rateLimiters.entries()).map(
+        ([ip, data]) => ({
+          ip,
+          count: data.count,
+          resetTime: data.resetTime,
+        })
+      ),
     };
   }
 }

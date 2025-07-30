@@ -24,7 +24,7 @@ import {
   createConfigurationError,
   createNetworkError,
   safeAsync,
-  isSYMindXError
+  isSYMindXError,
 } from './standard-errors.js';
 
 /**
@@ -239,7 +239,11 @@ export interface SystemErrorAnalytics {
  */
 export interface ErrorAlert {
   readonly id: string;
-  readonly type: 'error_rate' | 'critical_error' | 'circuit_breaker' | 'component_down';
+  readonly type:
+    | 'error_rate'
+    | 'critical_error'
+    | 'circuit_breaker'
+    | 'component_down';
   readonly severity: 'warning' | 'critical';
   readonly message: string;
   readonly component?: string;
@@ -324,16 +328,19 @@ export class ErrorHandler {
       severity: ErrorSeverity;
     }
   >();
-  
+
   // Component-specific configurations
   private componentConfigs = new Map<string, ComponentErrorConfig>();
-  private componentMetrics = new Map<string, {
-    errorCount: number;
-    successCount: number;
-    totalRecoveryTime: number;
-    lastError?: Date;
-  }>();
-  
+  private componentMetrics = new Map<
+    string,
+    {
+      errorCount: number;
+      successCount: number;
+      totalRecoveryTime: number;
+      lastError?: Date;
+    }
+  >();
+
   // Analytics support
   private analyticsConfig: ErrorAnalyticsConfig = {
     enabled: true,
@@ -382,13 +389,13 @@ export class ErrorHandler {
     }
     return ErrorHandler.instance;
   }
-  
+
   /**
    * Register component-specific error handling configuration
    */
   public registerComponent(config: ComponentErrorConfig): void {
     this.componentConfigs.set(config.componentName, config);
-    
+
     // Initialize metrics
     this.componentMetrics.set(config.componentName, {
       errorCount: 0,
@@ -396,17 +403,20 @@ export class ErrorHandler {
       totalRecoveryTime: 0,
     });
 
-    runtimeLogger.info(`Registered error handling for component: ${config.componentName}`, {
-      config: {
-        category: config.defaultCategory,
-        severity: config.defaultSeverity,
-        retryEnabled: config.enableRetry,
-        circuitBreakerEnabled: config.enableCircuitBreaker,
-        fallbackEnabled: config.enableFallback,
+    runtimeLogger.info(
+      `Registered error handling for component: ${config.componentName}`,
+      {
+        config: {
+          category: config.defaultCategory,
+          severity: config.defaultSeverity,
+          retryEnabled: config.enableRetry,
+          circuitBreakerEnabled: config.enableCircuitBreaker,
+          fallbackEnabled: config.enableFallback,
+        },
       }
-    });
+    );
   }
-  
+
   /**
    * Handle error with component-specific configuration
    */
@@ -418,7 +428,7 @@ export class ErrorHandler {
   ): Promise<EnhancedRecoveryResult<T>> {
     const startTime = Date.now();
     const config = this.componentConfigs.get(componentName);
-    
+
     if (!config) {
       throw createRuntimeError(
         `Component '${componentName}' not registered for error handling`,
@@ -429,17 +439,16 @@ export class ErrorHandler {
 
     // Convert to SYMindXError if needed
     const symindxError = this.normalizeError(error, config, context);
-    
+
     // Update metrics
     this.updateComponentMetrics(componentName, 'error');
 
     try {
       // Use the core error handler with component context
-      const result = await this.handleError(
-        symindxError,
-        operation,
-        { ...context, componentName }
-      );
+      const result = await this.handleError(symindxError, operation, {
+        ...context,
+        componentName,
+      });
 
       const duration = Date.now() - startTime;
       const metrics = this.getComponentMetrics(componentName);
@@ -447,7 +456,7 @@ export class ErrorHandler {
       if (result.success) {
         this.updateComponentMetrics(componentName, 'success', duration);
       }
-      
+
       // Record for analytics
       if (this.analyticsConfig.enabled) {
         this.recordError(symindxError, componentName, result.success, duration);
@@ -461,23 +470,30 @@ export class ErrorHandler {
         attempts: result.metadata?.recovery?.attempts || 1,
         duration,
         componentName,
-        recoveryPath: this.buildRecoveryPath(symindxError, result.metadata?.recovery?.strategy),
+        recoveryPath: this.buildRecoveryPath(
+          symindxError,
+          result.metadata?.recovery?.strategy
+        ),
         metrics: {
           errorCount: metrics.errorCount,
-          successRate: metrics.successCount / (metrics.errorCount + metrics.successCount),
-          avgRecoveryTime: metrics.totalRecoveryTime / Math.max(metrics.successCount, 1)
-        }
+          successRate:
+            metrics.successCount / (metrics.errorCount + metrics.successCount),
+          avgRecoveryTime:
+            metrics.totalRecoveryTime / Math.max(metrics.successCount, 1),
+        },
       };
-
     } catch (recoveryError) {
       const duration = Date.now() - startTime;
       const finalError = createRuntimeError(
         'Component error recovery failed',
         'COMPONENT_RECOVERY_FAILED',
-        { 
-          componentName, 
+        {
+          componentName,
           originalError: symindxError.toJSON(),
-          recoveryError: recoveryError instanceof Error ? recoveryError.message : String(recoveryError)
+          recoveryError:
+            recoveryError instanceof Error
+              ? recoveryError.message
+              : String(recoveryError),
         },
         recoveryError instanceof Error ? recoveryError : undefined
       );
@@ -490,11 +506,11 @@ export class ErrorHandler {
         duration,
         componentName,
         recoveryPath: ['failed'],
-        metrics: this.getComponentMetrics(componentName)
+        metrics: this.getComponentMetrics(componentName),
       };
     }
   }
-  
+
   /**
    * Wrap a function with component-specific error handling
    */
@@ -518,7 +534,7 @@ export class ErrorHandler {
       return result.data!;
     };
   }
-  
+
   /**
    * Create component-specific error
    */
@@ -530,7 +546,7 @@ export class ErrorHandler {
     cause?: Error
   ): SYMindXError {
     const config = this.componentConfigs.get(componentName);
-    
+
     if (!config) {
       return createRuntimeError(message, code, context, cause);
     }
@@ -540,24 +556,53 @@ export class ErrorHandler {
       componentName,
       componentConfig: {
         category: config.defaultCategory,
-        severity: config.defaultSeverity
-      }
+        severity: config.defaultSeverity,
+      },
     };
 
     switch (config.defaultCategory) {
       case ErrorCategory.SYSTEM:
-        return createPortalError(message, componentName, undefined, code, enrichedContext, cause);
+        return createPortalError(
+          message,
+          componentName,
+          undefined,
+          code,
+          enrichedContext,
+          cause
+        );
       case ErrorCategory.CONFIGURATION:
-        return createConfigurationError(message, code, componentName, undefined, enrichedContext, cause);
+        return createConfigurationError(
+          message,
+          code,
+          componentName,
+          undefined,
+          enrichedContext,
+          cause
+        );
       case ErrorCategory.NETWORK:
-        return createNetworkError(message, code, undefined, undefined, undefined, enrichedContext, cause);
+        return createNetworkError(
+          message,
+          code,
+          undefined,
+          undefined,
+          undefined,
+          enrichedContext,
+          cause
+        );
       case ErrorCategory.RESOURCE:
-        return createMemoryError(message, code, componentName, undefined, enrichedContext, cause);
+        return createMemoryError(
+          message,
+          code,
+          componentName,
+          undefined,
+          enrichedContext,
+          cause
+        );
       default:
         return createRuntimeError(message, code, enrichedContext, cause);
     }
   }
-  
+
   /**
    * Get component error metrics
    */
@@ -567,33 +612,39 @@ export class ErrorHandler {
       return {
         errorCount: 0,
         successRate: 0,
-        avgRecoveryTime: 0
+        avgRecoveryTime: 0,
       };
     }
 
     return {
       errorCount: metrics.errorCount,
-      successRate: metrics.successCount / Math.max(metrics.errorCount + metrics.successCount, 1),
-      avgRecoveryTime: metrics.totalRecoveryTime / Math.max(metrics.successCount, 1)
+      successRate:
+        metrics.successCount /
+        Math.max(metrics.errorCount + metrics.successCount, 1),
+      avgRecoveryTime:
+        metrics.totalRecoveryTime / Math.max(metrics.successCount, 1),
     };
   }
-  
+
   /**
    * Get all component metrics for dashboard
    */
-  public getAllComponentMetrics(): Record<string, ReturnType<typeof this.getComponentMetrics> & { componentName: string }> {
+  public getAllComponentMetrics(): Record<
+    string,
+    ReturnType<typeof this.getComponentMetrics> & { componentName: string }
+  > {
     const result: Record<string, any> = {};
-    
+
     for (const [componentName] of this.componentConfigs) {
       result[componentName] = {
         ...this.getComponentMetrics(componentName),
-        componentName
+        componentName,
       };
     }
-    
+
     return result;
   }
-  
+
   /**
    * Reset component metrics
    */
@@ -645,7 +696,7 @@ export class ErrorHandler {
       timestamp: new Date(),
       recoveryStrategy: this.determineRecoveryStrategy(category, severity),
       metadata: {
-        environment: process.env["NODE_ENV"] || 'development',
+        environment: process.env['NODE_ENV'] || 'development',
         nodeVersion: process.version,
         platform: process.platform,
       },
@@ -710,15 +761,19 @@ export class ErrorHandler {
           },
         },
       };
-      
-      if (recovery.success && 'data' in recovery && recovery.data !== undefined) {
+
+      if (
+        recovery.success &&
+        'data' in recovery &&
+        recovery.data !== undefined
+      ) {
         result.data = recovery.data;
       }
-      
+
       if (!recovery.success) {
         result.error = recovery.message || 'Recovery failed';
       }
-      
+
       return result;
     } catch (recoveryError) {
       const finalError = this.createError(
@@ -1307,7 +1362,7 @@ export class ErrorHandler {
   private sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
-  
+
   /**
    * Normalize error to SYMindXError
    */
@@ -1328,7 +1383,7 @@ export class ErrorHandler {
       error
     );
   }
-  
+
   /**
    * Update component metrics
    */
@@ -1350,35 +1405,41 @@ export class ErrorHandler {
       }
     }
   }
-  
+
   /**
    * Build recovery path for debugging
    */
-  private buildRecoveryPath(error: SYMindXError | ErrorInfo, strategy?: RecoveryStrategy): string[] {
-    const path = ['category' in error ? error.category : 'unknown', 'code' in error ? error.code : 'unknown'];
-    
+  private buildRecoveryPath(
+    error: SYMindXError | ErrorInfo,
+    strategy?: RecoveryStrategy
+  ): string[] {
+    const path = [
+      'category' in error ? error.category : 'unknown',
+      'code' in error ? error.code : 'unknown',
+    ];
+
     if (strategy) {
       path.push(strategy);
     }
-    
+
     return path;
   }
-  
+
   // Analytics Methods
-  
+
   /**
    * Configure analytics settings
    */
   public configureAnalytics(config: Partial<ErrorAnalyticsConfig>): void {
     this.analyticsConfig = { ...this.analyticsConfig, ...config };
-    
+
     if (this.analyticsConfig.enabled && !this.analyticsTimer) {
       this.startAnalytics();
     } else if (!this.analyticsConfig.enabled && this.analyticsTimer) {
       this.stopAnalytics();
     }
   }
-  
+
   /**
    * Record an error event for analytics
    */
@@ -1404,22 +1465,26 @@ export class ErrorHandler {
     // Clean old entries
     this.cleanupHistory();
   }
-  
+
   /**
    * Get system-wide error analytics
    */
   public getSystemAnalytics(): SystemErrorAnalytics {
     const now = new Date();
     const recentHistory = this.errorHistory.filter(
-      entry => now.getTime() - entry.timestamp.getTime() < 24 * 60 * 60 * 1000 // Last 24 hours
+      (entry) => now.getTime() - entry.timestamp.getTime() < 24 * 60 * 60 * 1000 // Last 24 hours
     );
 
     const totalRequests = recentHistory.length;
-    const totalErrors = recentHistory.filter(entry => !entry.recovered).length;
+    const totalErrors = recentHistory.filter(
+      (entry) => !entry.recovered
+    ).length;
     const errorRate = totalRequests > 0 ? totalErrors / totalRequests : 0;
-    const avgResponseTime = recentHistory.length > 0 
-      ? recentHistory.reduce((sum, entry) => sum + entry.responseTime, 0) / recentHistory.length 
-      : 0;
+    const avgResponseTime =
+      recentHistory.length > 0
+        ? recentHistory.reduce((sum, entry) => sum + entry.responseTime, 0) /
+          recentHistory.length
+        : 0;
 
     return {
       overall: {
@@ -1435,26 +1500,34 @@ export class ErrorHandler {
       topErrors: this.getTopErrors(),
     };
   }
-  
+
   /**
    * Get component health status
    */
   public getComponentHealth(componentName: string): ComponentHealth {
-    const componentErrors = this.errorHistory.filter(entry => entry.component === componentName);
+    const componentErrors = this.errorHistory.filter(
+      (entry) => entry.component === componentName
+    );
     const recentErrors = componentErrors.filter(
-      entry => new Date().getTime() - entry.timestamp.getTime() < 60 * 60 * 1000 // Last hour
+      (entry) =>
+        new Date().getTime() - entry.timestamp.getTime() < 60 * 60 * 1000 // Last hour
     );
 
     const totalRequests = recentErrors.length;
-    const failedRequests = recentErrors.filter(entry => !entry.recovered).length;
+    const failedRequests = recentErrors.filter(
+      (entry) => !entry.recovered
+    ).length;
     const errorRate = totalRequests > 0 ? failedRequests / totalRequests : 0;
     const successRate = 1 - errorRate;
-    const avgResponseTime = recentErrors.length > 0
-      ? recentErrors.reduce((sum, entry) => sum + entry.responseTime, 0) / recentErrors.length
-      : 0;
+    const avgResponseTime =
+      recentErrors.length > 0
+        ? recentErrors.reduce((sum, entry) => sum + entry.responseTime, 0) /
+          recentErrors.length
+        : 0;
 
-    const lastError = componentErrors
-      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())[0];
+    const lastError = componentErrors.sort(
+      (a, b) => b.timestamp.getTime() - a.timestamp.getTime()
+    )[0];
 
     // Determine status
     let status: ComponentHealth['status'] = 'healthy';
@@ -1465,7 +1538,11 @@ export class ErrorHandler {
     // Get circuit breaker state
     const circuitBreakerStatus = this.getCircuitBreakerStatus(componentName);
 
-    const recommendations = this.generateRecommendations(errorRate, avgResponseTime, circuitBreakerStatus);
+    const recommendations = this.generateRecommendations(
+      errorRate,
+      avgResponseTime,
+      circuitBreakerStatus
+    );
 
     return {
       componentName,
@@ -1474,16 +1551,21 @@ export class ErrorHandler {
       successRate,
       avgResponseTime,
       circuitBreakerState: circuitBreakerStatus.state,
-      lastError: lastError ? {
-        timestamp: lastError.timestamp,
-        message: lastError.error.message,
-        code: 'code' in lastError.error ? lastError.error.code : 'UNKNOWN',
-        severity: 'severity' in lastError.error ? lastError.error.severity : ErrorSeverity.MEDIUM,
-      } : undefined,
+      lastError: lastError
+        ? {
+            timestamp: lastError.timestamp,
+            message: lastError.error.message,
+            code: 'code' in lastError.error ? lastError.error.code : 'UNKNOWN',
+            severity:
+              'severity' in lastError.error
+                ? lastError.error.severity
+                : ErrorSeverity.MEDIUM,
+          }
+        : undefined,
       recommendations,
     };
   }
-  
+
   /**
    * Get error trends over time
    */
@@ -1497,26 +1579,41 @@ export class ErrorHandler {
       const startTime = new Date(endTime.getTime() - intervalMs);
 
       const intervalErrors = this.errorHistory.filter(
-        entry => entry.timestamp >= startTime && entry.timestamp < endTime
+        (entry) => entry.timestamp >= startTime && entry.timestamp < endTime
       );
 
-      const errorCount = intervalErrors.filter(entry => !entry.recovered).length;
-      const successCount = intervalErrors.filter(entry => entry.recovered).length;
+      const errorCount = intervalErrors.filter(
+        (entry) => !entry.recovered
+      ).length;
+      const successCount = intervalErrors.filter(
+        (entry) => entry.recovered
+      ).length;
       const totalCount = intervalErrors.length;
       const errorRate = totalCount > 0 ? errorCount / totalCount : 0;
-      const avgResponseTime = totalCount > 0
-        ? intervalErrors.reduce((sum, entry) => sum + entry.responseTime, 0) / totalCount
-        : 0;
+      const avgResponseTime =
+        totalCount > 0
+          ? intervalErrors.reduce((sum, entry) => sum + entry.responseTime, 0) /
+            totalCount
+          : 0;
 
       // Get top errors for this interval
-      const errorCounts = new Map<string, { count: number; category: ErrorCategory; severity: ErrorSeverity }>();
-      intervalErrors.forEach(entry => {
+      const errorCounts = new Map<
+        string,
+        { count: number; category: ErrorCategory; severity: ErrorSeverity }
+      >();
+      intervalErrors.forEach((entry) => {
         const code = 'code' in entry.error ? entry.error.code : 'UNKNOWN';
         const existing = errorCounts.get(code);
         errorCounts.set(code, {
           count: (existing?.count || 0) + 1,
-          category: 'category' in entry.error ? entry.error.category : ErrorCategory.RUNTIME,
-          severity: 'severity' in entry.error ? entry.error.severity : ErrorSeverity.MEDIUM,
+          category:
+            'category' in entry.error
+              ? entry.error.category
+              : ErrorCategory.RUNTIME,
+          severity:
+            'severity' in entry.error
+              ? entry.error.severity
+              : ErrorSeverity.MEDIUM,
         });
       });
 
@@ -1537,44 +1634,52 @@ export class ErrorHandler {
 
     return trends;
   }
-  
+
   /**
    * Acknowledge an alert
    */
   public acknowledgeAlert(alertId: string): boolean {
-    const alert = this.alerts.find(a => a.id === alertId);
+    const alert = this.alerts.find((a) => a.id === alertId);
     if (alert) {
       (alert as any).acknowledged = true;
       return true;
     }
     return false;
   }
-  
+
   /**
    * Get active alerts
    */
   public getActiveAlerts(): ErrorAlert[] {
-    return this.alerts.filter(alert => !alert.acknowledged);
+    return this.alerts.filter((alert) => !alert.acknowledged);
   }
-  
+
   /**
    * Clear acknowledged alerts
    */
   public clearAcknowledgedAlerts(): number {
     const before = this.alerts.length;
-    this.alerts = this.alerts.filter(alert => !alert.acknowledged);
+    this.alerts = this.alerts.filter((alert) => !alert.acknowledged);
     return before - this.alerts.length;
   }
-  
+
   /**
    * Export analytics data for external systems
    */
   public exportAnalytics(format: 'json' | 'csv' = 'json'): string {
     const analytics = this.getSystemAnalytics();
-    
+
     if (format === 'csv') {
-      const headers = ['timestamp', 'component', 'error_code', 'error_message', 'severity', 'recovered', 'response_time'];
-      const rows = this.errorHistory.map(entry => [
+      const headers = [
+        'timestamp',
+        'component',
+        'error_code',
+        'error_message',
+        'severity',
+        'recovered',
+        'response_time',
+      ];
+      const rows = this.errorHistory.map((entry) => [
         entry.timestamp.toISOString(),
         entry.component,
         'code' in entry.error ? entry.error.code : 'UNKNOWN',
@@ -1583,19 +1688,21 @@ export class ErrorHandler {
         entry.recovered.toString(),
         entry.responseTime.toString(),
       ]);
-      
-      return [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
+
+      return [headers.join(','), ...rows.map((row) => row.join(','))].join(
+        '\n'
+      );
     }
-    
+
     return JSON.stringify(analytics, null, 2);
   }
-  
+
   /**
    * Start analytics processing
    */
   private startAnalytics(): void {
     if (this.analyticsTimer) return;
-    
+
     this.analyticsTimer = setInterval(() => {
       this.processAnalytics();
     }, this.analyticsConfig.aggregationInterval);
@@ -1604,7 +1711,7 @@ export class ErrorHandler {
       config: this.analyticsConfig,
     });
   }
-  
+
   /**
    * Stop analytics processing
    */
@@ -1614,7 +1721,7 @@ export class ErrorHandler {
       this.analyticsTimer = undefined;
     }
   }
-  
+
   /**
    * Process analytics and generate insights
    */
@@ -1625,56 +1732,79 @@ export class ErrorHandler {
 
     // Generate system health report
     const analytics = this.getSystemAnalytics();
-    
+
     runtimeLogger.debug('Error analytics processed', {
       totalErrors: analytics.overall.totalErrors,
       errorRate: analytics.overall.errorRate,
       activeAlerts: analytics.alerts.length,
     });
   }
-  
+
   /**
    * Check alert thresholds
    */
-  private checkAlertThresholds(error: SYMindXError | ErrorInfo, component: string): void {
+  private checkAlertThresholds(
+    error: SYMindXError | ErrorInfo,
+    component: string
+  ): void {
     // Check critical error threshold
-    const severity = 'severity' in error ? error.severity : ErrorSeverity.MEDIUM;
+    const severity =
+      'severity' in error ? error.severity : ErrorSeverity.MEDIUM;
     if (severity === ErrorSeverity.CRITICAL) {
-      const recentCritical = this.errorHistory.filter(
-        entry => {
-          const entrySeverity = 'severity' in entry.error ? entry.error.severity : ErrorSeverity.MEDIUM;
-          return entrySeverity === ErrorSeverity.CRITICAL &&
-            new Date().getTime() - entry.timestamp.getTime() < 60 * 60 * 1000; // Last hour
-        }
-      ).length;
+      const recentCritical = this.errorHistory.filter((entry) => {
+        const entrySeverity =
+          'severity' in entry.error
+            ? entry.error.severity
+            : ErrorSeverity.MEDIUM;
+        return (
+          entrySeverity === ErrorSeverity.CRITICAL &&
+          new Date().getTime() - entry.timestamp.getTime() < 60 * 60 * 1000
+        ); // Last hour
+      }).length;
 
-      if (recentCritical >= this.analyticsConfig.alertThresholds.criticalErrors) {
-        this.createAlert('critical_error', 'critical', 
+      if (
+        recentCritical >= this.analyticsConfig.alertThresholds.criticalErrors
+      ) {
+        this.createAlert(
+          'critical_error',
+          'critical',
           `Critical error threshold exceeded: ${recentCritical} critical errors in the last hour`,
-          component, { criticalErrorCount: recentCritical });
+          component,
+          { criticalErrorCount: recentCritical }
+        );
       }
     }
 
     // Check error rate threshold
     const componentHealth = this.getComponentHealth(component);
-    if (componentHealth.errorRate > this.analyticsConfig.alertThresholds.errorRate) {
-      this.createAlert('error_rate', 'warning',
+    if (
+      componentHealth.errorRate > this.analyticsConfig.alertThresholds.errorRate
+    ) {
+      this.createAlert(
+        'error_rate',
+        'warning',
         `High error rate detected: ${(componentHealth.errorRate * 100).toFixed(1)}%`,
-        component, { errorRate: componentHealth.errorRate });
+        component,
+        { errorRate: componentHealth.errorRate }
+      );
     }
 
     // Check circuit breaker trips
     const circuitBreakerStatus = this.getCircuitBreakerStatus(component);
     if (circuitBreakerStatus.state === 'open') {
-      this.createAlert('circuit_breaker', 'critical',
+      this.createAlert(
+        'circuit_breaker',
+        'critical',
         `Circuit breaker tripped for component: ${component}`,
-        component, { 
+        component,
+        {
           state: circuitBreakerStatus.state,
-          failureCount: circuitBreakerStatus.failureCount 
-        });
+          failureCount: circuitBreakerStatus.failureCount,
+        }
+      );
     }
   }
-  
+
   /**
    * Create an alert
    */
@@ -1687,10 +1817,11 @@ export class ErrorHandler {
   ): void {
     // Check if similar alert already exists
     const existingAlert = this.alerts.find(
-      alert => alert.type === type && 
-      alert.component === component && 
-      !alert.acknowledged &&
-      new Date().getTime() - alert.timestamp.getTime() < 60 * 60 * 1000 // Within last hour
+      (alert) =>
+        alert.type === type &&
+        alert.component === component &&
+        !alert.acknowledged &&
+        new Date().getTime() - alert.timestamp.getTime() < 60 * 60 * 1000 // Within last hour
     );
 
     if (existingAlert) return; // Don't create duplicate alerts
@@ -1714,32 +1845,39 @@ export class ErrorHandler {
         type: alert.type,
         severity: alert.severity,
         component: alert.component,
-      }
+      },
     });
   }
-  
+
   /**
    * Get components health status
    */
   private getComponentsHealth(): ComponentHealth[] {
-    const components = new Set(this.errorHistory.map(entry => entry.component));
-    return Array.from(components).map(component => this.getComponentHealth(component));
+    const components = new Set(
+      this.errorHistory.map((entry) => entry.component)
+    );
+    return Array.from(components).map((component) =>
+      this.getComponentHealth(component)
+    );
   }
-  
+
   /**
    * Generate error trends
    */
   private generateTrends(): ErrorTrend[] {
     return this.getErrorTrends(24);
   }
-  
+
   /**
    * Get top errors across all components
    */
   private getTopErrors() {
-    const errorCounts = new Map<string, { count: number; components: Set<string> }>();
-    
-    this.errorHistory.forEach(entry => {
+    const errorCounts = new Map<
+      string,
+      { count: number; components: Set<string> }
+    >();
+
+    this.errorHistory.forEach((entry) => {
       const code = 'code' in entry.error ? entry.error.code : 'UNKNOWN';
       const existing = errorCounts.get(code);
       if (existing) {
@@ -1748,7 +1886,7 @@ export class ErrorHandler {
       } else {
         errorCounts.set(code, {
           count: 1,
-          components: new Set([entry.component])
+          components: new Set([entry.component]),
         });
       }
     });
@@ -1763,17 +1901,20 @@ export class ErrorHandler {
       .sort((a, b) => b.count - a.count)
       .slice(0, 10);
   }
-  
+
   /**
    * Determine error impact level
    */
-  private determineErrorImpact(count: number, componentCount: number): 'low' | 'medium' | 'high' | 'critical' {
+  private determineErrorImpact(
+    count: number,
+    componentCount: number
+  ): 'low' | 'medium' | 'high' | 'critical' {
     if (count > 100 || componentCount > 5) return 'critical';
     if (count > 50 || componentCount > 3) return 'high';
     if (count > 10 || componentCount > 1) return 'medium';
     return 'low';
   }
-  
+
   /**
    * Generate recommendations for component health
    */
@@ -1788,40 +1929,44 @@ export class ErrorHandler {
       recommendations.push('High error rate detected - investigate root cause');
     }
     if (avgResponseTime > 5000) {
-      recommendations.push('Slow response times - consider performance optimization');
+      recommendations.push(
+        'Slow response times - consider performance optimization'
+      );
     }
     if (circuitBreakerStatus.state === 'open') {
-      recommendations.push('Circuit breaker is open - check downstream dependencies');
+      recommendations.push(
+        'Circuit breaker is open - check downstream dependencies'
+      );
     }
     if (circuitBreakerStatus.failureCount > 3) {
-      recommendations.push('Multiple failures detected - consider increasing timeout or implementing fallback');
+      recommendations.push(
+        'Multiple failures detected - consider increasing timeout or implementing fallback'
+      );
     }
 
     return recommendations;
   }
-  
+
   /**
    * Clean up old error history
    */
   private cleanupHistory(): void {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - this.analyticsConfig.retentionDays);
-    
+
     this.errorHistory = this.errorHistory.filter(
-      entry => entry.timestamp >= cutoff
+      (entry) => entry.timestamp >= cutoff
     );
   }
-  
+
   /**
    * Clean up old alerts
    */
   private cleanupAlerts(): void {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - 1); // Keep alerts for 1 day
-    
-    this.alerts = this.alerts.filter(
-      alert => alert.timestamp >= cutoff
-    );
+
+    this.alerts = this.alerts.filter((alert) => alert.timestamp >= cutoff);
   }
 }
 
@@ -1933,7 +2078,10 @@ export function handleErrors(
           'DECORATED_METHOD_ERROR',
           category,
           severity,
-          { methodName: propertyKey, className: (target as any).constructor.name },
+          {
+            methodName: propertyKey,
+            className: (target as any).constructor.name,
+          },
           error instanceof Error ? error : undefined
         );
 
@@ -1958,45 +2106,49 @@ export function handleErrors(
 /**
  * Component registration helpers
  */
-export const registerRuntimeComponent = () => errorHandler.registerComponent({
-  componentName: 'runtime',
-  defaultCategory: ErrorCategory.RUNTIME,
-  defaultSeverity: ErrorSeverity.HIGH,
-  enableRetry: true,
-  maxRetries: 3,
-  enableCircuitBreaker: true,
-  enableFallback: true,
-});
+export const registerRuntimeComponent = () =>
+  errorHandler.registerComponent({
+    componentName: 'runtime',
+    defaultCategory: ErrorCategory.RUNTIME,
+    defaultSeverity: ErrorSeverity.HIGH,
+    enableRetry: true,
+    maxRetries: 3,
+    enableCircuitBreaker: true,
+    enableFallback: true,
+  });
 
-export const registerPortalComponent = (portalName: string) => errorHandler.registerComponent({
-  componentName: `portal:${portalName}`,
-  defaultCategory: ErrorCategory.SYSTEM,
-  defaultSeverity: ErrorSeverity.HIGH,
-  enableRetry: true,
-  maxRetries: 2,
-  enableCircuitBreaker: true,
-  enableFallback: true,
-});
+export const registerPortalComponent = (portalName: string) =>
+  errorHandler.registerComponent({
+    componentName: `portal:${portalName}`,
+    defaultCategory: ErrorCategory.SYSTEM,
+    defaultSeverity: ErrorSeverity.HIGH,
+    enableRetry: true,
+    maxRetries: 2,
+    enableCircuitBreaker: true,
+    enableFallback: true,
+  });
 
-export const registerExtensionComponent = (extensionName: string) => errorHandler.registerComponent({
-  componentName: `extension:${extensionName}`,
-  defaultCategory: ErrorCategory.SYSTEM,
-  defaultSeverity: ErrorSeverity.MEDIUM,
-  enableRetry: false,
-  maxRetries: 1,
-  enableCircuitBreaker: false,
-  enableFallback: true,
-});
+export const registerExtensionComponent = (extensionName: string) =>
+  errorHandler.registerComponent({
+    componentName: `extension:${extensionName}`,
+    defaultCategory: ErrorCategory.SYSTEM,
+    defaultSeverity: ErrorSeverity.MEDIUM,
+    enableRetry: false,
+    maxRetries: 1,
+    enableCircuitBreaker: false,
+    enableFallback: true,
+  });
 
-export const registerMemoryComponent = (providerType: string) => errorHandler.registerComponent({
-  componentName: `memory:${providerType}`,
-  defaultCategory: ErrorCategory.RESOURCE,
-  defaultSeverity: ErrorSeverity.MEDIUM,
-  enableRetry: true,
-  maxRetries: 2,
-  enableCircuitBreaker: true,
-  enableFallback: true,
-});
+export const registerMemoryComponent = (providerType: string) =>
+  errorHandler.registerComponent({
+    componentName: `memory:${providerType}`,
+    defaultCategory: ErrorCategory.RESOURCE,
+    defaultSeverity: ErrorSeverity.MEDIUM,
+    enableRetry: true,
+    maxRetries: 2,
+    enableCircuitBreaker: true,
+    enableFallback: true,
+  });
 
 /**
  * Convenience wrapper functions
@@ -2023,9 +2175,11 @@ export const withMemoryErrorHandling = <T extends unknown[], R>(
 /**
  * Initialize error handler with analytics
  */
-export function initializeErrorHandler(config?: Partial<ErrorHandlerConfig & ErrorAnalyticsConfig>): void {
+export function initializeErrorHandler(
+  config?: Partial<ErrorHandlerConfig & ErrorAnalyticsConfig>
+): void {
   const handler = ErrorHandler.getInstance(config);
-  
+
   if (config?.enabled !== false) {
     handler.configureAnalytics({
       enabled: config?.enabled ?? true,
@@ -2034,6 +2188,6 @@ export function initializeErrorHandler(config?: Partial<ErrorHandlerConfig & Err
       aggregationInterval: config?.aggregationInterval ?? 60000,
     });
   }
-  
+
   runtimeLogger.info('Error handler initialized with integrated analytics');
 }

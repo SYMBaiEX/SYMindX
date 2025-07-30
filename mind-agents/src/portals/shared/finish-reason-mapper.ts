@@ -1,6 +1,6 @@
 /**
  * Shared Finish Reason Mapping Utilities
- * 
+ *
  * Provides standardized finish reason mapping for all portal implementations
  */
 
@@ -65,7 +65,10 @@ export function createFinishReasonMapper(provider: string) {
 /**
  * Map provider-specific finish reasons with additional context
  */
-function mapProviderFinishReason(reason?: string, provider: string): FinishReason {
+function mapProviderFinishReason(
+  reason?: string,
+  provider: string
+): FinishReason {
   if (!reason) {
     return FinishReason.STOP;
   }

@@ -1,6 +1,6 @@
 /**
  * Shared Chat Repository Implementation for SYMindX
- * 
+ *
  * Abstract base class providing common chat operations for all memory providers
  */
 
@@ -29,10 +29,13 @@ import {
   AnalyticsEvent,
 } from '../../memory/providers/sqlite/chat-types';
 
-export abstract class SharedChatRepository extends BaseRepository<Conversation> implements ChatRepository {
+export abstract class SharedChatRepository
+  extends BaseRepository<Conversation>
+  implements ChatRepository
+{
   protected connection: ConnectionPool;
   protected config: ChatSystemConfig;
-  
+
   constructor(connection: ConnectionPool, config: ChatSystemConfig) {
     super({
       tableName: 'conversations',
@@ -43,18 +46,20 @@ export abstract class SharedChatRepository extends BaseRepository<Conversation> 
     this.connection = connection;
     this.config = config;
   }
-  
+
   // ===================================================================
   // CONVERSATION OPERATIONS
   // ===================================================================
-  
+
   async createConversation(
-    conversation: Omit<Conversation, 'id' | 'createdAt' | 'updatedAt' | 'messageCount' | 'metadata'> & 
-    { metadata?: Record<string, unknown> }
+    conversation: Omit<
+      Conversation,
+      'id' | 'createdAt' | 'updatedAt' | 'messageCount' | 'metadata'
+    > & { metadata?: Record<string, unknown> }
   ): Promise<Conversation> {
     const id = this.generateId();
     const now = new Date();
-    
+
     const data = {
       id,
       agent_id: conversation.agentId,
@@ -64,14 +69,15 @@ export abstract class SharedChatRepository extends BaseRepository<Conversation> 
       created_at: now,
       updated_at: now,
       message_count: 0,
-      metadata: JSON.stringify(conversation.metadata || {})
+      metadata: JSON.stringify(conversation.metadata || {}),
     };
-    
+
     await this.connection.transaction(async (client) => {
       // Insert conversation
-      const { sql, params } = QueryBuilder.from('conversations').buildInsert(data);
+      const { sql, params } =
+        QueryBuilder.from('conversations').buildInsert(data);
       await client.execute(sql, params);
-      
+
       // Add participants
       await this.addParticipantInTransaction(client, {
         conversationId: id,
@@ -83,7 +89,7 @@ export abstract class SharedChatRepository extends BaseRepository<Conversation> 
         preferences: {},
         status: ParticipantStatus.ACTIVE,
       });
-      
+
       await this.addParticipantInTransaction(client, {
         conversationId: id,
         participantType: ParticipantType.AGENT,
@@ -95,9 +101,11 @@ export abstract class SharedChatRepository extends BaseRepository<Conversation> 
         status: ParticipantStatus.ACTIVE,
       });
     });
-    
-    console.log(`💬 Created conversation ${id} between user ${conversation.userId} and agent ${conversation.agentId}`);
-    
+
+    console.log(
+      `💬 Created conversation ${id} between user ${conversation.userId} and agent ${conversation.agentId}`
+    );
+
     return {
       id,
       agentId: conversation.agentId,
@@ -113,56 +121,59 @@ export abstract class SharedChatRepository extends BaseRepository<Conversation> 
       deletedBy: conversation.deletedBy,
     };
   }
-  
+
   async getConversation(id: string): Promise<Conversation | null> {
-    const { sql, params } = QueryBuilder
-      .from('conversations')
+    const { sql, params } = QueryBuilder.from('conversations')
       .where('id', '=', id)
       .where('deleted_at', 'IS NULL')
       .buildSelect();
-    
+
     const rows = await this.connection.query(sql, params);
     if (rows.length === 0) return null;
-    
+
     return this.transformFromStorage(rows[0]);
   }
-  
-  async updateConversation(id: string, updates: Partial<Conversation>): Promise<void> {
+
+  async updateConversation(
+    id: string,
+    updates: Partial<Conversation>
+  ): Promise<void> {
     const data: any = {};
-    
+
     if (updates.title !== undefined) data.title = updates.title;
     if (updates.status !== undefined) data.status = updates.status;
-    if (updates.metadata !== undefined) data.metadata = JSON.stringify(updates.metadata);
-    
+    if (updates.metadata !== undefined)
+      data.metadata = JSON.stringify(updates.metadata);
+
     if (Object.keys(data).length === 0) return;
-    
+
     data.updated_at = new Date();
-    
-    const { sql, params } = QueryBuilder
-      .from('conversations')
+
+    const { sql, params } = QueryBuilder.from('conversations')
       .where('id', '=', id)
       .buildUpdate(data);
-    
+
     await this.connection.execute(sql, params);
   }
-  
+
   async deleteConversation(id: string, deletedBy: string): Promise<void> {
     const data = {
       status: ConversationStatus.DELETED,
       deleted_at: new Date(),
       deleted_by: deletedBy,
-      updated_at: new Date()
+      updated_at: new Date(),
     };
-    
-    const { sql, params } = QueryBuilder
-      .from('conversations')
+
+    const { sql, params } = QueryBuilder.from('conversations')
       .where('id', '=', id)
       .buildUpdate(data);
-    
+
     await this.connection.execute(sql, params);
   }
-  
-  async listConversations(query: ConversationQuery): Promise<ConversationWithLastMessage[]> {
+
+  async listConversations(
+    query: ConversationQuery
+  ): Promise<ConversationWithLastMessage[]> {
     const qb = QueryBuilder.from('conversations c')
       .select(
         'c.*',
@@ -170,38 +181,53 @@ export abstract class SharedChatRepository extends BaseRepository<Conversation> 
         'm.sender_type as last_message_sender_type',
         'm.timestamp as last_message_timestamp',
         '(SELECT COUNT(*) FROM participants WHERE conversation_id = c.id) as participant_count',
-        '(SELECT COUNT(*) FROM participants WHERE conversation_id = c.id AND status = \'active\') as active_participant_count'
+        "(SELECT COUNT(*) FROM participants WHERE conversation_id = c.id AND status = 'active') as active_participant_count"
       )
-      .leftJoin('messages m', 'm.id = (SELECT id FROM messages WHERE conversation_id = c.id AND deleted_at IS NULL ORDER BY timestamp DESC LIMIT 1)')
+      .leftJoin(
+        'messages m',
+        'm.id = (SELECT id FROM messages WHERE conversation_id = c.id AND deleted_at IS NULL ORDER BY timestamp DESC LIMIT 1)'
+      )
       .where('c.deleted_at', 'IS NULL');
-    
+
     if (query.userId) qb.where('c.user_id', '=', query.userId);
     if (query.agentId) qb.where('c.agent_id', '=', query.agentId);
     if (query.status) qb.where('c.status', '=', query.status);
-    
-    const orderColumn = {
-      created: 'c.created_at',
-      updated: 'c.updated_at',
-      lastMessage: 'c.last_message_at',
-    }[query.orderBy || 'updated'] || 'c.updated_at';
-    
-    qb.orderBy(orderColumn, query.orderDirection?.toUpperCase() as 'ASC' | 'DESC' || 'DESC');
-    
+
+    const orderColumn =
+      {
+        created: 'c.created_at',
+        updated: 'c.updated_at',
+        lastMessage: 'c.last_message_at',
+      }[query.orderBy || 'updated'] || 'c.updated_at';
+
+    qb.orderBy(
+      orderColumn,
+      (query.orderDirection?.toUpperCase() as 'ASC' | 'DESC') || 'DESC'
+    );
+
     if (query.limit) qb.limit(query.limit);
     if (query.offset) qb.offset(query.offset);
-    
+
     const { sql, params } = qb.buildSelect();
     const rows = await this.connection.query(sql, params);
-    
+
     return rows.map((row: any) => this.rowToConversationWithLastMessage(row));
   }
-  
+
   // ===================================================================
   // MESSAGE OPERATIONS
   // ===================================================================
-  
+
   async createMessage(
-    message: Omit<Message, 'id' | 'timestamp' | 'metadata' | 'memoryReferences' | 'createdMemories' | 'status'> & {
+    message: Omit<
+      Message,
+      | 'id'
+      | 'timestamp'
+      | 'metadata'
+      | 'memoryReferences'
+      | 'createdMemories'
+      | 'status'
+    > & {
       metadata?: Record<string, unknown>;
       memoryReferences?: string[];
       createdMemories?: string[];
@@ -210,7 +236,7 @@ export abstract class SharedChatRepository extends BaseRepository<Conversation> 
   ): Promise<Message> {
     const id = this.generateId().replace('conv', 'msg');
     const timestamp = new Date();
-    
+
     const data = {
       id,
       conversation_id: message.conversationId,
@@ -220,47 +246,53 @@ export abstract class SharedChatRepository extends BaseRepository<Conversation> 
       message_type: message.messageType || MessageType.TEXT,
       timestamp,
       metadata: JSON.stringify(message.metadata || {}),
-      emotion_state: message.emotionState ? JSON.stringify(message.emotionState) : null,
-      thought_process: message.thoughtProcess ? JSON.stringify(message.thoughtProcess) : null,
+      emotion_state: message.emotionState
+        ? JSON.stringify(message.emotionState)
+        : null,
+      thought_process: message.thoughtProcess
+        ? JSON.stringify(message.thoughtProcess)
+        : null,
       confidence_score: message.confidenceScore || null,
       memory_references: JSON.stringify(message.memoryReferences || []),
       created_memories: JSON.stringify(message.createdMemories || []),
-      status: message.status || MessageStatus.SENT
+      status: message.status || MessageStatus.SENT,
     };
-    
+
     await this.connection.transaction(async (client) => {
       // Insert message
       const { sql, params } = QueryBuilder.from('messages').buildInsert(data);
       await client.execute(sql, params);
-      
+
       // Update conversation
-      const updateConv = QueryBuilder
-        .from('conversations')
+      const updateConv = QueryBuilder.from('conversations')
         .where('id', '=', message.conversationId)
         .buildUpdate({
           last_message_at: timestamp,
-          message_count: this.connection.type === 'sqlite' 
-            ? { raw: 'message_count + 1' } 
-            : { raw: 'message_count + 1' },
-          updated_at: timestamp
+          message_count:
+            this.connection.type === 'sqlite'
+              ? { raw: 'message_count + 1' }
+              : { raw: 'message_count + 1' },
+          updated_at: timestamp,
         });
       await client.execute(updateConv.sql, updateConv.params);
-      
+
       // Update participant message count
-      const updatePart = QueryBuilder
-        .from('participants')
+      const updatePart = QueryBuilder.from('participants')
         .where('conversation_id', '=', message.conversationId)
         .where('participant_id', '=', message.senderId)
         .buildUpdate({
-          message_count: this.connection.type === 'sqlite'
-            ? { raw: 'message_count + 1' }
-            : { raw: 'message_count + 1' }
+          message_count:
+            this.connection.type === 'sqlite'
+              ? { raw: 'message_count + 1' }
+              : { raw: 'message_count + 1' },
         });
       await client.execute(updatePart.sql, updatePart.params);
     });
-    
-    console.log(`📝 Created message ${id} in conversation ${message.conversationId}`);
-    
+
+    console.log(
+      `📝 Created message ${id} in conversation ${message.conversationId}`
+    );
+
     return {
       id,
       conversationId: message.conversationId,
@@ -281,62 +313,60 @@ export abstract class SharedChatRepository extends BaseRepository<Conversation> 
       deletedBy: message.deletedBy,
     };
   }
-  
+
   async getMessage(id: string): Promise<Message | null> {
-    const { sql, params } = QueryBuilder
-      .from('messages')
+    const { sql, params } = QueryBuilder.from('messages')
       .where('id', '=', id)
       .where('deleted_at', 'IS NULL')
       .buildSelect();
-    
+
     const rows = await this.connection.query(sql, params);
     if (rows.length === 0) return null;
-    
+
     return this.rowToMessage(rows[0]);
   }
-  
+
   async updateMessage(id: string, updates: Partial<Message>): Promise<void> {
     const data: any = {};
-    
+
     if (updates.content !== undefined) {
       data.content = updates.content;
       data.edited_at = new Date();
     }
     if (updates.status !== undefined) data.status = updates.status;
     if (updates.readAt !== undefined) data.read_at = updates.readAt;
-    
+
     if (Object.keys(data).length === 0) return;
-    
-    const { sql, params } = QueryBuilder
-      .from('messages')
+
+    const { sql, params } = QueryBuilder.from('messages')
       .where('id', '=', id)
       .buildUpdate(data);
-    
+
     await this.connection.execute(sql, params);
   }
-  
+
   async deleteMessage(id: string, deletedBy: string): Promise<void> {
     const data = {
       deleted_at: new Date(),
-      deleted_by: deletedBy
+      deleted_by: deletedBy,
     };
-    
-    const { sql, params } = QueryBuilder
-      .from('messages')
+
+    const { sql, params } = QueryBuilder.from('messages')
       .where('id', '=', id)
       .buildUpdate(data);
-    
+
     await this.connection.execute(sql, params);
   }
-  
+
   async listMessages(query: MessageQuery): Promise<Message[]> {
     const qb = QueryBuilder.from('messages');
-    
+
     if (!query.includeDeleted) {
       qb.where('deleted_at', 'IS NULL');
     }
-    
-    if (query.conversationId) qb.where('conversation_id', '=', query.conversationId);
+
+    if (query.conversationId)
+      qb.where('conversation_id', '=', query.conversationId);
     if (query.senderId) qb.where('sender_id', '=', query.senderId);
     if (query.senderType) qb.where('sender_type', '=', query.senderType);
     if (query.messageType) qb.where('message_type', '=', query.messageType);
@@ -344,27 +374,34 @@ export abstract class SharedChatRepository extends BaseRepository<Conversation> 
     if (query.searchText) qb.where('content', 'LIKE', `%${query.searchText}%`);
     if (query.startDate) qb.where('timestamp', '>=', query.startDate);
     if (query.endDate) qb.where('timestamp', '<=', query.endDate);
-    
+
     qb.orderBy('timestamp', 'DESC');
-    
+
     if (query.limit) qb.limit(query.limit);
     if (query.offset) qb.offset(query.offset);
-    
+
     const { sql, params } = qb.buildSelect();
     const rows = await this.connection.query(sql, params);
-    
+
     return rows.map((row: any) => this.rowToMessage(row));
   }
-  
+
   // Abstract methods that must be implemented by specific providers
-  abstract searchMessages(conversationId: string, searchText: string, limit?: number): Promise<Message[]>;
-  
+  abstract searchMessages(
+    conversationId: string,
+    searchText: string,
+    limit?: number
+  ): Promise<Message[]>;
+
   // ===================================================================
   // PARTICIPANT OPERATIONS
   // ===================================================================
-  
+
   async addParticipant(
-    participant: Omit<Participant, 'id' | 'joinedAt' | 'messageCount' | 'preferences'> & {
+    participant: Omit<
+      Participant,
+      'id' | 'joinedAt' | 'messageCount' | 'preferences'
+    > & {
       messageCount?: number;
       preferences?: Record<string, any>;
     }
@@ -373,17 +410,20 @@ export abstract class SharedChatRepository extends BaseRepository<Conversation> 
       return this.addParticipantInTransaction(client, participant);
     });
   }
-  
+
   protected async addParticipantInTransaction(
     client: any,
-    participant: Omit<Participant, 'id' | 'joinedAt' | 'messageCount' | 'preferences'> & {
+    participant: Omit<
+      Participant,
+      'id' | 'joinedAt' | 'messageCount' | 'preferences'
+    > & {
       messageCount?: number;
       preferences?: Record<string, any>;
     }
   ): Promise<Participant> {
     const id = this.generateId().replace('conv', 'part');
     const joinedAt = new Date();
-    
+
     const data = {
       id,
       conversation_id: participant.conversationId,
@@ -395,12 +435,12 @@ export abstract class SharedChatRepository extends BaseRepository<Conversation> 
       message_count: 0,
       notifications_enabled: participant.notificationsEnabled ? 1 : 0,
       preferences: JSON.stringify(participant.preferences || {}),
-      status: participant.status
+      status: participant.status,
     };
-    
+
     const { sql, params } = QueryBuilder.from('participants').buildInsert(data);
     await client.execute(sql, params);
-    
+
     return {
       id,
       conversationId: participant.conversationId,
@@ -418,19 +458,22 @@ export abstract class SharedChatRepository extends BaseRepository<Conversation> 
       status: participant.status,
     };
   }
-  
+
   // ===================================================================
   // SESSION OPERATIONS
   // ===================================================================
-  
+
   async createSession(
-    session: Omit<ChatSession, 'id' | 'startedAt' | 'lastActivityAt' | 'clientInfo'> & {
+    session: Omit<
+      ChatSession,
+      'id' | 'startedAt' | 'lastActivityAt' | 'clientInfo'
+    > & {
       clientInfo?: Record<string, any>;
     }
   ): Promise<ChatSession> {
     const id = this.generateId().replace('conv', 'sess');
     const now = new Date();
-    
+
     const data = {
       id,
       user_id: session.userId,
@@ -440,12 +483,13 @@ export abstract class SharedChatRepository extends BaseRepository<Conversation> 
       last_activity_at: now,
       client_info: JSON.stringify(session.clientInfo || {}),
       ip_address: session.ipAddress || null,
-      user_agent: session.userAgent || null
+      user_agent: session.userAgent || null,
     };
-    
-    const { sql, params } = QueryBuilder.from('chat_sessions').buildInsert(data);
+
+    const { sql, params } =
+      QueryBuilder.from('chat_sessions').buildInsert(data);
     await this.connection.execute(sql, params);
-    
+
     return {
       id,
       userId: session.userId,
@@ -459,17 +503,19 @@ export abstract class SharedChatRepository extends BaseRepository<Conversation> 
       userAgent: session.userAgent,
     };
   }
-  
+
   // ===================================================================
   // ANALYTICS OPERATIONS
   // ===================================================================
-  
-  async logEvent(event: Omit<AnalyticsEvent, 'id' | 'timestamp'>): Promise<void> {
+
+  async logEvent(
+    event: Omit<AnalyticsEvent, 'id' | 'timestamp'>
+  ): Promise<void> {
     if (this.config.enableAnalytics === false) return;
-    
+
     const id = this.generateId().replace('conv', 'evt');
     const timestamp = new Date();
-    
+
     const data = {
       id,
       event_type: event.eventType,
@@ -479,18 +525,21 @@ export abstract class SharedChatRepository extends BaseRepository<Conversation> 
       event_data: JSON.stringify(event.eventData || {}),
       timestamp,
       processing_time: event.processingTime || null,
-      tokens_used: event.tokensUsed || null
+      tokens_used: event.tokensUsed || null,
     };
-    
+
     try {
-      const { sql, params } = QueryBuilder.from('analytics_events').buildInsert(data);
+      const { sql, params } =
+        QueryBuilder.from('analytics_events').buildInsert(data);
       await this.connection.execute(sql, params);
     } catch (error) {
       console.warn('Failed to log analytics event:', error);
     }
   }
-  
-  async getConversationStats(conversationId: string): Promise<ConversationStats> {
+
+  async getConversationStats(
+    conversationId: string
+  ): Promise<ConversationStats> {
     const sql = `
       SELECT 
         ? as conversation_id,
@@ -506,10 +555,13 @@ export abstract class SharedChatRepository extends BaseRepository<Conversation> 
       FROM messages
       WHERE conversation_id = ? AND deleted_at IS NULL
     `;
-    
-    const rows = await this.connection.query(sql, [conversationId, conversationId]);
+
+    const rows = await this.connection.query(sql, [
+      conversationId,
+      conversationId,
+    ]);
     const row = rows[0];
-    
+
     return buildObject<ConversationStats>({
       conversationId,
       messageCount: row.message_count || 0,
@@ -530,25 +582,34 @@ export abstract class SharedChatRepository extends BaseRepository<Conversation> 
       .addOptional('avgConfidence', row.avg_confidence || undefined)
       .build();
   }
-  
+
   // ===================================================================
   // UTILITY OPERATIONS - Must be implemented by specific providers
   // ===================================================================
-  
-  abstract removeParticipant(conversationId: string, participantId: string): Promise<void>;
-  abstract updateParticipant(id: string, updates: Partial<Participant>): Promise<void>;
+
+  abstract removeParticipant(
+    conversationId: string,
+    participantId: string
+  ): Promise<void>;
+  abstract updateParticipant(
+    id: string,
+    updates: Partial<Participant>
+  ): Promise<void>;
   abstract listParticipants(conversationId: string): Promise<Participant[]>;
-  abstract updateLastSeen(conversationId: string, participantId: string): Promise<void>;
+  abstract updateLastSeen(
+    conversationId: string,
+    participantId: string
+  ): Promise<void>;
   abstract updateSessionActivity(sessionId: string): Promise<void>;
   abstract endSession(sessionId: string): Promise<void>;
   abstract getActiveSessions(conversationId?: string): Promise<ChatSession[]>;
   abstract cleanupExpiredSessions(maxAge: number): Promise<number>;
   abstract archiveOldConversations(daysOld: number): Promise<number>;
-  
+
   // ===================================================================
   // HELPER METHODS
   // ===================================================================
-  
+
   protected rowToConversation(row: any): Conversation {
     return buildObject<Conversation>({
       id: row.id,
@@ -559,7 +620,10 @@ export abstract class SharedChatRepository extends BaseRepository<Conversation> 
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
       messageCount: row.message_count,
-      metadata: typeof row.metadata === 'string' ? JSON.parse(row.metadata) : row.metadata || {},
+      metadata:
+        typeof row.metadata === 'string'
+          ? JSON.parse(row.metadata)
+          : row.metadata || {},
     })
       .addOptional(
         'lastMessageAt',
@@ -572,8 +636,10 @@ export abstract class SharedChatRepository extends BaseRepository<Conversation> 
       .addOptional('deletedBy', row.deleted_by)
       .build();
   }
-  
-  protected rowToConversationWithLastMessage(row: any): ConversationWithLastMessage {
+
+  protected rowToConversationWithLastMessage(
+    row: any
+  ): ConversationWithLastMessage {
     return buildObject<ConversationWithLastMessage>({
       ...this.rowToConversation(row),
       lastMessageContent: row.last_message_content,
@@ -589,7 +655,7 @@ export abstract class SharedChatRepository extends BaseRepository<Conversation> 
       )
       .build();
   }
-  
+
   protected rowToMessage(row: any): Message {
     return buildObject<Message>({
       id: row.id,
@@ -599,13 +665,18 @@ export abstract class SharedChatRepository extends BaseRepository<Conversation> 
       content: row.content,
       messageType: row.message_type as MessageType,
       timestamp: new Date(row.timestamp),
-      metadata: typeof row.metadata === 'string' ? JSON.parse(row.metadata) : row.metadata || {},
-      memoryReferences: typeof row.memory_references === 'string' 
-        ? JSON.parse(row.memory_references) 
-        : row.memory_references || [],
-      createdMemories: typeof row.created_memories === 'string'
-        ? JSON.parse(row.created_memories)
-        : row.created_memories || [],
+      metadata:
+        typeof row.metadata === 'string'
+          ? JSON.parse(row.metadata)
+          : row.metadata || {},
+      memoryReferences:
+        typeof row.memory_references === 'string'
+          ? JSON.parse(row.memory_references)
+          : row.memory_references || [],
+      createdMemories:
+        typeof row.created_memories === 'string'
+          ? JSON.parse(row.created_memories)
+          : row.created_memories || [],
       status: row.status as MessageStatus,
     })
       .addOptional(
@@ -614,14 +685,18 @@ export abstract class SharedChatRepository extends BaseRepository<Conversation> 
       )
       .addOptional(
         'emotionState',
-        row.emotion_state 
-          ? (typeof row.emotion_state === 'string' ? JSON.parse(row.emotion_state) : row.emotion_state)
+        row.emotion_state
+          ? typeof row.emotion_state === 'string'
+            ? JSON.parse(row.emotion_state)
+            : row.emotion_state
           : undefined
       )
       .addOptional(
         'thoughtProcess',
         row.thought_process
-          ? (typeof row.thought_process === 'string' ? JSON.parse(row.thought_process) : row.thought_process)
+          ? typeof row.thought_process === 'string'
+            ? JSON.parse(row.thought_process)
+            : row.thought_process
           : undefined
       )
       .addOptional('confidenceScore', row.confidence_score)
@@ -633,17 +708,20 @@ export abstract class SharedChatRepository extends BaseRepository<Conversation> 
       .addOptional('deletedBy', row.deleted_by)
       .build();
   }
-  
+
   // Required BaseRepository implementations
   async create(data: Omit<Conversation, 'id'>): Promise<Conversation> {
     return this.createConversation(data);
   }
-  
+
   async findById(id: string): Promise<Conversation | null> {
     return this.getConversation(id);
   }
-  
-  async find(query: Partial<Conversation>, options?: QueryOptions): Promise<Conversation[]> {
+
+  async find(
+    query: Partial<Conversation>,
+    options?: QueryOptions
+  ): Promise<Conversation[]> {
     const convQuery: ConversationQuery = {
       userId: query.userId,
       agentId: query.agentId,
@@ -651,9 +729,9 @@ export abstract class SharedChatRepository extends BaseRepository<Conversation> 
       limit: options?.limit,
       offset: options?.offset,
     };
-    
+
     const results = await this.listConversations(convQuery);
-    return results.map(r => ({
+    return results.map((r) => ({
       id: r.id,
       agentId: r.agentId,
       userId: r.userId,
@@ -668,38 +746,40 @@ export abstract class SharedChatRepository extends BaseRepository<Conversation> 
       deletedBy: r.deletedBy,
     }));
   }
-  
+
   async update(id: string, updates: Partial<Conversation>): Promise<void> {
     return this.updateConversation(id, updates);
   }
-  
+
   async delete(id: string): Promise<void> {
     return this.deleteConversation(id, 'system');
   }
-  
+
   async batch(operations: any[]): Promise<void> {
     // Implement batch operations if needed
     throw new Error('Batch operations not implemented');
   }
-  
+
   async count(query: Partial<Conversation>): Promise<number> {
     const qb = QueryBuilder.from('conversations');
-    
+
     if (query.userId) qb.where('user_id', '=', query.userId);
     if (query.agentId) qb.where('agent_id', '=', query.agentId);
     if (query.status) qb.where('status', '=', query.status);
     qb.where('deleted_at', 'IS NULL');
-    
+
     const { sql, params } = qb.buildCount();
     const rows = await this.connection.query(sql, params);
-    
+
     return rows[0]?.count || 0;
   }
-  
+
   protected async archiveBeforeDate(date: Date): Promise<number> {
-    return this.archiveOldConversations(Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24)));
+    return this.archiveOldConversations(
+      Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24))
+    );
   }
-  
+
   protected async validate(record: Partial<Conversation>): Promise<void> {
     if (!record.agentId) throw new Error('Agent ID is required');
     if (!record.userId) throw new Error('User ID is required');

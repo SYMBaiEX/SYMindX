@@ -1,6 +1,6 @@
 /**
  * Runtime Context Adapter
- * 
+ *
  * Bridges the existing runtime context system with the new unified context system.
  * Provides seamless adaptation between old ThoughtContext and new UnifiedContext.
  */
@@ -22,17 +22,17 @@ export interface UnifiedContext {
   id: string;
   agentId: string;
   timestamp: Date;
-  
+
   // Legacy compatibility
   thoughtContext?: ThoughtContext;
   conversationContext?: ConversationContext;
-  
+
   // Enhanced context data
   sessionContext?: SessionContext;
   environmentContext?: EnvironmentContext;
   cognitiveContext?: CognitiveContext;
   socialContext?: SocialContext;
-  
+
   metadata: Record<string, unknown>;
 }
 
@@ -78,11 +78,11 @@ export interface RuntimeContextAdapterConfig {
   enableSessionTracking?: boolean;
   enableCognitiveContext?: boolean;
   enableSocialContext?: boolean;
-  
+
   // Performance settings
   cacheSize?: number;
   contextRetentionMs?: number;
-  
+
   // Compatibility settings
   preserveLegacyContext?: boolean;
   enableGradualMigration?: boolean;
@@ -95,7 +95,10 @@ export class RuntimeContextAdapter {
   private contextManager: ContextManager;
   private config: RuntimeContextAdapterConfig;
   private contextCache = new Map<string, UnifiedContext>();
-  private migrationState = new Map<string, { stage: string; timestamp: Date }>();
+  private migrationState = new Map<
+    string,
+    { stage: string; timestamp: Date }
+  >();
 
   constructor(
     contextManager: ContextManager,
@@ -128,7 +131,7 @@ export class RuntimeContextAdapter {
     conversationContext?: ConversationContext
   ): UnifiedContext {
     const contextId = `unified_${agent.id}_${Date.now()}`;
-    
+
     const unifiedContext: UnifiedContext = {
       id: contextId,
       agentId: agent.id,
@@ -164,14 +167,12 @@ export class RuntimeContextAdapter {
 
     // Add social context if enabled
     if (this.config.enableSocialContext && conversationContext) {
-      unifiedContext.socialContext = this.buildSocialContext(
-        conversationContext
-      );
+      unifiedContext.socialContext =
+        this.buildSocialContext(conversationContext);
     }
 
     // Cache the context
     this.contextCache.set(contextId, unifiedContext);
-
 
     runtimeLogger.debug(
       `Adapted ThoughtContext to UnifiedContext for agent ${agent.id}`,
@@ -371,7 +372,7 @@ export class RuntimeContextAdapter {
     memories: MemoryRecord[]
   ): Record<string, number> {
     const activation: Record<string, number> = {};
-    
+
     for (const memory of memories) {
       // Simple activation based on recency and importance
       const recency = 1 - (Date.now() - memory.timestamp.getTime()) / 86400000;

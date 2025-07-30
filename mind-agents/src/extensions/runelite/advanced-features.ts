@@ -67,7 +67,11 @@ interface ConditionalTask extends BaseAutomationTask {
   startTime?: number;
 }
 
-type AutomationTask = BaseAutomationTask | SequentialTask | LoopTask | ConditionalTask;
+type AutomationTask =
+  | BaseAutomationTask
+  | SequentialTask
+  | LoopTask
+  | ConditionalTask;
 
 /**
  * Pathfinding System
@@ -762,7 +766,7 @@ export class AutomationSystem extends EventEmitter {
   private async executeTask(task: AutomationTask): Promise<void> {
     try {
       this.emit('task:executing', { taskId: task.id, status: 'starting' });
-      
+
       // Execute task based on its type
       switch (task.type) {
         case 'sequence':
@@ -777,13 +781,19 @@ export class AutomationSystem extends EventEmitter {
         default:
           throw new Error(`Unknown task type: ${task.type}`);
       }
-      
+
       task.status = 'completed';
       const startTime = 'startTime' in task ? task.startTime : Date.now();
-      this.emit('task:completed', { taskId: task.id, duration: Date.now() - (startTime || Date.now()) });
+      this.emit('task:completed', {
+        taskId: task.id,
+        duration: Date.now() - (startTime || Date.now()),
+      });
     } catch (error) {
       task.status = 'failed';
-      this.emit('task:failed', { taskId: task.id, error: error instanceof Error ? error.message : String(error) });
+      this.emit('task:failed', {
+        taskId: task.id,
+        error: error instanceof Error ? error.message : String(error),
+      });
       throw error;
     }
   }
@@ -812,7 +822,12 @@ export class AutomationSystem extends EventEmitter {
   private async executeConditionalTask(task: AutomationTask): Promise<void> {
     // Execute conditional logic based on game state
     // This would evaluate conditions and execute appropriate steps
-    if ('conditions' in task && 'steps' in task && task.conditions && task.conditions.length > 0) {
+    if (
+      'conditions' in task &&
+      'steps' in task &&
+      task.conditions &&
+      task.conditions.length > 0
+    ) {
       const conditionMet = await this.evaluateConditions(task.conditions);
       if (conditionMet) {
         for (const step of task.steps) {
@@ -823,19 +838,26 @@ export class AutomationSystem extends EventEmitter {
     }
   }
 
-  private async executeTaskStep(task: AutomationTask, step: any): Promise<void> {
+  private async executeTaskStep(
+    task: AutomationTask,
+    step: any
+  ): Promise<void> {
     // Execute individual task step
     // This would coordinate with the main extension to perform game actions
-    this.emit('task:step', { taskId: task.id, step: step.id, action: step.action });
-    
+    this.emit('task:step', {
+      taskId: task.id,
+      step: step.id,
+      action: step.action,
+    });
+
     // Simulate step execution delay
-    await new Promise(resolve => setTimeout(resolve, step.delay || 100));
+    await new Promise((resolve) => setTimeout(resolve, step.delay || 100));
   }
 
   private async evaluateConditions(conditions: any[]): Promise<boolean> {
     // Evaluate automation conditions
     // This would check game state against defined conditions
-    return conditions.every(condition => {
+    return conditions.every((condition) => {
       // Placeholder condition evaluation logic
       return condition.type === 'always' || Math.random() > 0.5;
     });
@@ -852,7 +874,7 @@ export class AutomationSystem extends EventEmitter {
       type: 'condition',
       conditions,
       enabled: true,
-      priority: 1
+      priority: 1,
     };
   }
 
@@ -863,7 +885,7 @@ export class AutomationSystem extends EventEmitter {
       name: npc.name,
       position: npc.location,
       level: npc.combatLevel,
-      health: npc.healthRatio
+      health: npc.healthRatio,
     });
   }
 
@@ -874,7 +896,7 @@ export class AutomationSystem extends EventEmitter {
       name: item.name,
       position: item.location,
       value: item.value,
-      stackSize: item.quantity
+      stackSize: item.quantity,
     });
   }
 
@@ -885,7 +907,7 @@ export class AutomationSystem extends EventEmitter {
       position: player.location,
       level: player.combatLevel,
       equipment: (player as any).equipment || [],
-      isInCombat: (player as any).isInCombat || false
+      isInCombat: (player as any).isInCombat || false,
     });
   }
 

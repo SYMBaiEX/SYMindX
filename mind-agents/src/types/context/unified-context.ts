@@ -3,7 +3,7 @@
  * @description Comprehensive context interface that consolidates all contextual information
  * across the agent runtime system. This serves as the foundation for context injection
  * and management throughout the SYMindX ecosystem.
- * 
+ *
  * @version 1.0.0
  * @author SYMindX Core Team
  */
@@ -405,13 +405,16 @@ export interface ResourceContext {
  */
 export interface ExtensionContextMap {
   /** Map of extension contexts by extension ID */
-  contexts: Map<string, {
-    config: ExtensionConfig;
-    state: GenericData;
-    capabilities: string[];
-    resources: ResourceContext;
-    lastActivity: Timestamp;
-  }>;
+  contexts: Map<
+    string,
+    {
+      config: ExtensionConfig;
+      state: GenericData;
+      capabilities: string[];
+      resources: ResourceContext;
+      lastActivity: Timestamp;
+    }
+  >;
   /** Global extension settings */
   global?: {
     autoLoad: boolean;
@@ -511,16 +514,16 @@ export interface ToolContext {
 export interface UnifiedContext {
   /** Context metadata and management information */
   metadata: ContextMetadata;
-  
+
   /** Distributed tracing information */
   trace?: ContextTrace;
-  
+
   /** Performance metrics and resource utilization */
   performance?: PerformanceContext;
-  
+
   /** Identity and authentication context */
   identity?: IdentityContext;
-  
+
   /** Session-specific context information */
   session?: {
     id: string;
@@ -529,44 +532,43 @@ export interface UnifiedContext {
     events: AgentEvent[];
     state: GenericData;
   };
-  
+
   /** Temporal context and time-related information */
   temporal?: TemporalContext;
-  
+
   /** Execution environment context */
   execution?: ExecutionContext;
-  
+
   /** Agent-specific context data */
   agent?: AgentContextData;
-  
+
   /** Memory and knowledge context */
   memory?: MemoryContextData;
-  
+
   /** Communication and conversation context */
   communication?: CommunicationContext;
-  
+
   /** Environmental and situational context */
   environment?: EnvironmentContext;
-  
+
   /** Extension-specific contexts */
   extensions?: ExtensionContextMap;
-  
+
   /** Portal and AI provider context */
   portal?: UnifiedPortalContext;
-  
+
   /** Metadata for additional context properties */
   additionalMetadata?: Metadata;
-  
+
   /** Resource availability and usage context */
   resources?: ResourceContext;
-  
+
   /** System and agent capabilities context */
   capabilities?: CapabilityContext;
-  
+
   /** Tool availability and usage context */
   tools?: ToolContext;
-  
-  
+
   /** Custom context properties for extension-specific data */
   custom?: Record<string, unknown>;
 }
@@ -666,7 +668,7 @@ export namespace ContextTypeGuards {
       'priority' in (obj as any).metadata
     );
   }
-  
+
   /**
    * Type guard for ContextMetadata
    */

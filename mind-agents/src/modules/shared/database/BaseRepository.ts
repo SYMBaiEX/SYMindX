@@ -1,6 +1,6 @@
 /**
  * Base Repository for SYMindX
- * 
+ *
  * Provides common CRUD operations and patterns for all database implementations
  */
 
@@ -29,14 +29,14 @@ export interface BatchOperation<T> {
 
 export abstract class BaseRepository<T extends { id: string }> {
   protected config: RepositoryConfig;
-  
+
   constructor(config: RepositoryConfig) {
     this.config = {
       enableSoftDelete: true,
       enableTimestamps: true,
       enableArchival: false,
       idPrefix: 'rec',
-      ...config
+      ...config,
     };
   }
 
@@ -108,10 +108,10 @@ export abstract class BaseRepository<T extends { id: string }> {
     if (!this.config.enableArchival) {
       return 0;
     }
-    
+
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
-    
+
     return this.archiveBeforeDate(cutoffDate);
   }
 
@@ -123,24 +123,27 @@ export abstract class BaseRepository<T extends { id: string }> {
   /**
    * Apply common query transformations
    */
-  protected applyQueryOptions(baseQuery: string, options?: QueryOptions): string {
+  protected applyQueryOptions(
+    baseQuery: string,
+    options?: QueryOptions
+  ): string {
     let query = baseQuery;
-    
+
     if (!options?.includeDeleted && this.config.enableSoftDelete) {
       query += ' AND deleted_at IS NULL';
     }
-    
+
     if (options?.orderBy) {
       query += ` ORDER BY ${options.orderBy} ${options.orderDirection || 'ASC'}`;
     }
-    
+
     if (options?.limit) {
       query += ` LIMIT ${options.limit}`;
       if (options.offset) {
         query += ` OFFSET ${options.offset}`;
       }
     }
-    
+
     return query;
   }
 
@@ -160,7 +163,7 @@ export abstract class BaseRepository<T extends { id: string }> {
     const pageSize = options?.limit || 10;
     const page = Math.floor((options?.offset || 0) / pageSize) + 1;
     const totalPages = Math.ceil(total / pageSize);
-    
+
     return { total, page, pageSize, totalPages };
   }
 
@@ -171,11 +174,11 @@ export abstract class BaseRepository<T extends { id: string }> {
     if (!this.config.enableSoftDelete) {
       return record;
     }
-    
+
     return {
       ...record,
       deleted_at: new Date(),
-      deleted_by: 'system' // Can be overridden by subclasses
+      deleted_by: 'system', // Can be overridden by subclasses
     };
   }
 
@@ -186,20 +189,20 @@ export abstract class BaseRepository<T extends { id: string }> {
     if (!this.config.enableTimestamps) {
       return record;
     }
-    
+
     const now = new Date();
-    
+
     if (isUpdate) {
       return {
         ...record,
-        updated_at: now
+        updated_at: now,
       };
     }
-    
+
     return {
       ...record,
       created_at: now,
-      updated_at: now
+      updated_at: now,
     };
   }
 
@@ -213,23 +216,27 @@ export abstract class BaseRepository<T extends { id: string }> {
    */
   protected transformForStorage(record: Partial<T>): any {
     const transformed = { ...record };
-    
+
     // Convert dates to ISO strings
-    Object.keys(transformed).forEach(key => {
+    Object.keys(transformed).forEach((key) => {
       const value = (transformed as any)[key];
       if (value instanceof Date) {
         (transformed as any)[key] = value.toISOString();
       }
     });
-    
+
     // Convert objects to JSON strings
-    Object.keys(transformed).forEach(key => {
+    Object.keys(transformed).forEach((key) => {
       const value = (transformed as any)[key];
-      if (typeof value === 'object' && value !== null && !(value instanceof Date)) {
+      if (
+        typeof value === 'object' &&
+        value !== null &&
+        !(value instanceof Date)
+      ) {
         (transformed as any)[key] = JSON.stringify(value);
       }
     });
-    
+
     return transformed;
   }
 
@@ -238,11 +245,14 @@ export abstract class BaseRepository<T extends { id: string }> {
    */
   protected transformFromStorage(row: any): T {
     const transformed = { ...row };
-    
+
     // Parse JSON fields
-    Object.keys(transformed).forEach(key => {
+    Object.keys(transformed).forEach((key) => {
       const value = transformed[key];
-      if (typeof value === 'string' && (value.startsWith('{') || value.startsWith('['))) {
+      if (
+        typeof value === 'string' &&
+        (value.startsWith('{') || value.startsWith('['))
+      ) {
         try {
           transformed[key] = JSON.parse(value);
         } catch {
@@ -250,15 +260,15 @@ export abstract class BaseRepository<T extends { id: string }> {
         }
       }
     });
-    
+
     // Convert date strings to Date objects
     const dateFields = ['created_at', 'updated_at', 'deleted_at', 'timestamp'];
-    dateFields.forEach(field => {
+    dateFields.forEach((field) => {
       if (transformed[field]) {
         transformed[field] = new Date(transformed[field]);
       }
     });
-    
+
     return transformed as T;
   }
 
@@ -274,15 +284,15 @@ export abstract class BaseRepository<T extends { id: string }> {
         details: {
           table: this.config.tableName,
           softDelete: this.config.enableSoftDelete,
-          timestamps: this.config.enableTimestamps
-        }
+          timestamps: this.config.enableTimestamps,
+        },
       };
     } catch (error) {
       return {
         status: 'unhealthy',
         details: {
-          error: error instanceof Error ? error.message : String(error)
-        }
+          error: error instanceof Error ? error.message : String(error),
+        },
       };
     }
   }

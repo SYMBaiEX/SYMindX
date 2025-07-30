@@ -292,7 +292,8 @@ export class AgentManagementSkill {
           ? String(params['instanceName'])
           : undefined,
         autoStart: Boolean(params['autoStart'] ?? true),
-        priority: typeof params['priority'] === 'number' ? params['priority'] : 1,
+        priority:
+          typeof params['priority'] === 'number' ? params['priority'] : 1,
         ...((params['config'] as any) || {}),
       };
 
@@ -387,7 +388,11 @@ export class AgentManagementSkill {
       }
 
       // Terminate the agent
-      await runtime['multiAgentManager']['terminateAgent'](agentId, reason, graceful);
+      await runtime['multiAgentManager']['terminateAgent'](
+        agentId,
+        reason,
+        graceful
+      );
 
       // Clean up metrics
       this['agentMetrics']['delete'](agentId);
@@ -488,7 +493,8 @@ export class AgentManagementSkill {
 
       const runtime = (this['extension'] as any)['runtime'];
       const targetAgent =
-        runtime?.['agents']?.['get'](agentId) || runtime?.['lazyAgents']?.['get'](agentId);
+        runtime?.['agents']?.['get'](agentId) ||
+        runtime?.['lazyAgents']?.['get'](agentId);
 
       if (!targetAgent) {
         return {
@@ -553,7 +559,9 @@ export class AgentManagementSkill {
     params: SkillParameters
   ): Promise<ActionResult> {
     try {
-      const statusFilter = params['status'] ? String(params['status']) : undefined;
+      const statusFilter = params['status']
+        ? String(params['status'])
+        : undefined;
       const characterFilter = params['character']
         ? String(params['character'])
         : undefined;
@@ -566,7 +574,10 @@ export class AgentManagementSkill {
       if (runtime?.['agents']) {
         for (const [id, agentData] of runtime['agents']) {
           if (statusFilter && agentData['status'] !== statusFilter) continue;
-          if (characterFilter && !agentData['name']['includes'](characterFilter))
+          if (
+            characterFilter &&
+            !agentData['name']['includes'](characterFilter)
+          )
             continue;
 
           const agentInfo: any = {
@@ -596,7 +607,10 @@ export class AgentManagementSkill {
       if (runtime?.['lazyAgents']) {
         for (const [id, lazyAgent] of runtime['lazyAgents']) {
           if (statusFilter && lazyAgent['state'] !== statusFilter) continue;
-          if (characterFilter && !lazyAgent['name']['includes'](characterFilter))
+          if (
+            characterFilter &&
+            !lazyAgent['name']['includes'](characterFilter)
+          )
             continue;
 
           agents.push({
@@ -751,9 +765,9 @@ export class AgentManagementSkill {
 
       // Count current agents for this character
       const runtime = (this['extension'] as any)['runtime'];
-      const currentAgents = Array['from'](runtime?.['agents']?.['values']() || [])['filter'](
-        (a: any) => a['name']['includes'](characterId)
-      );
+      const currentAgents = Array['from'](
+        runtime?.['agents']?.['values']() || []
+      )['filter']((a: any) => a['name']['includes'](characterId));
 
       const currentCount = currentAgents['length'];
       const scalingOperations: any[] = [];
@@ -1069,7 +1083,8 @@ export class AgentManagementSkill {
       memoryUsage: metrics.memoryUsage,
       errorRate: metrics['performance']['errorRate'],
       checks: {
-        responsive: Date['now']() - metrics['lastActivity']['getTime']() < 300000, // 5 minutes
+        responsive:
+          Date['now']() - metrics['lastActivity']['getTime']() < 300000, // 5 minutes
         memoryOk: metrics['memoryUsage'] < 500 * 1024 * 1024, // 500MB threshold
         errorRateOk: metrics['performance']['errorRate'] < 5, // 5% threshold
       },
@@ -1115,7 +1130,8 @@ export class AgentManagementSkill {
 
     for (const [_agentId, metrics] of this['agentMetrics']) {
       // Update uptime
-      metrics['uptime'] = now['getTime']() - (now['getTime']() - metrics['uptime']);
+      metrics['uptime'] =
+        now['getTime']() - (now['getTime']() - metrics['uptime']);
 
       // Update memory usage (placeholder - would get real data)
       metrics['memoryUsage'] = process['memoryUsage']()['heapUsed'];

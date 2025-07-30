@@ -70,11 +70,11 @@ export class ContextAssertions {
       expect(typeof message.content).toBe('string');
       expect(message.content.length).toBeGreaterThan(0);
       expect(message.timestamp).toBeInstanceOf(Date);
-      
+
       if (message.emotion) {
         expect(typeof message.emotion).toBe('string');
       }
-      
+
       if (message.intent) {
         expect(typeof message.intent).toBe('string');
       }
@@ -115,7 +115,10 @@ export class ContextAssertions {
   /**
    * Assert that two contexts can be merged
    */
-  static assertMergeable(primary: ConversationContext, secondary: ConversationContext): void {
+  static assertMergeable(
+    primary: ConversationContext,
+    secondary: ConversationContext
+  ): void {
     expect(primary.agentId).toBe(secondary.agentId);
     expect(primary).not.toBe(secondary);
     expect(primary.id).not.toBe(secondary.id);
@@ -145,14 +148,14 @@ export class ContextAssertions {
   ): void {
     const now = Date.now();
     const age = now - context.lastActive.getTime();
-    
+
     expect(age).toBeLessThanOrEqual(maxAge);
-    
+
     if (!allowFuture) {
       expect(context.startedAt.getTime()).toBeLessThanOrEqual(now);
       expect(context.lastActive.getTime()).toBeLessThanOrEqual(now);
     }
-    
+
     expect(context.lastActive.getTime()).toBeGreaterThanOrEqual(
       context.startedAt.getTime()
     );
@@ -163,15 +166,16 @@ export class ContextAssertions {
    */
   static assertParticipantManagement(context: ConversationContext): void {
     expect(context.participants.size).toBeGreaterThan(0);
-    
+
     if (context.primaryParticipant) {
       expect(context.participants.has(context.primaryParticipant)).toBe(true);
     }
-    
+
     // All message senders should be participants
     for (const message of context.messages) {
       expect(
-        context.participants.has(message.from) || message.from === context.agentId
+        context.participants.has(message.from) ||
+          message.from === context.agentId
       ).toBe(true);
     }
   }
@@ -182,10 +186,10 @@ export class ContextAssertions {
   static assertSentimentConsistency(context: ConversationContext): void {
     const positiveEmotions = ['happy', 'excited', 'confident', 'proud'];
     const negativeEmotions = ['sad', 'angry', 'anxious', 'confused'];
-    
+
     let positiveCount = 0;
     let negativeCount = 0;
-    
+
     for (const message of context.messages) {
       if (message.emotion) {
         if (positiveEmotions.includes(message.emotion)) {
@@ -195,7 +199,7 @@ export class ContextAssertions {
         }
       }
     }
-    
+
     // If we have overwhelming positive/negative emotions, mood should reflect it
     if (positiveCount > negativeCount * 2) {
       expect(['positive', 'neutral']).toContain(context.state.mood);
@@ -219,16 +223,18 @@ export class PerformanceAssertions {
   ): Promise<void> {
     return new Promise(async (resolve, reject) => {
       const start = performance.now();
-      
+
       try {
         await operation();
         const end = performance.now();
         const duration = end - start;
-        
+
         if (duration > maxTimeMs) {
-          reject(new Error(
-            `${description} took ${duration.toFixed(2)}ms, expected < ${maxTimeMs}ms`
-          ));
+          reject(
+            new Error(
+              `${description} took ${duration.toFixed(2)}ms, expected < ${maxTimeMs}ms`
+            )
+          );
         } else {
           resolve();
         }
@@ -248,22 +254,24 @@ export class PerformanceAssertions {
   ): Promise<void> {
     return new Promise(async (resolve, reject) => {
       const initialMemory = process.memoryUsage().heapUsed;
-      
+
       try {
         await operation();
-        
+
         // Force garbage collection if available
         if (global.gc) {
           global.gc();
         }
-        
+
         const finalMemory = process.memoryUsage().heapUsed;
         const memoryDelta = (finalMemory - initialMemory) / 1024 / 1024; // MB
-        
+
         if (memoryDelta > maxMemoryMB) {
-          reject(new Error(
-            `${description} used ${memoryDelta.toFixed(2)}MB, expected < ${maxMemoryMB}MB`
-          ));
+          reject(
+            new Error(
+              `${description} used ${memoryDelta.toFixed(2)}MB, expected < ${maxMemoryMB}MB`
+            )
+          );
         } else {
           resolve();
         }
@@ -283,19 +291,19 @@ export class PerformanceAssertions {
     description: string = 'Operations'
   ): Promise<void> {
     const start = performance.now();
-    
+
     for (let i = 0; i < iterations; i++) {
       await operation();
     }
-    
+
     const end = performance.now();
     const totalTime = end - start;
     const avgTime = totalTime / iterations;
-    
+
     if (totalTime > maxTotalTimeMs) {
       throw new Error(
         `${description} (${iterations} iterations) took ${totalTime.toFixed(2)}ms total ` +
-        `(${avgTime.toFixed(2)}ms avg), expected < ${maxTotalTimeMs}ms total`
+          `(${avgTime.toFixed(2)}ms avg), expected < ${maxTotalTimeMs}ms total`
       );
     }
   }
@@ -312,15 +320,15 @@ export class ConcurrencyAssertions {
     operations: Array<() => Promise<any>>,
     description: string = 'Concurrent operations'
   ): Promise<void> {
-    const results = await Promise.allSettled(operations.map(op => op()));
-    
-    const failures = results.filter(r => r.status === 'rejected');
-    
+    const results = await Promise.allSettled(operations.map((op) => op()));
+
+    const failures = results.filter((r) => r.status === 'rejected');
+
     if (failures.length > 0) {
-      const errors = failures.map(f => (f as PromiseRejectedResult).reason);
+      const errors = failures.map((f) => (f as PromiseRejectedResult).reason);
       throw new Error(
         `${description} had ${failures.length}/${results.length} failures: ` +
-        errors.map(e => e.message || e).join(', ')
+          errors.map((e) => e.message || e).join(', ')
       );
     }
   }
@@ -335,10 +343,13 @@ export class ConcurrencyAssertions {
     concurrency: number = 10
   ): Promise<void> {
     const state = setup();
-    const operations = Array.from({ length: concurrency }, () => () => operation(state));
-    
-    const results = await Promise.all(operations.map(op => op()));
-    
+    const operations = Array.from(
+      { length: concurrency },
+      () => () => operation(state)
+    );
+
+    const results = await Promise.all(operations.map((op) => op()));
+
     validate(state, results);
   }
 }
@@ -358,7 +369,7 @@ export class ChaosAssertions {
   ): Promise<void> {
     let successCount = 0;
     let expectedFailures = 0;
-    
+
     for (let i = 0; i < iterations; i++) {
       try {
         // Randomly inject failures
@@ -366,7 +377,7 @@ export class ChaosAssertions {
           expectedFailures++;
           throw new Error('Injected chaos failure');
         }
-        
+
         await operation();
         successCount++;
       } catch (error) {
@@ -375,14 +386,14 @@ export class ChaosAssertions {
         }
       }
     }
-    
+
     const expectedSuccess = iterations - expectedFailures;
     const tolerance = Math.ceil(expectedSuccess * 0.1); // 10% tolerance
-    
+
     if (Math.abs(successCount - expectedSuccess) > tolerance) {
       throw new Error(
         `${description} resilience test failed: ${successCount}/${expectedSuccess} ` +
-        `successful operations (tolerance: ${tolerance})`
+          `successful operations (tolerance: ${tolerance})`
       );
     }
   }
@@ -395,8 +406,10 @@ export class ChaosAssertions {
     resourceLimit: number,
     description: string = 'Operation'
   ): Promise<void> {
-    const operations = Array.from({ length: resourceLimit * 2 }, () => operation());
-    
+    const operations = Array.from({ length: resourceLimit * 2 }, () =>
+      operation()
+    );
+
     try {
       await Promise.all(operations);
     } catch (error) {
@@ -404,7 +417,7 @@ export class ChaosAssertions {
       expect(error).toBeDefined();
       return;
     }
-    
+
     throw new Error(
       `${description} should have failed due to resource exhaustion at ${resourceLimit} operations`
     );

@@ -14,6 +14,8 @@ import { createEmotionModule } from './emotion/index';
 import { createMemoryProvider } from './memory/index';
 import { createMemoryProviderByName } from './memory/providers/index';
 import { createToolSystem } from './tools/factory';
+import { createMultiModalModule } from './multimodal/index';
+import { createLearningModule } from './learning/index';
 
 // Re-export core module factories
 export {
@@ -22,6 +24,8 @@ export {
   createEmotionModule,
   createCognitionModule,
   createToolSystem,
+  createMultiModalModule,
+  createLearningModule,
 };
 
 // Future modules - see /TODO.md for details
@@ -36,13 +40,21 @@ export interface ModuleFactories {
   emotion: typeof createEmotionModule;
   cognition: typeof createCognitionModule;
   tools: typeof createToolSystem;
+  multimodal: typeof createMultiModalModule;
+  learning: typeof createLearningModule;
 }
 
 /**
  * Create a module of the specified type
  */
 export function createModule(
-  type: 'memory' | 'emotion' | 'cognition' | 'tools',
+  type:
+    | 'memory'
+    | 'emotion'
+    | 'cognition'
+    | 'tools'
+    | 'multimodal'
+    | 'learning',
   moduleType: string,
   config: unknown
 ): MemoryProvider | EmotionModule | CognitionModule | unknown {
@@ -55,6 +67,10 @@ export function createModule(
       return createCognitionModule(moduleType, config as any);
     case 'tools':
       return createToolSystem(moduleType, config as any);
+    case 'multimodal':
+      return createMultiModalModule(config as any);
+    case 'learning':
+      return createLearningModule(moduleType as any, config as any);
     default:
       throw new Error(`Unknown module type: ${type}`);
   }
@@ -84,6 +100,15 @@ export async function registerCoreModules(
     registerToolSystemFactory('dynamic', (config) =>
       createToolSystem('dynamic', config as any)
     );
+
+    // Register multi-modal module factory
+    registry.registerModuleFactory('multimodal', 'default', () =>
+      createMultiModalModule()
+    );
+
+    // Import and register learning modules
+    const { registerLearningModules } = await import('./learning/index');
+    await registerLearningModules(registry);
 
     // Register extension factories
     await registerExtensionFactories(registry);

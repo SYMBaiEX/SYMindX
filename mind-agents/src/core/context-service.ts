@@ -2,10 +2,10 @@
  * @fileoverview Context Service for SYMindX
  * @description Centralized context management service that provides context enhancement,
  * caching, validation, and integration helpers for the runtime system.
- * 
+ *
  * This service acts as the primary interface between the runtime and the unified
  * context system, providing seamless integration without breaking existing code.
- * 
+ *
  * @version 1.0.0
  * @author SYMindX Core Team
  */
@@ -64,7 +64,9 @@ export interface ContextEnhancementOptions {
   /** Cache TTL in milliseconds */
   cacheTtl?: number;
   /** Custom enhancement functions */
-  customEnhancements?: Array<(context: UnifiedContext, agent: Agent) => Promise<UnifiedContext>>;
+  customEnhancements?: Array<
+    (context: UnifiedContext, agent: Agent) => Promise<UnifiedContext>
+  >;
 }
 
 /**
@@ -117,7 +119,7 @@ const DEFAULT_CONFIG: ContextServiceConfig = {
 
 /**
  * Context Service
- * 
+ *
  * Centralized service for context management, enhancement, caching, and validation.
  * Provides seamless integration between legacy and unified context systems.
  */
@@ -129,17 +131,17 @@ export class ContextService {
 
   constructor(config: Partial<ContextServiceConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
-    
+
     if (this.config.enableCaching && this.config.gcInterval > 0) {
       this.startGarbageCollection();
     }
-    
+
     runtimeLogger.info('Context service initialized');
   }
 
   /**
    * Enhance Legacy ThoughtContext with Unified Context Data
-   * 
+   *
    * Takes a basic ThoughtContext and enriches it with additional contextual
    * information from the unified context system while maintaining backward compatibility.
    */
@@ -149,7 +151,7 @@ export class ContextService {
     options: ContextEnhancementOptions = {}
   ): Promise<ThoughtContext> {
     const startTime = performance.now();
-    
+
     try {
       // Check cache first if enabled
       if (this.config.enableCaching && options.cache !== false) {
@@ -161,29 +163,36 @@ export class ContextService {
       }
 
       // Create unified context from basic context
-      const unifiedContext = await this.createUnifiedContext(agent, basicContext, options);
-      
+      const unifiedContext = await this.createUnifiedContext(
+        agent,
+        basicContext,
+        options
+      );
+
       // Enhance with additional data
-      const enhancedContext = await this.applyEnhancements(unifiedContext, agent, options);
-      
+      const enhancedContext = await this.applyEnhancements(
+        unifiedContext,
+        agent,
+        options
+      );
+
       // Cache if enabled
       if (this.config.enableCaching && options.cache !== false) {
         this.setCachedContext(agent.id, enhancedContext, options.cacheTtl);
       }
-      
+
       // Convert back to ThoughtContext for backward compatibility
       const result = this.extractThoughtContextFromUnified(enhancedContext);
-      
+
       this.recordPerformance('enhancement', performance.now() - startTime);
       return result;
-      
     } catch (error) {
       runtimeLogger.error(
         'Failed to enhance thought context',
         error as Error,
         { agentId: agent.id } as LogContext
       );
-      
+
       // Return basic context on error
       return basicContext;
     }
@@ -191,7 +200,7 @@ export class ContextService {
 
   /**
    * Create Unified Context from Basic Components
-   * 
+   *
    * Converts legacy context components into a unified context structure.
    */
   async createUnifiedContext(
@@ -200,7 +209,7 @@ export class ContextService {
     options: ContextEnhancementOptions = {}
   ): Promise<UnifiedContext> {
     const now = new Date() as Timestamp;
-    
+
     // Create context metadata
     const metadata: ContextMetadata = {
       id: `ctx-${agent.id}-${Date.now()}`,
@@ -216,25 +225,30 @@ export class ContextService {
     // Build unified context
     const unifiedContext: UnifiedContext = {
       metadata,
-      
+
       // Agent-specific context
       agent: await this.createAgentContextData(agent, basicContext),
-      
+
       // Memory context
-      memory: options.includeMemory !== false ? 
-        await this.createMemoryContextData(agent, basicContext.memories) : undefined,
-      
+      memory:
+        options.includeMemory !== false
+          ? await this.createMemoryContextData(agent, basicContext.memories)
+          : undefined,
+
       // Temporal context
-      temporal: options.includeTemporal !== false ? 
-        this.createTemporalContext(now) : undefined,
-      
+      temporal:
+        options.includeTemporal !== false
+          ? this.createTemporalContext(now)
+          : undefined,
+
       // Execution context
       execution: this.createExecutionContext(),
-      
+
       // Performance context
-      performance: options.includePerformance ? 
-        this.createPerformanceContext() : undefined,
-      
+      performance: options.includePerformance
+        ? this.createPerformanceContext()
+        : undefined,
+
       // Session context (derived from events)
       session: {
         id: `session-${agent.id}`,
@@ -242,10 +256,10 @@ export class ContextService {
         events: basicContext.events,
         state: basicContext.currentState as any,
       },
-      
+
       // Environment context (converted from basic environment state)
       environment: this.convertEnvironmentState(basicContext.environment),
-      
+
       // Legacy context for backward compatibility
       legacy: {
         events: basicContext.events,
@@ -260,7 +274,7 @@ export class ContextService {
 
   /**
    * Apply Context Enhancements
-   * 
+   *
    * Applies additional enhancements to the unified context based on configuration.
    */
   private async applyEnhancements(
@@ -269,7 +283,7 @@ export class ContextService {
     options: ContextEnhancementOptions
   ): Promise<UnifiedContext> {
     let enhanced = { ...context };
-    
+
     // Apply custom enhancements if provided
     if (options.customEnhancements) {
       for (const enhancement of options.customEnhancements) {
@@ -284,29 +298,36 @@ export class ContextService {
         }
       }
     }
-    
+
     // Update last modified timestamp
     enhanced.metadata.lastModified = new Date() as Timestamp;
-    
+
     return enhanced;
   }
 
   /**
    * Extract ThoughtContext from Unified Context
-   * 
+   *
    * Converts unified context back to legacy ThoughtContext for backward compatibility.
    */
-  private extractThoughtContextFromUnified(unifiedContext: UnifiedContext): ThoughtContext {
+  private extractThoughtContextFromUnified(
+    unifiedContext: UnifiedContext
+  ): ThoughtContext {
     return {
-      events: (unifiedContext.session?.events || (unifiedContext.legacy as any)?.events || []) as any,
-      memories: (unifiedContext.memory?.recent || (unifiedContext.legacy as any)?.memories || []) as any,
-      currentState: (unifiedContext.session?.state || (unifiedContext.legacy as any)?.currentState || {
-        location: 'unknown',
-        inventory: {},
-        stats: {},
-        goals: [],
-        context: {},
-      }) as any,
+      events: (unifiedContext.session?.events ||
+        (unifiedContext.legacy as any)?.events ||
+        []) as any,
+      memories: (unifiedContext.memory?.recent ||
+        (unifiedContext.legacy as any)?.memories ||
+        []) as any,
+      currentState: (unifiedContext.session?.state ||
+        (unifiedContext.legacy as any)?.currentState || {
+          location: 'unknown',
+          inventory: {},
+          stats: {},
+          goals: [],
+          context: {},
+        }) as any,
       environment: ((unifiedContext.legacy as any)?.environment || {
         type: 'virtual_world' as any,
         time: new Date(),
@@ -322,13 +343,15 @@ export class ContextService {
 
   /**
    * Validate Context
-   * 
+   *
    * Validates context structure and content for consistency and completeness.
    */
-  async validateContext(context: UnifiedContext): Promise<ContextValidationResult> {
+  async validateContext(
+    context: UnifiedContext
+  ): Promise<ContextValidationResult> {
     const errors: string[] = [];
     const warnings: string[] = [];
-    
+
     try {
       // Validate metadata
       if (!context.metadata) {
@@ -336,24 +359,26 @@ export class ContextService {
       } else {
         if (!context.metadata.id) errors.push('Missing metadata.id');
         if (!context.metadata.scope) errors.push('Missing metadata.scope');
-        if (!context.metadata.priority) errors.push('Missing metadata.priority');
-        if (!context.metadata.createdAt) errors.push('Missing metadata.createdAt');
+        if (!context.metadata.priority)
+          errors.push('Missing metadata.priority');
+        if (!context.metadata.createdAt)
+          errors.push('Missing metadata.createdAt');
         if (!context.metadata.source) errors.push('Missing metadata.source');
       }
-      
+
       // Validate agent context
       if (context.agent) {
         if (!context.agent.config) warnings.push('Missing agent.config');
         if (!context.agent.state) warnings.push('Missing agent.state');
       }
-      
+
       // Validate temporal consistency
       if (context.temporal && context.metadata) {
         if (context.temporal.now < context.metadata.createdAt) {
           errors.push('Temporal inconsistency: now < createdAt');
         }
       }
-      
+
       return {
         isValid: errors.length === 0,
         errors,
@@ -364,7 +389,6 @@ export class ContextService {
           schema: '1.0.0',
         },
       };
-      
     } catch (error) {
       return {
         isValid: false,
@@ -385,13 +409,13 @@ export class ContextService {
   private getCachedContext(agentId: string): UnifiedContext | null {
     const entry = this.contextCache.get(agentId);
     if (!entry) return null;
-    
+
     const now = new Date() as Timestamp;
     if (now > entry.expiresAt) {
       this.contextCache.delete(agentId);
       return null;
     }
-    
+
     entry.accessCount++;
     entry.lastAccessed = now;
     return entry.context;
@@ -403,10 +427,10 @@ export class ContextService {
     ttl?: number
   ): void {
     if (!this.config.enableCaching) return;
-    
+
     const now = new Date() as Timestamp;
     const cacheTtl = ttl || this.config.defaultCacheTtl;
-    
+
     const entry: ContextCacheEntry = {
       context,
       createdAt: now,
@@ -414,13 +438,13 @@ export class ContextService {
       accessCount: 1,
       lastAccessed: now,
     };
-    
+
     // Remove oldest entry if cache is full
     if (this.contextCache.size >= this.config.cacheSize) {
       const oldestKey = Array.from(this.contextCache.keys())[0];
       this.contextCache.delete(oldestKey);
     }
-    
+
     this.contextCache.set(agentId, entry);
   }
 
@@ -445,16 +469,18 @@ export class ContextService {
     return {
       config: agent.config,
       state: basicContext.currentState,
-      emotions: agent.emotion?.getCurrentState() || {
-        current: 'neutral',
-        intensity: 0.5,
-        secondary: [],
-        history: [],
-        triggers: [],
-      } as any,
+      emotions:
+        agent.emotion?.getCurrentState() ||
+        ({
+          current: 'neutral',
+          intensity: 0.5,
+          secondary: [],
+          history: [],
+          triggers: [],
+        } as any),
       recentMemories: basicContext.memories,
       goals: basicContext.goal ? [basicContext.goal] : [],
-      capabilities: agent.extensions?.map(ext => ext.id) || [],
+      capabilities: agent.extensions?.map((ext) => ext.id) || [],
     };
   }
 
@@ -469,8 +495,13 @@ export class ContextService {
       longTerm: [],
       statistics: {
         totalRecords: memories.length,
-        memoryUsage: memories.reduce((sum, m) => sum + (m.content?.length || 0), 0),
-        averageImportance: memories.reduce((sum, m) => sum + (m.importance || 0.5), 0) / Math.max(memories.length, 1),
+        memoryUsage: memories.reduce(
+          (sum, m) => sum + (m.content?.length || 0),
+          0
+        ),
+        averageImportance:
+          memories.reduce((sum, m) => sum + (m.importance || 0.5), 0) /
+          Math.max(memories.length, 1),
       },
     };
   }
@@ -534,14 +565,14 @@ export class ContextService {
    */
   private recordPerformance(operation: string, duration: number): void {
     if (!this.config.enablePerformanceMonitoring) return;
-    
+
     if (!this.performanceMetrics.has(operation)) {
       this.performanceMetrics.set(operation, []);
     }
-    
+
     const metrics = this.performanceMetrics.get(operation)!;
     metrics.push(duration);
-    
+
     // Keep only last 100 measurements
     if (metrics.length > 100) {
       metrics.shift();
@@ -551,9 +582,15 @@ export class ContextService {
   /**
    * Get Performance Statistics
    */
-  getPerformanceStats(): Record<string, { avg: number; min: number; max: number; count: number }> {
-    const stats: Record<string, { avg: number; min: number; max: number; count: number }> = {};
-    
+  getPerformanceStats(): Record<
+    string,
+    { avg: number; min: number; max: number; count: number }
+  > {
+    const stats: Record<
+      string,
+      { avg: number; min: number; max: number; count: number }
+    > = {};
+
     for (const [operation, metrics] of this.performanceMetrics) {
       if (metrics.length > 0) {
         stats[operation] = {
@@ -564,7 +601,7 @@ export class ContextService {
         };
       }
     }
-    
+
     return stats;
   }
 
@@ -580,16 +617,18 @@ export class ContextService {
   private runGarbageCollection(): void {
     const now = new Date() as Timestamp;
     let removed = 0;
-    
+
     for (const [key, entry] of this.contextCache) {
       if (now > entry.expiresAt) {
         this.contextCache.delete(key);
         removed++;
       }
     }
-    
+
     if (removed > 0) {
-      runtimeLogger.debug(`Context cache GC: removed ${removed} expired entries`);
+      runtimeLogger.debug(
+        `Context cache GC: removed ${removed} expired entries`
+      );
     }
   }
 
@@ -608,23 +647,25 @@ export class ContextService {
 
 /**
  * Create Context Service Instance
- * 
+ *
  * Factory function for creating a new context service instance.
  */
-export function createContextService(config?: Partial<ContextServiceConfig>): ContextService {
+export function createContextService(
+  config?: Partial<ContextServiceConfig>
+): ContextService {
   return new ContextService(config);
 }
 
 /**
  * Default Context Service Instance
- * 
+ *
  * Singleton instance for use across the runtime system.
  */
 let defaultContextService: ContextService | null = null;
 
 /**
  * Get Default Context Service
- * 
+ *
  * Returns the default context service instance, creating it if necessary.
  */
 export function getDefaultContextService(): ContextService {
@@ -636,7 +677,7 @@ export function getDefaultContextService(): ContextService {
 
 /**
  * Set Default Context Service
- * 
+ *
  * Sets a custom context service as the default instance.
  */
 export function setDefaultContextService(service: ContextService): void {

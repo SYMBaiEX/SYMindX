@@ -497,12 +497,16 @@ export class DebugUtilities {
       message,
       data,
       ...(context !== undefined ? { context } : {}),
-      ...(level >= DebugLevel.ERROR && new Error().stack ? { stack: new Error().stack } : {}),
-      ...(this.config.enablePerformanceTracing ? {
-        performance: {
-          memory: process.memoryUsage().heapUsed,
-        }
-      } : {}),
+      ...(level >= DebugLevel.ERROR && new Error().stack
+        ? { stack: new Error().stack }
+        : {}),
+      ...(this.config.enablePerformanceTracing
+        ? {
+            performance: {
+              memory: process.memoryUsage().heapUsed,
+            },
+          }
+        : {}),
     };
 
     this.traces.push(trace);
@@ -998,7 +1002,9 @@ export class DebugUtilities {
   /**
    * Sanitize configuration for debugging (remove sensitive data)
    */
-  private sanitizeConfig(config: Record<string, unknown>): Record<string, unknown> {
+  private sanitizeConfig(
+    config: Record<string, unknown>
+  ): Record<string, unknown> {
     const sanitized = { ...config };
     const sensitiveKeys = ['apiKey', 'password', 'token', 'secret', 'key'];
 
@@ -1007,7 +1013,9 @@ export class DebugUtilities {
         return obj;
       }
 
-      const result: Record<string, unknown> | unknown[] = Array.isArray(obj) ? [] : {};
+      const result: Record<string, unknown> | unknown[] = Array.isArray(obj)
+        ? []
+        : {};
 
       for (const [key, value] of Object.entries(obj)) {
         if (

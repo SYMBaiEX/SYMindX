@@ -1,6 +1,6 @@
 /**
  * Extension Context Injection Patterns for SYMindX
- * 
+ *
  * Provides dependency injection patterns specifically for extensions,
  * including automatic configuration injection, capability resolution,
  * and state management.
@@ -12,11 +12,9 @@ import type {
   ContextEnricher,
   ContextScope,
   ContextScopeType,
-  ExtensionContextInjection
+  ExtensionContextInjection,
 } from '../../../types/context/context-injection';
-import type { 
-  OperationResult 
-} from '../../../types/helpers';
+import type { OperationResult } from '../../../types/helpers';
 import type { Agent } from '../../../types/agent';
 import type { Extension } from '../../../types/extension';
 import { runtimeLogger } from '../../../utils/logger';
@@ -41,8 +39,10 @@ export class ExtensionConfigProvider implements ContextProvider<unknown> {
   }
 
   canProvide(scope: ContextScope): boolean {
-    return scope.type === ContextScopeType.Extension && 
-           this.configRegistry.has(scope.target);
+    return (
+      scope.type === ContextScopeType.Extension &&
+      this.configRegistry.has(scope.target)
+    );
   }
 
   /**
@@ -58,7 +58,9 @@ export class ExtensionConfigProvider implements ContextProvider<unknown> {
    */
   unregisterConfig(extensionId: string): void {
     this.configRegistry.delete(extensionId);
-    runtimeLogger.debug('Extension configuration unregistered', { extensionId });
+    runtimeLogger.debug('Extension configuration unregistered', {
+      extensionId,
+    });
   }
 }
 
@@ -66,7 +68,9 @@ export class ExtensionConfigProvider implements ContextProvider<unknown> {
  * Extension capabilities context provider
  * Provides extension capability information
  */
-export class ExtensionCapabilitiesProvider implements ContextProvider<string[]> {
+export class ExtensionCapabilitiesProvider
+  implements ContextProvider<string[]>
+{
   readonly id = 'extension-capabilities';
   readonly priority = 85;
   readonly supportsAsync = false;
@@ -82,8 +86,10 @@ export class ExtensionCapabilitiesProvider implements ContextProvider<string[]> 
   }
 
   canProvide(scope: ContextScope): boolean {
-    return scope.type === ContextScopeType.Extension && 
-           this.capabilitiesRegistry.has(scope.target);
+    return (
+      scope.type === ContextScopeType.Extension &&
+      this.capabilitiesRegistry.has(scope.target)
+    );
   }
 
   /**
@@ -91,7 +97,10 @@ export class ExtensionCapabilitiesProvider implements ContextProvider<string[]> 
    */
   registerCapabilities(extensionId: string, capabilities: string[]): void {
     this.capabilitiesRegistry.set(extensionId, [...capabilities]);
-    runtimeLogger.debug('Extension capabilities registered', { extensionId, capabilities });
+    runtimeLogger.debug('Extension capabilities registered', {
+      extensionId,
+      capabilities,
+    });
   }
 
   /**
@@ -105,7 +114,10 @@ export class ExtensionCapabilitiesProvider implements ContextProvider<string[]> 
 
     if (!capabilities.includes(capability)) {
       capabilities.push(capability);
-      runtimeLogger.debug('Extension capability added', { extensionId, capability });
+      runtimeLogger.debug('Extension capability added', {
+        extensionId,
+        capability,
+      });
     }
 
     return true;
@@ -123,7 +135,10 @@ export class ExtensionCapabilitiesProvider implements ContextProvider<string[]> 
     const index = capabilities.indexOf(capability);
     if (index > -1) {
       capabilities.splice(index, 1);
-      runtimeLogger.debug('Extension capability removed', { extensionId, capability });
+      runtimeLogger.debug('Extension capability removed', {
+        extensionId,
+        capability,
+      });
       return true;
     }
 
@@ -135,7 +150,9 @@ export class ExtensionCapabilitiesProvider implements ContextProvider<string[]> 
  * Extension state context provider
  * Provides extension state information
  */
-export class ExtensionStateProvider implements ContextProvider<Record<string, unknown>> {
+export class ExtensionStateProvider
+  implements ContextProvider<Record<string, unknown>>
+{
   readonly id = 'extension-state';
   readonly priority = 80;
   readonly supportsAsync = false;
@@ -157,7 +174,10 @@ export class ExtensionStateProvider implements ContextProvider<Record<string, un
   /**
    * Initialize state for an extension
    */
-  initializeState(extensionId: string, initialState?: Record<string, unknown>): void {
+  initializeState(
+    extensionId: string,
+    initialState?: Record<string, unknown>
+  ): void {
     this.stateRegistry.set(extensionId, initialState || {});
     runtimeLogger.debug('Extension state initialized', { extensionId });
   }
@@ -165,17 +185,17 @@ export class ExtensionStateProvider implements ContextProvider<Record<string, un
   /**
    * Update extension state
    */
-  updateState(
-    extensionId: string, 
-    updates: Record<string, unknown>
-  ): boolean {
+  updateState(extensionId: string, updates: Record<string, unknown>): boolean {
     const state = this.stateRegistry.get(extensionId);
     if (!state) {
       return false;
     }
 
     Object.assign(state, updates);
-    runtimeLogger.debug('Extension state updated', { extensionId, updates: Object.keys(updates) });
+    runtimeLogger.debug('Extension state updated', {
+      extensionId,
+      updates: Object.keys(updates),
+    });
     return true;
   }
 
@@ -210,7 +230,7 @@ export class ExtensionStateProvider implements ContextProvider<Record<string, un
       return false;
     }
 
-    Object.keys(state).forEach(key => delete state[key]);
+    Object.keys(state).forEach((key) => delete state[key]);
     runtimeLogger.debug('Extension state cleared', { extensionId });
     return true;
   }
@@ -246,18 +266,20 @@ export class ExtensionAgentProvider implements ContextProvider<Agent> {
     try {
       return await this.agentResolver(agentId);
     } catch (error) {
-      runtimeLogger.warn('Failed to resolve agent for extension', { 
-        extensionId: scope.target, 
-        agentId, 
-        error 
+      runtimeLogger.warn('Failed to resolve agent for extension', {
+        extensionId: scope.target,
+        agentId,
+        error,
       });
       return undefined;
     }
   }
 
   canProvide(scope: ContextScope): boolean {
-    return scope.type === ContextScopeType.Extension && 
-           (this.agentAssociations.has(scope.target) || !!scope.agentId);
+    return (
+      scope.type === ContextScopeType.Extension &&
+      (this.agentAssociations.has(scope.target) || !!scope.agentId)
+    );
   }
 
   /**
@@ -265,7 +287,10 @@ export class ExtensionAgentProvider implements ContextProvider<Agent> {
    */
   associateAgent(extensionId: string, agentId: string): void {
     this.agentAssociations.set(extensionId, agentId);
-    runtimeLogger.debug('Extension associated with agent', { extensionId, agentId });
+    runtimeLogger.debug('Extension associated with agent', {
+      extensionId,
+      agentId,
+    });
   }
 
   /**
@@ -279,7 +304,9 @@ export class ExtensionAgentProvider implements ContextProvider<Agent> {
   /**
    * Set agent resolver function
    */
-  setAgentResolver(resolver: (agentId: string) => Promise<Agent | undefined>): void {
+  setAgentResolver(
+    resolver: (agentId: string) => Promise<Agent | undefined>
+  ): void {
     this.agentResolver = resolver;
   }
 }
@@ -288,12 +315,14 @@ export class ExtensionAgentProvider implements ContextProvider<Agent> {
  * Extension context enricher
  * Enriches extension context with additional metadata
  */
-export class ExtensionContextEnricher implements ContextEnricher<ExtensionContextInjection> {
+export class ExtensionContextEnricher
+  implements ContextEnricher<ExtensionContextInjection>
+{
   readonly id = 'extension-enricher';
   readonly priority = 70;
 
   async enrich(
-    context: ExtensionContextInjection, 
+    context: ExtensionContextInjection,
     scope: ContextScope
   ): Promise<ExtensionContextInjection> {
     if (scope.type !== ContextScopeType.Extension) {
@@ -308,8 +337,8 @@ export class ExtensionContextEnricher implements ContextEnricher<ExtensionContex
       scopeMetadata: {
         agentId: scope.agentId,
         correlationId: scope.correlationId,
-        ...scope.metadata
-      }
+        ...scope.metadata,
+      },
     };
 
     // Add capability analysis
@@ -318,7 +347,7 @@ export class ExtensionContextEnricher implements ContextEnricher<ExtensionContex
         totalCapabilities: context.capabilities.length,
         categories: this.categorizeCapabilities(context.capabilities),
         primaryCapability: context.capabilities[0],
-        lastUpdated: new Date()
+        lastUpdated: new Date(),
       };
     }
 
@@ -328,7 +357,7 @@ export class ExtensionContextEnricher implements ContextEnricher<ExtensionContex
         stateKeys: Object.keys(context.state),
         stateSize: JSON.stringify(context.state).length,
         lastModified: new Date(),
-        hasComplexState: this.hasComplexState(context.state)
+        hasComplexState: this.hasComplexState(context.state),
       };
     }
 
@@ -342,25 +371,43 @@ export class ExtensionContextEnricher implements ContextEnricher<ExtensionContex
   /**
    * Categorize capabilities into groups
    */
-  private categorizeCapabilities(capabilities: string[]): Record<string, string[]> {
+  private categorizeCapabilities(
+    capabilities: string[]
+  ): Record<string, string[]> {
     const categories: Record<string, string[]> = {
       communication: [],
       data: [],
       integration: [],
       processing: [],
-      other: []
+      other: [],
     };
 
     for (const capability of capabilities) {
       const lower = capability.toLowerCase();
-      
-      if (lower.includes('chat') || lower.includes('message') || lower.includes('notification')) {
+
+      if (
+        lower.includes('chat') ||
+        lower.includes('message') ||
+        lower.includes('notification')
+      ) {
         categories.communication.push(capability);
-      } else if (lower.includes('data') || lower.includes('storage') || lower.includes('memory')) {
+      } else if (
+        lower.includes('data') ||
+        lower.includes('storage') ||
+        lower.includes('memory')
+      ) {
         categories.data.push(capability);
-      } else if (lower.includes('api') || lower.includes('webhook') || lower.includes('integration')) {
+      } else if (
+        lower.includes('api') ||
+        lower.includes('webhook') ||
+        lower.includes('integration')
+      ) {
         categories.integration.push(capability);
-      } else if (lower.includes('process') || lower.includes('analyze') || lower.includes('compute')) {
+      } else if (
+        lower.includes('process') ||
+        lower.includes('analyze') ||
+        lower.includes('compute')
+      ) {
         categories.processing.push(capability);
       } else {
         categories.other.push(capability);
@@ -374,8 +421,9 @@ export class ExtensionContextEnricher implements ContextEnricher<ExtensionContex
    * Check if state contains complex objects
    */
   private hasComplexState(state: Record<string, unknown>): boolean {
-    return Object.values(state).some(value => 
-      typeof value === 'object' && value !== null && !Array.isArray(value)
+    return Object.values(state).some(
+      (value) =>
+        typeof value === 'object' && value !== null && !Array.isArray(value)
     );
   }
 }
@@ -384,14 +432,18 @@ export class ExtensionContextEnricher implements ContextEnricher<ExtensionContex
  * Extension context validation middleware
  * Validates and sanitizes extension context data
  */
-export class ExtensionContextValidator implements ContextMiddleware<ExtensionContextInjection> {
+export class ExtensionContextValidator
+  implements ContextMiddleware<ExtensionContextInjection>
+{
   readonly id = 'extension-validator';
   readonly priority = 100;
 
   async transform(
     context: ExtensionContextInjection,
     scope: ContextScope,
-    next: (context: ExtensionContextInjection) => Promise<ExtensionContextInjection>
+    next: (
+      context: ExtensionContextInjection
+    ) => Promise<ExtensionContextInjection>
   ): Promise<ExtensionContextInjection> {
     // Validate required fields
     if (!context.extensionId) {
@@ -428,10 +480,17 @@ export class ExtensionContextValidator implements ContextMiddleware<ExtensionCon
       return config;
     }
 
-    const sanitized = { ...config as Record<string, unknown> };
+    const sanitized = { ...(config as Record<string, unknown>) };
 
     // Remove sensitive fields
-    const sensitiveFields = ['password', 'secret', 'key', 'token', 'apiKey', 'clientSecret'];
+    const sensitiveFields = [
+      'password',
+      'secret',
+      'key',
+      'token',
+      'apiKey',
+      'clientSecret',
+    ];
     for (const field of sensitiveFields) {
       if (field in sanitized) {
         sanitized[field] = '[REDACTED]';
@@ -446,28 +505,30 @@ export class ExtensionContextValidator implements ContextMiddleware<ExtensionCon
    */
   private validateCapabilities(capabilities: string[]): string[] {
     return capabilities
-      .filter(cap => typeof cap === 'string' && cap.trim().length > 0)
-      .map(cap => cap.trim().toLowerCase())
+      .filter((cap) => typeof cap === 'string' && cap.trim().length > 0)
+      .map((cap) => cap.trim().toLowerCase())
       .filter((cap, index, arr) => arr.indexOf(cap) === index); // Remove duplicates
   }
 
   /**
    * Sanitize state object
    */
-  private sanitizeState(state: Record<string, unknown>): Record<string, unknown> {
+  private sanitizeState(
+    state: Record<string, unknown>
+  ): Record<string, unknown> {
     const sanitized = { ...state };
 
     // Limit state object size (e.g., max 1MB serialized)
     const stateStr = JSON.stringify(sanitized);
     if (stateStr.length > 1024 * 1024) {
-      runtimeLogger.warn('Extension state is too large, truncating', { 
-        size: stateStr.length 
+      runtimeLogger.warn('Extension state is too large, truncating', {
+        size: stateStr.length,
       });
-      
+
       // Keep only first-level properties that fit within limit
       const truncated: Record<string, unknown> = {};
       let currentSize = 2; // for {}
-      
+
       for (const [key, value] of Object.entries(sanitized)) {
         const entrySize = JSON.stringify({ [key]: value }).length;
         if (currentSize + entrySize > 1024 * 1024) {
@@ -476,7 +537,7 @@ export class ExtensionContextValidator implements ContextMiddleware<ExtensionCon
         truncated[key] = value;
         currentSize += entrySize;
       }
-      
+
       return truncated;
     }
 
@@ -503,8 +564,8 @@ export class ExtensionInjectionHelper {
       correlationId,
       metadata: {
         extensionType: this.getExtensionType(extensionId),
-        createdAt: new Date().toISOString()
-      }
+        createdAt: new Date().toISOString(),
+      },
     };
   }
 
@@ -521,7 +582,7 @@ export class ExtensionInjectionHelper {
       extensionId,
       config: config || {},
       capabilities: capabilities || [],
-      state: initialState || {}
+      state: initialState || {},
     };
   }
 
@@ -533,50 +594,68 @@ export class ExtensionInjectionHelper {
     context: ExtensionContextInjection,
     agent?: Agent
   ): Promise<Extension & { context: ExtensionContextInjection }> {
-    const contextualExtension = extension as Extension & { 
+    const contextualExtension = extension as Extension & {
       context: ExtensionContextInjection;
-      updateContext?: (updates: Partial<ExtensionContextInjection>) => Promise<OperationResult>;
-      getContextValue?: <K extends keyof ExtensionContextInjection>(key: K) => ExtensionContextInjection[K];
-      setContextValue?: <K extends keyof ExtensionContextInjection>(key: K, value: ExtensionContextInjection[K]) => Promise<OperationResult>;
+      updateContext?: (
+        updates: Partial<ExtensionContextInjection>
+      ) => Promise<OperationResult>;
+      getContextValue?: <K extends keyof ExtensionContextInjection>(
+        key: K
+      ) => ExtensionContextInjection[K];
+      setContextValue?: <K extends keyof ExtensionContextInjection>(
+        key: K,
+        value: ExtensionContextInjection[K]
+      ) => Promise<OperationResult>;
     };
 
     contextualExtension.context = { ...context };
-    
+
     // Associate with agent if provided
     if (agent) {
       contextualExtension.context.agent = agent;
     }
-    
+
     // Add context update method
-    contextualExtension.updateContext = async (updates: Partial<ExtensionContextInjection>) => {
+    contextualExtension.updateContext = async (
+      updates: Partial<ExtensionContextInjection>
+    ) => {
       try {
-        contextualExtension.context = { ...contextualExtension.context, ...updates };
+        contextualExtension.context = {
+          ...contextualExtension.context,
+          ...updates,
+        };
         return { success: true };
       } catch (error) {
-        return { 
-          success: false, 
-          error: error instanceof Error ? error.message : 'Unknown error' 
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
         };
       }
     };
 
     // Add context value getter
-    contextualExtension.getContextValue = <K extends keyof ExtensionContextInjection>(key: K) => {
+    contextualExtension.getContextValue = <
+      K extends keyof ExtensionContextInjection,
+    >(
+      key: K
+    ) => {
       return contextualExtension.context[key];
     };
 
     // Add context value setter
-    contextualExtension.setContextValue = async <K extends keyof ExtensionContextInjection>(
-      key: K, 
+    contextualExtension.setContextValue = async <
+      K extends keyof ExtensionContextInjection,
+    >(
+      key: K,
       value: ExtensionContextInjection[K]
     ) => {
       try {
         contextualExtension.context[key] = value;
         return { success: true };
       } catch (error) {
-        return { 
-          success: false, 
-          error: error instanceof Error ? error.message : 'Unknown error' 
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
         };
       }
     };
@@ -605,9 +684,9 @@ export class ExtensionInjectionHelper {
           // Implementation would use ExtensionStateProvider
           return { success: true };
         } catch (error) {
-          return { 
-            success: false, 
-            error: error instanceof Error ? error.message : 'Unknown error' 
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error',
           };
         }
       },
@@ -620,9 +699,9 @@ export class ExtensionInjectionHelper {
           // Implementation would use ExtensionStateProvider
           return { success: true };
         } catch (error) {
-          return { 
-            success: false, 
-            error: error instanceof Error ? error.message : 'Unknown error' 
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error',
           };
         }
       },
@@ -635,12 +714,12 @@ export class ExtensionInjectionHelper {
           // Implementation would use ExtensionStateProvider
           return { success: true };
         } catch (error) {
-          return { 
-            success: false, 
-            error: error instanceof Error ? error.message : 'Unknown error' 
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error',
           };
         }
-      }
+      },
     };
   }
 
@@ -662,13 +741,13 @@ export const extensionInjectionPatterns = {
     config: ExtensionConfigProvider,
     capabilities: ExtensionCapabilitiesProvider,
     state: ExtensionStateProvider,
-    agent: ExtensionAgentProvider
+    agent: ExtensionAgentProvider,
   },
   enrichers: {
-    context: ExtensionContextEnricher
+    context: ExtensionContextEnricher,
   },
   middleware: {
-    validator: ExtensionContextValidator
+    validator: ExtensionContextValidator,
   },
-  helpers: ExtensionInjectionHelper
+  helpers: ExtensionInjectionHelper,
 };

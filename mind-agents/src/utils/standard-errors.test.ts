@@ -59,7 +59,7 @@ describe('Standard Errors', () => {
     test('should format errors consistently', () => {
       const error = createRuntimeError('Test error', 'TEST_CODE');
       const formatted = formatError(error);
-      
+
       expect(formatted).toContain('[TEST_CODE]');
       expect(formatted).toContain('Test error');
       expect(formatted).toContain('runtime:medium');
@@ -68,7 +68,7 @@ describe('Standard Errors', () => {
     test('should identify SYMindX errors', () => {
       const symindxError = createRuntimeError('Test');
       const regularError = new Error('Regular');
-      
+
       expect(isSYMindXError(symindxError)).toBe(true);
       expect(isSYMindXError(regularError)).toBe(false);
     });
@@ -76,7 +76,7 @@ describe('Standard Errors', () => {
     test('should identify error types', () => {
       const runtimeError = createRuntimeError('Test');
       const portalError = createPortalError('Test', 'openai');
-      
+
       expect(isErrorOfType(runtimeError, RuntimeError)).toBe(true);
       expect(isErrorOfType(runtimeError, PortalError)).toBe(false);
       expect(isErrorOfType(portalError, PortalError)).toBe(true);
@@ -99,7 +99,8 @@ describe('Standard Errors', () => {
         async () => {
           throw new Error('Test failure');
         },
-        (err) => createRuntimeError('Operation failed', 'OPERATION_ERROR', {}, err)
+        (err) =>
+          createRuntimeError('Operation failed', 'OPERATION_ERROR', {}, err)
       );
 
       expect(data).toBeUndefined();
@@ -121,7 +122,8 @@ describe('Standard Errors', () => {
         () => {
           throw new Error('Sync failure');
         },
-        (err) => createRuntimeError('Sync operation failed', 'SYNC_ERROR', {}, err)
+        (err) =>
+          createRuntimeError('Sync operation failed', 'SYNC_ERROR', {}, err)
       );
 
       expect(data).toBeUndefined();
@@ -132,7 +134,9 @@ describe('Standard Errors', () => {
 
   describe('Error Conversion', () => {
     test('should convert to ErrorInfo format', () => {
-      const error = createRuntimeError('Test error', 'TEST_CODE', { test: true });
+      const error = createRuntimeError('Test error', 'TEST_CODE', {
+        test: true,
+      });
       const errorInfo = error.toErrorInfo();
 
       expect(errorInfo.message).toBe('Test error');
@@ -143,7 +147,9 @@ describe('Standard Errors', () => {
     });
 
     test('should serialize to JSON', () => {
-      const error = createRuntimeError('Test error', 'TEST_CODE', { test: true });
+      const error = createRuntimeError('Test error', 'TEST_CODE', {
+        test: true,
+      });
       const json = error.toJSON();
 
       expect(json.name).toBe('RuntimeError');
@@ -189,7 +195,7 @@ describe('Error Integration', () => {
 
   test('should maintain error hierarchy', () => {
     const error = createRuntimeError('Test');
-    
+
     expect(error instanceof Error).toBe(true);
     expect(error instanceof SYMindXError).toBe(true);
     expect(error instanceof RuntimeError).toBe(true);

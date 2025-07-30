@@ -74,7 +74,7 @@ export class PerformanceBenchmark extends EventEmitter {
       timeout: options.timeout ?? 30000,
       collectMemory: options.collectMemory ?? true,
       collectGC: options.collectGC ?? true,
-      ...options
+      ...options,
     };
 
     if (this.isRunning) {
@@ -82,13 +82,15 @@ export class PerformanceBenchmark extends EventEmitter {
     }
 
     this.isRunning = true;
-    
+
     try {
       runtimeLogger.info(`Starting benchmark: ${name}`);
       this.emit('benchmarkStarted', name);
 
       // Initial memory snapshot
-      const initialMemory = config.collectMemory ? process.memoryUsage().heapUsed : 0;
+      const initialMemory = config.collectMemory
+        ? process.memoryUsage().heapUsed
+        : 0;
       let peakMemory = initialMemory;
       let gcCount = 0;
 
@@ -110,7 +112,7 @@ export class PerformanceBenchmark extends EventEmitter {
       let timeoutReached = false;
 
       runtimeLogger.debug(`Benchmark runs: ${config.benchmarkRuns}`);
-      
+
       for (let i = 0; i < config.benchmarkRuns && !timeoutReached; i++) {
         // Check timeout
         if (performance.now() - startTime > config.timeout) {
@@ -122,7 +124,7 @@ export class PerformanceBenchmark extends EventEmitter {
         const runStart = performance.now();
         await Promise.resolve(fn());
         const runEnd = performance.now();
-        
+
         durations.push(runEnd - runStart);
 
         // Track peak memory
@@ -139,39 +141,48 @@ export class PerformanceBenchmark extends EventEmitter {
       }
 
       const totalTime = performance.now() - startTime;
-      const finalMemory = config.collectMemory ? process.memoryUsage().heapUsed : 0;
+      const finalMemory = config.collectMemory
+        ? process.memoryUsage().heapUsed
+        : 0;
 
       // Calculate statistics
       const sortedDurations = durations.sort((a, b) => a - b);
       const actualRuns = durations.length;
-      
+
       const result: BenchmarkResult = {
         name,
         runs: actualRuns,
         duration: {
           min: sortedDurations[0] || 0,
           max: sortedDurations[actualRuns - 1] || 0,
-          avg: durations.length > 0 ? durations.reduce((a, b) => a + b, 0) / durations.length : 0,
+          avg:
+            durations.length > 0
+              ? durations.reduce((a, b) => a + b, 0) / durations.length
+              : 0,
           median: this.percentile(sortedDurations, 0.5),
           p95: this.percentile(sortedDurations, 0.95),
           p99: this.percentile(sortedDurations, 0.99),
-          total: totalTime
+          total: totalTime,
         },
         throughput: {
           opsPerSecond: actualRuns > 0 ? (actualRuns / totalTime) * 1000 : 0,
-          totalOps: actualRuns
+          totalOps: actualRuns,
         },
-        memory: config.collectMemory ? {
-          initial: initialMemory,
-          peak: peakMemory,
-          final: finalMemory,
-          leaked: finalMemory - initialMemory
-        } : undefined,
-        gc: config.collectGC ? {
-          forced: gcCount,
-          collections: gcCount
-        } : undefined,
-        timestamp: Date.now()
+        memory: config.collectMemory
+          ? {
+              initial: initialMemory,
+              peak: peakMemory,
+              final: finalMemory,
+              leaked: finalMemory - initialMemory,
+            }
+          : undefined,
+        gc: config.collectGC
+          ? {
+              forced: gcCount,
+              collections: gcCount,
+            }
+          : undefined,
+        timestamp: Date.now(),
       };
 
       // Store result
@@ -189,12 +200,11 @@ export class PerformanceBenchmark extends EventEmitter {
       runtimeLogger.info(`Benchmark completed: ${name}`, {
         runs: actualRuns,
         avgDuration: result.duration.avg,
-        opsPerSecond: result.throughput.opsPerSecond
+        opsPerSecond: result.throughput.opsPerSecond,
       });
 
       this.emit('benchmarkCompleted', result);
       return result;
-
     } finally {
       this.isRunning = false;
     }
@@ -203,17 +213,29 @@ export class PerformanceBenchmark extends EventEmitter {
   /**
    * Compare two benchmark results
    */
-  compare(baseline: BenchmarkResult, optimized: BenchmarkResult): ComparisonResult {
-    const durationImprovement = ((baseline.duration.avg - optimized.duration.avg) / baseline.duration.avg) * 100;
-    const throughputImprovement = ((optimized.throughput.opsPerSecond - baseline.throughput.opsPerSecond) / baseline.throughput.opsPerSecond) * 100;
-    
+  compare(
+    baseline: BenchmarkResult,
+    optimized: BenchmarkResult
+  ): ComparisonResult {
+    const durationImprovement =
+      ((baseline.duration.avg - optimized.duration.avg) /
+        baseline.duration.avg) *
+      100;
+    const throughputImprovement =
+      ((optimized.throughput.opsPerSecond - baseline.throughput.opsPerSecond) /
+        baseline.throughput.opsPerSecond) *
+      100;
+
     let memoryImprovement = 0;
     if (baseline.memory && optimized.memory) {
-      memoryImprovement = ((baseline.memory.peak - optimized.memory.peak) / baseline.memory.peak) * 100;
+      memoryImprovement =
+        ((baseline.memory.peak - optimized.memory.peak) /
+          baseline.memory.peak) *
+        100;
     }
 
     let verdict: 'better' | 'worse' | 'similar' = 'similar';
-    
+
     if (durationImprovement > 5 && throughputImprovement > 5) {
       verdict = 'better';
     } else if (durationImprovement < -5 || throughputImprovement < -5) {
@@ -226,9 +248,9 @@ export class PerformanceBenchmark extends EventEmitter {
       improvement: {
         duration: durationImprovement,
         throughput: throughputImprovement,
-        memory: memoryImprovement
+        memory: memoryImprovement,
       },
-      verdict
+      verdict,
     };
   }
 
@@ -309,34 +331,46 @@ export class PerformanceBenchmark extends EventEmitter {
     // Baseline - Simple Event Bus
     const simpleEventBus = new SimpleEventBus();
     let eventCount = 0;
-    simpleEventBus.on('test-event', () => { eventCount++; });
+    simpleEventBus.on('test-event', () => {
+      eventCount++;
+    });
 
-    const baselineResult = await this.benchmark('event-bus-simple', () => {
-      simpleEventBus.emit({
-        id: `event-${eventCount}`,
-        type: 'test-event',
-        agentId: 'test-agent',
-        timestamp: new Date(),
-        payload: { data: 'test-data', count: eventCount }
-      });
-    }, { benchmarkRuns: 1000 });
+    const baselineResult = await this.benchmark(
+      'event-bus-simple',
+      () => {
+        simpleEventBus.emit({
+          id: `event-${eventCount}`,
+          type: 'test-event',
+          agentId: 'test-agent',
+          timestamp: new Date(),
+          payload: { data: 'test-data', count: eventCount },
+        });
+      },
+      { benchmarkRuns: 1000 }
+    );
 
     simpleEventBus.shutdown();
 
     // Optimized - Optimized Event Bus
     const optimizedEventBus = new OptimizedEventBus();
     eventCount = 0;
-    optimizedEventBus.on('test-event', () => { eventCount++; });
+    optimizedEventBus.on('test-event', () => {
+      eventCount++;
+    });
 
-    const optimizedResult = await this.benchmark('event-bus-optimized', () => {
-      optimizedEventBus.emit({
-        id: `event-${eventCount}`,
-        type: 'test-event',
-        agentId: 'test-agent',
-        timestamp: new Date(),
-        payload: { data: 'test-data', count: eventCount }
-      });
-    }, { benchmarkRuns: 1000 });
+    const optimizedResult = await this.benchmark(
+      'event-bus-optimized',
+      () => {
+        optimizedEventBus.emit({
+          id: `event-${eventCount}`,
+          type: 'test-event',
+          agentId: 'test-agent',
+          timestamp: new Date(),
+          payload: { data: 'test-data', count: eventCount },
+        });
+      },
+      { benchmarkRuns: 1000 }
+    );
 
     optimizedEventBus.shutdown();
 
@@ -348,25 +382,33 @@ export class PerformanceBenchmark extends EventEmitter {
 
     // Baseline - Map-based cache
     const mapCache = new Map<string, any>();
-    const baselineResult = await this.benchmark('cache-map', () => {
-      const key = `key-${Math.floor(Math.random() * 1000)}`;
-      if (Math.random() > 0.3) {
-        mapCache.set(key, { data: 'test-data', timestamp: Date.now() });
-      } else {
-        mapCache.get(key);
-      }
-    }, { benchmarkRuns: 5000 });
+    const baselineResult = await this.benchmark(
+      'cache-map',
+      () => {
+        const key = `key-${Math.floor(Math.random() * 1000)}`;
+        if (Math.random() > 0.3) {
+          mapCache.set(key, { data: 'test-data', timestamp: Date.now() });
+        } else {
+          mapCache.get(key);
+        }
+      },
+      { benchmarkRuns: 5000 }
+    );
 
     // Optimized - LRU Cache
     const lruCache = new LRUCache<string, any>({ maxSize: 1000, ttl: 60000 });
-    const optimizedResult = await this.benchmark('cache-lru', () => {
-      const key = `key-${Math.floor(Math.random() * 1000)}`;
-      if (Math.random() > 0.3) {
-        lruCache.set(key, { data: 'test-data', timestamp: Date.now() });
-      } else {
-        lruCache.get(key);
-      }
-    }, { benchmarkRuns: 5000 });
+    const optimizedResult = await this.benchmark(
+      'cache-lru',
+      () => {
+        const key = `key-${Math.floor(Math.random() * 1000)}`;
+        if (Math.random() > 0.3) {
+          lruCache.set(key, { data: 'test-data', timestamp: Date.now() });
+        } else {
+          lruCache.get(key);
+        }
+      },
+      { benchmarkRuns: 5000 }
+    );
 
     return this.compare(baselineResult, optimizedResult);
   }
@@ -374,26 +416,45 @@ export class PerformanceBenchmark extends EventEmitter {
   private async benchmarkMemoryOperations(): Promise<ComparisonResult> {
     // Baseline - Manual memory management
     const objects: any[] = [];
-    const baselineResult = await this.benchmark('memory-manual', () => {
-      const obj = { data: new Array(100).fill('test'), timestamp: Date.now() };
-      objects.push(obj);
-      
-      // Manual cleanup
-      if (objects.length > 1000) {
-        objects.splice(0, 500);
-      }
-    }, { benchmarkRuns: 2000, collectMemory: true });
+    const baselineResult = await this.benchmark(
+      'memory-manual',
+      () => {
+        const obj = {
+          data: new Array(100).fill('test'),
+          timestamp: Date.now(),
+        };
+        objects.push(obj);
+
+        // Manual cleanup
+        if (objects.length > 1000) {
+          objects.splice(0, 500);
+        }
+      },
+      { benchmarkRuns: 2000, collectMemory: true }
+    );
 
     // Optimized - Managed memory with weak references
     const { memoryManager } = await import('../utils/MemoryManager');
-    const optimizedResult = await this.benchmark('memory-managed', () => {
-      const obj = { data: new Array(100).fill('test'), timestamp: Date.now() };
-      memoryManager.trackWeakRef(obj);
-      
-      memoryManager.registerResource('test-object', obj, () => {
-        // Cleanup logic
-      }, { ttl: 60000 });
-    }, { benchmarkRuns: 2000, collectMemory: true });
+    const optimizedResult = await this.benchmark(
+      'memory-managed',
+      () => {
+        const obj = {
+          data: new Array(100).fill('test'),
+          timestamp: Date.now(),
+        };
+        memoryManager.trackWeakRef(obj);
+
+        memoryManager.registerResource(
+          'test-object',
+          obj,
+          () => {
+            // Cleanup logic
+          },
+          { ttl: 60000 }
+        );
+      },
+      { benchmarkRuns: 2000, collectMemory: true }
+    );
 
     return this.compare(baselineResult, optimizedResult);
   }
@@ -402,40 +463,51 @@ export class PerformanceBenchmark extends EventEmitter {
     const { globalQueue } = await import('../utils/AsyncQueue');
 
     // Baseline - setTimeout
-    const baselineResult = await this.benchmark('async-timeout', async () => {
-      return new Promise<void>(resolve => {
-        setTimeout(() => {
-          // Simulate work
-          Math.random() * 1000;
-          resolve();
-        }, 1);
-      });
-    }, { benchmarkRuns: 100 });
+    const baselineResult = await this.benchmark(
+      'async-timeout',
+      async () => {
+        return new Promise<void>((resolve) => {
+          setTimeout(() => {
+            // Simulate work
+            Math.random() * 1000;
+            resolve();
+          }, 1);
+        });
+      },
+      { benchmarkRuns: 100 }
+    );
 
     // Optimized - AsyncQueue
-    const optimizedResult = await this.benchmark('async-queue', async () => {
-      return new Promise<void>(resolve => {
-        globalQueue.add(() => {
-          // Simulate work
-          Math.random() * 1000;
-          resolve();
-        }, { delay: 1 });
-      });
-    }, { benchmarkRuns: 100 });
+    const optimizedResult = await this.benchmark(
+      'async-queue',
+      async () => {
+        return new Promise<void>((resolve) => {
+          globalQueue.add(
+            () => {
+              // Simulate work
+              Math.random() * 1000;
+              resolve();
+            },
+            { delay: 1 }
+          );
+        });
+      },
+      { benchmarkRuns: 100 }
+    );
 
     return this.compare(baselineResult, optimizedResult);
   }
 
   private percentile(values: number[], p: number): number {
     if (values.length === 0) return 0;
-    
+
     const index = p * (values.length - 1);
     const lower = Math.floor(index);
     const upper = Math.ceil(index);
     const weight = index % 1;
-    
+
     if (upper >= values.length) return values[values.length - 1];
-    
+
     return values[lower] * (1 - weight) + values[upper] * weight;
   }
 }
@@ -463,8 +535,16 @@ export async function compareFunctions(
   name = 'comparison',
   runs = 100
 ): Promise<ComparisonResult> {
-  const baseline = await performanceBenchmark.benchmark(`${name}-baseline`, baselineFn, { benchmarkRuns: runs });
-  const optimized = await performanceBenchmark.benchmark(`${name}-optimized`, optimizedFn, { benchmarkRuns: runs });
-  
+  const baseline = await performanceBenchmark.benchmark(
+    `${name}-baseline`,
+    baselineFn,
+    { benchmarkRuns: runs }
+  );
+  const optimized = await performanceBenchmark.benchmark(
+    `${name}-optimized`,
+    optimizedFn,
+    { benchmarkRuns: runs }
+  );
+
   return performanceBenchmark.compare(baseline, optimized);
 }

@@ -28,7 +28,10 @@ import {
   TimeRange,
   BoostFactors,
 } from '../../types/memory';
-import { UnifiedContext, ContextScope } from '../../types/context/unified-context';
+import {
+  UnifiedContext,
+  ContextScope,
+} from '../../types/context/unified-context';
 import { buildObject } from '../../utils/type-helpers';
 
 /**
@@ -227,9 +230,13 @@ export abstract class BaseMemoryProvider implements MemoryProvider {
 
     // Generate context fingerprint for similarity matching
     if (context) {
-      enhancedMemory.contextFingerprint = await this.generateContextFingerprint(context);
+      enhancedMemory.contextFingerprint =
+        await this.generateContextFingerprint(context);
       enhancedMemory.contextScore = this.calculateContextScore(context);
-      enhancedMemory.derivedInsights = await this.extractContextualInsights(memory, context);
+      enhancedMemory.derivedInsights = await this.extractContextualInsights(
+        memory,
+        context
+      );
     }
 
     return this.store(agentId, enhancedMemory);
@@ -301,9 +308,9 @@ export abstract class BaseMemoryProvider implements MemoryProvider {
   ): Promise<SearchResult[]> {
     // Get base memories
     const baseMemories = await this.retrieve(agentId, query, limit * 2);
-    
+
     // Convert to search results
-    let results: SearchResult[] = baseMemories.map(memory => ({
+    let results: SearchResult[] = baseMemories.map((memory) => ({
       record: memory,
       score: memory.importance || 0.5,
     }));
@@ -333,18 +340,26 @@ export abstract class BaseMemoryProvider implements MemoryProvider {
     context?: UnifiedContext
   ): Promise<SearchResult[]> {
     // Use existing search method as base
-    const embedding = searchQuery.embedding || (searchQuery.query ? await this.generateEmbedding(searchQuery.query) : undefined);
-    
+    const embedding =
+      searchQuery.embedding ||
+      (searchQuery.query
+        ? await this.generateEmbedding(searchQuery.query)
+        : undefined);
+
     let baseMemories: MemoryRecord[] = [];
-    
+
     if (embedding) {
       baseMemories = await this.search(agentId, embedding, searchQuery.limit);
     } else {
-      baseMemories = await this.retrieve(agentId, searchQuery.query, searchQuery.limit);
+      baseMemories = await this.retrieve(
+        agentId,
+        searchQuery.query,
+        searchQuery.limit
+      );
     }
 
     // Convert to search results with initial scoring
-    let results: SearchResult[] = baseMemories.map(memory => ({
+    let results: SearchResult[] = baseMemories.map((memory) => ({
       record: memory,
       score: this.calculateInitialScore(memory, searchQuery),
     }));
@@ -361,7 +376,9 @@ export abstract class BaseMemoryProvider implements MemoryProvider {
 
     // Filter by threshold
     if (searchQuery.threshold) {
-      results = results.filter(result => result.score >= searchQuery.threshold);
+      results = results.filter(
+        (result) => result.score >= searchQuery.threshold
+      );
     }
 
     return results.slice(0, searchQuery.limit || 10);
@@ -640,20 +657,23 @@ export abstract class BaseMemoryProvider implements MemoryProvider {
     if (!context) return;
 
     // Get memories from working tier for potential consolidation
-    const workingMemories = await this.retrieveTier(agentId, MemoryTierType.WORKING);
-    
+    const workingMemories = await this.retrieveTier(
+      agentId,
+      MemoryTierType.WORKING
+    );
+
     for (const memory of workingMemories) {
       const shouldConsolidate = await this.shouldConsolidateByContext(
         memory as ContextEnhancedMemoryRecord,
         context
       );
-      
+
       if (shouldConsolidate) {
         const targetTier = this.determineTargetTier(
           memory as ContextEnhancedMemoryRecord,
           context
         );
-        
+
         await this.consolidateMemory(
           agentId,
           memory.id,
@@ -846,7 +866,9 @@ export abstract class BaseMemoryProvider implements MemoryProvider {
    * @param context The unified context
    * @returns A string fingerprint representing the context
    */
-  protected async generateContextFingerprint(context: UnifiedContext): Promise<string> {
+  protected async generateContextFingerprint(
+    context: UnifiedContext
+  ): Promise<string> {
     // Create a simplified representation of context for fingerprinting
     const contextData = {
       scope: context.metadata?.scope,
@@ -869,22 +891,23 @@ export abstract class BaseMemoryProvider implements MemoryProvider {
    */
   protected calculateContextScore(context: UnifiedContext): number {
     let score = 0;
-    
+
     // Agent context weight
     if (context.agent) score += 0.3;
-    
+
     // Session context weight
     if (context.session) score += 0.2;
-    
+
     // Extension context weight
-    if (context.extensions && Object.keys(context.extensions).length > 0) score += 0.2;
-    
+    if (context.extensions && Object.keys(context.extensions).length > 0)
+      score += 0.2;
+
     // Environment context weight
     if (context.environment) score += 0.1;
-    
+
     // Communication context weight
     if (context.communication) score += 0.1;
-    
+
     // Portal context weight
     if (context.portal) score += 0.1;
 
@@ -915,9 +938,11 @@ export abstract class BaseMemoryProvider implements MemoryProvider {
       )
         .filter(([, value]) => value.intensity > 0.5)
         .map(([emotion]) => emotion);
-      
+
       if (emotions.length > 0) {
-        insights.push(`Agent was feeling ${emotions.join(', ')} when this memory was created`);
+        insights.push(
+          `Agent was feeling ${emotions.join(', ')} when this memory was created`
+        );
       }
     }
 
@@ -952,26 +977,30 @@ export abstract class BaseMemoryProvider implements MemoryProvider {
     const contextWeight = options.contextWeight || 0.3;
     const contextFingerprint = await this.generateContextFingerprint(context);
 
-    return results.map(result => {
-      const memory = result.record as ContextEnhancedMemoryRecord;
-      let contextSimilarity = 0;
+    return results
+      .map((result) => {
+        const memory = result.record as ContextEnhancedMemoryRecord;
+        let contextSimilarity = 0;
 
-      if (memory.contextFingerprint) {
-        contextSimilarity = this.calculateFingerprintSimilarity(
-          contextFingerprint,
-          memory.contextFingerprint
-        );
-      }
+        if (memory.contextFingerprint) {
+          contextSimilarity = this.calculateFingerprintSimilarity(
+            contextFingerprint,
+            memory.contextFingerprint
+          );
+        }
 
-      // Apply context weight to final score
-      const finalScore = (result.score * (1 - contextWeight)) + (contextSimilarity * contextWeight);
+        // Apply context weight to final score
+        const finalScore =
+          result.score * (1 - contextWeight) +
+          contextSimilarity * contextWeight;
 
-      return {
-        ...result,
-        score: finalScore,
-        contextScore: contextSimilarity,
-      };
-    }).sort((a, b) => b.score - a.score);
+        return {
+          ...result,
+          score: finalScore,
+          contextScore: contextSimilarity,
+        };
+      })
+      .sort((a, b) => b.score - a.score);
   }
 
   /**
@@ -984,7 +1013,7 @@ export abstract class BaseMemoryProvider implements MemoryProvider {
     results: SearchResult[],
     context: UnifiedContext
   ): Promise<SearchResult[]> {
-    return results.map(result => {
+    return results.map((result) => {
       const memory = result.record as ContextEnhancedMemoryRecord;
       const enriched = { ...result };
 
@@ -994,7 +1023,10 @@ export abstract class BaseMemoryProvider implements MemoryProvider {
       }
 
       // Add context-based highlights
-      if (memory.unifiedContext && context.agent?.id === memory.unifiedContext.agent?.id) {
+      if (
+        memory.unifiedContext &&
+        context.agent?.id === memory.unifiedContext.agent?.id
+      ) {
         enriched.highlights = [`Same agent context`];
       }
 
@@ -1016,7 +1048,7 @@ export abstract class BaseMemoryProvider implements MemoryProvider {
   ): Promise<SearchResult[]> {
     const contextFingerprint = await this.generateContextFingerprint(context);
 
-    return results.map(result => {
+    return results.map((result) => {
       const memory = result.record as ContextEnhancedMemoryRecord;
       let contextScore = 0;
 
@@ -1028,7 +1060,7 @@ export abstract class BaseMemoryProvider implements MemoryProvider {
       }
 
       // Enhance score with context similarity
-      const enhancedScore = (result.score * 0.7) + (contextScore * 0.3);
+      const enhancedScore = result.score * 0.7 + contextScore * 0.3;
 
       return {
         ...result,
@@ -1045,12 +1077,18 @@ export abstract class BaseMemoryProvider implements MemoryProvider {
    * @param searchQuery The search query
    * @returns Initial score
    */
-  protected calculateInitialScore(memory: MemoryRecord, searchQuery: SearchQuery): number {
+  protected calculateInitialScore(
+    memory: MemoryRecord,
+    searchQuery: SearchQuery
+  ): number {
     let score = memory.importance || 0.5;
 
     // Time-based scoring
     if (searchQuery.timeRange) {
-      const withinRange = this.isWithinTimeRange(memory.timestamp, searchQuery.timeRange);
+      const withinRange = this.isWithinTimeRange(
+        memory.timestamp,
+        searchQuery.timeRange
+      );
       if (withinRange) score += 0.2;
     }
 
@@ -1063,20 +1101,27 @@ export abstract class BaseMemoryProvider implements MemoryProvider {
    * @param boostFactors The boost factors to apply
    * @returns Boosted search results
    */
-  protected applyBoostFactors(results: SearchResult[], boostFactors: BoostFactors): SearchResult[] {
-    return results.map(result => {
+  protected applyBoostFactors(
+    results: SearchResult[],
+    boostFactors: BoostFactors
+  ): SearchResult[] {
+    return results.map((result) => {
       let boostedScore = result.score;
 
       // Recency boost
       if (boostFactors.recency) {
-        const ageInDays = (Date.now() - result.record.timestamp.getTime()) / (1000 * 60 * 60 * 24);
-        const recencyMultiplier = Math.exp(-ageInDays / 30) * boostFactors.recency;
+        const ageInDays =
+          (Date.now() - result.record.timestamp.getTime()) /
+          (1000 * 60 * 60 * 24);
+        const recencyMultiplier =
+          Math.exp(-ageInDays / 30) * boostFactors.recency;
         boostedScore += recencyMultiplier;
       }
 
       // Importance boost
       if (boostFactors.importance) {
-        boostedScore += (result.record.importance || 0) * boostFactors.importance;
+        boostedScore +=
+          (result.record.importance || 0) * boostFactors.importance;
       }
 
       return {
@@ -1126,7 +1171,8 @@ export abstract class BaseMemoryProvider implements MemoryProvider {
     if ((memory.importance || 0) > 0.8) return MemoryTierType.SEMANTIC;
 
     // Rich context goes to episodic memory
-    if (memory.contextScore && memory.contextScore > 0.6) return MemoryTierType.EPISODIC;
+    if (memory.contextScore && memory.contextScore > 0.6)
+      return MemoryTierType.EPISODIC;
 
     // Procedural memories based on content patterns
     if (memory.content.includes('how to') || memory.content.includes('step')) {
@@ -1192,18 +1238,20 @@ export abstract class BaseMemoryProvider implements MemoryProvider {
       id: this.generateId(),
       agentId,
       type: MemoryType.EXPERIENCE,
-      content: `Consolidated memory: ${group.map(m => m.content).join('; ')}`,
+      content: `Consolidated memory: ${group.map((m) => m.content).join('; ')}`,
       metadata: {
         consolidated: true,
-        originalIds: group.map(m => m.id),
+        originalIds: group.map((m) => m.id),
         consolidatedAt: new Date().toISOString(),
       },
-      importance: Math.max(...group.map(m => m.importance || 0)),
+      importance: Math.max(...group.map((m) => m.importance || 0)),
       timestamp: new Date(),
-      tags: [...new Set(group.flatMap(m => m.tags || []))],
+      tags: [...new Set(group.flatMap((m) => m.tags || []))],
       duration: MemoryDuration.LONG_TERM,
       tier: MemoryTierType.EPISODIC,
-      derivedInsights: [...new Set(group.flatMap(m => m.derivedInsights || []))],
+      derivedInsights: [
+        ...new Set(group.flatMap((m) => m.derivedInsights || [])),
+      ],
     };
 
     // Store consolidated memory
@@ -1224,7 +1272,7 @@ export abstract class BaseMemoryProvider implements MemoryProvider {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32-bit integer
     }
     return Math.abs(hash).toString(36);
@@ -1238,13 +1286,13 @@ export abstract class BaseMemoryProvider implements MemoryProvider {
    */
   protected calculateFingerprintSimilarity(fp1: string, fp2: string): number {
     if (fp1 === fp2) return 1.0;
-    
+
     // Simple character-based similarity
     const longer = fp1.length > fp2.length ? fp1 : fp2;
     const shorter = fp1.length > fp2.length ? fp2 : fp1;
-    
+
     if (longer.length === 0) return 1.0;
-    
+
     const editDistance = this.levenshteinDistance(longer, shorter);
     return (longer.length - editDistance) / longer.length;
   }
@@ -1292,7 +1340,7 @@ export abstract class BaseMemoryProvider implements MemoryProvider {
   protected isWithinTimeRange(timestamp: Date, timeRange: TimeRange): boolean {
     if (timeRange.start && timestamp < timeRange.start) return false;
     if (timeRange.end && timestamp > timeRange.end) return false;
-    
+
     if (timeRange.relative) {
       const now = new Date();
       const units = {
@@ -1303,12 +1351,12 @@ export abstract class BaseMemoryProvider implements MemoryProvider {
         months: 30 * 24 * 60 * 60 * 1000,
         years: 365 * 24 * 60 * 60 * 1000,
       };
-      
+
       const unit = units[timeRange.relative.unit as keyof typeof units];
-      const cutoff = new Date(now.getTime() - (timeRange.relative.value * unit));
+      const cutoff = new Date(now.getTime() - timeRange.relative.value * unit);
       return timestamp >= cutoff;
     }
-    
+
     return true;
   }
 

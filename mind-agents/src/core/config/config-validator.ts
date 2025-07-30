@@ -1,19 +1,19 @@
 /**
  * Configuration Validator
- * 
+ *
  * Provides comprehensive validation for configuration schemas with
  * built-in rules, custom validation functions, and detailed error reporting.
  */
 
-import { 
-  ValidationRule, 
-  ValidationContext, 
-  ValidationError, 
-  SchemaDefinition, 
+import {
+  ValidationRule,
+  ValidationContext,
+  ValidationError,
+  SchemaDefinition,
   SchemaValidationResult,
   IValidator,
   ConfigValidatorOptions,
-  ValidationRules 
+  ValidationRules,
 } from '../../types/utils/validation.js';
 import { standardLoggers } from '../../utils/standard-logging.js';
 
@@ -27,7 +27,7 @@ export class BuiltInRules implements ValidationRules {
       description: `String must be at least ${min} characters long`,
       validate: (value: string) => value.length >= min,
       message: `Must be at least ${min} characters long`,
-      severity: 'error' as const
+      severity: 'error' as const,
     }),
 
     maxLength: (max: number): ValidationRule<string> => ({
@@ -35,18 +35,19 @@ export class BuiltInRules implements ValidationRules {
       description: `String must be at most ${max} characters long`,
       validate: (value: string) => value.length <= max,
       message: `Must be at most ${max} characters long`,
-      severity: 'error' as const
+      severity: 'error' as const,
     }),
 
     pattern: (pattern: string | RegExp): ValidationRule<string> => ({
       name: 'pattern',
       description: `String must match pattern: ${pattern}`,
       validate: (value: string) => {
-        const regex = typeof pattern === 'string' ? new RegExp(pattern) : pattern;
+        const regex =
+          typeof pattern === 'string' ? new RegExp(pattern) : pattern;
         return regex.test(value);
       },
       message: `Must match pattern: ${pattern}`,
-      severity: 'error' as const
+      severity: 'error' as const,
     }),
 
     email: (): ValidationRule<string> => ({
@@ -54,7 +55,7 @@ export class BuiltInRules implements ValidationRules {
       description: 'Must be a valid email address',
       validate: (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
       message: 'Must be a valid email address',
-      severity: 'error' as const
+      severity: 'error' as const,
     }),
 
     url: (): ValidationRule<string> => ({
@@ -69,16 +70,18 @@ export class BuiltInRules implements ValidationRules {
         }
       },
       message: 'Must be a valid URL',
-      severity: 'error' as const
+      severity: 'error' as const,
     }),
 
     uuid: (): ValidationRule<string> => ({
       name: 'uuid',
       description: 'Must be a valid UUID',
-      validate: (value: string) => 
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value),
+      validate: (value: string) =>
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+          value
+        ),
       message: 'Must be a valid UUID',
-      severity: 'error' as const
+      severity: 'error' as const,
     }),
 
     alphanumeric: (): ValidationRule<string> => ({
@@ -86,8 +89,8 @@ export class BuiltInRules implements ValidationRules {
       description: 'Must contain only letters and numbers',
       validate: (value: string) => /^[a-zA-Z0-9]+$/.test(value),
       message: 'Must contain only letters and numbers',
-      severity: 'error' as const
-    })
+      severity: 'error' as const,
+    }),
   };
 
   number = {
@@ -96,7 +99,7 @@ export class BuiltInRules implements ValidationRules {
       description: `Number must be at least ${min}`,
       validate: (value: number) => value >= min,
       message: `Must be at least ${min}`,
-      severity: 'error' as const
+      severity: 'error' as const,
     }),
 
     max: (max: number): ValidationRule<number> => ({
@@ -104,7 +107,7 @@ export class BuiltInRules implements ValidationRules {
       description: `Number must be at most ${max}`,
       validate: (value: number) => value <= max,
       message: `Must be at most ${max}`,
-      severity: 'error' as const
+      severity: 'error' as const,
     }),
 
     integer: (): ValidationRule<number> => ({
@@ -112,7 +115,7 @@ export class BuiltInRules implements ValidationRules {
       description: 'Must be an integer',
       validate: (value: number) => Number.isInteger(value),
       message: 'Must be an integer',
-      severity: 'error' as const
+      severity: 'error' as const,
     }),
 
     positive: (): ValidationRule<number> => ({
@@ -120,7 +123,7 @@ export class BuiltInRules implements ValidationRules {
       description: 'Must be a positive number',
       validate: (value: number) => value > 0,
       message: 'Must be a positive number',
-      severity: 'error' as const
+      severity: 'error' as const,
     }),
 
     negative: (): ValidationRule<number> => ({
@@ -128,7 +131,7 @@ export class BuiltInRules implements ValidationRules {
       description: 'Must be a negative number',
       validate: (value: number) => value < 0,
       message: 'Must be a negative number',
-      severity: 'error' as const
+      severity: 'error' as const,
     }),
 
     between: (min: number, max: number): ValidationRule<number> => ({
@@ -136,8 +139,8 @@ export class BuiltInRules implements ValidationRules {
       description: `Must be between ${min} and ${max}`,
       validate: (value: number) => value >= min && value <= max,
       message: `Must be between ${min} and ${max}`,
-      severity: 'error' as const
-    })
+      severity: 'error' as const,
+    }),
   };
 
   array = {
@@ -146,7 +149,7 @@ export class BuiltInRules implements ValidationRules {
       description: `Array must have at least ${min} items`,
       validate: (value: unknown[]) => value.length >= min,
       message: `Must have at least ${min} items`,
-      severity: 'error' as const
+      severity: 'error' as const,
     }),
 
     maxLength: (max: number): ValidationRule<unknown[]> => ({
@@ -154,7 +157,7 @@ export class BuiltInRules implements ValidationRules {
       description: `Array must have at most ${max} items`,
       validate: (value: unknown[]) => value.length <= max,
       message: `Must have at most ${max} items`,
-      severity: 'error' as const
+      severity: 'error' as const,
     }),
 
     unique: (): ValidationRule<unknown[]> => ({
@@ -170,7 +173,7 @@ export class BuiltInRules implements ValidationRules {
         return true;
       },
       message: 'Array items must be unique',
-      severity: 'error' as const
+      severity: 'error' as const,
     }),
 
     contains: (searchValue: unknown): ValidationRule<unknown[]> => ({
@@ -178,40 +181,49 @@ export class BuiltInRules implements ValidationRules {
       description: `Array must contain ${searchValue}`,
       validate: (value: unknown[]) => value.includes(searchValue),
       message: `Must contain ${searchValue}`,
-      severity: 'error' as const
-    })
+      severity: 'error' as const,
+    }),
   };
 
   object = {
     hasKeys: (keys: string[]): ValidationRule<Record<string, unknown>> => ({
       name: 'hasKeys',
       description: `Object must have keys: ${keys.join(', ')}`,
-      validate: (value: Record<string, unknown>) => 
-        keys.every(key => key in value),
+      validate: (value: Record<string, unknown>) =>
+        keys.every((key) => key in value),
       message: `Must have keys: ${keys.join(', ')}`,
-      severity: 'error' as const
+      severity: 'error' as const,
     }),
 
-    shape: (shape: Record<string, SchemaDefinition>): ValidationRule<Record<string, unknown>> => ({
+    shape: (
+      shape: Record<string, SchemaDefinition>
+    ): ValidationRule<Record<string, unknown>> => ({
       name: 'shape',
       description: 'Object must match expected shape',
-      validate: async (value: Record<string, unknown>, context?: ValidationContext) => {
+      validate: async (
+        value: Record<string, unknown>,
+        context?: ValidationContext
+      ) => {
         const validator = new ConfigValidator();
-        const result = await validator.validate(value, { type: 'object', properties: shape });
+        const result = await validator.validate(value, {
+          type: 'object',
+          properties: shape,
+        });
         return result.valid;
       },
       message: 'Object shape validation failed',
-      severity: 'error' as const
-    })
+      severity: 'error' as const,
+    }),
   };
 
   common = {
     required: (): ValidationRule => ({
       name: 'required',
       description: 'Field is required',
-      validate: (value: unknown) => value !== undefined && value !== null && value !== '',
+      validate: (value: unknown) =>
+        value !== undefined && value !== null && value !== '',
       message: 'Field is required',
-      severity: 'error' as const
+      severity: 'error' as const,
     }),
 
     oneOf: (values: unknown[]): ValidationRule => ({
@@ -219,7 +231,7 @@ export class BuiltInRules implements ValidationRules {
       description: `Must be one of: ${values.join(', ')}`,
       validate: (value: unknown) => values.includes(value),
       message: `Must be one of: ${values.join(', ')}`,
-      severity: 'error' as const
+      severity: 'error' as const,
     }),
 
     custom: (fn: (value: unknown) => boolean): ValidationRule => ({
@@ -227,14 +239,14 @@ export class BuiltInRules implements ValidationRules {
       description: 'Custom validation rule',
       validate: fn,
       message: 'Custom validation failed',
-      severity: 'error' as const
-    })
+      severity: 'error' as const,
+    }),
   };
 }
 
 /**
  * Configuration Validator
- * 
+ *
  * Implements comprehensive validation with built-in rules,
  * custom validation functions, and detailed error reporting.
  */
@@ -261,38 +273,48 @@ export class ConfigValidator implements IValidator {
     const warnings: ValidationError[] = [];
 
     try {
-      this.validateValue(data, schema, context || { path: 'root', value: data }, errors, warnings);
-      
+      this.validateValue(
+        data,
+        schema,
+        context || { path: 'root', value: data },
+        errors,
+        warnings
+      );
+
       const duration = Date.now() - startTime;
       const result: SchemaValidationResult = {
         valid: errors.length === 0,
         errors,
         warnings,
         data: this.transformValue(data, schema),
-        duration
+        duration,
       };
 
       this.logger.debug('Validation completed', {
         valid: result.valid,
         errors: errors.length,
         warnings: warnings.length,
-        duration
+        duration,
       });
 
       return result;
-
     } catch (error) {
       this.logger.error('Validation error', error);
       return {
         valid: false,
-        errors: [{
-          field: context?.path || 'root',
-          message: error instanceof Error ? error.message : 'Unknown validation error',
-          code: 'VALIDATION_ERROR',
-          severity: 'error'
-        }],
+        errors: [
+          {
+            field: context?.path || 'root',
+            message:
+              error instanceof Error
+                ? error.message
+                : 'Unknown validation error',
+            code: 'VALIDATION_ERROR',
+            severity: 'error',
+          },
+        ],
         warnings: [],
-        duration: Date.now() - startTime
+        duration: Date.now() - startTime,
       };
     }
   }
@@ -310,31 +332,41 @@ export class ConfigValidator implements IValidator {
     const warnings: ValidationError[] = [];
 
     try {
-      await this.validateValueAsync(data, schema, context || { path: 'root', value: data }, errors, warnings);
-      
+      await this.validateValueAsync(
+        data,
+        schema,
+        context || { path: 'root', value: data },
+        errors,
+        warnings
+      );
+
       const duration = Date.now() - startTime;
       const result: SchemaValidationResult = {
         valid: errors.length === 0,
         errors,
         warnings,
         data: this.transformValue(data, schema),
-        duration
+        duration,
       };
 
       return result;
-
     } catch (error) {
       this.logger.error('Async validation error', error);
       return {
         valid: false,
-        errors: [{
-          field: context?.path || 'root',
-          message: error instanceof Error ? error.message : 'Unknown validation error',
-          code: 'ASYNC_VALIDATION_ERROR',
-          severity: 'error'
-        }],
+        errors: [
+          {
+            field: context?.path || 'root',
+            message:
+              error instanceof Error
+                ? error.message
+                : 'Unknown validation error',
+            code: 'ASYNC_VALIDATION_ERROR',
+            severity: 'error',
+          },
+        ],
         warnings: [],
-        duration: Date.now() - startTime
+        duration: Date.now() - startTime,
       };
     }
   }
@@ -382,13 +414,16 @@ export class ConfigValidator implements IValidator {
     const transformedValue = this.transformValue(value, schema);
 
     // Check required field
-    if (schema.required && (transformedValue === undefined || transformedValue === null)) {
+    if (
+      schema.required &&
+      (transformedValue === undefined || transformedValue === null)
+    ) {
       errors.push({
         field: context.path,
         message: 'Field is required',
         code: 'REQUIRED_FIELD',
         severity: 'error',
-        value: transformedValue
+        value: transformedValue,
       });
       return;
     }
@@ -406,7 +441,7 @@ export class ConfigValidator implements IValidator {
         code: 'INVALID_TYPE',
         severity: 'error',
         value: transformedValue,
-        expected: schema.type
+        expected: schema.type,
       });
       return;
     }
@@ -419,7 +454,7 @@ export class ConfigValidator implements IValidator {
         code: 'INVALID_ENUM',
         severity: 'error',
         value: transformedValue,
-        expected: schema.enum
+        expected: schema.enum,
       });
     }
 
@@ -432,7 +467,7 @@ export class ConfigValidator implements IValidator {
           code: 'MIN_VALUE',
           severity: 'error',
           value: transformedValue,
-          expected: `>= ${schema.min}`
+          expected: `>= ${schema.min}`,
         });
       }
 
@@ -443,7 +478,7 @@ export class ConfigValidator implements IValidator {
           code: 'MAX_VALUE',
           severity: 'error',
           value: transformedValue,
-          expected: `<= ${schema.max}`
+          expected: `<= ${schema.max}`,
         });
       }
     }
@@ -456,7 +491,7 @@ export class ConfigValidator implements IValidator {
           message: `String must be at least ${schema.min} characters long`,
           code: 'MIN_LENGTH',
           severity: 'error',
-          value: transformedValue
+          value: transformedValue,
         });
       }
 
@@ -466,12 +501,15 @@ export class ConfigValidator implements IValidator {
           message: `String must be at most ${schema.max} characters long`,
           code: 'MAX_LENGTH',
           severity: 'error',
-          value: transformedValue
+          value: transformedValue,
         });
       }
 
       if (schema.pattern) {
-        const regex = typeof schema.pattern === 'string' ? new RegExp(schema.pattern) : schema.pattern;
+        const regex =
+          typeof schema.pattern === 'string'
+            ? new RegExp(schema.pattern)
+            : schema.pattern;
         if (!regex.test(transformedValue)) {
           errors.push({
             field: context.path,
@@ -479,7 +517,7 @@ export class ConfigValidator implements IValidator {
             code: 'PATTERN_MISMATCH',
             severity: 'error',
             value: transformedValue,
-            expected: schema.pattern
+            expected: schema.pattern,
           });
         }
       }
@@ -493,7 +531,7 @@ export class ConfigValidator implements IValidator {
           message: `Array must have at least ${schema.min} items`,
           code: 'MIN_ITEMS',
           severity: 'error',
-          value: transformedValue.length
+          value: transformedValue.length,
         });
       }
 
@@ -503,7 +541,7 @@ export class ConfigValidator implements IValidator {
           message: `Array must have at most ${schema.max} items`,
           code: 'MAX_ITEMS',
           severity: 'error',
-          value: transformedValue.length
+          value: transformedValue.length,
         });
       }
 
@@ -514,29 +552,47 @@ export class ConfigValidator implements IValidator {
             ...context,
             path: `${context.path}[${index}]`,
             value: item,
-            parent: transformedValue
+            parent: transformedValue,
           };
-          this.validateValue(item, schema.items!, itemContext, errors, warnings);
+          this.validateValue(
+            item,
+            schema.items!,
+            itemContext,
+            errors,
+            warnings
+          );
         });
       }
     }
 
     // Object validation
-    if (typeof transformedValue === 'object' && transformedValue !== null && !Array.isArray(transformedValue)) {
+    if (
+      typeof transformedValue === 'object' &&
+      transformedValue !== null &&
+      !Array.isArray(transformedValue)
+    ) {
       if (schema.properties) {
         const obj = transformedValue as Record<string, unknown>;
-        
+
         // Validate properties
-        for (const [propName, propSchema] of Object.entries(schema.properties)) {
+        for (const [propName, propSchema] of Object.entries(
+          schema.properties
+        )) {
           const propValue = obj[propName];
           const propContext: ValidationContext = {
             ...context,
             path: `${context.path}.${propName}`,
             value: propValue,
             parent: obj,
-            root: context.root || obj
+            root: context.root || obj,
           };
-          this.validateValue(propValue, propSchema, propContext, errors, warnings);
+          this.validateValue(
+            propValue,
+            propSchema,
+            propContext,
+            errors,
+            warnings
+          );
         }
       }
     }
@@ -550,11 +606,14 @@ export class ConfigValidator implements IValidator {
           message: 'Custom validation failed',
           code: 'CUSTOM_VALIDATION',
           severity: 'error',
-          value: transformedValue
+          value: transformedValue,
         });
       } else if (Array.isArray(customResult)) {
         errors.push(...customResult);
-      } else if (typeof customResult === 'object' && 'message' in customResult) {
+      } else if (
+        typeof customResult === 'object' &&
+        'message' in customResult
+      ) {
         errors.push(customResult);
       }
     }
@@ -568,9 +627,10 @@ export class ConfigValidator implements IValidator {
 
         const isValid = rule.validate(transformedValue, context);
         if (!isValid) {
-          const message = typeof rule.message === 'function' 
-            ? rule.message(transformedValue, context)
-            : rule.message || `Validation rule '${rule.name}' failed`;
+          const message =
+            typeof rule.message === 'function'
+              ? rule.message(transformedValue, context)
+              : rule.message || `Validation rule '${rule.name}' failed`;
 
           const error: ValidationError = {
             field: context.path,
@@ -578,7 +638,7 @@ export class ConfigValidator implements IValidator {
             code: rule.name.toUpperCase(),
             severity: rule.severity || 'error',
             value: transformedValue,
-            rule: rule.name
+            rule: rule.name,
           };
 
           if (rule.severity === 'warning') {
@@ -610,9 +670,10 @@ export class ConfigValidator implements IValidator {
 
         const isValid = await rule.validate(value, context);
         if (!isValid) {
-          const message = typeof rule.message === 'function' 
-            ? rule.message(value, context)
-            : rule.message || `Async validation rule '${rule.name}' failed`;
+          const message =
+            typeof rule.message === 'function'
+              ? rule.message(value, context)
+              : rule.message || `Async validation rule '${rule.name}' failed`;
 
           const error: ValidationError = {
             field: context.path,
@@ -620,7 +681,7 @@ export class ConfigValidator implements IValidator {
             code: rule.name.toUpperCase(),
             severity: rule.severity || 'error',
             value,
-            rule: rule.name
+            rule: rule.name,
           };
 
           if (rule.severity === 'warning') {
@@ -644,7 +705,9 @@ export class ConfigValidator implements IValidator {
       case 'array':
         return Array.isArray(value);
       case 'object':
-        return typeof value === 'object' && value !== null && !Array.isArray(value);
+        return (
+          typeof value === 'object' && value !== null && !Array.isArray(value)
+        );
       case 'null':
         return value === null;
       case 'any':
@@ -675,7 +738,7 @@ export class ConfigValidator implements IValidator {
       this.builtInRules.number,
       this.builtInRules.array,
       this.builtInRules.object,
-      this.builtInRules.common
+      this.builtInRules.common,
     ];
 
     for (const category of ruleCategories) {
@@ -686,7 +749,7 @@ export class ConfigValidator implements IValidator {
           this.rules.set(ruleName, {
             name: ruleName,
             validate: () => true, // Placeholder
-            message: `Built-in rule: ${ruleName}`
+            message: `Built-in rule: ${ruleName}`,
           });
         }
       }

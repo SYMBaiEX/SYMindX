@@ -1,22 +1,36 @@
 /**
  * Unified Configuration Management System
- * 
+ *
  * This module provides a comprehensive, type-safe, and environment-aware
  * configuration system for SYMindX with hot-reload capabilities.
  */
 
 import { EventEmitter } from 'events';
-import { readFileSync, writeFileSync, existsSync, watchFile, unwatchFile } from 'fs';
+import {
+  readFileSync,
+  writeFileSync,
+  existsSync,
+  watchFile,
+  unwatchFile,
+} from 'fs';
 import { resolve, dirname } from 'path';
 import { standardLoggers } from '../../utils/standard-logging.js';
-import { SchemaDefinition, ValidationError, SchemaValidationResult } from '../../types/utils/validation.js';
+import {
+  SchemaDefinition,
+  ValidationError,
+  SchemaValidationResult,
+} from '../../types/utils/validation.js';
 import { ConfigValidator } from './config-validator.js';
 import { ConfigSecrets } from './config-secrets.js';
 
 /**
  * Configuration environment types
  */
-export type ConfigEnvironment = 'development' | 'testing' | 'staging' | 'production';
+export type ConfigEnvironment =
+  | 'development'
+  | 'testing'
+  | 'staging'
+  | 'production';
 
 /**
  * Configuration change event data
@@ -181,35 +195,35 @@ export const UNIFIED_CONFIG_SCHEMA: SchemaDefinition = {
           type: 'string',
           required: true,
           enum: ['development', 'testing', 'staging', 'production'],
-          default: 'development'
+          default: 'development',
         },
         tickInterval: {
           type: 'number',
           required: true,
           min: 100,
           max: 60000,
-          default: 1000
+          default: 1000,
         },
         maxAgents: {
           type: 'number',
           required: true,
           min: 1,
           max: 1000,
-          default: 10
+          default: 10,
         },
         logLevel: {
           type: 'string',
           required: true,
           enum: ['debug', 'info', 'warn', 'error'],
-          default: 'info'
+          default: 'info',
         },
         version: {
           type: 'string',
           required: true,
           pattern: /^\d+\.\d+\.\d+/,
-          default: '1.0.0'
-        }
-      }
+          default: '1.0.0',
+        },
+      },
     },
     persistence: {
       type: 'object',
@@ -220,34 +234,42 @@ export const UNIFIED_CONFIG_SCHEMA: SchemaDefinition = {
         autoSave: { type: 'boolean', default: true },
         saveInterval: { type: 'number', min: 1000, default: 30000 },
         maxBackups: { type: 'number', min: 0, max: 100, default: 5 },
-        compression: { type: 'boolean', default: true }
-      }
+        compression: { type: 'boolean', default: true },
+      },
     },
     portals: {
       type: 'object',
       required: true,
       properties: {
         autoLoad: { type: 'boolean', default: true },
-        paths: { type: 'array', items: { type: 'string' }, default: ['./portals'] },
+        paths: {
+          type: 'array',
+          items: { type: 'string' },
+          default: ['./portals'],
+        },
         defaultPortal: { type: 'string', default: 'openai' },
         fallbackPortal: { type: 'string', default: 'groq' },
         providers: {
           type: 'object',
           default: {},
-          properties: {} // Dynamic based on available providers
-        }
-      }
+          properties: {}, // Dynamic based on available providers
+        },
+      },
     },
     extensions: {
       type: 'object',
       required: true,
       properties: {
         autoLoad: { type: 'boolean', default: true },
-        paths: { type: 'array', items: { type: 'string' }, default: ['./extensions'] },
+        paths: {
+          type: 'array',
+          items: { type: 'string' },
+          default: ['./extensions'],
+        },
         enabled: { type: 'array', items: { type: 'string' }, default: [] },
         disabled: { type: 'array', items: { type: 'string' }, default: [] },
-        config: { type: 'object', default: {} }
-      }
+        config: { type: 'object', default: {} },
+      },
     },
     multiAgent: {
       type: 'object',
@@ -257,15 +279,15 @@ export const UNIFIED_CONFIG_SCHEMA: SchemaDefinition = {
         coordinationStrategy: {
           type: 'string',
           enum: ['centralized', 'distributed', 'hybrid'],
-          default: 'centralized'
+          default: 'centralized',
         },
         messagingProtocol: {
           type: 'string',
           enum: ['direct', 'pubsub', 'queue'],
-          default: 'direct'
+          default: 'direct',
         },
-        loadBalancing: { type: 'boolean', default: false }
-      }
+        loadBalancing: { type: 'boolean', default: false },
+      },
     },
     performance: {
       type: 'object',
@@ -279,34 +301,42 @@ export const UNIFIED_CONFIG_SCHEMA: SchemaDefinition = {
         gcStrategy: {
           type: 'string',
           enum: ['aggressive', 'balanced', 'conservative'],
-          default: 'balanced'
-        }
-      }
+          default: 'balanced',
+        },
+      },
     },
     security: {
       type: 'object',
       properties: {
         enableAuth: { type: 'boolean', default: false },
         enableEncryption: { type: 'boolean', default: true },
-        allowedOrigins: { type: 'array', items: { type: 'string' }, default: ['*'] },
+        allowedOrigins: {
+          type: 'array',
+          items: { type: 'string' },
+          default: ['*'],
+        },
         rateLimiting: {
           type: 'object',
           properties: {
             enabled: { type: 'boolean', default: true },
             windowMs: { type: 'number', min: 1000, default: 60000 },
             maxRequests: { type: 'number', min: 1, default: 100 },
-            skipWhitelist: { type: 'array', items: { type: 'string' }, default: [] }
-          }
+            skipWhitelist: {
+              type: 'array',
+              items: { type: 'string' },
+              default: [],
+            },
+          },
         },
         secrets: {
           type: 'object',
           properties: {
             encryptionKey: { type: 'string' },
             jwtSecret: { type: 'string' },
-            apiKeys: { type: 'object', default: {} }
-          }
-        }
-      }
+            apiKeys: { type: 'object', default: {} },
+          },
+        },
+      },
     },
     features: {
       type: 'object',
@@ -314,8 +344,8 @@ export const UNIFIED_CONFIG_SCHEMA: SchemaDefinition = {
         enabled: { type: 'array', items: { type: 'string' }, default: [] },
         disabled: { type: 'array', items: { type: 'string' }, default: [] },
         experimental: { type: 'array', items: { type: 'string' }, default: [] },
-        beta: { type: 'array', items: { type: 'string' }, default: [] }
-      }
+        beta: { type: 'array', items: { type: 'string' }, default: [] },
+      },
     },
     development: {
       type: 'object',
@@ -324,15 +354,15 @@ export const UNIFIED_CONFIG_SCHEMA: SchemaDefinition = {
         debugMode: { type: 'boolean', default: false },
         verboseLogging: { type: 'boolean', default: false },
         mockExternalServices: { type: 'boolean', default: false },
-        testMode: { type: 'boolean', default: false }
-      }
-    }
-  }
+        testMode: { type: 'boolean', default: false },
+      },
+    },
+  },
 };
 
 /**
  * Unified Configuration Manager
- * 
+ *
  * Provides centralized configuration management with:
  * - Environment-aware configuration loading
  * - Type-safe validation
@@ -371,12 +401,15 @@ export class UnifiedConfigManager extends EventEmitter {
   /**
    * Initialize configuration system
    */
-  public async initialize(configPath?: string, environment?: ConfigEnvironment): Promise<void> {
+  public async initialize(
+    configPath?: string,
+    environment?: ConfigEnvironment
+  ): Promise<void> {
     try {
       this.logger.info('Initializing unified configuration system', {
         configPath,
         environment,
-        hotReloadEnabled: this.hotReloadEnabled
+        hotReloadEnabled: this.hotReloadEnabled,
       });
 
       // Load configuration from multiple sources
@@ -389,7 +422,9 @@ export class UnifiedConfigManager extends EventEmitter {
       // Validate final configuration
       const validation = await this.validateConfig();
       if (!validation.valid) {
-        throw new Error(`Configuration validation failed: ${validation.errors.map(e => e.message).join(', ')}`);
+        throw new Error(
+          `Configuration validation failed: ${validation.errors.map((e) => e.message).join(', ')}`
+        );
       }
 
       // Setup hot reload if enabled
@@ -399,12 +434,11 @@ export class UnifiedConfigManager extends EventEmitter {
 
       this.isLoaded = true;
       this.emit('initialized', this.config);
-      
+
       this.logger.info('Configuration system initialized successfully', {
         sources: Array.from(this.sources.keys()),
-        environment: this.config.runtime.environment
+        environment: this.config.runtime.environment,
       });
-
     } catch (error) {
       this.logger.error('Failed to initialize configuration system', error);
       throw error;
@@ -434,16 +468,20 @@ export class UnifiedConfigManager extends EventEmitter {
   public set(path: string, value: unknown): void {
     const oldValue = this.get(path);
     this.setValueByPath(this.config, path, value);
-    
+
     this.emit('changed', {
       path,
       oldValue,
       newValue: value,
       source: 'runtime',
-      timestamp: new Date()
+      timestamp: new Date(),
     } as ConfigChangeEvent);
 
-    this.logger.debug('Configuration value updated', { path, oldValue, newValue: value });
+    this.logger.debug('Configuration value updated', {
+      path,
+      oldValue,
+      newValue: value,
+    });
   }
 
   /**
@@ -451,9 +489,9 @@ export class UnifiedConfigManager extends EventEmitter {
    */
   public async reload(): Promise<void> {
     this.logger.info('Reloading configuration');
-    
+
     const previousConfig = { ...this.config };
-    
+
     try {
       // Reload from all sources
       for (const [sourcePath, source] of this.sources) {
@@ -468,12 +506,13 @@ export class UnifiedConfigManager extends EventEmitter {
       if (!validation.valid) {
         // Rollback on validation failure
         this.config = previousConfig;
-        throw new Error(`Configuration reload validation failed: ${validation.errors.map(e => e.message).join(', ')}`);
+        throw new Error(
+          `Configuration reload validation failed: ${validation.errors.map((e) => e.message).join(', ')}`
+        );
       }
 
       this.emit('reloaded', this.config);
       this.logger.info('Configuration reloaded successfully');
-
     } catch (error) {
       this.logger.error('Failed to reload configuration', error);
       throw error;
@@ -490,7 +529,10 @@ export class UnifiedConfigManager extends EventEmitter {
   /**
    * Export configuration to file
    */
-  public async exportConfig(filePath: string, includeSecrets = false): Promise<void> {
+  public async exportConfig(
+    filePath: string,
+    includeSecrets = false
+  ): Promise<void> {
     try {
       let exportConfig = { ...this.config };
 
@@ -504,15 +546,14 @@ export class UnifiedConfigManager extends EventEmitter {
               ...exportConfig.security.secrets,
               encryptionKey: undefined,
               jwtSecret: undefined,
-              apiKeys: {}
-            }
-          }
+              apiKeys: {},
+            },
+          },
         };
       }
 
       writeFileSync(filePath, JSON.stringify(exportConfig, null, 2));
       this.logger.info('Configuration exported', { filePath, includeSecrets });
-
     } catch (error) {
       this.logger.error('Failed to export configuration', error);
       throw error;
@@ -533,7 +574,7 @@ export class UnifiedConfigManager extends EventEmitter {
     if (enabled === this.hotReloadEnabled) return;
 
     this.hotReloadEnabled = enabled;
-    
+
     if (enabled) {
       this.setupHotReload();
     } else {
@@ -563,7 +604,7 @@ export class UnifiedConfigManager extends EventEmitter {
         tickInterval: 1000,
         maxAgents: 10,
         logLevel: 'info',
-        version: '1.0.0'
+        version: '1.0.0',
       },
       persistence: {
         enabled: true,
@@ -571,28 +612,28 @@ export class UnifiedConfigManager extends EventEmitter {
         autoSave: true,
         saveInterval: 30000,
         maxBackups: 5,
-        compression: true
+        compression: true,
       },
       portals: {
         autoLoad: true,
         paths: ['./portals'],
         defaultPortal: 'openai',
         fallbackPortal: 'groq',
-        providers: {}
+        providers: {},
       },
       extensions: {
         autoLoad: true,
         paths: ['./extensions'],
         enabled: [],
         disabled: [],
-        config: {}
+        config: {},
       },
       multiAgent: {
         enabled: false,
         maxConcurrentAgents: 5,
         coordinationStrategy: 'centralized',
         messagingProtocol: 'direct',
-        loadBalancing: false
+        loadBalancing: false,
       },
       performance: {
         enableMetrics: true,
@@ -601,7 +642,7 @@ export class UnifiedConfigManager extends EventEmitter {
         cpuThreshold: 80,
         enableProfiling: false,
         cacheSize: 1000,
-        gcStrategy: 'balanced'
+        gcStrategy: 'balanced',
       },
       security: {
         enableAuth: false,
@@ -611,60 +652,77 @@ export class UnifiedConfigManager extends EventEmitter {
           enabled: true,
           windowMs: 60000,
           maxRequests: 100,
-          skipWhitelist: []
+          skipWhitelist: [],
         },
         secrets: {
-          apiKeys: {}
-        }
+          apiKeys: {},
+        },
       },
       features: {
         enabled: [],
         disabled: [],
         experimental: [],
-        beta: []
+        beta: [],
       },
       development: {
         hotReload: true,
         debugMode: false,
         verboseLogging: false,
         mockExternalServices: false,
-        testMode: false
-      }
+        testMode: false,
+      },
     };
   }
 
-  private async loadFromFile(filePath: string, environment?: ConfigEnvironment): Promise<void> {
+  private async loadFromFile(
+    filePath: string,
+    environment?: ConfigEnvironment
+  ): Promise<void> {
     const resolvedPath = resolve(filePath);
-    
+
     if (!existsSync(resolvedPath)) {
-      this.logger.warn('Configuration file not found', { filePath: resolvedPath });
+      this.logger.warn('Configuration file not found', {
+        filePath: resolvedPath,
+      });
       return;
     }
 
     try {
       const fileContent = readFileSync(resolvedPath, 'utf8');
       const fileConfig = JSON.parse(fileContent);
-      
+
       // Environment-specific configuration
       let envConfig = fileConfig;
-      if (environment && fileConfig.environments && fileConfig.environments[environment]) {
-        envConfig = this.mergeConfigs(fileConfig, fileConfig.environments[environment]);
+      if (
+        environment &&
+        fileConfig.environments &&
+        fileConfig.environments[environment]
+      ) {
+        envConfig = this.mergeConfigs(
+          fileConfig,
+          fileConfig.environments[environment]
+        );
       }
 
       this.config = this.mergeConfigs(this.config, envConfig);
-      
+
       this.sources.set(resolvedPath, {
         type: 'file',
         path: resolvedPath,
         priority: 100,
         environment,
-        lastModified: new Date()
+        lastModified: new Date(),
       });
 
-      this.logger.debug('Configuration loaded from file', { filePath: resolvedPath, environment });
-
+      this.logger.debug('Configuration loaded from file', {
+        filePath: resolvedPath,
+        environment,
+      });
     } catch (error) {
-      this.logger.error('Failed to load configuration from file', { filePath: resolvedPath, error });
+      this.logger.error('Failed to load configuration from file', {
+        filePath: resolvedPath,
+        error,
+      });
       throw error;
     }
   }
@@ -672,11 +730,11 @@ export class UnifiedConfigManager extends EventEmitter {
   private async loadFromEnvironment(): Promise<void> {
     const envConfig = await this.parseEnvironmentVariables();
     this.config = this.mergeConfigs(this.config, envConfig);
-    
+
     this.sources.set('environment', {
       type: 'environment',
       priority: 200,
-      lastModified: new Date()
+      lastModified: new Date(),
     });
 
     this.logger.debug('Configuration loaded from environment variables');
@@ -690,7 +748,7 @@ export class UnifiedConfigManager extends EventEmitter {
     this.sources.set('runtime-defaults', {
       type: 'override',
       priority: 50,
-      lastModified: new Date()
+      lastModified: new Date(),
     });
   }
 
@@ -699,15 +757,15 @@ export class UnifiedConfigManager extends EventEmitter {
 
     // Parse environment variables with prefix mapping
     const envMappings = {
-      'SYMINDX_LOG_LEVEL': 'runtime.logLevel',
-      'SYMINDX_TICK_INTERVAL': 'runtime.tickInterval',
-      'SYMINDX_MAX_AGENTS': 'runtime.maxAgents',
-      'SYMINDX_ENVIRONMENT': 'runtime.environment',
-      'SYMINDX_DATA_PATH': 'persistence.path',
-      'SYMINDX_DEBUG': 'development.debugMode',
-      'SYMINDX_HOT_RELOAD': 'development.hotReload',
-      'SYMINDX_ENABLE_AUTH': 'security.enableAuth',
-      'SYMINDX_ENABLE_ENCRYPTION': 'security.enableEncryption'
+      SYMINDX_LOG_LEVEL: 'runtime.logLevel',
+      SYMINDX_TICK_INTERVAL: 'runtime.tickInterval',
+      SYMINDX_MAX_AGENTS: 'runtime.maxAgents',
+      SYMINDX_ENVIRONMENT: 'runtime.environment',
+      SYMINDX_DATA_PATH: 'persistence.path',
+      SYMINDX_DEBUG: 'development.debugMode',
+      SYMINDX_HOT_RELOAD: 'development.hotReload',
+      SYMINDX_ENABLE_AUTH: 'security.enableAuth',
+      SYMINDX_ENABLE_ENCRYPTION: 'security.enableEncryption',
     };
 
     for (const [envVar, configPath] of Object.entries(envMappings)) {
@@ -736,11 +794,11 @@ export class UnifiedConfigManager extends EventEmitter {
     // Try to parse as boolean
     if (value === 'true') return true;
     if (value === 'false') return false;
-    
+
     // Try to parse as number
     const num = Number(value);
     if (!isNaN(num) && isFinite(num)) return num;
-    
+
     // Return as string
     return value;
   }
@@ -749,22 +807,27 @@ export class UnifiedConfigManager extends EventEmitter {
     return {
       runtime: {
         version: process.env.npm_package_version || '1.0.0',
-        environment: (process.env.NODE_ENV as ConfigEnvironment) || 'development'
-      }
+        environment:
+          (process.env.NODE_ENV as ConfigEnvironment) || 'development',
+      },
     };
   }
 
   private mergeConfigs(target: any, source: any): any {
     const result = { ...target };
-    
+
     for (const key in source) {
-      if (source[key] !== null && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+      if (
+        source[key] !== null &&
+        typeof source[key] === 'object' &&
+        !Array.isArray(source[key])
+      ) {
         result[key] = this.mergeConfigs(result[key] || {}, source[key]);
       } else {
         result[key] = source[key];
       }
     }
-    
+
     return result;
   }
 
@@ -798,8 +861,11 @@ export class UnifiedConfigManager extends EventEmitter {
     watchFile(filePath, { interval: 1000 }, (curr, prev) => {
       if (curr.mtime !== prev.mtime) {
         this.logger.info('Configuration file changed, reloading', { filePath });
-        this.reload().catch(error => {
-          this.logger.error('Failed to reload configuration after file change', error);
+        this.reload().catch((error) => {
+          this.logger.error(
+            'Failed to reload configuration after file change',
+            error
+          );
         });
       }
     });

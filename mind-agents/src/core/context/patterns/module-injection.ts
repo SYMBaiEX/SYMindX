@@ -1,6 +1,6 @@
 /**
  * Module Context Injection Patterns for SYMindX
- * 
+ *
  * Provides dependency injection patterns specifically for modules,
  * including automatic configuration injection, dependency resolution,
  * and runtime context management.
@@ -12,12 +12,9 @@ import type {
   ContextEnricher,
   ContextScope,
   ContextScopeType,
-  ModuleContextInjection
+  ModuleContextInjection,
 } from '../../../types/context/context-injection';
-import type { 
-  OperationResult, 
-  ModuleId 
-} from '../../../types/helpers';
+import type { OperationResult, ModuleId } from '../../../types/helpers';
 import type { Agent } from '../../../types/agent';
 import type { CognitionModule } from '../../../types/cognition';
 import type { EmotionModule } from '../../../types/emotion';
@@ -44,8 +41,10 @@ export class ModuleConfigProvider implements ContextProvider<unknown> {
   }
 
   canProvide(scope: ContextScope): boolean {
-    return scope.type === ContextScopeType.Module && 
-           this.configRegistry.has(scope.target);
+    return (
+      scope.type === ContextScopeType.Module &&
+      this.configRegistry.has(scope.target)
+    );
   }
 
   /**
@@ -69,13 +68,21 @@ export class ModuleConfigProvider implements ContextProvider<unknown> {
  * Module dependencies context provider
  * Provides resolved module dependencies
  */
-export class ModuleDependenciesProvider implements ContextProvider<Record<string, unknown>> {
+export class ModuleDependenciesProvider
+  implements ContextProvider<Record<string, unknown>>
+{
   readonly id = 'module-dependencies';
   readonly priority = 85;
   readonly supportsAsync = true;
 
-  private readonly dependencyRegistry = new Map<string, Record<string, unknown>>();
-  private readonly dependencyResolvers = new Map<string, () => Promise<unknown>>();
+  private readonly dependencyRegistry = new Map<
+    string,
+    Record<string, unknown>
+  >();
+  private readonly dependencyResolvers = new Map<
+    string,
+    () => Promise<unknown>
+  >();
 
   provide(scope: ContextScope): Record<string, unknown> | undefined {
     if (scope.type !== ContextScopeType.Module) {
@@ -85,7 +92,9 @@ export class ModuleDependenciesProvider implements ContextProvider<Record<string
     return this.dependencyRegistry.get(scope.target);
   }
 
-  async provideAsync(scope: ContextScope): Promise<Record<string, unknown> | undefined> {
+  async provideAsync(
+    scope: ContextScope
+  ): Promise<Record<string, unknown> | undefined> {
     if (scope.type !== ContextScopeType.Module) {
       return undefined;
     }
@@ -112,22 +121,28 @@ export class ModuleDependenciesProvider implements ContextProvider<Record<string
    * Register a dependency resolver for a module
    */
   registerDependencyResolver(
-    moduleId: string, 
-    dependencyName: string, 
+    moduleId: string,
+    dependencyName: string,
     resolver: () => Promise<unknown>
   ): void {
     const key = `${moduleId}:${dependencyName}`;
     this.dependencyResolvers.set(key, resolver);
-    runtimeLogger.debug('Module dependency resolver registered', { moduleId, dependencyName });
+    runtimeLogger.debug('Module dependency resolver registered', {
+      moduleId,
+      dependencyName,
+    });
   }
 
   /**
    * Resolve all dependencies for a module
    */
-  private async resolveDependencies(moduleId: string): Promise<Record<string, unknown> | undefined> {
+  private async resolveDependencies(
+    moduleId: string
+  ): Promise<Record<string, unknown> | undefined> {
     const dependencies: Record<string, unknown> = {};
-    const resolvers = Array.from(this.dependencyResolvers.entries())
-      .filter(([key]) => key.startsWith(`${moduleId}:`));
+    const resolvers = Array.from(this.dependencyResolvers.entries()).filter(
+      ([key]) => key.startsWith(`${moduleId}:`)
+    );
 
     if (resolvers.length === 0) {
       return undefined;
@@ -140,10 +155,10 @@ export class ModuleDependenciesProvider implements ContextProvider<Record<string
           try {
             dependencies[dependencyName] = await resolver();
           } catch (error) {
-            runtimeLogger.warn('Failed to resolve module dependency', { 
-              moduleId, 
-              dependencyName, 
-              error 
+            runtimeLogger.warn('Failed to resolve module dependency', {
+              moduleId,
+              dependencyName,
+              error,
             });
           }
         })
@@ -151,7 +166,9 @@ export class ModuleDependenciesProvider implements ContextProvider<Record<string
 
       return dependencies;
     } catch (error) {
-      runtimeLogger.error('Failed to resolve module dependencies', error, { moduleId });
+      runtimeLogger.error('Failed to resolve module dependencies', error, {
+        moduleId,
+      });
       return undefined;
     }
   }
@@ -161,12 +178,17 @@ export class ModuleDependenciesProvider implements ContextProvider<Record<string
  * Module runtime context provider
  * Provides runtime information about modules
  */
-export class ModuleRuntimeProvider implements ContextProvider<ModuleContextInjection['runtime']> {
+export class ModuleRuntimeProvider
+  implements ContextProvider<ModuleContextInjection['runtime']>
+{
   readonly id = 'module-runtime';
   readonly priority = 80;
   readonly supportsAsync = false;
 
-  private readonly runtimeInfo = new Map<string, ModuleContextInjection['runtime']>();
+  private readonly runtimeInfo = new Map<
+    string,
+    ModuleContextInjection['runtime']
+  >();
 
   provide(scope: ContextScope): ModuleContextInjection['runtime'] | undefined {
     if (scope.type !== ContextScopeType.Module) {
@@ -177,26 +199,31 @@ export class ModuleRuntimeProvider implements ContextProvider<ModuleContextInjec
   }
 
   canProvide(scope: ContextScope): boolean {
-    return scope.type === ContextScopeType.Module && 
-           this.runtimeInfo.has(scope.target);
+    return (
+      scope.type === ContextScopeType.Module &&
+      this.runtimeInfo.has(scope.target)
+    );
   }
 
   /**
    * Register runtime information for a module
    */
   registerRuntime(
-    moduleId: string, 
+    moduleId: string,
     runtime: ModuleContextInjection['runtime']
   ): void {
     this.runtimeInfo.set(moduleId, runtime);
-    runtimeLogger.debug('Module runtime info registered', { moduleId, status: runtime.status });
+    runtimeLogger.debug('Module runtime info registered', {
+      moduleId,
+      status: runtime.status,
+    });
   }
 
   /**
    * Update module status
    */
   updateStatus(
-    moduleId: string, 
+    moduleId: string,
     status: ModuleContextInjection['runtime']['status']
   ): boolean {
     const runtime = this.runtimeInfo.get(moduleId);
@@ -227,12 +254,14 @@ export class ModuleRuntimeProvider implements ContextProvider<ModuleContextInjec
  * Module context enricher
  * Enriches module context with additional metadata
  */
-export class ModuleContextEnricher implements ContextEnricher<ModuleContextInjection> {
+export class ModuleContextEnricher
+  implements ContextEnricher<ModuleContextInjection>
+{
   readonly id = 'module-enricher';
   readonly priority = 70;
 
   async enrich(
-    context: ModuleContextInjection, 
+    context: ModuleContextInjection,
     scope: ContextScope
   ): Promise<ModuleContextInjection> {
     if (scope.type !== ContextScopeType.Module) {
@@ -247,8 +276,8 @@ export class ModuleContextEnricher implements ContextEnricher<ModuleContextInjec
       scopeMetadata: {
         agentId: scope.agentId,
         correlationId: scope.correlationId,
-        ...scope.metadata
-      }
+        ...scope.metadata,
+      },
     };
 
     // Add performance tracking if runtime info exists
@@ -256,7 +285,7 @@ export class ModuleContextEnricher implements ContextEnricher<ModuleContextInjec
       enriched.performance = {
         uptime: Date.now() - context.runtime.startTime.getTime(),
         lastActivity: new Date(),
-        metricsSnapshot: { ...context.runtime.metrics }
+        metricsSnapshot: { ...context.runtime.metrics },
       };
     }
 
@@ -272,7 +301,9 @@ export class ModuleContextEnricher implements ContextEnricher<ModuleContextInjec
  * Module context validation middleware
  * Validates and sanitizes module context data
  */
-export class ModuleContextValidator implements ContextMiddleware<ModuleContextInjection> {
+export class ModuleContextValidator
+  implements ContextMiddleware<ModuleContextInjection>
+{
   readonly id = 'module-validator';
   readonly priority = 100;
 
@@ -295,9 +326,9 @@ export class ModuleContextValidator implements ContextMiddleware<ModuleContextIn
     if (context.runtime) {
       const validStatuses = ['initializing', 'running', 'stopping', 'stopped'];
       if (!validStatuses.includes(context.runtime.status)) {
-        runtimeLogger.warn('Invalid module status, defaulting to stopped', { 
+        runtimeLogger.warn('Invalid module status, defaulting to stopped', {
           moduleId: context.moduleId,
-          status: context.runtime.status
+          status: context.runtime.status,
         });
         context.runtime.status = 'stopped';
       }
@@ -318,7 +349,7 @@ export class ModuleContextValidator implements ContextMiddleware<ModuleContextIn
       return config;
     }
 
-    const sanitized = { ...config as Record<string, unknown> };
+    const sanitized = { ...(config as Record<string, unknown>) };
 
     // Remove sensitive fields
     const sensitiveFields = ['password', 'secret', 'key', 'token'];
@@ -351,8 +382,8 @@ export class ModuleInjectionHelper {
       correlationId,
       metadata: {
         moduleType: this.getModuleType(moduleId),
-        createdAt: new Date().toISOString()
-      }
+        createdAt: new Date().toISOString(),
+      },
     };
   }
 
@@ -370,9 +401,9 @@ export class ModuleInjectionHelper {
       runtime: {
         startTime: new Date(),
         status: 'initializing',
-        metrics: {}
+        metrics: {},
       },
-      dependencies: dependencies || {}
+      dependencies: dependencies || {},
     };
   }
 
@@ -384,22 +415,26 @@ export class ModuleInjectionHelper {
     context: ModuleContextInjection,
     agent?: Agent
   ): Promise<CognitionModule & { context: ModuleContextInjection }> {
-    const contextualModule = module as CognitionModule & { 
+    const contextualModule = module as CognitionModule & {
       context: ModuleContextInjection;
-      updateContext?: (updates: Partial<ModuleContextInjection>) => Promise<OperationResult>;
+      updateContext?: (
+        updates: Partial<ModuleContextInjection>
+      ) => Promise<OperationResult>;
     };
 
     contextualModule.context = context;
-    
+
     // Add context update method
-    contextualModule.updateContext = async (updates: Partial<ModuleContextInjection>) => {
+    contextualModule.updateContext = async (
+      updates: Partial<ModuleContextInjection>
+    ) => {
       try {
         contextualModule.context = { ...contextualModule.context, ...updates };
         return { success: true };
       } catch (error) {
-        return { 
-          success: false, 
-          error: error instanceof Error ? error.message : 'Unknown error' 
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
         };
       }
     };
@@ -415,22 +450,26 @@ export class ModuleInjectionHelper {
     context: ModuleContextInjection,
     agent?: Agent
   ): Promise<EmotionModule & { context: ModuleContextInjection }> {
-    const contextualModule = module as EmotionModule & { 
+    const contextualModule = module as EmotionModule & {
       context: ModuleContextInjection;
-      updateContext?: (updates: Partial<ModuleContextInjection>) => Promise<OperationResult>;
+      updateContext?: (
+        updates: Partial<ModuleContextInjection>
+      ) => Promise<OperationResult>;
     };
 
     contextualModule.context = context;
-    
+
     // Add context update method
-    contextualModule.updateContext = async (updates: Partial<ModuleContextInjection>) => {
+    contextualModule.updateContext = async (
+      updates: Partial<ModuleContextInjection>
+    ) => {
       try {
         contextualModule.context = { ...contextualModule.context, ...updates };
         return { success: true };
       } catch (error) {
-        return { 
-          success: false, 
-          error: error instanceof Error ? error.message : 'Unknown error' 
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
         };
       }
     };
@@ -446,22 +485,29 @@ export class ModuleInjectionHelper {
     context: ModuleContextInjection,
     agent?: Agent
   ): Promise<MemoryProvider & { context: ModuleContextInjection }> {
-    const contextualProvider = provider as MemoryProvider & { 
+    const contextualProvider = provider as MemoryProvider & {
       context: ModuleContextInjection;
-      updateContext?: (updates: Partial<ModuleContextInjection>) => Promise<OperationResult>;
+      updateContext?: (
+        updates: Partial<ModuleContextInjection>
+      ) => Promise<OperationResult>;
     };
 
     contextualProvider.context = context;
-    
+
     // Add context update method
-    contextualProvider.updateContext = async (updates: Partial<ModuleContextInjection>) => {
+    contextualProvider.updateContext = async (
+      updates: Partial<ModuleContextInjection>
+    ) => {
       try {
-        contextualProvider.context = { ...contextualProvider.context, ...updates };
+        contextualProvider.context = {
+          ...contextualProvider.context,
+          ...updates,
+        };
         return { success: true };
       } catch (error) {
-        return { 
-          success: false, 
-          error: error instanceof Error ? error.message : 'Unknown error' 
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
         };
       }
     };
@@ -486,13 +532,13 @@ export const moduleInjectionPatterns = {
   providers: {
     config: ModuleConfigProvider,
     dependencies: ModuleDependenciesProvider,
-    runtime: ModuleRuntimeProvider
+    runtime: ModuleRuntimeProvider,
   },
   enrichers: {
-    context: ModuleContextEnricher
+    context: ModuleContextEnricher,
   },
   middleware: {
-    validator: ModuleContextValidator
+    validator: ModuleContextValidator,
   },
-  helpers: ModuleInjectionHelper
+  helpers: ModuleInjectionHelper,
 };

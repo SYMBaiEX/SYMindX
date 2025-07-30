@@ -1,6 +1,6 @@
 /**
  * Module Traits System for SYMindX
- * 
+ *
  * Provides mixins and traits for common module functionality
  */
 
@@ -48,41 +48,44 @@ export function DisposableTrait<T extends Constructor>(Base: T) {
   return class extends Base implements Disposable {
     private _disposed = false;
     private _disposalHandlers: Array<() => Promise<void> | void> = [];
-    
+
     /**
      * Add a disposal handler
      */
     protected addDisposalHandler(handler: () => Promise<void> | void): void {
       this._disposalHandlers.push(handler);
     }
-    
+
     /**
      * Check if disposed
      */
     protected get isDisposed(): boolean {
       return this._disposed;
     }
-    
+
     /**
      * Dispose of resources
      */
     async dispose(): Promise<void> {
       if (this._disposed) return;
-      
+
       runtimeLogger.debug(`Disposing ${this.constructor.name}`);
-      
+
       for (const handler of this._disposalHandlers.reverse()) {
         try {
           await handler();
         } catch (error) {
-          runtimeLogger.error(`Error in disposal handler for ${this.constructor.name}:`, error);
+          runtimeLogger.error(
+            `Error in disposal handler for ${this.constructor.name}:`,
+            error
+          );
         }
       }
-      
+
       this._disposed = true;
       this._disposalHandlers = [];
     }
-    
+
     /**
      * Ensure not disposed before operations
      */
@@ -107,27 +110,29 @@ export function InitializableTrait<T extends Constructor>(Base: T) {
     private _initializing = false;
     private _initializationPromise?: Promise<void>;
     private _initializationHandlers: Array<() => Promise<void> | void> = [];
-    
+
     /**
      * Add an initialization handler
      */
-    protected addInitializationHandler(handler: () => Promise<void> | void): void {
+    protected addInitializationHandler(
+      handler: () => Promise<void> | void
+    ): void {
       this._initializationHandlers.push(handler);
     }
-    
+
     /**
      * Initialize the module
      */
     async initialize(): Promise<void> {
       if (this._initialized) return;
-      
+
       if (this._initializing) {
         return this._initializationPromise;
       }
-      
+
       this._initializing = true;
       this._initializationPromise = this._doInitialize();
-      
+
       try {
         await this._initializationPromise;
         this._initialized = true;
@@ -135,30 +140,33 @@ export function InitializableTrait<T extends Constructor>(Base: T) {
         this._initializing = false;
       }
     }
-    
+
     /**
      * Perform actual initialization
      */
     private async _doInitialize(): Promise<void> {
       runtimeLogger.debug(`Initializing ${this.constructor.name}`);
-      
+
       for (const handler of this._initializationHandlers) {
         try {
           await handler();
         } catch (error) {
-          runtimeLogger.error(`Error in initialization handler for ${this.constructor.name}:`, error);
+          runtimeLogger.error(
+            `Error in initialization handler for ${this.constructor.name}:`,
+            error
+          );
           throw error;
         }
       }
     }
-    
+
     /**
      * Check if initialized
      */
     isInitialized(): boolean {
       return this._initialized;
     }
-    
+
     /**
      * Ensure initialized before operations
      */
@@ -178,18 +186,22 @@ export function InitializableTrait<T extends Constructor>(Base: T) {
  * Adds configuration management with validation
  */
 export function ConfigurableTrait<TConfig = any>() {
-  return function<T extends Constructor>(Base: T) {
+  return function <T extends Constructor>(Base: T) {
     return class extends Base implements Configurable<TConfig> {
       private _config?: TConfig;
-      private _configValidators: Array<(config: TConfig) => void | Promise<void>> = [];
-      
+      private _configValidators: Array<
+        (config: TConfig) => void | Promise<void>
+      > = [];
+
       /**
        * Add a config validator
        */
-      protected addConfigValidator(validator: (config: TConfig) => void | Promise<void>): void {
+      protected addConfigValidator(
+        validator: (config: TConfig) => void | Promise<void>
+      ): void {
         this._configValidators.push(validator);
       }
-      
+
       /**
        * Configure the module
        */
@@ -198,7 +210,7 @@ export function ConfigurableTrait<TConfig = any>() {
         this._config = config;
         this._onConfigUpdate(config);
       }
-      
+
       /**
        * Get current configuration
        */
@@ -208,14 +220,14 @@ export function ConfigurableTrait<TConfig = any>() {
         }
         return this._config;
       }
-      
+
       /**
        * Get configuration safely (returns undefined if not configured)
        */
       protected getConfigSafe(): TConfig | undefined {
         return this._config;
       }
-      
+
       /**
        * Validate configuration
        */
@@ -224,7 +236,7 @@ export function ConfigurableTrait<TConfig = any>() {
           validator(config);
         }
       }
-      
+
       /**
        * Called when configuration is updated
        */
@@ -244,8 +256,10 @@ export function ConfigurableTrait<TConfig = any>() {
  */
 export function HealthCheckableTrait<T extends Constructor>(Base: T) {
   return class extends Base implements HealthCheckable {
-    private _healthChecks: Array<() => Promise<{ status: 'healthy' | 'unhealthy'; details?: any }>> = [];
-    
+    private _healthChecks: Array<
+      () => Promise<{ status: 'healthy' | 'unhealthy'; details?: any }>
+    > = [];
+
     /**
      * Add a health check
      */
@@ -254,13 +268,17 @@ export function HealthCheckableTrait<T extends Constructor>(Base: T) {
     ): void {
       this._healthChecks.push(check);
     }
-    
+
     /**
      * Perform health check
      */
-    async healthCheck(): Promise<{ status: 'healthy' | 'unhealthy'; details?: any }> {
-      const results: Array<{ status: 'healthy' | 'unhealthy'; details?: any }> = [];
-      
+    async healthCheck(): Promise<{
+      status: 'healthy' | 'unhealthy';
+      details?: any;
+    }> {
+      const results: Array<{ status: 'healthy' | 'unhealthy'; details?: any }> =
+        [];
+
       for (const check of this._healthChecks) {
         try {
           const result = await check();
@@ -269,34 +287,34 @@ export function HealthCheckableTrait<T extends Constructor>(Base: T) {
           results.push({
             status: 'unhealthy',
             details: {
-              error: error instanceof Error ? error.message : String(error)
-            }
+              error: error instanceof Error ? error.message : String(error),
+            },
           });
         }
       }
-      
-      const unhealthy = results.filter(r => r.status === 'unhealthy');
-      
+
+      const unhealthy = results.filter((r) => r.status === 'unhealthy');
+
       if (unhealthy.length === 0) {
         return {
           status: 'healthy',
           details: {
             module: this.constructor.name,
             checks: results.length,
-            timestamp: new Date().toISOString()
-          }
+            timestamp: new Date().toISOString(),
+          },
         };
       }
-      
+
       return {
         status: 'unhealthy',
         details: {
           module: this.constructor.name,
           checks: results.length,
           failures: unhealthy.length,
-          errors: unhealthy.map(r => r.details),
-          timestamp: new Date().toISOString()
-        }
+          errors: unhealthy.map((r) => r.details),
+          timestamp: new Date().toISOString(),
+        },
       };
     }
   };
@@ -310,58 +328,65 @@ export function HealthCheckableTrait<T extends Constructor>(Base: T) {
  * Adds version tracking and compatibility checking
  */
 export function VersionedTrait(version: string) {
-  return function<T extends Constructor>(Base: T) {
+  return function <T extends Constructor>(Base: T) {
     return class extends Base implements Versioned {
       private _version = version;
-      
+
       /**
        * Get module version
        */
       getVersion(): string {
         return this._version;
       }
-      
+
       /**
        * Check compatibility with another version
        */
       isCompatible(otherVersion: string): boolean {
         return this._checkCompatibility(this._version, otherVersion);
       }
-      
+
       /**
        * Check version compatibility using semantic versioning
        */
-      private _checkCompatibility(currentVersion: string, targetVersion: string): boolean {
+      private _checkCompatibility(
+        currentVersion: string,
+        targetVersion: string
+      ): boolean {
         const current = this._parseVersion(currentVersion);
         const target = this._parseVersion(targetVersion);
-        
+
         // Major version must match
         if (current.major !== target.major) {
           return false;
         }
-        
+
         // Current minor must be >= target minor
         if (current.minor < target.minor) {
           return false;
         }
-        
+
         // If minor versions match, current patch must be >= target patch
         if (current.minor === target.minor && current.patch < target.patch) {
           return false;
         }
-        
+
         return true;
       }
-      
+
       /**
        * Parse semantic version string
        */
-      private _parseVersion(version: string): { major: number; minor: number; patch: number } {
+      private _parseVersion(version: string): {
+        major: number;
+        minor: number;
+        patch: number;
+      } {
         const parts = version.split('.').map(Number);
         return {
           major: parts[0] || 0,
           minor: parts[1] || 0,
-          patch: parts[2] || 0
+          patch: parts[2] || 0,
         };
       }
     };
@@ -387,7 +412,7 @@ export function CachingTrait<T extends Constructor>(Base: T) {
     private _cache = new Map<string, CacheEntry<any>>();
     private _maxCacheSize = 1000;
     private _defaultTtl = 5 * 60 * 1000; // 5 minutes
-    
+
     /**
      * Set cache configuration
      */
@@ -395,14 +420,14 @@ export function CachingTrait<T extends Constructor>(Base: T) {
       this._maxCacheSize = maxSize;
       this._defaultTtl = defaultTtl;
     }
-    
+
     /**
      * Get value from cache
      */
     protected getFromCache<T>(key: string): T | undefined {
       const entry = this._cache.get(key);
       if (!entry) return undefined;
-      
+
       // Check TTL
       const now = Date.now();
       const age = now - entry.timestamp.getTime();
@@ -410,14 +435,14 @@ export function CachingTrait<T extends Constructor>(Base: T) {
         this._cache.delete(key);
         return undefined;
       }
-      
+
       // Update hits
       entry.hits++;
       entry.timestamp = new Date();
-      
+
       return entry.value as T;
     }
-    
+
     /**
      * Set value in cache
      */
@@ -426,29 +451,29 @@ export function CachingTrait<T extends Constructor>(Base: T) {
       if (this._cache.size >= this._maxCacheSize) {
         this._evictLRU();
       }
-      
+
       this._cache.set(key, {
         value,
         timestamp: new Date(),
         ttl: ttl || this._defaultTtl,
-        hits: 0
+        hits: 0,
       });
     }
-    
+
     /**
      * Delete from cache
      */
     protected deleteFromCache(key: string): void {
       this._cache.delete(key);
     }
-    
+
     /**
      * Clear entire cache
      */
     protected clearCache(): void {
       this._cache.clear();
     }
-    
+
     /**
      * Get cache statistics
      */
@@ -463,30 +488,30 @@ export function CachingTrait<T extends Constructor>(Base: T) {
       const totalHits = entries.reduce((sum, entry) => sum + entry.hits, 0);
       const totalEntries = entries.length;
       const hitRate = totalEntries > 0 ? totalHits / totalEntries : 0;
-      
+
       return {
         size: this._cache.size,
         maxSize: this._maxCacheSize,
         hitRate,
         totalHits,
-        totalEntries
+        totalEntries,
       };
     }
-    
+
     /**
      * Evict least recently used entry
      */
     private _evictLRU(): void {
       let lruKey: string | null = null;
       let lruTimestamp = Date.now();
-      
+
       for (const [key, entry] of this._cache) {
         if (entry.timestamp.getTime() < lruTimestamp) {
           lruTimestamp = entry.timestamp.getTime();
           lruKey = key;
         }
       }
-      
+
       if (lruKey) {
         this._cache.delete(lruKey);
       }
@@ -506,7 +531,7 @@ export type EventListener<T = any> = (data: T) => void | Promise<void>;
 export function ObservableTrait<T extends Constructor>(Base: T) {
   return class extends Base {
     private _listeners = new Map<string, EventListener[]>();
-    
+
     /**
      * Add event listener
      */
@@ -516,7 +541,7 @@ export function ObservableTrait<T extends Constructor>(Base: T) {
       }
       this._listeners.get(event)!.push(listener);
     }
-    
+
     /**
      * Remove event listener
      */
@@ -529,14 +554,14 @@ export function ObservableTrait<T extends Constructor>(Base: T) {
         }
       }
     }
-    
+
     /**
      * Emit event
      */
     protected async emit<T>(event: string, data: T): Promise<void> {
       const listeners = this._listeners.get(event);
       if (!listeners) return;
-      
+
       for (const listener of listeners) {
         try {
           await listener(data);
@@ -545,14 +570,14 @@ export function ObservableTrait<T extends Constructor>(Base: T) {
         }
       }
     }
-    
+
     /**
      * Get listener count for event
      */
     protected getListenerCount(event: string): number {
       return this._listeners.get(event)?.length || 0;
     }
-    
+
     /**
      * Remove all listeners
      */
@@ -574,7 +599,7 @@ export function ObservableTrait<T extends Constructor>(Base: T) {
  * Complete module trait combining all common functionality
  */
 export function CompleteModuleTrait<TConfig = any>(version: string) {
-  return function<T extends Constructor>(Base: T) {
+  return function <T extends Constructor>(Base: T) {
     const WithDisposable = DisposableTrait(Base);
     const WithInitializable = InitializableTrait(WithDisposable);
     const WithConfigurable = ConfigurableTrait<TConfig>()(WithInitializable);
@@ -582,7 +607,7 @@ export function CompleteModuleTrait<TConfig = any>(version: string) {
     const WithVersioned = VersionedTrait(version)(WithHealthCheckable);
     const WithCaching = CachingTrait(WithVersioned);
     const WithObservable = ObservableTrait(WithCaching);
-    
+
     return WithObservable;
   };
 }
@@ -591,13 +616,13 @@ export function CompleteModuleTrait<TConfig = any>(version: string) {
  * Memory provider specific trait
  */
 export function MemoryProviderTrait<TConfig = any>(version: string) {
-  return function<T extends Constructor>(Base: T) {
+  return function <T extends Constructor>(Base: T) {
     const WithComplete = CompleteModuleTrait<TConfig>(version)(Base);
-    
+
     return class extends WithComplete {
       constructor(...args: any[]) {
         super(...args);
-        
+
         // Add memory provider specific health checks
         this.addHealthCheck(async () => {
           try {
@@ -606,11 +631,13 @@ export function MemoryProviderTrait<TConfig = any>(version: string) {
           } catch (error) {
             return {
               status: 'unhealthy' as const,
-              details: { error: error instanceof Error ? error.message : String(error) }
+              details: {
+                error: error instanceof Error ? error.message : String(error),
+              },
             };
           }
         });
-        
+
         // Add cleanup on disposal
         this.addDisposalHandler(async () => {
           this.clearCache();
@@ -625,13 +652,13 @@ export function MemoryProviderTrait<TConfig = any>(version: string) {
  * Emotion module specific trait
  */
 export function EmotionModuleTrait<TConfig = any>(version: string) {
-  return function<T extends Constructor>(Base: T) {
+  return function <T extends Constructor>(Base: T) {
     const WithComplete = CompleteModuleTrait<TConfig>(version)(Base);
-    
+
     return class extends WithComplete {
       constructor(...args: any[]) {
         super(...args);
-        
+
         // Add emotion-specific initialization
         this.addInitializationHandler(() => {
           this.emit('emotion:initialized', { module: this.constructor.name });
@@ -645,13 +672,13 @@ export function EmotionModuleTrait<TConfig = any>(version: string) {
  * Cognition module specific trait
  */
 export function CognitionModuleTrait<TConfig = any>(version: string) {
-  return function<T extends Constructor>(Base: T) {
+  return function <T extends Constructor>(Base: T) {
     const WithComplete = CompleteModuleTrait<TConfig>(version)(Base);
-    
+
     return class extends WithComplete {
       constructor(...args: any[]) {
         super(...args);
-        
+
         // Add cognition-specific caching
         this.setCacheConfig(500, 10 * 60 * 1000); // 10 minutes for thoughts
       }

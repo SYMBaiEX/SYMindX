@@ -449,7 +449,10 @@ export class RuleBasedReasoning implements CognitionModule {
       this.factBase.addSimpleFact(`event_${index}`, event);
 
       // Check for questions
-      if (event.data?.['message'] && typeof event.data['message'] === 'string') {
+      if (
+        event.data?.['message'] &&
+        typeof event.data['message'] === 'string'
+      ) {
         this.factBase.addSimpleFact('has_message', true);
         this.factBase.addSimpleFact(
           'message_contains_question',

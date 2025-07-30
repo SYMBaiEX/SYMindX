@@ -40,7 +40,7 @@ export class SecretsManager {
       ivLength: config.ivLength || 16,
       saltLength: config.saltLength || 32,
       iterations: config.iterations || 100000,
-      storageDir: config.storageDir || './data/secrets'
+      storageDir: config.storageDir || './data/secrets',
     };
   }
 
@@ -70,10 +70,10 @@ export class SecretsManager {
     const encrypted = await this.encrypt(value);
     const secretData: EncryptedSecret = {
       ...encrypted,
-      createdAt: this.secrets.has(key) 
-        ? this.secrets.get(key)!.createdAt 
+      createdAt: this.secrets.has(key)
+        ? this.secrets.get(key)!.createdAt
         : new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     };
 
     this.secrets.set(key, secretData);
@@ -105,7 +105,7 @@ export class SecretsManager {
     }
 
     this.secrets.delete(key);
-    
+
     try {
       await fs.unlink(this.getSecretPath(key));
       return true;
@@ -139,7 +139,7 @@ export class SecretsManager {
 
     // Decrypt all secrets with current key
     const decryptedSecrets: Map<string, string> = new Map();
-    
+
     for (const [key, secretData] of this.secrets) {
       const decrypted = await this.decrypt(secretData);
       decryptedSecrets.set(key, decrypted);
@@ -148,7 +148,7 @@ export class SecretsManager {
     // Generate new master key
     const salt = crypto.randomBytes(this.config.saltLength);
     this.masterKey = await this.deriveKey(newMasterPassword, salt);
-    
+
     // Save new master salt
     await this.saveMasterSalt(salt);
 
@@ -167,37 +167,44 @@ export class SecretsManager {
     }
 
     const exportData: Record<string, any> = {};
-    
+
     for (const [key, secretData] of this.secrets) {
       const decrypted = await this.decrypt(secretData);
-      
+
       // Re-encrypt with export password
       const exportSalt = crypto.randomBytes(this.config.saltLength);
       const exportKey = await this.deriveKey(exportPassword, exportSalt);
       const exportEncrypted = await this.encryptWithKey(decrypted, exportKey);
-      
+
       exportData[key] = {
         ...exportEncrypted,
         salt: exportSalt.toString('base64'),
         createdAt: secretData.createdAt,
-        updatedAt: secretData.updatedAt
+        updatedAt: secretData.updatedAt,
       };
     }
 
-    return JSON.stringify({
-      version: '1.0',
-      algorithm: this.config.encryptionAlgorithm,
-      secrets: exportData,
-      exportedAt: new Date().toISOString()
-    }, null, 2);
+    return JSON.stringify(
+      {
+        version: '1.0',
+        algorithm: this.config.encryptionAlgorithm,
+        secrets: exportData,
+        exportedAt: new Date().toISOString(),
+      },
+      null,
+      2
+    );
   }
 
   /**
    * Import secrets
    */
-  async importSecrets(exportData: string, importPassword: string): Promise<void> {
+  async importSecrets(
+    exportData: string,
+    importPassword: string
+  ): Promise<void> {
     const data = JSON.parse(exportData);
-    
+
     if (data.version !== '1.0') {
       throw new Error('Unsupported export version');
     }
@@ -207,7 +214,7 @@ export class SecretsManager {
       const importSalt = Buffer.from(secretData.salt, 'base64');
       const importKey = await this.deriveKey(importPassword, importSalt);
       const decrypted = await this.decryptWithKey(secretData, importKey);
-      
+
       // Store with current master key
       await this.setSecret(key, decrypted);
     }
@@ -233,7 +240,10 @@ export class SecretsManager {
   /**
    * Encrypt data with specific key
    */
-  private async encryptWithKey(data: string, key: Buffer): Promise<{
+  private async encryptWithKey(
+    data: string,
+    key: Buffer
+  ): Promise<{
     encrypted: string;
     iv: string;
     salt: string;
@@ -242,7 +252,7 @@ export class SecretsManager {
   }> {
     const iv = crypto.randomBytes(this.config.ivLength);
     const cipher = crypto.createCipher(this.config.encryptionAlgorithm, key);
-    
+
     let encrypted = cipher.update(data, 'utf8', 'base64');
     encrypted += cipher.final('base64');
 
@@ -251,7 +261,7 @@ export class SecretsManager {
       iv: iv.toString('base64'),
       salt: '', // Salt is handled separately
       algorithm: this.config.encryptionAlgorithm,
-      iterations: this.config.iterations
+      iterations: this.config.iterations,
     };
   }
 
@@ -269,16 +279,21 @@ export class SecretsManager {
   /**
    * Decrypt data with specific key
    */
-  private async decryptWithKey(secretData: EncryptedSecret, key: Buffer): Promise<string> {
+  private async decryptWithKey(
+    secretData: EncryptedSecret,
+    key: Buffer
+  ): Promise<string> {
     try {
       const decipher = crypto.createDecipher(secretData.algorithm, key);
-      
+
       let decrypted = decipher.update(secretData.encrypted, 'base64', 'utf8');
       decrypted += decipher.final('utf8');
-      
+
       return decrypted;
     } catch (error) {
-      throw new Error('Failed to decrypt secret: Invalid password or corrupted data');
+      throw new Error(
+        'Failed to decrypt secret: Invalid password or corrupted data'
+      );
     }
   }
 
@@ -306,7 +321,7 @@ export class SecretsManager {
    */
   private async getOrCreateMasterSalt(): Promise<Buffer> {
     const saltPath = path.join(this.config.storageDir, '.master_salt');
-    
+
     try {
       const saltData = await fs.readFile(saltPath);
       return saltData;
@@ -332,7 +347,7 @@ export class SecretsManager {
   private async loadSecrets(): Promise<void> {
     try {
       const files = await fs.readdir(this.config.storageDir);
-      
+
       for (const file of files) {
         if (file.startsWith('.') || !file.endsWith('.json')) {
           continue;
@@ -340,7 +355,7 @@ export class SecretsManager {
 
         const key = file.replace('.json', '');
         const secretPath = this.getSecretPath(key);
-        
+
         try {
           const data = await fs.readFile(secretPath, 'utf8');
           const secretData: EncryptedSecret = JSON.parse(data);
@@ -357,13 +372,14 @@ export class SecretsManager {
   /**
    * Save secret to disk
    */
-  private async saveSecret(key: string, secretData: EncryptedSecret): Promise<void> {
+  private async saveSecret(
+    key: string,
+    secretData: EncryptedSecret
+  ): Promise<void> {
     const secretPath = this.getSecretPath(key);
-    await fs.writeFile(
-      secretPath,
-      JSON.stringify(secretData, null, 2),
-      { mode: 0o600 }
-    );
+    await fs.writeFile(secretPath, JSON.stringify(secretData, null, 2), {
+      mode: 0o600,
+    });
   }
 
   /**

@@ -3,8 +3,20 @@
  * @description Unified Context System Test Suite - Core functionality tests
  */
 
-import { describe, test as it, expect, beforeEach, afterEach, beforeAll, afterAll } from 'bun:test';
-import { ContextManager, createContextManager, type ContextManagerConfig } from '../context-manager.js';
+import {
+  describe,
+  test as it,
+  expect,
+  beforeEach,
+  afterEach,
+  beforeAll,
+  afterAll,
+} from 'bun:test';
+import {
+  ContextManager,
+  createContextManager,
+  type ContextManagerConfig,
+} from '../context-manager.js';
 import {
   ContextFactory,
   ConfigFactory,
@@ -18,7 +30,7 @@ import {
 describe('Unified Context System', () => {
   let contextManager: ContextManager;
   let testEnv: ReturnType<typeof createTestEnvironment>;
-  
+
   beforeAll(() => {
     testEnv = createTestEnvironment();
   });
@@ -41,7 +53,11 @@ describe('Unified Context System', () => {
       const participantId = 'user-1';
       const initialMessage = 'Hello, world!';
 
-      const context = contextManager.getOrCreateContext(agentId, participantId, initialMessage);
+      const context = contextManager.getOrCreateContext(
+        agentId,
+        participantId,
+        initialMessage
+      );
 
       // Validate context structure
       ContextAssertions.assertValidContext(context);
@@ -56,8 +72,14 @@ describe('Unified Context System', () => {
       const agentId = 'test-agent-1';
       const participantId = 'user-1';
 
-      const context1 = contextManager.getOrCreateContext(agentId, participantId);
-      const context2 = contextManager.getOrCreateContext(agentId, participantId);
+      const context1 = contextManager.getOrCreateContext(
+        agentId,
+        participantId
+      );
+      const context2 = contextManager.getOrCreateContext(
+        agentId,
+        participantId
+      );
 
       expect(context1).toBe(context2);
       expect(context1.id).toBe(context2.id);
@@ -66,8 +88,14 @@ describe('Unified Context System', () => {
     it('should create different contexts for different agents', () => {
       const participantId = 'user-1';
 
-      const context1 = contextManager.getOrCreateContext('agent-1', participantId);
-      const context2 = contextManager.getOrCreateContext('agent-2', participantId);
+      const context1 = contextManager.getOrCreateContext(
+        'agent-1',
+        participantId
+      );
+      const context2 = contextManager.getOrCreateContext(
+        'agent-2',
+        participantId
+      );
 
       expect(context1).not.toBe(context2);
       expect(context1.id).not.toBe(context2.id);
@@ -79,7 +107,10 @@ describe('Unified Context System', () => {
       const participants = ['user-1', 'user-2', 'user-3'];
 
       // Create context with first participant
-      const context = contextManager.getOrCreateContext(agentId, participants[0]);
+      const context = contextManager.getOrCreateContext(
+        agentId,
+        participants[0]
+      );
 
       // Add more participants
       for (let i = 1; i < participants.length; i++) {
@@ -87,14 +118,14 @@ describe('Unified Context System', () => {
       }
 
       expect(context.participants.size).toBe(participants.length);
-      participants.forEach(p => {
+      participants.forEach((p) => {
         expect(context.participants.has(p)).toBe(true);
       });
     });
 
     it('should validate context state integrity', () => {
       const context = ContextFactory.createBasicContext();
-      
+
       ContextAssertions.assertContextIntegrity(context);
       ContextAssertions.assertValidState(context);
       ContextAssertions.assertParticipantManagement(context);
@@ -146,7 +177,10 @@ describe('Unified Context System', () => {
     it('should limit message history according to configuration', () => {
       const config = ConfigFactory.createBasicConfig({ maxMessageHistory: 5 });
       const limitedContext = createContextManager(config);
-      const context = limitedContext.getOrCreateContext('test-agent-1', 'user-1');
+      const context = limitedContext.getOrCreateContext(
+        'test-agent-1',
+        'user-1'
+      );
 
       // Add more messages than the limit
       for (let i = 0; i < 10; i++) {
@@ -160,13 +194,15 @@ describe('Unified Context System', () => {
 
     it('should update last active timestamp on message addition', () => {
       const initialTime = context.lastActive;
-      
+
       // Wait a small amount to ensure timestamp difference
-      await new Promise(resolve => setTimeout(resolve, 1));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1));
+
       contextManager.addMessage(context, 'user-1', 'New message');
-      
-      expect(context.lastActive.getTime()).toBeGreaterThan(initialTime.getTime());
+
+      expect(context.lastActive.getTime()).toBeGreaterThan(
+        initialTime.getTime()
+      );
     });
 
     it('should extract and track topics from messages', () => {
@@ -177,7 +213,7 @@ describe('Unified Context System', () => {
         'Database design is important for programming',
       ];
 
-      messagesWithTopics.forEach(message => {
+      messagesWithTopics.forEach((message) => {
         contextManager.addMessage(context, 'user-1', message);
       });
 
@@ -189,7 +225,9 @@ describe('Unified Context System', () => {
       );
 
       // Programming should have the highest mentions
-      const programmingTopic = context.topics.find(t => t.topic === 'programming');
+      const programmingTopic = context.topics.find(
+        (t) => t.topic === 'programming'
+      );
       expect(programmingTopic?.mentions).toBeGreaterThan(1);
     });
 
@@ -200,7 +238,7 @@ describe('Unified Context System', () => {
         'Can you explain recursion?',
       ];
 
-      questions.forEach(question => {
+      questions.forEach((question) => {
         contextManager.addMessage(context, 'user-1', question);
       });
 
@@ -214,18 +252,23 @@ describe('Unified Context System', () => {
     it('should update conversation mood based on emotions', () => {
       // Add positive emotion messages
       contextManager.addMessage(context, 'user-1', 'This is great!', 'happy');
-      contextManager.addMessage(context, 'user-1', 'Excellent work!', 'excited');
-      
+      contextManager.addMessage(
+        context,
+        'user-1',
+        'Excellent work!',
+        'excited'
+      );
+
       expect(['positive', 'neutral']).toContain(context.state.mood);
 
       // Reset context for negative test
       context.messages = [];
       context.state.mood = 'neutral';
-      
+
       // Add negative emotion messages
       contextManager.addMessage(context, 'user-1', 'This is terrible.', 'sad');
       contextManager.addMessage(context, 'user-1', 'I am frustrated.', 'angry');
-      
+
       expect(['negative', 'neutral']).toContain(context.state.mood);
     });
 
@@ -251,11 +294,19 @@ describe('Unified Context System', () => {
 
     beforeEach(() => {
       context = contextManager.getOrCreateContext('test-agent-1', 'user-1');
-      
+
       // Add some test data
       contextManager.addMessage(context, 'user-1', 'I love programming!');
-      contextManager.addMessage(context, 'test-agent-1', 'That\'s great to hear!');
-      contextManager.addMessage(context, 'user-1', 'Can you help with JavaScript?');
+      contextManager.addMessage(
+        context,
+        'test-agent-1',
+        "That's great to hear!"
+      );
+      contextManager.addMessage(
+        context,
+        'user-1',
+        'Can you help with JavaScript?'
+      );
     });
 
     it('should generate accurate context summaries', () => {
@@ -266,7 +317,9 @@ describe('Unified Context System', () => {
       expect(summary!.mood).toBe(context.state.mood);
       expect(summary!.phase).toBe(context.state.phase);
       expect(summary!.recentMessages).toHaveLength(3);
-      expect(summary!.pendingQuestions).toContain('Can you help with JavaScript?');
+      expect(summary!.pendingQuestions).toContain(
+        'Can you help with JavaScript?'
+      );
     });
 
     it('should return null for non-existent context summary', () => {
@@ -276,13 +329,14 @@ describe('Unified Context System', () => {
 
     it('should get active context for agent', () => {
       const activeContext = contextManager.getActiveContext('test-agent-1');
-      
+
       expect(activeContext).not.toBeNull();
       expect(activeContext!.id).toBe(context.id);
     });
 
     it('should return null for agent with no active context', () => {
-      const activeContext = contextManager.getActiveContext('non-existent-agent');
+      const activeContext =
+        contextManager.getActiveContext('non-existent-agent');
       expect(activeContext).toBeNull();
     });
   });
@@ -290,7 +344,7 @@ describe('Unified Context System', () => {
   describe('Context Lifecycle Management', () => {
     it('should switch between contexts for an agent', () => {
       const agentId = 'test-agent-1';
-      
+
       // Create two contexts
       const context1 = contextManager.getOrCreateContext(agentId, 'user-1');
       const context2 = contextManager.getOrCreateContext(agentId, 'user-2');
@@ -306,7 +360,10 @@ describe('Unified Context System', () => {
 
     it('should fail to switch to non-existent context', () => {
       const agentId = 'test-agent-1';
-      const switched = contextManager.switchContext(agentId, 'non-existent-context');
+      const switched = contextManager.switchContext(
+        agentId,
+        'non-existent-context'
+      );
       expect(switched).toBe(false);
     });
 
@@ -318,11 +375,11 @@ describe('Unified Context System', () => {
 
     it('should merge contexts successfully', () => {
       const agentId = 'test-agent-1';
-      
+
       // Create two contexts with different data
       const primary = contextManager.getOrCreateContext(agentId, 'user-1');
       contextManager.addMessage(primary, 'user-1', 'Primary message');
-      
+
       const secondary = contextManager.getOrCreateContext(agentId, 'user-2');
       contextManager.addMessage(secondary, 'user-2', 'Secondary message');
 
@@ -334,7 +391,7 @@ describe('Unified Context System', () => {
       expect(merged!.participants.has('user-1')).toBe(true);
       expect(merged!.participants.has('user-2')).toBe(true);
       expect(merged!.messages).toHaveLength(2);
-      
+
       // Secondary context should be removed
       expect(contextManager.getActiveContext(agentId)?.id).toBe(primary.id);
     });
@@ -342,8 +399,11 @@ describe('Unified Context System', () => {
     it('should handle context expiration and cleanup', () => {
       const config = ConfigFactory.createRestrictiveConfig(); // 1 minute duration
       const expiringManager = createContextManager(config);
-      
-      const context = expiringManager.getOrCreateContext('test-agent-1', 'user-1');
+
+      const context = expiringManager.getOrCreateContext(
+        'test-agent-1',
+        'user-1'
+      );
       const contextId = context.id;
 
       // Manually set context as expired
@@ -362,11 +422,15 @@ describe('Unified Context System', () => {
     beforeEach(() => {
       agent = AgentFactory.createBasicAgent();
       context = contextManager.getOrCreateContext(agent.id, 'user-1');
-      
+
       // Add some conversation data
       contextManager.addMessage(context, 'user-1', 'I love programming!');
-      contextManager.addMessage(context, agent.id, 'That\'s wonderful!');
-      contextManager.addMessage(context, 'user-1', 'Can you teach me JavaScript?');
+      contextManager.addMessage(context, agent.id, "That's wonderful!");
+      contextManager.addMessage(
+        context,
+        'user-1',
+        'Can you teach me JavaScript?'
+      );
     });
 
     it('should preserve context to memory when conditions are met', async () => {
@@ -385,23 +449,37 @@ describe('Unified Context System', () => {
     });
 
     it('should not preserve context to memory when disabled', async () => {
-      const config = ConfigFactory.createBasicConfig({ persistToMemory: false });
+      const config = ConfigFactory.createBasicConfig({
+        persistToMemory: false,
+      });
       const nonPersistingManager = createContextManager(config);
-      const testContext = nonPersistingManager.getOrCreateContext(agent.id, 'user-1');
+      const testContext = nonPersistingManager.getOrCreateContext(
+        agent.id,
+        'user-1'
+      );
 
-      const memory = await nonPersistingManager.preserveToMemory(agent, testContext.id);
+      const memory = await nonPersistingManager.preserveToMemory(
+        agent,
+        testContext.id
+      );
       expect(memory).toBeNull();
     });
 
     it('should not preserve context to memory when importance is too low', async () => {
       const config = ConfigFactory.createBasicConfig({ memoryImportance: 0.9 }); // Very high threshold
       const selectiveManager = createContextManager(config);
-      const lowImportanceContext = selectiveManager.getOrCreateContext(agent.id, 'user-1');
-      
+      const lowImportanceContext = selectiveManager.getOrCreateContext(
+        agent.id,
+        'user-1'
+      );
+
       // Add minimal interaction
       selectiveManager.addMessage(lowImportanceContext, 'user-1', 'Hi');
 
-      const memory = await selectiveManager.preserveToMemory(agent, lowImportanceContext.id);
+      const memory = await selectiveManager.preserveToMemory(
+        agent,
+        lowImportanceContext.id
+      );
       expect(memory).toBeNull();
     });
   });
@@ -410,12 +488,25 @@ describe('Unified Context System', () => {
     it('should respect maxTopics configuration', () => {
       const config = ConfigFactory.createBasicConfig({ maxTopics: 3 });
       const limitedManager = createContextManager(config);
-      const context = limitedManager.getOrCreateContext('test-agent-1', 'user-1');
+      const context = limitedManager.getOrCreateContext(
+        'test-agent-1',
+        'user-1'
+      );
 
       // Add messages with many different topics
-      const topics = ['programming', 'javascript', 'typescript', 'react', 'nodejs'];
-      topics.forEach(topic => {
-        limitedManager.addMessage(context, 'user-1', `I love ${topic} development`);
+      const topics = [
+        'programming',
+        'javascript',
+        'typescript',
+        'react',
+        'nodejs',
+      ];
+      topics.forEach((topic) => {
+        limitedManager.addMessage(
+          context,
+          'user-1',
+          `I love ${topic} development`
+        );
       });
 
       expect(context.topics.length).toBeLessThanOrEqual(3);
@@ -426,7 +517,11 @@ describe('Unified Context System', () => {
       const basicManager = createContextManager(config);
       const context = basicManager.getOrCreateContext('test-agent-1', 'user-1');
 
-      basicManager.addMessage(context, 'user-1', 'What is your favorite programming language?');
+      basicManager.addMessage(
+        context,
+        'user-1',
+        'What is your favorite programming language?'
+      );
 
       const message = context.messages[0];
       expect(message.intent).toBeUndefined();
@@ -458,7 +553,10 @@ describe('Unified Context System', () => {
     });
 
     it('should process messages efficiently', async () => {
-      const context = contextManager.getOrCreateContext('test-agent-1', 'user-1');
+      const context = contextManager.getOrCreateContext(
+        'test-agent-1',
+        'user-1'
+      );
 
       await PerformanceAssertions.assertExecutionTime(
         () => {
@@ -472,8 +570,11 @@ describe('Unified Context System', () => {
     });
 
     it('should retrieve context summaries quickly', async () => {
-      const context = contextManager.getOrCreateContext('test-agent-1', 'user-1');
-      
+      const context = contextManager.getOrCreateContext(
+        'test-agent-1',
+        'user-1'
+      );
+
       // Add some data first
       for (let i = 0; i < 10; i++) {
         contextManager.addMessage(context, 'user-1', `Message ${i}`);
@@ -491,11 +592,18 @@ describe('Unified Context System', () => {
     });
 
     it('should handle large message histories efficiently', async () => {
-      const context = contextManager.getOrCreateContext('test-agent-1', 'user-1');
-      
+      const context = contextManager.getOrCreateContext(
+        'test-agent-1',
+        'user-1'
+      );
+
       // Add a large number of messages
       for (let i = 0; i < 1000; i++) {
-        contextManager.addMessage(context, `user-${i % 10}`, `This is message ${i} about topic ${i % 20}`);
+        contextManager.addMessage(
+          context,
+          `user-${i % 10}`,
+          `This is message ${i} about topic ${i % 20}`
+        );
       }
 
       // Operations should still be fast
@@ -511,10 +619,13 @@ describe('Unified Context System', () => {
 
     it('should not have memory leaks with many contexts', async () => {
       const initialMemory = process.memoryUsage().heapUsed;
-      
+
       // Create and use many contexts
       for (let i = 0; i < 1000; i++) {
-        const context = contextManager.getOrCreateContext(`agent-${i}`, `user-${i}`);
+        const context = contextManager.getOrCreateContext(
+          `agent-${i}`,
+          `user-${i}`
+        );
         for (let j = 0; j < 10; j++) {
           contextManager.addMessage(context, `user-${i}`, `Message ${j}`);
         }
@@ -535,8 +646,11 @@ describe('Unified Context System', () => {
 
   describe('Edge Cases and Error Handling', () => {
     it('should handle empty messages gracefully', () => {
-      const context = contextManager.getOrCreateContext('test-agent-1', 'user-1');
-      
+      const context = contextManager.getOrCreateContext(
+        'test-agent-1',
+        'user-1'
+      );
+
       expect(() => {
         contextManager.addMessage(context, 'user-1', '');
       }).not.toThrow();
@@ -546,9 +660,12 @@ describe('Unified Context System', () => {
     });
 
     it('should handle extremely long messages', () => {
-      const context = contextManager.getOrCreateContext('test-agent-1', 'user-1');
+      const context = contextManager.getOrCreateContext(
+        'test-agent-1',
+        'user-1'
+      );
       const longMessage = 'A'.repeat(10000); // 10KB message
-      
+
       expect(() => {
         contextManager.addMessage(context, 'user-1', longMessage);
       }).not.toThrow();
@@ -557,31 +674,40 @@ describe('Unified Context System', () => {
     });
 
     it('should handle special characters in messages', () => {
-      const context = contextManager.getOrCreateContext('test-agent-1', 'user-1');
-      const specialMessage = '🚀 Hello! @user #hashtag $symbol 100% "quoted" <xml> [array]';
-      
+      const context = contextManager.getOrCreateContext(
+        'test-agent-1',
+        'user-1'
+      );
+      const specialMessage =
+        '🚀 Hello! @user #hashtag $symbol 100% "quoted" <xml> [array]';
+
       contextManager.addMessage(context, 'user-1', specialMessage);
-      
+
       expect(context.messages[0].content).toBe(specialMessage);
     });
 
     it('should handle concurrent access safely', async () => {
       const agentId = 'test-agent-1';
       const participantId = 'user-1';
-      
-      const operations = Array.from({ length: 50 }, (_, i) => 
-        () => {
-          const context = contextManager.getOrCreateContext(agentId, participantId);
-          contextManager.addMessage(context, participantId, `Concurrent message ${i}`);
-          return contextManager.getContextSummary(context.id);
-        }
-      );
+
+      const operations = Array.from({ length: 50 }, (_, i) => () => {
+        const context = contextManager.getOrCreateContext(
+          agentId,
+          participantId
+        );
+        contextManager.addMessage(
+          context,
+          participantId,
+          `Concurrent message ${i}`
+        );
+        return contextManager.getContextSummary(context.id);
+      });
 
       // All operations should complete without errors
-      const results = await Promise.all(operations.map(op => op()));
-      
+      const results = await Promise.all(operations.map((op) => op()));
+
       expect(results).toHaveLength(50);
-      expect(results.every(result => result !== null)).toBe(true);
+      expect(results.every((result) => result !== null)).toBe(true);
     });
 
     it('should handle invalid agent IDs gracefully', () => {

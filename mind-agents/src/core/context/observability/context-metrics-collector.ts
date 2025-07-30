@@ -5,10 +5,10 @@
 
 import { EventEmitter } from 'events';
 import { performance } from 'perf_hooks';
-import type { 
+import type {
   ContextMetricsCollector,
   ContextMetrics,
-  ContextObservabilityConfig
+  ContextObservabilityConfig,
 } from '../../../types/context/context-observability.ts';
 import type { ObservabilityMetrics } from '../../../types/observability/index.ts';
 import { runtimeLogger } from '../../../utils/logger.ts';
@@ -35,7 +35,10 @@ interface ContextInstanceMetrics {
 /**
  * Context metrics collector with Prometheus-compatible output
  */
-export class ContextMetricsCollectorImpl extends EventEmitter implements ContextMetricsCollector {
+export class ContextMetricsCollectorImpl
+  extends EventEmitter
+  implements ContextMetricsCollector
+{
   private metrics = new Map<string, MetricEntry[]>();
   private contextInstances = new Map<string, ContextInstanceMetrics>();
   private config: ContextObservabilityConfig['metrics'];
@@ -45,7 +48,7 @@ export class ContextMetricsCollectorImpl extends EventEmitter implements Context
   constructor(config: ContextObservabilityConfig['metrics']) {
     super();
     this.config = config;
-    
+
     if (config.enabled) {
       this.startCollection();
     }
@@ -60,7 +63,9 @@ export class ContextMetricsCollectorImpl extends EventEmitter implements Context
     }
 
     if (this.contextInstances.has(contextId)) {
-      runtimeLogger.warn('Metrics collection already started for context', { contextId });
+      runtimeLogger.warn('Metrics collection already started for context', {
+        contextId,
+      });
       return;
     }
 
@@ -74,12 +79,14 @@ export class ContextMetricsCollectorImpl extends EventEmitter implements Context
       qualityScore: 1.0,
       errorCount: 0,
       successCount: 0,
-      startTime: new Date()
+      startTime: new Date(),
     };
 
     this.contextInstances.set(contextId, metrics);
 
-    runtimeLogger.debug('Started metrics collection for context', { contextId });
+    runtimeLogger.debug('Started metrics collection for context', {
+      contextId,
+    });
     this.emit('collection_started', { contextId });
   }
 
@@ -89,7 +96,9 @@ export class ContextMetricsCollectorImpl extends EventEmitter implements Context
   async stopCollection(contextId: string): Promise<void> {
     const metrics = this.contextInstances.get(contextId);
     if (!metrics) {
-      runtimeLogger.warn('Attempted to stop non-existent metrics collection', { contextId });
+      runtimeLogger.warn('Attempted to stop non-existent metrics collection', {
+        contextId,
+      });
       return;
     }
 
@@ -98,14 +107,22 @@ export class ContextMetricsCollectorImpl extends EventEmitter implements Context
     // Record final metrics
     this.recordMetric(contextId, 'context_lifetime_ms', metrics.lifetimeMs);
     this.recordMetric(contextId, 'context_total_accesses', metrics.accessCount);
-    this.recordMetric(contextId, 'context_total_transformations', metrics.transformationCount);
-    this.recordMetric(contextId, 'context_final_quality_score', metrics.qualityScore);
+    this.recordMetric(
+      contextId,
+      'context_total_transformations',
+      metrics.transformationCount
+    );
+    this.recordMetric(
+      contextId,
+      'context_final_quality_score',
+      metrics.qualityScore
+    );
 
-    runtimeLogger.debug('Stopped metrics collection for context', { 
+    runtimeLogger.debug('Stopped metrics collection for context', {
       contextId,
       lifetimeMs: metrics.lifetimeMs,
       totalAccesses: metrics.accessCount,
-      totalTransformations: metrics.transformationCount
+      totalTransformations: metrics.transformationCount,
     });
 
     this.emit('collection_stopped', { contextId, metrics });
@@ -121,9 +138,9 @@ export class ContextMetricsCollectorImpl extends EventEmitter implements Context
    * Record a metric value
    */
   recordMetric(
-    contextId: string, 
-    metric: string, 
-    value: number, 
+    contextId: string,
+    metric: string,
+    value: number,
     labels: Record<string, string> = {}
   ): void {
     if (!this.config.enabled) return;
@@ -132,7 +149,7 @@ export class ContextMetricsCollectorImpl extends EventEmitter implements Context
     const entry: MetricEntry = {
       value,
       timestamp: new Date(),
-      labels: { context_id: contextId, ...labels }
+      labels: { context_id: contextId, ...labels },
     };
 
     if (!this.metrics.has(metricKey)) {
@@ -151,7 +168,7 @@ export class ContextMetricsCollectorImpl extends EventEmitter implements Context
     const contextMetrics = this.contextInstances.get(contextId);
     if (contextMetrics) {
       contextMetrics.lastActivity = new Date();
-      
+
       // Update specific counters
       switch (metric) {
         case 'context_access':
@@ -180,11 +197,11 @@ export class ContextMetricsCollectorImpl extends EventEmitter implements Context
       this.emit('slow_operation', { contextId, metric, value });
     }
 
-    runtimeLogger.debug('Metric recorded', { 
-      contextId, 
-      metric, 
+    runtimeLogger.debug('Metric recorded', {
+      contextId,
+      metric,
       value: typeof value === 'number' ? value.toFixed(2) : value,
-      labels 
+      labels,
     });
   }
 
@@ -235,14 +252,24 @@ export class ContextMetricsCollectorImpl extends EventEmitter implements Context
     dataSize: number,
     success: boolean
   ): void {
-    const labels = { 
-      accessor, 
+    const labels = {
+      accessor,
       access_type: accessType,
-      success: success.toString()
+      success: success.toString(),
     };
 
-    this.recordMetric(contextId, 'context_access_duration_ms', duration, labels);
-    this.recordMetric(contextId, 'context_access_data_size_bytes', dataSize, labels);
+    this.recordMetric(
+      contextId,
+      'context_access_duration_ms',
+      duration,
+      labels
+    );
+    this.recordMetric(
+      contextId,
+      'context_access_data_size_bytes',
+      dataSize,
+      labels
+    );
     this.recordMetric(contextId, 'context_access_total', 1, labels);
 
     if (success) {
@@ -263,19 +290,45 @@ export class ContextMetricsCollectorImpl extends EventEmitter implements Context
     duration: number,
     success: boolean
   ): void {
-    const labels = { 
+    const labels = {
       transformation_type: transformationType,
-      success: success.toString()
+      success: success.toString(),
     };
 
-    const compressionRatio = inputSize > 0 ? (outputSize / inputSize) : 1;
-    const dataReduction = inputSize > 0 ? ((inputSize - outputSize) / inputSize) : 0;
+    const compressionRatio = inputSize > 0 ? outputSize / inputSize : 1;
+    const dataReduction =
+      inputSize > 0 ? (inputSize - outputSize) / inputSize : 0;
 
-    this.recordMetric(contextId, 'context_transformation_duration_ms', duration, labels);
-    this.recordMetric(contextId, 'context_transformation_input_size_bytes', inputSize, labels);
-    this.recordMetric(contextId, 'context_transformation_output_size_bytes', outputSize, labels);
-    this.recordMetric(contextId, 'context_transformation_compression_ratio', compressionRatio, labels);
-    this.recordMetric(contextId, 'context_transformation_data_reduction', dataReduction, labels);
+    this.recordMetric(
+      contextId,
+      'context_transformation_duration_ms',
+      duration,
+      labels
+    );
+    this.recordMetric(
+      contextId,
+      'context_transformation_input_size_bytes',
+      inputSize,
+      labels
+    );
+    this.recordMetric(
+      contextId,
+      'context_transformation_output_size_bytes',
+      outputSize,
+      labels
+    );
+    this.recordMetric(
+      contextId,
+      'context_transformation_compression_ratio',
+      compressionRatio,
+      labels
+    );
+    this.recordMetric(
+      contextId,
+      'context_transformation_data_reduction',
+      dataReduction,
+      labels
+    );
     this.recordMetric(contextId, 'context_transformation_total', 1, labels);
 
     if (success) {
@@ -295,20 +348,30 @@ export class ContextMetricsCollectorImpl extends EventEmitter implements Context
     duration: number,
     dataSize: number
   ): void {
-    const labels = { 
+    const labels = {
       source_context: sourceContextId,
       target_context: targetContextId,
-      flow_type: flowType
+      flow_type: flowType,
     };
 
-    this.recordMetric(sourceContextId, 'context_flow_duration_ms', duration, labels);
-    this.recordMetric(sourceContextId, 'context_flow_data_size_bytes', dataSize, labels);
+    this.recordMetric(
+      sourceContextId,
+      'context_flow_duration_ms',
+      duration,
+      labels
+    );
+    this.recordMetric(
+      sourceContextId,
+      'context_flow_data_size_bytes',
+      dataSize,
+      labels
+    );
     this.recordMetric(sourceContextId, 'context_flow_total', 1, labels);
 
     // Also record on target context
     this.recordMetric(targetContextId, 'context_flow_received_total', 1, {
       source_context: sourceContextId,
-      flow_type: flowType
+      flow_type: flowType,
     });
   }
 
@@ -329,7 +392,8 @@ export class ContextMetricsCollectorImpl extends EventEmitter implements Context
     this.recordMetric(contextId, 'context_quality_relevance', relevance);
     this.recordMetric(contextId, 'context_quality_reliability', reliability);
 
-    const overallScore = (completeness + consistency + freshness + relevance + reliability) / 5;
+    const overallScore =
+      (completeness + consistency + freshness + relevance + reliability) / 5;
     this.recordMetric(contextId, 'context_quality_score', overallScore);
   }
 
@@ -345,7 +409,7 @@ export class ContextMetricsCollectorImpl extends EventEmitter implements Context
     }, this.config.collectionIntervalMs);
 
     runtimeLogger.debug('Started periodic metrics collection', {
-      intervalMs: this.config.collectionIntervalMs
+      intervalMs: this.config.collectionIntervalMs,
     });
   }
 
@@ -374,14 +438,19 @@ export class ContextMetricsCollectorImpl extends EventEmitter implements Context
     this.recordMetric('system', 'memory_rss_bytes', memUsage.rss);
 
     // Context system metrics
-    this.recordMetric('system', 'context_instances_total', this.contextInstances.size);
+    this.recordMetric(
+      'system',
+      'context_instances_total',
+      this.contextInstances.size
+    );
     this.recordMetric('system', 'context_metrics_total', this.metrics.size);
 
     // Calculate active contexts (accessed in last 5 minutes)
     const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
-    const activeContexts = Array.from(this.contextInstances.values())
-      .filter(ctx => ctx.lastActivity > fiveMinutesAgo).length;
-    
+    const activeContexts = Array.from(this.contextInstances.values()).filter(
+      (ctx) => ctx.lastActivity > fiveMinutesAgo
+    ).length;
+
     this.recordMetric('system', 'context_instances_active', activeContexts);
 
     // Performance metrics
@@ -398,8 +467,10 @@ export class ContextMetricsCollectorImpl extends EventEmitter implements Context
 
     for (const [metricKey, entries] of this.metrics.entries()) {
       const originalLength = entries.length;
-      const filteredEntries = entries.filter(entry => entry.timestamp > cutoffTime);
-      
+      const filteredEntries = entries.filter(
+        (entry) => entry.timestamp > cutoffTime
+      );
+
       if (filteredEntries.length !== originalLength) {
         this.metrics.set(metricKey, filteredEntries);
         cleanedCount += originalLength - filteredEntries.length;
@@ -419,18 +490,20 @@ export class ContextMetricsCollectorImpl extends EventEmitter implements Context
   /**
    * Build comprehensive context metrics
    */
-  private buildContextMetrics(contextMetrics: ContextInstanceMetrics[]): ContextMetrics {
+  private buildContextMetrics(
+    contextMetrics: ContextInstanceMetrics[]
+  ): ContextMetrics {
     const instances: Record<string, any> = {};
     const typeStats: Record<string, any> = {};
 
-    contextMetrics.forEach(ctx => {
+    contextMetrics.forEach((ctx) => {
       instances[ctx.contextId] = {
         lifetimeMs: ctx.lifetimeMs,
         accessCount: ctx.accessCount,
         transformationCount: ctx.transformationCount,
         memoryUsage: ctx.memoryUsage,
         lastActivity: ctx.lastActivity,
-        qualityScore: ctx.qualityScore
+        qualityScore: ctx.qualityScore,
       };
 
       // Aggregate by type (inferred from ID)
@@ -441,14 +514,15 @@ export class ContextMetricsCollectorImpl extends EventEmitter implements Context
           averageLifetime: 0,
           averageSize: 0,
           errorRate: 0,
-          throughput: 0
+          throughput: 0,
         };
       }
 
       typeStats[type].instanceCount++;
       typeStats[type].averageLifetime += ctx.lifetimeMs;
       typeStats[type].averageSize += ctx.memoryUsage;
-      typeStats[type].errorRate += ctx.errorCount / Math.max(1, ctx.accessCount + ctx.transformationCount);
+      typeStats[type].errorRate +=
+        ctx.errorCount / Math.max(1, ctx.accessCount + ctx.transformationCount);
       typeStats[type].throughput += ctx.accessCount + ctx.transformationCount;
     });
 
@@ -468,14 +542,15 @@ export class ContextMetricsCollectorImpl extends EventEmitter implements Context
         memory: {
           heapUsed: process.memoryUsage().heapUsed,
           heapTotal: process.memoryUsage().heapTotal,
-          usage: process.memoryUsage().heapUsed / process.memoryUsage().heapTotal
+          usage:
+            process.memoryUsage().heapUsed / process.memoryUsage().heapTotal,
         },
         cpu: {
           usage: 0, // Would need external library
-          loadAverage: require('os').loadavg()
+          loadAverage: require('os').loadavg(),
         },
         uptime: process.uptime() * 1000,
-        eventLoopDelay: 0 // Would need external library
+        eventLoopDelay: 0, // Would need external library
       },
       agents: {},
       portals: {},
@@ -483,15 +558,15 @@ export class ContextMetricsCollectorImpl extends EventEmitter implements Context
       memory: {},
       health: {
         overall: 'healthy',
-        components: {}
+        components: {},
       },
       observability: {
         logEntriesPerSecond: 0,
         metricsCollected: this.metrics.size,
         tracesGenerated: 0,
         alertsTriggered: 0,
-        overheadMs: 0
-      }
+        overheadMs: 0,
+      },
     };
 
     return {
@@ -504,11 +579,11 @@ export class ContextMetricsCollectorImpl extends EventEmitter implements Context
           activeFlows,
           averageFlowTime: this.getAverageFlowTime(),
           bottleneckCount: this.getBottleneckCount(),
-          flowEfficiency: this.getFlowEfficiency()
+          flowEfficiency: this.getFlowEfficiency(),
         },
         transformations: this.getTransformationStats(),
-        sharing: this.getSharingStats()
-      }
+        sharing: this.getSharingStats(),
+      },
     };
   }
 
@@ -519,19 +594,31 @@ export class ContextMetricsCollectorImpl extends EventEmitter implements Context
     const lines: string[] = [];
 
     // Context instance metrics
-    lines.push('# HELP context_instances_total Total number of context instances');
+    lines.push(
+      '# HELP context_instances_total Total number of context instances'
+    );
     lines.push('# TYPE context_instances_total gauge');
-    lines.push(`context_instances_total ${Object.keys(metrics.context.instances).length}`);
+    lines.push(
+      `context_instances_total ${Object.keys(metrics.context.instances).length}`
+    );
 
     // Context type metrics
     Object.entries(metrics.context.types).forEach(([type, stats]) => {
-      lines.push(`# HELP context_type_instances_total Context instances by type`);
+      lines.push(
+        `# HELP context_type_instances_total Context instances by type`
+      );
       lines.push(`# TYPE context_type_instances_total gauge`);
-      lines.push(`context_type_instances_total{type="${type}"} ${stats.instanceCount}`);
+      lines.push(
+        `context_type_instances_total{type="${type}"} ${stats.instanceCount}`
+      );
 
-      lines.push(`# HELP context_type_average_lifetime_ms Average lifetime by type`);
+      lines.push(
+        `# HELP context_type_average_lifetime_ms Average lifetime by type`
+      );
       lines.push(`# TYPE context_type_average_lifetime_ms gauge`);
-      lines.push(`context_type_average_lifetime_ms{type="${type}"} ${stats.averageLifetime}`);
+      lines.push(
+        `context_type_average_lifetime_ms{type="${type}"} ${stats.averageLifetime}`
+      );
 
       lines.push(`# HELP context_type_error_rate Error rate by type`);
       lines.push(`# TYPE context_type_error_rate gauge`);
@@ -549,12 +636,16 @@ export class ContextMetricsCollectorImpl extends EventEmitter implements Context
 
     lines.push('# HELP context_flow_efficiency Flow efficiency ratio');
     lines.push('# TYPE context_flow_efficiency gauge');
-    lines.push(`context_flow_efficiency ${metrics.context.flow.flowEfficiency}`);
+    lines.push(
+      `context_flow_efficiency ${metrics.context.flow.flowEfficiency}`
+    );
 
     // System metrics
     lines.push('# HELP system_memory_heap_used_bytes Heap memory used');
     lines.push('# TYPE system_memory_heap_used_bytes gauge');
-    lines.push(`system_memory_heap_used_bytes ${metrics.system.memory.heapUsed}`);
+    lines.push(
+      `system_memory_heap_used_bytes ${metrics.system.memory.heapUsed}`
+    );
 
     lines.push('# HELP system_uptime_ms System uptime in milliseconds');
     lines.push('# TYPE system_uptime_ms counter');
@@ -577,40 +668,45 @@ export class ContextMetricsCollectorImpl extends EventEmitter implements Context
 
   private getTotalFlows(): number {
     return Array.from(this.metrics.keys())
-      .filter(key => key.includes('context_flow_total'))
+      .filter((key) => key.includes('context_flow_total'))
       .reduce((sum, key) => {
         const entries = this.metrics.get(key) || [];
-        return sum + entries.reduce((entrySum, entry) => entrySum + entry.value, 0);
+        return (
+          sum + entries.reduce((entrySum, entry) => entrySum + entry.value, 0)
+        );
       }, 0);
   }
 
   private getActiveFlows(): number {
     const recentTime = new Date(Date.now() - 60000); // Last minute
     return Array.from(this.metrics.keys())
-      .filter(key => key.includes('context_flow_total'))
+      .filter((key) => key.includes('context_flow_total'))
       .reduce((sum, key) => {
         const entries = this.metrics.get(key) || [];
-        const recentEntries = entries.filter(entry => entry.timestamp > recentTime);
+        const recentEntries = entries.filter(
+          (entry) => entry.timestamp > recentTime
+        );
         return sum + recentEntries.length;
       }, 0);
   }
 
   private getAverageFlowTime(): number {
     const flowTimes = Array.from(this.metrics.keys())
-      .filter(key => key.includes('context_flow_duration_ms'))
-      .flatMap(key => this.metrics.get(key) || [])
-      .map(entry => entry.value);
+      .filter((key) => key.includes('context_flow_duration_ms'))
+      .flatMap((key) => this.metrics.get(key) || [])
+      .map((entry) => entry.value);
 
-    return flowTimes.length > 0 ? 
-      flowTimes.reduce((sum, time) => sum + time, 0) / flowTimes.length : 0;
+    return flowTimes.length > 0
+      ? flowTimes.reduce((sum, time) => sum + time, 0) / flowTimes.length
+      : 0;
   }
 
   private getBottleneckCount(): number {
     // Count slow operations as bottlenecks
     const slowOperations = Array.from(this.metrics.keys())
-      .filter(key => key.includes('duration_ms'))
-      .flatMap(key => this.metrics.get(key) || [])
-      .filter(entry => entry.value > 1000); // > 1 second
+      .filter((key) => key.includes('duration_ms'))
+      .flatMap((key) => this.metrics.get(key) || [])
+      .filter((entry) => entry.value > 1000); // > 1 second
 
     return slowOperations.length;
   }
@@ -618,10 +714,12 @@ export class ContextMetricsCollectorImpl extends EventEmitter implements Context
   private getFlowEfficiency(): number {
     const totalOperations = this.getTotalFlows();
     const successfulOperations = Array.from(this.metrics.keys())
-      .filter(key => key.includes('success'))
+      .filter((key) => key.includes('success'))
       .reduce((sum, key) => {
         const entries = this.metrics.get(key) || [];
-        return sum + entries.reduce((entrySum, entry) => entrySum + entry.value, 0);
+        return (
+          sum + entries.reduce((entrySum, entry) => entrySum + entry.value, 0)
+        );
       }, 0);
 
     return totalOperations > 0 ? successfulOperations / totalOperations : 1;
@@ -629,21 +727,22 @@ export class ContextMetricsCollectorImpl extends EventEmitter implements Context
 
   private getTransformationStats(): Record<string, any> {
     const stats: Record<string, any> = {};
-    
+
     // Group transformation metrics by type
     Array.from(this.metrics.keys())
-      .filter(key => key.includes('context_transformation_'))
-      .forEach(key => {
+      .filter((key) => key.includes('context_transformation_'))
+      .forEach((key) => {
         const entries = this.metrics.get(key) || [];
-        entries.forEach(entry => {
-          const transformationType = entry.labels.transformation_type || 'unknown';
+        entries.forEach((entry) => {
+          const transformationType =
+            entry.labels.transformation_type || 'unknown';
           if (!stats[transformationType]) {
             stats[transformationType] = {
               count: 0,
               successRate: 0,
               averageDuration: 0,
               dataReduction: 0,
-              errorCount: 0
+              errorCount: 0,
             };
           }
 
@@ -674,14 +773,16 @@ export class ContextMetricsCollectorImpl extends EventEmitter implements Context
   }
 
   private getSharingStats(): any {
-    const shareCount = Array.from(this.contextInstances.values())
-      .reduce((sum, ctx) => sum + (ctx.accessCount > 1 ? 1 : 0), 0);
+    const shareCount = Array.from(this.contextInstances.values()).reduce(
+      (sum, ctx) => sum + (ctx.accessCount > 1 ? 1 : 0),
+      0
+    );
 
     return {
       shareCount,
       concurrentShares: this.getActiveFlows(),
       isolationViolations: 0, // Would need specific tracking
-      sharingEfficiency: shareCount > 0 ? this.getFlowEfficiency() : 1
+      sharingEfficiency: shareCount > 0 ? this.getFlowEfficiency() : 1,
     };
   }
 
@@ -705,7 +806,7 @@ export class ContextMetricsCollectorImpl extends EventEmitter implements Context
       contextInstancesCount: this.contextInstances.size,
       uptime: Date.now() - this.startTime,
       config: this.config,
-      isCollecting: !!this.collectionInterval
+      isCollecting: !!this.collectionInterval,
     };
   }
 }

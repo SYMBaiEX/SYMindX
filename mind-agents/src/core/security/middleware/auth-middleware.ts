@@ -64,7 +64,7 @@ export class AuthMiddleware {
       apiKeyHeader: config.apiKeyHeader || 'X-API-Key',
       apiKeyHashAlgorithm: config.apiKeyHashAlgorithm || 'sha256',
       requireHttps: config.requireHttps !== false,
-      trustedProxies: config.trustedProxies || []
+      trustedProxies: config.trustedProxies || [],
     };
   }
 
@@ -78,7 +78,7 @@ export class AuthMiddleware {
         if (this.config.requireHttps && !this.isSecureConnection(req)) {
           return res.status(403).json({
             error: 'HTTPS required',
-            code: 'HTTPS_REQUIRED'
+            code: 'HTTPS_REQUIRED',
           });
         }
 
@@ -111,7 +111,7 @@ export class AuthMiddleware {
               if (!session) {
                 return res.status(401).json({
                   error: 'Session expired or invalid',
-                  code: 'SESSION_INVALID'
+                  code: 'SESSION_INVALID',
                 });
               }
 
@@ -124,13 +124,13 @@ export class AuthMiddleware {
         if (!authenticated) {
           return res.status(401).json({
             error: 'Authentication required',
-            code: 'AUTH_REQUIRED'
+            code: 'AUTH_REQUIRED',
           });
         }
 
         // Check required scopes
         if (requiredScopes.length > 0) {
-          const hasRequiredScopes = requiredScopes.every(scope =>
+          const hasRequiredScopes = requiredScopes.every((scope) =>
             req.user!.scopes.includes(scope)
           );
 
@@ -139,7 +139,7 @@ export class AuthMiddleware {
               error: 'Insufficient permissions',
               code: 'INSUFFICIENT_SCOPES',
               required: requiredScopes,
-              provided: req.user!.scopes
+              provided: req.user!.scopes,
             });
           }
         }
@@ -149,7 +149,7 @@ export class AuthMiddleware {
         console.error('Authentication error:', error);
         res.status(500).json({
           error: 'Authentication error',
-          code: 'AUTH_ERROR'
+          code: 'AUTH_ERROR',
         });
       }
     };
@@ -162,9 +162,10 @@ export class AuthMiddleware {
     return async (req: Request, res: Response, next: NextFunction) => {
       try {
         // Try authentication but don't fail if not authenticated
-        const authResult = await this.authenticateJWT(req) || 
-                          await this.authenticateApiKey(req);
-        
+        const authResult =
+          (await this.authenticateJWT(req)) ||
+          (await this.authenticateApiKey(req));
+
         if (authResult?.success) {
           req.user = authResult.user;
         }
@@ -212,8 +213,8 @@ export class AuthMiddleware {
       user: {
         id: keyData.userId,
         scopes: keyData.scopes,
-        apiKeyId: keyData.id
-      }
+        apiKeyId: keyData.id,
+      },
     };
   }
 
@@ -224,21 +225,23 @@ export class AuthMiddleware {
     success: boolean;
     user?: any;
   }> {
-    const token = this.jwtManager.extractTokenFromHeader(req.get('authorization'));
+    const token = this.jwtManager.extractTokenFromHeader(
+      req.get('authorization')
+    );
     if (!token) {
       return { success: false };
     }
 
     try {
       const payload = await this.jwtManager.verifyToken(token, 'access');
-      
+
       return {
         success: true,
         user: {
           id: payload.sub,
           scopes: payload.scopes || [],
-          sessionId: payload.jti
-        }
+          sessionId: payload.jti,
+        },
       };
     } catch (error) {
       return { success: false };
@@ -266,7 +269,7 @@ export class AuthMiddleware {
       scopes,
       createdAt: new Date(),
       expiresAt: expiresIn ? new Date(Date.now() + expiresIn) : undefined,
-      metadata: {}
+      metadata: {},
     };
 
     this.apiKeys.set(hashedKey, keyData);
@@ -307,7 +310,7 @@ export class AuthMiddleware {
     if (this.config.trustedProxies.length > 0) {
       const clientIp = this.getClientIp(req);
       const isTrustedProxy = this.config.trustedProxies.includes(clientIp);
-      
+
       if (isTrustedProxy) {
         // Check X-Forwarded-Proto header
         const proto = req.get('x-forwarded-proto');

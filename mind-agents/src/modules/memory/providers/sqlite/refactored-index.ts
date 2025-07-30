@@ -1,6 +1,6 @@
 /**
  * Refactored SQLite Memory Provider for SYMindX
- * 
+ *
  * Example of how to use the shared components to eliminate duplication
  */
 
@@ -33,7 +33,7 @@ import {
   ResourceManager,
   type ConnectionConfig,
   type ArchiverConfig,
-  type PoolConfig
+  type PoolConfig,
 } from '../../../shared';
 
 export interface SqliteMemoryConfig extends BaseMemoryConfig {
@@ -46,7 +46,8 @@ export interface SqliteMemoryConfig extends BaseMemoryConfig {
 }
 
 // Create the enhanced base class with traits
-const SqliteMemoryProviderBase = MemoryProviderTrait<SqliteMemoryConfig>('1.0.0')(BaseMemoryProvider);
+const SqliteMemoryProviderBase =
+  MemoryProviderTrait<SqliteMemoryConfig>('1.0.0')(BaseMemoryProvider);
 
 export class RefactoredSqliteMemoryProvider extends SqliteMemoryProviderBase {
   private connection: any;
@@ -59,7 +60,7 @@ export class RefactoredSqliteMemoryProvider extends SqliteMemoryProviderBase {
       type: 'sqlite',
       name: 'SQLite Memory Provider',
       version: '1.0.0',
-      description: 'SQLite-based memory storage with shared components'
+      description: 'SQLite-based memory storage with shared components',
     });
 
     // Configure the module
@@ -70,14 +71,14 @@ export class RefactoredSqliteMemoryProvider extends SqliteMemoryProviderBase {
       enableCompression: true,
       maxCacheSize: 1000,
       vacuumIntervalMs: 3600000, // 1 hour
-      ...config
+      ...config,
     });
 
     // Initialize resource manager
     this.resourceManager = new ResourceManager({
       maxConnections: 10,
       maxMemoryMB: 256,
-      cleanupIntervalMs: 60000
+      cleanupIntervalMs: 60000,
     });
 
     // Add initialization handlers
@@ -95,29 +96,29 @@ export class RefactoredSqliteMemoryProvider extends SqliteMemoryProviderBase {
 
   private async initializeConnection(): Promise<void> {
     const config = this.getConfig();
-    
+
     const connectionConfig: ConnectionConfig = {
       type: DatabaseType.SQLITE,
-      dbPath: config.dbPath
+      dbPath: config.dbPath,
     };
 
     this.connection = await DatabaseConnection.getConnection(connectionConfig);
-    
+
     // Initialize database schema
     await this.initializeSchema();
-    
+
     runtimeLogger.info(`SQLite memory provider connected to: ${config.dbPath}`);
   }
 
   private async initializeArchiver(): Promise<void> {
     const config = this.getConfig();
-    
+
     if (config.archival && config.archival.length > 0) {
       const archiverConfig: ArchiverConfig = {
         strategies: config.archival,
         enableCompression: config.enableCompression,
         maxCompressionRatio: 0.7,
-        retentionDays: 365
+        retentionDays: 365,
       };
 
       this.archiver = new SqliteArchiver(archiverConfig, this.connection);
@@ -127,14 +128,14 @@ export class RefactoredSqliteMemoryProvider extends SqliteMemoryProviderBase {
 
   private async initializeSharedPool(): Promise<void> {
     const config = this.getConfig();
-    
+
     if (config.sharedMemory) {
       const poolConfig: PoolConfig = {
         poolId: `sqlite_pool_${Date.now()}`,
         sharedConfig: config.sharedMemory,
         maxPoolSize: 1000,
         enableVersioning: true,
-        enablePermissions: true
+        enablePermissions: true,
       };
 
       this.sharedPool = new SqliteMemoryPool(poolConfig, this.connection);
@@ -188,14 +189,19 @@ export class RefactoredSqliteMemoryProvider extends SqliteMemoryProviderBase {
     }
   }
 
-  private async checkDatabaseHealth(): Promise<{ status: 'healthy' | 'unhealthy'; details?: any }> {
+  private async checkDatabaseHealth(): Promise<{
+    status: 'healthy' | 'unhealthy';
+    details?: any;
+  }> {
     try {
       await this.connection.query('SELECT 1');
       return { status: 'healthy' };
     } catch (error) {
       return {
         status: 'unhealthy',
-        details: { error: error instanceof Error ? error.message : String(error) }
+        details: {
+          error: error instanceof Error ? error.message : String(error),
+        },
       };
     }
   }
@@ -204,11 +210,11 @@ export class RefactoredSqliteMemoryProvider extends SqliteMemoryProviderBase {
     if (this.sharedPool) {
       await this.sharedPool.saveToStorage();
     }
-    
+
     if (this.connection) {
       await this.connection.close();
     }
-    
+
     await this.resourceManager.shutdown();
   }
 
@@ -225,35 +231,47 @@ export class RefactoredSqliteMemoryProvider extends SqliteMemoryProviderBase {
       agent_id: agentId,
       type: memory.type,
       content: memory.content,
-      embedding: memory.embedding ? Buffer.from(new Float32Array(memory.embedding).buffer) : null,
+      embedding: memory.embedding
+        ? Buffer.from(new Float32Array(memory.embedding).buffer)
+        : null,
       metadata: JSON.stringify(memory.metadata || {}),
       importance: memory.importance || 0.5,
       timestamp: memory.timestamp.getTime(),
       tags: JSON.stringify(memory.tags || []),
       duration: memory.duration || MemoryDuration.LONG_TERM,
-      expires_at: memory.expiresAt?.getTime() || null
+      expires_at: memory.expiresAt?.getTime() || null,
     };
 
-    await this.connection.execute(`
+    await this.connection.execute(
+      `
       INSERT OR REPLACE INTO memories 
       (id, agent_id, type, content, embedding, metadata, importance, timestamp, tags, duration, expires_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, Object.values(data));
+    `,
+      Object.values(data)
+    );
 
     // Update FTS table if enabled
     const config = this.getConfig();
     if (config.enableFTS) {
-      await this.connection.execute(`
+      await this.connection.execute(
+        `
         INSERT OR REPLACE INTO memories_fts (rowid, content, tags)
         SELECT rowid, content, tags FROM memories WHERE id = ?
-      `, [memory.id]);
+      `,
+        [memory.id]
+      );
     }
 
     this.updateResourceUsage(`memory_${memory.id}`);
     this.emit('memory:stored', { agentId, memory });
   }
 
-  async retrieve(agentId: string, query: string, limit = 10): Promise<MemoryRecord[]> {
+  async retrieve(
+    agentId: string,
+    query: string,
+    limit = 10
+  ): Promise<MemoryRecord[]> {
     this.ensureNotDisposed();
     await this.ensureInitialized();
 
@@ -294,7 +312,9 @@ export class RefactoredSqliteMemoryProvider extends SqliteMemoryProviderBase {
     }
 
     const rows = await this.connection.query(sql, params);
-    const memories = rows.map((row: MemoryRow) => this.parseMemoryFromStorage(row));
+    const memories = rows.map((row: MemoryRow) =>
+      this.parseMemoryFromStorage(row)
+    );
 
     // Cache the results
     this.setInCache(cacheKey, memories, 60000); // 1 minute cache
@@ -302,7 +322,11 @@ export class RefactoredSqliteMemoryProvider extends SqliteMemoryProviderBase {
     return memories;
   }
 
-  async search(agentId: string, embedding: number[], limit = 10): Promise<MemoryRecord[]> {
+  async search(
+    agentId: string,
+    embedding: number[],
+    limit = 10
+  ): Promise<MemoryRecord[]> {
     this.ensureNotDisposed();
     await this.ensureInitialized();
 
@@ -315,18 +339,24 @@ export class RefactoredSqliteMemoryProvider extends SqliteMemoryProviderBase {
     this.ensureNotDisposed();
     await this.ensureInitialized();
 
-    await this.connection.execute(`
+    await this.connection.execute(
+      `
       DELETE FROM memories WHERE id = ? AND agent_id = ?
-    `, [memoryId, agentId]);
+    `,
+      [memoryId, agentId]
+    );
 
     // Clean up FTS
     const config = this.getConfig();
     if (config.enableFTS) {
-      await this.connection.execute(`
+      await this.connection.execute(
+        `
         DELETE FROM memories_fts WHERE rowid IN (
           SELECT rowid FROM memories WHERE id = ?
         )
-      `, [memoryId]);
+      `,
+        [memoryId]
+      );
     }
 
     this.deleteFromCache(`memory_${memoryId}`);
@@ -337,24 +367,32 @@ export class RefactoredSqliteMemoryProvider extends SqliteMemoryProviderBase {
     this.ensureNotDisposed();
     await this.ensureInitialized();
 
-    await this.connection.execute(`
+    await this.connection.execute(
+      `
       DELETE FROM memories WHERE agent_id = ?
-    `, [agentId]);
+    `,
+      [agentId]
+    );
 
     this.clearCache();
     this.emit('memory:cleared', { agentId });
   }
 
-  async getStats(agentId: string): Promise<{ total: number; byType: Record<string, number> }> {
+  async getStats(
+    agentId: string
+  ): Promise<{ total: number; byType: Record<string, number> }> {
     this.ensureNotDisposed();
     await this.ensureInitialized();
 
-    const rows = await this.connection.query(`
+    const rows = await this.connection.query(
+      `
       SELECT type, COUNT(*) as count
       FROM memories 
       WHERE agent_id = ? AND (expires_at IS NULL OR expires_at > ?)
       GROUP BY type
-    `, [agentId, Date.now()]);
+    `,
+      [agentId, Date.now()]
+    );
 
     const byType: Record<string, number> = {};
     let total = 0;
@@ -371,23 +409,31 @@ export class RefactoredSqliteMemoryProvider extends SqliteMemoryProviderBase {
     this.ensureNotDisposed();
     await this.ensureInitialized();
 
-    const cutoffTime = Date.now() - (retentionDays * 24 * 60 * 60 * 1000);
+    const cutoffTime = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
 
-    await this.connection.execute(`
+    await this.connection.execute(
+      `
       DELETE FROM memories 
       WHERE agent_id = ? 
         AND timestamp < ?
         AND duration != 'permanent'
-    `, [agentId, cutoffTime]);
+    `,
+      [agentId, cutoffTime]
+    );
 
     // Archive if archiver is available
     if (this.archiver) {
-      const oldMemories = await this.connection.query(`
+      const oldMemories = await this.connection.query(
+        `
         SELECT * FROM memories 
         WHERE agent_id = ? AND timestamp < ?
-      `, [agentId, cutoffTime]);
+      `,
+        [agentId, cutoffTime]
+      );
 
-      const memories = oldMemories.map((row: MemoryRow) => this.parseMemoryFromStorage(row));
+      const memories = oldMemories.map((row: MemoryRow) =>
+        this.parseMemoryFromStorage(row)
+      );
       await this.archiver.archive(memories);
     }
 
@@ -400,11 +446,14 @@ export class RefactoredSqliteMemoryProvider extends SqliteMemoryProviderBase {
     fromTier: MemoryTierType,
     toTier: MemoryTierType
   ): Promise<void> {
-    await this.connection.execute(`
+    await this.connection.execute(
+      `
       UPDATE memories 
       SET tier = ?, updated_at = ?
       WHERE id = ? AND agent_id = ?
-    `, [toTier, Date.now(), memoryId, agentId]);
+    `,
+      [toTier, Date.now(), memoryId, agentId]
+    );
   }
 
   async retrieveTier(
@@ -412,12 +461,15 @@ export class RefactoredSqliteMemoryProvider extends SqliteMemoryProviderBase {
     tier: MemoryTierType,
     limit = 10
   ): Promise<MemoryRecord[]> {
-    const rows = await this.connection.query(`
+    const rows = await this.connection.query(
+      `
       SELECT * FROM memories
       WHERE agent_id = ? AND tier = ?
       ORDER BY importance DESC, timestamp DESC
       LIMIT ?
-    `, [agentId, tier, limit]);
+    `,
+      [agentId, tier, limit]
+    );
 
     return rows.map((row: MemoryRow) => this.parseMemoryFromStorage(row));
   }
@@ -425,14 +477,19 @@ export class RefactoredSqliteMemoryProvider extends SqliteMemoryProviderBase {
   async archiveMemories(agentId: string): Promise<void> {
     if (!this.archiver) return;
 
-    const oldMemories = await this.connection.query(`
+    const oldMemories = await this.connection.query(
+      `
       SELECT * FROM memories 
       WHERE agent_id = ? 
         AND timestamp < ?
         AND duration != 'permanent'
-    `, [agentId, Date.now() - (30 * 24 * 60 * 60 * 1000)]); // 30 days
+    `,
+      [agentId, Date.now() - 30 * 24 * 60 * 60 * 1000]
+    ); // 30 days
 
-    const memories = oldMemories.map((row: MemoryRow) => this.parseMemoryFromStorage(row));
+    const memories = oldMemories.map((row: MemoryRow) =>
+      this.parseMemoryFromStorage(row)
+    );
     await this.archiver.archive(memories);
   }
 
@@ -444,9 +501,12 @@ export class RefactoredSqliteMemoryProvider extends SqliteMemoryProviderBase {
     if (!this.sharedPool) return;
 
     for (const memoryId of memoryIds) {
-      const rows = await this.connection.query(`
+      const rows = await this.connection.query(
+        `
         SELECT * FROM memories WHERE id = ? AND agent_id = ?
-      `, [memoryId, agentId]);
+      `,
+        [memoryId, agentId]
+      );
 
       if (rows.length > 0) {
         const memory = this.parseMemoryFromStorage(rows[0]);
@@ -474,7 +534,10 @@ export class RefactoredSqliteMemoryProvider extends SqliteMemoryProviderBase {
  * SQLite-specific archiver implementation
  */
 class SqliteArchiver extends SharedArchiver<any> {
-  constructor(config: ArchiverConfig, private connection: any) {
+  constructor(
+    config: ArchiverConfig,
+    private connection: any
+  ) {
     super(config);
   }
 
@@ -483,10 +546,13 @@ class SqliteArchiver extends SharedArchiver<any> {
   }
 
   protected async cleanupBefore(date: Date): Promise<number> {
-    const result = await this.connection.execute(`
+    const result = await this.connection.execute(
+      `
       DELETE FROM memories 
       WHERE timestamp < ? AND duration = 'archived'
-    `, [date.getTime()]);
+    `,
+      [date.getTime()]
+    );
 
     return result.changes || 0;
   }
@@ -496,7 +562,10 @@ class SqliteArchiver extends SharedArchiver<any> {
  * SQLite-specific memory pool implementation
  */
 class SqliteMemoryPool extends SharedMemoryPool<any> {
-  constructor(config: PoolConfig, private connection: any) {
+  constructor(
+    config: PoolConfig,
+    private connection: any
+  ) {
     super(config);
   }
 
@@ -508,24 +577,30 @@ class SqliteMemoryPool extends SharedMemoryPool<any> {
     const entry = this.entries.get(key);
     if (!entry) return;
 
-    await this.connection.execute(`
+    await this.connection.execute(
+      `
       INSERT OR REPLACE INTO shared_memories 
       (id, agent_id, memory_data, permissions, shared_at, version)
       VALUES (?, ?, ?, ?, ?, ?)
-    `, [
-      entry.id,
-      entry.agentId,
-      JSON.stringify(entry.memory),
-      JSON.stringify(entry.permissions),
-      entry.sharedAt.getTime(),
-      entry.version
-    ]);
+    `,
+      [
+        entry.id,
+        entry.agentId,
+        JSON.stringify(entry.memory),
+        JSON.stringify(entry.permissions),
+        entry.sharedAt.getTime(),
+        entry.version,
+      ]
+    );
   }
 
   protected async removePersistedEntry(key: string): Promise<void> {
-    await this.connection.execute(`
+    await this.connection.execute(
+      `
       DELETE FROM shared_memories WHERE id = ?
-    `, [key]);
+    `,
+      [key]
+    );
   }
 
   async loadFromStorage(): Promise<void> {
@@ -557,7 +632,7 @@ class SqliteMemoryPool extends SharedMemoryPool<any> {
         sharedAt: new Date(row.shared_at),
         version: row.version,
         lastAccessedAt: new Date(row.last_accessed_at),
-        accessCount: row.access_count
+        accessCount: row.access_count,
       };
 
       this.entries.set(row.id, entry);
@@ -573,6 +648,8 @@ class SqliteMemoryPool extends SharedMemoryPool<any> {
 /**
  * Factory function to create SQLite memory provider
  */
-export function createSqliteMemoryProvider(config: SqliteMemoryConfig): RefactoredSqliteMemoryProvider {
+export function createSqliteMemoryProvider(
+  config: SqliteMemoryConfig
+): RefactoredSqliteMemoryProvider {
   return new RefactoredSqliteMemoryProvider(config);
 }

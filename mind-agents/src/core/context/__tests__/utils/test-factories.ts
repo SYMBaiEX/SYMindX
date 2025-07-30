@@ -3,7 +3,10 @@
  * @description Test factories for creating mock context objects and test data
  */
 
-import { ConversationContext, ContextManagerConfig } from '../../context-manager.js';
+import {
+  ConversationContext,
+  ContextManagerConfig,
+} from '../../context-manager.js';
 import { Agent, AgentStatus } from '../../../types/agent.js';
 import { MemoryRecord } from '../../../types/memory.js';
 import { MemoryType, MemoryDuration } from '../../../types/enums.js';
@@ -12,7 +15,9 @@ import { MemoryType, MemoryDuration } from '../../../types/enums.js';
  * Factory for creating test conversation contexts
  */
 export class ContextFactory {
-  static createBasicContext(overrides: Partial<ConversationContext> = {}): ConversationContext {
+  static createBasicContext(
+    overrides: Partial<ConversationContext> = {}
+  ): ConversationContext {
     const baseContext: ConversationContext = {
       id: 'test-ctx-1',
       agentId: 'test-agent-1',
@@ -36,9 +41,11 @@ export class ContextFactory {
     return { ...baseContext, ...overrides };
   }
 
-  static createContextWithMessages(messageCount: number = 5): ConversationContext {
+  static createContextWithMessages(
+    messageCount: number = 5
+  ): ConversationContext {
     const context = this.createBasicContext();
-    
+
     for (let i = 0; i < messageCount; i++) {
       context.messages.push({
         from: i % 2 === 0 ? 'user-1' : 'test-agent-1',
@@ -54,7 +61,7 @@ export class ContextFactory {
 
   static createContextWithTopics(topics: string[]): ConversationContext {
     const context = this.createBasicContext();
-    
+
     context.topics = topics.map((topic, index) => ({
       topic,
       mentions: index + 1,
@@ -77,9 +84,11 @@ export class ContextFactory {
     });
   }
 
-  static createActiveContextWithQuestions(questionCount: number = 3): ConversationContext {
+  static createActiveContextWithQuestions(
+    questionCount: number = 3
+  ): ConversationContext {
     const context = this.createBasicContext();
-    
+
     for (let i = 0; i < questionCount; i++) {
       context.pendingQuestions.push({
         question: `What about topic ${i + 1}?`,
@@ -91,9 +100,14 @@ export class ContextFactory {
     return context;
   }
 
-  static createMultiParticipantContext(participantCount: number = 3): ConversationContext {
-    const participants = Array.from({ length: participantCount }, (_, i) => `user-${i + 1}`);
-    
+  static createMultiParticipantContext(
+    participantCount: number = 3
+  ): ConversationContext {
+    const participants = Array.from(
+      { length: participantCount },
+      (_, i) => `user-${i + 1}`
+    );
+
     return this.createBasicContext({
       participants: new Set(participants),
       primaryParticipant: participants[0],
@@ -105,7 +119,9 @@ export class ContextFactory {
  * Factory for creating test context manager configurations
  */
 export class ConfigFactory {
-  static createBasicConfig(overrides: Partial<ContextManagerConfig> = {}): ContextManagerConfig {
+  static createBasicConfig(
+    overrides: Partial<ContextManagerConfig> = {}
+  ): ContextManagerConfig {
     return {
       maxContextDuration: 3600000, // 1 hour
       maxMessageHistory: 100,
@@ -192,7 +208,7 @@ export class AgentFactory {
       extensions: [],
       config: {} as any, // Mock agent config
       lastUpdate: new Date(),
-      
+
       // Mock lifecycle methods
       initialize: async () => ({
         success: true,
@@ -224,7 +240,7 @@ export class AgentFactory {
         success: true,
         timestamp: new Date(),
       }),
-      
+
       ...overrides,
     } as Agent;
   }
@@ -237,7 +253,10 @@ export class TestDataGenerator {
   /**
    * Generate random conversation messages
    */
-  static generateMessages(count: number, participants: string[] = ['user-1', 'agent-1']) {
+  static generateMessages(
+    count: number,
+    participants: string[] = ['user-1', 'agent-1']
+  ) {
     const messages = [];
     const sampleContents = [
       'Hello there!',
@@ -255,7 +274,8 @@ export class TestDataGenerator {
         from: participants[i % participants.length],
         content: sampleContents[i % sampleContents.length],
         timestamp: new Date(Date.now() - (count - i) * 60000), // 1 minute intervals
-        emotion: i % 4 === 0 ? ['happy', 'curious', 'confident'][i % 3] : undefined,
+        emotion:
+          i % 4 === 0 ? ['happy', 'curious', 'confident'][i % 3] : undefined,
         intent: i % 3 === 0 ? 'question' : 'statement',
       });
     }
@@ -268,9 +288,20 @@ export class TestDataGenerator {
    */
   static generateTopics(count: number) {
     const sampleTopics = [
-      'programming', 'testing', 'javascript', 'typescript', 'react',
-      'nodejs', 'database', 'api', 'frontend', 'backend',
-      'algorithm', 'datastructure', 'performance', 'security',
+      'programming',
+      'testing',
+      'javascript',
+      'typescript',
+      'react',
+      'nodejs',
+      'database',
+      'api',
+      'frontend',
+      'backend',
+      'algorithm',
+      'datastructure',
+      'performance',
+      'security',
     ];
 
     return sampleTopics.slice(0, count).map((topic, index) => ({
@@ -284,10 +315,18 @@ export class TestDataGenerator {
   /**
    * Generate performance test data
    */
-  static generateLargeContextData(messageCount: number, participantCount: number) {
-    const participants = Array.from({ length: participantCount }, (_, i) => `user-${i + 1}`);
+  static generateLargeContextData(
+    messageCount: number,
+    participantCount: number
+  ) {
+    const participants = Array.from(
+      { length: participantCount },
+      (_, i) => `user-${i + 1}`
+    );
     const messages = this.generateMessages(messageCount, participants);
-    const topics = this.generateTopics(Math.min(50, Math.floor(messageCount / 10)));
+    const topics = this.generateTopics(
+      Math.min(50, Math.floor(messageCount / 10))
+    );
 
     return { participants, messages, topics };
   }

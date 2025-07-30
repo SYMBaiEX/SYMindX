@@ -1,6 +1,6 @@
 /**
  * Context Enrichment Types for SYMindX
- * 
+ *
  * This module defines types for the dynamic context enrichment system that
  * transforms basic context into rich, actionable context for agents.
  */
@@ -378,7 +378,9 @@ export interface EnrichmentError {
 /**
  * Factory function type for creating enrichers
  */
-export type EnricherFactory = (config?: Partial<EnricherConfig>) => Promise<ContextEnricher>;
+export type EnricherFactory = (
+  config?: Partial<EnricherConfig>
+) => Promise<ContextEnricher>;
 
 /**
  * Registry entry for enrichers

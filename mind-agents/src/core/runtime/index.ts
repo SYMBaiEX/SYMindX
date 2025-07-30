@@ -1,6 +1,6 @@
 /**
  * Runtime Module Exports
- * 
+ *
  * Centralized exports for all runtime modules to enable clean imports
  * and maintain a clear API surface.
  */
@@ -10,10 +10,10 @@ export { AgentManager } from './AgentManager';
 export { ConfigurationManager } from './ConfigurationManager';
 export { BootstrapManager } from './BootstrapManager';
 export { IntegrationCoordinator } from './IntegrationCoordinator';
-export { 
-  RuntimeMetricsCollector, 
-  type MetricsCollectorConfig, 
-  type PerformanceTimer 
+export {
+  RuntimeMetricsCollector,
+  type MetricsCollectorConfig,
+  type PerformanceTimer,
 } from './RuntimeMetrics';
 
 // Re-export commonly used types for convenience

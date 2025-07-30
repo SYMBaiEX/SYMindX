@@ -1,6 +1,6 @@
 /**
  * Environment Context Enricher for SYMindX
- * 
+ *
  * This enricher adds system environment information, runtime metrics,
  * and agent status data to provide contextual awareness of the execution
  * environment and system state.
@@ -31,7 +31,7 @@ export interface EnvironmentEnricherConfig {
 
 /**
  * Environment Context Enricher
- * 
+ *
  * Enriches context with system and runtime environment information,
  * providing agents with awareness of their execution context.
  */
@@ -64,7 +64,7 @@ export class EnvironmentContextEnricher extends BaseContextEnricher {
     );
 
     this.agentProvider = agentProvider;
-    
+
     // Default environment enricher configuration
     this.enricherConfig = {
       includeSystemMetrics: true,
@@ -103,7 +103,7 @@ export class EnvironmentContextEnricher extends BaseContextEnricher {
     try {
       // Test agent provider
       const agent = this.agentProvider();
-      
+
       this.log('info', 'Environment context enricher initialized', {
         agentAvailable: agent !== null,
         configuration: this.enricherConfig,
@@ -114,7 +114,8 @@ export class EnvironmentContextEnricher extends BaseContextEnricher {
         message: 'Environment context enricher initialized successfully',
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       return {
         success: false,
         error: errorMessage,
@@ -125,12 +126,14 @@ export class EnvironmentContextEnricher extends BaseContextEnricher {
   /**
    * Perform environment-based context enrichment
    */
-  protected async doEnrich(request: EnrichmentRequest): Promise<Record<string, unknown>> {
+  protected async doEnrich(
+    request: EnrichmentRequest
+  ): Promise<Record<string, unknown>> {
     // Check if we can use cached metrics
     const now = Date.now();
     if (
       this.metricsCache.data &&
-      (now - this.metricsCache.timestamp) < this.enricherConfig.metricsCacheMs
+      now - this.metricsCache.timestamp < this.enricherConfig.metricsCacheMs
     ) {
       return {
         environmentContext: this.metricsCache.data,
@@ -140,7 +143,7 @@ export class EnvironmentContextEnricher extends BaseContextEnricher {
 
     // Gather fresh environment data
     const environmentData = await this.gatherEnvironmentData(request.agentId);
-    
+
     // Update cache
     this.metricsCache = {
       data: environmentData,
@@ -172,7 +175,7 @@ export class EnvironmentContextEnricher extends BaseContextEnricher {
 
       // Test agent provider
       const agent = this.agentProvider();
-      
+
       return {
         success: true,
         message: 'Environment context enricher is healthy',
@@ -187,7 +190,8 @@ export class EnvironmentContextEnricher extends BaseContextEnricher {
         },
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       return {
         success: false,
         error: errorMessage,
@@ -202,13 +206,14 @@ export class EnvironmentContextEnricher extends BaseContextEnricher {
     try {
       // Clear metrics cache
       this.metricsCache = { data: null, timestamp: 0 };
-      
+
       return {
         success: true,
         message: 'Environment context enricher disposed successfully',
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       return {
         success: false,
         error: errorMessage,
@@ -221,7 +226,9 @@ export class EnvironmentContextEnricher extends BaseContextEnricher {
   /**
    * Gather comprehensive environment data
    */
-  private async gatherEnvironmentData(agentId: string): Promise<EnvironmentEnrichmentData> {
+  private async gatherEnvironmentData(
+    agentId: string
+  ): Promise<EnvironmentEnrichmentData> {
     const environmentData: EnvironmentEnrichmentData = {
       systemInfo: {
         platform: '',
@@ -272,7 +279,7 @@ export class EnvironmentContextEnricher extends BaseContextEnricher {
   private collectSystemInfo(): EnvironmentEnrichmentData['systemInfo'] {
     try {
       const memoryUsage = process.memoryUsage();
-      
+
       return {
         platform: process.platform,
         nodeVersion: process.version,
@@ -289,7 +296,7 @@ export class EnvironmentContextEnricher extends BaseContextEnricher {
       this.log('warn', 'Failed to collect system info', {
         error: error instanceof Error ? error.message : String(error),
       });
-      
+
       return {
         platform: 'unknown',
         nodeVersion: 'unknown',
@@ -308,10 +315,12 @@ export class EnvironmentContextEnricher extends BaseContextEnricher {
   /**
    * Collect agent-specific information
    */
-  private async collectAgentInfo(agentId: string): Promise<EnvironmentEnrichmentData['agentInfo']> {
+  private async collectAgentInfo(
+    agentId: string
+  ): Promise<EnvironmentEnrichmentData['agentInfo']> {
     try {
       const agent = this.agentProvider();
-      
+
       if (!agent) {
         return {
           id: agentId,
@@ -335,7 +344,7 @@ export class EnvironmentContextEnricher extends BaseContextEnricher {
         agentId,
         error: error instanceof Error ? error.message : String(error),
       });
-      
+
       return {
         id: agentId,
         status: 'error',
@@ -365,11 +374,15 @@ export class EnvironmentContextEnricher extends BaseContextEnricher {
     if ('status' in agent && typeof agent.status === 'string') {
       return agent.status;
     }
-    
-    if ('state' in agent && typeof agent.state === 'object' && agent.state !== null) {
+
+    if (
+      'state' in agent &&
+      typeof agent.state === 'object' &&
+      agent.state !== null
+    ) {
       return 'active'; // Assume active if state exists
     }
-    
+
     return 'unknown';
   }
 
@@ -381,8 +394,12 @@ export class EnvironmentContextEnricher extends BaseContextEnricher {
     if ('lastActivity' in agent && agent.lastActivity instanceof Date) {
       return agent.lastActivity;
     }
-    
-    if ('state' in agent && typeof agent.state === 'object' && agent.state !== null) {
+
+    if (
+      'state' in agent &&
+      typeof agent.state === 'object' &&
+      agent.state !== null
+    ) {
       const state = agent.state as any;
       if (state.lastActivity instanceof Date) {
         return state.lastActivity;
@@ -391,7 +408,7 @@ export class EnvironmentContextEnricher extends BaseContextEnricher {
         return state.timestamp;
       }
     }
-    
+
     // Default to current time if no last activity found
     return new Date();
   }
@@ -401,25 +418,27 @@ export class EnvironmentContextEnricher extends BaseContextEnricher {
    */
   private getActiveModules(agent: Agent): string[] {
     const modules: string[] = [];
-    
+
     try {
       // Check for various module types that might be active
       if ('extensions' in agent && Array.isArray(agent.extensions)) {
-        modules.push(...agent.extensions.map(ext => `extension:${ext.id || 'unknown'}`));
+        modules.push(
+          ...agent.extensions.map((ext) => `extension:${ext.id || 'unknown'}`)
+        );
       }
-      
+
       if ('memory' in agent && agent.memory) {
         modules.push('memory');
       }
-      
+
       if ('emotion' in agent && agent.emotion) {
         modules.push('emotion');
       }
-      
+
       if ('cognition' in agent && agent.cognition) {
         modules.push('cognition');
       }
-      
+
       if ('portals' in agent && agent.portals) {
         modules.push('portals');
       }
@@ -429,7 +448,7 @@ export class EnvironmentContextEnricher extends BaseContextEnricher {
         error: error instanceof Error ? error.message : String(error),
       });
     }
-    
+
     return modules;
   }
 
@@ -439,7 +458,7 @@ export class EnvironmentContextEnricher extends BaseContextEnricher {
   private generateSessionId(): string {
     // In a real implementation, this might be managed by the runtime
     // For now, generate a simple session ID based on process start time
-    const startTime = Date.now() - (process.uptime() * 1000);
+    const startTime = Date.now() - process.uptime() * 1000;
     return `session_${Math.floor(startTime / 1000)}`;
   }
 
@@ -453,7 +472,9 @@ export class EnvironmentContextEnricher extends BaseContextEnricher {
   /**
    * Flatten environment data for direct context access
    */
-  private flattenEnvironmentData(data: EnvironmentEnrichmentData): Record<string, unknown> {
+  private flattenEnvironmentData(
+    data: EnvironmentEnrichmentData
+  ): Record<string, unknown> {
     return {
       systemInfo: data.systemInfo,
       agentInfo: data.agentInfo,
@@ -469,29 +490,35 @@ export class EnvironmentContextEnricher extends BaseContextEnricher {
   /**
    * Calculate confidence score for environment enrichment
    */
-  protected calculateConfidence(context: Context, enrichedData: Record<string, unknown>): number {
-    const environmentData = enrichedData.environmentContext as EnvironmentEnrichmentData;
-    
+  protected calculateConfidence(
+    context: Context,
+    enrichedData: Record<string, unknown>
+  ): number {
+    const environmentData =
+      enrichedData.environmentContext as EnvironmentEnrichmentData;
+
     if (!environmentData) {
       return 0.1;
     }
 
     let confidenceScore = 0.5; // Base confidence
-    
+
     // Increase confidence based on data availability
     if (environmentData.systemInfo.platform !== 'unknown') {
       confidenceScore += 0.2;
     }
-    
-    if (environmentData.agentInfo.status !== 'unknown' && 
-        environmentData.agentInfo.status !== 'not_found') {
+
+    if (
+      environmentData.agentInfo.status !== 'unknown' &&
+      environmentData.agentInfo.status !== 'not_found'
+    ) {
       confidenceScore += 0.2;
     }
-    
+
     if (environmentData.agentInfo.activeModules.length > 0) {
       confidenceScore += 0.1;
     }
-    
+
     return Math.min(0.95, confidenceScore);
   }
 }

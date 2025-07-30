@@ -14,6 +14,13 @@ export interface Theme {
     warning: string;
     success: string;
     info: string;
+    border: string;
+    borderBright: string;
+    borderDim: string;
+    textDim: string;
+    glitch: string;
+    danger: string;
+    matrix: string;
   };
   borders: {
     default: string;
@@ -39,6 +46,13 @@ const defaultTheme: Theme = {
     warning: '#FFAA00',
     success: '#00FF88',
     info: '#00AAFF',
+    border: '#444444',
+    borderBright: '#666666', 
+    borderDim: '#222222',
+    textDim: '#888888',
+    glitch: '#FF0066',
+    danger: '#FF0000',
+    matrix: '#00FF00',
   },
   borders: {
     default: '─│┌┐└┘',
@@ -78,6 +92,10 @@ class ThemeEngine {
 
   getAnimationEasing(): string {
     return this.theme.animations.easing;
+  }
+
+  areAnimationsEnabled(): boolean {
+    return true; // Always enabled for now
   }
 }
 

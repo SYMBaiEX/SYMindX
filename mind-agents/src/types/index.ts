@@ -239,7 +239,6 @@ export * from './lifecycle';
 // EventSource types (for server-sent events)
 // Note: eventsource.d.ts is a type declaration file, not exported
 
-
 /**
  * Enhanced result types that replace the generic Result<T>
  * These provide better type safety and more detailed information
@@ -325,7 +324,6 @@ export interface SecurityContext {
   trustedPlugin: boolean;
 }
 
-
 /**
  * Dependency validation result
  */
@@ -334,7 +332,6 @@ export interface DependencyValidation {
   missing: string[];
   circular: string[];
 }
-
 
 /**
  * Type-safe event emitter with proper result types
@@ -358,7 +355,6 @@ export interface TypedEventEmitter<T extends Record<string, unknown>> {
   removeAllListeners<K extends keyof T>(event?: K): OperationResult;
 }
 
-
 /**
  * Module registry with proper result types
  */
@@ -372,7 +368,6 @@ export interface ModuleRegistryV5 {
   validate(name: string): ValidationResult;
   healthCheck(name: string): HealthCheckResult;
 }
-
 
 /**
  * Health monitoring service
@@ -393,7 +388,6 @@ export interface HealthMonitoringService {
   unsubscribe(callback: (result: HealthCheckResult) => void): OperationResult;
 }
 
-
 /**
  * Configuration provider with proper result types
  */
@@ -412,7 +406,6 @@ export interface ConfigProvider {
   unwatch(key: string): OperationResult;
 }
 
-
 /**
  * Logger interface with proper result types
  */
@@ -430,7 +423,6 @@ export interface LoggerV5 {
   flush(): Promise<OperationResult>;
 }
 
-
 /**
  * Disposable interface with proper result types
  */
@@ -444,7 +436,6 @@ export interface AsyncDisposable {
     metadata?: Record<string, unknown>;
   };
 }
-
 
 /**
  * Factory registry with proper result types
@@ -629,6 +620,9 @@ export * from './api-versioning';
 export * from './validation-utils';
 export * from './agent-interfaces';
 
+// Multi-modal types
+export * from './multimodal';
+
 // Compliance types
 export type {
   ComplianceConfig,
@@ -688,3 +682,144 @@ export type {
   HIPAAComplianceReport,
   ComplianceServiceFactory,
 } from './compliance';
+
+// Quantum Security types
+export type {
+  QuantumAlgorithm,
+  QuantumSecurityLevel,
+  QKDConfig,
+  QKDSession,
+  QRNGConfig,
+  QRNGStatus,
+  PQCKeyPair,
+  PQCSignature,
+  PQCEncryptedData,
+  HybridCryptoConfig,
+  HybridKeyPair,
+  ZKProofConfig,
+  ZKProof,
+  ZKAuthenticationChallenge,
+  SMPCConfig,
+  SMPCSession,
+  SMPCParty,
+  DifferentialPrivacyConfig,
+  DPQuery,
+  DPBudget,
+  FederatedLearningConfig,
+  FLRound,
+  FLMetrics,
+  QuantumSecurityService,
+  QuantumReadinessReport,
+  QuantumVulnerability,
+  QuantumMigrationRecommendation,
+  QuantumMigrationTimeline,
+  QuantumSecurityConfig,
+  QuantumSecurityFactory,
+} from './quantum-security';
+
+// AI Act Compliance types
+export type {
+  AIRiskCategory,
+  AISystemPurpose,
+  AIActConfig,
+  AISystemLog,
+  AIEventType,
+  ExplainabilityConfig,
+  ExplainabilityMethod,
+  Explanation,
+  ExplanationFactor,
+  Visualization,
+  Counterfactual,
+  CounterfactualChange,
+  HumanOversightConfig,
+  HumanReview,
+  HumanOversightRequest,
+  BiasDetectionConfig,
+  FairnessMetric,
+  MitigationStrategy,
+  BiasReport,
+  BiasMetric,
+  DetectedBias,
+  MitigationAction,
+  ExplanationRequest,
+  ExplanationResponse,
+  DataQualityConfig,
+  ValidationRule,
+  QualityThreshold,
+  DataQualityReport,
+  DataQualityMetric,
+  DataQualityIssue,
+  DataLineage,
+  TechnicalDocumentation,
+  SystemDescription,
+  OrganizationInfo,
+  DataDocumentation,
+  DatasetInfo,
+  ModelDocumentation,
+  PerformanceDocumentation,
+  RobustnessTest,
+  EfficiencyMetrics,
+  RealWorldMetrics,
+  LimitationDocumentation,
+  FailureMode,
+  OversightDocumentation,
+  UpdateLog,
+  Anomaly,
+  AIActComplianceStatus,
+  ComplianceRequirement,
+  ComplianceViolation,
+  Certification,
+  AIActComplianceService,
+  LogFilter,
+  ValidationResult,
+  ValidationError,
+  ValidationWarning,
+  AIActComplianceReport,
+  AuditPackage,
+  AIActComplianceFactory,
+} from './ai-act-compliance';
+
+// Community ecosystem types
+export * from './community';
+
+// Homomorphic Encryption types
+export type {
+  HEScheme,
+  HESecurityParams,
+  HESecurityLevel,
+  HEKeySet,
+  HEPublicKey,
+  HESecretKey,
+  HERelinKeys,
+  HEGaloisKeys,
+  HEEvaluationKey,
+  HECiphertext,
+  HEMetadata,
+  HEOperation,
+  HEComputation,
+  HEOperationNode,
+  HEResourceUsage,
+  PrivateInferenceConfig,
+  PrivateModel,
+  NeuralArchitecture,
+  NeuralLayer,
+  ActivationType,
+  DataPreprocessor,
+  HEOptimization,
+  PIRConfig,
+  PIRServer,
+  PIRQuery,
+  PIRResponse,
+  PSIConfig,
+  PSISession,
+  PSIParty,
+  SecureAggregationConfig,
+  AggregationSession,
+  EncryptedMemory,
+  EncryptedMemoryQuery,
+  EncryptedMemoryResult,
+  HEPerformanceMetrics,
+  HomomorphicEncryptionService,
+  HomomorphicEncryptionConfig,
+  HomomorphicEncryptionFactory,
+} from './homomorphic-encryption';

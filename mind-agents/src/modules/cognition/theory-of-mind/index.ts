@@ -152,10 +152,7 @@ export class TheoryOfMind {
   /**
    * Update mental model based on observed behavior
    */
-  updateModel(
-    agentId: string,
-    observation: Observation
-  ): void {
+  updateModel(agentId: string, observation: Observation): void {
     const model = this.getModel(agentId);
 
     // Update beliefs based on statements
@@ -437,7 +434,10 @@ export class TheoryOfMind {
   /**
    * Update relationship quality
    */
-  private updateRelationship(model: MentalModel, observation: Observation): void {
+  private updateRelationship(
+    model: MentalModel,
+    observation: Observation
+  ): void {
     // Positive interactions increase rapport
     if (
       observation.message?.toLowerCase().includes('thank') ||

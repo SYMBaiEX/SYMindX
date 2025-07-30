@@ -1,16 +1,16 @@
 /**
  * Configuration Management Usage Examples
- * 
+ *
  * This file demonstrates how to use the unified configuration management
  * system in various scenarios and environments.
  */
 
-import { 
-  config, 
-  configManager, 
-  loadEnvironmentConfig, 
+import {
+  config,
+  configManager,
+  loadEnvironmentConfig,
   configMigrator,
-  UnifiedConfig 
+  UnifiedConfig,
 } from '../index.js';
 
 /**
@@ -24,7 +24,7 @@ export async function basicUsageExample(): Promise<void> {
     await config.init({
       configPath: './config/config.development.json',
       environment: 'development',
-      enableHotReload: true
+      enableHotReload: true,
     });
 
     // Get configuration values
@@ -48,7 +48,6 @@ export async function basicUsageExample(): Promise<void> {
     } else {
       console.log('❌ Configuration errors:', validation.errors);
     }
-
   } catch (error) {
     console.error('Configuration initialization failed:', error);
   }
@@ -62,8 +61,16 @@ export async function secretsManagementExample(): Promise<void> {
 
   try {
     // Store secrets securely
-    await config.storeSecret('OPENAI_API_KEY', 'sk-example-key-12345', 'confidential');
-    await config.storeSecret('DATABASE_PASSWORD', 'super-secret-password', 'secret');
+    await config.storeSecret(
+      'OPENAI_API_KEY',
+      'sk-example-key-12345',
+      'confidential'
+    );
+    await config.storeSecret(
+      'DATABASE_PASSWORD',
+      'super-secret-password',
+      'secret'
+    );
     await config.storeSecret('JWT_SECRET', 'jwt-signing-secret-key', 'secret');
 
     // Retrieve secrets
@@ -77,7 +84,6 @@ export async function secretsManagementExample(): Promise<void> {
     // Check for secrets needing rotation
     const needingRotation = configManager.getSecretsNeedingRotation();
     console.log(`- Secrets needing rotation: ${needingRotation.length}`);
-
   } catch (error) {
     console.error('Secrets management failed:', error);
   }
@@ -92,7 +98,7 @@ export async function environmentConfigExample(): Promise<void> {
   // Development environment
   process.env.NODE_ENV = 'development';
   await loadEnvironmentConfig('./config/config.development.json');
-  
+
   let currentConfig = config.all();
   console.log('Development config:');
   console.log(`- Debug Mode: ${currentConfig.development?.debugMode}`);
@@ -101,7 +107,7 @@ export async function environmentConfigExample(): Promise<void> {
   // Production environment simulation
   process.env.NODE_ENV = 'production';
   await loadEnvironmentConfig('./config/config.production.json');
-  
+
   currentConfig = config.all();
   console.log('\nProduction config:');
   console.log(`- Debug Mode: ${currentConfig.development?.debugMode}`);
@@ -123,17 +129,17 @@ export async function validationExample(): Promise<void> {
 
     // Validate configuration
     const validation = await config.validate();
-    
+
     if (!validation.valid) {
       console.log('❌ Validation failed with errors:');
-      validation.errors.forEach(error => {
+      validation.errors.forEach((error) => {
         console.log(`  - ${error.field}: ${error.message}`);
       });
     }
 
     if (validation.warnings.length > 0) {
       console.log('⚠️  Validation warnings:');
-      validation.warnings.forEach(warning => {
+      validation.warnings.forEach((warning) => {
         console.log(`  - ${warning.field}: ${warning.message}`);
       });
     }
@@ -148,7 +154,6 @@ export async function validationExample(): Promise<void> {
     if (fixedValidation.valid) {
       console.log('✅ Configuration is now valid');
     }
-
   } catch (error) {
     console.error('Validation example failed:', error);
   }
@@ -184,7 +189,6 @@ export async function hotReloadExample(): Promise<void> {
     // Simulate file reload (in real usage, this would happen automatically)
     console.log('Simulating configuration file change...');
     await config.reload();
-
   } catch (error) {
     console.error('Hot reload example failed:', error);
   }
@@ -216,7 +220,6 @@ export async function documentationExample(): Promise<void> {
     console.log('  - ./templates/config.development.json');
     console.log('  - ./templates/config.production.json');
     console.log('  - ./templates/.env.example');
-
   } catch (error) {
     console.error('Documentation generation failed:', error);
   }
@@ -239,11 +242,10 @@ export async function migrationExample(): Promise<void> {
     // Load the migrated configuration
     await config.init({
       configPath: './config/migrated-config.json',
-      environment: 'development'
+      environment: 'development',
     });
 
     console.log('✅ Migrated configuration loaded and validated');
-
   } catch (error) {
     console.error('Configuration migration failed:', error);
   }
@@ -257,7 +259,11 @@ export async function advancedPatternsExample(): Promise<void> {
 
   try {
     // Access advanced features
-    const { configManager: manager, validator, secrets } = configManager.advanced;
+    const {
+      configManager: manager,
+      validator,
+      secrets,
+    } = configManager.advanced;
 
     // Custom validation rules
     validator.addRule({
@@ -270,7 +276,7 @@ export async function advancedPatternsExample(): Promise<void> {
         return false;
       },
       message: 'At least one portal provider must be configured',
-      severity: 'error'
+      severity: 'error',
     });
 
     // Export configuration with different options
@@ -280,17 +286,20 @@ export async function advancedPatternsExample(): Promise<void> {
     // Get configuration sources
     const sources = manager.getSources();
     console.log('Configuration sources:');
-    sources.forEach(source => {
-      console.log(`  - ${source.type}: ${source.path || 'N/A'} (priority: ${source.priority})`);
+    sources.forEach((source) => {
+      console.log(
+        `  - ${source.type}: ${source.path || 'N/A'} (priority: ${source.priority})`
+      );
     });
 
     // Secret metadata
     const secretMetadata = secrets.getSecretMetadata();
     console.log('Secret metadata:');
-    secretMetadata.forEach(meta => {
-      console.log(`  - ${meta.name}: ${meta.classification} (created: ${meta.createdAt.toISOString()})`);
+    secretMetadata.forEach((meta) => {
+      console.log(
+        `  - ${meta.name}: ${meta.classification} (created: ${meta.createdAt.toISOString()})`
+      );
     });
-
   } catch (error) {
     console.error('Advanced patterns example failed:', error);
   }
@@ -308,47 +317,48 @@ export async function multiEnvironmentExample(): Promise<void> {
       runtime: {
         environment: 'development' as const,
         logLevel: 'debug' as const,
-        maxAgents: 5
+        maxAgents: 5,
       },
       development: {
         hotReload: true,
         debugMode: true,
-        verboseLogging: true
+        verboseLogging: true,
       },
       performance: {
         enableMetrics: false,
-        enableProfiling: true
-      }
+        enableProfiling: true,
+      },
     },
     production: {
       runtime: {
         environment: 'production' as const,
         logLevel: 'warn' as const,
-        maxAgents: 50
+        maxAgents: 50,
       },
       development: {
         hotReload: false,
         debugMode: false,
-        verboseLogging: false
+        verboseLogging: false,
       },
       performance: {
         enableMetrics: true,
         enableProfiling: false,
-        memoryLimit: 4096
+        memoryLimit: 4096,
       },
       security: {
         enableAuth: true,
         enableEncryption: true,
         rateLimiting: {
           enabled: true,
-          maxRequests: 1000
-        }
-      }
-    }
+          maxRequests: 1000,
+        },
+      },
+    },
   };
 
   // Apply environment-specific configuration
-  const currentEnv = (process.env.NODE_ENV || 'development') as keyof typeof environments;
+  const currentEnv = (process.env.NODE_ENV ||
+    'development') as keyof typeof environments;
   const envConfig = environments[currentEnv];
 
   // Merge with base configuration
@@ -376,7 +386,7 @@ export async function performanceMonitoringExample(): Promise<void> {
   console.time('Config Load');
   await config.init({
     configPath: './config/config.development.json',
-    environment: 'development'
+    environment: 'development',
   });
   console.timeEnd('Config Load');
 
@@ -413,7 +423,7 @@ export async function runAllExamples(): Promise<void> {
     { name: 'Migration', fn: migrationExample },
     { name: 'Advanced Patterns', fn: advancedPatternsExample },
     { name: 'Multi-Environment', fn: multiEnvironmentExample },
-    { name: 'Performance Monitoring', fn: performanceMonitoringExample }
+    { name: 'Performance Monitoring', fn: performanceMonitoringExample },
   ];
 
   for (const example of examples) {

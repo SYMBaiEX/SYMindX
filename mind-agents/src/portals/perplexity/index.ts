@@ -116,7 +116,7 @@ export class PerplexityPortal extends BasePortal {
   constructor(config: PerplexityConfig) {
     super('perplexity', 'Perplexity', '1.0.0', config);
 
-    this.apiKey = config.apiKey || process.env["PERPLEXITY_API_KEY"] || '';
+    this.apiKey = config.apiKey || process.env['PERPLEXITY_API_KEY'] || '';
     if (!this.apiKey) {
       throw new Error('Perplexity API key is required');
     }
@@ -233,7 +233,8 @@ export class PerplexityPortal extends BasePortal {
       };
 
       // Add optional parameters
-      const maxTokens = options?.maxOutputTokens ?? options?.maxTokens ?? config.maxTokens;
+      const maxTokens =
+        options?.maxOutputTokens ?? options?.maxTokens ?? config.maxTokens;
       if (maxTokens !== undefined) {
         request.max_tokens = maxTokens;
       }
@@ -334,7 +335,8 @@ export class PerplexityPortal extends BasePortal {
       };
 
       // Add optional parameters
-      const maxTokens = options?.maxOutputTokens ?? options?.maxTokens ?? config.maxTokens;
+      const maxTokens =
+        options?.maxOutputTokens ?? options?.maxTokens ?? config.maxTokens;
       if (maxTokens !== undefined) {
         request.max_tokens = maxTokens;
       }

@@ -3,7 +3,7 @@
  * @description Essential utility functions for creating, validating, manipulating,
  * and managing unified context objects. This module provides the foundational
  * operations needed for context management throughout the SYMindX ecosystem.
- * 
+ *
  * @version 1.0.0
  * @author SYMindX Core Team
  */
@@ -43,10 +43,10 @@ import type { Metadata } from '../common.js';
 export namespace ContextCreation {
   /**
    * Creates a new unified context with the specified options
-   * 
+   *
    * @param options - Context creation options
    * @returns New unified context instance
-   * 
+   *
    * @example
    * ```typescript
    * const context = createContext({
@@ -58,14 +58,17 @@ export namespace ContextCreation {
    * });
    * ```
    */
-  export function createContext(options: ContextCreationOptions): UnifiedContext {
+  export function createContext(
+    options: ContextCreationOptions
+  ): UnifiedContext {
     const now = new Date().toISOString() as Timestamp;
     const contextId = randomUUID();
-    
+
     const metadata: ContextMetadata = {
       id: contextId,
       scope: options.scope,
-      priority: options.priority ?? DEFAULT_CONTEXT_SYSTEM_CONFIG.defaultPriority,
+      priority:
+        options.priority ?? DEFAULT_CONTEXT_SYSTEM_CONFIG.defaultPriority,
       createdAt: now,
       lastModified: now,
       source: options.source,
@@ -92,7 +95,7 @@ export namespace ContextCreation {
 
   /**
    * Creates a context from a template with default values
-   * 
+   *
    * @param templateData - Template data for context creation
    * @param overrides - Optional overrides for template defaults
    * @returns New context instance based on template
@@ -114,7 +117,7 @@ export namespace ContextCreation {
 
   /**
    * Creates a child context that inherits from a parent
-   * 
+   *
    * @param parent - Parent context to inherit from
    * @param childOptions - Options for child context creation
    * @returns New child context instance
@@ -132,7 +135,7 @@ export namespace ContextCreation {
 
   /**
    * Creates an empty context with minimal metadata
-   * 
+   *
    * @param scope - Context scope
    * @param source - Context source identifier
    * @returns Minimal context instance
@@ -155,11 +158,11 @@ export namespace ContextCreation {
 export namespace ContextValidation {
   /**
    * Validates a unified context against standard rules
-   * 
+   *
    * @param context - Context to validate
    * @param rules - Optional custom validation rules
    * @returns Validation result
-   * 
+   *
    * @example
    * ```typescript
    * const result = validateContext(context);
@@ -213,9 +216,13 @@ export namespace ContextValidation {
         try {
           const ruleResult = rule.validate(context);
           if (ruleResult === ContextValidationResult.INVALID) {
-            errors.push(rule.errorMessage ?? `Validation rule '${rule.name}' failed`);
+            errors.push(
+              rule.errorMessage ?? `Validation rule '${rule.name}' failed`
+            );
           } else if (ruleResult === ContextValidationResult.WARNING) {
-            warnings.push(rule.errorMessage ?? `Validation rule '${rule.name}' warning`);
+            warnings.push(
+              rule.errorMessage ?? `Validation rule '${rule.name}' warning`
+            );
           }
         } catch (error) {
           errors.push(`Validation rule '${rule.name}' threw error: ${error}`);
@@ -224,18 +231,19 @@ export namespace ContextValidation {
     }
 
     const isValid = errors.length === 0;
-    const result = errors.length > 0 
-      ? ContextValidationResult.INVALID 
-      : warnings.length > 0 
-        ? ContextValidationResult.WARNING 
-        : ContextValidationResult.VALID;
+    const result =
+      errors.length > 0
+        ? ContextValidationResult.INVALID
+        : warnings.length > 0
+          ? ContextValidationResult.WARNING
+          : ContextValidationResult.VALID;
 
     return { isValid, result, errors, warnings };
   }
 
   /**
    * Checks if a context has expired
-   * 
+   *
    * @param context - Context to check
    * @returns True if context has expired
    */
@@ -251,7 +259,7 @@ export namespace ContextValidation {
 
   /**
    * Validates context scope hierarchy
-   * 
+   *
    * @param child - Child context
    * @param parent - Parent context
    * @returns True if hierarchy is valid
@@ -279,12 +287,15 @@ export namespace ContextValidation {
 
   /**
    * Validates context size limits
-   * 
+   *
    * @param context - Context to validate
    * @param maxSize - Maximum size in bytes
    * @returns True if context size is within limits
    */
-  export function validateSize(context: UnifiedContext, maxSize: number = 10485760): boolean {
+  export function validateSize(
+    context: UnifiedContext,
+    maxSize: number = 10485760
+  ): boolean {
     const serialized = JSON.stringify(context);
     const size = Buffer.byteLength(serialized, 'utf8');
     return size <= maxSize;
@@ -297,11 +308,11 @@ export namespace ContextValidation {
 export namespace ContextComparison {
   /**
    * Compares two contexts and returns their differences
-   * 
+   *
    * @param current - Current context state
    * @param previous - Previous context state
    * @returns Context diff object
-   * 
+   *
    * @example
    * ```typescript
    * const diff = compareContexts(currentContext, previousContext);
@@ -351,7 +362,7 @@ export namespace ContextComparison {
 
   /**
    * Checks if two contexts are equal
-   * 
+   *
    * @param context1 - First context
    * @param context2 - Second context
    * @param options - Comparison options
@@ -370,8 +381,12 @@ export namespace ContextComparison {
       return options.customComparator(context1, context2);
     }
 
-    const ctx1 = options.ignoreMetadata ? { ...context1, metadata: undefined } : context1;
-    const ctx2 = options.ignoreMetadata ? { ...context2, metadata: undefined } : context2;
+    const ctx1 = options.ignoreMetadata
+      ? { ...context1, metadata: undefined }
+      : context1;
+    const ctx2 = options.ignoreMetadata
+      ? { ...context2, metadata: undefined }
+      : context2;
 
     if (options.ignoreTimestamps) {
       // Remove timestamp fields for comparison
@@ -394,7 +409,7 @@ export namespace ContextComparison {
 
   /**
    * Calculates similarity score between two contexts
-   * 
+   *
    * @param context1 - First context
    * @param context2 - Second context
    * @returns Similarity score between 0 and 1
@@ -409,7 +424,7 @@ export namespace ContextComparison {
     const allKeys = new Set([...Object.keys(flat1), ...Object.keys(flat2)]);
     let matches = 0;
 
-    Array.from(allKeys).forEach(key => {
+    Array.from(allKeys).forEach((key) => {
       if (key in flat1 && key in flat2 && deepEqual(flat1[key], flat2[key])) {
         matches++;
       }
@@ -425,12 +440,12 @@ export namespace ContextComparison {
 export namespace ContextMerging {
   /**
    * Merges two or more contexts into a single context
-   * 
+   *
    * @param target - Target context to merge into
    * @param sources - Source contexts to merge from
    * @param options - Merge options
    * @returns Merged context
-   * 
+   *
    * @example
    * ```typescript
    * const merged = mergeContexts(baseContext, agentContext, sessionContext, {
@@ -446,9 +461,13 @@ export namespace ContextMerging {
     let result = { ...target };
 
     for (const sourceOrTuple of sources) {
-      const [source, options] = Array.isArray(sourceOrTuple) && sourceOrTuple.length === 2
-        ? sourceOrTuple
-        : [sourceOrTuple as UnifiedContext, { merge: true } as ContextUpdateOptions];
+      const [source, options] =
+        Array.isArray(sourceOrTuple) && sourceOrTuple.length === 2
+          ? sourceOrTuple
+          : [
+              sourceOrTuple as UnifiedContext,
+              { merge: true } as ContextUpdateOptions,
+            ];
 
       if (options?.merge === false) {
         // Replace mode - overwrite target with source
@@ -480,7 +499,7 @@ export namespace ContextMerging {
 
   /**
    * Merges contexts with conflict resolution strategy
-   * 
+   *
    * @param contexts - Contexts to merge
    * @param strategy - Conflict resolution strategy
    * @returns Merged context
@@ -488,7 +507,9 @@ export namespace ContextMerging {
   export function mergeWithConflictResolution(
     contexts: UnifiedContext[],
     strategy: 'priority' | 'timestamp' | 'source' | 'custom',
-    customResolver?: (conflicts: Array<{ key: string; values: unknown[] }>) => Record<string, unknown>
+    customResolver?: (
+      conflicts: Array<{ key: string; values: unknown[] }>
+    ) => Record<string, unknown>
   ): UnifiedContext {
     if (contexts.length === 0) {
       throw new Error('Cannot merge empty context array');
@@ -502,15 +523,21 @@ export namespace ContextMerging {
     let sortedContexts: UnifiedContext[];
     switch (strategy) {
       case 'priority':
-        sortedContexts = [...contexts].sort((a, b) => b.metadata.priority - a.metadata.priority);
+        sortedContexts = [...contexts].sort(
+          (a, b) => b.metadata.priority - a.metadata.priority
+        );
         break;
       case 'timestamp':
-        sortedContexts = [...contexts].sort((a, b) => 
-          new Date(String(b.metadata.lastModified)).getTime() - new Date(String(a.metadata.lastModified)).getTime()
+        sortedContexts = [...contexts].sort(
+          (a, b) =>
+            new Date(String(b.metadata.lastModified)).getTime() -
+            new Date(String(a.metadata.lastModified)).getTime()
         );
         break;
       case 'source':
-        sortedContexts = [...contexts].sort((a, b) => a.metadata.source.localeCompare(b.metadata.source));
+        sortedContexts = [...contexts].sort((a, b) =>
+          a.metadata.source.localeCompare(b.metadata.source)
+        );
         break;
       case 'custom':
         if (!customResolver) {
@@ -524,7 +551,9 @@ export namespace ContextMerging {
     }
 
     // Merge contexts in order
-    return sortedContexts.reduce((merged, current) => mergeContexts(merged, current));
+    return sortedContexts.reduce((merged, current) =>
+      mergeContexts(merged, current)
+    );
   }
 }
 
@@ -534,7 +563,7 @@ export namespace ContextMerging {
 export namespace ContextCloning {
   /**
    * Creates a deep clone of a context
-   * 
+   *
    * @param context - Context to clone
    * @param options - Cloning options
    * @returns Cloned context
@@ -574,7 +603,7 @@ export namespace ContextCloning {
 
   /**
    * Creates a shallow clone of a context
-   * 
+   *
    * @param context - Context to clone
    * @returns Shallow cloned context
    */
@@ -584,11 +613,13 @@ export namespace ContextCloning {
 
   /**
    * Creates a context snapshot for versioning
-   * 
+   *
    * @param context - Context to snapshot
    * @returns Context snapshot
    */
-  export function createSnapshot(context: UnifiedContext): ContextSnapshot<UnifiedContext> {
+  export function createSnapshot(
+    context: UnifiedContext
+  ): ContextSnapshot<UnifiedContext> {
     return {
       ...deepClone(context),
       _snapshotId: randomUUID(),
@@ -604,7 +635,7 @@ export namespace ContextCloning {
 export namespace ContextQuery {
   /**
    * Filters contexts based on query criteria
-   * 
+   *
    * @param contexts - Contexts to filter
    * @param query - Query criteria
    * @returns Filtered contexts
@@ -613,17 +644,20 @@ export namespace ContextQuery {
     contexts: UnifiedContext[],
     query: UnifiedContextQuery
   ): UnifiedContext[] {
-    return contexts.filter(context => matchesQuery(context, query));
+    return contexts.filter((context) => matchesQuery(context, query));
   }
 
   /**
    * Checks if a context matches query criteria
-   * 
+   *
    * @param context - Context to check
    * @param query - Query criteria
    * @returns True if context matches
    */
-  export function matchesQuery(context: UnifiedContext, query: UnifiedContextQuery): boolean {
+  export function matchesQuery(
+    context: UnifiedContext,
+    query: UnifiedContextQuery
+  ): boolean {
     // Scope filter
     if (query.scope) {
       const scopes = Array.isArray(query.scope) ? query.scope : [query.scope];
@@ -634,7 +668,9 @@ export namespace ContextQuery {
 
     // Source filter
     if (query.source) {
-      const sources = Array.isArray(query.source) ? query.source : [query.source];
+      const sources = Array.isArray(query.source)
+        ? query.source
+        : [query.source];
       if (!sources.includes(context.metadata.source)) {
         return false;
       }
@@ -644,7 +680,7 @@ export namespace ContextQuery {
     if (query.tags) {
       const queryTags = Array.isArray(query.tags) ? query.tags : [query.tags];
       const contextTags = context.metadata.tags ?? [];
-      if (!queryTags.some(tag => contextTags.includes(tag))) {
+      if (!queryTags.some((tag) => contextTags.includes(tag))) {
         return false;
       }
     }
@@ -662,7 +698,10 @@ export namespace ContextQuery {
     // Priority range filter
     if (query.priorityRange) {
       const priority = context.metadata.priority;
-      if (priority < query.priorityRange.min || priority > query.priorityRange.max) {
+      if (
+        priority < query.priorityRange.min ||
+        priority > query.priorityRange.max
+      ) {
         return false;
       }
     }
@@ -677,7 +716,7 @@ export namespace ContextQuery {
 
   /**
    * Sorts contexts by specified criteria
-   * 
+   *
    * @param contexts - Contexts to sort
    * @param sortBy - Sort criteria
    * @param order - Sort order
@@ -693,10 +732,14 @@ export namespace ContextQuery {
 
       switch (sortBy) {
         case 'createdAt':
-          result = new Date(String(a.metadata.createdAt)).getTime() - new Date(String(b.metadata.createdAt)).getTime();
+          result =
+            new Date(String(a.metadata.createdAt)).getTime() -
+            new Date(String(b.metadata.createdAt)).getTime();
           break;
         case 'lastModified':
-          result = new Date(String(a.metadata.lastModified)).getTime() - new Date(String(b.metadata.lastModified)).getTime();
+          result =
+            new Date(String(a.metadata.lastModified)).getTime() -
+            new Date(String(b.metadata.lastModified)).getTime();
           break;
         case 'priority':
           result = a.metadata.priority - b.metadata.priority;
@@ -725,21 +768,21 @@ function deepEqual(a: unknown, b: unknown): boolean {
   if (a === b) return true;
   if (a == null || b == null) return false;
   if (typeof a !== typeof b) return false;
-  
+
   if (typeof a === 'object' && typeof b === 'object') {
     const keysA = Object.keys(a as object);
     const keysB = Object.keys(b as object);
-    
+
     if (keysA.length !== keysB.length) return false;
-    
+
     for (const key of keysA) {
       if (!keysB.includes(key)) return false;
       if (!deepEqual((a as any)[key], (b as any)[key])) return false;
     }
-    
+
     return true;
   }
-  
+
   return false;
 }
 
@@ -749,15 +792,16 @@ function deepEqual(a: unknown, b: unknown): boolean {
 function deepClone<T>(obj: T): T {
   if (obj === null || typeof obj !== 'object') return obj;
   if (obj instanceof Date) return new Date(obj.getTime()) as unknown as T;
-  if (obj instanceof Array) return obj.map(item => deepClone(item)) as unknown as T;
-  
+  if (obj instanceof Array)
+    return obj.map((item) => deepClone(item)) as unknown as T;
+
   const cloned = {} as T;
   for (const key in obj) {
     if (obj.hasOwnProperty(key)) {
       cloned[key] = deepClone(obj[key]);
     }
   }
-  
+
   return cloned;
 }
 
@@ -766,12 +810,12 @@ function deepClone<T>(obj: T): T {
  */
 function deepMerge<T, U>(target: T, source: U): T & U {
   const result = { ...target } as T & U;
-  
+
   for (const key in source) {
     if (source.hasOwnProperty(key)) {
       const sourceValue = source[key];
       const targetValue = (target as any)[key];
-      
+
       if (isObject(sourceValue) && isObject(targetValue)) {
         (result as any)[key] = deepMerge(targetValue, sourceValue);
       } else {
@@ -779,7 +823,7 @@ function deepMerge<T, U>(target: T, source: U): T & U {
       }
     }
   }
-  
+
   return result;
 }
 
@@ -788,21 +832,21 @@ function deepMerge<T, U>(target: T, source: U): T & U {
  */
 function flattenObject(obj: unknown, prefix = ''): Record<string, unknown> {
   const flattened: Record<string, unknown> = {};
-  
+
   if (!isObject(obj)) {
     return { [prefix]: obj };
   }
-  
+
   for (const [key, value] of Object.entries(obj)) {
     const newKey = prefix ? `${prefix}.${key}` : key;
-    
+
     if (isObject(value) && !Array.isArray(value)) {
       Object.assign(flattened, flattenObject(value, newKey));
     } else {
       flattened[newKey] = value;
     }
   }
-  
+
   return flattened;
 }
 
@@ -837,25 +881,11 @@ export const {
   validateSize,
 } = ContextValidation;
 
-export const {
-  compareContexts,
-  areEqual,
-  calculateSimilarity,
-} = ContextComparison;
+export const { compareContexts, areEqual, calculateSimilarity } =
+  ContextComparison;
 
-export const {
-  mergeContexts,
-  mergeWithConflictResolution,
-} = ContextMerging;
+export const { mergeContexts, mergeWithConflictResolution } = ContextMerging;
 
-export const {
-  cloneContext,
-  shallowClone,
-  createSnapshot,
-} = ContextCloning;
+export const { cloneContext, shallowClone, createSnapshot } = ContextCloning;
 
-export const {
-  filterContexts,
-  matchesQuery,
-  sortContexts,
-} = ContextQuery;
+export const { filterContexts, matchesQuery, sortContexts } = ContextQuery;

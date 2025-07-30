@@ -1,6 +1,6 @@
 /**
  * Publish-Subscribe Pattern for Multi-Agent Context Coordination
- * 
+ *
  * Implements event-based context updates where agents can publish
  * context changes to topics and subscribe to receive updates.
  */
@@ -8,7 +8,7 @@
 import { EventEmitter } from 'events';
 import {
   AgentContext,
-  ContextUpdate
+  ContextUpdate,
 } from '../../../types/context/multi-agent-context';
 import { AgentId, OperationResult } from '../../../types/helpers';
 import { runtimeLogger } from '../../../utils/logger';
@@ -96,19 +96,20 @@ export class PublishSubscribePattern extends EventEmitter {
   private topics: Map<string, TopicInfo> = new Map();
   private subscriptions: Map<string, TopicSubscription[]> = new Map();
   private messageQueue: Map<string, PublishedMessage[]> = new Map();
-  private batchQueues: Map<AgentId, Map<string, PublishedMessage[]>> = new Map();
+  private batchQueues: Map<AgentId, Map<string, PublishedMessage[]>> =
+    new Map();
   private batchTimers: Map<string, NodeJS.Timeout> = new Map();
   private messageHistory: Map<string, PublishedMessage[]> = new Map();
 
   private readonly defaultRetention = {
     maxMessages: 1000,
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    autoDelete: true
+    autoDelete: true,
   };
 
   private readonly defaultAccessControl = {
     publicRead: true,
-    publicWrite: true
+    publicWrite: true,
   };
 
   constructor() {
@@ -131,7 +132,7 @@ export class PublishSubscribePattern extends EventEmitter {
         return {
           success: false,
           error: 'Topic already exists',
-          metadata: { operation: 'createTopic' }
+          metadata: { operation: 'createTopic' },
         };
       }
 
@@ -141,12 +142,12 @@ export class PublishSubscribePattern extends EventEmitter {
         messageCount: 0,
         retentionPolicy: {
           ...this.defaultRetention,
-          ...options?.retentionPolicy
+          ...options?.retentionPolicy,
         },
         accessControl: {
           ...this.defaultAccessControl,
-          ...options?.accessControl
-        }
+          ...options?.accessControl,
+        },
       };
 
       this.topics.set(topicName, topicInfo);
@@ -156,7 +157,7 @@ export class PublishSubscribePattern extends EventEmitter {
 
       this.emit('topicCreated', {
         topicName,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
 
       runtimeLogger.debug('Topic created', { topicName });
@@ -166,22 +167,21 @@ export class PublishSubscribePattern extends EventEmitter {
         data: {
           topicName,
           retentionPolicy: topicInfo.retentionPolicy,
-          accessControl: topicInfo.accessControl
+          accessControl: topicInfo.accessControl,
         },
         metadata: {
           operation: 'createTopic',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
-
     } catch (error) {
       return {
         success: false,
         error: `Topic creation failed: ${(error as Error).message}`,
         metadata: {
           operation: 'createTopic',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
     }
   }
@@ -212,13 +212,15 @@ export class PublishSubscribePattern extends EventEmitter {
         return {
           success: false,
           error: 'Access denied for topic subscription',
-          metadata: { operation: 'subscribe' }
+          metadata: { operation: 'subscribe' },
         };
       }
 
       // Check if already subscribed
       const existingSubscriptions = this.subscriptions.get(topic)!;
-      const existingIndex = existingSubscriptions.findIndex(s => s.subscriberId === subscriberId);
+      const existingIndex = existingSubscriptions.findIndex(
+        (s) => s.subscriberId === subscriberId
+      );
 
       if (existingIndex !== -1) {
         // Update existing subscription
@@ -242,7 +244,7 @@ export class PublishSubscribePattern extends EventEmitter {
           filters: options?.filters,
           deliveryMode: options?.deliveryMode || 'immediate',
           maxBatchSize: options?.maxBatchSize || 10,
-          batchTimeout: options?.batchTimeout || 5000
+          batchTimeout: options?.batchTimeout || 5000,
         };
 
         existingSubscriptions.push(subscription);
@@ -257,14 +259,17 @@ export class PublishSubscribePattern extends EventEmitter {
           this.setupBatchTimer(subscriberId, topic, subscription.batchTimeout!);
         }
 
-        runtimeLogger.debug('New subscription created', { subscriberId, topic });
+        runtimeLogger.debug('New subscription created', {
+          subscriberId,
+          topic,
+        });
       }
 
       this.emit('subscribed', {
         subscriberId,
         topic,
         deliveryMode: options?.deliveryMode || 'immediate',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
 
       return {
@@ -272,22 +277,21 @@ export class PublishSubscribePattern extends EventEmitter {
         data: {
           subscriberId,
           topic,
-          subscriberCount: topicInfo.subscriberCount
+          subscriberCount: topicInfo.subscriberCount,
         },
         metadata: {
           operation: 'subscribe',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
-
     } catch (error) {
       return {
         success: false,
         error: `Subscription failed: ${(error as Error).message}`,
         metadata: {
           operation: 'subscribe',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
     }
   }
@@ -295,23 +299,28 @@ export class PublishSubscribePattern extends EventEmitter {
   /**
    * Unsubscribe from a topic
    */
-  async unsubscribe(subscriberId: AgentId, topic: string): Promise<OperationResult> {
+  async unsubscribe(
+    subscriberId: AgentId,
+    topic: string
+  ): Promise<OperationResult> {
     try {
       const subscriptions = this.subscriptions.get(topic);
       if (!subscriptions) {
         return {
           success: false,
           error: 'Topic not found',
-          metadata: { operation: 'unsubscribe' }
+          metadata: { operation: 'unsubscribe' },
         };
       }
 
-      const subscriptionIndex = subscriptions.findIndex(s => s.subscriberId === subscriberId);
+      const subscriptionIndex = subscriptions.findIndex(
+        (s) => s.subscriberId === subscriberId
+      );
       if (subscriptionIndex === -1) {
         return {
           success: false,
           error: 'Subscription not found',
-          metadata: { operation: 'unsubscribe' }
+          metadata: { operation: 'unsubscribe' },
         };
       }
 
@@ -341,7 +350,7 @@ export class PublishSubscribePattern extends EventEmitter {
       this.emit('unsubscribed', {
         subscriberId,
         topic,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
 
       runtimeLogger.debug('Unsubscribed from topic', { subscriberId, topic });
@@ -351,22 +360,21 @@ export class PublishSubscribePattern extends EventEmitter {
         data: {
           subscriberId,
           topic,
-          remainingSubscribers: topicInfo.subscriberCount
+          remainingSubscribers: topicInfo.subscriberCount,
         },
         metadata: {
           operation: 'unsubscribe',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
-
     } catch (error) {
       return {
         success: false,
         error: `Unsubscription failed: ${(error as Error).message}`,
         metadata: {
           operation: 'unsubscribe',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
     }
   }
@@ -399,7 +407,7 @@ export class PublishSubscribePattern extends EventEmitter {
         return {
           success: false,
           error: 'Access denied for topic publishing',
-          metadata: { operation: 'publish' }
+          metadata: { operation: 'publish' },
         };
       }
 
@@ -416,7 +424,7 @@ export class PublishSubscribePattern extends EventEmitter {
         ttl: options?.ttl || 60000, // 1 minute default
         priority: options?.priority || 'normal',
         tags: options?.tags,
-        metadata: options?.metadata
+        metadata: options?.metadata,
       };
 
       // Add to message queue
@@ -443,14 +451,14 @@ export class PublishSubscribePattern extends EventEmitter {
         topic,
         subscriberCount: deliveryResults.totalSubscribers,
         deliveredCount: deliveryResults.deliveredCount,
-        timestamp: now
+        timestamp: now,
       });
 
       runtimeLogger.debug('Message published to topic', {
         messageId,
         publisherId,
         topic,
-        subscriberCount: deliveryResults.totalSubscribers
+        subscriberCount: deliveryResults.totalSubscribers,
       });
 
       return {
@@ -460,18 +468,17 @@ export class PublishSubscribePattern extends EventEmitter {
           topic,
           totalSubscribers: deliveryResults.totalSubscribers,
           deliveredCount: deliveryResults.deliveredCount,
-          batchedCount: deliveryResults.batchedCount
+          batchedCount: deliveryResults.batchedCount,
         },
         metadata: {
           operation: 'publish',
-          timestamp: now
-        }
+          timestamp: now,
+        },
       };
-
     } catch (error) {
       runtimeLogger.error('Message publishing failed', error as Error, {
         publisherId,
-        topic
+        topic,
       });
 
       return {
@@ -479,8 +486,8 @@ export class PublishSubscribePattern extends EventEmitter {
         error: `Publishing failed: ${(error as Error).message}`,
         metadata: {
           operation: 'publish',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
     }
   }
@@ -511,7 +518,7 @@ export class PublishSubscribePattern extends EventEmitter {
    */
   getAgentSubscriptions(agentId: AgentId): TopicSubscription[] {
     const subscriptions: TopicSubscription[] = [];
-    
+
     for (const topicSubscriptions of this.subscriptions.values()) {
       for (const subscription of topicSubscriptions) {
         if (subscription.subscriberId === agentId) {
@@ -519,7 +526,7 @@ export class PublishSubscribePattern extends EventEmitter {
         }
       }
     }
-    
+
     return subscriptions;
   }
 
@@ -531,7 +538,9 @@ export class PublishSubscribePattern extends EventEmitter {
       return true;
     }
 
-    return topicInfo.accessControl.allowedSubscribers?.includes(agentId) || false;
+    return (
+      topicInfo.accessControl.allowedSubscribers?.includes(agentId) || false
+    );
   }
 
   /**
@@ -542,7 +551,9 @@ export class PublishSubscribePattern extends EventEmitter {
       return true;
     }
 
-    return topicInfo.accessControl.allowedPublishers?.includes(agentId) || false;
+    return (
+      topicInfo.accessControl.allowedPublishers?.includes(agentId) || false
+    );
   }
 
   /**
@@ -551,7 +562,11 @@ export class PublishSubscribePattern extends EventEmitter {
   private async deliverToSubscribers(
     topic: string,
     message: PublishedMessage
-  ): Promise<{ totalSubscribers: number; deliveredCount: number; batchedCount: number }> {
+  ): Promise<{
+    totalSubscribers: number;
+    deliveredCount: number;
+    batchedCount: number;
+  }> {
     const subscriptions = this.subscriptions.get(topic) || [];
     let deliveredCount = 0;
     let batchedCount = 0;
@@ -562,7 +577,10 @@ export class PublishSubscribePattern extends EventEmitter {
       }
 
       // Apply filters
-      if (subscription.filters && !this.passesFilters(message, subscription.filters)) {
+      if (
+        subscription.filters &&
+        !this.passesFilters(message, subscription.filters)
+      ) {
         continue;
       }
 
@@ -588,49 +606,58 @@ export class PublishSubscribePattern extends EventEmitter {
         // Update subscription stats
         subscription.lastMessage = message.publishedAt;
         subscription.messageCount++;
-
       } catch (error) {
-        runtimeLogger.error('Failed to deliver message to subscriber', error as Error, {
-          messageId: message.messageId,
-          subscriberId: subscription.subscriberId,
-          topic
-        });
+        runtimeLogger.error(
+          'Failed to deliver message to subscriber',
+          error as Error,
+          {
+            messageId: message.messageId,
+            subscriberId: subscription.subscriberId,
+            topic,
+          }
+        );
       }
     }
 
     return {
-      totalSubscribers: subscriptions.filter(s => s.isActive).length,
+      totalSubscribers: subscriptions.filter((s) => s.isActive).length,
       deliveredCount,
-      batchedCount
+      batchedCount,
     };
   }
 
   /**
    * Deliver message immediately
    */
-  private async deliverImmediate(subscription: TopicSubscription, message: PublishedMessage): Promise<void> {
+  private async deliverImmediate(
+    subscription: TopicSubscription,
+    message: PublishedMessage
+  ): Promise<void> {
     // In a real implementation, this would actually deliver the message
     // For now, we'll just emit an event
-    
+
     this.emit('messageDelivered', {
       subscriberId: subscription.subscriberId,
       messageId: message.messageId,
       topic: message.topic,
       deliveryMode: 'immediate',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
 
     runtimeLogger.debug('Message delivered immediately', {
       subscriberId: subscription.subscriberId,
       messageId: message.messageId,
-      topic: message.topic
+      topic: message.topic,
     });
   }
 
   /**
    * Add message to batch queue
    */
-  private async addToBatch(subscription: TopicSubscription, message: PublishedMessage): Promise<void> {
+  private async addToBatch(
+    subscription: TopicSubscription,
+    message: PublishedMessage
+  ): Promise<void> {
     const agentBatchQueues = this.batchQueues.get(subscription.subscriberId);
     if (!agentBatchQueues) {
       return;
@@ -652,7 +679,10 @@ export class PublishSubscribePattern extends EventEmitter {
   /**
    * Deliver batch of messages
    */
-  private async deliverBatch(subscriberId: AgentId, topic: string): Promise<void> {
+  private async deliverBatch(
+    subscriberId: AgentId,
+    topic: string
+  ): Promise<void> {
     const agentBatchQueues = this.batchQueues.get(subscriberId);
     if (!agentBatchQueues) {
       return;
@@ -673,7 +703,7 @@ export class PublishSubscribePattern extends EventEmitter {
       messages: [...batch],
       createdAt: new Date().toISOString(),
       scheduledDelivery: new Date().toISOString(),
-      status: 'delivered'
+      status: 'delivered',
     };
 
     // Clear the batch
@@ -684,23 +714,27 @@ export class PublishSubscribePattern extends EventEmitter {
       subscriberId,
       topic,
       messageCount: batchDelivery.messages.length,
-      timestamp: batchDelivery.scheduledDelivery
+      timestamp: batchDelivery.scheduledDelivery,
     });
 
     runtimeLogger.debug('Batch delivered', {
       batchId,
       subscriberId,
       topic,
-      messageCount: batchDelivery.messages.length
+      messageCount: batchDelivery.messages.length,
     });
   }
 
   /**
    * Setup batch timer for delayed delivery
    */
-  private setupBatchTimer(subscriberId: AgentId, topic: string, timeout: number): void {
+  private setupBatchTimer(
+    subscriberId: AgentId,
+    topic: string,
+    timeout: number
+  ): void {
     const timerKey = `${subscriberId}:${topic}`;
-    
+
     // Clear existing timer
     const existingTimer = this.batchTimers.get(timerKey);
     if (existingTimer) {
@@ -709,11 +743,15 @@ export class PublishSubscribePattern extends EventEmitter {
 
     // Setup new timer
     const timer = setTimeout(() => {
-      this.deliverBatch(subscriberId, topic).catch(error => {
-        runtimeLogger.error('Failed to deliver batch on timer', error as Error, {
-          subscriberId,
-          topic
-        });
+      this.deliverBatch(subscriberId, topic).catch((error) => {
+        runtimeLogger.error(
+          'Failed to deliver batch on timer',
+          error as Error,
+          {
+            subscriberId,
+            topic,
+          }
+        );
       });
     }, timeout);
 
@@ -723,7 +761,10 @@ export class PublishSubscribePattern extends EventEmitter {
   /**
    * Check if message passes subscription filters
    */
-  private passesFilters(message: PublishedMessage, filters: SubscriptionFilter[]): boolean {
+  private passesFilters(
+    message: PublishedMessage,
+    filters: SubscriptionFilter[]
+  ): boolean {
     for (const filter of filters) {
       if (!this.evaluateFilter(message, filter)) {
         return false;
@@ -735,7 +776,10 @@ export class PublishSubscribePattern extends EventEmitter {
   /**
    * Evaluate a single filter
    */
-  private evaluateFilter(message: PublishedMessage, filter: SubscriptionFilter): boolean {
+  private evaluateFilter(
+    message: PublishedMessage,
+    filter: SubscriptionFilter
+  ): boolean {
     let fieldValue: unknown;
 
     // Get field value from message or context
@@ -752,27 +796,31 @@ export class PublishSubscribePattern extends EventEmitter {
     switch (filter.operator) {
       case 'equals':
         return fieldValue === filter.value;
-      
+
       case 'contains':
         if (Array.isArray(fieldValue)) {
           return fieldValue.includes(filter.value);
         }
         return String(fieldValue).includes(String(filter.value));
-      
+
       case 'regex':
         return new RegExp(String(filter.value)).test(String(fieldValue));
-      
+
       case 'range':
-        if (typeof fieldValue === 'number' && Array.isArray(filter.value) && filter.value.length === 2) {
+        if (
+          typeof fieldValue === 'number' &&
+          Array.isArray(filter.value) &&
+          filter.value.length === 2
+        ) {
           return fieldValue >= filter.value[0] && fieldValue <= filter.value[1];
         }
         return false;
-      
+
       case 'custom':
-        return filter.customFilter 
+        return filter.customFilter
           ? filter.customFilter(message.context, message.update)
           : false;
-      
+
       default:
         return false;
     }
@@ -803,12 +851,18 @@ export class PublishSubscribePattern extends EventEmitter {
 
     // Remove messages by age
     const cutoffTime = now - policy.maxAge;
-    
-    while (queue.length > 0 && new Date(queue[0].publishedAt).getTime() < cutoffTime) {
+
+    while (
+      queue.length > 0 &&
+      new Date(queue[0].publishedAt).getTime() < cutoffTime
+    ) {
       queue.shift();
     }
 
-    while (history.length > 0 && new Date(history[0].publishedAt).getTime() < cutoffTime) {
+    while (
+      history.length > 0 &&
+      new Date(history[0].publishedAt).getTime() < cutoffTime
+    ) {
       history.shift();
     }
   }
@@ -833,7 +887,7 @@ export class PublishSubscribePattern extends EventEmitter {
       for (let i = queue.length - 1; i >= 0; i--) {
         const message = queue[i];
         const messageTime = new Date(message.publishedAt).getTime();
-        
+
         if (now - messageTime > message.ttl) {
           queue.splice(i, 1);
         }
@@ -851,16 +905,16 @@ export class PublishSubscribePattern extends EventEmitter {
 
       for (let i = subscriptions.length - 1; i >= 0; i--) {
         const subscription = subscriptions[i];
-        
+
         if (subscription.isActive) {
           activeCount++;
         } else {
           // Remove inactive subscription
           subscriptions.splice(i, 1);
-          
+
           runtimeLogger.debug('Removed inactive subscription', {
             subscriberId: subscription.subscriberId,
-            topic
+            topic,
           });
         }
       }
@@ -874,12 +928,18 @@ export class PublishSubscribePattern extends EventEmitter {
    */
   getStatistics() {
     const totalTopics = this.topics.size;
-    const totalSubscriptions = Array.from(this.subscriptions.values())
-      .reduce((sum, subs) => sum + subs.filter(s => s.isActive).length, 0);
-    const totalMessages = Array.from(this.messageQueue.values())
-      .reduce((sum, queue) => sum + queue.length, 0);
-    const totalBatches = Array.from(this.batchQueues.values())
-      .reduce((sum, agentQueues) => sum + agentQueues.size, 0);
+    const totalSubscriptions = Array.from(this.subscriptions.values()).reduce(
+      (sum, subs) => sum + subs.filter((s) => s.isActive).length,
+      0
+    );
+    const totalMessages = Array.from(this.messageQueue.values()).reduce(
+      (sum, queue) => sum + queue.length,
+      0
+    );
+    const totalBatches = Array.from(this.batchQueues.values()).reduce(
+      (sum, agentQueues) => sum + agentQueues.size,
+      0
+    );
 
     return {
       totalTopics,
@@ -887,8 +947,9 @@ export class PublishSubscribePattern extends EventEmitter {
       totalMessages,
       totalBatches,
       activeBatchTimers: this.batchTimers.size,
-      avgSubscriptionsPerTopic: totalTopics > 0 ? totalSubscriptions / totalTopics : 0,
-      avgMessagesPerTopic: totalTopics > 0 ? totalMessages / totalTopics : 0
+      avgSubscriptionsPerTopic:
+        totalTopics > 0 ? totalSubscriptions / totalTopics : 0,
+      avgMessagesPerTopic: totalTopics > 0 ? totalMessages / totalTopics : 0,
     };
   }
 

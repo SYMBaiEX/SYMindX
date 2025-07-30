@@ -19,10 +19,10 @@ import {
   ToolEvaluationResult,
 } from '../types/portal';
 import { UnifiedContext } from '../types/context/unified-context.js';
-import { 
-  standardLoggers, 
+import {
+  standardLoggers,
   createStandardLoggingPatterns,
-  StandardLogContext 
+  StandardLogContext,
 } from '../utils/standard-logging.js';
 import { buildObject } from '../utils/type-helpers';
 
@@ -43,7 +43,7 @@ export abstract class BasePortal implements Portal {
   status: PortalStatus = PortalStatus.INACTIVE;
   config: PortalConfig;
   abstract supportedModels: ModelType[];
-  
+
   // Standardized logging
   protected logger = standardLoggers.portal;
   protected loggingPatterns = createStandardLoggingPatterns(this.logger);
@@ -132,25 +132,33 @@ export abstract class BasePortal implements Portal {
    * @param agent The agent to initialize with
    */
   async init(agent: Agent): Promise<void> {
-    this.loggingPatterns.logInitialization(`${this.name} portal`, { 
+    this.loggingPatterns.logInitialization(`${this.name} portal`, {
       portalId: this.id,
       agentId: agent.id,
-      agentName: agent.name 
+      agentName: agent.name,
     });
 
     try {
       await this.validateConfig();
-      this.loggingPatterns.logInitializationSuccess(`${this.name} portal`, undefined, {
-        portalId: this.id,
-        agentId: agent.id,
-        agentName: agent.name
-      });
+      this.loggingPatterns.logInitializationSuccess(
+        `${this.name} portal`,
+        undefined,
+        {
+          portalId: this.id,
+          agentId: agent.id,
+          agentName: agent.name,
+        }
+      );
     } catch (error) {
-      this.loggingPatterns.logInitializationFailure(`${this.name} portal`, error as Error, {
-        portalId: this.id,
-        agentId: agent.id,
-        agentName: agent.name
-      });
+      this.loggingPatterns.logInitializationFailure(
+        `${this.name} portal`,
+        error as Error,
+        {
+          portalId: this.id,
+          agentId: agent.id,
+          agentName: agent.name,
+        }
+      );
       throw error;
     }
   }
@@ -198,14 +206,14 @@ export abstract class BasePortal implements Portal {
   ): Promise<TextGenerationResult> {
     // Enhance prompt with context information
     const enhancedPrompt = this.buildContextualPrompt(prompt, context);
-    
+
     // Select optimal model based on context
     const contextualOptions = this.buildContextualOptions(context, options);
-    
+
     // Use existing generateText method with enhanced prompt and options
     return this.generateText(enhancedPrompt, {
       ...contextualOptions,
-      context
+      context,
     });
   }
 
@@ -223,14 +231,14 @@ export abstract class BasePortal implements Portal {
   ): Promise<ChatGenerationResult> {
     // Enhance messages with context information
     const enhancedMessages = this.buildContextualMessages(messages, context);
-    
+
     // Select optimal tools and model based on context
     const contextualOptions = this.buildContextualOptions(context, options);
-    
+
     // Use existing generateChat method with enhanced messages and options
     return this.generateChat(enhancedMessages, {
       ...contextualOptions,
-      context
+      context,
     });
   }
 
@@ -650,7 +658,7 @@ export abstract class BasePortal implements Portal {
    */
   getOptimalModelForCapability(capability: PortalCapability): string | null {
     const models = this.getSupportedModelsForCapability(capability);
-    return models.length > 0 ? models[0] ?? null : null;
+    return models.length > 0 ? (models[0] ?? null) : null;
   }
 
   /**
@@ -659,7 +667,10 @@ export abstract class BasePortal implements Portal {
    * @param context Unified context information
    * @returns Enhanced prompt with context
    */
-  protected buildContextualPrompt(prompt: string, context: UnifiedContext): string {
+  protected buildContextualPrompt(
+    prompt: string,
+    context: UnifiedContext
+  ): string {
     let enhancedPrompt = prompt;
 
     // Add agent context if available
@@ -672,7 +683,9 @@ export abstract class BasePortal implements Portal {
 
     // Add memory context if available
     if (context.memory?.relevant && context.memory.relevant.length > 0) {
-      const memoryContext = this.buildMemoryContextString(context.memory.relevant);
+      const memoryContext = this.buildMemoryContextString(
+        context.memory.relevant
+      );
       if (memoryContext) {
         enhancedPrompt = `${memoryContext}\n\n${enhancedPrompt}`;
       }
@@ -680,7 +693,9 @@ export abstract class BasePortal implements Portal {
 
     // Add communication context if available
     if (context.communication?.style) {
-      const styleContext = this.buildCommunicationStyleString(context.communication.style);
+      const styleContext = this.buildCommunicationStyleString(
+        context.communication.style
+      );
       if (styleContext) {
         enhancedPrompt = `${styleContext}\n\n${enhancedPrompt}`;
       }
@@ -703,18 +718,24 @@ export abstract class BasePortal implements Portal {
    * @param context Unified context information
    * @returns Enhanced messages with context
    */
-  protected buildContextualMessages(messages: ChatMessage[], context: UnifiedContext): ChatMessage[] {
+  protected buildContextualMessages(
+    messages: ChatMessage[],
+    context: UnifiedContext
+  ): ChatMessage[] {
     const enhancedMessages = [...messages];
 
     // Build system message with context
     const systemMessage = this.buildSystemMessageWithContext(context);
     if (systemMessage) {
       // Check if first message is already a system message
-      if (enhancedMessages.length > 0 && enhancedMessages[0]?.role === 'system') {
+      if (
+        enhancedMessages.length > 0 &&
+        enhancedMessages[0]?.role === 'system'
+      ) {
         // Enhance existing system message
         enhancedMessages[0] = {
           ...enhancedMessages[0],
-          content: `${systemMessage.content}\n\n${enhancedMessages[0].content}`
+          content: `${systemMessage.content}\n\n${enhancedMessages[0].content}`,
         };
       } else {
         // Add new system message at the beginning
@@ -732,7 +753,7 @@ export abstract class BasePortal implements Portal {
    * @returns Enhanced options with context-based optimizations
    */
   protected buildContextualOptions(
-    context: UnifiedContext, 
+    context: UnifiedContext,
     baseOptions?: TextGenerationOptions | ChatGenerationOptions
   ): TextGenerationOptions | ChatGenerationOptions {
     const contextualOptions = { ...baseOptions };
@@ -744,12 +765,14 @@ export abstract class BasePortal implements Portal {
 
     // Temperature adjustment based on context
     if (contextualOptions.temperature === undefined) {
-      contextualOptions.temperature = this.selectTemperatureFromContext(context);
+      contextualOptions.temperature =
+        this.selectTemperatureFromContext(context);
     }
 
     // Token limit adjustment based on context
     if (!contextualOptions.maxOutputTokens && !contextualOptions.maxTokens) {
-      contextualOptions.maxOutputTokens = this.selectTokenLimitFromContext(context);
+      contextualOptions.maxOutputTokens =
+        this.selectTokenLimitFromContext(context);
     }
 
     // Tool selection based on context
@@ -767,7 +790,9 @@ export abstract class BasePortal implements Portal {
     const parts: string[] = [];
 
     if (agentContext.config?.personality) {
-      parts.push(`Personality: ${JSON.stringify(agentContext.config.personality)}`);
+      parts.push(
+        `Personality: ${JSON.stringify(agentContext.config.personality)}`
+      );
     }
 
     if (agentContext.emotions) {
@@ -795,7 +820,10 @@ export abstract class BasePortal implements Portal {
 
     const relevantMemories = memories
       .slice(0, 5) // Limit to top 5 most relevant
-      .map(memory => `- ${memory.content || memory.text || memory.description || 'Memory'}`)
+      .map(
+        (memory) =>
+          `- ${memory.content || memory.text || memory.description || 'Memory'}`
+      )
       .join('\n');
 
     return `Relevant Context:\n${relevantMemories}`;
@@ -834,7 +862,9 @@ export abstract class BasePortal implements Portal {
   /**
    * Build system message with context information
    */
-  private buildSystemMessageWithContext(context: UnifiedContext): ChatMessage | null {
+  private buildSystemMessageWithContext(
+    context: UnifiedContext
+  ): ChatMessage | null {
     const contextParts: string[] = [];
 
     // Add agent context
@@ -845,13 +875,17 @@ export abstract class BasePortal implements Portal {
 
     // Add memory context
     if (context.memory?.relevant && context.memory.relevant.length > 0) {
-      const memoryContext = this.buildMemoryContextString(context.memory.relevant);
+      const memoryContext = this.buildMemoryContextString(
+        context.memory.relevant
+      );
       if (memoryContext) contextParts.push(memoryContext);
     }
 
     // Add communication context
     if (context.communication?.style) {
-      const styleContext = this.buildCommunicationStyleString(context.communication.style);
+      const styleContext = this.buildCommunicationStyleString(
+        context.communication.style
+      );
       if (styleContext) contextParts.push(styleContext);
     }
 
@@ -860,14 +894,16 @@ export abstract class BasePortal implements Portal {
     return {
       role: 'system' as any,
       content: contextParts.join('\n\n'),
-      timestamp: new Date()
+      timestamp: new Date(),
     };
   }
 
   /**
    * Select model based on context requirements
    */
-  protected selectModelFromContext(context: UnifiedContext): string | undefined {
+  protected selectModelFromContext(
+    context: UnifiedContext
+  ): string | undefined {
     // Use tools model if tools are available
     if (context.tools?.available && context.tools.available.length > 0) {
       return this.resolveModel('tool');
@@ -907,8 +943,10 @@ export abstract class BasePortal implements Portal {
    */
   protected selectTokenLimitFromContext(context: UnifiedContext): number {
     // Higher token limit for complex conversations
-    if (context.communication?.conversationHistory && 
-        context.communication.conversationHistory.length > 10) {
+    if (
+      context.communication?.conversationHistory &&
+      context.communication.conversationHistory.length > 10
+    ) {
       return Math.min(4000, (this.config.maxTokens || 1000) * 2);
     }
 
@@ -923,16 +961,18 @@ export abstract class BasePortal implements Portal {
   /**
    * Select tools based on context requirements
    */
-  protected selectToolsFromContext(context: UnifiedContext): Record<string, any> | undefined {
+  protected selectToolsFromContext(
+    context: UnifiedContext
+  ): Record<string, any> | undefined {
     if (!context.tools?.available) return undefined;
 
     // Convert available tools to AI SDK format
     const tools: Record<string, any> = {};
-    
+
     for (const tool of context.tools.available) {
       tools[tool.name] = {
         description: tool.description,
-        parameters: tool.parameters
+        parameters: tool.parameters,
       };
     }
 

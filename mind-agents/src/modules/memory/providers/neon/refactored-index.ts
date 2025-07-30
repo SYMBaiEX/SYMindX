@@ -1,6 +1,6 @@
 /**
  * Refactored Neon Memory Provider for SYMindX
- * 
+ *
  * Uses shared components to eliminate duplication and provide enhanced Neon-specific functionality
  */
 
@@ -33,7 +33,7 @@ import {
   ResourceManager,
   type ConnectionConfig,
   type ArchiverConfig,
-  type PoolConfig
+  type PoolConfig,
 } from '../../../shared/index.js';
 
 export interface NeonMemoryConfig extends BaseMemoryConfig {
@@ -56,7 +56,8 @@ export interface EnhancedMemoryRecord extends MemoryRecord {
 }
 
 // Create the enhanced base class with traits
-const NeonMemoryProviderBase = MemoryProviderTrait<NeonMemoryConfig>('2.0.0')(BaseMemoryProvider);
+const NeonMemoryProviderBase =
+  MemoryProviderTrait<NeonMemoryConfig>('2.0.0')(BaseMemoryProvider);
 
 export class RefactoredNeonMemoryProvider extends NeonMemoryProviderBase {
   private connection: Pool;
@@ -71,7 +72,8 @@ export class RefactoredNeonMemoryProvider extends NeonMemoryProviderBase {
       type: 'neon',
       name: 'Neon Memory Provider',
       version: '2.0.0',
-      description: 'Enhanced Neon PostgreSQL provider with shared components and serverless optimizations'
+      description:
+        'Enhanced Neon PostgreSQL provider with shared components and serverless optimizations',
     });
 
     // Configure the module with Neon-specific defaults
@@ -86,14 +88,14 @@ export class RefactoredNeonMemoryProvider extends NeonMemoryProviderBase {
       consolidationInterval: 3600000, // 1 hour
       archivalInterval: 86400000, // 24 hours
       maxPoolSize: 1000,
-      ...config
+      ...config,
     });
 
     // Initialize resource manager
     this.resourceManager = new ResourceManager({
       maxConnections: config.maxConnections || 10,
       maxMemoryMB: 256,
-      cleanupIntervalMs: 60000
+      cleanupIntervalMs: 60000,
     });
 
     // Add initialization handlers
@@ -113,23 +115,27 @@ export class RefactoredNeonMemoryProvider extends NeonMemoryProviderBase {
 
   private async initializeConnection(): Promise<void> {
     const config = this.getConfig();
-    
+
     const connectionConfig: ConnectionConfig = {
       type: DatabaseType.NEON,
       connectionString: config.connectionString,
       maxConnections: config.maxConnections,
       connectionTimeoutMillis: config.connectionTimeoutMillis,
       idleTimeoutMillis: config.idleTimeoutMillis,
-      ssl: config.ssl
+      ssl: config.ssl,
     };
 
-    this.connection = await DatabaseConnection.getConnection(connectionConfig) as Pool;
-    
+    this.connection = (await DatabaseConnection.getConnection(
+      connectionConfig
+    )) as Pool;
+
     // Test connection
     const client = await this.connection.connect();
     try {
       const result = await client.query('SELECT version()');
-      runtimeLogger.info(`Neon memory provider connected: ${result.rows[0]?.version?.split(' ').slice(0, 2).join(' ')}`);
+      runtimeLogger.info(
+        `Neon memory provider connected: ${result.rows[0]?.version?.split(' ').slice(0, 2).join(' ')}`
+      );
     } finally {
       client.release();
     }
@@ -209,7 +215,7 @@ export class RefactoredNeonMemoryProvider extends NeonMemoryProviderBase {
       if (config.enableVectorSearch) {
         // Create pgvector extension if not exists
         await client.query(`CREATE EXTENSION IF NOT EXISTS vector`);
-        
+
         await client.query(`
           CREATE INDEX IF NOT EXISTS idx_memories_embedding_cosine 
           ON memories USING ivfflat (embedding vector_cosine_ops)
@@ -222,13 +228,17 @@ export class RefactoredNeonMemoryProvider extends NeonMemoryProviderBase {
         await this.createServerlessOptimizations(client);
       }
 
-      runtimeLogger.info('Neon memory schema initialized with advanced features');
+      runtimeLogger.info(
+        'Neon memory schema initialized with advanced features'
+      );
     } finally {
       client.release();
     }
   }
 
-  private async createServerlessOptimizations(client: PoolClient): Promise<void> {
+  private async createServerlessOptimizations(
+    client: PoolClient
+  ): Promise<void> {
     // Create memory consolidation tracking
     await client.query(`
       CREATE TABLE IF NOT EXISTS consolidation_history (
@@ -346,13 +356,13 @@ export class RefactoredNeonMemoryProvider extends NeonMemoryProviderBase {
 
   private async initializeArchiver(): Promise<void> {
     const config = this.getConfig();
-    
+
     if (config.archival && config.archival.length > 0) {
       const archiverConfig: ArchiverConfig = {
         strategies: config.archival,
         enableCompression: true,
         maxCompressionRatio: 0.8,
-        retentionDays: 365
+        retentionDays: 365,
       };
 
       this.archiver = new NeonArchiver(archiverConfig, this.connection);
@@ -362,14 +372,14 @@ export class RefactoredNeonMemoryProvider extends NeonMemoryProviderBase {
 
   private async initializeSharedPool(): Promise<void> {
     const config = this.getConfig();
-    
+
     if (config.sharedMemory) {
       const poolConfig: PoolConfig = {
         poolId: `neon_pool_${Date.now()}`,
         sharedConfig: config.sharedMemory,
         maxPoolSize: config.maxPoolSize || 1000,
         enableVersioning: true,
-        enablePermissions: true
+        enablePermissions: true,
       };
 
       this.sharedPool = new NeonMemoryPool(poolConfig, this.connection);
@@ -383,7 +393,7 @@ export class RefactoredNeonMemoryProvider extends NeonMemoryProviderBase {
 
     if (config.consolidationInterval) {
       this.consolidationTimer = setInterval(() => {
-        this.runConsolidation().catch(error => {
+        this.runConsolidation().catch((error) => {
           runtimeLogger.error('Consolidation error:', error);
         });
       }, config.consolidationInterval);
@@ -391,27 +401,30 @@ export class RefactoredNeonMemoryProvider extends NeonMemoryProviderBase {
 
     if (config.archivalInterval) {
       this.archivalTimer = setInterval(() => {
-        this.runArchival().catch(error => {
+        this.runArchival().catch((error) => {
           runtimeLogger.error('Archival error:', error);
         });
       }, config.archivalInterval);
     }
   }
 
-  private async checkDatabaseHealth(): Promise<{ status: 'healthy' | 'unhealthy'; details?: any }> {
+  private async checkDatabaseHealth(): Promise<{
+    status: 'healthy' | 'unhealthy';
+    details?: any;
+  }> {
     try {
       const client = await this.connection.connect();
       try {
         await client.query('SELECT 1');
-        return { 
+        return {
           status: 'healthy',
           details: {
             poolStatus: {
               total: this.connection.totalCount,
               idle: this.connection.idleCount,
-              waiting: this.connection.waitingCount
-            }
-          }
+              waiting: this.connection.waitingCount,
+            },
+          },
         };
       } finally {
         client.release();
@@ -419,7 +432,9 @@ export class RefactoredNeonMemoryProvider extends NeonMemoryProviderBase {
     } catch (error) {
       return {
         status: 'unhealthy',
-        details: { error: error instanceof Error ? error.message : String(error) }
+        details: {
+          error: error instanceof Error ? error.message : String(error),
+        },
       };
     }
   }
@@ -436,11 +451,11 @@ export class RefactoredNeonMemoryProvider extends NeonMemoryProviderBase {
     if (this.sharedPool) {
       await this.sharedPool.saveToStorage();
     }
-    
+
     if (this.connection) {
       await this.connection.end();
     }
-    
+
     await this.resourceManager.shutdown();
   }
 
@@ -460,7 +475,8 @@ export class RefactoredNeonMemoryProvider extends NeonMemoryProviderBase {
         memory.embedding = await this.generateEmbedding(memory.content);
       }
 
-      await client.query(`
+      await client.query(
+        `
         INSERT INTO memories (
           id, agent_id, type, content, embedding, metadata, importance, 
           timestamp, tags, duration, expires_at, tier, context, updated_at
@@ -476,21 +492,23 @@ export class RefactoredNeonMemoryProvider extends NeonMemoryProviderBase {
           tier = EXCLUDED.tier,
           context = EXCLUDED.context,
           updated_at = NOW()
-      `, [
-        memory.id,
-        agentId,
-        memory.type,
-        memory.content,
-        memory.embedding ? JSON.stringify(memory.embedding) : null,
-        JSON.stringify(memory.metadata || {}),
-        memory.importance || 0.5,
-        memory.timestamp.toISOString(),
-        memory.tags || [],
-        memory.duration || MemoryDuration.LONG_TERM,
-        memory.expiresAt?.toISOString() || null,
-        enhanced.tier || MemoryTierType.EPISODIC,
-        enhanced.context ? JSON.stringify(enhanced.context) : null
-      ]);
+      `,
+        [
+          memory.id,
+          agentId,
+          memory.type,
+          memory.content,
+          memory.embedding ? JSON.stringify(memory.embedding) : null,
+          JSON.stringify(memory.metadata || {}),
+          memory.importance || 0.5,
+          memory.timestamp.toISOString(),
+          memory.tags || [],
+          memory.duration || MemoryDuration.LONG_TERM,
+          memory.expiresAt?.toISOString() || null,
+          enhanced.tier || MemoryTierType.EPISODIC,
+          enhanced.context ? JSON.stringify(enhanced.context) : null,
+        ]
+      );
 
       this.updateResourceUsage(`memory_${memory.id}`);
       this.emit('memory:stored', { agentId, memory });
@@ -499,7 +517,11 @@ export class RefactoredNeonMemoryProvider extends NeonMemoryProviderBase {
     }
   }
 
-  async retrieve(agentId: string, query: string, limit = 10): Promise<MemoryRecord[]> {
+  async retrieve(
+    agentId: string,
+    query: string,
+    limit = 10
+  ): Promise<MemoryRecord[]> {
     this.ensureNotDisposed();
     await this.ensureInitialized();
 
@@ -552,7 +574,9 @@ export class RefactoredNeonMemoryProvider extends NeonMemoryProviderBase {
       }
 
       const result = await client.query(sql, params);
-      const memories = result.rows.map(row => this.parseMemoryFromStorage(row));
+      const memories = result.rows.map((row) =>
+        this.parseMemoryFromStorage(row)
+      );
 
       // Cache the results
       this.setInCache(cacheKey, memories, 60000); // 1 minute cache
@@ -563,7 +587,11 @@ export class RefactoredNeonMemoryProvider extends NeonMemoryProviderBase {
     }
   }
 
-  async search(agentId: string, embedding: number[], limit = 10): Promise<MemoryRecord[]> {
+  async search(
+    agentId: string,
+    embedding: number[],
+    limit = 10
+  ): Promise<MemoryRecord[]> {
     this.ensureNotDisposed();
     await this.ensureInitialized();
 
@@ -581,9 +609,12 @@ export class RefactoredNeonMemoryProvider extends NeonMemoryProviderBase {
         [agentId, JSON.stringify(embedding), 0.7, limit]
       );
 
-      return result.rows.map(row => this.parseMemoryFromStorage(row));
+      return result.rows.map((row) => this.parseMemoryFromStorage(row));
     } catch (error) {
-      runtimeLogger.warn('Vector search failed, falling back to recent memories:', error);
+      runtimeLogger.warn(
+        'Vector search failed, falling back to recent memories:',
+        error
+      );
       return this.retrieve(agentId, 'recent', limit);
     } finally {
       client.release();
@@ -596,9 +627,12 @@ export class RefactoredNeonMemoryProvider extends NeonMemoryProviderBase {
 
     const client = await this.connection.connect();
     try {
-      const result = await client.query(`
+      const result = await client.query(
+        `
         DELETE FROM memories WHERE agent_id = $1 AND id = $2
-      `, [agentId, memoryId]);
+      `,
+        [agentId, memoryId]
+      );
 
       if (result.rowCount === 0) {
         throw new Error(`Memory ${memoryId} not found for agent ${agentId}`);
@@ -617,11 +651,16 @@ export class RefactoredNeonMemoryProvider extends NeonMemoryProviderBase {
 
     const client = await this.connection.connect();
     try {
-      const result = await client.query(`
+      const result = await client.query(
+        `
         DELETE FROM memories WHERE agent_id = $1
-      `, [agentId]);
+      `,
+        [agentId]
+      );
 
-      runtimeLogger.info(`Cleared ${result.rowCount} memories for agent ${agentId}`);
+      runtimeLogger.info(
+        `Cleared ${result.rowCount} memories for agent ${agentId}`
+      );
       this.clearCache();
       this.emit('memory:cleared', { agentId });
     } finally {
@@ -629,7 +668,9 @@ export class RefactoredNeonMemoryProvider extends NeonMemoryProviderBase {
     }
   }
 
-  async getStats(agentId: string): Promise<{ total: number; byType: Record<string, number> }> {
+  async getStats(
+    agentId: string
+  ): Promise<{ total: number; byType: Record<string, number> }> {
     this.ensureNotDisposed();
     await this.ensureInitialized();
 
@@ -645,22 +686,25 @@ export class RefactoredNeonMemoryProvider extends NeonMemoryProviderBase {
         const stats = statsResult.rows[0];
 
         // Get count by type
-        const typeResult = await client.query(`
+        const typeResult = await client.query(
+          `
           SELECT type, COUNT(*) as count 
           FROM memories 
           WHERE agent_id = $1 
           GROUP BY type
-        `, [agentId]);
+        `,
+          [agentId]
+        );
 
         const byType: Record<string, number> = {};
-        typeResult.rows.forEach(row => {
+        typeResult.rows.forEach((row) => {
           byType[row.type] = parseInt(row.count);
         });
 
         return {
           total: parseInt(stats.total_memories),
           byType,
-          ...stats
+          ...stats,
         };
       }
 
@@ -674,29 +718,41 @@ export class RefactoredNeonMemoryProvider extends NeonMemoryProviderBase {
     this.ensureNotDisposed();
     await this.ensureInitialized();
 
-    const cutoffTime = new Date(Date.now() - (retentionDays * 24 * 60 * 60 * 1000));
+    const cutoffTime = new Date(
+      Date.now() - retentionDays * 24 * 60 * 60 * 1000
+    );
 
     const client = await this.connection.connect();
     try {
       // Archive before cleanup if archiver is available
       if (this.archiver) {
-        const oldMemoriesResult = await client.query(`
+        const oldMemoriesResult = await client.query(
+          `
           SELECT * FROM memories 
           WHERE agent_id = $1 AND timestamp < $2
-        `, [agentId, cutoffTime.toISOString()]);
+        `,
+          [agentId, cutoffTime.toISOString()]
+        );
 
-        const memories = oldMemoriesResult.rows.map(row => this.parseMemoryFromStorage(row));
+        const memories = oldMemoriesResult.rows.map((row) =>
+          this.parseMemoryFromStorage(row)
+        );
         await this.archiver.archive(memories);
       }
 
-      const result = await client.query(`
+      const result = await client.query(
+        `
         DELETE FROM memories 
         WHERE agent_id = $1 
           AND timestamp < $2
           AND duration != 'permanent'
-      `, [agentId, cutoffTime.toISOString()]);
+      `,
+        [agentId, cutoffTime.toISOString()]
+      );
 
-      runtimeLogger.info(`Cleaned up ${result.rowCount} old memories for agent ${agentId}`);
+      runtimeLogger.info(
+        `Cleaned up ${result.rowCount} old memories for agent ${agentId}`
+      );
       this.clearCache();
     } finally {
       client.release();
@@ -712,19 +768,27 @@ export class RefactoredNeonMemoryProvider extends NeonMemoryProviderBase {
     const client = await this.connection.connect();
     try {
       // Update memory tier
-      await client.query(`
+      await client.query(
+        `
         UPDATE memories 
         SET tier = $1, updated_at = NOW()
         WHERE id = $2 AND agent_id = $3
-      `, [toTier, memoryId, agentId]);
+      `,
+        [toTier, memoryId, agentId]
+      );
 
       // Record consolidation history
-      await client.query(`
+      await client.query(
+        `
         INSERT INTO consolidation_history (agent_id, memory_id, from_tier, to_tier, reason)
         VALUES ($1, $2, $3, $4, $5)
-      `, [agentId, memoryId, fromTier, toTier, 'manual']);
+      `,
+        [agentId, memoryId, fromTier, toTier, 'manual']
+      );
 
-      runtimeLogger.info(`Consolidated memory ${memoryId} from ${fromTier} to ${toTier}`);
+      runtimeLogger.info(
+        `Consolidated memory ${memoryId} from ${fromTier} to ${toTier}`
+      );
     } finally {
       client.release();
     }
@@ -743,14 +807,19 @@ export class RefactoredNeonMemoryProvider extends NeonMemoryProviderBase {
 
     const client = await this.connection.connect();
     try {
-      const oldMemoriesResult = await client.query(`
+      const oldMemoriesResult = await client.query(
+        `
         SELECT * FROM memories 
         WHERE agent_id = $1 
           AND timestamp < $2
           AND duration != 'permanent'
-      `, [agentId, new Date(Date.now() - (30 * 24 * 60 * 60 * 1000)).toISOString()]); // 30 days
+      `,
+        [agentId, new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()]
+      ); // 30 days
 
-      const memories = oldMemoriesResult.rows.map(row => this.parseMemoryFromStorage(row));
+      const memories = oldMemoriesResult.rows.map((row) =>
+        this.parseMemoryFromStorage(row)
+      );
       await this.archiver.archive(memories);
     } finally {
       client.release();
@@ -767,9 +836,12 @@ export class RefactoredNeonMemoryProvider extends NeonMemoryProviderBase {
     const client = await this.connection.connect();
     try {
       for (const memoryId of memoryIds) {
-        const result = await client.query(`
+        const result = await client.query(
+          `
           SELECT * FROM memories WHERE id = $1 AND agent_id = $2
-        `, [memoryId, agentId]);
+        `,
+          [memoryId, agentId]
+        );
 
         if (result.rows.length > 0) {
           const memory = this.parseMemoryFromStorage(result.rows[0]);
@@ -796,9 +868,10 @@ export class RefactoredNeonMemoryProvider extends NeonMemoryProviderBase {
 
     if (row.embedding) {
       try {
-        embedding = typeof row.embedding === 'string' 
-          ? JSON.parse(row.embedding) 
-          : row.embedding;
+        embedding =
+          typeof row.embedding === 'string'
+            ? JSON.parse(row.embedding)
+            : row.embedding;
       } catch (error) {
         runtimeLogger.warn('Failed to parse embedding:', error);
       }
@@ -816,9 +889,19 @@ export class RefactoredNeonMemoryProvider extends NeonMemoryProviderBase {
       duration: row.duration as MemoryDuration,
     })
       .addOptional('embedding', embedding)
-      .addOptional('expiresAt', row.expires_at ? new Date(row.expires_at) : undefined)
+      .addOptional(
+        'expiresAt',
+        row.expires_at ? new Date(row.expires_at) : undefined
+      )
       .addOptional('tier', row.tier as MemoryTierType)
-      .addOptional('context', row.context ? (typeof row.context === 'string' ? JSON.parse(row.context) : row.context) : undefined)
+      .addOptional(
+        'context',
+        row.context
+          ? typeof row.context === 'string'
+            ? JSON.parse(row.context)
+            : row.context
+          : undefined
+      )
       .build();
   }
 
@@ -831,13 +914,19 @@ export class RefactoredNeonMemoryProvider extends NeonMemoryProviderBase {
       `);
 
       for (const { agent_id } of agentsResult.rows) {
-        const rulesResult = await client.query(`
+        const rulesResult = await client.query(
+          `
           SELECT * FROM consolidation_rules WHERE agent_id = $1 AND enabled = true
-        `, [agent_id]);
+        `,
+          [agent_id]
+        );
 
         for (const rule of rulesResult.rows) {
-          const memories = await this.retrieveTier(agent_id, rule.from_tier as MemoryTierType);
-          
+          const memories = await this.retrieveTier(
+            agent_id,
+            rule.from_tier as MemoryTierType
+          );
+
           for (const memory of memories) {
             if (this.shouldConsolidate(memory as EnhancedMemoryRecord, rule)) {
               await this.consolidateMemory(
@@ -875,7 +964,8 @@ export class RefactoredNeonMemoryProvider extends NeonMemoryProviderBase {
       case 'importance':
         return (memory.importance || 0) >= rule.threshold;
       case 'age': {
-        const ageInDays = (Date.now() - memory.timestamp.getTime()) / (1000 * 60 * 60 * 24);
+        const ageInDays =
+          (Date.now() - memory.timestamp.getTime()) / (1000 * 60 * 60 * 24);
         return ageInDays >= rule.threshold;
       }
       case 'access_frequency':
@@ -894,7 +984,10 @@ export class RefactoredNeonMemoryProvider extends NeonMemoryProviderBase {
  * Neon-specific archiver implementation
  */
 class NeonArchiver extends SharedArchiver<Pool> {
-  constructor(config: ArchiverConfig, private connection: Pool) {
+  constructor(
+    config: ArchiverConfig,
+    private connection: Pool
+  ) {
     super(config);
   }
 
@@ -905,10 +998,13 @@ class NeonArchiver extends SharedArchiver<Pool> {
   protected async cleanupBefore(date: Date): Promise<number> {
     const client = await this.connection.connect();
     try {
-      const result = await client.query(`
+      const result = await client.query(
+        `
         DELETE FROM memories 
         WHERE timestamp < $1 AND duration = 'archived'
-      `, [date.toISOString()]);
+      `,
+        [date.toISOString()]
+      );
 
       return result.rowCount || 0;
     } finally {
@@ -921,7 +1017,10 @@ class NeonArchiver extends SharedArchiver<Pool> {
  * Neon-specific memory pool implementation
  */
 class NeonMemoryPool extends SharedMemoryPool<Pool> {
-  constructor(config: PoolConfig, private connection: Pool) {
+  constructor(
+    config: PoolConfig,
+    private connection: Pool
+  ) {
     super(config);
   }
 
@@ -935,7 +1034,8 @@ class NeonMemoryPool extends SharedMemoryPool<Pool> {
 
     const client = await this.connection.connect();
     try {
-      await client.query(`
+      await client.query(
+        `
         INSERT INTO shared_memories 
         (id, agent_id, memory_data, permissions, shared_at, version)
         VALUES ($1, $2, $3, $4, $5, $6)
@@ -944,14 +1044,16 @@ class NeonMemoryPool extends SharedMemoryPool<Pool> {
         permissions = EXCLUDED.permissions,
         version = EXCLUDED.version,
         last_accessed_at = NOW()
-      `, [
-        entry.id,
-        entry.agentId,
-        JSON.stringify(entry.memory),
-        JSON.stringify(entry.permissions),
-        entry.sharedAt.toISOString(),
-        entry.version
-      ]);
+      `,
+        [
+          entry.id,
+          entry.agentId,
+          JSON.stringify(entry.memory),
+          JSON.stringify(entry.permissions),
+          entry.sharedAt.toISOString(),
+          entry.version,
+        ]
+      );
     } finally {
       client.release();
     }
@@ -960,9 +1062,12 @@ class NeonMemoryPool extends SharedMemoryPool<Pool> {
   protected async removePersistedEntry(key: string): Promise<void> {
     const client = await this.connection.connect();
     try {
-      await client.query(`
+      await client.query(
+        `
         DELETE FROM shared_memories WHERE id = $1
-      `, [key]);
+      `,
+        [key]
+      );
     } finally {
       client.release();
     }
@@ -1004,7 +1109,7 @@ class NeonMemoryPool extends SharedMemoryPool<Pool> {
           sharedAt: new Date(row.shared_at),
           version: row.version,
           lastAccessedAt: new Date(row.last_accessed_at),
-          accessCount: row.access_count
+          accessCount: row.access_count,
         };
 
         this.entries.set(row.id, entry);
@@ -1022,7 +1127,9 @@ class NeonMemoryPool extends SharedMemoryPool<Pool> {
 /**
  * Factory function to create Neon memory provider
  */
-export function createNeonMemoryProvider(config: NeonMemoryConfig): RefactoredNeonMemoryProvider {
+export function createNeonMemoryProvider(
+  config: NeonMemoryConfig
+): RefactoredNeonMemoryProvider {
   return new RefactoredNeonMemoryProvider(config);
 }
 

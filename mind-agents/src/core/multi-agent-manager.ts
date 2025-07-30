@@ -625,7 +625,9 @@ export class MultiAgentManager extends EventEmitter {
 
           // Ensure agents are defined (they should be based on our validation above)
           if (!agent1 || !agent2) {
-            throw new Error(`Unexpected undefined agent in collaboration setup`);
+            throw new Error(
+              `Unexpected undefined agent in collaboration setup`
+            );
           }
 
           // Add bidirectional collaboration relationships
@@ -873,7 +875,10 @@ export class MultiAgentManager extends EventEmitter {
     proposerId: string,
     proposal: Record<string, unknown>,
     participants: string[],
-    type: 'simple_majority' | 'super_majority' | 'unanimous' = 'simple_majority',
+    type:
+      | 'simple_majority'
+      | 'super_majority'
+      | 'unanimous' = 'simple_majority',
     timeoutMs: number = 300000
   ): Promise<string> {
     // Validate proposer exists
@@ -951,11 +956,12 @@ export class MultiAgentManager extends EventEmitter {
       }
     }
 
-    const distributionId = await this.coordinationManager.requestTaskDistribution(
-      requesterId,
-      task as any,
-      eligibleAgents
-    );
+    const distributionId =
+      await this.coordinationManager.requestTaskDistribution(
+        requesterId,
+        task as any,
+        eligibleAgents
+      );
 
     this.logger.info(`Task distribution requested: ${task.id}`, {
       metadata: {
@@ -1118,8 +1124,10 @@ export class MultiAgentManager extends EventEmitter {
           },
           synchronization: {
             strategy: 'eventual_consistency',
-            conflictResolution: config?.consensusDecisions !== false ? 
-              'consensus_required' : 'last_writer_wins',
+            conflictResolution:
+              config?.consensusDecisions !== false
+                ? 'consensus_required'
+                : 'last_writer_wins',
           },
         }
       );
@@ -1128,13 +1136,16 @@ export class MultiAgentManager extends EventEmitter {
     // Enable legacy collaboration as fallback
     this.enableAgentCollaboration(agentIds);
 
-    this.logger.info(`Advanced collaboration enabled for ${agentIds.length} agents`, {
-      metadata: {
-        collaborationId,
-        agentIds,
-        config,
-      },
-    });
+    this.logger.info(
+      `Advanced collaboration enabled for ${agentIds.length} agents`,
+      {
+        metadata: {
+          collaborationId,
+          agentIds,
+          config,
+        },
+      }
+    );
 
     this.emit('advanced_collaboration_enabled', {
       collaborationId,

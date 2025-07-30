@@ -68,7 +68,7 @@ import {
   safeAsync,
   formatError,
 } from '../utils/standard-errors';
-import { 
+import {
   standardLoggers,
   createStandardLoggingPatterns,
   StandardLogContext,
@@ -76,7 +76,6 @@ import {
 import { performanceMonitor } from '../utils/PerformanceMonitor';
 import { memoryManager } from '../utils/MemoryManager';
 import { globalQueue } from '../utils/AsyncQueue';
-
 
 // Core system imports
 import { AutonomousEngine, AutonomousEngineConfig } from './autonomous-engine';
@@ -96,16 +95,16 @@ import {
   ContextManager,
   createContextBootstrapper,
 } from './context/integration/index';
-import { 
-  ContextService, 
-  createContextService, 
-  ContextEnhancementOptions 
+import {
+  ContextService,
+  createContextService,
+  ContextEnhancementOptions,
 } from './context-service';
 
 // Compliance system imports
-import { 
-  ComplianceIntegration, 
-  createComplianceIntegration 
+import {
+  ComplianceIntegration,
+  createComplianceIntegration,
 } from './compliance-integration';
 
 export class SYMindXRuntime implements AgentRuntime {
@@ -119,7 +118,7 @@ export class SYMindXRuntime implements AgentRuntime {
   private tickTaskId?: string;
   private isRunning = false;
   private runtimeState: RuntimeState;
-  
+
   // Standardized logging
   private logger = standardLoggers.runtime;
   private loggingPatterns = createStandardLoggingPatterns(this.logger);
@@ -144,17 +143,18 @@ export class SYMindXRuntime implements AgentRuntime {
 
   constructor(config: RuntimeConfig) {
     this.config = config;
-    
+
     // Use optimized event bus for better performance
-    const useOptimizedEventBus = config.performance?.useOptimizedEventBus ?? true;
-    this.eventBus = useOptimizedEventBus 
+    const useOptimizedEventBus =
+      config.performance?.useOptimizedEventBus ?? true;
+    this.eventBus = useOptimizedEventBus
       ? new OptimizedEventBus({
           maxEvents: config.performance?.maxEvents || 10000,
           compressionEnabled: config.performance?.compression ?? true,
-          batchingEnabled: config.performance?.batching ?? true
+          batchingEnabled: config.performance?.batching ?? true,
         })
       : new SimpleEventBus();
-    
+
     this.registry = new SYMindXModuleRegistry();
 
     // Create extension context for plugin loader
@@ -250,9 +250,9 @@ export class SYMindXRuntime implements AgentRuntime {
         projectRoot = path.resolve(__dirname, '..', '..');
       }
 
-      this.logger.debug('Resolving config paths', { 
-        __dirname, 
-        projectRoot 
+      this.logger.debug('Resolving config paths', {
+        __dirname,
+        projectRoot,
       });
 
       // Try multiple paths for runtime.json
@@ -308,19 +308,32 @@ export class SYMindXRuntime implements AgentRuntime {
             ...fileConfig.extensions,
           },
           agents: (() => {
-            const agentsConfig: { enabled: boolean; paths?: string[]; defaultEnabled?: boolean; charactersPath?: string } = {
-              enabled: fileConfig.agents?.enabled ?? this.config.agents?.enabled ?? true
+            const agentsConfig: {
+              enabled: boolean;
+              paths?: string[];
+              defaultEnabled?: boolean;
+              charactersPath?: string;
+            } = {
+              enabled:
+                fileConfig.agents?.enabled ??
+                this.config.agents?.enabled ??
+                true,
             };
-            
+
             const paths = fileConfig.agents?.paths ?? this.config.agents?.paths;
             if (paths) agentsConfig.paths = paths;
-            
-            const defaultEnabled = fileConfig.agents?.defaultEnabled ?? this.config.agents?.defaultEnabled;
-            if (defaultEnabled !== undefined) agentsConfig.defaultEnabled = defaultEnabled;
-            
-            const charactersPath = fileConfig.agents?.charactersPath ?? this.config.agents?.charactersPath;
+
+            const defaultEnabled =
+              fileConfig.agents?.defaultEnabled ??
+              this.config.agents?.defaultEnabled;
+            if (defaultEnabled !== undefined)
+              agentsConfig.defaultEnabled = defaultEnabled;
+
+            const charactersPath =
+              fileConfig.agents?.charactersPath ??
+              this.config.agents?.charactersPath;
             if (charactersPath) agentsConfig.charactersPath = charactersPath;
-            
+
             return agentsConfig;
           })(),
           portals: {
@@ -333,13 +346,13 @@ export class SYMindXRuntime implements AgentRuntime {
               this.config.portals?.paths ?? ['./portals'],
             apiKeys: {
               // Default API keys from environment variables
-              openai: process.env["OPENAI_API_KEY"] || '',
-              anthropic: process.env["ANTHROPIC_API_KEY"] || '',
-              groq: process.env["GROQ_API_KEY"] || '',
-              xai: process.env["XAI_API_KEY"] || '',
-              google: process.env["GOOGLE_API_KEY"] || '',
-              openrouter: process.env["OPENROUTER_API_KEY"] || '',
-              'kluster.ai': process.env["KLUSTER_AI_API_KEY"] || '',
+              openai: process.env['OPENAI_API_KEY'] || '',
+              anthropic: process.env['ANTHROPIC_API_KEY'] || '',
+              groq: process.env['GROQ_API_KEY'] || '',
+              xai: process.env['XAI_API_KEY'] || '',
+              google: process.env['GOOGLE_API_KEY'] || '',
+              openrouter: process.env['OPENROUTER_API_KEY'] || '',
+              'kluster.ai': process.env['KLUSTER_AI_API_KEY'] || '',
               // Override with any explicit config values
               ...this.config.portals?.apiKeys,
               ...fileConfig.portals?.apiKeys,
@@ -361,13 +374,13 @@ export class SYMindXRuntime implements AgentRuntime {
               paths: this.config.portals?.paths ?? ['./portals'],
               apiKeys: {
                 // Default API keys from environment variables
-                openai: process.env["OPENAI_API_KEY"] || '',
-                anthropic: process.env["ANTHROPIC_API_KEY"] || '',
-                groq: process.env["GROQ_API_KEY"] || '',
-                xai: process.env["XAI_API_KEY"] || '',
-                google: process.env["GOOGLE_API_KEY"] || '',
-                openrouter: process.env["OPENROUTER_API_KEY"] || '',
-                'kluster.ai': process.env["KLUSTER_AI_API_KEY"] || '',
+                openai: process.env['OPENAI_API_KEY'] || '',
+                anthropic: process.env['ANTHROPIC_API_KEY'] || '',
+                groq: process.env['GROQ_API_KEY'] || '',
+                xai: process.env['XAI_API_KEY'] || '',
+                google: process.env['GOOGLE_API_KEY'] || '',
+                openrouter: process.env['OPENROUTER_API_KEY'] || '',
+                'kluster.ai': process.env['KLUSTER_AI_API_KEY'] || '',
                 // Override with any existing config values
                 ...this.config.portals?.apiKeys,
               },
@@ -434,7 +447,7 @@ export class SYMindXRuntime implements AgentRuntime {
         runtimeLogger.info('📊 Starting performance monitoring...');
         performanceMonitor.start();
         memoryManager.start();
-        
+
         // Register runtime for automatic cleanup
         memoryManager.registerResource(
           'runtime',
@@ -467,23 +480,27 @@ export class SYMindXRuntime implements AgentRuntime {
       this.runtimeState.startTime = new Date();
       // Use optimized async queue for ticking if enabled
       if (this.config.performance?.useAsyncQueue !== false) {
-        this.tickTaskId = globalQueue.addRecurring(() => {
-          return this.tick().catch((error) => {
-            runtimeLogger.error(
-              '❌ Runtime tick error:',
-              error as Error,
-              {} as LogContext
-            );
-            this.runtimeState.errors.push(
-              new RuntimeError('Runtime tick error', 'TICK_ERROR', {
-                error: error instanceof Error ? error.message : String(error),
-              })
-            );
-          });
-        }, this.config.tickInterval, {
-          priority: 10, // High priority for runtime tick
-          tags: { component: 'runtime', operation: 'tick' }
-        });
+        this.tickTaskId = globalQueue.addRecurring(
+          () => {
+            return this.tick().catch((error) => {
+              runtimeLogger.error(
+                '❌ Runtime tick error:',
+                error as Error,
+                {} as LogContext
+              );
+              this.runtimeState.errors.push(
+                new RuntimeError('Runtime tick error', 'TICK_ERROR', {
+                  error: error instanceof Error ? error.message : String(error),
+                })
+              );
+            });
+          },
+          this.config.tickInterval,
+          {
+            priority: 10, // High priority for runtime tick
+            tags: { component: 'runtime', operation: 'tick' },
+          }
+        );
       } else {
         this.tickTimer = setInterval(() => {
           this.tick().catch((error) => {
@@ -648,7 +665,7 @@ export class SYMindXRuntime implements AgentRuntime {
       this.logger.debug('Loading characters', {
         charactersDir,
         enabled: this.config.agents?.enabled,
-        configuredPath: this.config.agents?.charactersPath
+        configuredPath: this.config.agents?.charactersPath,
       });
 
       try {
@@ -659,7 +676,7 @@ export class SYMindXRuntime implements AgentRuntime {
         let jsonFiles = files.filter((file) => file.endsWith('.json'));
 
         // Check if we should load only a specific agent
-        const forceSingleAgent = process.env["FORCE_SINGLE_AGENT"];
+        const forceSingleAgent = process.env['FORCE_SINGLE_AGENT'];
         if (forceSingleAgent) {
           const singleAgentFile = `${forceSingleAgent}.json`;
           if (jsonFiles.includes(singleAgentFile)) {
@@ -868,7 +885,9 @@ export class SYMindXRuntime implements AgentRuntime {
   /**
    * Process environment variables in legacy format
    */
-  private processEnvironmentVariables(obj: ConfigValue): ProcessedEnvironmentConfig {
+  private processEnvironmentVariables(
+    obj: ConfigValue
+  ): ProcessedEnvironmentConfig {
     if (typeof obj === 'string') {
       // Handle ${ENV_VAR:default} syntax
       return obj.replace(
@@ -933,19 +952,20 @@ export class SYMindXRuntime implements AgentRuntime {
         },
       },
       modules: (() => {
-        const modulesConfig: { 
-          extensions: string[]; 
-          memory?: MemoryConfig; 
-          emotion?: EmotionConfig; 
-          cognition?: CognitionConfig; 
-          portal?: Record<string, ConfigValue>; 
-          tools?: Record<string, ConfigValue>; 
+        const modulesConfig: {
+          extensions: string[];
+          memory?: MemoryConfig;
+          emotion?: EmotionConfig;
+          cognition?: CognitionConfig;
+          portal?: Record<string, ConfigValue>;
+          tools?: Record<string, ConfigValue>;
         } = {
-          extensions: charConfig.extensions?.map(
-            (ext: CharacterExtensionConfig) => ext.name
-          ) || []
+          extensions:
+            charConfig.extensions?.map(
+              (ext: CharacterExtensionConfig) => ext.name
+            ) || [],
         };
-        
+
         if (charConfig.memory) {
           modulesConfig.memory = {
             provider: charConfig.memory.type as MemoryProviderType,
@@ -953,7 +973,7 @@ export class SYMindXRuntime implements AgentRuntime {
             ...charConfig.memory.config,
           } as MemoryConfig;
         }
-        
+
         if (charConfig.emotion) {
           modulesConfig.emotion = {
             type: charConfig.emotion.type as EmotionModuleType,
@@ -963,7 +983,7 @@ export class SYMindXRuntime implements AgentRuntime {
             ...charConfig.emotion.config,
           } as EmotionConfig;
         }
-        
+
         if (charConfig.cognition) {
           modulesConfig.cognition = {
             type: charConfig.cognition.type as CognitionModuleType,
@@ -973,16 +993,19 @@ export class SYMindXRuntime implements AgentRuntime {
             ...charConfig.cognition.config,
           } as CognitionConfig;
         }
-        
+
         if (charConfig.portals?.[0]?.config) {
-          modulesConfig.portal = charConfig.portals[0].config as Record<string, ConfigValue>;
+          modulesConfig.portal = charConfig.portals[0].config as Record<
+            string,
+            ConfigValue
+          >;
         }
-        
+
         const tools = (charConfig as CharacterConfigWithModules).modules?.tools;
         if (tools) {
           modulesConfig.tools = tools;
         }
-        
+
         return modulesConfig;
       })(),
       ...(charConfig.autonomous && {
@@ -991,7 +1014,7 @@ export class SYMindXRuntime implements AgentRuntime {
           independence_level: charConfig.autonomous.independence_level,
           decision_making: charConfig.autonomous.decision_making,
           life_simulation: charConfig.autonomous.life_simulation,
-        }
+        },
       }),
       ...(charConfig.human_interaction && {
         human_interaction: {
@@ -999,7 +1022,7 @@ export class SYMindXRuntime implements AgentRuntime {
           mode: charConfig.human_interaction.response_style,
           interruption_tolerance:
             charConfig.human_interaction.interruption_tolerance,
-        }
+        },
       }),
     };
   }
@@ -1063,7 +1086,6 @@ export class SYMindXRuntime implements AgentRuntime {
         `Cognition module '${agentConfig.psyche.defaults.cognition}' not found and could not be created`
       );
     }
-
 
     // Create emotion module (try factory first, then fallback to registry)
     let emotionModule = this.registry.getEmotionModule(
@@ -1391,12 +1413,15 @@ export class SYMindXRuntime implements AgentRuntime {
         runtimeLogger.info(`✅ Initialized extension: ${extension.name}`);
       } catch (error) {
         void error;
-        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
         runtimeLogger.error(
           `❌ Failed to initialize extension ${extension.name}: ${errorMessage}`
         );
         if (error instanceof Error && error.stack) {
-          runtimeLogger.debug(`Extension ${extension.name} error stack: ${error.stack}`);
+          runtimeLogger.debug(
+            `Extension ${extension.name} error stack: ${error.stack}`
+          );
         }
       }
     }
@@ -1587,11 +1612,17 @@ export class SYMindXRuntime implements AgentRuntime {
 
     const duration = Date.now() - startTime;
     timer.end();
-    
+
     // Record tick performance metrics
-    performanceMonitor.recordMetric('runtime.tick.agents_processed', this.agents.size);
-    performanceMonitor.recordMetric('runtime.tick.lazy_agents', this.lazyAgents.size);
-    
+    performanceMonitor.recordMetric(
+      'runtime.tick.agents_processed',
+      this.agents.size
+    );
+    performanceMonitor.recordMetric(
+      'runtime.tick.lazy_agents',
+      this.lazyAgents.size
+    );
+
     if (duration > this.config.tickInterval * 0.8) {
       runtimeLogger.warn(
         `⚠️ Tick took ${duration}ms (${this.config.tickInterval}ms interval)`
@@ -1655,9 +1686,9 @@ export class SYMindXRuntime implements AgentRuntime {
         hasGoal: !!context.goal,
         environmentType: context.environment.type,
       };
-      
+
       runtimeLogger.debug('Context created for thought process', contextTrace);
-      
+
       // Add performance monitoring for context usage
       const contextStartTime = performance.now();
       (context as any).__contextMetrics = {
@@ -1677,7 +1708,7 @@ export class SYMindXRuntime implements AgentRuntime {
           emotionalTriggers: agent.emotion.triggers || [],
         };
         (context as any).emotional = emotionalContext;
-        
+
         runtimeLogger.debug(`Emotional context added for ${agent.name}`, {
           emotion: emotionalContext.currentEmotion,
           intensity: emotionalContext.emotionIntensity,
@@ -1686,18 +1717,23 @@ export class SYMindXRuntime implements AgentRuntime {
 
       // Enrich context with social data (other agents, recent interactions)
       const socialContext = {
-        activeAgents: Array.from(this.agents.keys()).filter(id => id !== agent.id),
+        activeAgents: Array.from(this.agents.keys()).filter(
+          (id) => id !== agent.id
+        ),
         recentInteractions: context.events
-          .filter(event => event.type.includes('interaction') || event.type.includes('message'))
+          .filter(
+            (event) =>
+              event.type.includes('interaction') ||
+              event.type.includes('message')
+          )
           .slice(-3), // Last 3 interactions
         collaborativeGoals: context.goal ? [context.goal] : [],
       };
       (context as any).social = socialContext;
     } catch (error) {
-      runtimeLogger.warn(
-        `Failed to enrich context for ${agent.name}`,
-        { error: (error as Error).message }
-      );
+      runtimeLogger.warn(`Failed to enrich context for ${agent.name}`, {
+        error: (error as Error).message,
+      });
     }
 
     // TEMPORARILY DISABLED - Enhanced thinking prompt generation
@@ -1740,8 +1776,9 @@ export class SYMindXRuntime implements AgentRuntime {
     if (this.config.debug?.enabled) {
       const contextMetrics = (context as any).__contextMetrics;
       if (contextMetrics) {
-        const totalContextDuration = performance.now() - contextMetrics.startTime;
-        
+        const totalContextDuration =
+          performance.now() - contextMetrics.startTime;
+
         runtimeLogger.debug(`Thought process completed for ${agent.name}`, {
           thinkingDuration: `${thinkingDuration.toFixed(2)}ms`,
           totalContextDuration: `${totalContextDuration.toFixed(2)}ms`,
@@ -1759,8 +1796,14 @@ export class SYMindXRuntime implements AgentRuntime {
       if (!thoughtResult.actions || !Array.isArray(thoughtResult.actions)) {
         runtimeLogger.warn(`Invalid actions array for agent ${agent.name}`);
       }
-      if (typeof thoughtResult.confidence !== 'number' || thoughtResult.confidence < 0 || thoughtResult.confidence > 1) {
-        runtimeLogger.warn(`Invalid confidence value for agent ${agent.name}: ${thoughtResult.confidence}`);
+      if (
+        typeof thoughtResult.confidence !== 'number' ||
+        thoughtResult.confidence < 0 ||
+        thoughtResult.confidence > 1
+      ) {
+        runtimeLogger.warn(
+          `Invalid confidence value for agent ${agent.name}: ${thoughtResult.confidence}`
+        );
       }
     }
 
@@ -1946,13 +1989,16 @@ export class SYMindXRuntime implements AgentRuntime {
       runtimeLogger.info('🔒 Initializing compliance system...');
 
       // Get memory provider from the registry
-      const memoryProvider = this.registry.getMemoryProvider('sqlite') || 
-                            this.registry.getMemoryProvider('postgres') ||
-                            this.registry.getMemoryProvider('supabase') ||
-                            this.registry.getMemoryProvider('neon');
+      const memoryProvider =
+        this.registry.getMemoryProvider('sqlite') ||
+        this.registry.getMemoryProvider('postgres') ||
+        this.registry.getMemoryProvider('supabase') ||
+        this.registry.getMemoryProvider('neon');
 
       if (!memoryProvider) {
-        runtimeLogger.warn('⚠️ No memory provider available for compliance system');
+        runtimeLogger.warn(
+          '⚠️ No memory provider available for compliance system'
+        );
         return;
       }
 
@@ -1967,7 +2013,8 @@ export class SYMindXRuntime implements AgentRuntime {
           sox: this.config.compliance.sox,
           strictMode: this.config.compliance.strictMode || false,
           autoClassifyData: this.config.compliance.autoClassifyData || false,
-          enableRealTimeMonitoring: this.config.compliance.enableRealTimeMonitoring || false,
+          enableRealTimeMonitoring:
+            this.config.compliance.enableRealTimeMonitoring || false,
         }
       );
 
@@ -1976,8 +2023,12 @@ export class SYMindXRuntime implements AgentRuntime {
 
       runtimeLogger.success('🔒 Compliance system initialized');
     } catch (error) {
-      runtimeLogger.error('❌ Failed to initialize compliance system', error as Error, {});
-      
+      runtimeLogger.error(
+        '❌ Failed to initialize compliance system',
+        error as Error,
+        {}
+      );
+
       // In strict mode, throw the error to prevent startup
       if (this.config.compliance?.strictMode) {
         throw error;
@@ -2005,11 +2056,14 @@ export class SYMindXRuntime implements AgentRuntime {
 
       // Initialize the context system
       const initResult = await this.contextBootstrapper.initialize(this.config);
-      
+
       if (!initResult.success) {
         runtimeLogger.warn(
           `Context system initialization had issues: ${initResult.message}`,
-          { warnings: initResult.warnings, errors: initResult.components_failed }
+          {
+            warnings: initResult.warnings,
+            errors: initResult.components_failed,
+          }
         );
       } else {
         runtimeLogger.info(
@@ -2024,7 +2078,6 @@ export class SYMindXRuntime implements AgentRuntime {
         this.contextManager = contextSystem.contextManager;
         this.runtimeAdapter = contextSystem.runtimeAdapter;
       }
-
     } catch (error) {
       runtimeLogger.error(
         'Failed to initialize context system - falling back to legacy mode',
@@ -2081,7 +2134,10 @@ export class SYMindXRuntime implements AgentRuntime {
     if (this.runtimeAdapter && this.contextManager) {
       try {
         // Get or create unified context
-        const unifiedContext = this.runtimeAdapter.getOrCreateUnifiedContext(agent, basicContext);
+        const unifiedContext = this.runtimeAdapter.getOrCreateUnifiedContext(
+          agent,
+          basicContext
+        );
 
         // Otherwise, extract legacy context from unified context
         return this.runtimeAdapter.extractThoughtContext(unifiedContext);
@@ -2104,7 +2160,9 @@ export class SYMindXRuntime implements AgentRuntime {
     if (this.contextBootstrapper) {
       try {
         await this.contextBootstrapper.registerAgent(agent);
-        runtimeLogger.debug(`Agent ${agent.name} registered with context system`);
+        runtimeLogger.debug(
+          `Agent ${agent.name} registered with context system`
+        );
       } catch (error) {
         runtimeLogger.warn(
           `Failed to register agent ${agent.name} with context system`,
@@ -2121,7 +2179,9 @@ export class SYMindXRuntime implements AgentRuntime {
     if (this.contextBootstrapper) {
       try {
         await this.contextBootstrapper.unregisterAgent(agentId);
-        runtimeLogger.debug(`Agent ${agentId} unregistered from context system`);
+        runtimeLogger.debug(
+          `Agent ${agentId} unregistered from context system`
+        );
       } catch (error) {
         runtimeLogger.warn(
           `Failed to unregister agent ${agentId} from context system`,
@@ -2508,28 +2568,30 @@ export class SYMindXRuntime implements AgentRuntime {
         enabled: true,
         priority: 1,
         settings: {
-          port: parseInt(process.env["API_PORT"] || '8000'),
-          host: process.env["API_HOST"] || 'localhost',
+          port: parseInt(process.env['API_PORT'] || '8000'),
+          host: process.env['API_HOST'] || 'localhost',
           cors_enabled: true,
           rate_limiting: true,
           websocket_enabled: true,
           webui_enabled: true,
-          auth_required: process.env["API_AUTH_REQUIRED"] === 'true',
-          max_connections: parseInt(process.env["API_MAX_CONNECTIONS"] || '100'),
+          auth_required: process.env['API_AUTH_REQUIRED'] === 'true',
+          max_connections: parseInt(
+            process.env['API_MAX_CONNECTIONS'] || '100'
+          ),
         },
         dependencies: [],
         capabilities: ['http', 'websocket', 'webui', 'api'],
       };
 
       // Slack extension config
-      if (process.env["SLACK_BOT_TOKEN"]) {
+      if (process.env['SLACK_BOT_TOKEN']) {
         extensionConfigs['slack'] = {
           enabled: true,
           priority: 2,
           settings: {
-            botToken: process.env["SLACK_BOT_TOKEN"],
-            signingSecret: process.env["SLACK_SIGNING_SECRET"],
-            appToken: process.env["SLACK_APP_TOKEN"],
+            botToken: process.env['SLACK_BOT_TOKEN'],
+            signingSecret: process.env['SLACK_SIGNING_SECRET'],
+            appToken: process.env['SLACK_APP_TOKEN'],
           },
           dependencies: [],
           capabilities: ['messaging', 'channels'],
@@ -2537,7 +2599,7 @@ export class SYMindXRuntime implements AgentRuntime {
       }
 
       // RuneLite extension config
-      if (process.env["RUNELITE_ENABLED"] === 'true') {
+      if (process.env['RUNELITE_ENABLED'] === 'true') {
         extensionConfigs['runelite'] = {
           enabled: true,
           priority: 3,
@@ -2550,15 +2612,15 @@ export class SYMindXRuntime implements AgentRuntime {
       }
 
       // Twitter extension config
-      if (process.env["TWITTER_API_KEY"]) {
+      if (process.env['TWITTER_API_KEY']) {
         extensionConfigs['twitter'] = {
           enabled: true,
           priority: 4,
           settings: {
-            apiKey: process.env["TWITTER_API_KEY"],
-            apiSecret: process.env["TWITTER_API_SECRET"],
-            accessToken: process.env["TWITTER_ACCESS_TOKEN"],
-            accessTokenSecret: process.env["TWITTER_ACCESS_TOKEN_SECRET"],
+            apiKey: process.env['TWITTER_API_KEY'],
+            apiSecret: process.env['TWITTER_API_SECRET'],
+            accessToken: process.env['TWITTER_ACCESS_TOKEN'],
+            accessTokenSecret: process.env['TWITTER_ACCESS_TOKEN_SECRET'],
           },
           dependencies: [],
           capabilities: ['social-media', 'posting'],
@@ -2566,13 +2628,13 @@ export class SYMindXRuntime implements AgentRuntime {
       }
 
       // Telegram extension config
-      if (process.env["TELEGRAM_BOT_TOKEN"]) {
+      if (process.env['TELEGRAM_BOT_TOKEN']) {
         extensionConfigs['telegram'] = {
           enabled: true,
           priority: 5,
           settings: {
-            botToken: process.env["TELEGRAM_BOT_TOKEN"],
-            webhookUrl: process.env["TELEGRAM_WEBHOOK_URL"],
+            botToken: process.env['TELEGRAM_BOT_TOKEN'],
+            webhookUrl: process.env['TELEGRAM_WEBHOOK_URL'],
           },
           dependencies: [],
           capabilities: ['messaging', 'webhook'],
@@ -2628,7 +2690,8 @@ export class SYMindXRuntime implements AgentRuntime {
             );
           } catch (error) {
             void error;
-            const errorMessage = error instanceof Error ? error.message : String(error);
+            const errorMessage =
+              error instanceof Error ? error.message : String(error);
             runtimeLogger.error(
               `❌ Failed to initialize API extension at runtime level: ${errorMessage}`
             );
@@ -3433,16 +3496,16 @@ export class SYMindXRuntime implements AgentRuntime {
 
   private async loadApiKeys(): Promise<Record<string, string>> {
     const apiKeys: Record<string, string> = {};
-    
+
     // 1. Start with config defaults
     if (this.config.portals?.apiKeys) {
       Object.assign(apiKeys, this.config.portals.apiKeys);
     }
-    
+
     // 2. Override with environment variables
     const envKeys = [
       'OPENAI_API_KEY',
-      'ANTHROPIC_API_KEY', 
+      'ANTHROPIC_API_KEY',
       'GROQ_API_KEY',
       'XAI_API_KEY',
       'OPENROUTER_API_KEY',
@@ -3450,9 +3513,9 @@ export class SYMindXRuntime implements AgentRuntime {
       'GOOGLE_API_KEY',
       'MISTRAL_API_KEY',
       'COHERE_API_KEY',
-      'AZURE_OPENAI_API_KEY'
+      'AZURE_OPENAI_API_KEY',
     ];
-    
+
     for (const envKey of envKeys) {
       const value = process.env[envKey];
       if (value && value.trim()) {
@@ -3461,44 +3524,53 @@ export class SYMindXRuntime implements AgentRuntime {
         apiKeys[portalKey] = value;
       }
     }
-    
+
     // 3. Override with character-specific keys (if any characters are loaded)
     try {
       const characters = await this.loadCharacterApiKeys();
       Object.assign(apiKeys, characters);
     } catch (error) {
-      this.logger.debug('No character API keys found', { error: String(error) });
+      this.logger.debug('No character API keys found', {
+        error: String(error),
+      });
     }
-    
-    this.logger.info('API Keys loaded', { 
-      availableKeys: Object.keys(apiKeys).filter(key => apiKeys[key] && apiKeys[key].trim()),
-      totalKeys: Object.keys(apiKeys).length
+
+    this.logger.info('API Keys loaded', {
+      availableKeys: Object.keys(apiKeys).filter(
+        (key) => apiKeys[key] && apiKeys[key].trim()
+      ),
+      totalKeys: Object.keys(apiKeys).length,
     });
-    
+
     return apiKeys;
   }
-  
+
   private async loadCharacterApiKeys(): Promise<Record<string, string>> {
     const characterKeys: Record<string, string> = {};
-    
+
     try {
       const fs = await import('fs/promises');
       const path = await import('path');
-      
+
       // Look for character files that might contain API keys
       const characterPaths = [
         path.join(process.cwd(), 'dist', 'characters'),
         path.join(process.cwd(), 'src', 'characters'),
-        path.join(process.cwd(), 'characters')
+        path.join(process.cwd(), 'characters'),
       ];
-      
+
       for (const charPath of characterPaths) {
         try {
           const files = await fs.readdir(charPath);
           for (const file of files) {
             if (file.endsWith('.json')) {
-              const charConfig = JSON.parse(await fs.readFile(path.join(charPath, file), 'utf-8'));
-              if (charConfig.apiKeys && typeof charConfig.apiKeys === 'object') {
+              const charConfig = JSON.parse(
+                await fs.readFile(path.join(charPath, file), 'utf-8')
+              );
+              if (
+                charConfig.apiKeys &&
+                typeof charConfig.apiKeys === 'object'
+              ) {
                 Object.assign(characterKeys, charConfig.apiKeys);
               }
             }
@@ -3508,9 +3580,11 @@ export class SYMindXRuntime implements AgentRuntime {
         }
       }
     } catch (error) {
-      this.logger.debug('Error loading character API keys', { error: String(error) });
+      this.logger.debug('Error loading character API keys', {
+        error: String(error),
+      });
     }
-    
+
     return characterKeys;
   }
 
@@ -3521,26 +3595,29 @@ export class SYMindXRuntime implements AgentRuntime {
   /**
    * Validate context for agent processing
    */
-  private async validateContextForAgent(agent: Agent, context: ThoughtContext): Promise<void> {
+  private async validateContextForAgent(
+    agent: Agent,
+    context: ThoughtContext
+  ): Promise<void> {
     try {
       // Convert ThoughtContext to UnifiedContext for validation
       // This is a simplified validation - the context service handles full validation
       if (!context.events || !Array.isArray(context.events)) {
         runtimeLogger.warn(`Invalid context events for agent ${agent.name}`);
       }
-      
+
       if (!context.memories || !Array.isArray(context.memories)) {
         runtimeLogger.warn(`Invalid context memories for agent ${agent.name}`);
       }
-      
+
       if (!context.currentState) {
         runtimeLogger.warn(`Missing current state for agent ${agent.name}`);
       }
-      
+
       if (!context.environment) {
         runtimeLogger.warn(`Missing environment state for agent ${agent.name}`);
       }
-      
+
       runtimeLogger.debug(`Context validated for agent ${agent.name}`, {
         events: context.events.length,
         memories: context.memories.length,
@@ -3562,14 +3639,14 @@ export class SYMindXRuntime implements AgentRuntime {
   private cleanupContextCache(): void {
     try {
       const activeAgentIds = new Set(this.agents.keys());
-      
+
       // Clear cache for agents that are no longer active
       for (const agentId of this.agents.keys()) {
         if (!activeAgentIds.has(agentId)) {
           this.contextService.clearContextCache(agentId);
         }
       }
-      
+
       runtimeLogger.debug('Context cache cleanup completed');
     } catch (error) {
       runtimeLogger.error(
@@ -3582,14 +3659,14 @@ export class SYMindXRuntime implements AgentRuntime {
 
   /**
    * Inject context into agent lifecycle
-   * 
+   *
    * This method integrates context lifecycle with agent activation and deactivation
    */
   private async injectContextIntoLifecycle(agent: Agent): Promise<void> {
     try {
       // Clear any existing context cache when agent is reactivated
       this.contextService.clearContextCache(agent.id);
-      
+
       // Pre-warm context cache if agent has recent activity
       const hasRecentActivity = this.getUnprocessedEvents(agent.id).length > 0;
       if (hasRecentActivity) {
@@ -3599,13 +3676,13 @@ export class SYMindXRuntime implements AgentRuntime {
           currentState: this.getCurrentState(agent),
           environment: this.getEnvironmentState(),
         };
-        
+
         // Pre-warm cache with enhanced context
         await this.contextService.enhanceThoughtContext(agent, basicContext, {
           cache: true,
           cacheTtl: 600000, // 10 minutes for pre-warmed cache
         });
-        
+
         runtimeLogger.debug(`Context cache pre-warmed for agent ${agent.name}`);
       }
     } catch (error) {
@@ -3619,7 +3696,10 @@ export class SYMindXRuntime implements AgentRuntime {
   /**
    * Get context performance metrics
    */
-  getContextPerformanceMetrics(): Record<string, { avg: number; min: number; max: number; count: number }> {
+  getContextPerformanceMetrics(): Record<
+    string,
+    { avg: number; min: number; max: number; count: number }
+  > {
     return this.contextService.getPerformanceStats();
   }
 

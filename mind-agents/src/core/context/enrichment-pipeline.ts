@@ -1,6 +1,6 @@
 /**
  * Context Enrichment Pipeline for SYMindX
- * 
+ *
  * This module implements the orchestration system for context enrichers,
  * providing priority-based execution, parallel processing, caching, and
  * comprehensive metrics collection.
@@ -29,7 +29,7 @@ import { LRUCache } from '../../utils/LRUCache';
 
 /**
  * Context Enrichment Pipeline
- * 
+ *
  * Orchestrates the execution of multiple context enrichers with support for:
  * - Priority-based execution ordering
  * - Parallel and sequential execution
@@ -45,7 +45,7 @@ export class EnrichmentPipeline extends EventEmitter {
   private dependencyGraph = new Map<string, DependencyGraphNode>();
   private config: EnrichmentPipelineConfig;
   private isInitialized = false;
-  
+
   // Performance optimizations
   private executionQueue: Array<{
     request: EnrichmentRequest;
@@ -53,15 +53,18 @@ export class EnrichmentPipeline extends EventEmitter {
     reject: (error: Error) => void;
   }> = [];
   private isProcessingQueue = false;
-  private circuitBreakers = new Map<string, {
-    failures: number;
-    lastFailure: number;
-    isOpen: boolean;
-  }>();
+  private circuitBreakers = new Map<
+    string,
+    {
+      failures: number;
+      lastFailure: number;
+      isOpen: boolean;
+    }
+  >();
 
   constructor(config?: Partial<EnrichmentPipelineConfig>) {
     super();
-    
+
     this.config = {
       maxConcurrency: 5,
       defaultTimeout: 5000,
@@ -83,7 +86,7 @@ export class EnrichmentPipeline extends EventEmitter {
       ttl: this.config.cacheTtl * 1000, // Convert to milliseconds
       onEvict: (key, value) => {
         this.emit('cacheEvict', { key, value });
-      }
+      },
     });
 
     // Set up cache cleanup interval with auto-tuning
@@ -106,7 +109,7 @@ export class EnrichmentPipeline extends EventEmitter {
           await enricher.initialize(entry.defaultConfig);
           this.enrichers.set(id, enricher);
           this.initializeMetrics(id);
-          
+
           runtimeLogger.debug('Enricher initialized', { enricherId: id });
         } catch (error) {
           runtimeLogger.error('Failed to initialize enricher', {
@@ -132,9 +135,12 @@ export class EnrichmentPipeline extends EventEmitter {
         },
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      runtimeLogger.error('Failed to initialize enrichment pipeline', { error: errorMessage });
-      
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      runtimeLogger.error('Failed to initialize enrichment pipeline', {
+        error: errorMessage,
+      });
+
       return {
         success: false,
         error: errorMessage,
@@ -155,7 +161,7 @@ export class EnrichmentPipeline extends EventEmitter {
       }
 
       this.enricherRegistry.set(entry.id, entry);
-      
+
       runtimeLogger.info('Enricher registered', {
         enricherId: entry.id,
         name: entry.metadata.name,
@@ -164,7 +170,7 @@ export class EnrichmentPipeline extends EventEmitter {
 
       // If pipeline is already initialized, initialize this enricher immediately
       if (this.isInitialized) {
-        this.initializeNewEnricher(entry).catch(error => {
+        this.initializeNewEnricher(entry).catch((error) => {
           runtimeLogger.error('Failed to initialize new enricher', {
             enricherId: entry.id,
             error: error instanceof Error ? error.message : String(error),
@@ -177,12 +183,13 @@ export class EnrichmentPipeline extends EventEmitter {
         message: `Enricher '${entry.id}' registered successfully`,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       runtimeLogger.error('Failed to register enricher', {
         enricherId: entry.id,
         error: errorMessage,
       });
-      
+
       return {
         success: false,
         error: errorMessage,
@@ -215,12 +222,13 @@ export class EnrichmentPipeline extends EventEmitter {
         message: `Enricher '${enricherId}' unregistered successfully`,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       runtimeLogger.error('Failed to unregister enricher', {
         enricherId,
         error: errorMessage,
       });
-      
+
       return {
         success: false,
         error: errorMessage,
@@ -242,7 +250,9 @@ export class EnrichmentPipeline extends EventEmitter {
   /**
    * Execute the enrichment pipeline directly (optimized version)
    */
-  private async enrichInternal(request: EnrichmentRequest): Promise<PipelineExecutionResult> {
+  private async enrichInternal(
+    request: EnrichmentRequest
+  ): Promise<PipelineExecutionResult> {
     const startTime = Date.now();
     const result: PipelineExecutionResult = {
       success: false,
@@ -279,11 +289,11 @@ export class EnrichmentPipeline extends EventEmitter {
 
       // Sort enrichers by dependency order and stage
       const executionPlan = this.createExecutionPlan(enrichersToRun);
-      
+
       // Execute enrichers according to the plan
       for (const stage of executionPlan) {
         const stageStartTime = Date.now();
-        
+
         if (stage.parallel.length > 0) {
           // Execute parallel enrichers
           const parallelResults = await this.executeParallelEnrichers(
@@ -291,7 +301,7 @@ export class EnrichmentPipeline extends EventEmitter {
             request,
             result.enrichedContext
           );
-          
+
           this.processStageResults(parallelResults, result);
           result.metrics.parallelExecutions += stage.parallel.length;
         }
@@ -302,10 +312,10 @@ export class EnrichmentPipeline extends EventEmitter {
             const enricher = this.enrichers.get(enricherId);
             if (!enricher) continue;
 
-            const enrichmentResult = await this.executeEnricher(
-              enricher,
-              { ...request, context: result.enrichedContext }
-            );
+            const enrichmentResult = await this.executeEnricher(enricher, {
+              ...request,
+              context: result.enrichedContext,
+            });
 
             this.processEnricherResult(enrichmentResult, enricherId, result);
             result.metrics.sequentialExecutions++;
@@ -320,7 +330,8 @@ export class EnrichmentPipeline extends EventEmitter {
         });
       }
 
-      result.success = result.errors.length === 0 || result.enrichersExecuted.length > 0;
+      result.success =
+        result.errors.length === 0 || result.enrichersExecuted.length > 0;
       result.executionTime = Date.now() - startTime;
 
       // Emit completion event
@@ -336,7 +347,8 @@ export class EnrichmentPipeline extends EventEmitter {
 
       return result;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       result.errors.push({
         enricherId: 'pipeline',
         error: errorMessage,
@@ -366,11 +378,13 @@ export class EnrichmentPipeline extends EventEmitter {
    */
   async getHealthStatus(): Promise<OperationResult> {
     const healthChecks = await Promise.allSettled(
-      Array.from(this.enrichers.values()).map(enricher => enricher.healthCheck())
+      Array.from(this.enrichers.values()).map((enricher) =>
+        enricher.healthCheck()
+      )
     );
 
-    const healthy = healthChecks.filter(result => 
-      result.status === 'fulfilled' && result.value.success
+    const healthy = healthChecks.filter(
+      (result) => result.status === 'fulfilled' && result.value.success
     ).length;
 
     const total = healthChecks.length;
@@ -403,7 +417,9 @@ export class EnrichmentPipeline extends EventEmitter {
     try {
       // Dispose of all enrichers
       await Promise.allSettled(
-        Array.from(this.enrichers.values()).map(enricher => enricher.dispose())
+        Array.from(this.enrichers.values()).map((enricher) =>
+          enricher.dispose()
+        )
       );
 
       this.enrichers.clear();
@@ -423,9 +439,12 @@ export class EnrichmentPipeline extends EventEmitter {
         message: 'Pipeline disposed successfully',
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      runtimeLogger.error('Failed to dispose pipeline', { error: errorMessage });
-      
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      runtimeLogger.error('Failed to dispose pipeline', {
+        error: errorMessage,
+      });
+
       return {
         success: false,
         error: errorMessage,
@@ -435,7 +454,9 @@ export class EnrichmentPipeline extends EventEmitter {
 
   // Private helper methods
 
-  private async initializeNewEnricher(entry: EnricherRegistryEntry): Promise<void> {
+  private async initializeNewEnricher(
+    entry: EnricherRegistryEntry
+  ): Promise<void> {
     const enricher = await entry.factory(entry.defaultConfig);
     await enricher.initialize(entry.defaultConfig);
     this.enrichers.set(entry.id, enricher);
@@ -464,16 +485,19 @@ export class EnrichmentPipeline extends EventEmitter {
     this.dependencyGraph.clear();
 
     for (const [id, enricher] of this.enrichers) {
-      const dependencies = enricher.getRequiredKeys()
-        .map(key => this.findEnricherByProvidedKey(key))
-        .filter(enricherId => enricherId && enricherId !== id) as string[];
+      const dependencies = enricher
+        .getRequiredKeys()
+        .map((key) => this.findEnricherByProvidedKey(key))
+        .filter((enricherId) => enricherId && enricherId !== id) as string[];
 
       const dependents = Array.from(this.enrichers.values())
-        .filter(other => other.getRequiredKeys().some(key => 
-          enricher.getProvidedKeys().includes(key)
-        ))
-        .map(other => other.id)
-        .filter(otherId => otherId !== id);
+        .filter((other) =>
+          other
+            .getRequiredKeys()
+            .some((key) => enricher.getProvidedKeys().includes(key))
+        )
+        .map((other) => other.id)
+        .filter((otherId) => otherId !== id);
 
       this.dependencyGraph.set(id, {
         enricherId: id,
@@ -497,22 +521,28 @@ export class EnrichmentPipeline extends EventEmitter {
 
   private selectEnrichers(request: EnrichmentRequest): string[] {
     const available = Array.from(this.enrichers.keys());
-    
+
     // Filter by required enrichers if specified
     if (request.requiredEnrichers && request.requiredEnrichers.length > 0) {
-      return request.requiredEnrichers.filter(id => available.includes(id));
+      return request.requiredEnrichers.filter((id) => available.includes(id));
     }
 
     // Filter out excluded enrichers
     let selected = available;
     if (request.excludedEnrichers && request.excludedEnrichers.length > 0) {
-      selected = selected.filter(id => !request.excludedEnrichers!.includes(id));
+      selected = selected.filter(
+        (id) => !request.excludedEnrichers!.includes(id)
+      );
     }
 
     // Filter by enrichers that can process this context
-    return selected.filter(id => {
+    return selected.filter((id) => {
       const enricher = this.enrichers.get(id);
-      return enricher && enricher.config.enabled && enricher.canEnrich(request.context);
+      return (
+        enricher &&
+        enricher.config.enabled &&
+        enricher.canEnrich(request.context)
+      );
     });
   }
 
@@ -521,8 +551,11 @@ export class EnrichmentPipeline extends EventEmitter {
     parallel: string[];
     sequential: string[];
   }> {
-    const stages = new Map<EnrichmentStage, { parallel: string[]; sequential: string[]; }>();
-    
+    const stages = new Map<
+      EnrichmentStage,
+      { parallel: string[]; sequential: string[] }
+    >();
+
     // Group by stage
     for (const id of enricherIds) {
       const node = this.dependencyGraph.get(id);
@@ -549,8 +582,8 @@ export class EnrichmentPipeline extends EventEmitter {
     ];
 
     return orderedStages
-      .filter(stageName => stages.has(stageName))
-      .map(stageName => ({
+      .filter((stageName) => stages.has(stageName))
+      .map((stageName) => ({
         name: stageName,
         ...stages.get(stageName)!,
       }));
@@ -560,12 +593,18 @@ export class EnrichmentPipeline extends EventEmitter {
     enricherIds: string[],
     request: EnrichmentRequest,
     enrichedContext: Context
-  ): Promise<Array<{ id: string; result: ContextEnrichmentResult | null; error?: Error }>> {
+  ): Promise<
+    Array<{ id: string; result: ContextEnrichmentResult | null; error?: Error }>
+  > {
     const promises = enricherIds.map(async (id) => {
       try {
         const enricher = this.enrichers.get(id);
         if (!enricher) {
-          return { id, result: null, error: new Error(`Enricher '${id}' not found`) };
+          return {
+            id,
+            result: null,
+            error: new Error(`Enricher '${id}' not found`),
+          };
         }
 
         const result = await this.executeEnricher(enricher, {
@@ -575,10 +614,10 @@ export class EnrichmentPipeline extends EventEmitter {
 
         return { id, result };
       } catch (error) {
-        return { 
-          id, 
-          result: null, 
-          error: error instanceof Error ? error : new Error(String(error))
+        return {
+          id,
+          result: null,
+          error: error instanceof Error ? error : new Error(String(error)),
         };
       }
     });
@@ -592,7 +631,7 @@ export class EnrichmentPipeline extends EventEmitter {
   ): Promise<ContextEnrichmentResult> {
     const startTime = Date.now();
     const cacheKey = this.generateCacheKey(enricher.id, request);
-    
+
     // Check cache first
     if (this.config.enableCaching && enricher.config.cacheEnabled) {
       const cached = this.getCachedResult(cacheKey);
@@ -604,18 +643,38 @@ export class EnrichmentPipeline extends EventEmitter {
 
     try {
       // Execute enricher with timeout
-      const timeoutMs = request.timeoutMs || enricher.config.timeout || this.config.defaultTimeout;
-      const result = await this.withTimeout(enricher.enrich(request), timeoutMs);
+      const timeoutMs =
+        request.timeoutMs ||
+        enricher.config.timeout ||
+        this.config.defaultTimeout;
+      const result = await this.withTimeout(
+        enricher.enrich(request),
+        timeoutMs
+      );
 
       // Cache the result
-      if (this.config.enableCaching && enricher.config.cacheEnabled && result.success) {
-        this.cacheResult(cacheKey, result, enricher.config.cacheTtl || this.config.cacheTtl);
+      if (
+        this.config.enableCaching &&
+        enricher.config.cacheEnabled &&
+        result.success
+      ) {
+        this.cacheResult(
+          cacheKey,
+          result,
+          enricher.config.cacheTtl || this.config.cacheTtl
+        );
       }
 
-      this.updateMetrics(enricher.id, Date.now() - startTime, result.success, false);
+      this.updateMetrics(
+        enricher.id,
+        Date.now() - startTime,
+        result.success,
+        false
+      );
       return result;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       const result: ContextEnrichmentResult = {
         success: false,
         enrichedContext: {},
@@ -631,7 +690,11 @@ export class EnrichmentPipeline extends EventEmitter {
   }
 
   private processStageResults(
-    results: Array<{ id: string; result: ContextEnrichmentResult | null; error?: Error }>,
+    results: Array<{
+      id: string;
+      result: ContextEnrichmentResult | null;
+      error?: Error;
+    }>,
     pipelineResult: PipelineExecutionResult
   ): void {
     for (const { id, result, error } of results) {
@@ -673,7 +736,10 @@ export class EnrichmentPipeline extends EventEmitter {
     }
   }
 
-  private generateCacheKey(enricherId: string, request: EnrichmentRequest): string {
+  private generateCacheKey(
+    enricherId: string,
+    request: EnrichmentRequest
+  ): string {
     if (request.cacheKey) {
       return `${enricherId}:${request.cacheKey}`;
     }
@@ -688,7 +754,7 @@ export class EnrichmentPipeline extends EventEmitter {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32-bit integer
     }
     return Math.abs(hash).toString(36);
@@ -698,7 +764,11 @@ export class EnrichmentPipeline extends EventEmitter {
     return this.enricherResultCache.get(key);
   }
 
-  private cacheResult(key: string, result: ContextEnrichmentResult, ttlSeconds: number): void {
+  private cacheResult(
+    key: string,
+    result: ContextEnrichmentResult,
+    ttlSeconds: number
+  ): void {
     this.enricherResultCache.set(key, result);
   }
 
@@ -706,19 +776,26 @@ export class EnrichmentPipeline extends EventEmitter {
     this.enricherResultCache.prune();
   }
 
-  private updateMetrics(enricherId: string, duration: number, success: boolean, cached: boolean): void {
+  private updateMetrics(
+    enricherId: string,
+    duration: number,
+    success: boolean,
+    cached: boolean
+  ): void {
     const metrics = this.metrics.get(enricherId);
     if (!metrics) return;
 
     metrics.executionCount++;
     metrics.totalExecutionTime += duration;
-    metrics.averageExecutionTime = metrics.totalExecutionTime / metrics.executionCount;
+    metrics.averageExecutionTime =
+      metrics.totalExecutionTime / metrics.executionCount;
 
     if (!success) {
       metrics.errorCount++;
     }
 
-    metrics.successRate = (metrics.executionCount - metrics.errorCount) / metrics.executionCount;
+    metrics.successRate =
+      (metrics.executionCount - metrics.errorCount) / metrics.executionCount;
 
     if (cached) {
       const totalCacheAttempts = metrics.executionCount;
@@ -739,7 +816,10 @@ export class EnrichmentPipeline extends EventEmitter {
     return Promise.race([
       promise,
       new Promise<T>((_, reject) =>
-        setTimeout(() => reject(new Error(`Operation timed out after ${timeoutMs}ms`)), timeoutMs)
+        setTimeout(
+          () => reject(new Error(`Operation timed out after ${timeoutMs}ms`)),
+          timeoutMs
+        )
       ),
     ]);
   }
@@ -759,7 +839,7 @@ export class EnrichmentPipeline extends EventEmitter {
     try {
       // Process up to maxConcurrency items at once
       const batch = this.executionQueue.splice(0, this.config.maxConcurrency);
-      
+
       await Promise.allSettled(
         batch.map(async ({ request, resolve, reject }) => {
           try {
@@ -785,10 +865,10 @@ export class EnrichmentPipeline extends EventEmitter {
    */
   private setupCacheCleanup(): void {
     let cleanupInterval = 60000; // Start with 1 minute
-    
+
     const adaptiveCleanup = () => {
       const stats = this.enricherResultCache.getStats();
-      
+
       // Adjust cleanup frequency based on cache performance
       if (stats.hitRate > 0.8 && stats.size < stats.maxSize * 0.7) {
         // Cache is performing well, clean less frequently
@@ -799,7 +879,7 @@ export class EnrichmentPipeline extends EventEmitter {
       }
 
       this.cleanupCache();
-      
+
       setTimeout(adaptiveCleanup, cleanupInterval);
     };
 
@@ -869,16 +949,18 @@ export class EnrichmentPipeline extends EventEmitter {
   /**
    * Warm cache with predicted patterns
    */
-  async warmCache(patterns: Array<{ key: string; context: any }>): Promise<void> {
+  async warmCache(
+    patterns: Array<{ key: string; context: any }>
+  ): Promise<void> {
     const warmingPromises = patterns.map(async ({ key, context }) => {
       try {
         // Pre-compute and cache common enrichment patterns
         const request: EnrichmentRequest = {
           context,
           agentId: 'cache-warmer',
-          cacheKey: key
+          cacheKey: key,
         };
-        
+
         await this.enrichInternal(request);
       } catch (error) {
         runtimeLogger.warn('Cache warming failed for key:', key, error);

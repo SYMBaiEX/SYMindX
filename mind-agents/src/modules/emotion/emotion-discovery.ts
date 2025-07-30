@@ -114,8 +114,11 @@ export class EmotionDiscovery {
                   {
                     error: {
                       code: 'PARSE_ERROR',
-                      message: error instanceof Error ? error.message : String(error),
-                      ...(error instanceof Error && error.stack ? { stack: error.stack } : {}),
+                      message:
+                        error instanceof Error ? error.message : String(error),
+                      ...(error instanceof Error && error.stack
+                        ? { stack: error.stack }
+                        : {}),
                     },
                     metadata: { emotion: entry.name },
                   }
@@ -141,7 +144,9 @@ export class EmotionDiscovery {
         error: {
           code: 'DISCOVERY_ERROR',
           message: error instanceof Error ? error.message : String(error),
-          ...(error instanceof Error && error.stack ? { stack: error.stack } : {}),
+          ...(error instanceof Error && error.stack
+            ? { stack: error.stack }
+            : {}),
         },
         metadata: { directory: this.emotionsDir },
       });
@@ -201,7 +206,9 @@ export class EmotionDiscovery {
         error: {
           code: 'NODE_MODULES_DISCOVERY_ERROR',
           message: error instanceof Error ? error.message : String(error),
-          ...(error instanceof Error && error.stack ? { stack: error.stack } : {}),
+          ...(error instanceof Error && error.stack
+            ? { stack: error.stack }
+            : {}),
         },
         metadata: { directory: this.nodeModulesDir },
       });
@@ -259,8 +266,11 @@ export class EmotionDiscovery {
                 {
                   error: {
                     code: 'LOCAL_PARSE_ERROR',
-                    message: error instanceof Error ? error.message : String(error),
-                    ...(error instanceof Error && error.stack ? { stack: error.stack } : {}),
+                    message:
+                      error instanceof Error ? error.message : String(error),
+                    ...(error instanceof Error && error.stack
+                      ? { stack: error.stack }
+                      : {}),
                   },
                   metadata: { emotion: entry.name, path: packageJsonPath },
                 }
@@ -275,7 +285,9 @@ export class EmotionDiscovery {
         error: {
           code: 'LOCAL_DISCOVERY_ERROR',
           message: error instanceof Error ? error.message : String(error),
-          ...(error instanceof Error && error.stack ? { stack: error.stack } : {}),
+          ...(error instanceof Error && error.stack
+            ? { stack: error.stack }
+            : {}),
         },
         metadata: { directory: localEmotionsDir },
       });
@@ -309,7 +321,9 @@ export class EmotionDiscovery {
             error: {
               code: 'AUTO_REGISTER_ERROR',
               message: error instanceof Error ? error.message : String(error),
-              ...(error instanceof Error && error.stack ? { stack: error.stack } : {}),
+              ...(error instanceof Error && error.stack
+                ? { stack: error.stack }
+                : {}),
             },
             metadata: { emotion: emotion.name, path: emotion.path },
           }
@@ -362,10 +376,10 @@ export class EmotionDiscovery {
         `❌ Failed to register emotion ${emotion.name}:`,
         error,
         {
-          metadata: { 
-            emotion: emotion.name, 
+          metadata: {
+            emotion: emotion.name,
             path: emotion.path,
-            factory: emotion.factory
+            factory: emotion.factory,
           },
         }
       );

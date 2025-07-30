@@ -14,10 +14,10 @@ import {
   errorHandler,
   initializeErrorHandler,
 } from '../utils/error-handler.js';
-import { 
-  portalErrorHandler, 
+import {
+  portalErrorHandler,
   registerPortalWithFallback,
-  wrapPortalWithErrorHandling 
+  wrapPortalWithErrorHandling,
 } from '../portals/portal-error-integration.js';
 import {
   createRuntimeError,
@@ -99,7 +99,6 @@ export class RuntimeErrorIntegration {
       runtimeLogger.info('Runtime error integration initialized successfully', {
         componentsRegistered: this.getRegisteredComponents(),
       });
-
     } catch (error) {
       const initError = createRuntimeError(
         'Failed to initialize runtime error integration',
@@ -108,7 +107,10 @@ export class RuntimeErrorIntegration {
         error instanceof Error ? error : undefined
       );
 
-      runtimeLogger.error('Runtime error integration initialization failed', initError);
+      runtimeLogger.error(
+        'Runtime error integration initialization failed',
+        initError
+      );
       throw initError;
     }
   }
@@ -118,11 +120,11 @@ export class RuntimeErrorIntegration {
    */
   public wrapAgent(agent: Agent): Agent {
     const self = this;
-    
+
     return new Proxy(agent, {
       get(target, prop, receiver) {
         const value = Reflect.get(target, prop, receiver);
-        
+
         if (typeof value === 'function') {
           return async function (this: Agent, ...args: any[]) {
             const context: AgentErrorContext = {
@@ -143,7 +145,7 @@ export class RuntimeErrorIntegration {
         }
 
         return value;
-      }
+      },
     });
   }
 
@@ -169,12 +171,15 @@ export class RuntimeErrorIntegration {
     );
 
     if (!result.success) {
-      throw result.error || createAgentError(
-        'Agent operation failed',
-        'AGENT_OPERATION_FAILED',
-        agentId,
-        context.operation,
-        context
+      throw (
+        result.error ||
+        createAgentError(
+          'Agent operation failed',
+          'AGENT_OPERATION_FAILED',
+          agentId,
+          context.operation,
+          context
+        )
       );
     }
 
@@ -188,9 +193,8 @@ export class RuntimeErrorIntegration {
     operation: () => Promise<T>,
     context: RuntimeErrorContext
   ): Promise<T> {
-    const { data, error } = await safeAsync(
-      operation,
-      (err) => createConfigurationError(
+    const { data, error } = await safeAsync(operation, (err) =>
+      createConfigurationError(
         `Configuration error in ${context.component}`,
         'CONFIG_OPERATION_FAILED',
         context.component,
@@ -222,22 +226,31 @@ export class RuntimeErrorIntegration {
         runtime: componentMetrics.runtime,
         agents: Object.entries(componentMetrics)
           .filter(([name]) => name.startsWith('agent:'))
-          .reduce((acc, [name, metrics]) => {
-            acc[name.replace('agent:', '')] = metrics;
-            return acc;
-          }, {} as Record<string, any>),
+          .reduce(
+            (acc, [name, metrics]) => {
+              acc[name.replace('agent:', '')] = metrics;
+              return acc;
+            },
+            {} as Record<string, any>
+          ),
         extensions: Object.entries(componentMetrics)
           .filter(([name]) => name.startsWith('extension:'))
-          .reduce((acc, [name, metrics]) => {
-            acc[name.replace('extension:', '')] = metrics;
-            return acc;
-          }, {} as Record<string, any>),
+          .reduce(
+            (acc, [name, metrics]) => {
+              acc[name.replace('extension:', '')] = metrics;
+              return acc;
+            },
+            {} as Record<string, any>
+          ),
         memory: Object.entries(componentMetrics)
           .filter(([name]) => name.startsWith('memory:'))
-          .reduce((acc, [name, metrics]) => {
-            acc[name.replace('memory:', '')] = metrics;
-            return acc;
-          }, {} as Record<string, any>),
+          .reduce(
+            (acc, [name, metrics]) => {
+              acc[name.replace('memory:', '')] = metrics;
+              return acc;
+            },
+            {} as Record<string, any>
+          ),
         portals: portalHealth,
       },
       alerts: systemAnalytics.alerts,
@@ -265,16 +278,24 @@ export class RuntimeErrorIntegration {
 
     if (stats.overall.errorRate > 0.2) {
       overallStatus = 'critical';
-      issues.push(`High system error rate: ${(stats.overall.errorRate * 100).toFixed(1)}%`);
+      issues.push(
+        `High system error rate: ${(stats.overall.errorRate * 100).toFixed(1)}%`
+      );
       recommendations.push('Investigate root causes of high error rate');
     } else if (stats.overall.errorRate > 0.1) {
       overallStatus = 'degraded';
-      issues.push(`Elevated error rate: ${(stats.overall.errorRate * 100).toFixed(1)}%`);
-      recommendations.push('Monitor error trends and optimize failure-prone components');
+      issues.push(
+        `Elevated error rate: ${(stats.overall.errorRate * 100).toFixed(1)}%`
+      );
+      recommendations.push(
+        'Monitor error trends and optimize failure-prone components'
+      );
     }
 
     // Check critical alerts
-    const criticalAlerts = stats.alerts.filter(alert => alert.severity === 'critical');
+    const criticalAlerts = stats.alerts.filter(
+      (alert) => alert.severity === 'critical'
+    );
     if (criticalAlerts.length > 0) {
       overallStatus = 'critical';
       issues.push(`${criticalAlerts.length} critical alerts active`);
@@ -291,7 +312,9 @@ export class RuntimeErrorIntegration {
         componentIssues.push('Portal marked as unhealthy');
       } else if (health.errorRate > 0.2) {
         componentStatus = 'degraded';
-        componentIssues.push(`High error rate: ${(health.errorRate * 100).toFixed(1)}%`);
+        componentIssues.push(
+          `High error rate: ${(health.errorRate * 100).toFixed(1)}%`
+        );
       }
 
       components[`portal:${portalName}`] = {
@@ -342,10 +365,16 @@ export class RuntimeErrorIntegration {
    */
   private registerCoreComponents(): void {
     registerRuntimeComponent();
-    
+
     // Register common extension types
-    const commonExtensions = ['api', 'telegram', 'slack', 'runelite', 'mcp-server'];
-    commonExtensions.forEach(ext => registerExtensionComponent(ext));
+    const commonExtensions = [
+      'api',
+      'telegram',
+      'slack',
+      'runelite',
+      'mcp-server',
+    ];
+    commonExtensions.forEach((ext) => registerExtensionComponent(ext));
 
     runtimeLogger.info('Core components registered for error handling');
   }
@@ -355,14 +384,14 @@ export class RuntimeErrorIntegration {
    */
   private async registerPortals(config: RuntimeConfig): Promise<void> {
     const portalConfigs = config.portals || {};
-    
+
     // Define fallback chains for common portals
     const fallbackStrategies: Record<string, string[]> = {
-      'openai': ['anthropic', 'groq'],
-      'anthropic': ['openai', 'groq'],
-      'groq': ['openai', 'anthropic'],
-      'mistral': ['openai', 'anthropic'],
-      'cohere': ['openai', 'anthropic'],
+      openai: ['anthropic', 'groq'],
+      anthropic: ['openai', 'groq'],
+      groq: ['openai', 'anthropic'],
+      mistral: ['openai', 'anthropic'],
+      cohere: ['openai', 'anthropic'],
       'google-generative': ['openai', 'anthropic'],
       'azure-openai': ['openai', 'anthropic'],
     };
@@ -384,7 +413,7 @@ export class RuntimeErrorIntegration {
    */
   private registerMemoryProviders(config: RuntimeConfig): void {
     const memoryTypes = ['sqlite', 'postgres', 'supabase', 'neon', 'memory'];
-    memoryTypes.forEach(type => registerMemoryComponent(type));
+    memoryTypes.forEach((type) => registerMemoryComponent(type));
 
     runtimeLogger.info('Memory providers registered for error handling');
   }
@@ -392,7 +421,10 @@ export class RuntimeErrorIntegration {
   /**
    * Enhance agent error with additional context
    */
-  private enhanceAgentError(error: unknown, context: AgentErrorContext): SYMindXError {
+  private enhanceAgentError(
+    error: unknown,
+    context: AgentErrorContext
+  ): SYMindXError {
     if (error instanceof SYMindXError) {
       return error;
     }
@@ -416,12 +448,19 @@ export class RuntimeErrorIntegration {
   /**
    * Map method names to operation types
    */
-  private mapMethodToOperation(methodName: string): AgentErrorContext['operation'] {
-    if (methodName.includes('think') || methodName.includes('cognition')) return 'think';
-    if (methodName.includes('action') || methodName.includes('execute')) return 'action';
-    if (methodName.includes('memory') || methodName.includes('remember')) return 'memory';
-    if (methodName.includes('emotion') || methodName.includes('feel')) return 'emotion';
-    if (methodName.includes('extension') || methodName.includes('plugin')) return 'extension';
+  private mapMethodToOperation(
+    methodName: string
+  ): AgentErrorContext['operation'] {
+    if (methodName.includes('think') || methodName.includes('cognition'))
+      return 'think';
+    if (methodName.includes('action') || methodName.includes('execute'))
+      return 'action';
+    if (methodName.includes('memory') || methodName.includes('remember'))
+      return 'memory';
+    if (methodName.includes('emotion') || methodName.includes('feel'))
+      return 'emotion';
+    if (methodName.includes('extension') || methodName.includes('plugin'))
+      return 'extension';
     return 'action';
   }
 
@@ -432,16 +471,24 @@ export class RuntimeErrorIntegration {
     const recommendations: string[] = [];
 
     if (analytics.overall.errorRate > 0.15) {
-      recommendations.push('Consider implementing additional error recovery mechanisms');
+      recommendations.push(
+        'Consider implementing additional error recovery mechanisms'
+      );
     }
 
     if (analytics.overall.avgResponseTime > 5000) {
-      recommendations.push('Optimize runtime performance - high response times detected');
+      recommendations.push(
+        'Optimize runtime performance - high response times detected'
+      );
     }
 
-    const criticalErrors = analytics.topErrors.filter((e: any) => e.impact === 'critical');
+    const criticalErrors = analytics.topErrors.filter(
+      (e: any) => e.impact === 'critical'
+    );
     if (criticalErrors.length > 0) {
-      recommendations.push('Address critical errors immediately to prevent system instability');
+      recommendations.push(
+        'Address critical errors immediately to prevent system instability'
+      );
     }
 
     return recommendations;
@@ -466,7 +513,7 @@ export class RuntimeErrorIntegration {
    */
   private sanitizeConfig(config: RuntimeConfig): any {
     const sanitized = { ...config };
-    
+
     // Remove API keys and sensitive data
     if (sanitized.portals) {
       Object.values(sanitized.portals).forEach((portal: any) => {
@@ -487,7 +534,9 @@ export const runtimeErrorIntegration = RuntimeErrorIntegration.getInstance();
 /**
  * Convenience functions for runtime integration
  */
-export const initializeRuntimeErrorHandling = async (config: RuntimeConfig): Promise<void> => {
+export const initializeRuntimeErrorHandling = async (
+  config: RuntimeConfig
+): Promise<void> => {
   await runtimeErrorIntegration.initialize(config);
 };
 

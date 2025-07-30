@@ -1,6 +1,6 @@
 /**
  * Context Management System for SYMindX
- * 
+ *
  * This module provides the complete context enrichment system including
  * the pipeline orchestrator and all available enrichers.
  */

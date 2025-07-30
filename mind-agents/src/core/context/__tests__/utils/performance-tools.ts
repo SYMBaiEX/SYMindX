@@ -96,7 +96,10 @@ export class PerformanceProfiler {
 
     let improvement: number | undefined;
     if (baseline) {
-      improvement = ((baseline.executionTime - latest.executionTime) / baseline.executionTime) * 100;
+      improvement =
+        ((baseline.executionTime - latest.executionTime) /
+          baseline.executionTime) *
+        100;
     }
 
     return {
@@ -130,7 +133,11 @@ export class PerformanceProfiler {
       }),
       {
         executionTime: 0,
-        memoryUsage: { before: measurements[0].memoryUsage.before, after: measurements[0].memoryUsage.after, delta: 0 },
+        memoryUsage: {
+          before: measurements[0].memoryUsage.before,
+          after: measurements[0].memoryUsage.after,
+          delta: 0,
+        },
         operations: 0,
         throughput: 0,
         timestamp: measurements[0].timestamp,
@@ -172,12 +179,16 @@ export class PerformanceProfiler {
         report.push(`Operation: ${name}`);
         report.push(`  Measurements: ${measurements.length}`);
         report.push(`  Avg Execution Time: ${avg.executionTime.toFixed(2)}ms`);
-        report.push(`  Avg Memory Delta: ${avg.memoryUsage.delta.toFixed(2)}MB`);
+        report.push(
+          `  Avg Memory Delta: ${avg.memoryUsage.delta.toFixed(2)}MB`
+        );
         report.push(`  Avg Throughput: ${avg.throughput.toFixed(2)} ops/sec`);
 
         if (benchmark.baseline && benchmark.improvement !== undefined) {
           const sign = benchmark.improvement > 0 ? '+' : '';
-          report.push(`  Improvement: ${sign}${benchmark.improvement.toFixed(1)}%`);
+          report.push(
+            `  Improvement: ${sign}${benchmark.improvement.toFixed(1)}%`
+          );
         }
 
         report.push('');
@@ -204,9 +215,14 @@ export class LoadTester {
     step: number = 10,
     durationMs: number = 10000
   ): Promise<Array<{ concurrency: number; metrics: PerformanceMetrics }>> {
-    const results: Array<{ concurrency: number; metrics: PerformanceMetrics }> = [];
+    const results: Array<{ concurrency: number; metrics: PerformanceMetrics }> =
+      [];
 
-    for (let concurrency = step; concurrency <= maxConcurrency; concurrency += step) {
+    for (
+      let concurrency = step;
+      concurrency <= maxConcurrency;
+      concurrency += step
+    ) {
       console.log(`Testing concurrency: ${concurrency}`);
 
       const startTime = Date.now();
@@ -221,7 +237,7 @@ export class LoadTester {
       const { metrics } = await this.profiler.measure(
         `${name}_concurrency_${concurrency}`,
         async () => {
-          const promises = operations.map(op => op());
+          const promises = operations.map((op) => op());
           return Promise.all(promises);
         }
       );
@@ -278,7 +294,9 @@ export class LoadTester {
       // Wait for next operation based on target rate
       const elapsed = performance.now() - operationStart;
       if (elapsed < intervalMs) {
-        await new Promise(resolve => setTimeout(resolve, intervalMs - elapsed));
+        await new Promise((resolve) =>
+          setTimeout(resolve, intervalMs - elapsed)
+        );
       }
     }
 
@@ -306,7 +324,7 @@ export class LoadTester {
     measurements: Array<{ iteration: number; heapUsed: number }>;
   }> {
     const measurements: Array<{ iteration: number; heapUsed: number }> = [];
-    
+
     // Force garbage collection at start
     if (global.gc) {
       global.gc();
@@ -367,14 +385,11 @@ export class ContextBenchmarkSuite {
     createContext: () => any,
     iterations: number = 1000
   ): Promise<BenchmarkResult> {
-    const { metrics } = await this.profiler.measure(
-      'context_creation',
-      () => {
-        for (let i = 0; i < iterations; i++) {
-          createContext();
-        }
+    const { metrics } = await this.profiler.measure('context_creation', () => {
+      for (let i = 0; i < iterations; i++) {
+        createContext();
       }
-    );
+    });
 
     return {
       name: 'Context Creation',
@@ -389,7 +404,10 @@ export class ContextBenchmarkSuite {
     processMessage: (message: string) => Promise<void>,
     messageCount: number = 1000
   ): Promise<BenchmarkResult> {
-    const messages = Array.from({ length: messageCount }, (_, i) => `Test message ${i}`);
+    const messages = Array.from(
+      { length: messageCount },
+      (_, i) => `Test message ${i}`
+    );
 
     const { metrics } = await this.profiler.measure(
       'message_processing',
@@ -413,14 +431,11 @@ export class ContextBenchmarkSuite {
     queryContext: () => any,
     iterations: number = 10000
   ): Promise<BenchmarkResult> {
-    const { metrics } = await this.profiler.measure(
-      'context_queries',
-      () => {
-        for (let i = 0; i < iterations; i++) {
-          queryContext();
-        }
+    const { metrics } = await this.profiler.measure('context_queries', () => {
+      for (let i = 0; i < iterations; i++) {
+        queryContext();
       }
-    );
+    });
 
     return {
       name: 'Context Queries',
@@ -442,7 +457,9 @@ export class ContextBenchmarkSuite {
     results.push(await this.benchmarkContextCreation(operations.createContext));
 
     // Message processing benchmark
-    results.push(await this.benchmarkMessageProcessing(operations.processMessage));
+    results.push(
+      await this.benchmarkMessageProcessing(operations.processMessage)
+    );
 
     // Context querying benchmark
     results.push(await this.benchmarkContextQueries(operations.queryContext));
@@ -454,13 +471,23 @@ export class ContextBenchmarkSuite {
    * Generate benchmark report
    */
   generateBenchmarkReport(results: BenchmarkResult[]): string {
-    const report = ['Context System Benchmark Report', '================================', ''];
+    const report = [
+      'Context System Benchmark Report',
+      '================================',
+      '',
+    ];
 
     for (const result of results) {
       report.push(`${result.name}:`);
-      report.push(`  Execution Time: ${result.metrics.executionTime.toFixed(2)}ms`);
-      report.push(`  Memory Delta: ${result.metrics.memoryUsage.delta.toFixed(2)}MB`);
-      report.push(`  Throughput: ${result.metrics.throughput.toFixed(2)} ops/sec`);
+      report.push(
+        `  Execution Time: ${result.metrics.executionTime.toFixed(2)}ms`
+      );
+      report.push(
+        `  Memory Delta: ${result.metrics.memoryUsage.delta.toFixed(2)}MB`
+      );
+      report.push(
+        `  Throughput: ${result.metrics.throughput.toFixed(2)} ops/sec`
+      );
       report.push(`  Operations: ${result.metrics.operations}`);
 
       if (result.improvement !== undefined) {
@@ -483,7 +510,7 @@ export class PerformanceTestUtils {
    * Sleep for specified milliseconds
    */
   static sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**
@@ -509,7 +536,7 @@ export class PerformanceTestUtils {
    */
   static async waitForStabilization(timeoutMs: number = 1000): Promise<void> {
     await this.sleep(timeoutMs);
-    
+
     // Force garbage collection if available
     if (global.gc) {
       global.gc();
@@ -529,8 +556,11 @@ export class PerformanceTestUtils {
       memory: NodeJS.MemoryUsage;
     }>;
   }> {
-    const resourceHistory: Array<{ timestamp: number; memory: NodeJS.MemoryUsage }> = [];
-    
+    const resourceHistory: Array<{
+      timestamp: number;
+      memory: NodeJS.MemoryUsage;
+    }> = [];
+
     const monitor = setInterval(() => {
       resourceHistory.push({
         timestamp: Date.now(),

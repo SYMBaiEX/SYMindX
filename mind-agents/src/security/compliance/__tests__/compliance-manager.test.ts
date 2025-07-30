@@ -1,6 +1,6 @@
 /**
  * Compliance Manager Tests
- * 
+ *
  * Tests for the unified compliance management system
  */
 
@@ -31,7 +31,7 @@ const mockMemoryProvider: MemoryProvider = {
   },
   async cleanup() {
     return { success: true };
-  }
+  },
 } as any;
 
 describe('ComplianceManager', () => {
@@ -45,8 +45,8 @@ describe('ComplianceManager', () => {
         enabled: true,
         legalBasis: 'consent',
         retentionPeriods: {
-          'personal_data': 730, // 2 years
-          'consent_record': 2555, // 7 years
+          personal_data: 730, // 2 years
+          consent_record: 2555, // 7 years
         },
       },
       hipaa: {
@@ -70,24 +70,30 @@ describe('ComplianceManager', () => {
   });
 
   test('should create compliance manager with valid configuration', async () => {
-    const manager = createComplianceManager(mockMemoryProvider, complianceConfig);
-    
+    const manager = createComplianceManager(
+      mockMemoryProvider,
+      complianceConfig
+    );
+
     expect(manager).toBeDefined();
     expect(manager.getConfiguration().enabled).toBe(true);
   });
 
   test('should classify data correctly', async () => {
-    const manager = createComplianceManager(mockMemoryProvider, complianceConfig);
-    
+    const manager = createComplianceManager(
+      mockMemoryProvider,
+      complianceConfig
+    );
+
     // Test personal data classification
     const personalData = {
       name: 'John Doe',
       email: 'john.doe@example.com',
       phone: '555-123-4567',
     };
-    
+
     const classification = await manager.classifyData(personalData);
-    
+
     expect(classification.level).toBe('confidential');
     expect(classification.tags).toContain('personalNames:1');
     expect(classification.tags).toContain('emails:1');
@@ -96,17 +102,20 @@ describe('ComplianceManager', () => {
   });
 
   test('should classify financial data correctly', async () => {
-    const manager = createComplianceManager(mockMemoryProvider, complianceConfig);
-    
+    const manager = createComplianceManager(
+      mockMemoryProvider,
+      complianceConfig
+    );
+
     const financialData = {
       transaction: 'Payment received',
       amount: '$150,000.00',
       account: '123456',
       revenue: 'Q4 sales',
     };
-    
+
     const classification = await manager.classifyData(financialData);
-    
+
     expect(classification.level).toBe('confidential');
     expect(classification.tags).toContain('financialAmounts:1');
     expect(classification.tags).toContain('accountNumbers:1');
@@ -114,17 +123,20 @@ describe('ComplianceManager', () => {
   });
 
   test('should classify medical data correctly', async () => {
-    const manager = createComplianceManager(mockMemoryProvider, complianceConfig);
-    
+    const manager = createComplianceManager(
+      mockMemoryProvider,
+      complianceConfig
+    );
+
     const medicalData = {
       patient: 'Jane Smith',
       diagnosis: 'Diabetes Type 2',
       treatment: 'Metformin 500mg',
       medicalRecord: 'MR123456',
     };
-    
+
     const classification = await manager.classifyData(medicalData);
-    
+
     expect(classification.level).toBe('restricted');
     expect(classification.tags).toContain('medicalRecords:1');
     expect(classification.tags).toContain('medicalTerms:4');
@@ -132,8 +144,11 @@ describe('ComplianceManager', () => {
   });
 
   test('should handle GDPR data subject requests', async () => {
-    const manager = createComplianceManager(mockMemoryProvider, complianceConfig);
-    
+    const manager = createComplianceManager(
+      mockMemoryProvider,
+      complianceConfig
+    );
+
     // Mock GDPR service methods
     const mockExportData = {
       userId: 'user123',
@@ -157,10 +172,13 @@ describe('ComplianceManager', () => {
   });
 
   test('should get compliance status', async () => {
-    const manager = createComplianceManager(mockMemoryProvider, complianceConfig);
-    
+    const manager = createComplianceManager(
+      mockMemoryProvider,
+      complianceConfig
+    );
+
     const status = await manager.getComplianceStatus();
-    
+
     expect(status).toBeDefined();
     expect(typeof status.overallCompliant).toBe('boolean');
     expect(status.gdpr).toBeDefined();
@@ -169,10 +187,17 @@ describe('ComplianceManager', () => {
   });
 
   test('should generate compliance report', async () => {
-    const manager = createComplianceManager(mockMemoryProvider, complianceConfig);
-    
-    const report = await manager.generateComplianceReport(['gdpr', 'hipaa', 'sox']);
-    
+    const manager = createComplianceManager(
+      mockMemoryProvider,
+      complianceConfig
+    );
+
+    const report = await manager.generateComplianceReport([
+      'gdpr',
+      'hipaa',
+      'sox',
+    ]);
+
     expect(report).toBeDefined();
     expect(report.generatedAt).toBeInstanceOf(Date);
     expect(report.period).toBeDefined();
@@ -182,13 +207,16 @@ describe('ComplianceManager', () => {
   });
 
   test('should export audit logs', async () => {
-    const manager = createComplianceManager(mockMemoryProvider, complianceConfig);
-    
+    const manager = createComplianceManager(
+      mockMemoryProvider,
+      complianceConfig
+    );
+
     const auditLogs = await manager.exportAuditLog({
       startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
       endDate: new Date(),
     });
-    
+
     expect(Array.isArray(auditLogs)).toBe(true);
   });
 
@@ -196,9 +224,9 @@ describe('ComplianceManager', () => {
     const disabledConfig: ComplianceConfig = {
       enabled: false,
     };
-    
+
     const manager = createComplianceManager(mockMemoryProvider, disabledConfig);
-    
+
     const classification = await manager.classifyData({ sensitive: 'data' });
     expect(classification.level).toBe('public');
     expect(classification.tags).toEqual([]);
@@ -210,9 +238,9 @@ describe('ComplianceManager', () => {
       ...complianceConfig,
       strictMode: true,
     };
-    
+
     const manager = createComplianceManager(mockMemoryProvider, strictConfig);
-    
+
     // In strict mode, compliance violations should be more strictly enforced
     const config = manager.getConfiguration();
     expect(config.strictMode).toBe(true);
@@ -225,9 +253,9 @@ describe('Individual Compliance Services', () => {
       enabled: true,
       gdpr: { enabled: true, legalBasis: 'consent' },
     };
-    
+
     const manager = createComplianceManager(mockMemoryProvider, config);
-    
+
     // Test basic GDPR functionality
     expect(manager.gdpr).toBeDefined();
     expect(typeof manager.gdpr.recordConsent).toBe('function');
@@ -240,9 +268,9 @@ describe('Individual Compliance Services', () => {
       enabled: true,
       hipaa: { enabled: true, coveredEntity: true },
     };
-    
+
     const manager = createComplianceManager(mockMemoryProvider, config);
-    
+
     // Test basic HIPAA functionality
     expect(manager.hipaa).toBeDefined();
     expect(typeof manager.hipaa.classifyData).toBe('function');
@@ -255,9 +283,9 @@ describe('Individual Compliance Services', () => {
       enabled: true,
       sox: { enabled: true, materialityThreshold: 50000 },
     };
-    
+
     const manager = createComplianceManager(mockMemoryProvider, config);
-    
+
     // Test basic SOX functionality
     expect(manager.sox).toBeDefined();
     expect(typeof manager.sox.tagFinancialData).toBe('function');
@@ -272,15 +300,15 @@ describe('Data Classification', () => {
       enabled: true,
       gdpr: { enabled: true },
     });
-    
+
     const publicData = {
       message: 'Hello world',
       timestamp: new Date().toISOString(),
       status: 'active',
     };
-    
+
     const classification = await manager.classifyData(publicData);
-    
+
     expect(classification.level).toBe('public');
     expect(classification.tags.length).toBe(0);
     expect(classification.handlingRules.length).toBe(1); // Should have public data rule
@@ -293,21 +321,21 @@ describe('Data Classification', () => {
       hipaa: { enabled: true },
       sox: { enabled: true },
     });
-    
+
     const sensitiveData = {
       name: 'John Doe',
       ssn: '123-45-6789',
       amount: '$75,000',
       diagnosis: 'Hypertension',
     };
-    
+
     const classification = await manager.classifyData(sensitiveData);
-    
+
     expect(classification.level).toBe('restricted');
     expect(classification.handlingRules.length).toBeGreaterThan(0);
-    
+
     // Should have rules for all applicable regulations
-    const ruleIds = classification.handlingRules.map(rule => rule.id);
+    const ruleIds = classification.handlingRules.map((rule) => rule.id);
     expect(ruleIds).toContain('gdpr_personal_data');
     expect(ruleIds).toContain('hipaa_phi');
     expect(ruleIds).toContain('sox_financial');

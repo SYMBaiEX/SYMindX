@@ -65,7 +65,10 @@ export class StandardLoggerFactory {
   /**
    * Create a logger for a specific category
    */
-  static createLogger(category: keyof typeof LOGGER_CATEGORIES, options?: Partial<LoggerOptions>): Logger {
+  static createLogger(
+    category: keyof typeof LOGGER_CATEGORIES,
+    options?: Partial<LoggerOptions>
+  ): Logger {
     const prefix = LOGGER_CATEGORIES[category];
     return createLogger(prefix, { ...this.defaultOptions, ...options });
   }
@@ -103,14 +106,18 @@ export class PerformanceLogger {
   /**
    * Start timing an operation
    */
-  startOperation(operationId: string, operation: string, metadata?: Record<string, any>): void {
+  startOperation(
+    operationId: string,
+    operation: string,
+    metadata?: Record<string, any>
+  ): void {
     const metrics: PerformanceMetrics = {
       operation,
       startTime: Date.now(),
       metadata,
     };
     this.metrics.set(operationId, metrics);
-    
+
     this.logger.debug(`⏱️ Started: ${operation}`, {
       operation,
       operationId,
@@ -121,7 +128,11 @@ export class PerformanceLogger {
   /**
    * End timing an operation and log results
    */
-  endOperation(operationId: string, success: boolean = true, error?: Error): void {
+  endOperation(
+    operationId: string,
+    success: boolean = true,
+    error?: Error
+  ): void {
     const metrics = this.metrics.get(operationId);
     if (!metrics) {
       this.logger.warn(`⚠️ No metrics found for operation: ${operationId}`);
@@ -141,9 +152,16 @@ export class PerformanceLogger {
     };
 
     if (success) {
-      this.logger.info(`✅ Completed: ${metrics.operation} (${metrics.duration}ms)`, context);
+      this.logger.info(
+        `✅ Completed: ${metrics.operation} (${metrics.duration}ms)`,
+        context
+      );
     } else {
-      this.logger.error(`❌ Failed: ${metrics.operation} (${metrics.duration}ms)`, error, context);
+      this.logger.error(
+        `❌ Failed: ${metrics.operation} (${metrics.duration}ms)`,
+        error,
+        context
+      );
     }
 
     this.metrics.delete(operationId);
@@ -152,12 +170,16 @@ export class PerformanceLogger {
   /**
    * Log a quick timing measurement
    */
-  timeOperation<T>(operation: string, fn: () => T | Promise<T>, metadata?: Record<string, any>): Promise<T> {
+  timeOperation<T>(
+    operation: string,
+    fn: () => T | Promise<T>,
+    metadata?: Record<string, any>
+  ): Promise<T> {
     const operationId = `${operation}-${Date.now()}`;
     this.startOperation(operationId, operation, metadata);
 
     const result = fn();
-    
+
     if (result instanceof Promise) {
       return result
         .then((value) => {
@@ -190,7 +212,11 @@ export class StandardLoggingPatterns {
   /**
    * Log module initialization
    */
-  logInitialization(moduleName: string, config?: any, context?: StandardLogContext): void {
+  logInitialization(
+    moduleName: string,
+    config?: any,
+    context?: StandardLogContext
+  ): void {
     this.logger.start(`Initializing ${moduleName}`, {
       module: moduleName,
       config: config ? Object.keys(config) : undefined,
@@ -201,7 +227,11 @@ export class StandardLoggingPatterns {
   /**
    * Log successful initialization
    */
-  logInitializationSuccess(moduleName: string, duration?: number, context?: StandardLogContext): void {
+  logInitializationSuccess(
+    moduleName: string,
+    duration?: number,
+    context?: StandardLogContext
+  ): void {
     this.logger.success(`${moduleName} initialized successfully`, {
       module: moduleName,
       duration,
@@ -212,7 +242,11 @@ export class StandardLoggingPatterns {
   /**
    * Log initialization failure
    */
-  logInitializationFailure(moduleName: string, error: Error, context?: StandardLogContext): void {
+  logInitializationFailure(
+    moduleName: string,
+    error: Error,
+    context?: StandardLogContext
+  ): void {
     this.logger.error(`Failed to initialize ${moduleName}`, error, {
       module: moduleName,
       ...context,
@@ -222,7 +256,11 @@ export class StandardLoggingPatterns {
   /**
    * Log configuration loading
    */
-  logConfigurationLoad(configType: string, source: string, context?: StandardLogContext): void {
+  logConfigurationLoad(
+    configType: string,
+    source: string,
+    context?: StandardLogContext
+  ): void {
     this.logger.config(`Loading ${configType} from ${source}`, {
       configType,
       source,
@@ -241,7 +279,7 @@ export class StandardLoggingPatterns {
     context?: StandardLogContext
   ): void {
     const baseContext = { agentId, operation, success, ...context };
-    
+
     if (success) {
       this.logger.agent(`Agent ${operation} completed`, baseContext);
     } else {
@@ -293,7 +331,7 @@ export class StandardLoggingPatterns {
     context?: StandardLogContext
   ): void {
     const baseContext = { extensionId, operation, success, ...context };
-    
+
     if (success) {
       this.logger.extension(`Extension ${operation} completed`, baseContext);
     } else {
@@ -331,7 +369,9 @@ export const standardLoggers = {
 /**
  * Create standard logging patterns for a specific logger
  */
-export function createStandardLoggingPatterns(logger: Logger): StandardLoggingPatterns {
+export function createStandardLoggingPatterns(
+  logger: Logger
+): StandardLoggingPatterns {
   return new StandardLoggingPatterns(logger);
 }
 
@@ -345,8 +385,9 @@ export function logConsoleReplacement(
   ...args: any[]
 ): void {
   const logger = StandardLoggerFactory.createLogger(category);
-  const fullMessage = args.length > 0 ? `${message} ${args.map(String).join(' ')}` : message;
-  
+  const fullMessage =
+    args.length > 0 ? `${message} ${args.map(String).join(' ')}` : message;
+
   switch (level) {
     case 'debug':
       logger.debug(fullMessage);

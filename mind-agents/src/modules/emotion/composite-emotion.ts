@@ -14,10 +14,10 @@ import {
   EmotionBlendResult,
   EmotionTransition,
 } from '../../types/modules/emotions';
-import { 
-  standardLoggers, 
+import {
+  standardLoggers,
   createStandardLoggingPatterns,
-  StandardLogContext 
+  StandardLogContext,
 } from '../../utils/standard-logging.js';
 
 // Import all emotion types
@@ -41,7 +41,7 @@ export class CompositeEmotionModule implements EmotionModule {
   private _history: EmotionRecord[] = [];
   // Config is stored and used throughout the module
   private config: AdvancedEmotionConfig;
-  
+
   // Standardized logging
   private logger = standardLoggers.emotion;
   private loggingPatterns = createStandardLoggingPatterns(this.logger);

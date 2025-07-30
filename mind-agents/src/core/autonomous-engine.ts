@@ -1681,7 +1681,8 @@ export class AutonomousEngine {
         );
       case 'curiosity':
         return (
-          this.calculateCuriosityScore() > (trigger.parameters['threshold'] || 0.5)
+          this.calculateCuriosityScore() >
+          (trigger.parameters['threshold'] || 0.5)
         );
       case 'state':
         return Math.random() > 0.7; // Simplified

@@ -103,7 +103,7 @@ export interface Portal {
   hasCapability(capability: PortalCapability): boolean;
   getUsage?(): Promise<PortalUsage>;
   healthCheck?(): Promise<boolean>;
-  
+
   // Context-aware generation methods
   generateTextWithContext?(
     prompt: string,

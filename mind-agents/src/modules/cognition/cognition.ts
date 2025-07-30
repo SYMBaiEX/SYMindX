@@ -354,7 +354,9 @@ export class UnifiedCognition implements CognitionModule {
 
     // 5. Create memories if significant
     const significance =
-      typeof situation['significance'] === 'number' ? situation['significance'] : 0;
+      typeof situation['significance'] === 'number'
+        ? situation['significance']
+        : 0;
     if (significance > 0.6) {
       const memory = this.createMemory(agent, situation, thoughts);
       memories.push(memory as MemoryRecord);
@@ -594,7 +596,9 @@ export class UnifiedCognition implements CognitionModule {
         timestamp: new Date().toISOString(),
       },
       importance:
-        typeof situation['significance'] === 'number' ? situation['significance'] : 0,
+        typeof situation['significance'] === 'number'
+          ? situation['significance']
+          : 0,
       timestamp: new Date(),
       tags: [
         typeof situation['type'] === 'string' ? situation['type'] : 'unknown',
@@ -1001,7 +1005,8 @@ export class UnifiedCognition implements CognitionModule {
 
     return {
       id: `plan_${Date.now()}`,
-      goal: typeof situation['summary'] === 'string' ? situation['summary'] : '',
+      goal:
+        typeof situation['summary'] === 'string' ? situation['summary'] : '',
       steps,
       priority: 0.7,
       estimatedDuration: 3600000, // 1 hour

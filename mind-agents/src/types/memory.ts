@@ -20,7 +20,6 @@ export enum MemoryTierType {
   INTERACTION = 'interaction', // Interactive conversation memory
 }
 
-
 /**
  * Memory duration types for retention policies
  */

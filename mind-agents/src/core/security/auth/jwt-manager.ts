@@ -40,7 +40,10 @@ export class JWTManager {
   private privateKey: string = '';
   private readonly config: JWTConfig;
   private readonly blacklistedTokens: Set<string> = new Set();
-  private readonly refreshTokenStore: Map<string, { userId: string; expiresAt: Date }> = new Map();
+  private readonly refreshTokenStore: Map<
+    string,
+    { userId: string; expiresAt: Date }
+  > = new Map();
 
   constructor(config: Partial<JWTConfig> = {}) {
     this.config = {
@@ -48,7 +51,7 @@ export class JWTManager {
       audience: config.audience || 'symindx-client',
       accessTokenExpiry: config.accessTokenExpiry || '15m',
       refreshTokenExpiry: config.refreshTokenExpiry || '7d',
-      algorithm: config.algorithm || 'RS256'
+      algorithm: config.algorithm || 'RS256',
     };
   }
 
@@ -61,19 +64,20 @@ export class JWTManager {
         modulusLength: 2048,
         publicKeyEncoding: {
           type: 'spki',
-          format: 'pem'
+          format: 'pem',
         },
         privateKeyEncoding: {
           type: 'pkcs8',
-          format: 'pem'
-        }
+          format: 'pem',
+        },
       });
-      
+
       this.publicKey = publicKey;
       this.privateKey = privateKey;
     } else {
       // For HMAC algorithms, use a secure secret
-      const secret = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
+      const secret =
+        process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
       this.privateKey = secret;
       this.publicKey = secret;
     }
@@ -85,7 +89,10 @@ export class JWTManager {
   /**
    * Generate a token pair (access + refresh tokens)
    */
-  async generateTokenPair(userId: string, scopes: string[] = []): Promise<TokenPair> {
+  async generateTokenPair(
+    userId: string,
+    scopes: string[] = []
+  ): Promise<TokenPair> {
     const jti = crypto.randomBytes(16).toString('hex');
     const now = Math.floor(Date.now() / 1000);
 
@@ -97,12 +104,12 @@ export class JWTManager {
       aud: this.config.audience,
       iss: this.config.issuer,
       scopes,
-      type: 'access'
+      type: 'access',
     };
 
     const accessToken = jwt.sign(accessPayload, this.privateKey, {
       algorithm: this.config.algorithm,
-      expiresIn: this.config.accessTokenExpiry
+      expiresIn: this.config.accessTokenExpiry,
     });
 
     // Generate refresh token
@@ -112,30 +119,38 @@ export class JWTManager {
       jti: `${jti}-refresh`,
       aud: this.config.audience,
       iss: this.config.issuer,
-      type: 'refresh'
+      type: 'refresh',
     };
 
     const refreshToken = jwt.sign(refreshPayload, this.privateKey, {
       algorithm: this.config.algorithm,
-      expiresIn: this.config.refreshTokenExpiry
+      expiresIn: this.config.refreshTokenExpiry,
     });
 
     // Store refresh token
-    const refreshExpiresAt = new Date(now * 1000 + this.parseExpiry(this.config.refreshTokenExpiry));
-    this.refreshTokenStore.set(refreshToken, { userId, expiresAt: refreshExpiresAt });
+    const refreshExpiresAt = new Date(
+      now * 1000 + this.parseExpiry(this.config.refreshTokenExpiry)
+    );
+    this.refreshTokenStore.set(refreshToken, {
+      userId,
+      expiresAt: refreshExpiresAt,
+    });
 
     return {
       accessToken,
       refreshToken,
       expiresIn: this.parseExpiry(this.config.accessTokenExpiry) / 1000,
-      refreshExpiresIn: this.parseExpiry(this.config.refreshTokenExpiry) / 1000
+      refreshExpiresIn: this.parseExpiry(this.config.refreshTokenExpiry) / 1000,
     };
   }
 
   /**
    * Verify and decode a token
    */
-  async verifyToken(token: string, tokenType: 'access' | 'refresh' = 'access'): Promise<JWTPayload> {
+  async verifyToken(
+    token: string,
+    tokenType: 'access' | 'refresh' = 'access'
+  ): Promise<JWTPayload> {
     // Check if token is blacklisted
     if (this.blacklistedTokens.has(token)) {
       throw new Error('Token has been revoked');
@@ -145,12 +160,14 @@ export class JWTManager {
       const decoded = jwt.verify(token, this.publicKey, {
         algorithms: [this.config.algorithm],
         audience: this.config.audience,
-        issuer: this.config.issuer
+        issuer: this.config.issuer,
       }) as JWTPayload;
 
       // Verify token type
       if (decoded.type !== tokenType) {
-        throw new Error(`Invalid token type. Expected ${tokenType}, got ${decoded.type}`);
+        throw new Error(
+          `Invalid token type. Expected ${tokenType}, got ${decoded.type}`
+        );
       }
 
       // For refresh tokens, verify they're in our store
@@ -174,10 +191,10 @@ export class JWTManager {
    */
   async refreshAccessToken(refreshToken: string): Promise<TokenPair> {
     const payload = await this.verifyToken(refreshToken, 'refresh');
-    
+
     // Revoke old refresh token
     this.revokeToken(refreshToken);
-    
+
     // Generate new token pair
     return this.generateTokenPair(payload.sub, payload.scopes);
   }
@@ -212,7 +229,7 @@ export class JWTManager {
    */
   private cleanupExpiredTokens(): void {
     const now = new Date();
-    
+
     // Clean refresh token store
     for (const [token, data] of this.refreshTokenStore.entries()) {
       if (data.expiresAt < now) {
@@ -237,11 +254,16 @@ export class JWTManager {
     const unit = match[2];
 
     switch (unit) {
-      case 's': return value * 1000;
-      case 'm': return value * 60 * 1000;
-      case 'h': return value * 60 * 60 * 1000;
-      case 'd': return value * 24 * 60 * 60 * 1000;
-      default: throw new Error(`Invalid time unit: ${unit}`);
+      case 's':
+        return value * 1000;
+      case 'm':
+        return value * 60 * 1000;
+      case 'h':
+        return value * 60 * 60 * 1000;
+      case 'd':
+        return value * 24 * 60 * 60 * 1000;
+      default:
+        throw new Error(`Invalid time unit: ${unit}`);
     }
   }
 }

@@ -11,7 +11,7 @@ import { LogLevel } from '../../types/utils/logger.js';
  */
 export const DEFAULT_OBSERVABILITY_CONFIG: ObservabilityConfig = {
   enabled: true,
-  
+
   logging: {
     level: LogLevel.INFO,
     enableStructuredLogging: true,
@@ -19,7 +19,7 @@ export const DEFAULT_OBSERVABILITY_CONFIG: ObservabilityConfig = {
     maxLogSizeBytes: 10 * 1024 * 1024, // 10MB
     retentionDays: 30,
   },
-  
+
   metrics: {
     enableCollection: true,
     collectionIntervalMs: 5000, // 5 seconds
@@ -27,7 +27,7 @@ export const DEFAULT_OBSERVABILITY_CONFIG: ObservabilityConfig = {
     maxMetricsInMemory: 10000,
     exportFormat: 'prometheus',
   },
-  
+
   tracing: {
     enableTracing: true,
     sampleRate: 0.1, // 10% sampling
@@ -35,26 +35,26 @@ export const DEFAULT_OBSERVABILITY_CONFIG: ObservabilityConfig = {
     enableSpanDebugging: false,
     traceRetentionMs: 24 * 60 * 60 * 1000, // 24 hours
   },
-  
+
   health: {
     enableHealthChecks: true,
     checkIntervalMs: 30000, // 30 seconds
     enablePredictiveAlerts: true,
     alertThresholds: {
       memory: 0.85, // 85% memory usage
-      cpu: 0.80, // 80% CPU usage
+      cpu: 0.8, // 80% CPU usage
       responseTime: 5000, // 5 seconds
       errorRate: 0.05, // 5% error rate
     },
   },
-  
+
   performance: {
     enableMonitoring: true,
     maxOverheadMs: 5, // Maximum 5ms overhead
     enableProfiling: false,
     profilingIntervalMs: 60000, // 1 minute
   },
-  
+
   dashboard: {
     enableDashboard: true,
     refreshIntervalMs: 5000, // 5 seconds
@@ -75,7 +75,7 @@ export const OBSERVABILITY_CONSTANTS = {
     SAMPLED: 'x-trace-sampled',
     FLAGS: 'x-trace-flags',
   },
-  
+
   /** Metric name prefixes */
   METRIC_PREFIXES: {
     SYSTEM: 'symindx_system_',
@@ -86,7 +86,7 @@ export const OBSERVABILITY_CONSTANTS = {
     HEALTH: 'symindx_health_',
     OBSERVABILITY: 'symindx_observability_',
   },
-  
+
   /** Standard metric names */
   METRICS: {
     // System metrics
@@ -94,44 +94,44 @@ export const OBSERVABILITY_CONSTANTS = {
     SYSTEM_CPU_USAGE: 'symindx_system_cpu_usage_percent',
     SYSTEM_UPTIME: 'symindx_system_uptime_seconds',
     SYSTEM_EVENT_LOOP_LAG: 'symindx_system_event_loop_lag_ms',
-    
+
     // Agent metrics
     AGENT_THINK_TIME: 'symindx_agent_think_time_ms',
     AGENT_RESPONSE_TIME: 'symindx_agent_response_time_ms',
     AGENT_ACTIONS_TOTAL: 'symindx_agent_actions_total',
     AGENT_ERRORS_TOTAL: 'symindx_agent_errors_total',
     AGENT_MEMORY_USAGE: 'symindx_agent_memory_usage_bytes',
-    
+
     // Portal metrics
     PORTAL_REQUESTS_TOTAL: 'symindx_portal_requests_total',
     PORTAL_REQUEST_DURATION: 'symindx_portal_request_duration_ms',
     PORTAL_TOKENS_USED: 'symindx_portal_tokens_used_total',
     PORTAL_ERRORS_TOTAL: 'symindx_portal_errors_total',
-    
+
     // Extension metrics
     EXTENSION_MESSAGES_TOTAL: 'symindx_extension_messages_total',
     EXTENSION_CONNECTIONS_ACTIVE: 'symindx_extension_connections_active',
     EXTENSION_ERRORS_TOTAL: 'symindx_extension_errors_total',
     EXTENSION_LATENCY: 'symindx_extension_latency_ms',
-    
+
     // Memory metrics
     MEMORY_OPERATIONS_TOTAL: 'symindx_memory_operations_total',
     MEMORY_OPERATION_DURATION: 'symindx_memory_operation_duration_ms',
     MEMORY_STORAGE_SIZE: 'symindx_memory_storage_size_bytes',
     MEMORY_ERRORS_TOTAL: 'symindx_memory_errors_total',
-    
+
     // Health metrics
     HEALTH_CHECK_DURATION: 'symindx_health_check_duration_ms',
     HEALTH_CHECKS_TOTAL: 'symindx_health_checks_total',
     HEALTH_STATUS: 'symindx_health_status',
-    
+
     // Observability metrics
     OBSERVABILITY_OVERHEAD: 'symindx_observability_overhead_ms',
     OBSERVABILITY_LOGS_TOTAL: 'symindx_observability_logs_total',
     OBSERVABILITY_METRICS_TOTAL: 'symindx_observability_metrics_total',
     OBSERVABILITY_TRACES_TOTAL: 'symindx_observability_traces_total',
   },
-  
+
   /** Standard log fields */
   LOG_FIELDS: {
     TRACE_ID: 'traceId',
@@ -146,7 +146,7 @@ export const OBSERVABILITY_CONSTANTS = {
     MEMORY_USAGE: 'memoryUsage',
     CPU_USAGE: 'cpuUsage',
   },
-  
+
   /** Standard trace operations */
   TRACE_OPERATIONS: {
     // Agent operations
@@ -154,29 +154,29 @@ export const OBSERVABILITY_CONSTANTS = {
     AGENT_ACT: 'agent.act',
     AGENT_REMEMBER: 'agent.remember',
     AGENT_FEEL: 'agent.feel',
-    
+
     // Portal operations
     PORTAL_REQUEST: 'portal.request',
     PORTAL_GENERATE: 'portal.generate',
     PORTAL_STREAM: 'portal.stream',
-    
+
     // Extension operations
     EXTENSION_MESSAGE: 'extension.message',
     EXTENSION_ACTION: 'extension.action',
     EXTENSION_CONNECT: 'extension.connect',
-    
+
     // Memory operations
     MEMORY_STORE: 'memory.store',
     MEMORY_RETRIEVE: 'memory.retrieve',
     MEMORY_QUERY: 'memory.query',
     MEMORY_DELETE: 'memory.delete',
-    
+
     // System operations
     SYSTEM_STARTUP: 'system.startup',
     SYSTEM_SHUTDOWN: 'system.shutdown',
     SYSTEM_HEALTH_CHECK: 'system.health_check',
   },
-  
+
   /** Alert severity levels */
   ALERT_SEVERITY: {
     INFO: 'info',
@@ -184,7 +184,7 @@ export const OBSERVABILITY_CONSTANTS = {
     ERROR: 'error',
     CRITICAL: 'critical',
   } as const,
-  
+
   /** Health status values */
   HEALTH_STATUS: {
     HEALTHY: 'healthy',
@@ -193,7 +193,7 @@ export const OBSERVABILITY_CONSTANTS = {
     CRITICAL: 'critical',
     UNKNOWN: 'unknown',
   } as const,
-  
+
   /** Trace sampling strategies */
   SAMPLING: {
     ALWAYS: 1.0,
@@ -202,7 +202,7 @@ export const OBSERVABILITY_CONSTANTS = {
     DEBUG: 1.0,
     PRODUCTION: 0.01, // 1%
   },
-  
+
   /** Performance thresholds */
   PERFORMANCE_THRESHOLDS: {
     MAX_OBSERVABILITY_OVERHEAD_MS: 5,
@@ -212,7 +212,7 @@ export const OBSERVABILITY_CONSTANTS = {
     MAX_CPU_USAGE_PERCENT: 80,
     MAX_EVENT_LOOP_LAG_MS: 100,
   },
-  
+
   /** Data retention periods */
   RETENTION: {
     TRACES_MS: 24 * 60 * 60 * 1000, // 24 hours
@@ -220,7 +220,7 @@ export const OBSERVABILITY_CONSTANTS = {
     LOGS_MS: 30 * 24 * 60 * 60 * 1000, // 30 days
     HEALTH_DATA_MS: 7 * 24 * 60 * 60 * 1000, // 7 days
   },
-  
+
   /** Dashboard configuration */
   DASHBOARD: {
     DEFAULT_REFRESH_INTERVAL_MS: 5000,
@@ -228,7 +228,7 @@ export const OBSERVABILITY_CONSTANTS = {
     MAX_CHART_SERIES: 10,
     DEFAULT_TIME_RANGE_MS: 60 * 60 * 1000, // 1 hour
   },
-  
+
   /** Error codes */
   ERROR_CODES: {
     OBSERVABILITY_DISABLED: 'OBSERVABILITY_DISABLED',
@@ -239,7 +239,7 @@ export const OBSERVABILITY_CONSTANTS = {
     DASHBOARD_DATA_UNAVAILABLE: 'DASHBOARD_DATA_UNAVAILABLE',
     OVERHEAD_EXCEEDED: 'OVERHEAD_EXCEEDED',
   },
-  
+
   /** Service metadata */
   SERVICE: {
     NAME: 'symindx',
@@ -331,7 +331,7 @@ export const ENVIRONMENT_CONFIGS = {
       enableProfiling: true,
     },
   },
-  
+
   staging: {
     ...DEFAULT_OBSERVABILITY_CONFIG,
     tracing: {
@@ -339,7 +339,7 @@ export const ENVIRONMENT_CONFIGS = {
       sampleRate: 0.5, // 50% sampling in staging
     },
   },
-  
+
   production: {
     ...DEFAULT_OBSERVABILITY_CONFIG,
     tracing: {

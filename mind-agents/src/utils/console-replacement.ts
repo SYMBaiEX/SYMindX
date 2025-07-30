@@ -3,7 +3,10 @@
  * Provides standardized logging replacements for console.log/error/warn/debug
  */
 
-import { logConsoleReplacement, LOGGER_CATEGORIES } from './standard-logging.js';
+import {
+  logConsoleReplacement,
+  LOGGER_CATEGORIES,
+} from './standard-logging.js';
 
 /**
  * Replace console.log with proper logging

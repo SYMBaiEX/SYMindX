@@ -1,6 +1,6 @@
 /**
  * SYMindXRuntime - Refactored modular runtime system
- * 
+ *
  * This is the main runtime class that orchestrates all system components
  * using the new modular architecture with proper separation of concerns.
  */
@@ -49,8 +49,12 @@ export class SYMindXRuntime extends RuntimeCore implements AgentRuntime {
     // Initialize all managers
     this.configManager = new ConfigurationManager(config);
     this.agentManager = new AgentManager(this.eventBus);
-    this.bootstrapManager = new BootstrapManager(this.registry, this.eventBus, config);
-    
+    this.bootstrapManager = new BootstrapManager(
+      this.registry,
+      this.eventBus,
+      config
+    );
+
     // Create extension loader from bootstrap manager
     const extensionLoader = this.bootstrapManager.getExtensionLoader();
     this.integrationCoordinator = new IntegrationCoordinator(
@@ -111,7 +115,6 @@ export class SYMindXRuntime extends RuntimeCore implements AgentRuntime {
         totalAgents: this.agents.size + this.lazyAgents.size,
         activeAgents: this.agents.size,
       });
-
     } catch (error) {
       this.logger.error('Runtime initialization failed', { error });
       throw error;
@@ -182,7 +185,7 @@ export class SYMindXRuntime extends RuntimeCore implements AgentRuntime {
 
     try {
       const characters = await this.configManager.loadCharacters();
-      
+
       if (characters.length === 0) {
         this.logger.warn('No character configurations found');
         return;
@@ -203,7 +206,9 @@ export class SYMindXRuntime extends RuntimeCore implements AgentRuntime {
             lazyCount++;
           }
         } catch (error) {
-          this.logger.error(`Failed to load character: ${character.id}`, { error });
+          this.logger.error(`Failed to load character: ${character.id}`, {
+            error,
+          });
         }
       }
 
@@ -212,7 +217,6 @@ export class SYMindXRuntime extends RuntimeCore implements AgentRuntime {
         activeAgents: loadedCount,
         lazyAgents: lazyCount,
       });
-
     } catch (error) {
       this.logger.error('Failed to load agents', { error });
       throw error;
@@ -315,12 +319,16 @@ export class SYMindXRuntime extends RuntimeCore implements AgentRuntime {
     }
 
     try {
-      this.metricsCollector.startTimer(`event_${event.type}`, 'event_processing', agentId);
-      
+      this.metricsCollector.startTimer(
+        `event_${event.type}`,
+        'event_processing',
+        agentId
+      );
+
       const result = await agent.processEvent(event);
-      
+
       this.metricsCollector.endTimer(`event_${event.type}`);
-      
+
       if (!result.success) {
         this.logger.error(`Event processing failed for agent: ${agentId}`, {
           event: event.type,
@@ -328,7 +336,9 @@ export class SYMindXRuntime extends RuntimeCore implements AgentRuntime {
         });
       }
     } catch (error) {
-      this.logger.error(`Error processing event for agent: ${agentId}`, { error });
+      this.logger.error(`Error processing event for agent: ${agentId}`, {
+        error,
+      });
       throw error;
     }
   }
@@ -336,20 +346,27 @@ export class SYMindXRuntime extends RuntimeCore implements AgentRuntime {
   /**
    * Execute agent action
    */
-  async executeAgentAction(agentId: string, action: AgentAction): Promise<void> {
+  async executeAgentAction(
+    agentId: string,
+    action: AgentAction
+  ): Promise<void> {
     const agent = this.getAgent(agentId);
     if (!agent) {
       throw createAgentError(`Agent not found: ${agentId}`);
     }
 
     try {
-      this.metricsCollector.startTimer(`action_${action.type}`, 'action_execution', agentId);
+      this.metricsCollector.startTimer(
+        `action_${action.type}`,
+        'action_execution',
+        agentId
+      );
       this.metricsCollector.recordActionExecuted(action);
-      
+
       const result = await agent.executeAction(action);
-      
+
       this.metricsCollector.endTimer(`action_${action.type}`);
-      
+
       if (!result.success) {
         this.logger.error(`Action execution failed for agent: ${agentId}`, {
           action: action.type,
@@ -357,7 +374,9 @@ export class SYMindXRuntime extends RuntimeCore implements AgentRuntime {
         });
       }
     } catch (error) {
-      this.logger.error(`Error executing action for agent: ${agentId}`, { error });
+      this.logger.error(`Error executing action for agent: ${agentId}`, {
+        error,
+      });
       throw error;
     }
   }
@@ -368,11 +387,11 @@ export class SYMindXRuntime extends RuntimeCore implements AgentRuntime {
   getState(): RuntimeState {
     const baseState = super.getState();
     const metricsReport = this.metricsCollector.generateReport();
-    
+
     // Update state with current counts
     baseState.activeAgents = this.agents.size;
     baseState.totalAgents = this.agents.size + this.lazyAgents.size;
-    
+
     // Merge metrics
     baseState.metrics = {
       ...baseState.metrics,
@@ -414,10 +433,10 @@ export class SYMindXRuntime extends RuntimeCore implements AgentRuntime {
       this.metricsCollector.updateAgentMetrics(this.agents);
 
       // Unload inactive agents periodically
-      if (Math.random() < 0.1) { // 10% chance per tick
+      if (Math.random() < 0.1) {
+        // 10% chance per tick
         await this.agentManager.unloadInactiveAgents();
       }
-
     } catch (error) {
       this.logger.error('Error during runtime tick', { error });
     }
@@ -431,7 +450,9 @@ export class SYMindXRuntime extends RuntimeCore implements AgentRuntime {
       // This would create a proper agent instance
       // For now, return a placeholder that will be implemented
       // when the actual agent creation logic is moved from the old runtime
-      throw new Error('Agent factory not yet implemented in refactored runtime');
+      throw new Error(
+        'Agent factory not yet implemented in refactored runtime'
+      );
     };
 
     this.agentManager.setAgentFactory(agentFactory);
@@ -442,13 +463,16 @@ export class SYMindXRuntime extends RuntimeCore implements AgentRuntime {
    */
   private async startAutonomousSystems(): Promise<void> {
     const agents = this.getActiveAgents();
-    
+
     for (const agent of agents) {
       if (agent.character?.autonomous?.enabled) {
         try {
           await this.integrationCoordinator.startAutonomousSystems(agent.id);
         } catch (error) {
-          this.logger.error(`Failed to start autonomous systems for agent: ${agent.id}`, { error });
+          this.logger.error(
+            `Failed to start autonomous systems for agent: ${agent.id}`,
+            { error }
+          );
         }
       }
     }
@@ -459,12 +483,15 @@ export class SYMindXRuntime extends RuntimeCore implements AgentRuntime {
    */
   private async stopAutonomousSystems(): Promise<void> {
     const agents = this.getActiveAgents();
-    
+
     for (const agent of agents) {
       try {
         await this.integrationCoordinator.stopAutonomousSystems(agent.id);
       } catch (error) {
-        this.logger.error(`Failed to stop autonomous systems for agent: ${agent.id}`, { error });
+        this.logger.error(
+          `Failed to stop autonomous systems for agent: ${agent.id}`,
+          { error }
+        );
       }
     }
   }
@@ -475,7 +502,7 @@ export class SYMindXRuntime extends RuntimeCore implements AgentRuntime {
   private logStartupSummary(): void {
     const state = this.getState();
     const metricsReport = this.getMetricsReport();
-    
+
     const summary = {
       status: state.status,
       uptime: state.uptime,
@@ -483,7 +510,9 @@ export class SYMindXRuntime extends RuntimeCore implements AgentRuntime {
       activeAgents: state.activeAgents,
       lazyAgents: state.totalAgents - state.activeAgents,
       memoryUsage: `${Math.round(metricsReport.system.memoryUsage.heapUsed / 1024 / 1024)}MB`,
-      startupTime: this.startupTime ? Date.now() - this.startupTime.getTime() : 0,
+      startupTime: this.startupTime
+        ? Date.now() - this.startupTime.getTime()
+        : 0,
     };
 
     this.logger.info('🚀 SYMindX Runtime System Ready', summary);
@@ -494,7 +523,7 @@ export class SYMindXRuntime extends RuntimeCore implements AgentRuntime {
    */
   get agents(): Map<string, Agent> {
     return new Map(
-      this.agentManager.getActiveAgents().map(agent => [agent.id, agent])
+      this.agentManager.getActiveAgents().map((agent) => [agent.id, agent])
     );
   }
 
@@ -503,7 +532,7 @@ export class SYMindXRuntime extends RuntimeCore implements AgentRuntime {
    */
   get lazyAgents(): Map<string, LazyAgent> {
     return new Map(
-      this.agentManager.getLazyAgents().map(agent => [agent.id, agent])
+      this.agentManager.getLazyAgents().map((agent) => [agent.id, agent])
     );
   }
 }

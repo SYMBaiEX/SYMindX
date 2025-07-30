@@ -1,7 +1,7 @@
 /**
  * @module observability/tracing-system
  * @description Distributed tracing system for SYMindX
- * 
+ *
  * Provides comprehensive request tracing across agent interactions,
  * portal calls, and extension operations with minimal overhead.
  */
@@ -10,11 +10,11 @@ import { EventEmitter } from 'events';
 import { randomBytes } from 'crypto';
 import { performance } from 'perf_hooks';
 
-import type { 
-  TraceContext, 
-  TraceSpan, 
+import type {
+  TraceContext,
+  TraceSpan,
   ObservabilityConfig,
-  ObservabilityEvent 
+  ObservabilityEvent,
 } from './types.js';
 import { OBSERVABILITY_CONSTANTS } from './constants.js';
 import { runtimeLogger } from '../../utils/logger.js';
@@ -135,18 +135,25 @@ export class TraceContextManager {
     // Use consistent sampling based on trace ID
     const hash = parseInt(traceId.slice(-8), 16);
     const sampleRate = 0.1; // 10% default, should be configurable
-    return (hash / 0xffffffff) < sampleRate;
+    return hash / 0xffffffff < sampleRate;
   }
 
   /**
    * Extract trace context from headers
    */
-  public extractFromHeaders(headers: Record<string, string>): TraceContext | undefined {
+  public extractFromHeaders(
+    headers: Record<string, string>
+  ): TraceContext | undefined {
     const traceId = headers[OBSERVABILITY_CONSTANTS.TRACE_HEADERS.TRACE_ID];
     const spanId = headers[OBSERVABILITY_CONSTANTS.TRACE_HEADERS.SPAN_ID];
-    const parentSpanId = headers[OBSERVABILITY_CONSTANTS.TRACE_HEADERS.PARENT_SPAN_ID];
-    const sampled = headers[OBSERVABILITY_CONSTANTS.TRACE_HEADERS.SAMPLED] === 'true';
-    const flags = parseInt(headers[OBSERVABILITY_CONSTANTS.TRACE_HEADERS.FLAGS] || '0', 10);
+    const parentSpanId =
+      headers[OBSERVABILITY_CONSTANTS.TRACE_HEADERS.PARENT_SPAN_ID];
+    const sampled =
+      headers[OBSERVABILITY_CONSTANTS.TRACE_HEADERS.SAMPLED] === 'true';
+    const flags = parseInt(
+      headers[OBSERVABILITY_CONSTANTS.TRACE_HEADERS.FLAGS] || '0',
+      10
+    );
 
     if (!traceId || !spanId) {
       return undefined;
@@ -167,13 +174,18 @@ export class TraceContextManager {
   /**
    * Inject trace context into headers
    */
-  public injectIntoHeaders(context: TraceContext, headers: Record<string, string> = {}): Record<string, string> {
+  public injectIntoHeaders(
+    context: TraceContext,
+    headers: Record<string, string> = {}
+  ): Record<string, string> {
     return {
       ...headers,
       [OBSERVABILITY_CONSTANTS.TRACE_HEADERS.TRACE_ID]: context.traceId,
       [OBSERVABILITY_CONSTANTS.TRACE_HEADERS.SPAN_ID]: context.spanId,
-      [OBSERVABILITY_CONSTANTS.TRACE_HEADERS.PARENT_SPAN_ID]: context.parentSpanId || '',
-      [OBSERVABILITY_CONSTANTS.TRACE_HEADERS.SAMPLED]: context.sampled.toString(),
+      [OBSERVABILITY_CONSTANTS.TRACE_HEADERS.PARENT_SPAN_ID]:
+        context.parentSpanId || '',
+      [OBSERVABILITY_CONSTANTS.TRACE_HEADERS.SAMPLED]:
+        context.sampled.toString(),
       [OBSERVABILITY_CONSTANTS.TRACE_HEADERS.FLAGS]: context.flags.toString(),
     };
   }
@@ -228,7 +240,10 @@ export class SpanManager {
   /**
    * Finish a span
    */
-  public finishSpan(spanId: string, status?: TraceSpan['status']): TraceSpan | undefined {
+  public finishSpan(
+    spanId: string,
+    status?: TraceSpan['status']
+  ): TraceSpan | undefined {
     const span = this.activeSpans.get(spanId);
     if (!span) {
       return undefined;
@@ -236,7 +251,7 @@ export class SpanManager {
 
     span.endTime = new Date();
     span.duration = span.endTime.getTime() - span.startTime.getTime();
-    
+
     if (status) {
       span.status = status;
     }
@@ -274,10 +289,7 @@ export class SpanManager {
   /**
    * Set span status
    */
-  public setSpanStatus(
-    spanId: string,
-    status: TraceSpan['status']
-  ): void {
+  public setSpanStatus(spanId: string, status: TraceSpan['status']): void {
     const span = this.activeSpans.get(spanId);
     if (span) {
       span.status = status;
@@ -308,7 +320,9 @@ export class SpanManager {
    * Get all spans for a trace
    */
   public getTraceSpans(traceId: string): TraceSpan[] {
-    return Array.from(this.spans.values()).filter(span => span.traceId === traceId);
+    return Array.from(this.spans.values()).filter(
+      (span) => span.traceId === traceId
+    );
   }
 
   /**
@@ -323,10 +337,10 @@ export class SpanManager {
    */
   public cleanup(maxAgeMs: number = 24 * 60 * 60 * 1000): void {
     const cutoff = new Date(Date.now() - maxAgeMs);
-    
+
     // Clean completed spans
     this.completedSpans = this.completedSpans.filter(
-      span => span.endTime && span.endTime > cutoff
+      (span) => span.endTime && span.endTime > cutoff
     );
 
     // Clean stored spans
@@ -355,9 +369,12 @@ export class TracingSystem extends EventEmitter {
     this.spanManager = new SpanManager();
 
     // Setup cleanup interval
-    setInterval(() => {
-      this.spanManager.cleanup(config.traceRetentionMs);
-    }, 60 * 60 * 1000); // Clean up every hour
+    setInterval(
+      () => {
+        this.spanManager.cleanup(config.traceRetentionMs);
+      },
+      60 * 60 * 1000
+    ); // Clean up every hour
   }
 
   /**
@@ -378,7 +395,7 @@ export class TracingSystem extends EventEmitter {
     if (context.sampled) {
       const span = this.spanManager.startSpan(context, operationName);
       this.emit('traceStarted', { context, span });
-      
+
       runtimeLogger.debug('Trace started', {
         correlationId: context.traceId,
         metadata: {
@@ -428,7 +445,7 @@ export class TracingSystem extends EventEmitter {
     const span = this.spanManager.finishSpan(context.spanId, status);
     if (span) {
       this.emit('traceFinished', { context, span });
-      
+
       runtimeLogger.debug('Trace finished', {
         correlationId: context.traceId,
         metadata: {
@@ -487,7 +504,7 @@ export class TracingSystem extends EventEmitter {
     const operationName = `${event.type}.${event.operation || 'unknown'}`;
     const context = this.startTrace(operationName, {
       eventType: event.type,
-      ...event.metadata as Record<string, string>,
+      ...(event.metadata as Record<string, string>),
     });
 
     if (context) {
@@ -526,7 +543,8 @@ export class TracingSystem extends EventEmitter {
           tags['health.component'] = event.componentId;
           tags['health.operation'] = event.operation;
           tags['health.status'] = event.status;
-          if (event.responseTime) tags['health.response_time'] = event.responseTime;
+          if (event.responseTime)
+            tags['health.response_time'] = event.responseTime;
           break;
         case 'system':
           tags['system.operation'] = event.operation;
@@ -559,10 +577,10 @@ export class TracingSystem extends EventEmitter {
    */
   public exportTraces(traceIds?: string[]): unknown[] {
     const spans = traceIds
-      ? traceIds.flatMap(id => this.spanManager.getTraceSpans(id))
+      ? traceIds.flatMap((id) => this.spanManager.getTraceSpans(id))
       : this.spanManager.getCompletedSpans();
 
-    return spans.map(span => ({
+    return spans.map((span) => ({
       traceId: span.traceId,
       spanId: span.spanId,
       parentSpanId: span.parentSpanId,
@@ -571,7 +589,7 @@ export class TracingSystem extends EventEmitter {
       endTime: span.endTime ? span.endTime.getTime() * 1000000 : undefined,
       duration: span.duration ? span.duration * 1000000 : undefined,
       tags: span.tags,
-      events: span.events.map(event => ({
+      events: span.events.map((event) => ({
         timestamp: event.timestamp.getTime() * 1000000,
         name: event.name,
         attributes: event.attributes,
@@ -593,14 +611,18 @@ export class TracingSystem extends EventEmitter {
     averageSpanDuration: number;
   } {
     const completedSpans = this.spanManager.getCompletedSpans();
-    const totalDuration = completedSpans.reduce((sum, span) => sum + (span.duration || 0), 0);
-    
+    const totalDuration = completedSpans.reduce(
+      (sum, span) => sum + (span.duration || 0),
+      0
+    );
+
     return {
-      totalTraces: new Set(completedSpans.map(span => span.traceId)).size,
+      totalTraces: new Set(completedSpans.map((span) => span.traceId)).size,
       activeSpans: this.spanManager['activeSpans'].size,
       completedSpans: completedSpans.length,
       samplingRate: this.config.sampleRate,
-      averageSpanDuration: completedSpans.length > 0 ? totalDuration / completedSpans.length : 0,
+      averageSpanDuration:
+        completedSpans.length > 0 ? totalDuration / completedSpans.length : 0,
     };
   }
 

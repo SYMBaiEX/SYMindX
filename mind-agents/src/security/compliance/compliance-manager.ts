@@ -1,6 +1,6 @@
 /**
  * Unified Compliance Manager
- * 
+ *
  * Coordinates GDPR, HIPAA, and SOX compliance across the entire system
  * Provides a single interface for all compliance operations
  */
@@ -26,15 +26,24 @@ import { EventEmitter } from 'events';
 import { createGDPRService } from './gdpr/gdpr-service.js';
 import { createHIPAAService } from './hipaa/hipaa-service.js';
 import { createSOXService } from './sox/sox-service.js';
-import { createDataClassifier, DataClassifier } from './common/data-classifier.js';
-import { createRetentionManager, RetentionManager } from './common/retention-manager.js';
+import {
+  createDataClassifier,
+  DataClassifier,
+} from './common/data-classifier.js';
+import {
+  createRetentionManager,
+  RetentionManager,
+} from './common/retention-manager.js';
 
-export class ComplianceManagerImpl extends EventEmitter implements ComplianceManager {
+export class ComplianceManagerImpl
+  extends EventEmitter
+  implements ComplianceManager
+{
   private memoryProvider: MemoryProvider;
   private config: ComplianceConfig;
   private dataClassifier: DataClassifier;
   private retentionManager: RetentionManager;
-  
+
   // Service instances
   public readonly gdpr: GDPRService;
   public readonly hipaa: HIPAAService;
@@ -47,26 +56,26 @@ export class ComplianceManagerImpl extends EventEmitter implements ComplianceMan
 
   constructor(memoryProvider: MemoryProvider, config: ComplianceConfig) {
     super();
-    
+
     this.memoryProvider = memoryProvider;
     this.config = { enabled: true, strictMode: false, ...config };
-    
+
     // Initialize utilities
     this.dataClassifier = createDataClassifier();
     this.retentionManager = createRetentionManager(memoryProvider);
-    
+
     // Initialize services based on configuration
-    this.gdpr = this.config.gdpr?.enabled ? 
-      createGDPRService(memoryProvider, this.config.gdpr) : 
-      this.createNoOpGDPRService();
-      
-    this.hipaa = this.config.hipaa?.enabled ? 
-      createHIPAAService(memoryProvider, this.config.hipaa) : 
-      this.createNoOpHIPAAService();
-      
-    this.sox = this.config.sox?.enabled ? 
-      createSOXService(memoryProvider, this.config.sox) : 
-      this.createNoOpSOXService();
+    this.gdpr = this.config.gdpr?.enabled
+      ? createGDPRService(memoryProvider, this.config.gdpr)
+      : this.createNoOpGDPRService();
+
+    this.hipaa = this.config.hipaa?.enabled
+      ? createHIPAAService(memoryProvider, this.config.hipaa)
+      : this.createNoOpHIPAAService();
+
+    this.sox = this.config.sox?.enabled
+      ? createSOXService(memoryProvider, this.config.sox)
+      : this.createNoOpSOXService();
 
     this.initialize();
   }
@@ -93,7 +102,7 @@ export class ComplianceManagerImpl extends EventEmitter implements ComplianceMan
 
       this.isInitialized = true;
       this.emit('initialized', { config: this.config });
-      
+
       runtimeLogger.info('Compliance manager initialized successfully');
     } catch (error) {
       runtimeLogger.error('Failed to initialize compliance manager', { error });
@@ -104,34 +113,68 @@ export class ComplianceManagerImpl extends EventEmitter implements ComplianceMan
   private setupEventForwarding(): void {
     // Forward GDPR events
     if (this.config.gdpr?.enabled) {
-      this.gdpr.on('dataDeleted', (data) => this.emit('gdpr:dataDeleted', data));
-      this.gdpr.on('dataAnonymized', (data) => this.emit('gdpr:dataAnonymized', data));
-      this.gdpr.on('dataExported', (data) => this.emit('gdpr:dataExported', data));
-      this.gdpr.on('consentRecorded', (data) => this.emit('gdpr:consentRecorded', data));
-      this.gdpr.on('consentWithdrawn', (data) => this.emit('gdpr:consentWithdrawn', data));
+      this.gdpr.on('dataDeleted', (data) =>
+        this.emit('gdpr:dataDeleted', data)
+      );
+      this.gdpr.on('dataAnonymized', (data) =>
+        this.emit('gdpr:dataAnonymized', data)
+      );
+      this.gdpr.on('dataExported', (data) =>
+        this.emit('gdpr:dataExported', data)
+      );
+      this.gdpr.on('consentRecorded', (data) =>
+        this.emit('gdpr:consentRecorded', data)
+      );
+      this.gdpr.on('consentWithdrawn', (data) =>
+        this.emit('gdpr:consentWithdrawn', data)
+      );
     }
 
     // Forward HIPAA events
     if (this.config.hipaa?.enabled) {
-      this.hipaa.on('accessLogged', (data) => this.emit('hipaa:accessLogged', data));
-      this.hipaa.on('breachReported', (data) => this.emit('hipaa:breachReported', data));
-      this.hipaa.on('anomalyDetected', (data) => this.emit('hipaa:anomalyDetected', data));
-      this.hipaa.on('trainingCompleted', (data) => this.emit('hipaa:trainingCompleted', data));
+      this.hipaa.on('accessLogged', (data) =>
+        this.emit('hipaa:accessLogged', data)
+      );
+      this.hipaa.on('breachReported', (data) =>
+        this.emit('hipaa:breachReported', data)
+      );
+      this.hipaa.on('anomalyDetected', (data) =>
+        this.emit('hipaa:anomalyDetected', data)
+      );
+      this.hipaa.on('trainingCompleted', (data) =>
+        this.emit('hipaa:trainingCompleted', data)
+      );
     }
 
     // Forward SOX events
     if (this.config.sox?.enabled) {
-      this.sox.on('changeRequested', (data) => this.emit('sox:changeRequested', data));
-      this.sox.on('changeApproved', (data) => this.emit('sox:changeApproved', data));
-      this.sox.on('changeImplemented', (data) => this.emit('sox:changeImplemented', data));
-      this.sox.on('controlTested', (data) => this.emit('sox:controlTested', data));
-      this.sox.on('changeLogged', (data) => this.emit('sox:changeLogged', data));
+      this.sox.on('changeRequested', (data) =>
+        this.emit('sox:changeRequested', data)
+      );
+      this.sox.on('changeApproved', (data) =>
+        this.emit('sox:changeApproved', data)
+      );
+      this.sox.on('changeImplemented', (data) =>
+        this.emit('sox:changeImplemented', data)
+      );
+      this.sox.on('controlTested', (data) =>
+        this.emit('sox:controlTested', data)
+      );
+      this.sox.on('changeLogged', (data) =>
+        this.emit('sox:changeLogged', data)
+      );
     }
 
     // Forward retention events
-    this.retentionManager.on('retentionScheduled', (data) => this.emit('retention:scheduled', data));
-    this.retentionManager.on('retentionActionExecuted', (data) => this.emit('retention:executed', data));
-    this.retentionManager.on('legalHoldApplied', (data) => this.emit('retention:legalHold', data));
+    this.retentionManager.on('retentionScheduled', (data) =>
+      this.emit('retention:scheduled', data)
+    );
+    this.retentionManager.on('retentionActionExecuted', (data) =>
+      this.emit('retention:executed', data)
+    );
+    this.retentionManager.on('legalHoldApplied', (data) =>
+      this.emit('retention:legalHold', data)
+    );
   }
 
   /**
@@ -140,13 +183,15 @@ export class ComplianceManagerImpl extends EventEmitter implements ComplianceMan
   async configure(config: ComplianceConfig): Promise<void> {
     try {
       this.config = { ...this.config, ...config };
-      
+
       await this.storeConfiguration();
-      
+
       runtimeLogger.info('Compliance configuration updated', { config });
       this.emit('configurationUpdated', { config });
     } catch (error) {
-      runtimeLogger.error('Failed to update compliance configuration', { error });
+      runtimeLogger.error('Failed to update compliance configuration', {
+        error,
+      });
       throw error;
     }
   }
@@ -164,7 +209,7 @@ export class ComplianceManagerImpl extends EventEmitter implements ComplianceMan
   async classifyData(data: any): Promise<DataClassification> {
     try {
       const classification = this.dataClassifier.classifyData(data);
-      
+
       // Enhanced classification with compliance-specific data
       const gdprClassification = this.dataClassifier.classifyForGDPR(data);
       const hipaaClassification = this.dataClassifier.classifyForHIPAA(data);
@@ -173,12 +218,16 @@ export class ComplianceManagerImpl extends EventEmitter implements ComplianceMan
       // Add compliance-specific tags
       if (gdprClassification.isPersonalData) {
         classification.tags.push(`gdpr:${gdprClassification.lawfulBasis}`);
-        classification.tags.push(...gdprClassification.dataTypes.map(type => `gdpr:${type}`));
+        classification.tags.push(
+          ...gdprClassification.dataTypes.map((type) => `gdpr:${type}`)
+        );
       }
 
       if (hipaaClassification.isPHI) {
         classification.tags.push(`hipaa:${hipaaClassification.dataType}`);
-        classification.tags.push(`hipaa:${hipaaClassification.sensitivityLevel}`);
+        classification.tags.push(
+          `hipaa:${hipaaClassification.sensitivityLevel}`
+        );
       }
 
       if (soxClassification.isFinancial) {
@@ -187,7 +236,11 @@ export class ComplianceManagerImpl extends EventEmitter implements ComplianceMan
       }
 
       // Schedule retention if data contains regulated information
-      if (gdprClassification.isPersonalData || hipaaClassification.isPHI || soxClassification.isFinancial) {
+      if (
+        gdprClassification.isPersonalData ||
+        hipaaClassification.isPHI ||
+        soxClassification.isFinancial
+      ) {
         const dataType = this.determineRetentionDataType(classification);
         await this.retentionManager.scheduleRetention(
           this.generateDataId(data),
@@ -216,7 +269,7 @@ export class ComplianceManagerImpl extends EventEmitter implements ComplianceMan
   async applyRetentionPolicy(policy: RetentionPolicy): Promise<void> {
     try {
       this.retentionManager.addPolicy(policy);
-      
+
       await this.logComplianceEvent({
         action: 'retention_policy_applied',
         resource: 'retention_policy',
@@ -235,7 +288,10 @@ export class ComplianceManagerImpl extends EventEmitter implements ComplianceMan
 
       this.emit('retentionPolicyApplied', policy);
     } catch (error) {
-      runtimeLogger.error('Failed to apply retention policy', { policyId: policy.id, error });
+      runtimeLogger.error('Failed to apply retention policy', {
+        policyId: policy.id,
+        error,
+      });
       throw error;
     }
   }
@@ -252,16 +308,16 @@ export class ComplianceManagerImpl extends EventEmitter implements ComplianceMan
       // Check GDPR compliance
       if (this.config.gdpr?.enabled) {
         const gdprIssues: string[] = [];
-        
+
         // Add specific GDPR compliance checks here
         // For now, assume compliant unless issues are found
-        
+
         status.gdpr = {
           compliant: gdprIssues.length === 0,
           issues: gdprIssues,
           lastAudit: this.lastHealthCheck,
         };
-        
+
         if (!status.gdpr.compliant) {
           status.overallCompliant = false;
         }
@@ -270,15 +326,15 @@ export class ComplianceManagerImpl extends EventEmitter implements ComplianceMan
       // Check HIPAA compliance
       if (this.config.hipaa?.enabled) {
         const hipaaIssues: string[] = [];
-        
+
         // Add specific HIPAA compliance checks here
-        
+
         status.hipaa = {
           compliant: hipaaIssues.length === 0,
           issues: hipaaIssues,
           lastAudit: this.lastHealthCheck,
         };
-        
+
         if (!status.hipaa.compliant) {
           status.overallCompliant = false;
         }
@@ -287,29 +343,35 @@ export class ComplianceManagerImpl extends EventEmitter implements ComplianceMan
       // Check SOX compliance
       if (this.config.sox?.enabled) {
         const soxIssues: string[] = [];
-        
+
         // Check control effectiveness
         try {
           const controlReport = await this.sox.getControlEffectiveness();
-          const effectivenessRate = (controlReport.effectiveControls / controlReport.totalControls) * 100;
-          
+          const effectivenessRate =
+            (controlReport.effectiveControls / controlReport.totalControls) *
+            100;
+
           if (effectivenessRate < 80) {
-            soxIssues.push(`Control effectiveness below threshold: ${effectivenessRate.toFixed(1)}%`);
+            soxIssues.push(
+              `Control effectiveness below threshold: ${effectivenessRate.toFixed(1)}%`
+            );
           }
-          
+
           if (controlReport.totalControls - controlReport.testedControls > 0) {
-            soxIssues.push(`${controlReport.totalControls - controlReport.testedControls} controls not tested`);
+            soxIssues.push(
+              `${controlReport.totalControls - controlReport.testedControls} controls not tested`
+            );
           }
         } catch (error) {
           soxIssues.push('Unable to assess control effectiveness');
         }
-        
+
         status.sox = {
           compliant: soxIssues.length === 0,
           issues: soxIssues,
           lastAudit: this.lastHealthCheck,
         };
-        
+
         if (!status.sox.compliant) {
           status.overallCompliant = false;
         }
@@ -328,7 +390,9 @@ export class ComplianceManagerImpl extends EventEmitter implements ComplianceMan
   /**
    * Generate comprehensive compliance report
    */
-  async generateComplianceReport(regulations?: ('gdpr' | 'hipaa' | 'sox')[]): Promise<ComplianceReport> {
+  async generateComplianceReport(
+    regulations?: ('gdpr' | 'hipaa' | 'sox')[]
+  ): Promise<ComplianceReport> {
     try {
       const reportPeriod = {
         start: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000), // Last 90 days
@@ -401,20 +465,22 @@ export class ComplianceManagerImpl extends EventEmitter implements ComplianceMan
         type: 'audit_log',
       });
 
-      const allLogs = memories.map(m => {
-        try {
-          return JSON.parse(m.content) as AuditEntry;
-        } catch {
-          return null;
-        }
-      }).filter(log => log !== null) as AuditEntry[];
+      const allLogs = memories
+        .map((m) => {
+          try {
+            return JSON.parse(m.content) as AuditEntry;
+          } catch {
+            return null;
+          }
+        })
+        .filter((log) => log !== null) as AuditEntry[];
 
       // Apply filters if provided
       let filteredLogs = allLogs;
-      
+
       if (filters) {
         if (filters.startDate || filters.endDate) {
-          filteredLogs = filteredLogs.filter(log => {
+          filteredLogs = filteredLogs.filter((log) => {
             const logDate = new Date(log.timestamp);
             if (filters.startDate && logDate < filters.startDate) return false;
             if (filters.endDate && logDate > filters.endDate) return false;
@@ -423,12 +489,17 @@ export class ComplianceManagerImpl extends EventEmitter implements ComplianceMan
         }
 
         if (filters.userId) {
-          filteredLogs = filteredLogs.filter(log => log.userId === filters.userId);
+          filteredLogs = filteredLogs.filter(
+            (log) => log.userId === filters.userId
+          );
         }
       }
 
       // Sort by timestamp (newest first)
-      filteredLogs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      filteredLogs.sort(
+        (a, b) =>
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      );
 
       await this.logComplianceEvent({
         action: 'audit_log_exported',
@@ -448,15 +519,17 @@ export class ComplianceManagerImpl extends EventEmitter implements ComplianceMan
 
   // Private helper methods
 
-  private determineRetentionDataType(classification: DataClassification): string {
+  private determineRetentionDataType(
+    classification: DataClassification
+  ): string {
     // Determine retention data type based on classification tags
-    if (classification.tags.some(tag => tag.startsWith('gdpr:'))) {
+    if (classification.tags.some((tag) => tag.startsWith('gdpr:'))) {
       return 'personal_data';
     }
-    if (classification.tags.some(tag => tag.startsWith('hipaa:'))) {
+    if (classification.tags.some((tag) => tag.startsWith('hipaa:'))) {
       return 'phi';
     }
-    if (classification.tags.some(tag => tag.startsWith('sox:'))) {
+    if (classification.tags.some((tag) => tag.startsWith('sox:'))) {
       return 'financial_data';
     }
     return 'general_data';
@@ -466,7 +539,11 @@ export class ComplianceManagerImpl extends EventEmitter implements ComplianceMan
     // Generate a unique ID for data based on its content
     const crypto = require('crypto');
     const content = typeof data === 'string' ? data : JSON.stringify(data);
-    return crypto.createHash('sha256').update(content).digest('hex').substring(0, 16);
+    return crypto
+      .createHash('sha256')
+      .update(content)
+      .digest('hex')
+      .substring(0, 16);
   }
 
   private async generateGDPRReport(period: any): Promise<any> {
@@ -517,27 +594,35 @@ export class ComplianceManagerImpl extends EventEmitter implements ComplianceMan
     if (regulations.gdpr) {
       if (regulations.gdpr.dataBreaches > 0) {
         overallCompliance = false;
-        criticalIssues.push(`${regulations.gdpr.dataBreaches} GDPR data breaches reported`);
+        criticalIssues.push(
+          `${regulations.gdpr.dataBreaches} GDPR data breaches reported`
+        );
       }
     }
 
     if (regulations.hipaa) {
       if (regulations.hipaa.phiAccesses.unauthorized > 0) {
         overallCompliance = false;
-        criticalIssues.push(`${regulations.hipaa.phiAccesses.unauthorized} unauthorized PHI accesses`);
+        criticalIssues.push(
+          `${regulations.hipaa.phiAccesses.unauthorized} unauthorized PHI accesses`
+        );
       }
     }
 
     if (regulations.sox) {
       if (regulations.sox.materialWeaknesses?.length > 0) {
         overallCompliance = false;
-        criticalIssues.push(`${regulations.sox.materialWeaknesses.length} material weaknesses identified`);
+        criticalIssues.push(
+          `${regulations.sox.materialWeaknesses.length} material weaknesses identified`
+        );
       }
     }
 
     // Generate recommendations
     if (!overallCompliance) {
-      recommendations.push('Immediate remediation required for critical issues');
+      recommendations.push(
+        'Immediate remediation required for critical issues'
+      );
       recommendations.push('Conduct comprehensive compliance audit');
       recommendations.push('Review and strengthen internal controls');
     }
@@ -565,7 +650,7 @@ export class ComplianceManagerImpl extends EventEmitter implements ComplianceMan
       agentId: 'system',
       content: JSON.stringify(report),
       timestamp: report.generatedAt,
-      metadata: { 
+      metadata: {
         type: 'compliance_report',
         period: report.period.type,
       },
@@ -589,9 +674,9 @@ export class ComplianceManagerImpl extends EventEmitter implements ComplianceMan
 
   private updateComplianceMetrics(key: string, value: any): void {
     this.complianceMetrics.set(key, value);
-    
+
     // Store updated metrics (async, don't wait)
-    this.storeComplianceMetrics().catch(error => {
+    this.storeComplianceMetrics().catch((error) => {
       runtimeLogger.warn('Failed to store compliance metrics', { error });
     });
   }
@@ -606,7 +691,12 @@ export class ComplianceManagerImpl extends EventEmitter implements ComplianceMan
     });
   }
 
-  private async logComplianceEvent(event: Omit<AuditEntry, 'id' | 'timestamp' | 'userId' | 'result' | 'ipAddress' | 'userAgent'>): Promise<void> {
+  private async logComplianceEvent(
+    event: Omit<
+      AuditEntry,
+      'id' | 'timestamp' | 'userId' | 'result' | 'ipAddress' | 'userAgent'
+    >
+  ): Promise<void> {
     const auditEntry: AuditEntry = {
       id: `compliance_audit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       timestamp: new Date(),
@@ -629,50 +719,119 @@ export class ComplianceManagerImpl extends EventEmitter implements ComplianceMan
   // No-op service implementations for disabled features
   private createNoOpGDPRService(): GDPRService {
     return {
-      deleteUserData: async () => { throw new Error('GDPR service not enabled'); },
-      anonymizeUserData: async () => { throw new Error('GDPR service not enabled'); },
-      exportUserData: async () => { throw new Error('GDPR service not enabled'); },
-      recordConsent: async () => { throw new Error('GDPR service not enabled'); },
-      withdrawConsent: async () => { throw new Error('GDPR service not enabled'); },
-      getConsentStatus: async () => { throw new Error('GDPR service not enabled'); },
-      handleDataSubjectRequest: async () => { throw new Error('GDPR service not enabled'); },
-      getPrivacyPolicy: async () => { throw new Error('GDPR service not enabled'); },
-      updatePrivacyPolicy: async () => { throw new Error('GDPR service not enabled'); },
+      deleteUserData: async () => {
+        throw new Error('GDPR service not enabled');
+      },
+      anonymizeUserData: async () => {
+        throw new Error('GDPR service not enabled');
+      },
+      exportUserData: async () => {
+        throw new Error('GDPR service not enabled');
+      },
+      recordConsent: async () => {
+        throw new Error('GDPR service not enabled');
+      },
+      withdrawConsent: async () => {
+        throw new Error('GDPR service not enabled');
+      },
+      getConsentStatus: async () => {
+        throw new Error('GDPR service not enabled');
+      },
+      handleDataSubjectRequest: async () => {
+        throw new Error('GDPR service not enabled');
+      },
+      getPrivacyPolicy: async () => {
+        throw new Error('GDPR service not enabled');
+      },
+      updatePrivacyPolicy: async () => {
+        throw new Error('GDPR service not enabled');
+      },
     } as any;
   }
 
   private createNoOpHIPAAService(): HIPAAService {
     return {
-      classifyData: () => ({ isPHI: false, dataType: 'other', sensitivityLevel: 'low' }),
-      encryptPHI: async () => { throw new Error('HIPAA service not enabled'); },
-      decryptPHI: async () => { throw new Error('HIPAA service not enabled'); },
-      authorizeAccess: async () => { throw new Error('HIPAA service not enabled'); },
+      classifyData: () => ({
+        isPHI: false,
+        dataType: 'other',
+        sensitivityLevel: 'low',
+      }),
+      encryptPHI: async () => {
+        throw new Error('HIPAA service not enabled');
+      },
+      decryptPHI: async () => {
+        throw new Error('HIPAA service not enabled');
+      },
+      authorizeAccess: async () => {
+        throw new Error('HIPAA service not enabled');
+      },
       checkAuthorization: () => false,
-      logAccess: async () => { throw new Error('HIPAA service not enabled'); },
-      getAccessLog: async () => { throw new Error('HIPAA service not enabled'); },
-      getAuditReport: async () => { throw new Error('HIPAA service not enabled'); },
-      reportBreach: async () => { throw new Error('HIPAA service not enabled'); },
-      getBreachLog: async () => { throw new Error('HIPAA service not enabled'); },
-      recordTraining: async () => { throw new Error('HIPAA service not enabled'); },
-      getTrainingStatus: async () => { throw new Error('HIPAA service not enabled'); },
+      logAccess: async () => {
+        throw new Error('HIPAA service not enabled');
+      },
+      getAccessLog: async () => {
+        throw new Error('HIPAA service not enabled');
+      },
+      getAuditReport: async () => {
+        throw new Error('HIPAA service not enabled');
+      },
+      reportBreach: async () => {
+        throw new Error('HIPAA service not enabled');
+      },
+      getBreachLog: async () => {
+        throw new Error('HIPAA service not enabled');
+      },
+      recordTraining: async () => {
+        throw new Error('HIPAA service not enabled');
+      },
+      getTrainingStatus: async () => {
+        throw new Error('HIPAA service not enabled');
+      },
     } as any;
   }
 
   private createNoOpSOXService(): SOXService {
     return {
-      tagFinancialData: () => ({ isFinancial: false, dataType: 'transaction', materialityLevel: 'immaterial', requiresApproval: false }),
-      validateFinancialTransaction: async () => ({ valid: true, errors: [], warnings: [] }),
-      requestChange: async () => { throw new Error('SOX service not enabled'); },
-      approveChange: async () => { throw new Error('SOX service not enabled'); },
-      implementChange: async () => { throw new Error('SOX service not enabled'); },
+      tagFinancialData: () => ({
+        isFinancial: false,
+        dataType: 'transaction',
+        materialityLevel: 'immaterial',
+        requiresApproval: false,
+      }),
+      validateFinancialTransaction: async () => ({
+        valid: true,
+        errors: [],
+        warnings: [],
+      }),
+      requestChange: async () => {
+        throw new Error('SOX service not enabled');
+      },
+      approveChange: async () => {
+        throw new Error('SOX service not enabled');
+      },
+      implementChange: async () => {
+        throw new Error('SOX service not enabled');
+      },
       validateSegregationOfDuties: async () => true,
       getConflictingRoles: async () => [],
-      logChange: async () => { throw new Error('SOX service not enabled'); },
-      getAuditLog: async () => { throw new Error('SOX service not enabled'); },
-      testControl: async () => { throw new Error('SOX service not enabled'); },
-      getControlEffectiveness: async () => { throw new Error('SOX service not enabled'); },
-      generateSOXReport: async () => { throw new Error('SOX service not enabled'); },
-      getCertificationStatus: async () => { throw new Error('SOX service not enabled'); },
+      logChange: async () => {
+        throw new Error('SOX service not enabled');
+      },
+      getAuditLog: async () => {
+        throw new Error('SOX service not enabled');
+      },
+      testControl: async () => {
+        throw new Error('SOX service not enabled');
+      },
+      getControlEffectiveness: async () => {
+        throw new Error('SOX service not enabled');
+      },
+      generateSOXReport: async () => {
+        throw new Error('SOX service not enabled');
+      },
+      getCertificationStatus: async () => {
+        throw new Error('SOX service not enabled');
+      },
     } as any;
   }
 }

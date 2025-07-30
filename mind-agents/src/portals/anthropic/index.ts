@@ -38,10 +38,10 @@ import type {
 } from '../../types/portals/ai-sdk';
 import { BasePortal } from '../base-portal';
 import { convertUsage } from '../utils';
-import { 
-  ContextPromptTransformer, 
-  ContextModelSelector, 
-  ContextPerformanceOptimizer 
+import {
+  ContextPromptTransformer,
+  ContextModelSelector,
+  ContextPerformanceOptimizer,
 } from '../context-helpers.js';
 
 export interface AnthropicConfig extends PortalConfig {
@@ -66,7 +66,7 @@ export class AnthropicPortal extends BasePortal {
     super('anthropic', 'Anthropic', '1.0.0', config);
 
     // Create Anthropic provider with proper AI SDK v5 configuration
-    const apiKey = config.apiKey || process.env["ANTHROPIC_API_KEY"];
+    const apiKey = config.apiKey || process.env['ANTHROPIC_API_KEY'];
     if (!apiKey) {
       throw new Error('Anthropic API key is required');
     }
@@ -97,11 +97,16 @@ export class AnthropicPortal extends BasePortal {
   /**
    * Create a tool using AI SDK v5 tool function
    */
-  createTool(name: string, description: string, parameters: any, execute: Function) {
+  createTool(
+    name: string,
+    description: string,
+    parameters: any,
+    execute: Function
+  ) {
     return tool({
       description,
       parameters,
-      execute
+      execute,
     });
   }
 
@@ -149,9 +154,7 @@ export class AnthropicPortal extends BasePortal {
 
       // Use maxOutputTokens for AI SDK v5
       const maxOutputTokens =
-        options?.maxOutputTokens ??
-        options?.maxTokens ??
-        this.config.maxTokens;
+        options?.maxOutputTokens ?? options?.maxTokens ?? this.config.maxTokens;
       if (maxOutputTokens !== undefined) {
         params.maxOutputTokens = maxOutputTokens;
       }
@@ -308,9 +311,7 @@ export class AnthropicPortal extends BasePortal {
 
       // Use maxOutputTokens for AI SDK v5
       const maxOutputTokens =
-        options?.maxOutputTokens ??
-        options?.maxTokens ??
-        this.config.maxTokens;
+        options?.maxOutputTokens ?? options?.maxTokens ?? this.config.maxTokens;
       if (maxOutputTokens !== undefined) {
         params.maxOutputTokens = maxOutputTokens;
       }
@@ -921,19 +922,34 @@ export class AnthropicPortal extends BasePortal {
   ): Promise<TextGenerationResult> {
     try {
       // Use context helpers to optimize for Claude
-      const contextPrompt = ContextPromptTransformer.transformToPromptContext(context);
-      const enhancedPrompt = contextPrompt ? `${contextPrompt}\n\n${prompt}` : prompt;
-      
+      const contextPrompt =
+        ContextPromptTransformer.transformToPromptContext(context);
+      const enhancedPrompt = contextPrompt
+        ? `${contextPrompt}\n\n${prompt}`
+        : prompt;
+
       // Select optimal Claude model based on context
-      const availableModels = this.getSupportedModelsForCapability(PortalCapability.TEXT_GENERATION);
-      const contextModel = ContextModelSelector.selectModel(context, availableModels, PortalCapability.TEXT_GENERATION);
-      
+      const availableModels = this.getSupportedModelsForCapability(
+        PortalCapability.TEXT_GENERATION
+      );
+      const contextModel = ContextModelSelector.selectModel(
+        context,
+        availableModels,
+        PortalCapability.TEXT_GENERATION
+      );
+
       // Optimize options for Claude specifics
-      const optimizedOptions = ContextPerformanceOptimizer.optimizeOptions(context, options);
-      
+      const optimizedOptions = ContextPerformanceOptimizer.optimizeOptions(
+        context,
+        options
+      );
+
       // Use Claude-specific model selection
-      const modelToUse = contextModel || this.selectClaudeModelFromContext(context) || 
-                       (this.config as AnthropicConfig).model || 'claude-3-5-sonnet-20241022';
+      const modelToUse =
+        contextModel ||
+        this.selectClaudeModelFromContext(context) ||
+        (this.config as AnthropicConfig).model ||
+        'claude-3-5-sonnet-20241022';
 
       const baseParams = {
         model: this.getLanguageModel(modelToUse),
@@ -944,7 +960,8 @@ export class AnthropicPortal extends BasePortal {
 
       // Apply optimized options
       if (optimizedOptions.maxOutputTokens || optimizedOptions.maxTokens) {
-        params.maxOutputTokens = optimizedOptions.maxOutputTokens || optimizedOptions.maxTokens;
+        params.maxOutputTokens =
+          optimizedOptions.maxOutputTokens || optimizedOptions.maxTokens;
       }
 
       if (optimizedOptions.temperature !== undefined) {
@@ -989,18 +1006,30 @@ export class AnthropicPortal extends BasePortal {
     try {
       // Build context-enhanced messages using base implementation
       const enhancedMessages = this.buildContextualMessages(messages, context);
-      
+
       // Select optimal Claude model based on context
-      const availableModels = this.getSupportedModelsForCapability(PortalCapability.CHAT_GENERATION);
-      const contextModel = ContextModelSelector.selectModel(context, availableModels, PortalCapability.CHAT_GENERATION);
-      
+      const availableModels = this.getSupportedModelsForCapability(
+        PortalCapability.CHAT_GENERATION
+      );
+      const contextModel = ContextModelSelector.selectModel(
+        context,
+        availableModels,
+        PortalCapability.CHAT_GENERATION
+      );
+
       // Optimize options for Claude specifics
-      const optimizedOptions = ContextPerformanceOptimizer.optimizeOptions(context, options);
-      
+      const optimizedOptions = ContextPerformanceOptimizer.optimizeOptions(
+        context,
+        options
+      );
+
       // Use Claude-specific model selection
-      const modelToUse = contextModel || this.selectClaudeModelFromContext(context) || 
-                       (this.config as AnthropicConfig).model || 'claude-3-5-sonnet-20241022';
-      
+      const modelToUse =
+        contextModel ||
+        this.selectClaudeModelFromContext(context) ||
+        (this.config as AnthropicConfig).model ||
+        'claude-3-5-sonnet-20241022';
+
       const modelMessages = this.convertToModelMessages(enhancedMessages);
 
       const baseOptions = {
@@ -1012,7 +1041,8 @@ export class AnthropicPortal extends BasePortal {
 
       // Apply optimized options
       if (optimizedOptions.maxOutputTokens || optimizedOptions.maxTokens) {
-        generateOptions.maxOutputTokens = optimizedOptions.maxOutputTokens || optimizedOptions.maxTokens;
+        generateOptions.maxOutputTokens =
+          optimizedOptions.maxOutputTokens || optimizedOptions.maxTokens;
       }
 
       if (optimizedOptions.temperature !== undefined) {
@@ -1024,8 +1054,12 @@ export class AnthropicPortal extends BasePortal {
       }
 
       // Add tools if available in context
-      if (optimizedOptions.tools || (context.tools?.available && context.tools.available.length > 0)) {
-        generateOptions.tools = optimizedOptions.tools || this.selectToolsFromContext(context);
+      if (
+        optimizedOptions.tools ||
+        (context.tools?.available && context.tools.available.length > 0)
+      ) {
+        generateOptions.tools =
+          optimizedOptions.tools || this.selectToolsFromContext(context);
         generateOptions.maxSteps = optimizedOptions.maxSteps || 5;
 
         // Add comprehensive tool streaming callbacks
@@ -1079,16 +1113,23 @@ export class AnthropicPortal extends BasePortal {
   /**
    * Claude-specific model selection based on context
    */
-  private selectClaudeModelFromContext(context: UnifiedContext): string | undefined {
+  private selectClaudeModelFromContext(
+    context: UnifiedContext
+  ): string | undefined {
     // Check for Anthropic-specific context preferences
-    if (context.portal?.active && (context.portal.active as any).provider === 'anthropic') {
+    if (
+      context.portal?.active &&
+      (context.portal.active as any).provider === 'anthropic'
+    ) {
       return context.portal.active.model;
     }
 
     // Use latest Claude for complex reasoning tasks
-    if ((context.agent?.config?.personality as any)?.reasoning === 'high' ||
-        context.communication?.conversationHistory && 
-        context.communication.conversationHistory.length > 20) {
+    if (
+      (context.agent?.config?.personality as any)?.reasoning === 'high' ||
+      (context.communication?.conversationHistory &&
+        context.communication.conversationHistory.length > 20)
+    ) {
       return 'claude-3-5-sonnet-20241022'; // Latest Claude for complex tasks
     }
 
@@ -1101,15 +1142,19 @@ export class AnthropicPortal extends BasePortal {
     }
 
     // Use Haiku for simple, fast responses
-    if (context.communication?.style && 
-        (context.communication.style as any).speed === 'high' &&
-        (context.communication.style as any).complexity === 'low') {
+    if (
+      context.communication?.style &&
+      (context.communication.style as any).speed === 'high' &&
+      (context.communication.style as any).complexity === 'low'
+    ) {
       return 'claude-3-haiku-20240307';
     }
 
     // Use multimodal capabilities if needed
-    if (context.communication?.channel?.capabilities?.includes('image') ||
-        context.communication?.channel?.capabilities?.includes('video')) {
+    if (
+      context.communication?.channel?.capabilities?.includes('image') ||
+      context.communication?.channel?.capabilities?.includes('video')
+    ) {
       return 'claude-3-5-sonnet-20241022'; // Best multimodal support
     }
 
@@ -1121,7 +1166,9 @@ export class AnthropicPortal extends BasePortal {
    * Context-aware temperature selection for Claude models
    * Override base implementation with Claude-specific optimizations
    */
-  protected override selectTemperatureFromContext(context: UnifiedContext): number {
+  protected override selectTemperatureFromContext(
+    context: UnifiedContext
+  ): number {
     // Claude works well with slightly higher temperatures for creativity
     if (context.communication?.style) {
       const style = context.communication.style as any;
@@ -1131,7 +1178,11 @@ export class AnthropicPortal extends BasePortal {
 
     // Lower temperature for computer use tasks
     const config = this.config as AnthropicConfig;
-    if (config.enableComputerUse && context.tools?.available && context.tools.available.length > 0) {
+    if (
+      config.enableComputerUse &&
+      context.tools?.available &&
+      context.tools.available.length > 0
+    ) {
       return 0.1;
     }
 

@@ -1,6 +1,6 @@
 /**
  * L1 Context Cache - In-Memory Hot Cache
- * 
+ *
  * Ultra-fast in-memory cache optimized for sub-millisecond access times.
  * Uses Map-based storage with size-based and count-based eviction.
  */
@@ -24,7 +24,7 @@ import { createHash } from 'crypto';
 
 /**
  * L1 Context Cache Implementation
- * 
+ *
  * High-performance in-memory cache with:
  * - Sub-millisecond access times
  * - LRU eviction policy
@@ -37,10 +37,10 @@ export class L1ContextCache {
   private currentMemoryUsage = 0;
   private accessCounter = 0;
   private eventCallbacks = new Set<CacheEventCallback>();
-  
+
   private config: CacheConfiguration['l1'];
   private isInitialized = false;
-  
+
   // Performance metrics
   private metrics = {
     hits: 0,
@@ -51,17 +51,17 @@ export class L1ContextCache {
     totalResponseTime: 0,
     operationCount: 0,
   };
-  
+
   constructor(config: CacheConfiguration['l1']) {
     this.config = config;
   }
-  
+
   /**
    * Initialize the L1 cache
    */
   async initialize(): Promise<OperationResult> {
     const startTime = performance.now();
-    
+
     try {
       if (this.isInitialized) {
         return {
@@ -71,18 +71,18 @@ export class L1ContextCache {
           duration: performance.now() - startTime,
         };
       }
-      
+
       // Validate configuration
       if (this.config.maxEntries <= 0) {
         throw new Error('maxEntries must be greater than 0');
       }
-      
+
       if (this.config.maxMemoryBytes <= 0) {
         throw new Error('maxMemoryBytes must be greater than 0');
       }
-      
+
       this.isInitialized = true;
-      
+
       return {
         success: true,
         timestamp: Date.now(),
@@ -101,21 +101,21 @@ export class L1ContextCache {
       };
     }
   }
-  
+
   /**
    * Get an item from L1 cache
    */
   async get<T>(key: string): Promise<T | null> {
     const startTime = performance.now();
     this.metrics.operationCount++;
-    
+
     if (!this.isInitialized || !this.config.enabled) {
       this.metrics.misses++;
       return null;
     }
-    
+
     const entry = this.cache.get(key);
-    
+
     if (!entry) {
       this.metrics.misses++;
       this.updateMetricsResponseTime(performance.now() - startTime);
@@ -128,7 +128,7 @@ export class L1ContextCache {
       });
       return null;
     }
-    
+
     // Check if entry is expired
     if (entry.expiresAt && entry.expiresAt < Date.now()) {
       this.cache.delete(key);
@@ -145,16 +145,16 @@ export class L1ContextCache {
       });
       return null;
     }
-    
+
     // Update access tracking
     entry.lastAccessedAt = Date.now();
     entry.accessCount++;
     this.accessOrder.set(key, ++this.accessCounter);
-    
+
     this.metrics.hits++;
     const responseTime = performance.now() - startTime;
     this.updateMetricsResponseTime(responseTime);
-    
+
     this.emitEvent({
       type: CacheEventType.HIT,
       key,
@@ -162,17 +162,21 @@ export class L1ContextCache {
       timestamp: Date.now(),
       responseTime,
     });
-    
+
     return entry.data as T;
   }
-  
+
   /**
    * Set an item in L1 cache
    */
-  async set<T>(key: string, value: T, options: CacheSetOptions = {}): Promise<OperationResult> {
+  async set<T>(
+    key: string,
+    value: T,
+    options: CacheSetOptions = {}
+  ): Promise<OperationResult> {
     const startTime = performance.now();
     this.metrics.operationCount++;
-    
+
     if (!this.isInitialized || !this.config.enabled) {
       return {
         success: false,
@@ -181,12 +185,12 @@ export class L1ContextCache {
         duration: performance.now() - startTime,
       };
     }
-    
+
     try {
       // Calculate data size
       const serialized = JSON.stringify(value);
       const size = Buffer.byteLength(serialized, 'utf8');
-      
+
       // Check if this single entry would exceed memory limit
       if (size > this.config.maxMemoryBytes) {
         return {
@@ -196,7 +200,7 @@ export class L1ContextCache {
           duration: performance.now() - startTime,
         };
       }
-      
+
       // Create cache entry
       const now = Date.now();
       const entry: CacheEntry<T> = {
@@ -217,25 +221,25 @@ export class L1ContextCache {
         tags: options.tags ?? [],
         dependencies: options.dependencies ?? [],
       };
-      
+
       // Check if we need to evict entries to make space
       await this.ensureSpace(size);
-      
+
       // Remove existing entry if present
       const existingEntry = this.cache.get(key);
       if (existingEntry) {
         this.currentMemoryUsage -= existingEntry.size;
       }
-      
+
       // Add new entry
       this.cache.set(key, entry);
       this.accessOrder.set(key, ++this.accessCounter);
       this.currentMemoryUsage += size;
       this.metrics.sets++;
-      
+
       const responseTime = performance.now() - startTime;
       this.updateMetricsResponseTime(responseTime);
-      
+
       this.emitEvent({
         type: CacheEventType.SET,
         key,
@@ -244,7 +248,7 @@ export class L1ContextCache {
         responseTime,
         data: { size, priority: entry.priority },
       });
-      
+
       return {
         success: true,
         timestamp: Date.now(),
@@ -264,14 +268,14 @@ export class L1ContextCache {
       };
     }
   }
-  
+
   /**
    * Delete an item from L1 cache
    */
   async delete(key: string): Promise<OperationResult> {
     const startTime = performance.now();
     this.metrics.operationCount++;
-    
+
     if (!this.isInitialized) {
       return {
         success: false,
@@ -280,7 +284,7 @@ export class L1ContextCache {
         duration: performance.now() - startTime,
       };
     }
-    
+
     const entry = this.cache.get(key);
     if (!entry) {
       return {
@@ -290,15 +294,15 @@ export class L1ContextCache {
         duration: performance.now() - startTime,
       };
     }
-    
+
     this.cache.delete(key);
     this.accessOrder.delete(key);
     this.currentMemoryUsage -= entry.size;
     this.metrics.deletes++;
-    
+
     const responseTime = performance.now() - startTime;
     this.updateMetricsResponseTime(responseTime);
-    
+
     this.emitEvent({
       type: CacheEventType.DELETE,
       key,
@@ -306,7 +310,7 @@ export class L1ContextCache {
       timestamp: Date.now(),
       responseTime,
     });
-    
+
     return {
       success: true,
       timestamp: Date.now(),
@@ -317,7 +321,7 @@ export class L1ContextCache {
       },
     };
   }
-  
+
   /**
    * Check if a key exists
    */
@@ -325,9 +329,9 @@ export class L1ContextCache {
     if (!this.isInitialized || !this.config.enabled) {
       return false;
     }
-    
+
     const entry = this.cache.get(key);
-    
+
     // Check expiration
     if (entry && entry.expiresAt && entry.expiresAt < Date.now()) {
       this.cache.delete(key);
@@ -335,16 +339,16 @@ export class L1ContextCache {
       this.currentMemoryUsage -= entry.size;
       return false;
     }
-    
+
     return !!entry;
   }
-  
+
   /**
    * Clear all entries from L1 cache
    */
   async clear(): Promise<OperationResult> {
     const startTime = performance.now();
-    
+
     if (!this.isInitialized) {
       return {
         success: false,
@@ -353,13 +357,13 @@ export class L1ContextCache {
         duration: performance.now() - startTime,
       };
     }
-    
+
     const entryCount = this.cache.size;
     this.cache.clear();
     this.accessOrder.clear();
     this.currentMemoryUsage = 0;
     this.accessCounter = 0;
-    
+
     this.emitEvent({
       type: CacheEventType.CLEAR,
       key: '*',
@@ -368,7 +372,7 @@ export class L1ContextCache {
       responseTime: performance.now() - startTime,
       data: { clearedEntries: entryCount },
     });
-    
+
     return {
       success: true,
       timestamp: Date.now(),
@@ -376,17 +380,18 @@ export class L1ContextCache {
       data: { clearedEntries: entryCount },
     };
   }
-  
+
   /**
    * Get cache metrics
    */
   getMetrics(): Partial<CacheMetrics> {
     const totalOps = this.metrics.hits + this.metrics.misses;
     const hitRate = totalOps > 0 ? this.metrics.hits / totalOps : 0;
-    const avgResponseTime = this.metrics.operationCount > 0 
-      ? this.metrics.totalResponseTime / this.metrics.operationCount 
-      : 0;
-    
+    const avgResponseTime =
+      this.metrics.operationCount > 0
+        ? this.metrics.totalResponseTime / this.metrics.operationCount
+        : 0;
+
     return {
       hitRate: {
         l1: hitRate,
@@ -404,7 +409,8 @@ export class L1ContextCache {
         l1: this.currentMemoryUsage,
         l2: 0,
         total: this.currentMemoryUsage,
-        percentage: (this.currentMemoryUsage / this.config.maxMemoryBytes) * 100,
+        percentage:
+          (this.currentMemoryUsage / this.config.maxMemoryBytes) * 100,
       },
       entries: {
         l1: this.cache.size,
@@ -420,66 +426,69 @@ export class L1ContextCache {
       },
     };
   }
-  
+
   /**
    * Get all cache keys
    */
   listKeys(): string[] {
     return Array.from(this.cache.keys());
   }
-  
+
   /**
    * Inspect cache entry without accessing data
    */
   inspect(key: string): CacheEntry | null {
     return this.cache.get(key) ?? null;
   }
-  
+
   /**
    * Subscribe to cache events
    */
   subscribe(callback: CacheEventCallback): void {
     this.eventCallbacks.add(callback);
   }
-  
+
   /**
    * Unsubscribe from cache events
    */
   unsubscribe(callback: CacheEventCallback): void {
     this.eventCallbacks.delete(callback);
   }
-  
+
   /**
    * Shutdown L1 cache
    */
   async shutdown(): Promise<OperationResult> {
     const startTime = performance.now();
-    
+
     this.cache.clear();
     this.accessOrder.clear();
     this.eventCallbacks.clear();
     this.currentMemoryUsage = 0;
     this.accessCounter = 0;
     this.isInitialized = false;
-    
+
     return {
       success: true,
       timestamp: Date.now(),
       duration: performance.now() - startTime,
     };
   }
-  
+
   /**
    * Ensure we have enough space for a new entry
    */
   private async ensureSpace(requiredSize: number): Promise<void> {
     // Check if we need to evict based on memory usage
-    while (this.currentMemoryUsage + requiredSize > this.config.maxMemoryBytes) {
+    while (
+      this.currentMemoryUsage + requiredSize >
+      this.config.maxMemoryBytes
+    ) {
       if (!this.evictLRUEntry()) {
         break; // No more entries to evict
       }
     }
-    
+
     // Check if we need to evict based on entry count
     while (this.cache.size >= this.config.maxEntries) {
       if (!this.evictLRUEntry()) {
@@ -487,21 +496,21 @@ export class L1ContextCache {
       }
     }
   }
-  
+
   /**
    * Evict the least recently used entry
    */
   private evictLRUEntry(): boolean {
     let oldestKey: string | null = null;
     let oldestAccess = Infinity;
-    
+
     for (const [key, accessOrder] of this.accessOrder) {
       if (accessOrder < oldestAccess) {
         oldestAccess = accessOrder;
         oldestKey = key;
       }
     }
-    
+
     if (oldestKey) {
       const entry = this.cache.get(oldestKey);
       if (entry) {
@@ -509,7 +518,7 @@ export class L1ContextCache {
         this.accessOrder.delete(oldestKey);
         this.currentMemoryUsage -= entry.size;
         this.metrics.evictions++;
-        
+
         this.emitEvent({
           type: CacheEventType.EVICT,
           key: oldestKey,
@@ -517,21 +526,21 @@ export class L1ContextCache {
           timestamp: Date.now(),
           data: { reason: 'LRU', freedMemory: entry.size },
         });
-        
+
         return true;
       }
     }
-    
+
     return false;
   }
-  
+
   /**
    * Update metrics response time
    */
   private updateMetricsResponseTime(responseTime: number): void {
     this.metrics.totalResponseTime += responseTime;
   }
-  
+
   /**
    * Emit cache event to subscribers
    */
@@ -545,7 +554,7 @@ export class L1ContextCache {
       }
     }
   }
-  
+
   /**
    * Get cache size information
    */
@@ -555,16 +564,18 @@ export class L1ContextCache {
     memoryPercentage: number;
     averageEntrySize: number;
   } {
-    const avgSize = this.cache.size > 0 ? this.currentMemoryUsage / this.cache.size : 0;
-    
+    const avgSize =
+      this.cache.size > 0 ? this.currentMemoryUsage / this.cache.size : 0;
+
     return {
       entryCount: this.cache.size,
       memoryUsage: this.currentMemoryUsage,
-      memoryPercentage: (this.currentMemoryUsage / this.config.maxMemoryBytes) * 100,
+      memoryPercentage:
+        (this.currentMemoryUsage / this.config.maxMemoryBytes) * 100,
       averageEntrySize: avgSize,
     };
   }
-  
+
   /**
    * Optimize cache by cleaning expired entries
    */
@@ -572,7 +583,7 @@ export class L1ContextCache {
     const startTime = performance.now();
     let expiredCount = 0;
     const now = Date.now();
-    
+
     for (const [key, entry] of this.cache) {
       if (entry.expiresAt && entry.expiresAt < now) {
         this.cache.delete(key);
@@ -581,7 +592,7 @@ export class L1ContextCache {
         expiredCount++;
       }
     }
-    
+
     return {
       success: true,
       timestamp: Date.now(),

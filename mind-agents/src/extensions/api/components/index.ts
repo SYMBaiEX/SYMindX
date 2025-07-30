@@ -1,6 +1,6 @@
 /**
  * API Extension Components
- * 
+ *
  * Centralized exports for all API extension components
  */
 

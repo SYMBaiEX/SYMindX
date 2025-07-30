@@ -5,7 +5,7 @@
 
 import { EventEmitter } from 'events';
 import { randomUUID } from 'crypto';
-import type { 
+import type {
   ContextTracer,
   ContextTrace,
   ContextObservabilityConfig,
@@ -14,7 +14,7 @@ import type {
   ContextFlowNode,
   ContextBottleneck,
   ContextEntryPoint,
-  ContextExitPoint
+  ContextExitPoint,
 } from '../../../types/context/context-observability.ts';
 import type { TraceSpan } from '../../../types/observability/index.ts';
 import type { AgentId } from '../../../types/helpers.ts';
@@ -38,14 +38,20 @@ export class ContextTracerImpl extends EventEmitter implements ContextTracer {
   /**
    * Start tracing a context instance
    */
-  async startTrace(contextId: string, parentTrace?: ContextTrace): Promise<ContextTrace> {
+  async startTrace(
+    contextId: string,
+    parentTrace?: ContextTrace
+  ): Promise<ContextTrace> {
     if (!this.config.enabled) {
       throw new Error('Context tracing is disabled');
     }
 
     // Check sampling
     if (Math.random() > this.config.sampleRate) {
-      runtimeLogger.debug('Trace skipped due to sampling', { contextId, sampleRate: this.config.sampleRate });
+      runtimeLogger.debug('Trace skipped due to sampling', {
+        contextId,
+        sampleRate: this.config.sampleRate,
+      });
       throw new Error('Trace not sampled');
     }
 
@@ -70,10 +76,10 @@ export class ContextTracerImpl extends EventEmitter implements ContextTracer {
         parentContextId: parentTrace?.contextId,
         childContextIds: [],
         depth: parentTrace ? parentTrace.hierarchy.depth + 1 : 0,
-        rootContextId: parentTrace?.hierarchy.rootContextId || contextId
+        rootContextId: parentTrace?.hierarchy.rootContextId || contextId,
       },
       lifecycle: {
-        created: now
+        created: now,
       },
       transformations: [],
       accessPatterns: [],
@@ -81,21 +87,21 @@ export class ContextTracerImpl extends EventEmitter implements ContextTracer {
         shareCount: 0,
         sharedWith: [],
         shareType: 'read',
-        isolationLevel: 'weak'
+        isolationLevel: 'weak',
       },
       flow: {
         entryPoints: [],
         exitPoints: [],
         criticalPath: [],
-        bottlenecks: []
+        bottlenecks: [],
       },
       quality: {
         completeness: 1,
         consistency: 1,
         freshness: 1,
         relevance: 1,
-        reliability: 1
-      }
+        reliability: 1,
+      },
     };
 
     // Update parent trace if exists
@@ -107,18 +113,18 @@ export class ContextTracerImpl extends EventEmitter implements ContextTracer {
 
     // Check depth limits
     if (trace.hierarchy.depth > this.config.maxContextDepth) {
-      runtimeLogger.warn('Context trace depth exceeded', { 
-        contextId, 
-        depth: trace.hierarchy.depth, 
-        maxDepth: this.config.maxContextDepth 
+      runtimeLogger.warn('Context trace depth exceeded', {
+        contextId,
+        depth: trace.hierarchy.depth,
+        maxDepth: this.config.maxContextDepth,
       });
     }
 
-    runtimeLogger.debug('Context trace started', { 
-      contextId, 
-      traceId, 
+    runtimeLogger.debug('Context trace started', {
+      contextId,
+      traceId,
       parentTraceId: parentTrace?.traceId,
-      depth: trace.hierarchy.depth 
+      depth: trace.hierarchy.depth,
     });
 
     this.emit('trace_started', { contextId, trace });
@@ -138,7 +144,8 @@ export class ContextTracerImpl extends EventEmitter implements ContextTracer {
 
     const now = new Date();
     trace.lifecycle.destroyed = now;
-    trace.lifecycle.totalLifetimeMs = now.getTime() - trace.lifecycle.created.getTime();
+    trace.lifecycle.totalLifetimeMs =
+      now.getTime() - trace.lifecycle.created.getTime();
 
     // Calculate quality metrics
     this.calculateQualityMetrics(trace);
@@ -146,12 +153,12 @@ export class ContextTracerImpl extends EventEmitter implements ContextTracer {
     // Detect bottlenecks
     this.detectBottlenecks(trace);
 
-    runtimeLogger.debug('Context trace ended', { 
-      contextId, 
+    runtimeLogger.debug('Context trace ended', {
+      contextId,
       traceId: trace.traceId,
       lifetimeMs: trace.lifecycle.totalLifetimeMs,
       transformations: trace.transformations.length,
-      accesses: trace.accessPatterns.length
+      accesses: trace.accessPatterns.length,
     });
 
     this.emit('trace_ended', { contextId, trace });
@@ -167,8 +174,8 @@ export class ContextTracerImpl extends EventEmitter implements ContextTracer {
    * Create a span for an operation
    */
   async createSpan(
-    contextId: string, 
-    operation: string, 
+    contextId: string,
+    operation: string,
     metadata: Record<string, unknown> = {}
   ): Promise<TraceSpan> {
     const trace = this.traces.get(contextId);
@@ -190,31 +197,35 @@ export class ContextTracerImpl extends EventEmitter implements ContextTracer {
       tags: {
         'context.id': contextId,
         'context.type': trace.contextType,
-        'context.depth': trace.hierarchy.depth
+        'context.depth': trace.hierarchy.depth,
       },
       events: [],
       resource: {
         serviceName: 'symindx-agent',
         serviceVersion: '1.0.0',
         instanceId: process.env.INSTANCE_ID || 'default',
-        environment: process.env.NODE_ENV || 'development'
-      }
+        environment: process.env.NODE_ENV || 'development',
+      },
     };
 
     // Add metadata as tags
     Object.entries(metadata).forEach(([key, value]) => {
-      if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+      if (
+        typeof value === 'string' ||
+        typeof value === 'number' ||
+        typeof value === 'boolean'
+      ) {
         span.tags[key] = value;
       }
     });
 
     this.spans.set(spanId, span);
 
-    runtimeLogger.debug('Context span created', { 
-      contextId, 
-      spanId, 
+    runtimeLogger.debug('Context span created', {
+      contextId,
+      spanId,
       operation,
-      parentSpanId: span.parentSpanId 
+      parentSpanId: span.parentSpanId,
     });
 
     return span;
@@ -223,7 +234,11 @@ export class ContextTracerImpl extends EventEmitter implements ContextTracer {
   /**
    * Finish a span
    */
-  async finishSpan(spanId: string, result?: unknown, error?: Error): Promise<void> {
+  async finishSpan(
+    spanId: string,
+    result?: unknown,
+    error?: Error
+  ): Promise<void> {
     const span = this.spans.get(spanId);
     if (!span) {
       runtimeLogger.warn('Attempted to finish non-existent span', { spanId });
@@ -237,7 +252,7 @@ export class ContextTracerImpl extends EventEmitter implements ContextTracer {
     if (error) {
       span.status = {
         code: 'error',
-        message: error.message
+        message: error.message,
       };
       span.events.push({
         timestamp: now,
@@ -245,8 +260,8 @@ export class ContextTracerImpl extends EventEmitter implements ContextTracer {
         attributes: {
           'error.type': error.constructor.name,
           'error.message': error.message,
-          'error.stack': error.stack
-        }
+          'error.stack': error.stack,
+        },
       });
     } else {
       span.status = { code: 'ok' };
@@ -258,16 +273,16 @@ export class ContextTracerImpl extends EventEmitter implements ContextTracer {
         name: 'result',
         attributes: {
           'result.type': typeof result,
-          'result.size': JSON.stringify(result).length
-        }
+          'result.size': JSON.stringify(result).length,
+        },
       });
     }
 
-    runtimeLogger.debug('Context span finished', { 
-      spanId, 
+    runtimeLogger.debug('Context span finished', {
+      spanId,
       operation: span.operationName,
       duration: span.duration,
-      status: span.status.code
+      status: span.status.code,
     });
 
     this.emit('span_finished', { spanId, span });
@@ -282,7 +297,9 @@ export class ContextTracerImpl extends EventEmitter implements ContextTracer {
    * Get active traces
    */
   getActiveTraces(): ContextTrace[] {
-    return Array.from(this.traces.values()).filter(trace => !trace.lifecycle.destroyed);
+    return Array.from(this.traces.values()).filter(
+      (trace) => !trace.lifecycle.destroyed
+    );
   }
 
   /**
@@ -338,7 +355,7 @@ export class ContextTracerImpl extends EventEmitter implements ContextTracer {
       outputSize,
       success,
       error,
-      metadata
+      metadata,
     };
 
     trace.transformations.push(transformation);
@@ -348,12 +365,13 @@ export class ContextTracerImpl extends EventEmitter implements ContextTracer {
       trace.quality.reliability = Math.max(0, trace.quality.reliability - 0.1);
     }
 
-    runtimeLogger.debug('Context transformation recorded', { 
-      contextId, 
+    runtimeLogger.debug('Context transformation recorded', {
+      contextId,
       transformationType,
       success,
       duration,
-      dataReduction: ((inputSize - outputSize) / inputSize * 100).toFixed(1) + '%'
+      dataReduction:
+        (((inputSize - outputSize) / inputSize) * 100).toFixed(1) + '%',
     });
   }
 
@@ -382,7 +400,7 @@ export class ContextTracerImpl extends EventEmitter implements ContextTracer {
       dataSize,
       success,
       error,
-      callStack
+      callStack,
     };
 
     trace.accessPatterns.push(access);
@@ -399,13 +417,13 @@ export class ContextTracerImpl extends EventEmitter implements ContextTracer {
       trace.sharing.shareCount++;
     }
 
-    runtimeLogger.debug('Context access recorded', { 
-      contextId, 
+    runtimeLogger.debug('Context access recorded', {
+      contextId,
       accessor,
       accessType,
       success,
       duration,
-      dataSize
+      dataSize,
     });
   }
 
@@ -428,16 +446,16 @@ export class ContextTracerImpl extends EventEmitter implements ContextTracer {
       entryType,
       timestamp: new Date(),
       dataSize,
-      metadata
+      metadata,
     };
 
     trace.flow.entryPoints.push(entryPoint);
 
-    runtimeLogger.debug('Context entry point recorded', { 
-      contextId, 
+    runtimeLogger.debug('Context entry point recorded', {
+      contextId,
       source,
       entryType,
-      dataSize
+      dataSize,
     });
   }
 
@@ -460,16 +478,16 @@ export class ContextTracerImpl extends EventEmitter implements ContextTracer {
       exitType,
       timestamp: new Date(),
       dataSize,
-      metadata
+      metadata,
     };
 
     trace.flow.exitPoints.push(exitPoint);
 
-    runtimeLogger.debug('Context exit point recorded', { 
-      contextId, 
+    runtimeLogger.debug('Context exit point recorded', {
+      contextId,
       destination,
       exitType,
-      dataSize
+      dataSize,
     });
   }
 
@@ -491,26 +509,32 @@ export class ContextTracerImpl extends EventEmitter implements ContextTracer {
   private calculateQualityMetrics(trace: ContextTrace): void {
     const now = Date.now();
     const age = now - trace.lifecycle.created.getTime();
-    
+
     // Freshness decreases over time
-    trace.quality.freshness = Math.max(0, 1 - (age / (24 * 60 * 60 * 1000))); // Decay over 24 hours
+    trace.quality.freshness = Math.max(0, 1 - age / (24 * 60 * 60 * 1000)); // Decay over 24 hours
 
     // Completeness based on transformations and accesses
     const expectedOperations = 5; // Baseline expectation
-    const actualOperations = trace.transformations.length + trace.accessPatterns.length;
-    trace.quality.completeness = Math.min(1, actualOperations / expectedOperations);
+    const actualOperations =
+      trace.transformations.length + trace.accessPatterns.length;
+    trace.quality.completeness = Math.min(
+      1,
+      actualOperations / expectedOperations
+    );
 
     // Consistency based on successful operations
-    const totalOperations = trace.transformations.length + trace.accessPatterns.length;
-    const successfulOperations = 
-      trace.transformations.filter(t => t.success).length +
-      trace.accessPatterns.filter(a => a.success).length;
-    
-    trace.quality.consistency = totalOperations > 0 ? successfulOperations / totalOperations : 1;
+    const totalOperations =
+      trace.transformations.length + trace.accessPatterns.length;
+    const successfulOperations =
+      trace.transformations.filter((t) => t.success).length +
+      trace.accessPatterns.filter((a) => a.success).length;
+
+    trace.quality.consistency =
+      totalOperations > 0 ? successfulOperations / totalOperations : 1;
 
     // Relevance based on access patterns
     const recentAccesses = trace.accessPatterns.filter(
-      a => now - a.accessedAt.getTime() < 60 * 60 * 1000 // Within last hour
+      (a) => now - a.accessedAt.getTime() < 60 * 60 * 1000 // Within last hour
     ).length;
     trace.quality.relevance = Math.min(1, recentAccesses / 3); // Expect at least 3 recent accesses
 
@@ -520,7 +544,7 @@ export class ContextTracerImpl extends EventEmitter implements ContextTracer {
       consistency: trace.quality.consistency.toFixed(2),
       freshness: trace.quality.freshness.toFixed(2),
       relevance: trace.quality.relevance.toFixed(2),
-      reliability: trace.quality.reliability.toFixed(2)
+      reliability: trace.quality.reliability.toFixed(2),
     });
   }
 
@@ -531,26 +555,33 @@ export class ContextTracerImpl extends EventEmitter implements ContextTracer {
     const bottlenecks: ContextBottleneck[] = [];
 
     // Analyze transformation performance
-    const slowTransformations = trace.transformations.filter(t => t.duration > 1000); // > 1 second
-    slowTransformations.forEach(t => {
+    const slowTransformations = trace.transformations.filter(
+      (t) => t.duration > 1000
+    ); // > 1 second
+    slowTransformations.forEach((t) => {
       bottlenecks.push({
         bottleneckId: randomUUID(),
         location: `transformation:${t.transformationType}`,
         bottleneckType: 'processing',
-        impact: t.duration > 5000 ? 'critical' : t.duration > 3000 ? 'high' : 'medium',
+        impact:
+          t.duration > 5000
+            ? 'critical'
+            : t.duration > 3000
+              ? 'high'
+              : 'medium',
         delay: t.duration,
         suggestions: [
           'Consider optimizing transformation algorithm',
           'Implement caching for expensive operations',
-          'Use incremental processing for large datasets'
+          'Use incremental processing for large datasets',
         ],
-        detectedAt: new Date()
+        detectedAt: new Date(),
       });
     });
 
     // Analyze access patterns
-    const slowAccesses = trace.accessPatterns.filter(a => a.duration > 500); // > 500ms
-    slowAccesses.forEach(a => {
+    const slowAccesses = trace.accessPatterns.filter((a) => a.duration > 500); // > 500ms
+    slowAccesses.forEach((a) => {
       bottlenecks.push({
         bottleneckId: randomUUID(),
         location: `access:${a.accessor}`,
@@ -560,9 +591,9 @@ export class ContextTracerImpl extends EventEmitter implements ContextTracer {
         suggestions: [
           'Optimize data access patterns',
           'Implement data locality improvements',
-          'Consider async access where possible'
+          'Consider async access where possible',
         ],
-        detectedAt: new Date()
+        detectedAt: new Date(),
       });
     });
 
@@ -572,7 +603,8 @@ export class ContextTracerImpl extends EventEmitter implements ContextTracer {
       runtimeLogger.warn('Performance bottlenecks detected', {
         contextId: trace.contextId,
         bottleneckCount: bottlenecks.length,
-        criticalCount: bottlenecks.filter(b => b.impact === 'critical').length
+        criticalCount: bottlenecks.filter((b) => b.impact === 'critical')
+          .length,
       });
     }
   }
@@ -581,29 +613,37 @@ export class ContextTracerImpl extends EventEmitter implements ContextTracer {
    * Export traces in Jaeger format
    */
   private exportJaegerFormat(traces: ContextTrace[]): string {
-    const jaegerTraces = traces.map(trace => ({
+    const jaegerTraces = traces.map((trace) => ({
       traceID: trace.traceId,
-      spans: [{
-        traceID: trace.traceId,
-        spanID: trace.spanId,
-        parentSpanID: trace.parentSpanId,
-        operationName: `context:${trace.contextType}`,
-        startTime: trace.startTime.getTime() * 1000, // microseconds
-        duration: trace.lifecycle.totalLifetimeMs ? trace.lifecycle.totalLifetimeMs * 1000 : 0,
-        tags: [
-          { key: 'context.id', value: trace.contextId },
-          { key: 'context.type', value: trace.contextType },
-          { key: 'context.depth', value: trace.hierarchy.depth },
-          { key: 'quality.score', value: Object.values(trace.quality).reduce((a, b) => a + b, 0) / 5 }
-        ],
-        process: {
-          serviceName: 'symindx-agent',
+      spans: [
+        {
+          traceID: trace.traceId,
+          spanID: trace.spanId,
+          parentSpanID: trace.parentSpanId,
+          operationName: `context:${trace.contextType}`,
+          startTime: trace.startTime.getTime() * 1000, // microseconds
+          duration: trace.lifecycle.totalLifetimeMs
+            ? trace.lifecycle.totalLifetimeMs * 1000
+            : 0,
           tags: [
-            { key: 'version', value: '1.0.0' },
-            { key: 'instance', value: process.env.INSTANCE_ID || 'default' }
-          ]
-        }
-      }]
+            { key: 'context.id', value: trace.contextId },
+            { key: 'context.type', value: trace.contextType },
+            { key: 'context.depth', value: trace.hierarchy.depth },
+            {
+              key: 'quality.score',
+              value:
+                Object.values(trace.quality).reduce((a, b) => a + b, 0) / 5,
+            },
+          ],
+          process: {
+            serviceName: 'symindx-agent',
+            tags: [
+              { key: 'version', value: '1.0.0' },
+              { key: 'instance', value: process.env.INSTANCE_ID || 'default' },
+            ],
+          },
+        },
+      ],
     }));
 
     return JSON.stringify({ data: jaegerTraces }, null, 2);
@@ -613,24 +653,26 @@ export class ContextTracerImpl extends EventEmitter implements ContextTracer {
    * Export traces in Zipkin format
    */
   private exportZipkinFormat(traces: ContextTrace[]): string {
-    const zipkinSpans = traces.map(trace => ({
+    const zipkinSpans = traces.map((trace) => ({
       traceId: trace.traceId,
       id: trace.spanId,
       parentId: trace.parentSpanId,
       name: `context:${trace.contextType}`,
       timestamp: trace.startTime.getTime() * 1000,
-      duration: trace.lifecycle.totalLifetimeMs ? trace.lifecycle.totalLifetimeMs * 1000 : 0,
+      duration: trace.lifecycle.totalLifetimeMs
+        ? trace.lifecycle.totalLifetimeMs * 1000
+        : 0,
       kind: 'SERVER',
       localEndpoint: {
         serviceName: 'symindx-agent',
         ipv4: '127.0.0.1',
-        port: 3000
+        port: 3000,
       },
       tags: {
         'context.id': trace.contextId,
         'context.type': trace.contextType,
-        'context.depth': trace.hierarchy.depth.toString()
-      }
+        'context.depth': trace.hierarchy.depth.toString(),
+      },
     }));
 
     return JSON.stringify(zipkinSpans, null, 2);
@@ -663,7 +705,10 @@ export class ContextTracerImpl extends EventEmitter implements ContextTracer {
       let cleanedCount = 0;
 
       for (const [contextId, trace] of this.traces.entries()) {
-        if (trace.lifecycle.destroyed && trace.lifecycle.destroyed.getTime() < cutoff) {
+        if (
+          trace.lifecycle.destroyed &&
+          trace.lifecycle.destroyed.getTime() < cutoff
+        ) {
           this.traces.delete(contextId);
           cleanedCount++;
         }
@@ -684,7 +729,7 @@ export class ContextTracerImpl extends EventEmitter implements ContextTracer {
       totalTraces: this.traces.size,
       activeSpans: this.spans.size,
       uptime: Date.now() - this.startTime,
-      config: this.config
+      config: this.config,
     };
   }
 }

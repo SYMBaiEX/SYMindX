@@ -334,39 +334,43 @@ export class CoordinationManager extends EventEmitter {
   private logger = new Logger('coordination-manager');
   private agents: Map<string, Agent> = new Map();
   private eventBus: EventBus;
-  
+
   // Communication channels
   private channels: Map<string, CoordinationChannel> = new Map();
   private messageQueue: CoordinationMessage[] = [];
-  private messageHandlers: Map<MessageType, (message: CoordinationMessage) => Promise<void>> = new Map();
-  
+  private messageHandlers: Map<
+    MessageType,
+    (message: CoordinationMessage) => Promise<void>
+  > = new Map();
+
   // Consensus mechanisms
   private activeProposals: Map<string, ConsensusProposal> = new Map();
   private votes: Map<string, ConsensusVote[]> = new Map();
-  private consensusTimeouts: Map<string, ReturnType<typeof setTimeout>> = new Map();
-  
+  private consensusTimeouts: Map<string, ReturnType<typeof setTimeout>> =
+    new Map();
+
   // Task distribution
   private taskQueue: TaskDistribution[] = [];
   private activeAssignments: Map<string, TaskAssignment> = new Map();
   private agentCapabilities: Map<string, Set<string>> = new Map();
   private agentWorkload: Map<string, number> = new Map();
-  
+
   // Shared memory
   private sharedPools: Map<string, SharedMemoryPool> = new Map();
   private syncTimers: Map<string, ReturnType<typeof setInterval>> = new Map();
-  
+
   // Monitoring
   private metrics: CoordinationMetrics;
   private metricsTimer?: ReturnType<typeof setInterval>;
-  
+
   constructor(eventBus: EventBus) {
     super();
     this.eventBus = eventBus;
     this.metrics = this.initializeMetrics();
-    
+
     this.setupMessageHandlers();
     this.startMetricsCollection();
-    
+
     this.logger.info('Coordination Manager initialized');
   }
 
@@ -378,11 +382,11 @@ export class CoordinationManager extends EventEmitter {
   async registerAgent(agent: Agent): Promise<void> {
     this.agents.set(agent.id, agent);
     this.agentWorkload.set(agent.id, 0);
-    
+
     // Extract agent capabilities from character config
     const capabilities = this.extractAgentCapabilities(agent);
     this.agentCapabilities.set(agent.id, capabilities);
-    
+
     // Subscribe to agent events
     this.eventBus.subscribe(agent.id, [
       'coordination_message',
@@ -390,13 +394,13 @@ export class CoordinationManager extends EventEmitter {
       'task_assignment',
       'shared_memory_update',
     ]);
-    
+
     this.logger.info(`Agent ${agent.id} registered for coordination`, {
       metadata: {
         capabilities: Array.from(capabilities),
       },
     });
-    
+
     this.emit('agent_registered', { agentId: agent.id, capabilities });
   }
 
@@ -406,18 +410,18 @@ export class CoordinationManager extends EventEmitter {
   async unregisterAgent(agentId: string): Promise<void> {
     // Clean up active coordination
     await this.cleanupAgentCoordination(agentId);
-    
+
     this.agents.delete(agentId);
     this.agentCapabilities.delete(agentId);
     this.agentWorkload.delete(agentId);
-    
+
     this.eventBus.unsubscribe(agentId, [
       'coordination_message',
-      'consensus_proposal', 
+      'consensus_proposal',
       'task_assignment',
       'shared_memory_update',
     ]);
-    
+
     this.logger.info(`Agent ${agentId} unregistered from coordination`);
     this.emit('agent_unregistered', { agentId });
   }
@@ -434,7 +438,7 @@ export class CoordinationManager extends EventEmitter {
     security: Partial<SecurityConfig> = {}
   ): Promise<string> {
     const channelId = uuidv4();
-    
+
     const channel: CoordinationChannel = {
       id: channelId,
       name,
@@ -454,9 +458,9 @@ export class CoordinationManager extends EventEmitter {
       messageCount: 0,
       isActive: true,
     };
-    
+
     this.channels.set(channelId, channel);
-    
+
     // Notify participants
     for (const participantId of participants) {
       await this.sendMessage({
@@ -479,7 +483,7 @@ export class CoordinationManager extends EventEmitter {
         requiresResponse: false,
       });
     }
-    
+
     this.logger.info(`Created coordination channel: ${name}`, {
       metadata: {
         channelId,
@@ -487,7 +491,7 @@ export class CoordinationManager extends EventEmitter {
         participants,
       },
     });
-    
+
     this.emit('channel_created', { channelId, name, type, participants });
     return channelId;
   }
@@ -500,20 +504,25 @@ export class CoordinationManager extends EventEmitter {
     if (!channel) {
       throw new Error(`Channel ${message.channelId} not found`);
     }
-    
+
     // Validate sender authorization
-    if (!channel.participants.includes(message.senderId) && message.senderId !== 'system') {
-      throw new Error(`Sender ${message.senderId} not authorized for channel ${message.channelId}`);
+    if (
+      !channel.participants.includes(message.senderId) &&
+      message.senderId !== 'system'
+    ) {
+      throw new Error(
+        `Sender ${message.senderId} not authorized for channel ${message.channelId}`
+      );
     }
-    
+
     // Add message to queue with priority sorting
     this.messageQueue.push(message);
     this.messageQueue.sort((a, b) => b.priority - a.priority);
-    
+
     // Update channel activity
     channel.lastActivity = new Date();
     channel.messageCount++;
-    
+
     // Process message immediately if high priority
     if (message.priority >= MessagePriority.HIGH) {
       await this.processMessage(message);
@@ -521,7 +530,7 @@ export class CoordinationManager extends EventEmitter {
       // Process in next tick for normal priority
       setImmediate(() => this.processMessage(message));
     }
-    
+
     this.emit('message_sent', { message, channelId: message.channelId });
   }
 
@@ -538,8 +547,11 @@ export class CoordinationManager extends EventEmitter {
     timeoutMs: number = 300000 // 5 minutes default
   ): Promise<string> {
     const proposalId = uuidv4();
-    const requiredVotes = this.calculateRequiredVotes(type, participants.length);
-    
+    const requiredVotes = this.calculateRequiredVotes(
+      type,
+      participants.length
+    );
+
     const consensusProposal: ConsensusProposal = {
       id: proposalId,
       proposerId,
@@ -551,23 +563,23 @@ export class CoordinationManager extends EventEmitter {
       deadline: new Date(Date.now() + timeoutMs),
       status: ConsensusStatus.VOTING,
     };
-    
+
     this.activeProposals.set(proposalId, consensusProposal);
     this.votes.set(proposalId, []);
-    
+
     // Set timeout for proposal
     const timeoutHandle = setTimeout(async () => {
       await this.timeoutConsensusProposal(proposalId);
     }, timeoutMs);
     this.consensusTimeouts.set(proposalId, timeoutHandle);
-    
+
     // Broadcast proposal to participants
     const channelId = await this.createChannel(
       `consensus-${proposalId}`,
       ChannelType.CONSENSUS,
       participants
     );
-    
+
     for (const participantId of participants) {
       await this.sendMessage({
         id: uuidv4(),
@@ -587,7 +599,7 @@ export class CoordinationManager extends EventEmitter {
         requiresResponse: true,
       });
     }
-    
+
     this.logger.info(`Created consensus proposal: ${proposalId}`, {
       metadata: {
         type,
@@ -595,7 +607,7 @@ export class CoordinationManager extends EventEmitter {
         requiredVotes,
       },
     });
-    
+
     this.emit('consensus_proposal_created', { proposalId, proposerId, type });
     return proposalId;
   }
@@ -613,11 +625,11 @@ export class CoordinationManager extends EventEmitter {
     if (!proposal) {
       throw new Error(`Proposal ${proposalId} not found`);
     }
-    
+
     if (proposal.status !== ConsensusStatus.VOTING) {
       throw new Error(`Proposal ${proposalId} is no longer accepting votes`);
     }
-    
+
     const voteRecord: ConsensusVote = {
       proposalId,
       voterId,
@@ -625,11 +637,13 @@ export class CoordinationManager extends EventEmitter {
       reasoning,
       timestamp: new Date(),
     };
-    
+
     const currentVotes = this.votes.get(proposalId) || [];
-    
+
     // Check if agent already voted
-    const existingVoteIndex = currentVotes.findIndex(v => v.voterId === voterId);
+    const existingVoteIndex = currentVotes.findIndex(
+      (v) => v.voterId === voterId
+    );
     if (existingVoteIndex >= 0) {
       // Update existing vote
       currentVotes[existingVoteIndex] = voteRecord;
@@ -637,12 +651,12 @@ export class CoordinationManager extends EventEmitter {
       // Add new vote
       currentVotes.push(voteRecord);
     }
-    
+
     this.votes.set(proposalId, currentVotes);
-    
+
     // Check if consensus reached
     await this.evaluateConsensus(proposalId);
-    
+
     this.logger.info(`Vote submitted for proposal ${proposalId}`, {
       metadata: {
         voterId,
@@ -650,7 +664,7 @@ export class CoordinationManager extends EventEmitter {
         totalVotes: currentVotes.length,
       },
     });
-    
+
     this.emit('vote_submitted', { proposalId, voterId, vote });
   }
 
@@ -665,8 +679,9 @@ export class CoordinationManager extends EventEmitter {
     eligibleAgents?: string[]
   ): Promise<string> {
     // Determine eligible agents based on capabilities if not specified
-    const eligible = eligibleAgents || this.findEligibleAgents(task.requirements);
-    
+    const eligible =
+      eligibleAgents || this.findEligibleAgents(task.requirements);
+
     const distribution: TaskDistribution = {
       id: uuidv4(),
       requesterId,
@@ -676,9 +691,9 @@ export class CoordinationManager extends EventEmitter {
       createdAt: new Date(),
       deadline: task.payload.deadline as Date,
     };
-    
+
     this.taskQueue.push(distribution);
-    
+
     // Sort by priority and deadline
     this.taskQueue.sort((a, b) => {
       if (a.task.priority !== b.task.priority) {
@@ -688,10 +703,10 @@ export class CoordinationManager extends EventEmitter {
       const bDeadline = b.deadline?.getTime() || Infinity;
       return aDeadline - bDeadline;
     });
-    
+
     // Attempt immediate assignment
     await this.processTaskAssignment(distribution);
-    
+
     this.logger.info(`Task distribution requested: ${task.id}`, {
       metadata: {
         requesterId,
@@ -699,13 +714,13 @@ export class CoordinationManager extends EventEmitter {
         priority: task.priority,
       },
     });
-    
-    this.emit('task_distribution_requested', { 
+
+    this.emit('task_distribution_requested', {
       distributionId: distribution.id,
       taskId: task.id,
       requesterId,
     });
-    
+
     return distribution.id;
   }
 
@@ -721,7 +736,7 @@ export class CoordinationManager extends EventEmitter {
     synchronization: Partial<SynchronizationConfig> = {}
   ): Promise<string> {
     const poolId = uuidv4();
-    
+
     const pool: SharedMemoryPool = {
       id: poolId,
       name,
@@ -750,9 +765,9 @@ export class CoordinationManager extends EventEmitter {
       createdAt: new Date(),
       lastSync: new Date(),
     };
-    
+
     this.sharedPools.set(poolId, pool);
-    
+
     // Start synchronization timer
     if (pool.synchronization.syncIntervalMs > 0) {
       const syncTimer = setInterval(
@@ -761,7 +776,7 @@ export class CoordinationManager extends EventEmitter {
       );
       this.syncTimers.set(poolId, syncTimer);
     }
-    
+
     // Notify participants
     for (const participantId of participants) {
       await this.sendMessage({
@@ -784,14 +799,14 @@ export class CoordinationManager extends EventEmitter {
         requiresResponse: false,
       });
     }
-    
+
     this.logger.info(`Created shared memory pool: ${name}`, {
       metadata: {
         poolId,
         participants: participants.length,
       },
     });
-    
+
     this.emit('shared_memory_pool_created', { poolId, name, participants });
     return poolId;
   }
@@ -809,16 +824,18 @@ export class CoordinationManager extends EventEmitter {
     if (!pool) {
       throw new Error(`Shared memory pool ${poolId} not found`);
     }
-    
+
     if (!pool.participants.includes(ownerId)) {
-      throw new Error(`Agent ${ownerId} is not a participant in pool ${poolId}`);
+      throw new Error(
+        `Agent ${ownerId} is not a participant in pool ${poolId}`
+      );
     }
-    
+
     const entry: SharedMemoryEntry = {
       id: memory.id,
       memory,
       ownerId,
-      sharedWith: pool.participants.filter(id => id !== ownerId),
+      sharedWith: pool.participants.filter((id) => id !== ownerId),
       permissions: {
         ...pool.accessControl.defaultPermissions,
         ...permissions,
@@ -827,17 +844,22 @@ export class CoordinationManager extends EventEmitter {
       lastModified: new Date(),
       conflicts: [],
     };
-    
+
     pool.memories.set(memory.id, entry);
     pool.lastSync = new Date();
-    
+
     // Notify other participants
     for (const participantId of entry.sharedWith) {
       if (entry.permissions.read.includes(participantId)) {
-        await this.notifySharedMemoryUpdate(poolId, participantId, entry, 'created');
+        await this.notifySharedMemoryUpdate(
+          poolId,
+          participantId,
+          entry,
+          'created'
+        );
       }
     }
-    
+
     this.logger.info(`Memory shared in pool ${poolId}`, {
       metadata: {
         memoryId: memory.id,
@@ -845,7 +867,7 @@ export class CoordinationManager extends EventEmitter {
         sharedWith: entry.sharedWith.length,
       },
     });
-    
+
     this.emit('memory_shared', { poolId, memoryId: memory.id, ownerId });
   }
 
@@ -868,31 +890,35 @@ export class CoordinationManager extends EventEmitter {
   } {
     const issues: string[] = [];
     const metrics = this.getMetrics();
-    
+
     // Check for issues
     if (metrics.channels.averageLatency > 1000) {
       issues.push('High channel latency detected');
     }
-    
+
     if (metrics.consensus.consensusRate < 0.8) {
       issues.push('Low consensus success rate');
     }
-    
+
     if (metrics.tasks.completionRate < 0.9) {
       issues.push('Low task completion rate');
     }
-    
+
     if (metrics.sharedMemory.conflictsActive > 10) {
       issues.push('High number of memory conflicts');
     }
-    
+
     if (metrics.performance.coordinationOverhead > 0.3) {
       issues.push('High coordination overhead');
     }
-    
-    const status = issues.length === 0 ? 'healthy' : 
-                  issues.length <= 2 ? 'degraded' : 'unhealthy';
-    
+
+    const status =
+      issues.length === 0
+        ? 'healthy'
+        : issues.length <= 2
+          ? 'degraded'
+          : 'unhealthy';
+
     return { status, issues, metrics };
   }
 
@@ -901,29 +927,29 @@ export class CoordinationManager extends EventEmitter {
    */
   async shutdown(): Promise<void> {
     this.logger.info('Shutting down coordination manager...');
-    
+
     // Stop metrics collection
     if (this.metricsTimer) {
       clearInterval(this.metricsTimer);
     }
-    
+
     // Stop all sync timers
     for (const timer of this.syncTimers.values()) {
       clearInterval(timer);
     }
     this.syncTimers.clear();
-    
+
     // Clear consensus timeouts
     for (const timeout of this.consensusTimeouts.values()) {
       clearTimeout(timeout);
     }
     this.consensusTimeouts.clear();
-    
+
     // Clean up all agent coordination
     for (const agentId of this.agents.keys()) {
       await this.cleanupAgentCoordination(agentId);
     }
-    
+
     this.logger.info('Coordination manager shutdown complete');
   }
 
@@ -963,11 +989,26 @@ export class CoordinationManager extends EventEmitter {
   }
 
   private setupMessageHandlers(): void {
-    this.messageHandlers.set(MessageType.CONSENSUS_VOTE, this.handleConsensusVote.bind(this));
-    this.messageHandlers.set(MessageType.TASK_REQUEST, this.handleTaskRequest.bind(this));
-    this.messageHandlers.set(MessageType.RESOURCE_REQUEST, this.handleResourceRequest.bind(this));
-    this.messageHandlers.set(MessageType.SHARED_STATE_UPDATE, this.handleSharedStateUpdate.bind(this));
-    this.messageHandlers.set(MessageType.CONFLICT_RESOLUTION, this.handleConflictResolution.bind(this));
+    this.messageHandlers.set(
+      MessageType.CONSENSUS_VOTE,
+      this.handleConsensusVote.bind(this)
+    );
+    this.messageHandlers.set(
+      MessageType.TASK_REQUEST,
+      this.handleTaskRequest.bind(this)
+    );
+    this.messageHandlers.set(
+      MessageType.RESOURCE_REQUEST,
+      this.handleResourceRequest.bind(this)
+    );
+    this.messageHandlers.set(
+      MessageType.SHARED_STATE_UPDATE,
+      this.handleSharedStateUpdate.bind(this)
+    );
+    this.messageHandlers.set(
+      MessageType.CONFLICT_RESOLUTION,
+      this.handleConflictResolution.bind(this)
+    );
   }
 
   private startMetricsCollection(): void {
@@ -979,29 +1020,35 @@ export class CoordinationManager extends EventEmitter {
   private updateMetrics(): void {
     // Update channel metrics
     this.metrics.channels.total = this.channels.size;
-    this.metrics.channels.active = Array.from(this.channels.values())
-      .filter(c => c.isActive).length;
-    
+    this.metrics.channels.active = Array.from(this.channels.values()).filter(
+      (c) => c.isActive
+    ).length;
+
     // Update consensus metrics
     this.metrics.consensus.proposalsActive = this.activeProposals.size;
-    
+
     // Update task metrics
     this.metrics.tasks.pendingTasks = this.taskQueue.length;
-    
+
     // Update shared memory metrics
     this.metrics.sharedMemory.poolsActive = this.sharedPools.size;
-    this.metrics.sharedMemory.memoriesShared = Array.from(this.sharedPools.values())
-      .reduce((sum, pool) => sum + pool.memories.size, 0);
-    this.metrics.sharedMemory.conflictsActive = Array.from(this.sharedPools.values())
-      .reduce((sum, pool) => sum + pool.conflicts.length, 0);
+    this.metrics.sharedMemory.memoriesShared = Array.from(
+      this.sharedPools.values()
+    ).reduce((sum, pool) => sum + pool.memories.size, 0);
+    this.metrics.sharedMemory.conflictsActive = Array.from(
+      this.sharedPools.values()
+    ).reduce((sum, pool) => sum + pool.conflicts.length, 0);
   }
 
   private extractAgentCapabilities(agent: Agent): Set<string> {
     const capabilities = new Set<string>();
-    
+
     // Extract from character config if available
     if (agent.characterConfig?.capabilities) {
-      const caps = agent.characterConfig.capabilities as Record<string, Record<string, boolean>>;
+      const caps = agent.characterConfig.capabilities as Record<
+        string,
+        Record<string, boolean>
+      >;
       for (const category of Object.values(caps)) {
         for (const [capability, enabled] of Object.entries(category)) {
           if (enabled) {
@@ -1010,7 +1057,7 @@ export class CoordinationManager extends EventEmitter {
         }
       }
     }
-    
+
     // Extract from extensions
     for (const extension of agent.extensions) {
       if (extension.capabilities) {
@@ -1019,7 +1066,7 @@ export class CoordinationManager extends EventEmitter {
         }
       }
     }
-    
+
     return capabilities;
   }
 
@@ -1041,12 +1088,12 @@ export class CoordinationManager extends EventEmitter {
   private async deliverMessage(message: CoordinationMessage): Promise<void> {
     const channel = this.channels.get(message.channelId);
     if (!channel) return;
-    
+
     // Broadcast or direct delivery
-    const recipients = message.receiverId ? 
-      [message.receiverId] : 
-      channel.participants.filter(id => id !== message.senderId);
-    
+    const recipients = message.receiverId
+      ? [message.receiverId]
+      : channel.participants.filter((id) => id !== message.senderId);
+
     for (const recipientId of recipients) {
       const agent = this.agents.get(recipientId);
       if (agent) {
@@ -1060,13 +1107,16 @@ export class CoordinationManager extends EventEmitter {
           processed: false,
           targetAgentId: recipientId,
         };
-        
+
         this.eventBus.emit(event);
       }
     }
   }
 
-  private calculateRequiredVotes(type: ConsensusType, totalParticipants: number): number {
+  private calculateRequiredVotes(
+    type: ConsensusType,
+    totalParticipants: number
+  ): number {
     switch (type) {
       case ConsensusType.SIMPLE_MAJORITY:
         return Math.floor(totalParticipants / 2) + 1;
@@ -1084,16 +1134,18 @@ export class CoordinationManager extends EventEmitter {
   private async evaluateConsensus(proposalId: string): Promise<void> {
     const proposal = this.activeProposals.get(proposalId);
     const votes = this.votes.get(proposalId);
-    
+
     if (!proposal || !votes) return;
-    
-    const approveVotes = votes.filter(v => v.vote === VoteType.APPROVE).length;
-    const rejectVotes = votes.filter(v => v.vote === VoteType.REJECT).length;
+
+    const approveVotes = votes.filter(
+      (v) => v.vote === VoteType.APPROVE
+    ).length;
+    const rejectVotes = votes.filter((v) => v.vote === VoteType.REJECT).length;
     const totalVotes = votes.length;
-    
+
     let consensusReached = false;
     let accepted = false;
-    
+
     switch (proposal.type) {
       case ConsensusType.SIMPLE_MAJORITY:
       case ConsensusType.SUPER_MAJORITY:
@@ -1113,19 +1165,25 @@ export class CoordinationManager extends EventEmitter {
         }
         break;
     }
-    
+
     if (consensusReached) {
-      proposal.status = accepted ? ConsensusStatus.ACCEPTED : ConsensusStatus.REJECTED;
-      
+      proposal.status = accepted
+        ? ConsensusStatus.ACCEPTED
+        : ConsensusStatus.REJECTED;
+
       // Clear timeout
       const timeout = this.consensusTimeouts.get(proposalId);
       if (timeout) {
         clearTimeout(timeout);
         this.consensusTimeouts.delete(proposalId);
       }
-      
-      this.emit('consensus_reached', { proposalId, accepted, votes: totalVotes });
-      
+
+      this.emit('consensus_reached', {
+        proposalId,
+        accepted,
+        votes: totalVotes,
+      });
+
       this.logger.info(`Consensus reached for proposal ${proposalId}`, {
         metadata: {
           accepted,
@@ -1140,80 +1198,87 @@ export class CoordinationManager extends EventEmitter {
   private async timeoutConsensusProposal(proposalId: string): Promise<void> {
     const proposal = this.activeProposals.get(proposalId);
     if (!proposal) return;
-    
+
     proposal.status = ConsensusStatus.TIMEOUT;
     this.consensusTimeouts.delete(proposalId);
-    
+
     this.emit('consensus_timeout', { proposalId });
     this.logger.warn(`Consensus proposal ${proposalId} timed out`);
   }
 
   private findEligibleAgents(requirements: TaskRequirements): string[] {
     const eligible: string[] = [];
-    
+
     for (const [agentId, capabilities] of this.agentCapabilities) {
       // Check capability requirements
-      const hasRequiredCapabilities = requirements.capabilities.every(
-        cap => capabilities.has(cap)
+      const hasRequiredCapabilities = requirements.capabilities.every((cap) =>
+        capabilities.has(cap)
       );
-      
+
       if (!hasRequiredCapabilities) continue;
-      
+
       // Check exclusions
       if (requirements.exclusions?.includes(agentId)) continue;
-      
+
       // Check workload capacity
       const currentWorkload = this.agentWorkload.get(agentId) || 0;
       if (currentWorkload >= 5) continue; // Max 5 concurrent tasks
-      
+
       eligible.push(agentId);
     }
-    
+
     return eligible;
   }
 
-  private async processTaskAssignment(distribution: TaskDistribution): Promise<void> {
+  private async processTaskAssignment(
+    distribution: TaskDistribution
+  ): Promise<void> {
     if (distribution.eligibleAgents.length === 0) {
       distribution.status = TaskStatus.FAILED;
-      this.emit('task_assignment_failed', { 
+      this.emit('task_assignment_failed', {
         distributionId: distribution.id,
         reason: 'No eligible agents',
       });
       return;
     }
-    
+
     // Select best agent based on capabilities and workload
     const bestAgent = this.selectBestAgentForTask(
       distribution.task,
       distribution.eligibleAgents
     );
-    
+
     if (!bestAgent) {
       distribution.status = TaskStatus.FAILED;
       return;
     }
-    
+
     // Create assignment
     const assignment: TaskAssignment = {
       taskId: distribution.task.id,
       assigneeId: bestAgent,
       assignedAt: new Date(),
-      deadline: distribution.deadline || new Date(Date.now() + distribution.task.estimatedDuration * 1000),
+      deadline:
+        distribution.deadline ||
+        new Date(Date.now() + distribution.task.estimatedDuration * 1000),
       resourceAllocations: [],
     };
-    
+
     distribution.assignment = assignment;
     distribution.status = TaskStatus.ASSIGNED;
     this.activeAssignments.set(distribution.task.id, assignment);
-    
+
     // Update agent workload
     const currentWorkload = this.agentWorkload.get(bestAgent) || 0;
     this.agentWorkload.set(bestAgent, currentWorkload + 1);
-    
+
     // Notify assigned agent
     await this.sendMessage({
       id: uuidv4(),
-      channelId: await this.getOrCreateDirectChannel(distribution.requesterId, bestAgent),
+      channelId: await this.getOrCreateDirectChannel(
+        distribution.requesterId,
+        bestAgent
+      ),
       senderId: distribution.requesterId,
       receiverId: bestAgent,
       type: MessageType.TASK_ASSIGNMENT,
@@ -1226,55 +1291,65 @@ export class CoordinationManager extends EventEmitter {
       priority: MessagePriority.HIGH,
       requiresResponse: true,
     });
-    
+
     this.emit('task_assigned', {
       distributionId: distribution.id,
       taskId: distribution.task.id,
       assigneeId: bestAgent,
     });
-    
-    this.logger.info(`Task ${distribution.task.id} assigned to agent ${bestAgent}`);
+
+    this.logger.info(
+      `Task ${distribution.task.id} assigned to agent ${bestAgent}`
+    );
   }
 
-  private selectBestAgentForTask(task: DistributedTask, eligibleAgents: string[]): string | null {
+  private selectBestAgentForTask(
+    task: DistributedTask,
+    eligibleAgents: string[]
+  ): string | null {
     if (eligibleAgents.length === 0) return null;
-    
+
     // Score agents based on workload and capability match
-    const scoredAgents = eligibleAgents.map(agentId => {
+    const scoredAgents = eligibleAgents.map((agentId) => {
       const workload = this.agentWorkload.get(agentId) || 0;
       const capabilities = this.agentCapabilities.get(agentId) || new Set();
-      
+
       // Lower workload is better
       const workloadScore = Math.max(0, 10 - workload * 2);
-      
+
       // More matching capabilities is better
-      const capabilityScore = task.requirements.capabilities.filter(
-        cap => capabilities.has(cap)
+      const capabilityScore = task.requirements.capabilities.filter((cap) =>
+        capabilities.has(cap)
       ).length;
-      
+
       return {
         agentId,
         score: workloadScore + capabilityScore,
       };
     });
-    
+
     // Sort by score (highest first)
     scoredAgents.sort((a, b) => b.score - a.score);
-    
+
     return scoredAgents[0]?.agentId || null;
   }
 
-  private async getOrCreateDirectChannel(agent1Id: string, agent2Id: string): Promise<string> {
+  private async getOrCreateDirectChannel(
+    agent1Id: string,
+    agent2Id: string
+  ): Promise<string> {
     // Look for existing direct channel
     for (const channel of this.channels.values()) {
-      if (channel.type === ChannelType.DIRECT &&
-          channel.participants.length === 2 &&
-          channel.participants.includes(agent1Id) &&
-          channel.participants.includes(agent2Id)) {
+      if (
+        channel.type === ChannelType.DIRECT &&
+        channel.participants.length === 2 &&
+        channel.participants.includes(agent1Id) &&
+        channel.participants.includes(agent2Id)
+      ) {
         return channel.id;
       }
     }
-    
+
     // Create new direct channel
     return await this.createChannel(
       `direct-${agent1Id}-${agent2Id}`,
@@ -1286,9 +1361,9 @@ export class CoordinationManager extends EventEmitter {
   private async synchronizeMemoryPool(poolId: string): Promise<void> {
     const pool = this.sharedPools.get(poolId);
     if (!pool) return;
-    
+
     const syncStart = Date.now();
-    
+
     try {
       // Process any pending conflicts
       for (const conflict of pool.conflicts) {
@@ -1296,29 +1371,32 @@ export class CoordinationManager extends EventEmitter {
           await this.resolveMemoryConflict(poolId, conflict);
         }
       }
-      
+
       pool.lastSync = new Date();
-      
+
       const syncLatency = Date.now() - syncStart;
       this.metrics.sharedMemory.syncLatency = syncLatency;
-      
     } catch (error) {
       this.logger.error(`Failed to synchronize memory pool ${poolId}:`, error);
     }
   }
 
-  private async resolveMemoryConflict(poolId: string, conflict: ConflictRecord): Promise<void> {
+  private async resolveMemoryConflict(
+    poolId: string,
+    conflict: ConflictRecord
+  ): Promise<void> {
     const pool = this.sharedPools.get(poolId);
     if (!pool) return;
-    
+
     const strategy = pool.synchronization.conflictResolution;
-    
+
     switch (strategy) {
       case ConflictResolutionStrategy.LAST_WRITER_WINS:
-        const latestConflict = conflict.conflictingVersions.reduce((latest, current) =>
-          current.timestamp > latest.timestamp ? current : latest
+        const latestConflict = conflict.conflictingVersions.reduce(
+          (latest, current) =>
+            current.timestamp > latest.timestamp ? current : latest
         );
-        
+
         conflict.resolution = {
           strategy,
           resolvedBy: 'system',
@@ -1328,7 +1406,7 @@ export class CoordinationManager extends EventEmitter {
         };
         conflict.status = ConflictStatus.RESOLVED;
         break;
-        
+
       case ConflictResolutionStrategy.CONSENSUS_REQUIRED:
         // Create consensus proposal for conflict resolution
         const proposalId = await this.createConsensusProposal(
@@ -1342,7 +1420,7 @@ export class CoordinationManager extends EventEmitter {
           pool.participants,
           60000 // 1 minute timeout
         );
-        
+
         conflict.resolution = {
           strategy,
           resolvedBy: 'consensus',
@@ -1351,9 +1429,11 @@ export class CoordinationManager extends EventEmitter {
           timestamp: new Date(),
         };
         break;
-        
+
       default:
-        this.logger.warn(`Unsupported conflict resolution strategy: ${strategy}`);
+        this.logger.warn(
+          `Unsupported conflict resolution strategy: ${strategy}`
+        );
     }
   }
 
@@ -1364,7 +1444,7 @@ export class CoordinationManager extends EventEmitter {
     operation: 'created' | 'updated' | 'deleted'
   ): Promise<void> {
     const channelId = await this.getSharedMemoryChannelId(poolId);
-    
+
     await this.sendMessage({
       id: uuidv4(),
       channelId,
@@ -1385,13 +1465,16 @@ export class CoordinationManager extends EventEmitter {
 
   private async getSharedMemoryChannelId(poolId: string): Promise<string> {
     const channelName = `shared-memory-${poolId}`;
-    
+
     for (const channel of this.channels.values()) {
-      if (channel.name === channelName && channel.type === ChannelType.SHARED_MEMORY) {
+      if (
+        channel.name === channelName &&
+        channel.type === ChannelType.SHARED_MEMORY
+      ) {
         return channel.id;
       }
     }
-    
+
     // Channel should have been created when pool was created
     throw new Error(`Shared memory channel not found for pool ${poolId}`);
   }
@@ -1407,7 +1490,7 @@ export class CoordinationManager extends EventEmitter {
         }
       }
     }
-    
+
     // Cancel any active proposals by this agent
     for (const [proposalId, proposal] of this.activeProposals) {
       if (proposal.proposerId === agentId) {
@@ -1419,24 +1502,24 @@ export class CoordinationManager extends EventEmitter {
         }
       }
     }
-    
+
     // Remove from task assignments
     for (const [taskId, assignment] of this.activeAssignments) {
       if (assignment.assigneeId === agentId) {
         this.activeAssignments.delete(taskId);
-        
+
         // Update workload
         const currentWorkload = this.agentWorkload.get(agentId) || 0;
         this.agentWorkload.set(agentId, Math.max(0, currentWorkload - 1));
       }
     }
-    
+
     // Remove from shared memory pools
     for (const pool of this.sharedPools.values()) {
       const index = pool.participants.indexOf(agentId);
       if (index >= 0) {
         pool.participants.splice(index, 1);
-        
+
         // Remove memories owned by this agent
         for (const [memoryId, entry] of pool.memories) {
           if (entry.ownerId === agentId) {
@@ -1448,7 +1531,9 @@ export class CoordinationManager extends EventEmitter {
   }
 
   // Message handlers
-  private async handleConsensusVote(message: CoordinationMessage): Promise<void> {
+  private async handleConsensusVote(
+    message: CoordinationMessage
+  ): Promise<void> {
     const { proposalId, vote, reasoning } = message.payload;
     await this.submitVote(proposalId, message.senderId, vote, reasoning);
   }
@@ -1458,21 +1543,27 @@ export class CoordinationManager extends EventEmitter {
     await this.requestTaskDistribution(message.senderId, task);
   }
 
-  private async handleResourceRequest(message: CoordinationMessage): Promise<void> {
+  private async handleResourceRequest(
+    message: CoordinationMessage
+  ): Promise<void> {
     // Handle resource allocation requests
     this.logger.info(`Resource request from ${message.senderId}`, {
       metadata: message.payload,
     });
   }
 
-  private async handleSharedStateUpdate(message: CoordinationMessage): Promise<void> {
+  private async handleSharedStateUpdate(
+    message: CoordinationMessage
+  ): Promise<void> {
     // Handle shared state updates
     this.logger.info(`Shared state update from ${message.senderId}`, {
       metadata: message.payload,
     });
   }
 
-  private async handleConflictResolution(message: CoordinationMessage): Promise<void> {
+  private async handleConflictResolution(
+    message: CoordinationMessage
+  ): Promise<void> {
     // Handle conflict resolution responses
     this.logger.info(`Conflict resolution from ${message.senderId}`, {
       metadata: message.payload,

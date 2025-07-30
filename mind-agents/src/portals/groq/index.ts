@@ -52,7 +52,7 @@ export class GroqPortal extends BasePortal {
     super('groq', 'Groq', '1.0.0', config);
 
     // Create Groq provider with proper AI SDK v5 configuration
-    const apiKey = config.apiKey || process.env["GROQ_API_KEY"];
+    const apiKey = config.apiKey || process.env['GROQ_API_KEY'];
     if (!apiKey) {
       throw new Error('Groq API key is required');
     }
@@ -153,7 +153,7 @@ export class GroqPortal extends BasePortal {
       const model = this.resolveModel('chat', 'GROQ');
 
       const config = this.config as GroqConfig;
-      const apiKey = config.apiKey || process.env["GROQ_API_KEY"];
+      const apiKey = config.apiKey || process.env['GROQ_API_KEY'];
       const providerSettings: { apiKey?: string; baseURL?: string } = {};
       if (apiKey) providerSettings.apiKey = apiKey;
       if (config.baseURL) providerSettings.baseURL = config.baseURL;
@@ -165,29 +165,30 @@ export class GroqPortal extends BasePortal {
 
       // Build params with only defined values
       const optionalParams: Record<string, unknown> = {};
-      
-      const maxOutputTokens = options?.maxOutputTokens ?? options?.maxTokens ?? this.config.maxTokens;
+
+      const maxOutputTokens =
+        options?.maxOutputTokens ?? options?.maxTokens ?? this.config.maxTokens;
       if (maxOutputTokens !== undefined) {
         optionalParams.maxOutputTokens = maxOutputTokens;
       }
-      
+
       const temperature = options?.temperature ?? this.config.temperature;
       if (temperature !== undefined) {
         optionalParams.temperature = temperature;
       }
-      
+
       if (options?.topP !== undefined) {
         optionalParams.topP = options.topP;
       }
-      
+
       if (options?.frequencyPenalty !== undefined) {
         optionalParams.frequencyPenalty = options.frequencyPenalty;
       }
-      
+
       if (options?.presencePenalty !== undefined) {
         optionalParams.presencePenalty = options.presencePenalty;
       }
-      
+
       const params = buildAISDKParams(baseParams, optionalParams);
 
       const result = await generateText(params as any);
@@ -245,7 +246,7 @@ export class GroqPortal extends BasePortal {
         : undefined;
 
       const config = this.config as GroqConfig;
-      const apiKey = config.apiKey || process.env["GROQ_API_KEY"];
+      const apiKey = config.apiKey || process.env['GROQ_API_KEY'];
       const providerSettings: { apiKey?: string; baseURL?: string } = {};
       if (apiKey) providerSettings.apiKey = apiKey;
       if (config.baseURL) providerSettings.baseURL = config.baseURL;
@@ -257,29 +258,30 @@ export class GroqPortal extends BasePortal {
 
       // Build params with only defined values
       const optionalParams: Record<string, unknown> = {};
-      
-      const maxOutputTokens = options?.maxOutputTokens ?? options?.maxTokens ?? this.config.maxTokens;
+
+      const maxOutputTokens =
+        options?.maxOutputTokens ?? options?.maxTokens ?? this.config.maxTokens;
       if (maxOutputTokens !== undefined) {
         optionalParams.maxOutputTokens = maxOutputTokens;
       }
-      
+
       const temperature = options?.temperature ?? this.config.temperature;
       if (temperature !== undefined) {
         optionalParams.temperature = temperature;
       }
-      
+
       if (options?.topP !== undefined) {
         optionalParams.topP = options.topP;
       }
-      
+
       if (options?.frequencyPenalty !== undefined) {
         optionalParams.frequencyPenalty = options.frequencyPenalty;
       }
-      
+
       if (options?.presencePenalty !== undefined) {
         optionalParams.presencePenalty = options.presencePenalty;
       }
-      
+
       const generateOptions = buildAISDKParams(baseOptions, optionalParams);
 
       // Add tools if provided with comprehensive AI SDK v5 support
@@ -389,7 +391,7 @@ export class GroqPortal extends BasePortal {
       const evaluationPrompt = super.buildEvaluationPrompt(options);
 
       const config = this.config as GroqConfig;
-      const apiKey = config.apiKey || process.env["GROQ_API_KEY"];
+      const apiKey = config.apiKey || process.env['GROQ_API_KEY'];
       const providerSettings: { apiKey?: string; baseURL?: string } = {};
       if (apiKey) providerSettings.apiKey = apiKey;
       if (config.baseURL) providerSettings.baseURL = config.baseURL;
@@ -544,7 +546,7 @@ export class GroqPortal extends BasePortal {
       const model = this.resolveModel('chat', 'GROQ');
 
       const config = this.config as GroqConfig;
-      const apiKey = config.apiKey || process.env["GROQ_API_KEY"];
+      const apiKey = config.apiKey || process.env['GROQ_API_KEY'];
       const providerSettings: { apiKey?: string; baseURL?: string } = {};
       if (apiKey) providerSettings.apiKey = apiKey;
       if (config.baseURL) providerSettings.baseURL = config.baseURL;
@@ -556,17 +558,18 @@ export class GroqPortal extends BasePortal {
 
       // Build params with only defined values
       const optionalParams: Record<string, unknown> = {};
-      
-      const maxOutputTokens = options?.maxOutputTokens ?? options?.maxTokens ?? this.config.maxTokens;
+
+      const maxOutputTokens =
+        options?.maxOutputTokens ?? options?.maxTokens ?? this.config.maxTokens;
       if (maxOutputTokens !== undefined) {
         optionalParams.maxOutputTokens = maxOutputTokens;
       }
-      
+
       const temperature = options?.temperature ?? this.config.temperature;
       if (temperature !== undefined) {
         optionalParams.temperature = temperature;
       }
-      
+
       const params = buildAISDKParams(baseParams, optionalParams);
 
       // Add tools if provided with comprehensive AI SDK v5 streaming support
@@ -624,7 +627,7 @@ export class GroqPortal extends BasePortal {
       });
 
       const config = this.config as GroqConfig;
-      const apiKey = config.apiKey || process.env["GROQ_API_KEY"];
+      const apiKey = config.apiKey || process.env['GROQ_API_KEY'];
       const providerSettings: { apiKey?: string; baseURL?: string } = {};
       if (apiKey) providerSettings.apiKey = apiKey;
       if (config.baseURL) providerSettings.baseURL = config.baseURL;
@@ -636,29 +639,30 @@ export class GroqPortal extends BasePortal {
 
       // Build params with only defined values
       const optionalParams: Record<string, unknown> = {};
-      
-      const maxOutputTokens = options?.maxOutputTokens ?? options?.maxTokens ?? this.config.maxTokens;
+
+      const maxOutputTokens =
+        options?.maxOutputTokens ?? options?.maxTokens ?? this.config.maxTokens;
       if (maxOutputTokens !== undefined) {
         optionalParams.maxOutputTokens = maxOutputTokens;
       }
-      
+
       const temperature = options?.temperature ?? this.config.temperature;
       if (temperature !== undefined) {
         optionalParams.temperature = temperature;
       }
-      
+
       if (options?.topP !== undefined) {
         optionalParams.topP = options.topP;
       }
-      
+
       if (options?.frequencyPenalty !== undefined) {
         optionalParams.frequencyPenalty = options.frequencyPenalty;
       }
-      
+
       if (options?.presencePenalty !== undefined) {
         optionalParams.presencePenalty = options.presencePenalty;
       }
-      
+
       const params = buildAISDKParams(baseParams, optionalParams);
 
       // Add tools if provided with comprehensive AI SDK v5 streaming support

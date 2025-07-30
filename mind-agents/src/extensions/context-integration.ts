@@ -1,6 +1,6 @@
 /**
  * Extension Context Integration for SYMindX
- * 
+ *
  * Provides utilities for integrating context awareness into extensions
  * while maintaining backward compatibility with existing implementations.
  */
@@ -12,14 +12,14 @@ import type {
   ExtensionEventHandler,
   AgentEvent,
   ActionResult,
-  ActionStatus
+  ActionStatus,
 } from '../types/agent.js';
 import type { Context, SkillParameters } from '../types/common.js';
 import type { OperationResult } from '../types/helpers.js';
 import type {
   ContextScope,
   ContextInjector,
-  ExtensionContextInjection
+  ExtensionContextInjection,
 } from '../types/context/context-injection.js';
 import { ContextScopeType } from '../types/context/context-injection.js';
 import { runtimeLogger } from '../utils/logger.js';
@@ -30,22 +30,22 @@ import { runtimeLogger } from '../utils/logger.js';
 export interface ExtensionContextConfig {
   /** Whether to enable context injection for this extension */
   enableInjection: boolean;
-  
+
   /** Scope type for context resolution */
   scopeType: ContextScopeType;
-  
+
   /** Whether to auto-update context on agent state changes */
   autoUpdate: boolean;
-  
+
   /** Whether to filter sensitive data from context */
   filterSensitive: boolean;
-  
+
   /** Fields to include in context (if empty, includes all) */
   includeFields?: string[];
-  
+
   /** Fields to exclude from context */
   excludeFields?: string[];
-  
+
   /** Maximum context cache TTL in milliseconds */
   cacheTtl?: number;
 }
@@ -55,13 +55,16 @@ export interface ExtensionContextConfig {
  */
 export class ExtensionContextIntegrator {
   private contextInjector?: ContextInjector;
-  private readonly extensionContextCache = new Map<string, { context: Context; timestamp: number }>();
+  private readonly extensionContextCache = new Map<
+    string,
+    { context: Context; timestamp: number }
+  >();
   private readonly defaultConfig: ExtensionContextConfig = {
     enableInjection: true,
     scopeType: ContextScopeType.Extension,
     autoUpdate: true,
     filterSensitive: true,
-    cacheTtl: 30000 // 30 seconds
+    cacheTtl: 30000, // 30 seconds
   };
 
   constructor(contextInjector?: ContextInjector) {
@@ -84,7 +87,7 @@ export class ExtensionContextIntegrator {
     config?: Partial<ExtensionContextConfig>
   ): Promise<Extension> {
     const contextConfig = { ...this.defaultConfig, ...config };
-    
+
     // Store original methods for wrapper implementation
     const originalInit = extension.init.bind(extension);
     const originalTick = extension.tick.bind(extension);
@@ -93,13 +96,23 @@ export class ExtensionContextIntegrator {
 
     // Enhance init method
     extension.init = async (agent: Agent, context?: Context) => {
-      const injectedContext = await this.injectContext(extension, agent, context, contextConfig);
+      const injectedContext = await this.injectContext(
+        extension,
+        agent,
+        context,
+        contextConfig
+      );
       return originalInit(agent, injectedContext);
     };
 
     // Enhance tick method
     extension.tick = async (agent: Agent, context?: Context) => {
-      const injectedContext = await this.injectContext(extension, agent, context, contextConfig);
+      const injectedContext = await this.injectContext(
+        extension,
+        agent,
+        context,
+        contextConfig
+      );
       return originalTick(agent, injectedContext);
     };
 
@@ -126,7 +139,10 @@ export class ExtensionContextIntegrator {
       if (extension.lifecycle.onLoad) {
         const originalOnLoad = extension.lifecycle.onLoad.bind(extension);
         extension.lifecycle.onLoad = async (context?: Context) => {
-          const injectedContext = await this.createExtensionContext(extension, contextConfig);
+          const injectedContext = await this.createExtensionContext(
+            extension,
+            contextConfig
+          );
           return originalOnLoad(injectedContext || context);
         };
       }
@@ -143,15 +159,24 @@ export class ExtensionContextIntegrator {
         const originalOnReload = extension.lifecycle.onReload.bind(extension);
         extension.lifecycle.onReload = async (context?: Context) => {
           this.clearExtensionCache(extension.id);
-          const injectedContext = await this.createExtensionContext(extension, contextConfig);
+          const injectedContext = await this.createExtensionContext(
+            extension,
+            contextConfig
+          );
           return originalOnReload(injectedContext || context);
         };
       }
 
       if (extension.lifecycle.onError) {
         const originalOnError = extension.lifecycle.onError.bind(extension);
-        extension.lifecycle.onError = async (error: Error, context?: Context) => {
-          const injectedContext = await this.createExtensionContext(extension, contextConfig);
+        extension.lifecycle.onError = async (
+          error: Error,
+          context?: Context
+        ) => {
+          const injectedContext = await this.createExtensionContext(
+            extension,
+            contextConfig
+          );
           return originalOnError(error, injectedContext || context);
         };
       }
@@ -159,11 +184,12 @@ export class ExtensionContextIntegrator {
 
     // Set context configuration
     (extension as any).contextConfig = contextConfig;
-    (extension as any).contextScope = `${contextConfig.scopeType}:${extension.id}`;
+    (extension as any).contextScope =
+      `${contextConfig.scopeType}:${extension.id}`;
 
     runtimeLogger.debug('Extension enhanced with context awareness', {
       extension: extension.id,
-      config: contextConfig
+      config: contextConfig,
     });
 
     return extension;
@@ -190,7 +216,11 @@ export class ExtensionContextIntegrator {
       }
 
       // Create fresh context
-      const freshContext = await this.createExtensionContext(extension, config, agent);
+      const freshContext = await this.createExtensionContext(
+        extension,
+        config,
+        agent
+      );
       if (freshContext) {
         this.cacheContext(extension.id, freshContext);
         return { ...freshContext, ...providedContext };
@@ -200,7 +230,7 @@ export class ExtensionContextIntegrator {
     } catch (error) {
       runtimeLogger.warn('Failed to inject context for extension', {
         extension: extension.id,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
       return providedContext;
     }
@@ -228,24 +258,30 @@ export class ExtensionContextIntegrator {
           extensionType: extension.type,
           extensionVersion: extension.version,
           enabled: extension.enabled,
-          status: extension.status
-        }
+          status: extension.status,
+        },
       };
 
-      const result = await this.contextInjector.inject<ExtensionContextInjection>(scope);
-      
+      const result =
+        await this.contextInjector.inject<ExtensionContextInjection>(scope);
+
       if (result.success && result.context) {
         let context: Context = {
           timestamp: new Date().toISOString(),
           scope: result.scope.type,
-          extensionId: extension.id
+          extensionId: extension.id,
         };
 
         // Add extension context data safely
         if (result.context) {
-          Object.keys(result.context).forEach(key => {
+          Object.keys(result.context).forEach((key) => {
             const value = (result.context as any)[key];
-            if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean' || value instanceof Date) {
+            if (
+              typeof value === 'string' ||
+              typeof value === 'number' ||
+              typeof value === 'boolean' ||
+              value instanceof Date
+            ) {
               context[key] = value;
             }
           });
@@ -259,7 +295,7 @@ export class ExtensionContextIntegrator {
     } catch (error) {
       runtimeLogger.warn('Failed to create extension context', {
         extension: extension.id,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
     }
 
@@ -278,12 +314,21 @@ export class ExtensionContextIntegrator {
 
     return {
       ...action,
-      execute: async (agent: Agent, params: SkillParameters, context?: Context): Promise<ActionResult> => {
+      execute: async (
+        agent: Agent,
+        params: SkillParameters,
+        context?: Context
+      ): Promise<ActionResult> => {
         try {
           let enhancedContext = context;
 
           if (config.enableInjection) {
-            const injectedContext = await this.injectContext(extension, agent, context, config);
+            const injectedContext = await this.injectContext(
+              extension,
+              agent,
+              context,
+              config
+            );
             enhancedContext = injectedContext || context;
           }
 
@@ -293,13 +338,13 @@ export class ExtensionContextIntegrator {
               enhancedContext,
               action.contextRequirements
             );
-            
+
             if (!validationResult.valid) {
               return {
                 success: false,
                 type: 'error' as any,
                 error: `Context validation failed: ${validationResult.errors.join(', ')}`,
-                timestamp: new Date()
+                timestamp: new Date(),
               };
             }
           }
@@ -309,17 +354,17 @@ export class ExtensionContextIntegrator {
           runtimeLogger.error('Extension action execution failed', {
             extension: extension.id,
             action: action.name,
-            error: error instanceof Error ? error.message : 'Unknown error'
+            error: error instanceof Error ? error.message : 'Unknown error',
           });
 
           return {
             success: false,
             type: 'error' as any,
             error: error instanceof Error ? error.message : 'Unknown error',
-            timestamp: new Date()
+            timestamp: new Date(),
           };
         }
-      }
+      },
     };
   }
 
@@ -335,14 +380,18 @@ export class ExtensionContextIntegrator {
 
     return {
       ...eventHandler,
-      handler: async (agent: Agent, event: AgentEvent, context?: Context): Promise<void> => {
+      handler: async (
+        agent: Agent,
+        event: AgentEvent,
+        context?: Context
+      ): Promise<void> => {
         try {
           let enhancedContext = context;
 
           if (config.enableInjection) {
             // Create event-specific context
             let eventContext = context || {};
-            
+
             if (eventHandler.contextOptions?.injectEventContext) {
               eventContext = {
                 ...eventContext,
@@ -354,8 +403,10 @@ export class ExtensionContextIntegrator {
                   agentId: event.agentId,
                   targetAgentId: event.targetAgentId,
                   tags: event.tags,
-                  ...(eventHandler.contextOptions.preserveEventData ? { data: event.data } : {})
-                }
+                  ...(eventHandler.contextOptions.preserveEventData
+                    ? { data: event.data }
+                    : {}),
+                },
               };
             }
 
@@ -366,12 +417,17 @@ export class ExtensionContextIntegrator {
                   id: agent.id,
                   name: agent.name,
                   status: agent.status,
-                  lastUpdate: agent.lastUpdate
-                }
+                  lastUpdate: agent.lastUpdate,
+                },
               };
             }
 
-            const injectedContext = await this.injectContext(extension, agent, eventContext, config);
+            const injectedContext = await this.injectContext(
+              extension,
+              agent,
+              eventContext,
+              config
+            );
             enhancedContext = injectedContext || eventContext;
 
             // Filter sensitive data if requested
@@ -385,10 +441,10 @@ export class ExtensionContextIntegrator {
           runtimeLogger.error('Extension event handler execution failed', {
             extension: extension.id,
             event: eventHandler.event,
-            error: error instanceof Error ? error.message : 'Unknown error'
+            error: error instanceof Error ? error.message : 'Unknown error',
           });
         }
-      }
+      },
     };
   }
 
@@ -402,7 +458,10 @@ export class ExtensionContextIntegrator {
     const errors: string[] = [];
 
     if (!context) {
-      if (requirements.requiredFields && requirements.requiredFields.length > 0) {
+      if (
+        requirements.requiredFields &&
+        requirements.requiredFields.length > 0
+      ) {
         errors.push('Context is required but not provided');
       }
       return { valid: errors.length === 0, errors };
@@ -419,14 +478,18 @@ export class ExtensionContextIntegrator {
 
     // Apply validation rules
     if (requirements.validationRules) {
-      for (const [field, validator] of Object.entries(requirements.validationRules)) {
+      for (const [field, validator] of Object.entries(
+        requirements.validationRules
+      )) {
         if (field in context) {
           try {
             if (!validator(context[field])) {
               errors.push(`Context field validation failed: ${field}`);
             }
           } catch (error) {
-            errors.push(`Context field validation error for ${field}: ${error}`);
+            errors.push(
+              `Context field validation error for ${field}: ${error}`
+            );
           }
         }
       }
@@ -438,7 +501,10 @@ export class ExtensionContextIntegrator {
   /**
    * Filter context based on configuration
    */
-  private filterContext(context: Context, config: ExtensionContextConfig): Context {
+  private filterContext(
+    context: Context,
+    config: ExtensionContextConfig
+  ): Context {
     let filtered = { ...context };
 
     // Include only specified fields
@@ -472,8 +538,16 @@ export class ExtensionContextIntegrator {
    */
   private filterSensitiveData(context: Context): Context {
     const sensitiveFields = [
-      'password', 'secret', 'key', 'token', 'apiKey', 'clientSecret',
-      'auth', 'authentication', 'authorization', 'credentials'
+      'password',
+      'secret',
+      'key',
+      'token',
+      'apiKey',
+      'clientSecret',
+      'auth',
+      'authentication',
+      'authorization',
+      'credentials',
     ];
 
     const filtered = { ...context };
@@ -484,7 +558,9 @@ export class ExtensionContextIntegrator {
       }
 
       if (Array.isArray(obj)) {
-        return obj.map((item, index) => filterObject(item, `${path}[${index}]`));
+        return obj.map((item, index) =>
+          filterObject(item, `${path}[${index}]`)
+        );
       }
 
       const result: any = {};
@@ -492,7 +568,7 @@ export class ExtensionContextIntegrator {
         const currentPath = path ? `${path}.${key}` : key;
         const keyLower = key.toLowerCase();
 
-        if (sensitiveFields.some(field => keyLower.includes(field))) {
+        if (sensitiveFields.some((field) => keyLower.includes(field))) {
           result[key] = '[REDACTED]';
         } else {
           result[key] = filterObject(value, currentPath);
@@ -507,7 +583,10 @@ export class ExtensionContextIntegrator {
   /**
    * Get cached context for an extension
    */
-  private getCachedContext(extensionId: string, cacheTtl?: number): Context | undefined {
+  private getCachedContext(
+    extensionId: string,
+    cacheTtl?: number
+  ): Context | undefined {
     const cached = this.extensionContextCache.get(extensionId);
     if (!cached) {
       return undefined;
@@ -515,7 +594,7 @@ export class ExtensionContextIntegrator {
 
     const ttl = cacheTtl || this.defaultConfig.cacheTtl || 30000;
     const age = Date.now() - cached.timestamp;
-    
+
     if (age > ttl) {
       this.extensionContextCache.delete(extensionId);
       return undefined;
@@ -530,7 +609,7 @@ export class ExtensionContextIntegrator {
   private cacheContext(extensionId: string, context: Context): void {
     this.extensionContextCache.set(extensionId, {
       context,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   }
 
@@ -539,7 +618,9 @@ export class ExtensionContextIntegrator {
    */
   clearExtensionCache(extensionId: string): void {
     this.extensionContextCache.delete(extensionId);
-    runtimeLogger.debug('Extension context cache cleared', { extension: extensionId });
+    runtimeLogger.debug('Extension context cache cleared', {
+      extension: extensionId,
+    });
   }
 
   /**
@@ -556,7 +637,7 @@ export class ExtensionContextIntegrator {
   getCacheStats(): { totalEntries: number; extensionIds: string[] } {
     return {
       totalEntries: this.extensionContextCache.size,
-      extensionIds: Array.from(this.extensionContextCache.keys())
+      extensionIds: Array.from(this.extensionContextCache.keys()),
     };
   }
 }
@@ -569,7 +650,11 @@ export class ExtensionMigrationHelper {
    * Check if an extension is already context-aware
    */
   static isContextAware(extension: Extension): boolean {
-    return !!((extension as any).context || (extension as any).contextConfig || (extension as any).contextScope);
+    return !!(
+      (extension as any).context ||
+      (extension as any).contextConfig ||
+      (extension as any).contextScope
+    );
   }
 
   /**
@@ -598,9 +683,13 @@ export class ExtensionMigrationHelper {
       const originalExecute = action.execute.bind(action);
       extension.actions[actionName] = {
         ...action,
-        execute: async (agent: Agent, params: SkillParameters, context?: Context): Promise<ActionResult> => {
+        execute: async (
+          agent: Agent,
+          params: SkillParameters,
+          context?: Context
+        ): Promise<ActionResult> => {
           return originalExecute(agent, params);
-        }
+        },
       };
     }
 
@@ -609,14 +698,18 @@ export class ExtensionMigrationHelper {
       const originalHandler = eventHandler.handler.bind(eventHandler);
       extension.events[eventName] = {
         ...eventHandler,
-        handler: async (agent: Agent, event: AgentEvent, context?: Context): Promise<void> => {
+        handler: async (
+          agent: Agent,
+          event: AgentEvent,
+          context?: Context
+        ): Promise<void> => {
           return originalHandler(agent, event);
-        }
+        },
       };
     }
 
     runtimeLogger.debug('Extension wrapped for backward compatibility', {
-      extension: extension.id
+      extension: extension.id,
     });
 
     return extension;
@@ -633,28 +726,38 @@ export class ExtensionMigrationHelper {
       // Check init method signature
       const initParams = extension.init.length;
       if (initParams < 1 || initParams > 2) {
-        errors.push('init method should accept (agent: Agent, context?: Context)');
+        errors.push(
+          'init method should accept (agent: Agent, context?: Context)'
+        );
       }
 
       // Check tick method signature
       const tickParams = extension.tick.length;
       if (tickParams < 1 || tickParams > 2) {
-        errors.push('tick method should accept (agent: Agent, context?: Context)');
+        errors.push(
+          'tick method should accept (agent: Agent, context?: Context)'
+        );
       }
 
       // Check action execute methods
       for (const [actionName, action] of Object.entries(extension.actions)) {
         const executeParams = action.execute.length;
         if (executeParams < 2 || executeParams > 3) {
-          errors.push(`Action ${actionName} execute method should accept (agent: Agent, params: SkillParameters, context?: Context)`);
+          errors.push(
+            `Action ${actionName} execute method should accept (agent: Agent, params: SkillParameters, context?: Context)`
+          );
         }
       }
 
       // Check event handlers
-      for (const [eventName, eventHandler] of Object.entries(extension.events)) {
+      for (const [eventName, eventHandler] of Object.entries(
+        extension.events
+      )) {
         const handlerParams = eventHandler.handler.length;
         if (handlerParams < 2 || handlerParams > 3) {
-          errors.push(`Event handler ${eventName} should accept (agent: Agent, event: AgentEvent, context?: Context)`);
+          errors.push(
+            `Event handler ${eventName} should accept (agent: Agent, event: AgentEvent, context?: Context)`
+          );
         }
       }
     } catch (error) {
@@ -664,7 +767,7 @@ export class ExtensionMigrationHelper {
     return {
       success: errors.length === 0,
       error: errors.length > 0 ? errors.join('; ') : undefined,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
   }
 }
@@ -672,7 +775,8 @@ export class ExtensionMigrationHelper {
 /**
  * Default extension context integrator instance
  */
-export const defaultExtensionContextIntegrator = new ExtensionContextIntegrator();
+export const defaultExtensionContextIntegrator =
+  new ExtensionContextIntegrator();
 
 /**
  * Helper functions for easy integration
@@ -698,6 +802,8 @@ export function createLegacyExtensionWrapper(extension: Extension): Extension {
 /**
  * Validate extension context compatibility
  */
-export function validateExtensionContextCompatibility(extension: Extension): OperationResult {
+export function validateExtensionContextCompatibility(
+  extension: Extension
+): OperationResult {
   return ExtensionMigrationHelper.validateContextCompatibility(extension);
 }

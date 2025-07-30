@@ -1,6 +1,6 @@
 /**
  * L3 Context Cache - Persistent Disk Cache
- * 
+ *
  * Persistent cache that stores data on disk with async operations.
  * Features write-ahead logging, file rotation, and efficient I/O.
  */
@@ -60,7 +60,7 @@ interface CacheIndex {
 
 /**
  * L3 Context Cache Implementation
- * 
+ *
  * Persistent disk cache with:
  * - Async file operations
  * - Write-ahead logging for durability
@@ -78,23 +78,26 @@ export class L3ContextCache {
       totalSize: 0,
     },
   };
-  
-  private writeBuffer = new Map<string, { data: unknown; options: CacheSetOptions }>();
+
+  private writeBuffer = new Map<
+    string,
+    { data: unknown; options: CacheSetOptions }
+  >();
   private writeBufferSize = 0;
   private walLog: WALEntry[] = [];
   private isFlushingBuffer = false;
   private flushInterval?: NodeJS.Timeout;
   private eventCallbacks = new Set<CacheEventCallback>();
-  
+
   private config: CacheConfiguration['l3'];
   private globalConfig: CacheConfiguration['global'];
   private isInitialized = false;
-  
+
   // File paths
   private indexPath: string = '';
   private walPath: string = '';
   private dataDirectory: string = '';
-  
+
   // Performance metrics
   private metrics = {
     hits: 0,
@@ -108,18 +111,21 @@ export class L3ContextCache {
     totalIOTime: 0,
     operationCount: 0,
   };
-  
-  constructor(config: CacheConfiguration['l3'], globalConfig: CacheConfiguration['global']) {
+
+  constructor(
+    config: CacheConfiguration['l3'],
+    globalConfig: CacheConfiguration['global']
+  ) {
     this.config = config;
     this.globalConfig = globalConfig;
   }
-  
+
   /**
    * Initialize the L3 cache
    */
   async initialize(): Promise<OperationResult> {
     const startTime = performance.now();
-    
+
     try {
       if (this.isInitialized) {
         return {
@@ -129,38 +135,38 @@ export class L3ContextCache {
           duration: performance.now() - startTime,
         };
       }
-      
+
       // Validate configuration
       if (this.config.maxEntries <= 0) {
         throw new Error('maxEntries must be greater than 0');
       }
-      
+
       if (this.config.maxDiskBytes <= 0) {
         throw new Error('maxDiskBytes must be greater than 0');
       }
-      
+
       // Setup file paths
       this.dataDirectory = join(this.config.storageDirectory, 'data');
       this.indexPath = join(this.config.storageDirectory, 'index.json');
       this.walPath = join(this.config.storageDirectory, 'wal.json');
-      
+
       // Create storage directories
       await this.ensureDirectoryExists(this.config.storageDirectory);
       await this.ensureDirectoryExists(this.dataDirectory);
-      
+
       // Load existing index
       await this.loadIndex();
-      
+
       // Replay WAL if it exists
       if (this.config.enableWAL) {
         await this.replayWAL();
       }
-      
+
       // Start periodic buffer flush
       this.startPeriodicFlush();
-      
+
       this.isInitialized = true;
-      
+
       return {
         success: true,
         timestamp: Date.now(),
@@ -181,26 +187,26 @@ export class L3ContextCache {
       };
     }
   }
-  
+
   /**
    * Get an item from L3 cache
    */
   async get<T>(key: string): Promise<T | null> {
     const startTime = performance.now();
     this.metrics.operationCount++;
-    
+
     if (!this.isInitialized || !this.config.enabled) {
       this.metrics.misses++;
       return null;
     }
-    
+
     // Check write buffer first
     const bufferedEntry = this.writeBuffer.get(key);
     if (bufferedEntry) {
       this.metrics.hits++;
       const responseTime = performance.now() - startTime;
       this.updateMetricsResponseTime(responseTime);
-      
+
       this.emitEvent({
         type: CacheEventType.HIT,
         key,
@@ -209,12 +215,12 @@ export class L3ContextCache {
         responseTime,
         data: { source: 'buffer' },
       });
-      
+
       return bufferedEntry.data as T;
     }
-    
+
     const entry = this.index.entries[key];
-    
+
     if (!entry) {
       this.metrics.misses++;
       this.updateMetricsResponseTime(performance.now() - startTime);
@@ -227,7 +233,7 @@ export class L3ContextCache {
       });
       return null;
     }
-    
+
     // Check if entry is expired
     if (entry.expiresAt && entry.expiresAt < Date.now()) {
       await this.deleteFromDisk(key);
@@ -242,7 +248,7 @@ export class L3ContextCache {
       });
       return null;
     }
-    
+
     try {
       // Read from disk
       const ioStart = performance.now();
@@ -250,16 +256,16 @@ export class L3ContextCache {
       const ioTime = performance.now() - ioStart;
       this.metrics.totalIOTime += ioTime;
       this.metrics.fileReads++;
-      
+
       // Update access tracking
       entry.lastAccessedAt = Date.now();
       entry.accessCount++;
       await this.updateIndex();
-      
+
       this.metrics.hits++;
       const responseTime = performance.now() - startTime;
       this.updateMetricsResponseTime(responseTime);
-      
+
       this.emitEvent({
         type: CacheEventType.HIT,
         key,
@@ -268,7 +274,7 @@ export class L3ContextCache {
         responseTime,
         data: { source: 'disk', ioTime },
       });
-      
+
       return data;
     } catch (error) {
       this.emitEvent({
@@ -282,14 +288,18 @@ export class L3ContextCache {
       return null;
     }
   }
-  
+
   /**
    * Set an item in L3 cache
    */
-  async set<T>(key: string, value: T, options: CacheSetOptions = {}): Promise<OperationResult> {
+  async set<T>(
+    key: string,
+    value: T,
+    options: CacheSetOptions = {}
+  ): Promise<OperationResult> {
     const startTime = performance.now();
     this.metrics.operationCount++;
-    
+
     if (!this.isInitialized || !this.config.enabled) {
       return {
         success: false,
@@ -298,12 +308,12 @@ export class L3ContextCache {
         duration: performance.now() - startTime,
       };
     }
-    
+
     try {
       // Calculate data size
       const serialized = JSON.stringify(value);
       const size = Buffer.byteLength(serialized, 'utf8');
-      
+
       // Check if this single entry would exceed disk limit
       if (size > this.config.maxDiskBytes) {
         return {
@@ -313,11 +323,11 @@ export class L3ContextCache {
           duration: performance.now() - startTime,
         };
       }
-      
+
       // Add to write buffer
       this.writeBuffer.set(key, { data: value, options });
       this.writeBufferSize += size;
-      
+
       // Add to WAL if enabled
       if (this.config.enableWAL) {
         this.walLog.push({
@@ -328,29 +338,29 @@ export class L3ContextCache {
           options,
         });
       }
-      
+
       // Flush buffer if it exceeds threshold
       if (this.writeBufferSize >= this.config.writeBufferSize) {
         await this.flushWriteBuffer();
       }
-      
+
       this.metrics.sets++;
       const responseTime = performance.now() - startTime;
       this.updateMetricsResponseTime(responseTime);
-      
+
       this.emitEvent({
         type: CacheEventType.SET,
         key,
         level: CacheLevel.L3,
         timestamp: Date.now(),
         responseTime,
-        data: { 
+        data: {
           size,
           buffered: true,
           bufferSize: this.writeBufferSize,
         },
       });
-      
+
       return {
         success: true,
         timestamp: Date.now(),
@@ -371,14 +381,14 @@ export class L3ContextCache {
       };
     }
   }
-  
+
   /**
    * Delete an item from L3 cache
    */
   async delete(key: string): Promise<OperationResult> {
     const startTime = performance.now();
     this.metrics.operationCount++;
-    
+
     if (!this.isInitialized) {
       return {
         success: false,
@@ -387,14 +397,14 @@ export class L3ContextCache {
         duration: performance.now() - startTime,
       };
     }
-    
+
     // Remove from write buffer if present
     const bufferedEntry = this.writeBuffer.get(key);
     if (bufferedEntry) {
       this.writeBuffer.delete(key);
       this.writeBufferSize -= JSON.stringify(bufferedEntry.data).length;
     }
-    
+
     // Add to WAL if enabled
     if (this.config.enableWAL) {
       this.walLog.push({
@@ -403,13 +413,13 @@ export class L3ContextCache {
         timestamp: Date.now(),
       });
     }
-    
+
     const result = await this.deleteFromDisk(key);
-    
+
     this.metrics.deletes++;
     const responseTime = performance.now() - startTime;
     this.updateMetricsResponseTime(responseTime);
-    
+
     this.emitEvent({
       type: CacheEventType.DELETE,
       key,
@@ -417,10 +427,10 @@ export class L3ContextCache {
       timestamp: Date.now(),
       responseTime,
     });
-    
+
     return result;
   }
-  
+
   /**
    * Check if a key exists
    */
@@ -428,29 +438,29 @@ export class L3ContextCache {
     if (!this.isInitialized || !this.config.enabled) {
       return false;
     }
-    
+
     // Check write buffer first
     if (this.writeBuffer.has(key)) {
       return true;
     }
-    
+
     const entry = this.index.entries[key];
-    
+
     // Check expiration
     if (entry && entry.expiresAt && entry.expiresAt < Date.now()) {
       await this.deleteFromDisk(key);
       return false;
     }
-    
+
     return !!entry;
   }
-  
+
   /**
    * Clear all entries from L3 cache
    */
   async clear(): Promise<OperationResult> {
     const startTime = performance.now();
-    
+
     if (!this.isInitialized) {
       return {
         success: false,
@@ -459,15 +469,15 @@ export class L3ContextCache {
         duration: performance.now() - startTime,
       };
     }
-    
+
     try {
       // Clear write buffer
       this.writeBuffer.clear();
       this.writeBufferSize = 0;
-      
+
       // Clear WAL
       this.walLog = [];
-      
+
       // Delete all data files
       const entryCount = Object.keys(this.index.entries).length;
       for (const entry of Object.values(this.index.entries)) {
@@ -477,7 +487,7 @@ export class L3ContextCache {
           // Ignore file not found errors
         }
       }
-      
+
       // Reset index
       this.index = {
         entries: {},
@@ -489,9 +499,9 @@ export class L3ContextCache {
           totalSize: 0,
         },
       };
-      
+
       await this.updateIndex();
-      
+
       this.emitEvent({
         type: CacheEventType.CLEAR,
         key: '*',
@@ -500,7 +510,7 @@ export class L3ContextCache {
         responseTime: performance.now() - startTime,
         data: { clearedEntries: entryCount },
       });
-      
+
       return {
         success: true,
         timestamp: Date.now(),
@@ -516,17 +526,18 @@ export class L3ContextCache {
       };
     }
   }
-  
+
   /**
    * Get cache metrics
    */
   getMetrics(): Partial<CacheMetrics> {
     const totalOps = this.metrics.hits + this.metrics.misses;
     const hitRate = totalOps > 0 ? this.metrics.hits / totalOps : 0;
-    const avgResponseTime = this.metrics.operationCount > 0 
-      ? this.metrics.totalResponseTime / this.metrics.operationCount 
-      : 0;
-    
+    const avgResponseTime =
+      this.metrics.operationCount > 0
+        ? this.metrics.totalResponseTime / this.metrics.operationCount
+        : 0;
+
     return {
       hitRate: {
         l1: 0,
@@ -542,7 +553,8 @@ export class L3ContextCache {
       },
       diskUsage: {
         size: this.index.metadata.totalSize,
-        percentage: (this.index.metadata.totalSize / this.config.maxDiskBytes) * 100,
+        percentage:
+          (this.index.metadata.totalSize / this.config.maxDiskBytes) * 100,
         files: this.index.metadata.totalEntries,
       },
       entries: {
@@ -559,7 +571,7 @@ export class L3ContextCache {
       },
     };
   }
-  
+
   /**
    * Get all cache keys
    */
@@ -568,7 +580,7 @@ export class L3ContextCache {
     const bufferKeys = Array.from(this.writeBuffer.keys());
     return [...new Set([...diskKeys, ...bufferKeys])];
   }
-  
+
   /**
    * Inspect cache entry without accessing data
    */
@@ -585,59 +597,63 @@ export class L3ContextCache {
         createdAt: now,
         lastAccessedAt: now,
         lastUpdatedAt: now,
-        expiresAt: bufferedEntry.options.ttl ? now + bufferedEntry.options.ttl : undefined,
+        expiresAt: bufferedEntry.options.ttl
+          ? now + bufferedEntry.options.ttl
+          : undefined,
         accessCount: 0,
         size: Buffer.byteLength(JSON.stringify(bufferedEntry.data), 'utf8'),
         priority: bufferedEntry.options.priority ?? 1,
         accessPattern: CacheAccessPattern.RANDOM,
         metadata: bufferedEntry.options.metadata ?? {},
-        dataHash: createHash('sha256').update(JSON.stringify(bufferedEntry.data)).digest('hex'),
+        dataHash: createHash('sha256')
+          .update(JSON.stringify(bufferedEntry.data))
+          .digest('hex'),
         tags: bufferedEntry.options.tags ?? [],
         dependencies: bufferedEntry.options.dependencies ?? [],
       };
     }
-    
+
     return this.index.entries[key] ?? null;
   }
-  
+
   /**
    * Subscribe to cache events
    */
   subscribe(callback: CacheEventCallback): void {
     this.eventCallbacks.add(callback);
   }
-  
+
   /**
    * Unsubscribe from cache events
    */
   unsubscribe(callback: CacheEventCallback): void {
     this.eventCallbacks.delete(callback);
   }
-  
+
   /**
    * Shutdown L3 cache
    */
   async shutdown(): Promise<OperationResult> {
     const startTime = performance.now();
-    
+
     try {
       // Stop periodic flush
       if (this.flushInterval) {
         clearInterval(this.flushInterval);
         this.flushInterval = undefined;
       }
-      
+
       // Flush any remaining write buffer
       await this.flushWriteBuffer();
-      
+
       // Clear WAL
       if (this.config.enableWAL) {
         await this.clearWAL();
       }
-      
+
       this.eventCallbacks.clear();
       this.isInitialized = false;
-      
+
       return {
         success: true,
         timestamp: Date.now(),
@@ -652,7 +668,7 @@ export class L3ContextCache {
       };
     }
   }
-  
+
   /**
    * Flush write buffer to disk
    */
@@ -665,33 +681,33 @@ export class L3ContextCache {
         data: { entriesFlushed: 0 },
       };
     }
-    
+
     const startTime = performance.now();
     this.isFlushingBuffer = true;
-    
+
     try {
       const entries = Array.from(this.writeBuffer.entries());
       let flushedCount = 0;
-      
+
       for (const [key, { data, options }] of entries) {
         await this.writeToDisk(key, data, options);
         this.writeBuffer.delete(key);
         flushedCount++;
       }
-      
+
       this.writeBufferSize = 0;
       this.metrics.flushes++;
-      
+
       // Update index after flush
       await this.updateIndex();
-      
+
       // Clear WAL after successful flush
       if (this.config.enableWAL) {
         await this.clearWAL();
       }
-      
+
       const responseTime = performance.now() - startTime;
-      
+
       this.emitEvent({
         type: CacheEventType.OPTIMIZE,
         key: '*',
@@ -700,7 +716,7 @@ export class L3ContextCache {
         responseTime,
         data: { entriesFlushed: flushedCount },
       });
-      
+
       return {
         success: true,
         timestamp: Date.now(),
@@ -718,24 +734,28 @@ export class L3ContextCache {
       this.isFlushingBuffer = false;
     }
   }
-  
+
   /**
    * Write data to disk
    */
-  private async writeToDisk<T>(key: string, data: T, options: CacheSetOptions): Promise<void> {
+  private async writeToDisk<T>(
+    key: string,
+    data: T,
+    options: CacheSetOptions
+  ): Promise<void> {
     const ioStart = performance.now();
-    
+
     // Generate file path
     const hash = createHash('sha256').update(key).digest('hex');
     const filePath = join(this.dataDirectory, `${hash}.json`);
-    
+
     // Serialize data
     const serialized = JSON.stringify(data);
     const size = Buffer.byteLength(serialized, 'utf8');
-    
+
     // Write to disk
     await fs.writeFile(filePath, serialized, 'utf8');
-    
+
     const now = Date.now();
     const entry: DiskCacheEntry = {
       id: key,
@@ -756,18 +776,18 @@ export class L3ContextCache {
       filePath,
       fileSize: size,
     };
-    
+
     // Update index
     this.index.entries[key] = entry;
     this.index.metadata.totalEntries = Object.keys(this.index.entries).length;
     this.index.metadata.totalSize += size;
     this.index.metadata.lastUpdated = now;
-    
+
     const ioTime = performance.now() - ioStart;
     this.metrics.totalIOTime += ioTime;
     this.metrics.fileWrites++;
   }
-  
+
   /**
    * Read data from disk
    */
@@ -775,13 +795,13 @@ export class L3ContextCache {
     const data = await fs.readFile(filePath, 'utf8');
     return JSON.parse(data) as T;
   }
-  
+
   /**
    * Delete data from disk
    */
   private async deleteFromDisk(key: string): Promise<OperationResult> {
     const startTime = performance.now();
-    
+
     const entry = this.index.entries[key];
     if (!entry) {
       return {
@@ -791,19 +811,19 @@ export class L3ContextCache {
         duration: performance.now() - startTime,
       };
     }
-    
+
     try {
       // Delete file
       await fs.unlink(entry.filePath);
-      
+
       // Update index
       delete this.index.entries[key];
       this.index.metadata.totalEntries = Object.keys(this.index.entries).length;
       this.index.metadata.totalSize -= entry.fileSize;
       this.index.metadata.lastUpdated = Date.now();
-      
+
       await this.updateIndex();
-      
+
       return {
         success: true,
         timestamp: Date.now(),
@@ -819,7 +839,7 @@ export class L3ContextCache {
       };
     }
   }
-  
+
   /**
    * Load index from disk
    */
@@ -842,14 +862,18 @@ export class L3ContextCache {
       await this.updateIndex();
     }
   }
-  
+
   /**
    * Update index on disk
    */
   private async updateIndex(): Promise<void> {
-    await fs.writeFile(this.indexPath, JSON.stringify(this.index, null, 2), 'utf8');
+    await fs.writeFile(
+      this.indexPath,
+      JSON.stringify(this.index, null, 2),
+      'utf8'
+    );
   }
-  
+
   /**
    * Replay write-ahead log
    */
@@ -857,7 +881,7 @@ export class L3ContextCache {
     try {
       const data = await fs.readFile(this.walPath, 'utf8');
       const walEntries: WALEntry[] = JSON.parse(data);
-      
+
       for (const entry of walEntries) {
         if (entry.operation === 'SET' && entry.data && entry.options) {
           await this.writeToDisk(entry.key, entry.data, entry.options);
@@ -865,14 +889,14 @@ export class L3ContextCache {
           await this.deleteFromDisk(entry.key);
         }
       }
-      
+
       // Clear WAL after replay
       await this.clearWAL();
     } catch (error) {
       // WAL doesn't exist or is corrupted, continue without replay
     }
   }
-  
+
   /**
    * Clear write-ahead log
    */
@@ -884,7 +908,7 @@ export class L3ContextCache {
       // Ignore if file doesn't exist
     }
   }
-  
+
   /**
    * Start periodic buffer flush
    */
@@ -892,23 +916,27 @@ export class L3ContextCache {
     if (this.flushInterval) {
       clearInterval(this.flushInterval);
     }
-    
+
     this.flushInterval = setInterval(async () => {
       if (this.writeBuffer.size > 0) {
         await this.flushWriteBuffer();
       }
-      
+
       // Write WAL to disk
       if (this.config.enableWAL && this.walLog.length > 0) {
         try {
-          await fs.writeFile(this.walPath, JSON.stringify(this.walLog, null, 2), 'utf8');
+          await fs.writeFile(
+            this.walPath,
+            JSON.stringify(this.walLog, null, 2),
+            'utf8'
+          );
         } catch (error) {
           console.warn('Failed to write WAL:', error);
         }
       }
     }, 5000); // Flush every 5 seconds
   }
-  
+
   /**
    * Ensure directory exists
    */
@@ -919,14 +947,14 @@ export class L3ContextCache {
       await fs.mkdir(path, { recursive: true });
     }
   }
-  
+
   /**
    * Update metrics response time
    */
   private updateMetricsResponseTime(responseTime: number): void {
     this.metrics.totalResponseTime += responseTime;
   }
-  
+
   /**
    * Emit cache event to subscribers
    */
@@ -940,7 +968,7 @@ export class L3ContextCache {
       }
     }
   }
-  
+
   /**
    * Optimize cache by cleaning expired entries and rotating files
    */
@@ -949,7 +977,7 @@ export class L3ContextCache {
     let expiredCount = 0;
     let rotatedFiles = 0;
     const now = Date.now();
-    
+
     // Remove expired entries
     const expiredKeys: string[] = [];
     for (const [key, entry] of Object.entries(this.index.entries)) {
@@ -957,18 +985,18 @@ export class L3ContextCache {
         expiredKeys.push(key);
       }
     }
-    
+
     for (const key of expiredKeys) {
       await this.deleteFromDisk(key);
       expiredCount++;
     }
-    
+
     // Implement file rotation if needed
     // This would involve checking file sizes and rotating based on config
-    
+
     // Flush any pending writes
     await this.flushWriteBuffer();
-    
+
     return {
       success: true,
       timestamp: Date.now(),

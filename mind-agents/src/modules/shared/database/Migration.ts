@@ -1,6 +1,6 @@
 /**
  * Database Migration System for SYMindX
- * 
+ *
  * Provides unified migration patterns for all database types
  */
 
@@ -26,11 +26,11 @@ export interface MigrationRecord {
 export class MigrationRunner {
   private connection: ConnectionPool;
   private tableName = 'schema_migrations';
-  
+
   constructor(connection: ConnectionPool) {
     this.connection = connection;
   }
-  
+
   /**
    * Initialize migration table
    */
@@ -39,7 +39,7 @@ export class MigrationRunner {
     await this.connection.execute(sql);
     runtimeLogger.info('Migration table initialized');
   }
-  
+
   /**
    * Get migration table creation SQL based on database type
    */
@@ -55,7 +55,7 @@ export class MigrationRunner {
             error TEXT
           )
         `;
-      
+
       case DatabaseType.POSTGRES:
       case DatabaseType.NEON:
       case DatabaseType.SUPABASE:
@@ -68,43 +68,43 @@ export class MigrationRunner {
             error TEXT
           )
         `;
-      
+
       default:
         throw new Error(`Unsupported database type: ${this.connection.type}`);
     }
   }
-  
+
   /**
    * Run pending migrations
    */
   async run(migrations: Migration[]): Promise<void> {
     await this.initialize();
-    
+
     const executed = await this.getExecutedMigrations();
-    const executedIds = new Set(executed.map(m => m.id));
-    
+    const executedIds = new Set(executed.map((m) => m.id));
+
     const pending = migrations
-      .filter(m => !executedIds.has(m.id))
+      .filter((m) => !executedIds.has(m.id))
       .sort((a, b) => a.timestamp - b.timestamp);
-    
+
     if (pending.length === 0) {
       runtimeLogger.info('No pending migrations');
       return;
     }
-    
+
     runtimeLogger.info(`Running ${pending.length} pending migrations`);
-    
+
     for (const migration of pending) {
       await this.runMigration(migration);
     }
   }
-  
+
   /**
    * Run a single migration
    */
   private async runMigration(migration: Migration): Promise<void> {
     runtimeLogger.info(`Running migration: ${migration.name}`);
-    
+
     try {
       await this.connection.transaction(async (client) => {
         if (typeof migration.up === 'string') {
@@ -112,54 +112,55 @@ export class MigrationRunner {
         } else {
           await migration.up(this.connection);
         }
-        
+
         await this.recordMigration(migration, true);
       });
-      
+
       runtimeLogger.info(`Migration completed: ${migration.name}`);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       runtimeLogger.error(`Migration failed: ${migration.name}`, error);
-      
+
       await this.recordMigration(migration, false, errorMessage);
       throw error;
     }
   }
-  
+
   /**
    * Rollback migrations
    */
   async rollback(migrations: Migration[], steps = 1): Promise<void> {
     const executed = await this.getExecutedMigrations();
     const toRollback = executed
-      .filter(m => m.success)
+      .filter((m) => m.success)
       .sort((a, b) => b.executed_at.getTime() - a.executed_at.getTime())
       .slice(0, steps);
-    
+
     if (toRollback.length === 0) {
       runtimeLogger.info('No migrations to rollback');
       return;
     }
-    
+
     runtimeLogger.info(`Rolling back ${toRollback.length} migrations`);
-    
+
     for (const record of toRollback) {
-      const migration = migrations.find(m => m.id === record.id);
+      const migration = migrations.find((m) => m.id === record.id);
       if (!migration) {
         runtimeLogger.warn(`Migration not found for rollback: ${record.id}`);
         continue;
       }
-      
+
       await this.rollbackMigration(migration);
     }
   }
-  
+
   /**
    * Rollback a single migration
    */
   private async rollbackMigration(migration: Migration): Promise<void> {
     runtimeLogger.info(`Rolling back migration: ${migration.name}`);
-    
+
     try {
       await this.connection.transaction(async (client) => {
         if (typeof migration.down === 'string') {
@@ -167,33 +168,33 @@ export class MigrationRunner {
         } else {
           await migration.down(this.connection);
         }
-        
+
         await this.removeMigrationRecord(migration.id);
       });
-      
+
       runtimeLogger.info(`Migration rolled back: ${migration.name}`);
     } catch (error) {
       runtimeLogger.error(`Rollback failed: ${migration.name}`, error);
       throw error;
     }
   }
-  
+
   /**
    * Get executed migrations
    */
   async getExecutedMigrations(): Promise<MigrationRecord[]> {
     const sql = `SELECT * FROM ${this.tableName} ORDER BY executed_at ASC`;
     const rows = await this.connection.query(sql);
-    
+
     return rows.map((row: any) => ({
       id: row.id,
       name: row.name,
       executed_at: new Date(row.executed_at),
       success: Boolean(row.success),
-      error: row.error
+      error: row.error,
     }));
   }
-  
+
   /**
    * Record a migration execution
    */
@@ -206,18 +207,18 @@ export class MigrationRunner {
       INSERT INTO ${this.tableName} (id, name, executed_at, success, error)
       VALUES ($1, $2, $3, $4, $5)
     `;
-    
+
     const params = [
       migration.id,
       migration.name,
       this.connection.type === DatabaseType.SQLITE ? Date.now() : new Date(),
       success ? 1 : 0,
-      error || null
+      error || null,
     ];
-    
+
     await this.connection.execute(sql, params);
   }
-  
+
   /**
    * Remove a migration record
    */
@@ -225,7 +226,7 @@ export class MigrationRunner {
     const sql = `DELETE FROM ${this.tableName} WHERE id = $1`;
     await this.connection.execute(sql, [id]);
   }
-  
+
   /**
    * Check if a migration has been executed
    */
@@ -234,7 +235,7 @@ export class MigrationRunner {
     const rows = await this.connection.query(sql, [id]);
     return rows[0]?.count > 0;
   }
-  
+
   /**
    * Get migration status
    */
@@ -245,17 +246,17 @@ export class MigrationRunner {
     total: number;
   }> {
     const executed = await this.getExecutedMigrations();
-    const executedIds = new Set(executed.map(m => m.id));
-    
-    const pending = migrations.filter(m => !executedIds.has(m.id)).length;
-    const failed = executed.filter(m => !m.success).length;
-    const successful = executed.filter(m => m.success).length;
-    
+    const executedIds = new Set(executed.map((m) => m.id));
+
+    const pending = migrations.filter((m) => !executedIds.has(m.id)).length;
+    const failed = executed.filter((m) => !m.success).length;
+    const successful = executed.filter((m) => m.success).length;
+
     return {
       executed: successful,
       pending,
       failed,
-      total: migrations.length
+      total: migrations.length,
     };
   }
 }
@@ -270,13 +271,13 @@ export function createMigration(
 ): Migration {
   const timestamp = Date.now();
   const id = `${timestamp}_${name.toLowerCase().replace(/\s+/g, '_')}`;
-  
+
   return {
     id,
     name,
     up,
     down,
-    timestamp
+    timestamp,
   };
 }
 

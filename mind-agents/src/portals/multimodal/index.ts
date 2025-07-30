@@ -1012,36 +1012,41 @@ Format as JSON for easy parsing.`,
 
             // Extract structured data from text response
             const descMatch = analysisText.match(/description[:\s]+([^\n]+)/i);
-            const description = descMatch && descMatch[1]
-              ? descMatch[1].trim()
-              : analysisText.split('\n')[0];
+            const description =
+              descMatch && descMatch[1]
+                ? descMatch[1].trim()
+                : analysisText.split('\n')[0];
 
             // Extract objects
             const objectsMatch = analysisText.match(
               /objects?[:\s]+([\s\S]*?)(?=\n\n|\n[A-Z]|$)/i
             );
-            const objectsList = objectsMatch && objectsMatch[1]
-              ? objectsMatch[1]
-                  .split(/[-•*\n]/)
-                  .filter((item) => item.trim())
-                  .map((item) => item.trim())
-              : [];
+            const objectsList =
+              objectsMatch && objectsMatch[1]
+                ? objectsMatch[1]
+                    .split(/[-•*\n]/)
+                    .filter((item) => item.trim())
+                    .map((item) => item.trim())
+                : [];
 
             // Extract scene
             const sceneMatch = analysisText.match(/scene[:\s]+([^\n]+)/i);
-            const scene = sceneMatch && sceneMatch[1] ? sceneMatch[1].trim() : '';
+            const scene =
+              sceneMatch && sceneMatch[1] ? sceneMatch[1].trim() : '';
 
             // Extract text
             const textMatch = analysisText.match(
               /text[:\s]+([\s\S]*?)(?=\n\n|\n[A-Z]|$)/i
             );
-            const extractedText = textMatch && textMatch[1] ? textMatch[1].trim() : '';
+            const extractedText =
+              textMatch && textMatch[1] ? textMatch[1].trim() : '';
 
             // Extract faces/people count
             const peopleMatch = analysisText.match(
               /(\d+)\s*(?:people|person|faces?)/i
             );
-            const peopleCount = peopleMatch && peopleMatch[1] ? parseInt(peopleMatch[1], 10) : 0;
+            const peopleCount =
+              peopleMatch && peopleMatch[1] ? parseInt(peopleMatch[1], 10) : 0;
 
             // Extract mood/emotion
             const moodMatch = analysisText.match(

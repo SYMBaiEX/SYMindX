@@ -17,10 +17,10 @@ import express from 'express';
 
 import { CommandSystem } from '../../../core/command-system';
 import { Agent } from '../../../types/agent';
-import { 
-  standardLoggers, 
+import {
+  standardLoggers,
   createStandardLoggingPatterns,
-  StandardLogContext 
+  StandardLogContext,
 } from '../../../utils/standard-logging.js';
 
 // Handle ES module __dirname

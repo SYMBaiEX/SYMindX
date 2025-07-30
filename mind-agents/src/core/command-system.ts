@@ -1226,7 +1226,7 @@ export class CommandSystem extends EventEmitter {
     const useEmbeddings =
       memoryConfig.enable_embeddings === 'true' ||
       memoryConfig.enable_embeddings === true ||
-      process.env["ENABLE_OPENAI_EMBEDDINGS"] === 'true';
+      process.env['ENABLE_OPENAI_EMBEDDINGS'] === 'true';
 
     let memories;
     if (useEmbeddings) {

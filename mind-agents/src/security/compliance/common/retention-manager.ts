@@ -1,6 +1,6 @@
 /**
  * Data Retention Policy Manager
- * 
+ *
  * Manages data retention policies across GDPR, HIPAA, and SOX requirements
  * Provides automated data lifecycle management
  */
@@ -180,7 +180,7 @@ export class RetentionManager extends EventEmitter {
   addPolicy(policy: RetentionPolicy): void {
     this.policies.set(policy.id, policy);
     this.storePolicy(policy);
-    
+
     runtimeLogger.info('Retention policy added', {
       policyId: policy.id,
       dataType: policy.dataType,
@@ -197,17 +197,21 @@ export class RetentionManager extends EventEmitter {
     const policy = this.policies.get(policyId);
     if (policy) {
       this.policies.delete(policyId);
-      
+
       // Remove associated schedules
-      const associatedSchedules = Array.from(this.schedules.values())
-        .filter(schedule => schedule.policyId === policyId);
-      
+      const associatedSchedules = Array.from(this.schedules.values()).filter(
+        (schedule) => schedule.policyId === policyId
+      );
+
       for (const schedule of associatedSchedules) {
         this.schedules.delete(schedule.id);
       }
 
       runtimeLogger.info('Retention policy removed', { policyId });
-      this.emit('policyRemoved', { policyId, affectedSchedules: associatedSchedules.length });
+      this.emit('policyRemoved', {
+        policyId,
+        affectedSchedules: associatedSchedules.length,
+      });
     }
   }
 
@@ -228,17 +232,27 @@ export class RetentionManager extends EventEmitter {
   /**
    * Schedule data for retention action
    */
-  async scheduleRetention(dataId: string, dataType: string, createdAt: Date, metadata?: any): Promise<void> {
+  async scheduleRetention(
+    dataId: string,
+    dataType: string,
+    createdAt: Date,
+    metadata?: any
+  ): Promise<void> {
     try {
       // Find applicable policy
       const policy = this.findApplicablePolicy(dataType, metadata);
       if (!policy) {
-        runtimeLogger.warn('No retention policy found for data type', { dataId, dataType });
+        runtimeLogger.warn('No retention policy found for data type', {
+          dataId,
+          dataType,
+        });
         return;
       }
 
-      const expiresAt = new Date(createdAt.getTime() + (policy.retentionPeriod * 24 * 60 * 60 * 1000));
-      
+      const expiresAt = new Date(
+        createdAt.getTime() + policy.retentionPeriod * 24 * 60 * 60 * 1000
+      );
+
       const schedule: RetentionSchedule = {
         id: `retention_${dataId}_${Date.now()}`,
         policyId: policy.id,
@@ -263,7 +277,11 @@ export class RetentionManager extends EventEmitter {
 
       this.emit('retentionScheduled', schedule);
     } catch (error) {
-      runtimeLogger.error('Failed to schedule retention', { dataId, dataType, error });
+      runtimeLogger.error('Failed to schedule retention', {
+        dataId,
+        dataType,
+        error,
+      });
       throw error;
     }
   }
@@ -273,8 +291,9 @@ export class RetentionManager extends EventEmitter {
    */
   async applyLegalHold(dataId: string, reason: string): Promise<void> {
     try {
-      const affectedSchedules = Array.from(this.schedules.values())
-        .filter(schedule => schedule.dataId === dataId);
+      const affectedSchedules = Array.from(this.schedules.values()).filter(
+        (schedule) => schedule.dataId === dataId
+      );
 
       for (const schedule of affectedSchedules) {
         schedule.legalHold = true;
@@ -291,10 +310,18 @@ export class RetentionManager extends EventEmitter {
         result: 'success',
       });
 
-      runtimeLogger.info('Legal hold applied', { dataId, reason, affectedSchedules: affectedSchedules.length });
+      runtimeLogger.info('Legal hold applied', {
+        dataId,
+        reason,
+        affectedSchedules: affectedSchedules.length,
+      });
       this.emit('legalHoldApplied', { dataId, reason, affectedSchedules });
     } catch (error) {
-      runtimeLogger.error('Failed to apply legal hold', { dataId, reason, error });
+      runtimeLogger.error('Failed to apply legal hold', {
+        dataId,
+        reason,
+        error,
+      });
       throw error;
     }
   }
@@ -304,12 +331,14 @@ export class RetentionManager extends EventEmitter {
    */
   async removeLegalHold(dataId: string, reason: string): Promise<void> {
     try {
-      const affectedSchedules = Array.from(this.schedules.values())
-        .filter(schedule => schedule.dataId === dataId && schedule.legalHold);
+      const affectedSchedules = Array.from(this.schedules.values()).filter(
+        (schedule) => schedule.dataId === dataId && schedule.legalHold
+      );
 
       for (const schedule of affectedSchedules) {
         const policy = this.policies.get(schedule.policyId);
-        if (policy && !policy.legalHold) { // Only remove if policy doesn't require permanent hold
+        if (policy && !policy.legalHold) {
+          // Only remove if policy doesn't require permanent hold
           schedule.legalHold = false;
           schedule.status = 'pending';
           await this.updateSchedule(schedule);
@@ -325,10 +354,18 @@ export class RetentionManager extends EventEmitter {
         result: 'success',
       });
 
-      runtimeLogger.info('Legal hold removed', { dataId, reason, affectedSchedules: affectedSchedules.length });
+      runtimeLogger.info('Legal hold removed', {
+        dataId,
+        reason,
+        affectedSchedules: affectedSchedules.length,
+      });
       this.emit('legalHoldRemoved', { dataId, reason, affectedSchedules });
     } catch (error) {
-      runtimeLogger.error('Failed to remove legal hold', { dataId, reason, error });
+      runtimeLogger.error('Failed to remove legal hold', {
+        dataId,
+        reason,
+        error,
+      });
       throw error;
     }
   }
@@ -343,11 +380,16 @@ export class RetentionManager extends EventEmitter {
     }
 
     this.isRunning = true;
-    this.checkInterval = setInterval(async () => {
-      await this.processRetentionActions();
-    }, intervalMinutes * 60 * 1000);
+    this.checkInterval = setInterval(
+      async () => {
+        await this.processRetentionActions();
+      },
+      intervalMinutes * 60 * 1000
+    );
 
-    runtimeLogger.info('Automated retention processing started', { intervalMinutes });
+    runtimeLogger.info('Automated retention processing started', {
+      intervalMinutes,
+    });
     this.emit('processingStarted', { intervalMinutes });
   }
 
@@ -359,7 +401,7 @@ export class RetentionManager extends EventEmitter {
       clearInterval(this.checkInterval);
       this.checkInterval = null;
     }
-    
+
     this.isRunning = false;
     runtimeLogger.info('Automated retention processing stopped');
     this.emit('processingStopped');
@@ -371,20 +413,24 @@ export class RetentionManager extends EventEmitter {
   async processRetentionActions(): Promise<void> {
     try {
       const now = new Date();
-      const pendingSchedules = Array.from(this.schedules.values())
-        .filter(schedule => 
-          schedule.status === 'pending' && 
+      const pendingSchedules = Array.from(this.schedules.values()).filter(
+        (schedule) =>
+          schedule.status === 'pending' &&
           schedule.expiresAt <= now &&
           !schedule.legalHold
-        );
+      );
 
-      runtimeLogger.info('Processing retention actions', { pendingCount: pendingSchedules.length });
+      runtimeLogger.info('Processing retention actions', {
+        pendingCount: pendingSchedules.length,
+      });
 
       for (const schedule of pendingSchedules) {
         await this.executeRetentionAction(schedule);
       }
 
-      this.emit('retentionProcessed', { processedCount: pendingSchedules.length });
+      this.emit('retentionProcessed', {
+        processedCount: pendingSchedules.length,
+      });
     } catch (error) {
       runtimeLogger.error('Failed to process retention actions', { error });
       this.emit('retentionError', { error: error.message });
@@ -394,7 +440,9 @@ export class RetentionManager extends EventEmitter {
   /**
    * Execute a specific retention action
    */
-  private async executeRetentionAction(schedule: RetentionSchedule): Promise<void> {
+  private async executeRetentionAction(
+    schedule: RetentionSchedule
+  ): Promise<void> {
     try {
       runtimeLogger.info('Executing retention action', {
         scheduleId: schedule.id,
@@ -425,7 +473,7 @@ export class RetentionManager extends EventEmitter {
         action: `retention_${schedule.action}`,
         resource: 'data',
         resourceId: schedule.dataId,
-        details: { 
+        details: {
           scheduleId: schedule.id,
           policyId: schedule.policyId,
           dataType: schedule.dataType,
@@ -445,7 +493,7 @@ export class RetentionManager extends EventEmitter {
         action: `retention_${schedule.action}`,
         resource: 'data',
         resourceId: schedule.dataId,
-        details: { 
+        details: {
           scheduleId: schedule.id,
           error: error.message,
         },
@@ -460,8 +508,8 @@ export class RetentionManager extends EventEmitter {
   private async deleteData(dataId: string): Promise<void> {
     // Check if this is a memory record
     const memories = await this.memoryProvider.getMemories('system');
-    const targetMemory = memories.find(m => m.id === dataId);
-    
+    const targetMemory = memories.find((m) => m.id === dataId);
+
     if (targetMemory) {
       await this.memoryProvider.deleteMemory(dataId);
       runtimeLogger.debug('Memory deleted', { dataId });
@@ -473,8 +521,8 @@ export class RetentionManager extends EventEmitter {
   private async archiveData(dataId: string): Promise<void> {
     // For archiving, we'll add an archive flag to the metadata
     const memories = await this.memoryProvider.getMemories('system');
-    const targetMemory = memories.find(m => m.id === dataId);
-    
+    const targetMemory = memories.find((m) => m.id === dataId);
+
     if (targetMemory) {
       const archivedMemory = {
         ...targetMemory,
@@ -484,7 +532,7 @@ export class RetentionManager extends EventEmitter {
           archivedAt: new Date().toISOString(),
         },
       };
-      
+
       await this.memoryProvider.storeMemory(archivedMemory);
       runtimeLogger.debug('Data archived', { dataId });
     } else {
@@ -494,8 +542,8 @@ export class RetentionManager extends EventEmitter {
 
   private async anonymizeData(dataId: string): Promise<void> {
     const memories = await this.memoryProvider.getMemories('system');
-    const targetMemory = memories.find(m => m.id === dataId);
-    
+    const targetMemory = memories.find((m) => m.id === dataId);
+
     if (targetMemory) {
       // Simple anonymization - replace content with anonymized version
       const anonymizedMemory = {
@@ -507,7 +555,7 @@ export class RetentionManager extends EventEmitter {
           anonymizedAt: new Date().toISOString(),
         },
       };
-      
+
       await this.memoryProvider.storeMemory(anonymizedMemory);
       runtimeLogger.debug('Data anonymized', { dataId });
     } else {
@@ -519,7 +567,10 @@ export class RetentionManager extends EventEmitter {
     // Basic anonymization patterns
     return content
       .replace(/\b[A-Z][a-z]+ [A-Z][a-z]+\b/g, '[NAME]')
-      .replace(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g, '[EMAIL]')
+      .replace(
+        /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g,
+        '[EMAIL]'
+      )
       .replace(/\b\d{3}[-.]?\d{3}[-.]?\d{4}\b/g, '[PHONE]')
       .replace(/\b\d{3}-\d{2}-\d{4}\b/g, '[SSN]')
       .replace(/\$[\d,]+\.?\d*/g, '[AMOUNT]');
@@ -531,34 +582,43 @@ export class RetentionManager extends EventEmitter {
   async getRetentionReport(): Promise<RetentionReport> {
     const now = new Date();
     const schedules = Array.from(this.schedules.values());
-    
+
     const upcomingExpirations = schedules
-      .filter(s => s.status === 'pending' && s.expiresAt > now && s.expiresAt <= new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000))
+      .filter(
+        (s) =>
+          s.status === 'pending' &&
+          s.expiresAt > now &&
+          s.expiresAt <= new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
+      )
       .sort((a, b) => a.expiresAt.getTime() - b.expiresAt.getTime())
       .slice(0, 10);
 
-    const overdueActions = schedules
-      .filter(s => s.status === 'pending' && s.expiresAt <= now && !s.legalHold);
+    const overdueActions = schedules.filter(
+      (s) => s.status === 'pending' && s.expiresAt <= now && !s.legalHold
+    );
 
     const totalSchedules = schedules.length;
-    const compliantSchedules = schedules.filter(s => 
-      s.status === 'executed' || 
-      s.expiresAt > now || 
-      s.legalHold
+    const compliantSchedules = schedules.filter(
+      (s) => s.status === 'executed' || s.expiresAt > now || s.legalHold
     ).length;
 
     return {
       totalPolicies: this.policies.size,
-      activePolicies: Array.from(this.policies.values()).filter(p => !p.legalHold).length,
-      scheduledActions: schedules.filter(s => s.status === 'pending').length,
-      executedActions: schedules.filter(s => s.status === 'executed').length,
-      onHoldActions: schedules.filter(s => s.status === 'on_hold').length,
+      activePolicies: Array.from(this.policies.values()).filter(
+        (p) => !p.legalHold
+      ).length,
+      scheduledActions: schedules.filter((s) => s.status === 'pending').length,
+      executedActions: schedules.filter((s) => s.status === 'executed').length,
+      onHoldActions: schedules.filter((s) => s.status === 'on_hold').length,
       upcomingExpirations,
       overdueActions,
       policyCompliance: {
         compliant: compliantSchedules,
         nonCompliant: totalSchedules - compliantSchedules,
-        percentage: totalSchedules > 0 ? (compliantSchedules / totalSchedules) * 100 : 100,
+        percentage:
+          totalSchedules > 0
+            ? (compliantSchedules / totalSchedules) * 100
+            : 100,
       },
     };
   }
@@ -567,41 +627,50 @@ export class RetentionManager extends EventEmitter {
    * Get schedules for specific data
    */
   getSchedulesForData(dataId: string): RetentionSchedule[] {
-    return Array.from(this.schedules.values())
-      .filter(schedule => schedule.dataId === dataId);
+    return Array.from(this.schedules.values()).filter(
+      (schedule) => schedule.dataId === dataId
+    );
   }
 
   // Private helper methods
 
-  private findApplicablePolicy(dataType: string, metadata?: any): RetentionPolicy | undefined {
+  private findApplicablePolicy(
+    dataType: string,
+    metadata?: any
+  ): RetentionPolicy | undefined {
     // First, try exact match
-    let policy = Array.from(this.policies.values())
-      .find(p => p.dataType === dataType);
+    let policy = Array.from(this.policies.values()).find(
+      (p) => p.dataType === dataType
+    );
 
     if (policy) return policy;
 
     // Try pattern matching based on metadata
     if (metadata?.type) {
-      policy = Array.from(this.policies.values())
-        .find(p => p.dataType === metadata.type);
-      
+      policy = Array.from(this.policies.values()).find(
+        (p) => p.dataType === metadata.type
+      );
+
       if (policy) return policy;
     }
 
     // Try category-based matching
     if (dataType.includes('audit')) {
-      return Array.from(this.policies.values())
-        .find(p => p.dataType.includes('audit_log'));
+      return Array.from(this.policies.values()).find((p) =>
+        p.dataType.includes('audit_log')
+      );
     }
 
     if (dataType.includes('financial')) {
-      return Array.from(this.policies.values())
-        .find(p => p.dataType.includes('financial'));
+      return Array.from(this.policies.values()).find((p) =>
+        p.dataType.includes('financial')
+      );
     }
 
     if (dataType.includes('personal') || dataType.includes('user')) {
-      return Array.from(this.policies.values())
-        .find(p => p.dataType.includes('personal'));
+      return Array.from(this.policies.values()).find((p) =>
+        p.dataType.includes('personal')
+      );
     }
 
     // Default to system logs policy for unknown types
@@ -633,7 +702,9 @@ export class RetentionManager extends EventEmitter {
     await this.storeSchedule(schedule);
   }
 
-  private async logAuditEntry(entry: Omit<AuditEntry, 'id' | 'timestamp'>): Promise<void> {
+  private async logAuditEntry(
+    entry: Omit<AuditEntry, 'id' | 'timestamp'>
+  ): Promise<void> {
     const auditEntry: AuditEntry = {
       id: `retention_audit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       timestamp: new Date(),
@@ -655,6 +726,8 @@ export class RetentionManager extends EventEmitter {
 /**
  * Factory function to create retention manager
  */
-export function createRetentionManager(memoryProvider: MemoryProvider): RetentionManager {
+export function createRetentionManager(
+  memoryProvider: MemoryProvider
+): RetentionManager {
   return new RetentionManager(memoryProvider);
 }

@@ -1,6 +1,6 @@
 /**
  * Compliance Type Definitions
- * 
+ *
  * Core types for GDPR, HIPAA, and SOX compliance implementations
  */
 
@@ -70,7 +70,13 @@ export interface GDPRConfig {
     phone?: string;
   };
   retentionPeriods: Record<string, number>;
-  legalBasis: 'consent' | 'contract' | 'legal_obligation' | 'vital_interests' | 'public_task' | 'legitimate_interests';
+  legalBasis:
+    | 'consent'
+    | 'contract'
+    | 'legal_obligation'
+    | 'vital_interests'
+    | 'public_task'
+    | 'legitimate_interests';
   dataProcessingAgreements?: string[];
 }
 
@@ -137,18 +143,26 @@ export interface GDPRService {
   // Right to erasure
   deleteUserData(userId: string): Promise<void>;
   anonymizeUserData(userId: string): Promise<void>;
-  
+
   // Data portability
-  exportUserData(userId: string, format?: 'json' | 'csv' | 'xml'): Promise<UserDataExport>;
-  
+  exportUserData(
+    userId: string,
+    format?: 'json' | 'csv' | 'xml'
+  ): Promise<UserDataExport>;
+
   // Consent management
-  recordConsent(userId: string, purposes: ConsentPurpose[]): Promise<ConsentRecord>;
+  recordConsent(
+    userId: string,
+    purposes: ConsentPurpose[]
+  ): Promise<ConsentRecord>;
   withdrawConsent(userId: string, purposeIds: string[]): Promise<void>;
   getConsentStatus(userId: string): Promise<ConsentStatus>;
-  
+
   // Data subject requests
-  handleDataSubjectRequest(request: DataSubjectRequest): Promise<DataSubjectResponse>;
-  
+  handleDataSubjectRequest(
+    request: DataSubjectRequest
+  ): Promise<DataSubjectResponse>;
+
   // Privacy rights
   getPrivacyPolicy(): Promise<PrivacyPolicy>;
   updatePrivacyPolicy(policy: PrivacyPolicy): Promise<void>;
@@ -157,7 +171,13 @@ export interface GDPRService {
 export interface DataSubjectRequest {
   id: string;
   userId: string;
-  type: 'access' | 'rectification' | 'erasure' | 'portability' | 'restriction' | 'objection';
+  type:
+    | 'access'
+    | 'rectification'
+    | 'erasure'
+    | 'portability'
+    | 'restriction'
+    | 'objection';
   submittedAt: Date;
   details?: string;
   status: 'pending' | 'processing' | 'completed' | 'rejected';
@@ -203,7 +223,18 @@ export interface HIPAAConfig {
 
 export interface PHIClassification {
   isPHI: boolean;
-  dataType: 'name' | 'address' | 'date' | 'phone' | 'email' | 'ssn' | 'medical_record' | 'health_plan' | 'biometric' | 'photo' | 'other';
+  dataType:
+    | 'name'
+    | 'address'
+    | 'date'
+    | 'phone'
+    | 'email'
+    | 'ssn'
+    | 'medical_record'
+    | 'health_plan'
+    | 'biometric'
+    | 'photo'
+    | 'other';
   sensitivityLevel: 'low' | 'medium' | 'high' | 'critical';
 }
 
@@ -212,7 +243,14 @@ export interface HIPAAAuditLog {
   timestamp: Date;
   userId: string;
   patientId?: string;
-  action: 'create' | 'read' | 'update' | 'delete' | 'print' | 'export' | 'transmit';
+  action:
+    | 'create'
+    | 'read'
+    | 'update'
+    | 'delete'
+    | 'print'
+    | 'export'
+    | 'transmit';
   resource: string;
   resourceId: string;
   phi?: PHIClassification;
@@ -229,21 +267,32 @@ export interface HIPAAService {
   // PHI Protection
   classifyData(data: Record<string, unknown>): PHIClassification;
   encryptPHI(data: Record<string, unknown>): Promise<EncryptedData>;
-  decryptPHI(encryptedData: EncryptedData, authorization: PHIAuthorization): Promise<any>;
-  
+  decryptPHI(
+    encryptedData: EncryptedData,
+    authorization: PHIAuthorization
+  ): Promise<any>;
+
   // Access control
-  authorizeAccess(userId: string, patientId: string, action: string): Promise<PHIAuthorization>;
+  authorizeAccess(
+    userId: string,
+    patientId: string,
+    action: string
+  ): Promise<PHIAuthorization>;
   checkAuthorization(authorization: PHIAuthorization): boolean;
-  
+
   // Audit logging
   logAccess(log: Omit<HIPAAAuditLog, 'id' | 'timestamp'>): Promise<void>;
-  getAccessLog(patientId: string, startDate?: Date, endDate?: Date): Promise<HIPAAAuditLog[]>;
+  getAccessLog(
+    patientId: string,
+    startDate?: Date,
+    endDate?: Date
+  ): Promise<HIPAAAuditLog[]>;
   getAuditReport(filters: AuditFilter): Promise<AuditReport>;
-  
+
   // Breach notification
   reportBreach(breach: BreachIncident): Promise<void>;
   getBreachLog(): Promise<BreachIncident[]>;
-  
+
   // Training and awareness
   recordTraining(userId: string, training: SecurityTraining): Promise<void>;
   getTrainingStatus(userId: string): Promise<TrainingStatus>;
@@ -271,7 +320,12 @@ export interface BreachIncident {
   reportedAt?: Date;
   affectedRecords: number;
   dataTypes: string[];
-  cause: 'theft' | 'loss' | 'unauthorized_access' | 'improper_disposal' | 'other';
+  cause:
+    | 'theft'
+    | 'loss'
+    | 'unauthorized_access'
+    | 'improper_disposal'
+    | 'other';
   description: string;
   containmentActions: string[];
   notificationsSent: boolean;
@@ -316,7 +370,11 @@ export interface AuditReport {
 }
 
 export interface AuditAnomaly {
-  type: 'unusual_time' | 'excessive_access' | 'unauthorized_attempt' | 'location_change';
+  type:
+    | 'unusual_time'
+    | 'excessive_access'
+    | 'unauthorized_attempt'
+    | 'location_change';
   userId: string;
   timestamp: Date;
   details: string;
@@ -341,16 +399,38 @@ export interface SOXControl {
   name: string;
   description: string;
   type: 'preventive' | 'detective' | 'corrective';
-  category: 'access' | 'change_management' | 'segregation_of_duties' | 'data_integrity' | 'monitoring';
-  frequency: 'real_time' | 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'annual';
+  category:
+    | 'access'
+    | 'change_management'
+    | 'segregation_of_duties'
+    | 'data_integrity'
+    | 'monitoring';
+  frequency:
+    | 'real_time'
+    | 'daily'
+    | 'weekly'
+    | 'monthly'
+    | 'quarterly'
+    | 'annual';
   owner: string;
   lastTested?: Date;
-  effectiveness: 'effective' | 'partially_effective' | 'ineffective' | 'not_tested';
+  effectiveness:
+    | 'effective'
+    | 'partially_effective'
+    | 'ineffective'
+    | 'not_tested';
 }
 
 export interface FinancialDataTag {
   isFinancial: boolean;
-  dataType: 'revenue' | 'expense' | 'asset' | 'liability' | 'equity' | 'transaction' | 'journal_entry';
+  dataType:
+    | 'revenue'
+    | 'expense'
+    | 'asset'
+    | 'liability'
+    | 'equity'
+    | 'transaction'
+    | 'journal_entry';
   materialityLevel: 'immaterial' | 'material' | 'highly_material';
   requiresApproval: boolean;
   approvalThreshold?: number;
@@ -390,25 +470,35 @@ export interface ChangeTest {
 export interface SOXService {
   // Financial data controls
   tagFinancialData(data: Record<string, unknown>): FinancialDataTag;
-  validateFinancialTransaction(transaction: Record<string, unknown>): Promise<ValidationResult>;
-  
+  validateFinancialTransaction(
+    transaction: Record<string, unknown>
+  ): Promise<ValidationResult>;
+
   // Change management
-  requestChange(change: Omit<ChangeRequest, 'id' | 'requestedAt' | 'status'>): Promise<ChangeRequest>;
-  approveChange(changeId: string, approval: Omit<ChangeApproval, 'approvedAt'>): Promise<void>;
-  implementChange(changeId: string, implementation: ChangeImplementation): Promise<void>;
-  
+  requestChange(
+    change: Omit<ChangeRequest, 'id' | 'requestedAt' | 'status'>
+  ): Promise<ChangeRequest>;
+  approveChange(
+    changeId: string,
+    approval: Omit<ChangeApproval, 'approvedAt'>
+  ): Promise<void>;
+  implementChange(
+    changeId: string,
+    implementation: ChangeImplementation
+  ): Promise<void>;
+
   // Segregation of duties
   validateSegregationOfDuties(userId: string, action: string): Promise<boolean>;
   getConflictingRoles(roleId: string): Promise<string[]>;
-  
+
   // Audit trail
   logChange(entity: string, changes: ChangeSet, userId: string): Promise<void>;
   getAuditLog(filters: SOXAuditFilter): Promise<SOXAuditEntry[]>;
-  
+
   // Control testing
   testControl(controlId: string): Promise<ControlTestResult>;
   getControlEffectiveness(): Promise<ControlEffectivenessReport>;
-  
+
   // Compliance reporting
   generateSOXReport(period: ReportPeriod): Promise<SOXComplianceReport>;
   getCertificationStatus(): Promise<CertificationStatus>;
@@ -534,19 +624,21 @@ export interface ComplianceManager {
   // Configuration
   configure(config: ComplianceConfig): Promise<void>;
   getConfiguration(): ComplianceConfig;
-  
+
   // Services
   gdpr: GDPRService;
   hipaa: HIPAAService;
   sox: SOXService;
-  
+
   // Common operations
   classifyData(data: Record<string, unknown>): Promise<DataClassification>;
   applyRetentionPolicy(policy: RetentionPolicy): Promise<void>;
   getComplianceStatus(): Promise<ComplianceStatus>;
-  
+
   // Audit and reporting
-  generateComplianceReport(regulations?: ('gdpr' | 'hipaa' | 'sox')[]): Promise<ComplianceReport>;
+  generateComplianceReport(
+    regulations?: ('gdpr' | 'hipaa' | 'sox')[]
+  ): Promise<ComplianceReport>;
   exportAuditLog(filters?: AuditFilter): Promise<AuditEntry[]>;
 }
 
@@ -618,4 +710,6 @@ export interface HIPAAComplianceReport {
 }
 
 // Factory function types
-export type ComplianceServiceFactory = (config: ComplianceConfig) => Promise<ComplianceManager>;
+export type ComplianceServiceFactory = (
+  config: ComplianceConfig
+) => Promise<ComplianceManager>;

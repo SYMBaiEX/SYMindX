@@ -330,7 +330,9 @@ export class SimpleEventBus implements EventBus {
 
         this.events = this.events.filter((event) => {
           const isRecent = event.timestamp.getTime() > cutoff;
-          const isContextValid = !event.context?.expires_at || event.context.expires_at.getTime() > Date.now();
+          const isContextValid =
+            !event.context?.expires_at ||
+            event.context.expires_at.getTime() > Date.now();
           return isRecent && isContextValid;
         });
 
@@ -349,7 +351,10 @@ export class SimpleEventBus implements EventBus {
 
   // New private methods for context support
 
-  private processEventContext(event: AgentEvent, context?: EventContext): AgentEvent {
+  private processEventContext(
+    event: AgentEvent,
+    context?: EventContext
+  ): AgentEvent {
     const rule = this.getPropagationRule(event.type);
     let processedContext = context;
 
@@ -357,44 +362,72 @@ export class SimpleEventBus implements EventBus {
       // Check propagation depth
       const currentDepth = context.propagation_depth || 0;
       if (currentDepth >= (rule.max_depth || 10)) {
-        runtimeLogger.warn(`Event context propagation depth exceeded for ${event.type}`, {
-          metadata: { eventId: event.id, depth: currentDepth, maxDepth: rule.max_depth }
-        });
+        runtimeLogger.warn(
+          `Event context propagation depth exceeded for ${event.type}`,
+          {
+            metadata: {
+              eventId: event.id,
+              depth: currentDepth,
+              maxDepth: rule.max_depth,
+            },
+          }
+        );
         processedContext = undefined;
       } else {
         // Increment depth and set expiration if needed
         processedContext = {
           ...context,
           propagation_depth: currentDepth + 1,
-          expires_at: context.expires_at || (rule.ttl_seconds ? 
-            new Date(Date.now() + rule.ttl_seconds * 1000) : undefined
-          )
+          expires_at:
+            context.expires_at ||
+            (rule.ttl_seconds
+              ? new Date(Date.now() + rule.ttl_seconds * 1000)
+              : undefined),
         };
       }
     }
 
     return {
       ...event,
-      context: processedContext
+      context: processedContext,
     };
   }
 
   private emitToContextListeners(event: AgentEvent): void {
     for (const [agentId, subscription] of this.contextSubscriptions) {
-      if (subscription.eventTypes.has(event.type) || subscription.eventTypes.has('*')) {
-        if (!subscription.filter || this.matchesContextFilter(event, subscription.filter)) {
+      if (
+        subscription.eventTypes.has(event.type) ||
+        subscription.eventTypes.has('*')
+      ) {
+        if (
+          !subscription.filter ||
+          this.matchesContextFilter(event, subscription.filter)
+        ) {
           // Emit specifically to this agent's context-aware handlers
-          this.emitter.emit(`context:${agentId}:${event.type}`, event, event.context);
+          this.emitter.emit(
+            `context:${agentId}:${event.type}`,
+            event,
+            event.context
+          );
         }
       }
     }
   }
 
-  private matchesContextFilter(event: AgentEvent, filter: EventContextFilter): boolean {
+  private matchesContextFilter(
+    event: AgentEvent,
+    filter: EventContextFilter
+  ): boolean {
     const context = event.context;
-    if (!context) return !filter.correlation_id && !filter.chain_id && !filter.origin_agent_id;
+    if (!context)
+      return (
+        !filter.correlation_id && !filter.chain_id && !filter.origin_agent_id
+      );
 
-    if (filter.correlation_id && context.correlation_id !== filter.correlation_id) {
+    if (
+      filter.correlation_id &&
+      context.correlation_id !== filter.correlation_id
+    ) {
       return false;
     }
 
@@ -402,30 +435,46 @@ export class SimpleEventBus implements EventBus {
       return false;
     }
 
-    if (filter.origin_agent_id && context.origin_agent_id !== filter.origin_agent_id) {
+    if (
+      filter.origin_agent_id &&
+      context.origin_agent_id !== filter.origin_agent_id
+    ) {
       return false;
     }
 
-    if (filter.priority_min !== undefined && (context.priority || 0) < filter.priority_min) {
+    if (
+      filter.priority_min !== undefined &&
+      (context.priority || 0) < filter.priority_min
+    ) {
       return false;
     }
 
-    if (filter.priority_max !== undefined && (context.priority || 0) > filter.priority_max) {
+    if (
+      filter.priority_max !== undefined &&
+      (context.priority || 0) > filter.priority_max
+    ) {
       return false;
     }
 
-    if (filter.max_depth !== undefined && (context.propagation_depth || 0) > filter.max_depth) {
+    if (
+      filter.max_depth !== undefined &&
+      (context.propagation_depth || 0) > filter.max_depth
+    ) {
       return false;
     }
 
     if (filter.tags && filter.tags.length > 0) {
       const contextTags = context.tags || [];
-      if (!filter.tags.some(tag => contextTags.includes(tag))) {
+      if (!filter.tags.some((tag) => contextTags.includes(tag))) {
         return false;
       }
     }
 
-    if (!filter.include_expired && context.expires_at && context.expires_at.getTime() < Date.now()) {
+    if (
+      !filter.include_expired &&
+      context.expires_at &&
+      context.expires_at.getTime() < Date.now()
+    ) {
       return false;
     }
 
@@ -434,19 +483,26 @@ export class SimpleEventBus implements EventBus {
 }
 
 // Export context-related helper functions for backward compatibility
-export function createEventContext(options: Partial<EventContext> = {}): EventContext {
+export function createEventContext(
+  options: Partial<EventContext> = {}
+): EventContext {
   return {
-    correlation_id: options.correlation_id || `ctx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    correlation_id:
+      options.correlation_id ||
+      `ctx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     timestamp: new Date(),
     propagation_depth: 0,
-    ...options
+    ...options,
   };
 }
 
-export function createEventWithContext(event: Omit<AgentEvent, 'context'>, context?: EventContext): AgentEvent {
+export function createEventWithContext(
+  event: Omit<AgentEvent, 'context'>,
+  context?: EventContext
+): AgentEvent {
   return {
     ...event,
-    context
+    context,
   };
 }
 

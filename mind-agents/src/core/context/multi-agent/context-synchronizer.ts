@@ -1,6 +1,6 @@
 /**
  * Context Synchronizer for Multi-Agent Systems
- * 
+ *
  * Handles real-time synchronization of context data across agents,
  * manages network partitions, and ensures eventual consistency.
  */
@@ -13,7 +13,7 @@ import {
   ContextUpdate,
   VectorClock,
   CausalEvent,
-  ContextOperation
+  ContextOperation,
 } from '../../../types/context/multi-agent-context';
 import { AgentId, OperationResult, Timestamp } from '../../../types/helpers';
 import { runtimeLogger } from '../../../utils/logger';
@@ -77,12 +77,12 @@ export class ContextSynchronizer extends EventEmitter {
       runtimeLogger.debug('Starting context synchronization', {
         agentId,
         syncMode,
-        contextVersion: context.version
+        contextVersion: context.version,
       });
 
       // Update local context
       this.agentContexts.set(agentId, context);
-      
+
       // Update vector clock
       this.updateVectorClock(agentId);
       context.vectorClock = this.vectorClocks.get(agentId)!;
@@ -93,7 +93,7 @@ export class ContextSynchronizer extends EventEmitter {
         agentId,
         timestamp: new Date().toISOString(),
         vectorClock: context.vectorClock,
-        operation: 'sync'
+        operation: 'sync',
       };
 
       this.addCausalEvent(agentId, causalEvent);
@@ -111,14 +111,14 @@ export class ContextSynchronizer extends EventEmitter {
         contextVersion: context.version,
         syncMode,
         syncTime,
-        success: syncResult.success
+        success: syncResult.success,
       });
 
       runtimeLogger.debug('Context synchronization completed', {
         agentId,
         syncMode,
         syncTime,
-        success: syncResult.success
+        success: syncResult.success,
       });
 
       return {
@@ -127,18 +127,17 @@ export class ContextSynchronizer extends EventEmitter {
           agentId,
           contextVersion: context.version,
           syncTime,
-          syncMode
+          syncMode,
         },
         metadata: {
           operation: 'synchronizeContext',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
-
     } catch (error) {
       runtimeLogger.error('Context synchronization failed', error as Error, {
         agentId,
-        syncMode
+        syncMode,
       });
 
       await this.updateSyncStatus(agentId, false);
@@ -148,8 +147,8 @@ export class ContextSynchronizer extends EventEmitter {
         error: `Synchronization failed: ${(error as Error).message}`,
         metadata: {
           operation: 'synchronizeContext',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
     }
   }
@@ -167,7 +166,7 @@ export class ContextSynchronizer extends EventEmitter {
         agents: new Set(affectedAgents),
         startTime: new Date().toISOString(),
         isActive: true,
-        lastActivity: new Date().toISOString()
+        lastActivity: new Date().toISOString(),
       };
 
       this.networkPartitions.set(partitionId, partition);
@@ -184,12 +183,12 @@ export class ContextSynchronizer extends EventEmitter {
       this.emit('partitionDetected', {
         partitionId,
         affectedAgents,
-        timestamp: partition.startTime
+        timestamp: partition.startTime,
       });
 
       runtimeLogger.warn('Network partition detected', {
         partitionId,
-        affectedAgents: affectedAgents.length
+        affectedAgents: affectedAgents.length,
       });
 
       return {
@@ -197,22 +196,21 @@ export class ContextSynchronizer extends EventEmitter {
         data: {
           partitionId,
           affectedAgents,
-          startTime: partition.startTime
+          startTime: partition.startTime,
         },
         metadata: {
           operation: 'handlePartition',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
-
     } catch (error) {
       return {
         success: false,
         error: `Partition handling failed: ${(error as Error).message}`,
         metadata: {
           operation: 'handlePartition',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
     }
   }
@@ -230,18 +228,18 @@ export class ContextSynchronizer extends EventEmitter {
         return {
           success: false,
           error: 'Partition not found',
-          metadata: { operation: 'recoverFromPartition' }
+          metadata: { operation: 'recoverFromPartition' },
         };
       }
 
       runtimeLogger.debug('Starting partition recovery', {
         partitionId,
-        mergingAgents: mergingAgents.length
+        mergingAgents: mergingAgents.length,
       });
 
       // Merge contexts from partitioned agents
       const mergeResults = await this.mergePartitionedContexts(mergingAgents);
-      
+
       // Reconcile vector clocks
       await this.reconcileVectorClocks(mergingAgents);
 
@@ -262,13 +260,13 @@ export class ContextSynchronizer extends EventEmitter {
       this.emit('partitionRecovered', {
         partitionId,
         recoveredAgents: mergingAgents,
-        mergeResults
+        mergeResults,
       });
 
       runtimeLogger.info('Partition recovery completed', {
         partitionId,
         recoveredAgents: mergingAgents.length,
-        conflictsResolved: mergeResults.conflictsResolved
+        conflictsResolved: mergeResults.conflictsResolved,
       });
 
       return {
@@ -276,18 +274,17 @@ export class ContextSynchronizer extends EventEmitter {
         data: {
           partitionId,
           recoveredAgents: mergingAgents,
-          conflictsResolved: mergeResults.conflictsResolved
+          conflictsResolved: mergeResults.conflictsResolved,
         },
         metadata: {
           operation: 'recoverFromPartition',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
-
     } catch (error) {
       runtimeLogger.error('Partition recovery failed', error as Error, {
         partitionId,
-        mergingAgents: mergingAgents.length
+        mergingAgents: mergingAgents.length,
       });
 
       return {
@@ -295,8 +292,8 @@ export class ContextSynchronizer extends EventEmitter {
         error: `Partition recovery failed: ${(error as Error).message}`,
         metadata: {
           operation: 'recoverFromPartition',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
     }
   }
@@ -310,11 +307,14 @@ export class ContextSynchronizer extends EventEmitter {
         // Remove oldest update
         const oldestUpdateId = this.pendingUpdates.keys().next().value;
         this.pendingUpdates.delete(oldestUpdateId);
-        
-        runtimeLogger.warn('Pending updates queue full, removed oldest update', {
-          removedUpdateId: oldestUpdateId,
-          queueSize: this.pendingUpdates.size
-        });
+
+        runtimeLogger.warn(
+          'Pending updates queue full, removed oldest update',
+          {
+            removedUpdateId: oldestUpdateId,
+            queueSize: this.pendingUpdates.size,
+          }
+        );
       }
 
       this.pendingUpdates.set(update.updateId, update);
@@ -328,22 +328,21 @@ export class ContextSynchronizer extends EventEmitter {
         success: true,
         data: {
           updateId: update.updateId,
-          queueSize: this.pendingUpdates.size
+          queueSize: this.pendingUpdates.size,
         },
         metadata: {
           operation: 'addPendingUpdate',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
-
     } catch (error) {
       return {
         success: false,
         error: `Failed to add pending update: ${(error as Error).message}`,
         metadata: {
           operation: 'addPendingUpdate',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
     }
   }
@@ -358,7 +357,7 @@ export class ContextSynchronizer extends EventEmitter {
       let failedCount = 0;
 
       runtimeLogger.debug('Processing pending updates', {
-        totalUpdates: updateIds.length
+        totalUpdates: updateIds.length,
       });
 
       for (const updateId of updateIds) {
@@ -366,9 +365,13 @@ export class ContextSynchronizer extends EventEmitter {
           await this.processPendingUpdate(updateId);
           processedCount++;
         } catch (error) {
-          runtimeLogger.error('Failed to process pending update', error as Error, {
-            updateId
-          });
+          runtimeLogger.error(
+            'Failed to process pending update',
+            error as Error,
+            {
+              updateId,
+            }
+          );
           failedCount++;
         }
       }
@@ -378,22 +381,21 @@ export class ContextSynchronizer extends EventEmitter {
         data: {
           totalUpdates: updateIds.length,
           processedCount,
-          failedCount
+          failedCount,
         },
         metadata: {
           operation: 'processPendingUpdates',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
-
     } catch (error) {
       return {
         success: false,
         error: `Failed to process pending updates: ${(error as Error).message}`,
         metadata: {
           operation: 'processPendingUpdates',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
     }
   }
@@ -432,17 +434,17 @@ export class ContextSynchronizer extends EventEmitter {
     switch (syncMode) {
       case 'realtime':
         return this.performRealtimeSync(agentId, context);
-      
+
       case 'eventual':
         return this.performEventualSync(agentId, context);
-      
+
       case 'batch':
         return this.performBatchSync(agentId, context);
-      
+
       case 'manual':
         // Manual sync - just store locally
         return { success: true, syncedAgents: [agentId] };
-      
+
       default:
         throw new Error(`Unknown sync mode: ${syncMode}`);
     }
@@ -456,7 +458,7 @@ export class ContextSynchronizer extends EventEmitter {
     context: AgentContext
   ): Promise<{ success: boolean; syncedAgents: AgentId[] }> {
     const syncedAgents: AgentId[] = [];
-    
+
     // Sync with all agents that have this context shared
     for (const sharedAgentId of context.sharedWith) {
       if (sharedAgentId !== agentId) {
@@ -466,7 +468,7 @@ export class ContextSynchronizer extends EventEmitter {
         } catch (error) {
           runtimeLogger.error('Failed to sync with agent', error as Error, {
             sourceAgent: agentId,
-            targetAgent: sharedAgentId
+            targetAgent: sharedAgentId,
           });
         }
       }
@@ -489,7 +491,7 @@ export class ContextSynchronizer extends EventEmitter {
       timestamp: new Date().toISOString(),
       operation: 'update',
       fieldPath: '',
-      newValue: context
+      newValue: context,
     };
 
     await this.addPendingUpdate(update);
@@ -517,7 +519,7 @@ export class ContextSynchronizer extends EventEmitter {
   ): Promise<void> {
     // In a real implementation, this would send the context to the target agent
     // For now, we'll just simulate the sync
-    
+
     const targetContext = this.agentContexts.get(targetAgentId);
     if (targetContext) {
       // Merge contexts if there's a conflict
@@ -527,18 +529,18 @@ export class ContextSynchronizer extends EventEmitter {
           sourceAgent: sourceAgentId,
           targetAgent: targetAgentId,
           sourceVersion: context.version,
-          targetVersion: targetContext.version
+          targetVersion: targetContext.version,
         });
       }
     }
 
     // Update the target agent's context
     this.agentContexts.set(targetAgentId, { ...context });
-    
+
     runtimeLogger.debug('Context synced with agent', {
       sourceAgent: sourceAgentId,
       targetAgent: targetAgentId,
-      contextVersion: context.version
+      contextVersion: context.version,
     });
   }
 
@@ -558,11 +560,10 @@ export class ContextSynchronizer extends EventEmitter {
       }
 
       this.pendingUpdates.delete(updateId);
-      
     } catch (error) {
       runtimeLogger.error('Failed to process pending update', error as Error, {
         updateId,
-        agentId: update.agentId
+        agentId: update.agentId,
       });
       throw error;
     }
@@ -575,7 +576,7 @@ export class ContextSynchronizer extends EventEmitter {
     if (!this.vectorClocks.has(agentId)) {
       this.vectorClocks.set(agentId, {
         clocks: { [agentId]: 0 },
-        version: 1
+        version: 1,
       });
     }
 
@@ -604,9 +605,12 @@ export class ContextSynchronizer extends EventEmitter {
   /**
    * Update sync status for an agent
    */
-  private async updateSyncStatus(agentId: AgentId, success: boolean): Promise<void> {
+  private async updateSyncStatus(
+    agentId: AgentId,
+    success: boolean
+  ): Promise<void> {
     let status = this.syncStatus.get(agentId);
-    
+
     if (!status) {
       status = {
         lastSyncTime: new Date().toISOString(),
@@ -614,7 +618,7 @@ export class ContextSynchronizer extends EventEmitter {
         pendingUpdates: [],
         conflictCount: 0,
         syncMode: this.config.mode,
-        isHealthy: true
+        isHealthy: true,
       };
       this.syncStatus.set(agentId, status);
     }
@@ -630,20 +634,23 @@ export class ContextSynchronizer extends EventEmitter {
   /**
    * Merge contexts from partitioned agents
    */
-  private async mergePartitionedContexts(agents: AgentId[]): Promise<{ conflictsResolved: number }> {
+  private async mergePartitionedContexts(
+    agents: AgentId[]
+  ): Promise<{ conflictsResolved: number }> {
     let conflictsResolved = 0;
 
     // Simple merge strategy - in a real implementation, this would be more sophisticated
     for (let i = 0; i < agents.length - 1; i++) {
       const agent1 = agents[i];
       const agent2 = agents[i + 1];
-      
+
       const context1 = this.agentContexts.get(agent1);
       const context2 = this.agentContexts.get(agent2);
-      
+
       if (context1 && context2 && context1.version !== context2.version) {
         // Merge contexts (simplified)
-        const mergedContext = context1.version > context2.version ? context1 : context2;
+        const mergedContext =
+          context1.version > context2.version ? context1 : context2;
         this.agentContexts.set(agent1, mergedContext);
         this.agentContexts.set(agent2, mergedContext);
         conflictsResolved++;
@@ -663,8 +670,13 @@ export class ContextSynchronizer extends EventEmitter {
     for (const agentId of agents) {
       const vectorClock = this.vectorClocks.get(agentId);
       if (vectorClock) {
-        for (const [clockAgent, clockValue] of Object.entries(vectorClock.clocks)) {
-          allClocks[clockAgent] = Math.max(allClocks[clockAgent] || 0, clockValue);
+        for (const [clockAgent, clockValue] of Object.entries(
+          vectorClock.clocks
+        )) {
+          allClocks[clockAgent] = Math.max(
+            allClocks[clockAgent] || 0,
+            clockValue
+          );
         }
       }
     }
@@ -673,7 +685,7 @@ export class ContextSynchronizer extends EventEmitter {
     for (const agentId of agents) {
       this.vectorClocks.set(agentId, {
         clocks: { ...allClocks },
-        version: Math.max(...Object.values(allClocks)) + 1
+        version: Math.max(...Object.values(allClocks)) + 1,
       });
     }
   }
@@ -684,7 +696,7 @@ export class ContextSynchronizer extends EventEmitter {
   private setupPeriodicSync(): void {
     if (this.config.mode === 'batch') {
       setInterval(() => {
-        this.processPendingUpdates().catch(error => {
+        this.processPendingUpdates().catch((error) => {
           runtimeLogger.error('Periodic sync failed', error as Error);
         });
       }, this.config.heartbeatInterval);
@@ -705,18 +717,18 @@ export class ContextSynchronizer extends EventEmitter {
    */
   private performHealthCheck(): void {
     const now = Date.now();
-    
+
     for (const [agentId, status] of this.syncStatus.entries()) {
       const lastSyncTime = new Date(status.lastSyncTime).getTime();
       const timeSinceLastSync = now - lastSyncTime;
-      
+
       if (timeSinceLastSync > this.config.syncTimeout) {
         status.isHealthy = false;
-        
+
         this.emit('syncHealthDegraded', {
           agentId,
           lastSyncTime: status.lastSyncTime,
-          timeSinceLastSync
+          timeSinceLastSync,
         });
       }
     }
@@ -727,10 +739,12 @@ export class ContextSynchronizer extends EventEmitter {
    */
   getStatistics() {
     const totalAgents = this.agentContexts.size;
-    const healthyAgents = Array.from(this.syncStatus.values())
-      .filter(s => s.isHealthy).length;
-    const activePartitions = Array.from(this.networkPartitions.values())
-      .filter(p => p.isActive).length;
+    const healthyAgents = Array.from(this.syncStatus.values()).filter(
+      (s) => s.isHealthy
+    ).length;
+    const activePartitions = Array.from(this.networkPartitions.values()).filter(
+      (p) => p.isActive
+    ).length;
 
     return {
       totalAgents,
@@ -739,7 +753,7 @@ export class ContextSynchronizer extends EventEmitter {
       pendingUpdates: this.pendingUpdates.size,
       activePartitions,
       totalPartitions: this.networkPartitions.size,
-      vectorClocks: this.vectorClocks.size
+      vectorClocks: this.vectorClocks.size,
     };
   }
 

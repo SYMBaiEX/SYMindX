@@ -65,16 +65,18 @@ export function createTestEnvironment() {
     profiler,
     contextFactory,
     configFactory,
-    
+
     // Quick access to common utilities
     createContext: contextFactory.createBasicContext,
     createConfig: configFactory.createBasicConfig,
-    
+
     // Setup helpers
     setupBasic: () => harness.setupBasicScenario(),
-    setupMultiParticipant: (count: number) => harness.setupMultiParticipantScenario(count),
-    setupConversation: (messageCount: number) => harness.setupConversationHistory(messageCount),
-    
+    setupMultiParticipant: (count: number) =>
+      harness.setupMultiParticipantScenario(count),
+    setupConversation: (messageCount: number) =>
+      harness.setupConversationHistory(messageCount),
+
     // Cleanup
     cleanup: () => {
       harness.resetAll();
@@ -125,7 +127,10 @@ export const TestPatterns = {
   /**
    * Integration test pattern
    */
-  integrationTest: (description: string, testFn: () => Promise<void> | void) => ({
+  integrationTest: (
+    description: string,
+    testFn: () => Promise<void> | void
+  ) => ({
     description,
     testFn,
     type: 'integration' as const,
@@ -200,7 +205,9 @@ export class TestSuiteBuilder {
     testFn: (profiler: PerformanceProfiler) => Promise<void>,
     thresholds?: { maxTime?: number; maxMemory?: number }
   ) {
-    this.tests.push(TestPatterns.performanceTest(description, testFn, thresholds));
+    this.tests.push(
+      TestPatterns.performanceTest(description, testFn, thresholds)
+    );
     return this;
   }
 

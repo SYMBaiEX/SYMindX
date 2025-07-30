@@ -1,12 +1,12 @@
 /**
  * Refactored Anthropic Portal Implementation Example
- * 
+ *
  * This demonstrates how the shared utilities dramatically reduce code duplication
  * and improve maintainability across portal implementations.
  */
 
 import { generateText } from 'ai';
-import { 
+import {
   PortalConfig,
   TextGenerationOptions,
   TextGenerationResult,
@@ -36,7 +36,7 @@ export interface AnthropicConfig extends PortalConfig {
 
 /**
  * Simplified Anthropic Portal using shared utilities
- * 
+ *
  * Compare this implementation to the original - much cleaner!
  */
 export class RefactoredAnthropicPortal extends BasePortal {
@@ -46,7 +46,7 @@ export class RefactoredAnthropicPortal extends BasePortal {
     ModelType.CHAT,
     ModelType.MULTIMODAL,
   ];
-  
+
   private helper: ReturnType<typeof createPortalHelper>;
   private provider: any;
 
@@ -58,7 +58,7 @@ export class RefactoredAnthropicPortal extends BasePortal {
 
     // Create provider using shared factory
     const providerConfig: ProviderConfig = {
-      apiKey: config.apiKey || process.env["ANTHROPIC_API_KEY"],
+      apiKey: config.apiKey || process.env['ANTHROPIC_API_KEY'],
       baseURL: config.baseURL,
     };
 
@@ -72,24 +72,34 @@ export class RefactoredAnthropicPortal extends BasePortal {
     prompt: string,
     options?: TextGenerationOptions
   ): Promise<TextGenerationResult> {
-    return this.helper.withRetry(async () => {
-      const model = this.helper.resolveModel('chat', options?.model);
-      const languageModel = this.helper.getLanguageModel(this.provider, model);
+    return this.helper.withRetry(
+      async () => {
+        const model = this.helper.resolveModel('chat', options?.model);
+        const languageModel = this.helper.getLanguageModel(
+          this.provider,
+          model
+        );
 
-      const params = this.helper.buildTextParams({
-        model: languageModel,
-        prompt,
-      }, options);
+        const params = this.helper.buildTextParams(
+          {
+            model: languageModel,
+            prompt,
+          },
+          options
+        );
 
-      const result = await generateText(params);
+        const result = await generateText(params);
 
-      return {
-        text: result.text,
-        usage: convertUsage(result.usage),
-        finishReason: this.helper.mapFinishReason(result.finishReason),
-        metadata: { model, provider: 'anthropic' },
-      };
-    }, 'generateText', options?.model);
+        return {
+          text: result.text,
+          usage: convertUsage(result.usage),
+          finishReason: this.helper.mapFinishReason(result.finishReason),
+          metadata: { model, provider: 'anthropic' },
+        };
+      },
+      'generateText',
+      options?.model
+    );
   }
 
   /**
@@ -99,33 +109,46 @@ export class RefactoredAnthropicPortal extends BasePortal {
     messages: ChatMessage[],
     options?: ChatGenerationOptions
   ): Promise<ChatGenerationResult> {
-    return this.helper.withRetry(async () => {
-      const model = this.helper.resolveModel('chat', options?.model);
-      const languageModel = this.helper.getLanguageModel(this.provider, model);
-      const modelMessages = this.helper.convertMessages(messages);
+    return this.helper.withRetry(
+      async () => {
+        const model = this.helper.resolveModel('chat', options?.model);
+        const languageModel = this.helper.getLanguageModel(
+          this.provider,
+          model
+        );
+        const modelMessages = this.helper.convertMessages(messages);
 
-      const params = this.helper.buildChatParams({
-        model: languageModel,
-        messages: modelMessages,
-      }, options);
+        const params = this.helper.buildChatParams(
+          {
+            model: languageModel,
+            messages: modelMessages,
+          },
+          options
+        );
 
-      // Add Anthropic-specific options
-      if ((this.config as AnthropicConfig).enableComputerUse && params.tools) {
-        params.providerOptions = {
-          anthropic: { betaVersion: 'computer-use-2024-10-22' }
+        // Add Anthropic-specific options
+        if (
+          (this.config as AnthropicConfig).enableComputerUse &&
+          params.tools
+        ) {
+          params.providerOptions = {
+            anthropic: { betaVersion: 'computer-use-2024-10-22' },
+          };
+        }
+
+        const result = await generateText(params);
+
+        return {
+          text: result.text,
+          message: { role: MessageRole.ASSISTANT, content: result.text },
+          usage: convertUsage(result.usage),
+          finishReason: this.helper.mapFinishReason(result.finishReason),
+          metadata: { model, provider: 'anthropic' },
         };
-      }
-
-      const result = await generateText(params);
-
-      return {
-        text: result.text,
-        message: { role: MessageRole.ASSISTANT, content: result.text },
-        usage: convertUsage(result.usage),
-        finishReason: this.helper.mapFinishReason(result.finishReason),
-        metadata: { model, provider: 'anthropic' },
-      };
-    }, 'generateChat', options?.model);
+      },
+      'generateChat',
+      options?.model
+    );
   }
 
   /**
@@ -142,7 +165,7 @@ export class RefactoredAnthropicPortal extends BasePortal {
   }
 
   /**
-   * Anthropic doesn't support image generation - clean error handling  
+   * Anthropic doesn't support image generation - clean error handling
    */
   override async generateImage(
     _prompt: string,
@@ -164,10 +187,13 @@ export class RefactoredAnthropicPortal extends BasePortal {
     const model = this.helper.resolveModel('chat', options?.model);
     const languageModel = this.helper.getLanguageModel(this.provider, model);
 
-    const params = this.helper.buildTextParams({
-      model: languageModel,
-      prompt,
-    }, options);
+    const params = this.helper.buildTextParams(
+      {
+        model: languageModel,
+        prompt,
+      },
+      options
+    );
 
     yield* this.helper.createTextStream(languageModel, params);
   }
@@ -183,13 +209,17 @@ export class RefactoredAnthropicPortal extends BasePortal {
     const languageModel = this.helper.getLanguageModel(this.provider, model);
     const modelMessages = this.helper.convertMessages(messages);
 
-    const params = this.helper.buildChatParams({
-      model: languageModel,
-      messages: modelMessages,
-    }, options);
+    const params = this.helper.buildChatParams(
+      {
+        model: languageModel,
+        messages: modelMessages,
+      },
+      options
+    );
 
     yield* this.helper.createChatStream(languageModel, params, {
-      enableToolStreaming: (this.config as AnthropicConfig).enableToolStreaming !== false
+      enableToolStreaming:
+        (this.config as AnthropicConfig).enableToolStreaming !== false,
     });
   }
 
@@ -212,31 +242,37 @@ export class RefactoredAnthropicPortal extends BasePortal {
   /**
    * Get supported models - delegated to shared utilities
    */
-  override getSupportedModelsForCapability(capability: PortalCapability): string[] {
+  override getSupportedModelsForCapability(
+    capability: PortalCapability
+  ): string[] {
     return this.helper.modelResolver.getSupportedModels(capability);
   }
 
   /**
    * Get optimal model - delegated to shared utilities
    */
-  override getOptimalModelForCapability(capability: PortalCapability): string | null {
+  override getOptimalModelForCapability(
+    capability: PortalCapability
+  ): string | null {
     return this.helper.modelResolver.getOptimalModel(capability);
   }
 }
 
 // Factory function
-export function createRefactoredAnthropicPortal(config: AnthropicConfig): RefactoredAnthropicPortal {
+export function createRefactoredAnthropicPortal(
+  config: AnthropicConfig
+): RefactoredAnthropicPortal {
   return new RefactoredAnthropicPortal(config);
 }
 
 /*
  * COMPARISON ANALYSIS:
- * 
+ *
  * Original Anthropic Portal: ~900+ lines of code
  * Refactored Portal: ~200 lines of code
- * 
+ *
  * Reduction: ~75% less code while maintaining full functionality
- * 
+ *
  * Benefits:
  * 1. Dramatic reduction in code duplication
  * 2. Consistent error handling across all portals

@@ -25,7 +25,7 @@ class PostgresConnection implements Connection {
 
   async connect(): Promise<void> {
     if (this.isConnected) return;
-    
+
     try {
       this.client = await this.pool.connect();
       this.isConnected = true;
@@ -38,7 +38,7 @@ class PostgresConnection implements Connection {
 
   async disconnect(): Promise<void> {
     if (!this.isConnected || !this.client) return;
-    
+
     try {
       this.client.release();
       this.isConnected = false;
@@ -51,7 +51,7 @@ class PostgresConnection implements Connection {
 
   async isHealthy(): Promise<boolean> {
     if (!this.isConnected || !this.client) return false;
-    
+
     try {
       const result = await this.client.query('SELECT 1');
       return result.rows.length === 1;
@@ -64,9 +64,9 @@ class PostgresConnection implements Connection {
     if (!this.isConnected || !this.client) {
       throw new Error('Connection not established');
     }
-    
+
     const timer = performanceMonitor.createTimer('db.postgres.query');
-    
+
     try {
       const result = await operation();
       timer.end();
@@ -103,19 +103,20 @@ class SQLiteConnection implements Connection {
 
   async connect(): Promise<void> {
     if (this.isConnected) return;
-    
+
     try {
       const Database = (await import('better-sqlite3')).default;
       this.db = new Database(this.dbPath, {
-        verbose: process.env.NODE_ENV === 'development' ? console.log : undefined
+        verbose:
+          process.env.NODE_ENV === 'development' ? console.log : undefined,
       });
-      
+
       // Enable WAL mode for better concurrency
       this.db.pragma('journal_mode = WAL');
       this.db.pragma('synchronous = NORMAL');
       this.db.pragma('cache_size = 1000');
       this.db.pragma('temp_store = memory');
-      
+
       this.isConnected = true;
       performanceMonitor.recordMetric('db.sqlite.connection.created', 1);
     } catch (error) {
@@ -126,7 +127,7 @@ class SQLiteConnection implements Connection {
 
   async disconnect(): Promise<void> {
     if (!this.isConnected || !this.db) return;
-    
+
     try {
       this.db.close();
       this.isConnected = false;
@@ -139,7 +140,7 @@ class SQLiteConnection implements Connection {
 
   async isHealthy(): Promise<boolean> {
     if (!this.isConnected || !this.db) return false;
-    
+
     try {
       const result = this.db.prepare('SELECT 1').get();
       return !!result;
@@ -152,9 +153,9 @@ class SQLiteConnection implements Connection {
     if (!this.isConnected || !this.db) {
       throw new Error('Connection not established');
     }
-    
+
     const timer = performanceMonitor.createTimer('db.sqlite.query');
-    
+
     try {
       const result = await operation();
       timer.end();
@@ -182,10 +183,12 @@ export class OptimizedPostgresPool {
   private connectionPool: ConnectionPool<PostgresConnection>;
   private pgPool: Pool;
 
-  constructor(config: PoolConfig & {
-    minConnections?: number;
-    maxConnections?: number;
-  }) {
+  constructor(
+    config: PoolConfig & {
+      minConnections?: number;
+      maxConnections?: number;
+    }
+  ) {
     // Create underlying PostgreSQL pool
     this.pgPool = new Pool({
       ...config,
@@ -193,7 +196,7 @@ export class OptimizedPostgresPool {
       min: config.minConnections || 2,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 5000,
-      application_name: 'symindx-optimized-pool'
+      application_name: 'symindx-optimized-pool',
     });
 
     // Create managed connection pool
@@ -204,7 +207,7 @@ export class OptimizedPostgresPool {
         maxSize: config.maxConnections || 20,
         acquireTimeoutMs: 5000,
         idleTimeoutMs: 30000,
-        validateOnBorrow: true
+        validateOnBorrow: true,
       }
     );
 
@@ -253,15 +256,21 @@ export class OptimizedPostgresPool {
     // Monitor pool stats every 30 seconds
     const monitorStats = () => {
       const stats = this.getStats();
-      
+
       performanceMonitor.recordMetric('db.postgres.pool.size', stats.size);
-      performanceMonitor.recordMetric('db.postgres.pool.available', stats.available);
+      performanceMonitor.recordMetric(
+        'db.postgres.pool.available',
+        stats.available
+      );
       performanceMonitor.recordMetric('db.postgres.pool.in_use', stats.inUse);
-      performanceMonitor.recordMetric('db.postgres.pool.wait_queue', stats.waitQueue);
-      
+      performanceMonitor.recordMetric(
+        'db.postgres.pool.wait_queue',
+        stats.waitQueue
+      );
+
       setTimeout(monitorStats, 30000);
     };
-    
+
     setTimeout(monitorStats, 1000);
 
     // Set up performance thresholds
@@ -277,11 +286,14 @@ export class OptimizedSQLitePool {
   private connectionPool: ConnectionPool<SQLiteConnection>;
   private dbPath: string;
 
-  constructor(dbPath: string, options?: {
-    maxConnections?: number;
-  }) {
+  constructor(
+    dbPath: string,
+    options?: {
+      maxConnections?: number;
+    }
+  ) {
     this.dbPath = dbPath;
-    
+
     // SQLite doesn't benefit from many concurrent connections
     const maxConnections = Math.min(options?.maxConnections || 5, 5);
 
@@ -292,7 +304,7 @@ export class OptimizedSQLitePool {
         maxSize: maxConnections,
         acquireTimeoutMs: 5000,
         idleTimeoutMs: 60000,
-        validateOnBorrow: true
+        validateOnBorrow: true,
       }
     );
 
@@ -356,15 +368,21 @@ export class OptimizedSQLitePool {
   private setupMonitoring(): void {
     const monitorStats = () => {
       const stats = this.getStats();
-      
+
       performanceMonitor.recordMetric('db.sqlite.pool.size', stats.size);
-      performanceMonitor.recordMetric('db.sqlite.pool.available', stats.available);
+      performanceMonitor.recordMetric(
+        'db.sqlite.pool.available',
+        stats.available
+      );
       performanceMonitor.recordMetric('db.sqlite.pool.in_use', stats.inUse);
-      performanceMonitor.recordMetric('db.sqlite.pool.wait_queue', stats.waitQueue);
-      
+      performanceMonitor.recordMetric(
+        'db.sqlite.pool.wait_queue',
+        stats.waitQueue
+      );
+
       setTimeout(monitorStats, 30000);
     };
-    
+
     setTimeout(monitorStats, 1000);
 
     // Set up performance thresholds

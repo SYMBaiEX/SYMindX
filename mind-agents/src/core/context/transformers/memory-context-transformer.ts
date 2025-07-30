@@ -1,6 +1,6 @@
 /**
  * Memory Context Transformer
- * 
+ *
  * Transforms unified context into memory operation-specific format,
  * optimizing for storage, retrieval, and memory management operations.
  */
@@ -16,7 +16,7 @@ import {
   ValidationConfig,
   TransformerCapabilities,
   TransformationMetadata,
-  TransformationPerformance
+  TransformationPerformance,
 } from '../../../types/context/context-transformation.js';
 import { MemoryRecord } from '../../../types/memory.js';
 import { runtimeLogger } from '../../../utils/logger.js';
@@ -30,49 +30,65 @@ export interface MemoryContext {
   sessionId: string;
   contextId: string;
   timestamp: Date;
-  
+
   // Memory operation context
-  operationType: 'store' | 'retrieve' | 'update' | 'delete' | 'search' | 'analyze';
-  
+  operationType:
+    | 'store'
+    | 'retrieve'
+    | 'update'
+    | 'delete'
+    | 'search'
+    | 'analyze';
+
   // Content for memory operations
   primaryContent: string;
   structuredContent: StructuredMemoryContent;
   contentMetadata: ContentMetadata;
-  
+
   // Memory categorization
-  memoryType: 'episodic' | 'semantic' | 'procedural' | 'working' | 'autobiographical';
+  memoryType:
+    | 'episodic'
+    | 'semantic'
+    | 'procedural'
+    | 'working'
+    | 'autobiographical';
   importance: number; // 0-1
-  persistence: 'temporary' | 'session' | 'short_term' | 'long_term' | 'permanent';
-  
+  persistence:
+    | 'temporary'
+    | 'session'
+    | 'short_term'
+    | 'long_term'
+    | 'permanent';
+
   // Contextual relationships
   relatedMemories: MemoryRelation[];
   temporalContext: TemporalContext;
   spatialContext: SpatialContext;
-  
+
   // Indexing and retrieval
   searchTags: string[];
   semanticVectors: number[];
   indexingHints: IndexingHint[];
-  
+
   // Access patterns
   accessContext: AccessContext;
   privacyLevel: 'public' | 'private' | 'confidential' | 'restricted';
-  
+
   // Memory processing
   compressionLevel: 'none' | 'light' | 'moderate' | 'aggressive';
   extractedEntities: ExtractedEntity[];
   keyPhrases: KeyPhrase[];
-  
+
   // Quality metrics
   coherence: number; // 0-1
   completeness: number; // 0-1
   reliability: number; // 0-1
-  
+
   // Storage optimization
   storageHints: StorageHint[];
   compressionRatio: number;
   estimatedSize: number;
-  
+
   // Retrieval optimization
   retrievalContext: RetrievalContext;
   queryOptimization: QueryOptimization;
@@ -88,7 +104,12 @@ export interface StructuredMemoryContent {
 }
 
 export interface ContentMetadata {
-  sourceType: 'conversation' | 'observation' | 'learning' | 'inference' | 'external';
+  sourceType:
+    | 'conversation'
+    | 'observation'
+    | 'learning'
+    | 'inference'
+    | 'external';
   confidence: number; // 0-1
   verificationStatus: 'unverified' | 'partial' | 'verified' | 'disputed';
   lastModified: Date;
@@ -119,7 +140,13 @@ export interface MemoryEvent {
 
 export interface Relationship {
   id: string;
-  type: 'causal' | 'temporal' | 'spatial' | 'conceptual' | 'emotional' | 'functional';
+  type:
+    | 'causal'
+    | 'temporal'
+    | 'spatial'
+    | 'conceptual'
+    | 'emotional'
+    | 'functional';
   subject: string;
   predicate: string;
   object: string;
@@ -147,7 +174,12 @@ export interface DecisionContext {
 
 export interface MemoryRelation {
   relatedMemoryId: string;
-  relationType: 'prerequisite' | 'consequence' | 'similar' | 'contradictory' | 'supportive';
+  relationType:
+    | 'prerequisite'
+    | 'consequence'
+    | 'similar'
+    | 'contradictory'
+    | 'supportive';
   strength: number; // 0-1
   explanation: string;
 }
@@ -193,7 +225,15 @@ export interface AccessPattern {
 
 export interface ExtractedEntity {
   text: string;
-  type: 'person' | 'place' | 'organization' | 'event' | 'concept' | 'object' | 'time' | 'number';
+  type:
+    | 'person'
+    | 'place'
+    | 'organization'
+    | 'event'
+    | 'concept'
+    | 'object'
+    | 'time'
+    | 'number';
   confidence: number;
   startPos: number;
   endPos: number;
@@ -245,7 +285,9 @@ export interface ModificationRecord {
 /**
  * Memory Context Transformer implementation
  */
-export class MemoryContextTransformer implements ContextTransformer<UnifiedContext, MemoryContext> {
+export class MemoryContextTransformer
+  implements ContextTransformer<UnifiedContext, MemoryContext>
+{
   readonly id = 'memory-context-transformer';
   readonly version = '1.0.0';
   readonly target = TransformationTarget.MEMORY;
@@ -253,11 +295,14 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
     TransformationStrategy.FULL,
     TransformationStrategy.SELECTIVE,
     TransformationStrategy.OPTIMIZED,
-    TransformationStrategy.CACHED
+    TransformationStrategy.CACHED,
   ];
   readonly reversible = true;
 
-  private transformationCache = new Map<string, TransformationResult<MemoryContext>>();
+  private transformationCache = new Map<
+    string,
+    TransformationResult<MemoryContext>
+  >();
 
   /**
    * Transform unified context to memory format
@@ -267,32 +312,38 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
     config?: TransformationConfig
   ): Promise<TransformationResult<MemoryContext>> {
     const startTime = performance.now();
-    
+
     try {
       // Check cache first
       if (config?.cache?.enabled) {
         const cacheKey = this.generateCacheKey(context, config);
         const cached = this.transformationCache.get(cacheKey);
         if (cached) {
-          runtimeLogger.debug(`Cache hit for memory transformation: ${cacheKey}`);
+          runtimeLogger.debug(
+            `Cache hit for memory transformation: ${cacheKey}`
+          );
           return {
             ...cached,
-            cached: true
+            cached: true,
           };
         }
       }
 
       // Determine strategy
       const strategy = config?.strategy || TransformationStrategy.SELECTIVE;
-      
+
       // Transform based on strategy
-      const transformedContext = await this.performTransformation(context, strategy, config);
-      
+      const transformedContext = await this.performTransformation(
+        context,
+        strategy,
+        config
+      );
+
       // Calculate performance metrics
       const duration = performance.now() - startTime;
       const inputSize = JSON.stringify(context).length;
       const outputSize = JSON.stringify(transformedContext).length;
-      
+
       const metadata: TransformationMetadata = {
         transformerId: this.id,
         transformerVersion: this.version,
@@ -303,7 +354,7 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
         fieldsDropped: this.getDroppedFields(strategy),
         fieldsAdded: this.getAddedFields(),
         validationPassed: true,
-        cacheHit: false
+        cacheHit: false,
       };
 
       const performance: TransformationPerformance = {
@@ -312,7 +363,7 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
         cpuUsage: process.cpuUsage().user,
         cacheHitRate: 0,
         compressionRatio: inputSize / outputSize,
-        throughput: outputSize / duration
+        throughput: outputSize / duration,
       };
 
       const result: TransformationResult<MemoryContext> = {
@@ -325,7 +376,7 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
         metadata,
         performance,
         reversible: this.reversible,
-        cached: false
+        cached: false,
       };
 
       // Cache result if enabled
@@ -334,13 +385,17 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
         this.transformationCache.set(cacheKey, result);
       }
 
-      runtimeLogger.debug(`Memory context transformation completed in ${duration.toFixed(2)}ms`);
+      runtimeLogger.debug(
+        `Memory context transformation completed in ${duration.toFixed(2)}ms`
+      );
       return result;
-
     } catch (error) {
       const duration = performance.now() - startTime;
-      runtimeLogger.error('Memory context transformation failed', { error, duration });
-      
+      runtimeLogger.error('Memory context transformation failed', {
+        error,
+        duration,
+      });
+
       return {
         success: false,
         error: error instanceof Error ? error.message : String(error),
@@ -359,7 +414,7 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
           fieldsDropped: [],
           fieldsAdded: [],
           validationPassed: false,
-          cacheHit: false
+          cacheHit: false,
         },
         performance: {
           duration,
@@ -367,10 +422,10 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
           cpuUsage: 0,
           cacheHitRate: 0,
           compressionRatio: 0,
-          throughput: 0
+          throughput: 0,
         },
         reversible: false,
-        cached: false
+        cached: false,
       };
     }
   }
@@ -384,7 +439,7 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
     config?: TransformationConfig
   ): Promise<MemoryContext> {
     const memoryData = context.memoryData;
-    
+
     const baseContext: MemoryContext = {
       agentId: context.agentId,
       sessionId: context.sessionId,
@@ -415,7 +470,7 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
       compressionRatio: this.calculateCompressionRatio(context),
       estimatedSize: this.estimateSize(context),
       retrievalContext: this.buildRetrievalContext(context),
-      queryOptimization: this.buildQueryOptimization(context)
+      queryOptimization: this.buildQueryOptimization(context),
     };
 
     // Apply strategy-specific optimizations
@@ -434,16 +489,18 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
   /**
    * Determine the type of memory operation
    */
-  private determineOperationType(context: UnifiedContext): 'store' | 'retrieve' | 'update' | 'delete' | 'search' | 'analyze' {
+  private determineOperationType(
+    context: UnifiedContext
+  ): 'store' | 'retrieve' | 'update' | 'delete' | 'search' | 'analyze' {
     // Analyze context to determine intended memory operation
     if (context.memoryData?.memoryQueries?.length) {
       return 'retrieve';
     }
-    
+
     if (context.messages.length > 0) {
       const lastMessage = context.messages[context.messages.length - 1];
       const content = lastMessage.content.toLowerCase();
-      
+
       if (content.includes('remember') || content.includes('save')) {
         return 'store';
       }
@@ -460,7 +517,7 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
         return 'search';
       }
     }
-    
+
     // Default to store for new content
     return 'store';
   }
@@ -472,7 +529,7 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
     if (context.messages.length > 0) {
       // Create a narrative from recent messages
       const recentMessages = context.messages.slice(-5);
-      return recentMessages.map(m => `${m.from}: ${m.content}`).join('\n');
+      return recentMessages.map((m) => `${m.from}: ${m.content}`).join('\n');
     }
     return context.content;
   }
@@ -482,14 +539,14 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
    */
   private structureContent(context: UnifiedContext): StructuredMemoryContent {
     const content = this.extractPrimaryContent(context);
-    
+
     return {
       summary: this.generateSummary(content),
       keyFacts: this.extractFacts(context),
       events: this.extractEvents(context),
       relationships: this.extractRelationships(context),
       emotions: this.extractEmotionalContext(context),
-      decisions: this.extractDecisionContext(context)
+      decisions: this.extractDecisionContext(context),
     };
   }
 
@@ -498,9 +555,11 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
    */
   private generateSummary(content: string): string {
     // Simple extractive summarization
-    const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 10);
+    const sentences = content
+      .split(/[.!?]+/)
+      .filter((s) => s.trim().length > 10);
     if (sentences.length <= 2) return content;
-    
+
     // Return first and last sentence as a basic summary
     return `${sentences[0].trim()}. ${sentences[sentences.length - 1].trim()}.`;
   }
@@ -511,7 +570,7 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
   private extractFacts(context: UnifiedContext): Fact[] {
     const facts: Fact[] = [];
     const content = this.extractPrimaryContent(context);
-    
+
     // Simple fact extraction based on declarative sentences
     const sentences = content.split(/[.!?]+/);
     sentences.forEach((sentence, index) => {
@@ -524,11 +583,11 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
           source: context.agentId,
           timestamp: context.timestamp,
           category: 'general',
-          verifiable: this.isVerifiable(sentence)
+          verifiable: this.isVerifiable(sentence),
         });
       }
     });
-    
+
     return facts;
   }
 
@@ -537,12 +596,32 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
    */
   private isFactualStatement(sentence: string): boolean {
     const lower = sentence.toLowerCase();
-    const factualIndicators = ['is', 'are', 'was', 'were', 'has', 'have', 'can', 'will'];
-    const opinionIndicators = ['think', 'believe', 'feel', 'maybe', 'perhaps', 'might'];
-    
-    const hasFactual = factualIndicators.some(indicator => lower.includes(indicator));
-    const hasOpinion = opinionIndicators.some(indicator => lower.includes(indicator));
-    
+    const factualIndicators = [
+      'is',
+      'are',
+      'was',
+      'were',
+      'has',
+      'have',
+      'can',
+      'will',
+    ];
+    const opinionIndicators = [
+      'think',
+      'believe',
+      'feel',
+      'maybe',
+      'perhaps',
+      'might',
+    ];
+
+    const hasFactual = factualIndicators.some((indicator) =>
+      lower.includes(indicator)
+    );
+    const hasOpinion = opinionIndicators.some((indicator) =>
+      lower.includes(indicator)
+    );
+
     return hasFactual && !hasOpinion;
   }
 
@@ -555,10 +634,10 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
       /\d{4}/, // Years
       /at \d/, // Times
       /in [A-Z][a-z]+/, // Places
-      /[A-Z][a-z]+ (said|announced|declared)/ // Quotes
+      /[A-Z][a-z]+ (said|announced|declared)/, // Quotes
     ];
-    
-    return verifiablePatterns.some(pattern => pattern.test(lower));
+
+    return verifiablePatterns.some((pattern) => pattern.test(lower));
   }
 
   /**
@@ -566,7 +645,7 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
    */
   private extractEvents(context: UnifiedContext): MemoryEvent[] {
     const events: MemoryEvent[] = [];
-    
+
     context.messages.forEach((message, index) => {
       if (this.isEventDescription(message.content)) {
         events.push({
@@ -578,7 +657,7 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
         });
       }
     });
-    
+
     return events;
   }
 
@@ -586,9 +665,18 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
    * Check if content describes an event
    */
   private isEventDescription(content: string): boolean {
-    const eventWords = ['happened', 'occurred', 'did', 'went', 'came', 'started', 'finished', 'completed'];
+    const eventWords = [
+      'happened',
+      'occurred',
+      'did',
+      'went',
+      'came',
+      'started',
+      'finished',
+      'completed',
+    ];
     const lower = content.toLowerCase();
-    return eventWords.some(word => lower.includes(word));
+    return eventWords.some((word) => lower.includes(word));
   }
 
   /**
@@ -596,14 +684,29 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
    */
   private calculateEventSignificance(content: string): number {
     let significance = 0.5;
-    
-    const importantWords = ['important', 'critical', 'major', 'significant', 'breakthrough'];
-    const emotionalWords = ['amazing', 'terrible', 'wonderful', 'awful', 'excited', 'disappointed'];
-    
+
+    const importantWords = [
+      'important',
+      'critical',
+      'major',
+      'significant',
+      'breakthrough',
+    ];
+    const emotionalWords = [
+      'amazing',
+      'terrible',
+      'wonderful',
+      'awful',
+      'excited',
+      'disappointed',
+    ];
+
     const lower = content.toLowerCase();
-    if (importantWords.some(word => lower.includes(word))) significance += 0.3;
-    if (emotionalWords.some(word => lower.includes(word))) significance += 0.2;
-    
+    if (importantWords.some((word) => lower.includes(word)))
+      significance += 0.3;
+    if (emotionalWords.some((word) => lower.includes(word)))
+      significance += 0.2;
+
     return Math.min(significance, 1.0);
   }
 
@@ -618,21 +721,21 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
   private extractEmotionalContext(context: UnifiedContext): EmotionalContext[] {
     const emotionData = context.emotionData;
     if (!emotionData?.currentEmotions) return [];
-    
-    return emotionData.currentEmotions.map(emotion => ({
+
+    return emotionData.currentEmotions.map((emotion) => ({
       emotion: emotion.emotion,
       intensity: emotion.intensity,
       valence: this.getEmotionValence(emotion.emotion),
       duration: emotion.duration,
       trigger: emotion.trigger,
-      associated_memories: []
+      associated_memories: [],
     }));
   }
 
   private getEmotionValence(emotion: string): number {
     const positiveEmotions = ['happy', 'excited', 'proud', 'confident'];
     const negativeEmotions = ['sad', 'angry', 'anxious', 'confused'];
-    
+
     if (positiveEmotions.includes(emotion)) return 0.7;
     if (negativeEmotions.includes(emotion)) return -0.7;
     return 0;
@@ -641,14 +744,14 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
   private extractDecisionContext(context: UnifiedContext): DecisionContext[] {
     const cognitionData = context.cognitionData;
     if (!cognitionData?.decisions) return [];
-    
-    return cognitionData.decisions.map(decision => ({
+
+    return cognitionData.decisions.map((decision) => ({
       decision: decision.description,
       alternatives: decision.options,
       criteria: [],
       outcome: decision.selected || 'pending',
       satisfaction: decision.confidence,
-      learned_lessons: []
+      learned_lessons: [],
     }));
   }
 
@@ -659,20 +762,28 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
       verificationStatus: 'unverified',
       lastModified: context.timestamp,
       modificationHistory: [],
-      sourceCitation: `Agent ${context.agentId} session ${context.sessionId}`
+      sourceCitation: `Agent ${context.agentId} session ${context.sessionId}`,
     };
   }
 
-  private determineSourceType(context: UnifiedContext): 'conversation' | 'observation' | 'learning' | 'inference' | 'external' {
+  private determineSourceType(
+    context: UnifiedContext
+  ): 'conversation' | 'observation' | 'learning' | 'inference' | 'external' {
     if (context.messages.length > 0) return 'conversation';
     if (context.cognitionData?.reasoningChain?.length) return 'inference';
     return 'observation';
   }
 
-  private determineMemoryType(context: UnifiedContext): 'episodic' | 'semantic' | 'procedural' | 'working' | 'autobiographical' {
-    const hasEvents = context.messages.some(m => this.isEventDescription(m.content));
-    const hasFactual = context.messages.some(m => this.isFactualStatement(m.content));
-    
+  private determineMemoryType(
+    context: UnifiedContext
+  ): 'episodic' | 'semantic' | 'procedural' | 'working' | 'autobiographical' {
+    const hasEvents = context.messages.some((m) =>
+      this.isEventDescription(m.content)
+    );
+    const hasFactual = context.messages.some((m) =>
+      this.isFactualStatement(m.content)
+    );
+
     if (hasEvents) return 'episodic';
     if (hasFactual) return 'semantic';
     return 'working';
@@ -680,26 +791,31 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
 
   private calculateImportance(context: UnifiedContext): number {
     let importance = 0.5;
-    
+
     // Factor in emotion intensity
     if (context.emotionData?.currentEmotions?.length) {
-      const avgIntensity = context.emotionData.currentEmotions.reduce((sum, e) => sum + e.intensity, 0) / 
-                          context.emotionData.currentEmotions.length;
+      const avgIntensity =
+        context.emotionData.currentEmotions.reduce(
+          (sum, e) => sum + e.intensity,
+          0
+        ) / context.emotionData.currentEmotions.length;
       importance += avgIntensity * 0.3;
     }
-    
+
     // Factor in complexity
     importance += context.state.complexity * 0.2;
-    
+
     // Factor in user engagement
     importance += context.state.engagement * 0.3;
-    
+
     return Math.min(importance, 1.0);
   }
 
-  private determinePersistence(context: UnifiedContext): 'temporary' | 'session' | 'short_term' | 'long_term' | 'permanent' {
+  private determinePersistence(
+    context: UnifiedContext
+  ): 'temporary' | 'session' | 'short_term' | 'long_term' | 'permanent' {
     const importance = this.calculateImportance(context);
-    
+
     if (importance > 0.8) return 'long_term';
     if (importance > 0.6) return 'short_term';
     if (context.messages.length > 5) return 'session';
@@ -710,28 +826,30 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
   private extractRelatedMemories(context: UnifiedContext): MemoryRelation[] {
     const memoryData = context.memoryData;
     if (!memoryData?.relevantMemories) return [];
-    
-    return memoryData.relevantMemories.map(mem => ({
+
+    return memoryData.relevantMemories.map((mem) => ({
       relatedMemoryId: mem.id,
       relationType: 'similar' as const,
       strength: mem.relevance,
-      explanation: `Related memory from ${mem.type} context`
+      explanation: `Related memory from ${mem.type} context`,
     }));
   }
 
   private buildTemporalContext(context: UnifiedContext): TemporalContext {
     const now = new Date();
     const timeOfDay = this.getTimeOfDay(now);
-    
+
     return {
       absoluteTime: context.timestamp,
       relativeTime: this.getRelativeTime(context.timestamp, now),
       timeOfDay,
-      sequencePosition: context.version
+      sequencePosition: context.version,
     };
   }
 
-  private getTimeOfDay(date: Date): 'morning' | 'afternoon' | 'evening' | 'night' {
+  private getTimeOfDay(
+    date: Date
+  ): 'morning' | 'afternoon' | 'evening' | 'night' {
     const hour = date.getHours();
     if (hour < 6) return 'night';
     if (hour < 12) return 'morning';
@@ -745,7 +863,7 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMins / 60);
     const diffDays = Math.floor(diffHours / 24);
-    
+
     if (diffMins < 60) return `${diffMins} minutes ago`;
     if (diffHours < 24) return `${diffHours} hours ago`;
     return `${diffDays} days ago`;
@@ -756,40 +874,40 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
       location: context.environment.location,
       environment: context.environment.platform || 'digital',
       scale: 'personal' as const,
-      permanence: 'stable' as const
+      permanence: 'stable' as const,
     };
   }
 
   private generateSearchTags(context: UnifiedContext): string[] {
     const tags = new Set<string>();
-    
+
     // Add agent ID
     tags.add(`agent:${context.agentId}`);
-    
+
     // Add session ID
     tags.add(`session:${context.sessionId}`);
-    
+
     // Add memory type
     tags.add(`type:${this.determineMemoryType(context)}`);
-    
+
     // Add time-based tags
     const date = context.timestamp;
     tags.add(`year:${date.getFullYear()}`);
     tags.add(`month:${date.getMonth() + 1}`);
     tags.add(`day:${date.getDate()}`);
-    
+
     // Add emotion tags
     if (context.emotionData?.currentEmotions) {
-      context.emotionData.currentEmotions.forEach(emotion => {
+      context.emotionData.currentEmotions.forEach((emotion) => {
         tags.add(`emotion:${emotion.emotion}`);
       });
     }
-    
+
     // Add content-based tags
     const content = this.extractPrimaryContent(context).toLowerCase();
-    const words = content.split(/\s+/).filter(w => w.length > 3);
-    words.slice(0, 10).forEach(word => tags.add(`content:${word}`));
-    
+    const words = content.split(/\s+/).filter((w) => w.length > 3);
+    words.slice(0, 10).forEach((word) => tags.add(`content:${word}`));
+
     return Array.from(tags);
   }
 
@@ -799,11 +917,11 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
     const content = this.extractPrimaryContent(context);
     const hash = this.simpleHash(content);
     const vector: number[] = [];
-    
+
     for (let i = 0; i < 64; i++) {
       vector.push((hash >> i) & 1 ? 1 : -1);
     }
-    
+
     return vector;
   }
 
@@ -811,7 +929,7 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32-bit integer
     }
     return hash;
@@ -823,26 +941,26 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
         field: 'agentId',
         indexType: 'hash',
         priority: 1.0,
-        cardinality: 'low'
+        cardinality: 'low',
       },
       {
         field: 'timestamp',
         indexType: 'btree',
         priority: 0.9,
-        cardinality: 'high'
+        cardinality: 'high',
       },
       {
         field: 'searchTags',
         indexType: 'fulltext',
         priority: 0.8,
-        cardinality: 'high'
+        cardinality: 'high',
       },
       {
         field: 'semanticVectors',
         indexType: 'vector',
         priority: 0.7,
-        cardinality: 'high'
-      }
+        cardinality: 'high',
+      },
     ];
   }
 
@@ -851,25 +969,35 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
       accessFrequency: 'regular',
       lastAccessed: context.timestamp,
       accessCount: 1,
-      accessPatterns: []
+      accessPatterns: [],
     };
   }
 
-  private determinePrivacyLevel(context: UnifiedContext): 'public' | 'private' | 'confidential' | 'restricted' {
+  private determinePrivacyLevel(
+    context: UnifiedContext
+  ): 'public' | 'private' | 'confidential' | 'restricted' {
     // Check for sensitive content indicators
     const content = this.extractPrimaryContent(context).toLowerCase();
-    const sensitiveWords = ['password', 'secret', 'private', 'confidential', 'personal'];
-    
-    if (sensitiveWords.some(word => content.includes(word))) {
+    const sensitiveWords = [
+      'password',
+      'secret',
+      'private',
+      'confidential',
+      'personal',
+    ];
+
+    if (sensitiveWords.some((word) => content.includes(word))) {
       return 'confidential';
     }
-    
+
     return 'private'; // Default for agent memories
   }
 
-  private determineCompressionLevel(context: UnifiedContext): 'none' | 'light' | 'moderate' | 'aggressive' {
+  private determineCompressionLevel(
+    context: UnifiedContext
+  ): 'none' | 'light' | 'moderate' | 'aggressive' {
     const contentSize = this.extractPrimaryContent(context).length;
-    
+
     if (contentSize > 5000) return 'aggressive';
     if (contentSize > 2000) return 'moderate';
     if (contentSize > 500) return 'light';
@@ -879,21 +1007,21 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
   private extractEntities(context: UnifiedContext): ExtractedEntity[] {
     const content = this.extractPrimaryContent(context);
     const entities: ExtractedEntity[] = [];
-    
+
     // Simple entity extraction (would use NLP in production)
     const personPattern = /\b[A-Z][a-z]+ [A-Z][a-z]+\b/g;
     let match;
-    
+
     while ((match = personPattern.exec(content)) !== null) {
       entities.push({
         text: match[0],
         type: 'person',
         confidence: 0.7,
         startPos: match.index,
-        endPos: match.index + match[0].length
+        endPos: match.index + match[0].length,
       });
     }
-    
+
     return entities;
   }
 
@@ -901,14 +1029,14 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
     const content = this.extractPrimaryContent(context);
     const words = content.toLowerCase().split(/\s+/);
     const wordCounts = new Map<string, number>();
-    
+
     // Count word frequencies
-    words.forEach(word => {
+    words.forEach((word) => {
       if (word.length > 3) {
         wordCounts.set(word, (wordCounts.get(word) || 0) + 1);
       }
     });
-    
+
     // Convert to key phrases
     const phrases: KeyPhrase[] = [];
     wordCounts.forEach((count, word) => {
@@ -918,51 +1046,53 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
           score: count / words.length,
           frequency: count,
           tfidf: count, // Simplified TF-IDF
-          category: 'general'
+          category: 'general',
         });
       }
     });
-    
+
     return phrases.sort((a, b) => b.score - a.score).slice(0, 10);
   }
 
   private calculateCoherence(context: UnifiedContext): number {
     // Simple coherence calculation based on message flow
     if (context.messages.length < 2) return 1.0;
-    
+
     let coherenceScore = 0;
     for (let i = 1; i < context.messages.length; i++) {
       const prev = context.messages[i - 1].content.toLowerCase();
       const curr = context.messages[i].content.toLowerCase();
-      
+
       // Check for shared words (simple coherence measure)
       const prevWords = new Set(prev.split(/\s+/));
       const currWords = new Set(curr.split(/\s+/));
-      const intersection = new Set([...prevWords].filter(x => currWords.has(x)));
+      const intersection = new Set(
+        [...prevWords].filter((x) => currWords.has(x))
+      );
       const union = new Set([...prevWords, ...currWords]);
-      
+
       coherenceScore += intersection.size / union.size;
     }
-    
+
     return coherenceScore / (context.messages.length - 1);
   }
 
   private calculateCompleteness(context: UnifiedContext): number {
     let completeness = 0.5; // Base completeness
-    
+
     // Factor in structured content presence
     if (context.messages.length > 0) completeness += 0.2;
     if (context.emotionData?.currentEmotions?.length) completeness += 0.1;
     if (context.cognitionData?.thoughts?.length) completeness += 0.1;
     if (context.environment.location) completeness += 0.1;
-    
+
     return Math.min(completeness, 1.0);
   }
 
   private calculateReliability(context: UnifiedContext): number {
     // Base reliability on source and confidence
     let reliability = context.state.confidence;
-    
+
     // Adjust based on source type
     const sourceType = this.determineSourceType(context);
     switch (sourceType) {
@@ -977,30 +1107,30 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
         reliability *= 0.8;
         break;
     }
-    
+
     return reliability;
   }
 
   private generateStorageHints(context: UnifiedContext): StorageHint[] {
     const hints: StorageHint[] = [];
-    
+
     const contentSize = this.extractPrimaryContent(context).length;
     if (contentSize > 1000) {
       hints.push({
         hint: 'Large content - consider compression',
         impact: 'space',
-        importance: 0.8
+        importance: 0.8,
       });
     }
-    
+
     if (context.emotionData?.currentEmotions?.length) {
       hints.push({
         hint: 'Emotional content - index for sentiment retrieval',
         impact: 'retrieval',
-        importance: 0.7
+        importance: 0.7,
       });
     }
-    
+
     return hints;
   }
 
@@ -1019,7 +1149,7 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
       queryTypes: ['semantic', 'temporal', 'emotional'],
       commonPatterns: ['recent memories', 'similar emotions', 'related topics'],
       optimizationTargets: ['speed', 'accuracy'],
-      cacheability: 0.8
+      cacheability: 0.8,
     };
   }
 
@@ -1030,16 +1160,16 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
         {
           field: 'agentId',
           operation: 'eq',
-          selectivity: 0.1
+          selectivity: 0.1,
         },
         {
           field: 'timestamp',
           operation: 'gt',
-          selectivity: 0.3
-        }
+          selectivity: 0.3,
+        },
       ],
       sortingPreference: ['timestamp', 'importance'],
-      aggregationHints: ['count', 'avg']
+      aggregationHints: ['count', 'avg'],
     };
   }
 
@@ -1053,12 +1183,12 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
         ...context.structuredContent,
         keyFacts: context.structuredContent.keyFacts.slice(0, 3),
         events: context.structuredContent.events.slice(0, 2),
-        relationships: context.structuredContent.relationships.slice(0, 2)
+        relationships: context.structuredContent.relationships.slice(0, 2),
       },
       searchTags: context.searchTags.slice(0, 10),
       semanticVectors: context.semanticVectors.slice(0, 32),
       extractedEntities: context.extractedEntities.slice(0, 5),
-      keyPhrases: context.keyPhrases.slice(0, 5)
+      keyPhrases: context.keyPhrases.slice(0, 5),
     };
   }
 
@@ -1069,22 +1199,23 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
       structuredContent: {
         ...context.structuredContent,
         keyFacts: context.structuredContent.keyFacts
-          .filter(f => f.confidence > 0.6)
+          .filter((f) => f.confidence > 0.6)
           .slice(0, 5),
         events: context.structuredContent.events
-          .filter(e => e.significance > 0.5)
-          .slice(0, 3)
+          .filter((e) => e.significance > 0.5)
+          .slice(0, 3),
       },
       extractedEntities: context.extractedEntities
-        .filter(e => e.confidence > 0.6)
+        .filter((e) => e.confidence > 0.6)
         .slice(0, 10),
-      keyPhrases: context.keyPhrases
-        .filter(p => p.score > 0.1)
-        .slice(0, 8)
+      keyPhrases: context.keyPhrases.filter((p) => p.score > 0.1).slice(0, 8),
     };
   }
 
-  private applyFullStrategy(context: MemoryContext, original: UnifiedContext): MemoryContext {
+  private applyFullStrategy(
+    context: MemoryContext,
+    original: UnifiedContext
+  ): MemoryContext {
     // Include all available data
     return context;
   }
@@ -1105,7 +1236,7 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
         field: 'agentId',
         message: 'Agent ID is required',
         severity: 'critical',
-        code: 'MISSING_AGENT_ID'
+        code: 'MISSING_AGENT_ID',
       });
     }
 
@@ -1114,7 +1245,7 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
         field: 'primaryContent',
         message: 'Primary content is required',
         severity: 'high',
-        code: 'MISSING_CONTENT'
+        code: 'MISSING_CONTENT',
       });
     }
 
@@ -1124,7 +1255,7 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
         field: 'importance',
         message: 'Importance must be between 0 and 1',
         severity: 'medium',
-        code: 'INVALID_IMPORTANCE'
+        code: 'INVALID_IMPORTANCE',
       });
     }
 
@@ -1133,18 +1264,19 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
       warnings.push({
         field: 'semanticVectors',
         message: 'Semantic vectors recommended for better retrieval',
-        code: 'MISSING_VECTORS'
+        code: 'MISSING_VECTORS',
       });
     }
 
-    const score = errors.length === 0 ? (warnings.length === 0 ? 1.0 : 0.8) : 0.5;
+    const score =
+      errors.length === 0 ? (warnings.length === 0 ? 1.0 : 0.8) : 0.5;
 
     return {
       valid: errors.length === 0,
       errors,
       warnings,
       score,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
   }
 
@@ -1166,36 +1298,50 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
       performance: {
         averageDuration: 25, // ms
         memoryUsage: 5 * 1024 * 1024, // 5MB
-        throughput: 500 // contexts per second
-      }
+        throughput: 500, // contexts per second
+      },
     };
   }
 
   /**
    * Helper methods
    */
-  private generateCacheKey(context: UnifiedContext, config?: TransformationConfig): string {
+  private generateCacheKey(
+    context: UnifiedContext,
+    config?: TransformationConfig
+  ): string {
     const keyData = {
       contextId: context.contextId,
       version: context.version,
       strategy: config?.strategy,
       contentHash: this.simpleHash(context.content),
-      timestamp: Math.floor(context.timestamp.getTime() / 300000) // 5-minute precision
+      timestamp: Math.floor(context.timestamp.getTime() / 300000), // 5-minute precision
     };
     return `memory_${JSON.stringify(keyData)}`;
   }
 
   private getTransformedFields(strategy: TransformationStrategy): string[] {
     const baseFields = [
-      'agentId', 'primaryContent', 'structuredContent', 'memoryType',
-      'importance', 'searchTags', 'semanticVectors'
+      'agentId',
+      'primaryContent',
+      'structuredContent',
+      'memoryType',
+      'importance',
+      'searchTags',
+      'semanticVectors',
     ];
-    
+
     switch (strategy) {
       case TransformationStrategy.MINIMAL:
         return baseFields.slice(0, 5);
       case TransformationStrategy.FULL:
-        return [...baseFields, 'extractedEntities', 'keyPhrases', 'storageHints', 'queryOptimization'];
+        return [
+          ...baseFields,
+          'extractedEntities',
+          'keyPhrases',
+          'storageHints',
+          'queryOptimization',
+        ];
       default:
         return baseFields;
     }
@@ -1204,7 +1350,12 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
   private getDroppedFields(strategy: TransformationStrategy): string[] {
     switch (strategy) {
       case TransformationStrategy.MINIMAL:
-        return ['extractedEntities', 'keyPhrases', 'storageHints', 'queryOptimization'];
+        return [
+          'extractedEntities',
+          'keyPhrases',
+          'storageHints',
+          'queryOptimization',
+        ];
       default:
         return [];
     }
@@ -1212,8 +1363,15 @@ export class MemoryContextTransformer implements ContextTransformer<UnifiedConte
 
   private getAddedFields(): string[] {
     return [
-      'structuredContent', 'contentMetadata', 'searchTags', 'semanticVectors',
-      'indexingHints', 'extractedEntities', 'keyPhrases', 'storageHints', 'queryOptimization'
+      'structuredContent',
+      'contentMetadata',
+      'searchTags',
+      'semanticVectors',
+      'indexingHints',
+      'extractedEntities',
+      'keyPhrases',
+      'storageHints',
+      'queryOptimization',
     ];
   }
 }

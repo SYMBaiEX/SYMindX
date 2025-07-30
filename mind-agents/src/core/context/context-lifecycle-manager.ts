@@ -1,12 +1,12 @@
 /**
  * Context Lifecycle Manager Implementation for SYMindX
- * 
+ *
  * Manages the complete lifecycle of agent contexts including creation,
  * validation, enrichment, propagation, and cleanup with performance monitoring.
  */
 
 import { EventEmitter } from 'events';
-import { 
+import {
   ContextLifecycleManager,
   ContextLifecycleManagerConfig,
   ContextRequest,
@@ -16,7 +16,7 @@ import {
   ContextLifecycleEventData,
   ContextLifecycleHooks,
   ContextLifecycleMetrics,
-  ManagedContext
+  ManagedContext,
 } from '../../types/context/context-lifecycle';
 import { BaseContext } from '../../types/context';
 import { Agent } from '../../types/agent';
@@ -26,7 +26,10 @@ import { createRuntimeError } from '../../utils/standard-errors';
 /**
  * Context Lifecycle Manager Implementation
  */
-export class SYMindXContextLifecycleManager extends EventEmitter implements ContextLifecycleManager {
+export class SYMindXContextLifecycleManager
+  extends EventEmitter
+  implements ContextLifecycleManager
+{
   private contexts: Map<string, ManagedContext> = new Map();
   private agentContexts: Map<string, Set<string>> = new Map(); // agentId -> contextIds
   private contextIndex: Map<string, string> = new Map(); // agentId -> primary contextId
@@ -37,7 +40,7 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
 
   constructor(config: ContextLifecycleManagerConfig = {}) {
     super();
-    
+
     // Set default configuration
     this.config = {
       maxContextsPerAgent: config.maxContextsPerAgent ?? 10,
@@ -47,18 +50,18 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
       enableEnrichment: config.enableEnrichment ?? true,
       memoryThresholds: config.memoryThresholds ?? {
         warning: 100 * 1024 * 1024, // 100MB
-        critical: 500 * 1024 * 1024  // 500MB
+        critical: 500 * 1024 * 1024, // 500MB
       },
       errorRecovery: config.errorRecovery ?? {
         maxRetries: 3,
         retryDelay: 1000,
-        enableAutoRecovery: true
+        enableAutoRecovery: true,
       },
       validation: config.validation ?? {
         strict: false,
-        rules: ['required_fields', 'type_validation', 'circular_dependency']
+        rules: ['required_fields', 'type_validation', 'circular_dependency'],
       },
-      custom: config.custom ?? {}
+      custom: config.custom ?? {},
     };
 
     this.setupEventHandlers();
@@ -84,8 +87,15 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
       this.isInitialized = true;
       runtimeLogger.success('✅ Context Lifecycle Manager initialized');
     } catch (error) {
-      runtimeLogger.error('❌ Failed to initialize Context Lifecycle Manager:', error as Error);
-      throw createRuntimeError('Failed to initialize Context Lifecycle Manager', 'LIFECYCLE_INIT_ERROR', { error });
+      runtimeLogger.error(
+        '❌ Failed to initialize Context Lifecycle Manager:',
+        error as Error
+      );
+      throw createRuntimeError(
+        'Failed to initialize Context Lifecycle Manager',
+        'LIFECYCLE_INIT_ERROR',
+        { error }
+      );
     }
   }
 
@@ -106,7 +116,7 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
 
       // Cleanup all contexts
       const contextIds = Array.from(this.contexts.keys());
-      await Promise.all(contextIds.map(id => this.disposeContext(id)));
+      await Promise.all(contextIds.map((id) => this.disposeContext(id)));
 
       // Clear all maps
       this.contexts.clear();
@@ -116,7 +126,10 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
       this.isInitialized = false;
       runtimeLogger.success('✅ Context Lifecycle Manager shut down');
     } catch (error) {
-      runtimeLogger.error('❌ Error during Context Lifecycle Manager shutdown:', error as Error);
+      runtimeLogger.error(
+        '❌ Error during Context Lifecycle Manager shutdown:',
+        error as Error
+      );
       throw error;
     }
   }
@@ -128,18 +141,27 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
     try {
       // Generate unique context ID
       const contextId = this.generateContextId(request.agentId);
-      
+
       // Emit request event
-      await this.emitLifecycleEvent(contextId, request.agentId, ContextLifecycleEvent.CONTEXT_REQUESTED, ContextLifecycleState.INITIALIZING);
+      await this.emitLifecycleEvent(
+        contextId,
+        request.agentId,
+        ContextLifecycleEvent.CONTEXT_REQUESTED,
+        ContextLifecycleState.INITIALIZING
+      );
 
       // Execute before create hook
-      const processedRequest = await this.executeHook('beforeCreate', request) || request;
+      const processedRequest =
+        (await this.executeHook('beforeCreate', request)) || request;
 
       // Check agent context limits
       await this.checkContextLimits(request.agentId);
 
       // Create managed context
-      const managedContext = await this.createManagedContext(contextId, processedRequest);
+      const managedContext = await this.createManagedContext(
+        contextId,
+        processedRequest
+      );
 
       // Store context
       this.contexts.set(contextId, managedContext);
@@ -149,16 +171,30 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
       await this.executeHook('afterCreate', contextId, managedContext.context);
 
       // Emit created event
-      await this.emitLifecycleEvent(contextId, request.agentId, ContextLifecycleEvent.CONTEXT_CREATED, ContextLifecycleState.INITIALIZING);
+      await this.emitLifecycleEvent(
+        contextId,
+        request.agentId,
+        ContextLifecycleEvent.CONTEXT_CREATED,
+        ContextLifecycleState.INITIALIZING
+      );
 
       // Initialize context
       await this.initializeContext(contextId);
 
-      runtimeLogger.info(`🔄 Context created: ${contextId} for agent ${request.agentId}`);
+      runtimeLogger.info(
+        `🔄 Context created: ${contextId} for agent ${request.agentId}`
+      );
       return contextId;
     } catch (error) {
-      runtimeLogger.error(`❌ Failed to create context for agent ${request.agentId}:`, error as Error);
-      throw createRuntimeError('Failed to create context', 'CONTEXT_CREATION_ERROR', { agentId: request.agentId, error });
+      runtimeLogger.error(
+        `❌ Failed to create context for agent ${request.agentId}:`,
+        error as Error
+      );
+      throw createRuntimeError(
+        'Failed to create context',
+        'CONTEXT_CREATION_ERROR',
+        { agentId: request.agentId, error }
+      );
     }
   }
 
@@ -171,7 +207,7 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
 
     // Update last accessed timestamp
     context.lastAccessed = new Date();
-    
+
     return context;
   }
 
@@ -191,15 +227,26 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
   async validateContext(contextId: string): Promise<ContextValidationResult> {
     const managedContext = this.contexts.get(contextId);
     if (!managedContext) {
-      throw createRuntimeError('Context not found', 'CONTEXT_NOT_FOUND', { contextId });
+      throw createRuntimeError('Context not found', 'CONTEXT_NOT_FOUND', {
+        contextId,
+      });
     }
 
     try {
       // Execute before validation hook
-      await this.executeHook('beforeValidation', contextId, managedContext.context);
+      await this.executeHook(
+        'beforeValidation',
+        contextId,
+        managedContext.context
+      );
 
       // Emit validation started event
-      await this.emitLifecycleEvent(contextId, managedContext.agentId, ContextLifecycleEvent.VALIDATION_STARTED, managedContext.state);
+      await this.emitLifecycleEvent(
+        contextId,
+        managedContext.agentId,
+        ContextLifecycleEvent.VALIDATION_STARTED,
+        managedContext.state
+      );
 
       const startTime = Date.now();
       const result = await this.performValidation(managedContext);
@@ -213,12 +260,26 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
       await this.executeHook('afterValidation', contextId, result);
 
       // Emit validation result event
-      const event = result.isValid ? ContextLifecycleEvent.VALIDATION_PASSED : ContextLifecycleEvent.VALIDATION_FAILED;
-      await this.emitLifecycleEvent(contextId, managedContext.agentId, event, managedContext.state, { result });
+      const event = result.isValid
+        ? ContextLifecycleEvent.VALIDATION_PASSED
+        : ContextLifecycleEvent.VALIDATION_FAILED;
+      await this.emitLifecycleEvent(
+        contextId,
+        managedContext.agentId,
+        event,
+        managedContext.state,
+        { result }
+      );
 
       return result;
     } catch (error) {
-      await this.emitLifecycleEvent(contextId, managedContext.agentId, ContextLifecycleEvent.VALIDATION_ERROR, managedContext.state, { error });
+      await this.emitLifecycleEvent(
+        contextId,
+        managedContext.agentId,
+        ContextLifecycleEvent.VALIDATION_ERROR,
+        managedContext.state,
+        { error }
+      );
       throw error;
     }
   }
@@ -231,18 +292,29 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
 
     const managedContext = this.contexts.get(contextId);
     if (!managedContext) {
-      throw createRuntimeError('Context not found', 'CONTEXT_NOT_FOUND', { contextId });
+      throw createRuntimeError('Context not found', 'CONTEXT_NOT_FOUND', {
+        contextId,
+      });
     }
 
     try {
       // Execute before enrichment hook
-      await this.executeHook('beforeEnrichment', contextId, managedContext.context);
+      await this.executeHook(
+        'beforeEnrichment',
+        contextId,
+        managedContext.context
+      );
 
       // Update state
       await this.updateContextState(contextId, ContextLifecycleState.ENRICHING);
 
       // Emit enrichment started event
-      await this.emitLifecycleEvent(contextId, managedContext.agentId, ContextLifecycleEvent.ENRICHMENT_STARTED, ContextLifecycleState.ENRICHING);
+      await this.emitLifecycleEvent(
+        contextId,
+        managedContext.agentId,
+        ContextLifecycleEvent.ENRICHMENT_STARTED,
+        ContextLifecycleState.ENRICHING
+      );
 
       const startTime = Date.now();
       await this.performEnrichment(managedContext);
@@ -253,19 +325,37 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
       managedContext.metrics.timestamps.enriched = new Date();
 
       // Execute after enrichment hook
-      await this.executeHook('afterEnrichment', contextId, managedContext.context);
+      await this.executeHook(
+        'afterEnrichment',
+        contextId,
+        managedContext.context
+      );
 
       // Update state back to active
       await this.updateContextState(contextId, ContextLifecycleState.ACTIVE);
 
       // Emit enrichment completed event
-      await this.emitLifecycleEvent(contextId, managedContext.agentId, ContextLifecycleEvent.ENRICHMENT_COMPLETED, ContextLifecycleState.ACTIVE);
+      await this.emitLifecycleEvent(
+        contextId,
+        managedContext.agentId,
+        ContextLifecycleEvent.ENRICHMENT_COMPLETED,
+        ContextLifecycleState.ACTIVE
+      );
 
       runtimeLogger.info(`🔄 Context enriched: ${contextId} in ${duration}ms`);
     } catch (error) {
       await this.updateContextState(contextId, ContextLifecycleState.ERROR);
-      await this.emitLifecycleEvent(contextId, managedContext.agentId, ContextLifecycleEvent.ENRICHMENT_ERROR, ContextLifecycleState.ERROR, { error });
-      runtimeLogger.error(`❌ Context enrichment failed: ${contextId}:`, error as Error);
+      await this.emitLifecycleEvent(
+        contextId,
+        managedContext.agentId,
+        ContextLifecycleEvent.ENRICHMENT_ERROR,
+        ContextLifecycleState.ERROR,
+        { error }
+      );
+      runtimeLogger.error(
+        `❌ Context enrichment failed: ${contextId}:`,
+        error as Error
+      );
       throw error;
     }
   }
@@ -273,18 +363,33 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
   /**
    * Propagate context to child agents
    */
-  async propagateContext(contextId: string, targetAgentIds: string[]): Promise<string[]> {
+  async propagateContext(
+    contextId: string,
+    targetAgentIds: string[]
+  ): Promise<string[]> {
     const parentContext = this.contexts.get(contextId);
     if (!parentContext) {
-      throw createRuntimeError('Parent context not found', 'CONTEXT_NOT_FOUND', { contextId });
+      throw createRuntimeError(
+        'Parent context not found',
+        'CONTEXT_NOT_FOUND',
+        { contextId }
+      );
     }
 
     try {
       // Update state
-      await this.updateContextState(contextId, ContextLifecycleState.PROPAGATING);
+      await this.updateContextState(
+        contextId,
+        ContextLifecycleState.PROPAGATING
+      );
 
       // Emit propagation started event
-      await this.emitLifecycleEvent(contextId, parentContext.agentId, ContextLifecycleEvent.PROPAGATION_STARTED, ContextLifecycleState.PROPAGATING);
+      await this.emitLifecycleEvent(
+        contextId,
+        parentContext.agentId,
+        ContextLifecycleEvent.PROPAGATION_STARTED,
+        ContextLifecycleState.PROPAGATING
+      );
 
       const childContextIds: string[] = [];
 
@@ -297,20 +402,22 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
             baseContext: { ...parentContext.context },
             inheritance: {
               parentContextId: contextId,
-              inheritableProperties: parentContext.config.inheritance?.inheritableProperties,
-              mergeStrategy: parentContext.config.inheritance?.mergeStrategy || 'merge'
+              inheritableProperties:
+                parentContext.config.inheritance?.inheritableProperties,
+              mergeStrategy:
+                parentContext.config.inheritance?.mergeStrategy || 'merge',
             },
             scope: {
               ...parentContext.config.scope,
-              visibility: 'shared' // Child contexts are shared by default
+              visibility: 'shared', // Child contexts are shared by default
             },
             enrichment: parentContext.config.enrichment,
             monitoring: parentContext.config.monitoring,
             metadata: {
               ...parentContext.config.metadata,
               parentContextId: contextId,
-              propagated: true
-            }
+              propagated: true,
+            },
           };
 
           // Create child context
@@ -325,9 +432,17 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
           }
 
           // Emit context inherited event
-          await this.emitLifecycleEvent(childContextId, targetAgentId, ContextLifecycleEvent.CONTEXT_INHERITED, ContextLifecycleState.ACTIVE);
+          await this.emitLifecycleEvent(
+            childContextId,
+            targetAgentId,
+            ContextLifecycleEvent.CONTEXT_INHERITED,
+            ContextLifecycleState.ACTIVE
+          );
         } catch (error) {
-          runtimeLogger.error(`❌ Failed to propagate context to agent ${targetAgentId}:`, error as Error);
+          runtimeLogger.error(
+            `❌ Failed to propagate context to agent ${targetAgentId}:`,
+            error as Error
+          );
           // Continue with other agents
         }
       }
@@ -336,13 +451,27 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
       await this.updateContextState(contextId, ContextLifecycleState.ACTIVE);
 
       // Emit propagation completed event
-      await this.emitLifecycleEvent(contextId, parentContext.agentId, ContextLifecycleEvent.PROPAGATION_COMPLETED, ContextLifecycleState.ACTIVE, { childContextIds });
+      await this.emitLifecycleEvent(
+        contextId,
+        parentContext.agentId,
+        ContextLifecycleEvent.PROPAGATION_COMPLETED,
+        ContextLifecycleState.ACTIVE,
+        { childContextIds }
+      );
 
-      runtimeLogger.info(`🔄 Context propagated: ${contextId} to ${childContextIds.length} child contexts`);
+      runtimeLogger.info(
+        `🔄 Context propagated: ${contextId} to ${childContextIds.length} child contexts`
+      );
       return childContextIds;
     } catch (error) {
       await this.updateContextState(contextId, ContextLifecycleState.ERROR);
-      await this.emitLifecycleEvent(contextId, parentContext.agentId, ContextLifecycleEvent.PROPAGATION_ERROR, ContextLifecycleState.ERROR, { error });
+      await this.emitLifecycleEvent(
+        contextId,
+        parentContext.agentId,
+        ContextLifecycleEvent.PROPAGATION_ERROR,
+        ContextLifecycleState.ERROR,
+        { error }
+      );
       throw error;
     }
   }
@@ -350,29 +479,46 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
   /**
    * Inherit context from parent
    */
-  async inheritContext(childContextId: string, parentContextId: string): Promise<void> {
+  async inheritContext(
+    childContextId: string,
+    parentContextId: string
+  ): Promise<void> {
     const childContext = this.contexts.get(childContextId);
     const parentContext = this.contexts.get(parentContextId);
 
     if (!childContext || !parentContext) {
-      throw createRuntimeError('Context not found for inheritance', 'CONTEXT_NOT_FOUND', { childContextId, parentContextId });
+      throw createRuntimeError(
+        'Context not found for inheritance',
+        'CONTEXT_NOT_FOUND',
+        { childContextId, parentContextId }
+      );
     }
 
     try {
-      const inheritableProperties = childContext.config.inheritance?.inheritableProperties || Object.keys(parentContext.context);
-      const mergeStrategy = childContext.config.inheritance?.mergeStrategy || 'merge';
+      const inheritableProperties =
+        childContext.config.inheritance?.inheritableProperties ||
+        Object.keys(parentContext.context);
+      const mergeStrategy =
+        childContext.config.inheritance?.mergeStrategy || 'merge';
 
       for (const property of inheritableProperties) {
         const parentValue = (parentContext.context as any)[property];
         if (parentValue !== undefined) {
           if (mergeStrategy === 'override') {
             (childContext.context as any)[property] = parentValue;
-          } else if (mergeStrategy === 'merge' && typeof parentValue === 'object' && parentValue !== null) {
+          } else if (
+            mergeStrategy === 'merge' &&
+            typeof parentValue === 'object' &&
+            parentValue !== null
+          ) {
             (childContext.context as any)[property] = {
               ...(childContext.context as any)[property],
-              ...parentValue
+              ...parentValue,
             };
-          } else if (mergeStrategy === 'selective' && (childContext.context as any)[property] === undefined) {
+          } else if (
+            mergeStrategy === 'selective' &&
+            (childContext.context as any)[property] === undefined
+          ) {
             (childContext.context as any)[property] = parentValue;
           }
         }
@@ -382,9 +528,14 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
       childContext.parentId = parentContextId;
       parentContext.childIds.add(childContextId);
 
-      runtimeLogger.info(`🔄 Context inheritance completed: ${childContextId} from ${parentContextId}`);
+      runtimeLogger.info(
+        `🔄 Context inheritance completed: ${childContextId} from ${parentContextId}`
+      );
     } catch (error) {
-      runtimeLogger.error(`❌ Context inheritance failed: ${childContextId} from ${parentContextId}:`, error as Error);
+      runtimeLogger.error(
+        `❌ Context inheritance failed: ${childContextId} from ${parentContextId}:`,
+        error as Error
+      );
       throw error;
     }
   }
@@ -392,10 +543,15 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
   /**
    * Update context state
    */
-  async updateContextState(contextId: string, newState: ContextLifecycleState): Promise<void> {
+  async updateContextState(
+    contextId: string,
+    newState: ContextLifecycleState
+  ): Promise<void> {
     const managedContext = this.contexts.get(contextId);
     if (!managedContext) {
-      throw createRuntimeError('Context not found', 'CONTEXT_NOT_FOUND', { contextId });
+      throw createRuntimeError('Context not found', 'CONTEXT_NOT_FOUND', {
+        contextId,
+      });
     }
 
     const previousState = managedContext.state;
@@ -403,9 +559,16 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
 
     try {
       // Execute before state transition hook
-      const shouldTransition = await this.executeHook('beforeStateTransition', contextId, previousState, newState);
+      const shouldTransition = await this.executeHook(
+        'beforeStateTransition',
+        contextId,
+        previousState,
+        newState
+      );
       if (shouldTransition === false) {
-        runtimeLogger.warn(`🔄 State transition blocked by hook: ${contextId} ${previousState} -> ${newState}`);
+        runtimeLogger.warn(
+          `🔄 State transition blocked by hook: ${contextId} ${previousState} -> ${newState}`
+        );
         return;
       }
 
@@ -416,27 +579,50 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
       managedContext.metrics.stateHistory.push({
         state: newState,
         timestamp: new Date(),
-        duration: 0 // Will be calculated on next transition
+        duration: 0, // Will be calculated on next transition
       });
 
       // Calculate duration for previous state
       if (managedContext.metrics.stateHistory.length > 1) {
-        const previousEntry = managedContext.metrics.stateHistory[managedContext.metrics.stateHistory.length - 2];
-        const currentEntry = managedContext.metrics.stateHistory[managedContext.metrics.stateHistory.length - 1];
-        previousEntry.duration = currentEntry.timestamp.getTime() - previousEntry.timestamp.getTime();
+        const previousEntry =
+          managedContext.metrics.stateHistory[
+            managedContext.metrics.stateHistory.length - 2
+          ];
+        const currentEntry =
+          managedContext.metrics.stateHistory[
+            managedContext.metrics.stateHistory.length - 1
+          ];
+        previousEntry.duration =
+          currentEntry.timestamp.getTime() - previousEntry.timestamp.getTime();
       }
 
       // Execute after state transition hook
-      await this.executeHook('afterStateTransition', contextId, previousState, newState);
+      await this.executeHook(
+        'afterStateTransition',
+        contextId,
+        previousState,
+        newState
+      );
 
       // Emit state transition event
-      await this.emitLifecycleEvent(contextId, managedContext.agentId, ContextLifecycleEvent.STATE_TRANSITION, newState, { previousState });
+      await this.emitLifecycleEvent(
+        contextId,
+        managedContext.agentId,
+        ContextLifecycleEvent.STATE_TRANSITION,
+        newState,
+        { previousState }
+      );
 
-      runtimeLogger.debug(`🔄 Context state updated: ${contextId} ${previousState} -> ${newState}`);
+      runtimeLogger.debug(
+        `🔄 Context state updated: ${contextId} ${previousState} -> ${newState}`
+      );
     } catch (error) {
       // Revert state on error
       managedContext.state = previousState;
-      runtimeLogger.error(`❌ Failed to update context state: ${contextId}:`, error as Error);
+      runtimeLogger.error(
+        `❌ Failed to update context state: ${contextId}:`,
+        error as Error
+      );
       throw error;
     }
   }
@@ -444,19 +630,32 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
   /**
    * Schedule context cleanup
    */
-  async scheduleCleanup(contextId: string, delay: number = this.config.defaultTtl): Promise<void> {
+  async scheduleCleanup(
+    contextId: string,
+    delay: number = this.config.defaultTtl
+  ): Promise<void> {
     const managedContext = this.contexts.get(contextId);
     if (!managedContext) {
-      throw createRuntimeError('Context not found', 'CONTEXT_NOT_FOUND', { contextId });
+      throw createRuntimeError('Context not found', 'CONTEXT_NOT_FOUND', {
+        contextId,
+      });
     }
 
     const cleanupTime = new Date(Date.now() + delay);
     managedContext.cleanupScheduled = cleanupTime;
 
     // Emit cleanup scheduled event
-    await this.emitLifecycleEvent(contextId, managedContext.agentId, ContextLifecycleEvent.CLEANUP_SCHEDULED, managedContext.state, { cleanupTime });
+    await this.emitLifecycleEvent(
+      contextId,
+      managedContext.agentId,
+      ContextLifecycleEvent.CLEANUP_SCHEDULED,
+      managedContext.state,
+      { cleanupTime }
+    );
 
-    runtimeLogger.debug(`🔄 Context cleanup scheduled: ${contextId} at ${cleanupTime.toISOString()}`);
+    runtimeLogger.debug(
+      `🔄 Context cleanup scheduled: ${contextId} at ${cleanupTime.toISOString()}`
+    );
   }
 
   /**
@@ -474,7 +673,12 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
       await this.updateContextState(contextId, ContextLifecycleState.CLEANUP);
 
       // Emit cleanup started event
-      await this.emitLifecycleEvent(contextId, managedContext.agentId, ContextLifecycleEvent.CLEANUP_STARTED, ContextLifecycleState.CLEANUP);
+      await this.emitLifecycleEvent(
+        contextId,
+        managedContext.agentId,
+        ContextLifecycleEvent.CLEANUP_STARTED,
+        ContextLifecycleState.CLEANUP
+      );
 
       // Cleanup child contexts first
       for (const childId of managedContext.childIds) {
@@ -499,13 +703,27 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
       await this.updateContextState(contextId, ContextLifecycleState.DISPOSED);
 
       // Emit cleanup completed event
-      await this.emitLifecycleEvent(contextId, managedContext.agentId, ContextLifecycleEvent.CLEANUP_COMPLETED, ContextLifecycleState.DISPOSED);
+      await this.emitLifecycleEvent(
+        contextId,
+        managedContext.agentId,
+        ContextLifecycleEvent.CLEANUP_COMPLETED,
+        ContextLifecycleState.DISPOSED
+      );
 
       runtimeLogger.info(`🔄 Context cleaned up: ${contextId}`);
     } catch (error) {
       await this.updateContextState(contextId, ContextLifecycleState.ERROR);
-      await this.emitLifecycleEvent(contextId, managedContext.agentId, ContextLifecycleEvent.CLEANUP_ERROR, ContextLifecycleState.ERROR, { error });
-      runtimeLogger.error(`❌ Context cleanup failed: ${contextId}:`, error as Error);
+      await this.emitLifecycleEvent(
+        contextId,
+        managedContext.agentId,
+        ContextLifecycleEvent.CLEANUP_ERROR,
+        ContextLifecycleState.ERROR,
+        { error }
+      );
+      runtimeLogger.error(
+        `❌ Context cleanup failed: ${contextId}:`,
+        error as Error
+      );
       throw error;
     }
   }
@@ -525,7 +743,7 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
 
       // Remove from all indexes
       this.contexts.delete(contextId);
-      
+
       const agentContexts = this.agentContexts.get(managedContext.agentId);
       if (agentContexts) {
         agentContexts.delete(contextId);
@@ -539,11 +757,19 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
       }
 
       // Emit disposed event
-      await this.emitLifecycleEvent(contextId, managedContext.agentId, ContextLifecycleEvent.CONTEXT_DISPOSED, ContextLifecycleState.DISPOSED);
+      await this.emitLifecycleEvent(
+        contextId,
+        managedContext.agentId,
+        ContextLifecycleEvent.CONTEXT_DISPOSED,
+        ContextLifecycleState.DISPOSED
+      );
 
       runtimeLogger.info(`🔄 Context disposed: ${contextId}`);
     } catch (error) {
-      runtimeLogger.error(`❌ Context disposal failed: ${contextId}:`, error as Error);
+      runtimeLogger.error(
+        `❌ Context disposal failed: ${contextId}:`,
+        error as Error
+      );
       throw error;
     }
   }
@@ -555,12 +781,12 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
     if (agentId) {
       const contextIds = this.agentContexts.get(agentId);
       if (!contextIds) return [];
-      
+
       return Array.from(contextIds)
-        .map(id => this.contexts.get(id))
+        .map((id) => this.contexts.get(id))
         .filter((ctx): ctx is ManagedContext => ctx !== undefined);
     }
-    
+
     return Array.from(this.contexts.values());
   }
 
@@ -573,7 +799,8 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
 
     // Update total duration
     const now = Date.now();
-    managedContext.metrics.performance.totalDuration = now - managedContext.metrics.timestamps.requested.getTime();
+    managedContext.metrics.performance.totalDuration =
+      now - managedContext.metrics.timestamps.requested.getTime();
 
     return managedContext.metrics;
   }
@@ -622,23 +849,33 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
     issues: string[];
   }> {
     const contexts = Array.from(this.contexts.values());
-    const activeContexts = contexts.filter(ctx => ctx.state === ContextLifecycleState.ACTIVE).length;
+    const activeContexts = contexts.filter(
+      (ctx) => ctx.state === ContextLifecycleState.ACTIVE
+    ).length;
     const totalContexts = contexts.length;
-    
+
     // Calculate average creation time
     const creationTimes = contexts
-      .filter(ctx => ctx.metrics.performance.creationDuration > 0)
-      .map(ctx => ctx.metrics.performance.creationDuration);
-    const avgCreationTime = creationTimes.length > 0 
-      ? creationTimes.reduce((sum, time) => sum + time, 0) / creationTimes.length 
-      : 0;
+      .filter((ctx) => ctx.metrics.performance.creationDuration > 0)
+      .map((ctx) => ctx.metrics.performance.creationDuration);
+    const avgCreationTime =
+      creationTimes.length > 0
+        ? creationTimes.reduce((sum, time) => sum + time, 0) /
+          creationTimes.length
+        : 0;
 
     // Calculate error rate
-    const totalErrors = contexts.reduce((sum, ctx) => sum + ctx.metrics.errors.length, 0);
+    const totalErrors = contexts.reduce(
+      (sum, ctx) => sum + ctx.metrics.errors.length,
+      0
+    );
     const errorRate = totalContexts > 0 ? totalErrors / totalContexts : 0;
 
     // Calculate memory usage
-    const memoryUsage = contexts.reduce((sum, ctx) => sum + ctx.metrics.performance.memoryUsage, 0);
+    const memoryUsage = contexts.reduce(
+      (sum, ctx) => sum + ctx.metrics.performance.memoryUsage,
+      0
+    );
 
     const issues: string[] = [];
     let status: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';
@@ -672,9 +909,9 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
         totalContexts,
         avgCreationTime,
         errorRate,
-        memoryUsage
+        memoryUsage,
       },
-      issues
+      issues,
     };
   }
 
@@ -687,9 +924,11 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
 
     for (const [contextId, managedContext] of this.contexts) {
       // Check if context is stale
-      const isStale = 
-        (managedContext.cleanupScheduled && now >= managedContext.cleanupScheduled.getTime()) ||
-        (now - managedContext.lastAccessed.getTime() > this.config.defaultTtl * 2) ||
+      const isStale =
+        (managedContext.cleanupScheduled &&
+          now >= managedContext.cleanupScheduled.getTime()) ||
+        now - managedContext.lastAccessed.getTime() >
+          this.config.defaultTtl * 2 ||
         managedContext.state === ContextLifecycleState.STALE;
 
       if (isStale) {
@@ -702,12 +941,17 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
       try {
         await this.disposeContext(contextId);
       } catch (error) {
-        runtimeLogger.error(`❌ Failed to cleanup stale context ${contextId}:`, error as Error);
+        runtimeLogger.error(
+          `❌ Failed to cleanup stale context ${contextId}:`,
+          error as Error
+        );
       }
     }
 
     if (staleContexts.length > 0) {
-      runtimeLogger.info(`🔄 Cleaned up ${staleContexts.length} stale contexts`);
+      runtimeLogger.info(
+        `🔄 Cleaned up ${staleContexts.length} stale contexts`
+      );
     }
 
     return staleContexts.length;
@@ -719,7 +963,9 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
   async exportContext(contextId: string): Promise<any> {
     const managedContext = this.contexts.get(contextId);
     if (!managedContext) {
-      throw createRuntimeError('Context not found', 'CONTEXT_NOT_FOUND', { contextId });
+      throw createRuntimeError('Context not found', 'CONTEXT_NOT_FOUND', {
+        contextId,
+      });
     }
 
     return {
@@ -734,7 +980,7 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
       dependencies: Array.from(managedContext.dependencies),
       lastAccessed: managedContext.lastAccessed,
       metadata: managedContext.metadata,
-      exportedAt: new Date()
+      exportedAt: new Date(),
     };
   }
 
@@ -743,9 +989,11 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
    */
   async importContext(data: any): Promise<string> {
     const contextId = data.id;
-    
+
     if (this.contexts.has(contextId)) {
-      throw createRuntimeError('Context already exists', 'CONTEXT_EXISTS', { contextId });
+      throw createRuntimeError('Context already exists', 'CONTEXT_EXISTS', {
+        contextId,
+      });
     }
 
     const managedContext: ManagedContext = {
@@ -760,7 +1008,7 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
       dependencies: new Set(data.dependencies || []),
       references: new WeakSet(),
       lastAccessed: new Date(data.lastAccessed),
-      metadata: data.metadata || {}
+      metadata: data.metadata || {},
     };
 
     this.contexts.set(contextId, managedContext);
@@ -776,9 +1024,12 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
     return `ctx_${agentId}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
   }
 
-  private async createManagedContext(contextId: string, request: ContextRequest): Promise<ManagedContext> {
+  private async createManagedContext(
+    contextId: string,
+    request: ContextRequest
+  ): Promise<ManagedContext> {
     const now = new Date();
-    
+
     const managedContext: ManagedContext = {
       id: contextId,
       agentId: request.agentId,
@@ -790,27 +1041,29 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
         agentId: request.agentId,
         timestamps: {
           requested: now,
-          created: now
+          created: now,
         },
         performance: {
           creationDuration: 0,
           memoryUsage: this.estimateMemoryUsage(request.baseContext || {}),
-          cpuTime: 0
+          cpuTime: 0,
         },
-        stateHistory: [{
-          state: ContextLifecycleState.INITIALIZING,
-          timestamp: now,
-          duration: 0
-        }],
+        stateHistory: [
+          {
+            state: ContextLifecycleState.INITIALIZING,
+            timestamp: now,
+            duration: 0,
+          },
+        ],
         eventCounts: {} as Record<ContextLifecycleEvent, number>,
         errors: [],
-        custom: {}
+        custom: {},
       },
       childIds: new Set(),
       dependencies: new Set(),
       references: new WeakSet(),
       lastAccessed: now,
-      metadata: request.metadata || {}
+      metadata: request.metadata || {},
     };
 
     return managedContext;
@@ -827,15 +1080,22 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
       if (this.config.validation.strict) {
         const validationResult = await this.validateContext(contextId);
         if (!validationResult.isValid) {
-          throw createRuntimeError('Context validation failed', 'CONTEXT_VALIDATION_ERROR', { 
-            contextId, 
-            errors: validationResult.errors 
-          });
+          throw createRuntimeError(
+            'Context validation failed',
+            'CONTEXT_VALIDATION_ERROR',
+            {
+              contextId,
+              errors: validationResult.errors,
+            }
+          );
         }
       }
 
       // Enrich context if enabled
-      if (this.config.enableEnrichment && managedContext.config.enrichment?.enabled) {
+      if (
+        this.config.enableEnrichment &&
+        managedContext.config.enrichment?.enabled
+      ) {
         await this.enrichContext(contextId);
       }
 
@@ -847,17 +1107,28 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
       managedContext.metrics.performance.creationDuration = creationDuration;
 
       // Emit initialized event
-      await this.emitLifecycleEvent(contextId, managedContext.agentId, ContextLifecycleEvent.CONTEXT_INITIALIZED, ContextLifecycleState.ACTIVE);
+      await this.emitLifecycleEvent(
+        contextId,
+        managedContext.agentId,
+        ContextLifecycleEvent.CONTEXT_INITIALIZED,
+        ContextLifecycleState.ACTIVE
+      );
 
       // Schedule cleanup if TTL is set
       if (managedContext.config.scope?.ttl) {
         await this.scheduleCleanup(contextId, managedContext.config.scope.ttl);
       }
 
-      runtimeLogger.debug(`🔄 Context initialized: ${contextId} in ${creationDuration}ms`);
+      runtimeLogger.debug(
+        `🔄 Context initialized: ${contextId} in ${creationDuration}ms`
+      );
     } catch (error) {
       await this.updateContextState(contextId, ContextLifecycleState.ERROR);
-      await this.recordError(contextId, error as Error, ContextLifecycleEvent.CONTEXT_INITIALIZED);
+      await this.recordError(
+        contextId,
+        error as Error,
+        ContextLifecycleEvent.CONTEXT_INITIALIZED
+      );
       throw error;
     }
   }
@@ -867,11 +1138,15 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
     const contextCount = agentContexts ? agentContexts.size : 0;
 
     if (contextCount >= this.config.maxContextsPerAgent) {
-      throw createRuntimeError('Maximum contexts per agent exceeded', 'CONTEXT_LIMIT_EXCEEDED', { 
-        agentId, 
-        currentCount: contextCount, 
-        maxAllowed: this.config.maxContextsPerAgent 
-      });
+      throw createRuntimeError(
+        'Maximum contexts per agent exceeded',
+        'CONTEXT_LIMIT_EXCEEDED',
+        {
+          agentId,
+          currentCount: contextCount,
+          maxAllowed: this.config.maxContextsPerAgent,
+        }
+      );
     }
   }
 
@@ -887,7 +1162,9 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
     }
   }
 
-  private async performValidation(managedContext: ManagedContext): Promise<ContextValidationResult> {
+  private async performValidation(
+    managedContext: ManagedContext
+  ): Promise<ContextValidationResult> {
     const startTime = Date.now();
     const errors: ContextValidationResult['errors'] = [];
     const warnings: string[] = [];
@@ -900,19 +1177,22 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
           property: 'agentId',
           message: 'Agent ID is required',
           severity: 'error',
-          code: 'REQUIRED_FIELD'
+          code: 'REQUIRED_FIELD',
         });
       }
     }
 
     // Type validation
     if (this.config.validation.rules.includes('type_validation')) {
-      if (managedContext.context && typeof managedContext.context !== 'object') {
+      if (
+        managedContext.context &&
+        typeof managedContext.context !== 'object'
+      ) {
         errors.push({
           property: 'context',
           message: 'Context must be an object',
           severity: 'error',
-          code: 'INVALID_TYPE'
+          code: 'INVALID_TYPE',
         });
       }
     }
@@ -924,27 +1204,31 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
           property: 'dependencies',
           message: 'Circular dependency detected',
           severity: 'error',
-          code: 'CIRCULAR_DEPENDENCY'
+          code: 'CIRCULAR_DEPENDENCY',
         });
       }
     }
 
     // Custom validators
     if (this.config.validation.customValidators) {
-      for (const [name, validator] of Object.entries(this.config.validation.customValidators)) {
+      for (const [name, validator] of Object.entries(
+        this.config.validation.customValidators
+      )) {
         try {
           const result = validator(managedContext.context);
           errors.push(...result.errors);
           warnings.push(...result.warnings);
           suggestions.push(...result.suggestions);
         } catch (error) {
-          warnings.push(`Custom validator ${name} failed: ${(error as Error).message}`);
+          warnings.push(
+            `Custom validator ${name} failed: ${(error as Error).message}`
+          );
         }
       }
     }
 
     const duration = Date.now() - startTime;
-    const score = Math.max(0, 1 - (errors.length * 0.2) - (warnings.length * 0.1));
+    const score = Math.max(0, 1 - errors.length * 0.2 - warnings.length * 0.1);
 
     return {
       isValid: errors.length === 0,
@@ -956,13 +1240,17 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
         validatedAt: new Date(),
         validatorVersion: '1.0.0',
         validationDuration: duration,
-        rulesApplied: this.config.validation.rules
-      }
+        rulesApplied: this.config.validation.rules,
+      },
     };
   }
 
-  private async performEnrichment(managedContext: ManagedContext): Promise<void> {
-    const enrichmentSteps = managedContext.config.enrichment?.steps || ['basic_enrichment'];
+  private async performEnrichment(
+    managedContext: ManagedContext
+  ): Promise<void> {
+    const enrichmentSteps = managedContext.config.enrichment?.steps || [
+      'basic_enrichment',
+    ];
 
     for (const step of enrichmentSteps) {
       switch (step) {
@@ -988,13 +1276,17 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
     managedContext.context.contextId = managedContext.id;
   }
 
-  private async memoryEnrichment(managedContext: ManagedContext): Promise<void> {
+  private async memoryEnrichment(
+    managedContext: ManagedContext
+  ): Promise<void> {
     // This would integrate with the memory system to add relevant memories
     // For now, we'll add a placeholder
     managedContext.context.memories = [];
   }
 
-  private async emotionEnrichment(managedContext: ManagedContext): Promise<void> {
+  private async emotionEnrichment(
+    managedContext: ManagedContext
+  ): Promise<void> {
     // This would integrate with the emotion system to add emotional context
     // For now, we'll add a placeholder
     managedContext.context.emotions = { current: 'neutral', history: [] };
@@ -1025,14 +1317,20 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
     return checkCircular(contextId);
   }
 
-  private async executeHook(hookName: keyof ContextLifecycleHooks, ...args: any[]): Promise<any> {
+  private async executeHook(
+    hookName: keyof ContextLifecycleHooks,
+    ...args: any[]
+  ): Promise<any> {
     const hook = this.hooks[hookName];
     if (!hook) return undefined;
 
     try {
       return await (hook as any)(...args);
     } catch (error) {
-      runtimeLogger.error(`❌ Lifecycle hook ${hookName} failed:`, error as Error);
+      runtimeLogger.error(
+        `❌ Lifecycle hook ${hookName} failed:`,
+        error as Error
+      );
       if (this.config.errorRecovery.enableAutoRecovery) {
         return undefined; // Allow execution to continue
       }
@@ -1053,19 +1351,24 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
       event,
       currentState: state,
       timestamp: new Date(),
-      metadata
+      metadata,
     };
 
     // Update event counts
     const managedContext = this.contexts.get(contextId);
     if (managedContext) {
-      managedContext.metrics.eventCounts[event] = (managedContext.metrics.eventCounts[event] || 0) + 1;
+      managedContext.metrics.eventCounts[event] =
+        (managedContext.metrics.eventCounts[event] || 0) + 1;
     }
 
     this.emit(event, eventData);
   }
 
-  private async recordError(contextId: string, error: Error, event: ContextLifecycleEvent): Promise<void> {
+  private async recordError(
+    contextId: string,
+    error: Error,
+    event: ContextLifecycleEvent
+  ): Promise<void> {
     const managedContext = this.contexts.get(contextId);
     if (!managedContext) return;
 
@@ -1073,7 +1376,7 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
       error,
       event,
       timestamp: new Date(),
-      recovered: false
+      recovered: false,
     });
 
     // Execute error hook
@@ -1109,13 +1412,18 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
     // Setup performance monitoring
     setInterval(() => {
       const health = this.healthCheck();
-      health.then(result => {
-        if (result.status !== 'healthy') {
-          runtimeLogger.warn(`🔄 Context Lifecycle Manager health: ${result.status}`, result.issues);
-        }
-      }).catch(error => {
-        runtimeLogger.error('❌ Health check failed:', error as Error);
-      });
+      health
+        .then((result) => {
+          if (result.status !== 'healthy') {
+            runtimeLogger.warn(
+              `🔄 Context Lifecycle Manager health: ${result.status}`,
+              result.issues
+            );
+          }
+        })
+        .catch((error) => {
+          runtimeLogger.error('❌ Health check failed:', error as Error);
+        });
     }, 60000); // Check every minute
   }
 }
@@ -1123,6 +1431,8 @@ export class SYMindXContextLifecycleManager extends EventEmitter implements Cont
 /**
  * Factory function to create a context lifecycle manager
  */
-export function createContextLifecycleManager(config?: ContextLifecycleManagerConfig): ContextLifecycleManager {
+export function createContextLifecycleManager(
+  config?: ContextLifecycleManagerConfig
+): ContextLifecycleManager {
   return new SYMindXContextLifecycleManager(config);
 }

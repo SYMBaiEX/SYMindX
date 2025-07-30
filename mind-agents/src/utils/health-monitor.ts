@@ -591,10 +591,18 @@ export class HealthMonitor extends EventEmitter {
           uptime: this.calculateUptime(checkId),
           errorCount: result.details?.errors?.length || 0,
           warningCount: result.details?.warnings?.length || 0,
-          ...(typeof result.details?.memory === 'number' ? { memoryUsage: result.details.memory } : {}),
-          ...(typeof result.details?.cpu === 'number' ? { cpuUsage: result.details.cpu } : {}),
-          ...(result.details?.errors?.[0] ? { lastError: result.details.errors[0] as string } : {}),
-          ...(result.details?.warnings?.[0] ? { lastWarning: result.details.warnings[0] as string } : {}),
+          ...(typeof result.details?.memory === 'number'
+            ? { memoryUsage: result.details.memory }
+            : {}),
+          ...(typeof result.details?.cpu === 'number'
+            ? { cpuUsage: result.details.cpu }
+            : {}),
+          ...(result.details?.errors?.[0]
+            ? { lastError: result.details.errors[0] as string }
+            : {}),
+          ...(result.details?.warnings?.[0]
+            ? { lastWarning: result.details.warnings[0] as string }
+            : {}),
         },
       };
 

@@ -5,8 +5,16 @@
  * model selection, performance optimization, and migration support.
  */
 
-import { UnifiedContext, ContextScope, ContextPriority } from '../types/context/unified-context.js';
-import { PortalCapability, TextGenerationOptions, ChatGenerationOptions } from '../types/portal.js';
+import {
+  UnifiedContext,
+  ContextScope,
+  ContextPriority,
+} from '../types/context/unified-context.js';
+import {
+  PortalCapability,
+  TextGenerationOptions,
+  ChatGenerationOptions,
+} from '../types/portal.js';
 import { CommunicationStyle } from '../types/communication.js';
 
 /**
@@ -33,13 +41,17 @@ export class ContextPromptTransformer {
 
     // Communication preferences
     if (context.communication) {
-      const commSection = this.buildCommunicationPromptSection(context.communication);
+      const commSection = this.buildCommunicationPromptSection(
+        context.communication
+      );
       if (commSection) sections.push(commSection);
     }
 
     // Environmental context
     if (context.environment) {
-      const envSection = this.buildEnvironmentPromptSection(context.environment);
+      const envSection = this.buildEnvironmentPromptSection(
+        context.environment
+      );
       if (envSection) sections.push(envSection);
     }
 
@@ -68,7 +80,10 @@ export class ContextPromptTransformer {
     if (agentContext.emotions) {
       const activeEmotions = Object.entries(agentContext.emotions)
         .filter(([_, data]) => (data as any)?.intensity > 0.3)
-        .map(([emotion, data]) => `${emotion} (${(data as any).intensity.toFixed(1)})`)
+        .map(
+          ([emotion, data]) =>
+            `${emotion} (${(data as any).intensity.toFixed(1)})`
+        )
         .join(', ');
       if (activeEmotions) {
         parts.push(`Current emotional state: ${activeEmotions}`);
@@ -82,7 +97,9 @@ export class ContextPromptTransformer {
 
     // Capabilities
     if (agentContext.capabilities && agentContext.capabilities.length > 0) {
-      parts.push(`Available capabilities: ${agentContext.capabilities.join(', ')}`);
+      parts.push(
+        `Available capabilities: ${agentContext.capabilities.join(', ')}`
+      );
     }
 
     return parts.length > 0 ? `[Agent Context]\n${parts.join('\n')}` : '';
@@ -98,8 +115,9 @@ export class ContextPromptTransformer {
     if (memoryContext.relevant && memoryContext.relevant.length > 0) {
       const memories = memoryContext.relevant
         .slice(0, 5)
-        .map((memory: any, index: number) => 
-          `${index + 1}. ${memory.content || memory.text || memory.description || 'Previous interaction'}`
+        .map(
+          (memory: any, index: number) =>
+            `${index + 1}. ${memory.content || memory.text || memory.description || 'Previous interaction'}`
         )
         .join('\n');
       parts.push(`Relevant memories:\n${memories}`);
@@ -137,15 +155,21 @@ export class ContextPromptTransformer {
 
     // Language preferences
     if (commContext.language) {
-      parts.push(`Language: ${commContext.language.primary}${commContext.language.region ? ` (${commContext.language.region})` : ''}`);
+      parts.push(
+        `Language: ${commContext.language.primary}${commContext.language.region ? ` (${commContext.language.region})` : ''}`
+      );
     }
 
     // Channel capabilities
     if (commContext.channel) {
-      parts.push(`Channel: ${commContext.channel.type}${commContext.channel.platform ? ` (${commContext.channel.platform})` : ''}`);
+      parts.push(
+        `Channel: ${commContext.channel.type}${commContext.channel.platform ? ` (${commContext.channel.platform})` : ''}`
+      );
     }
 
-    return parts.length > 0 ? `[Communication Preferences]\n${parts.join('\n')}` : '';
+    return parts.length > 0
+      ? `[Communication Preferences]\n${parts.join('\n')}`
+      : '';
   }
 
   /**
@@ -160,8 +184,10 @@ export class ContextPromptTransformer {
       const locationDesc = [
         location.address,
         location.timezone,
-        location.locale
-      ].filter(Boolean).join(', ');
+        location.locale,
+      ]
+        .filter(Boolean)
+        .join(', ');
       if (locationDesc) {
         parts.push(`Location: ${locationDesc}`);
       }
@@ -169,7 +195,9 @@ export class ContextPromptTransformer {
 
     // Device context
     if (envContext.device) {
-      parts.push(`Device: ${envContext.device.type}${envContext.device.os ? ` (${envContext.device.os})` : ''}`);
+      parts.push(
+        `Device: ${envContext.device.type}${envContext.device.os ? ` (${envContext.device.os})` : ''}`
+      );
     }
 
     // Environmental factors
@@ -194,13 +222,17 @@ export class ContextModelSelector {
   /**
    * Select optimal model based on context requirements
    */
-  static selectModel(context: UnifiedContext, availableModels: string[], capability: PortalCapability): string | null {
+  static selectModel(
+    context: UnifiedContext,
+    availableModels: string[],
+    capability: PortalCapability
+  ): string | null {
     const requirements = this.analyzeContextRequirements(context);
-    
+
     // Score models based on context requirements
-    const modelScores = availableModels.map(model => ({
+    const modelScores = availableModels.map((model) => ({
       model,
-      score: this.scoreModelForContext(model, requirements, capability)
+      score: this.scoreModelForContext(model, requirements, capability),
     }));
 
     // Sort by score and return the best match
@@ -211,7 +243,9 @@ export class ContextModelSelector {
   /**
    * Analyze context to determine requirements
    */
-  private static analyzeContextRequirements(context: UnifiedContext): ContextRequirements {
+  private static analyzeContextRequirements(
+    context: UnifiedContext
+  ): ContextRequirements {
     const requirements: ContextRequirements = {
       complexity: 'medium',
       speed: 'medium',
@@ -219,7 +253,7 @@ export class ContextModelSelector {
       accuracy: 'high',
       multimodal: false,
       toolUsage: false,
-      conversational: false
+      conversational: false,
     };
 
     // Analyze conversation complexity
@@ -237,8 +271,10 @@ export class ContextModelSelector {
     }
 
     // Analyze multimodal requirements
-    if (context.communication?.channel?.capabilities?.includes('image') ||
-        context.communication?.channel?.capabilities?.includes('video')) {
+    if (
+      context.communication?.channel?.capabilities?.includes('image') ||
+      context.communication?.channel?.capabilities?.includes('video')
+    ) {
       requirements.multimodal = true;
     }
 
@@ -250,8 +286,10 @@ export class ContextModelSelector {
     }
 
     // Analyze accuracy requirements
-    if (context.agent?.config?.personality?.precision === 'high' ||
-        context.execution?.mode === 'production') {
+    if (
+      context.agent?.config?.personality?.precision === 'high' ||
+      context.execution?.mode === 'production'
+    ) {
       requirements.accuracy = 'high';
     }
 
@@ -261,33 +299,71 @@ export class ContextModelSelector {
   /**
    * Score a model based on context requirements
    */
-  private static scoreModelForContext(model: string, requirements: ContextRequirements, capability: PortalCapability): number {
+  private static scoreModelForContext(
+    model: string,
+    requirements: ContextRequirements,
+    capability: PortalCapability
+  ): number {
     let score = 0;
 
     // Model-specific scoring logic
     const modelInfo = this.getModelInfo(model);
-    
+
     // Complexity matching
-    if (requirements.complexity === 'high' && modelInfo.capabilities.includes('complex-reasoning')) score += 30;
-    if (requirements.complexity === 'medium' && modelInfo.capabilities.includes('general-purpose')) score += 25;
-    if (requirements.complexity === 'low' && modelInfo.capabilities.includes('fast-simple')) score += 20;
+    if (
+      requirements.complexity === 'high' &&
+      modelInfo.capabilities.includes('complex-reasoning')
+    )
+      score += 30;
+    if (
+      requirements.complexity === 'medium' &&
+      modelInfo.capabilities.includes('general-purpose')
+    )
+      score += 25;
+    if (
+      requirements.complexity === 'low' &&
+      modelInfo.capabilities.includes('fast-simple')
+    )
+      score += 20;
 
     // Speed requirements
-    if (requirements.speed === 'high' && modelInfo.speed === 'fast') score += 20;
-    if (requirements.speed === 'medium' && modelInfo.speed === 'medium') score += 15;
+    if (requirements.speed === 'high' && modelInfo.speed === 'fast')
+      score += 20;
+    if (requirements.speed === 'medium' && modelInfo.speed === 'medium')
+      score += 15;
 
     // Tool usage capability
-    if (requirements.toolUsage && modelInfo.capabilities.includes('tool-calling')) score += 25;
+    if (
+      requirements.toolUsage &&
+      modelInfo.capabilities.includes('tool-calling')
+    )
+      score += 25;
 
     // Multimodal requirements
-    if (requirements.multimodal && modelInfo.capabilities.includes('multimodal')) score += 30;
+    if (
+      requirements.multimodal &&
+      modelInfo.capabilities.includes('multimodal')
+    )
+      score += 30;
 
     // Creativity requirements
-    if (requirements.creativity === 'high' && modelInfo.capabilities.includes('creative')) score += 15;
+    if (
+      requirements.creativity === 'high' &&
+      modelInfo.capabilities.includes('creative')
+    )
+      score += 15;
 
     // Capability-specific scoring
-    if (capability === PortalCapability.FUNCTION_CALLING && modelInfo.capabilities.includes('tool-calling')) score += 20;
-    if (capability === PortalCapability.VISION && modelInfo.capabilities.includes('multimodal')) score += 20;
+    if (
+      capability === PortalCapability.FUNCTION_CALLING &&
+      modelInfo.capabilities.includes('tool-calling')
+    )
+      score += 20;
+    if (
+      capability === PortalCapability.VISION &&
+      modelInfo.capabilities.includes('multimodal')
+    )
+      score += 20;
 
     return score;
   }
@@ -300,26 +376,38 @@ export class ContextModelSelector {
     const modelDatabase: Record<string, ModelInfo> = {
       'gpt-4o': {
         speed: 'medium',
-        capabilities: ['complex-reasoning', 'multimodal', 'tool-calling', 'creative']
+        capabilities: [
+          'complex-reasoning',
+          'multimodal',
+          'tool-calling',
+          'creative',
+        ],
       },
       'gpt-4o-mini': {
         speed: 'fast',
-        capabilities: ['general-purpose', 'tool-calling', 'fast-simple']
+        capabilities: ['general-purpose', 'tool-calling', 'fast-simple'],
       },
       'claude-3-5-sonnet-20241022': {
         speed: 'medium',
-        capabilities: ['complex-reasoning', 'creative', 'tool-calling', 'multimodal']
+        capabilities: [
+          'complex-reasoning',
+          'creative',
+          'tool-calling',
+          'multimodal',
+        ],
       },
       'claude-3-haiku-20240307': {
         speed: 'fast',
-        capabilities: ['fast-simple', 'general-purpose']
-      }
+        capabilities: ['fast-simple', 'general-purpose'],
+      },
     };
 
-    return modelDatabase[model] || {
-      speed: 'medium',
-      capabilities: ['general-purpose']
-    };
+    return (
+      modelDatabase[model] || {
+        speed: 'medium',
+        capabilities: ['general-purpose'],
+      }
+    );
   }
 }
 
@@ -337,10 +425,16 @@ export class ContextPerformanceOptimizer {
     const optimized = { ...baseOptions };
 
     // Token optimization
-    optimized.maxOutputTokens = this.optimizeTokenLimit(context, optimized.maxOutputTokens);
+    optimized.maxOutputTokens = this.optimizeTokenLimit(
+      context,
+      optimized.maxOutputTokens
+    );
 
     // Temperature optimization
-    optimized.temperature = this.optimizeTemperature(context, optimized.temperature);
+    optimized.temperature = this.optimizeTemperature(
+      context,
+      optimized.temperature
+    );
 
     // Streaming optimization
     if (this.shouldEnableStreaming(context)) {
@@ -358,12 +452,17 @@ export class ContextPerformanceOptimizer {
   /**
    * Optimize token limit based on context
    */
-  private static optimizeTokenLimit(context: UnifiedContext, currentLimit?: number): number {
+  private static optimizeTokenLimit(
+    context: UnifiedContext,
+    currentLimit?: number
+  ): number {
     let baseLimit = currentLimit || 1000;
 
     // Increase for complex conversations
-    if (context.communication?.conversationHistory && 
-        context.communication.conversationHistory.length > 10) {
+    if (
+      context.communication?.conversationHistory &&
+      context.communication.conversationHistory.length > 10
+    ) {
       baseLimit = Math.min(baseLimit * 2, 4000);
     }
 
@@ -373,7 +472,10 @@ export class ContextPerformanceOptimizer {
     }
 
     // Adjust based on performance constraints
-    if (context.performance?.memoryUsage && context.performance.memoryUsage > 100 * 1024 * 1024) {
+    if (
+      context.performance?.memoryUsage &&
+      context.performance.memoryUsage > 100 * 1024 * 1024
+    ) {
       baseLimit = Math.min(baseLimit, 800); // Reduce for memory pressure
     }
 
@@ -383,7 +485,10 @@ export class ContextPerformanceOptimizer {
   /**
    * Optimize temperature based on context
    */
-  private static optimizeTemperature(context: UnifiedContext, currentTemp?: number): number {
+  private static optimizeTemperature(
+    context: UnifiedContext,
+    currentTemp?: number
+  ): number {
     let temperature = currentTemp || 0.7;
 
     // Lower temperature for tool usage
@@ -412,8 +517,10 @@ export class ContextPerformanceOptimizer {
    */
   private static shouldEnableStreaming(context: UnifiedContext): boolean {
     // Enable streaming for interactive channels
-    if (context.communication?.channel?.type === 'text' && 
-        context.communication.channel.capabilities?.includes('streaming')) {
+    if (
+      context.communication?.channel?.type === 'text' &&
+      context.communication.channel.capabilities?.includes('streaming')
+    ) {
       return true;
     }
 
@@ -431,11 +538,13 @@ export class ContextPerformanceOptimizer {
   /**
    * Optimize tool selection based on context
    */
-  private static optimizeToolSelection(context: UnifiedContext): Record<string, any> | undefined {
+  private static optimizeToolSelection(
+    context: UnifiedContext
+  ): Record<string, any> | undefined {
     if (!context.tools?.available) return undefined;
 
     const tools: Record<string, any> = {};
-    
+
     // Prioritize tools based on recent usage
     const toolsByRecency = context.tools.recent || [];
     const recentToolNames = toolsByRecency.map((usage: any) => usage.id);
@@ -445,7 +554,7 @@ export class ContextPerformanceOptimizer {
       if (recentToolNames.includes(tool.id)) {
         tools[tool.name] = {
           description: tool.description,
-          parameters: tool.parameters
+          parameters: tool.parameters,
         };
       }
     }
@@ -453,13 +562,13 @@ export class ContextPerformanceOptimizer {
     // Add other relevant tools (up to a reasonable limit)
     const maxTools = 10;
     let toolCount = Object.keys(tools).length;
-    
+
     for (const tool of context.tools.available) {
       if (toolCount >= maxTools) break;
       if (!tools[tool.name]) {
         tools[tool.name] = {
           description: tool.description,
-          parameters: tool.parameters
+          parameters: tool.parameters,
         };
         toolCount++;
       }
@@ -494,7 +603,11 @@ export class ContextMigrationHelper {
       }
 
       // Migrate model selection if not set
-      if (!migrated.model && context.tools?.available && context.tools.available.length > 0) {
+      if (
+        !migrated.model &&
+        context.tools?.available &&
+        context.tools.available.length > 0
+      ) {
         // This would typically be set by the portal's context-aware methods
         migrated.model = 'tool-optimized-model';
       }
@@ -512,7 +625,7 @@ export class ContextMigrationHelper {
     communicationStyle?: CommunicationStyle
   ): UnifiedContext {
     const now = new Date().toISOString();
-    
+
     return {
       metadata: {
         id: `context_${Date.now()}`,
@@ -521,23 +634,27 @@ export class ContextMigrationHelper {
         createdAt: now,
         lastModified: now,
         source: 'migration-helper',
-        version: '1.0.0'
+        version: '1.0.0',
       },
       identity: agentId ? { agentId } : undefined,
-      session: sessionId ? {
-        id: sessionId,
-        startTime: new Date(now),
-        events: [],
-        state: {}
-      } : undefined,
-      communication: communicationStyle ? { 
-        conversationHistory: [],
-        style: communicationStyle 
-      } : undefined,
+      session: sessionId
+        ? {
+            id: sessionId,
+            startTime: new Date(now),
+            events: [],
+            state: {},
+          }
+        : undefined,
+      communication: communicationStyle
+        ? {
+            conversationHistory: [],
+            style: communicationStyle,
+          }
+        : undefined,
       temporal: {
         now: new Date(now),
-        startTime: new Date(now)
-      }
+        startTime: new Date(now),
+      },
     };
   }
 
@@ -550,8 +667,13 @@ export class ContextMigrationHelper {
     const hasMemory = data.memory || data.memories;
     const hasCommunicationPrefs = data.communication || data.style;
     const hasEnvironmentInfo = data.environment || data.location || data.device;
-    
-    return !!(hasAgentInfo || hasMemory || hasCommunicationPrefs || hasEnvironmentInfo);
+
+    return !!(
+      hasAgentInfo ||
+      hasMemory ||
+      hasCommunicationPrefs ||
+      hasEnvironmentInfo
+    );
   }
 }
 
@@ -602,8 +724,10 @@ export const ContextUtils = {
    * Check if context indicates real-time requirements
    */
   isRealTime: (context: UnifiedContext): boolean => {
-    return !!(context.temporal?.constraints?.deadline || 
-              context.communication?.channel?.capabilities?.includes('streaming'));
+    return !!(
+      context.temporal?.constraints?.deadline ||
+      context.communication?.channel?.capabilities?.includes('streaming')
+    );
   },
 
   /**
@@ -619,7 +743,7 @@ export const ContextUtils = {
   isExpired: (context: UnifiedContext): boolean => {
     if (!context.metadata.expiresAt) return false;
     return new Date(context.metadata.expiresAt) < new Date();
-  }
+  },
 };
 
 // Export all utilities as default
@@ -628,5 +752,5 @@ export default {
   ContextModelSelector,
   ContextPerformanceOptimizer,
   ContextMigrationHelper,
-  ContextUtils
+  ContextUtils,
 };

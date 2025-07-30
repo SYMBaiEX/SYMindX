@@ -1,6 +1,6 @@
 /**
  * Context Enrichers for SYMindX
- * 
+ *
  * This module exports all available context enrichers and provides factory
  * functions for creating and registering enrichers with the pipeline.
  */
@@ -31,11 +31,26 @@ import {
 } from '../../../types/context/context-enrichment';
 
 // Import all enricher classes
-import { MemoryContextEnricher, MemoryEnricherConfig } from './memory-context-enricher';
-import { EnvironmentContextEnricher, EnvironmentEnricherConfig } from './environment-context-enricher';
-import { EmotionalContextEnricher, EmotionalEnricherConfig } from './emotional-context-enricher';
-import { SocialContextEnricher, SocialEnricherConfig } from './social-context-enricher';
-import { TemporalContextEnricher, TemporalEnricherConfig } from './temporal-context-enricher';
+import {
+  MemoryContextEnricher,
+  MemoryEnricherConfig,
+} from './memory-context-enricher';
+import {
+  EnvironmentContextEnricher,
+  EnvironmentEnricherConfig,
+} from './environment-context-enricher';
+import {
+  EmotionalContextEnricher,
+  EmotionalEnricherConfig,
+} from './emotional-context-enricher';
+import {
+  SocialContextEnricher,
+  SocialEnricherConfig,
+} from './social-context-enricher';
+import {
+  TemporalContextEnricher,
+  TemporalEnricherConfig,
+} from './temporal-context-enricher';
 
 /**
  * Factory function for creating a Memory Context Enricher
@@ -104,7 +119,8 @@ export function createMemoryEnricherRegistryEntry(
     metadata: {
       name: 'Memory Context Enricher',
       version: '1.0.0',
-      description: 'Enriches context with relevant memories and historical patterns',
+      description:
+        'Enriches context with relevant memories and historical patterns',
       author: 'SYMindX',
       tags: ['memory', 'history', 'patterns'],
     },
@@ -140,7 +156,8 @@ export function createEnvironmentEnricherRegistryEntry(
     metadata: {
       name: 'Environment Context Enricher',
       version: '1.0.0',
-      description: 'Enriches context with system environment and runtime information',
+      description:
+        'Enriches context with system environment and runtime information',
       author: 'SYMindX',
       tags: ['environment', 'system', 'runtime'],
     },
@@ -176,7 +193,8 @@ export function createEmotionalEnricherRegistryEntry(
     metadata: {
       name: 'Emotional Context Enricher',
       version: '1.0.0',
-      description: 'Enriches context with emotional state and emotional insights',
+      description:
+        'Enriches context with emotional state and emotional insights',
       author: 'SYMindX',
       tags: ['emotion', 'mood', 'feelings'],
     },
@@ -212,7 +230,8 @@ export function createSocialEnricherRegistryEntry(
     metadata: {
       name: 'Social Context Enricher',
       version: '1.0.0',
-      description: 'Enriches context with social relationships and interaction patterns',
+      description:
+        'Enriches context with social relationships and interaction patterns',
       author: 'SYMindX',
       tags: ['social', 'relationships', 'interactions'],
     },
@@ -247,7 +266,8 @@ export function createTemporalEnricherRegistryEntry(
     metadata: {
       name: 'Temporal Context Enricher',
       version: '1.0.0',
-      description: 'Enriches context with temporal information and time-based patterns',
+      description:
+        'Enriches context with temporal information and time-based patterns',
       author: 'SYMindX',
       tags: ['time', 'temporal', 'chronological'],
     },
@@ -267,7 +287,7 @@ export function createTemporalEnricherRegistryEntry(
 
 /**
  * Get all default enricher registry entries
- * 
+ *
  * This function creates all standard enrichers with their default configurations.
  * You'll need to provide the required dependencies (memoryProvider, agentProvider, etc.)
  */
@@ -283,18 +303,26 @@ export function getAllDefaultEnricherEntries(dependencies: {
 
   // Add environment enricher if agent provider available
   if (dependencies.agentProvider) {
-    entries.push(createEnvironmentEnricherRegistryEntry(dependencies.agentProvider));
+    entries.push(
+      createEnvironmentEnricherRegistryEntry(dependencies.agentProvider)
+    );
   }
 
   // Add memory-based enrichers if memory provider available
   if (dependencies.memoryProvider) {
-    entries.push(createMemoryEnricherRegistryEntry(dependencies.memoryProvider));
-    entries.push(createSocialEnricherRegistryEntry(dependencies.memoryProvider));
+    entries.push(
+      createMemoryEnricherRegistryEntry(dependencies.memoryProvider)
+    );
+    entries.push(
+      createSocialEnricherRegistryEntry(dependencies.memoryProvider)
+    );
   }
 
   // Add emotional enricher if emotion provider available
   if (dependencies.emotionProvider) {
-    entries.push(createEmotionalEnricherRegistryEntry(dependencies.emotionProvider));
+    entries.push(
+      createEmotionalEnricherRegistryEntry(dependencies.emotionProvider)
+    );
   }
 
   return entries;
@@ -329,30 +357,38 @@ export function createAllEnricherEntries(
 
   // Environment enricher
   if (dependencies.agentProvider) {
-    entries.push(createEnvironmentEnricherRegistryEntry(
-      dependencies.agentProvider,
-      config.environment
-    ));
+    entries.push(
+      createEnvironmentEnricherRegistryEntry(
+        dependencies.agentProvider,
+        config.environment
+      )
+    );
   }
 
   // Memory-based enrichers
   if (dependencies.memoryProvider) {
-    entries.push(createMemoryEnricherRegistryEntry(
-      dependencies.memoryProvider,
-      config.memory
-    ));
-    entries.push(createSocialEnricherRegistryEntry(
-      dependencies.memoryProvider,
-      config.social
-    ));
+    entries.push(
+      createMemoryEnricherRegistryEntry(
+        dependencies.memoryProvider,
+        config.memory
+      )
+    );
+    entries.push(
+      createSocialEnricherRegistryEntry(
+        dependencies.memoryProvider,
+        config.social
+      )
+    );
   }
 
   // Emotional enricher
   if (dependencies.emotionProvider) {
-    entries.push(createEmotionalEnricherRegistryEntry(
-      dependencies.emotionProvider,
-      config.emotional
-    ));
+    entries.push(
+      createEmotionalEnricherRegistryEntry(
+        dependencies.emotionProvider,
+        config.emotional
+      )
+    );
   }
 
   return entries;

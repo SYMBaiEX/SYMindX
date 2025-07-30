@@ -61,12 +61,12 @@ const config: RuntimeConfig = {
     autoLoad: true,
     paths: ['./portals'],
     apiKeys: {
-      openai: process.env["OPENAI_API_KEY"] || '',
-      anthropic: process.env["ANTHROPIC_API_KEY"] || '',
-      groq: process.env["GROQ_API_KEY"] || '',
-      xai: process.env["XAI_API_KEY"] || '',
-      openrouter: process.env["OPENROUTER_API_KEY"] || '',
-      'kluster.ai': process.env["KLUSTERAI_API_KEY"] || '',
+      openai: process.env['OPENAI_API_KEY'] || '',
+      anthropic: process.env['ANTHROPIC_API_KEY'] || '',
+      groq: process.env['GROQ_API_KEY'] || '',
+      xai: process.env['XAI_API_KEY'] || '',
+      openrouter: process.env['OPENROUTER_API_KEY'] || '',
+      'kluster.ai': process.env['KLUSTERAI_API_KEY'] || '',
     },
   },
 };
@@ -84,7 +84,7 @@ async function start() {
     await displayBanner();
 
     // Optional: Show matrix rain for 2 seconds
-    if (process.env["SHOW_MATRIX"] === 'true') {
+    if (process.env['SHOW_MATRIX'] === 'true') {
       await matrixRain(2000);
     }
 

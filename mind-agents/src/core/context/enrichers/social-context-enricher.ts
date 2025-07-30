@@ -1,6 +1,6 @@
 /**
  * Social Context Enricher for SYMindX
- * 
+ *
  * This enricher adds social relationship data, interaction history,
  * and social dynamics information to help agents understand and
  * respond appropriately to social contexts.
@@ -48,7 +48,7 @@ interface Relationship {
 
 /**
  * Social Context Enricher
- * 
+ *
  * Enriches context with social relationship data, interaction patterns,
  * and social dynamics to enable socially aware agent behavior.
  */
@@ -62,24 +62,19 @@ export class SocialContextEnricher extends BaseContextEnricher {
     memoryProvider: MemoryProvider,
     config: Partial<SocialEnricherConfig> = {}
   ) {
-    super(
-      'social-context-enricher',
-      'Social Context Enricher',
-      '1.0.0',
-      {
-        enabled: true,
-        priority: EnrichmentPriority.MEDIUM,
-        stage: EnrichmentStage.CORE_ENRICHMENT,
-        timeout: 2500,
-        maxRetries: 3,
-        cacheEnabled: true,
-        cacheTtl: 120, // 2 minute cache for social data
-        dependsOn: [],
-      }
-    );
+    super('social-context-enricher', 'Social Context Enricher', '1.0.0', {
+      enabled: true,
+      priority: EnrichmentPriority.MEDIUM,
+      stage: EnrichmentStage.CORE_ENRICHMENT,
+      timeout: 2500,
+      maxRetries: 3,
+      cacheEnabled: true,
+      cacheTtl: 120, // 2 minute cache for social data
+      dependsOn: [],
+    });
 
     this.memoryProvider = memoryProvider;
-    
+
     // Default social enricher configuration
     this.enricherConfig = {
       includeRelationships: true,
@@ -126,7 +121,9 @@ export class SocialContextEnricher extends BaseContextEnricher {
       }
 
       // Test memory provider connection
-      const healthCheck = await this.memoryProvider.healthCheck?.() || { success: true };
+      const healthCheck = (await this.memoryProvider.healthCheck?.()) || {
+        success: true,
+      };
       if (!healthCheck.success) {
         return {
           success: false,
@@ -145,7 +142,8 @@ export class SocialContextEnricher extends BaseContextEnricher {
         message: 'Social context enricher initialized successfully',
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       return {
         success: false,
         error: errorMessage,
@@ -156,17 +154,19 @@ export class SocialContextEnricher extends BaseContextEnricher {
   /**
    * Perform social-based context enrichment
    */
-  protected async doEnrich(request: EnrichmentRequest): Promise<Record<string, unknown>> {
+  protected async doEnrich(
+    request: EnrichmentRequest
+  ): Promise<Record<string, unknown>> {
     if (!this.memoryProvider) {
       throw new Error('Memory provider not available');
     }
 
     const agentId = request.agentId;
     const context = request.context;
-    
+
     // Extract social entities from context
     const socialEntities = this.extractSocialEntities(context);
-    
+
     // Get relationship information
     const relationships = this.enricherConfig.includeRelationships
       ? await this.getRelationships(agentId, socialEntities)
@@ -229,7 +229,9 @@ export class SocialContextEnricher extends BaseContextEnricher {
       }
 
       // Check memory provider health
-      const providerHealth = await this.memoryProvider.healthCheck?.() || { success: true };
+      const providerHealth = (await this.memoryProvider.healthCheck?.()) || {
+        success: true,
+      };
       if (!providerHealth.success) {
         return {
           success: false,
@@ -247,7 +249,8 @@ export class SocialContextEnricher extends BaseContextEnricher {
         },
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       return {
         success: false,
         error: errorMessage,
@@ -264,13 +267,14 @@ export class SocialContextEnricher extends BaseContextEnricher {
       this.relationshipCache.clear();
       this.cacheExpiry.clear();
       this.memoryProvider = null;
-      
+
       return {
         success: true,
         message: 'Social context enricher disposed successfully',
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       return {
         success: false,
         error: errorMessage,
@@ -302,7 +306,11 @@ export class SocialContextEnricher extends BaseContextEnricher {
     type: 'user' | 'agent' | 'system';
     role?: string;
   }> {
-    const entities: Array<{ id: string; type: 'user' | 'agent' | 'system'; role?: string }> = [];
+    const entities: Array<{
+      id: string;
+      type: 'user' | 'agent' | 'system';
+      role?: string;
+    }> = [];
 
     // Extract user ID
     if (context.userId && typeof context.userId === 'string') {
@@ -353,7 +361,7 @@ export class SocialContextEnricher extends BaseContextEnricher {
 
     // Remove duplicates
     const seen = new Set<string>();
-    return entities.filter(entity => {
+    return entities.filter((entity) => {
       const key = `${entity.id}:${entity.type}`;
       if (seen.has(key)) {
         return false;
@@ -368,37 +376,44 @@ export class SocialContextEnricher extends BaseContextEnricher {
    */
   private async getRelationships(
     agentId: string,
-    entities: Array<{ id: string; type: 'user' | 'agent' | 'system'; role?: string }>
+    entities: Array<{
+      id: string;
+      type: 'user' | 'agent' | 'system';
+      role?: string;
+    }>
   ): Promise<Relationship[]> {
     if (!this.memoryProvider) {
       return [];
     }
 
     const relationships: Relationship[] = [];
-    
+
     for (const entity of entities) {
       try {
         // Check cache first
         const cacheKey = `${agentId}:${entity.id}`;
         const cached = this.getCachedRelationship(cacheKey);
-        
+
         if (cached) {
           relationships.push(...cached);
           continue;
         }
 
         // Query memories for interaction history with this entity
-        const interactionMemories = await this.getInteractionMemories(agentId, entity.id);
-        
+        const interactionMemories = await this.getInteractionMemories(
+          agentId,
+          entity.id
+        );
+
         // Build relationship from interaction history
         const relationship = await this.buildRelationshipFromMemories(
           entity,
           interactionMemories
         );
-        
+
         if (relationship) {
           relationships.push(relationship);
-          
+
           // Cache the relationship
           this.cacheRelationship(cacheKey, [relationship]);
         }
@@ -420,7 +435,10 @@ export class SocialContextEnricher extends BaseContextEnricher {
   /**
    * Get interaction memories with a specific entity
    */
-  private async getInteractionMemories(agentId: string, entityId: string): Promise<MemoryRecord[]> {
+  private async getInteractionMemories(
+    agentId: string,
+    entityId: string
+  ): Promise<MemoryRecord[]> {
     if (!this.memoryProvider) {
       return [];
     }
@@ -430,7 +448,10 @@ export class SocialContextEnricher extends BaseContextEnricher {
         query: `interaction with ${entityId}`,
         limit: 50,
         types: ['interaction', 'conversation', 'social'],
-        since: new Date(Date.now() - this.enricherConfig.relationshipDecayDays * 24 * 60 * 60 * 1000),
+        since: new Date(
+          Date.now() -
+            this.enricherConfig.relationshipDecayDays * 24 * 60 * 60 * 1000
+        ),
       });
 
       if (!searchResult.success || !searchResult.memories) {
@@ -438,11 +459,12 @@ export class SocialContextEnricher extends BaseContextEnricher {
       }
 
       // Filter memories that actually involve this entity
-      return searchResult.memories.filter(memory => 
-        memory.content?.includes(entityId) ||
-        memory.metadata?.participants?.includes(entityId) ||
-        memory.metadata?.userId === entityId ||
-        memory.metadata?.senderId === entityId
+      return searchResult.memories.filter(
+        (memory) =>
+          memory.content?.includes(entityId) ||
+          memory.metadata?.participants?.includes(entityId) ||
+          memory.metadata?.userId === entityId ||
+          memory.metadata?.senderId === entityId
       );
     } catch (error) {
       this.log('warn', 'Failed to search interaction memories', {
@@ -467,21 +489,27 @@ export class SocialContextEnricher extends BaseContextEnricher {
 
     // Calculate interaction metrics
     const interactionCount = memories.length;
-    const sortedMemories = memories.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    const sortedMemories = memories.sort(
+      (a, b) => b.timestamp.getTime() - a.timestamp.getTime()
+    );
     const lastInteraction = sortedMemories[0].timestamp;
-    
+
     // Calculate relationship strength based on frequency and recency
-    const daysSinceLastInteraction = (Date.now() - lastInteraction.getTime()) / (1000 * 60 * 60 * 24);
-    const recencyFactor = Math.max(0, 1 - (daysSinceLastInteraction / this.enricherConfig.relationshipDecayDays));
+    const daysSinceLastInteraction =
+      (Date.now() - lastInteraction.getTime()) / (1000 * 60 * 60 * 24);
+    const recencyFactor = Math.max(
+      0,
+      1 - daysSinceLastInteraction / this.enricherConfig.relationshipDecayDays
+    );
     const frequencyFactor = Math.min(1, interactionCount / 10); // Cap at 10 interactions for full frequency score
-    const strength = (recencyFactor * 0.6) + (frequencyFactor * 0.4);
+    const strength = recencyFactor * 0.6 + frequencyFactor * 0.4;
 
     // Calculate sentiment from memories
     const sentiment = this.calculateSentimentFromMemories(memories);
-    
+
     // Calculate trust score based on positive interactions and consistency
     const trustScore = this.calculateTrustScore(memories, sentiment);
-    
+
     // Calculate familiarity based on interaction depth and variety
     const familiarity = this.calculateFamiliarity(memories);
 
@@ -515,7 +543,10 @@ export class SocialContextEnricher extends BaseContextEnricher {
 
     for (const memory of memories) {
       // Look for sentiment in metadata
-      if (memory.metadata?.sentiment && typeof memory.metadata.sentiment === 'number') {
+      if (
+        memory.metadata?.sentiment &&
+        typeof memory.metadata.sentiment === 'number'
+      ) {
         sentimentSum += memory.metadata.sentiment;
         sentimentCount++;
         continue;
@@ -526,8 +557,24 @@ export class SocialContextEnricher extends BaseContextEnricher {
       let memorySentiment = 0;
 
       // Positive keywords
-      const positiveKeywords = ['good', 'great', 'excellent', 'positive', 'happy', 'satisfied', 'success'];
-      const negativeKeywords = ['bad', 'terrible', 'negative', 'angry', 'frustrated', 'problem', 'error'];
+      const positiveKeywords = [
+        'good',
+        'great',
+        'excellent',
+        'positive',
+        'happy',
+        'satisfied',
+        'success',
+      ];
+      const negativeKeywords = [
+        'bad',
+        'terrible',
+        'negative',
+        'angry',
+        'frustrated',
+        'problem',
+        'error',
+      ];
 
       for (const keyword of positiveKeywords) {
         if (content.includes(keyword)) {
@@ -551,18 +598,25 @@ export class SocialContextEnricher extends BaseContextEnricher {
   /**
    * Calculate trust score based on interaction history
    */
-  private calculateTrustScore(memories: MemoryRecord[], sentiment: number): number {
+  private calculateTrustScore(
+    memories: MemoryRecord[],
+    sentiment: number
+  ): number {
     let trustScore = 0.5; // Start with neutral trust
 
     // Positive sentiment increases trust
     trustScore += sentiment * 0.3;
 
     // Consistent interactions over time increase trust
-    const timeSpan = memories.length > 1 
-      ? (memories[0].timestamp.getTime() - memories[memories.length - 1].timestamp.getTime()) / (1000 * 60 * 60 * 24)
-      : 0;
-    
-    if (timeSpan > 7) { // More than a week of interactions
+    const timeSpan =
+      memories.length > 1
+        ? (memories[0].timestamp.getTime() -
+            memories[memories.length - 1].timestamp.getTime()) /
+          (1000 * 60 * 60 * 24)
+        : 0;
+
+    if (timeSpan > 7) {
+      // More than a week of interactions
       trustScore += 0.2;
     }
 
@@ -585,11 +639,13 @@ export class SocialContextEnricher extends BaseContextEnricher {
     familiarityScore += Math.min(0.5, memories.length * 0.05);
 
     // Variety of interaction types increases familiarity
-    const interactionTypes = new Set(memories.map(m => m.type || 'unknown'));
+    const interactionTypes = new Set(memories.map((m) => m.type || 'unknown'));
     familiarityScore += Math.min(0.3, interactionTypes.size * 0.1);
 
     // Longer conversations increase familiarity
-    const avgContentLength = memories.reduce((sum, m) => sum + (m.content?.length || 0), 0) / memories.length;
+    const avgContentLength =
+      memories.reduce((sum, m) => sum + (m.content?.length || 0), 0) /
+      memories.length;
     familiarityScore += Math.min(0.2, avgContentLength / 500); // Normalize by 500 characters
 
     return Math.max(0, Math.min(1, familiarityScore));
@@ -606,13 +662,15 @@ export class SocialContextEnricher extends BaseContextEnricher {
     if (entity.type === 'agent') {
       return 'colleague';
     }
-    
+
     if (entity.type === 'system') {
       return 'system';
     }
 
     // Analyze interaction patterns for users
-    const avgContentLength = memories.reduce((sum, m) => sum + (m.content?.length || 0), 0) / memories.length;
+    const avgContentLength =
+      memories.reduce((sum, m) => sum + (m.content?.length || 0), 0) /
+      memories.length;
     const interactionFrequency = memories.length;
 
     // Determine relationship based on interaction patterns
@@ -632,7 +690,11 @@ export class SocialContextEnricher extends BaseContextEnricher {
    */
   private async buildConversationContext(
     agentId: string,
-    entities: Array<{ id: string; type: 'user' | 'agent' | 'system'; role?: string }>
+    entities: Array<{
+      id: string;
+      type: 'user' | 'agent' | 'system';
+      role?: string;
+    }>
   ): Promise<SocialEnrichmentData['conversationContext']> {
     if (!this.memoryProvider) {
       return {
@@ -658,11 +720,14 @@ export class SocialContextEnricher extends BaseContextEnricher {
       }
 
       const memories = recentMemories.memories;
-      
+
       // Analyze conversation
       const conversationLength = memories.length;
-      const totalContent = memories.reduce((sum, m) => sum + (m.content?.length || 0), 0);
-      
+      const totalContent = memories.reduce(
+        (sum, m) => sum + (m.content?.length || 0),
+        0
+      );
+
       // Analyze topics if available
       const topics = new Set<string>();
       let sentimentSum = 0;
@@ -671,17 +736,21 @@ export class SocialContextEnricher extends BaseContextEnricher {
       for (const memory of memories) {
         // Extract topics
         if (memory.metadata?.topics && Array.isArray(memory.metadata.topics)) {
-          memory.metadata.topics.forEach(topic => topics.add(topic));
+          memory.metadata.topics.forEach((topic) => topics.add(topic));
         }
 
         // Extract sentiment
-        if (memory.metadata?.sentiment && typeof memory.metadata.sentiment === 'number') {
+        if (
+          memory.metadata?.sentiment &&
+          typeof memory.metadata.sentiment === 'number'
+        ) {
           sentimentSum += memory.metadata.sentiment;
           sentimentCount++;
         }
       }
 
-      const avgSentiment = sentimentCount > 0 ? sentimentSum / sentimentCount : 0;
+      const avgSentiment =
+        sentimentCount > 0 ? sentimentSum / sentimentCount : 0;
 
       return {
         participantCount: entities.length,
@@ -696,7 +765,7 @@ export class SocialContextEnricher extends BaseContextEnricher {
         agentId,
         error: error instanceof Error ? error.message : String(error),
       });
-      
+
       return {
         participantCount: entities.length,
         conversationLength: 0,
@@ -720,8 +789,12 @@ export class SocialContextEnricher extends BaseContextEnricher {
     }
 
     // Calculate average trust and familiarity
-    const avgTrust = relationships.reduce((sum, r) => sum + r.trustScore, 0) / relationships.length;
-    const avgFamiliarity = relationships.reduce((sum, r) => sum + r.familiarity, 0) / relationships.length;
+    const avgTrust =
+      relationships.reduce((sum, r) => sum + r.trustScore, 0) /
+      relationships.length;
+    const avgFamiliarity =
+      relationships.reduce((sum, r) => sum + r.familiarity, 0) /
+      relationships.length;
 
     // Determine communication style
     let communicationStyle = 'formal';
@@ -749,7 +822,8 @@ export class SocialContextEnricher extends BaseContextEnricher {
       available: true,
       timestamp: new Date(),
       relationshipAnalysis: this.analyzeRelationships(socialData.relationships),
-      conversationRecommendations: this.generateConversationRecommendations(socialData),
+      conversationRecommendations:
+        this.generateConversationRecommendations(socialData),
       socialDynamics: this.analyzeSocialDynamics(socialData),
     };
 
@@ -759,14 +833,16 @@ export class SocialContextEnricher extends BaseContextEnricher {
   /**
    * Analyze relationships for insights
    */
-  private analyzeRelationships(relationships: Relationship[]): Record<string, unknown> {
+  private analyzeRelationships(
+    relationships: Relationship[]
+  ): Record<string, unknown> {
     if (relationships.length === 0) {
       return { hasRelationships: false };
     }
 
-    const strongRelationships = relationships.filter(r => r.strength > 0.6);
-    const trustedEntities = relationships.filter(r => r.trustScore > 0.7);
-    const familiarEntities = relationships.filter(r => r.familiarity > 0.6);
+    const strongRelationships = relationships.filter((r) => r.strength > 0.6);
+    const trustedEntities = relationships.filter((r) => r.trustScore > 0.7);
+    const familiarEntities = relationships.filter((r) => r.familiarity > 0.6);
 
     return {
       hasRelationships: true,
@@ -775,8 +851,12 @@ export class SocialContextEnricher extends BaseContextEnricher {
       trustedEntities: trustedEntities.length,
       familiarEntities: familiarEntities.length,
       dominantRelationshipType: this.getDominantRelationshipType(relationships),
-      avgTrustScore: relationships.reduce((sum, r) => sum + r.trustScore, 0) / relationships.length,
-      avgFamiliarityScore: relationships.reduce((sum, r) => sum + r.familiarity, 0) / relationships.length,
+      avgTrustScore:
+        relationships.reduce((sum, r) => sum + r.trustScore, 0) /
+        relationships.length,
+      avgFamiliarityScore:
+        relationships.reduce((sum, r) => sum + r.familiarity, 0) /
+        relationships.length,
     };
   }
 
@@ -785,7 +865,7 @@ export class SocialContextEnricher extends BaseContextEnricher {
    */
   private getDominantRelationshipType(relationships: Relationship[]): string {
     const typeCounts = new Map<string, number>();
-    
+
     for (const relationship of relationships) {
       const count = typeCounts.get(relationship.relationshipType) || 0;
       typeCounts.set(relationship.relationshipType, count + 1);
@@ -793,7 +873,7 @@ export class SocialContextEnricher extends BaseContextEnricher {
 
     let dominantType = 'unknown';
     let maxCount = 0;
-    
+
     for (const [type, count] of typeCounts) {
       if (count > maxCount) {
         maxCount = count;
@@ -807,7 +887,9 @@ export class SocialContextEnricher extends BaseContextEnricher {
   /**
    * Generate conversation recommendations
    */
-  private generateConversationRecommendations(socialData: SocialEnrichmentData): Array<{
+  private generateConversationRecommendations(
+    socialData: SocialEnrichmentData
+  ): Array<{
     type: string;
     message: string;
     priority: 'low' | 'medium' | 'high';
@@ -818,7 +900,8 @@ export class SocialContextEnricher extends BaseContextEnricher {
     if (socialData.socialMetrics.trustLevel > 0.7) {
       recommendations.push({
         type: 'communication_style',
-        message: 'High trust relationship allows for direct, honest communication',
+        message:
+          'High trust relationship allows for direct, honest communication',
         priority: 'medium' as const,
       });
     }
@@ -836,7 +919,8 @@ export class SocialContextEnricher extends BaseContextEnricher {
     if (socialData.conversationContext.participantCount > 2) {
       recommendations.push({
         type: 'group_dynamics',
-        message: 'Multiple participants require inclusive communication approach',
+        message:
+          'Multiple participants require inclusive communication approach',
         priority: 'medium' as const,
       });
     }
@@ -847,7 +931,9 @@ export class SocialContextEnricher extends BaseContextEnricher {
   /**
    * Analyze social dynamics
    */
-  private analyzeSocialDynamics(socialData: SocialEnrichmentData): Record<string, unknown> {
+  private analyzeSocialDynamics(
+    socialData: SocialEnrichmentData
+  ): Record<string, unknown> {
     return {
       isGroupConversation: socialData.conversationContext.participantCount > 2,
       communicationStyle: socialData.socialMetrics.communicationStyle,
@@ -863,7 +949,10 @@ export class SocialContextEnricher extends BaseContextEnricher {
     let complexity = 0;
 
     // More participants = higher complexity
-    complexity += Math.min(0.4, socialData.conversationContext.participantCount * 0.1);
+    complexity += Math.min(
+      0.4,
+      socialData.conversationContext.participantCount * 0.1
+    );
 
     // More relationships = higher complexity
     complexity += Math.min(0.3, socialData.relationships.length * 0.05);
@@ -881,9 +970,15 @@ export class SocialContextEnricher extends BaseContextEnricher {
   private calculateTrustVariance(relationships: Relationship[]): number {
     if (relationships.length < 2) return 0;
 
-    const avgTrust = relationships.reduce((sum, r) => sum + r.trustScore, 0) / relationships.length;
-    const variance = relationships.reduce((sum, r) => sum + Math.pow(r.trustScore - avgTrust, 2), 0) / relationships.length;
-    
+    const avgTrust =
+      relationships.reduce((sum, r) => sum + r.trustScore, 0) /
+      relationships.length;
+    const variance =
+      relationships.reduce(
+        (sum, r) => sum + Math.pow(r.trustScore - avgTrust, 2),
+        0
+      ) / relationships.length;
+
     return Math.sqrt(variance);
   }
 
@@ -925,15 +1020,20 @@ export class SocialContextEnricher extends BaseContextEnricher {
   /**
    * Cache relationship data
    */
-  private cacheRelationship(cacheKey: string, relationships: Relationship[]): void {
+  private cacheRelationship(
+    cacheKey: string,
+    relationships: Relationship[]
+  ): void {
     this.relationshipCache.set(cacheKey, relationships);
-    this.cacheExpiry.set(cacheKey, Date.now() + (this.config.cacheTtl! * 1000));
+    this.cacheExpiry.set(cacheKey, Date.now() + this.config.cacheTtl! * 1000);
   }
 
   /**
    * Sanitize relationship for context inclusion
    */
-  private sanitizeRelationshipForContext(relationship: Relationship): Record<string, unknown> {
+  private sanitizeRelationshipForContext(
+    relationship: Relationship
+  ): Record<string, unknown> {
     return {
       entityId: relationship.entityId,
       entityType: relationship.entityType,
@@ -949,9 +1049,12 @@ export class SocialContextEnricher extends BaseContextEnricher {
   /**
    * Calculate confidence score for social enrichment
    */
-  protected calculateConfidence(context: Context, enrichedData: Record<string, unknown>): number {
+  protected calculateConfidence(
+    context: Context,
+    enrichedData: Record<string, unknown>
+  ): number {
     const socialData = enrichedData.socialContext as SocialEnrichmentData;
-    
+
     if (!socialData) {
       return 0.1;
     }
@@ -967,11 +1070,12 @@ export class SocialContextEnricher extends BaseContextEnricher {
     }
 
     // Higher confidence with recent interactions
-    const recentRelationships = socialData.relationships.filter(r => {
-      const daysSince = (Date.now() - r.lastInteraction.getTime()) / (1000 * 60 * 60 * 24);
+    const recentRelationships = socialData.relationships.filter((r) => {
+      const daysSince =
+        (Date.now() - r.lastInteraction.getTime()) / (1000 * 60 * 60 * 24);
       return daysSince < 7; // Within last week
     });
-    
+
     if (recentRelationships.length > 0) {
       confidenceScore += 0.3;
     }

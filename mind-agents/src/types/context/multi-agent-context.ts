@@ -1,6 +1,6 @@
 /**
  * Multi-Agent Context Orchestration Types
- * 
+ *
  * This module defines types for coordinating context sharing and synchronization
  * across multiple agents in a distributed system.
  */
@@ -12,9 +12,18 @@ import { LogLevel, Priority } from '../enums';
 /**
  * Multi-agent context sharing protocol types
  */
-export type ContextSharingMode = 'readonly' | 'readwrite' | 'writeonly' | 'none';
+export type ContextSharingMode =
+  | 'readonly'
+  | 'readwrite'
+  | 'writeonly'
+  | 'none';
 export type ContextScope = 'global' | 'group' | 'peer' | 'private';
-export type ContextMergeStrategy = 'merge' | 'overwrite' | 'append' | 'conflict' | 'custom';
+export type ContextMergeStrategy =
+  | 'merge'
+  | 'overwrite'
+  | 'append'
+  | 'conflict'
+  | 'custom';
 export type ContextSyncMode = 'realtime' | 'eventual' | 'manual' | 'batch';
 
 /**
@@ -48,18 +57,18 @@ export interface AgentContext extends PortalContext {
   version: number;
   lastModified: Timestamp;
   modifiedBy: AgentId;
-  
+
   // Multi-agent specific fields
   sharedWith: AgentId[];
   permissions: ContextPermissions[];
   syncStatus: ContextSyncStatus;
   conflictHistory: ContextConflict[];
-  
+
   // Coordination metadata
   coordinationGroup?: string;
   leaderAgent?: AgentId;
   consensusState?: ContextConsensusState;
-  
+
   // Network partitioning support
   partitionId: string;
   vectorClock: VectorClock;
@@ -114,9 +123,9 @@ export interface ContextUpdate {
 /**
  * Context operation types
  */
-export type ContextOperation = 
+export type ContextOperation =
   | 'create'
-  | 'update' 
+  | 'update'
   | 'delete'
   | 'merge'
   | 'sync'
@@ -141,7 +150,7 @@ export interface ContextConflict {
 /**
  * Conflict resolution strategies
  */
-export type ConflictResolutionStrategy = 
+export type ConflictResolutionStrategy =
   | 'last_writer_wins'
   | 'first_writer_wins'
   | 'priority_based'
@@ -176,7 +185,7 @@ export interface ContextVote {
 /**
  * Aggregation strategies for combining contexts from multiple agents
  */
-export type AggregationStrategy = 
+export type AggregationStrategy =
   | 'union'
   | 'intersection'
   | 'weighted_merge'
@@ -335,11 +344,18 @@ export interface NetworkHealth {
  * Context router configuration for capability-based routing
  */
 export interface ContextRoutingConfig {
-  routingStrategy: 'capability_based' | 'proximity_based' | 'load_balanced' | 'custom';
+  routingStrategy:
+    | 'capability_based'
+    | 'proximity_based'
+    | 'load_balanced'
+    | 'custom';
   capabilities: Record<AgentId, string[]>;
   proximityMatrix?: Record<AgentId, Record<AgentId, number>>;
   loadThresholds?: Record<AgentId, number>;
-  customRouter?: (context: AgentContext, availableAgents: AgentId[]) => AgentId[];
+  customRouter?: (
+    context: AgentContext,
+    availableAgents: AgentId[]
+  ) => AgentId[];
 }
 
 /**

@@ -1,6 +1,6 @@
 /**
  * Shared Model Resolution Utilities
- * 
+ *
  * Provides standardized model selection and validation logic for all portals
  */
 
@@ -18,21 +18,21 @@ export interface ModelConfig {
     reasoning?: string;
     vision?: string;
   };
-  
+
   /**
    * Available models for different capabilities
    */
   supported: {
     [key in PortalCapability]?: string[];
   };
-  
+
   /**
    * Optimal models for different capabilities (best performance/cost ratio)
    */
   optimal: {
     [key in PortalCapability]?: string;
   };
-  
+
   /**
    * Model aliases for backwards compatibility
    */
@@ -43,7 +43,13 @@ export interface ModelConfig {
  * Resolve model configuration with hierarchy: explicit → environment → config → defaults
  */
 export function resolveModel(
-  type: 'chat' | 'tool' | 'embedding' | 'image' | 'reasoning' | 'vision' = 'chat',
+  type:
+    | 'chat'
+    | 'tool'
+    | 'embedding'
+    | 'image'
+    | 'reasoning'
+    | 'vision' = 'chat',
   options: {
     explicit?: string;
     config?: any;
@@ -82,17 +88,26 @@ export function resolveModel(
 function getEnvironmentModel(type: string, prefix: string): string | undefined {
   switch (type) {
     case 'chat':
-      return process.env[`${prefix}_CHAT_MODEL`] || process.env[`${prefix}_MODEL`];
+      return (
+        process.env[`${prefix}_CHAT_MODEL`] || process.env[`${prefix}_MODEL`]
+      );
     case 'tool':
-      return process.env[`${prefix}_TOOL_MODEL`] || process.env[`${prefix}_MODEL`];
+      return (
+        process.env[`${prefix}_TOOL_MODEL`] || process.env[`${prefix}_MODEL`]
+      );
     case 'embedding':
       return process.env[`${prefix}_EMBEDDING_MODEL`];
     case 'image':
       return process.env[`${prefix}_IMAGE_MODEL`];
     case 'reasoning':
-      return process.env[`${prefix}_REASONING_MODEL`] || process.env[`${prefix}_MODEL`];
+      return (
+        process.env[`${prefix}_REASONING_MODEL`] ||
+        process.env[`${prefix}_MODEL`]
+      );
     case 'vision':
-      return process.env[`${prefix}_VISION_MODEL`] || process.env[`${prefix}_MODEL`];
+      return (
+        process.env[`${prefix}_VISION_MODEL`] || process.env[`${prefix}_MODEL`]
+      );
     default:
       return process.env[`${prefix}_MODEL`];
   }
@@ -126,24 +141,36 @@ function getConfigModel(type: string, config: any): string | undefined {
 function getProviderDefault(type: string, provider: string): string {
   const configs = getProviderModelConfigs();
   const config = configs[provider.toLowerCase()];
-  
+
   if (!config) {
     return getGenericDefault(type);
   }
 
   switch (type) {
     case 'chat':
-      return config.defaults.chat || config.defaults.chat || getGenericDefault(type);
+      return (
+        config.defaults.chat || config.defaults.chat || getGenericDefault(type)
+      );
     case 'tool':
-      return config.defaults.tool || config.defaults.chat || getGenericDefault(type);
+      return (
+        config.defaults.tool || config.defaults.chat || getGenericDefault(type)
+      );
     case 'embedding':
       return config.defaults.embedding || getGenericDefault(type);
     case 'image':
       return config.defaults.image || getGenericDefault(type);
     case 'reasoning':
-      return config.defaults.reasoning || config.defaults.chat || getGenericDefault(type);
+      return (
+        config.defaults.reasoning ||
+        config.defaults.chat ||
+        getGenericDefault(type)
+      );
     case 'vision':
-      return config.defaults.vision || config.defaults.chat || getGenericDefault(type);
+      return (
+        config.defaults.vision ||
+        config.defaults.chat ||
+        getGenericDefault(type)
+      );
     default:
       return config.defaults.chat || getGenericDefault(type);
   }
@@ -174,38 +201,48 @@ function getGenericDefault(type: string): string {
 function resolveModelAlias(model: string, provider: string): string {
   const configs = getProviderModelConfigs();
   const config = configs[provider.toLowerCase()];
-  
+
   if (config?.aliases && config.aliases[model]) {
     return config.aliases[model];
   }
-  
+
   return model;
 }
 
 /**
  * Get supported models for a capability
  */
-export function getSupportedModels(capability: PortalCapability, provider: string): string[] {
+export function getSupportedModels(
+  capability: PortalCapability,
+  provider: string
+): string[] {
   const configs = getProviderModelConfigs();
   const config = configs[provider.toLowerCase()];
-  
+
   return config?.supported[capability] || [];
 }
 
 /**
  * Get optimal model for a capability
  */
-export function getOptimalModel(capability: PortalCapability, provider: string): string | null {
+export function getOptimalModel(
+  capability: PortalCapability,
+  provider: string
+): string | null {
   const configs = getProviderModelConfigs();
   const config = configs[provider.toLowerCase()];
-  
+
   return config?.optimal[capability] || null;
 }
 
 /**
  * Validate if a model supports a capability
  */
-export function validateModelCapability(model: string, capability: PortalCapability, provider: string): boolean {
+export function validateModelCapability(
+  model: string,
+  capability: PortalCapability,
+  provider: string
+): boolean {
   const supportedModels = getSupportedModels(capability, provider);
   return supportedModels.includes(model);
 }
@@ -215,14 +252,24 @@ export function validateModelCapability(model: string, capability: PortalCapabil
  */
 export function createModelResolver(provider: string, config?: any) {
   return {
-    resolve: (type: 'chat' | 'tool' | 'embedding' | 'image' | 'reasoning' | 'vision' = 'chat', explicit?: string) =>
-      resolveModel(type, { explicit, config, provider }),
-    
-    getSupportedModels: (capability: PortalCapability) => getSupportedModels(capability, provider),
-    
-    getOptimalModel: (capability: PortalCapability) => getOptimalModel(capability, provider),
-    
-    validateCapability: (model: string, capability: PortalCapability) => 
+    resolve: (
+      type:
+        | 'chat'
+        | 'tool'
+        | 'embedding'
+        | 'image'
+        | 'reasoning'
+        | 'vision' = 'chat',
+      explicit?: string
+    ) => resolveModel(type, { explicit, config, provider }),
+
+    getSupportedModels: (capability: PortalCapability) =>
+      getSupportedModels(capability, provider),
+
+    getOptimalModel: (capability: PortalCapability) =>
+      getOptimalModel(capability, provider),
+
+    validateCapability: (model: string, capability: PortalCapability) =>
       validateModelCapability(model, capability, provider),
   };
 }
@@ -242,13 +289,37 @@ function getProviderModelConfigs(): Record<string, ModelConfig> {
         vision: 'gpt-4o',
       },
       supported: {
-        [PortalCapability.TEXT_GENERATION]: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'],
-        [PortalCapability.CHAT_GENERATION]: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'],
-        [PortalCapability.EMBEDDING_GENERATION]: ['text-embedding-3-large', 'text-embedding-3-small', 'text-embedding-ada-002'],
+        [PortalCapability.TEXT_GENERATION]: [
+          'gpt-4o',
+          'gpt-4o-mini',
+          'gpt-4-turbo',
+          'gpt-3.5-turbo',
+        ],
+        [PortalCapability.CHAT_GENERATION]: [
+          'gpt-4o',
+          'gpt-4o-mini',
+          'gpt-4-turbo',
+          'gpt-3.5-turbo',
+        ],
+        [PortalCapability.EMBEDDING_GENERATION]: [
+          'text-embedding-3-large',
+          'text-embedding-3-small',
+          'text-embedding-ada-002',
+        ],
         [PortalCapability.IMAGE_GENERATION]: ['dall-e-3', 'dall-e-2'],
         [PortalCapability.VISION]: ['gpt-4o', 'gpt-4-turbo'],
-        [PortalCapability.FUNCTION_CALLING]: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'],
-        [PortalCapability.TOOL_USAGE]: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'],
+        [PortalCapability.FUNCTION_CALLING]: [
+          'gpt-4o',
+          'gpt-4o-mini',
+          'gpt-4-turbo',
+          'gpt-3.5-turbo',
+        ],
+        [PortalCapability.TOOL_USAGE]: [
+          'gpt-4o',
+          'gpt-4o-mini',
+          'gpt-4-turbo',
+          'gpt-3.5-turbo',
+        ],
         [PortalCapability.REASONING]: ['o1', 'o1-mini', 'o1-preview'],
       },
       optimal: {
@@ -346,9 +417,12 @@ function getProviderModelConfigs(): Record<string, ModelConfig> {
         ],
       },
       optimal: {
-        [PortalCapability.TEXT_GENERATION]: 'llama-3-groq-8b-8192-tool-use-preview',
-        [PortalCapability.CHAT_GENERATION]: 'llama-3-groq-70b-8192-tool-use-preview',
-        [PortalCapability.FUNCTION_CALLING]: 'llama-3-groq-8b-8192-tool-use-preview',
+        [PortalCapability.TEXT_GENERATION]:
+          'llama-3-groq-8b-8192-tool-use-preview',
+        [PortalCapability.CHAT_GENERATION]:
+          'llama-3-groq-70b-8192-tool-use-preview',
+        [PortalCapability.FUNCTION_CALLING]:
+          'llama-3-groq-8b-8192-tool-use-preview',
         [PortalCapability.TOOL_USAGE]: 'llama-3-groq-8b-8192-tool-use-preview',
       },
     },
@@ -380,12 +454,26 @@ function getProviderModelConfigs(): Record<string, ModelConfig> {
         embedding: 'text-embedding-004',
       },
       supported: {
-        [PortalCapability.TEXT_GENERATION]: ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-1.0-pro'],
-        [PortalCapability.CHAT_GENERATION]: ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-1.0-pro'],
+        [PortalCapability.TEXT_GENERATION]: [
+          'gemini-1.5-pro',
+          'gemini-1.5-flash',
+          'gemini-1.0-pro',
+        ],
+        [PortalCapability.CHAT_GENERATION]: [
+          'gemini-1.5-pro',
+          'gemini-1.5-flash',
+          'gemini-1.0-pro',
+        ],
         [PortalCapability.VISION]: ['gemini-1.5-pro', 'gemini-1.5-flash'],
-        [PortalCapability.FUNCTION_CALLING]: ['gemini-1.5-pro', 'gemini-1.5-flash'],
+        [PortalCapability.FUNCTION_CALLING]: [
+          'gemini-1.5-pro',
+          'gemini-1.5-flash',
+        ],
         [PortalCapability.TOOL_USAGE]: ['gemini-1.5-pro', 'gemini-1.5-flash'],
-        [PortalCapability.EMBEDDING_GENERATION]: ['text-embedding-004', 'text-embedding-gecko'],
+        [PortalCapability.EMBEDDING_GENERATION]: [
+          'text-embedding-004',
+          'text-embedding-gecko',
+        ],
       },
       optimal: {
         [PortalCapability.TEXT_GENERATION]: 'gemini-1.5-flash',
@@ -404,10 +492,24 @@ function getProviderModelConfigs(): Record<string, ModelConfig> {
         embedding: 'mistral-embed',
       },
       supported: {
-        [PortalCapability.TEXT_GENERATION]: ['mistral-large-latest', 'mistral-medium-latest', 'mistral-tiny'],
-        [PortalCapability.CHAT_GENERATION]: ['mistral-large-latest', 'mistral-medium-latest', 'mistral-tiny'],
-        [PortalCapability.FUNCTION_CALLING]: ['mistral-large-latest', 'mistral-medium-latest'],
-        [PortalCapability.TOOL_USAGE]: ['mistral-large-latest', 'mistral-medium-latest'],
+        [PortalCapability.TEXT_GENERATION]: [
+          'mistral-large-latest',
+          'mistral-medium-latest',
+          'mistral-tiny',
+        ],
+        [PortalCapability.CHAT_GENERATION]: [
+          'mistral-large-latest',
+          'mistral-medium-latest',
+          'mistral-tiny',
+        ],
+        [PortalCapability.FUNCTION_CALLING]: [
+          'mistral-large-latest',
+          'mistral-medium-latest',
+        ],
+        [PortalCapability.TOOL_USAGE]: [
+          'mistral-large-latest',
+          'mistral-medium-latest',
+        ],
         [PortalCapability.EMBEDDING_GENERATION]: ['mistral-embed'],
       },
       optimal: {
@@ -426,11 +528,22 @@ function getProviderModelConfigs(): Record<string, ModelConfig> {
         embedding: 'embed-english-v3.0',
       },
       supported: {
-        [PortalCapability.TEXT_GENERATION]: ['command-r-plus', 'command-r', 'command'],
-        [PortalCapability.CHAT_GENERATION]: ['command-r-plus', 'command-r', 'command'],
+        [PortalCapability.TEXT_GENERATION]: [
+          'command-r-plus',
+          'command-r',
+          'command',
+        ],
+        [PortalCapability.CHAT_GENERATION]: [
+          'command-r-plus',
+          'command-r',
+          'command',
+        ],
         [PortalCapability.FUNCTION_CALLING]: ['command-r-plus', 'command-r'],
         [PortalCapability.TOOL_USAGE]: ['command-r-plus', 'command-r'],
-        [PortalCapability.EMBEDDING_GENERATION]: ['embed-english-v3.0', 'embed-multilingual-v3.0'],
+        [PortalCapability.EMBEDDING_GENERATION]: [
+          'embed-english-v3.0',
+          'embed-multilingual-v3.0',
+        ],
       },
       optimal: {
         [PortalCapability.TEXT_GENERATION]: 'command-r-plus',

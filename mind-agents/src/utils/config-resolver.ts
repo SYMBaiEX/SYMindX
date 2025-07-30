@@ -11,10 +11,10 @@
  * - Supports multiple memory providers and AI portals
  */
 
-import { 
-  standardLoggers, 
+import {
+  standardLoggers,
   createStandardLoggingPatterns,
-  StandardLogContext 
+  StandardLogContext,
 } from './standard-logging.js';
 import {
   CharacterConfig,
@@ -71,14 +71,14 @@ export class ConfigResolver {
 
     // Log validation results
     if (validationResult.warnings.length > 0) {
-      logger.warn('Configuration validation warnings', { 
-        warnings: validationResult.warnings 
+      logger.warn('Configuration validation warnings', {
+        warnings: validationResult.warnings,
       });
     }
 
     if (!validationResult.valid) {
-      logger.error('Configuration validation failed', undefined, { 
-        errors: validationResult.errors 
+      logger.error('Configuration validation failed', undefined, {
+        errors: validationResult.errors,
       });
       throw new Error(
         'Invalid environment configuration. Please check your environment variables.'
@@ -520,10 +520,11 @@ export class ConfigResolver {
     const portalConfig: PortalSpecificConfig = {
       ...baseConfig,
     };
-    
-    const apiKey = validatedConfig.apiKeys[
-      `${portalName}_API_KEY` as keyof typeof validatedConfig.apiKeys
-    ];
+
+    const apiKey =
+      validatedConfig.apiKeys[
+        `${portalName}_API_KEY` as keyof typeof validatedConfig.apiKeys
+      ];
     if (apiKey !== undefined) {
       portalConfig.apiKey = apiKey;
     }
@@ -622,7 +623,7 @@ export class ConfigResolver {
 
       return {
         valid: validationResult.valid,
-        missing: validationResult.errors.map(error => error.message),
+        missing: validationResult.errors.map((error) => error.message),
       };
     } catch (error) {
       void error;

@@ -1,6 +1,6 @@
 /**
  * Refactored PostgreSQL Memory Provider for SYMindX
- * 
+ *
  * Uses shared components to eliminate duplication and provide consistent functionality
  */
 
@@ -33,7 +33,7 @@ import {
   ResourceManager,
   type ConnectionConfig,
   type ArchiverConfig,
-  type PoolConfig
+  type PoolConfig,
 } from '../../../shared/index.js';
 
 export interface PostgresMemoryConfig extends BaseMemoryConfig {
@@ -53,7 +53,8 @@ export interface PostgresMemoryConfig extends BaseMemoryConfig {
 }
 
 // Create the enhanced base class with traits
-const PostgresMemoryProviderBase = MemoryProviderTrait<PostgresMemoryConfig>('1.0.0')(BaseMemoryProvider);
+const PostgresMemoryProviderBase =
+  MemoryProviderTrait<PostgresMemoryConfig>('1.0.0')(BaseMemoryProvider);
 
 export class RefactoredPostgresMemoryProvider extends PostgresMemoryProviderBase {
   private connection: Pool;
@@ -66,7 +67,8 @@ export class RefactoredPostgresMemoryProvider extends PostgresMemoryProviderBase
       type: 'postgres',
       name: 'PostgreSQL Memory Provider',
       version: '1.0.0',
-      description: 'PostgreSQL-based memory storage with shared components and advanced features'
+      description:
+        'PostgreSQL-based memory storage with shared components and advanced features',
     });
 
     // Configure the module
@@ -84,14 +86,14 @@ export class RefactoredPostgresMemoryProvider extends PostgresMemoryProviderBase
       enableFullTextSearch: true,
       enablePartitioning: false,
       maxPoolSize: 1000,
-      ...config
+      ...config,
     });
 
     // Initialize resource manager
     this.resourceManager = new ResourceManager({
       maxConnections: config.maxConnections || 20,
       maxMemoryMB: 512,
-      cleanupIntervalMs: 60000
+      cleanupIntervalMs: 60000,
     });
 
     // Add initialization handlers
@@ -110,7 +112,7 @@ export class RefactoredPostgresMemoryProvider extends PostgresMemoryProviderBase
 
   private async initializeConnection(): Promise<void> {
     const config = this.getConfig();
-    
+
     const connectionConfig: ConnectionConfig = {
       type: DatabaseType.POSTGRES,
       host: config.host,
@@ -121,12 +123,16 @@ export class RefactoredPostgresMemoryProvider extends PostgresMemoryProviderBase
       ssl: config.ssl,
       maxConnections: config.maxConnections,
       idleTimeoutMillis: config.idleTimeoutMillis,
-      connectionTimeoutMillis: config.connectionTimeoutMillis
+      connectionTimeoutMillis: config.connectionTimeoutMillis,
     };
 
-    this.connection = await DatabaseConnection.getConnection(connectionConfig) as Pool;
-    
-    runtimeLogger.info(`PostgreSQL memory provider connected to: ${config.host}:${config.port}/${config.database}`);
+    this.connection = (await DatabaseConnection.getConnection(
+      connectionConfig
+    )) as Pool;
+
+    runtimeLogger.info(
+      `PostgreSQL memory provider connected to: ${config.host}:${config.port}/${config.database}`
+    );
   }
 
   private async initializeSchema(): Promise<void> {
@@ -217,7 +223,9 @@ export class RefactoredPostgresMemoryProvider extends PostgresMemoryProviderBase
         await this.setupPartitioning(client);
       }
 
-      runtimeLogger.info('PostgreSQL memory schema initialized with advanced features');
+      runtimeLogger.info(
+        'PostgreSQL memory schema initialized with advanced features'
+      );
     } finally {
       client.release();
     }
@@ -237,7 +245,7 @@ export class RefactoredPostgresMemoryProvider extends PostgresMemoryProviderBase
       const partitionDate = new Date(now.getFullYear(), now.getMonth() + i, 1);
       const nextMonth = new Date(now.getFullYear(), now.getMonth() + i + 1, 1);
       const partitionName = `memories_${partitionDate.getFullYear()}_${String(partitionDate.getMonth() + 1).padStart(2, '0')}`;
-      
+
       await client.query(`
         CREATE TABLE IF NOT EXISTS ${partitionName} 
         PARTITION OF memories_partitioned
@@ -248,13 +256,13 @@ export class RefactoredPostgresMemoryProvider extends PostgresMemoryProviderBase
 
   private async initializeArchiver(): Promise<void> {
     const config = this.getConfig();
-    
+
     if (config.archival && config.archival.length > 0) {
       const archiverConfig: ArchiverConfig = {
         strategies: config.archival,
         enableCompression: true,
         maxCompressionRatio: 0.8,
-        retentionDays: 365
+        retentionDays: 365,
       };
 
       this.archiver = new PostgresArchiver(archiverConfig, this.connection);
@@ -264,14 +272,14 @@ export class RefactoredPostgresMemoryProvider extends PostgresMemoryProviderBase
 
   private async initializeSharedPool(): Promise<void> {
     const config = this.getConfig();
-    
+
     if (config.sharedMemory) {
       const poolConfig: PoolConfig = {
         poolId: `postgres_pool_${Date.now()}`,
         sharedConfig: config.sharedMemory,
         maxPoolSize: config.maxPoolSize || 1000,
         enableVersioning: true,
-        enablePermissions: true
+        enablePermissions: true,
       };
 
       this.sharedPool = new PostgresMemoryPool(poolConfig, this.connection);
@@ -280,7 +288,10 @@ export class RefactoredPostgresMemoryProvider extends PostgresMemoryProviderBase
     }
   }
 
-  private async checkDatabaseHealth(): Promise<{ status: 'healthy' | 'unhealthy'; details?: any }> {
+  private async checkDatabaseHealth(): Promise<{
+    status: 'healthy' | 'unhealthy';
+    details?: any;
+  }> {
     try {
       const client = await this.connection.connect();
       try {
@@ -292,7 +303,9 @@ export class RefactoredPostgresMemoryProvider extends PostgresMemoryProviderBase
     } catch (error) {
       return {
         status: 'unhealthy',
-        details: { error: error instanceof Error ? error.message : String(error) }
+        details: {
+          error: error instanceof Error ? error.message : String(error),
+        },
       };
     }
   }
@@ -301,11 +314,11 @@ export class RefactoredPostgresMemoryProvider extends PostgresMemoryProviderBase
     if (this.sharedPool) {
       await this.sharedPool.saveToStorage();
     }
-    
+
     if (this.connection) {
       await this.connection.end();
     }
-    
+
     await this.resourceManager.shutdown();
   }
 
@@ -319,7 +332,8 @@ export class RefactoredPostgresMemoryProvider extends PostgresMemoryProviderBase
 
     const client = await this.connection.connect();
     try {
-      await client.query(`
+      await client.query(
+        `
         INSERT INTO memories 
         (id, agent_id, type, content, embedding, metadata, importance, timestamp, tags, duration, expires_at, tier)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
@@ -333,20 +347,22 @@ export class RefactoredPostgresMemoryProvider extends PostgresMemoryProviderBase
         expires_at = EXCLUDED.expires_at,
         tier = EXCLUDED.tier,
         updated_at = NOW()
-      `, [
-        memory.id,
-        agentId,
-        memory.type,
-        memory.content,
-        memory.embedding ? `[${memory.embedding.join(',')}]` : null,
-        JSON.stringify(memory.metadata || {}),
-        memory.importance || 0.5,
-        memory.timestamp.toISOString(),
-        memory.tags || [],
-        memory.duration || MemoryDuration.LONG_TERM,
-        memory.expiresAt?.toISOString() || null,
-        'episodic'
-      ]);
+      `,
+        [
+          memory.id,
+          agentId,
+          memory.type,
+          memory.content,
+          memory.embedding ? `[${memory.embedding.join(',')}]` : null,
+          JSON.stringify(memory.metadata || {}),
+          memory.importance || 0.5,
+          memory.timestamp.toISOString(),
+          memory.tags || [],
+          memory.duration || MemoryDuration.LONG_TERM,
+          memory.expiresAt?.toISOString() || null,
+          'episodic',
+        ]
+      );
 
       this.updateResourceUsage(`memory_${memory.id}`);
       this.emit('memory:stored', { agentId, memory });
@@ -355,7 +371,11 @@ export class RefactoredPostgresMemoryProvider extends PostgresMemoryProviderBase
     }
   }
 
-  async retrieve(agentId: string, query: string, limit = 10): Promise<MemoryRecord[]> {
+  async retrieve(
+    agentId: string,
+    query: string,
+    limit = 10
+  ): Promise<MemoryRecord[]> {
     this.ensureNotDisposed();
     await this.ensureInitialized();
 
@@ -399,7 +419,9 @@ export class RefactoredPostgresMemoryProvider extends PostgresMemoryProviderBase
       }
 
       const result = await client.query(sql, params);
-      const memories = result.rows.map(row => this.parseMemoryFromStorage(row));
+      const memories = result.rows.map((row) =>
+        this.parseMemoryFromStorage(row)
+      );
 
       // Cache the results
       this.setInCache(cacheKey, memories, 60000); // 1 minute cache
@@ -410,7 +432,11 @@ export class RefactoredPostgresMemoryProvider extends PostgresMemoryProviderBase
     }
   }
 
-  async search(agentId: string, embedding: number[], limit = 10): Promise<MemoryRecord[]> {
+  async search(
+    agentId: string,
+    embedding: number[],
+    limit = 10
+  ): Promise<MemoryRecord[]> {
     this.ensureNotDisposed();
     await this.ensureInitialized();
 
@@ -422,7 +448,8 @@ export class RefactoredPostgresMemoryProvider extends PostgresMemoryProviderBase
 
     const client = await this.connection.connect();
     try {
-      const result = await client.query(`
+      const result = await client.query(
+        `
         SELECT *, 1 - (embedding <=> $2) as similarity
         FROM memories
         WHERE agent_id = $1 
@@ -430,13 +457,11 @@ export class RefactoredPostgresMemoryProvider extends PostgresMemoryProviderBase
           AND (expires_at IS NULL OR expires_at > NOW())
         ORDER BY embedding <=> $2
         LIMIT $3
-      `, [
-        agentId,
-        `[${embedding.join(',')}]`,
-        limit
-      ]);
+      `,
+        [agentId, `[${embedding.join(',')}]`, limit]
+      );
 
-      return result.rows.map(row => this.parseMemoryFromStorage(row));
+      return result.rows.map((row) => this.parseMemoryFromStorage(row));
     } finally {
       client.release();
     }
@@ -448,9 +473,12 @@ export class RefactoredPostgresMemoryProvider extends PostgresMemoryProviderBase
 
     const client = await this.connection.connect();
     try {
-      await client.query(`
+      await client.query(
+        `
         DELETE FROM memories WHERE id = $1 AND agent_id = $2
-      `, [memoryId, agentId]);
+      `,
+        [memoryId, agentId]
+      );
 
       this.deleteFromCache(`memory_${memoryId}`);
       this.emit('memory:deleted', { agentId, memoryId });
@@ -465,9 +493,12 @@ export class RefactoredPostgresMemoryProvider extends PostgresMemoryProviderBase
 
     const client = await this.connection.connect();
     try {
-      await client.query(`
+      await client.query(
+        `
         DELETE FROM memories WHERE agent_id = $1
-      `, [agentId]);
+      `,
+        [agentId]
+      );
 
       this.clearCache();
       this.emit('memory:cleared', { agentId });
@@ -476,18 +507,23 @@ export class RefactoredPostgresMemoryProvider extends PostgresMemoryProviderBase
     }
   }
 
-  async getStats(agentId: string): Promise<{ total: number; byType: Record<string, number> }> {
+  async getStats(
+    agentId: string
+  ): Promise<{ total: number; byType: Record<string, number> }> {
     this.ensureNotDisposed();
     await this.ensureInitialized();
 
     const client = await this.connection.connect();
     try {
-      const result = await client.query(`
+      const result = await client.query(
+        `
         SELECT type, COUNT(*) as count
         FROM memories 
         WHERE agent_id = $1 AND (expires_at IS NULL OR expires_at > NOW())
         GROUP BY type
-      `, [agentId]);
+      `,
+        [agentId]
+      );
 
       const byType: Record<string, number> = {};
       let total = 0;
@@ -507,27 +543,37 @@ export class RefactoredPostgresMemoryProvider extends PostgresMemoryProviderBase
     this.ensureNotDisposed();
     await this.ensureInitialized();
 
-    const cutoffTime = new Date(Date.now() - (retentionDays * 24 * 60 * 60 * 1000));
+    const cutoffTime = new Date(
+      Date.now() - retentionDays * 24 * 60 * 60 * 1000
+    );
 
     const client = await this.connection.connect();
     try {
       // Archive before cleanup if archiver is available
       if (this.archiver) {
-        const oldMemoriesResult = await client.query(`
+        const oldMemoriesResult = await client.query(
+          `
           SELECT * FROM memories 
           WHERE agent_id = $1 AND timestamp < $2
-        `, [agentId, cutoffTime.toISOString()]);
+        `,
+          [agentId, cutoffTime.toISOString()]
+        );
 
-        const memories = oldMemoriesResult.rows.map(row => this.parseMemoryFromStorage(row));
+        const memories = oldMemoriesResult.rows.map((row) =>
+          this.parseMemoryFromStorage(row)
+        );
         await this.archiver.archive(memories);
       }
 
-      await client.query(`
+      await client.query(
+        `
         DELETE FROM memories 
         WHERE agent_id = $1 
           AND timestamp < $2
           AND duration != 'permanent'
-      `, [agentId, cutoffTime.toISOString()]);
+      `,
+        [agentId, cutoffTime.toISOString()]
+      );
 
       this.clearCache();
     } finally {
@@ -543,11 +589,14 @@ export class RefactoredPostgresMemoryProvider extends PostgresMemoryProviderBase
   ): Promise<void> {
     const client = await this.connection.connect();
     try {
-      await client.query(`
+      await client.query(
+        `
         UPDATE memories 
         SET tier = $1, updated_at = NOW()
         WHERE id = $2 AND agent_id = $3
-      `, [toTier, memoryId, agentId]);
+      `,
+        [toTier, memoryId, agentId]
+      );
     } finally {
       client.release();
     }
@@ -560,14 +609,17 @@ export class RefactoredPostgresMemoryProvider extends PostgresMemoryProviderBase
   ): Promise<MemoryRecord[]> {
     const client = await this.connection.connect();
     try {
-      const result = await client.query(`
+      const result = await client.query(
+        `
         SELECT * FROM memories
         WHERE agent_id = $1 AND tier = $2
         ORDER BY importance DESC, timestamp DESC
         LIMIT $3
-      `, [agentId, tier, limit]);
+      `,
+        [agentId, tier, limit]
+      );
 
-      return result.rows.map(row => this.parseMemoryFromStorage(row));
+      return result.rows.map((row) => this.parseMemoryFromStorage(row));
     } finally {
       client.release();
     }
@@ -578,14 +630,19 @@ export class RefactoredPostgresMemoryProvider extends PostgresMemoryProviderBase
 
     const client = await this.connection.connect();
     try {
-      const oldMemoriesResult = await client.query(`
+      const oldMemoriesResult = await client.query(
+        `
         SELECT * FROM memories 
         WHERE agent_id = $1 
           AND timestamp < $2
           AND duration != 'permanent'
-      `, [agentId, new Date(Date.now() - (30 * 24 * 60 * 60 * 1000)).toISOString()]); // 30 days
+      `,
+        [agentId, new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()]
+      ); // 30 days
 
-      const memories = oldMemoriesResult.rows.map(row => this.parseMemoryFromStorage(row));
+      const memories = oldMemoriesResult.rows.map((row) =>
+        this.parseMemoryFromStorage(row)
+      );
       await this.archiver.archive(memories);
     } finally {
       client.release();
@@ -602,9 +659,12 @@ export class RefactoredPostgresMemoryProvider extends PostgresMemoryProviderBase
     const client = await this.connection.connect();
     try {
       for (const memoryId of memoryIds) {
-        const result = await client.query(`
+        const result = await client.query(
+          `
           SELECT * FROM memories WHERE id = $1 AND agent_id = $2
-        `, [memoryId, agentId]);
+        `,
+          [memoryId, agentId]
+        );
 
         if (result.rows.length > 0) {
           const memory = this.parseMemoryFromStorage(result.rows[0]);
@@ -638,8 +698,14 @@ export class RefactoredPostgresMemoryProvider extends PostgresMemoryProviderBase
       tags: row.tags || [],
       duration: row.duration as MemoryDuration,
     })
-      .addOptional('embedding', row.embedding ? JSON.parse(row.embedding) : undefined)
-      .addOptional('expiresAt', row.expires_at ? new Date(row.expires_at) : undefined)
+      .addOptional(
+        'embedding',
+        row.embedding ? JSON.parse(row.embedding) : undefined
+      )
+      .addOptional(
+        'expiresAt',
+        row.expires_at ? new Date(row.expires_at) : undefined
+      )
       .build();
   }
 }
@@ -652,7 +718,10 @@ export class RefactoredPostgresMemoryProvider extends PostgresMemoryProviderBase
  * PostgreSQL-specific archiver implementation
  */
 class PostgresArchiver extends SharedArchiver<Pool> {
-  constructor(config: ArchiverConfig, private connection: Pool) {
+  constructor(
+    config: ArchiverConfig,
+    private connection: Pool
+  ) {
     super(config);
   }
 
@@ -663,10 +732,13 @@ class PostgresArchiver extends SharedArchiver<Pool> {
   protected async cleanupBefore(date: Date): Promise<number> {
     const client = await this.connection.connect();
     try {
-      const result = await client.query(`
+      const result = await client.query(
+        `
         DELETE FROM memories 
         WHERE timestamp < $1 AND duration = 'archived'
-      `, [date.toISOString()]);
+      `,
+        [date.toISOString()]
+      );
 
       return result.rowCount || 0;
     } finally {
@@ -679,7 +751,10 @@ class PostgresArchiver extends SharedArchiver<Pool> {
  * PostgreSQL-specific memory pool implementation
  */
 class PostgresMemoryPool extends SharedMemoryPool<Pool> {
-  constructor(config: PoolConfig, private connection: Pool) {
+  constructor(
+    config: PoolConfig,
+    private connection: Pool
+  ) {
     super(config);
   }
 
@@ -693,7 +768,8 @@ class PostgresMemoryPool extends SharedMemoryPool<Pool> {
 
     const client = await this.connection.connect();
     try {
-      await client.query(`
+      await client.query(
+        `
         INSERT INTO shared_memories 
         (id, agent_id, memory_data, permissions, shared_at, version)
         VALUES ($1, $2, $3, $4, $5, $6)
@@ -702,14 +778,16 @@ class PostgresMemoryPool extends SharedMemoryPool<Pool> {
         permissions = EXCLUDED.permissions,
         version = EXCLUDED.version,
         last_accessed_at = NOW()
-      `, [
-        entry.id,
-        entry.agentId,
-        JSON.stringify(entry.memory),
-        JSON.stringify(entry.permissions),
-        entry.sharedAt.toISOString(),
-        entry.version
-      ]);
+      `,
+        [
+          entry.id,
+          entry.agentId,
+          JSON.stringify(entry.memory),
+          JSON.stringify(entry.permissions),
+          entry.sharedAt.toISOString(),
+          entry.version,
+        ]
+      );
     } finally {
       client.release();
     }
@@ -718,9 +796,12 @@ class PostgresMemoryPool extends SharedMemoryPool<Pool> {
   protected async removePersistedEntry(key: string): Promise<void> {
     const client = await this.connection.connect();
     try {
-      await client.query(`
+      await client.query(
+        `
         DELETE FROM shared_memories WHERE id = $1
-      `, [key]);
+      `,
+        [key]
+      );
     } finally {
       client.release();
     }
@@ -765,7 +846,7 @@ class PostgresMemoryPool extends SharedMemoryPool<Pool> {
           sharedAt: new Date(row.shared_at),
           version: row.version,
           lastAccessedAt: new Date(row.last_accessed_at),
-          accessCount: row.access_count
+          accessCount: row.access_count,
         };
 
         this.entries.set(row.id, entry);
@@ -784,6 +865,8 @@ class PostgresMemoryPool extends SharedMemoryPool<Pool> {
 /**
  * Factory function to create PostgreSQL memory provider
  */
-export function createPostgresMemoryProvider(config: PostgresMemoryConfig): RefactoredPostgresMemoryProvider {
+export function createPostgresMemoryProvider(
+  config: PostgresMemoryConfig
+): RefactoredPostgresMemoryProvider {
   return new RefactoredPostgresMemoryProvider(config);
 }

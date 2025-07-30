@@ -1,6 +1,6 @@
 /**
  * Context Observability Utilities for SYMindX
- * 
+ *
  * Provides lightweight tracing, monitoring, and debugging capabilities
  * for the context system without adding technical debt.
  */
@@ -79,7 +79,11 @@ export class ContextTracer extends EventEmitter {
   /**
    * Start a trace
    */
-  startTrace(operation: string, agentId?: string, metadata?: Record<string, any>): string {
+  startTrace(
+    operation: string,
+    agentId?: string,
+    metadata?: Record<string, any>
+  ): string {
     const traceId = `trace-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const trace: ContextTrace = {
       id: traceId,
@@ -90,7 +94,7 @@ export class ContextTracer extends EventEmitter {
     };
 
     this.traces.set(traceId, trace);
-    
+
     // Clean up old traces
     if (this.traces.size > this.maxTraces) {
       const oldestTrace = Array.from(this.traces.keys())[0];
@@ -98,7 +102,10 @@ export class ContextTracer extends EventEmitter {
     }
 
     if (this.debugMode) {
-      runtimeLogger.debug(`Context trace started: ${operation}`, { traceId, agentId });
+      runtimeLogger.debug(`Context trace started: ${operation}`, {
+        traceId,
+        agentId,
+      });
     }
 
     return traceId;
@@ -167,12 +174,12 @@ export class ContextTracer extends EventEmitter {
    */
   getTraces(filter?: { agentId?: string; operation?: string }): ContextTrace[] {
     let traces = Array.from(this.traces.values());
-    
+
     if (filter?.agentId) {
-      traces = traces.filter(t => t.agentId === filter.agentId);
+      traces = traces.filter((t) => t.agentId === filter.agentId);
     }
     if (filter?.operation) {
-      traces = traces.filter(t => t.operation === filter.operation);
+      traces = traces.filter((t) => t.operation === filter.operation);
     }
 
     return traces.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
@@ -250,7 +257,7 @@ export class ContextDebugger {
       memoryUsage: 0,
       childContexts: [],
     };
-    
+
     this.debugInfo.set(contextId, info);
     this.cleanupOldEntries();
   }
@@ -298,8 +305,9 @@ export class ContextDebugger {
    * Get all debug info
    */
   getAllDebugInfo(): ContextDebugInfo[] {
-    return Array.from(this.debugInfo.values())
-      .sort((a, b) => b.lastAccessed.getTime() - a.lastAccessed.getTime());
+    return Array.from(this.debugInfo.values()).sort(
+      (a, b) => b.lastAccessed.getTime() - a.lastAccessed.getTime()
+    );
   }
 
   /**
@@ -315,7 +323,7 @@ export class ContextDebugger {
       'Active Contexts:',
     ];
 
-    infos.slice(0, 10).forEach(info => {
+    infos.slice(0, 10).forEach((info) => {
       report.push(`  - ${info.contextId} (${info.agentId})`);
       report.push(`    Created: ${info.createdAt.toISOString()}`);
       report.push(`    Enrichments: ${info.enrichmentSteps.join(', ')}`);
@@ -328,9 +336,10 @@ export class ContextDebugger {
 
   private cleanupOldEntries(): void {
     if (this.debugInfo.size > this.maxDebugEntries) {
-      const entries = Array.from(this.debugInfo.entries())
-        .sort((a, b) => a[1].lastAccessed.getTime() - b[1].lastAccessed.getTime());
-      
+      const entries = Array.from(this.debugInfo.entries()).sort(
+        (a, b) => a[1].lastAccessed.getTime() - b[1].lastAccessed.getTime()
+      );
+
       const toRemove = entries.slice(0, entries.length - this.maxDebugEntries);
       toRemove.forEach(([contextId]) => {
         this.debugInfo.delete(contextId);
@@ -339,8 +348,10 @@ export class ContextDebugger {
   }
 
   private calculateTotalMemory(): number {
-    return Array.from(this.debugInfo.values())
-      .reduce((total, info) => total + info.memoryUsage, 0);
+    return Array.from(this.debugInfo.values()).reduce(
+      (total, info) => total + info.memoryUsage,
+      0
+    );
   }
 }
 
@@ -380,14 +391,16 @@ export class ContextMonitor {
    */
   performHealthCheck(): void {
     const metrics = this.tracer.getMetrics();
-    
+
     // Check cache hit rate
     const totalCacheOps = metrics.cacheHits + metrics.cacheMisses;
-    const cacheHitRate = totalCacheOps > 0 ? metrics.cacheHits / totalCacheOps : 0;
-    
+    const cacheHitRate =
+      totalCacheOps > 0 ? metrics.cacheHits / totalCacheOps : 0;
+
     // Check performance
-    const avgTime = (metrics.avgEnrichmentTime + metrics.avgTransformationTime) / 2;
-    
+    const avgTime =
+      (metrics.avgEnrichmentTime + metrics.avgTransformationTime) / 2;
+
     // Determine health status
     if (cacheHitRate < 0.3 || avgTime > 1000) {
       this.healthStatus = 'unhealthy';
@@ -420,7 +433,7 @@ export class ContextMonitor {
   getPerformanceSummary(): Record<string, any> {
     const metrics = this.tracer.getMetrics();
     const totalCacheOps = metrics.cacheHits + metrics.cacheMisses;
-    
+
     return {
       healthStatus: this.healthStatus,
       cacheHitRate: totalCacheOps > 0 ? metrics.cacheHits / totalCacheOps : 0,
@@ -433,8 +446,11 @@ export class ContextMonitor {
 }
 
 // Create singleton instances
-export const contextTracer = new ContextTracer(process.env.NODE_ENV === 'development');
-export const contextDebugger = process.env.NODE_ENV === 'development' ? new ContextDebugger() : null;
+export const contextTracer = new ContextTracer(
+  process.env.NODE_ENV === 'development'
+);
+export const contextDebugger =
+  process.env.NODE_ENV === 'development' ? new ContextDebugger() : null;
 export const contextMonitor = new ContextMonitor(contextTracer);
 
 // Start monitoring in production

@@ -1,6 +1,6 @@
 /**
  * Segregated Agent Interfaces
- * 
+ *
  * Breaking down the monolithic Agent interface into focused, composable interfaces
  * following the Interface Segregation Principle
  */
@@ -33,21 +33,13 @@ import type {
   ContextEnricher,
 } from './context/unified-context.js';
 
-import type {
-  EmotionModule,
-} from './emotion.js';
+import type { EmotionModule } from './emotion.js';
 
-import type {
-  CognitionModule,
-} from './cognition.js';
+import type { CognitionModule } from './cognition.js';
 
-import type {
-  Extension,
-} from './extensions';
+import type { Extension } from './extensions';
 
-import type {
-  Portal,
-} from './portal.js';
+import type { Portal } from './portal.js';
 
 /**
  * Core agent identity and basic information
@@ -77,7 +69,9 @@ export interface AgentRuntime {
   initialize(config: AgentConfig): Promise<InitializationResult>;
   cleanup(): Promise<CleanupResult>;
   tick(): Promise<OperationResult>;
-  updateState(newState: Partial<AgentState>): Promise<AgentStateTransitionResult>;
+  updateState(
+    newState: Partial<AgentState>
+  ): Promise<AgentStateTransitionResult>;
 }
 
 /**
@@ -86,8 +80,16 @@ export interface AgentRuntime {
 export interface AgentMemory {
   memory: {
     store(agentId: string, memory: MemoryRecord): Promise<void>;
-    retrieve(agentId: string, query: string, limit?: number): Promise<MemoryRecord[]>;
-    search(agentId: string, embedding: number[], limit?: number): Promise<MemoryRecord[]>;
+    retrieve(
+      agentId: string,
+      query: string,
+      limit?: number
+    ): Promise<MemoryRecord[]>;
+    search(
+      agentId: string,
+      embedding: number[],
+      limit?: number
+    ): Promise<MemoryRecord[]>;
     delete(agentId: string, memoryId: string): Promise<void>;
     clear(agentId: string): Promise<void>;
     getRecent(agentId: string, limit?: number): Promise<MemoryRecord[]>;
@@ -137,7 +139,7 @@ export interface AgentPortal {
 export interface AgentContextAware {
   currentContext?: UnifiedContext;
   contextEnrichers?: ContextEnricher[];
-  
+
   // Context management methods
   createContext?(baseContext?: Partial<UnifiedContext>): UnifiedContext;
   enrichContext?(context: UnifiedContext): Promise<UnifiedContext>;
@@ -179,61 +181,61 @@ export interface AgentEventBus {
 /**
  * Complete agent interface composed of all capabilities
  */
-export interface CompositeAgent extends
-  AgentCore,
-  AgentBehavior,
-  AgentRuntime,
-  AgentMemory,
-  AgentEmotional,
-  AgentCognitive,
-  AgentCommunication,
-  AgentExtensible,
-  AgentPortal,
-  AgentContextAware,
-  AgentToolSystem,
-  AgentLearning,
-  AgentEventBus {}
+export interface CompositeAgent
+  extends AgentCore,
+    AgentBehavior,
+    AgentRuntime,
+    AgentMemory,
+    AgentEmotional,
+    AgentCognitive,
+    AgentCommunication,
+    AgentExtensible,
+    AgentPortal,
+    AgentContextAware,
+    AgentToolSystem,
+    AgentLearning,
+    AgentEventBus {}
 
 /**
  * Minimal agent interface for basic functionality
  */
-export interface MinimalAgent extends
-  AgentCore,
-  AgentRuntime,
-  AgentMemory,
-  AgentEmotional,
-  AgentCognitive,
-  AgentCommunication {}
+export interface MinimalAgent
+  extends AgentCore,
+    AgentRuntime,
+    AgentMemory,
+    AgentEmotional,
+    AgentCognitive,
+    AgentCommunication {}
 
 /**
  * Standard agent interface for most use cases
  */
-export interface StandardAgent extends
-  AgentCore,
-  AgentBehavior,
-  AgentRuntime,
-  AgentMemory,
-  AgentEmotional,
-  AgentCognitive,
-  AgentCommunication,
-  AgentExtensible,
-  AgentPortal {}
+export interface StandardAgent
+  extends AgentCore,
+    AgentBehavior,
+    AgentRuntime,
+    AgentMemory,
+    AgentEmotional,
+    AgentCognitive,
+    AgentCommunication,
+    AgentExtensible,
+    AgentPortal {}
 
 /**
  * Advanced agent interface with full capabilities
  */
-export interface AdvancedAgent extends
-  AgentCore,
-  AgentBehavior,
-  AgentRuntime,
-  AgentMemory,
-  AgentEmotional,
-  AgentCognitive,
-  AgentCommunication,
-  AgentExtensible,
-  AgentPortal,
-  AgentContextAware,
-  AgentToolSystem {}
+export interface AdvancedAgent
+  extends AgentCore,
+    AgentBehavior,
+    AgentRuntime,
+    AgentMemory,
+    AgentEmotional,
+    AgentCognitive,
+    AgentCommunication,
+    AgentExtensible,
+    AgentPortal,
+    AgentContextAware,
+    AgentToolSystem {}
 
 /**
  * Enterprise agent interface with all features
@@ -247,13 +249,13 @@ export interface EnterpriseAgent extends CompositeAgent {}
 /**
  * Chatbot agent focused on conversation
  */
-export interface ChatbotAgent extends
-  AgentCore,
-  AgentBehavior,
-  AgentMemory,
-  AgentEmotional,
-  AgentCommunication,
-  AgentPortal {
+export interface ChatbotAgent
+  extends AgentCore,
+    AgentBehavior,
+    AgentMemory,
+    AgentEmotional,
+    AgentCommunication,
+    AgentPortal {
   // Chatbot-specific methods
   processMessage?(message: string): Promise<string>;
   generateResponse?(context: ThoughtContext): Promise<string>;
@@ -262,29 +264,32 @@ export interface ChatbotAgent extends
 /**
  * Assistant agent focused on task execution
  */
-export interface AssistantAgent extends
-  AgentCore,
-  AgentRuntime,
-  AgentMemory,
-  AgentCognitive,
-  AgentCommunication,
-  AgentExtensible,
-  AgentToolSystem {
+export interface AssistantAgent
+  extends AgentCore,
+    AgentRuntime,
+    AgentMemory,
+    AgentCognitive,
+    AgentCommunication,
+    AgentExtensible,
+    AgentToolSystem {
   // Assistant-specific methods
-  executeTask?(task: string, parameters?: Record<string, unknown>): Promise<ExecutionResult>;
+  executeTask?(
+    task: string,
+    parameters?: Record<string, unknown>
+  ): Promise<ExecutionResult>;
   planTask?(goal: string): Promise<ThoughtResult>;
 }
 
 /**
  * Research agent focused on information gathering
  */
-export interface ResearchAgent extends
-  AgentCore,
-  AgentMemory,
-  AgentCognitive,
-  AgentCommunication,
-  AgentExtensible,
-  AgentToolSystem {
+export interface ResearchAgent
+  extends AgentCore,
+    AgentMemory,
+    AgentCognitive,
+    AgentCommunication,
+    AgentExtensible,
+    AgentToolSystem {
   // Research-specific methods
   search?(query: string): Promise<MemoryRecord[]>;
   analyze?(data: unknown[]): Promise<ThoughtResult>;
@@ -294,15 +299,15 @@ export interface ResearchAgent extends
 /**
  * Gaming agent focused on game interactions
  */
-export interface GamingAgent extends
-  AgentCore,
-  AgentBehavior,
-  AgentRuntime,
-  AgentMemory,
-  AgentEmotional,
-  AgentCognitive,
-  AgentCommunication,
-  AgentExtensible {
+export interface GamingAgent
+  extends AgentCore,
+    AgentBehavior,
+    AgentRuntime,
+    AgentMemory,
+    AgentEmotional,
+    AgentCognitive,
+    AgentCommunication,
+    AgentExtensible {
   // Gaming-specific methods
   perceiveEnvironment?(): Promise<AgentState>;
   makeDecision?(options: AgentAction[]): Promise<AgentAction>;
@@ -312,14 +317,14 @@ export interface GamingAgent extends
 /**
  * Social agent focused on social interactions
  */
-export interface SocialAgent extends
-  AgentCore,
-  AgentBehavior,
-  AgentMemory,
-  AgentEmotional,
-  AgentCommunication,
-  AgentPortal,
-  AgentContextAware {
+export interface SocialAgent
+  extends AgentCore,
+    AgentBehavior,
+    AgentMemory,
+    AgentEmotional,
+    AgentCommunication,
+    AgentPortal,
+    AgentContextAware {
   // Social-specific methods
   interpretSocialCues?(context: UnifiedContext): Promise<EmotionState>;
   generateSocialResponse?(context: ThoughtContext): Promise<string>;
@@ -329,12 +334,12 @@ export interface SocialAgent extends
 /**
  * Learning agent focused on continuous improvement
  */
-export interface LearningAgent extends
-  AgentCore,
-  AgentMemory,
-  AgentCognitive,
-  AgentLearning,
-  AgentContextAware {
+export interface LearningAgent
+  extends AgentCore,
+    AgentMemory,
+    AgentCognitive,
+    AgentLearning,
+    AgentContextAware {
   // Learning-specific methods
   learn?(experience: MemoryRecord[]): Promise<void>;
   adapt?(feedback: unknown): Promise<void>;
@@ -344,17 +349,17 @@ export interface LearningAgent extends
 /**
  * Autonomous agent with self-management capabilities
  */
-export interface AutonomousAgent extends
-  AgentCore,
-  AgentBehavior,
-  AgentRuntime,
-  AgentMemory,
-  AgentEmotional,
-  AgentCognitive,
-  AgentCommunication,
-  AgentExtensible,
-  AgentLearning,
-  AgentContextAware {
+export interface AutonomousAgent
+  extends AgentCore,
+    AgentBehavior,
+    AgentRuntime,
+    AgentMemory,
+    AgentEmotional,
+    AgentCognitive,
+    AgentCommunication,
+    AgentExtensible,
+    AgentLearning,
+    AgentContextAware {
   // Autonomous-specific methods
   selfMonitor?(): Promise<AgentState>;
   selfImprove?(): Promise<void>;
@@ -441,7 +446,10 @@ export function isChatbotAgent(obj: unknown): obj is ChatbotAgent {
  */
 export interface AgentFactory<T> {
   create(config: AgentConfig): Promise<T>;
-  createFromTemplate?(template: string, overrides?: Partial<AgentConfig>): Promise<T>;
+  createFromTemplate?(
+    template: string,
+    overrides?: Partial<AgentConfig>
+  ): Promise<T>;
 }
 
 export interface MinimalAgentFactory extends AgentFactory<MinimalAgent> {}

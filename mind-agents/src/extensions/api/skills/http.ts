@@ -52,7 +52,7 @@ export class HttpSkill {
             },
             environment: {
               mode:
-                process.env["NODE_ENV"] === 'production'
+                process.env['NODE_ENV'] === 'production'
                   ? 'production'
                   : 'development',
               resources: {

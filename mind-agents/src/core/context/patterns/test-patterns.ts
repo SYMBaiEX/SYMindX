@@ -1,6 +1,6 @@
 /**
  * Test Patterns for Context Injection
- * 
+ *
  * Provides unit test patterns and examples for the context injection framework.
  * These patterns demonstrate proper usage and serve as templates for testing.
  */
@@ -12,7 +12,7 @@ import type {
   ContextEnricher,
   ContextScope,
   ContextScopeType,
-  ContextInjectionConfig
+  ContextInjectionConfig,
 } from '../../../types/context/context-injection';
 import type { OperationResult, ValidationResult } from '../../../types/helpers';
 import { createContextInjector, createScope } from '../context-injector';
@@ -20,16 +20,18 @@ import { createContextInjector, createScope } from '../context-injector';
 /**
  * Mock context provider for testing
  */
-export class MockContextProvider implements ContextProvider<Record<string, unknown>> {
+export class MockContextProvider
+  implements ContextProvider<Record<string, unknown>>
+{
   readonly id: string;
   readonly priority: number;
   readonly supportsAsync: boolean;
-  
+
   private mockData: Record<string, unknown>;
 
   constructor(
-    id: string, 
-    mockData: Record<string, unknown> = {}, 
+    id: string,
+    mockData: Record<string, unknown> = {},
     priority = 50,
     supportsAsync = false
   ) {
@@ -43,9 +45,11 @@ export class MockContextProvider implements ContextProvider<Record<string, unkno
     return this.canProvide(scope) ? { ...this.mockData } : undefined;
   }
 
-  async provideAsync(scope: ContextScope): Promise<Record<string, unknown> | undefined> {
+  async provideAsync(
+    scope: ContextScope
+  ): Promise<Record<string, unknown> | undefined> {
     // Simulate async operation
-    await new Promise(resolve => setTimeout(resolve, 10));
+    await new Promise((resolve) => setTimeout(resolve, 10));
     return this.provide(scope);
   }
 
@@ -64,10 +68,14 @@ export class MockContextProvider implements ContextProvider<Record<string, unkno
 export class MockContextMiddleware implements ContextMiddleware<any, any> {
   readonly id: string;
   readonly priority: number;
-  
+
   private transformFn?: (context: any, scope: ContextScope) => any;
 
-  constructor(id: string, priority = 50, transformFn?: (context: any, scope: ContextScope) => any) {
+  constructor(
+    id: string,
+    priority = 50,
+    transformFn?: (context: any, scope: ContextScope) => any
+  ) {
     this.id = id;
     this.priority = priority;
     this.transformFn = transformFn;
@@ -79,7 +87,7 @@ export class MockContextMiddleware implements ContextMiddleware<any, any> {
     next: (context: any) => Promise<any>
   ): Promise<any> {
     let processedContext = context;
-    
+
     if (this.transformFn) {
       processedContext = this.transformFn(context, scope);
     }
@@ -98,10 +106,14 @@ export class MockContextMiddleware implements ContextMiddleware<any, any> {
 export class MockContextEnricher implements ContextEnricher<any> {
   readonly id: string;
   readonly priority: number;
-  
+
   private enrichmentData: Record<string, unknown>;
 
-  constructor(id: string, enrichmentData: Record<string, unknown> = {}, priority = 50) {
+  constructor(
+    id: string,
+    enrichmentData: Record<string, unknown> = {},
+    priority = 50
+  ) {
     this.id = id;
     this.enrichmentData = enrichmentData;
     this.priority = priority;
@@ -112,7 +124,7 @@ export class MockContextEnricher implements ContextEnricher<any> {
       ...context,
       ...this.enrichmentData,
       enrichedBy: this.id,
-      enrichedAt: new Date()
+      enrichedAt: new Date(),
     };
   }
 
@@ -132,7 +144,9 @@ export class ContextInjectionTestHelper {
   /**
    * Create a test context injector with mock components
    */
-  static async createTestInjector(config?: Partial<ContextInjectionConfig>): Promise<ContextInjector> {
+  static async createTestInjector(
+    config?: Partial<ContextInjectionConfig>
+  ): Promise<ContextInjector> {
     const injector = await createContextInjector({
       enableAsync: true,
       asyncTimeout: 1000,
@@ -140,7 +154,7 @@ export class ContextInjectionTestHelper {
       enableValidation: true,
       enableEnrichment: true,
       enableMiddleware: true,
-      ...config
+      ...config,
     });
 
     return injector;
@@ -155,22 +169,24 @@ export class ContextInjectionTestHelper {
       correlationId: 'test-correlation-123',
       metadata: {
         testContext: true,
-        createdAt: new Date().toISOString()
-      }
+        createdAt: new Date().toISOString(),
+      },
     });
   }
 
   /**
    * Create a mock extension scope for testing
    */
-  static createMockExtensionScope(extensionId = 'test-extension'): ContextScope {
+  static createMockExtensionScope(
+    extensionId = 'test-extension'
+  ): ContextScope {
     return createScope(ContextScopeType.Extension, extensionId, {
       agentId: 'test-agent',
       correlationId: 'test-correlation-123',
       metadata: {
         testContext: true,
-        createdAt: new Date().toISOString()
-      }
+        createdAt: new Date().toISOString(),
+      },
     });
   }
 
@@ -183,8 +199,8 @@ export class ContextInjectionTestHelper {
       correlationId: 'test-correlation-123',
       metadata: {
         testContext: true,
-        createdAt: new Date().toISOString()
-      }
+        createdAt: new Date().toISOString(),
+      },
     });
   }
 
@@ -197,8 +213,8 @@ export class ContextInjectionTestHelper {
       correlationId: 'test-correlation-123',
       metadata: {
         testContext: true,
-        createdAt: new Date().toISOString()
-      }
+        createdAt: new Date().toISOString(),
+      },
     });
   }
 
@@ -219,7 +235,9 @@ export class ContextInjectionTestHelper {
     if (expectedContext) {
       for (const [key, value] of Object.entries(expectedContext)) {
         if (result.context[key] !== value) {
-          console.error(`Expected context.${key} to be ${value}, got ${result.context[key]}`);
+          console.error(
+            `Expected context.${key} to be ${value}, got ${result.context[key]}`
+          );
           return false;
         }
       }
@@ -238,12 +256,16 @@ export class ContextInjectionTestHelper {
        */
       testProvider: async () => {
         const injector = await this.createTestInjector();
-        const provider = new MockContextProvider('test-provider', { test: 'data' });
+        const provider = new MockContextProvider('test-provider', {
+          test: 'data',
+        });
         const scope = this.createMockModuleScope();
 
         const registerResult = injector.registerProvider(provider);
         if (!registerResult.success) {
-          throw new Error('Failed to register provider: ' + registerResult.error);
+          throw new Error(
+            'Failed to register provider: ' + registerResult.error
+          );
         }
 
         const injectionResult = await injector.inject(scope);
@@ -260,18 +282,29 @@ export class ContextInjectionTestHelper {
        */
       testMiddleware: async () => {
         const injector = await this.createTestInjector();
-        const provider = new MockContextProvider('test-provider', { original: 'data' });
-        const middleware = new MockContextMiddleware('test-middleware', 50, (context) => ({
-          ...context,
-          transformed: true
-        }));
+        const provider = new MockContextProvider('test-provider', {
+          original: 'data',
+        });
+        const middleware = new MockContextMiddleware(
+          'test-middleware',
+          50,
+          (context) => ({
+            ...context,
+            transformed: true,
+          })
+        );
         const scope = this.createMockModuleScope();
 
         injector.registerProvider(provider);
         injector.registerMiddleware(middleware);
 
         const injectionResult = await injector.inject(scope);
-        if (!this.verifyInjectionResult(injectionResult, { original: 'data', transformed: true })) {
+        if (
+          !this.verifyInjectionResult(injectionResult, {
+            original: 'data',
+            transformed: true,
+          })
+        ) {
           throw new Error('Middleware test failed');
         }
 
@@ -284,18 +317,24 @@ export class ContextInjectionTestHelper {
        */
       testEnricher: async () => {
         const injector = await this.createTestInjector();
-        const provider = new MockContextProvider('test-provider', { original: 'data' });
-        const enricher = new MockContextEnricher('test-enricher', { enriched: 'value' });
+        const provider = new MockContextProvider('test-provider', {
+          original: 'data',
+        });
+        const enricher = new MockContextEnricher('test-enricher', {
+          enriched: 'value',
+        });
         const scope = this.createMockModuleScope();
 
         injector.registerProvider(provider);
         injector.registerEnricher(enricher);
 
         const injectionResult = await injector.inject(scope);
-        if (!this.verifyInjectionResult(injectionResult, { 
-          original: 'data', 
-          enriched: 'value' 
-        })) {
+        if (
+          !this.verifyInjectionResult(injectionResult, {
+            original: 'data',
+            enriched: 'value',
+          })
+        ) {
           throw new Error('Enricher test failed');
         }
 
@@ -308,7 +347,12 @@ export class ContextInjectionTestHelper {
        */
       testAsyncProvider: async () => {
         const injector = await this.createTestInjector();
-        const provider = new MockContextProvider('async-provider', { async: 'data' }, 50, true);
+        const provider = new MockContextProvider(
+          'async-provider',
+          { async: 'data' },
+          50,
+          true
+        );
         const scope = this.createMockModuleScope();
 
         injector.registerProvider(provider);
@@ -327,8 +371,16 @@ export class ContextInjectionTestHelper {
        */
       testProviderPriority: async () => {
         const injector = await this.createTestInjector();
-        const lowPriorityProvider = new MockContextProvider('low-priority', { priority: 'low' }, 10);
-        const highPriorityProvider = new MockContextProvider('high-priority', { priority: 'high' }, 90);
+        const lowPriorityProvider = new MockContextProvider(
+          'low-priority',
+          { priority: 'low' },
+          10
+        );
+        const highPriorityProvider = new MockContextProvider(
+          'high-priority',
+          { priority: 'high' },
+          90
+        );
         const scope = this.createMockModuleScope();
 
         injector.registerProvider(lowPriorityProvider);
@@ -336,7 +388,9 @@ export class ContextInjectionTestHelper {
 
         const injectionResult = await injector.inject(scope);
         // High priority should override low priority
-        if (!this.verifyInjectionResult(injectionResult, { priority: 'high' })) {
+        if (
+          !this.verifyInjectionResult(injectionResult, { priority: 'high' })
+        ) {
           throw new Error('Provider priority test failed');
         }
 
@@ -359,7 +413,11 @@ export class ContextInjectionTestHelper {
         injector.registerProvider(errorProvider);
 
         const injectionResult = await injector.inject(scope);
-        if (injectionResult.success && injectionResult.errors && injectionResult.errors.length > 0) {
+        if (
+          injectionResult.success &&
+          injectionResult.errors &&
+          injectionResult.errors.length > 0
+        ) {
           console.log('✅ Error handling test passed');
           return true;
         }
@@ -378,14 +436,14 @@ export class ContextInjectionTestHelper {
           await this.testAsyncProvider();
           await this.testProviderPriority();
           await this.testErrorHandling();
-          
+
           console.log('🎉 All context injection tests passed!');
           return true;
         } catch (error) {
           console.error('❌ Test suite failed:', error);
           return false;
         }
-      }
+      },
     };
   }
 }
@@ -397,7 +455,10 @@ export class ContextInjectionPerformanceTests {
   /**
    * Test injection performance with multiple providers
    */
-  static async testProviderPerformance(providerCount = 10, injectionCount = 100): Promise<{
+  static async testProviderPerformance(
+    providerCount = 10,
+    injectionCount = 100
+  ): Promise<{
     totalTime: number;
     averageTime: number;
     throughput: number;
@@ -408,7 +469,7 @@ export class ContextInjectionPerformanceTests {
     // Register multiple providers
     for (let i = 0; i < providerCount; i++) {
       const provider = new MockContextProvider(
-        `provider-${i}`, 
+        `provider-${i}`,
         { [`data-${i}`]: `value-${i}` },
         Math.random() * 100
       );
@@ -420,7 +481,7 @@ export class ContextInjectionPerformanceTests {
 
     // Performance test
     const startTime = Date.now();
-    
+
     for (let i = 0; i < injectionCount; i++) {
       await injector.inject(scope);
     }
@@ -432,7 +493,7 @@ export class ContextInjectionPerformanceTests {
     return {
       totalTime,
       averageTime,
-      throughput
+      throughput,
     };
   }
 
@@ -445,11 +506,12 @@ export class ContextInjectionPerformanceTests {
     speedup: number;
   }> {
     const scope = ContextInjectionTestHelper.createMockModuleScope();
-    
+
     // Test with caching disabled
-    const uncachedInjector = await ContextInjectionTestHelper.createTestInjector({
-      enableCaching: false
-    });
+    const uncachedInjector =
+      await ContextInjectionTestHelper.createTestInjector({
+        enableCaching: false,
+      });
     const provider1 = new MockContextProvider('provider', { test: 'data' });
     uncachedInjector.registerProvider(provider1);
 
@@ -462,7 +524,7 @@ export class ContextInjectionPerformanceTests {
     // Test with caching enabled
     const cachedInjector = await ContextInjectionTestHelper.createTestInjector({
       enableCaching: true,
-      cacheTtl: 60000 // 1 minute
+      cacheTtl: 60000, // 1 minute
     });
     const provider2 = new MockContextProvider('provider', { test: 'data' });
     cachedInjector.registerProvider(provider2);
@@ -478,7 +540,7 @@ export class ContextInjectionPerformanceTests {
     return {
       cachedTime,
       uncachedTime,
-      speedup
+      speedup,
     };
   }
 }
@@ -490,13 +552,18 @@ export class ContextInjectionConcurrencyTests {
   /**
    * Test concurrent injections
    */
-  static async testConcurrentInjections(concurrency = 10, injectionsPerWorker = 10): Promise<{
+  static async testConcurrentInjections(
+    concurrency = 10,
+    injectionsPerWorker = 10
+  ): Promise<{
     totalTime: number;
     successCount: number;
     errorCount: number;
   }> {
     const injector = await ContextInjectionTestHelper.createTestInjector();
-    const provider = new MockContextProvider('concurrent-provider', { concurrent: 'data' });
+    const provider = new MockContextProvider('concurrent-provider', {
+      concurrent: 'data',
+    });
     injector.registerProvider(provider);
 
     const scope = ContextInjectionTestHelper.createMockModuleScope();
@@ -506,24 +573,27 @@ export class ContextInjectionConcurrencyTests {
     const startTime = Date.now();
 
     // Create concurrent workers
-    const workers = Array.from({ length: concurrency }, async (_, workerIndex) => {
-      for (let i = 0; i < injectionsPerWorker; i++) {
-        try {
-          const result = await injector.inject({
-            ...scope,
-            correlationId: `worker-${workerIndex}-injection-${i}`
-          });
-          
-          if (result.success) {
-            successCount++;
-          } else {
+    const workers = Array.from(
+      { length: concurrency },
+      async (_, workerIndex) => {
+        for (let i = 0; i < injectionsPerWorker; i++) {
+          try {
+            const result = await injector.inject({
+              ...scope,
+              correlationId: `worker-${workerIndex}-injection-${i}`,
+            });
+
+            if (result.success) {
+              successCount++;
+            } else {
+              errorCount++;
+            }
+          } catch (error) {
             errorCount++;
           }
-        } catch (error) {
-          errorCount++;
         }
       }
-    });
+    );
 
     // Wait for all workers to complete
     await Promise.all(workers);
@@ -533,7 +603,7 @@ export class ContextInjectionConcurrencyTests {
     return {
       totalTime,
       successCount,
-      errorCount
+      errorCount,
     };
   }
 }
@@ -545,9 +615,9 @@ export const contextInjectionTestPatterns = {
   mocks: {
     MockContextProvider,
     MockContextMiddleware,
-    MockContextEnricher
+    MockContextEnricher,
   },
   helpers: ContextInjectionTestHelper,
   performance: ContextInjectionPerformanceTests,
-  concurrency: ContextInjectionConcurrencyTests
+  concurrency: ContextInjectionConcurrencyTests,
 };

@@ -278,7 +278,7 @@ export class PortalComplianceTester {
           error: 'streamText method not available',
         };
       }
-      
+
       const stream = portal.streamText('Count from 1 to 5', {
         maxOutputTokens: 100,
       });
@@ -399,7 +399,7 @@ export class PortalComplianceTester {
           error: 'generateImage method not available',
         };
       }
-      
+
       const result = await portal.generateImage('A beautiful sunset', {
         size: '1024x1024',
         quality: 'standard',

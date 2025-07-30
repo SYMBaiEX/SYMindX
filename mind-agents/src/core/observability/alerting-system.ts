@@ -1,7 +1,7 @@
 /**
  * @module observability/alerting-system
  * @description Intelligent alerting system for SYMindX
- * 
+ *
  * Provides comprehensive alerting with predictive capabilities,
  * intelligent rule evaluation, and automated response actions.
  */
@@ -138,11 +138,11 @@ class AlertActionExecutor {
   ): Promise<void> {
     // Placeholder for email integration
     runtimeLogger.info(`Email alert sent: ${alert.message}`, {
-      metadata: { 
-        alertId: alert.id, 
+      metadata: {
+        alertId: alert.id,
         recipient: config.to,
         subject: config.subject || `SYMindX Alert: ${alert.rule.name}`,
-      }
+      },
     });
   }
 
@@ -190,7 +190,7 @@ class AlertActionExecutor {
     }
 
     const message = this.formatSlackMessage(alert);
-    
+
     // Placeholder for Slack integration
     runtimeLogger.info(`Slack alert sent: ${channel}`, {
       metadata: { alertId: alert.id, message },
@@ -202,12 +202,14 @@ class AlertActionExecutor {
    */
   private formatSlackMessage(alert: ActiveAlert): string {
     const emoji = this.getSeverityEmoji(alert.rule.severity);
-    return `${emoji} *${alert.rule.name}*\n` +
-           `Severity: ${alert.rule.severity.toUpperCase()}\n` +
-           `Message: ${alert.message}\n` +
-           `Value: ${alert.currentValue}\n` +
-           `Threshold: ${alert.rule.condition.threshold}\n` +
-           `Time: ${alert.triggerTime.toISOString()}`;
+    return (
+      `${emoji} *${alert.rule.name}*\n` +
+      `Severity: ${alert.rule.severity.toUpperCase()}\n` +
+      `Message: ${alert.message}\n` +
+      `Value: ${alert.currentValue}\n` +
+      `Threshold: ${alert.rule.condition.threshold}\n` +
+      `Time: ${alert.triggerTime.toISOString()}`
+    );
   }
 
   /**
@@ -215,11 +217,16 @@ class AlertActionExecutor {
    */
   private getSeverityEmoji(severity: string): string {
     switch (severity) {
-      case 'critical': return '🚨';
-      case 'error': return '❌';
-      case 'warning': return '⚠️';
-      case 'info': return 'ℹ️';
-      default: return '📊';
+      case 'critical':
+        return '🚨';
+      case 'error':
+        return '❌';
+      case 'warning':
+        return '⚠️';
+      case 'info':
+        return 'ℹ️';
+      default:
+        return '📊';
     }
   }
 }
@@ -270,7 +277,10 @@ class PredictiveAnalyzer {
     slope: number;
   } {
     const n = values.length;
-    let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+    let sumX = 0,
+      sumY = 0,
+      sumXY = 0,
+      sumXX = 0;
 
     for (let i = 0; i < n; i++) {
       const x = i;
@@ -282,7 +292,7 @@ class PredictiveAnalyzer {
     }
 
     const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
-    
+
     let direction: 'rising' | 'falling' | 'stable';
     if (Math.abs(slope) < 0.01) {
       direction = 'stable';
@@ -325,7 +335,10 @@ class PredictiveAnalyzer {
         risk = Math.max(0, Math.min(1, threshold / (predictedValue || 1)));
         break;
       case 'eq':
-        risk = Math.max(0, 1 - Math.abs(predictedValue - threshold) / threshold);
+        risk = Math.max(
+          0,
+          1 - Math.abs(predictedValue - threshold) / threshold
+        );
         break;
       case 'ne':
         risk = Math.min(1, Math.abs(predictedValue - threshold) / threshold);
@@ -432,7 +445,7 @@ export class AlertingSystem extends EventEmitter {
    */
   public addRule(rule: AlertRule): void {
     this.rules.set(rule.id, rule);
-    
+
     // Initialize alert state
     this.alertStates.set(rule.id, {
       ruleId: rule.id,
@@ -461,10 +474,10 @@ export class AlertingSystem extends EventEmitter {
    */
   public removeRule(ruleId: string): boolean {
     const existed = this.rules.delete(ruleId);
-    
+
     if (existed) {
       this.alertStates.delete(ruleId);
-      
+
       // Remove any active alerts for this rule
       for (const [alertId, alert] of this.activeAlerts) {
         if (alert.ruleId === ruleId) {
@@ -546,7 +559,7 @@ export class AlertingSystem extends EventEmitter {
     if (!alert) return false;
 
     this.activeAlerts.delete(alertId);
-    
+
     // Reset alert state
     const state = this.alertStates.get(alert.ruleId);
     if (state) {
@@ -568,7 +581,7 @@ export class AlertingSystem extends EventEmitter {
   public evaluateRule(ruleId: string, currentValue: number): boolean {
     const rule = this.rules.get(ruleId);
     const state = this.alertStates.get(ruleId);
-    
+
     if (!rule || !state || !rule.enabled) {
       return false;
     }
@@ -581,7 +594,7 @@ export class AlertingSystem extends EventEmitter {
       state.lastEvaluation = new Date();
       state.evaluationCount++;
       state.lastValue = currentValue;
-      
+
       // Add to history
       state.history.push({
         timestamp: new Date(),
@@ -599,7 +612,10 @@ export class AlertingSystem extends EventEmitter {
 
       // Update trend
       if (state.history.length >= 3) {
-        const analysis = this.predictiveAnalyzer.analyzeTrend(state.history, rule);
+        const analysis = this.predictiveAnalyzer.analyzeTrend(
+          state.history,
+          rule
+        );
         state.trend = analysis.trend;
       }
 
@@ -652,9 +668,13 @@ export class AlertingSystem extends EventEmitter {
     averageEvaluationTime: number;
     alertsByRule: Record<string, number>;
   } {
-    const enabledRules = Array.from(this.rules.values()).filter(r => r.enabled).length;
-    const totalEvaluations = Array.from(this.alertStates.values())
-      .reduce((sum, state) => sum + state.evaluationCount, 0);
+    const enabledRules = Array.from(this.rules.values()).filter(
+      (r) => r.enabled
+    ).length;
+    const totalEvaluations = Array.from(this.alertStates.values()).reduce(
+      (sum, state) => sum + state.evaluationCount,
+      0
+    );
 
     const alertsByRule: Record<string, number> = {};
     for (const alert of this.activeAlerts.values()) {
@@ -702,7 +722,7 @@ export class AlertingSystem extends EventEmitter {
 
     try {
       const metrics = this.metricsCollector.getMetrics();
-      
+
       for (const rule of this.rules.values()) {
         if (!rule.enabled) continue;
 
@@ -817,7 +837,7 @@ export class AlertingSystem extends EventEmitter {
   private generateAlertMessage(rule: AlertRule, currentValue: number): string {
     const operator = rule.condition.operator;
     const threshold = rule.condition.threshold;
-    
+
     return `${rule.metricName} is ${currentValue} (${operator} ${threshold})`;
   }
 

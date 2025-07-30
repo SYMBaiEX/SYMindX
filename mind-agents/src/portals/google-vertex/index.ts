@@ -206,9 +206,9 @@ export class GoogleVertexPortal extends BasePortal {
   constructor(config: GoogleVertexConfig) {
     super('google-vertex', 'Google Vertex AI', '1.0.0', config);
     this.projectId =
-      config.projectId || process.env["GOOGLE_VERTEX_PROJECT"] || '';
+      config.projectId || process.env['GOOGLE_VERTEX_PROJECT'] || '';
     this.location =
-      config.location || process.env["GOOGLE_VERTEX_LOCATION"] || 'us-central1';
+      config.location || process.env['GOOGLE_VERTEX_LOCATION'] || 'us-central1';
     this.vertexProvider = vertex;
   }
 
@@ -537,7 +537,7 @@ export class GoogleVertexPortal extends BasePortal {
       if (topP !== undefined) {
         optionalParams.topP = topP;
       }
-      
+
       const params = buildAISDKParams(baseParams, optionalParams);
 
       const { textStream } = await streamText(params as any);

@@ -1,6 +1,6 @@
 /**
  * Context Aggregator for Multi-Agent Systems
- * 
+ *
  * Combines contexts from multiple agents using various aggregation strategies
  * while handling conflicts and maintaining data integrity.
  */
@@ -11,7 +11,7 @@ import {
   ContextAggregationConfig,
   ContextConflict,
   ConflictResolutionStrategy,
-  VectorClock
+  VectorClock,
 } from '../../../types/context/multi-agent-context';
 import { AgentId, OperationResult } from '../../../types/helpers';
 import { Priority } from '../../../types/enums';
@@ -40,48 +40,58 @@ export class ContextAggregator {
       }
 
       // Filter contexts by age if specified
-      const filteredContexts = this.filterContextsByAge(contexts, config.maxContextAge);
+      const filteredContexts = this.filterContextsByAge(
+        contexts,
+        config.maxContextAge
+      );
 
       runtimeLogger.debug('Starting context aggregation', {
         strategy: config.strategy,
         contextCount: filteredContexts.length,
-        includeMetadata: config.includeMetadata
+        includeMetadata: config.includeMetadata,
       });
 
       // Detect conflicts before aggregation
       const conflicts = await this.detectConflicts(filteredContexts);
-      
+
       // Resolve conflicts if any exist
-      const resolvedContexts = conflicts.length > 0
-        ? await this.resolveConflictsInContexts(filteredContexts, conflicts, config.conflictResolution)
-        : filteredContexts;
+      const resolvedContexts =
+        conflicts.length > 0
+          ? await this.resolveConflictsInContexts(
+              filteredContexts,
+              conflicts,
+              config.conflictResolution
+            )
+          : filteredContexts;
 
       // Perform aggregation based on strategy
-      const aggregatedContext = await this.performAggregation(resolvedContexts, config);
+      const aggregatedContext = await this.performAggregation(
+        resolvedContexts,
+        config
+      );
 
       // Add aggregation metadata if requested
       if (config.includeMetadata) {
         aggregatedContext.aggregationMetadata = {
           strategy: config.strategy,
-          sourceAgents: resolvedContexts.map(c => c.agentId),
+          sourceAgents: resolvedContexts.map((c) => c.agentId),
           aggregatedAt: new Date().toISOString(),
           conflictsResolved: conflicts.length,
-          resolvedConflicts: conflicts
+          resolvedConflicts: conflicts,
         };
       }
 
       runtimeLogger.debug('Context aggregation completed', {
         resultVersion: aggregatedContext.version,
         sourceAgents: resolvedContexts.length,
-        conflictsResolved: conflicts.length
+        conflictsResolved: conflicts.length,
       });
 
       return aggregatedContext;
-
     } catch (error) {
       runtimeLogger.error('Context aggregation failed', error as Error, {
         strategy: config.strategy,
-        contextCount: contexts.length
+        contextCount: contexts.length,
       });
       throw error;
     }
@@ -108,8 +118,8 @@ export class ContextAggregator {
     for (const [field, agentValues] of fieldMap.entries()) {
       if (agentValues.size > 1) {
         const values = Array.from(agentValues.values());
-        const uniqueValues = new Set(values.map(v => JSON.stringify(v)));
-        
+        const uniqueValues = new Set(values.map((v) => JSON.stringify(v)));
+
         if (uniqueValues.size > 1) {
           // Conflict detected
           const conflict: ContextConflict = {
@@ -119,7 +129,7 @@ export class ContextAggregator {
             conflictingAgents: Array.from(agentValues.keys()),
             values: Object.fromEntries(agentValues.entries()),
             resolutionStrategy: 'last_writer_wins', // Default strategy
-            resolved: false
+            resolved: false,
           };
 
           conflicts.push(conflict);
@@ -138,11 +148,15 @@ export class ContextAggregator {
     conflicts: ContextConflict[],
     strategy: ConflictResolutionStrategy
   ): Promise<AgentContext[]> {
-    const resolvedContexts = contexts.map(c => ({ ...c }));
+    const resolvedContexts = contexts.map((c) => ({ ...c }));
 
     for (const conflict of conflicts) {
-      const resolvedValue = await this.resolveConflict(conflict, strategy, contexts);
-      
+      const resolvedValue = await this.resolveConflict(
+        conflict,
+        strategy,
+        contexts
+      );
+
       // Apply resolved value to all contexts
       for (const context of resolvedContexts) {
         if (conflict.conflictingAgents.includes(context.agentId)) {
@@ -178,30 +192,33 @@ export class ContextAggregator {
     switch (strategy) {
       case 'last_writer_wins':
         return this.resolveLastWriterWins(conflict, contexts);
-      
+
       case 'first_writer_wins':
         return this.resolveFirstWriterWins(conflict, contexts);
-      
+
       case 'priority_based':
         return this.resolvePriorityBased(conflict, contexts);
-      
+
       case 'merge_values':
         return this.resolveMergeValues(conflict);
-      
+
       case 'consensus_based':
         return this.resolveConsensusBased(conflict);
-      
+
       case 'manual_resolution':
         return this.resolveManually(conflict);
-      
+
       case 'custom':
         return this.resolveCustom(conflict, contexts);
-      
+
       default:
-        runtimeLogger.warn('Unknown conflict resolution strategy, using last_writer_wins', {
-          strategy,
-          conflictId: conflict.conflictId
-        });
+        runtimeLogger.warn(
+          'Unknown conflict resolution strategy, using last_writer_wins',
+          {
+            strategy,
+            conflictId: conflict.conflictId,
+          }
+        );
         return this.resolveLastWriterWins(conflict, contexts);
     }
   }
@@ -216,28 +233,28 @@ export class ContextAggregator {
     switch (config.strategy) {
       case 'union':
         return this.aggregateUnion(contexts);
-      
+
       case 'intersection':
         return this.aggregateIntersection(contexts);
-      
+
       case 'weighted_merge':
         return this.aggregateWeightedMerge(contexts, config.weights || {});
-      
+
       case 'priority_based':
         return this.aggregatePriorityBased(contexts, config.priorities || {});
-      
+
       case 'consensus_based':
         return this.aggregateConsensusBased(contexts);
-      
+
       case 'custom':
         if (config.customAggregator) {
           return config.customAggregator(contexts);
         }
         throw new Error('Custom aggregator not provided');
-      
+
       default:
         runtimeLogger.warn('Unknown aggregation strategy, using union', {
-          strategy: config.strategy
+          strategy: config.strategy,
         });
         return this.aggregateUnion(contexts);
     }
@@ -248,22 +265,29 @@ export class ContextAggregator {
    */
   private aggregateUnion(contexts: AgentContext[]): AgentContext {
     const baseContext = { ...contexts[0] };
-    
+
     for (let i = 1; i < contexts.length; i++) {
       const context = contexts[i];
-      
+
       for (const [key, value] of Object.entries(context)) {
-        if (!(key in baseContext) || baseContext[key as keyof AgentContext] === undefined) {
+        if (
+          !(key in baseContext) ||
+          baseContext[key as keyof AgentContext] === undefined
+        ) {
           (baseContext as any)[key] = value;
         }
       }
     }
 
     // Update metadata
-    baseContext.version = Math.max(...contexts.map(c => c.version)) + 1;
+    baseContext.version = Math.max(...contexts.map((c) => c.version)) + 1;
     baseContext.lastModified = new Date().toISOString();
-    baseContext.sharedWith = Array.from(new Set(contexts.flatMap(c => c.sharedWith)));
-    baseContext.vectorClock = this.mergeVectorClocks(contexts.map(c => c.vectorClock));
+    baseContext.sharedWith = Array.from(
+      new Set(contexts.flatMap((c) => c.sharedWith))
+    );
+    baseContext.vectorClock = this.mergeVectorClocks(
+      contexts.map((c) => c.vectorClock)
+    );
 
     return baseContext;
   }
@@ -273,7 +297,7 @@ export class ContextAggregator {
    */
   private aggregateIntersection(contexts: AgentContext[]): AgentContext {
     const baseContext = { ...contexts[0] };
-    
+
     // Find common fields
     const commonFields = new Set(Object.keys(contexts[0]));
     for (let i = 1; i < contexts.length; i++) {
@@ -293,9 +317,11 @@ export class ContextAggregator {
 
     // Ensure required fields
     const finalContext = result as AgentContext;
-    finalContext.version = Math.max(...contexts.map(c => c.version)) + 1;
+    finalContext.version = Math.max(...contexts.map((c) => c.version)) + 1;
     finalContext.lastModified = new Date().toISOString();
-    finalContext.vectorClock = this.mergeVectorClocks(contexts.map(c => c.vectorClock));
+    finalContext.vectorClock = this.mergeVectorClocks(
+      contexts.map((c) => c.vectorClock)
+    );
 
     return finalContext;
   }
@@ -308,28 +334,33 @@ export class ContextAggregator {
     weights: Record<AgentId, number>
   ): AgentContext {
     const baseContext = { ...contexts[0] };
-    const totalWeight = contexts.reduce((sum, ctx) => sum + (weights[ctx.agentId] || 1), 0);
+    const totalWeight = contexts.reduce(
+      (sum, ctx) => sum + (weights[ctx.agentId] || 1),
+      0
+    );
 
     // For numeric fields, compute weighted average
     for (const key of Object.keys(baseContext)) {
       const values = contexts
-        .map(ctx => (ctx as any)[key])
-        .filter(val => typeof val === 'number');
-      
+        .map((ctx) => (ctx as any)[key])
+        .filter((val) => typeof val === 'number');
+
       if (values.length === contexts.length) {
         // All values are numeric, compute weighted average
         const weightedSum = contexts.reduce((sum, ctx, idx) => {
           const weight = weights[ctx.agentId] || 1;
-          return sum + ((ctx as any)[key] * weight);
+          return sum + (ctx as any)[key] * weight;
         }, 0);
-        
+
         (baseContext as any)[key] = weightedSum / totalWeight;
       }
     }
 
-    baseContext.version = Math.max(...contexts.map(c => c.version)) + 1;
+    baseContext.version = Math.max(...contexts.map((c) => c.version)) + 1;
     baseContext.lastModified = new Date().toISOString();
-    baseContext.vectorClock = this.mergeVectorClocks(contexts.map(c => c.vectorClock));
+    baseContext.vectorClock = this.mergeVectorClocks(
+      contexts.map((c) => c.vectorClock)
+    );
 
     return baseContext;
   }
@@ -350,20 +381,25 @@ export class ContextAggregator {
 
     // Use highest priority context as base, fill in missing fields from lower priority
     const result = { ...sortedContexts[0] };
-    
+
     for (let i = 1; i < sortedContexts.length; i++) {
       const context = sortedContexts[i];
-      
+
       for (const [key, value] of Object.entries(context)) {
-        if (!(key in result) || result[key as keyof AgentContext] === undefined) {
+        if (
+          !(key in result) ||
+          result[key as keyof AgentContext] === undefined
+        ) {
           (result as any)[key] = value;
         }
       }
     }
 
-    result.version = Math.max(...contexts.map(c => c.version)) + 1;
+    result.version = Math.max(...contexts.map((c) => c.version)) + 1;
     result.lastModified = new Date().toISOString();
-    result.vectorClock = this.mergeVectorClocks(contexts.map(c => c.vectorClock));
+    result.vectorClock = this.mergeVectorClocks(
+      contexts.map((c) => c.vectorClock)
+    );
 
     return result;
   }
@@ -377,7 +413,7 @@ export class ContextAggregator {
 
     for (const key of Object.keys(baseContext)) {
       const valueFreq = new Map<string, number>();
-      
+
       // Count frequency of each value
       for (const context of contexts) {
         const value = JSON.stringify((context as any)[key]);
@@ -387,7 +423,7 @@ export class ContextAggregator {
       // Find consensus value (most frequent that meets threshold)
       let consensusValue = undefined;
       let maxCount = 0;
-      
+
       for (const [value, count] of valueFreq.entries()) {
         if (count >= requiredConsensus && count > maxCount) {
           consensusValue = JSON.parse(value);
@@ -401,9 +437,11 @@ export class ContextAggregator {
       // If no consensus, keep original value
     }
 
-    baseContext.version = Math.max(...contexts.map(c => c.version)) + 1;
+    baseContext.version = Math.max(...contexts.map((c) => c.version)) + 1;
     baseContext.lastModified = new Date().toISOString();
-    baseContext.vectorClock = this.mergeVectorClocks(contexts.map(c => c.vectorClock));
+    baseContext.vectorClock = this.mergeVectorClocks(
+      contexts.map((c) => c.vectorClock)
+    );
 
     return baseContext;
   }
@@ -411,7 +449,10 @@ export class ContextAggregator {
   /**
    * Conflict resolution strategies
    */
-  private resolveLastWriterWins(conflict: ContextConflict, contexts: AgentContext[]): unknown {
+  private resolveLastWriterWins(
+    conflict: ContextConflict,
+    contexts: AgentContext[]
+  ): unknown {
     let latestContext = contexts[0];
     let latestTime = new Date(contexts[0].lastModified);
 
@@ -426,7 +467,10 @@ export class ContextAggregator {
     return conflict.values[latestContext.agentId];
   }
 
-  private resolveFirstWriterWins(conflict: ContextConflict, contexts: AgentContext[]): unknown {
+  private resolveFirstWriterWins(
+    conflict: ContextConflict,
+    contexts: AgentContext[]
+  ): unknown {
     let earliestContext = contexts[0];
     let earliestTime = new Date(contexts[0].lastModified);
 
@@ -441,7 +485,10 @@ export class ContextAggregator {
     return conflict.values[earliestContext.agentId];
   }
 
-  private resolvePriorityBased(conflict: ContextConflict, contexts: AgentContext[]): unknown {
+  private resolvePriorityBased(
+    conflict: ContextConflict,
+    contexts: AgentContext[]
+  ): unknown {
     // In a real implementation, this would use agent priorities
     // For now, use the first conflicting agent
     const firstAgent = conflict.conflictingAgents[0];
@@ -450,29 +497,33 @@ export class ContextAggregator {
 
   private resolveMergeValues(conflict: ContextConflict): unknown {
     const values = Object.values(conflict.values);
-    
+
     // If all values are arrays, merge them
-    if (values.every(v => Array.isArray(v))) {
+    if (values.every((v) => Array.isArray(v))) {
       return Array.from(new Set(values.flat()));
     }
-    
+
     // If all values are objects, merge them
-    if (values.every(v => typeof v === 'object' && v !== null && !Array.isArray(v))) {
+    if (
+      values.every(
+        (v) => typeof v === 'object' && v !== null && !Array.isArray(v)
+      )
+    ) {
       return Object.assign({}, ...values);
     }
-    
+
     // If all values are strings, concatenate them
-    if (values.every(v => typeof v === 'string')) {
+    if (values.every((v) => typeof v === 'string')) {
       return values.join(' ');
     }
-    
+
     // Default: return first value
     return values[0];
   }
 
   private resolveConsensusBased(conflict: ContextConflict): unknown {
     const valueFreq = new Map<string, { value: unknown; count: number }>();
-    
+
     for (const value of Object.values(conflict.values)) {
       const key = JSON.stringify(value);
       if (valueFreq.has(key)) {
@@ -485,7 +536,7 @@ export class ContextAggregator {
     // Return most frequent value
     let maxCount = 0;
     let consensusValue = Object.values(conflict.values)[0];
-    
+
     for (const { value, count } of valueFreq.values()) {
       if (count > maxCount) {
         maxCount = count;
@@ -501,13 +552,16 @@ export class ContextAggregator {
     // For now, return first value and log
     runtimeLogger.warn('Manual conflict resolution required', {
       conflictId: conflict.conflictId,
-      fieldPath: conflict.fieldPath
+      fieldPath: conflict.fieldPath,
     });
-    
+
     return Object.values(conflict.values)[0];
   }
 
-  private resolveCustom(conflict: ContextConflict, contexts: AgentContext[]): unknown {
+  private resolveCustom(
+    conflict: ContextConflict,
+    contexts: AgentContext[]
+  ): unknown {
     // In a real implementation, this would use custom resolution logic
     // For now, use last writer wins
     return this.resolveLastWriterWins(conflict, contexts);
@@ -522,7 +576,7 @@ export class ContextAggregator {
 
     for (const vectorClock of vectorClocks) {
       maxVersion = Math.max(maxVersion, vectorClock.version);
-      
+
       for (const [agentId, clock] of Object.entries(vectorClock.clocks)) {
         mergedClocks[agentId] = Math.max(mergedClocks[agentId] || 0, clock);
       }
@@ -530,7 +584,7 @@ export class ContextAggregator {
 
     return {
       clocks: mergedClocks,
-      version: maxVersion + 1
+      version: maxVersion + 1,
     };
   }
 
@@ -546,8 +600,8 @@ export class ContextAggregator {
     }
 
     const cutoffTime = new Date(Date.now() - maxAge);
-    return contexts.filter(context => 
-      new Date(context.lastModified) >= cutoffTime
+    return contexts.filter(
+      (context) => new Date(context.lastModified) >= cutoffTime
     );
   }
 
@@ -562,17 +616,21 @@ export class ContextAggregator {
    * Get aggregation statistics
    */
   getStatistics() {
-    const totalConflicts = Array.from(this.conflictHistory.values())
-      .reduce((sum, conflicts) => sum + conflicts.length, 0);
-    
-    const resolvedConflicts = Array.from(this.conflictHistory.values())
-      .reduce((sum, conflicts) => sum + conflicts.filter(c => c.resolved).length, 0);
+    const totalConflicts = Array.from(this.conflictHistory.values()).reduce(
+      (sum, conflicts) => sum + conflicts.length,
+      0
+    );
+
+    const resolvedConflicts = Array.from(this.conflictHistory.values()).reduce(
+      (sum, conflicts) => sum + conflicts.filter((c) => c.resolved).length,
+      0
+    );
 
     return {
       totalConflicts,
       resolvedConflicts,
       unresolvedConflicts: totalConflicts - resolvedConflicts,
-      fieldsWithConflicts: this.conflictHistory.size
+      fieldsWithConflicts: this.conflictHistory.size,
     };
   }
 

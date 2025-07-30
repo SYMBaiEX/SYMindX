@@ -1,6 +1,6 @@
 /**
  * RuntimeMetrics.ts - Performance monitoring and metrics collection
- * 
+ *
  * This module handles:
  * - Performance metrics collection
  * - System monitoring
@@ -42,7 +42,7 @@ export class RuntimeMetricsCollector {
   private metricsHistory: RuntimeMetrics[] = [];
   private performanceTimers: Map<string, PerformanceTimer> = new Map();
   private metricsTimer?: ReturnType<typeof setInterval>;
-  
+
   // Performance counters
   private counters = {
     messagesProcessed: 0,
@@ -118,9 +118,10 @@ export class RuntimeMetricsCollector {
 
       // Calculate average response time
       if (this.responseTimes.length > 0) {
-        this.metrics.averageResponseTime = 
-          this.responseTimes.reduce((sum, time) => sum + time, 0) / this.responseTimes.length;
-        
+        this.metrics.averageResponseTime =
+          this.responseTimes.reduce((sum, time) => sum + time, 0) /
+          this.responseTimes.length;
+
         // Keep only recent response times (last 100)
         if (this.responseTimes.length > 100) {
           this.responseTimes = this.responseTimes.slice(-100);
@@ -171,7 +172,7 @@ export class RuntimeMetricsCollector {
    */
   recordMessageProcessed(responseTime?: number): void {
     this.counters.messagesProcessed++;
-    
+
     if (responseTime && this.config.enablePerformanceTimers) {
       this.responseTimes.push(responseTime);
     }
@@ -306,13 +307,14 @@ export class RuntimeMetricsCollector {
   } {
     const history = this.getMetricsHistory();
     const responseTimes = this.responseTimes;
-    
+
     return {
       current: this.getMetrics(),
       history,
       performance: {
         averageResponseTime: this.metrics.averageResponseTime,
-        peakResponseTime: responseTimes.length > 0 ? Math.max(...responseTimes) : 0,
+        peakResponseTime:
+          responseTimes.length > 0 ? Math.max(...responseTimes) : 0,
         totalOperations: this.getTotalOperations(),
         operationsPerMinute: this.getOperationsPerMinute(),
       },
@@ -370,7 +372,9 @@ export class RuntimeMetricsCollector {
 
     // Limit history size
     if (this.metricsHistory.length > this.config.maxHistoryEntries) {
-      this.metricsHistory = this.metricsHistory.slice(-this.config.maxHistoryEntries);
+      this.metricsHistory = this.metricsHistory.slice(
+        -this.config.maxHistoryEntries
+      );
     }
   }
 

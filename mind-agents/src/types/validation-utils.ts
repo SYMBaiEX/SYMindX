@@ -1,6 +1,6 @@
 /**
  * Type Validation Utilities
- * 
+ *
  * Comprehensive runtime type validation for better type safety
  */
 
@@ -95,9 +95,15 @@ export class TypeValidator {
    */
   validateAgent(obj: unknown, fieldPath = 'agent'): obj is Agent {
     this.resetValidation();
-    
+
     if (!isAgent(obj)) {
-      this.addError(fieldPath, obj, 'Agent', typeof obj, 'Invalid agent structure');
+      this.addError(
+        fieldPath,
+        obj,
+        'Agent',
+        typeof obj,
+        'Invalid agent structure'
+      );
       return false;
     }
 
@@ -105,7 +111,7 @@ export class TypeValidator {
     this.validateAgentConfig(obj.config, `${fieldPath}.config`);
     this.validateMemoryProvider(obj.memory, `${fieldPath}.memory`);
     this.validateEmotionModule(obj.emotion, `${fieldPath}.emotion`);
-    
+
     if (obj.extensions) {
       obj.extensions.forEach((ext, index) => {
         this.validateExtension(ext, `${fieldPath}.extensions[${index}]`);
@@ -122,9 +128,18 @@ export class TypeValidator {
   /**
    * Validate an AgentConfig object
    */
-  validateAgentConfig(obj: unknown, fieldPath = 'agentConfig'): obj is AgentConfig {
+  validateAgentConfig(
+    obj: unknown,
+    fieldPath = 'agentConfig'
+  ): obj is AgentConfig {
     if (!isAgentConfig(obj)) {
-      this.addError(fieldPath, obj, 'AgentConfig', typeof obj, 'Invalid agent configuration');
+      this.addError(
+        fieldPath,
+        obj,
+        'AgentConfig',
+        typeof obj,
+        'Invalid agent configuration'
+      );
       return false;
     }
 
@@ -139,15 +154,28 @@ export class TypeValidator {
   /**
    * Validate a MemoryRecord object
    */
-  validateMemoryRecord(obj: unknown, fieldPath = 'memoryRecord'): obj is MemoryRecord {
+  validateMemoryRecord(
+    obj: unknown,
+    fieldPath = 'memoryRecord'
+  ): obj is MemoryRecord {
     if (!isMemoryRecord(obj)) {
-      this.addError(fieldPath, obj, 'MemoryRecord', typeof obj, 'Invalid memory record');
+      this.addError(
+        fieldPath,
+        obj,
+        'MemoryRecord',
+        typeof obj,
+        'Invalid memory record'
+      );
       return false;
     }
 
     // Validate memory record constraints
     if (obj.importance < 0 || obj.importance > 1) {
-      this.addWarning(fieldPath, obj.importance, 'Importance should be between 0 and 1');
+      this.addWarning(
+        fieldPath,
+        obj.importance,
+        'Importance should be between 0 and 1'
+      );
     }
 
     if (obj.content.length === 0) {
@@ -160,15 +188,28 @@ export class TypeValidator {
   /**
    * Validate an EmotionState object
    */
-  validateEmotionState(obj: unknown, fieldPath = 'emotionState'): obj is EmotionState {
+  validateEmotionState(
+    obj: unknown,
+    fieldPath = 'emotionState'
+  ): obj is EmotionState {
     if (!isEmotionState(obj)) {
-      this.addError(fieldPath, obj, 'EmotionState', typeof obj, 'Invalid emotion state');
+      this.addError(
+        fieldPath,
+        obj,
+        'EmotionState',
+        typeof obj,
+        'Invalid emotion state'
+      );
       return false;
     }
 
     // Validate emotion constraints
     if (obj.intensity < 0 || obj.intensity > 1) {
-      this.addWarning(fieldPath, obj.intensity, 'Emotion intensity should be between 0 and 1');
+      this.addWarning(
+        fieldPath,
+        obj.intensity,
+        'Emotion intensity should be between 0 and 1'
+      );
     }
 
     return true;
@@ -177,20 +218,33 @@ export class TypeValidator {
   /**
    * Validate a ThoughtResult object
    */
-  validateThoughtResult(obj: unknown, fieldPath = 'thoughtResult'): obj is ThoughtResult {
+  validateThoughtResult(
+    obj: unknown,
+    fieldPath = 'thoughtResult'
+  ): obj is ThoughtResult {
     if (!isThoughtResult(obj)) {
-      this.addError(fieldPath, obj, 'ThoughtResult', typeof obj, 'Invalid thought result');
+      this.addError(
+        fieldPath,
+        obj,
+        'ThoughtResult',
+        typeof obj,
+        'Invalid thought result'
+      );
       return false;
     }
 
     // Validate thought result constraints
     if (obj.confidence < 0 || obj.confidence > 1) {
-      this.addWarning(fieldPath, obj.confidence, 'Confidence should be between 0 and 1');
+      this.addWarning(
+        fieldPath,
+        obj.confidence,
+        'Confidence should be between 0 and 1'
+      );
     }
 
     // Validate nested objects
     this.validateEmotionState(obj.emotions, `${fieldPath}.emotions`);
-    
+
     obj.actions.forEach((action, index) => {
       this.validateAgentAction(action, `${fieldPath}.actions[${index}]`);
     });
@@ -207,17 +261,31 @@ export class TypeValidator {
    */
   validatePlan(obj: unknown, fieldPath = 'plan'): obj is Plan {
     if (!isPlan(obj)) {
-      this.addError(fieldPath, obj, 'Plan', typeof obj, 'Invalid plan structure');
+      this.addError(
+        fieldPath,
+        obj,
+        'Plan',
+        typeof obj,
+        'Invalid plan structure'
+      );
       return false;
     }
 
     // Validate plan constraints
     if (obj.priority < 0) {
-      this.addWarning(fieldPath, obj.priority, 'Plan priority should not be negative');
+      this.addWarning(
+        fieldPath,
+        obj.priority,
+        'Plan priority should not be negative'
+      );
     }
 
     if (obj.estimatedDuration <= 0) {
-      this.addWarning(fieldPath, obj.estimatedDuration, 'Estimated duration should be positive');
+      this.addWarning(
+        fieldPath,
+        obj.estimatedDuration,
+        'Estimated duration should be positive'
+      );
     }
 
     return true;
@@ -226,9 +294,18 @@ export class TypeValidator {
   /**
    * Validate an AgentAction object
    */
-  validateAgentAction(obj: unknown, fieldPath = 'agentAction'): obj is AgentAction {
+  validateAgentAction(
+    obj: unknown,
+    fieldPath = 'agentAction'
+  ): obj is AgentAction {
     if (!isAgentAction(obj)) {
-      this.addError(fieldPath, obj, 'AgentAction', typeof obj, 'Invalid agent action');
+      this.addError(
+        fieldPath,
+        obj,
+        'AgentAction',
+        typeof obj,
+        'Invalid agent action'
+      );
       return false;
     }
 
@@ -238,9 +315,18 @@ export class TypeValidator {
   /**
    * Validate an AgentEvent object
    */
-  validateAgentEvent(obj: unknown, fieldPath = 'agentEvent'): obj is AgentEvent {
+  validateAgentEvent(
+    obj: unknown,
+    fieldPath = 'agentEvent'
+  ): obj is AgentEvent {
     if (!isAgentEvent(obj)) {
-      this.addError(fieldPath, obj, 'AgentEvent', typeof obj, 'Invalid agent event');
+      this.addError(
+        fieldPath,
+        obj,
+        'AgentEvent',
+        typeof obj,
+        'Invalid agent event'
+      );
       return false;
     }
 
@@ -252,7 +338,13 @@ export class TypeValidator {
    */
   validateExtension(obj: unknown, fieldPath = 'extension'): obj is Extension {
     if (!isExtension(obj)) {
-      this.addError(fieldPath, obj, 'Extension', typeof obj, 'Invalid extension');
+      this.addError(
+        fieldPath,
+        obj,
+        'Extension',
+        typeof obj,
+        'Invalid extension'
+      );
       return false;
     }
 
@@ -274,9 +366,18 @@ export class TypeValidator {
   /**
    * Validate a UnifiedContext object
    */
-  validateUnifiedContext(obj: unknown, fieldPath = 'unifiedContext'): obj is UnifiedContext {
+  validateUnifiedContext(
+    obj: unknown,
+    fieldPath = 'unifiedContext'
+  ): obj is UnifiedContext {
     if (!isUnifiedContext(obj)) {
-      this.addError(fieldPath, obj, 'UnifiedContext', typeof obj, 'Invalid unified context');
+      this.addError(
+        fieldPath,
+        obj,
+        'UnifiedContext',
+        typeof obj,
+        'Invalid unified context'
+      );
       return false;
     }
 
@@ -354,7 +455,12 @@ export class TypeValidator {
   /**
    * Add validation warning
    */
-  private addWarning(field: string, value: unknown, message: string, suggestion?: string): void {
+  private addWarning(
+    field: string,
+    value: unknown,
+    message: string,
+    suggestion?: string
+  ): void {
     this.warnings.push({
       field,
       value,
@@ -366,7 +472,10 @@ export class TypeValidator {
   /**
    * Check for deprecated naming patterns
    */
-  private checkDeprecatedNaming(obj: Record<string, unknown>, fieldPath: string): void {
+  private checkDeprecatedNaming(
+    obj: Record<string, unknown>,
+    fieldPath: string
+  ): void {
     const deprecatedPatterns = [
       'decision_making',
       'human_interaction',
@@ -379,7 +488,7 @@ export class TypeValidator {
     ];
 
     for (const key of Object.keys(obj)) {
-      if (deprecatedPatterns.some(pattern => key.includes(pattern))) {
+      if (deprecatedPatterns.some((pattern) => key.includes(pattern))) {
         this.addWarning(
           `${fieldPath}.${key}`,
           obj[key],
@@ -393,12 +502,25 @@ export class TypeValidator {
   // Private methods for validating complex nested objects
   private validateMemoryProvider(obj: unknown, fieldPath: string): boolean {
     if (typeof obj !== 'object' || obj === null) {
-      this.addError(fieldPath, obj, 'MemoryProvider', typeof obj, 'Invalid memory provider');
+      this.addError(
+        fieldPath,
+        obj,
+        'MemoryProvider',
+        typeof obj,
+        'Invalid memory provider'
+      );
       return false;
     }
 
     // Check for required methods
-    const requiredMethods = ['store', 'retrieve', 'search', 'delete', 'clear', 'getRecent'];
+    const requiredMethods = [
+      'store',
+      'retrieve',
+      'search',
+      'delete',
+      'clear',
+      'getRecent',
+    ];
     for (const method of requiredMethods) {
       if (!(method in obj) || typeof (obj as any)[method] !== 'function') {
         this.addError(
@@ -416,12 +538,24 @@ export class TypeValidator {
 
   private validateEmotionModule(obj: unknown, fieldPath: string): boolean {
     if (typeof obj !== 'object' || obj === null) {
-      this.addError(fieldPath, obj, 'EmotionModule', typeof obj, 'Invalid emotion module');
+      this.addError(
+        fieldPath,
+        obj,
+        'EmotionModule',
+        typeof obj,
+        'Invalid emotion module'
+      );
       return false;
     }
 
     // Check for required methods
-    const requiredMethods = ['getState', 'processEvent', 'updateEmotion', 'decay', 'reset'];
+    const requiredMethods = [
+      'getState',
+      'processEvent',
+      'updateEmotion',
+      'decay',
+      'reset',
+    ];
     for (const method of requiredMethods) {
       if (!(method in obj) || typeof (obj as any)[method] !== 'function') {
         this.addError(
@@ -513,10 +647,12 @@ export function sanitizeObject<T extends Record<string, unknown>>(
   }
 
   const sanitized = { ...obj };
-  
+
   for (const [key, sanitizer] of Object.entries(sanitizers)) {
     if (key in sanitized && sanitizer) {
-      sanitized[key as keyof T] = sanitizer(sanitized[key as keyof T]) as T[keyof T];
+      sanitized[key as keyof T] = sanitizer(
+        sanitized[key as keyof T]
+      ) as T[keyof T];
     }
   }
 

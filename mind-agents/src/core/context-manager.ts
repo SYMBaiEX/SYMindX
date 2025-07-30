@@ -343,12 +343,14 @@ export class ContextManager {
       startedAt: memory.timestamp,
       lastActive: new Date(),
       participants: getStringSet(memory.metadata['participants']),
-      topics: getStringArray(memory.metadata['topics']).map((topic: string) => ({
-        topic,
-        mentions: 1,
-        firstMentioned: memory.timestamp,
-        lastMentioned: memory.timestamp,
-      })),
+      topics: getStringArray(memory.metadata['topics']).map(
+        (topic: string) => ({
+          topic,
+          mentions: 1,
+          firstMentioned: memory.timestamp,
+          lastMentioned: memory.timestamp,
+        })
+      ),
       messages: [],
       state: {
         phase: 'active' as const,

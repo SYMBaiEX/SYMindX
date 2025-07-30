@@ -591,7 +591,9 @@ export class MetaReasoner implements CognitionModule {
   private assessRulesApplicability(context: ThoughtContext): number {
     // Clear patterns and structure suggest rule applicability
     const hasQuestions = context.events.some(
-      (e) => typeof e.data?.['message'] === 'string' && e.data['message'].includes('?')
+      (e) =>
+        typeof e.data?.['message'] === 'string' &&
+        e.data['message'].includes('?')
     );
 
     const hasCommands = context.events.some(

@@ -94,7 +94,7 @@ export class CoherePortal extends BasePortal {
 
     // Create properly configured Cohere provider
     const providerConfig: { apiKey?: string; baseURL?: string } = {};
-    const apiKey = config.apiKey || process.env["COHERE_API_KEY"];
+    const apiKey = config.apiKey || process.env['COHERE_API_KEY'];
     if (apiKey) providerConfig.apiKey = apiKey;
     if (config.baseUrl) providerConfig.baseURL = config.baseUrl;
 

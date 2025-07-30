@@ -378,7 +378,9 @@ export class AuthenticationSkill {
   /**
    * Decode token using JWT
    */
-  private async decodeToken(token: string): Promise<Record<string, unknown> | null> {
+  private async decodeToken(
+    token: string
+  ): Promise<Record<string, unknown> | null> {
     try {
       const jwtManager = (this.extension as any).jwtManager as JWTManager;
       if (!jwtManager) {
@@ -391,7 +393,7 @@ export class AuthenticationSkill {
         iat: payload.iat,
         exp: payload.exp,
         scopes: payload.scopes || [],
-        type: payload.type
+        type: payload.type,
       };
     } catch (error) {
       return null;

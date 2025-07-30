@@ -109,7 +109,7 @@ export function createSpinner(
   const canUseSpinner =
     process.stdout.isTTY &&
     process.stdin.isTTY &&
-    !process.env["CI"] &&
+    !process.env['CI'] &&
     process.stdin.readable;
 
   const spinner = ora({
@@ -259,7 +259,7 @@ export async function animateLoading(
   const canUseSpinner =
     process.stdout.isTTY &&
     process.stdin.isTTY &&
-    !process.env["CI"] &&
+    !process.env['CI'] &&
     process.stdin.readable;
 
   if (!canUseSpinner) {
@@ -390,7 +390,7 @@ export function createProgressBar(
 }
 
 // Legacy export - keeping original function name for backward compatibility
-export { createInteractiveProgressBar as createProgressBarWithUpdate }
+export { createInteractiveProgressBar as createProgressBarWithUpdate };
 
 /**
  * Display a styled chat message with timestamp

@@ -1,6 +1,6 @@
 /**
  * ConfigurationManager.ts - Configuration loading and validation
- * 
+ *
  * This module handles:
  * - Configuration file loading
  * - Environment variable processing
@@ -64,7 +64,7 @@ export class ConfigurationManager {
    */
   async loadCharacters(): Promise<CharacterConfig[]> {
     const characters: CharacterConfig[] = [];
-    
+
     if (!this.config.charactersPath) {
       this.logger.warn('No characters path configured');
       return characters;
@@ -81,7 +81,7 @@ export class ConfigurationManager {
 
         const filePath = path.join(charactersPath, file);
         const characterConfig = await this.loadCharacterFile(filePath);
-        
+
         if (characterConfig) {
           characters.push(characterConfig);
         }
@@ -105,7 +105,9 @@ export class ConfigurationManager {
 
       // Validate character config
       if (!config.id || !config.name) {
-        this.logger.warn(`Invalid character config in ${filePath}: missing id or name`);
+        this.logger.warn(
+          `Invalid character config in ${filePath}: missing id or name`
+        );
         return null;
       }
 
@@ -115,7 +117,9 @@ export class ConfigurationManager {
       this.logger.debug(`Loaded character: ${config.name} (${config.id})`);
       return config;
     } catch (error) {
-      this.logger.error(`Failed to load character file: ${filePath}`, { error });
+      this.logger.error(`Failed to load character file: ${filePath}`, {
+        error,
+      });
       return null;
     }
   }
@@ -158,7 +162,9 @@ export class ConfigurationManager {
           return true;
       }
     } catch (error) {
-      this.logger.error(`Module config validation failed for ${moduleType}`, { error });
+      this.logger.error(`Module config validation failed for ${moduleType}`, {
+        error,
+      });
       return false;
     }
   }
@@ -168,19 +174,25 @@ export class ConfigurationManager {
    */
   private processConfigEnvironmentVariables(): void {
     // Process main config
-    this.config = this.processEnvironmentVariables(this.config) as RuntimeConfig;
+    this.config = this.processEnvironmentVariables(
+      this.config
+    ) as RuntimeConfig;
 
     // Process extensions config
     if (this.config.extensions) {
       for (const [key, value] of Object.entries(this.config.extensions)) {
-        this.config.extensions[key] = this.processEnvironmentVariables(value) as ExtensionConfig;
+        this.config.extensions[key] = this.processEnvironmentVariables(
+          value
+        ) as ExtensionConfig;
       }
     }
 
     // Process portals config
     if (this.config.portals) {
       for (const [key, value] of Object.entries(this.config.portals)) {
-        this.config.portals[key] = this.processEnvironmentVariables(value) as PortalConfig;
+        this.config.portals[key] = this.processEnvironmentVariables(
+          value
+        ) as PortalConfig;
       }
     }
   }
@@ -192,7 +204,11 @@ export class ConfigurationManager {
     // Process portal API keys
     if (config.portals) {
       for (const portal of config.portals) {
-        if (portal.apiKey && portal.apiKey.startsWith('${') && portal.apiKey.endsWith('}')) {
+        if (
+          portal.apiKey &&
+          portal.apiKey.startsWith('${') &&
+          portal.apiKey.endsWith('}')
+        ) {
           const envVar = portal.apiKey.slice(2, -1);
           portal.apiKey = process.env[envVar] || portal.apiKey;
         }
@@ -201,7 +217,7 @@ export class ConfigurationManager {
 
     // Process extension configurations
     if (config.extensions) {
-      Object.keys(config.extensions).forEach(key => {
+      Object.keys(config.extensions).forEach((key) => {
         config.extensions[key] = this.processEnvironmentVariables(
           config.extensions[key]
         ) as ProcessedEnvironmentConfig;
@@ -212,7 +228,9 @@ export class ConfigurationManager {
   /**
    * Process environment variables in any configuration object
    */
-  private processEnvironmentVariables(obj: ConfigValue): ProcessedEnvironmentConfig {
+  private processEnvironmentVariables(
+    obj: ConfigValue
+  ): ProcessedEnvironmentConfig {
     if (typeof obj === 'string') {
       // Check if string is an environment variable reference
       if (obj.startsWith('${') && obj.endsWith('}')) {
@@ -223,7 +241,7 @@ export class ConfigurationManager {
     }
 
     if (Array.isArray(obj)) {
-      return obj.map(item => this.processEnvironmentVariables(item));
+      return obj.map((item) => this.processEnvironmentVariables(item));
     }
 
     if (typeof obj === 'object' && obj !== null) {
@@ -261,7 +279,9 @@ export class ConfigurationManager {
       }
     }
 
-    this.logger.debug(`Loaded ${Object.keys(this.apiKeys).length} API keys from environment`);
+    this.logger.debug(
+      `Loaded ${Object.keys(this.apiKeys).length} API keys from environment`
+    );
   }
 
   /**
@@ -309,7 +329,9 @@ export class ConfigurationManager {
       case 'postgres':
       case 'neon':
         if (!config.settings?.connectionString) {
-          this.logger.error(`${config.provider} memory config missing connectionString`);
+          this.logger.error(
+            `${config.provider} memory config missing connectionString`
+          );
           return false;
         }
         break;
@@ -335,7 +357,9 @@ export class ConfigurationManager {
 
     // Composite emotion should have enabled emotions list
     if (config.type === 'composite' && !config.settings?.enabledEmotions) {
-      this.logger.warn('Composite emotion config missing enabledEmotions, using defaults');
+      this.logger.warn(
+        'Composite emotion config missing enabledEmotions, using defaults'
+      );
     }
 
     return true;
@@ -386,19 +410,23 @@ export class ConfigurationManager {
           return true;
         }
         // Check if it contains actual sensitive data
-        return !sensitivePatterns.some(pattern => pattern.test(value));
+        return !sensitivePatterns.some((pattern) => pattern.test(value));
       }
 
       if (Array.isArray(value)) {
-        return value.every(item => checkValue(item));
+        return value.every((item) => checkValue(item));
       }
 
       if (typeof value === 'object' && value !== null) {
         return Object.entries(value).every(([key, val]) => {
           // Check key name
-          if (sensitivePatterns.some(pattern => pattern.test(key))) {
+          if (sensitivePatterns.some((pattern) => pattern.test(key))) {
             // If the value is an env var reference, it's OK
-            if (typeof val === 'string' && val.startsWith('${') && val.endsWith('}')) {
+            if (
+              typeof val === 'string' &&
+              val.startsWith('${') &&
+              val.endsWith('}')
+            ) {
               return true;
             }
             return false;

@@ -1,14 +1,14 @@
 /**
  * @module observability
  * @description Unified observability system for SYMindX
- * 
+ *
  * This module provides comprehensive observability across all SYMindX components:
  * - Unified logging with structured metadata
  * - Metrics collection and analysis
  * - Distributed tracing for agent interactions
  * - Health monitoring with intelligent alerting
  * - Performance monitoring and optimization insights
- * 
+ *
  * Features:
  * - <5ms observability overhead
  * - End-to-end request tracing

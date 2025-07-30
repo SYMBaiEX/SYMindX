@@ -1,6 +1,6 @@
 /**
  * AgentManager.ts - Agent lifecycle management
- * 
+ *
  * This module handles:
  * - Agent creation and destruction
  * - Agent activation and deactivation
@@ -28,7 +28,7 @@ import { EventBus } from '../../types/agent';
 export class AgentManager {
   public agents: Map<string, Agent> = new Map();
   public lazyAgents: Map<string, LazyAgent> = new Map();
-  
+
   private logger = standardLoggers.runtime;
   private eventBus: EventBus;
   private agentFactory?: (config: AgentConfig) => Promise<Agent>;
@@ -54,13 +54,15 @@ export class AgentManager {
 
     try {
       this.logger.start(`Creating agent: ${config.id}`);
-      
+
       const agent = await this.agentFactory(config);
-      
+
       // Initialize the agent
       const initResult = await agent.initialize(config);
       if (!initResult.success) {
-        throw createAgentError(`Failed to initialize agent: ${initResult.error}`);
+        throw createAgentError(
+          `Failed to initialize agent: ${initResult.error}`
+        );
       }
 
       // Store the agent
@@ -96,8 +98,8 @@ export class AgentManager {
       // Cleanup the agent
       const cleanupResult = await agent.cleanup();
       if (!cleanupResult.success) {
-        this.logger.error(`Failed to cleanup agent: ${agentId}`, { 
-          error: cleanupResult.error 
+        this.logger.error(`Failed to cleanup agent: ${agentId}`, {
+          error: cleanupResult.error,
         });
       }
 
@@ -163,7 +165,7 @@ export class AgentManager {
       this.eventBus.emit({
         type: 'agent.activated',
         agentId,
-        data: { 
+        data: {
           activationCount: lazyAgent.activationCount,
           priority: lazyAgent.priority,
         },
@@ -201,8 +203,8 @@ export class AgentManager {
       // Cleanup the agent
       const cleanupResult = await agent.cleanup();
       if (!cleanupResult.success) {
-        this.logger.error(`Cleanup failed during deactivation: ${agentId}`, { 
-          error: cleanupResult.error 
+        this.logger.error(`Cleanup failed during deactivation: ${agentId}`, {
+          error: cleanupResult.error,
         });
       }
 
@@ -299,7 +301,10 @@ export class AgentManager {
   /**
    * Create a lazy agent from character config
    */
-  createLazyAgent(characterConfig: CharacterConfig, priority: number = 0): void {
+  createLazyAgent(
+    characterConfig: CharacterConfig,
+    priority: number = 0
+  ): void {
     const lazyAgent: LazyAgent = {
       id: characterConfig.id,
       config: characterConfig,
@@ -310,14 +315,18 @@ export class AgentManager {
     };
 
     this.lazyAgents.set(characterConfig.id, lazyAgent);
-    
-    this.logger.debug(`Created lazy agent: ${characterConfig.id}`, { priority });
+
+    this.logger.debug(`Created lazy agent: ${characterConfig.id}`, {
+      priority,
+    });
   }
 
   /**
    * Unload inactive agents based on criteria
    */
-  async unloadInactiveAgents(maxInactiveTime: number = 300000): Promise<number> {
+  async unloadInactiveAgents(
+    maxInactiveTime: number = 300000
+  ): Promise<number> {
     const now = Date.now();
     let unloadedCount = 0;
 
@@ -331,7 +340,9 @@ export class AgentManager {
           await this.deactivateAgent(agent.id);
           unloadedCount++;
         } catch (error) {
-          this.logger.error(`Failed to unload inactive agent: ${agent.id}`, { error });
+          this.logger.error(`Failed to unload inactive agent: ${agent.id}`, {
+            error,
+          });
         }
       }
     }
@@ -350,8 +361,8 @@ export class AgentManager {
     try {
       const result = await agent.tick();
       if (!result.success) {
-        this.logger.error(`Agent tick failed: ${agent.id}`, { 
-          error: result.error 
+        this.logger.error(`Agent tick failed: ${agent.id}`, {
+          error: result.error,
         });
       }
     } catch (error) {
@@ -369,7 +380,7 @@ export class AgentManager {
 
     const agent = await this.agentFactory(config);
     this.agents.set(config.id, agent);
-    
+
     return agent;
   }
 
@@ -385,7 +396,10 @@ export class AgentManager {
     }
 
     // Check if agent has extensions configured
-    if (characterConfig.extensions && Object.keys(characterConfig.extensions).length > 0) {
+    if (
+      characterConfig.extensions &&
+      Object.keys(characterConfig.extensions).length > 0
+    ) {
       priority += 50;
     }
 

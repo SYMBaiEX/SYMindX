@@ -1,6 +1,6 @@
 /**
  * GDPR Service Implementation
- * 
+ *
  * Provides GDPR compliance features including:
  * - Right to Erasure (Right to be Forgotten)
  * - Data Portability
@@ -45,7 +45,7 @@ export class GDPRServiceImpl extends EventEmitter implements GDPRService {
         type: 'privacy_policy',
         limit: 1,
       });
-      
+
       if (stored.length > 0) {
         this.privacyPolicy = JSON.parse(stored[0].content);
       } else {
@@ -102,7 +102,7 @@ export class GDPRServiceImpl extends EventEmitter implements GDPRService {
       runtimeLogger.info('User data deletion completed', { userId });
     } catch (error) {
       runtimeLogger.error('Failed to delete user data', { userId, error });
-      
+
       await this.logAuditEntry({
         userId: 'system',
         action: 'user_data_deleted',
@@ -112,7 +112,7 @@ export class GDPRServiceImpl extends EventEmitter implements GDPRService {
         result: 'failure',
         errorMessage: error.message,
       });
-      
+
       throw error;
     }
   }
@@ -135,7 +135,7 @@ export class GDPRServiceImpl extends EventEmitter implements GDPRService {
           content: this.anonymizeContent(memory.content),
           metadata: this.anonymizeMetadata(memory.metadata),
         };
-        
+
         await this.memoryProvider.storeMemory(anonymizedMemory);
         await this.memoryProvider.deleteMemory(memory.id);
       }
@@ -156,7 +156,10 @@ export class GDPRServiceImpl extends EventEmitter implements GDPRService {
       });
 
       this.emit('dataAnonymized', { userId, anonymizedId });
-      runtimeLogger.info('User data anonymization completed', { userId, anonymizedId });
+      runtimeLogger.info('User data anonymization completed', {
+        userId,
+        anonymizedId,
+      });
     } catch (error) {
       runtimeLogger.error('Failed to anonymize user data', { userId, error });
       throw error;
@@ -166,7 +169,10 @@ export class GDPRServiceImpl extends EventEmitter implements GDPRService {
   private anonymizeContent(content: string): string {
     // Replace personal identifiers with anonymized versions
     return content
-      .replace(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g, '[EMAIL]')
+      .replace(
+        /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g,
+        '[EMAIL]'
+      )
       .replace(/\b\d{3}[-.]?\d{3}[-.]?\d{4}\b/g, '[PHONE]')
       .replace(/\b\d{3}-\d{2}-\d{4}\b/g, '[SSN]')
       .replace(/\b[A-Z][a-z]+ [A-Z][a-z]+\b/g, '[NAME]');
@@ -174,20 +180,23 @@ export class GDPRServiceImpl extends EventEmitter implements GDPRService {
 
   private anonymizeMetadata(metadata: any): any {
     if (!metadata) return {};
-    
+
     const anonymized = { ...metadata };
     delete anonymized.email;
     delete anonymized.phone;
     delete anonymized.name;
     delete anonymized.address;
-    
+
     return anonymized;
   }
 
   /**
    * Data Portability - Export user data
    */
-  async exportUserData(userId: string, format: 'json' | 'csv' | 'xml' = 'json'): Promise<UserDataExport> {
+  async exportUserData(
+    userId: string,
+    format: 'json' | 'csv' | 'xml' = 'json'
+  ): Promise<UserDataExport> {
     try {
       runtimeLogger.info('Starting user data export', { userId, format });
 
@@ -202,14 +211,14 @@ export class GDPRServiceImpl extends EventEmitter implements GDPRService {
         exportedAt: new Date(),
         format,
         data: {
-          memories: memories.map(m => ({
+          memories: memories.map((m) => ({
             id: m.id,
             content: m.content,
             timestamp: m.timestamp,
             metadata: m.metadata,
           })),
           consents: consents,
-          auditLogs: auditLogs.filter(log => log.userId === userId),
+          auditLogs: auditLogs.filter((log) => log.userId === userId),
         },
         metadata: {
           dataCategories: ['memories', 'consents', 'audit_logs'],
@@ -223,25 +232,33 @@ export class GDPRServiceImpl extends EventEmitter implements GDPRService {
         action: 'data_exported',
         resource: 'user_data',
         resourceId: userId,
-        details: { 
-          format, 
+        details: {
+          format,
           recordCount: exportData.metadata.totalRecords,
           categories: exportData.metadata.dataCategories,
         },
         result: 'success',
       });
 
-      this.emit('dataExported', { userId, format, recordCount: exportData.metadata.totalRecords });
-      runtimeLogger.info('User data export completed', { 
-        userId, 
-        format, 
+      this.emit('dataExported', {
+        userId,
+        format,
+        recordCount: exportData.metadata.totalRecords,
+      });
+      runtimeLogger.info('User data export completed', {
+        userId,
+        format,
         recordCount: exportData.metadata.totalRecords,
       });
 
       return exportData;
     } catch (error) {
-      runtimeLogger.error('Failed to export user data', { userId, format, error });
-      
+      runtimeLogger.error('Failed to export user data', {
+        userId,
+        format,
+        error,
+      });
+
       await this.logAuditEntry({
         userId,
         action: 'data_exported',
@@ -251,7 +268,7 @@ export class GDPRServiceImpl extends EventEmitter implements GDPRService {
         result: 'failure',
         errorMessage: error.message,
       });
-      
+
       throw error;
     }
   }
@@ -259,7 +276,10 @@ export class GDPRServiceImpl extends EventEmitter implements GDPRService {
   /**
    * Consent Management - Record user consent
    */
-  async recordConsent(userId: string, purposes: ConsentPurpose[]): Promise<ConsentRecord> {
+  async recordConsent(
+    userId: string,
+    purposes: ConsentPurpose[]
+  ): Promise<ConsentRecord> {
     try {
       const consentRecord: ConsentRecord = {
         id: `consent_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -278,15 +298,22 @@ export class GDPRServiceImpl extends EventEmitter implements GDPRService {
         action: 'consent_recorded',
         resource: 'consent',
         resourceId: consentRecord.id,
-        details: { 
-          purposes: purposes.map(p => p.id),
+        details: {
+          purposes: purposes.map((p) => p.id),
           version: consentRecord.version,
         },
         result: 'success',
       });
 
-      this.emit('consentRecorded', { userId, consentId: consentRecord.id, purposes });
-      runtimeLogger.info('Consent recorded', { userId, consentId: consentRecord.id });
+      this.emit('consentRecorded', {
+        userId,
+        consentId: consentRecord.id,
+        purposes,
+      });
+      runtimeLogger.info('Consent recorded', {
+        userId,
+        consentId: consentRecord.id,
+      });
 
       return consentRecord;
     } catch (error) {
@@ -305,7 +332,9 @@ export class GDPRServiceImpl extends EventEmitter implements GDPRService {
 
       for (const record of consentRecords) {
         if (!record.withdrawnAt) {
-          const affectedPurposes = record.purposes.filter(p => purposeIds.includes(p.id));
+          const affectedPurposes = record.purposes.filter((p) =>
+            purposeIds.includes(p.id)
+          );
           if (affectedPurposes.length > 0) {
             record.withdrawnAt = now;
             await this.updateConsentRecord(record);
@@ -324,7 +353,11 @@ export class GDPRServiceImpl extends EventEmitter implements GDPRService {
       this.emit('consentWithdrawn', { userId, purposeIds });
       runtimeLogger.info('Consent withdrawn', { userId, purposeIds });
     } catch (error) {
-      runtimeLogger.error('Failed to withdraw consent', { userId, purposeIds, error });
+      runtimeLogger.error('Failed to withdraw consent', {
+        userId,
+        purposeIds,
+        error,
+      });
       throw error;
     }
   }
@@ -335,7 +368,7 @@ export class GDPRServiceImpl extends EventEmitter implements GDPRService {
   async getConsentStatus(userId: string): Promise<ConsentStatus> {
     try {
       const consentRecords = await this.getConsentRecords(userId);
-      
+
       const activeConsents: ConsentPurpose[] = [];
       const withdrawnConsents: ConsentPurpose[] = [];
 
@@ -362,11 +395,13 @@ export class GDPRServiceImpl extends EventEmitter implements GDPRService {
   /**
    * Handle data subject requests
    */
-  async handleDataSubjectRequest(request: DataSubjectRequest): Promise<DataSubjectResponse> {
+  async handleDataSubjectRequest(
+    request: DataSubjectRequest
+  ): Promise<DataSubjectResponse> {
     try {
-      runtimeLogger.info('Processing data subject request', { 
-        requestId: request.id, 
-        type: request.type, 
+      runtimeLogger.info('Processing data subject request', {
+        requestId: request.id,
+        type: request.type,
         userId: request.userId,
       });
 
@@ -385,7 +420,9 @@ export class GDPRServiceImpl extends EventEmitter implements GDPRService {
           break;
         case 'rectification':
           // Implementation depends on specific requirements
-          responseData = { message: 'Rectification request requires manual processing' };
+          responseData = {
+            message: 'Rectification request requires manual processing',
+          };
           break;
         case 'restriction':
           // Implementation depends on specific requirements
@@ -418,8 +455,8 @@ export class GDPRServiceImpl extends EventEmitter implements GDPRService {
       this.emit('dataSubjectRequestCompleted', { request, response });
       return response;
     } catch (error) {
-      runtimeLogger.error('Failed to handle data subject request', { 
-        requestId: request.id, 
+      runtimeLogger.error('Failed to handle data subject request', {
+        requestId: request.id,
         error,
       });
 
@@ -504,7 +541,11 @@ export class GDPRServiceImpl extends EventEmitter implements GDPRService {
       agentId: record.userId,
       content: JSON.stringify(record),
       timestamp: record.givenAt,
-      metadata: { type: 'consent_record', version: record.version, updated: true },
+      metadata: {
+        type: 'consent_record',
+        version: record.version,
+        updated: true,
+      },
     });
   }
 
@@ -513,7 +554,7 @@ export class GDPRServiceImpl extends EventEmitter implements GDPRService {
       type: 'consent_record',
     });
 
-    return memories.map(m => JSON.parse(m.content));
+    return memories.map((m) => JSON.parse(m.content));
   }
 
   private async deleteConsentRecords(userId: string): Promise<void> {
@@ -526,9 +567,12 @@ export class GDPRServiceImpl extends EventEmitter implements GDPRService {
     }
   }
 
-  private async anonymizeConsentRecords(userId: string, anonymizedId: string): Promise<void> {
+  private async anonymizeConsentRecords(
+    userId: string,
+    anonymizedId: string
+  ): Promise<void> {
     const records = await this.getConsentRecords(userId);
-    
+
     for (const record of records) {
       const anonymizedRecord = {
         ...record,
@@ -536,7 +580,7 @@ export class GDPRServiceImpl extends EventEmitter implements GDPRService {
         ipAddress: '[ANONYMIZED]',
         userAgent: '[ANONYMIZED]',
       };
-      
+
       await this.memoryProvider.storeMemory({
         id: record.id,
         agentId: anonymizedId,
@@ -555,22 +599,28 @@ export class GDPRServiceImpl extends EventEmitter implements GDPRService {
     });
 
     return memories
-      .map(m => JSON.parse(m.content))
-      .filter(log => log.userId === userId || log.resourceId === userId);
+      .map((m) => JSON.parse(m.content))
+      .filter((log) => log.userId === userId || log.resourceId === userId);
   }
 
-  private async anonymizeAuditLogs(userId: string, anonymizedId?: string): Promise<void> {
+  private async anonymizeAuditLogs(
+    userId: string,
+    anonymizedId?: string
+  ): Promise<void> {
     const auditLogs = await this.getUserAuditLogs(userId);
-    
+
     for (const log of auditLogs) {
       const anonymizedLog = {
         ...log,
         userId: anonymizedId || '[ANONYMIZED]',
-        resourceId: log.resourceId === userId ? (anonymizedId || '[ANONYMIZED]') : log.resourceId,
+        resourceId:
+          log.resourceId === userId
+            ? anonymizedId || '[ANONYMIZED]'
+            : log.resourceId,
         ipAddress: '[ANONYMIZED]',
         userAgent: '[ANONYMIZED]',
       };
-      
+
       await this.memoryProvider.storeMemory({
         id: log.id,
         agentId: 'system',
@@ -581,7 +631,9 @@ export class GDPRServiceImpl extends EventEmitter implements GDPRService {
     }
   }
 
-  private async logAuditEntry(entry: Omit<AuditEntry, 'id' | 'timestamp'>): Promise<void> {
+  private async logAuditEntry(
+    entry: Omit<AuditEntry, 'id' | 'timestamp'>
+  ): Promise<void> {
     const auditEntry: AuditEntry = {
       id: `audit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       timestamp: new Date(),

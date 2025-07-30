@@ -22,6 +22,13 @@ export interface ConnectionStatus {
   latency: number;
   lastError?: Error;
   runtimeVersion?: string;
+  runtime?: {
+    isRunning: boolean;
+  };
+  extensions?: {
+    loaded: number;
+    active: number;
+  };
 }
 
 export interface AgentInfo {
@@ -34,6 +41,10 @@ export interface AgentInfo {
   extensions?: string[];
   uptime?: number;
   lastActivity?: Date;
+  ethicsEnabled?: boolean;
+  extensionCount?: number;
+  hasPortal?: boolean;
+  lastUpdate?: Date;
 }
 
 export interface SystemMetrics {
@@ -43,6 +54,12 @@ export interface SystemMetrics {
   cpuUsage: number;
   activeConnections: number;
   eventCount: number;
+  memory: {
+    heapUsed: number;
+    heapTotal: number;
+    external: number;
+    rss: number;
+  };
 }
 
 export class RuntimeClient extends EventEmitter {
@@ -301,6 +318,23 @@ export class RuntimeClient extends EventEmitter {
   }
 
   // Cleanup
+  async getAgent(agentId: string): Promise<AgentInfo | null> {
+    if (!this.connectionStatus.connected) {
+      throw new Error('Runtime not connected');
+    }
+
+    const agents = await this.getAgents();
+    return agents.find(agent => agent.id === agentId) || null;
+  }
+
+  async isRuntimeAvailable(): Promise<boolean> {
+    return this.connectionStatus.connected;
+  }
+
+  async getRuntimeStatus(): Promise<ConnectionStatus> {
+    return this.connectionStatus;
+  }
+
   async disconnect(): Promise<void> {
     if (this.runtime) {
       await this.runtime.stop();

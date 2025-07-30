@@ -5,13 +5,13 @@
 
 import { EventEmitter } from 'events';
 import { randomUUID } from 'crypto';
-import type { 
+import type {
   ContextVisualizer,
   ContextVisualization,
   ContextVisualNode,
   ContextVisualEdge,
   ContextObservabilityConfig,
-  ContextTrace
+  ContextTrace,
 } from '../../../types/context/context-observability.ts';
 import { runtimeLogger } from '../../../utils/logger.ts';
 
@@ -27,13 +27,19 @@ interface VisualizationState {
 
 interface LayoutAlgorithm {
   name: string;
-  calculate: (nodes: ContextVisualNode[], edges: ContextVisualEdge[]) => Map<string, { x: number; y: number; z?: number }>;
+  calculate: (
+    nodes: ContextVisualNode[],
+    edges: ContextVisualEdge[]
+  ) => Map<string, { x: number; y: number; z?: number }>;
 }
 
 /**
  * Context visualizer with multiple rendering formats and interactive features
  */
-export class ContextVisualizerImpl extends EventEmitter implements ContextVisualizer {
+export class ContextVisualizerImpl
+  extends EventEmitter
+  implements ContextVisualizer
+{
   private visualizations = new Map<string, VisualizationState>();
   private config: ContextObservabilityConfig['visualization'];
   private contextTraces = new Map<string, ContextTrace>();
@@ -43,7 +49,7 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
     super();
     this.config = config;
     this.layoutAlgorithms = this.initializeLayoutAlgorithms();
-    
+
     if (config.enabled && config.enableRealTimeUpdates) {
       this.startUpdateTimer();
     }
@@ -53,7 +59,7 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
    * Generate visualization for context flow
    */
   async generateVisualization(
-    contextIds: string[], 
+    contextIds: string[],
     type: ContextVisualization['type']
   ): Promise<ContextVisualization> {
     if (!this.config.enabled) {
@@ -70,13 +76,16 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
     try {
       // Collect context data
       const contextData = await this.collectContextData(contextIds);
-      
+
       // Generate nodes and edges based on visualization type
-      const { nodes, edges } = await this.generateGraphElements(contextData, type);
-      
+      const { nodes, edges } = await this.generateGraphElements(
+        contextData,
+        type
+      );
+
       // Apply layout algorithm
       const layout = await this.calculateLayout(nodes, edges, type);
-      
+
       // Create visualization
       const visualization: ContextVisualization = {
         visualizationId,
@@ -89,15 +98,15 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
           enablePan: this.config.enableInteractiveMode,
           enableSelection: this.config.enableInteractiveMode,
           enableFiltering: this.config.enableInteractiveMode,
-          enableAnimation: this.config.enableRealTimeUpdates
+          enableAnimation: this.config.enableRealTimeUpdates,
         },
         rendering: {
           generatedAt: new Date(),
           nodeCount: nodes.length,
           edgeCount: edges.length,
           renderTime: performance.now() - startTime,
-          format: this.config.renderFormat
-        }
+          format: this.config.renderFormat,
+        },
       };
 
       // Store visualization state
@@ -108,11 +117,11 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
         updateSubscribers: new Set(),
         lastUpdate: new Date(),
         nodePositions: new Map(),
-        autoLayout: true
+        autoLayout: true,
       };
 
       // Store node positions
-      nodes.forEach(node => {
+      nodes.forEach((node) => {
         state.nodePositions.set(node.nodeId, node.position);
       });
 
@@ -124,22 +133,23 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
         contextCount: contextIds.length,
         nodeCount: nodes.length,
         edgeCount: edges.length,
-        renderTime: visualization.rendering.renderTime.toFixed(2) + 'ms'
+        renderTime: visualization.rendering.renderTime.toFixed(2) + 'ms',
       });
 
       this.emit('visualization_generated', { visualizationId, visualization });
 
       return visualization;
-
     } catch (error) {
       runtimeLogger.error('Visualization generation failed', {
         visualizationId,
         contextIds,
         type,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       });
 
-      throw new Error(`Failed to generate visualization: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `Failed to generate visualization: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -153,11 +163,14 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
     }
 
     try {
-      const updatedVisualization = await this.generateVisualization(state.contextIds, state.type);
-      
+      const updatedVisualization = await this.generateVisualization(
+        state.contextIds,
+        state.type
+      );
+
       // Preserve custom node positions if not using auto-layout
       if (!state.autoLayout) {
-        updatedVisualization.nodes.forEach(node => {
+        updatedVisualization.nodes.forEach((node) => {
           const savedPosition = state.nodePositions.get(node.nodeId);
           if (savedPosition) {
             node.position = savedPosition;
@@ -168,11 +181,14 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
       state.lastUpdate = new Date();
 
       // Notify subscribers
-      state.updateSubscribers.forEach(callback => {
+      state.updateSubscribers.forEach((callback) => {
         try {
           callback(updatedVisualization);
         } catch (error) {
-          runtimeLogger.error('Update callback failed', { visualizationId, error });
+          runtimeLogger.error('Update callback failed', {
+            visualizationId,
+            error,
+          });
         }
       });
 
@@ -180,13 +196,18 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
         visualizationId,
         nodeCount: updatedVisualization.nodes.length,
         edgeCount: updatedVisualization.edges.length,
-        subscriberCount: state.updateSubscribers.size
+        subscriberCount: state.updateSubscribers.size,
       });
 
-      this.emit('visualization_updated', { visualizationId, visualization: updatedVisualization });
-
+      this.emit('visualization_updated', {
+        visualizationId,
+        visualization: updatedVisualization,
+      });
     } catch (error) {
-      runtimeLogger.error('Visualization update failed', { visualizationId, error });
+      runtimeLogger.error('Visualization update failed', {
+        visualizationId,
+        error,
+      });
       throw error;
     }
   }
@@ -195,7 +216,7 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
    * Export visualization in specified format
    */
   async exportVisualization(
-    visualizationId: string, 
+    visualizationId: string,
     format: 'svg' | 'png' | 'json'
   ): Promise<string | Buffer> {
     const visualization = await this.getVisualization(visualizationId);
@@ -218,15 +239,23 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
           throw new Error(`Unsupported export format: ${format}`);
       }
     } catch (error) {
-      runtimeLogger.error('Visualization export failed', { visualizationId, format, error });
-      throw new Error(`Failed to export visualization: ${error instanceof Error ? error.message : String(error)}`);
+      runtimeLogger.error('Visualization export failed', {
+        visualizationId,
+        format,
+        error,
+      });
+      throw new Error(
+        `Failed to export visualization: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
   /**
    * Get visualization data
    */
-  async getVisualization(visualizationId: string): Promise<ContextVisualization | undefined> {
+  async getVisualization(
+    visualizationId: string
+  ): Promise<ContextVisualization | undefined> {
     const state = this.visualizations.get(visualizationId);
     if (!state) {
       return undefined;
@@ -234,10 +263,16 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
 
     // Generate fresh visualization data
     try {
-      const visualization = await this.generateVisualization(state.contextIds, state.type);
+      const visualization = await this.generateVisualization(
+        state.contextIds,
+        state.type
+      );
       return visualization;
     } catch (error) {
-      runtimeLogger.error('Failed to get visualization', { visualizationId, error });
+      runtimeLogger.error('Failed to get visualization', {
+        visualizationId,
+        error,
+      });
       return undefined;
     }
   }
@@ -246,7 +281,7 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
    * Subscribe to real-time updates
    */
   async subscribeToUpdates(
-    visualizationId: string, 
+    visualizationId: string,
     callback: (update: ContextVisualization) => void
   ): Promise<void> {
     const state = this.visualizations.get(visualizationId);
@@ -258,7 +293,7 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
 
     runtimeLogger.debug('Subscribed to visualization updates', {
       visualizationId,
-      subscriberCount: state.updateSubscribers.size
+      subscriberCount: state.updateSubscribers.size,
     });
 
     this.emit('subscription_added', { visualizationId });
@@ -275,7 +310,9 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
 
     state.updateSubscribers.clear();
 
-    runtimeLogger.debug('Unsubscribed from visualization updates', { visualizationId });
+    runtimeLogger.debug('Unsubscribed from visualization updates', {
+      visualizationId,
+    });
 
     this.emit('subscription_removed', { visualizationId });
   }
@@ -285,16 +322,19 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
    */
   setContextTrace(contextId: string, trace: ContextTrace): void {
     this.contextTraces.set(contextId, trace);
-    
+
     // Update any visualizations that include this context
     for (const [visualizationId, state] of this.visualizations.entries()) {
       if (state.contextIds.includes(contextId)) {
-        this.updateVisualization(visualizationId).catch(error => {
-          runtimeLogger.error('Failed to update visualization after trace update', {
-            visualizationId,
-            contextId,
-            error
-          });
+        this.updateVisualization(visualizationId).catch((error) => {
+          runtimeLogger.error(
+            'Failed to update visualization after trace update',
+            {
+              visualizationId,
+              contextId,
+              error,
+            }
+          );
         });
       }
     }
@@ -304,7 +344,9 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
    * Private helper methods
    */
 
-  private async collectContextData(contextIds: string[]): Promise<Map<string, any>> {
+  private async collectContextData(
+    contextIds: string[]
+  ): Promise<Map<string, any>> {
     const contextData = new Map<string, any>();
 
     for (const contextId of contextIds) {
@@ -318,8 +360,9 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
             lifetime: trace.lifecycle.totalLifetimeMs || 0,
             accessCount: trace.accessPatterns.length,
             transformationCount: trace.transformations.length,
-            qualityScore: Object.values(trace.quality).reduce((a, b) => a + b, 0) / 5
-          }
+            qualityScore:
+              Object.values(trace.quality).reduce((a, b) => a + b, 0) / 5,
+          },
         });
       } else {
         // Create mock data for missing contexts
@@ -330,8 +373,8 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
             lifetime: 0,
             accessCount: 0,
             transformationCount: 0,
-            qualityScore: 0.5
-          }
+            qualityScore: 0.5,
+          },
         });
       }
     }
@@ -340,7 +383,7 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
   }
 
   private async generateGraphElements(
-    contextData: Map<string, any>, 
+    contextData: Map<string, any>,
     type: ContextVisualization['type']
   ): Promise<{ nodes: ContextVisualNode[]; edges: ContextVisualEdge[] }> {
     const nodes: ContextVisualNode[] = [];
@@ -349,25 +392,28 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
     switch (type) {
       case 'flow':
         return this.generateFlowGraph(contextData);
-      
+
       case 'hierarchy':
         return this.generateHierarchyGraph(contextData);
-      
+
       case 'network':
         return this.generateNetworkGraph(contextData);
-      
+
       case 'timeline':
         return this.generateTimelineGraph(contextData);
-      
+
       case 'heatmap':
         return this.generateHeatmapGraph(contextData);
-      
+
       default:
         throw new Error(`Unsupported visualization type: ${type}`);
     }
   }
 
-  private generateFlowGraph(contextData: Map<string, any>): { nodes: ContextVisualNode[]; edges: ContextVisualEdge[] } {
+  private generateFlowGraph(contextData: Map<string, any>): {
+    nodes: ContextVisualNode[];
+    edges: ContextVisualEdge[];
+  } {
     const nodes: ContextVisualNode[] = [];
     const edges: ContextVisualEdge[] = [];
 
@@ -384,8 +430,8 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
         metadata: {
           contextId,
           status: data.status,
-          metrics: data.metrics
-        }
+          metrics: data.metrics,
+        },
       };
       nodes.push(node);
     }
@@ -404,8 +450,9 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
             data: {},
             metadata: {
               flowRate: data.metrics.accessCount,
-              latency: data.metrics.lifetime / Math.max(1, data.metrics.accessCount)
-            }
+              latency:
+                data.metrics.lifetime / Math.max(1, data.metrics.accessCount),
+            },
           });
         }
       }
@@ -424,8 +471,8 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
               data: { transformation: transform },
               metadata: {
                 latency: transform.duration,
-                errorRate: transform.success ? 0 : 1
-              }
+                errorRate: transform.success ? 0 : 1,
+              },
             });
           }
         });
@@ -435,7 +482,10 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
     return { nodes, edges };
   }
 
-  private generateHierarchyGraph(contextData: Map<string, any>): { nodes: ContextVisualNode[]; edges: ContextVisualEdge[] } {
+  private generateHierarchyGraph(contextData: Map<string, any>): {
+    nodes: ContextVisualNode[];
+    edges: ContextVisualEdge[];
+  } {
     const nodes: ContextVisualNode[] = [];
     const edges: ContextVisualEdge[] = [];
 
@@ -470,15 +520,15 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
           contextId,
           status: data.status,
           metrics: data.metrics,
-          depth
-        }
+          depth,
+        },
       };
       nodes.push(node);
     }
 
     // Create hierarchy edges
     for (const [parentId, children] of childMap.entries()) {
-      children.forEach(childId => {
+      children.forEach((childId) => {
         edges.push({
           edgeId: randomUUID(),
           sourceNodeId: parentId,
@@ -486,7 +536,7 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
           type: 'control',
           style: this.getEdgeStyle('control'),
           data: {},
-          metadata: {}
+          metadata: {},
         });
       });
     }
@@ -494,13 +544,16 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
     return { nodes, edges };
   }
 
-  private generateNetworkGraph(contextData: Map<string, any>): { nodes: ContextVisualNode[]; edges: ContextVisualEdge[] } {
+  private generateNetworkGraph(contextData: Map<string, any>): {
+    nodes: ContextVisualNode[];
+    edges: ContextVisualEdge[];
+  } {
     const nodes: ContextVisualNode[] = [];
     const edges: ContextVisualEdge[] = [];
 
     // Create nodes grouped by type
     const typeGroups = new Map<string, string[]>();
-    
+
     for (const [contextId, data] of contextData.entries()) {
       const type = data.type;
       if (!typeGroups.has(type)) {
@@ -519,8 +572,8 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
         metadata: {
           contextId,
           status: data.status,
-          metrics: data.metrics
-        }
+          metrics: data.metrics,
+        },
       };
       nodes.push(node);
     }
@@ -541,8 +594,8 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
               metadata: {
                 flowRate: 1,
                 latency: access.duration,
-                bandwidth: access.dataSize
-              }
+                bandwidth: access.dataSize,
+              },
             });
           }
         });
@@ -552,31 +605,37 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
     return { nodes, edges };
   }
 
-  private generateTimelineGraph(contextData: Map<string, any>): { nodes: ContextVisualNode[]; edges: ContextVisualEdge[] } {
+  private generateTimelineGraph(contextData: Map<string, any>): {
+    nodes: ContextVisualNode[];
+    edges: ContextVisualEdge[];
+  } {
     const nodes: ContextVisualNode[] = [];
     const edges: ContextVisualEdge[] = [];
 
     // Sort contexts by creation time
-    const sortedContexts = Array.from(contextData.entries())
-      .sort(([, a], [, b]) => {
+    const sortedContexts = Array.from(contextData.entries()).sort(
+      ([, a], [, b]) => {
         const aTime = a.trace?.lifecycle?.created?.getTime() || 0;
         const bTime = b.trace?.lifecycle?.created?.getTime() || 0;
         return aTime - bTime;
-      });
+      }
+    );
 
     // Create timeline nodes
     sortedContexts.forEach(([contextId, data], index) => {
-      const createdTime = data.trace?.lifecycle?.created?.getTime() || Date.now();
-      const startTime = sortedContexts[0][1].trace?.lifecycle?.created?.getTime() || Date.now();
+      const createdTime =
+        data.trace?.lifecycle?.created?.getTime() || Date.now();
+      const startTime =
+        sortedContexts[0][1].trace?.lifecycle?.created?.getTime() || Date.now();
       const relativeTime = createdTime - startTime;
 
       const node: ContextVisualNode = {
         nodeId: contextId,
         label: this.formatContextLabel(contextId, data),
         type: data.type,
-        position: { 
+        position: {
           x: relativeTime / 1000, // Time in seconds
-          y: index * 50 
+          y: index * 50,
         },
         size: this.calculateNodeSize(data),
         style: this.getNodeStyle(data),
@@ -584,8 +643,8 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
         metadata: {
           contextId,
           status: data.status,
-          metrics: data.metrics
-        }
+          metrics: data.metrics,
+        },
       };
       nodes.push(node);
     });
@@ -602,26 +661,29 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
         type: 'dependency',
         style: { ...this.getEdgeStyle('dependency'), style: 'dashed' },
         data: {},
-        metadata: {}
+        metadata: {},
       });
     }
 
     return { nodes, edges };
   }
 
-  private generateHeatmapGraph(contextData: Map<string, any>): { nodes: ContextVisualNode[]; edges: ContextVisualEdge[] } {
+  private generateHeatmapGraph(contextData: Map<string, any>): {
+    nodes: ContextVisualNode[];
+    edges: ContextVisualEdge[];
+  } {
     const nodes: ContextVisualNode[] = [];
     const edges: ContextVisualEdge[] = [];
 
     // Calculate grid size
     const gridSize = Math.ceil(Math.sqrt(contextData.size));
-    
+
     // Create heatmap nodes
     let index = 0;
     for (const [contextId, data] of contextData.entries()) {
       const x = (index % gridSize) * 100;
       const y = Math.floor(index / gridSize) * 100;
-      
+
       const intensity = data.metrics.qualityScore || 0;
       const node: ContextVisualNode = {
         nodeId: contextId,
@@ -634,8 +696,8 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
         metadata: {
           contextId,
           status: data.status,
-          metrics: data.metrics
-        }
+          metrics: data.metrics,
+        },
       };
       nodes.push(node);
       index++;
@@ -646,12 +708,12 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
   }
 
   private async calculateLayout(
-    nodes: ContextVisualNode[], 
-    edges: ContextVisualEdge[], 
+    nodes: ContextVisualNode[],
+    edges: ContextVisualEdge[],
     type: ContextVisualization['type']
   ): Promise<ContextVisualization['layout']> {
     let algorithm: string;
-    
+
     switch (type) {
       case 'hierarchy':
         algorithm = 'hierarchy';
@@ -675,9 +737,9 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
     }
 
     const positions = layoutAlg.calculate(nodes, edges);
-    
+
     // Update node positions
-    nodes.forEach(node => {
+    nodes.forEach((node) => {
       const position = positions.get(node.nodeId);
       if (position) {
         node.position = position;
@@ -685,21 +747,21 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
     });
 
     // Calculate bounds
-    const xs = nodes.map(n => n.position.x);
-    const ys = nodes.map(n => n.position.y);
+    const xs = nodes.map((n) => n.position.x);
+    const ys = nodes.map((n) => n.position.y);
 
     return {
       algorithm,
-      dimensions: { 
+      dimensions: {
         width: Math.max(...xs) - Math.min(...xs),
-        height: Math.max(...ys) - Math.min(...ys)
+        height: Math.max(...ys) - Math.min(...ys),
       },
       bounds: {
         minX: Math.min(...xs),
         maxX: Math.max(...xs),
         minY: Math.min(...ys),
-        maxY: Math.max(...ys)
-      }
+        maxY: Math.max(...ys),
+      },
     };
   }
 
@@ -711,10 +773,13 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
 
   private calculateNodeSize(data: any): { width: number; height: number } {
     const baseSize = 60;
-    const scaleFactor = Math.min(2, Math.max(0.5, (data.metrics?.qualityScore || 0.5) * 2));
+    const scaleFactor = Math.min(
+      2,
+      Math.max(0.5, (data.metrics?.qualityScore || 0.5) * 2)
+    );
     return {
       width: baseSize * scaleFactor,
-      height: baseSize * scaleFactor
+      height: baseSize * scaleFactor,
     };
   }
 
@@ -726,29 +791,33 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
       emotion: '#E91E63',
       extension: '#9C27B0',
       system: '#607D8B',
-      unknown: '#9E9E9E'
+      unknown: '#9E9E9E',
     };
 
-    const baseColor = colors[data.type as keyof typeof colors] || colors.unknown;
-    const opacity = Math.max(0.3, Math.min(1, data.metrics?.qualityScore || 0.5));
+    const baseColor =
+      colors[data.type as keyof typeof colors] || colors.unknown;
+    const opacity = Math.max(
+      0.3,
+      Math.min(1, data.metrics?.qualityScore || 0.5)
+    );
 
     return {
       color: baseColor,
       borderColor: this.darkenColor(baseColor, 0.2),
       shape: this.getNodeShape(data.type),
-      opacity
+      opacity,
     };
   }
 
   private getHeatmapNodeStyle(intensity: number): ContextVisualNode['style'] {
     const hue = intensity * 120; // 0 = red, 120 = green
     const color = `hsl(${hue}, 70%, 50%)`;
-    
+
     return {
       color,
       borderColor: this.darkenColor(color, 0.3),
       shape: 'rectangle',
-      opacity: 0.8
+      opacity: 0.8,
     };
   }
 
@@ -759,17 +828,41 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
       cognition: 'diamond',
       emotion: 'ellipse',
       extension: 'rectangle',
-      system: 'rectangle'
+      system: 'rectangle',
     };
     return shapes[type] || 'circle';
   }
 
   private getEdgeStyle(type: string): ContextVisualEdge['style'] {
     const styles = {
-      data: { color: '#4CAF50', width: 2, style: 'solid' as const, arrow: true, opacity: 0.8 },
-      control: { color: '#2196F3', width: 1, style: 'solid' as const, arrow: true, opacity: 0.6 },
-      dependency: { color: '#FF9800', width: 1, style: 'dashed' as const, arrow: true, opacity: 0.7 },
-      communication: { color: '#9C27B0', width: 1, style: 'dotted' as const, arrow: true, opacity: 0.6 }
+      data: {
+        color: '#4CAF50',
+        width: 2,
+        style: 'solid' as const,
+        arrow: true,
+        opacity: 0.8,
+      },
+      control: {
+        color: '#2196F3',
+        width: 1,
+        style: 'solid' as const,
+        arrow: true,
+        opacity: 0.6,
+      },
+      dependency: {
+        color: '#FF9800',
+        width: 1,
+        style: 'dashed' as const,
+        arrow: true,
+        opacity: 0.7,
+      },
+      communication: {
+        color: '#9C27B0',
+        width: 1,
+        style: 'dotted' as const,
+        arrow: true,
+        opacity: 0.6,
+      },
     };
     return styles[type as keyof typeof styles] || styles.data;
   }
@@ -779,8 +872,8 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
     if (color.startsWith('#')) {
       const num = parseInt(color.slice(1), 16);
       const r = Math.max(0, (num >> 16) - Math.floor(255 * amount));
-      const g = Math.max(0, ((num >> 8) & 0x00FF) - Math.floor(255 * amount));
-      const b = Math.max(0, (num & 0x0000FF) - Math.floor(255 * amount));
+      const g = Math.max(0, ((num >> 8) & 0x00ff) - Math.floor(255 * amount));
+      const b = Math.max(0, (num & 0x0000ff) - Math.floor(255 * amount));
       return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
     }
     return color;
@@ -799,10 +892,10 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
     </defs>`;
 
     // Draw edges first
-    edges.forEach(edge => {
-      const sourceNode = nodes.find(n => n.nodeId === edge.sourceNodeId);
-      const targetNode = nodes.find(n => n.nodeId === edge.targetNodeId);
-      
+    edges.forEach((edge) => {
+      const sourceNode = nodes.find((n) => n.nodeId === edge.sourceNodeId);
+      const targetNode = nodes.find((n) => n.nodeId === edge.targetNodeId);
+
       if (sourceNode && targetNode) {
         const x1 = sourceNode.position.x + 50;
         const y1 = sourceNode.position.y + 50;
@@ -818,7 +911,7 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
     });
 
     // Draw nodes
-    nodes.forEach(node => {
+    nodes.forEach((node) => {
       const x = node.position.x + 50;
       const y = node.position.y + 50;
 
@@ -863,19 +956,19 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
       name: 'Force-Directed',
       calculate: (nodes, edges) => {
         const positions = new Map<string, { x: number; y: number }>();
-        
+
         // Simple force-directed algorithm
         nodes.forEach((node, index) => {
           const angle = (index / nodes.length) * 2 * Math.PI;
           const radius = Math.min(200, nodes.length * 20);
           positions.set(node.nodeId, {
             x: Math.cos(angle) * radius,
-            y: Math.sin(angle) * radius
+            y: Math.sin(angle) * radius,
           });
         });
 
         return positions;
-      }
+      },
     });
 
     // Hierarchical layout
@@ -884,9 +977,9 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
       calculate: (nodes, edges) => {
         const positions = new Map<string, { x: number; y: number }>();
         const levels = new Map<number, string[]>();
-        
+
         // Group nodes by depth
-        nodes.forEach(node => {
+        nodes.forEach((node) => {
           const depth = (node.data as any)?.depth || 0;
           if (!levels.has(depth)) {
             levels.set(depth, []);
@@ -899,13 +992,13 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
           nodeIds.forEach((nodeId, index) => {
             positions.set(nodeId, {
               x: (index - nodeIds.length / 2) * 150,
-              y: depth * 100
+              y: depth * 100,
             });
           });
         });
 
         return positions;
-      }
+      },
     });
 
     // Grid layout
@@ -914,16 +1007,16 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
       calculate: (nodes, edges) => {
         const positions = new Map<string, { x: number; y: number }>();
         const gridSize = Math.ceil(Math.sqrt(nodes.length));
-        
+
         nodes.forEach((node, index) => {
           positions.set(node.nodeId, {
             x: (index % gridSize) * 120,
-            y: Math.floor(index / gridSize) * 120
+            y: Math.floor(index / gridSize) * 120,
           });
         });
 
         return positions;
-      }
+      },
     });
 
     return algorithms;
@@ -932,14 +1025,14 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
   private startUpdateTimer(): void {
     setInterval(() => {
       const now = new Date();
-      
+
       for (const [visualizationId, state] of this.visualizations.entries()) {
         // Update if it's been more than 5 seconds since last update
         if (now.getTime() - state.lastUpdate.getTime() > 5000) {
-          this.updateVisualization(visualizationId).catch(error => {
+          this.updateVisualization(visualizationId).catch((error) => {
             runtimeLogger.error('Scheduled visualization update failed', {
               visualizationId,
-              error
+              error,
             });
           });
         }
@@ -953,10 +1046,12 @@ export class ContextVisualizerImpl extends EventEmitter implements ContextVisual
   getStatistics() {
     return {
       totalVisualizations: this.visualizations.size,
-      totalSubscribers: Array.from(this.visualizations.values())
-        .reduce((sum, state) => sum + state.updateSubscribers.size, 0),
+      totalSubscribers: Array.from(this.visualizations.values()).reduce(
+        (sum, state) => sum + state.updateSubscribers.size,
+        0
+      ),
       availableLayouts: Array.from(this.layoutAlgorithms.keys()),
-      config: this.config
+      config: this.config,
     };
   }
 

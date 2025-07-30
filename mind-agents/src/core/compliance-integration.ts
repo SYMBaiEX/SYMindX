@@ -1,6 +1,6 @@
 /**
  * Compliance Integration for SYMindX Runtime
- * 
+ *
  * Integrates compliance management into the agent runtime system
  * Provides compliance-aware operations and monitoring
  */
@@ -27,7 +27,13 @@ export interface ComplianceIntegrationConfig {
       phone?: string;
     };
     retentionPeriods?: Record<string, number>;
-    legalBasis?: 'consent' | 'contract' | 'legal_obligation' | 'vital_interests' | 'public_task' | 'legitimate_interests';
+    legalBasis?:
+      | 'consent'
+      | 'contract'
+      | 'legal_obligation'
+      | 'vital_interests'
+      | 'public_task'
+      | 'legitimate_interests';
   };
   hipaa?: {
     enabled: boolean;
@@ -68,7 +74,7 @@ export class ComplianceIntegration extends EventEmitter {
     config: ComplianceIntegrationConfig
   ) {
     super();
-    
+
     this.memoryProvider = memoryProvider;
     this.eventBus = eventBus;
     this.config = config;
@@ -84,7 +90,10 @@ export class ComplianceIntegration extends EventEmitter {
         sox: config.sox,
       };
 
-      this.complianceManager = createComplianceManager(memoryProvider, complianceConfig);
+      this.complianceManager = createComplianceManager(
+        memoryProvider,
+        complianceConfig
+      );
       this.setupEventHandling();
     } else {
       // Create no-op compliance manager
@@ -119,7 +128,9 @@ export class ComplianceIntegration extends EventEmitter {
       this.emit('initialized');
       runtimeLogger.info('Compliance integration initialized successfully');
     } catch (error) {
-      runtimeLogger.error('Failed to initialize compliance integration', { error });
+      runtimeLogger.error('Failed to initialize compliance integration', {
+        error,
+      });
       throw error;
     }
   }
@@ -154,7 +165,10 @@ export class ComplianceIntegration extends EventEmitter {
   /**
    * Classify data for compliance
    */
-  async classifyData(data: any, context?: { agentId?: string; userId?: string }): Promise<DataClassification> {
+  async classifyData(
+    data: any,
+    context?: { agentId?: string; userId?: string }
+  ): Promise<DataClassification> {
     if (!this.isEnabled) {
       return {
         level: 'public',
@@ -165,7 +179,7 @@ export class ComplianceIntegration extends EventEmitter {
 
     try {
       const classification = await this.complianceManager.classifyData(data);
-      
+
       // Log classification for audit trail
       if (classification.level !== 'public') {
         runtimeLogger.debug('Data classified as sensitive', {
@@ -194,10 +208,15 @@ export class ComplianceIntegration extends EventEmitter {
 
     try {
       for (const memory of memories) {
-        const classification = await this.classifyData(memory.content, { agentId });
-        
+        const classification = await this.classifyData(memory.content, {
+          agentId,
+        });
+
         // Apply compliance rules based on classification
-        if (classification.level === 'restricted' || classification.level === 'confidential') {
+        if (
+          classification.level === 'restricted' ||
+          classification.level === 'confidential'
+        ) {
           // Add compliance metadata to memory
           memory.metadata = {
             ...memory.metadata,
@@ -215,7 +234,10 @@ export class ComplianceIntegration extends EventEmitter {
         }
       }
     } catch (error) {
-      runtimeLogger.error('Failed to process agent memory for compliance', { agentId, error });
+      runtimeLogger.error('Failed to process agent memory for compliance', {
+        agentId,
+        error,
+      });
     }
   }
 
@@ -229,7 +251,7 @@ export class ComplianceIntegration extends EventEmitter {
 
     try {
       await this.complianceManager.gdpr.deleteUserData(userId);
-      
+
       runtimeLogger.info('User data deletion completed', { userId, reason });
       this.emit('userDataDeleted', { userId, reason });
     } catch (error) {
@@ -241,20 +263,34 @@ export class ComplianceIntegration extends EventEmitter {
   /**
    * Export user data (GDPR Data Portability)
    */
-  async exportUserData(userId: string, format: 'json' | 'csv' | 'xml' = 'json'): Promise<any> {
+  async exportUserData(
+    userId: string,
+    format: 'json' | 'csv' | 'xml' = 'json'
+  ): Promise<any> {
     if (!this.isEnabled || !this.config.gdpr?.enabled) {
       throw new Error('GDPR compliance not enabled');
     }
 
     try {
-      const exportData = await this.complianceManager.gdpr.exportUserData(userId, format);
-      
-      runtimeLogger.info('User data exported', { userId, format, recordCount: exportData.metadata.totalRecords });
+      const exportData = await this.complianceManager.gdpr.exportUserData(
+        userId,
+        format
+      );
+
+      runtimeLogger.info('User data exported', {
+        userId,
+        format,
+        recordCount: exportData.metadata.totalRecords,
+      });
       this.emit('userDataExported', { userId, format, exportData });
-      
+
       return exportData;
     } catch (error) {
-      runtimeLogger.error('Failed to export user data', { userId, format, error });
+      runtimeLogger.error('Failed to export user data', {
+        userId,
+        format,
+        error,
+      });
       throw error;
     }
   }
@@ -275,7 +311,9 @@ export class ComplianceIntegration extends EventEmitter {
   /**
    * Generate compliance report
    */
-  async generateComplianceReport(regulations?: ('gdpr' | 'hipaa' | 'sox')[]): Promise<any> {
+  async generateComplianceReport(
+    regulations?: ('gdpr' | 'hipaa' | 'sox')[]
+  ): Promise<any> {
     if (!this.isEnabled) {
       throw new Error('Compliance not enabled');
     }
@@ -339,51 +377,69 @@ export class ComplianceIntegration extends EventEmitter {
 
   private startRealTimeMonitoring(): void {
     // Monitor compliance status every 5 minutes
-    this.monitoringInterval = setInterval(async () => {
-      try {
-        const status = await this.getComplianceStatus();
-        
-        if (!status.overallCompliant) {
-          const issues = [];
-          if (status.gdpr && !status.gdpr.compliant) {
-            issues.push(...status.gdpr.issues);
-          }
-          if (status.hipaa && !status.hipaa.compliant) {
-            issues.push(...status.hipaa.issues);
-          }
-          if (status.sox && !status.sox.compliant) {
-            issues.push(...status.sox.issues);
-          }
+    this.monitoringInterval = setInterval(
+      async () => {
+        try {
+          const status = await this.getComplianceStatus();
 
-          runtimeLogger.warn('Compliance issues detected', { issues });
-          this.emit('complianceIssues', { status, issues });
+          if (!status.overallCompliant) {
+            const issues = [];
+            if (status.gdpr && !status.gdpr.compliant) {
+              issues.push(...status.gdpr.issues);
+            }
+            if (status.hipaa && !status.hipaa.compliant) {
+              issues.push(...status.hipaa.issues);
+            }
+            if (status.sox && !status.sox.compliant) {
+              issues.push(...status.sox.issues);
+            }
+
+            runtimeLogger.warn('Compliance issues detected', { issues });
+            this.emit('complianceIssues', { status, issues });
+          }
+        } catch (error) {
+          runtimeLogger.error('Failed to check compliance status', { error });
         }
-      } catch (error) {
-        runtimeLogger.error('Failed to check compliance status', { error });
-      }
-    }, 5 * 60 * 1000); // 5 minutes
+      },
+      5 * 60 * 1000
+    ); // 5 minutes
   }
 
-  private async handleAgentCreated(agentId: string, config: any): Promise<void> {
+  private async handleAgentCreated(
+    agentId: string,
+    config: any
+  ): Promise<void> {
     try {
       // Classify agent configuration for sensitive data
       await this.classifyData(config, { agentId });
     } catch (error) {
-      runtimeLogger.error('Failed to handle agent creation for compliance', { agentId, error });
+      runtimeLogger.error('Failed to handle agent creation for compliance', {
+        agentId,
+        error,
+      });
     }
   }
 
-  private async handleMessageReceived(agentId: string, message: any): Promise<void> {
+  private async handleMessageReceived(
+    agentId: string,
+    message: any
+  ): Promise<void> {
     try {
       // Classify message content
-      const classification = await this.classifyData(message.content, { 
-        agentId, 
-        userId: message.userId 
+      const classification = await this.classifyData(message.content, {
+        agentId,
+        userId: message.userId,
       });
 
       // Log sensitive message access
-      if (classification.level === 'restricted' || classification.level === 'confidential') {
-        if (this.config.hipaa?.enabled && classification.tags.some(tag => tag.startsWith('hipaa:'))) {
+      if (
+        classification.level === 'restricted' ||
+        classification.level === 'confidential'
+      ) {
+        if (
+          this.config.hipaa?.enabled &&
+          classification.tags.some((tag) => tag.startsWith('hipaa:'))
+        ) {
           await this.complianceManager.hipaa.logAccess({
             userId: message.userId || 'unknown',
             action: 'read',
@@ -397,14 +453,22 @@ export class ComplianceIntegration extends EventEmitter {
         }
       }
     } catch (error) {
-      runtimeLogger.error('Failed to handle message for compliance', { agentId, error });
+      runtimeLogger.error('Failed to handle message for compliance', {
+        agentId,
+        error,
+      });
     }
   }
 
-  private async handleMemoryStored(agentId: string, memory: any): Promise<void> {
+  private async handleMemoryStored(
+    agentId: string,
+    memory: any
+  ): Promise<void> {
     try {
       // Classify stored memory
-      const classification = await this.classifyData(memory.content, { agentId });
+      const classification = await this.classifyData(memory.content, {
+        agentId,
+      });
 
       // Update memory with compliance metadata
       if (classification.level !== 'public') {
@@ -421,20 +485,30 @@ export class ComplianceIntegration extends EventEmitter {
         await this.memoryProvider.storeMemory(memory);
       }
     } catch (error) {
-      runtimeLogger.error('Failed to handle memory storage for compliance', { agentId, error });
+      runtimeLogger.error('Failed to handle memory storage for compliance', {
+        agentId,
+        error,
+      });
     }
   }
 
-  private async applyHandlingRule(data: any, rule: any, context: any): Promise<void> {
+  private async applyHandlingRule(
+    data: any,
+    rule: any,
+    context: any
+  ): Promise<void> {
     try {
       for (const action of rule.actions) {
         switch (action.type) {
           case 'encrypt':
-            if (this.config.hipaa?.enabled && this.config.hipaa.encryptionRequired) {
+            if (
+              this.config.hipaa?.enabled &&
+              this.config.hipaa.encryptionRequired
+            ) {
               // Apply encryption (would integrate with HIPAA service)
-              runtimeLogger.debug('Encryption required for data', { 
-                agentId: context.agentId, 
-                rule: rule.id 
+              runtimeLogger.debug('Encryption required for data', {
+                agentId: context.agentId,
+                rule: rule.id,
               });
             }
             break;
@@ -467,19 +541,34 @@ export class ComplianceIntegration extends EventEmitter {
         }
       }
     } catch (error) {
-      runtimeLogger.error('Failed to apply handling rule', { rule: rule.id, error });
+      runtimeLogger.error('Failed to apply handling rule', {
+        rule: rule.id,
+        error,
+      });
     }
   }
 
   private createNoOpComplianceManager(): ComplianceManager {
     return {
-      configure: async () => { throw new Error('Compliance not enabled'); },
+      configure: async () => {
+        throw new Error('Compliance not enabled');
+      },
       getConfiguration: () => ({ enabled: false }),
-      classifyData: async () => ({ level: 'public', tags: [], handlingRules: [] }),
-      applyRetentionPolicy: async () => { throw new Error('Compliance not enabled'); },
+      classifyData: async () => ({
+        level: 'public',
+        tags: [],
+        handlingRules: [],
+      }),
+      applyRetentionPolicy: async () => {
+        throw new Error('Compliance not enabled');
+      },
       getComplianceStatus: async () => ({ overallCompliant: true }),
-      generateComplianceReport: async () => { throw new Error('Compliance not enabled'); },
-      exportAuditLog: async () => { throw new Error('Compliance not enabled'); },
+      generateComplianceReport: async () => {
+        throw new Error('Compliance not enabled');
+      },
+      exportAuditLog: async () => {
+        throw new Error('Compliance not enabled');
+      },
       gdpr: {} as any,
       hipaa: {} as any,
       sox: {} as any,

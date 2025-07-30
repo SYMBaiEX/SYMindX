@@ -1,6 +1,6 @@
 /**
  * Refactored API Extension for SYMindX
- * 
+ *
  * This is the main API extension class that orchestrates all API components
  * using the new modular architecture with proper separation of concerns.
  */
@@ -21,7 +21,10 @@ import {
   WebSocketManager,
 } from './components/index';
 import { standardLoggers } from '../../utils/standard-logging';
-import { createExtensionError, createConfigurationError } from '../../utils/standard-errors';
+import {
+  createExtensionError,
+  createConfigurationError,
+} from '../../utils/standard-errors';
 import {
   SQLiteChatRepository,
   createSQLiteChatRepository,
@@ -66,7 +69,7 @@ export class ApiExtension implements Extension {
     enableInjection: true,
     scopeType: 'extension',
     autoUpdate: true,
-    filterSensitive: true
+    filterSensitive: true,
   };
 
   constructor(config: ApiConfig) {
@@ -139,7 +142,6 @@ export class ApiExtension implements Extension {
         chatEnabled: this.apiConfig.chat?.enabled ?? false,
         authEnabled: this.apiConfig.auth?.enabled ?? false,
       });
-
     } catch (error) {
       this.status = ExtensionStatus.ERROR;
       this.logger.error('Failed to initialize API Extension', { error });
@@ -152,7 +154,9 @@ export class ApiExtension implements Extension {
    */
   async start(): Promise<void> {
     if (!this.isInitialized) {
-      throw createExtensionError('API Extension must be initialized before starting');
+      throw createExtensionError(
+        'API Extension must be initialized before starting'
+      );
     }
 
     if (this.status === ExtensionStatus.ACTIVE) {
@@ -176,7 +180,6 @@ export class ApiExtension implements Extension {
         host: this.apiConfig.host,
         websocketPath: this.apiConfig.websocket?.path || '/ws',
       });
-
     } catch (error) {
       this.status = ExtensionStatus.ERROR;
       this.logger.error('Failed to start API Extension', { error });
@@ -210,7 +213,6 @@ export class ApiExtension implements Extension {
       this.status = ExtensionStatus.STOPPED;
 
       this.logger.info('API Extension stopped successfully');
-
     } catch (error) {
       this.status = ExtensionStatus.ERROR;
       this.logger.error('Failed to stop API Extension', { error });
@@ -268,7 +270,6 @@ export class ApiExtension implements Extension {
       this.logger.info('Chat repository initialized', {
         dbPath: this.apiConfig.chat.database.path,
       });
-
     } catch (error) {
       this.logger.error('Failed to initialize chat repository', { error });
       throw error;
@@ -310,7 +311,10 @@ export class ApiExtension implements Extension {
           status: { type: 'object', required: true },
         },
         execute: async (params: any) => {
-          this.webSocketManager.broadcastAgentStatus(params.agentId, params.status);
+          this.webSocketManager.broadcastAgentStatus(
+            params.agentId,
+            params.status
+          );
           return {
             type: 'success',
             data: { broadcasted: true },
@@ -330,7 +334,10 @@ export class ApiExtension implements Extension {
       'agent.status.changed': async (event) => {
         // Broadcast status changes via WebSocket
         if (event.data?.agentId && event.data?.status) {
-          this.webSocketManager.broadcastAgentStatus(event.data.agentId, event.data.status);
+          this.webSocketManager.broadcastAgentStatus(
+            event.data.agentId,
+            event.data.status
+          );
         }
       },
 
@@ -356,7 +363,7 @@ export class ApiExtension implements Extension {
       keepAliveTimeout: 5000,
       headersTimeout: 6000,
       maxRequestSize: '10mb',
-      
+
       cors: {
         allowedOrigins: '*',
         allowedMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -365,18 +372,18 @@ export class ApiExtension implements Extension {
           'Authorization',
           'X-Requested-With',
           'Accept',
-          'Origin'
+          'Origin',
         ],
         allowCredentials: true,
         maxAge: 86400,
       },
-      
+
       rateLimit: {
         enabled: true,
         windowMs: 15 * 60 * 1000, // 15 minutes
         maxRequests: 100,
       },
-      
+
       auth: {
         enabled: false,
         jwtSecret: 'default-secret-change-in-production',
@@ -384,7 +391,7 @@ export class ApiExtension implements Extension {
         maxSessions: 100,
         sessionTimeout: 3600000, // 1 hour
       },
-      
+
       websocket: {
         path: '/ws',
         compression: true,
@@ -393,7 +400,7 @@ export class ApiExtension implements Extension {
         connectionTimeout: 60000, // 60 seconds
         metricsInterval: 5000, // 5 seconds
       },
-      
+
       chat: {
         enabled: true,
         database: {

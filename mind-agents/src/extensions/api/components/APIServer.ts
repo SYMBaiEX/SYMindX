@@ -1,6 +1,6 @@
 /**
  * APIServer.ts - Core Express server setup and management
- * 
+ *
  * This module handles:
  * - Express application creation and configuration
  * - HTTP server lifecycle management
@@ -24,7 +24,7 @@ export class APIServer {
   constructor(config: ApiSettings) {
     this.config = config;
     this.app = express();
-    
+
     // Basic Express configuration
     this.app.set('trust proxy', true);
     this.app.disable('x-powered-by');
@@ -69,7 +69,9 @@ export class APIServer {
               `Port ${this.config.port} is already in use`,
               error
             );
-            this.logger.error('Failed to start API server', { error: portError });
+            this.logger.error('Failed to start API server', {
+              error: portError,
+            });
             reject(portError);
           } else {
             this.logger.error('API server error', { error });
@@ -81,20 +83,22 @@ export class APIServer {
         this.server.on('listening', () => {
           this.isRunning = true;
           const address = this.server?.address();
-          const port = typeof address === 'object' && address ? address.port : this.config.port;
-          
+          const port =
+            typeof address === 'object' && address
+              ? address.port
+              : this.config.port;
+
           this.logger.info(`API server started on port ${port}`, {
             port,
             timeout: this.config.timeout,
             keepAliveTimeout: this.config.keepAliveTimeout,
           });
-          
+
           resolve();
         });
 
         // Start listening
         this.server.listen(this.config.port, this.config.host);
-
       } catch (error) {
         this.logger.error('Error starting API server', { error });
         reject(error);
@@ -136,7 +140,8 @@ export class APIServer {
     connections?: number;
   } {
     const address = this.server?.address();
-    const port = typeof address === 'object' && address ? address.port : this.config.port;
+    const port =
+      typeof address === 'object' && address ? address.port : this.config.port;
 
     return {
       isRunning: this.isRunning,
@@ -158,7 +163,7 @@ export class APIServer {
    */
   private getActiveConnections(): number {
     if (!this.server) return 0;
-    
+
     // This is a simplified version - in practice you might want to track connections more accurately
     return this.server.listening ? 1 : 0;
   }
@@ -168,8 +173,10 @@ export class APIServer {
    */
   setupGracefulShutdown(): void {
     const shutdown = async (signal: string) => {
-      this.logger.info(`Received ${signal}, shutting down API server gracefully...`);
-      
+      this.logger.info(
+        `Received ${signal}, shutting down API server gracefully...`
+      );
+
       try {
         await this.stop();
         process.exit(0);
@@ -189,7 +196,10 @@ export class APIServer {
     });
 
     process.on('unhandledRejection', (reason, promise) => {
-      this.logger.error('Unhandled rejection in API server', { reason, promise });
+      this.logger.error('Unhandled rejection in API server', {
+        reason,
+        promise,
+      });
       shutdown('unhandledRejection');
     });
   }

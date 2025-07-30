@@ -1,6 +1,6 @@
 /**
  * BootstrapManager.ts - System bootstrapping and module loading
- * 
+ *
  * This module handles:
  * - Core module registration
  * - Extension loading
@@ -33,10 +33,10 @@ export class BootstrapManager {
   private config: RuntimeConfig;
   private extensionLoader: ExtensionLoader;
   private multiAgentManager?: MultiAgentManager;
-  
+
   constructor(
-    registry: ModuleRegistry, 
-    eventBus: EventBus, 
+    registry: ModuleRegistry,
+    eventBus: EventBus,
     config: RuntimeConfig
   ) {
     this.registry = registry;
@@ -124,7 +124,9 @@ export class BootstrapManager {
     const loadedExtensions: string[] = [];
     const failedExtensions: string[] = [];
 
-    for (const [extensionId, extensionConfig] of Object.entries(this.config.extensions)) {
+    for (const [extensionId, extensionConfig] of Object.entries(
+      this.config.extensions
+    )) {
       if (!extensionConfig.enabled) {
         this.logger.debug(`Extension disabled: ${extensionId}`);
         continue;
@@ -134,21 +136,23 @@ export class BootstrapManager {
         await this.loadExtension(extensionId, extensionConfig);
         loadedExtensions.push(extensionId);
       } catch (error) {
-        this.logger.error(`Failed to load extension: ${extensionId}`, { error });
+        this.logger.error(`Failed to load extension: ${extensionId}`, {
+          error,
+        });
         failedExtensions.push(extensionId);
       }
     }
 
     // Log summary
     if (loadedExtensions.length > 0) {
-      this.logger.info(`Loaded ${loadedExtensions.length} extensions`, { 
-        loaded: loadedExtensions 
+      this.logger.info(`Loaded ${loadedExtensions.length} extensions`, {
+        loaded: loadedExtensions,
       });
     }
-    
+
     if (failedExtensions.length > 0) {
-      this.logger.warn(`Failed to load ${failedExtensions.length} extensions`, { 
-        failed: failedExtensions 
+      this.logger.warn(`Failed to load ${failedExtensions.length} extensions`, {
+        failed: failedExtensions,
       });
     }
   }
@@ -163,23 +167,33 @@ export class BootstrapManager {
 
       switch (extensionId) {
         case 'api':
-          const { createApiExtension } = await import('../../extensions/api/index');
+          const { createApiExtension } = await import(
+            '../../extensions/api/index'
+          );
           extension = createApiExtension(config);
           break;
         case 'slack':
-          const { createSlackExtension } = await import('../../extensions/slack/index');
+          const { createSlackExtension } = await import(
+            '../../extensions/slack/index'
+          );
           extension = createSlackExtension(config);
           break;
         case 'telegram':
-          const { createTelegramExtension } = await import('../../extensions/telegram/index');
+          const { createTelegramExtension } = await import(
+            '../../extensions/telegram/index'
+          );
           extension = createTelegramExtension(config);
           break;
         case 'twitter':
-          const { createTwitterExtension } = await import('../../extensions/twitter/index');
+          const { createTwitterExtension } = await import(
+            '../../extensions/twitter/index'
+          );
           extension = createTwitterExtension(config);
           break;
         case 'runelite':
-          const { createRuneliteExtension } = await import('../../extensions/runelite/index');
+          const { createRuneliteExtension } = await import(
+            '../../extensions/runelite/index'
+          );
           extension = createRuneliteExtension(config);
           break;
         default:
@@ -188,7 +202,7 @@ export class BootstrapManager {
 
       // Register with extension loader
       this.extensionLoader.registerExtension(extensionId, extension);
-      
+
       // Emit extension loaded event
       this.eventBus.emit({
         type: 'extension.loaded',
@@ -199,7 +213,10 @@ export class BootstrapManager {
 
       this.logger.debug(`Extension loaded: ${extensionId}`);
     } catch (error) {
-      throw createRuntimeError(`Failed to load extension ${extensionId}`, error);
+      throw createRuntimeError(
+        `Failed to load extension ${extensionId}`,
+        error
+      );
     }
   }
 
@@ -216,7 +233,9 @@ export class BootstrapManager {
     const loadedPortals: string[] = [];
     const failedPortals: string[] = [];
 
-    for (const [portalId, portalConfig] of Object.entries(this.config.portals)) {
+    for (const [portalId, portalConfig] of Object.entries(
+      this.config.portals
+    )) {
       if (!portalConfig.enabled) {
         this.logger.debug(`Portal disabled: ${portalId}`);
         continue;
@@ -233,14 +252,14 @@ export class BootstrapManager {
 
     // Log summary
     if (loadedPortals.length > 0) {
-      this.logger.info(`Loaded ${loadedPortals.length} portals`, { 
-        loaded: loadedPortals 
+      this.logger.info(`Loaded ${loadedPortals.length} portals`, {
+        loaded: loadedPortals,
       });
     }
-    
+
     if (failedPortals.length > 0) {
-      this.logger.warn(`Failed to load ${failedPortals.length} portals`, { 
-        failed: failedPortals 
+      this.logger.warn(`Failed to load ${failedPortals.length} portals`, {
+        failed: failedPortals,
       });
     }
   }
@@ -259,11 +278,15 @@ export class BootstrapManager {
           portal = createGroqPortal(config);
           break;
         case 'openai':
-          const { createOpenAIPortal } = await import('../../portals/openai/index');
+          const { createOpenAIPortal } = await import(
+            '../../portals/openai/index'
+          );
           portal = createOpenAIPortal(config);
           break;
         case 'anthropic':
-          const { createAnthropicPortal } = await import('../../portals/anthropic/index');
+          const { createAnthropicPortal } = await import(
+            '../../portals/anthropic/index'
+          );
           portal = createAnthropicPortal(config);
           break;
         case 'xai':
@@ -272,31 +295,45 @@ export class BootstrapManager {
           break;
         case 'google':
         case 'google-generative':
-          const { createGooglePortal } = await import('../../portals/google-generative/index');
+          const { createGooglePortal } = await import(
+            '../../portals/google-generative/index'
+          );
           portal = createGooglePortal(config);
           break;
         case 'google-vertex':
-          const { createVertexPortal } = await import('../../portals/google-vertex/index');
+          const { createVertexPortal } = await import(
+            '../../portals/google-vertex/index'
+          );
           portal = createVertexPortal(config);
           break;
         case 'mistral':
-          const { createMistralPortal } = await import('../../portals/mistral/index');
+          const { createMistralPortal } = await import(
+            '../../portals/mistral/index'
+          );
           portal = createMistralPortal(config);
           break;
         case 'cohere':
-          const { createCoherePortal } = await import('../../portals/cohere/index');
+          const { createCoherePortal } = await import(
+            '../../portals/cohere/index'
+          );
           portal = createCoherePortal(config);
           break;
         case 'azure-openai':
-          const { createAzureOpenAIPortal } = await import('../../portals/azure-openai/index');
+          const { createAzureOpenAIPortal } = await import(
+            '../../portals/azure-openai/index'
+          );
           portal = createAzureOpenAIPortal(config);
           break;
         case 'ollama':
-          const { createOllamaPortal } = await import('../../portals/ollama/index');
+          const { createOllamaPortal } = await import(
+            '../../portals/ollama/index'
+          );
           portal = createOllamaPortal(config);
           break;
         case 'lmstudio':
-          const { createLMStudioPortal } = await import('../../portals/lmstudio/index');
+          const { createLMStudioPortal } = await import(
+            '../../portals/lmstudio/index'
+          );
           portal = createLMStudioPortal(config);
           break;
         default:
@@ -305,7 +342,7 @@ export class BootstrapManager {
 
       // Register with registry
       this.registry.registerPortal(portalId, portal);
-      
+
       // Emit portal loaded event
       this.eventBus.emit({
         type: 'portal.loaded',
@@ -328,7 +365,7 @@ export class BootstrapManager {
 
     try {
       this.multiAgentManager = new MultiAgentManager(this.eventBus);
-      
+
       // Configure multi-agent settings
       if (this.config.multiAgent) {
         // Apply configuration
@@ -350,7 +387,7 @@ export class BootstrapManager {
 
     try {
       const pluginIds = await this.extensionLoader.discoverPlugins();
-      
+
       if (pluginIds.length === 0) {
         this.logger.debug('No dynamic plugins found');
         return;
@@ -407,7 +444,9 @@ export class BootstrapManager {
         try {
           this.extensionLoader.unloadExtension(extensionId);
         } catch (error) {
-          this.logger.error(`Error unloading extension: ${extensionId}`, { error });
+          this.logger.error(`Error unloading extension: ${extensionId}`, {
+            error,
+          });
         }
       }
 

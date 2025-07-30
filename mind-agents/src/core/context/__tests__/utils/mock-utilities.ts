@@ -16,81 +16,92 @@ export class MockContextManager {
   private activeContexts = new Map<string, string>();
 
   // Mock methods
-  getOrCreateContext = mock((agentId: string, participantId: string, initialMessage?: string) => {
-    const contextId = `mock-ctx-${Date.now()}`;
-    const context: ConversationContext = {
-      id: contextId,
-      agentId,
-      startedAt: new Date(),
-      lastActive: new Date(),
-      participants: new Set([participantId]),
-      primaryParticipant: participantId,
-      topics: [],
-      messages: [],
-      state: {
-        phase: 'active',
-        mood: 'neutral',
-        formality: 0.5,
-        engagement: 0.5,
-      },
-      pendingQuestions: [],
-      followUpTopics: [],
-      metadata: {},
-    };
+  getOrCreateContext = mock(
+    (agentId: string, participantId: string, initialMessage?: string) => {
+      const contextId = `mock-ctx-${Date.now()}`;
+      const context: ConversationContext = {
+        id: contextId,
+        agentId,
+        startedAt: new Date(),
+        lastActive: new Date(),
+        participants: new Set([participantId]),
+        primaryParticipant: participantId,
+        topics: [],
+        messages: [],
+        state: {
+          phase: 'active',
+          mood: 'neutral',
+          formality: 0.5,
+          engagement: 0.5,
+        },
+        pendingQuestions: [],
+        followUpTopics: [],
+        metadata: {},
+      };
 
-    this.contexts.set(contextId, context);
-    this.activeContexts.set(agentId, contextId);
-    return context;
-  });
+      this.contexts.set(contextId, context);
+      this.activeContexts.set(agentId, contextId);
+      return context;
+    }
+  );
 
-  addMessage = mock((context: ConversationContext, from: string, content: string, emotion?: string) => {
-    context.messages.push({
-      from,
-      content,
-      timestamp: new Date(),
-      emotion,
-      intent: content.includes('?') ? 'question' : 'statement',
-    });
-    context.lastActive = new Date();
-  });
+  addMessage = mock(
+    (
+      context: ConversationContext,
+      from: string,
+      content: string,
+      emotion?: string
+    ) => {
+      context.messages.push({
+        from,
+        content,
+        timestamp: new Date(),
+        emotion,
+        intent: content.includes('?') ? 'question' : 'statement',
+      });
+      context.lastActive = new Date();
+    }
+  );
 
   getContextSummary = mock((contextId: string) => {
     const context = this.contexts.get(contextId);
     if (!context) return null;
 
     return {
-      topics: context.topics.map(t => t.topic),
+      topics: context.topics.map((t) => t.topic),
       mood: context.state.mood,
-      pendingQuestions: context.pendingQuestions.map(q => q.question),
-      recentMessages: context.messages.slice(-5).map(m => m.content),
+      pendingQuestions: context.pendingQuestions.map((q) => q.question),
+      recentMessages: context.messages.slice(-5).map((m) => m.content),
       participants: Array.from(context.participants),
       phase: context.state.phase,
     };
   });
 
-  preserveToMemory = mock(async (agent: Agent, contextId: string): Promise<MemoryRecord | null> => {
-    const context = this.contexts.get(contextId);
-    if (!context) return null;
+  preserveToMemory = mock(
+    async (agent: Agent, contextId: string): Promise<MemoryRecord | null> => {
+      const context = this.contexts.get(contextId);
+      if (!context) return null;
 
-    return {
-      id: `mock-mem-${Date.now()}`,
-      agentId: agent.id,
-      type: 'interaction' as any,
-      content: 'Mock conversation summary',
-      metadata: {
-        contextId,
-        participants: Array.from(context.participants),
-        topics: context.topics.map(t => t.topic),
-        duration: 300000,
-        messageCount: context.messages.length,
-        mood: context.state.mood,
-      },
-      importance: 0.8,
-      timestamp: new Date(),
-      tags: ['mock', 'conversation'],
-      duration: 'long_term' as any,
-    };
-  });
+      return {
+        id: `mock-mem-${Date.now()}`,
+        agentId: agent.id,
+        type: 'interaction' as any,
+        content: 'Mock conversation summary',
+        metadata: {
+          contextId,
+          participants: Array.from(context.participants),
+          topics: context.topics.map((t) => t.topic),
+          duration: 300000,
+          messageCount: context.messages.length,
+          mood: context.state.mood,
+        },
+        importance: 0.8,
+        timestamp: new Date(),
+        tags: ['mock', 'conversation'],
+        duration: 'long_term' as any,
+      };
+    }
+  );
 
   switchContext = mock((agentId: string, newContextId: string): boolean => {
     const context = this.contexts.get(newContextId);
@@ -100,24 +111,28 @@ export class MockContextManager {
     return true;
   });
 
-  mergeContexts = mock((primaryId: string, secondaryId: string): ConversationContext | null => {
-    const primary = this.contexts.get(primaryId);
-    const secondary = this.contexts.get(secondaryId);
+  mergeContexts = mock(
+    (primaryId: string, secondaryId: string): ConversationContext | null => {
+      const primary = this.contexts.get(primaryId);
+      const secondary = this.contexts.get(secondaryId);
 
-    if (!primary || !secondary) return null;
+      if (!primary || !secondary) return null;
 
-    // Merge participants
-    secondary.participants.forEach(p => primary.participants.add(p));
+      // Merge participants
+      secondary.participants.forEach((p) => primary.participants.add(p));
 
-    // Merge messages
-    primary.messages.push(...secondary.messages);
-    primary.messages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+      // Merge messages
+      primary.messages.push(...secondary.messages);
+      primary.messages.sort(
+        (a, b) => a.timestamp.getTime() - b.timestamp.getTime()
+      );
 
-    // Remove secondary
-    this.contexts.delete(secondaryId);
+      // Remove secondary
+      this.contexts.delete(secondaryId);
 
-    return primary;
-  });
+      return primary;
+    }
+  );
 
   getActiveContext = mock((agentId: string): ConversationContext | null => {
     const contextId = this.activeContexts.get(agentId);
@@ -152,7 +167,7 @@ export class MockContextManager {
 
   reset(): void {
     // Reset all mocks
-    Object.keys(this).forEach(key => {
+    Object.keys(this).forEach((key) => {
       const value = (this as any)[key];
       if (value?.mockReset) {
         value.mockReset();
@@ -172,27 +187,35 @@ export class MockMemoryProvider {
     this.memories.set(memory.id, { ...memory });
   });
 
-  retrieve = mock(async (agentId: string, filters?: any): Promise<MemoryRecord[]> => {
-    return Array.from(this.memories.values()).filter(m => m.agentId === agentId);
-  });
+  retrieve = mock(
+    async (agentId: string, filters?: any): Promise<MemoryRecord[]> => {
+      return Array.from(this.memories.values()).filter(
+        (m) => m.agentId === agentId
+      );
+    }
+  );
 
-  update = mock(async (id: string, updates: Partial<MemoryRecord>): Promise<boolean> => {
-    const memory = this.memories.get(id);
-    if (!memory) return false;
+  update = mock(
+    async (id: string, updates: Partial<MemoryRecord>): Promise<boolean> => {
+      const memory = this.memories.get(id);
+      if (!memory) return false;
 
-    Object.assign(memory, updates);
-    return true;
-  });
+      Object.assign(memory, updates);
+      return true;
+    }
+  );
 
   delete = mock(async (id: string): Promise<boolean> => {
     return this.memories.delete(id);
   });
 
-  search = mock(async (query: string, agentId?: string): Promise<MemoryRecord[]> => {
-    return Array.from(this.memories.values())
-      .filter(m => !agentId || m.agentId === agentId)
-      .filter(m => m.content.toLowerCase().includes(query.toLowerCase()));
-  });
+  search = mock(
+    async (query: string, agentId?: string): Promise<MemoryRecord[]> => {
+      return Array.from(this.memories.values())
+        .filter((m) => !agentId || m.agentId === agentId)
+        .filter((m) => m.content.toLowerCase().includes(query.toLowerCase()));
+    }
+  );
 
   // Helper methods
   getMemory(id: string): MemoryRecord | undefined {
@@ -208,7 +231,7 @@ export class MockMemoryProvider {
   }
 
   reset(): void {
-    Object.keys(this).forEach(key => {
+    Object.keys(this).forEach((key) => {
       const value = (this as any)[key];
       if (value?.mockReset) {
         value.mockReset();
@@ -282,7 +305,7 @@ export class MockAgent {
   }
 
   reset(): void {
-    Object.keys(this).forEach(key => {
+    Object.keys(this).forEach((key) => {
       const value = (this as any)[key];
       if (value?.mockReset) {
         value.mockReset();
@@ -302,7 +325,7 @@ export class MockEventBus {
   publish = mock(async (event: any): Promise<void> => {
     this.events.push(event);
     const handlers = this.handlers.get(event.type) || [];
-    await Promise.all(handlers.map(handler => handler(event)));
+    await Promise.all(handlers.map((handler) => handler(event)));
   });
 
   subscribe = mock((eventType: string, handler: Function): void => {
@@ -331,19 +354,19 @@ export class MockEventBus {
   // Helper methods
   getEventCount(type?: string): number {
     if (!type) return this.events.length;
-    return this.events.filter(e => e.type === type).length;
+    return this.events.filter((e) => e.type === type).length;
   }
 
   getLastEvent(type?: string): any {
     if (!type) return this.events[this.events.length - 1];
-    const filtered = this.events.filter(e => e.type === type);
+    const filtered = this.events.filter((e) => e.type === type);
     return filtered[filtered.length - 1];
   }
 
   reset(): void {
     this.events.length = 0;
     this.handlers.clear();
-    Object.keys(this).forEach(key => {
+    Object.keys(this).forEach((key) => {
       const value = (this as any)[key];
       if (value?.mockReset) {
         value.mockReset();
@@ -356,7 +379,12 @@ export class MockEventBus {
  * Mock logger for testing
  */
 export class MockLogger {
-  private logs: Array<{ level: string; message: string; data?: any; timestamp: Date }> = [];
+  private logs: Array<{
+    level: string;
+    message: string;
+    data?: any;
+    timestamp: Date;
+  }> = [];
 
   debug = mock((message: string, data?: any) => {
     this.logs.push({ level: 'debug', message, data, timestamp: new Date() });
@@ -379,12 +407,18 @@ export class MockLogger {
   });
 
   // Helper methods
-  getLogs(level?: string): Array<{ level: string; message: string; data?: any; timestamp: Date }> {
+  getLogs(
+    level?: string
+  ): Array<{ level: string; message: string; data?: any; timestamp: Date }> {
     if (!level) return [...this.logs];
-    return this.logs.filter(log => log.level === level);
+    return this.logs.filter((log) => log.level === level);
   }
 
-  getLastLog(level?: string): { level: string; message: string; data?: any; timestamp: Date } | undefined {
+  getLastLog(
+    level?: string
+  ):
+    | { level: string; message: string; data?: any; timestamp: Date }
+    | undefined {
     const logs = this.getLogs(level);
     return logs[logs.length - 1];
   }
@@ -395,7 +429,7 @@ export class MockLogger {
 
   reset(): void {
     this.clear();
-    Object.keys(this).forEach(key => {
+    Object.keys(this).forEach((key) => {
       const value = (this as any)[key];
       if (value?.mockReset) {
         value.mockReset();
@@ -432,7 +466,11 @@ export class TestHarness {
   } {
     const agentId = 'test-agent-1';
     const participantId = 'user-1';
-    const context = this.contextManager.getOrCreateContext(agentId, participantId, 'Hello!');
+    const context = this.contextManager.getOrCreateContext(
+      agentId,
+      participantId,
+      'Hello!'
+    );
 
     return {
       contextId: context.id,
@@ -450,13 +488,24 @@ export class TestHarness {
     participantIds: string[];
   } {
     const agentId = 'test-agent-1';
-    const participantIds = Array.from({ length: participantCount }, (_, i) => `user-${i + 1}`);
-    const context = this.contextManager.getOrCreateContext(agentId, participantIds[0], 'Hello!');
+    const participantIds = Array.from(
+      { length: participantCount },
+      (_, i) => `user-${i + 1}`
+    );
+    const context = this.contextManager.getOrCreateContext(
+      agentId,
+      participantIds[0],
+      'Hello!'
+    );
 
     // Add additional participants
     for (let i = 1; i < participantIds.length; i++) {
       context.participants.add(participantIds[i]);
-      this.contextManager.addMessage(context, participantIds[i], `Hi from user ${i + 1}!`);
+      this.contextManager.addMessage(
+        context,
+        participantIds[i],
+        `Hi from user ${i + 1}!`
+      );
     }
 
     return {
@@ -501,7 +550,9 @@ export class TestHarness {
   /**
    * Verify all mocks were called as expected
    */
-  verifyMockCalls(expectedCalls: Record<string, { method: string; callCount: number }>): void {
+  verifyMockCalls(
+    expectedCalls: Record<string, { method: string; callCount: number }>
+  ): void {
     for (const [component, expectation] of Object.entries(expectedCalls)) {
       const mockComponent = (this as any)[component];
       if (mockComponent && mockComponent.getCallCount) {
@@ -509,7 +560,7 @@ export class TestHarness {
         if (actualCount !== expectation.callCount) {
           throw new Error(
             `Expected ${component}.${expectation.method} to be called ${expectation.callCount} times, ` +
-            `but was called ${actualCount} times`
+              `but was called ${actualCount} times`
           );
         }
       }

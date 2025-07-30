@@ -189,7 +189,8 @@ export class VercelAIPortal extends BasePortal {
 
         switch (providerName) {
           case 'openai': {
-            const apiKey = providerConfig?.apiKey || process.env["OPENAI_API_KEY"];
+            const apiKey =
+              providerConfig?.apiKey || process.env['OPENAI_API_KEY'];
             if (apiKey) {
               provider = createOpenAI({
                 apiKey,
@@ -202,7 +203,7 @@ export class VercelAIPortal extends BasePortal {
           }
           case 'anthropic': {
             const apiKey =
-              providerConfig?.apiKey || process.env["ANTHROPIC_API_KEY"];
+              providerConfig?.apiKey || process.env['ANTHROPIC_API_KEY'];
             if (apiKey) {
               provider = createAnthropic({
                 apiKey,
@@ -214,7 +215,8 @@ export class VercelAIPortal extends BasePortal {
             break;
           }
           case 'groq': {
-            const apiKey = providerConfig?.apiKey || process.env["GROQ_API_KEY"];
+            const apiKey =
+              providerConfig?.apiKey || process.env['GROQ_API_KEY'];
             if (apiKey) {
               provider = createGroq({
                 apiKey,
@@ -226,7 +228,8 @@ export class VercelAIPortal extends BasePortal {
             break;
           }
           case 'cohere': {
-            const apiKey = providerConfig?.apiKey || process.env["COHERE_API_KEY"];
+            const apiKey =
+              providerConfig?.apiKey || process.env['COHERE_API_KEY'];
             if (apiKey) {
               provider = createCohere({
                 apiKey,
@@ -239,7 +242,7 @@ export class VercelAIPortal extends BasePortal {
           }
           case 'perplexity': {
             const apiKey =
-              providerConfig?.apiKey || process.env["PERPLEXITY_API_KEY"];
+              providerConfig?.apiKey || process.env['PERPLEXITY_API_KEY'];
             if (apiKey) {
               provider = createPerplexity({
                 apiKey,

@@ -620,6 +620,5 @@ export type {
 // Re-export extension types
 export type { ExtensionContext, Extension as ExtensionBase } from './extension';
 
-
 // Performance metrics
 export type { PerformanceMetrics } from './index';

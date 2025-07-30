@@ -1,6 +1,6 @@
 /**
  * Context Sharing Manager for Multi-Agent Systems
- * 
+ *
  * Handles secure context sharing between agents with permissions,
  * encryption, and access control.
  */
@@ -16,7 +16,7 @@ import {
   ContextPrivacySettings,
   ContextUpdate,
   VectorClock,
-  CausalEvent
+  CausalEvent,
 } from '../../../types/context/multi-agent-context';
 import { AgentId, OperationResult, Timestamp } from '../../../types/helpers';
 import { runtimeLogger } from '../../../utils/logger';
@@ -27,7 +27,8 @@ import { runtimeLogger } from '../../../utils/logger';
 export class ContextSharingManager extends EventEmitter {
   private sharedContexts: Map<AgentId, AgentContext> = new Map();
   private permissions: Map<string, ContextPermissions> = new Map();
-  private subscribers: Map<AgentId, Set<(update: ContextUpdate) => void>> = new Map();
+  private subscribers: Map<AgentId, Set<(update: ContextUpdate) => void>> =
+    new Map();
   private protocol: ContextSharingProtocol;
   private privacySettings: ContextPrivacySettings;
   private vectorClocks: Map<AgentId, VectorClock> = new Map();
@@ -47,26 +48,37 @@ export class ContextSharingManager extends EventEmitter {
    */
   async shareContext(
     sourceAgentId: AgentId,
-    targetAgentIds: AgentId[], 
+    targetAgentIds: AgentId[],
     context: AgentContext,
     permissions: ContextPermissions
   ): Promise<OperationResult> {
     try {
       // Validate permissions
-      const validationResult = await this.validatePermissions(sourceAgentId, permissions);
+      const validationResult = await this.validatePermissions(
+        sourceAgentId,
+        permissions
+      );
       if (!validationResult.success) {
         return validationResult;
       }
 
       // Apply privacy filters
-      const filteredContext = await this.applyPrivacyFilters(context, permissions);
+      const filteredContext = await this.applyPrivacyFilters(
+        context,
+        permissions
+      );
 
       // Update vector clock
       this.updateVectorClock(sourceAgentId);
 
       // Share with each target agent
       for (const targetAgentId of targetAgentIds) {
-        await this.shareWithAgent(sourceAgentId, targetAgentId, filteredContext, permissions);
+        await this.shareWithAgent(
+          sourceAgentId,
+          targetAgentId,
+          filteredContext,
+          permissions
+        );
       }
 
       // Log audit trail
@@ -75,7 +87,7 @@ export class ContextSharingManager extends EventEmitter {
           sourceAgentId,
           targetAgentIds,
           contextFields: Object.keys(filteredContext),
-          permissions: permissions.mode
+          permissions: permissions.mode,
         });
       }
 
@@ -84,25 +96,24 @@ export class ContextSharingManager extends EventEmitter {
         sourceAgentId,
         targetAgentIds,
         context: filteredContext,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
 
       return {
         success: true,
         data: {
           sharedWith: targetAgentIds,
-          contextVersion: filteredContext.version
+          contextVersion: filteredContext.version,
         },
         metadata: {
           operation: 'shareContext',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
-
     } catch (error) {
       runtimeLogger.error('Failed to share context', error as Error, {
         sourceAgentId,
-        targetAgentIds: targetAgentIds.length
+        targetAgentIds: targetAgentIds.length,
       });
 
       return {
@@ -110,15 +121,15 @@ export class ContextSharingManager extends EventEmitter {
         error: `Context sharing failed: ${(error as Error).message}`,
         metadata: {
           operation: 'shareContext',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
     }
   }
 
   /**
    * Subscribe to context changes from other agents
-   */  
+   */
   async subscribeToContextChanges(
     agentId: AgentId,
     callback: (update: ContextUpdate) => void
@@ -137,18 +148,17 @@ export class ContextSharingManager extends EventEmitter {
         data: { subscriberCount: this.subscribers.get(agentId)!.size },
         metadata: {
           operation: 'subscribeToContextChanges',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
-
     } catch (error) {
       return {
         success: false,
         error: `Subscription failed: ${(error as Error).message}`,
         metadata: {
           operation: 'subscribeToContextChanges',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
     }
   }
@@ -164,7 +174,7 @@ export class ContextSharingManager extends EventEmitter {
       const agentSubscribers = this.subscribers.get(agentId);
       if (agentSubscribers) {
         agentSubscribers.delete(callback);
-        
+
         if (agentSubscribers.size === 0) {
           this.subscribers.delete(agentId);
         }
@@ -175,18 +185,17 @@ export class ContextSharingManager extends EventEmitter {
         data: { remainingSubscribers: agentSubscribers?.size || 0 },
         metadata: {
           operation: 'unsubscribeFromContextChanges',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
-
     } catch (error) {
       return {
         success: false,
         error: `Unsubscription failed: ${(error as Error).message}`,
         metadata: {
           operation: 'unsubscribeFromContextChanges',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
     }
   }
@@ -194,7 +203,10 @@ export class ContextSharingManager extends EventEmitter {
   /**
    * Get shared context for an agent
    */
-  async getSharedContext(agentId: AgentId, requestingAgentId: AgentId): Promise<AgentContext | null> {
+  async getSharedContext(
+    agentId: AgentId,
+    requestingAgentId: AgentId
+  ): Promise<AgentContext | null> {
     try {
       const context = this.sharedContexts.get(agentId);
       if (!context) {
@@ -202,25 +214,33 @@ export class ContextSharingManager extends EventEmitter {
       }
 
       // Check permissions
-      const hasPermission = await this.checkReadPermission(requestingAgentId, context);
+      const hasPermission = await this.checkReadPermission(
+        requestingAgentId,
+        context
+      );
       if (!hasPermission) {
         runtimeLogger.warn('Permission denied for context access', {
           requestingAgentId,
-          targetAgentId: agentId
+          targetAgentId: agentId,
         });
         return null;
       }
 
       // Apply privacy filters based on requesting agent's permissions
-      const permissions = this.getPermissionsForAgent(requestingAgentId, context);
-      const filteredContext = await this.applyPrivacyFilters(context, permissions);
+      const permissions = this.getPermissionsForAgent(
+        requestingAgentId,
+        context
+      );
+      const filteredContext = await this.applyPrivacyFilters(
+        context,
+        permissions
+      );
 
       return filteredContext;
-
     } catch (error) {
       runtimeLogger.error('Failed to get shared context', error as Error, {
         agentId,
-        requestingAgentId
+        requestingAgentId,
       });
       return null;
     }
@@ -241,8 +261,8 @@ export class ContextSharingManager extends EventEmitter {
           error: 'Context not found for agent',
           metadata: {
             operation: 'updateSharedContext',
-            timestamp: new Date().toISOString()
-          }
+            timestamp: new Date().toISOString(),
+          },
         };
       }
 
@@ -252,7 +272,7 @@ export class ContextSharingManager extends EventEmitter {
         ...updates,
         version: existingContext.version + 1,
         lastModified: new Date().toISOString(),
-        modifiedBy: agentId
+        modifiedBy: agentId,
       };
 
       // Update vector clock
@@ -269,7 +289,7 @@ export class ContextSharingManager extends EventEmitter {
         timestamp: new Date().toISOString(),
         operation: 'update',
         fieldPath: '', // Could be more specific based on actual changes
-        newValue: updates
+        newValue: updates,
       };
 
       // Notify subscribers
@@ -279,22 +299,21 @@ export class ContextSharingManager extends EventEmitter {
         success: true,
         data: {
           contextVersion: updatedContext.version,
-          lastModified: updatedContext.lastModified
+          lastModified: updatedContext.lastModified,
         },
         metadata: {
           operation: 'updateSharedContext',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
-
     } catch (error) {
       return {
         success: false,
         error: `Context update failed: ${(error as Error).message}`,
         metadata: {
           operation: 'updateSharedContext',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
     }
   }
@@ -311,7 +330,7 @@ export class ContextSharingManager extends EventEmitter {
       return {
         success: false,
         error: 'Agent cannot create permissions for other agents',
-        metadata: { operation: 'validatePermissions' }
+        metadata: { operation: 'validatePermissions' },
       };
     }
 
@@ -320,7 +339,7 @@ export class ContextSharingManager extends EventEmitter {
       return {
         success: false,
         error: 'Permissions have expired',
-        metadata: { operation: 'validatePermissions' }
+        metadata: { operation: 'validatePermissions' },
       };
     }
 
@@ -331,7 +350,7 @@ export class ContextSharingManager extends EventEmitter {
           return {
             success: false,
             error: `Invalid access condition: ${condition.field}`,
-            metadata: { operation: 'validatePermissions' }
+            metadata: { operation: 'validatePermissions' },
           };
         }
       }
@@ -380,7 +399,7 @@ export class ContextSharingManager extends EventEmitter {
       // In a real implementation, this would encrypt sensitive fields
       // For now, we'll just mark them as encrypted
       runtimeLogger.debug('Context encryption applied', {
-        level: this.privacySettings.encryptionLevel
+        level: this.privacySettings.encryptionLevel,
       });
     }
 
@@ -411,7 +430,7 @@ export class ContextSharingManager extends EventEmitter {
     runtimeLogger.debug('Context shared with agent', {
       sourceAgentId,
       targetAgentId,
-      contextVersion: context.version
+      contextVersion: context.version,
     });
   }
 
@@ -461,7 +480,7 @@ export class ContextSharingManager extends EventEmitter {
     agentId: AgentId,
     context: AgentContext
   ): ContextPermissions | null {
-    return context.permissions.find(p => p.agentId === agentId) || null;
+    return context.permissions.find((p) => p.agentId === agentId) || null;
   }
 
   /**
@@ -492,13 +511,13 @@ export class ContextSharingManager extends EventEmitter {
       case 'equals':
         return fieldValue === condition.value;
       case 'contains':
-        return Array.isArray(fieldValue) 
+        return Array.isArray(fieldValue)
           ? fieldValue.includes(condition.value)
           : String(fieldValue).includes(String(condition.value));
       case 'regex':
         return new RegExp(String(condition.value)).test(String(fieldValue));
       case 'custom':
-        return condition.customCheck 
+        return condition.customCheck
           ? condition.customCheck(context, condition.value)
           : false;
       default:
@@ -513,7 +532,7 @@ export class ContextSharingManager extends EventEmitter {
     if (!this.vectorClocks.has(agentId)) {
       this.vectorClocks.set(agentId, {
         clocks: { [agentId]: 0 },
-        version: 1
+        version: 1,
       });
     }
 
@@ -534,7 +553,7 @@ export class ContextSharingManager extends EventEmitter {
         } catch (error) {
           runtimeLogger.error('Error notifying subscriber', error as Error, {
             agentId: update.agentId,
-            updateId: update.updateId
+            updateId: update.updateId,
           });
         }
       }
@@ -551,7 +570,7 @@ export class ContextSharingManager extends EventEmitter {
     const logData = {
       event,
       timestamp: new Date().toISOString(),
-      ...data
+      ...data,
     };
 
     if (this.privacySettings.auditLogging.includeFieldValues) {
@@ -588,7 +607,9 @@ export class ContextSharingManager extends EventEmitter {
 
     for (const key of expiredKeys) {
       this.permissions.delete(key);
-      runtimeLogger.debug('Cleaned up expired permission', { permissionKey: key });
+      runtimeLogger.debug('Cleaned up expired permission', {
+        permissionKey: key,
+      });
     }
   }
 
@@ -609,7 +630,7 @@ export class ContextSharingManager extends EventEmitter {
           // In a real implementation, this would archive the data
           runtimeLogger.debug('Context archived', { agentId });
         }
-        
+
         this.sharedContexts.delete(agentId);
         runtimeLogger.debug('Old context cleaned up', { agentId });
       }
@@ -623,9 +644,11 @@ export class ContextSharingManager extends EventEmitter {
     return {
       totalSharedContexts: this.sharedContexts.size,
       totalPermissions: this.permissions.size,
-      totalSubscribers: Array.from(this.subscribers.values())
-        .reduce((sum, set) => sum + set.size, 0),
-      vectorClocks: this.vectorClocks.size
+      totalSubscribers: Array.from(this.subscribers.values()).reduce(
+        (sum, set) => sum + set.size,
+        0
+      ),
+      vectorClocks: this.vectorClocks.size,
     };
   }
 

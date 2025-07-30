@@ -1,7 +1,7 @@
 /**
  * @module observability/dashboard
  * @description Real-time observability dashboard for SYMindX
- * 
+ *
  * Provides comprehensive dashboard data aggregation and real-time
  * monitoring capabilities with efficient data streaming.
  */
@@ -89,7 +89,7 @@ class RealTimeStreamer extends EventEmitter {
     if (!this.subscribers.has(channel)) {
       this.subscribers.set(channel, new Set());
     }
-    
+
     this.subscribers.get(channel)!.add(callback);
 
     // Return unsubscribe function
@@ -150,7 +150,10 @@ class TimeSeriesManager {
   private readonly maxDataPoints: number;
   private readonly retentionMs: number;
 
-  constructor(maxDataPoints: number = 1000, retentionMs: number = 24 * 60 * 60 * 1000) {
+  constructor(
+    maxDataPoints: number = 1000,
+    retentionMs: number = 24 * 60 * 60 * 1000
+  ) {
     this.maxDataPoints = maxDataPoints;
     this.retentionMs = retentionMs;
   }
@@ -182,7 +185,7 @@ class TimeSeriesManager {
 
     // Filter by time range
     if (fromTime || toTime) {
-      filtered = filtered.filter(point => {
+      filtered = filtered.filter((point) => {
         if (fromTime && point.timestamp < fromTime) return false;
         if (toTime && point.timestamp > toTime) return false;
         return true;
@@ -206,10 +209,11 @@ class TimeSeriesManager {
   ): Array<{ timestamp: Date; value: number; metricPath: string }> {
     // Group data points by time windows
     const windows = new Map<number, TimeSeriesPoint[]>();
-    
+
     for (const point of this.timeSeries) {
-      const windowStart = Math.floor(point.timestamp.getTime() / windowMs) * windowMs;
-      
+      const windowStart =
+        Math.floor(point.timestamp.getTime() / windowMs) * windowMs;
+
       if (!windows.has(windowStart)) {
         windows.set(windowStart, []);
       }
@@ -217,12 +221,16 @@ class TimeSeriesManager {
     }
 
     // Aggregate data for each window
-    const result: Array<{ timestamp: Date; value: number; metricPath: string }> = [];
-    
+    const result: Array<{
+      timestamp: Date;
+      value: number;
+      metricPath: string;
+    }> = [];
+
     for (const [windowStart, points] of windows) {
       // This is a simplified aggregation - in practice, you'd aggregate specific metric paths
       const avgValue = points.length > 0 ? points.length : 0; // Placeholder aggregation
-      
+
       result.push({
         timestamp: new Date(windowStart),
         value: avgValue,
@@ -238,10 +246,10 @@ class TimeSeriesManager {
    */
   private cleanup(): void {
     const cutoffTime = new Date(Date.now() - this.retentionMs);
-    
+
     // Remove old points
     this.timeSeries = this.timeSeries.filter(
-      point => point.timestamp > cutoffTime
+      (point) => point.timestamp > cutoffTime
     );
 
     // Limit by count
@@ -308,8 +316,10 @@ class MetricsCalculator {
     }
 
     // Error rate penalty
-    const totalErrors = Object.values(metrics.agents)
-      .reduce((sum, agent) => sum + agent.errorCount, 0);
+    const totalErrors = Object.values(metrics.agents).reduce(
+      (sum, agent) => sum + agent.errorCount,
+      0
+    );
     if (totalErrors > 20) {
       score -= 30;
     } else if (totalErrors > 10) {
@@ -319,10 +329,12 @@ class MetricsCalculator {
     }
 
     // Response time penalty
-    const avgResponseTime = Object.values(metrics.agents)
-      .reduce((sum, agent) => sum + agent.responseTime, 0) / 
-      Math.max(Object.keys(metrics.agents).length, 1);
-    
+    const avgResponseTime =
+      Object.values(metrics.agents).reduce(
+        (sum, agent) => sum + agent.responseTime,
+        0
+      ) / Math.max(Object.keys(metrics.agents).length, 1);
+
     if (avgResponseTime > 5000) {
       score -= 25;
     } else if (avgResponseTime > 2000) {
@@ -330,9 +342,10 @@ class MetricsCalculator {
     }
 
     // Health component penalty
-    const unhealthyComponents = Object.values(metrics.health.components)
-      .filter(c => c.status !== 'healthy').length;
-    
+    const unhealthyComponents = Object.values(metrics.health.components).filter(
+      (c) => c.status !== 'healthy'
+    ).length;
+
     score -= unhealthyComponents * 5;
 
     return Math.max(0, Math.min(100, score));
@@ -376,28 +389,40 @@ class MetricsCalculator {
     const intervalSeconds = intervalMs / 1000;
 
     // Calculate agent actions throughput
-    const currentAgentActions = Object.values(currentMetrics.agents)
-      .reduce((sum, agent) => sum + agent.actionCount, 0);
-    const previousAgentActions = Object.values(previousMetrics.agents)
-      .reduce((sum, agent) => sum + agent.actionCount, 0);
-    
-    const agentActionsPerSecond = (currentAgentActions - previousAgentActions) / intervalSeconds;
+    const currentAgentActions = Object.values(currentMetrics.agents).reduce(
+      (sum, agent) => sum + agent.actionCount,
+      0
+    );
+    const previousAgentActions = Object.values(previousMetrics.agents).reduce(
+      (sum, agent) => sum + agent.actionCount,
+      0
+    );
+
+    const agentActionsPerSecond =
+      (currentAgentActions - previousAgentActions) / intervalSeconds;
 
     // Calculate portal requests throughput
-    const currentPortalRequests = Object.values(currentMetrics.portals)
-      .reduce((sum, portal) => sum + portal.requestCount, 0);
-    const previousPortalRequests = Object.values(previousMetrics.portals)
-      .reduce((sum, portal) => sum + portal.requestCount, 0);
-    
-    const portalRequestsPerSecond = (currentPortalRequests - previousPortalRequests) / intervalSeconds;
+    const currentPortalRequests = Object.values(currentMetrics.portals).reduce(
+      (sum, portal) => sum + portal.requestCount,
+      0
+    );
+    const previousPortalRequests = Object.values(
+      previousMetrics.portals
+    ).reduce((sum, portal) => sum + portal.requestCount, 0);
+
+    const portalRequestsPerSecond =
+      (currentPortalRequests - previousPortalRequests) / intervalSeconds;
 
     // Calculate extension messages throughput
-    const currentExtensionMessages = Object.values(currentMetrics.extensions)
-      .reduce((sum, ext) => sum + ext.messageCount, 0);
-    const previousExtensionMessages = Object.values(previousMetrics.extensions)
-      .reduce((sum, ext) => sum + ext.messageCount, 0);
-    
-    const extensionMessagesPerSecond = (currentExtensionMessages - previousExtensionMessages) / intervalSeconds;
+    const currentExtensionMessages = Object.values(
+      currentMetrics.extensions
+    ).reduce((sum, ext) => sum + ext.messageCount, 0);
+    const previousExtensionMessages = Object.values(
+      previousMetrics.extensions
+    ).reduce((sum, ext) => sum + ext.messageCount, 0);
+
+    const extensionMessagesPerSecond =
+      (currentExtensionMessages - previousExtensionMessages) / intervalSeconds;
 
     return {
       agentActionsPerSecond: Math.max(0, agentActionsPerSecond),
@@ -417,7 +442,7 @@ export class ObservabilityDashboard extends EventEmitter {
   private realTimeStreamer: RealTimeStreamer;
   private metricsCalculator: MetricsCalculator;
   private widgets: Map<string, DashboardWidget> = new Map();
-  
+
   private refreshTimer?: NodeJS.Timeout;
   private enabled = true;
   private lastMetrics?: ObservabilityMetrics;
@@ -427,7 +452,7 @@ export class ObservabilityDashboard extends EventEmitter {
     observabilityManager: ObservabilityManager
   ) {
     super();
-    
+
     this.config = config;
     this.enabled = config.enableDashboard;
     this.observabilityManager = observabilityManager;
@@ -439,7 +464,7 @@ export class ObservabilityDashboard extends EventEmitter {
     this.metricsCalculator = new MetricsCalculator();
 
     this.setupDefaultWidgets();
-    
+
     if (this.enabled) {
       this.start();
     }
@@ -498,7 +523,7 @@ export class ObservabilityDashboard extends EventEmitter {
 
     try {
       const dashboardData = await this.observabilityManager.getDashboardData();
-      
+
       // Enhance with time series data
       const timeSeries = this.timeSeriesManager.getTimeSeries(
         new Date(Date.now() - 60 * 60 * 1000), // Last hour
@@ -570,7 +595,7 @@ export class ObservabilityDashboard extends EventEmitter {
    */
   public addWidget(widget: DashboardWidget): void {
     this.widgets.set(widget.id, widget);
-    
+
     runtimeLogger.debug(`Dashboard widget added: ${widget.title}`, {
       metadata: { widgetId: widget.id, type: widget.type },
     });
@@ -583,7 +608,7 @@ export class ObservabilityDashboard extends EventEmitter {
    */
   public removeWidget(widgetId: string): boolean {
     const existed = this.widgets.delete(widgetId);
-    
+
     if (existed) {
       runtimeLogger.debug(`Dashboard widget removed: ${widgetId}`);
       this.emit('widgetRemoved', widgetId);
@@ -595,7 +620,10 @@ export class ObservabilityDashboard extends EventEmitter {
   /**
    * Update widget configuration
    */
-  public updateWidget(widgetId: string, updates: Partial<DashboardWidget>): boolean {
+  public updateWidget(
+    widgetId: string,
+    updates: Partial<DashboardWidget>
+  ): boolean {
     const widget = this.widgets.get(widgetId);
     if (!widget) return false;
 
@@ -654,7 +682,9 @@ export class ObservabilityDashboard extends EventEmitter {
   /**
    * Update dashboard configuration
    */
-  public updateConfig(updates: Partial<ObservabilityConfig['dashboard']>): void {
+  public updateConfig(
+    updates: Partial<ObservabilityConfig['dashboard']>
+  ): void {
     this.config = { ...this.config, ...updates };
     this.enabled = this.config.enableDashboard;
 
@@ -679,7 +709,7 @@ export class ObservabilityDashboard extends EventEmitter {
     lastRefresh?: Date;
   } {
     const timeSeriesStats = this.timeSeriesManager.getStatistics();
-    
+
     return {
       enabled: this.enabled,
       widgets: this.widgets.size,
@@ -785,13 +815,15 @@ export class ObservabilityDashboard extends EventEmitter {
   private async refreshData(): void {
     try {
       const metrics = this.observabilityManager.getMetrics();
-      
+
       // Add to time series
       this.timeSeriesManager.addDataPoint(metrics);
 
       // Calculate enhanced metrics
-      const performanceScore = this.metricsCalculator.calculatePerformanceScore(metrics);
-      const resourceUtilization = this.metricsCalculator.calculateResourceUtilization(metrics);
+      const performanceScore =
+        this.metricsCalculator.calculatePerformanceScore(metrics);
+      const resourceUtilization =
+        this.metricsCalculator.calculateResourceUtilization(metrics);
       const throughput = this.metricsCalculator.calculateThroughput(
         metrics,
         this.lastMetrics,
@@ -825,13 +857,16 @@ export class ObservabilityDashboard extends EventEmitter {
   /**
    * Get metric widget data
    */
-  private getMetricWidgetData(widget: DashboardWidget, metrics: ObservabilityMetrics): any {
+  private getMetricWidgetData(
+    widget: DashboardWidget,
+    metrics: ObservabilityMetrics
+  ): any {
     const metricPath = widget.config.metricPath;
     if (!metricPath) return null;
 
     // Navigate to metric value
     const value = this.getNestedValue(metrics, metricPath);
-    
+
     return {
       widgetId: widget.id,
       type: 'metric',
@@ -844,19 +879,25 @@ export class ObservabilityDashboard extends EventEmitter {
   /**
    * Get chart widget data
    */
-  private getChartWidgetData(widget: DashboardWidget, metrics: ObservabilityMetrics): any {
+  private getChartWidgetData(
+    widget: DashboardWidget,
+    metrics: ObservabilityMetrics
+  ): any {
     const timeRange = widget.config.timeRange || 3600000; // 1 hour default
     const fromTime = new Date(Date.now() - timeRange);
-    
+
     const timeSeries = this.timeSeriesManager.getTimeSeries(fromTime);
-    
+
     return {
       widgetId: widget.id,
       type: 'chart',
       chartType: widget.config.chartType || 'line',
-      data: timeSeries.map(point => ({
+      data: timeSeries.map((point) => ({
         timestamp: point.timestamp,
-        value: this.getNestedValue(point.metrics, widget.config.metricPath || ''),
+        value: this.getNestedValue(
+          point.metrics,
+          widget.config.metricPath || ''
+        ),
       })),
       timestamp: new Date(),
     };
@@ -878,7 +919,10 @@ export class ObservabilityDashboard extends EventEmitter {
   /**
    * Get health widget data
    */
-  private getHealthWidgetData(widget: DashboardWidget, metrics: ObservabilityMetrics): any {
+  private getHealthWidgetData(
+    widget: DashboardWidget,
+    metrics: ObservabilityMetrics
+  ): any {
     return {
       widgetId: widget.id,
       type: 'health',
@@ -904,10 +948,13 @@ export class ObservabilityDashboard extends EventEmitter {
   /**
    * Generate performance insights
    */
-  private generatePerformanceInsights(metrics: ObservabilityMetrics): DashboardData['insights'] {
+  private generatePerformanceInsights(
+    metrics: ObservabilityMetrics
+  ): DashboardData['insights'] {
     const insights: DashboardData['insights'] = [];
 
-    const performanceScore = this.metricsCalculator.calculatePerformanceScore(metrics);
+    const performanceScore =
+      this.metricsCalculator.calculatePerformanceScore(metrics);
     if (performanceScore < 70) {
       insights.push({
         type: 'performance',
@@ -918,7 +965,8 @@ export class ObservabilityDashboard extends EventEmitter {
       });
     }
 
-    const resourceUtil = this.metricsCalculator.calculateResourceUtilization(metrics);
+    const resourceUtil =
+      this.metricsCalculator.calculateResourceUtilization(metrics);
     if (resourceUtil.overall > 80) {
       insights.push({
         type: 'resource',
@@ -946,7 +994,8 @@ export class ObservabilityDashboard extends EventEmitter {
     if (metricPath.includes('memory')) return 'bytes';
     if (metricPath.includes('cpu') || metricPath.includes('usage')) return '%';
     if (metricPath.includes('time')) return 'ms';
-    if (metricPath.includes('count') || metricPath.includes('total')) return 'count';
+    if (metricPath.includes('count') || metricPath.includes('total'))
+      return 'count';
     return '';
   }
 }

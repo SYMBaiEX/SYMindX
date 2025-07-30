@@ -1,6 +1,6 @@
 /**
  * Leader-Follower Pattern for Multi-Agent Context Coordination
- * 
+ *
  * Implements a hierarchical context flow where one agent acts as the leader
  * and coordinates context updates with follower agents.
  */
@@ -10,7 +10,7 @@ import {
   AgentContext,
   ContextUpdate,
   ContextSyncMode,
-  ContextConflict
+  ContextConflict,
 } from '../../../types/context/multi-agent-context';
 import { AgentId, OperationResult } from '../../../types/helpers';
 import { runtimeLogger } from '../../../utils/logger';
@@ -88,29 +88,34 @@ export class LeaderFollowerPattern extends EventEmitter {
       runtimeLogger.debug('Starting leader election', {
         groupId,
         candidates: candidateAgents.length,
-        preferredLeader: electionCriteria?.preferredLeader
+        preferredLeader: electionCriteria?.preferredLeader,
       });
 
       if (candidateAgents.length === 0) {
         return {
           success: false,
           error: 'No candidate agents provided',
-          metadata: { operation: 'electLeader' }
+          metadata: { operation: 'electLeader' },
         };
       }
 
       // Check if preferred leader is available and suitable
       let selectedLeader: AgentId;
-      
-      if (electionCriteria?.preferredLeader && 
-          candidateAgents.includes(electionCriteria.preferredLeader)) {
+
+      if (
+        electionCriteria?.preferredLeader &&
+        candidateAgents.includes(electionCriteria.preferredLeader)
+      ) {
         selectedLeader = electionCriteria.preferredLeader;
       } else {
         // Elect based on criteria
-        selectedLeader = await this.runElectionAlgorithm(candidateAgents, electionCriteria);
+        selectedLeader = await this.runElectionAlgorithm(
+          candidateAgents,
+          electionCriteria
+        );
       }
 
-      const followers = candidateAgents.filter(id => id !== selectedLeader);
+      const followers = candidateAgents.filter((id) => id !== selectedLeader);
       const term = this.getNextTerm(groupId);
 
       // Create leader status
@@ -120,7 +125,7 @@ export class LeaderFollowerPattern extends EventEmitter {
         lastHeartbeat: new Date().toISOString(),
         followers: new Set(followers),
         isHealthy: true,
-        contextVersion: 0
+        contextVersion: 0,
       };
 
       this.leaders.set(groupId, leaderStatus);
@@ -133,7 +138,7 @@ export class LeaderFollowerPattern extends EventEmitter {
           lastSync: new Date().toISOString(),
           syncStatus: 'up_to_date',
           contextVersion: 0,
-          lag: 0
+          lag: 0,
         };
 
         this.followers.set(followerId, followerStatus);
@@ -150,7 +155,7 @@ export class LeaderFollowerPattern extends EventEmitter {
         term,
         followers,
         electionTime,
-        consensusReached: true
+        consensusReached: true,
       };
 
       // Store election history
@@ -164,7 +169,7 @@ export class LeaderFollowerPattern extends EventEmitter {
         leaderId: selectedLeader,
         followers,
         term,
-        electionTime
+        electionTime,
       });
 
       runtimeLogger.info('Leader elected successfully', {
@@ -172,7 +177,7 @@ export class LeaderFollowerPattern extends EventEmitter {
         leaderId: selectedLeader,
         followers: followers.length,
         term,
-        electionTime
+        electionTime,
       });
 
       return {
@@ -180,14 +185,13 @@ export class LeaderFollowerPattern extends EventEmitter {
         data: electionResult,
         metadata: {
           operation: 'electLeader',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
-
     } catch (error) {
       runtimeLogger.error('Leader election failed', error as Error, {
         groupId,
-        candidates: candidateAgents.length
+        candidates: candidateAgents.length,
       });
 
       return {
@@ -195,8 +199,8 @@ export class LeaderFollowerPattern extends EventEmitter {
         error: `Leader election failed: ${(error as Error).message}`,
         metadata: {
           operation: 'electLeader',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
     }
   }
@@ -215,17 +219,21 @@ export class LeaderFollowerPattern extends EventEmitter {
         return {
           success: false,
           error: 'Agent is not a leader',
-          metadata: { operation: 'propagateUpdate' }
+          metadata: { operation: 'propagateUpdate' },
         };
       }
 
       const startTime = Date.now();
-      const propagationResults: { followerId: AgentId; success: boolean; error?: string }[] = [];
+      const propagationResults: {
+        followerId: AgentId;
+        success: boolean;
+        error?: string;
+      }[] = [];
 
       runtimeLogger.debug('Starting context propagation', {
         leaderId,
         followers: leaderStatus.followers.size,
-        updateId: update.updateId
+        updateId: update.updateId,
       });
 
       // Update leader's context version
@@ -233,26 +241,31 @@ export class LeaderFollowerPattern extends EventEmitter {
       this.contextVersions.set(leaderId, context.version);
 
       // Propagate to all followers
-      const propagationPromises = Array.from(leaderStatus.followers).map(async (followerId) => {
-        try {
-          await this.syncFollower(followerId, context, update);
-          propagationResults.push({ followerId, success: true });
-          
-        } catch (error) {
-          const errorMsg = (error as Error).message;
-          propagationResults.push({ followerId, success: false, error: errorMsg });
-          
-          runtimeLogger.error('Failed to sync follower', error as Error, {
-            leaderId,
-            followerId,
-            updateId: update.updateId
-          });
+      const propagationPromises = Array.from(leaderStatus.followers).map(
+        async (followerId) => {
+          try {
+            await this.syncFollower(followerId, context, update);
+            propagationResults.push({ followerId, success: true });
+          } catch (error) {
+            const errorMsg = (error as Error).message;
+            propagationResults.push({
+              followerId,
+              success: false,
+              error: errorMsg,
+            });
+
+            runtimeLogger.error('Failed to sync follower', error as Error, {
+              leaderId,
+              followerId,
+              updateId: update.updateId,
+            });
+          }
         }
-      });
+      );
 
       await Promise.allSettled(propagationPromises);
 
-      const successCount = propagationResults.filter(r => r.success).length;
+      const successCount = propagationResults.filter((r) => r.success).length;
       const propagationTime = Date.now() - startTime;
 
       this.emit('updatePropagated', {
@@ -260,7 +273,7 @@ export class LeaderFollowerPattern extends EventEmitter {
         updateId: update.updateId,
         totalFollowers: leaderStatus.followers.size,
         successCount,
-        propagationTime
+        propagationTime,
       });
 
       runtimeLogger.debug('Context propagation completed', {
@@ -268,7 +281,7 @@ export class LeaderFollowerPattern extends EventEmitter {
         updateId: update.updateId,
         successCount,
         totalFollowers: leaderStatus.followers.size,
-        propagationTime
+        propagationTime,
       });
 
       return {
@@ -280,18 +293,17 @@ export class LeaderFollowerPattern extends EventEmitter {
           successCount,
           failedCount: propagationResults.length - successCount,
           propagationTime,
-          results: propagationResults
+          results: propagationResults,
         },
         metadata: {
           operation: 'propagateUpdate',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
-
     } catch (error) {
       runtimeLogger.error('Context propagation failed', error as Error, {
         leaderId,
-        updateId: update.updateId
+        updateId: update.updateId,
       });
 
       return {
@@ -299,8 +311,8 @@ export class LeaderFollowerPattern extends EventEmitter {
         error: `Context propagation failed: ${(error as Error).message}`,
         metadata: {
           operation: 'propagateUpdate',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
     }
   }
@@ -318,7 +330,7 @@ export class LeaderFollowerPattern extends EventEmitter {
         return {
           success: false,
           error: 'Agent is not a follower',
-          metadata: { operation: 'requestSync' }
+          metadata: { operation: 'requestSync' },
         };
       }
 
@@ -327,7 +339,7 @@ export class LeaderFollowerPattern extends EventEmitter {
         return {
           success: false,
           error: 'Leader not found or unhealthy',
-          metadata: { operation: 'requestSync' }
+          metadata: { operation: 'requestSync' },
         };
       }
 
@@ -350,22 +362,22 @@ export class LeaderFollowerPattern extends EventEmitter {
             leaderId: followerStatus.leaderId,
             currentVersion,
             leaderVersion,
-            syncNeeded: false
+            syncNeeded: false,
           },
           metadata: {
             operation: 'requestSync',
-            timestamp: new Date().toISOString()
-          }
+            timestamp: new Date().toISOString(),
+          },
         };
       }
 
       // Perform sync
       followerStatus.syncStatus = 'syncing';
-      
+
       // Get pending updates from queue
       const pendingUpdates = this.syncQueue.get(followerId) || [];
-      const relevantUpdates = pendingUpdates.filter(update => 
-        this.getUpdateVersion(update) > currentVersion
+      const relevantUpdates = pendingUpdates.filter(
+        (update) => this.getUpdateVersion(update) > currentVersion
       );
 
       // Apply updates
@@ -375,10 +387,14 @@ export class LeaderFollowerPattern extends EventEmitter {
           await this.applyUpdateToFollower(followerId, update);
           appliedUpdates++;
         } catch (error) {
-          runtimeLogger.error('Failed to apply update to follower', error as Error, {
-            followerId,
-            updateId: update.updateId
-          });
+          runtimeLogger.error(
+            'Failed to apply update to follower',
+            error as Error,
+            {
+              followerId,
+              updateId: update.updateId,
+            }
+          );
         }
       }
 
@@ -389,8 +405,8 @@ export class LeaderFollowerPattern extends EventEmitter {
       followerStatus.lag = Date.now() - startTime;
 
       // Clear processed updates from queue
-      const remainingUpdates = pendingUpdates.filter(update => 
-        this.getUpdateVersion(update) <= currentVersion
+      const remainingUpdates = pendingUpdates.filter(
+        (update) => this.getUpdateVersion(update) <= currentVersion
       );
       this.syncQueue.set(followerId, remainingUpdates);
 
@@ -402,14 +418,14 @@ export class LeaderFollowerPattern extends EventEmitter {
         fromVersion: currentVersion,
         toVersion: leaderVersion,
         appliedUpdates,
-        syncTime
+        syncTime,
       });
 
       runtimeLogger.debug('Follower sync completed', {
         followerId,
         leaderId: followerStatus.leaderId,
         appliedUpdates,
-        syncTime
+        syncTime,
       });
 
       return {
@@ -420,14 +436,13 @@ export class LeaderFollowerPattern extends EventEmitter {
           fromVersion: currentVersion,
           toVersion: leaderVersion,
           appliedUpdates,
-          syncTime
+          syncTime,
         },
         metadata: {
           operation: 'requestSync',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
-
     } catch (error) {
       // Update follower status on error
       const followerStatus = this.followers.get(followerId);
@@ -440,8 +455,8 @@ export class LeaderFollowerPattern extends EventEmitter {
         error: `Sync request failed: ${(error as Error).message}`,
         metadata: {
           operation: 'requestSync',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
     }
   }
@@ -459,14 +474,14 @@ export class LeaderFollowerPattern extends EventEmitter {
         return {
           success: false,
           error: 'Leader not found or mismatch',
-          metadata: { operation: 'handleLeaderFailure' }
+          metadata: { operation: 'handleLeaderFailure' },
         };
       }
 
       runtimeLogger.warn('Leader failure detected, starting re-election', {
         groupId,
         failedLeaderId,
-        term: leaderStatus.term
+        term: leaderStatus.term,
       });
 
       // Mark leader as unhealthy
@@ -481,15 +496,15 @@ export class LeaderFollowerPattern extends EventEmitter {
 
       // Get remaining candidates (exclude failed leader)
       const candidates = Array.from(leaderStatus.followers);
-      
+
       if (candidates.length === 0) {
         // No candidates available
         this.leaders.delete(groupId);
-        
+
         return {
           success: false,
           error: 'No candidates available for re-election',
-          metadata: { operation: 'handleLeaderFailure' }
+          metadata: { operation: 'handleLeaderFailure' },
         };
       }
 
@@ -499,16 +514,17 @@ export class LeaderFollowerPattern extends EventEmitter {
       this.emit('leaderFailover', {
         groupId,
         failedLeaderId,
-        newLeaderId: electionResult.success ? (electionResult.data as LeaderElectionResult).leaderId : null,
-        failoverTime: Date.now()
+        newLeaderId: electionResult.success
+          ? (electionResult.data as LeaderElectionResult).leaderId
+          : null,
+        failoverTime: Date.now(),
       });
 
       return electionResult;
-
     } catch (error) {
       runtimeLogger.error('Leader failure handling failed', error as Error, {
         groupId,
-        failedLeaderId
+        failedLeaderId,
       });
 
       return {
@@ -516,8 +532,8 @@ export class LeaderFollowerPattern extends EventEmitter {
         error: `Leader failure handling failed: ${(error as Error).message}`,
         metadata: {
           operation: 'handleLeaderFailure',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
     }
   }
@@ -535,10 +551,13 @@ export class LeaderFollowerPattern extends EventEmitter {
     // Simple algorithm: select first candidate
     // In a real implementation, this would consider agent capabilities,
     // load, network connectivity, etc.
-    
+
     if (criteria?.loadThreshold) {
       // Filter by load threshold (simulated)
-      const lowLoadCandidates = candidates.slice(0, Math.ceil(candidates.length / 2));
+      const lowLoadCandidates = candidates.slice(
+        0,
+        Math.ceil(candidates.length / 2)
+      );
       if (lowLoadCandidates.length > 0) {
         return lowLoadCandidates[0];
       }
@@ -567,17 +586,16 @@ export class LeaderFollowerPattern extends EventEmitter {
 
     // Update follower status
     followerStatus.syncStatus = 'syncing';
-    
+
     try {
       // Simulate sync operation
       await this.applyUpdateToFollower(followerId, update);
-      
+
       // Update status on success
       followerStatus.contextVersion = context.version;
       followerStatus.syncStatus = 'up_to_date';
       followerStatus.lastSync = new Date().toISOString();
       followerStatus.lag = Date.now() - new Date(update.timestamp).getTime();
-      
     } catch (error) {
       followerStatus.syncStatus = 'disconnected';
       throw error;
@@ -587,18 +605,21 @@ export class LeaderFollowerPattern extends EventEmitter {
   /**
    * Apply update to follower (simulated)
    */
-  private async applyUpdateToFollower(followerId: AgentId, update: ContextUpdate): Promise<void> {
+  private async applyUpdateToFollower(
+    followerId: AgentId,
+    update: ContextUpdate
+  ): Promise<void> {
     // In a real implementation, this would actually apply the update to the follower's context
     // For now, we'll just simulate the operation
-    
+
     runtimeLogger.debug('Applying update to follower', {
       followerId,
       updateId: update.updateId,
-      operation: update.operation
+      operation: update.operation,
     });
 
     // Simulate network delay and processing time
-    await new Promise(resolve => setTimeout(resolve, Math.random() * 100));
+    await new Promise((resolve) => setTimeout(resolve, Math.random() * 100));
   }
 
   /**
@@ -609,7 +630,7 @@ export class LeaderFollowerPattern extends EventEmitter {
     if (!history || history.length === 0) {
       return 1;
     }
-    
+
     const lastElection = history[history.length - 1];
     return lastElection.term + 1;
   }
@@ -652,11 +673,11 @@ export class LeaderFollowerPattern extends EventEmitter {
     const leaderStatus = this.findLeaderByAgent(leaderId);
     if (leaderStatus) {
       leaderStatus.lastHeartbeat = new Date().toISOString();
-      
+
       this.emit('heartbeat', {
         leaderId,
         timestamp: leaderStatus.lastHeartbeat,
-        followers: Array.from(leaderStatus.followers)
+        followers: Array.from(leaderStatus.followers),
       });
     }
   }
@@ -675,29 +696,35 @@ export class LeaderFollowerPattern extends EventEmitter {
    */
   private checkLeaderHealth(): void {
     const now = Date.now();
-    
+
     for (const [groupId, leaderStatus] of this.leaders.entries()) {
       const lastHeartbeatTime = new Date(leaderStatus.lastHeartbeat).getTime();
       const timeSinceHeartbeat = now - lastHeartbeatTime;
-      
+
       if (timeSinceHeartbeat > this.electionTimeout) {
         // Leader is potentially failed
         leaderStatus.isHealthy = false;
-        
+
         this.emit('leaderHealthDegraded', {
           groupId,
           leaderId: leaderStatus.leaderId,
           lastHeartbeat: leaderStatus.lastHeartbeat,
-          timeSinceHeartbeat
+          timeSinceHeartbeat,
         });
 
         // Trigger failure handling
-        this.handleLeaderFailure(groupId, leaderStatus.leaderId).catch(error => {
-          runtimeLogger.error('Failed to handle leader failure', error as Error, {
-            groupId,
-            leaderId: leaderStatus.leaderId
-          });
-        });
+        this.handleLeaderFailure(groupId, leaderStatus.leaderId).catch(
+          (error) => {
+            runtimeLogger.error(
+              'Failed to handle leader failure',
+              error as Error,
+              {
+                groupId,
+                leaderId: leaderStatus.leaderId,
+              }
+            );
+          }
+        );
       }
     }
   }
@@ -707,11 +734,13 @@ export class LeaderFollowerPattern extends EventEmitter {
    */
   getStatistics() {
     const totalGroups = this.leaders.size;
-    const healthyLeaders = Array.from(this.leaders.values())
-      .filter(leader => leader.isHealthy).length;
+    const healthyLeaders = Array.from(this.leaders.values()).filter(
+      (leader) => leader.isHealthy
+    ).length;
     const totalFollowers = this.followers.size;
-    const syncedFollowers = Array.from(this.followers.values())
-      .filter(follower => follower.syncStatus === 'up_to_date').length;
+    const syncedFollowers = Array.from(this.followers.values()).filter(
+      (follower) => follower.syncStatus === 'up_to_date'
+    ).length;
 
     return {
       totalGroups,
@@ -720,8 +749,10 @@ export class LeaderFollowerPattern extends EventEmitter {
       totalFollowers,
       syncedFollowers,
       unsyncedFollowers: totalFollowers - syncedFollowers,
-      totalElections: Array.from(this.electionHistory.values())
-        .reduce((sum, history) => sum + history.length, 0)
+      totalElections: Array.from(this.electionHistory.values()).reduce(
+        (sum, history) => sum + history.length,
+        0
+      ),
     };
   }
 

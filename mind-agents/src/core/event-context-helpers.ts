@@ -3,18 +3,25 @@
  * Utility functions for event context propagation, filtering, and migration
  */
 
-import { AgentEvent, EventContext, EventContextFilter, EventPropagationRule } from '../types/agent.js';
+import {
+  AgentEvent,
+  EventContext,
+  EventContextFilter,
+  EventPropagationRule,
+} from '../types/agent.js';
 import { runtimeLogger } from '../utils/logger.js';
 
 /**
  * Create a new event context with optional parameters
  */
-export function createEventContext(options: Partial<EventContext> = {}): EventContext {
+export function createEventContext(
+  options: Partial<EventContext> = {}
+): EventContext {
   return {
     correlation_id: options.correlation_id || generateCorrelationId(),
     timestamp: new Date(),
     propagation_depth: 0,
-    ...options
+    ...options,
   };
 }
 
@@ -22,12 +29,12 @@ export function createEventContext(options: Partial<EventContext> = {}): EventCo
  * Create an event with context
  */
 export function createEventWithContext(
-  event: Omit<AgentEvent, 'context'>, 
+  event: Omit<AgentEvent, 'context'>,
   context?: EventContext
 ): AgentEvent {
   return {
     ...event,
-    context
+    context,
   };
 }
 
@@ -57,7 +64,7 @@ export function createChildContext(
     parent_event_id: options.parent_event_id,
     propagation_depth: (parentContext.propagation_depth || 0) + 1,
     timestamp: new Date(),
-    ...options
+    ...options,
   };
 }
 
@@ -80,12 +87,17 @@ export function mergeEventContexts(
         ...context1,
         ...context2,
         // Special handling for arrays and objects
-        tags: [...(context1.tags || []), ...(context2.tags || [])].filter((tag, index, arr) => arr.indexOf(tag) === index),
+        tags: [...(context1.tags || []), ...(context2.tags || [])].filter(
+          (tag, index, arr) => arr.indexOf(tag) === index
+        ),
         metadata: { ...context1.metadata, ...context2.metadata },
         // Keep the deeper propagation depth
-        propagation_depth: Math.max(context1.propagation_depth || 0, context2.propagation_depth || 0),
+        propagation_depth: Math.max(
+          context1.propagation_depth || 0,
+          context2.propagation_depth || 0
+        ),
         // Use the newer timestamp
-        timestamp: context2.timestamp || context1.timestamp
+        timestamp: context2.timestamp || context1.timestamp,
       };
   }
 }
@@ -93,15 +105,23 @@ export function mergeEventContexts(
 /**
  * Check if an event context matches a filter
  */
-export function matchesContextFilter(event: AgentEvent, filter: EventContextFilter): boolean {
+export function matchesContextFilter(
+  event: AgentEvent,
+  filter: EventContextFilter
+): boolean {
   const context = event.context;
   if (!context) {
     // If no context, only match if filter doesn't specify context requirements
-    return !filter.correlation_id && !filter.chain_id && !filter.origin_agent_id;
+    return (
+      !filter.correlation_id && !filter.chain_id && !filter.origin_agent_id
+    );
   }
 
   // Check correlation ID
-  if (filter.correlation_id && context.correlation_id !== filter.correlation_id) {
+  if (
+    filter.correlation_id &&
+    context.correlation_id !== filter.correlation_id
+  ) {
     return false;
   }
 
@@ -111,34 +131,50 @@ export function matchesContextFilter(event: AgentEvent, filter: EventContextFilt
   }
 
   // Check origin agent ID
-  if (filter.origin_agent_id && context.origin_agent_id !== filter.origin_agent_id) {
+  if (
+    filter.origin_agent_id &&
+    context.origin_agent_id !== filter.origin_agent_id
+  ) {
     return false;
   }
 
   // Check priority range
-  if (filter.priority_min !== undefined && (context.priority || 0) < filter.priority_min) {
+  if (
+    filter.priority_min !== undefined &&
+    (context.priority || 0) < filter.priority_min
+  ) {
     return false;
   }
 
-  if (filter.priority_max !== undefined && (context.priority || 0) > filter.priority_max) {
+  if (
+    filter.priority_max !== undefined &&
+    (context.priority || 0) > filter.priority_max
+  ) {
     return false;
   }
 
   // Check propagation depth
-  if (filter.max_depth !== undefined && (context.propagation_depth || 0) > filter.max_depth) {
+  if (
+    filter.max_depth !== undefined &&
+    (context.propagation_depth || 0) > filter.max_depth
+  ) {
     return false;
   }
 
   // Check tags
   if (filter.tags && filter.tags.length > 0) {
     const contextTags = context.tags || [];
-    if (!filter.tags.some(tag => contextTags.includes(tag))) {
+    if (!filter.tags.some((tag) => contextTags.includes(tag))) {
       return false;
     }
   }
 
   // Check expiration
-  if (!filter.include_expired && context.expires_at && context.expires_at.getTime() < Date.now()) {
+  if (
+    !filter.include_expired &&
+    context.expires_at &&
+    context.expires_at.getTime() < Date.now()
+  ) {
     return false;
   }
 
@@ -148,22 +184,34 @@ export function matchesContextFilter(event: AgentEvent, filter: EventContextFilt
 /**
  * Filter events by context criteria
  */
-export function filterEventsByContext(events: AgentEvent[], filter: EventContextFilter): AgentEvent[] {
-  return events.filter(event => matchesContextFilter(event, filter));
+export function filterEventsByContext(
+  events: AgentEvent[],
+  filter: EventContextFilter
+): AgentEvent[] {
+  return events.filter((event) => matchesContextFilter(event, filter));
 }
 
 /**
  * Validate event context for correctness
  */
-export function validateEventContext(context: EventContext): { valid: boolean; errors: string[] } {
+export function validateEventContext(context: EventContext): {
+  valid: boolean;
+  errors: string[];
+} {
   const errors: string[] = [];
 
   // Check propagation depth
-  if (context.propagation_depth !== undefined && context.propagation_depth < 0) {
+  if (
+    context.propagation_depth !== undefined &&
+    context.propagation_depth < 0
+  ) {
     errors.push('Propagation depth cannot be negative');
   }
 
-  if (context.propagation_depth !== undefined && context.propagation_depth > 100) {
+  if (
+    context.propagation_depth !== undefined &&
+    context.propagation_depth > 100
+  ) {
     errors.push('Propagation depth exceeds maximum (100)');
   }
 
@@ -177,12 +225,19 @@ export function validateEventContext(context: EventContext): { valid: boolean; e
     errors.push('Invalid expiration timestamp');
   }
 
-  if (context.expires_at && context.timestamp && context.expires_at.getTime() < context.timestamp.getTime()) {
+  if (
+    context.expires_at &&
+    context.timestamp &&
+    context.expires_at.getTime() < context.timestamp.getTime()
+  ) {
     errors.push('Expiration time cannot be before creation time');
   }
 
   // Check priority range
-  if (context.priority !== undefined && (context.priority < 0 || context.priority > 100)) {
+  if (
+    context.priority !== undefined &&
+    (context.priority < 0 || context.priority > 100)
+  ) {
     errors.push('Priority must be between 0 and 100');
   }
 
@@ -197,7 +252,7 @@ export function validateEventContext(context: EventContext): { valid: boolean; e
 
   return {
     valid: errors.length === 0,
-    errors
+    errors,
   };
 }
 
@@ -206,10 +261,10 @@ export function validateEventContext(context: EventContext): { valid: boolean; e
  */
 export function cleanExpiredContexts(events: AgentEvent[]): AgentEvent[] {
   const now = Date.now();
-  return events.map(event => {
+  return events.map((event) => {
     if (event.context?.expires_at && event.context.expires_at.getTime() < now) {
       runtimeLogger.debug(`Cleaning expired context from event ${event.id}`, {
-        metadata: { eventId: event.id, expiredAt: event.context.expires_at }
+        metadata: { eventId: event.id, expiredAt: event.context.expires_at },
       });
       // Return event without context
       const { context, ...eventWithoutContext } = event;
@@ -274,7 +329,7 @@ export class EventPropagationRuleBuilder {
     event_types: [],
     propagate: true,
     inherit_context: true,
-    merge_strategy: 'merge'
+    merge_strategy: 'merge',
   };
 
   forEventTypes(types: string[]): this {
@@ -335,15 +390,15 @@ export class EventMigrationHelper {
     return (event: AgentEvent, context?: EventContext) => {
       // Call original handler with just the event
       handler(event);
-      
+
       // Log context information if available
       if (context) {
         runtimeLogger.debug(`Legacy handler received context`, {
-          metadata: { 
-            eventId: event.id, 
+          metadata: {
+            eventId: event.id,
             correlationId: context.correlation_id,
-            depth: context.propagation_depth 
-          }
+            depth: context.propagation_depth,
+          },
         });
       }
     };
@@ -360,7 +415,7 @@ export class EventMigrationHelper {
       // Already has context, merge with options
       return {
         ...event,
-        context: mergeEventContexts(event.context, createEventContext(options))
+        context: mergeEventContexts(event.context, createEventContext(options)),
       };
     }
 
@@ -369,8 +424,8 @@ export class EventMigrationHelper {
       ...event,
       context: createEventContext({
         origin_agent_id: event.agentId,
-        ...options
-      })
+        ...options,
+      }),
     };
   }
 
@@ -381,7 +436,9 @@ export class EventMigrationHelper {
     events: AgentEvent[],
     contextOptions: Partial<EventContext> = {}
   ): AgentEvent[] {
-    return events.map(event => this.addContextToLegacyEvent(event, contextOptions));
+    return events.map((event) =>
+      this.addContextToLegacyEvent(event, contextOptions)
+    );
   }
 }
 
@@ -389,51 +446,54 @@ export class EventMigrationHelper {
  * Default propagation rules for common event types
  */
 export const DEFAULT_PROPAGATION_RULES: Record<string, EventPropagationRule> = {
-  'user_input': {
+  user_input: {
     event_types: ['user_input'],
     propagate: true,
     inherit_context: false, // Start new context chain
     merge_strategy: 'replace',
     max_depth: 5,
-    ttl_seconds: 300 // 5 minutes
+    ttl_seconds: 300, // 5 minutes
   },
-  'system_message': {
+  system_message: {
     event_types: ['system_message'],
     propagate: true,
     inherit_context: true,
     merge_strategy: 'merge',
     max_depth: 10,
-    ttl_seconds: 3600 // 1 hour
+    ttl_seconds: 3600, // 1 hour
   },
-  'agent_action': {
+  agent_action: {
     event_types: ['agent_action'],
     propagate: true,
     inherit_context: true,
     merge_strategy: 'merge',
     max_depth: 15,
-    ttl_seconds: 1800 // 30 minutes
+    ttl_seconds: 1800, // 30 minutes
   },
-  'error_event': {
+  error_event: {
     event_types: ['error_event'],
     propagate: true,
     inherit_context: true,
     merge_strategy: 'preserve', // Keep original context for debugging
     max_depth: 20,
-    ttl_seconds: 7200 // 2 hours
+    ttl_seconds: 7200, // 2 hours
   },
-  'heartbeat': {
+  heartbeat: {
     event_types: ['system.heartbeat'],
     propagate: false,
     inherit_context: false,
-    merge_strategy: 'replace'
-  }
+    merge_strategy: 'replace',
+  },
 };
 
 /**
  * Context-aware event routing
  */
 export class EventContextRouter {
-  private routes: Map<string, (event: AgentEvent, context?: EventContext) => boolean> = new Map();
+  private routes: Map<
+    string,
+    (event: AgentEvent, context?: EventContext) => boolean
+  > = new Map();
 
   /**
    * Add a routing rule based on context
@@ -450,7 +510,7 @@ export class EventContextRouter {
    */
   route(event: AgentEvent): string[] {
     const matchedRoutes: string[] = [];
-    
+
     for (const [name, rule] of this.routes) {
       try {
         if (rule(event, event.context)) {
@@ -487,34 +547,34 @@ export const ContextFilters = {
    * Filter for events from a specific agent
    */
   fromAgent: (agentId: string): EventContextFilter => ({
-    origin_agent_id: agentId
+    origin_agent_id: agentId,
   }),
 
   /**
    * Filter for events in a specific correlation chain
    */
   inCorrelation: (correlationId: string): EventContextFilter => ({
-    correlation_id: correlationId
+    correlation_id: correlationId,
   }),
 
   /**
    * Filter for high priority events
    */
   highPriority: (minPriority: number = 80): EventContextFilter => ({
-    priority_min: minPriority
+    priority_min: minPriority,
   }),
 
   /**
    * Filter for recent events with context
    */
   recentWithContext: (): EventContextFilter => ({
-    include_expired: false
+    include_expired: false,
   }),
 
   /**
    * Filter for shallow propagation events
    */
   shallow: (maxDepth: number = 3): EventContextFilter => ({
-    max_depth: maxDepth
-  })
+    max_depth: maxDepth,
+  }),
 };

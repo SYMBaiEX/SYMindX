@@ -6,19 +6,19 @@ export interface Agent {
   id: string;
   name?: string;
   personality?: string | string[];
-  
+
   // Legacy methods
   processMessage(message: string): string;
   getCurrentEmotion(): string;
   getMemories(): any[];
-  
+
   // Legacy properties
   memoryType?: string;
   emotionType?: string;
   cognitionType?: string;
   communicationStyle?: string;
   primaryPortal?: string;
-  
+
   // Configuration objects
   memoryConfig?: any;
   emotionConfig?: any;

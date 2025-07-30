@@ -5,11 +5,11 @@
 
 import { EventEmitter } from 'events';
 import { randomUUID } from 'crypto';
-import type { 
+import type {
   ContextObservabilitySystem,
   ContextMetrics,
   ContextTrace,
-  ContextObservabilityState
+  ContextObservabilityState,
 } from '../../../types/context/context-observability.ts';
 import { runtimeLogger } from '../../../utils/logger.ts';
 
@@ -69,7 +69,10 @@ export class ContextDashboard extends EventEmitter {
   private widgets = new Map<string, DashboardWidget>();
   private config: DashboardConfig;
   private alertRules = new Map<string, AlertRule>();
-  private dataHistory = new Map<string, Array<{ timestamp: Date; value: number }>>();
+  private dataHistory = new Map<
+    string,
+    Array<{ timestamp: Date; value: number }>
+  >();
   private updateInterval?: NodeJS.Timeout;
   private anomalyBaselines = new Map<string, number[]>();
 
@@ -88,15 +91,15 @@ export class ContextDashboard extends EventEmitter {
         response_time: 1000,
         error_rate: 0.05,
         memory_usage: 0.8,
-        context_quality: 0.6
+        context_quality: 0.6,
       },
       widgetLayout: [],
-      ...config
+      ...config,
     };
 
     this.initializeDefaultWidgets();
     this.setupDefaultAlerts();
-    
+
     if (this.config.enableRealTime) {
       this.startRealTimeUpdates();
     }
@@ -104,7 +107,7 @@ export class ContextDashboard extends EventEmitter {
     runtimeLogger.debug('Context dashboard initialized', {
       widgetCount: this.widgets.size,
       alertRuleCount: this.alertRules.size,
-      realTimeEnabled: this.config.enableRealTime
+      realTimeEnabled: this.config.enableRealTime,
     });
   }
 
@@ -116,7 +119,7 @@ export class ContextDashboard extends EventEmitter {
     const fullWidget: DashboardWidget = {
       ...widget,
       id: widgetId,
-      lastUpdate: new Date()
+      lastUpdate: new Date(),
     };
 
     this.widgets.set(widgetId, fullWidget);
@@ -124,7 +127,7 @@ export class ContextDashboard extends EventEmitter {
     runtimeLogger.debug('Dashboard widget added', {
       widgetId,
       type: widget.type,
-      title: widget.title
+      title: widget.title,
     });
 
     this.emit('widget_added', { widgetId, widget: fullWidget });
@@ -137,7 +140,7 @@ export class ContextDashboard extends EventEmitter {
    */
   removeWidget(widgetId: string): boolean {
     const removed = this.widgets.delete(widgetId);
-    
+
     if (removed) {
       runtimeLogger.debug('Dashboard widget removed', { widgetId });
       this.emit('widget_removed', { widgetId });
@@ -163,15 +166,14 @@ export class ContextDashboard extends EventEmitter {
       runtimeLogger.debug('Widget updated', {
         widgetId,
         type: widget.type,
-        dataSize: JSON.stringify(newData).length
+        dataSize: JSON.stringify(newData).length,
       });
 
       this.emit('widget_updated', { widgetId, widget, data: newData });
-
     } catch (error) {
       runtimeLogger.error('Widget update failed', {
         widgetId,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       });
 
       throw error;
@@ -190,9 +192,9 @@ export class ContextDashboard extends EventEmitter {
   } {
     const state = this.observabilitySystem.getObservabilityState();
     const widgets = Array.from(this.widgets.values());
-    const alerts = Array.from(this.alertRules.values()).map(rule => ({
+    const alerts = Array.from(this.alertRules.values()).map((rule) => ({
       rule,
-      active: this.isAlertActive(rule)
+      active: this.isAlertActive(rule),
     }));
     const anomalies = this.detectAnomalies();
 
@@ -201,7 +203,7 @@ export class ContextDashboard extends EventEmitter {
       layout: this.config.widgetLayout,
       metrics: state,
       alerts,
-      anomalies
+      anomalies,
     };
   }
 
@@ -213,7 +215,7 @@ export class ContextDashboard extends EventEmitter {
     const fullRule: AlertRule = {
       ...rule,
       id: ruleId,
-      triggerCount: 0
+      triggerCount: 0,
     };
 
     this.alertRules.set(ruleId, fullRule);
@@ -222,7 +224,7 @@ export class ContextDashboard extends EventEmitter {
       ruleId,
       name: rule.name,
       condition: rule.condition,
-      threshold: rule.threshold
+      threshold: rule.threshold,
     });
 
     this.emit('alert_rule_added', { ruleId, rule: fullRule });
@@ -235,7 +237,7 @@ export class ContextDashboard extends EventEmitter {
    */
   removeAlertRule(ruleId: string): boolean {
     const removed = this.alertRules.delete(ruleId);
-    
+
     if (removed) {
       runtimeLogger.debug('Alert rule removed', { ruleId });
       this.emit('alert_rule_removed', { ruleId });
@@ -256,13 +258,17 @@ export class ContextDashboard extends EventEmitter {
    */
   async getContextFlowData(contextIds: string[]): Promise<any> {
     try {
-      const visualization = await this.observabilitySystem.visualizer.generateVisualization(
-        contextIds,
-        'flow'
-      );
+      const visualization =
+        await this.observabilitySystem.visualizer.generateVisualization(
+          contextIds,
+          'flow'
+        );
       return visualization;
     } catch (error) {
-      runtimeLogger.error('Failed to generate context flow data', { contextIds, error });
+      runtimeLogger.error('Failed to generate context flow data', {
+        contextIds,
+        error,
+      });
       return null;
     }
   }
@@ -270,11 +276,14 @@ export class ContextDashboard extends EventEmitter {
   /**
    * Get performance trends
    */
-  getPerformanceTrends(metric: string, timeRange: number = 3600000): Array<{ timestamp: Date; value: number }> {
+  getPerformanceTrends(
+    metric: string,
+    timeRange: number = 3600000
+  ): Array<{ timestamp: Date; value: number }> {
     const history = this.dataHistory.get(metric) || [];
     const cutoff = new Date(Date.now() - timeRange);
-    
-    return history.filter(point => point.timestamp > cutoff);
+
+    return history.filter((point) => point.timestamp > cutoff);
   }
 
   /**
@@ -285,17 +294,17 @@ export class ContextDashboard extends EventEmitter {
     widgets: Array<Omit<DashboardWidget, 'data' | 'lastUpdate'>>;
     alertRules: AlertRule[];
   } {
-    const widgets = Array.from(this.widgets.values()).map(widget => ({
+    const widgets = Array.from(this.widgets.values()).map((widget) => ({
       id: widget.id,
       type: widget.type,
       title: widget.title,
-      config: widget.config
+      config: widget.config,
     }));
 
     return {
       config: this.config,
       widgets,
-      alertRules: Array.from(this.alertRules.values())
+      alertRules: Array.from(this.alertRules.values()),
     };
   }
 
@@ -327,7 +336,7 @@ export class ContextDashboard extends EventEmitter {
 
     runtimeLogger.info('Dashboard configuration imported', {
       widgetCount: this.widgets.size,
-      alertRuleCount: this.alertRules.size
+      alertRuleCount: this.alertRules.size,
     });
 
     this.emit('configuration_imported', config);
@@ -346,8 +355,8 @@ export class ContextDashboard extends EventEmitter {
       config: {
         refreshInterval: 5000,
         autoUpdate: true,
-        chartType: 'gauge'
-      }
+        chartType: 'gauge',
+      },
     });
 
     // Context Metrics Chart
@@ -358,8 +367,8 @@ export class ContextDashboard extends EventEmitter {
       config: {
         refreshInterval: 10000,
         autoUpdate: true,
-        chartType: 'line'
-      }
+        chartType: 'line',
+      },
     });
 
     // Active Contexts Table
@@ -369,8 +378,8 @@ export class ContextDashboard extends EventEmitter {
       data: {},
       config: {
         refreshInterval: 5000,
-        autoUpdate: true
-      }
+        autoUpdate: true,
+      },
     });
 
     // Context Flow Visualization
@@ -380,8 +389,8 @@ export class ContextDashboard extends EventEmitter {
       data: {},
       config: {
         refreshInterval: 10000,
-        autoUpdate: true
-      }
+        autoUpdate: true,
+      },
     });
 
     // Performance Heatmap
@@ -391,8 +400,8 @@ export class ContextDashboard extends EventEmitter {
       data: {},
       config: {
         refreshInterval: 15000,
-        autoUpdate: true
-      }
+        autoUpdate: true,
+      },
     });
 
     // Alert Status
@@ -402,8 +411,8 @@ export class ContextDashboard extends EventEmitter {
       data: {},
       config: {
         refreshInterval: 5000,
-        autoUpdate: true
-      }
+        autoUpdate: true,
+      },
     });
   }
 
@@ -414,7 +423,7 @@ export class ContextDashboard extends EventEmitter {
       condition: 'avg_response_time > threshold',
       threshold: this.config.alertThresholds.response_time,
       severity: 'warning',
-      enabled: true
+      enabled: true,
     });
 
     // High error rate alert
@@ -423,7 +432,7 @@ export class ContextDashboard extends EventEmitter {
       condition: 'error_rate > threshold',
       threshold: this.config.alertThresholds.error_rate,
       severity: 'error',
-      enabled: true
+      enabled: true,
     });
 
     // High memory usage alert
@@ -432,7 +441,7 @@ export class ContextDashboard extends EventEmitter {
       condition: 'memory_usage > threshold',
       threshold: this.config.alertThresholds.memory_usage,
       severity: 'warning',
-      enabled: true
+      enabled: true,
     });
 
     // Low context quality alert
@@ -441,7 +450,7 @@ export class ContextDashboard extends EventEmitter {
       condition: 'context_quality < threshold',
       threshold: this.config.alertThresholds.context_quality,
       severity: 'warning',
-      enabled: true
+      enabled: true,
     });
   }
 
@@ -474,7 +483,7 @@ export class ContextDashboard extends EventEmitter {
   }
 
   private generateMetricData(
-    state: ContextObservabilityState, 
+    state: ContextObservabilityState,
     metrics: ContextMetrics
   ): any {
     return {
@@ -484,14 +493,17 @@ export class ContextDashboard extends EventEmitter {
       memoryUsage: (state.resources.memoryUsage * 100).toFixed(1) + '%',
       cpuUsage: (state.resources.cpuUsage * 100).toFixed(1) + '%',
       uptime: Math.floor(metrics.system.uptime / 1000) + 's',
-      lastUpdate: new Date().toISOString()
+      lastUpdate: new Date().toISOString(),
     };
   }
 
-  private generateChartData(widget: DashboardWidget, metrics: ContextMetrics): any {
+  private generateChartData(
+    widget: DashboardWidget,
+    metrics: ContextMetrics
+  ): any {
     const chartData = {
       labels: [],
-      datasets: []
+      datasets: [],
     };
 
     // Generate time series data for the last hour
@@ -510,7 +522,10 @@ export class ContextDashboard extends EventEmitter {
     if (metrics.context) {
       const contextData = timeLabels.map((_, index) => {
         // Simulate data points (in real implementation, use actual historical data)
-        return Object.keys(metrics.context.instances).length * (0.8 + Math.random() * 0.4);
+        return (
+          Object.keys(metrics.context.instances).length *
+          (0.8 + Math.random() * 0.4)
+        );
       });
 
       chartData.datasets.push({
@@ -518,7 +533,7 @@ export class ContextDashboard extends EventEmitter {
         data: contextData,
         borderColor: '#4CAF50',
         backgroundColor: 'rgba(76, 175, 80, 0.1)',
-        tension: 0.4
+        tension: 0.4,
       });
     }
 
@@ -526,23 +541,32 @@ export class ContextDashboard extends EventEmitter {
   }
 
   private generateTableData(
-    state: ContextObservabilityState, 
+    state: ContextObservabilityState,
     metrics: ContextMetrics
   ): any {
     const tableData = {
-      headers: ['Context ID', 'Type', 'Status', 'Lifetime', 'Quality', 'Actions'],
-      rows: []
+      headers: [
+        'Context ID',
+        'Type',
+        'Status',
+        'Lifetime',
+        'Quality',
+        'Actions',
+      ],
+      rows: [],
     };
 
     if (metrics.context?.instances) {
-      for (const [contextId, instance] of Object.entries(metrics.context.instances)) {
+      for (const [contextId, instance] of Object.entries(
+        metrics.context.instances
+      )) {
         tableData.rows.push([
           contextId.substring(0, 12) + '...',
           this.inferContextType(contextId),
           'Active', // Would come from actual status
           this.formatDuration(instance.lifetimeMs),
           (instance.qualityScore * 100).toFixed(0) + '%',
-          ['View', 'Debug', 'Stop']
+          ['View', 'Debug', 'Stop'],
         ]);
       }
     }
@@ -550,7 +574,9 @@ export class ContextDashboard extends EventEmitter {
     return tableData;
   }
 
-  private async generateFlowData(state: ContextObservabilityState): Promise<any> {
+  private async generateFlowData(
+    state: ContextObservabilityState
+  ): Promise<any> {
     if (state.tracedContexts.length === 0) {
       return { nodes: [], edges: [] };
     }
@@ -567,7 +593,7 @@ export class ContextDashboard extends EventEmitter {
   private generateHeatmapData(metrics: ContextMetrics): any {
     const heatmapData = {
       data: [],
-      maxValue: 1
+      maxValue: 1,
     };
 
     if (metrics.context?.instances) {
@@ -583,7 +609,7 @@ export class ContextDashboard extends EventEmitter {
           y: Math.floor(index / 10),
           value: quality,
           contextId,
-          label: contextId.substring(0, 8)
+          label: contextId.substring(0, 8),
         });
       });
 
@@ -595,26 +621,26 @@ export class ContextDashboard extends EventEmitter {
 
   private generateAlertData(): any {
     const activeAlerts = Array.from(this.alertRules.values())
-      .filter(rule => this.isAlertActive(rule))
-      .map(rule => ({
+      .filter((rule) => this.isAlertActive(rule))
+      .map((rule) => ({
         id: rule.id,
         name: rule.name,
         severity: rule.severity,
         condition: rule.condition,
         threshold: rule.threshold,
         lastTriggered: rule.lastTriggered,
-        triggerCount: rule.triggerCount
+        triggerCount: rule.triggerCount,
       }));
 
     return {
       alerts: activeAlerts,
       totalCount: activeAlerts.length,
       severityCounts: {
-        critical: activeAlerts.filter(a => a.severity === 'critical').length,
-        error: activeAlerts.filter(a => a.severity === 'error').length,
-        warning: activeAlerts.filter(a => a.severity === 'warning').length,
-        info: activeAlerts.filter(a => a.severity === 'info').length
-      }
+        critical: activeAlerts.filter((a) => a.severity === 'critical').length,
+        error: activeAlerts.filter((a) => a.severity === 'error').length,
+        warning: activeAlerts.filter((a) => a.severity === 'warning').length,
+        info: activeAlerts.filter((a) => a.severity === 'info').length,
+      },
     };
   }
 
@@ -630,18 +656,23 @@ export class ContextDashboard extends EventEmitter {
     }, this.config.refreshInterval);
 
     runtimeLogger.debug('Real-time updates started', {
-      interval: this.config.refreshInterval
+      interval: this.config.refreshInterval,
     });
   }
 
   private async updateAllWidgets(): Promise<void> {
-    const updatePromises = Array.from(this.widgets.keys()).map(async (widgetId) => {
-      try {
-        await this.updateWidget(widgetId);
-      } catch (error) {
-        runtimeLogger.error('Widget update failed during bulk update', { widgetId, error });
+    const updatePromises = Array.from(this.widgets.keys()).map(
+      async (widgetId) => {
+        try {
+          await this.updateWidget(widgetId);
+        } catch (error) {
+          runtimeLogger.error('Widget update failed during bulk update', {
+            widgetId,
+            error,
+          });
+        }
       }
-    });
+    );
 
     await Promise.all(updatePromises);
   }
@@ -654,7 +685,7 @@ export class ContextDashboard extends EventEmitter {
       if (!rule.enabled) continue;
 
       const shouldTrigger = this.evaluateAlertCondition(rule, metrics, state);
-      
+
       if (shouldTrigger) {
         rule.triggerCount++;
         rule.lastTriggered = new Date();
@@ -663,7 +694,7 @@ export class ContextDashboard extends EventEmitter {
           ruleId: rule.id,
           name: rule.name,
           severity: rule.severity,
-          triggerCount: rule.triggerCount
+          triggerCount: rule.triggerCount,
         });
 
         this.emit('alert_triggered', { rule, metrics, state });
@@ -673,7 +704,7 @@ export class ContextDashboard extends EventEmitter {
 
   private isAlertActive(rule: AlertRule): boolean {
     if (!rule.lastTriggered) return false;
-    
+
     // Consider alert active if triggered within the last 5 minutes
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
     return rule.lastTriggered > fiveMinutesAgo;
@@ -689,24 +720,24 @@ export class ContextDashboard extends EventEmitter {
       switch (rule.condition) {
         case 'avg_response_time > threshold':
           return this.calculateAverageResponseTime(metrics) > rule.threshold;
-        
+
         case 'error_rate > threshold':
           return this.calculateErrorRate(metrics) > rule.threshold;
-        
+
         case 'memory_usage > threshold':
           return state.resources.memoryUsage > rule.threshold;
-        
+
         case 'context_quality < threshold':
           return this.calculateAverageContextQuality(metrics) < rule.threshold;
-        
+
         default:
           return false;
       }
     } catch (error) {
-      runtimeLogger.error('Alert condition evaluation failed', { 
+      runtimeLogger.error('Alert condition evaluation failed', {
         ruleId: rule.id,
         condition: rule.condition,
-        error 
+        error,
       });
       return false;
     }
@@ -714,57 +745,78 @@ export class ContextDashboard extends EventEmitter {
 
   private calculateAverageResponseTime(metrics: ContextMetrics): number {
     if (!metrics.context?.instances) return 0;
-    
+
     const instances = Object.values(metrics.context.instances);
     if (instances.length === 0) return 0;
-    
-    const totalTime = instances.reduce((sum, instance) => sum + instance.lifetimeMs, 0);
-    const totalAccesses = instances.reduce((sum, instance) => sum + instance.accessCount, 0);
-    
+
+    const totalTime = instances.reduce(
+      (sum, instance) => sum + instance.lifetimeMs,
+      0
+    );
+    const totalAccesses = instances.reduce(
+      (sum, instance) => sum + instance.accessCount,
+      0
+    );
+
     return totalAccesses > 0 ? totalTime / totalAccesses : 0;
   }
 
   private calculateErrorRate(metrics: ContextMetrics): number {
     // Simplified error rate calculation
     if (!metrics.context?.transformations) return 0;
-    
+
     const transformations = Object.values(metrics.context.transformations);
     if (transformations.length === 0) return 0;
-    
-    const totalTransformations = transformations.reduce((sum, t) => sum + t.count, 0);
-    const totalErrors = transformations.reduce((sum, t) => sum + t.errorCount, 0);
-    
+
+    const totalTransformations = transformations.reduce(
+      (sum, t) => sum + t.count,
+      0
+    );
+    const totalErrors = transformations.reduce(
+      (sum, t) => sum + t.errorCount,
+      0
+    );
+
     return totalTransformations > 0 ? totalErrors / totalTransformations : 0;
   }
 
   private calculateAverageContextQuality(metrics: ContextMetrics): number {
     if (!metrics.context?.instances) return 1;
-    
+
     const instances = Object.values(metrics.context.instances);
     if (instances.length === 0) return 1;
-    
-    const totalQuality = instances.reduce((sum, instance) => sum + instance.qualityScore, 0);
+
+    const totalQuality = instances.reduce(
+      (sum, instance) => sum + instance.qualityScore,
+      0
+    );
     return totalQuality / instances.length;
   }
 
   private updateAnomalyBaselines(): void {
     // Update baseline values for anomaly detection
     const metrics = this.observabilitySystem.metrics.getAllMetrics();
-    
+
     // Add current values to baselines
-    this.addToBaseline('response_time', this.calculateAverageResponseTime(metrics));
+    this.addToBaseline(
+      'response_time',
+      this.calculateAverageResponseTime(metrics)
+    );
     this.addToBaseline('error_rate', this.calculateErrorRate(metrics));
-    this.addToBaseline('context_quality', this.calculateAverageContextQuality(metrics));
+    this.addToBaseline(
+      'context_quality',
+      this.calculateAverageContextQuality(metrics)
+    );
   }
 
   private addToBaseline(metric: string, value: number): void {
     if (!this.anomalyBaselines.has(metric)) {
       this.anomalyBaselines.set(metric, []);
     }
-    
+
     const baseline = this.anomalyBaselines.get(metric)!;
     baseline.push(value);
-    
+
     // Keep only last 100 values
     if (baseline.length > 100) {
       baseline.shift();
@@ -773,22 +825,25 @@ export class ContextDashboard extends EventEmitter {
 
   private detectAnomalies(): AnomalyDetection[] {
     const anomalies: AnomalyDetection[] = [];
-    
+
     for (const [metric, baseline] of this.anomalyBaselines.entries()) {
       if (baseline.length < 10) continue; // Need at least 10 data points
-      
+
       const currentValue = baseline[baseline.length - 1];
-      const average = baseline.reduce((sum, val) => sum + val, 0) / baseline.length;
+      const average =
+        baseline.reduce((sum, val) => sum + val, 0) / baseline.length;
       const stdDev = Math.sqrt(
-        baseline.reduce((sum, val) => sum + Math.pow(val - average, 2), 0) / baseline.length
+        baseline.reduce((sum, val) => sum + Math.pow(val - average, 2), 0) /
+          baseline.length
       );
-      
+
       const deviation = Math.abs(currentValue - average);
       const zScore = stdDev > 0 ? deviation / stdDev : 0;
-      
-      if (zScore > 2) { // More than 2 standard deviations
+
+      if (zScore > 2) {
+        // More than 2 standard deviations
         const severity = zScore > 3 ? 'high' : zScore > 2.5 ? 'medium' : 'low';
-        
+
         anomalies.push({
           metric,
           baseline: average,
@@ -797,11 +852,11 @@ export class ContextDashboard extends EventEmitter {
           severity,
           confidence: Math.min(0.95, zScore / 3),
           detected: new Date(),
-          description: `${metric} value ${currentValue.toFixed(2)} deviates significantly from baseline ${average.toFixed(2)}`
+          description: `${metric} value ${currentValue.toFixed(2)} deviates significantly from baseline ${average.toFixed(2)}`,
         });
       }
     }
-    
+
     return anomalies;
   }
 
@@ -845,12 +900,17 @@ export class ContextDashboard extends EventEmitter {
   getStatistics() {
     return {
       widgetCount: this.widgets.size,
-      activeAlerts: Array.from(this.alertRules.values()).filter(r => this.isAlertActive(r)).length,
+      activeAlerts: Array.from(this.alertRules.values()).filter((r) =>
+        this.isAlertActive(r)
+      ).length,
       totalAlertRules: this.alertRules.size,
-      dataPoints: Array.from(this.dataHistory.values()).reduce((sum, history) => sum + history.length, 0),
+      dataPoints: Array.from(this.dataHistory.values()).reduce(
+        (sum, history) => sum + history.length,
+        0
+      ),
       anomalyBaselines: this.anomalyBaselines.size,
       realTimeEnabled: this.config.enableRealTime,
-      config: this.config
+      config: this.config,
     };
   }
 }

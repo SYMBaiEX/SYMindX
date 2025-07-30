@@ -1,9 +1,9 @@
 /**
  * Context Validation Framework Types
- * 
+ *
  * Provides comprehensive validation types for the SYMindX context system,
  * ensuring context integrity and preventing downstream errors.
- * 
+ *
  * @version 1.0.0
  * @author SYMindX Core Team
  */
@@ -17,7 +17,7 @@ export enum ValidationSeverity {
   INFO = 'info',
   WARNING = 'warning',
   ERROR = 'error',
-  CRITICAL = 'critical'
+  CRITICAL = 'critical',
 }
 
 /**
@@ -30,7 +30,7 @@ export enum ValidationCategory {
   PERFORMANCE = 'performance',
   CONSISTENCY = 'consistency',
   FORMAT = 'format',
-  RELATIONSHIP = 'relationship'
+  RELATIONSHIP = 'relationship',
 }
 
 /**
@@ -81,7 +81,7 @@ export enum ValidationLevel {
   /** Comprehensive validation - all validations including info */
   COMPREHENSIVE = 'comprehensive',
   /** Custom validation level with specific rules */
-  CUSTOM = 'custom'
+  CUSTOM = 'custom',
 }
 
 /**
@@ -208,12 +208,15 @@ export interface ValidationReport {
     fastestValidation?: ValidationResult;
   };
   /** Summary by category */
-  categorySummary: Record<ValidationCategory, {
-    total: number;
-    passed: number;
-    failed: number;
-    warnings: number;
-  }>;
+  categorySummary: Record<
+    ValidationCategory,
+    {
+      total: number;
+      passed: number;
+      failed: number;
+      warnings: number;
+    }
+  >;
   /** Timestamp of the validation report */
   timestamp: Date;
 }
@@ -351,7 +354,7 @@ export enum ValidationEventType {
   VALIDATION_COMPLETED = 'validation_completed',
   VALIDATION_FAILED = 'validation_failed',
   RULE_EXECUTED = 'rule_executed',
-  PERFORMANCE_WARNING = 'performance_warning'
+  PERFORMANCE_WARNING = 'performance_warning',
 }
 
 /**

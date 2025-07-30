@@ -1,6 +1,6 @@
 /**
  * Emotional Context Enricher for SYMindX
- * 
+ *
  * This enricher adds emotional state information, emotional history,
  * and contextual emotional insights to help agents make emotionally
  * aware decisions and responses.
@@ -31,7 +31,7 @@ export interface EmotionalEnricherConfig {
 
 /**
  * Emotional Context Enricher
- * 
+ *
  * Enriches context with current emotional state, emotional history,
  * and emotional insights to enable emotionally aware agent behavior.
  */
@@ -43,24 +43,19 @@ export class EmotionalContextEnricher extends BaseContextEnricher {
     emotionProvider: () => EmotionModule | null,
     config: Partial<EmotionalEnricherConfig> = {}
   ) {
-    super(
-      'emotional-context-enricher',
-      'Emotional Context Enricher',
-      '1.0.0',
-      {
-        enabled: true,
-        priority: EnrichmentPriority.HIGH,
-        stage: EnrichmentStage.CORE_ENRICHMENT,
-        timeout: 1500,
-        maxRetries: 2,
-        cacheEnabled: true,
-        cacheTtl: 30, // Short cache time for emotional data
-        dependsOn: [],
-      }
-    );
+    super('emotional-context-enricher', 'Emotional Context Enricher', '1.0.0', {
+      enabled: true,
+      priority: EnrichmentPriority.HIGH,
+      stage: EnrichmentStage.CORE_ENRICHMENT,
+      timeout: 1500,
+      maxRetries: 2,
+      cacheEnabled: true,
+      cacheTtl: 30, // Short cache time for emotional data
+      dependsOn: [],
+    });
 
     this.emotionProvider = emotionProvider;
-    
+
     // Default emotional enricher configuration
     this.enricherConfig = {
       includeEmotionalHistory: true,
@@ -101,7 +96,7 @@ export class EmotionalContextEnricher extends BaseContextEnricher {
     try {
       // Test emotion provider
       const emotionModule = this.emotionProvider();
-      
+
       this.log('info', 'Emotional context enricher initialized', {
         emotionModuleAvailable: emotionModule !== null,
         configuration: this.enricherConfig,
@@ -112,7 +107,8 @@ export class EmotionalContextEnricher extends BaseContextEnricher {
         message: 'Emotional context enricher initialized successfully',
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       return {
         success: false,
         error: errorMessage,
@@ -123,27 +119,32 @@ export class EmotionalContextEnricher extends BaseContextEnricher {
   /**
    * Perform emotion-based context enrichment
    */
-  protected async doEnrich(request: EnrichmentRequest): Promise<Record<string, unknown>> {
+  protected async doEnrich(
+    request: EnrichmentRequest
+  ): Promise<Record<string, unknown>> {
     const emotionModule = this.emotionProvider();
-    
+
     if (!emotionModule) {
       this.log('warn', 'Emotion module not available for enrichment', {
         agentId: request.agentId,
       });
-      
+
       return {
         emotionalContext: this.createEmptyEmotionalData(),
         currentEmotion: null,
         emotionalHistory: [],
         emotionalTrends: {},
         contextualEmotions: {},
-        emotionalInsights: { available: false, reason: 'Emotion module not available' },
+        emotionalInsights: {
+          available: false,
+          reason: 'Emotion module not available',
+        },
       };
     }
 
     // Get current emotional state
     const currentEmotion = emotionModule.getCurrentState();
-    
+
     // Get emotional history if enabled
     const emotionalHistory = this.enricherConfig.includeEmotionalHistory
       ? this.getEmotionalHistory(emotionModule)
@@ -156,7 +157,11 @@ export class EmotionalContextEnricher extends BaseContextEnricher {
 
     // Generate contextual emotions if enabled
     const contextualEmotions = this.enricherConfig.includeContextualEmotions
-      ? this.generateContextualEmotions(request.context, currentEmotion, emotionalHistory)
+      ? this.generateContextualEmotions(
+          request.context,
+          currentEmotion,
+          emotionalHistory
+        )
       : {};
 
     // Create comprehensive emotional enrichment data
@@ -197,7 +202,7 @@ export class EmotionalContextEnricher extends BaseContextEnricher {
   protected async doHealthCheck(): Promise<OperationResult> {
     try {
       const emotionModule = this.emotionProvider();
-      
+
       if (!emotionModule) {
         return {
           success: false,
@@ -207,11 +212,12 @@ export class EmotionalContextEnricher extends BaseContextEnricher {
 
       // Test emotion module functionality
       const currentState = emotionModule.getCurrentState();
-      const hasValidState = currentState && typeof currentState.emotion === 'string';
+      const hasValidState =
+        currentState && typeof currentState.emotion === 'string';
 
       return {
         success: hasValidState,
-        message: hasValidState 
+        message: hasValidState
           ? 'Emotional context enricher is healthy'
           : 'Emotion module state is invalid',
         metadata: {
@@ -222,7 +228,8 @@ export class EmotionalContextEnricher extends BaseContextEnricher {
         },
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       return {
         success: false,
         error: errorMessage,
@@ -241,7 +248,8 @@ export class EmotionalContextEnricher extends BaseContextEnricher {
         message: 'Emotional context enricher disposed successfully',
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       return {
         success: false,
         error: errorMessage,
@@ -283,9 +291,11 @@ export class EmotionalContextEnricher extends BaseContextEnricher {
     trigger?: string;
   }> {
     try {
-      const history = emotionModule.getHistory(this.enricherConfig.historyDepth);
-      
-      return history.map(record => ({
+      const history = emotionModule.getHistory(
+        this.enricherConfig.historyDepth
+      );
+
+      return history.map((record) => ({
         emotion: record.emotion,
         intensity: record.intensity,
         timestamp: record.timestamp,
@@ -303,7 +313,12 @@ export class EmotionalContextEnricher extends BaseContextEnricher {
    * Calculate emotional trends from history and current state
    */
   private calculateEmotionalTrends(
-    history: Array<{ emotion: string; intensity: number; timestamp: Date; trigger?: string }>,
+    history: Array<{
+      emotion: string;
+      intensity: number;
+      timestamp: Date;
+      trigger?: string;
+    }>,
     currentEmotion: EmotionState
   ): EmotionalEnrichmentData['emotionalTrends'] {
     if (history.length === 0) {
@@ -317,9 +332,12 @@ export class EmotionalContextEnricher extends BaseContextEnricher {
     // Count emotion occurrences
     const emotionCounts = new Map<string, number>();
     let totalIntensity = 0;
-    
+
     for (const entry of history) {
-      emotionCounts.set(entry.emotion, (emotionCounts.get(entry.emotion) || 0) + 1);
+      emotionCounts.set(
+        entry.emotion,
+        (emotionCounts.get(entry.emotion) || 0) + 1
+      );
       totalIntensity += entry.intensity;
     }
 
@@ -344,10 +362,14 @@ export class EmotionalContextEnricher extends BaseContextEnricher {
 
     // Calculate average intensity
     const totalEntries = history.length + (currentEmotion ? 1 : 0);
-    const averageIntensity = totalEntries > 0 ? totalIntensity / totalEntries : 0;
+    const averageIntensity =
+      totalEntries > 0 ? totalIntensity / totalEntries : 0;
 
     // Calculate emotional volatility (how much emotions change)
-    const volatility = this.calculateEmotionalVolatility(history, currentEmotion);
+    const volatility = this.calculateEmotionalVolatility(
+      history,
+      currentEmotion
+    );
 
     return {
       dominantEmotion,
@@ -369,9 +391,13 @@ export class EmotionalContextEnricher extends BaseContextEnricher {
 
     // Filter to recent entries within volatility window
     const now = new Date();
-    const windowStart = new Date(now.getTime() - this.enricherConfig.volatilityWindowMs);
-    
-    const recentHistory = history.filter(entry => entry.timestamp >= windowStart);
+    const windowStart = new Date(
+      now.getTime() - this.enricherConfig.volatilityWindowMs
+    );
+
+    const recentHistory = history.filter(
+      (entry) => entry.timestamp >= windowStart
+    );
     if (currentEmotion) {
       recentHistory.push({
         emotion: currentEmotion.emotion,
@@ -389,19 +415,19 @@ export class EmotionalContextEnricher extends BaseContextEnricher {
     for (let i = 1; i < recentHistory.length; i++) {
       const prev = recentHistory[i - 1];
       const curr = recentHistory[i];
-      
+
       // Calculate change in intensity
       const intensityChange = Math.abs(curr.intensity - prev.intensity);
-      
+
       // Add emotion change factor (different emotions = higher volatility)
       const emotionChange = prev.emotion !== curr.emotion ? 0.5 : 0;
-      
+
       volatilitySum += intensityChange + emotionChange;
     }
 
     // Normalize by number of changes
     const averageVolatility = volatilitySum / (recentHistory.length - 1);
-    
+
     // Cap at 1.0
     return Math.min(1.0, averageVolatility);
   }
@@ -412,7 +438,12 @@ export class EmotionalContextEnricher extends BaseContextEnricher {
   private generateContextualEmotions(
     context: Context,
     currentEmotion: EmotionState | null,
-    history: Array<{ emotion: string; intensity: number; timestamp: Date; trigger?: string }>
+    history: Array<{
+      emotion: string;
+      intensity: number;
+      timestamp: Date;
+      trigger?: string;
+    }>
   ): Record<string, number> {
     const contextualEmotions: Record<string, number> = {};
 
@@ -439,7 +470,7 @@ export class EmotionalContextEnricher extends BaseContextEnricher {
       // Boost based on recent emotional history
       const recentEmotionCount = history
         .slice(-5) // Last 5 entries
-        .filter(entry => entry.emotion === emotion).length;
+        .filter((entry) => entry.emotion === emotion).length;
       relevanceScore += (recentEmotionCount / 5) * 0.2;
 
       // Only include emotions above threshold
@@ -471,7 +502,7 @@ export class EmotionalContextEnricher extends BaseContextEnricher {
     }
 
     if (context.keywords && Array.isArray(context.keywords)) {
-      textParts.push(...context.keywords.filter(k => typeof k === 'string'));
+      textParts.push(...context.keywords.filter((k) => typeof k === 'string'));
     }
 
     return textParts.join(' ');
@@ -482,16 +513,111 @@ export class EmotionalContextEnricher extends BaseContextEnricher {
    */
   private getEmotionalKeywords(): Map<string, string[]> {
     return new Map([
-      ['happy', ['joy', 'celebrate', 'success', 'achievement', 'positive', 'good', 'excellent', 'wonderful']],
-      ['sad', ['loss', 'grief', 'disappointment', 'failure', 'negative', 'bad', 'terrible', 'awful']],
-      ['angry', ['frustration', 'annoyance', 'rage', 'mad', 'furious', 'irritated', 'upset']],
-      ['anxious', ['worry', 'fear', 'concern', 'nervous', 'stress', 'tension', 'uncertainty']],
-      ['confident', ['sure', 'certain', 'assured', 'strong', 'capable', 'skilled', 'expert']],
-      ['curious', ['wonder', 'question', 'explore', 'discover', 'learn', 'investigate', 'research']],
-      ['empathetic', ['understand', 'feel', 'compassion', 'sympathy', 'care', 'support', 'help']],
-      ['proud', ['accomplished', 'achieved', 'successful', 'recognition', 'honor', 'praise']],
-      ['confused', ['unclear', 'puzzled', 'uncertain', 'lost', 'complicated', 'complex']],
-      ['nostalgic', ['remember', 'past', 'memory', 'history', 'before', 'used to', 'miss']],
+      [
+        'happy',
+        [
+          'joy',
+          'celebrate',
+          'success',
+          'achievement',
+          'positive',
+          'good',
+          'excellent',
+          'wonderful',
+        ],
+      ],
+      [
+        'sad',
+        [
+          'loss',
+          'grief',
+          'disappointment',
+          'failure',
+          'negative',
+          'bad',
+          'terrible',
+          'awful',
+        ],
+      ],
+      [
+        'angry',
+        [
+          'frustration',
+          'annoyance',
+          'rage',
+          'mad',
+          'furious',
+          'irritated',
+          'upset',
+        ],
+      ],
+      [
+        'anxious',
+        [
+          'worry',
+          'fear',
+          'concern',
+          'nervous',
+          'stress',
+          'tension',
+          'uncertainty',
+        ],
+      ],
+      [
+        'confident',
+        [
+          'sure',
+          'certain',
+          'assured',
+          'strong',
+          'capable',
+          'skilled',
+          'expert',
+        ],
+      ],
+      [
+        'curious',
+        [
+          'wonder',
+          'question',
+          'explore',
+          'discover',
+          'learn',
+          'investigate',
+          'research',
+        ],
+      ],
+      [
+        'empathetic',
+        [
+          'understand',
+          'feel',
+          'compassion',
+          'sympathy',
+          'care',
+          'support',
+          'help',
+        ],
+      ],
+      [
+        'proud',
+        [
+          'accomplished',
+          'achieved',
+          'successful',
+          'recognition',
+          'honor',
+          'praise',
+        ],
+      ],
+      [
+        'confused',
+        ['unclear', 'puzzled', 'uncertain', 'lost', 'complicated', 'complex'],
+      ],
+      [
+        'nostalgic',
+        ['remember', 'past', 'memory', 'history', 'before', 'used to', 'miss'],
+      ],
     ]);
   }
 
@@ -522,20 +648,29 @@ export class EmotionalContextEnricher extends BaseContextEnricher {
         mostFrequent: emotionalData.emotionalTrends.dominantEmotion,
         averageIntensity: emotionalData.emotionalTrends.averageIntensity,
         isVolatile: emotionalData.emotionalTrends.volatility > 0.5,
-        recentChanges: this.analyzeRecentEmotionalChanges(emotionalData.emotionalHistory),
+        recentChanges: this.analyzeRecentEmotionalChanges(
+          emotionalData.emotionalHistory
+        ),
       };
     }
 
     // Contextual relevance
-    const contextualEmotionCount = Object.keys(emotionalData.contextualEmotions).length;
+    const contextualEmotionCount = Object.keys(
+      emotionalData.contextualEmotions
+    ).length;
     insights.contextualRelevance = {
       hasRelevantEmotions: contextualEmotionCount > 0,
       emotionCount: contextualEmotionCount,
-      topContextualEmotion: this.getTopContextualEmotion(emotionalData.contextualEmotions),
+      topContextualEmotion: this.getTopContextualEmotion(
+        emotionalData.contextualEmotions
+      ),
     };
 
     // Recommendations
-    insights.recommendations = this.generateEmotionalRecommendations(emotionalData, context);
+    insights.recommendations = this.generateEmotionalRecommendations(
+      emotionalData,
+      context
+    );
 
     return insights;
   }
@@ -544,10 +679,15 @@ export class EmotionalContextEnricher extends BaseContextEnricher {
    * Analyze recent emotional changes
    */
   private analyzeRecentEmotionalChanges(
-    history: Array<{ emotion: string; intensity: number; timestamp: Date; trigger?: string }>
+    history: Array<{
+      emotion: string;
+      intensity: number;
+      timestamp: Date;
+      trigger?: string;
+    }>
   ): Record<string, unknown> {
     const recent = history.slice(-3); // Last 3 entries
-    
+
     if (recent.length < 2) {
       return { hasChanges: false };
     }
@@ -556,7 +696,7 @@ export class EmotionalContextEnricher extends BaseContextEnricher {
     for (let i = 1; i < recent.length; i++) {
       const prev = recent[i - 1];
       const curr = recent[i];
-      
+
       changes.push({
         from: prev.emotion,
         to: curr.emotion,
@@ -577,33 +717,45 @@ export class EmotionalContextEnricher extends BaseContextEnricher {
   /**
    * Detect emotional trend from recent changes
    */
-  private detectEmotionalTrend(changes: Array<{
-    intensityChange: number;
-    emotionChanged: boolean;
-  }>): string {
+  private detectEmotionalTrend(
+    changes: Array<{
+      intensityChange: number;
+      emotionChanged: boolean;
+    }>
+  ): string {
     if (changes.length === 0) return 'stable';
 
-    const intensitySum = changes.reduce((sum, change) => sum + change.intensityChange, 0);
-    const changeCount = changes.filter(change => change.emotionChanged).length;
+    const intensitySum = changes.reduce(
+      (sum, change) => sum + change.intensityChange,
+      0
+    );
+    const changeCount = changes.filter(
+      (change) => change.emotionChanged
+    ).length;
 
     if (intensitySum > 0.3) return 'intensifying';
     if (intensitySum < -0.3) return 'calming';
     if (changeCount >= changes.length * 0.6) return 'fluctuating';
-    
+
     return 'stable';
   }
 
   /**
    * Get the top contextual emotion
    */
-  private getTopContextualEmotion(contextualEmotions: Record<string, number>): string | null {
+  private getTopContextualEmotion(
+    contextualEmotions: Record<string, number>
+  ): string | null {
     const entries = Object.entries(contextualEmotions);
     if (entries.length === 0) return null;
 
-    return entries.reduce((top, [emotion, score]) => 
-      score > top.score ? { emotion, score } : top,
-      { emotion: '', score: -1 }
-    ).emotion || null;
+    return (
+      entries.reduce(
+        (top, [emotion, score]) =>
+          score > top.score ? { emotion, score } : top,
+        { emotion: '', score: -1 }
+      ).emotion || null
+    );
   }
 
   /**
@@ -612,21 +764,28 @@ export class EmotionalContextEnricher extends BaseContextEnricher {
   private generateEmotionalRecommendations(
     emotionalData: EmotionalEnrichmentData,
     context: Context
-  ): Array<{ type: string; message: string; priority: 'low' | 'medium' | 'high' }> {
+  ): Array<{
+    type: string;
+    message: string;
+    priority: 'low' | 'medium' | 'high';
+  }> {
     const recommendations = [];
 
     // High volatility recommendation
     if (emotionalData.emotionalTrends.volatility > 0.7) {
       recommendations.push({
         type: 'stability',
-        message: 'Consider emotional regulation techniques due to high volatility',
+        message:
+          'Consider emotional regulation techniques due to high volatility',
         priority: 'high' as const,
       });
     }
 
     // Low intensity but negative emotion
-    if (emotionalData.currentEmotion?.emotion === 'sad' && 
-        emotionalData.currentEmotion.intensity < 0.3) {
+    if (
+      emotionalData.currentEmotion?.emotion === 'sad' &&
+      emotionalData.currentEmotion.intensity < 0.3
+    ) {
       recommendations.push({
         type: 'support',
         message: 'Provide empathetic response to address underlying concerns',
@@ -635,8 +794,12 @@ export class EmotionalContextEnricher extends BaseContextEnricher {
     }
 
     // High positive emotion - capitalize on it
-    if (emotionalData.currentEmotion?.intensity > 0.7 &&
-        ['happy', 'confident', 'proud'].includes(emotionalData.currentEmotion.emotion)) {
+    if (
+      emotionalData.currentEmotion?.intensity > 0.7 &&
+      ['happy', 'confident', 'proud'].includes(
+        emotionalData.currentEmotion.emotion
+      )
+    ) {
       recommendations.push({
         type: 'engagement',
         message: 'Leverage positive emotional state for enhanced interaction',
@@ -657,7 +820,7 @@ export class EmotionalContextEnricher extends BaseContextEnricher {
     trigger?: string;
   }): EmotionalEnrichmentData['emotionalHistory'][0] {
     return {
-      emotion: entry.emotion,            
+      emotion: entry.emotion,
       intensity: entry.intensity,
       timestamp: entry.timestamp,
       trigger: entry.trigger,
@@ -667,9 +830,13 @@ export class EmotionalContextEnricher extends BaseContextEnricher {
   /**
    * Calculate confidence score for emotional enrichment
    */
-  protected calculateConfidence(context: Context, enrichedData: Record<string, unknown>): number {
-    const emotionalData = enrichedData.emotionalContext as EmotionalEnrichmentData;
-    
+  protected calculateConfidence(
+    context: Context,
+    enrichedData: Record<string, unknown>
+  ): number {
+    const emotionalData =
+      enrichedData.emotionalContext as EmotionalEnrichmentData;
+
     if (!emotionalData || !emotionalData.currentEmotion) {
       return 0.1;
     }
@@ -686,7 +853,9 @@ export class EmotionalContextEnricher extends BaseContextEnricher {
     confidenceScore += Math.min(0.2, historyLength * 0.02);
 
     // Higher confidence with contextual emotions
-    const contextualEmotionCount = Object.keys(emotionalData.contextualEmotions).length;
+    const contextualEmotionCount = Object.keys(
+      emotionalData.contextualEmotions
+    ).length;
     confidenceScore += Math.min(0.2, contextualEmotionCount * 0.05);
 
     return Math.min(0.95, Math.max(0.1, confidenceScore));

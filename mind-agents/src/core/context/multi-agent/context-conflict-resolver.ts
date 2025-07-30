@@ -1,6 +1,6 @@
 /**
  * Context Conflict Resolver for Multi-Agent Systems
- * 
+ *
  * Handles detection, analysis, and resolution of context conflicts
  * between multiple agents using various resolution strategies.
  */
@@ -11,7 +11,7 @@ import {
   ConflictResolutionStrategy,
   AgentContext,
   ContextConsensusState,
-  ContextVote
+  ContextVote,
 } from '../../../types/context/multi-agent-context';
 import { AgentId, OperationResult } from '../../../types/helpers';
 import { runtimeLogger } from '../../../utils/logger';
@@ -37,7 +37,10 @@ export interface ConflictResolutionResult {
  */
 export class ContextConflictResolver extends EventEmitter {
   private pendingConflicts: Map<string, ContextConflict> = new Map();
-  private resolutionStrategies: Map<ConflictResolutionStrategy, (conflict: ContextConflict) => Promise<unknown>> = new Map();
+  private resolutionStrategies: Map<
+    ConflictResolutionStrategy,
+    (conflict: ContextConflict) => Promise<unknown>
+  > = new Map();
   private consensusStates: Map<string, ContextConsensusState> = new Map();
   private manualResolutionQueue: ContextConflict[] = [];
 
@@ -60,7 +63,7 @@ export class ContextConflictResolver extends EventEmitter {
 
       runtimeLogger.debug('Starting conflict resolution', {
         conflictCount: conflicts.length,
-        defaultStrategy
+        defaultStrategy,
       });
 
       for (const conflict of conflicts) {
@@ -82,27 +85,27 @@ export class ContextConflictResolver extends EventEmitter {
           this.emit('conflictResolved', {
             conflictId: conflict.conflictId,
             strategy,
-            resolvedValue: result.resolvedValue
+            resolvedValue: result.resolvedValue,
           });
         } else {
           this.pendingConflicts.set(conflict.conflictId, conflict);
-          
+
           this.emit('conflictUnresolved', {
             conflictId: conflict.conflictId,
             strategy,
-            reason: 'Resolution failed or requires manual intervention'
+            reason: 'Resolution failed or requires manual intervention',
           });
         }
       }
 
       const resolutionTime = Date.now() - startTime;
-      const resolvedCount = results.filter(r => r.resolved).length;
+      const resolvedCount = results.filter((r) => r.resolved).length;
 
       runtimeLogger.debug('Conflict resolution completed', {
         totalConflicts: conflicts.length,
         resolvedCount,
         resolutionTime,
-        pendingCount: this.pendingConflicts.size
+        pendingCount: this.pendingConflicts.size,
       });
 
       return {
@@ -111,18 +114,17 @@ export class ContextConflictResolver extends EventEmitter {
           resolvedConflicts: resolvedCount,
           totalConflicts: conflicts.length,
           resolutionTime,
-          results
+          results,
         },
         metadata: {
           operation: 'resolveConflicts',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
-
     } catch (error) {
       runtimeLogger.error('Conflict resolution failed', error as Error, {
         conflictCount: conflicts.length,
-        defaultStrategy
+        defaultStrategy,
       });
 
       return {
@@ -130,8 +132,8 @@ export class ContextConflictResolver extends EventEmitter {
         error: `Conflict resolution failed: ${(error as Error).message}`,
         metadata: {
           operation: 'resolveConflicts',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
     }
   }
@@ -158,7 +160,7 @@ export class ContextConflictResolver extends EventEmitter {
         conflictId: conflict.conflictId,
         strategy,
         fieldPath: conflict.fieldPath,
-        resolutionTime
+        resolutionTime,
       });
 
       return {
@@ -167,17 +169,16 @@ export class ContextConflictResolver extends EventEmitter {
         strategy,
         resolvedValue,
         metadata: {
-          resolutionTime
-        }
+          resolutionTime,
+        },
       };
-
     } catch (error) {
       const resolutionTime = Date.now() - startTime;
 
       runtimeLogger.error('Failed to resolve conflict', error as Error, {
         conflictId: conflict.conflictId,
         strategy,
-        fieldPath: conflict.fieldPath
+        fieldPath: conflict.fieldPath,
       });
 
       return {
@@ -187,8 +188,8 @@ export class ContextConflictResolver extends EventEmitter {
         resolvedValue: undefined,
         metadata: {
           resolutionTime,
-          error: (error as Error).message
-        }
+          error: (error as Error).message,
+        },
       };
     }
   }
@@ -212,7 +213,7 @@ export class ContextConflictResolver extends EventEmitter {
         votes: {},
         requiredVotes: Math.ceil(participatingAgents.length / 2), // Majority
         status: 'pending',
-        expiresAt
+        expiresAt,
       };
 
       this.consensusStates.set(consensusId, consensusState);
@@ -226,14 +227,14 @@ export class ContextConflictResolver extends EventEmitter {
         conflictId: conflict.conflictId,
         consensusId,
         participatingAgents,
-        expiresAt
+        expiresAt,
       });
 
       runtimeLogger.debug('Consensus resolution started', {
         conflictId: conflict.conflictId,
         consensusId,
         participatingAgents: participatingAgents.length,
-        timeoutMs
+        timeoutMs,
       });
 
       return {
@@ -241,22 +242,21 @@ export class ContextConflictResolver extends EventEmitter {
         data: {
           consensusId,
           expiresAt,
-          requiredVotes: consensusState.requiredVotes
+          requiredVotes: consensusState.requiredVotes,
         },
         metadata: {
           operation: 'startConsensusResolution',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
-
     } catch (error) {
       return {
         success: false,
         error: `Failed to start consensus: ${(error as Error).message}`,
         metadata: {
           operation: 'startConsensusResolution',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
     }
   }
@@ -276,7 +276,7 @@ export class ContextConflictResolver extends EventEmitter {
         return {
           success: false,
           error: 'Consensus proposal not found',
-          metadata: { operation: 'submitConsensusVote' }
+          metadata: { operation: 'submitConsensusVote' },
         };
       }
 
@@ -284,7 +284,7 @@ export class ContextConflictResolver extends EventEmitter {
         return {
           success: false,
           error: `Consensus already ${consensusState.status}`,
-          metadata: { operation: 'submitConsensusVote' }
+          metadata: { operation: 'submitConsensusVote' },
         };
       }
 
@@ -293,7 +293,7 @@ export class ContextConflictResolver extends EventEmitter {
         return {
           success: false,
           error: 'Consensus proposal has expired',
-          metadata: { operation: 'submitConsensusVote' }
+          metadata: { operation: 'submitConsensusVote' },
         };
       }
 
@@ -302,16 +302,18 @@ export class ContextConflictResolver extends EventEmitter {
         agentId,
         vote,
         timestamp: new Date().toISOString(),
-        reason
+        reason,
       };
 
       consensusState.votes[agentId] = contextVote;
 
       // Check if consensus is reached
-      const approveVotes = Object.values(consensusState.votes)
-        .filter(v => v.vote === 'approve').length;
-      const rejectVotes = Object.values(consensusState.votes)
-        .filter(v => v.vote === 'reject').length;
+      const approveVotes = Object.values(consensusState.votes).filter(
+        (v) => v.vote === 'approve'
+      ).length;
+      const rejectVotes = Object.values(consensusState.votes).filter(
+        (v) => v.vote === 'reject'
+      ).length;
 
       let consensusReached = false;
 
@@ -322,7 +324,7 @@ export class ContextConflictResolver extends EventEmitter {
           consensusId,
           result: 'accepted',
           approveVotes,
-          totalVotes: Object.keys(consensusState.votes).length
+          totalVotes: Object.keys(consensusState.votes).length,
         });
       } else if (rejectVotes >= consensusState.requiredVotes) {
         consensusState.status = 'rejected';
@@ -331,7 +333,7 @@ export class ContextConflictResolver extends EventEmitter {
           consensusId,
           result: 'rejected',
           rejectVotes,
-          totalVotes: Object.keys(consensusState.votes).length
+          totalVotes: Object.keys(consensusState.votes).length,
         });
       }
 
@@ -341,7 +343,7 @@ export class ContextConflictResolver extends EventEmitter {
         vote,
         approveVotes,
         rejectVotes,
-        consensusReached
+        consensusReached,
       });
 
       return {
@@ -351,22 +353,21 @@ export class ContextConflictResolver extends EventEmitter {
           currentStatus: consensusState.status,
           approveVotes,
           rejectVotes,
-          totalVotes: Object.keys(consensusState.votes).length
+          totalVotes: Object.keys(consensusState.votes).length,
         },
         metadata: {
           operation: 'submitConsensusVote',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
-
     } catch (error) {
       return {
         success: false,
         error: `Failed to submit vote: ${(error as Error).message}`,
         metadata: {
           operation: 'submitConsensusVote',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
     }
   }
@@ -374,43 +375,51 @@ export class ContextConflictResolver extends EventEmitter {
   /**
    * Queue conflict for manual resolution
    */
-  async queueForManualResolution(conflict: ContextConflict): Promise<OperationResult> {
+  async queueForManualResolution(
+    conflict: ContextConflict
+  ): Promise<OperationResult> {
     try {
-      if (!this.manualResolutionQueue.find(c => c.conflictId === conflict.conflictId)) {
+      if (
+        !this.manualResolutionQueue.find(
+          (c) => c.conflictId === conflict.conflictId
+        )
+      ) {
         this.manualResolutionQueue.push(conflict);
-        
+
         this.emit('manualResolutionQueued', {
           conflictId: conflict.conflictId,
           fieldPath: conflict.fieldPath,
-          queuePosition: this.manualResolutionQueue.length
+          queuePosition: this.manualResolutionQueue.length,
         });
 
         runtimeLogger.debug('Conflict queued for manual resolution', {
           conflictId: conflict.conflictId,
-          queuePosition: this.manualResolutionQueue.length
+          queuePosition: this.manualResolutionQueue.length,
         });
       }
 
       return {
         success: true,
         data: {
-          queuePosition: this.manualResolutionQueue.findIndex(c => c.conflictId === conflict.conflictId) + 1,
-          totalQueued: this.manualResolutionQueue.length
+          queuePosition:
+            this.manualResolutionQueue.findIndex(
+              (c) => c.conflictId === conflict.conflictId
+            ) + 1,
+          totalQueued: this.manualResolutionQueue.length,
         },
         metadata: {
           operation: 'queueForManualResolution',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
-
     } catch (error) {
       return {
         success: false,
         error: `Failed to queue for manual resolution: ${(error as Error).message}`,
         metadata: {
           operation: 'queueForManualResolution',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
     }
   }
@@ -428,17 +437,22 @@ export class ContextConflictResolver extends EventEmitter {
       const conflict = this.pendingConflicts.get(conflictId);
       if (!conflict) {
         // Check manual resolution queue
-        const queueIndex = this.manualResolutionQueue.findIndex(c => c.conflictId === conflictId);
+        const queueIndex = this.manualResolutionQueue.findIndex(
+          (c) => c.conflictId === conflictId
+        );
         if (queueIndex === -1) {
           return {
             success: false,
             error: 'Conflict not found',
-            metadata: { operation: 'manuallyResolveConflict' }
+            metadata: { operation: 'manuallyResolveConflict' },
           };
         }
 
         // Remove from queue and resolve
-        const queuedConflict = this.manualResolutionQueue.splice(queueIndex, 1)[0];
+        const queuedConflict = this.manualResolutionQueue.splice(
+          queueIndex,
+          1
+        )[0];
         queuedConflict.resolved = true;
         queuedConflict.resolvedAt = new Date().toISOString();
         queuedConflict.resolvedValue = resolvedValue;
@@ -448,7 +462,7 @@ export class ContextConflictResolver extends EventEmitter {
         this.emit('conflictResolvedManually', {
           conflictId,
           resolvedBy,
-          resolvedValue
+          resolvedValue,
         });
 
         return {
@@ -456,12 +470,12 @@ export class ContextConflictResolver extends EventEmitter {
           data: {
             conflictId,
             resolvedValue,
-            resolvedBy
+            resolvedBy,
           },
           metadata: {
             operation: 'manuallyResolveConflict',
-            timestamp: new Date().toISOString()
-          }
+            timestamp: new Date().toISOString(),
+          },
         };
       }
 
@@ -477,13 +491,13 @@ export class ContextConflictResolver extends EventEmitter {
       this.emit('conflictResolvedManually', {
         conflictId,
         resolvedBy,
-        resolvedValue
+        resolvedValue,
       });
 
       runtimeLogger.debug('Conflict manually resolved', {
         conflictId,
         resolvedBy,
-        fieldPath: conflict.fieldPath
+        fieldPath: conflict.fieldPath,
       });
 
       return {
@@ -491,22 +505,21 @@ export class ContextConflictResolver extends EventEmitter {
         data: {
           conflictId,
           resolvedValue,
-          resolvedBy
+          resolvedBy,
         },
         metadata: {
           operation: 'manuallyResolveConflict',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
-
     } catch (error) {
       return {
         success: false,
         error: `Manual resolution failed: ${(error as Error).message}`,
         metadata: {
           operation: 'manuallyResolveConflict',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
     }
   }
@@ -515,60 +528,94 @@ export class ContextConflictResolver extends EventEmitter {
    * Initialize resolution strategies
    */
   private initializeResolutionStrategies(): void {
-    this.resolutionStrategies.set('last_writer_wins', this.resolveLastWriterWins.bind(this));
-    this.resolutionStrategies.set('first_writer_wins', this.resolveFirstWriterWins.bind(this));
-    this.resolutionStrategies.set('priority_based', this.resolvePriorityBased.bind(this));
-    this.resolutionStrategies.set('merge_values', this.resolveMergeValues.bind(this));
-    this.resolutionStrategies.set('consensus_based', this.resolveConsensusBased.bind(this));
-    this.resolutionStrategies.set('manual_resolution', this.resolveManual.bind(this));
+    this.resolutionStrategies.set(
+      'last_writer_wins',
+      this.resolveLastWriterWins.bind(this)
+    );
+    this.resolutionStrategies.set(
+      'first_writer_wins',
+      this.resolveFirstWriterWins.bind(this)
+    );
+    this.resolutionStrategies.set(
+      'priority_based',
+      this.resolvePriorityBased.bind(this)
+    );
+    this.resolutionStrategies.set(
+      'merge_values',
+      this.resolveMergeValues.bind(this)
+    );
+    this.resolutionStrategies.set(
+      'consensus_based',
+      this.resolveConsensusBased.bind(this)
+    );
+    this.resolutionStrategies.set(
+      'manual_resolution',
+      this.resolveManual.bind(this)
+    );
     this.resolutionStrategies.set('custom', this.resolveCustom.bind(this));
   }
 
   /**
    * Resolution strategy implementations
    */
-  private async resolveLastWriterWins(conflict: ContextConflict): Promise<unknown> {
-    // For now, just return the first value (in a real implementation, 
+  private async resolveLastWriterWins(
+    conflict: ContextConflict
+  ): Promise<unknown> {
+    // For now, just return the first value (in a real implementation,
     // we'd need timestamp information)
     return Object.values(conflict.values)[0];
   }
 
-  private async resolveFirstWriterWins(conflict: ContextConflict): Promise<unknown> {
+  private async resolveFirstWriterWins(
+    conflict: ContextConflict
+  ): Promise<unknown> {
     // For now, just return the first value
     return Object.values(conflict.values)[0];
   }
 
-  private async resolvePriorityBased(conflict: ContextConflict): Promise<unknown> {
+  private async resolvePriorityBased(
+    conflict: ContextConflict
+  ): Promise<unknown> {
     // In a real implementation, this would use agent priorities
     return Object.values(conflict.values)[0];
   }
 
-  private async resolveMergeValues(conflict: ContextConflict): Promise<unknown> {
+  private async resolveMergeValues(
+    conflict: ContextConflict
+  ): Promise<unknown> {
     const values = Object.values(conflict.values);
-    
+
     // If all values are arrays, merge them
-    if (values.every(v => Array.isArray(v))) {
+    if (values.every((v) => Array.isArray(v))) {
       return Array.from(new Set(values.flat()));
     }
-    
+
     // If all values are objects, merge them
-    if (values.every(v => typeof v === 'object' && v !== null && !Array.isArray(v))) {
+    if (
+      values.every(
+        (v) => typeof v === 'object' && v !== null && !Array.isArray(v)
+      )
+    ) {
       return Object.assign({}, ...values);
     }
-    
+
     // If all values are strings, concatenate them
-    if (values.every(v => typeof v === 'string')) {
+    if (values.every((v) => typeof v === 'string')) {
       return values.join(' ');
     }
-    
+
     // Default: return first value
     return values[0];
   }
 
-  private async resolveConsensusBased(conflict: ContextConflict): Promise<unknown> {
+  private async resolveConsensusBased(
+    conflict: ContextConflict
+  ): Promise<unknown> {
     // For existing conflicts, we can't start a new consensus process
     // This would need to be handled differently in a real implementation
-    throw new Error('Consensus-based resolution requires active consensus process');
+    throw new Error(
+      'Consensus-based resolution requires active consensus process'
+    );
   }
 
   private async resolveManual(conflict: ContextConflict): Promise<unknown> {
@@ -597,13 +644,13 @@ export class ContextConflictResolver extends EventEmitter {
     this.emit('consensusTimeout', {
       consensusId,
       votesReceived: Object.keys(consensusState.votes).length,
-      requiredVotes: consensusState.requiredVotes
+      requiredVotes: consensusState.requiredVotes,
     });
 
     runtimeLogger.warn('Consensus resolution timed out', {
       consensusId,
       votesReceived: Object.keys(consensusState.votes).length,
-      requiredVotes: consensusState.requiredVotes
+      requiredVotes: consensusState.requiredVotes,
     });
   }
 
@@ -617,10 +664,12 @@ export class ContextConflictResolver extends EventEmitter {
         if (state.status === 'pending' && new Date(state.expiresAt) < now) {
           this.handleConsensusTimeout(consensusId);
         }
-        
+
         // Clean up completed consensus states older than 1 hour
-        if (state.status !== 'pending' && 
-            new Date(state.proposedAt).getTime() < now.getTime() - 3600000) {
+        if (
+          state.status !== 'pending' &&
+          new Date(state.proposedAt).getTime() < now.getTime() - 3600000
+        ) {
           this.consensusStates.delete(consensusId);
         }
       }
@@ -631,18 +680,20 @@ export class ContextConflictResolver extends EventEmitter {
    * Get conflict resolution statistics
    */
   getStatistics() {
-    const activeConsensus = Array.from(this.consensusStates.values())
-      .filter(s => s.status === 'pending').length;
-    
-    const completedConsensus = Array.from(this.consensusStates.values())
-      .filter(s => s.status !== 'pending').length;
+    const activeConsensus = Array.from(this.consensusStates.values()).filter(
+      (s) => s.status === 'pending'
+    ).length;
+
+    const completedConsensus = Array.from(this.consensusStates.values()).filter(
+      (s) => s.status !== 'pending'
+    ).length;
 
     return {
       pendingConflicts: this.pendingConflicts.size,
       manualResolutionQueue: this.manualResolutionQueue.length,
       activeConsensusProcesses: activeConsensus,
       completedConsensusProcesses: completedConsensus,
-      totalConsensusStates: this.consensusStates.size
+      totalConsensusStates: this.consensusStates.size,
     };
   }
 

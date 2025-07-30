@@ -294,12 +294,27 @@ export interface CognitionModule {
   decide(agent: Agent, options: Decision[]): Promise<Decision>;
 
   // Context-aware methods
-  thinkWithContext?(agent: Agent, context: ThoughtContext, unifiedContext?: UnifiedContext): Promise<ThoughtResult>;
-  planWithContext?(agent: Agent, goal: string, unifiedContext?: UnifiedContext): Promise<Plan>;
-  decideWithContext?(agent: Agent, options: Decision[], unifiedContext?: UnifiedContext): Promise<Decision>;
-  
+  thinkWithContext?(
+    agent: Agent,
+    context: ThoughtContext,
+    unifiedContext?: UnifiedContext
+  ): Promise<ThoughtResult>;
+  planWithContext?(
+    agent: Agent,
+    goal: string,
+    unifiedContext?: UnifiedContext
+  ): Promise<Plan>;
+  decideWithContext?(
+    agent: Agent,
+    options: Decision[],
+    unifiedContext?: UnifiedContext
+  ): Promise<Decision>;
+
   // Context enrichment capabilities
-  enrichThoughtContext?(thoughtContext: ThoughtContext, unifiedContext: UnifiedContext): Promise<ThoughtContext>;
+  enrichThoughtContext?(
+    thoughtContext: ThoughtContext,
+    unifiedContext: UnifiedContext
+  ): Promise<ThoughtContext>;
 }
 
 export interface ThoughtContext {
@@ -311,14 +326,14 @@ export interface ThoughtContext {
 
   // Unified context integration
   unifiedContext?: UnifiedContext;
-  
+
   // Context-aware fields that can be enriched from unified context
   conversationHistory?: Array<{
     role: 'user' | 'agent' | 'system';
     content: string;
     timestamp: Date;
   }>;
-  
+
   emotionalContext?: {
     current: string;
     intensity: number;
@@ -328,21 +343,21 @@ export interface ThoughtContext {
       trigger?: string;
     }>;
   };
-  
+
   cognitiveState?: {
     confidence: number;
     focus: number;
     workingMemory: string[];
     activeGoals: string[];
   };
-  
+
   environmentalFactors?: {
     timeOfDay?: string;
     location?: string;
     socialContext?: string;
     urgency?: number;
   };
-  
+
   toolContext?: {
     availableTools: string[];
     recentToolUse: Array<{
@@ -498,7 +513,11 @@ export interface ExtensionAction {
   category: ActionCategory;
   parameters: ActionParameters;
   requiredPermissions?: string[];
-  execute(agent: Agent, params: SkillParameters, context?: Context): Promise<ActionResult>;
+  execute(
+    agent: Agent,
+    params: SkillParameters,
+    context?: Context
+  ): Promise<ActionResult>;
   // Context-aware action configuration
   contextRequirements?: {
     requiredFields?: string[];
@@ -510,7 +529,11 @@ export interface ExtensionAction {
 export interface ExtensionEventHandler {
   event: string;
   description: string;
-  handler: (agent: Agent, event: AgentEvent, context?: Context) => Promise<void>;
+  handler: (
+    agent: Agent,
+    event: AgentEvent,
+    context?: Context
+  ) => Promise<void>;
   // Context-aware event handling
   contextOptions?: {
     injectAgentContext?: boolean;
@@ -710,11 +733,18 @@ export interface EventBus {
   getEvents(): AgentEvent[];
   publish(event: AgentEvent): void; // Added publish method for compatibility
   shutdown(): void; // Added shutdown method for cleanup
-  
+
   // Context-aware event methods
   emitWithContext(event: AgentEvent, context: EventContext): void;
-  onWithContext(eventType: string, handler: (event: AgentEvent, context?: EventContext) => void): void;
-  subscribeWithFilter(agentId: string, eventTypes: string[], filter?: EventContextFilter): void;
+  onWithContext(
+    eventType: string,
+    handler: (event: AgentEvent, context?: EventContext) => void
+  ): void;
+  subscribeWithFilter(
+    agentId: string,
+    eventTypes: string[],
+    filter?: EventContextFilter
+  ): void;
   getEventsWithContext(filter?: EventContextFilter): AgentEvent[];
 }
 
@@ -871,12 +901,15 @@ export interface RuntimeConfig {
     };
     mcp?: {
       enabled: boolean;
-      servers?: Record<string, {
-        command: string;
-        args?: string[];
-        env?: Record<string, string>;
-        timeout?: number;
-      }>;
+      servers?: Record<
+        string,
+        {
+          command: string;
+          args?: string[];
+          env?: Record<string, string>;
+          timeout?: number;
+        }
+      >;
       defaultTimeout?: number;
     };
     api?: {
@@ -926,7 +959,13 @@ export interface RuntimeConfig {
         phone?: string;
       };
       retentionPeriods?: Record<string, number>;
-      legalBasis?: 'consent' | 'contract' | 'legal_obligation' | 'vital_interests' | 'public_task' | 'legitimate_interests';
+      legalBasis?:
+        | 'consent'
+        | 'contract'
+        | 'legal_obligation'
+        | 'vital_interests'
+        | 'public_task'
+        | 'legitimate_interests';
     };
     hipaa?: {
       enabled: boolean;

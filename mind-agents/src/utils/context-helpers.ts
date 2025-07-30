@@ -3,11 +3,13 @@
  * Provides simple helpers for working with ThoughtContext and existing context system
  */
 
-import type { 
-  BaseContext, 
-  PortalContext
-} from '../types/context.js';
-import type { ThoughtContext, Agent, AgentState, EnvironmentState } from '../types/agent.js';
+import type { BaseContext, PortalContext } from '../types/context.js';
+import type {
+  ThoughtContext,
+  Agent,
+  AgentState,
+  EnvironmentState,
+} from '../types/agent.js';
 
 /**
  * Enhances a ThoughtContext with additional fields for unified context integration
@@ -22,36 +24,36 @@ export function enrichThoughtContext(
   }
 ): ThoughtContext {
   const enhanced = { ...thoughtContext };
-  
+
   // Only add fields if they don't already exist
   if (options?.includeConversationHistory && !enhanced.conversationHistory) {
     enhanced.conversationHistory = [];
   }
-  
+
   if (options?.includeEmotionalContext && !enhanced.emotionalContext) {
     enhanced.emotionalContext = {
       current: 'neutral',
       intensity: 0.5,
-      recentChanges: []
+      recentChanges: [],
     };
   }
-  
+
   if (options?.includeCognitiveState && !enhanced.cognitiveState) {
     enhanced.cognitiveState = {
       confidence: 0.5,
       focus: 0.5,
       workingMemory: [],
-      activeGoals: []
+      activeGoals: [],
     };
   }
-  
+
   if (options?.includeToolContext && !enhanced.toolContext) {
     enhanced.toolContext = {
       availableTools: [],
-      recentToolUse: []
+      recentToolUse: [],
     };
   }
-  
+
   return enhanced;
 }
 
@@ -87,21 +89,21 @@ export function thoughtContextToPortalContext(
   }
 ): PortalContext {
   const baseContext = thoughtContextToBaseContext(
-    thoughtContext, 
-    options?.sessionId, 
+    thoughtContext,
+    options?.sessionId,
     options?.userId
   );
-  
+
   return {
     ...baseContext,
     systemPrompt: options?.systemPrompt,
     cognitiveContext: {
       thoughts: thoughtContext.cognitiveState?.workingMemory || [],
-      cognitiveConfidence: thoughtContext.cognitiveState?.confidence
+      cognitiveConfidence: thoughtContext.cognitiveState?.confidence,
     },
     previousThoughts: thoughtContext.cognitiveState?.workingMemory?.join('\n'),
     environment: {
-      location: thoughtContext.environmentalFactors?.location
+      location: thoughtContext.environmentalFactors?.location,
     },
     events: thoughtContext.events,
   };
@@ -115,39 +117,43 @@ export function validateThoughtContextForUnified(context: ThoughtContext): {
   warnings: string[];
 } {
   const warnings: string[] = [];
-  
+
   if (!context.events || context.events.length === 0) {
     warnings.push('No events present in ThoughtContext');
   }
-  
+
   if (!context.memories || context.memories.length === 0) {
     warnings.push('No memories present in ThoughtContext');
   }
-  
+
   if (!context.currentState) {
     warnings.push('No current agent state in ThoughtContext');
   }
-  
+
   if (!context.environment) {
     warnings.push('No environment state in ThoughtContext');
   }
-  
+
   // Check for unified context fields
   if (!context.unifiedContext && !context.conversationHistory) {
-    warnings.push('Consider adding conversationHistory for better context tracking');
+    warnings.push(
+      'Consider adding conversationHistory for better context tracking'
+    );
   }
-  
+
   if (!context.emotionalContext) {
-    warnings.push('Consider adding emotionalContext for enhanced decision making');
+    warnings.push(
+      'Consider adding emotionalContext for enhanced decision making'
+    );
   }
-  
+
   if (!context.cognitiveState) {
     warnings.push('Consider adding cognitiveState for improved reasoning');
   }
-  
+
   return {
     isValid: warnings.length < 3, // Allow up to 2 warnings
-    warnings
+    warnings,
   };
 }
 
@@ -159,34 +165,34 @@ export function mergeThoughtContexts(
   ...additional: Partial<ThoughtContext>[]
 ): ThoughtContext {
   const merged = { ...primary };
-  
+
   for (const context of additional) {
     // Merge arrays
     if (context.events) {
       merged.events = [...merged.events, ...context.events];
     }
-    
+
     if (context.memories) {
       merged.memories = [...merged.memories, ...context.memories];
     }
-    
+
     // Update with most recent state
     if (context.currentState) {
       merged.currentState = { ...merged.currentState, ...context.currentState };
     }
-    
+
     if (context.environment) {
       merged.environment = { ...merged.environment, ...context.environment };
     }
-    
+
     // Merge conversation history
     if (context.conversationHistory) {
       merged.conversationHistory = [
         ...(merged.conversationHistory || []),
-        ...context.conversationHistory
+        ...context.conversationHistory,
       ];
     }
-    
+
     // Update emotional context
     if (context.emotionalContext) {
       merged.emotionalContext = {
@@ -194,11 +200,11 @@ export function mergeThoughtContexts(
         ...context.emotionalContext,
         recentChanges: [
           ...(merged.emotionalContext?.recentChanges || []),
-          ...(context.emotionalContext?.recentChanges || [])
-        ]
+          ...(context.emotionalContext?.recentChanges || []),
+        ],
       };
     }
-    
+
     // Update cognitive state
     if (context.cognitiveState) {
       merged.cognitiveState = {
@@ -206,18 +212,18 @@ export function mergeThoughtContexts(
         ...context.cognitiveState,
         workingMemory: [
           ...(merged.cognitiveState?.workingMemory || []),
-          ...(context.cognitiveState?.workingMemory || [])
+          ...(context.cognitiveState?.workingMemory || []),
         ],
         activeGoals: [
           ...(merged.cognitiveState?.activeGoals || []),
-          ...(context.cognitiveState?.activeGoals || [])
-        ]
+          ...(context.cognitiveState?.activeGoals || []),
+        ],
       };
     }
-    
+
     // Other properties
     Object.assign(merged, context);
   }
-  
+
   return merged;
 }

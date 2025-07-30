@@ -1,6 +1,6 @@
 /**
  * Context Transformation Utilities for SYMindX
- * 
+ *
  * Provides transformation capabilities to adapt context for different system components
  * while maintaining data integrity and backward compatibility.
  */
@@ -13,7 +13,12 @@ import { MemoryRecord } from '../types/memory';
 /**
  * Transform context for different target components
  */
-export type TransformationTarget = 'portal' | 'cognition' | 'memory' | 'emotion' | 'extension';
+export type TransformationTarget =
+  | 'portal'
+  | 'cognition'
+  | 'memory'
+  | 'emotion'
+  | 'extension';
 
 /**
  * Transformation options
@@ -65,7 +70,7 @@ export function transformForPortal(
   // Apply field filtering
   if (options.includeFields) {
     const filtered: any = {};
-    options.includeFields.forEach(field => {
+    options.includeFields.forEach((field) => {
       if (field in portalContext) {
         filtered[field] = (portalContext as any)[field];
       }
@@ -129,7 +134,7 @@ export function transformForMemory(
 
   // Build metadata from context
   const metadata: Record<string, any> = {};
-  
+
   if (context.sessionId) metadata.sessionId = context.sessionId;
   if (context.userId) metadata.userId = context.userId;
   if (context.conversationHistory?.length) {
@@ -192,12 +197,12 @@ export function transformForExtension(
 
   // Filter sensitive data by default
   const sensitiveFields = ['password', 'token', 'key', 'secret', 'credential'];
-  
+
   Object.entries(context).forEach(([key, value]) => {
-    const isSensitive = sensitiveFields.some(field => 
+    const isSensitive = sensitiveFields.some((field) =>
       key.toLowerCase().includes(field)
     );
-    
+
     if (!isSensitive || options.includeSensitive) {
       extensionContext[key] = value;
     }
@@ -219,7 +224,8 @@ export function transformForExtension(
  * Create a transformation pipeline
  */
 export class ContextTransformationPipeline {
-  private transformers: Map<string, (context: any, options?: any) => any> = new Map();
+  private transformers: Map<string, (context: any, options?: any) => any> =
+    new Map();
 
   constructor() {
     // Register default transformers
@@ -256,7 +262,10 @@ export class ContextTransformationPipeline {
     try {
       return transformer(context, options);
     } catch (error) {
-      console.error(`Context transformation failed for target ${target}:`, error);
+      console.error(
+        `Context transformation failed for target ${target}:`,
+        error
+      );
       // Return original context as fallback
       return context;
     }
@@ -339,7 +348,7 @@ function trimContext(context: any, maxSizeKB: number): any {
     if (['timestamp', 'agentId', 'sessionId'].includes(field)) {
       continue; // Keep essential fields
     }
-    
+
     delete trimmed[field];
     if (JSON.stringify(trimmed).length <= maxSizeKB * 1024) {
       break;

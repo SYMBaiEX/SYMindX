@@ -24,11 +24,11 @@ export class SecureErrorHandler {
   private readonly config: SecureErrorConfig;
   private readonly sensitivePatterns: RegExp[] = [
     /\/home\/[\w-]+/g, // Home directories
-    /\/var\/[\w-]+/g,  // System paths
-    /process\.env/g,   // Environment references
+    /\/var\/[\w-]+/g, // System paths
+    /process\.env/g, // Environment references
     /password|secret|key|token/gi, // Sensitive keywords
-    /SQL|database|connection/gi,   // Database information
-    /stack trace|at [\w\.]+/gi,    // Stack trace patterns
+    /SQL|database|connection/gi, // Database information
+    /stack trace|at [\w\.]+/gi, // Stack trace patterns
   ];
 
   constructor(config: Partial<SecureErrorConfig> = {}) {
@@ -42,9 +42,9 @@ export class SecureErrorHandler {
         'INSUFFICIENT_SCOPES',
         'RATE_LIMIT_EXCEEDED',
         'NOT_FOUND',
-        'METHOD_NOT_ALLOWED'
+        'METHOD_NOT_ALLOWED',
       ],
-      sanitizeErrorMessages: config.sanitizeErrorMessages !== false
+      sanitizeErrorMessages: config.sanitizeErrorMessages !== false,
     };
   }
 
@@ -52,7 +52,12 @@ export class SecureErrorHandler {
    * Express error handler middleware
    */
   handleError() {
-    return (error: SecureError, req: Request, res: Response, next: NextFunction) => {
+    return (
+      error: SecureError,
+      req: Request,
+      res: Response,
+      next: NextFunction
+    ) => {
       // Log error internally if configured
       if (this.config.logErrors) {
         console.error('API Error:', {
@@ -62,7 +67,7 @@ export class SecureErrorHandler {
           method: req.method,
           ip: req.ip,
           userAgent: req.get('user-agent'),
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       }
 
@@ -73,7 +78,7 @@ export class SecureErrorHandler {
 
       // Determine status code
       const statusCode = this.getStatusCode(error);
-      
+
       // Create secure error response
       const errorResponse = this.createSecureErrorResponse(error, req);
 
@@ -97,8 +102,8 @@ export class SecureErrorHandler {
         code: this.getErrorCode(error),
         timestamp: new Date().toISOString(),
         path: req.path,
-        method: req.method
-      }
+        method: req.method,
+      },
     };
 
     // Add details only if error is marked as safe to expose
@@ -152,14 +157,22 @@ export class SecureErrorHandler {
     // Map status codes to generic codes
     const statusCode = this.getStatusCode(error);
     switch (statusCode) {
-      case 400: return 'BAD_REQUEST';
-      case 401: return 'UNAUTHORIZED';
-      case 403: return 'FORBIDDEN';
-      case 404: return 'NOT_FOUND';
-      case 409: return 'CONFLICT';
-      case 429: return 'RATE_LIMITED';
-      case 500: return 'INTERNAL_ERROR';
-      default: return 'UNKNOWN_ERROR';
+      case 400:
+        return 'BAD_REQUEST';
+      case 401:
+        return 'UNAUTHORIZED';
+      case 403:
+        return 'FORBIDDEN';
+      case 404:
+        return 'NOT_FOUND';
+      case 409:
+        return 'CONFLICT';
+      case 429:
+        return 'RATE_LIMITED';
+      case 500:
+        return 'INTERNAL_ERROR';
+      default:
+        return 'UNKNOWN_ERROR';
     }
   }
 
@@ -203,8 +216,14 @@ export class SecureErrorHandler {
 
     // Hide internal paths if configured
     if (this.config.hideInternalPaths) {
-      sanitized = sanitized.replace(/at\s+.*node_modules.*/g, 'at [NODE_MODULES]');
-      sanitized = sanitized.replace(/at\s+.*\/usr\/.*\/node.*/g, 'at [NODE_RUNTIME]');
+      sanitized = sanitized.replace(
+        /at\s+.*node_modules.*/g,
+        'at [NODE_MODULES]'
+      );
+      sanitized = sanitized.replace(
+        /at\s+.*\/usr\/.*\/node.*/g,
+        'at [NODE_RUNTIME]'
+      );
     }
 
     return sanitized;
@@ -219,12 +238,12 @@ export class SecureErrorHandler {
     }
 
     if (Array.isArray(details)) {
-      return details.map(item => this.sanitizeErrorDetails(item));
+      return details.map((item) => this.sanitizeErrorDetails(item));
     }
 
     if (typeof details === 'object' && details !== null) {
       const sanitized: any = {};
-      
+
       for (const [key, value] of Object.entries(details)) {
         // Skip sensitive keys
         if (/password|secret|key|token|credential/i.test(key)) {

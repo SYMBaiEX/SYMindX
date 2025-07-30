@@ -3,7 +3,7 @@
  * @description Supporting type definitions, enums, and utility types for the
  * unified context system. This module provides all the foundational types
  * needed to implement comprehensive context management.
- * 
+ *
  * @version 1.0.0
  * @author SYMindX Core Team
  */
@@ -761,20 +761,34 @@ export class ContextValidationError extends ContextError {
 
 export class ContextNotFoundError extends ContextError {
   constructor(contextId: string) {
-    super(`Context not found: ${contextId}`, 'NOT_FOUND', contextId, ContextOperation.READ);
+    super(
+      `Context not found: ${contextId}`,
+      'NOT_FOUND',
+      contextId,
+      ContextOperation.READ
+    );
     this.name = 'ContextNotFoundError';
   }
 }
 
 export class ContextExpiredError extends ContextError {
   constructor(contextId: string) {
-    super(`Context expired: ${contextId}`, 'EXPIRED', contextId, ContextOperation.READ);
+    super(
+      `Context expired: ${contextId}`,
+      'EXPIRED',
+      contextId,
+      ContextOperation.READ
+    );
     this.name = 'ContextExpiredError';
   }
 }
 
 export class ContextPermissionError extends ContextError {
-  constructor(contextId: string, operation: ContextOperation, permission: ContextPermission) {
+  constructor(
+    contextId: string,
+    operation: ContextOperation,
+    permission: ContextPermission
+  ) {
     super(
       `Permission denied for ${operation} on context ${contextId}: requires ${permission}`,
       'PERMISSION_DENIED',

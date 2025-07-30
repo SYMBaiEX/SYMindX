@@ -1,17 +1,11 @@
 /**
  * Enhanced Tool Orchestration Framework
- * 
+ *
  * Advanced tool execution patterns including chaining, parallelization, conditional logic,
  * and intelligent orchestration for AI SDK v5 tools across all portal implementations.
  */
 
-import { 
-  tool, 
-  generateText, 
-  streamText,
-  LanguageModel,
-  generateId,
-} from 'ai';
+import { tool, generateText, streamText, LanguageModel, generateId } from 'ai';
 import { z } from 'zod';
 import { runtimeLogger } from '../../utils/logger';
 
@@ -37,7 +31,10 @@ export interface ToolExecutionResult {
 }
 
 export interface ConditionalRule {
-  condition: (context: ToolExecutionContext, results: ToolExecutionResult[]) => boolean;
+  condition: (
+    context: ToolExecutionContext,
+    results: ToolExecutionResult[]
+  ) => boolean;
   action: 'execute' | 'skip' | 'abort' | 'retry';
   maxRetries?: number;
   retryDelay?: number;
@@ -45,7 +42,10 @@ export interface ConditionalRule {
 
 export interface ToolChainStep {
   toolName: string;
-  inputMapper?: (previousResults: ToolExecutionResult[], context: ToolExecutionContext) => any;
+  inputMapper?: (
+    previousResults: ToolExecutionResult[],
+    context: ToolExecutionContext
+  ) => any;
   conditionalRules?: ConditionalRule[];
   parallelWith?: string[]; // Tool names to execute in parallel
   timeout?: number;
@@ -102,16 +102,16 @@ export class ToolChainOrchestrator {
         context.previousResults = results;
 
         // Execute tools in parallel within the group
-        const groupPromises = executionGroup.map(step => 
+        const groupPromises = executionGroup.map((step) =>
           this.executeStep(step, context)
         );
 
         const groupResults = await Promise.allSettled(groupPromises);
-        
+
         for (let i = 0; i < groupResults.length; i++) {
           const result = groupResults[i];
           const step = executionGroup[i];
-          
+
           if (result.status === 'fulfilled') {
             results.push(result.value);
           } else {
@@ -127,10 +127,12 @@ export class ToolChainOrchestrator {
               metadata: { failedInChain: true },
             };
             results.push(failureResult);
-            
+
             // Check if this failure should abort the chain
             if (this.shouldAbortChain(step, result.reason, context)) {
-              throw new Error(`Tool chain aborted due to failure in ${step.toolName}: ${result.reason.message}`);
+              throw new Error(
+                `Tool chain aborted due to failure in ${step.toolName}: ${result.reason.message}`
+              );
             }
           }
         }
@@ -138,7 +140,6 @@ export class ToolChainOrchestrator {
 
       this.executionHistory.push(...results);
       return results;
-
     } catch (error) {
       runtimeLogger.error('Tool chain execution failed:', error);
       throw error;
@@ -156,8 +157,12 @@ export class ToolChainOrchestrator {
       retryFailures?: boolean;
     } = {}
   ): Promise<ToolExecutionResult[]> {
-    const { failFast = false, maxConcurrency = 5, retryFailures = true } = options;
-    
+    const {
+      failFast = false,
+      maxConcurrency = 5,
+      retryFailures = true,
+    } = options;
+
     // Group tools into batches based on max concurrency
     const batches = this.createBatches(tools, maxConcurrency);
     const allResults: ToolExecutionResult[] = [];
@@ -189,7 +194,6 @@ export class ToolChainOrchestrator {
             success: true,
             metadata: { parallel: true },
           } as ToolExecutionResult;
-
         } catch (error) {
           const failureResult: ToolExecutionResult = {
             toolCallId,
@@ -205,8 +209,10 @@ export class ToolChainOrchestrator {
           if (retryFailures && this.shouldRetry(error as Error)) {
             // Implement exponential backoff retry
             try {
-              await new Promise(resolve => setTimeout(resolve, 1000));
-              const retryResult = await toolDef.execute(toolSpec.input, { toolCallId });
+              await new Promise((resolve) => setTimeout(resolve, 1000));
+              const retryResult = await toolDef.execute(toolSpec.input, {
+                toolCallId,
+              });
               return {
                 ...failureResult,
                 output: retryResult,
@@ -229,7 +235,7 @@ export class ToolChainOrchestrator {
       });
 
       const batchResults = await Promise.allSettled(batchPromises);
-      
+
       for (const result of batchResults) {
         if (result.status === 'fulfilled') {
           allResults.push(result.value);
@@ -250,7 +256,10 @@ export class ToolChainOrchestrator {
     toolSpecs: Array<{
       name: string;
       input: any;
-      condition?: (context: ToolExecutionContext, results: ToolExecutionResult[]) => boolean;
+      condition?: (
+        context: ToolExecutionContext,
+        results: ToolExecutionResult[]
+      ) => boolean;
       priority?: number;
     }>,
     context: Partial<ToolExecutionContext> = {}
@@ -265,16 +274,23 @@ export class ToolChainOrchestrator {
 
     // Sort by priority (higher first)
     const sortedSpecs = toolSpecs
-      .filter(spec => !spec.condition || spec.condition(fullContext, fullContext.previousResults))
+      .filter(
+        (spec) =>
+          !spec.condition ||
+          spec.condition(fullContext, fullContext.previousResults)
+      )
       .sort((a, b) => (b.priority || 0) - (a.priority || 0));
 
     const results: ToolExecutionResult[] = [];
 
     for (const spec of sortedSpecs) {
-      const result = await this.executeStep({
-        toolName: spec.name,
-        inputMapper: () => spec.input,
-      }, fullContext);
+      const result = await this.executeStep(
+        {
+          toolName: spec.name,
+          inputMapper: () => spec.input,
+        },
+        fullContext
+      );
 
       results.push(result);
       fullContext.previousResults = [...fullContext.previousResults, result];
@@ -283,8 +299,9 @@ export class ToolChainOrchestrator {
       // Re-evaluate conditions for remaining tools
       const remainingSpecs = sortedSpecs.slice(sortedSpecs.indexOf(spec) + 1);
       const validSpecs = remainingSpecs.filter(
-        remainingSpec => !remainingSpec.condition || 
-        remainingSpec.condition(fullContext, fullContext.previousResults)
+        (remainingSpec) =>
+          !remainingSpec.condition ||
+          remainingSpec.condition(fullContext, fullContext.previousResults)
       );
 
       if (validSpecs.length === 0) {
@@ -335,7 +352,7 @@ export class ToolChainOrchestrator {
       }
 
       // Prepare input using mapper if provided
-      const input = step.inputMapper 
+      const input = step.inputMapper
         ? step.inputMapper(context.previousResults, context)
         : {};
 
@@ -353,12 +370,18 @@ export class ToolChainOrchestrator {
           );
           break; // Success, exit retry loop
         } catch (error) {
-          if (retryCount < maxRetries && 
-              (!step.retryConfig?.retryCondition || step.retryConfig.retryCondition(error as Error))) {
+          if (
+            retryCount < maxRetries &&
+            (!step.retryConfig?.retryCondition ||
+              step.retryConfig.retryCondition(error as Error))
+          ) {
             retryCount++;
-            const delay = step.retryConfig?.backoffMs || (1000 * Math.pow(2, retryCount - 1));
-            await new Promise(resolve => setTimeout(resolve, delay));
-            runtimeLogger.warn(`Retrying ${step.toolName} (attempt ${retryCount}/${maxRetries})`);
+            const delay =
+              step.retryConfig?.backoffMs || 1000 * Math.pow(2, retryCount - 1);
+            await new Promise((resolve) => setTimeout(resolve, delay));
+            runtimeLogger.warn(
+              `Retrying ${step.toolName} (attempt ${retryCount}/${maxRetries})`
+            );
           } else {
             throw error;
           }
@@ -374,7 +397,6 @@ export class ToolChainOrchestrator {
         success: true,
         metadata: { retries: retryCount },
       };
-
     } catch (error) {
       return {
         toolCallId,
@@ -405,7 +427,9 @@ export class ToolChainOrchestrator {
       // Find tools that should execute in parallel with this one
       if (step.parallelWith) {
         for (const parallelToolName of step.parallelWith) {
-          const parallelStep = chain.find(s => s.toolName === parallelToolName);
+          const parallelStep = chain.find(
+            (s) => s.toolName === parallelToolName
+          );
           if (parallelStep && !processed.has(parallelToolName)) {
             group.push(parallelStep);
             processed.add(parallelToolName);
@@ -432,7 +456,10 @@ export class ToolChainOrchestrator {
     timeoutMs: number
   ): Promise<T> {
     const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error(`Tool execution timeout after ${timeoutMs}ms`)), timeoutMs);
+      setTimeout(
+        () => reject(new Error(`Tool execution timeout after ${timeoutMs}ms`)),
+        timeoutMs
+      );
     });
 
     return Promise.race([promise, timeoutPromise]);
@@ -446,7 +473,10 @@ export class ToolChainOrchestrator {
     // Check if any conditional rules specify abort behavior
     if (step.conditionalRules) {
       for (const rule of step.conditionalRules) {
-        if (rule.action === 'abort' && rule.condition(context, context.previousResults)) {
+        if (
+          rule.action === 'abort' &&
+          rule.condition(context, context.previousResults)
+        ) {
           return true;
         }
       }
@@ -467,7 +497,7 @@ export class ToolChainOrchestrator {
     ];
 
     const errorMessage = error.message.toLowerCase();
-    return retryableMessages.some(msg => errorMessage.includes(msg));
+    return retryableMessages.some((msg) => errorMessage.includes(msg));
   }
 
   /**
@@ -478,30 +508,40 @@ export class ToolChainOrchestrator {
     successfulExecutions: number;
     failedExecutions: number;
     averageExecutionTime: number;
-    toolUsageStats: Record<string, { count: number; avgTime: number; successRate: number }>;
+    toolUsageStats: Record<
+      string,
+      { count: number; avgTime: number; successRate: number }
+    >;
   } {
     const stats = {
       totalExecutions: this.executionHistory.length,
-      successfulExecutions: this.executionHistory.filter(r => r.success).length,
-      failedExecutions: this.executionHistory.filter(r => !r.success).length,
+      successfulExecutions: this.executionHistory.filter((r) => r.success)
+        .length,
+      failedExecutions: this.executionHistory.filter((r) => !r.success).length,
       averageExecutionTime: 0,
-      toolUsageStats: {} as Record<string, { count: number; avgTime: number; successRate: number }>,
+      toolUsageStats: {} as Record<
+        string,
+        { count: number; avgTime: number; successRate: number }
+      >,
     };
 
     if (this.executionHistory.length > 0) {
-      stats.averageExecutionTime = 
-        this.executionHistory.reduce((sum, r) => sum + r.executionTime, 0) / 
+      stats.averageExecutionTime =
+        this.executionHistory.reduce((sum, r) => sum + r.executionTime, 0) /
         this.executionHistory.length;
     }
 
     // Calculate per-tool statistics
-    const toolStats = new Map<string, { times: number[]; successes: number; total: number }>();
-    
+    const toolStats = new Map<
+      string,
+      { times: number[]; successes: number; total: number }
+    >();
+
     for (const result of this.executionHistory) {
       if (!toolStats.has(result.toolName)) {
         toolStats.set(result.toolName, { times: [], successes: 0, total: 0 });
       }
-      
+
       const toolStat = toolStats.get(result.toolName)!;
       toolStat.times.push(result.executionTime);
       toolStat.total++;
@@ -511,7 +551,8 @@ export class ToolChainOrchestrator {
     for (const [toolName, stat] of toolStats) {
       stats.toolUsageStats[toolName] = {
         count: stat.total,
-        avgTime: stat.times.reduce((sum, time) => sum + time, 0) / stat.times.length,
+        avgTime:
+          stat.times.reduce((sum, time) => sum + time, 0) / stat.times.length,
         successRate: stat.successes / stat.total,
       };
     }
@@ -532,19 +573,17 @@ export class ToolChainOrchestrator {
 /**
  * Create a tool that automatically chains with other tools
  */
-export function createChainableTool<T extends z.ZodType>(
-  config: {
-    name: string;
-    description: string;
-    inputSchema: T;
-    execute: (input: z.infer<T>, context: ToolExecutionContext) => Promise<any>;
-    chainWith?: string[];
-    conditionalChains?: Array<{
-      condition: (result: any, context: ToolExecutionContext) => boolean;
-      tools: string[];
-    }>;
-  }
-) {
+export function createChainableTool<T extends z.ZodType>(config: {
+  name: string;
+  description: string;
+  inputSchema: T;
+  execute: (input: z.infer<T>, context: ToolExecutionContext) => Promise<any>;
+  chainWith?: string[];
+  conditionalChains?: Array<{
+    condition: (result: any, context: ToolExecutionContext) => boolean;
+    tools: string[];
+  }>;
+}) {
   return tool({
     description: config.description,
     parameters: config.inputSchema,
@@ -558,7 +597,7 @@ export function createChainableTool<T extends z.ZodType>(
 
       try {
         const result = await config.execute(input, context);
-        
+
         // Store result for potential chaining
         context.metadata.lastResult = result;
         context.metadata.chainable = true;
@@ -577,33 +616,31 @@ export function createChainableTool<T extends z.ZodType>(
 /**
  * Create a tool with built-in retry logic
  */
-export function createResilientTool<T extends z.ZodType>(
-  config: {
-    name: string;
-    description: string;
-    inputSchema: T;
-    execute: (input: z.infer<T>, context: ToolExecutionContext) => Promise<any>;
-    maxRetries?: number;
-    retryDelay?: number;
-    retryCondition?: (error: Error) => boolean;
-  }
-) {
+export function createResilientTool<T extends z.ZodType>(config: {
+  name: string;
+  description: string;
+  inputSchema: T;
+  execute: (input: z.infer<T>, context: ToolExecutionContext) => Promise<any>;
+  maxRetries?: number;
+  retryDelay?: number;
+  retryCondition?: (error: Error) => boolean;
+}) {
   return tool({
     description: config.description,
     parameters: config.inputSchema,
     execute: async (input: z.infer<T>, executeContext: any) => {
       const maxRetries = config.maxRetries || 3;
       const retryDelay = config.retryDelay || 1000;
-      
+
       let lastError: Error | null = null;
-      
+
       for (let attempt = 0; attempt <= maxRetries; attempt++) {
         try {
           const context: ToolExecutionContext = {
             toolCallId: executeContext.toolCallId || generateId(),
             stepNumber: executeContext.stepNumber || 1,
             previousResults: executeContext.previousResults || [],
-            metadata: { 
+            metadata: {
               ...executeContext.metadata,
               attempt,
               maxRetries,
@@ -613,22 +650,24 @@ export function createResilientTool<T extends z.ZodType>(
           return await config.execute(input, context);
         } catch (error) {
           lastError = error as Error;
-          
+
           if (attempt < maxRetries) {
             // Check if we should retry this error
             if (config.retryCondition && !config.retryCondition(lastError)) {
               break;
             }
-            
+
             // Wait before retry with exponential backoff
             const delay = retryDelay * Math.pow(2, attempt);
-            await new Promise(resolve => setTimeout(resolve, delay));
-            
-            runtimeLogger.warn(`Tool ${config.name} failed (attempt ${attempt + 1}/${maxRetries + 1}), retrying...`);
+            await new Promise((resolve) => setTimeout(resolve, delay));
+
+            runtimeLogger.warn(
+              `Tool ${config.name} failed (attempt ${attempt + 1}/${maxRetries + 1}), retrying...`
+            );
           }
         }
       }
-      
+
       throw lastError;
     },
   });
@@ -637,15 +676,16 @@ export function createResilientTool<T extends z.ZodType>(
 /**
  * Create a tool that can execute in streaming mode
  */
-export function createStreamingTool<T extends z.ZodType>(
-  config: {
-    name: string;
-    description: string;
-    inputSchema: T;
-    execute: (input: z.infer<T>, context: ToolExecutionContext) => AsyncGenerator<any>;
-    bufferSize?: number;
-  }
-) {
+export function createStreamingTool<T extends z.ZodType>(config: {
+  name: string;
+  description: string;
+  inputSchema: T;
+  execute: (
+    input: z.infer<T>,
+    context: ToolExecutionContext
+  ) => AsyncGenerator<any>;
+  bufferSize?: number;
+}) {
   return tool({
     description: config.description,
     parameters: config.inputSchema,
@@ -662,15 +702,17 @@ export function createStreamingTool<T extends z.ZodType>(
 
       try {
         const stream = config.execute(input, context);
-        
+
         for await (const chunk of stream) {
           results.push(chunk);
-          
+
           // Implement buffering to avoid memory issues
           if (results.length > bufferSize) {
             // Could implement streaming to consumer here
             // For now, just log a warning
-            runtimeLogger.warn(`Streaming tool ${config.name} buffer size exceeded`);
+            runtimeLogger.warn(
+              `Streaming tool ${config.name} buffer size exceeded`
+            );
           }
         }
 
@@ -697,9 +739,11 @@ export function mapPreviousResult(
   propertyPath?: string
 ): (results: ToolExecutionResult[]) => any {
   return (results: ToolExecutionResult[]) => {
-    const targetResult = results.find(r => r.toolName === toolName);
+    const targetResult = results.find((r) => r.toolName === toolName);
     if (!targetResult || !targetResult.success) {
-      throw new Error(`Required tool result from '${toolName}' not found or failed`);
+      throw new Error(
+        `Required tool result from '${toolName}' not found or failed`
+      );
     }
 
     if (propertyPath) {
@@ -719,7 +763,10 @@ export function mapPreviousResult(
  * Create conditional rule for tool execution
  */
 export function createConditionalRule(
-  condition: (context: ToolExecutionContext, results: ToolExecutionResult[]) => boolean,
+  condition: (
+    context: ToolExecutionContext,
+    results: ToolExecutionResult[]
+  ) => boolean,
   action: ConditionalRule['action'],
   options?: { maxRetries?: number; retryDelay?: number }
 ): ConditionalRule {
@@ -735,14 +782,18 @@ export function createConditionalRule(
  */
 export let globalOrchestrator: ToolChainOrchestrator | null = null;
 
-export function initializeGlobalOrchestrator(model: LanguageModel): ToolChainOrchestrator {
+export function initializeGlobalOrchestrator(
+  model: LanguageModel
+): ToolChainOrchestrator {
   globalOrchestrator = new ToolChainOrchestrator(model);
   return globalOrchestrator;
 }
 
 export function getGlobalOrchestrator(): ToolChainOrchestrator {
   if (!globalOrchestrator) {
-    throw new Error('Global orchestrator not initialized. Call initializeGlobalOrchestrator first.');
+    throw new Error(
+      'Global orchestrator not initialized. Call initializeGlobalOrchestrator first.'
+    );
   }
   return globalOrchestrator;
 }

@@ -1,6 +1,6 @@
 /**
  * Context Bootstrapper
- * 
+ *
  * Initializes and manages the unified context system within the runtime.
  * Handles startup, configuration, and lifecycle management of context components.
  */
@@ -19,18 +19,18 @@ import {
 export interface ContextBootstrapperConfig {
   // Core system settings
   enableUnifiedContext: boolean;
-  
+
   // Component configurations
   contextManager?: ContextManagerConfig;
   runtimeAdapter?: RuntimeContextAdapterConfig;
-  
+
   // Initialization settings
   initializationTimeoutMs: number;
-  
+
   // Health checking
   enableHealthChecks: boolean;
   healthCheckIntervalMs: number;
-  
+
   // Performance monitoring
   enablePerformanceMonitoring: boolean;
   performanceMetricsIntervalMs: number;
@@ -102,7 +102,9 @@ export class ContextBootstrapper {
   /**
    * Initialize the context system
    */
-  async initialize(runtimeConfig: RuntimeConfig): Promise<InitializationResult> {
+  async initialize(
+    runtimeConfig: RuntimeConfig
+  ): Promise<InitializationResult> {
     const startTime = Date.now();
     const componentsInitialized: string[] = [];
     const componentsFailed: string[] = [];
@@ -121,8 +123,13 @@ export class ContextBootstrapper {
           runtimeLogger.debug('Context manager initialized');
         } catch (error) {
           componentsFailed.push('contextManager');
-          this.errors.push(`Context manager initialization failed: ${(error as Error).message}`);
-          runtimeLogger.error('Failed to initialize context manager', error as Error);
+          this.errors.push(
+            `Context manager initialization failed: ${(error as Error).message}`
+          );
+          runtimeLogger.error(
+            'Failed to initialize context manager',
+            error as Error
+          );
         }
       }
 
@@ -137,11 +144,15 @@ export class ContextBootstrapper {
           runtimeLogger.debug('Runtime adapter initialized');
         } catch (error) {
           componentsFailed.push('runtimeAdapter');
-          this.errors.push(`Runtime adapter initialization failed: ${(error as Error).message}`);
-          runtimeLogger.error('Failed to initialize runtime adapter', error as Error);
+          this.errors.push(
+            `Runtime adapter initialization failed: ${(error as Error).message}`
+          );
+          runtimeLogger.error(
+            'Failed to initialize runtime adapter',
+            error as Error
+          );
         }
       }
-
 
       // Check if minimum components are available
       const criticalComponents = ['contextManager', 'runtimeAdapter'];
@@ -150,7 +161,9 @@ export class ContextBootstrapper {
       );
 
       if (missingCritical.length > 0) {
-        throw new Error(`Critical components failed to initialize: ${missingCritical.join(', ')}`);
+        throw new Error(
+          `Critical components failed to initialize: ${missingCritical.join(', ')}`
+        );
       }
 
       // Start health checks
@@ -168,7 +181,7 @@ export class ContextBootstrapper {
       this.warnings = warnings;
 
       const duration = Date.now() - startTime;
-      
+
       const result: InitializationResult = {
         success: true,
         message: 'Context system initialized successfully',
@@ -186,11 +199,11 @@ export class ContextBootstrapper {
       });
 
       return result;
-
     } catch (error) {
       const duration = Date.now() - startTime;
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+
       this.errors.push(`Initialization failed: ${errorMessage}`);
       this.initialized = false;
       this.healthy = false;
@@ -205,9 +218,13 @@ export class ContextBootstrapper {
         warnings,
       };
 
-      runtimeLogger.error('Context system initialization failed', error as Error, {
-        duration_ms: duration,
-      });
+      runtimeLogger.error(
+        'Context system initialization failed',
+        error as Error,
+        {
+          duration_ms: duration,
+        }
+      );
 
       return result;
     }
@@ -228,14 +245,19 @@ export class ContextBootstrapper {
       // Create initial conversation context if needed
       const existingContext = this.contextManager.getActiveContext(agent.id);
       if (!existingContext) {
-        this.contextManager.getOrCreateContext(agent.id, 'system', 'Agent initialized');
+        this.contextManager.getOrCreateContext(
+          agent.id,
+          'system',
+          'Agent initialized'
+        );
       }
 
-      runtimeLogger.debug(`Agent registered with context system: ${agent.name}`, {
-        agentId: agent.id,
-      });
-
-
+      runtimeLogger.debug(
+        `Agent registered with context system: ${agent.name}`,
+        {
+          agentId: agent.id,
+        }
+      );
     } catch (error) {
       runtimeLogger.error(
         `Failed to register agent with context system: ${agent.name}`,
@@ -262,11 +284,10 @@ export class ContextBootstrapper {
     try {
       // Clear context data
       this.runtimeAdapter.clearContext(agentId);
-      
+
       this.agents.delete(agentId);
 
       runtimeLogger.debug(`Agent unregistered from context system: ${agentId}`);
-
     } catch (error) {
       runtimeLogger.error(
         `Failed to unregister agent from context system: ${agentId}`,
@@ -296,7 +317,6 @@ export class ContextBootstrapper {
    * Get system status
    */
   getStatus(): ContextSystemStatus {
-
     return {
       initialized: this.initialized,
       healthy: this.healthy,
@@ -368,7 +388,8 @@ export class ContextBootstrapper {
       // Check context manager
       if (this.contextManager) {
         const contexts = this.contextManager.exportContexts();
-        if (contexts.length > 10000) { // Warn if too many contexts
+        if (contexts.length > 10000) {
+          // Warn if too many contexts
           this.warnings.push('High number of active contexts detected');
         }
       } else if (this.config.enableUnifiedContext) {
@@ -382,14 +403,12 @@ export class ContextBootstrapper {
         errors.push('Runtime adapter is not available');
       }
 
-
       this.healthy = healthy;
-      
+
       if (errors.length > 0) {
         this.errors.push(...errors);
         runtimeLogger.warn('Context system health check failed', { errors });
       }
-
     } catch (error) {
       this.healthy = false;
       const errorMessage = `Health check failed: ${(error as Error).message}`;
@@ -409,7 +428,10 @@ export class ContextBootstrapper {
         });
       }
     } catch (error) {
-      runtimeLogger.error('Failed to collect performance metrics', error as Error);
+      runtimeLogger.error(
+        'Failed to collect performance metrics',
+        error as Error
+      );
     }
   }
 }

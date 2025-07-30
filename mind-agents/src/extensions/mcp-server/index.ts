@@ -280,12 +280,26 @@ export class MCPServerExtension implements Extension {
             try {
               const mcpTool = this.convertAgentActionToMCPTool(action);
               this.registerTool(mcpTool);
-              runtimeLogger.debug(`Registered MCP tool from agent action: ${action.name}`);
+              runtimeLogger.debug(
+                `Registered MCP tool from agent action: ${action.name}`
+              );
             } catch (error) {
-              const logContext: LogContext = error instanceof Error 
-                ? { error: { code: 'MCP_TOOL_REGISTRATION_ERROR', message: error.message, stack: error.stack } }
-                : { error: { code: 'UNKNOWN_ERROR', message: String(error) } };
-              runtimeLogger.warn(`Failed to register MCP tool for action ${action.name}:`, logContext);
+              const logContext: LogContext =
+                error instanceof Error
+                  ? {
+                      error: {
+                        code: 'MCP_TOOL_REGISTRATION_ERROR',
+                        message: error.message,
+                        stack: error.stack,
+                      },
+                    }
+                  : {
+                      error: { code: 'UNKNOWN_ERROR', message: String(error) },
+                    };
+              runtimeLogger.warn(
+                `Failed to register MCP tool for action ${action.name}:`,
+                logContext
+              );
             }
           }
         }

@@ -28,13 +28,13 @@ export async function registerExtensions(
             config.extensions.api.settings &&
             'port' in config.extensions.api.settings
               ? (config.extensions.api.settings.port as number)
-              : parseInt(process.env["API_PORT"] || '8000'),
+              : parseInt(process.env['API_PORT'] || '8000'),
           host:
             typeof config.extensions.api?.settings === 'object' &&
             config.extensions.api.settings &&
             'host' in config.extensions.api.settings
               ? (config.extensions.api.settings.host as string)
-              : process.env["API_HOST"] || 'localhost',
+              : process.env['API_HOST'] || 'localhost',
           cors: {
             enabled: true,
             origins: ['*'],
@@ -104,7 +104,7 @@ export async function registerExtensions(
           (typeof config.extensions.telegram.botToken === 'string'
             ? config.extensions.telegram.botToken
             : '') ||
-          process.env["TELEGRAM_BOT_TOKEN"] ||
+          process.env['TELEGRAM_BOT_TOKEN'] ||
           '',
         allowedUsers: Array.isArray(config.extensions.telegram.allowedUsers)
           ? config.extensions.telegram.allowedUsers

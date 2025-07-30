@@ -13,7 +13,7 @@ import type { MetricType as BaseMetricType } from '../../utils/performance-monit
 export interface ObservabilityConfig {
   /** Enable/disable observability system */
   enabled: boolean;
-  
+
   /** Logging configuration */
   logging: {
     level: LogLevel;
@@ -22,7 +22,7 @@ export interface ObservabilityConfig {
     maxLogSizeBytes: number;
     retentionDays: number;
   };
-  
+
   /** Metrics configuration */
   metrics: {
     enableCollection: boolean;
@@ -31,7 +31,7 @@ export interface ObservabilityConfig {
     maxMetricsInMemory: number;
     exportFormat: 'prometheus' | 'json' | 'both';
   };
-  
+
   /** Tracing configuration */
   tracing: {
     enableTracing: boolean;
@@ -40,7 +40,7 @@ export interface ObservabilityConfig {
     enableSpanDebugging: boolean;
     traceRetentionMs: number;
   };
-  
+
   /** Health monitoring configuration */
   health: {
     enableHealthChecks: boolean;
@@ -53,7 +53,7 @@ export interface ObservabilityConfig {
       errorRate: number;
     };
   };
-  
+
   /** Performance monitoring */
   performance: {
     enableMonitoring: boolean;
@@ -61,7 +61,7 @@ export interface ObservabilityConfig {
     enableProfiling: boolean;
     profilingIntervalMs: number;
   };
-  
+
   /** Dashboard configuration */
   dashboard: {
     enableDashboard: boolean;
@@ -77,25 +77,25 @@ export interface ObservabilityConfig {
 export interface TraceContext {
   /** Unique trace identifier */
   traceId: string;
-  
+
   /** Span identifier */
   spanId: string;
-  
+
   /** Parent span identifier */
   parentSpanId?: string;
-  
+
   /** Trace sampling decision */
   sampled: boolean;
-  
+
   /** Trace flags */
   flags: number;
-  
+
   /** Baggage items for trace context propagation */
   baggage: Record<string, string>;
-  
+
   /** Timestamp when trace started */
   startTime: Date;
-  
+
   /** Additional trace metadata */
   metadata: Record<string, unknown>;
 }
@@ -106,44 +106,44 @@ export interface TraceContext {
 export interface TraceSpan {
   /** Span identifier */
   spanId: string;
-  
+
   /** Trace identifier */
   traceId: string;
-  
+
   /** Parent span identifier */
   parentSpanId?: string;
-  
+
   /** Operation name */
   operationName: string;
-  
+
   /** Span kind */
   kind: 'internal' | 'server' | 'client' | 'producer' | 'consumer';
-  
+
   /** Start timestamp */
   startTime: Date;
-  
+
   /** End timestamp */
   endTime?: Date;
-  
+
   /** Span duration in milliseconds */
   duration?: number;
-  
+
   /** Span status */
   status: {
     code: 'ok' | 'error' | 'timeout';
     message?: string;
   };
-  
+
   /** Span tags/attributes */
   tags: Record<string, string | number | boolean>;
-  
+
   /** Span events/logs */
   events: Array<{
     timestamp: Date;
     name: string;
     attributes?: Record<string, unknown>;
   }>;
-  
+
   /** Resource information */
   resource: {
     serviceName: string;
@@ -159,13 +159,13 @@ export interface TraceSpan {
 export interface MetricType extends BaseMetricType {
   /** Metric observability labels */
   labels: Record<string, string>;
-  
+
   /** Metric sampling configuration */
   sampling: {
     enabled: boolean;
     rate: number;
   };
-  
+
   /** Metric alerting configuration */
   alerting: {
     enabled: boolean;
@@ -179,35 +179,35 @@ export interface MetricType extends BaseMetricType {
 export interface AlertRule {
   /** Rule identifier */
   id: string;
-  
+
   /** Rule name */
   name: string;
-  
+
   /** Metric to monitor */
   metricName: string;
-  
+
   /** Alert condition */
   condition: {
     operator: 'gt' | 'gte' | 'lt' | 'lte' | 'eq' | 'ne';
     threshold: number;
     duration: number; // Duration in milliseconds
   };
-  
+
   /** Alert severity */
   severity: 'info' | 'warning' | 'error' | 'critical';
-  
+
   /** Alert labels */
   labels: Record<string, string>;
-  
+
   /** Alert actions */
   actions: Array<{
     type: 'log' | 'email' | 'webhook' | 'slack';
     config: Record<string, unknown>;
   }>;
-  
+
   /** Rule enabled status */
   enabled: boolean;
-  
+
   /** Rule evaluation interval */
   evaluationInterval: number;
 }
@@ -230,51 +230,66 @@ export interface ObservabilityMetrics {
     uptime: number;
     eventLoopDelay: number;
   };
-  
+
   /** Agent metrics */
-  agents: Record<string, {
-    status: string;
-    thinkTime: number;
-    responseTime: number;
-    actionCount: number;
-    errorCount: number;
-    memoryUsage: number;
-  }>;
-  
+  agents: Record<
+    string,
+    {
+      status: string;
+      thinkTime: number;
+      responseTime: number;
+      actionCount: number;
+      errorCount: number;
+      memoryUsage: number;
+    }
+  >;
+
   /** Portal metrics */
-  portals: Record<string, {
-    requestCount: number;
-    errorCount: number;
-    averageLatency: number;
-    tokenUsage: number;
-  }>;
-  
+  portals: Record<
+    string,
+    {
+      requestCount: number;
+      errorCount: number;
+      averageLatency: number;
+      tokenUsage: number;
+    }
+  >;
+
   /** Extension metrics */
-  extensions: Record<string, {
-    activeConnections: number;
-    messageCount: number;
-    errorCount: number;
-    latency: number;
-  }>;
-  
+  extensions: Record<
+    string,
+    {
+      activeConnections: number;
+      messageCount: number;
+      errorCount: number;
+      latency: number;
+    }
+  >;
+
   /** Memory provider metrics */
-  memory: Record<string, {
-    operationCount: number;
-    averageLatency: number;
-    errorCount: number;
-    storageSize: number;
-  }>;
-  
+  memory: Record<
+    string,
+    {
+      operationCount: number;
+      averageLatency: number;
+      errorCount: number;
+      storageSize: number;
+    }
+  >;
+
   /** Health metrics */
   health: {
     overall: HealthStatus;
-    components: Record<string, {
-      status: HealthStatus;
-      responseTime: number;
-      uptime: number;
-    }>;
+    components: Record<
+      string,
+      {
+        status: HealthStatus;
+        responseTime: number;
+        uptime: number;
+      }
+    >;
   };
-  
+
   /** Observability system metrics */
   observability: {
     logEntriesPerSecond: number;
@@ -295,16 +310,16 @@ export interface DashboardData {
     dataPoints: number;
     refreshInterval: number;
   };
-  
+
   /** Real-time metrics */
   realTimeMetrics: ObservabilityMetrics;
-  
+
   /** Historical data */
   timeSeries: Array<{
     timestamp: Date;
     metrics: Partial<ObservabilityMetrics>;
   }>;
-  
+
   /** Active alerts */
   alerts: Array<{
     id: string;
@@ -314,7 +329,7 @@ export interface DashboardData {
     timestamp: Date;
     acknowledged: boolean;
   }>;
-  
+
   /** System health summary */
   healthSummary: {
     overall: HealthStatus;
@@ -323,7 +338,7 @@ export interface DashboardData {
     degradedComponents: number;
     unhealthyComponents: number;
   };
-  
+
   /** Performance insights */
   insights: Array<{
     type: 'performance' | 'resource' | 'error' | 'trend';
@@ -344,7 +359,7 @@ export interface ObservabilityLogContext extends LogContext {
     spanId: string;
     sampled: boolean;
   };
-  
+
   /** Service information */
   service?: {
     name: string;
@@ -352,7 +367,7 @@ export interface ObservabilityLogContext extends LogContext {
     instance: string;
     environment: string;
   };
-  
+
   /** Request information */
   request?: {
     id: string;
@@ -361,14 +376,14 @@ export interface ObservabilityLogContext extends LogContext {
     userAgent?: string;
     ip?: string;
   };
-  
+
   /** Performance information */
   performance?: {
     duration: number;
     memoryUsage: number;
     cpuUsage: number;
   };
-  
+
   /** Business context */
   business?: {
     agentId?: string;
@@ -381,7 +396,7 @@ export interface ObservabilityLogContext extends LogContext {
 /**
  * Observability event types
  */
-export type ObservabilityEvent = 
+export type ObservabilityEvent =
   | AgentObservabilityEvent
   | PortalObservabilityEvent
   | ExtensionObservabilityEvent
@@ -447,19 +462,41 @@ export interface SystemObservabilityEvent {
  */
 export interface ObservabilityHooks {
   /** Pre-operation hook */
-  beforeOperation?: (context: TraceContext, operation: string, metadata: Record<string, unknown>) => Promise<void>;
-  
+  beforeOperation?: (
+    context: TraceContext,
+    operation: string,
+    metadata: Record<string, unknown>
+  ) => Promise<void>;
+
   /** Post-operation hook */
-  afterOperation?: (context: TraceContext, operation: string, result: unknown, duration: number) => Promise<void>;
-  
+  afterOperation?: (
+    context: TraceContext,
+    operation: string,
+    result: unknown,
+    duration: number
+  ) => Promise<void>;
+
   /** Error hook */
-  onError?: (context: TraceContext, operation: string, error: Error, duration: number) => Promise<void>;
-  
+  onError?: (
+    context: TraceContext,
+    operation: string,
+    error: Error,
+    duration: number
+  ) => Promise<void>;
+
   /** Metric collection hook */
-  onMetric?: (metricName: string, value: number, labels: Record<string, string>) => Promise<void>;
-  
+  onMetric?: (
+    metricName: string,
+    value: number,
+    labels: Record<string, string>
+  ) => Promise<void>;
+
   /** Alert hook */
-  onAlert?: (alert: AlertRule, value: number, context: Record<string, unknown>) => Promise<void>;
+  onAlert?: (
+    alert: AlertRule,
+    value: number,
+    context: Record<string, unknown>
+  ) => Promise<void>;
 }
 
 /**
@@ -468,16 +505,16 @@ export interface ObservabilityHooks {
 export interface ObservabilityMiddleware {
   /** Middleware name */
   name: string;
-  
+
   /** Middleware priority (lower = higher priority) */
   priority: number;
-  
+
   /** Middleware enabled status */
   enabled: boolean;
-  
+
   /** Middleware hooks */
   hooks: ObservabilityHooks;
-  
+
   /** Middleware configuration */
   config: Record<string, unknown>;
 }

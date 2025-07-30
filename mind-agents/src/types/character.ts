@@ -155,7 +155,6 @@ export type PortalCapability =
   | 'tool_calling';
 
 export interface PortalSpecificConfig {
-
   // Granular model control
   chatModel?: string;
   embeddingModel?: string;

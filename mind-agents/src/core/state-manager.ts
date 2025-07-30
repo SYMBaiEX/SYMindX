@@ -1071,7 +1071,7 @@ export class StateManager {
    * Get encryption key from environment or generate a default one
    */
   private getEncryptionKey(): string {
-    const envKey = process.env["STATE_ENCRYPTION_KEY"];
+    const envKey = process.env['STATE_ENCRYPTION_KEY'];
     if (envKey) {
       return envKey;
     }

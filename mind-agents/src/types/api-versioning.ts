@@ -1,6 +1,6 @@
 /**
  * API Versioning Types
- * 
+ *
  * Provides type-safe API versioning support with backward compatibility
  */
 
@@ -32,7 +32,14 @@ export interface VersionedAPIEndpoint<V extends APIVersion = 'v1'> {
   tags?: string[];
 }
 
-export type HTTPMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'HEAD' | 'OPTIONS';
+export type HTTPMethod =
+  | 'GET'
+  | 'POST'
+  | 'PUT'
+  | 'PATCH'
+  | 'DELETE'
+  | 'HEAD'
+  | 'OPTIONS';
 
 export interface APISchema {
   type: 'object' | 'array' | 'string' | 'number' | 'boolean';
@@ -115,21 +122,28 @@ export interface V3AgentData {
 }
 
 // Type helpers for version selection
-export type AgentDataForVersion<V extends APIVersion> = 
-  V extends 'v1' ? V1AgentData :
-  V extends 'v2' ? V2AgentData :
-  V extends 'v3' ? V3AgentData :
-  never;
+export type AgentDataForVersion<V extends APIVersion> = V extends 'v1'
+  ? V1AgentData
+  : V extends 'v2'
+    ? V2AgentData
+    : V extends 'v3'
+      ? V3AgentData
+      : never;
 
 export type ResponseForVersion<T, V extends APIVersion> = APIResponse<T, V>;
 
 // Migration utilities
-export interface APIMigrationRule<From extends APIVersion, To extends APIVersion> {
+export interface APIMigrationRule<
+  From extends APIVersion,
+  To extends APIVersion,
+> {
   from: From;
   to: To;
   transform: (data: AgentDataForVersion<From>) => AgentDataForVersion<To>;
   reversible?: boolean;
-  reverseTransform?: (data: AgentDataForVersion<To>) => AgentDataForVersion<From>;
+  reverseTransform?: (
+    data: AgentDataForVersion<To>
+  ) => AgentDataForVersion<From>;
 }
 
 // Compatibility matrix

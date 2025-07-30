@@ -1,6 +1,6 @@
 /**
  * Extension Context Transformer
- * 
+ *
  * Transforms unified context into extension-specific format,
  * optimizing for extension integration and communication protocols.
  */
@@ -16,7 +16,7 @@ import {
   ValidationConfig,
   TransformerCapabilities,
   TransformationMetadata,
-  TransformationPerformance
+  TransformationPerformance,
 } from '../../../types/context/context-transformation.js';
 import { runtimeLogger } from '../../../utils/logger.js';
 
@@ -29,58 +29,70 @@ export interface ExtensionContext {
   sessionId: string;
   contextId: string;
   timestamp: Date;
-  
+
   // Extension targeting
   targetExtension: string;
-  extensionType: 'communication' | 'integration' | 'tool' | 'interface' | 'service';
+  extensionType:
+    | 'communication'
+    | 'integration'
+    | 'tool'
+    | 'interface'
+    | 'service';
   extensionVersion: string;
-  
+
   // Communication context
   communicationProtocol: CommunicationProtocol;
   messageFormat: MessageFormat;
   channelContext: ChannelContext;
-  
+
   // User interaction context
   userContext: UserContext;
   interactionHistory: InteractionRecord[];
   conversationState: ConversationState;
-  
+
   // Extension capabilities
   availableActions: ExtensionAction[];
   supportedCommands: Command[];
   extensionConfig: ExtensionConfiguration;
-  
+
   // Platform integration
   platformContext: PlatformContext;
   integrationEndpoints: IntegrationEndpoint[];
   authenticationContext: AuthenticationContext;
-  
+
   // Data flow
   inputData: ExtensionInputData;
   outputFormat: ExtensionOutputFormat;
   dataTransformation: DataTransformationRule[];
-  
+
   // Error handling
   errorHandling: ErrorHandlingStrategy;
   fallbackBehavior: FallbackBehavior;
   retryPolicy: RetryPolicy;
-  
+
   // Performance optimization
   performanceHints: PerformanceHint[];
   cachingStrategy: CachingStrategy;
   rateLimit: RateLimit;
-  
+
   // Security context
   securityContext: SecurityContext;
   permissions: Permission[];
-  
+
   // Monitoring and logging
   telemetryContext: TelemetryContext;
   loggingConfiguration: LoggingConfiguration;
 }
 
 export interface CommunicationProtocol {
-  type: 'http' | 'websocket' | 'grpc' | 'mqtt' | 'webhook' | 'polling' | 'streaming';
+  type:
+    | 'http'
+    | 'websocket'
+    | 'grpc'
+    | 'mqtt'
+    | 'webhook'
+    | 'polling'
+    | 'streaming';
   version: string;
   endpoint: string;
   headers: Record<string, string>;
@@ -90,7 +102,11 @@ export interface CommunicationProtocol {
 }
 
 export interface MessageFormat {
-  contentType: 'application/json' | 'text/plain' | 'application/xml' | 'multipart/form-data';
+  contentType:
+    | 'application/json'
+    | 'text/plain'
+    | 'application/xml'
+    | 'multipart/form-data';
   encoding: 'utf-8' | 'base64' | 'binary';
   structure: 'flat' | 'nested' | 'hierarchical';
   schema?: Record<string, unknown>;
@@ -218,10 +234,21 @@ export interface InteractionRecord {
 }
 
 export interface ConversationState {
-  phase: 'initiation' | 'engagement' | 'task_execution' | 'clarification' | 'completion' | 'termination';
+  phase:
+    | 'initiation'
+    | 'engagement'
+    | 'task_execution'
+    | 'clarification'
+    | 'completion'
+    | 'termination';
   context: string[];
   pendingActions: string[];
-  waitingFor: 'user_input' | 'system_response' | 'external_data' | 'approval' | 'none';
+  waitingFor:
+    | 'user_input'
+    | 'system_response'
+    | 'external_data'
+    | 'approval'
+    | 'none';
   conversationFlow: ConversationFlow;
 }
 
@@ -300,7 +327,15 @@ export interface FeatureFlag {
 }
 
 export interface PlatformContext {
-  platform: 'slack' | 'discord' | 'telegram' | 'whatsapp' | 'teams' | 'api' | 'web' | 'mobile';
+  platform:
+    | 'slack'
+    | 'discord'
+    | 'telegram'
+    | 'whatsapp'
+    | 'teams'
+    | 'api'
+    | 'web'
+    | 'mobile';
   version: string;
   capabilities: string[];
   limitations: string[];
@@ -458,7 +493,11 @@ export interface ErrorNotification {
 
 export interface FallbackBehavior {
   enabled: boolean;
-  strategy: 'graceful_degradation' | 'alternative_service' | 'cached_response' | 'minimal_response';
+  strategy:
+    | 'graceful_degradation'
+    | 'alternative_service'
+    | 'cached_response'
+    | 'minimal_response';
   configuration: Record<string, unknown>;
   timeout: number;
 }
@@ -564,7 +603,9 @@ export interface SamplingConfiguration {
 /**
  * Extension Context Transformer implementation
  */
-export class ExtensionContextTransformer implements ContextTransformer<UnifiedContext, ExtensionContext> {
+export class ExtensionContextTransformer
+  implements ContextTransformer<UnifiedContext, ExtensionContext>
+{
   readonly id = 'extension-context-transformer';
   readonly version = '1.0.0';
   readonly target = TransformationTarget.EXTENSION;
@@ -572,11 +613,14 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
     TransformationStrategy.FULL,
     TransformationStrategy.SELECTIVE,
     TransformationStrategy.OPTIMIZED,
-    TransformationStrategy.MINIMAL
+    TransformationStrategy.MINIMAL,
   ];
   readonly reversible = true;
 
-  private transformationCache = new Map<string, TransformationResult<ExtensionContext>>();
+  private transformationCache = new Map<
+    string,
+    TransformationResult<ExtensionContext>
+  >();
 
   /**
    * Transform unified context to extension format
@@ -586,17 +630,19 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
     config?: TransformationConfig
   ): Promise<TransformationResult<ExtensionContext>> {
     const startTime = performance.now();
-    
+
     try {
       // Check cache first
       if (config?.cache?.enabled) {
         const cacheKey = this.generateCacheKey(context, config);
         const cached = this.transformationCache.get(cacheKey);
         if (cached) {
-          runtimeLogger.debug(`Cache hit for extension transformation: ${cacheKey}`);
+          runtimeLogger.debug(
+            `Cache hit for extension transformation: ${cacheKey}`
+          );
           return {
             ...cached,
-            cached: true
+            cached: true,
           };
         }
       }
@@ -604,20 +650,20 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
       // Determine strategy and target extension
       const strategy = config?.strategy || TransformationStrategy.SELECTIVE;
       const targetExtension = this.determineTargetExtension(context, config);
-      
+
       // Transform based on strategy
       const transformedContext = await this.performTransformation(
-        context, 
-        strategy, 
-        targetExtension, 
+        context,
+        strategy,
+        targetExtension,
         config
       );
-      
+
       // Calculate performance metrics
       const duration = performance.now() - startTime;
       const inputSize = JSON.stringify(context).length;
       const outputSize = JSON.stringify(transformedContext).length;
-      
+
       const metadata: TransformationMetadata = {
         transformerId: this.id,
         transformerVersion: this.version,
@@ -628,7 +674,7 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
         fieldsDropped: this.getDroppedFields(strategy),
         fieldsAdded: this.getAddedFields(),
         validationPassed: true,
-        cacheHit: false
+        cacheHit: false,
       };
 
       const performance: TransformationPerformance = {
@@ -637,7 +683,7 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
         cpuUsage: process.cpuUsage().user,
         cacheHitRate: 0,
         compressionRatio: inputSize / outputSize,
-        throughput: outputSize / duration
+        throughput: outputSize / duration,
       };
 
       const result: TransformationResult<ExtensionContext> = {
@@ -650,7 +696,7 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
         metadata,
         performance,
         reversible: this.reversible,
-        cached: false
+        cached: false,
       };
 
       // Cache result if enabled
@@ -659,13 +705,17 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
         this.transformationCache.set(cacheKey, result);
       }
 
-      runtimeLogger.debug(`Extension context transformation completed in ${duration.toFixed(2)}ms`);
+      runtimeLogger.debug(
+        `Extension context transformation completed in ${duration.toFixed(2)}ms`
+      );
       return result;
-
     } catch (error) {
       const duration = performance.now() - startTime;
-      runtimeLogger.error('Extension context transformation failed', { error, duration });
-      
+      runtimeLogger.error('Extension context transformation failed', {
+        error,
+        duration,
+      });
+
       return {
         success: false,
         error: error instanceof Error ? error.message : String(error),
@@ -684,7 +734,7 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
           fieldsDropped: [],
           fieldsAdded: [],
           validationPassed: false,
-          cacheHit: false
+          cacheHit: false,
         },
         performance: {
           duration,
@@ -692,10 +742,10 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
           cpuUsage: 0,
           cacheHitRate: 0,
           compressionRatio: 0,
-          throughput: 0
+          throughput: 0,
         },
         reversible: false,
-        cached: false
+        cached: false,
       };
     }
   }
@@ -703,17 +753,20 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
   /**
    * Determine target extension from context
    */
-  private determineTargetExtension(context: UnifiedContext, config?: TransformationConfig): string {
+  private determineTargetExtension(
+    context: UnifiedContext,
+    config?: TransformationConfig
+  ): string {
     // Check for explicit extension target in config
     if (config?.options?.customFields?.includes('targetExtension')) {
       return 'specified';
     }
-    
+
     // Infer from environment or platform
     if (context.environment.platform) {
       return context.environment.platform;
     }
-    
+
     // Check extension data
     if (context.extensionData) {
       const extensionKeys = Object.keys(context.extensionData);
@@ -721,7 +774,7 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
         return extensionKeys[0];
       }
     }
-    
+
     return 'generic';
   }
 
@@ -766,7 +819,7 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
       securityContext: this.buildSecurityContext(targetExtension),
       permissions: this.buildPermissions(context, targetExtension),
       telemetryContext: this.buildTelemetryContext(context),
-      loggingConfiguration: this.buildLoggingConfiguration(targetExtension)
+      loggingConfiguration: this.buildLoggingConfiguration(targetExtension),
     };
 
     // Apply strategy-specific optimizations
@@ -785,16 +838,28 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
   /**
    * Determine extension type based on target extension
    */
-  private determineExtensionType(targetExtension: string): 'communication' | 'integration' | 'tool' | 'interface' | 'service' {
-    const communicationPlatforms = ['slack', 'discord', 'telegram', 'whatsapp', 'teams'];
+  private determineExtensionType(
+    targetExtension: string
+  ): 'communication' | 'integration' | 'tool' | 'interface' | 'service' {
+    const communicationPlatforms = [
+      'slack',
+      'discord',
+      'telegram',
+      'whatsapp',
+      'teams',
+    ];
     const integrationPlatforms = ['api', 'webhook', 'database'];
     const toolPlatforms = ['cli', 'desktop'];
     const interfacePlatforms = ['web', 'mobile'];
-    
+
     if (communicationPlatforms.includes(targetExtension.toLowerCase())) {
       return 'communication';
     }
-    if (integrationPlatforms.some(p => targetExtension.toLowerCase().includes(p))) {
+    if (
+      integrationPlatforms.some((p) =>
+        targetExtension.toLowerCase().includes(p)
+      )
+    ) {
       return 'integration';
     }
     if (toolPlatforms.includes(targetExtension.toLowerCase())) {
@@ -803,14 +868,16 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
     if (interfacePlatforms.includes(targetExtension.toLowerCase())) {
       return 'interface';
     }
-    
+
     return 'service';
   }
 
   /**
    * Build communication protocol configuration
    */
-  private buildCommunicationProtocol(targetExtension: string): CommunicationProtocol {
+  private buildCommunicationProtocol(
+    targetExtension: string
+  ): CommunicationProtocol {
     const protocols: Record<string, CommunicationProtocol> = {
       slack: {
         type: 'http',
@@ -819,7 +886,7 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
         headers: { 'Content-Type': 'application/json' },
         timeout: 30000,
         keepAlive: true,
-        compression: true
+        compression: true,
       },
       telegram: {
         type: 'http',
@@ -828,7 +895,7 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
         headers: { 'Content-Type': 'application/json' },
         timeout: 30000,
         keepAlive: true,
-        compression: true
+        compression: true,
       },
       websocket: {
         type: 'websocket',
@@ -837,10 +904,10 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
         headers: {},
         timeout: 60000,
         keepAlive: true,
-        compression: true
-      }
+        compression: true,
+      },
     };
-    
+
     return protocols[targetExtension.toLowerCase()] || protocols.websocket;
   }
 
@@ -852,7 +919,7 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
       contentType: 'application/json',
       encoding: 'utf-8',
       structure: 'nested',
-      validation: true
+      validation: true,
     };
   }
 
@@ -863,24 +930,26 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
     return {
       channelId: context.sessionId,
       channelType: 'direct',
-      participants: [{
-        id: context.userId || 'user',
-        name: 'User',
-        role: 'user',
-        status: 'online',
-        permissions: ['read', 'write'],
-        lastActivity: context.timestamp
-      }],
+      participants: [
+        {
+          id: context.userId || 'user',
+          name: 'User',
+          role: 'user',
+          status: 'online',
+          permissions: ['read', 'write'],
+          lastActivity: context.timestamp,
+        },
+      ],
       channelMetadata: {},
-      messageHistory: context.messages.map(msg => ({
+      messageHistory: context.messages.map((msg) => ({
         id: msg.id,
         from: msg.from,
         content: msg.content,
         timestamp: msg.timestamp,
         messageType: msg.type as any,
-        metadata: msg.metadata || {}
+        metadata: msg.metadata || {},
       })),
-      channelState: 'active'
+      channelState: 'active',
     };
   }
 
@@ -896,30 +965,30 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
         timezone: context.environment.timezone || 'UTC',
         language: context.environment.language || 'en',
         locale: context.environment.language || 'en-US',
-        customFields: {}
+        customFields: {},
       },
       preferences: {
         notificationSettings: {
           enabled: true,
           channels: ['direct'],
-          frequency: 'immediate'
+          frequency: 'immediate',
         },
         displaySettings: {
           theme: 'auto',
           fontSize: 'medium',
-          density: 'normal'
+          density: 'normal',
         },
         privacySettings: {
           profileVisibility: 'private',
           activityTracking: false,
-          dataCollection: false
+          dataCollection: false,
         },
         accessibilitySettings: {
           screenReader: false,
           highContrast: false,
           keyboardNavigation: false,
-          voiceCommands: false
-        }
+          voiceCommands: false,
+        },
       },
       currentSession: {
         sessionId: context.sessionId,
@@ -929,23 +998,25 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
           type: 'desktop',
           os: 'unknown',
           version: '1.0',
-          capabilities: []
+          capabilities: [],
         },
         ipAddress: '127.0.0.1',
-        userAgent: 'SYMindX-Agent/1.0'
+        userAgent: 'SYMindX-Agent/1.0',
       },
       authenticationState: {
         authenticated: true,
         method: 'token',
-        scopes: ['read', 'write']
-      }
+        scopes: ['read', 'write'],
+      },
     };
   }
 
   /**
    * Build interaction history
    */
-  private buildInteractionHistory(context: UnifiedContext): InteractionRecord[] {
+  private buildInteractionHistory(
+    context: UnifiedContext
+  ): InteractionRecord[] {
     return context.messages.map((msg, index) => ({
       id: `interaction_${index}`,
       timestamp: msg.timestamp,
@@ -953,10 +1024,10 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
       details: {
         content: msg.content,
         from: msg.from,
-        emotions: msg.emotions
+        emotions: msg.emotions,
       },
       outcome: 'success',
-      duration: 0
+      duration: 0,
     }));
   }
 
@@ -973,8 +1044,8 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
         currentStep: 'active',
         completedSteps: ['initiation'],
         nextPossibleSteps: ['task_execution', 'clarification'],
-        branchingPoints: []
-      }
+        branchingPoints: [],
+      },
     };
   }
 
@@ -982,8 +1053,20 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
    * Map context phase to conversation phase
    */
   private mapContextPhaseToConversation(
-    phase: 'initialization' | 'active' | 'processing' | 'waiting' | 'complete' | 'error'
-  ): 'initiation' | 'engagement' | 'task_execution' | 'clarification' | 'completion' | 'termination' {
+    phase:
+      | 'initialization'
+      | 'active'
+      | 'processing'
+      | 'waiting'
+      | 'complete'
+      | 'error'
+  ):
+    | 'initiation'
+    | 'engagement'
+    | 'task_execution'
+    | 'clarification'
+    | 'completion'
+    | 'termination' {
     switch (phase) {
       case 'initialization':
         return 'initiation';
@@ -1016,16 +1099,16 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
             name: 'content',
             type: 'string',
             required: true,
-            description: 'Message content'
-          }
+            description: 'Message content',
+          },
         ],
         permissions: ['write'],
         async: false,
         timeout: 30000,
-        retryable: true
-      }
+        retryable: true,
+      },
     ];
-    
+
     // Add platform-specific actions
     if (targetExtension === 'slack') {
       commonActions.push({
@@ -1037,16 +1120,16 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
             name: 'emoji',
             type: 'string',
             required: true,
-            description: 'Emoji name'
-          }
+            description: 'Emoji name',
+          },
         ],
         permissions: ['write'],
         async: true,
         timeout: 10000,
-        retryable: true
+        retryable: true,
       });
     }
-    
+
     return commonActions;
   }
 
@@ -1062,7 +1145,7 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
         usage: '/help [command]',
         examples: ['/help', '/help status'],
         category: 'general',
-        permissions: []
+        permissions: [],
       },
       {
         command: '/status',
@@ -1071,22 +1154,24 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
         usage: '/status',
         examples: ['/status'],
         category: 'system',
-        permissions: []
-      }
+        permissions: [],
+      },
     ];
   }
 
   /**
    * Build extension configuration
    */
-  private buildExtensionConfig(targetExtension: string): ExtensionConfiguration {
+  private buildExtensionConfig(
+    targetExtension: string
+  ): ExtensionConfiguration {
     return {
       enabled: true,
       version: '1.0.0',
       settings: {
         targetExtension,
         autoResponse: true,
-        debug: false
+        debug: false,
       },
       dependencies: [],
       resources: [
@@ -1094,15 +1179,15 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
           type: 'memory',
           amount: 100,
           unit: 'MB',
-          critical: false
-        }
+          critical: false,
+        },
       ],
       features: [
         {
           name: 'message_streaming',
-          enabled: true
-        }
-      ]
+          enabled: true,
+        },
+      ],
     };
   }
 
@@ -1114,17 +1199,17 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
       slack: {
         platform: 'slack',
         capabilities: ['message', 'reaction', 'file_upload', 'slash_commands'],
-        limitations: ['no_voice', 'no_video']
+        limitations: ['no_voice', 'no_video'],
       },
       telegram: {
         platform: 'telegram',
         capabilities: ['message', 'inline_keyboard', 'file_upload', 'location'],
-        limitations: ['message_length_limit']
-      }
+        limitations: ['message_length_limit'],
+      },
     };
-    
+
     const config = platformConfigs[targetExtension.toLowerCase()] || {};
-    
+
     return {
       platform: targetExtension as any,
       version: '1.0',
@@ -1132,24 +1217,28 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
       limitations: config.limitations || [],
       apiEndpoints: [],
       webhooks: [],
-      ...config
+      ...config,
     };
   }
 
   // Continue with remaining builder methods...
-  private buildIntegrationEndpoints(targetExtension: string): IntegrationEndpoint[] {
+  private buildIntegrationEndpoints(
+    targetExtension: string
+  ): IntegrationEndpoint[] {
     return [];
   }
 
-  private buildAuthenticationContext(context: UnifiedContext): AuthenticationContext {
+  private buildAuthenticationContext(
+    context: UnifiedContext
+  ): AuthenticationContext {
     return {
       required: false,
       methods: ['token'],
       tokenRefresh: {
         enabled: false,
         thresholdMinutes: 15,
-        maxRetries: 3
-      }
+        maxRetries: 3,
+      },
     };
   }
 
@@ -1158,22 +1247,22 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
       primaryContent: context.content,
       structuredData: {
         messages: context.messages,
-        state: context.state
+        state: context.state,
       },
       attachments: [],
       metadata: {
         source: context.agentId,
         timestamp: context.timestamp,
         contentType: 'application/json',
-        encoding: 'utf-8'
+        encoding: 'utf-8',
       },
       validation: {
         valid: true,
         errors: [],
         warnings: [],
         score: 1.0,
-        timestamp: new Date()
-      }
+        timestamp: new Date(),
+      },
     };
   }
 
@@ -1184,26 +1273,30 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
       validation: {
         enabled: true,
         rules: [],
-        onFailure: 'warn'
+        onFailure: 'warn',
       },
       delivery: {
         method: 'synchronous',
         timeout: 30000,
         retries: 3,
-        confirmation: false
-      }
+        confirmation: false,
+      },
     };
   }
 
-  private buildDataTransformationRules(targetExtension: string): DataTransformationRule[] {
+  private buildDataTransformationRules(
+    targetExtension: string
+  ): DataTransformationRule[] {
     return [];
   }
 
-  private buildErrorHandlingStrategy(targetExtension: string): ErrorHandlingStrategy {
+  private buildErrorHandlingStrategy(
+    targetExtension: string
+  ): ErrorHandlingStrategy {
     return {
       onError: 'fallback',
       errorMapping: [],
-      notifications: []
+      notifications: [],
     };
   }
 
@@ -1212,7 +1305,7 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
       enabled: true,
       strategy: 'graceful_degradation',
       configuration: {},
-      timeout: 10000
+      timeout: 10000,
     };
   }
 
@@ -1223,22 +1316,25 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
       backoffStrategy: 'exponential',
       baseDelay: 1000,
       maxDelay: 10000,
-      retryableErrors: ['network', 'timeout', 'rate_limit']
+      retryableErrors: ['network', 'timeout', 'rate_limit'],
     };
   }
 
-  private buildPerformanceHints(context: UnifiedContext, targetExtension: string): PerformanceHint[] {
+  private buildPerformanceHints(
+    context: UnifiedContext,
+    targetExtension: string
+  ): PerformanceHint[] {
     const hints: PerformanceHint[] = [];
-    
+
     if (context.messages.length > 10) {
       hints.push({
         hint: 'Long conversation - consider pagination',
         category: 'memory',
         priority: 0.8,
-        conditions: ['message_count > 10']
+        conditions: ['message_count > 10'],
       });
     }
-    
+
     return hints;
   }
 
@@ -1248,7 +1344,7 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
       ttl: 300, // 5 minutes
       strategy: 'lru',
       keyPattern: `${targetExtension}:{contextId}`,
-      storage: 'memory'
+      storage: 'memory',
     };
   }
 
@@ -1259,24 +1355,26 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
         requestsPerMinute: 60,
         burstLimit: 10,
         skipList: [],
-        penaltyDelay: 1000
+        penaltyDelay: 1000,
       },
       telegram: {
         enabled: true,
         requestsPerMinute: 30,
         burstLimit: 5,
         skipList: [],
-        penaltyDelay: 2000
+        penaltyDelay: 2000,
+      },
+    };
+
+    return (
+      rateLimits[targetExtension.toLowerCase()] || {
+        enabled: false,
+        requestsPerMinute: 100,
+        burstLimit: 20,
+        skipList: [],
+        penaltyDelay: 500,
       }
-    };
-    
-    return rateLimits[targetExtension.toLowerCase()] || {
-      enabled: false,
-      requestsPerMinute: 100,
-      burstLimit: 20,
-      skipList: [],
-      penaltyDelay: 500
-    };
+    );
   }
 
   private buildSecurityContext(targetExtension: string): SecurityContext {
@@ -1286,18 +1384,21 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
       csrfProtection: false,
       inputSanitization: true,
       outputEncoding: true,
-      auditLogging: false
+      auditLogging: false,
     };
   }
 
-  private buildPermissions(context: UnifiedContext, targetExtension: string): Permission[] {
+  private buildPermissions(
+    context: UnifiedContext,
+    targetExtension: string
+  ): Permission[] {
     return [
       {
         name: 'send_message',
         description: 'Send messages to users',
         level: 'write',
-        scope: 'channel'
-      }
+        scope: 'channel',
+      },
     ];
   }
 
@@ -1310,27 +1411,29 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
         counters: {},
         gauges: {},
         histograms: {},
-        timers: {}
+        timers: {},
       },
-      events: []
+      events: [],
     };
   }
 
-  private buildLoggingConfiguration(targetExtension: string): LoggingConfiguration {
+  private buildLoggingConfiguration(
+    targetExtension: string
+  ): LoggingConfiguration {
     return {
       level: 'info',
       format: 'json',
       destinations: [
         {
           type: 'console',
-          configuration: {}
-        }
+          configuration: {},
+        },
       ],
       sampling: {
         enabled: false,
         rate: 1.0,
-        threshold: 1000
-      }
+        threshold: 1000,
+      },
     };
   }
 
@@ -1343,11 +1446,11 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
       interactionHistory: context.interactionHistory.slice(-5),
       channelContext: {
         ...context.channelContext,
-        messageHistory: context.channelContext.messageHistory.slice(-10)
+        messageHistory: context.channelContext.messageHistory.slice(-10),
       },
       availableActions: context.availableActions.slice(0, 3),
       supportedCommands: context.supportedCommands.slice(0, 5),
-      performanceHints: context.performanceHints.slice(0, 3)
+      performanceHints: context.performanceHints.slice(0, 3),
     };
   }
 
@@ -1355,17 +1458,21 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
     return {
       ...context,
       interactionHistory: context.interactionHistory
-        .filter(interaction => interaction.outcome === 'success')
+        .filter((interaction) => interaction.outcome === 'success')
         .slice(-10),
-      availableActions: context.availableActions
-        .filter(action => !action.async || action.retryable),
+      availableActions: context.availableActions.filter(
+        (action) => !action.async || action.retryable
+      ),
       performanceHints: context.performanceHints
-        .filter(hint => hint.priority > 0.5)
-        .sort((a, b) => b.priority - a.priority)
+        .filter((hint) => hint.priority > 0.5)
+        .sort((a, b) => b.priority - a.priority),
     };
   }
 
-  private applyFullStrategy(context: ExtensionContext, original: UnifiedContext): ExtensionContext {
+  private applyFullStrategy(
+    context: ExtensionContext,
+    original: UnifiedContext
+  ): ExtensionContext {
     // Include all available data with full enrichment
     return context;
   }
@@ -1386,7 +1493,7 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
         field: 'agentId',
         message: 'Agent ID is required',
         severity: 'critical',
-        code: 'MISSING_AGENT_ID'
+        code: 'MISSING_AGENT_ID',
       });
     }
 
@@ -1395,7 +1502,7 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
         field: 'targetExtension',
         message: 'Target extension is required',
         severity: 'critical',
-        code: 'MISSING_TARGET_EXTENSION'
+        code: 'MISSING_TARGET_EXTENSION',
       });
     }
 
@@ -1404,7 +1511,7 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
       warnings.push({
         field: 'communicationProtocol.endpoint',
         message: 'Communication endpoint is recommended',
-        code: 'MISSING_ENDPOINT'
+        code: 'MISSING_ENDPOINT',
       });
     }
 
@@ -1412,20 +1519,22 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
     if (context.rateLimit.enabled && context.rateLimit.requestsPerMinute <= 0) {
       errors.push({
         field: 'rateLimit.requestsPerMinute',
-        message: 'Requests per minute must be positive when rate limiting is enabled',
+        message:
+          'Requests per minute must be positive when rate limiting is enabled',
         severity: 'medium',
-        code: 'INVALID_RATE_LIMIT'
+        code: 'INVALID_RATE_LIMIT',
       });
     }
 
-    const score = errors.length === 0 ? (warnings.length === 0 ? 1.0 : 0.8) : 0.5;
+    const score =
+      errors.length === 0 ? (warnings.length === 0 ? 1.0 : 0.8) : 0.5;
 
     return {
       valid: errors.length === 0,
       errors,
       warnings,
       score,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
   }
 
@@ -1447,36 +1556,49 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
       performance: {
         averageDuration: 20, // ms
         memoryUsage: 3 * 1024 * 1024, // 3MB
-        throughput: 800 // contexts per second
-      }
+        throughput: 800, // contexts per second
+      },
     };
   }
 
   /**
    * Helper methods
    */
-  private generateCacheKey(context: UnifiedContext, config?: TransformationConfig): string {
+  private generateCacheKey(
+    context: UnifiedContext,
+    config?: TransformationConfig
+  ): string {
     const keyData = {
       contextId: context.contextId,
       version: context.version,
       strategy: config?.strategy,
       targetExtension: this.determineTargetExtension(context, config),
-      timestamp: Math.floor(context.timestamp.getTime() / 60000)
+      timestamp: Math.floor(context.timestamp.getTime() / 60000),
     };
     return `extension_${JSON.stringify(keyData)}`;
   }
 
   private getTransformedFields(strategy: TransformationStrategy): string[] {
     const baseFields = [
-      'agentId', 'targetExtension', 'communicationProtocol', 'userContext',
-      'availableActions', 'inputData', 'outputFormat'
+      'agentId',
+      'targetExtension',
+      'communicationProtocol',
+      'userContext',
+      'availableActions',
+      'inputData',
+      'outputFormat',
     ];
-    
+
     switch (strategy) {
       case TransformationStrategy.MINIMAL:
         return baseFields.slice(0, 4);
       case TransformationStrategy.FULL:
-        return [...baseFields, 'telemetryContext', 'performanceHints', 'securityContext'];
+        return [
+          ...baseFields,
+          'telemetryContext',
+          'performanceHints',
+          'securityContext',
+        ];
       default:
         return baseFields;
     }
@@ -1485,7 +1607,12 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
   private getDroppedFields(strategy: TransformationStrategy): string[] {
     switch (strategy) {
       case TransformationStrategy.MINIMAL:
-        return ['telemetryContext', 'performanceHints', 'securityContext', 'loggingConfiguration'];
+        return [
+          'telemetryContext',
+          'performanceHints',
+          'securityContext',
+          'loggingConfiguration',
+        ];
       default:
         return [];
     }
@@ -1493,8 +1620,14 @@ export class ExtensionContextTransformer implements ContextTransformer<UnifiedCo
 
   private getAddedFields(): string[] {
     return [
-      'targetExtension', 'extensionType', 'communicationProtocol', 'channelContext',
-      'availableActions', 'platformContext', 'performanceHints', 'securityContext'
+      'targetExtension',
+      'extensionType',
+      'communicationProtocol',
+      'channelContext',
+      'availableActions',
+      'platformContext',
+      'performanceHints',
+      'securityContext',
     ];
   }
 }

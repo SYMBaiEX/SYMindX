@@ -37,7 +37,7 @@ export class SessionManager {
       sessionDuration: config.sessionDuration || 24 * 60 * 60 * 1000, // 24 hours
       maxConcurrentSessions: config.maxConcurrentSessions || 5,
       enableFingerprinting: config.enableFingerprinting !== false,
-      sessionIdleTimeout: config.sessionIdleTimeout || 30 * 60 * 1000 // 30 minutes
+      sessionIdleTimeout: config.sessionIdleTimeout || 30 * 60 * 1000, // 30 minutes
     };
 
     // Start cleanup interval
@@ -70,16 +70,16 @@ export class SessionManager {
       userAgent,
       metadata: {
         ...metadata,
-        fingerprint: this.config.enableFingerprinting 
-          ? this.generateFingerprint(ipAddress, userAgent) 
-          : undefined
+        fingerprint: this.config.enableFingerprinting
+          ? this.generateFingerprint(ipAddress, userAgent)
+          : undefined,
       },
-      isActive: true
+      isActive: true,
     };
 
     // Store session
     this.sessions.set(sessionId, session);
-    
+
     // Track user sessions
     if (!this.userSessions.has(userId)) {
       this.userSessions.set(userId, new Set());
@@ -101,7 +101,7 @@ export class SessionManager {
     userAgent?: string
   ): Promise<Session | null> {
     const session = this.sessions.get(sessionId);
-    
+
     if (!session || !session.isActive) {
       return null;
     }
@@ -153,9 +153,10 @@ export class SessionManager {
     if (!sessionIds) return [];
 
     return Array.from(sessionIds)
-      .map(id => this.sessions.get(id))
-      .filter((session): session is Session => 
-        session !== undefined && session.isActive
+      .map((id) => this.sessions.get(id))
+      .filter(
+        (session): session is Session =>
+          session !== undefined && session.isActive
       );
   }
 
@@ -170,7 +171,7 @@ export class SessionManager {
     session.isActive = false;
     session.metadata.terminationReason = reason;
     session.metadata.terminatedAt = new Date();
-    
+
     this.sessions.set(sessionId, session);
 
     // Remove from user sessions
@@ -185,7 +186,7 @@ export class SessionManager {
    */
   async terminateUserSessions(userId: string, reason?: string): Promise<void> {
     const sessions = this.getUserSessions(userId);
-    
+
     for (const session of sessions) {
       await this.terminateSession(session.id, reason);
     }
@@ -201,7 +202,7 @@ export class SessionManager {
     const extensionDuration = duration || this.config.sessionDuration;
     session.expiresAt = new Date(Date.now() + extensionDuration);
     session.lastActivityAt = new Date();
-    
+
     this.sessions.set(sessionId, session);
     return true;
   }
@@ -226,16 +227,16 @@ export class SessionManager {
    */
   private async enforceSessionLimit(userId: string): Promise<void> {
     const sessions = this.getUserSessions(userId);
-    
+
     if (sessions.length >= this.config.maxConcurrentSessions) {
       // Remove oldest session
-      const oldestSession = sessions.sort((a, b) => 
-        a.createdAt.getTime() - b.createdAt.getTime()
+      const oldestSession = sessions.sort(
+        (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
       )[0];
-      
+
       if (oldestSession) {
         await this.terminateSession(
-          oldestSession.id, 
+          oldestSession.id,
           'Maximum concurrent sessions exceeded'
         );
       }
@@ -247,16 +248,16 @@ export class SessionManager {
    */
   private cleanupExpiredSessions(): void {
     const now = new Date();
-    
+
     for (const [sessionId, session] of this.sessions) {
       if (session.expiresAt < now || !session.isActive) {
         // Remove from maps
         this.sessions.delete(sessionId);
-        
+
         const userSessions = this.userSessions.get(session.userId);
         if (userSessions) {
           userSessions.delete(sessionId);
-          
+
           // Clean up empty user session sets
           if (userSessions.size === 0) {
             this.userSessions.delete(session.userId);
@@ -274,13 +275,14 @@ export class SessionManager {
     activeSessions: number;
     uniqueUsers: number;
   } {
-    const activeSessions = Array.from(this.sessions.values())
-      .filter(s => s.isActive).length;
+    const activeSessions = Array.from(this.sessions.values()).filter(
+      (s) => s.isActive
+    ).length;
 
     return {
       totalSessions: this.sessions.size,
       activeSessions,
-      uniqueUsers: this.userSessions.size
+      uniqueUsers: this.userSessions.size,
     };
   }
 }

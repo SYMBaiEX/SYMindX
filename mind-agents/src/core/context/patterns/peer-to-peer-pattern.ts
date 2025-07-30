@@ -1,6 +1,6 @@
 /**
  * Peer-to-Peer Pattern for Multi-Agent Context Coordination
- * 
+ *
  * Implements equal context sharing where all agents can communicate
  * directly with each other without a central coordinator.
  */
@@ -10,7 +10,7 @@ import {
   AgentContext,
   ContextUpdate,
   VectorClock,
-  ContextConflict
+  ContextConflict,
 } from '../../../types/context/multi-agent-context';
 import { AgentId, OperationResult } from '../../../types/helpers';
 import { runtimeLogger } from '../../../utils/logger';
@@ -94,7 +94,7 @@ export class PeerToPeerPattern extends EventEmitter {
         return {
           success: true,
           data: { message: 'Peers already connected' },
-          metadata: { operation: 'connectPeers' }
+          metadata: { operation: 'connectPeers' },
         };
       }
 
@@ -107,7 +107,7 @@ export class PeerToPeerPattern extends EventEmitter {
         latency: 0,
         messagesSent: 0,
         messagesReceived: 0,
-        bandwidth: 0
+        bandwidth: 0,
       };
 
       const connection2: PeerConnection = {
@@ -118,7 +118,7 @@ export class PeerToPeerPattern extends EventEmitter {
         latency: 0,
         messagesSent: 0,
         messagesReceived: 0,
-        bandwidth: 0
+        bandwidth: 0,
       };
 
       this.peers.get(peer1)!.push(connection1);
@@ -130,7 +130,7 @@ export class PeerToPeerPattern extends EventEmitter {
       this.emit('peersConnected', {
         peer1,
         peer2,
-        timestamp: now
+        timestamp: now,
       });
 
       runtimeLogger.debug('Peers connected', { peer1, peer2 });
@@ -140,22 +140,21 @@ export class PeerToPeerPattern extends EventEmitter {
         data: {
           peer1,
           peer2,
-          connectedAt: now
+          connectedAt: now,
         },
         metadata: {
           operation: 'connectPeers',
-          timestamp: now
-        }
+          timestamp: now,
+        },
       };
-
     } catch (error) {
       return {
         success: false,
         error: `Peer connection failed: ${(error as Error).message}`,
         metadata: {
           operation: 'connectPeers',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
     }
   }
@@ -163,14 +162,17 @@ export class PeerToPeerPattern extends EventEmitter {
   /**
    * Disconnect two peers
    */
-  async disconnectPeers(peer1: AgentId, peer2: AgentId): Promise<OperationResult> {
+  async disconnectPeers(
+    peer1: AgentId,
+    peer2: AgentId
+  ): Promise<OperationResult> {
     try {
       let disconnected = false;
 
       // Remove connections
       const peer1Connections = this.peers.get(peer1);
       if (peer1Connections) {
-        const index = peer1Connections.findIndex(c => c.peerId === peer2);
+        const index = peer1Connections.findIndex((c) => c.peerId === peer2);
         if (index !== -1) {
           peer1Connections.splice(index, 1);
           disconnected = true;
@@ -179,7 +181,7 @@ export class PeerToPeerPattern extends EventEmitter {
 
       const peer2Connections = this.peers.get(peer2);
       if (peer2Connections) {
-        const index = peer2Connections.findIndex(c => c.peerId === peer1);
+        const index = peer2Connections.findIndex((c) => c.peerId === peer1);
         if (index !== -1) {
           peer2Connections.splice(index, 1);
           disconnected = true;
@@ -193,7 +195,7 @@ export class PeerToPeerPattern extends EventEmitter {
         this.emit('peersDisconnected', {
           peer1,
           peer2,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
 
         runtimeLogger.debug('Peers disconnected', { peer1, peer2 });
@@ -204,22 +206,21 @@ export class PeerToPeerPattern extends EventEmitter {
         data: {
           peer1,
           peer2,
-          wasConnected: disconnected
+          wasConnected: disconnected,
         },
         metadata: {
           operation: 'disconnectPeers',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
-
     } catch (error) {
       return {
         success: false,
         error: `Peer disconnection failed: ${(error as Error).message}`,
         metadata: {
           operation: 'disconnectPeers',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
     }
   }
@@ -239,27 +240,27 @@ export class PeerToPeerPattern extends EventEmitter {
       runtimeLogger.debug('Starting context broadcast', {
         sourceAgent,
         messageId,
-        updateId: update.updateId
+        updateId: update.updateId,
       });
 
       // Update vector clock
       this.updateVectorClock(sourceAgent);
-      
+
       // Cache the context
       this.contextCache.set(sourceAgent, context);
 
       // Get all connected peers
       const connectedPeers = this.getConnectedPeers(sourceAgent);
-      
+
       if (connectedPeers.length === 0) {
         return {
           success: true,
           data: {
             messageId,
             deliveredTo: [],
-            broadcastTime: Date.now() - startTime
+            broadcastTime: Date.now() - startTime,
           },
-          metadata: { operation: 'broadcastUpdate' }
+          metadata: { operation: 'broadcastUpdate' },
         };
       }
 
@@ -275,11 +276,15 @@ export class PeerToPeerPattern extends EventEmitter {
             await this.deliverMessage(route, { context, update });
             deliveredTo.push(peerId);
           } catch (error) {
-            runtimeLogger.error('Failed to deliver message to peer', error as Error, {
-              messageId,
-              sourceAgent,
-              targetPeer: peerId
-            });
+            runtimeLogger.error(
+              'Failed to deliver message to peer',
+              error as Error,
+              {
+                messageId,
+                sourceAgent,
+                targetPeer: peerId,
+              }
+            );
           }
         }
       }
@@ -292,7 +297,7 @@ export class PeerToPeerPattern extends EventEmitter {
         updateId: update.updateId,
         totalPeers: connectedPeers.length,
         deliveredTo: deliveredTo.length,
-        broadcastTime
+        broadcastTime,
       });
 
       runtimeLogger.debug('Context broadcast completed', {
@@ -300,7 +305,7 @@ export class PeerToPeerPattern extends EventEmitter {
         messageId,
         deliveredTo: deliveredTo.length,
         totalPeers: connectedPeers.length,
-        broadcastTime
+        broadcastTime,
       });
 
       return {
@@ -311,18 +316,17 @@ export class PeerToPeerPattern extends EventEmitter {
           deliveredTo,
           failedDeliveries: connectedPeers.length - deliveredTo.length,
           broadcastTime,
-          routes: routes.length
+          routes: routes.length,
         },
         metadata: {
           operation: 'broadcastUpdate',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
-
     } catch (error) {
       runtimeLogger.error('Context broadcast failed', error as Error, {
         sourceAgent,
-        updateId: update.updateId
+        updateId: update.updateId,
       });
 
       return {
@@ -330,8 +334,8 @@ export class PeerToPeerPattern extends EventEmitter {
         error: `Broadcast failed: ${(error as Error).message}`,
         metadata: {
           operation: 'broadcastUpdate',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
     }
   }
@@ -353,7 +357,7 @@ export class PeerToPeerPattern extends EventEmitter {
         sourceAgent,
         targetAgent,
         messageId,
-        updateId: update.updateId
+        updateId: update.updateId,
       });
 
       // Find route to target
@@ -362,7 +366,7 @@ export class PeerToPeerPattern extends EventEmitter {
         return {
           success: false,
           error: 'No route found to target peer',
-          metadata: { operation: 'sendToPeer' }
+          metadata: { operation: 'sendToPeer' },
         };
       }
 
@@ -377,7 +381,7 @@ export class PeerToPeerPattern extends EventEmitter {
         messageId,
         updateId: update.updateId,
         hops: route.hops.length,
-        deliveryTime
+        deliveryTime,
       });
 
       runtimeLogger.debug('Context sent to peer', {
@@ -385,7 +389,7 @@ export class PeerToPeerPattern extends EventEmitter {
         targetAgent,
         messageId,
         hops: route.hops.length,
-        deliveryTime
+        deliveryTime,
       });
 
       return {
@@ -394,19 +398,18 @@ export class PeerToPeerPattern extends EventEmitter {
           messageId,
           targetAgent,
           hops: route.hops.length,
-          deliveryTime
+          deliveryTime,
         },
         metadata: {
           operation: 'sendToPeer',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
-
     } catch (error) {
       runtimeLogger.error('Failed to send context to peer', error as Error, {
         sourceAgent,
         targetAgent,
-        updateId: update.updateId
+        updateId: update.updateId,
       });
 
       return {
@@ -414,8 +417,8 @@ export class PeerToPeerPattern extends EventEmitter {
         error: `Send to peer failed: ${(error as Error).message}`,
         metadata: {
           operation: 'sendToPeer',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
     }
   }
@@ -435,16 +438,20 @@ export class PeerToPeerPattern extends EventEmitter {
         requestingAgent,
         targetAgent,
         messageId,
-        contextVersion
+        contextVersion,
       });
 
       // Find route to target
-      const route = await this.findRoute(requestingAgent, targetAgent, messageId);
+      const route = await this.findRoute(
+        requestingAgent,
+        targetAgent,
+        messageId
+      );
       if (!route) {
         return {
           success: false,
           error: 'No route found to target peer',
-          metadata: { operation: 'requestContext' }
+          metadata: { operation: 'requestContext' },
         };
       }
 
@@ -453,7 +460,7 @@ export class PeerToPeerPattern extends EventEmitter {
         type: 'context_request',
         requestingAgent,
         contextVersion: contextVersion || 0,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
 
       await this.deliverMessage(route, request);
@@ -466,7 +473,7 @@ export class PeerToPeerPattern extends EventEmitter {
         requestingAgent,
         targetAgent,
         messageId,
-        contextFound: !!context
+        contextFound: !!context,
       });
 
       return {
@@ -475,22 +482,21 @@ export class PeerToPeerPattern extends EventEmitter {
           messageId,
           targetAgent,
           context: context || null,
-          hops: route.hops.length
+          hops: route.hops.length,
         },
         metadata: {
           operation: 'requestContext',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
-
     } catch (error) {
       return {
         success: false,
         error: `Context request failed: ${(error as Error).message}`,
         metadata: {
           operation: 'requestContext',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
     }
   }
@@ -505,25 +511,28 @@ export class PeerToPeerPattern extends EventEmitter {
     // Build connection map
     for (const [agentId, peerConnections] of this.peers.entries()) {
       const connectedPeers = new Set<AgentId>();
-      
+
       for (const connection of peerConnections) {
         if (connection.isActive) {
           connectedPeers.add(connection.peerId);
           totalConnections++;
         }
       }
-      
+
       connections.set(agentId, connectedPeers);
     }
 
     // Calculate network metrics
     const totalPeers = this.peers.size;
     const maxPossibleConnections = (totalPeers * (totalPeers - 1)) / 2;
-    const density = maxPossibleConnections > 0 ? (totalConnections / 2) / maxPossibleConnections : 0;
+    const density =
+      maxPossibleConnections > 0
+        ? totalConnections / 2 / maxPossibleConnections
+        : 0;
 
     // Find clusters using simple connected components
     const clusters = this.findClusters(connections);
-    
+
     // Calculate network diameter
     const diameter = this.calculateDiameter(connections);
 
@@ -532,7 +541,7 @@ export class PeerToPeerPattern extends EventEmitter {
       connections,
       clusters,
       diameter,
-      density
+      density,
     };
   }
 
@@ -543,7 +552,9 @@ export class PeerToPeerPattern extends EventEmitter {
     const peer1Connections = this.peers.get(peer1);
     if (!peer1Connections) return false;
 
-    return peer1Connections.some(conn => conn.peerId === peer2 && conn.isActive);
+    return peer1Connections.some(
+      (conn) => conn.peerId === peer2 && conn.isActive
+    );
   }
 
   /**
@@ -554,8 +565,8 @@ export class PeerToPeerPattern extends EventEmitter {
     if (!connections) return [];
 
     return connections
-      .filter(conn => conn.isActive)
-      .map(conn => conn.peerId);
+      .filter((conn) => conn.isActive)
+      .map((conn) => conn.peerId);
   }
 
   /**
@@ -574,14 +585,14 @@ export class PeerToPeerPattern extends EventEmitter {
     const routes = this.routingTable.get(source);
     if (routes?.has(destination)) {
       const hops = routes.get(destination)!;
-      
+
       return {
         messageId,
         source,
         destination,
         hops,
         timestamp: new Date().toISOString(),
-        ttl: this.messageTTL
+        ttl: this.messageTTL,
       };
     }
 
@@ -593,7 +604,7 @@ export class PeerToPeerPattern extends EventEmitter {
         destination,
         hops: [destination],
         timestamp: new Date().toISOString(),
-        ttl: this.messageTTL
+        ttl: this.messageTTL,
       };
     }
 
@@ -606,7 +617,7 @@ export class PeerToPeerPattern extends EventEmitter {
         destination,
         hops: route,
         timestamp: new Date().toISOString(),
-        ttl: this.messageTTL
+        ttl: this.messageTTL,
       };
     }
 
@@ -616,9 +627,14 @@ export class PeerToPeerPattern extends EventEmitter {
   /**
    * Find shortest path using breadth-first search
    */
-  private findShortestPath(source: AgentId, destination: AgentId): AgentId[] | null {
+  private findShortestPath(
+    source: AgentId,
+    destination: AgentId
+  ): AgentId[] | null {
     const visited = new Set<AgentId>();
-    const queue: { agentId: AgentId; path: AgentId[] }[] = [{ agentId: source, path: [] }];
+    const queue: { agentId: AgentId; path: AgentId[] }[] = [
+      { agentId: source, path: [] },
+    ];
 
     while (queue.length > 0) {
       const { agentId, path } = queue.shift()!;
@@ -638,7 +654,7 @@ export class PeerToPeerPattern extends EventEmitter {
         if (!visited.has(peerId)) {
           queue.push({
             agentId: peerId,
-            path: path.concat(agentId)
+            path: path.concat(agentId),
           });
         }
       }
@@ -650,7 +666,10 @@ export class PeerToPeerPattern extends EventEmitter {
   /**
    * Deliver message along route (simulated)
    */
-  private async deliverMessage(route: MessageRoute, payload: unknown): Promise<void> {
+  private async deliverMessage(
+    route: MessageRoute,
+    payload: unknown
+  ): Promise<void> {
     // In a real implementation, this would actually send the message
     // through the network hops. For now, we'll simulate the delivery.
 
@@ -658,12 +677,12 @@ export class PeerToPeerPattern extends EventEmitter {
       messageId: route.messageId,
       source: route.source,
       destination: route.destination,
-      hops: route.hops.length
+      hops: route.hops.length,
     });
 
     // Simulate network delay based on hops
     const delay = route.hops.length * 10; // 10ms per hop
-    await new Promise(resolve => setTimeout(resolve, delay));
+    await new Promise((resolve) => setTimeout(resolve, delay));
 
     // Update connection statistics
     this.updateConnectionStats(route.source, route.hops[0], Date.now());
@@ -681,11 +700,15 @@ export class PeerToPeerPattern extends EventEmitter {
   /**
    * Update connection statistics
    */
-  private updateConnectionStats(source: AgentId, target: AgentId, latency: number): void {
+  private updateConnectionStats(
+    source: AgentId,
+    target: AgentId,
+    latency: number
+  ): void {
     const connections = this.peers.get(source);
     if (!connections) return;
 
-    const connection = connections.find(c => c.peerId === target);
+    const connection = connections.find((c) => c.peerId === target);
     if (connection) {
       connection.lastActivity = new Date().toISOString();
       connection.latency = latency;
@@ -700,7 +723,7 @@ export class PeerToPeerPattern extends EventEmitter {
     if (!this.vectorClocks.has(agentId)) {
       this.vectorClocks.set(agentId, {
         clocks: { [agentId]: 0 },
-        version: 1
+        version: 1,
       });
     }
 
@@ -715,7 +738,7 @@ export class PeerToPeerPattern extends EventEmitter {
   private async updateRoutingTables(): Promise<void> {
     for (const agentId of this.peers.keys()) {
       const routes = new Map<AgentId, AgentId[]>();
-      
+
       // Direct connections
       const connectedPeers = this.getConnectedPeers(agentId);
       for (const peerId of connectedPeers) {
@@ -768,7 +791,7 @@ export class PeerToPeerPattern extends EventEmitter {
 
     while (stack.length > 0) {
       const agentId = stack.pop()!;
-      
+
       if (visited.has(agentId)) {
         continue;
       }
@@ -798,7 +821,11 @@ export class PeerToPeerPattern extends EventEmitter {
 
     for (let i = 0; i < agents.length; i++) {
       for (let j = i + 1; j < agents.length; j++) {
-        const distance = this.calculateDistance(agents[i], agents[j], connections);
+        const distance = this.calculateDistance(
+          agents[i],
+          agents[j],
+          connections
+        );
         maxDistance = Math.max(maxDistance, distance);
       }
     }
@@ -817,7 +844,9 @@ export class PeerToPeerPattern extends EventEmitter {
     if (agent1 === agent2) return 0;
 
     const visited = new Set<AgentId>();
-    const queue: { agentId: AgentId; distance: number }[] = [{ agentId: agent1, distance: 0 }];
+    const queue: { agentId: AgentId; distance: number }[] = [
+      { agentId: agent1, distance: 0 },
+    ];
 
     while (queue.length > 0) {
       const { agentId, distance } = queue.shift()!;
@@ -850,7 +879,7 @@ export class PeerToPeerPattern extends EventEmitter {
    */
   private setupRouting(): void {
     setInterval(() => {
-      this.updateRoutingTables().catch(error => {
+      this.updateRoutingTables().catch((error) => {
         runtimeLogger.error('Failed to update routing tables', error as Error);
       });
     }, this.routingUpdateInterval);
@@ -876,14 +905,14 @@ export class PeerToPeerPattern extends EventEmitter {
       for (let i = connections.length - 1; i >= 0; i--) {
         const connection = connections[i];
         const lastActivityTime = new Date(connection.lastActivity).getTime();
-        
+
         if (now - lastActivityTime > this.connectionTimeout) {
           connection.isActive = false;
-          
+
           runtimeLogger.debug('Connection marked as inactive', {
             agent: agentId,
             peer: connection.peerId,
-            lastActivity: connection.lastActivity
+            lastActivity: connection.lastActivity,
           });
         }
       }
@@ -899,7 +928,7 @@ export class PeerToPeerPattern extends EventEmitter {
 
     for (const [messageId, route] of this.messageHistory.entries()) {
       const messageTime = new Date(route.timestamp).getTime();
-      
+
       if (now - messageTime > route.ttl) {
         expiredMessages.push(messageId);
       }
@@ -912,7 +941,7 @@ export class PeerToPeerPattern extends EventEmitter {
 
     if (expiredMessages.length > 0) {
       runtimeLogger.debug('Cleaned up expired messages', {
-        count: expiredMessages.length
+        count: expiredMessages.length,
       });
     }
   }
@@ -922,8 +951,12 @@ export class PeerToPeerPattern extends EventEmitter {
    */
   getStatistics() {
     const topology = this.getNetworkTopology();
-    const totalConnections = Array.from(this.peers.values())
-      .reduce((sum, connections) => sum + connections.filter(c => c.isActive).length, 0) / 2;
+    const totalConnections =
+      Array.from(this.peers.values()).reduce(
+        (sum, connections) =>
+          sum + connections.filter((c) => c.isActive).length,
+        0
+      ) / 2;
 
     return {
       totalPeers: this.peers.size,
@@ -933,9 +966,12 @@ export class PeerToPeerPattern extends EventEmitter {
       clusters: topology.clusters.length,
       pendingMessages: this.pendingMessages.size,
       messageHistory: this.messageHistory.size,
-      routingTableSize: Array.from(this.routingTable.values())
-        .reduce((sum, routes) => sum + routes.size, 0),
-      avgConnectionsPerPeer: this.peers.size > 0 ? (totalConnections * 2) / this.peers.size : 0
+      routingTableSize: Array.from(this.routingTable.values()).reduce(
+        (sum, routes) => sum + routes.size,
+        0
+      ),
+      avgConnectionsPerPeer:
+        this.peers.size > 0 ? (totalConnections * 2) / this.peers.size : 0,
     };
   }
 

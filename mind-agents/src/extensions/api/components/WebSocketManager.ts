@@ -1,6 +1,6 @@
 /**
  * WebSocketManager.ts - WebSocket server management and real-time communication
- * 
+ *
  * This module handles:
  * - WebSocket server setup and lifecycle
  * - Client connection management
@@ -11,10 +11,7 @@
 
 import * as http from 'http';
 import { WebSocket, WebSocketServer } from 'ws';
-import {
-  Agent,
-  AgentEvent,
-} from '../../../types/agent';
+import { Agent, AgentEvent } from '../../../types/agent';
 import type {
   WebSocketMessage,
   WebSocketResponse,
@@ -146,9 +143,9 @@ export class WebSocketManager {
         const message = JSON.parse(data.toString()) as WebSocketMessage;
         this.handleMessage(connection, message);
       } catch (error) {
-        this.logger.error('Error parsing WebSocket message', { 
-          connectionId: id, 
-          error 
+        this.logger.error('Error parsing WebSocket message', {
+          connectionId: id,
+          error,
         });
         this.sendError(connection, 'Invalid message format');
       }
@@ -163,9 +160,9 @@ export class WebSocketManager {
     });
 
     ws.on('error', (error) => {
-      this.logger.error('WebSocket connection error', { 
-        connectionId: id, 
-        error 
+      this.logger.error('WebSocket connection error', {
+        connectionId: id,
+        error,
       });
       this.metrics.errors++;
     });
@@ -174,7 +171,10 @@ export class WebSocketManager {
   /**
    * Handle incoming WebSocket messages
    */
-  private async handleMessage(connection: ClientConnection, message: WebSocketMessage): Promise<void> {
+  private async handleMessage(
+    connection: ClientConnection,
+    message: WebSocketMessage
+  ): Promise<void> {
     try {
       switch (message.type) {
         case 'auth':
@@ -208,7 +208,10 @@ export class WebSocketManager {
   /**
    * Handle authentication
    */
-  private async handleAuth(connection: ClientConnection, message: WebSocketMessage): Promise<void> {
+  private async handleAuth(
+    connection: ClientConnection,
+    message: WebSocketMessage
+  ): Promise<void> {
     const { token, userId } = message.data || {};
 
     if (!token) {
@@ -239,7 +242,10 @@ export class WebSocketManager {
   /**
    * Handle subscription requests
    */
-  private handleSubscribe(connection: ClientConnection, message: WebSocketMessage): void {
+  private handleSubscribe(
+    connection: ClientConnection,
+    message: WebSocketMessage
+  ): void {
     const { channel } = message.data || {};
 
     if (!channel) {
@@ -266,7 +272,10 @@ export class WebSocketManager {
   /**
    * Handle unsubscription requests
    */
-  private handleUnsubscribe(connection: ClientConnection, message: WebSocketMessage): void {
+  private handleUnsubscribe(
+    connection: ClientConnection,
+    message: WebSocketMessage
+  ): void {
     const { channel } = message.data || {};
 
     if (!channel) {
@@ -293,7 +302,10 @@ export class WebSocketManager {
   /**
    * Handle ping messages
    */
-  private handlePing(connection: ClientConnection, message: WebSocketMessage): void {
+  private handlePing(
+    connection: ClientConnection,
+    message: WebSocketMessage
+  ): void {
     connection.lastPing = Date.now();
 
     this.sendToConnection(connection, {
@@ -308,7 +320,10 @@ export class WebSocketManager {
   /**
    * Handle agent commands
    */
-  private async handleAgentCommand(connection: ClientConnection, message: WebSocketMessage): Promise<void> {
+  private async handleAgentCommand(
+    connection: ClientConnection,
+    message: WebSocketMessage
+  ): Promise<void> {
     if (!connection.authenticated) {
       this.sendError(connection, 'Authentication required');
       return;
@@ -339,7 +354,11 @@ export class WebSocketManager {
   /**
    * Handle client disconnection
    */
-  private handleDisconnection(connection: ClientConnection, code: number, reason: string): void {
+  private handleDisconnection(
+    connection: ClientConnection,
+    code: number,
+    reason: string
+  ): void {
     this.connections.delete(connection.id);
     this.metrics.activeConnections--;
 
@@ -354,7 +373,10 @@ export class WebSocketManager {
   /**
    * Send message to specific connection
    */
-  private sendToConnection(connection: ClientConnection, message: WebSocketResponse): void {
+  private sendToConnection(
+    connection: ClientConnection,
+    message: WebSocketResponse
+  ): void {
     if (connection.ws.readyState === WebSocket.OPEN) {
       try {
         connection.ws.send(JSON.stringify(message));
@@ -463,8 +485,9 @@ export class WebSocketManager {
 
     this.metricsInterval = setInterval(() => {
       // Only broadcast if there are subscribers
-      const hasSubscribers = Array.from(this.connections.values())
-        .some(conn => conn.subscriptions.has('system.metrics'));
+      const hasSubscribers = Array.from(this.connections.values()).some(
+        (conn) => conn.subscriptions.has('system.metrics')
+      );
 
       if (hasSubscribers) {
         this.broadcastSystemMetrics({
@@ -528,8 +551,10 @@ export class WebSocketManager {
     return {
       ...this.metrics,
       isRunning: this.isRunning,
-      activeSubscriptions: Array.from(this.connections.values())
-        .reduce((total, conn) => total + conn.subscriptions.size, 0),
+      activeSubscriptions: Array.from(this.connections.values()).reduce(
+        (total, conn) => total + conn.subscriptions.size,
+        0
+      ),
     };
   }
 
@@ -537,7 +562,7 @@ export class WebSocketManager {
    * Get connection information
    */
   getConnections(): ConnectionInfo[] {
-    return Array.from(this.connections.values()).map(conn => ({
+    return Array.from(this.connections.values()).map((conn) => ({
       id: conn.id,
       userId: conn.userId,
       authenticated: conn.authenticated,

@@ -16,7 +16,7 @@ export function snakeToCamel(str: string): string {
  * Convert camelCase to snake_case
  */
 export function camelToSnake(str: string): string {
-  return str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+  return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
 }
 
 /**
@@ -24,24 +24,25 @@ export function camelToSnake(str: string): string {
  */
 export function deepSnakeToCamel<T extends Record<string, unknown>>(obj: T): T {
   if (Array.isArray(obj)) {
-    return obj.map(item => 
+    return obj.map((item) =>
       typeof item === 'object' && item !== null ? deepSnakeToCamel(item) : item
     ) as unknown as T;
   }
-  
+
   if (obj === null || typeof obj !== 'object') {
     return obj;
   }
-  
+
   const converted: Record<string, unknown> = {};
-  
+
   for (const [key, value] of Object.entries(obj)) {
     const camelKey = snakeToCamel(key);
-    converted[camelKey] = typeof value === 'object' && value !== null
-      ? deepSnakeToCamel(value as Record<string, unknown>)
-      : value;
+    converted[camelKey] =
+      typeof value === 'object' && value !== null
+        ? deepSnakeToCamel(value as Record<string, unknown>)
+        : value;
   }
-  
+
   return converted as T;
 }
 
@@ -50,24 +51,25 @@ export function deepSnakeToCamel<T extends Record<string, unknown>>(obj: T): T {
  */
 export function deepCamelToSnake<T extends Record<string, unknown>>(obj: T): T {
   if (Array.isArray(obj)) {
-    return obj.map(item => 
+    return obj.map((item) =>
       typeof item === 'object' && item !== null ? deepCamelToSnake(item) : item
     ) as unknown as T;
   }
-  
+
   if (obj === null || typeof obj !== 'object') {
     return obj;
   }
-  
+
   const converted: Record<string, unknown> = {};
-  
+
   for (const [key, value] of Object.entries(obj)) {
     const snakeKey = camelToSnake(key);
-    converted[snakeKey] = typeof value === 'object' && value !== null
-      ? deepCamelToSnake(value as Record<string, unknown>)
-      : value;
+    converted[snakeKey] =
+      typeof value === 'object' && value !== null
+        ? deepCamelToSnake(value as Record<string, unknown>)
+        : value;
   }
-  
+
   return converted as T;
 }
 
@@ -88,14 +90,14 @@ export function createMigrationProxy<T extends Record<string, unknown>>(
             component: componentName,
             deprecated: prop,
             replacement: camelProp,
-            stack: new Error().stack
+            stack: new Error().stack,
           });
           return obj[camelProp as keyof T];
         }
       }
       return obj[prop as keyof T];
     },
-    
+
     set(obj, prop, value) {
       if (typeof prop === 'string' && prop.includes('_')) {
         const camelProp = snakeToCamel(prop);
@@ -103,14 +105,14 @@ export function createMigrationProxy<T extends Record<string, unknown>>(
           component: componentName,
           deprecated: prop,
           replacement: camelProp,
-          stack: new Error().stack
+          stack: new Error().stack,
         });
         obj[camelProp as keyof T] = value;
         return true;
       }
       obj[prop as keyof T] = value;
       return true;
-    }
+    },
   });
 }
 
@@ -121,8 +123,9 @@ export function migrateArray<T extends Record<string, unknown>>(
   items: T[],
   direction: 'toCamel' | 'toSnake' = 'toCamel'
 ): T[] {
-  const converter = direction === 'toCamel' ? deepSnakeToCamel : deepCamelToSnake;
-  return items.map(item => converter(item));
+  const converter =
+    direction === 'toCamel' ? deepSnakeToCamel : deepCamelToSnake;
+  return items.map((item) => converter(item));
 }
 
 /**
@@ -140,12 +143,12 @@ export const PROPERTY_MAPPINGS = {
     goal_pursuit: 'goalPursuit',
     interruption_tolerance: 'interruptionTolerance',
   },
-  
+
   // MemoryRecord mappings
   memoryRecord: {
     expires_at: 'expiresAt',
   },
-  
+
   // EventContext mappings
   eventContext: {
     correlation_id: 'correlationId',
@@ -159,7 +162,7 @@ export const PROPERTY_MAPPINGS = {
     max_depth: 'maxDepth',
     include_expired: 'includeExpired',
   },
-  
+
   // EventPropagationRule mappings
   eventPropagationRule: {
     event_types: 'eventTypes',
@@ -170,7 +173,7 @@ export const PROPERTY_MAPPINGS = {
     required_tags: 'requiredTags',
     excluded_tags: 'excludedTags',
   },
-  
+
   // Autonomous system mappings
   autonomous: {
     q_learning: 'qLearning',
@@ -193,7 +196,7 @@ export const PROPERTY_MAPPINGS = {
     goal_abandonment: 'goalAbandonment',
     knowledge_gap: 'knowledgeGap',
   },
-  
+
   // Memory system mappings
   memory: {
     short_term: 'shortTerm',
@@ -202,17 +205,17 @@ export const PROPERTY_MAPPINGS = {
     multi_modal: 'multiModal',
     move_tier: 'moveTier',
   },
-  
+
   // Portal mappings
   portal: {
     unified_multimodal: 'unifiedMultimodal',
   },
-  
+
   // Extension API mappings
   extensionApi: {
     chat_response: 'chatResponse',
     command_response: 'commandResponse',
-  }
+  },
 } as const;
 
 /**
@@ -223,14 +226,14 @@ export function createInterfaceMigrator<T extends Record<string, unknown>>(
 ): (obj: T) => T {
   return (obj: T): T => {
     const migrated = { ...obj };
-    
+
     for (const [oldKey, newKey] of Object.entries(mappings)) {
       if (oldKey in migrated) {
         migrated[newKey as keyof T] = migrated[oldKey as keyof T];
         delete migrated[oldKey as keyof T];
       }
     }
-    
+
     return migrated;
   };
 }
@@ -243,28 +246,32 @@ export function validateNamingConsistency(
   convention: 'camelCase' | 'snake_case' = 'camelCase'
 ): { valid: boolean; violations: string[] } {
   const violations: string[] = [];
-  
+
   const checkKeys = (o: Record<string, unknown>, path = ''): void => {
     for (const key of Object.keys(o)) {
       const fullPath = path ? `${path}.${key}` : key;
-      
+
       if (convention === 'camelCase' && key.includes('_')) {
         violations.push(`${fullPath} uses snake_case instead of camelCase`);
       } else if (convention === 'snake_case' && /[A-Z]/.test(key)) {
         violations.push(`${fullPath} uses camelCase instead of snake_case`);
       }
-      
-      if (typeof o[key] === 'object' && o[key] !== null && !Array.isArray(o[key])) {
+
+      if (
+        typeof o[key] === 'object' &&
+        o[key] !== null &&
+        !Array.isArray(o[key])
+      ) {
         checkKeys(o[key] as Record<string, unknown>, fullPath);
       }
     }
   };
-  
+
   checkKeys(obj);
-  
+
   return {
     valid: violations.length === 0,
-    violations
+    violations,
   };
 }
 
@@ -277,7 +284,7 @@ export function deprecateSnakeCase(target: unknown, propertyKey: string): void {
     runtimeLogger.warn('Snake_case property is deprecated', {
       deprecated: propertyKey,
       replacement: camelCaseKey,
-      migration: `Please update your code to use '${camelCaseKey}' instead of '${propertyKey}'`
+      migration: `Please update your code to use '${camelCaseKey}' instead of '${propertyKey}'`,
     });
   }
 }

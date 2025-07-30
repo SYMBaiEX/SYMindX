@@ -1,7 +1,7 @@
 /**
  * @module observability/observability-manager
  * @description Central orchestrator for the SYMindX observability system
- * 
+ *
  * Coordinates all observability components including logging, metrics,
  * tracing, health monitoring, and alerting with intelligent overhead management.
  */
@@ -90,7 +90,10 @@ class OverheadTracker {
       minMs: min,
       p95Ms: p95,
       totalOperations: this.totalOperations,
-      withinThreshold: p95 <= OBSERVABILITY_CONSTANTS.PERFORMANCE_THRESHOLDS.MAX_OBSERVABILITY_OVERHEAD_MS,
+      withinThreshold:
+        p95 <=
+        OBSERVABILITY_CONSTANTS.PERFORMANCE_THRESHOLDS
+          .MAX_OBSERVABILITY_OVERHEAD_MS,
     };
   }
 
@@ -124,17 +127,23 @@ class MiddlewareManager {
   public register(middleware: ObservabilityMiddleware): void {
     this.middlewares.push(middleware);
     this.middlewares.sort((a, b) => a.priority - b.priority);
-    
-    runtimeLogger.debug(`Observability middleware registered: ${middleware.name}`, {
-      metadata: { priority: middleware.priority, enabled: middleware.enabled },
-    });
+
+    runtimeLogger.debug(
+      `Observability middleware registered: ${middleware.name}`,
+      {
+        metadata: {
+          priority: middleware.priority,
+          enabled: middleware.enabled,
+        },
+      }
+    );
   }
 
   /**
    * Unregister middleware
    */
   public unregister(name: string): boolean {
-    const index = this.middlewares.findIndex(m => m.name === name);
+    const index = this.middlewares.findIndex((m) => m.name === name);
     if (index >= 0) {
       this.middlewares.splice(index, 1);
       runtimeLogger.debug(`Observability middleware unregistered: ${name}`);
@@ -177,7 +186,12 @@ class MiddlewareManager {
     for (const middleware of this.middlewares) {
       if (middleware.enabled && middleware.hooks.afterOperation) {
         try {
-          await middleware.hooks.afterOperation(context, operation, result, duration);
+          await middleware.hooks.afterOperation(
+            context,
+            operation,
+            result,
+            duration
+          );
         } catch (error) {
           runtimeLogger.error(
             `Middleware afterOperation hook failed: ${middleware.name}`,
@@ -231,21 +245,25 @@ export class ObservabilityManager extends EventEmitter {
   private alertingSystem: AlertingSystem;
   private overheadTracker: OverheadTracker;
   private middlewareManager: MiddlewareManager;
-  
+
   private enabled = true;
   private startTime = new Date();
   private shutdownInProgress = false;
 
-  private constructor(config: ObservabilityConfig = DEFAULT_OBSERVABILITY_CONFIG) {
+  private constructor(
+    config: ObservabilityConfig = DEFAULT_OBSERVABILITY_CONFIG
+  ) {
     super();
-    
+
     // Apply environment-specific configuration
-    const environment = process.env.NODE_ENV as keyof typeof ENVIRONMENT_CONFIGS || 'development';
+    const environment =
+      (process.env.NODE_ENV as keyof typeof ENVIRONMENT_CONFIGS) ||
+      'development';
     this.config = {
-      ...ENVIRONMENT_CONFIGS[environment] || DEFAULT_OBSERVABILITY_CONFIG,
+      ...(ENVIRONMENT_CONFIGS[environment] || DEFAULT_OBSERVABILITY_CONFIG),
       ...config,
     };
-    
+
     this.enabled = this.config.enabled;
     this.overheadTracker = new OverheadTracker();
     this.middlewareManager = new MiddlewareManager();
@@ -253,11 +271,14 @@ export class ObservabilityManager extends EventEmitter {
     // Initialize subsystems
     this.tracingSystem = new TracingSystem(this.config.tracing);
     this.metricsCollector = new MetricsCollector(this.config.metrics);
-    this.alertingSystem = new AlertingSystem(this.config.health, this.metricsCollector);
+    this.alertingSystem = new AlertingSystem(
+      this.config.health,
+      this.metricsCollector
+    );
 
     this.setupEventHandlers();
     this.setupHealthChecks();
-    
+
     if (this.enabled) {
       this.start();
     }
@@ -266,7 +287,9 @@ export class ObservabilityManager extends EventEmitter {
   /**
    * Get singleton instance
    */
-  public static getInstance(config?: ObservabilityConfig): ObservabilityManager {
+  public static getInstance(
+    config?: ObservabilityConfig
+  ): ObservabilityManager {
     if (!ObservabilityManager.instance) {
       ObservabilityManager.instance = new ObservabilityManager(config);
     }
@@ -286,14 +309,17 @@ export class ObservabilityManager extends EventEmitter {
       // Start subsystems
       this.metricsCollector.startCollection();
       this.alertingSystem.startEvaluation();
-      
+
       // Start health monitoring integration
       healthMonitor.start();
       performanceMonitor.start();
 
       this.emit('started');
-      
-      runtimeLogger.banner('SYMindX Observability System', 'Comprehensive monitoring active');
+
+      runtimeLogger.banner(
+        'SYMindX Observability System',
+        'Comprehensive monitoring active'
+      );
       runtimeLogger.info('Observability system started', {
         metadata: {
           tracing: this.config.tracing.enableTracing,
@@ -303,7 +329,10 @@ export class ObservabilityManager extends EventEmitter {
         },
       });
     } catch (error) {
-      runtimeLogger.error('Failed to start observability system', error as Error);
+      runtimeLogger.error(
+        'Failed to start observability system',
+        error as Error
+      );
       throw error;
     }
   }
@@ -319,12 +348,12 @@ export class ObservabilityManager extends EventEmitter {
       // Stop subsystems
       this.metricsCollector.stopCollection();
       this.alertingSystem.stopEvaluation();
-      
+
       // Flush any pending data
       await this.flush();
 
       this.emit('stopped');
-      
+
       runtimeLogger.info('Observability system stopped', {
         metadata: {
           uptime: Date.now() - this.startTime.getTime(),
@@ -332,7 +361,10 @@ export class ObservabilityManager extends EventEmitter {
         },
       });
     } catch (error) {
-      runtimeLogger.error('Error stopping observability system', error as Error);
+      runtimeLogger.error(
+        'Error stopping observability system',
+        error as Error
+      );
     } finally {
       this.shutdownInProgress = false;
     }
@@ -350,7 +382,7 @@ export class ObservabilityManager extends EventEmitter {
     try {
       // Create trace context
       context = this.tracingSystem.traceEvent(event);
-      
+
       // Record metrics
       this.metricsCollector.recordEvent(event);
 
@@ -359,13 +391,17 @@ export class ObservabilityManager extends EventEmitter {
 
       return context;
     } catch (error) {
-      runtimeLogger.error('Failed to record observability event', error as Error, {
-        metadata: { eventType: event.type },
-      });
+      runtimeLogger.error(
+        'Failed to record observability event',
+        error as Error,
+        {
+          metadata: { eventType: event.type },
+        }
+      );
     } finally {
       const overhead = performance.now() - startTime;
       this.overheadTracker.recordOverhead(overhead);
-      
+
       // Check for excessive overhead
       if (this.overheadTracker.isOverheadExcessive()) {
         this.handleExcessiveOverhead();
@@ -396,15 +432,26 @@ export class ObservabilityManager extends EventEmitter {
     try {
       // Start trace
       context = parentContext
-        ? this.tracingSystem.startChildTrace(parentContext, operationName, metadata as Record<string, string>)
-        : this.tracingSystem.startTrace(operationName, metadata as Record<string, string>);
+        ? this.tracingSystem.startChildTrace(
+            parentContext,
+            operationName,
+            metadata as Record<string, string>
+          )
+        : this.tracingSystem.startTrace(
+            operationName,
+            metadata as Record<string, string>
+          );
 
       if (!context) {
         return await operation({} as TraceContext);
       }
 
       // Execute middleware before hooks
-      await this.middlewareManager.executeBeforeHooks(context, operationName, metadata);
+      await this.middlewareManager.executeBeforeHooks(
+        context,
+        operationName,
+        metadata
+      );
 
       // Execute operation
       result = await operation(context);
@@ -412,32 +459,47 @@ export class ObservabilityManager extends EventEmitter {
       return result;
     } catch (err) {
       error = err instanceof Error ? err : new Error(String(err));
-      
+
       if (context) {
         this.tracingSystem.setTraceStatus(context, {
           code: 'error',
           message: error.message,
         });
-        
+
         // Execute middleware error hooks
         const duration = performance.now() - startTime;
-        await this.middlewareManager.executeErrorHooks(context, operationName, error, duration);
+        await this.middlewareManager.executeErrorHooks(
+          context,
+          operationName,
+          error,
+          duration
+        );
       }
-      
+
       throw error;
     } finally {
       const duration = performance.now() - startTime;
-      
+
       if (context) {
         // Finish trace
-        this.tracingSystem.finishTrace(context, error ? {
-          code: 'error',
-          message: error.message,
-        } : { code: 'ok' });
+        this.tracingSystem.finishTrace(
+          context,
+          error
+            ? {
+                code: 'error',
+                message: error.message,
+              }
+            : { code: 'ok' }
+        );
 
         // Execute middleware after hooks
         if (!error) {
-          await this.middlewareManager.executeAfterHooks(context, operationName, result!, duration);
+          await this.middlewareManager.executeAfterHooks(
+            context,
+            operationName,
+            result!,
+            duration
+          );
         }
       }
 
@@ -482,7 +544,7 @@ export class ObservabilityManager extends EventEmitter {
       },
       realTimeMetrics: metrics,
       timeSeries: [], // Would implement time series storage
-      alerts: activeAlerts.map(alert => ({
+      alerts: activeAlerts.map((alert) => ({
         id: alert.id,
         rule: alert.rule.name,
         severity: alert.rule.severity,
@@ -493,9 +555,15 @@ export class ObservabilityManager extends EventEmitter {
       healthSummary: {
         overall: healthSummary.overall,
         componentCount: healthSummary.components.length,
-        healthyComponents: healthSummary.components.filter(c => c.status === 'healthy').length,
-        degradedComponents: healthSummary.components.filter(c => c.status === 'degraded').length,
-        unhealthyComponents: healthSummary.components.filter(c => c.status === 'unhealthy' || c.status === 'critical').length,
+        healthyComponents: healthSummary.components.filter(
+          (c) => c.status === 'healthy'
+        ).length,
+        degradedComponents: healthSummary.components.filter(
+          (c) => c.status === 'degraded'
+        ).length,
+        unhealthyComponents: healthSummary.components.filter(
+          (c) => c.status === 'unhealthy' || c.status === 'critical'
+        ).length,
       },
       insights: this.generateInsights(metrics, activeAlerts),
     };
@@ -594,7 +662,7 @@ export class ObservabilityManager extends EventEmitter {
   public async flush(): Promise<void> {
     // Flush any buffered data from subsystems
     // This would be implemented based on specific requirements
-    
+
     this.emit('flushed');
   }
 
@@ -619,7 +687,7 @@ export class ObservabilityManager extends EventEmitter {
     // Alerting events
     this.alertingSystem.on('alertTriggered', (alert) => {
       this.emit('alertTriggered', alert);
-      
+
       // Record alert metric
       this.metricsCollector.recordEvent({
         type: 'system',
@@ -658,9 +726,12 @@ export class ObservabilityManager extends EventEmitter {
       },
       async () => {
         const stats = this.overheadTracker.getStatistics();
-        const threshold = OBSERVABILITY_CONSTANTS.PERFORMANCE_THRESHOLDS.MAX_OBSERVABILITY_OVERHEAD_MS;
-        
-        let status: 'healthy' | 'degraded' | 'unhealthy' | 'unknown' = 'healthy';
+        const threshold =
+          OBSERVABILITY_CONSTANTS.PERFORMANCE_THRESHOLDS
+            .MAX_OBSERVABILITY_OVERHEAD_MS;
+
+        let status: 'healthy' | 'degraded' | 'unhealthy' | 'unknown' =
+          'healthy';
         let message = 'Observability overhead is within acceptable limits';
 
         if (stats.p95Ms > threshold * 2) {
@@ -695,18 +766,25 @@ export class ObservabilityManager extends EventEmitter {
    */
   private handleExcessiveOverhead(): void {
     const stats = this.overheadTracker.getStatistics();
-    
+
     runtimeLogger.warn('Excessive observability overhead detected', {
       metadata: {
         averageMs: stats.averageMs,
         p95Ms: stats.p95Ms,
         maxMs: stats.maxMs,
-        threshold: OBSERVABILITY_CONSTANTS.PERFORMANCE_THRESHOLDS.MAX_OBSERVABILITY_OVERHEAD_MS,
+        threshold:
+          OBSERVABILITY_CONSTANTS.PERFORMANCE_THRESHOLDS
+            .MAX_OBSERVABILITY_OVERHEAD_MS,
       },
     });
 
     // Auto-adjust sampling rates if overhead is too high
-    if (stats.p95Ms > OBSERVABILITY_CONSTANTS.PERFORMANCE_THRESHOLDS.MAX_OBSERVABILITY_OVERHEAD_MS * 3) {
+    if (
+      stats.p95Ms >
+      OBSERVABILITY_CONSTANTS.PERFORMANCE_THRESHOLDS
+        .MAX_OBSERVABILITY_OVERHEAD_MS *
+        3
+    ) {
       this.updateConfig({
         tracing: {
           ...this.config.tracing,
@@ -714,11 +792,16 @@ export class ObservabilityManager extends EventEmitter {
         },
         metrics: {
           ...this.config.metrics,
-          collectionIntervalMs: Math.min(30000, this.config.metrics.collectionIntervalMs * 1.5),
+          collectionIntervalMs: Math.min(
+            30000,
+            this.config.metrics.collectionIntervalMs * 1.5
+          ),
         },
       });
 
-      runtimeLogger.warn('Auto-adjusted observability configuration to reduce overhead');
+      runtimeLogger.warn(
+        'Auto-adjusted observability configuration to reduce overhead'
+      );
     }
 
     this.emit('excessiveOverhead', stats);
@@ -739,15 +822,18 @@ export class ObservabilityManager extends EventEmitter {
         type: 'resource',
         severity: 'warning',
         message: `High memory usage detected: ${(metrics.system.memory.usage * 100).toFixed(1)}%`,
-        recommendation: 'Consider scaling resources or investigating memory leaks',
+        recommendation:
+          'Consider scaling resources or investigating memory leaks',
         data: { memoryUsage: metrics.system.memory.usage },
       });
     }
 
     // Error rate insights
-    const totalAgentErrors = Object.values(metrics.agents)
-      .reduce((sum, agent) => sum + agent.errorCount, 0);
-    
+    const totalAgentErrors = Object.values(metrics.agents).reduce(
+      (sum, agent) => sum + agent.errorCount,
+      0
+    );
+
     if (totalAgentErrors > 10) {
       insights.push({
         type: 'error',
@@ -776,7 +862,8 @@ export class ObservabilityManager extends EventEmitter {
         type: 'performance',
         severity: 'warning',
         message: `Observability overhead is high: ${overheadStats.p95Ms.toFixed(2)}ms`,
-        recommendation: 'Consider reducing sampling rates or collection frequency',
+        recommendation:
+          'Consider reducing sampling rates or collection frequency',
         data: overheadStats,
       });
     }

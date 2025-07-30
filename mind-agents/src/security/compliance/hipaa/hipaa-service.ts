@@ -1,6 +1,6 @@
 /**
  * HIPAA Service Implementation
- * 
+ *
  * Provides HIPAA compliance features including:
  * - PHI (Protected Health Information) Classification and Protection
  * - Access Control and Authorization
@@ -73,7 +73,7 @@ export class HIPAAServiceImpl extends EventEmitter implements HIPAAService {
     for (const [type, pattern] of Object.entries(this.phiPatterns)) {
       if (pattern.test(content)) {
         detectedTypes.push(type);
-        
+
         // Determine sensitivity level
         switch (type) {
           case 'ssn':
@@ -98,7 +98,7 @@ export class HIPAAServiceImpl extends EventEmitter implements HIPAAService {
     }
 
     const isPHI = detectedTypes.length > 0;
-    const dataType = detectedTypes[0] as any || 'other';
+    const dataType = (detectedTypes[0] as any) || 'other';
 
     return {
       isPHI,
@@ -115,7 +115,11 @@ export class HIPAAServiceImpl extends EventEmitter implements HIPAAService {
       const dataString = typeof data === 'string' ? data : JSON.stringify(data);
       const algorithm = 'aes-256-gcm';
       const iv = crypto.randomBytes(16);
-      const keyId = crypto.createHash('sha256').update(this.encryptionKey).digest('hex').substring(0, 16);
+      const keyId = crypto
+        .createHash('sha256')
+        .update(this.encryptionKey)
+        .digest('hex')
+        .substring(0, 16);
 
       const cipher = crypto.createCipher(algorithm, this.encryptionKey);
       cipher.setAAD(Buffer.from(keyId));
@@ -144,7 +148,10 @@ export class HIPAAServiceImpl extends EventEmitter implements HIPAAService {
   /**
    * Decrypt PHI data with authorization check
    */
-  async decryptPHI(encryptedData: EncryptedData, authorization: PHIAuthorization): Promise<any> {
+  async decryptPHI(
+    encryptedData: EncryptedData,
+    authorization: PHIAuthorization
+  ): Promise<any> {
     try {
       // Verify authorization is still valid
       if (!this.checkAuthorization(authorization)) {
@@ -152,16 +159,20 @@ export class HIPAAServiceImpl extends EventEmitter implements HIPAAService {
       }
 
       const { algorithm, encryptedValue, keyId, iv, tag } = encryptedData;
-      
+
       // Verify key ID matches
-      const expectedKeyId = crypto.createHash('sha256').update(this.encryptionKey).digest('hex').substring(0, 16);
+      const expectedKeyId = crypto
+        .createHash('sha256')
+        .update(this.encryptionKey)
+        .digest('hex')
+        .substring(0, 16);
       if (keyId !== expectedKeyId) {
         throw new Error('Invalid encryption key');
       }
 
       const decipher = crypto.createDecipher(algorithm, this.encryptionKey);
       decipher.setAAD(Buffer.from(keyId));
-      
+
       if (tag) {
         decipher.setAuthTag(Buffer.from(tag, 'hex'));
       }
@@ -183,8 +194,11 @@ export class HIPAAServiceImpl extends EventEmitter implements HIPAAService {
         result: 'success',
       });
 
-      runtimeLogger.debug('PHI data decrypted', { keyId, userId: authorization.userId });
-      
+      runtimeLogger.debug('PHI data decrypted', {
+        keyId,
+        userId: authorization.userId,
+      });
+
       try {
         return JSON.parse(decrypted);
       } catch {
@@ -192,7 +206,7 @@ export class HIPAAServiceImpl extends EventEmitter implements HIPAAService {
       }
     } catch (error) {
       runtimeLogger.error('Failed to decrypt PHI data', { error });
-      
+
       // Log failed access attempt
       await this.logAccess({
         userId: authorization.userId,
@@ -206,7 +220,7 @@ export class HIPAAServiceImpl extends EventEmitter implements HIPAAService {
         result: 'failure',
         details: { error: error.message },
       });
-      
+
       throw error;
     }
   }
@@ -214,11 +228,15 @@ export class HIPAAServiceImpl extends EventEmitter implements HIPAAService {
   /**
    * Authorize access to PHI
    */
-  async authorizeAccess(userId: string, patientId: string, action: string): Promise<PHIAuthorization> {
+  async authorizeAccess(
+    userId: string,
+    patientId: string,
+    action: string
+  ): Promise<PHIAuthorization> {
     try {
       // In production, this would check user roles, permissions, etc.
       const permissions = await this.getUserPermissions(userId);
-      
+
       if (!permissions.includes(action)) {
         throw new Error(`User ${userId} not authorized for action: ${action}`);
       }
@@ -227,7 +245,9 @@ export class HIPAAServiceImpl extends EventEmitter implements HIPAAService {
         userId,
         patientId,
         permissions,
-        validUntil: new Date(Date.now() + (this.config.sessionTimeout * 60 * 1000)),
+        validUntil: new Date(
+          Date.now() + this.config.sessionTimeout * 60 * 1000
+        ),
         purpose: 'treatment', // Should be specified based on context
       };
 
@@ -244,7 +264,11 @@ export class HIPAAServiceImpl extends EventEmitter implements HIPAAService {
         details: { permissions, validUntil: authorization.validUntil },
       });
 
-      runtimeLogger.info('PHI access authorized', { userId, patientId, action });
+      runtimeLogger.info('PHI access authorized', {
+        userId,
+        patientId,
+        action,
+      });
       return authorization;
     } catch (error) {
       await this.logAccess({
@@ -260,7 +284,12 @@ export class HIPAAServiceImpl extends EventEmitter implements HIPAAService {
         details: { error: error.message },
       });
 
-      runtimeLogger.warn('PHI access denied', { userId, patientId, action, error: error.message });
+      runtimeLogger.warn('PHI access denied', {
+        userId,
+        patientId,
+        action,
+        error: error.message,
+      });
       throw error;
     }
   }
@@ -288,7 +317,7 @@ export class HIPAAServiceImpl extends EventEmitter implements HIPAAService {
       agentId: 'system',
       content: JSON.stringify(auditLog),
       timestamp: auditLog.timestamp,
-      metadata: { 
+      metadata: {
         type: 'hipaa_audit_log',
         action: auditLog.action,
         result: auditLog.result,
@@ -307,17 +336,21 @@ export class HIPAAServiceImpl extends EventEmitter implements HIPAAService {
   /**
    * Get access logs for a patient
    */
-  async getAccessLog(patientId: string, startDate?: Date, endDate?: Date): Promise<HIPAAAuditLog[]> {
+  async getAccessLog(
+    patientId: string,
+    startDate?: Date,
+    endDate?: Date
+  ): Promise<HIPAAAuditLog[]> {
     try {
       const filters: any = { type: 'hipaa_audit_log', patientId };
-      
+
       const memories = await this.memoryProvider.getMemories('system', filters);
-      
-      let logs = memories.map(m => JSON.parse(m.content) as HIPAAAuditLog);
+
+      let logs = memories.map((m) => JSON.parse(m.content) as HIPAAAuditLog);
 
       // Filter by date range if specified
       if (startDate || endDate) {
-        logs = logs.filter(log => {
+        logs = logs.filter((log) => {
           const logDate = new Date(log.timestamp);
           if (startDate && logDate < startDate) return false;
           if (endDate && logDate > endDate) return false;
@@ -325,7 +358,10 @@ export class HIPAAServiceImpl extends EventEmitter implements HIPAAService {
         });
       }
 
-      return logs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      return logs.sort(
+        (a, b) =>
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      );
     } catch (error) {
       runtimeLogger.error('Failed to get access log', { patientId, error });
       throw error;
@@ -338,22 +374,31 @@ export class HIPAAServiceImpl extends EventEmitter implements HIPAAService {
   async getAuditReport(filters: AuditFilter): Promise<AuditReport> {
     try {
       const allLogs = await this.getAllAuditLogs(filters);
-      
-      const uniqueUsers = new Set(allLogs.map(log => log.userId)).size;
-      const uniquePatients = new Set(allLogs.map(log => log.patientId).filter(Boolean)).size;
-      
-      const accessesByAction = allLogs.reduce((acc, log) => {
-        acc[log.action] = (acc[log.action] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
 
-      const unauthorizedAttempts = allLogs.filter(log => log.result === 'unauthorized').length;
-      
+      const uniqueUsers = new Set(allLogs.map((log) => log.userId)).size;
+      const uniquePatients = new Set(
+        allLogs.map((log) => log.patientId).filter(Boolean)
+      ).size;
+
+      const accessesByAction = allLogs.reduce(
+        (acc, log) => {
+          acc[log.action] = (acc[log.action] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>
+      );
+
+      const unauthorizedAttempts = allLogs.filter(
+        (log) => log.result === 'unauthorized'
+      ).length;
+
       const anomalies = await this.detectReportAnomalies(allLogs);
 
       return {
         period: {
-          start: filters.startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+          start:
+            filters.startDate ||
+            new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
           end: filters.endDate || new Date(),
         },
         totalAccesses: allLogs.length,
@@ -379,7 +424,7 @@ export class HIPAAServiceImpl extends EventEmitter implements HIPAAService {
         agentId: 'system',
         content: JSON.stringify(breach),
         timestamp: breach.discoveredAt,
-        metadata: { 
+        metadata: {
           type: 'breach_incident',
           cause: breach.cause,
           affectedRecords: breach.affectedRecords,
@@ -408,7 +453,10 @@ export class HIPAAServiceImpl extends EventEmitter implements HIPAAService {
         affectedRecords: breach.affectedRecords,
       });
     } catch (error) {
-      runtimeLogger.error('Failed to report breach', { breachId: breach.id, error });
+      runtimeLogger.error('Failed to report breach', {
+        breachId: breach.id,
+        error,
+      });
       throw error;
     }
   }
@@ -422,8 +470,13 @@ export class HIPAAServiceImpl extends EventEmitter implements HIPAAService {
         type: 'breach_incident',
       });
 
-      return memories.map(m => JSON.parse(m.content) as BreachIncident)
-        .sort((a, b) => new Date(b.discoveredAt).getTime() - new Date(a.discoveredAt).getTime());
+      return memories
+        .map((m) => JSON.parse(m.content) as BreachIncident)
+        .sort(
+          (a, b) =>
+            new Date(b.discoveredAt).getTime() -
+            new Date(a.discoveredAt).getTime()
+        );
     } catch (error) {
       runtimeLogger.error('Failed to get breach log', { error });
       throw error;
@@ -433,14 +486,17 @@ export class HIPAAServiceImpl extends EventEmitter implements HIPAAService {
   /**
    * Record security training completion
    */
-  async recordTraining(userId: string, training: SecurityTraining): Promise<void> {
+  async recordTraining(
+    userId: string,
+    training: SecurityTraining
+  ): Promise<void> {
     try {
       await this.memoryProvider.storeMemory({
         id: `training_${userId}_${training.id}`,
         agentId: userId,
         content: JSON.stringify(training),
         timestamp: training.completedAt,
-        metadata: { 
+        metadata: {
           type: 'security_training',
           trainingId: training.id,
           score: training.score,
@@ -458,9 +514,16 @@ export class HIPAAServiceImpl extends EventEmitter implements HIPAAService {
       });
 
       this.emit('trainingCompleted', { userId, training });
-      runtimeLogger.info('Security training completed', { userId, trainingId: training.id });
+      runtimeLogger.info('Security training completed', {
+        userId,
+        trainingId: training.id,
+      });
     } catch (error) {
-      runtimeLogger.error('Failed to record training', { userId, trainingId: training.id, error });
+      runtimeLogger.error('Failed to record training', {
+        userId,
+        trainingId: training.id,
+        error,
+      });
       throw error;
     }
   }
@@ -474,13 +537,21 @@ export class HIPAAServiceImpl extends EventEmitter implements HIPAAService {
         type: 'security_training',
       });
 
-      const trainings = memories.map(m => JSON.parse(m.content) as SecurityTraining)
-        .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
+      const trainings = memories
+        .map((m) => JSON.parse(m.content) as SecurityTraining)
+        .sort(
+          (a, b) =>
+            new Date(b.completedAt).getTime() -
+            new Date(a.completedAt).getTime()
+        );
 
-      const lastTrainingDate = trainings.length > 0 ? new Date(trainings[0].completedAt) : new Date(0);
+      const lastTrainingDate =
+        trainings.length > 0 ? new Date(trainings[0].completedAt) : new Date(0);
       const oneYearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
       const isCompliant = lastTrainingDate > oneYearAgo;
-      const nextRequiredDate = new Date(lastTrainingDate.getTime() + 365 * 24 * 60 * 60 * 1000);
+      const nextRequiredDate = new Date(
+        lastTrainingDate.getTime() + 365 * 24 * 60 * 60 * 1000
+      );
 
       return {
         userId,
@@ -503,16 +574,18 @@ export class HIPAAServiceImpl extends EventEmitter implements HIPAAService {
     return ['read', 'create', 'update'];
   }
 
-  private async getAllAuditLogs(filters: AuditFilter): Promise<HIPAAAuditLog[]> {
+  private async getAllAuditLogs(
+    filters: AuditFilter
+  ): Promise<HIPAAAuditLog[]> {
     const memories = await this.memoryProvider.getMemories('system', {
       type: 'hipaa_audit_log',
     });
 
-    let logs = memories.map(m => JSON.parse(m.content) as HIPAAAuditLog);
+    let logs = memories.map((m) => JSON.parse(m.content) as HIPAAAuditLog);
 
     // Apply filters
     if (filters.startDate || filters.endDate) {
-      logs = logs.filter(log => {
+      logs = logs.filter((log) => {
         const logDate = new Date(log.timestamp);
         if (filters.startDate && logDate < filters.startDate) return false;
         if (filters.endDate && logDate > filters.endDate) return false;
@@ -521,19 +594,19 @@ export class HIPAAServiceImpl extends EventEmitter implements HIPAAService {
     }
 
     if (filters.userId) {
-      logs = logs.filter(log => log.userId === filters.userId);
+      logs = logs.filter((log) => log.userId === filters.userId);
     }
 
     if (filters.patientId) {
-      logs = logs.filter(log => log.patientId === filters.patientId);
+      logs = logs.filter((log) => log.patientId === filters.patientId);
     }
 
     if (filters.action) {
-      logs = logs.filter(log => log.action === filters.action);
+      logs = logs.filter((log) => log.action === filters.action);
     }
 
     if (filters.result) {
-      logs = logs.filter(log => log.result === filters.result);
+      logs = logs.filter((log) => log.result === filters.result);
     }
 
     return logs;
@@ -541,13 +614,17 @@ export class HIPAAServiceImpl extends EventEmitter implements HIPAAService {
 
   private async detectAnomalies(log: HIPAAAuditLog): Promise<void> {
     // Simple anomaly detection - in production, this would be more sophisticated
-    const recentLogs = await this.getAccessLog(log.patientId || '', 
+    const recentLogs = await this.getAccessLog(
+      log.patientId || '',
       new Date(Date.now() - 24 * 60 * 60 * 1000)
     );
 
     // Check for excessive access
-    const userAccesses = recentLogs.filter(l => l.userId === log.userId).length;
-    if (userAccesses > 50) { // Threshold for suspicious activity
+    const userAccesses = recentLogs.filter(
+      (l) => l.userId === log.userId
+    ).length;
+    if (userAccesses > 50) {
+      // Threshold for suspicious activity
       const anomaly: AuditAnomaly = {
         type: 'excessive_access',
         userId: log.userId,
@@ -561,7 +638,8 @@ export class HIPAAServiceImpl extends EventEmitter implements HIPAAService {
 
     // Check for unusual time access
     const hour = new Date(log.timestamp).getHours();
-    if (hour < 6 || hour > 22) { // Outside normal business hours
+    if (hour < 6 || hour > 22) {
+      // Outside normal business hours
       const anomaly: AuditAnomaly = {
         type: 'unusual_time',
         userId: log.userId,
@@ -574,22 +652,30 @@ export class HIPAAServiceImpl extends EventEmitter implements HIPAAService {
     }
   }
 
-  private async detectReportAnomalies(logs: HIPAAAuditLog[]): Promise<AuditAnomaly[]> {
+  private async detectReportAnomalies(
+    logs: HIPAAAuditLog[]
+  ): Promise<AuditAnomaly[]> {
     const anomalies: AuditAnomaly[] = [];
 
     // Group by user
-    const userLogs = logs.reduce((acc, log) => {
-      if (!acc[log.userId]) acc[log.userId] = [];
-      acc[log.userId].push(log);
-      return acc;
-    }, {} as Record<string, HIPAAAuditLog[]>);
+    const userLogs = logs.reduce(
+      (acc, log) => {
+        if (!acc[log.userId]) acc[log.userId] = [];
+        acc[log.userId].push(log);
+        return acc;
+      },
+      {} as Record<string, HIPAAAuditLog[]>
+    );
 
     // Detect anomalies for each user
     for (const [userId, userLogList] of Object.entries(userLogs)) {
       const accessCount = userLogList.length;
-      const unauthorizedCount = userLogList.filter(l => l.result === 'unauthorized').length;
+      const unauthorizedCount = userLogList.filter(
+        (l) => l.result === 'unauthorized'
+      ).length;
 
-      if (accessCount > 1000) { // High access volume
+      if (accessCount > 1000) {
+        // High access volume
         anomalies.push({
           type: 'excessive_access',
           userId,
@@ -599,7 +685,8 @@ export class HIPAAServiceImpl extends EventEmitter implements HIPAAService {
         });
       }
 
-      if (unauthorizedCount > 5) { // Multiple unauthorized attempts
+      if (unauthorizedCount > 5) {
+        // Multiple unauthorized attempts
         anomalies.push({
           type: 'unauthorized_attempt',
           userId,
@@ -619,7 +706,7 @@ export class HIPAAServiceImpl extends EventEmitter implements HIPAAService {
       agentId: 'system',
       content: JSON.stringify(anomaly),
       timestamp: anomaly.timestamp,
-      metadata: { 
+      metadata: {
         type: 'audit_anomaly',
         anomalyType: anomaly.type,
         severity: anomaly.severity,

@@ -1,6 +1,6 @@
 /**
  * Shared Message Conversion Utilities
- * 
+ *
  * Provides standardized message conversion logic for all portal implementations
  */
 
@@ -16,44 +16,55 @@ export interface MessageConversionOptions {
    * - 'first-only': Only use the first system message
    */
   systemMessageStrategy?: 'single' | 'multiple' | 'first-only';
-  
+
   /**
    * Whether to support multimodal content (images, attachments)
    */
   supportsMultimodal?: boolean;
-  
+
   /**
    * Whether to support tool/function messages
    */
   supportsTools?: boolean;
-  
+
   /**
    * Provider-specific message handling
    */
-  provider?: 'openai' | 'anthropic' | 'groq' | 'xai' | 'google' | 'mistral' | 'cohere';
+  provider?:
+    | 'openai'
+    | 'anthropic'
+    | 'groq'
+    | 'xai'
+    | 'google'
+    | 'mistral'
+    | 'cohere';
 }
 
 /**
  * Convert ChatMessage array to AI SDK message format with provider-specific handling
  */
 export function convertToAIMessages(
-  messages: ChatMessage[], 
+  messages: ChatMessage[],
   options: MessageConversionOptions = {}
 ): AIMessage[] {
   const {
     systemMessageStrategy = 'multiple',
     supportsMultimodal = true,
     supportsTools = true,
-    provider = 'openai'
+    provider = 'openai',
   } = options;
 
   const modelMessages: AIMessage[] = [];
 
   // Handle system messages based on strategy
   if (systemMessageStrategy === 'single') {
-    const systemMessages = messages.filter(msg => msg.role === MessageRole.SYSTEM);
+    const systemMessages = messages.filter(
+      (msg) => msg.role === MessageRole.SYSTEM
+    );
     if (systemMessages.length > 0) {
-      const systemContent = systemMessages.map(msg => msg.content).join('\n\n');
+      const systemContent = systemMessages
+        .map((msg) => msg.content)
+        .join('\n\n');
       modelMessages.push({
         role: 'system',
         content: systemContent,
@@ -67,21 +78,26 @@ export function convertToAIMessages(
     if (systemMessageStrategy === 'single' && msg.role === MessageRole.SYSTEM) {
       continue;
     }
-    
+
     // Skip system messages after first if using first-only strategy
-    if (systemMessageStrategy === 'first-only' && msg.role === MessageRole.SYSTEM) {
-      const existingSystemMessages = modelMessages.filter(m => m.role === 'system');
+    if (
+      systemMessageStrategy === 'first-only' &&
+      msg.role === MessageRole.SYSTEM
+    ) {
+      const existingSystemMessages = modelMessages.filter(
+        (m) => m.role === 'system'
+      );
       if (existingSystemMessages.length > 0) {
         continue;
       }
     }
 
-    const convertedMessage = convertSingleMessage(msg, { 
-      supportsMultimodal, 
-      supportsTools, 
-      provider 
+    const convertedMessage = convertSingleMessage(msg, {
+      supportsMultimodal,
+      supportsTools,
+      provider,
     });
-    
+
     if (convertedMessage) {
       modelMessages.push(convertedMessage);
     }
@@ -94,10 +110,17 @@ export function convertToAIMessages(
  * Convert a single ChatMessage to AI SDK format
  */
 function convertSingleMessage(
-  msg: ChatMessage, 
-  options: Pick<MessageConversionOptions, 'supportsMultimodal' | 'supportsTools' | 'provider'>
+  msg: ChatMessage,
+  options: Pick<
+    MessageConversionOptions,
+    'supportsMultimodal' | 'supportsTools' | 'provider'
+  >
 ): AIMessage | null {
-  const { supportsMultimodal = true, supportsTools = true, provider = 'openai' } = options;
+  const {
+    supportsMultimodal = true,
+    supportsTools = true,
+    provider = 'openai',
+  } = options;
 
   switch (msg.role) {
     case MessageRole.SYSTEM:
@@ -126,7 +149,10 @@ function convertSingleMessage(
 /**
  * Convert user message with multimodal support
  */
-function convertUserMessage(msg: ChatMessage, supportsMultimodal: boolean): AIMessage {
+function convertUserMessage(
+  msg: ChatMessage,
+  supportsMultimodal: boolean
+): AIMessage {
   if (!supportsMultimodal || !msg.attachments || msg.attachments.length === 0) {
     return { role: 'user', content: msg.content };
   }
@@ -140,12 +166,12 @@ function convertUserMessage(msg: ChatMessage, supportsMultimodal: boolean): AIMe
         content.push({
           type: 'image',
           image: attachment.data,
-          ...(attachment.mimeType && { mimeType: attachment.mimeType })
+          ...(attachment.mimeType && { mimeType: attachment.mimeType }),
         } as AIContentPart);
       } else if (attachment.url) {
         content.push({
           type: 'image',
-          image: new URL(attachment.url)
+          image: new URL(attachment.url),
         } as AIContentPart);
       }
     }
@@ -163,9 +189,9 @@ function convertToolMessage(msg: ChatMessage, provider: string): AIMessage {
     case 'anthropic':
       return {
         role: 'tool',
-        content: msg.content
+        content: msg.content,
       };
-    
+
     case 'openai':
     default:
       return {
@@ -186,9 +212,11 @@ function convertToolMessage(msg: ChatMessage, provider: string): AIMessage {
  * Create message conversion function configured for specific provider
  */
 export function createMessageConverter(provider: string) {
-  const providerOptions: MessageConversionOptions = getProviderOptions(provider);
-  
-  return (messages: ChatMessage[]) => convertToAIMessages(messages, providerOptions);
+  const providerOptions: MessageConversionOptions =
+    getProviderOptions(provider);
+
+  return (messages: ChatMessage[]) =>
+    convertToAIMessages(messages, providerOptions);
 }
 
 /**
@@ -201,65 +229,65 @@ function getProviderOptions(provider: string): MessageConversionOptions {
         systemMessageStrategy: 'single',
         supportsMultimodal: true,
         supportsTools: true,
-        provider: 'anthropic'
+        provider: 'anthropic',
       };
-    
+
     case 'openai':
       return {
         systemMessageStrategy: 'multiple',
         supportsMultimodal: true,
         supportsTools: true,
-        provider: 'openai'
+        provider: 'openai',
       };
-    
+
     case 'groq':
       return {
         systemMessageStrategy: 'multiple',
         supportsMultimodal: false,
         supportsTools: true,
-        provider: 'groq'
+        provider: 'groq',
       };
-    
+
     case 'xai':
     case 'grok':
       return {
         systemMessageStrategy: 'multiple',
         supportsMultimodal: false,
         supportsTools: true,
-        provider: 'xai'
+        provider: 'xai',
       };
-    
+
     case 'google':
     case 'gemini':
       return {
         systemMessageStrategy: 'first-only',
         supportsMultimodal: true,
         supportsTools: true,
-        provider: 'google'
+        provider: 'google',
       };
-    
+
     case 'mistral':
       return {
         systemMessageStrategy: 'multiple',
         supportsMultimodal: false,
         supportsTools: true,
-        provider: 'mistral'
+        provider: 'mistral',
       };
-    
+
     case 'cohere':
       return {
         systemMessageStrategy: 'multiple',
         supportsMultimodal: false,
         supportsTools: true,
-        provider: 'cohere'
+        provider: 'cohere',
       };
-    
+
     default:
       return {
         systemMessageStrategy: 'multiple',
         supportsMultimodal: true,
         supportsTools: true,
-        provider: 'openai'
+        provider: 'openai',
       };
   }
 }

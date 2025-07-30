@@ -5,15 +5,15 @@
  */
 
 import { ObservabilityManager } from './observability-manager.js';
-import { 
-  withObservability, 
-  traceAgentOperation, 
+import {
+  withObservability,
+  traceAgentOperation,
   tracePortalOperation,
   traceExtensionOperation,
   traceMemoryOperation,
   createObservabilityLogContext,
   createPerformanceMiddleware,
-  createSecurityMiddleware 
+  createSecurityMiddleware,
 } from './utils.js';
 import { DEFAULT_OBSERVABILITY_CONFIG } from './constants.js';
 import { runtimeLogger } from '../../utils/logger.js';
@@ -80,7 +80,8 @@ class ObservableAgent {
           });
 
           // Enhanced logging with observability context
-          runtimeLogger.info('Agent thinking completed', 
+          runtimeLogger.info(
+            'Agent thinking completed',
             createObservabilityLogContext(traceContext, {
               agentId: this.id,
               agentName: this.name,
@@ -104,13 +105,15 @@ class ObservableAgent {
             duration,
             metadata: {
               error: error instanceof Error ? error.message : String(error),
-              errorType: error instanceof Error ? error.constructor.name : 'Unknown',
+              errorType:
+                error instanceof Error ? error.constructor.name : 'Unknown',
               agentName: this.name,
             },
           });
 
           // Enhanced error logging
-          runtimeLogger.error('Agent thinking failed', 
+          runtimeLogger.error(
+            'Agent thinking failed',
             error as Error,
             createObservabilityLogContext(traceContext, {
               agentId: this.id,
@@ -204,19 +207,27 @@ class ObservableAgent {
    */
   private async performThinking(context: any, traceContext: any): Promise<any> {
     // Simulate complex thinking with trace events
-    this.observability.tracingSystem.addTraceEvent(traceContext, 'thinking.start', {
-      contextAnalysis: 'completed',
-    });
+    this.observability.tracingSystem.addTraceEvent(
+      traceContext,
+      'thinking.start',
+      {
+        contextAnalysis: 'completed',
+      }
+    );
 
     // Simulate different thinking phases
     await this.analyzeContext(context, traceContext);
     await this.generateOptions(context, traceContext);
     const decision = await this.makeDecision(context, traceContext);
 
-    this.observability.tracingSystem.addTraceEvent(traceContext, 'thinking.complete', {
-      decision: decision.type,
-      confidence: decision.confidence,
-    });
+    this.observability.tracingSystem.addTraceEvent(
+      traceContext,
+      'thinking.complete',
+      {
+        decision: decision.type,
+        confidence: decision.confidence,
+      }
+    );
 
     return {
       thoughts: ['analyzed context', 'generated options', 'made decision'],
@@ -228,51 +239,79 @@ class ObservableAgent {
 
   private async analyzeContext(context: any, traceContext: any): Promise<void> {
     // Simulate context analysis
-    await new Promise(resolve => setTimeout(resolve, Math.random() * 100 + 50));
-    
-    this.observability.tracingSystem.addTraceEvent(traceContext, 'context.analyzed', {
-      complexity: context.complexity || 'medium',
-      elements: Math.floor(Math.random() * 10) + 1,
-    });
+    await new Promise((resolve) =>
+      setTimeout(resolve, Math.random() * 100 + 50)
+    );
+
+    this.observability.tracingSystem.addTraceEvent(
+      traceContext,
+      'context.analyzed',
+      {
+        complexity: context.complexity || 'medium',
+        elements: Math.floor(Math.random() * 10) + 1,
+      }
+    );
   }
 
-  private async generateOptions(context: any, traceContext: any): Promise<void> {
+  private async generateOptions(
+    context: any,
+    traceContext: any
+  ): Promise<void> {
     // Simulate option generation
-    await new Promise(resolve => setTimeout(resolve, Math.random() * 150 + 75));
-    
-    this.observability.tracingSystem.addTraceEvent(traceContext, 'options.generated', {
-      optionCount: Math.floor(Math.random() * 5) + 2,
-    });
+    await new Promise((resolve) =>
+      setTimeout(resolve, Math.random() * 150 + 75)
+    );
+
+    this.observability.tracingSystem.addTraceEvent(
+      traceContext,
+      'options.generated',
+      {
+        optionCount: Math.floor(Math.random() * 5) + 2,
+      }
+    );
   }
 
   private async makeDecision(context: any, traceContext: any): Promise<any> {
     // Simulate decision making
-    await new Promise(resolve => setTimeout(resolve, Math.random() * 100 + 25));
-    
+    await new Promise((resolve) =>
+      setTimeout(resolve, Math.random() * 100 + 25)
+    );
+
     const decision = {
       type: 'execute',
       confidence: Math.random() * 0.3 + 0.7, // 0.7 - 1.0
     };
 
-    this.observability.tracingSystem.addTraceEvent(traceContext, 'decision.made', {
-      decisionType: decision.type,
-      confidence: decision.confidence,
-    });
+    this.observability.tracingSystem.addTraceEvent(
+      traceContext,
+      'decision.made',
+      {
+        decisionType: decision.type,
+        confidence: decision.confidence,
+      }
+    );
 
     return decision;
   }
 
   private async executeAction(action: any, traceContext: any): Promise<any> {
     // Simulate action execution
-    await new Promise(resolve => setTimeout(resolve, Math.random() * 200 + 100));
-    
-    this.observability.tracingSystem.addTraceEvent(traceContext, 'action.executed', {
-      actionType: action.type,
-      duration: Math.random() * 200 + 100,
-    });
+    await new Promise((resolve) =>
+      setTimeout(resolve, Math.random() * 200 + 100)
+    );
+
+    this.observability.tracingSystem.addTraceEvent(
+      traceContext,
+      'action.executed',
+      {
+        actionType: action.type,
+        duration: Math.random() * 200 + 100,
+      }
+    );
 
     // Randomly simulate failures for demonstration
-    if (Math.random() < 0.1) { // 10% failure rate
+    if (Math.random() < 0.1) {
+      // 10% failure rate
       throw new Error(`Action execution failed: ${action.type}`);
     }
 
@@ -306,8 +345,8 @@ class ObservablePortal {
     includeResult: false, // Don't log response content
   })
   async generateResponse(
-    messages: any[], 
-    model?: string, 
+    messages: any[],
+    model?: string,
     parentContext?: any
   ): Promise<any> {
     return tracePortalOperation(
@@ -349,7 +388,8 @@ class ObservablePortal {
             },
           });
 
-          runtimeLogger.info('Portal response generated',
+          runtimeLogger.info(
+            'Portal response generated',
             createObservabilityLogContext(traceContext, {
               portalId: this.id,
               portalName: this.name,
@@ -373,14 +413,16 @@ class ObservablePortal {
             duration,
             metadata: {
               error: error instanceof Error ? error.message : String(error),
-              errorType: error instanceof Error ? error.constructor.name : 'Unknown',
+              errorType:
+                error instanceof Error ? error.constructor.name : 'Unknown',
               messageCount: messages.length,
               portalType: this.type,
               portalName: this.name,
             },
           });
 
-          runtimeLogger.error('Portal request failed',
+          runtimeLogger.error(
+            'Portal request failed',
             error as Error,
             createObservabilityLogContext(traceContext, {
               portalId: this.id,
@@ -400,19 +442,28 @@ class ObservablePortal {
     );
   }
 
-  private async callLLM(messages: any[], model?: string, traceContext?: any): Promise<any> {
+  private async callLLM(
+    messages: any[],
+    model?: string,
+    traceContext?: any
+  ): Promise<any> {
     // Simulate LLM API call
-    this.observability.tracingSystem.addTraceEvent(traceContext, 'llm.request_start', {
-      model: model || 'default',
-      messageCount: messages.length,
-    });
+    this.observability.tracingSystem.addTraceEvent(
+      traceContext,
+      'llm.request_start',
+      {
+        model: model || 'default',
+        messageCount: messages.length,
+      }
+    );
 
     // Simulate network latency and processing time
     const processingTime = Math.random() * 2000 + 500; // 500-2500ms
-    await new Promise(resolve => setTimeout(resolve, processingTime));
+    await new Promise((resolve) => setTimeout(resolve, processingTime));
 
     // Simulate random failures
-    if (Math.random() < 0.05) { // 5% failure rate
+    if (Math.random() < 0.05) {
+      // 5% failure rate
       throw new Error('LLM API request failed');
     }
 
@@ -425,14 +476,19 @@ class ObservablePortal {
       },
     };
 
-    response.usage.totalTokens = response.usage.promptTokens + response.usage.completionTokens;
+    response.usage.totalTokens =
+      response.usage.promptTokens + response.usage.completionTokens;
 
-    this.observability.tracingSystem.addTraceEvent(traceContext, 'llm.response_received', {
-      model: model || 'default',
-      tokensUsed: response.usage.totalTokens,
-      responseLength: response.content.length,
-      processingTime,
-    });
+    this.observability.tracingSystem.addTraceEvent(
+      traceContext,
+      'llm.response_received',
+      {
+        model: model || 'default',
+        tokensUsed: response.usage.totalTokens,
+        responseLength: response.content.length,
+        processingTime,
+      }
+    );
 
     return response;
   }
@@ -493,7 +549,8 @@ class ObservableExtension {
             },
           });
 
-          runtimeLogger.info('Extension message processed',
+          runtimeLogger.info(
+            'Extension message processed',
             createObservabilityLogContext(traceContext, {
               extensionId: this.id,
               extensionName: this.name,
@@ -521,7 +578,8 @@ class ObservableExtension {
             },
           });
 
-          runtimeLogger.error('Extension message processing failed',
+          runtimeLogger.error(
+            'Extension message processing failed',
             error as Error,
             createObservabilityLogContext(traceContext, {
               extensionId: this.id,
@@ -542,23 +600,34 @@ class ObservableExtension {
 
   private async processMessage(message: any, traceContext: any): Promise<void> {
     // Simulate message processing
-    this.observability.tracingSystem.addTraceEvent(traceContext, 'message.processing.start', {
-      messageType: message.type,
-      channel: message.channel,
-    });
+    this.observability.tracingSystem.addTraceEvent(
+      traceContext,
+      'message.processing.start',
+      {
+        messageType: message.type,
+        channel: message.channel,
+      }
+    );
 
     // Simulate processing time
-    await new Promise(resolve => setTimeout(resolve, Math.random() * 500 + 100));
+    await new Promise((resolve) =>
+      setTimeout(resolve, Math.random() * 500 + 100)
+    );
 
     // Simulate random failures
-    if (Math.random() < 0.08) { // 8% failure rate
+    if (Math.random() < 0.08) {
+      // 8% failure rate
       throw new Error(`Failed to process ${message.type} message`);
     }
 
-    this.observability.tracingSystem.addTraceEvent(traceContext, 'message.processing.complete', {
-      messageType: message.type,
-      processed: true,
-    });
+    this.observability.tracingSystem.addTraceEvent(
+      traceContext,
+      'message.processing.complete',
+      {
+        messageType: message.type,
+        processed: true,
+      }
+    );
   }
 }
 
@@ -612,7 +681,8 @@ class ObservableMemoryProvider {
             },
           });
 
-          runtimeLogger.info('Memory record stored',
+          runtimeLogger.info(
+            'Memory record stored',
             createObservabilityLogContext(traceContext, {
               providerId: this.id,
               providerType: this.type,
@@ -638,7 +708,8 @@ class ObservableMemoryProvider {
             },
           });
 
-          runtimeLogger.error('Memory store operation failed',
+          runtimeLogger.error(
+            'Memory store operation failed',
             error as Error,
             createObservabilityLogContext(traceContext, {
               providerId: this.id,
@@ -659,21 +730,32 @@ class ObservableMemoryProvider {
 
   private async performStore(record: any, traceContext: any): Promise<void> {
     // Simulate database operation
-    this.observability.tracingSystem.addTraceEvent(traceContext, 'db.connection.start', {
-      provider: this.type,
-    });
+    this.observability.tracingSystem.addTraceEvent(
+      traceContext,
+      'db.connection.start',
+      {
+        provider: this.type,
+      }
+    );
 
-    await new Promise(resolve => setTimeout(resolve, Math.random() * 200 + 50));
+    await new Promise((resolve) =>
+      setTimeout(resolve, Math.random() * 200 + 50)
+    );
 
     // Simulate random failures
-    if (Math.random() < 0.05) { // 5% failure rate
+    if (Math.random() < 0.05) {
+      // 5% failure rate
       throw new Error(`Database storage failed for ${this.type} provider`);
     }
 
-    this.observability.tracingSystem.addTraceEvent(traceContext, 'db.record.stored', {
-      recordType: record.type,
-      provider: this.type,
-    });
+    this.observability.tracingSystem.addTraceEvent(
+      traceContext,
+      'db.record.stored',
+      {
+        recordType: record.type,
+        provider: this.type,
+      }
+    );
   }
 }
 
@@ -706,10 +788,28 @@ export class ObservabilityIntegrationExample {
     this.setupMiddleware();
 
     // Initialize components
-    this.agent = new ObservableAgent('agent-001', 'Demo Agent', this.observability);
-    this.portal = new ObservablePortal('portal-001', 'Demo Portal', 'openai', this.observability);
-    this.extension = new ObservableExtension('ext-001', 'Demo Extension', 'slack', this.observability);
-    this.memoryProvider = new ObservableMemoryProvider('memory-001', 'sqlite', this.observability);
+    this.agent = new ObservableAgent(
+      'agent-001',
+      'Demo Agent',
+      this.observability
+    );
+    this.portal = new ObservablePortal(
+      'portal-001',
+      'Demo Portal',
+      'openai',
+      this.observability
+    );
+    this.extension = new ObservableExtension(
+      'ext-001',
+      'Demo Extension',
+      'slack',
+      this.observability
+    );
+    this.memoryProvider = new ObservableMemoryProvider(
+      'memory-001',
+      'sqlite',
+      this.observability
+    );
 
     // Setup event handlers
     this.setupEventHandlers();
@@ -720,10 +820,12 @@ export class ObservabilityIntegrationExample {
    */
   private setupMiddleware(): void {
     // Performance monitoring middleware
-    this.observability.registerMiddleware(createPerformanceMiddleware({
-      slowRequestMs: 1000,
-      memoryWarningMb: 50,
-    }));
+    this.observability.registerMiddleware(
+      createPerformanceMiddleware({
+        slowRequestMs: 1000,
+        memoryWarningMb: 50,
+      })
+    );
 
     // Security monitoring middleware
     this.observability.registerMiddleware(createSecurityMiddleware());
@@ -746,7 +848,11 @@ export class ObservabilityIntegrationExample {
     });
 
     this.observability.on('traceFinished', (data) => {
-      console.log('✅ Trace finished:', data.span.operationName, `${data.span.duration}ms`);
+      console.log(
+        '✅ Trace finished:',
+        data.span.operationName,
+        `${data.span.duration}ms`
+      );
     });
   }
 
@@ -771,7 +877,6 @@ export class ObservabilityIntegrationExample {
 
       // Demonstrate error handling
       await this.demonstrateErrorHandling();
-
     } catch (error) {
       console.error('❌ Example failed:', error);
     } finally {
@@ -791,43 +896,58 @@ export class ObservabilityIntegrationExample {
       'agent_workflow',
       async (context) => {
         // Step 1: Agent thinks about the problem
-        const thoughtResult = await this.agent.think({
-          type: 'problem_solving',
-          complexity: 'high',
-          context: 'User needs help with task automation',
-        }, context);
+        const thoughtResult = await this.agent.think(
+          {
+            type: 'problem_solving',
+            complexity: 'high',
+            context: 'User needs help with task automation',
+          },
+          context
+        );
 
         // Step 2: Agent queries portal for additional information
-        const portalResponse = await this.portal.generateResponse([
-          { role: 'user', content: 'How can I automate this task?' }
-        ], 'gpt-4', context);
+        const portalResponse = await this.portal.generateResponse(
+          [{ role: 'user', content: 'How can I automate this task?' }],
+          'gpt-4',
+          context
+        );
 
         // Step 3: Agent stores the interaction in memory
-        await this.memoryProvider.store({
-          type: 'interaction',
-          timestamp: new Date(),
-          agentId: this.agent.id,
-          content: 'Problem solving session completed',
-          metadata: {
-            thoughtResult,
-            portalResponse: portalResponse.content,
+        await this.memoryProvider.store(
+          {
+            type: 'interaction',
+            timestamp: new Date(),
+            agentId: this.agent.id,
+            content: 'Problem solving session completed',
+            metadata: {
+              thoughtResult,
+              portalResponse: portalResponse.content,
+            },
           },
-        }, context);
+          context
+        );
 
         // Step 4: Agent executes action
-        const actionResult = await this.agent.act({
-          type: 'respond',
-          id: 'action-001',
-          content: 'Based on my analysis, here is how to automate your task...',
-        }, context);
+        const actionResult = await this.agent.act(
+          {
+            type: 'respond',
+            id: 'action-001',
+            content:
+              'Based on my analysis, here is how to automate your task...',
+          },
+          context
+        );
 
         // Step 5: Extension handles the response
-        await this.extension.handleMessage({
-          type: 'response',
-          channel: 'general',
-          content: actionResult.result,
-          user: 'user-001',
-        }, context);
+        await this.extension.handleMessage(
+          {
+            type: 'response',
+            channel: 'general',
+            content: actionResult.result,
+            user: 'user-001',
+          },
+          context
+        );
 
         return {
           workflow: 'completed',
@@ -875,7 +995,7 @@ export class ObservabilityIntegrationExample {
       });
 
       // Small delay to spread out metrics
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
 
     console.log('✅ Metrics generation completed\n');
@@ -888,11 +1008,11 @@ export class ObservabilityIntegrationExample {
     console.log('📈 Current dashboard data:');
 
     const dashboardData = await this.observability.getDashboardData();
-    
+
     console.log('Overall health:', dashboardData.healthSummary.overall);
     console.log('Active alerts:', dashboardData.alerts.length);
     console.log('System insights:', dashboardData.insights.length);
-    
+
     if (dashboardData.insights.length > 0) {
       console.log('Top insights:');
       dashboardData.insights.slice(0, 3).forEach((insight, i) => {
@@ -928,7 +1048,11 @@ export class ObservabilityIntegrationExample {
 
     // Check if any alerts were triggered
     const status = this.observability.getStatus();
-    console.log('System status after errors:', status.subsystems.alerting.alerts, 'active alerts');
+    console.log(
+      'System status after errors:',
+      status.subsystems.alerting.alerts,
+      'active alerts'
+    );
     console.log('✅ Error handling demonstration completed\n');
   }
 
@@ -947,7 +1071,7 @@ export class ObservabilityIntegrationExample {
  */
 export async function runObservabilityExample(): Promise<void> {
   const example = new ObservabilityIntegrationExample();
-  
+
   try {
     await example.runExample();
   } finally {

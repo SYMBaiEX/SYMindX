@@ -1,6 +1,6 @@
 /**
  * Context Transformation System for SYMindX
- * 
+ *
  * This module provides interfaces and types for transforming unified context
  * into module-specific formats while maintaining context integrity and
  * enabling bidirectional transformations.
@@ -20,19 +20,19 @@ export enum TransformationTarget {
   EXTENSION = 'extension',
   EMOTION = 'emotion',
   MINIMAL = 'minimal',
-  CUSTOM = 'custom'
+  CUSTOM = 'custom',
 }
 
 /**
  * Transformation strategy types
  */
 export enum TransformationStrategy {
-  FULL = 'full',              // Complete context transformation
-  SELECTIVE = 'selective',    // Only relevant fields
-  MINIMAL = 'minimal',        // Bare minimum required
-  OPTIMIZED = 'optimized',    // Performance-optimized
-  CACHED = 'cached',          // Use cached transformation
-  STREAMING = 'streaming'     // Real-time streaming transformation
+  FULL = 'full', // Complete context transformation
+  SELECTIVE = 'selective', // Only relevant fields
+  MINIMAL = 'minimal', // Bare minimum required
+  OPTIMIZED = 'optimized', // Performance-optimized
+  CACHED = 'cached', // Use cached transformation
+  STREAMING = 'streaming', // Real-time streaming transformation
 }
 
 /**
@@ -44,7 +44,7 @@ export enum TransformationOperation {
   VALIDATE = 'validate',
   OPTIMIZE = 'optimize',
   CACHE = 'cache',
-  AUDIT = 'audit'
+  AUDIT = 'audit',
 }
 
 /**
@@ -55,29 +55,29 @@ export interface UnifiedContext extends BaseContext {
   agentId: string;
   sessionId: string;
   contextId: string;
-  
+
   // Temporal information
   timestamp: Date;
   lastModified: Date;
   version: number;
-  
+
   // Content
   content: string;
   messages: ContextMessage[];
-  
+
   // State information
   state: ContextState;
   environment: ContextEnvironment;
-  
+
   // Processing metadata
   metadata: ContextMetadata;
-  
+
   // Module-specific data
   cognitionData?: CognitionContextData;
   emotionData?: EmotionContextData;
   memoryData?: MemoryContextData;
   extensionData?: Record<string, unknown>;
-  
+
   // Performance data
   performance: ContextPerformance;
 }
@@ -101,7 +101,13 @@ export interface ContextMessage {
  * Context state information
  */
 export interface ContextState {
-  phase: 'initialization' | 'active' | 'processing' | 'waiting' | 'complete' | 'error';
+  phase:
+    | 'initialization'
+    | 'active'
+    | 'processing'
+    | 'waiting'
+    | 'complete'
+    | 'error';
   mood: 'positive' | 'neutral' | 'negative';
   engagement: number; // 0-1
   confidence: number; // 0-1
@@ -408,7 +414,10 @@ export interface CacheConfig {
 /**
  * Context transformer interface
  */
-export interface ContextTransformer<TInput = UnifiedContext, TOutput = unknown> {
+export interface ContextTransformer<
+  TInput = UnifiedContext,
+  TOutput = unknown,
+> {
   readonly id: string;
   readonly version: string;
   readonly target: TransformationTarget;
@@ -598,5 +607,7 @@ export interface TransformerRegistry {
   unregister(transformerId: string): void;
   get(target: TransformationTarget): ContextTransformer | undefined;
   getAll(): ContextTransformer[];
-  getByCapability(capability: keyof TransformerCapabilities): ContextTransformer[];
+  getByCapability(
+    capability: keyof TransformerCapabilities
+  ): ContextTransformer[];
 }

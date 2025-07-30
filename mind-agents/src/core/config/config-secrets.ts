@@ -1,6 +1,6 @@
 /**
  * Configuration Secrets Manager
- * 
+ *
  * Provides secure handling of sensitive configuration data including
  * encryption, key rotation, and secure storage patterns.
  */
@@ -50,7 +50,7 @@ export interface SecretValidationRule {
 
 /**
  * Configuration Secrets Manager
- * 
+ *
  * Handles encryption, decryption, and secure storage of sensitive
  * configuration data with key rotation and validation.
  */
@@ -82,7 +82,7 @@ export class ConfigSecrets {
 
       // Encrypt the secret
       const encrypted = await this.encryptValue(value);
-      
+
       const metadata: SecretMetadata = {
         id: this.generateSecretId(),
         name,
@@ -90,22 +90,21 @@ export class ConfigSecrets {
         createdAt: new Date(),
         rotationInterval,
         source: 'runtime',
-        classification
+        classification,
       };
 
       const encryptedSecret: EncryptedSecret = {
         ...encrypted,
-        metadata
+        metadata,
       };
 
       this.secrets.set(name, encryptedSecret);
-      
+
       this.logger.info('Secret stored successfully', {
         name,
         classification,
-        encrypted: true
+        encrypted: true,
       });
-
     } catch (error) {
       this.logger.error('Failed to store secret', { name, error });
       throw error;
@@ -118,7 +117,7 @@ export class ConfigSecrets {
   public async getSecret(name: string): Promise<string | undefined> {
     try {
       const encryptedSecret = this.secrets.get(name);
-      
+
       if (!encryptedSecret) {
         // Try environment variable fallback
         const envValue = process.env[name];
@@ -130,14 +129,13 @@ export class ConfigSecrets {
       }
 
       const decrypted = await this.decryptValue(encryptedSecret);
-      
+
       this.logger.debug('Secret retrieved successfully', {
         name,
-        classification: encryptedSecret.metadata.classification
+        classification: encryptedSecret.metadata.classification,
       });
 
       return decrypted;
-
     } catch (error) {
       this.logger.error('Failed to retrieve secret', { name, error });
       throw error;
@@ -156,11 +154,11 @@ export class ConfigSecrets {
    */
   public async removeSecret(name: string): Promise<boolean> {
     const removed = this.secrets.delete(name);
-    
+
     if (removed) {
       this.logger.info('Secret removed', { name });
     }
-    
+
     return removed;
   }
 
@@ -170,31 +168,30 @@ export class ConfigSecrets {
   public async rotateSecret(name: string): Promise<void> {
     try {
       const encryptedSecret = this.secrets.get(name);
-      
+
       if (!encryptedSecret) {
         throw new Error(`Secret '${name}' not found`);
       }
 
       // Decrypt current value
       const currentValue = await this.decryptValue(encryptedSecret);
-      
+
       // Re-encrypt with new key/IV
       const reencrypted = await this.encryptValue(currentValue);
-      
+
       const updatedMetadata: SecretMetadata = {
         ...encryptedSecret.metadata,
-        lastRotated: new Date()
+        lastRotated: new Date(),
       };
 
       const rotatedSecret: EncryptedSecret = {
         ...reencrypted,
-        metadata: updatedMetadata
+        metadata: updatedMetadata,
       };
 
       this.secrets.set(name, rotatedSecret);
-      
-      this.logger.info('Secret rotated successfully', { name });
 
+      this.logger.info('Secret rotated successfully', { name });
     } catch (error) {
       this.logger.error('Failed to rotate secret', { name, error });
       throw error;
@@ -205,34 +202,39 @@ export class ConfigSecrets {
    * Get all secret metadata (without values)
    */
   public getSecretMetadata(): SecretMetadata[] {
-    return Array.from(this.secrets.values()).map(secret => secret.metadata);
+    return Array.from(this.secrets.values()).map((secret) => secret.metadata);
   }
 
   /**
    * Export secrets to encrypted file
    */
-  public async exportSecrets(filePath: string, includeClassifications?: string[]): Promise<void> {
+  public async exportSecrets(
+    filePath: string,
+    includeClassifications?: string[]
+  ): Promise<void> {
     try {
       const exportData: Record<string, EncryptedSecret> = {};
-      
+
       for (const [name, secret] of this.secrets) {
         // Filter by classification if specified
-        if (includeClassifications && !includeClassifications.includes(secret.metadata.classification)) {
+        if (
+          includeClassifications &&
+          !includeClassifications.includes(secret.metadata.classification)
+        ) {
           continue;
         }
-        
+
         exportData[name] = secret;
       }
 
       const serialized = JSON.stringify(exportData, null, 2);
       writeFileSync(resolve(filePath), serialized, { mode: 0o600 });
-      
+
       this.logger.info('Secrets exported', {
         filePath,
         count: Object.keys(exportData).length,
-        includeClassifications
+        includeClassifications,
       });
-
     } catch (error) {
       this.logger.error('Failed to export secrets', { filePath, error });
       throw error;
@@ -245,14 +247,14 @@ export class ConfigSecrets {
   public async importSecrets(filePath: string): Promise<void> {
     try {
       const resolvedPath = resolve(filePath);
-      
+
       if (!existsSync(resolvedPath)) {
         throw new Error(`Secrets file not found: ${resolvedPath}`);
       }
 
       const content = readFileSync(resolvedPath, 'utf8');
       const importData: Record<string, EncryptedSecret> = JSON.parse(content);
-      
+
       let importedCount = 0;
       for (const [name, secret] of Object.entries(importData)) {
         // Validate secret structure
@@ -263,13 +265,12 @@ export class ConfigSecrets {
           this.logger.warn('Invalid secret structure, skipping', { name });
         }
       }
-      
+
       this.logger.info('Secrets imported', {
         filePath,
         imported: importedCount,
-        total: Object.keys(importData).length
+        total: Object.keys(importData).length,
       });
-
     } catch (error) {
       this.logger.error('Failed to import secrets', { filePath, error });
       throw error;
@@ -280,18 +281,23 @@ export class ConfigSecrets {
    * Validate secret format and strength
    */
   public async validateSecret(name: string, value: string): Promise<void> {
-    const rules = this.validationRules.get(name) || this.validationRules.get('default') || [];
-    
+    const rules =
+      this.validationRules.get(name) ||
+      this.validationRules.get('default') ||
+      [];
+
     for (const rule of rules) {
       if (!rule.validate(value)) {
-        const error = new Error(`Secret validation failed for '${name}': ${rule.message}`);
-        
+        const error = new Error(
+          `Secret validation failed for '${name}': ${rule.message}`
+        );
+
         if (rule.severity === 'error') {
           throw error;
         } else {
           this.logger.warn('Secret validation warning', {
             name,
-            message: rule.message
+            message: rule.message,
           });
         }
       }
@@ -308,10 +314,10 @@ export class ConfigSecrets {
     const existing = this.validationRules.get(secretName) || [];
     existing.push(rule);
     this.validationRules.set(secretName, existing);
-    
+
     this.logger.debug('Validation rule added', {
       secretName,
-      ruleName: rule.name
+      ruleName: rule.name,
     });
   }
 
@@ -324,12 +330,13 @@ export class ConfigSecrets {
 
     for (const secret of this.secrets.values()) {
       const { metadata } = secret;
-      
+
       if (!metadata.rotationInterval) continue;
-      
+
       const lastRotated = metadata.lastRotated || metadata.createdAt;
-      const daysSinceRotation = (now.getTime() - lastRotated.getTime()) / (1000 * 60 * 60 * 24);
-      
+      const daysSinceRotation =
+        (now.getTime() - lastRotated.getTime()) / (1000 * 60 * 60 * 24);
+
       if (daysSinceRotation >= metadata.rotationInterval) {
         needRotation.push(metadata);
       }
@@ -362,7 +369,9 @@ export class ConfigSecrets {
       } else {
         // Generate new master key
         this.masterKey = randomBytes(32);
-        this.logger.warn('New master key generated - save this for production use');
+        this.logger.warn(
+          'New master key generated - save this for production use'
+        );
       }
     } catch (error) {
       this.logger.error('Failed to initialize master key', error);
@@ -370,34 +379,39 @@ export class ConfigSecrets {
     }
   }
 
-  private async encryptValue(value: string): Promise<Omit<EncryptedSecret, 'metadata'>> {
+  private async encryptValue(
+    value: string
+  ): Promise<Omit<EncryptedSecret, 'metadata'>> {
     if (!this.masterKey) {
       throw new Error('Master key not initialized');
     }
 
     const iv = randomBytes(16);
     const salt = randomBytes(32);
-    
+
     // Derive key using scrypt
     const key = (await scryptAsync(this.masterKey, salt, 32)) as Buffer;
-    
+
     const cipher = createCipher(this.algorithm, key);
     cipher.setAAD(Buffer.from('symindx-config'));
-    
+
     let encrypted = cipher.update(value, 'utf8', 'hex');
     encrypted += cipher.final('hex');
-    
+
     const authTag = cipher.getAuthTag();
 
     return {
-      data: encrypted + ':' + authTag.toString('hex') + ':' + salt.toString('hex'),
+      data:
+        encrypted + ':' + authTag.toString('hex') + ':' + salt.toString('hex'),
       iv: iv.toString('hex'),
       algorithm: this.algorithm,
-      keyDerivation: this.keyDerivation
+      keyDerivation: this.keyDerivation,
     };
   }
 
-  private async decryptValue(encryptedSecret: EncryptedSecret): Promise<string> {
+  private async decryptValue(
+    encryptedSecret: EncryptedSecret
+  ): Promise<string> {
     if (!this.masterKey) {
       throw new Error('Master key not initialized');
     }
@@ -406,17 +420,17 @@ export class ConfigSecrets {
     const iv = Buffer.from(encryptedSecret.iv, 'hex');
     const saltBuffer = Buffer.from(salt, 'hex');
     const authTagBuffer = Buffer.from(authTag, 'hex');
-    
+
     // Derive key using scrypt
     const key = (await scryptAsync(this.masterKey, saltBuffer, 32)) as Buffer;
-    
+
     const decipher = createDecipher(this.algorithm, key);
     decipher.setAAD(Buffer.from('symindx-config'));
     decipher.setAuthTag(authTagBuffer);
-    
+
     let decrypted = decipher.update(encryptedData, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
-    
+
     return decrypted;
   }
 
@@ -444,14 +458,14 @@ export class ConfigSecrets {
         name: 'notEmpty',
         validate: (value: string) => value.trim().length > 0,
         message: 'Secret cannot be empty',
-        severity: 'error'
+        severity: 'error',
       },
       {
         name: 'minLength',
         validate: (value: string) => value.length >= 8,
         message: 'Secret must be at least 8 characters long',
-        severity: 'warning'
-      }
+        severity: 'warning',
+      },
     ];
 
     this.validationRules.set('default', defaultRules);
@@ -463,14 +477,14 @@ export class ConfigSecrets {
         name: 'validFormat',
         validate: (value: string) => /^[A-Za-z0-9_-]+$/.test(value),
         message: 'API key contains invalid characters',
-        severity: 'warning'
+        severity: 'warning',
       },
       {
         name: 'strongLength',
         validate: (value: string) => value.length >= 20,
         message: 'API key should be at least 20 characters long',
-        severity: 'warning'
-      }
+        severity: 'warning',
+      },
     ];
 
     // Apply API key rules to common API key names
@@ -480,7 +494,7 @@ export class ConfigSecrets {
       'GROQ_API_KEY',
       'XAI_API_KEY',
       'GOOGLE_API_KEY',
-      'TELEGRAM_BOT_TOKEN'
+      'TELEGRAM_BOT_TOKEN',
     ];
 
     for (const pattern of apiKeyPatterns) {
@@ -493,15 +507,15 @@ export class ConfigSecrets {
         name: 'strongSecret',
         validate: (value: string) => value.length >= 32,
         message: 'JWT secret must be at least 32 characters long',
-        severity: 'error'
+        severity: 'error',
       },
       {
         name: 'complexity',
-        validate: (value: string) => 
+        validate: (value: string) =>
           /[A-Z]/.test(value) && /[a-z]/.test(value) && /[0-9]/.test(value),
         message: 'JWT secret should contain uppercase, lowercase, and numbers',
-        severity: 'warning'
-      }
+        severity: 'warning',
+      },
     ]);
 
     this.logger.debug('Default validation rules configured');

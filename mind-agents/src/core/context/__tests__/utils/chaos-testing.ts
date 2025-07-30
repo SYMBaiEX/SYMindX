@@ -65,7 +65,9 @@ export class ChaosInjector {
 
     // Random latency injection
     if (this.config.latencyMax > 0) {
-      const latency = Math.random() * (this.config.latencyMax - this.config.latencyMin) + this.config.latencyMin;
+      const latency =
+        Math.random() * (this.config.latencyMax - this.config.latencyMin) +
+        this.config.latencyMin;
       await this.sleep(latency);
     }
 
@@ -136,7 +138,8 @@ export class ChaosInjector {
         latencies.push(latency);
         result.failedOperations++;
 
-        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
 
         if (errorMessage.includes('CHAOS_')) {
           result.chaosFailures++;
@@ -147,14 +150,15 @@ export class ChaosInjector {
       }
     }
 
-    result.averageLatency = latencies.reduce((a, b) => a + b, 0) / latencies.length;
+    result.averageLatency =
+      latencies.reduce((a, b) => a + b, 0) / latencies.length;
     result.maxLatency = Math.max(...latencies);
 
     return result;
   }
 
   private sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   private timeoutPromise<T>(ms: number, message: string): Promise<T> {
@@ -199,7 +203,10 @@ export class ContextChaosScenarios {
   ): Promise<ChaosResult> {
     this.injector.activate();
 
-    const messages = Array.from({ length: messageCount }, (_, i) => `Chaos test message ${i}`);
+    const messages = Array.from(
+      { length: messageCount },
+      (_, i) => `Chaos test message ${i}`
+    );
 
     try {
       return await this.injector.runWithChaos(async () => {
@@ -223,7 +230,8 @@ export class ContextChaosScenarios {
 
     try {
       return await this.injector.runWithChaos(async () => {
-        const contextId = contextIds[Math.floor(Math.random() * contextIds.length)];
+        const contextId =
+          contextIds[Math.floor(Math.random() * contextIds.length)];
         return switchContext(contextId);
       }, iterations);
     } finally {
@@ -252,7 +260,8 @@ export class ContextChaosScenarios {
     try {
       for (let round = 0; round < rounds; round++) {
         const roundOperations = Array.from({ length: concurrency }, () => {
-          const operation = operations[Math.floor(Math.random() * operations.length)];
+          const operation =
+            operations[Math.floor(Math.random() * operations.length)];
           return this.executeWithTracking(operation, latencies, errors);
         });
 
@@ -275,7 +284,10 @@ export class ContextChaosScenarios {
             }
           } else {
             failedOperations++;
-            const errorMessage = result.reason instanceof Error ? result.reason.message : String(result.reason);
+            const errorMessage =
+              result.reason instanceof Error
+                ? result.reason.message
+                : String(result.reason);
             if (errorMessage.includes('CHAOS_')) {
               chaosFailures++;
             } else {
@@ -314,7 +326,8 @@ export class ContextChaosScenarios {
       return { success: true, chaosFailure: false };
     } catch (error) {
       latencies.push(performance.now() - start);
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       const chaosFailure = errorMessage.includes('CHAOS_');
 
       if (!chaosFailure) {
@@ -371,7 +384,8 @@ export class NetworkChaosSimulator {
 
     // Simulate network latency
     if (this.networkLatency > 0) {
-      const latency = this.networkLatency + (Math.random() - 0.5) * this.networkLatency * 0.5;
+      const latency =
+        this.networkLatency + (Math.random() - 0.5) * this.networkLatency * 0.5;
       await this.sleep(Math.max(0, latency));
     }
 
@@ -379,7 +393,7 @@ export class NetworkChaosSimulator {
   }
 
   private sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
 
@@ -432,7 +446,7 @@ export class ResourceExhaustionSimulator {
    */
   cleanup(): void {
     this.memoryPressure.length = 0;
-    this.cpuIntensiveIntervals.forEach(interval => clearInterval(interval));
+    this.cpuIntensiveIntervals.forEach((interval) => clearInterval(interval));
     this.cpuIntensiveIntervals.length = 0;
 
     // Force garbage collection
@@ -481,13 +495,19 @@ export class ChaosTestSuite {
 
     try {
       const results = await Promise.all([
-        this.contextScenarios.testContextCreationResilience(operations.createContext),
-        this.contextScenarios.testMessageProcessingResilience(operations.processMessage),
+        this.contextScenarios.testContextCreationResilience(
+          operations.createContext
+        ),
+        this.contextScenarios.testMessageProcessingResilience(
+          operations.processMessage
+        ),
         this.contextScenarios.testContextSwitchingResilience(
           operations.switchContext,
           ['ctx-1', 'ctx-2', 'ctx-3', 'ctx-4', 'ctx-5']
         ),
-        this.contextScenarios.testConcurrentOperationsResilience(operations.concurrentOps),
+        this.contextScenarios.testConcurrentOperationsResilience(
+          operations.concurrentOps
+        ),
       ]);
 
       return {
@@ -515,16 +535,24 @@ export class ChaosTestSuite {
 
     const scenarios = [
       { name: 'Context Creation', result: results.contextCreationResilience },
-      { name: 'Message Processing', result: results.messageProcessingResilience },
+      {
+        name: 'Message Processing',
+        result: results.messageProcessingResilience,
+      },
       { name: 'Context Switching', result: results.contextSwitchingResilience },
-      { name: 'Concurrent Operations', result: results.concurrentOperationsResilience },
+      {
+        name: 'Concurrent Operations',
+        result: results.concurrentOperationsResilience,
+      },
     ];
 
     for (const scenario of scenarios) {
       const { name, result } = scenario;
-      const successRate = (result.successfulOperations / result.totalOperations) * 100;
+      const successRate =
+        (result.successfulOperations / result.totalOperations) * 100;
       const chaosRate = (result.chaosFailures / result.totalOperations) * 100;
-      const unexpectedRate = (result.unexpectedFailures / result.totalOperations) * 100;
+      const unexpectedRate =
+        (result.unexpectedFailures / result.totalOperations) * 100;
 
       report.push(`${name}:`);
       report.push(`  Total Operations: ${result.totalOperations}`);
@@ -536,7 +564,7 @@ export class ChaosTestSuite {
 
       if (result.errors.length > 0) {
         report.push(`  Unexpected Errors:`);
-        result.errors.slice(0, 5).forEach(error => {
+        result.errors.slice(0, 5).forEach((error) => {
           report.push(`    - ${error}`);
         });
         if (result.errors.length > 5) {

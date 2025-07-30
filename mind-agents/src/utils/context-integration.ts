@@ -1,15 +1,22 @@
 /**
  * Context Integration Hub for SYMindX
- * 
+ *
  * Central module that integrates all context utilities and provides
  * a unified API for the enhanced context system.
  */
 
 import { contextCache, ContextCacheKeyGenerator } from './context-cache';
 import { contextTransformer } from './context-transformation';
-import { contextTracer, contextDebugger, contextMonitor } from './context-observability';
+import {
+  contextTracer,
+  contextDebugger,
+  contextMonitor,
+} from './context-observability';
 import { multiAgentOrchestrator } from './multi-agent-context';
-import { enrichThoughtContext, validateThoughtContextForUnified } from './context-helpers';
+import {
+  enrichThoughtContext,
+  validateThoughtContextForUnified,
+} from './context-helpers';
 import type { ThoughtContext, Agent } from '../types/agent';
 import type { BaseContext, PortalContext } from '../types/context';
 import { runtimeLogger } from './logger';
@@ -62,7 +69,9 @@ export class ContextIntegrationService {
         config: this.config,
       });
     } catch (error) {
-      runtimeLogger.error('Failed to initialize context integration', { error });
+      runtimeLogger.error('Failed to initialize context integration', {
+        error,
+      });
       throw error;
     }
   }
@@ -157,7 +166,11 @@ export class ContextIntegrationService {
       }
 
       // Perform transformation
-      const transformed = contextTransformer.transform(context, target, options);
+      const transformed = contextTransformer.transform(
+        context,
+        target,
+        options
+      );
 
       // Cache transformed result if enabled
       if (this.config.enableCaching && context.id) {
@@ -235,7 +248,11 @@ export class ContextIntegrationService {
       throw new Error('Multi-agent context aggregation is disabled');
     }
 
-    return multiAgentOrchestrator.aggregateContexts(agentIds, strategy, options);
+    return multiAgentOrchestrator.aggregateContexts(
+      agentIds,
+      strategy,
+      options
+    );
   }
 
   /**
@@ -245,7 +262,9 @@ export class ContextIntegrationService {
     return {
       tracing: this.config.enableTracing ? contextTracer.getMetrics() : null,
       cache: this.config.enableCaching ? contextCache.getStats() : null,
-      monitor: this.config.enableTracing ? contextMonitor.getPerformanceSummary() : null,
+      monitor: this.config.enableTracing
+        ? contextMonitor.getPerformanceSummary()
+        : null,
     };
   }
 

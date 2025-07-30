@@ -3,7 +3,11 @@
  * @description Context-specific observability types for comprehensive tracing and debugging
  */
 
-import type { TraceContext, TraceSpan, ObservabilityMetrics } from '../observability/index.ts';
+import type {
+  TraceContext,
+  TraceSpan,
+  ObservabilityMetrics,
+} from '../observability/index.ts';
 import type { AgentId, CorrelationId, ModuleId } from '../helpers.ts';
 import type { PortalContext } from '../context.ts';
 
@@ -13,31 +17,34 @@ import type { PortalContext } from '../context.ts';
 export interface ContextObservabilitySystem {
   /** Context tracer for distributed tracing */
   tracer: ContextTracer;
-  
+
   /** Metrics collector for performance monitoring */
   metrics: ContextMetricsCollector;
-  
+
   /** Debugger for development and troubleshooting */
   debugger: ContextDebugger;
-  
+
   /** Versioning system for context evolution tracking */
   versioning: ContextVersioning;
-  
+
   /** Visualizer for context flow representation */
   visualizer: ContextVisualizer;
-  
+
   /** Start observability for a context instance */
-  startObservation(contextId: string, config?: ContextObservabilityConfig): Promise<ContextTrace>;
-  
+  startObservation(
+    contextId: string,
+    config?: ContextObservabilityConfig
+  ): Promise<ContextTrace>;
+
   /** Stop observability for a context instance */
   stopObservation(contextId: string): Promise<void>;
-  
+
   /** Get current observability state */
   getObservabilityState(contextId?: string): ContextObservabilityState;
-  
+
   /** Configure observability settings */
   configure(config: Partial<ContextObservabilityConfig>): void;
-  
+
   /** Cleanup resources */
   dispose(): Promise<void>;
 }
@@ -54,7 +61,7 @@ export interface ContextObservabilityConfig {
     enableFlowVisualization: boolean;
     traceRetentionMs: number;
   };
-  
+
   /** Metrics collection settings */
   metrics: {
     enabled: boolean;
@@ -64,7 +71,7 @@ export interface ContextObservabilityConfig {
     enableFlowMetrics: boolean;
     maxMetricsPerContext: number;
   };
-  
+
   /** Debug configuration */
   debug: {
     enabled: boolean;
@@ -74,7 +81,7 @@ export interface ContextObservabilityConfig {
     maxDebugHistorySize: number;
     enableConsoleIntegration: boolean;
   };
-  
+
   /** Versioning settings */
   versioning: {
     enabled: boolean;
@@ -83,7 +90,7 @@ export interface ContextObservabilityConfig {
     maxVersionHistory: number;
     compressionEnabled: boolean;
   };
-  
+
   /** Visualization settings */
   visualization: {
     enabled: boolean;
@@ -92,7 +99,7 @@ export interface ContextObservabilityConfig {
     enableInteractiveMode: boolean;
     renderFormat: 'svg' | 'canvas' | 'webgl';
   };
-  
+
   /** Performance settings */
   performance: {
     maxOverheadMs: number;
@@ -108,13 +115,19 @@ export interface ContextObservabilityConfig {
 export interface ContextTrace extends TraceContext {
   /** Context identifier */
   contextId: string;
-  
+
   /** Agent that owns this context */
   agentId?: AgentId;
-  
+
   /** Context type information */
-  contextType: 'portal' | 'memory' | 'cognition' | 'emotion' | 'extension' | 'system';
-  
+  contextType:
+    | 'portal'
+    | 'memory'
+    | 'cognition'
+    | 'emotion'
+    | 'extension'
+    | 'system';
+
   /** Context hierarchy information */
   hierarchy: {
     parentContextId?: string;
@@ -122,7 +135,7 @@ export interface ContextTrace extends TraceContext {
     depth: number;
     rootContextId: string;
   };
-  
+
   /** Context lifecycle stages */
   lifecycle: {
     created: Date;
@@ -132,13 +145,13 @@ export interface ContextTrace extends TraceContext {
     destroyed?: Date;
     totalLifetimeMs?: number;
   };
-  
+
   /** Context transformations applied */
   transformations: ContextTransformationTrace[];
-  
+
   /** Context access patterns */
   accessPatterns: ContextAccessTrace[];
-  
+
   /** Context sharing information */
   sharing: {
     shareCount: number;
@@ -146,7 +159,7 @@ export interface ContextTrace extends TraceContext {
     shareType: 'read' | 'write' | 'readwrite';
     isolationLevel: 'none' | 'weak' | 'strong';
   };
-  
+
   /** Flow analysis */
   flow: {
     entryPoints: ContextEntryPoint[];
@@ -154,7 +167,7 @@ export interface ContextTrace extends TraceContext {
     criticalPath: ContextFlowNode[];
     bottlenecks: ContextBottleneck[];
   };
-  
+
   /** Context quality metrics */
   quality: {
     completeness: number; // 0-1
@@ -252,24 +265,30 @@ export interface ContextMetrics extends ObservabilityMetrics {
   /** Context-specific metrics */
   context: {
     /** Context instance metrics */
-    instances: Record<string, {
-      lifetimeMs: number;
-      accessCount: number;
-      transformationCount: number;
-      memoryUsage: number;
-      lastActivity: Date;
-      qualityScore: number;
-    }>;
-    
+    instances: Record<
+      string,
+      {
+        lifetimeMs: number;
+        accessCount: number;
+        transformationCount: number;
+        memoryUsage: number;
+        lastActivity: Date;
+        qualityScore: number;
+      }
+    >;
+
     /** Context type metrics */
-    types: Record<string, {
-      instanceCount: number;
-      averageLifetime: number;
-      averageSize: number;
-      errorRate: number;
-      throughput: number;
-    }>;
-    
+    types: Record<
+      string,
+      {
+        instanceCount: number;
+        averageLifetime: number;
+        averageSize: number;
+        errorRate: number;
+        throughput: number;
+      }
+    >;
+
     /** Context flow metrics */
     flow: {
       totalFlows: number;
@@ -278,16 +297,19 @@ export interface ContextMetrics extends ObservabilityMetrics {
       bottleneckCount: number;
       flowEfficiency: number;
     };
-    
+
     /** Context transformation metrics */
-    transformations: Record<string, {
-      count: number;
-      successRate: number;
-      averageDuration: number;
-      dataReduction: number;
-      errorCount: number;
-    }>;
-    
+    transformations: Record<
+      string,
+      {
+        count: number;
+        successRate: number;
+        averageDuration: number;
+        dataReduction: number;
+        errorCount: number;
+      }
+    >;
+
     /** Context sharing metrics */
     sharing: {
       shareCount: number;
@@ -304,16 +326,16 @@ export interface ContextMetrics extends ObservabilityMetrics {
 export interface ContextDebugInfo {
   /** Context identifier */
   contextId: string;
-  
+
   /** Debug session identifier */
   debugSessionId: string;
-  
+
   /** Current debug state */
   state: 'running' | 'paused' | 'stepping' | 'stopped';
-  
+
   /** Debug breakpoints */
   breakpoints: ContextBreakpoint[];
-  
+
   /** Current execution position */
   position: {
     moduleId: string;
@@ -322,21 +344,24 @@ export interface ContextDebugInfo {
     column?: number;
     stackTrace: string[];
   };
-  
+
   /** Context variables for inspection */
-  variables: Record<string, {
-    value: unknown;
-    type: string;
-    mutable: boolean;
-    sensitive: boolean;
-  }>;
-  
+  variables: Record<
+    string,
+    {
+      value: unknown;
+      type: string;
+      mutable: boolean;
+      sensitive: boolean;
+    }
+  >;
+
   /** Context call stack */
   callStack: ContextStackFrame[];
-  
+
   /** Debug history */
   history: ContextDebugEvent[];
-  
+
   /** Performance profile */
   profile: {
     hotSpots: ContextHotSpot[];
@@ -430,13 +455,16 @@ export interface ContextMemoryProfile {
  */
 export interface ContextTimeProfile {
   totalExecutionTime: number;
-  operationTimes: Record<string, {
-    totalTime: number;
-    callCount: number;
-    averageTime: number;
-    minTime: number;
-    maxTime: number;
-  }>;
+  operationTimes: Record<
+    string,
+    {
+      totalTime: number;
+      callCount: number;
+      averageTime: number;
+      minTime: number;
+      maxTime: number;
+    }
+  >;
   criticalPath: Array<{
     operation: string;
     duration: number;
@@ -499,23 +527,23 @@ export interface ContextChange {
 export interface ContextVisualization {
   /** Visualization identifier */
   visualizationId: string;
-  
+
   /** Visualization type */
   type: 'flow' | 'hierarchy' | 'network' | 'timeline' | 'heatmap';
-  
+
   /** Graph nodes */
   nodes: ContextVisualNode[];
-  
+
   /** Graph edges */
   edges: ContextVisualEdge[];
-  
+
   /** Layout information */
   layout: {
     algorithm: 'force' | 'hierarchy' | 'circular' | 'grid';
     dimensions: { width: number; height: number; depth?: number };
     bounds: { minX: number; maxX: number; minY: number; maxY: number };
   };
-  
+
   /** Interactive features */
   interactions: {
     enableZoom: boolean;
@@ -524,7 +552,7 @@ export interface ContextVisualization {
     enableFiltering: boolean;
     enableAnimation: boolean;
   };
-  
+
   /** Rendering metadata */
   rendering: {
     generatedAt: Date;
@@ -588,7 +616,7 @@ export interface ContextVisualEdge {
 /**
  * Context monitoring event types
  */
-export type ContextMonitoringEvent = 
+export type ContextMonitoringEvent =
   | ContextLifecycleEvent
   | ContextAccessEvent
   | ContextTransformEvent
@@ -599,7 +627,13 @@ export type ContextMonitoringEvent =
 export interface ContextLifecycleEvent {
   type: 'context_lifecycle';
   contextId: string;
-  stage: 'created' | 'initialized' | 'accessed' | 'transformed' | 'shared' | 'destroyed';
+  stage:
+    | 'created'
+    | 'initialized'
+    | 'accessed'
+    | 'transformed'
+    | 'shared'
+    | 'destroyed';
   timestamp: Date;
   duration?: number;
   metadata: Record<string, unknown>;
@@ -674,20 +708,20 @@ export interface ContextPerformanceEvent {
 export interface ContextObservabilityState {
   /** Overall observability status */
   status: 'active' | 'paused' | 'error' | 'disabled';
-  
+
   /** Currently traced contexts */
   tracedContexts: string[];
-  
+
   /** Active debug sessions */
   debugSessions: string[];
-  
+
   /** Metrics collection status */
   metricsStatus: {
     collecting: boolean;
     lastCollection: Date;
     totalMetrics: number;
   };
-  
+
   /** Tracing status */
   tracingStatus: {
     active: boolean;
@@ -695,14 +729,14 @@ export interface ContextObservabilityState {
     totalTraces: number;
     activeTraces: number;
   };
-  
+
   /** System health */
   health: {
     status: 'healthy' | 'degraded' | 'unhealthy';
     issues: string[];
     lastCheck: Date;
   };
-  
+
   /** Resource usage */
   resources: {
     memoryUsage: number;
@@ -717,23 +751,30 @@ export interface ContextObservabilityState {
  */
 export interface ContextTracer {
   /** Start tracing a context */
-  startTrace(contextId: string, parentTrace?: ContextTrace): Promise<ContextTrace>;
-  
+  startTrace(
+    contextId: string,
+    parentTrace?: ContextTrace
+  ): Promise<ContextTrace>;
+
   /** End tracing a context */
   endTrace(contextId: string): Promise<void>;
-  
+
   /** Create a span for an operation */
-  createSpan(contextId: string, operation: string, metadata?: Record<string, unknown>): Promise<TraceSpan>;
-  
+  createSpan(
+    contextId: string,
+    operation: string,
+    metadata?: Record<string, unknown>
+  ): Promise<TraceSpan>;
+
   /** Finish a span */
   finishSpan(spanId: string, result?: unknown, error?: Error): Promise<void>;
-  
+
   /** Get active traces */
   getActiveTraces(): ContextTrace[];
-  
+
   /** Get trace by ID */
   getTrace(contextId: string): ContextTrace | undefined;
-  
+
   /** Export traces */
   exportTraces(format: 'json' | 'jaeger' | 'zipkin'): Promise<string>;
 }
@@ -744,19 +785,24 @@ export interface ContextTracer {
 export interface ContextMetricsCollector {
   /** Start collecting metrics for a context */
   startCollection(contextId: string): Promise<void>;
-  
+
   /** Stop collecting metrics for a context */
   stopCollection(contextId: string): Promise<void>;
-  
+
   /** Record a metric */
-  recordMetric(contextId: string, metric: string, value: number, labels?: Record<string, string>): void;
-  
+  recordMetric(
+    contextId: string,
+    metric: string,
+    value: number,
+    labels?: Record<string, string>
+  ): void;
+
   /** Get metrics for a context */
   getMetrics(contextId: string): ContextMetrics | undefined;
-  
+
   /** Get all metrics */
   getAllMetrics(): ContextMetrics;
-  
+
   /** Export metrics */
   exportMetrics(format: 'prometheus' | 'json'): Promise<string>;
 }
@@ -767,31 +813,37 @@ export interface ContextMetricsCollector {
 export interface ContextDebugger {
   /** Start debug session */
   startDebugSession(contextId: string): Promise<string>;
-  
+
   /** Stop debug session */
   stopDebugSession(sessionId: string): Promise<void>;
-  
+
   /** Set breakpoint */
-  setBreakpoint(sessionId: string, breakpoint: Omit<ContextBreakpoint, 'breakpointId' | 'hitCount' | 'createdAt'>): Promise<string>;
-  
+  setBreakpoint(
+    sessionId: string,
+    breakpoint: Omit<
+      ContextBreakpoint,
+      'breakpointId' | 'hitCount' | 'createdAt'
+    >
+  ): Promise<string>;
+
   /** Remove breakpoint */
   removeBreakpoint(sessionId: string, breakpointId: string): Promise<void>;
-  
+
   /** Step through execution */
   step(sessionId: string, type: 'into' | 'over' | 'out'): Promise<void>;
-  
+
   /** Continue execution */
   continue(sessionId: string): Promise<void>;
-  
+
   /** Pause execution */
   pause(sessionId: string): Promise<void>;
-  
+
   /** Inspect context variables */
   inspectVariables(sessionId: string): Promise<Record<string, unknown>>;
-  
+
   /** Evaluate expression */
   evaluate(sessionId: string, expression: string): Promise<unknown>;
-  
+
   /** Get debug info */
   getDebugInfo(sessionId: string): Promise<ContextDebugInfo>;
 }
@@ -801,23 +853,31 @@ export interface ContextDebugger {
  */
 export interface ContextVersioning {
   /** Create version snapshot */
-  createVersion(contextId: string, description: string, tags?: string[]): Promise<ContextVersion>;
-  
+  createVersion(
+    contextId: string,
+    description: string,
+    tags?: string[]
+  ): Promise<ContextVersion>;
+
   /** Get version history */
   getVersionHistory(contextId: string): Promise<ContextVersion[]>;
-  
+
   /** Get version by ID */
   getVersion(versionId: string): Promise<ContextVersion | undefined>;
-  
+
   /** Compare versions */
-  compareVersions(contextId: string, fromVersion: number, toVersion: number): Promise<ContextDiff>;
-  
+  compareVersions(
+    contextId: string,
+    fromVersion: number,
+    toVersion: number
+  ): Promise<ContextDiff>;
+
   /** Rollback to version */
   rollbackToVersion(contextId: string, version: number): Promise<void>;
-  
+
   /** Tag version */
   tagVersion(versionId: string, tags: string[]): Promise<void>;
-  
+
   /** Clean up old versions */
   cleanupVersions(contextId: string, keepCount: number): Promise<void>;
 }
@@ -827,20 +887,31 @@ export interface ContextVersioning {
  */
 export interface ContextVisualizer {
   /** Generate visualization */
-  generateVisualization(contextIds: string[], type: ContextVisualization['type']): Promise<ContextVisualization>;
-  
+  generateVisualization(
+    contextIds: string[],
+    type: ContextVisualization['type']
+  ): Promise<ContextVisualization>;
+
   /** Update visualization */
   updateVisualization(visualizationId: string): Promise<void>;
-  
+
   /** Export visualization */
-  exportVisualization(visualizationId: string, format: 'svg' | 'png' | 'json'): Promise<string | Buffer>;
-  
+  exportVisualization(
+    visualizationId: string,
+    format: 'svg' | 'png' | 'json'
+  ): Promise<string | Buffer>;
+
   /** Get visualization data */
-  getVisualization(visualizationId: string): Promise<ContextVisualization | undefined>;
-  
+  getVisualization(
+    visualizationId: string
+  ): Promise<ContextVisualization | undefined>;
+
   /** Subscribe to real-time updates */
-  subscribeToUpdates(visualizationId: string, callback: (update: ContextVisualization) => void): Promise<void>;
-  
+  subscribeToUpdates(
+    visualizationId: string,
+    callback: (update: ContextVisualization) => void
+  ): Promise<void>;
+
   /** Unsubscribe from updates */
   unsubscribeFromUpdates(visualizationId: string): Promise<void>;
 }

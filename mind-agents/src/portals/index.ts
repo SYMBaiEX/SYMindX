@@ -560,10 +560,13 @@ export function initializePortals(): PortalRegistry {
   logger.start('Initializing portals system');
   const registry = PortalRegistry.getInstance();
   const availablePortals = registry.getAvailablePortals();
-  logger.success(`Portals system initialized with ${availablePortals.length} providers`, {
-    portalCount: availablePortals.length,
-    providers: availablePortals
-  });
+  logger.success(
+    `Portals system initialized with ${availablePortals.length} providers`,
+    {
+      portalCount: availablePortals.length,
+      providers: availablePortals,
+    }
+  );
   return registry;
 }
 

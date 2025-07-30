@@ -1,6 +1,6 @@
 /**
  * Context Injection Patterns for SYMindX
- * 
+ *
  * This module exports all dependency injection patterns for automatic
  * context propagation throughout the system.
  */
@@ -23,10 +23,14 @@ export { serviceInjectionPatterns } from './service-injection';
 
 // Aggregate all patterns for easy access
 export const allInjectionPatterns = {
-  module: () => import('./module-injection').then(m => m.moduleInjectionPatterns),
-  extension: () => import('./extension-injection').then(m => m.extensionInjectionPatterns),
-  portal: () => import('./portal-injection').then(m => m.portalInjectionPatterns),
-  service: () => import('./service-injection').then(m => m.serviceInjectionPatterns)
+  module: () =>
+    import('./module-injection').then((m) => m.moduleInjectionPatterns),
+  extension: () =>
+    import('./extension-injection').then((m) => m.extensionInjectionPatterns),
+  portal: () =>
+    import('./portal-injection').then((m) => m.portalInjectionPatterns),
+  service: () =>
+    import('./service-injection').then((m) => m.serviceInjectionPatterns),
 };
 
 /**
@@ -61,10 +65,18 @@ export class InjectionPatternRegistry {
    */
   static initialize(): void {
     // Lazy load patterns to avoid circular dependencies
-    this.patterns.set('module', () => import('./module-injection').then(m => m.moduleInjectionPatterns));
-    this.patterns.set('extension', () => import('./extension-injection').then(m => m.extensionInjectionPatterns));
-    this.patterns.set('portal', () => import('./portal-injection').then(m => m.portalInjectionPatterns));
-    this.patterns.set('service', () => import('./service-injection').then(m => m.serviceInjectionPatterns));
+    this.patterns.set('module', () =>
+      import('./module-injection').then((m) => m.moduleInjectionPatterns)
+    );
+    this.patterns.set('extension', () =>
+      import('./extension-injection').then((m) => m.extensionInjectionPatterns)
+    );
+    this.patterns.set('portal', () =>
+      import('./portal-injection').then((m) => m.portalInjectionPatterns)
+    );
+    this.patterns.set('service', () =>
+      import('./service-injection').then((m) => m.serviceInjectionPatterns)
+    );
   }
 }
 

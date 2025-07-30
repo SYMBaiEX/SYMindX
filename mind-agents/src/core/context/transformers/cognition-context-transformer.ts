@@ -1,6 +1,6 @@
 /**
  * Cognition Context Transformer
- * 
+ *
  * Transforms unified context into cognition module-specific format,
  * optimizing for cognitive processing and reasoning operations.
  */
@@ -17,7 +17,7 @@ import {
   TransformerCapabilities,
   TransformationMetadata,
   TransformationPerformance,
-  CognitionContextData
+  CognitionContextData,
 } from '../../../types/context/context-transformation.js';
 import { runtimeLogger } from '../../../utils/logger.js';
 import { ThoughtContext } from '../../../types/modules/cognition.js';
@@ -31,35 +31,35 @@ export interface CognitionContext {
   sessionId: string;
   contextId: string;
   timestamp: Date;
-  
+
   // Cognitive content
   currentThought: string;
   thoughtHistory: string[];
   reasoningChain: ReasoningStep[];
-  
+
   // Decision context
   activeDecisions: Decision[];
   decisionHistory: DecisionRecord[];
-  
+
   // Planning context
   currentGoals: Goal[];
   activePlans: Plan[];
   constraints: Constraint[];
-  
+
   // Cognitive state
   cognitiveLoad: number; // 0-1
   reasoningDepth: number; // 0-10
   confidence: number; // 0-1
   focus: string[];
-  
+
   // Memory integration
   relevantMemories: MemoryReference[];
   memoryQueries: string[];
-  
+
   // Environment awareness
   availableActions: string[];
   contextualFactors: ContextualFactor[];
-  
+
   // Metadata
   processingMetadata: CognitionProcessingMetadata;
 }
@@ -213,7 +213,9 @@ export interface CognitionProcessingMetadata {
 /**
  * Cognition Context Transformer implementation
  */
-export class CognitionContextTransformer implements ContextTransformer<UnifiedContext, CognitionContext> {
+export class CognitionContextTransformer
+  implements ContextTransformer<UnifiedContext, CognitionContext>
+{
   readonly id = 'cognition-context-transformer';
   readonly version = '1.0.0';
   readonly target = TransformationTarget.COGNITION;
@@ -221,11 +223,14 @@ export class CognitionContextTransformer implements ContextTransformer<UnifiedCo
     TransformationStrategy.FULL,
     TransformationStrategy.SELECTIVE,
     TransformationStrategy.OPTIMIZED,
-    TransformationStrategy.CACHED
+    TransformationStrategy.CACHED,
   ];
   readonly reversible = true;
 
-  private performanceCache = new Map<string, TransformationResult<CognitionContext>>();
+  private performanceCache = new Map<
+    string,
+    TransformationResult<CognitionContext>
+  >();
 
   /**
    * Transform unified context to cognition format
@@ -235,32 +240,38 @@ export class CognitionContextTransformer implements ContextTransformer<UnifiedCo
     config?: TransformationConfig
   ): Promise<TransformationResult<CognitionContext>> {
     const startTime = performance.now();
-    
+
     try {
       // Check cache first
       if (config?.cache?.enabled) {
         const cacheKey = this.generateCacheKey(context, config);
         const cached = this.performanceCache.get(cacheKey);
         if (cached) {
-          runtimeLogger.debug(`Cache hit for cognition transformation: ${cacheKey}`);
+          runtimeLogger.debug(
+            `Cache hit for cognition transformation: ${cacheKey}`
+          );
           return {
             ...cached,
-            cached: true
+            cached: true,
           };
         }
       }
 
       // Determine strategy
       const strategy = config?.strategy || TransformationStrategy.SELECTIVE;
-      
+
       // Transform based on strategy
-      const transformedContext = await this.performTransformation(context, strategy, config);
-      
+      const transformedContext = await this.performTransformation(
+        context,
+        strategy,
+        config
+      );
+
       // Calculate performance metrics
       const duration = performance.now() - startTime;
       const inputSize = JSON.stringify(context).length;
       const outputSize = JSON.stringify(transformedContext).length;
-      
+
       const metadata: TransformationMetadata = {
         transformerId: this.id,
         transformerVersion: this.version,
@@ -271,7 +282,7 @@ export class CognitionContextTransformer implements ContextTransformer<UnifiedCo
         fieldsDropped: this.getDroppedFields(strategy),
         fieldsAdded: this.getAddedFields(),
         validationPassed: true,
-        cacheHit: false
+        cacheHit: false,
       };
 
       const performance: TransformationPerformance = {
@@ -280,7 +291,7 @@ export class CognitionContextTransformer implements ContextTransformer<UnifiedCo
         cpuUsage: process.cpuUsage().user,
         cacheHitRate: 0,
         compressionRatio: inputSize / outputSize,
-        throughput: outputSize / duration
+        throughput: outputSize / duration,
       };
 
       const result: TransformationResult<CognitionContext> = {
@@ -293,7 +304,7 @@ export class CognitionContextTransformer implements ContextTransformer<UnifiedCo
         metadata,
         performance,
         reversible: this.reversible,
-        cached: false
+        cached: false,
       };
 
       // Cache result if enabled
@@ -302,13 +313,17 @@ export class CognitionContextTransformer implements ContextTransformer<UnifiedCo
         this.performanceCache.set(cacheKey, result);
       }
 
-      runtimeLogger.debug(`Cognition context transformation completed in ${duration.toFixed(2)}ms`);
+      runtimeLogger.debug(
+        `Cognition context transformation completed in ${duration.toFixed(2)}ms`
+      );
       return result;
-
     } catch (error) {
       const duration = performance.now() - startTime;
-      runtimeLogger.error('Cognition context transformation failed', { error, duration });
-      
+      runtimeLogger.error('Cognition context transformation failed', {
+        error,
+        duration,
+      });
+
       return {
         success: false,
         error: error instanceof Error ? error.message : String(error),
@@ -327,7 +342,7 @@ export class CognitionContextTransformer implements ContextTransformer<UnifiedCo
           fieldsDropped: [],
           fieldsAdded: [],
           validationPassed: false,
-          cacheHit: false
+          cacheHit: false,
         },
         performance: {
           duration,
@@ -335,10 +350,10 @@ export class CognitionContextTransformer implements ContextTransformer<UnifiedCo
           cpuUsage: 0,
           cacheHitRate: 0,
           compressionRatio: 0,
-          throughput: 0
+          throughput: 0,
         },
         reversible: false,
-        cached: false
+        cached: false,
       };
     }
   }
@@ -352,7 +367,7 @@ export class CognitionContextTransformer implements ContextTransformer<UnifiedCo
     config?: TransformationConfig
   ): Promise<CognitionContext> {
     const cognitionData = context.cognitionData || {};
-    
+
     const baseContext: CognitionContext = {
       agentId: context.agentId,
       sessionId: context.sessionId,
@@ -374,7 +389,7 @@ export class CognitionContextTransformer implements ContextTransformer<UnifiedCo
       memoryQueries: this.extractMemoryQueries(context),
       availableActions: this.extractAvailableActions(context),
       contextualFactors: this.extractContextualFactors(context),
-      processingMetadata: this.createProcessingMetadata(context)
+      processingMetadata: this.createProcessingMetadata(context),
     };
 
     // Apply strategy-specific optimizations
@@ -414,17 +429,19 @@ export class CognitionContextTransformer implements ContextTransformer<UnifiedCo
       evidence: [], // Would extract from context
       confidence: 0.8, // Default confidence
       timestamp: new Date(),
-      dependencies: []
+      dependencies: [],
     }));
   }
 
   /**
    * Extract active decisions from cognition data
    */
-  private extractActiveDecisions(cognitionData: CognitionContextData): Decision[] {
+  private extractActiveDecisions(
+    cognitionData: CognitionContextData
+  ): Decision[] {
     if (!cognitionData.decisions) return [];
 
-    return cognitionData.decisions.map(decision => ({
+    return cognitionData.decisions.map((decision) => ({
       id: decision.id,
       question: decision.description,
       options: decision.options.map((option, index) => ({
@@ -433,10 +450,10 @@ export class CognitionContextTransformer implements ContextTransformer<UnifiedCo
         pros: [],
         cons: [],
         score: 0.5,
-        feasibility: 0.5
+        feasibility: 0.5,
       })),
       criteria: [],
-      status: 'pending' as const
+      status: 'pending' as const,
     }));
   }
 
@@ -446,7 +463,7 @@ export class CognitionContextTransformer implements ContextTransformer<UnifiedCo
   private extractGoals(cognitionData: CognitionContextData): Goal[] {
     if (!cognitionData.goals) return [];
 
-    return cognitionData.goals.map(goal => ({
+    return cognitionData.goals.map((goal) => ({
       id: goal.id,
       description: goal.description,
       priority: goal.priority,
@@ -454,7 +471,7 @@ export class CognitionContextTransformer implements ContextTransformer<UnifiedCo
       achievability: 0.7, // Default
       deadline: goal.deadline,
       subgoals: [],
-      metrics: []
+      metrics: [],
     }));
   }
 
@@ -464,43 +481,45 @@ export class CognitionContextTransformer implements ContextTransformer<UnifiedCo
   private extractPlans(cognitionData: CognitionContextData): Plan[] {
     if (!cognitionData.plans) return [];
 
-    return cognitionData.plans.map(plan => ({
+    return cognitionData.plans.map((plan) => ({
       id: plan.id,
       goalId: '', // Would need to be mapped
       description: plan.goal,
-      steps: plan.steps.map(step => ({
+      steps: plan.steps.map((step) => ({
         id: step.id,
         description: step.description,
         order: 0, // Would need ordering logic
         dependencies: step.dependencies,
         estimatedDuration: 0,
         resources: [],
-        status: step.status as any
+        status: step.status as any,
       })),
       resources: [],
       risks: [],
       timeline: {
         startTime: new Date(),
         estimatedEndTime: new Date(),
-        milestones: []
+        milestones: [],
       },
-      status: plan.status as any
+      status: plan.status as any,
     }));
   }
 
   /**
    * Extract constraints from cognition data
    */
-  private extractConstraints(cognitionData: CognitionContextData): Constraint[] {
+  private extractConstraints(
+    cognitionData: CognitionContextData
+  ): Constraint[] {
     if (!cognitionData.constraints) return [];
 
-    return cognitionData.constraints.map(constraint => ({
+    return cognitionData.constraints.map((constraint) => ({
       id: constraint.id,
       type: constraint.type as any,
       description: constraint.description,
       severity: constraint.severity,
       enforceable: true,
-      violationConsequence: 'Unknown consequence'
+      violationConsequence: 'Unknown consequence',
     }));
   }
 
@@ -509,18 +528,18 @@ export class CognitionContextTransformer implements ContextTransformer<UnifiedCo
    */
   private calculateCognitiveLoad(context: UnifiedContext): number {
     let load = 0;
-    
+
     // Factor in message complexity
     load += Math.min(context.messages.length / 10, 0.3);
-    
+
     // Factor in state complexity
     load += context.state.complexity * 0.4;
-    
+
     // Factor in cognition data complexity
     if (context.cognitionData) {
-      load += (context.cognitionData.thoughts?.length || 0) / 20 * 0.3;
+      load += ((context.cognitionData.thoughts?.length || 0) / 20) * 0.3;
     }
-    
+
     return Math.min(load, 1);
   }
 
@@ -530,10 +549,10 @@ export class CognitionContextTransformer implements ContextTransformer<UnifiedCo
   private calculateReasoningDepth(context: UnifiedContext): number {
     const cognitionData = context.cognitionData;
     if (!cognitionData) return 1;
-    
+
     const thoughtDepth = (cognitionData.thoughts?.length || 0) / 5;
     const reasoningDepth = (cognitionData.reasoningChain?.length || 0) / 3;
-    
+
     return Math.min(Math.max(thoughtDepth, reasoningDepth), 10);
   }
 
@@ -542,15 +561,15 @@ export class CognitionContextTransformer implements ContextTransformer<UnifiedCo
    */
   private extractFocus(context: UnifiedContext): string[] {
     const focus: string[] = [];
-    
+
     // Extract from messages
     if (context.messages.length > 0) {
       const lastMessage = context.messages[context.messages.length - 1];
       // Simple keyword extraction (would be more sophisticated in production)
       const words = lastMessage.content.toLowerCase().split(/\s+/);
-      focus.push(...words.filter(w => w.length > 4).slice(0, 3));
+      focus.push(...words.filter((w) => w.length > 4).slice(0, 3));
     }
-    
+
     return focus;
   }
 
@@ -560,14 +579,15 @@ export class CognitionContextTransformer implements ContextTransformer<UnifiedCo
   private extractMemoryReferences(context: UnifiedContext): MemoryReference[] {
     const memoryData = context.memoryData;
     if (!memoryData?.relevantMemories) return [];
-    
-    return memoryData.relevantMemories.map(mem => ({
+
+    return memoryData.relevantMemories.map((mem) => ({
       id: mem.id,
       type: mem.type as any,
       relevance: mem.relevance,
-      recency: 1 - (Date.now() - mem.lastAccessed.getTime()) / (24 * 60 * 60 * 1000),
+      recency:
+        1 - (Date.now() - mem.lastAccessed.getTime()) / (24 * 60 * 60 * 1000),
       importance: 0.5, // Default
-      accessibility: 1.0 // Default
+      accessibility: 1.0, // Default
     }));
   }
 
@@ -577,8 +597,8 @@ export class CognitionContextTransformer implements ContextTransformer<UnifiedCo
   private extractMemoryQueries(context: UnifiedContext): string[] {
     const memoryData = context.memoryData;
     if (!memoryData?.memoryQueries) return [];
-    
-    return memoryData.memoryQueries.map(q => q.query);
+
+    return memoryData.memoryQueries.map((q) => q.query);
   }
 
   /**
@@ -591,34 +611,38 @@ export class CognitionContextTransformer implements ContextTransformer<UnifiedCo
   /**
    * Extract contextual factors
    */
-  private extractContextualFactors(context: UnifiedContext): ContextualFactor[] {
+  private extractContextualFactors(
+    context: UnifiedContext
+  ): ContextualFactor[] {
     const factors: ContextualFactor[] = [];
-    
+
     // Environment factors
     if (context.environment.platform) {
       factors.push({
         factor: 'platform',
         value: context.environment.platform,
         influence: 0.3,
-        reliability: 0.9
+        reliability: 0.9,
       });
     }
-    
+
     // State factors
     factors.push({
       factor: 'engagement',
       value: context.state.engagement,
       influence: context.state.engagement - 0.5,
-      reliability: 0.8
+      reliability: 0.8,
     });
-    
+
     return factors;
   }
 
   /**
    * Create processing metadata
    */
-  private createProcessingMetadata(context: UnifiedContext): CognitionProcessingMetadata {
+  private createProcessingMetadata(
+    context: UnifiedContext
+  ): CognitionProcessingMetadata {
     return {
       processingStartTime: new Date(),
       processingDuration: 0,
@@ -627,7 +651,7 @@ export class CognitionContextTransformer implements ContextTransformer<UnifiedCo
       decisionPoints: context.cognitionData?.decisions?.length || 0,
       reasoningDepth: this.calculateReasoningDepth(context),
       alternativesConsidered: 0,
-      confidence: context.state.confidence
+      confidence: context.state.confidence,
     };
   }
 
@@ -640,7 +664,7 @@ export class CognitionContextTransformer implements ContextTransformer<UnifiedCo
       thoughtHistory: context.thoughtHistory.slice(-3), // Keep only last 3 thoughts
       reasoningChain: context.reasoningChain.slice(-5), // Keep only last 5 steps
       decisionHistory: [], // Clear history
-      contextualFactors: context.contextualFactors.slice(0, 3) // Keep top 3 factors
+      contextualFactors: context.contextualFactors.slice(0, 3), // Keep top 3 factors
     };
   }
 
@@ -652,19 +676,22 @@ export class CognitionContextTransformer implements ContextTransformer<UnifiedCo
     return {
       ...context,
       relevantMemories: context.relevantMemories
-        .filter(m => m.relevance > 0.5)
+        .filter((m) => m.relevance > 0.5)
         .sort((a, b) => b.relevance - a.relevance)
         .slice(0, 10),
       contextualFactors: context.contextualFactors
-        .filter(f => Math.abs(f.influence) > 0.2)
-        .sort((a, b) => Math.abs(b.influence) - Math.abs(a.influence))
+        .filter((f) => Math.abs(f.influence) > 0.2)
+        .sort((a, b) => Math.abs(b.influence) - Math.abs(a.influence)),
     };
   }
 
   /**
    * Apply full strategy
    */
-  private applyFullStrategy(context: CognitionContext, original: UnifiedContext): CognitionContext {
+  private applyFullStrategy(
+    context: CognitionContext,
+    original: UnifiedContext
+  ): CognitionContext {
     // Include all available data
     return {
       ...context,
@@ -699,7 +726,7 @@ export class CognitionContextTransformer implements ContextTransformer<UnifiedCo
         field: 'agentId',
         message: 'Agent ID is required',
         severity: 'critical',
-        code: 'MISSING_AGENT_ID'
+        code: 'MISSING_AGENT_ID',
       });
     }
 
@@ -708,7 +735,7 @@ export class CognitionContextTransformer implements ContextTransformer<UnifiedCo
         field: 'contextId',
         message: 'Context ID is required',
         severity: 'critical',
-        code: 'MISSING_CONTEXT_ID'
+        code: 'MISSING_CONTEXT_ID',
       });
     }
 
@@ -718,19 +745,20 @@ export class CognitionContextTransformer implements ContextTransformer<UnifiedCo
         field: 'cognitiveLoad',
         message: 'Cognitive load must be between 0 and 1',
         severity: 'high',
-        code: 'INVALID_COGNITIVE_LOAD'
+        code: 'INVALID_COGNITIVE_LOAD',
       });
     }
 
     // Calculate score
-    const score = errors.length === 0 ? (warnings.length === 0 ? 1.0 : 0.8) : 0.5;
+    const score =
+      errors.length === 0 ? (warnings.length === 0 ? 1.0 : 0.8) : 0.5;
 
     return {
       valid: errors.length === 0,
       errors,
       warnings,
       score,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
   }
 
@@ -752,35 +780,50 @@ export class CognitionContextTransformer implements ContextTransformer<UnifiedCo
       performance: {
         averageDuration: 15, // ms
         memoryUsage: 2 * 1024 * 1024, // 2MB
-        throughput: 1000 // contexts per second
-      }
+        throughput: 1000, // contexts per second
+      },
     };
   }
 
   /**
    * Helper methods for metadata
    */
-  private generateCacheKey(context: UnifiedContext, config?: TransformationConfig): string {
+  private generateCacheKey(
+    context: UnifiedContext,
+    config?: TransformationConfig
+  ): string {
     const keyData = {
       contextId: context.contextId,
       version: context.version,
       strategy: config?.strategy,
-      timestamp: Math.floor(context.timestamp.getTime() / 60000) // Minute precision
+      timestamp: Math.floor(context.timestamp.getTime() / 60000), // Minute precision
     };
     return `cognition_${JSON.stringify(keyData)}`;
   }
 
   private getTransformedFields(strategy: TransformationStrategy): string[] {
     const baseFields = [
-      'agentId', 'sessionId', 'contextId', 'currentThought', 'reasoningChain',
-      'activeDecisions', 'currentGoals', 'activePlans', 'cognitiveLoad'
+      'agentId',
+      'sessionId',
+      'contextId',
+      'currentThought',
+      'reasoningChain',
+      'activeDecisions',
+      'currentGoals',
+      'activePlans',
+      'cognitiveLoad',
     ];
-    
+
     switch (strategy) {
       case TransformationStrategy.MINIMAL:
         return baseFields.slice(0, 5);
       case TransformationStrategy.FULL:
-        return [...baseFields, 'decisionHistory', 'contextualFactors', 'processingMetadata'];
+        return [
+          ...baseFields,
+          'decisionHistory',
+          'contextualFactors',
+          'processingMetadata',
+        ];
       default:
         return baseFields;
     }

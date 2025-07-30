@@ -1,13 +1,13 @@
 /**
  * Shared Error Handling Utilities
- * 
+ *
  * Provides standardized error handling and recovery logic for all portals
  */
 
-import { 
-  createPortalError, 
-  createConfigurationError, 
-  createNetworkError 
+import {
+  createPortalError,
+  createConfigurationError,
+  createNetworkError,
 } from '../../utils/standard-errors';
 
 export interface ErrorHandlerOptions {
@@ -15,27 +15,27 @@ export interface ErrorHandlerOptions {
    * Portal/provider name for error context
    */
   provider: string;
-  
+
   /**
    * Operation being performed when error occurred
    */
   operation: string;
-  
+
   /**
    * Model being used when error occurred
    */
   model?: string;
-  
+
   /**
    * Whether to include retry logic
    */
   enableRetry?: boolean;
-  
+
   /**
    * Maximum number of retry attempts
    */
   maxRetries?: number;
-  
+
   /**
    * Retry delay in milliseconds
    */
@@ -52,7 +52,10 @@ export interface RetryOptions {
 /**
  * Handle AI SDK errors with provider-specific logic
  */
-export function handleAISDKError(error: any, options: ErrorHandlerOptions): Error {
+export function handleAISDKError(
+  error: any,
+  options: ErrorHandlerOptions
+): Error {
   const { provider, operation, model } = options;
 
   // Extract error details
@@ -138,7 +141,10 @@ export function handleAISDKError(error: any, options: ErrorHandlerOptions): Erro
 /**
  * Handle provider-specific error patterns
  */
-function handleProviderSpecificError(error: any, options: ErrorHandlerOptions): Error {
+function handleProviderSpecificError(
+  error: any,
+  options: ErrorHandlerOptions
+): Error {
   const { provider, operation, model } = options;
   const statusCode = error.status || error.statusCode;
   const errorMessage = error.message || 'Unknown error';
@@ -188,10 +194,10 @@ function handleProviderSpecificError(error: any, options: ErrorHandlerOptions): 
         provider,
         model || 'unknown',
         `${provider.toUpperCase()}_RATE_LIMITED`,
-        { 
-          operation, 
+        {
+          operation,
           retryAfter: error.headers?.['retry-after'],
-          originalMessage: errorMessage 
+          originalMessage: errorMessage,
         },
         error
       );
@@ -254,7 +260,7 @@ export async function withRetry<T>(
 
       // Wait before retrying
       if (delay > 0) {
-        await new Promise(resolve => setTimeout(resolve, delay));
+        await new Promise((resolve) => setTimeout(resolve, delay));
         delay *= options.backoffMultiplier;
       }
     }
@@ -269,12 +275,18 @@ export async function withRetry<T>(
  */
 function isNonRetryableError(error: any): boolean {
   const nonRetryableStatuses = [400, 401, 403, 404];
-  const nonRetryableNames = ['AI_AuthenticationError', 'AI_InvalidArgumentError'];
+  const nonRetryableNames = [
+    'AI_AuthenticationError',
+    'AI_InvalidArgumentError',
+  ];
 
   const statusCode = error.status || error.statusCode;
   const errorName = error.name || error.constructor?.name;
 
-  return nonRetryableStatuses.includes(statusCode) || nonRetryableNames.includes(errorName);
+  return (
+    nonRetryableStatuses.includes(statusCode) ||
+    nonRetryableNames.includes(errorName)
+  );
 }
 
 /**
@@ -302,10 +314,8 @@ export function createErrorHandler(provider: string, defaultModel?: string) {
         ...retryOptions,
       };
 
-      return withRetry(
-        operation,
-        fullRetryOptions,
-        (error) => handleAISDKError(error, {
+      return withRetry(operation, fullRetryOptions, (error) =>
+        handleAISDKError(error, {
           provider,
           operation: operationName,
           model: model || defaultModel,
@@ -320,7 +330,10 @@ export function createErrorHandler(provider: string, defaultModel?: string) {
 /**
  * Validate API key configuration
  */
-export function validateApiKey(apiKey: string | undefined, provider: string): void {
+export function validateApiKey(
+  apiKey: string | undefined,
+  provider: string
+): void {
   if (!apiKey) {
     throw createConfigurationError(
       `${provider} API key is required`,
@@ -400,7 +413,11 @@ export function withTimeout<T>(
     operation,
     new Promise<never>((_, reject) => {
       setTimeout(() => {
-        reject(new Error(timeoutMessage || `Operation timed out after ${timeoutMs}ms`));
+        reject(
+          new Error(
+            timeoutMessage || `Operation timed out after ${timeoutMs}ms`
+          )
+        );
       }, timeoutMs);
     }),
   ]);

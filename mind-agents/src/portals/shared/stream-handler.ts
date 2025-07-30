@@ -1,6 +1,6 @@
 /**
  * Shared Stream Handling Utilities
- * 
+ *
  * Provides standardized streaming logic for all portal implementations
  */
 
@@ -12,12 +12,12 @@ export interface StreamOptions {
    * Whether to enable tool call streaming
    */
   enableToolStreaming?: boolean;
-  
+
   /**
    * Maximum steps for multi-step operations
    */
   maxSteps?: number;
-  
+
   /**
    * Callbacks for different stream events
    */
@@ -181,7 +181,10 @@ export async function* createEnhancedStream(
     const { textStream, fullStream } = await streamText(streamParams);
 
     // Process the full stream to handle tool calls if callbacks are provided
-    if (options.callbacks?.onToolCallStart || options.callbacks?.onToolCallFinish) {
+    if (
+      options.callbacks?.onToolCallStart ||
+      options.callbacks?.onToolCallFinish
+    ) {
       const streamIterator = fullStream[Symbol.asyncIterator]();
 
       while (true) {
@@ -195,13 +198,19 @@ export async function* createEnhancedStream(
 
           case 'tool-call':
             if (options.callbacks?.onToolCallStart) {
-              options.callbacks.onToolCallStart(value.toolCallId, value.toolName);
+              options.callbacks.onToolCallStart(
+                value.toolCallId,
+                value.toolName
+              );
             }
             break;
 
           case 'tool-result':
             if (options.callbacks?.onToolCallFinish) {
-              options.callbacks.onToolCallFinish(value.toolCallId, value.result);
+              options.callbacks.onToolCallFinish(
+                value.toolCallId,
+                value.result
+              );
             }
             break;
         }
@@ -272,17 +281,30 @@ export function createStreamHandler(provider: string) {
   const providerConfig = getProviderStreamConfig(provider);
 
   return {
-    createTextStream: (model: LanguageModel, params: any, options?: StreamOptions) =>
-      createTextStream(model, params, { ...providerConfig, ...options }),
+    createTextStream: (
+      model: LanguageModel,
+      params: any,
+      options?: StreamOptions
+    ) => createTextStream(model, params, { ...providerConfig, ...options }),
 
-    createChatStream: (model: LanguageModel, params: any, options?: StreamOptions) =>
-      createChatStream(model, params, { ...providerConfig, ...options }),
+    createChatStream: (
+      model: LanguageModel,
+      params: any,
+      options?: StreamOptions
+    ) => createChatStream(model, params, { ...providerConfig, ...options }),
 
-    createFullAccessStream: (model: LanguageModel, params: any, options?: StreamOptions) =>
+    createFullAccessStream: (
+      model: LanguageModel,
+      params: any,
+      options?: StreamOptions
+    ) =>
       createFullAccessStream(model, params, { ...providerConfig, ...options }),
 
-    createEnhancedStream: (model: LanguageModel, params: any, options?: StreamOptions) =>
-      createEnhancedStream(model, params, { ...providerConfig, ...options }),
+    createEnhancedStream: (
+      model: LanguageModel,
+      params: any,
+      options?: StreamOptions
+    ) => createEnhancedStream(model, params, { ...providerConfig, ...options }),
 
     executeMultiStep: (model: LanguageModel, params: any, options?: any) =>
       executeMultiStep(model, params, options),
@@ -348,25 +370,29 @@ function getProviderStreamConfig(provider: string): StreamOptions {
 /**
  * Convert stream to array for testing or non-streaming usage
  */
-export async function streamToArray<T>(stream: AsyncGenerator<T>): Promise<T[]> {
+export async function streamToArray<T>(
+  stream: AsyncGenerator<T>
+): Promise<T[]> {
   const results: T[] = [];
-  
+
   for await (const chunk of stream) {
     results.push(chunk);
   }
-  
+
   return results;
 }
 
 /**
  * Combine multiple text streams into a single string
  */
-export async function streamToString(stream: AsyncGenerator<string>): Promise<string> {
+export async function streamToString(
+  stream: AsyncGenerator<string>
+): Promise<string> {
   const chunks: string[] = [];
-  
+
   for await (const chunk of stream) {
     chunks.push(chunk);
   }
-  
+
   return chunks.join('');
 }
