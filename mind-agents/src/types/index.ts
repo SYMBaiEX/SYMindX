@@ -779,6 +779,9 @@ export type {
   AIActComplianceFactory,
 } from './ai-act-compliance';
 
+// Communication and Skills types
+export * from './communication';
+
 // Community ecosystem types
 export * from './community';
 

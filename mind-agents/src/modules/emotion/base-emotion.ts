@@ -171,7 +171,7 @@ export abstract class BaseEmotion implements EmotionModule {
 
   protected decay(): void {
     const timeSinceUpdate = Date.now() - this._lastUpdate.getTime();
-    const decayRate = 0.01 * (timeSinceUpdate / 60000); // Decay per minute
+    const baseDecayRate = 0.01 * (timeSinceUpdate / 60000); // Base decay per minute
 
     // Apply personality-based decay modulation
     let decayModifier = 1.0;
@@ -180,12 +180,33 @@ export abstract class BaseEmotion implements EmotionModule {
       decayModifier = 1 - (this._personalityTraits.neuroticism - 0.5) * 0.5;
     }
 
-    const targetIntensity = Math.max(
-      0,
-      this._intensity - decayRate * decayModifier
-    );
+    // Apply emotion-specific decay rates
+    const emotionDecayRates = {
+      'happy': 0.8,    // Happy fades relatively quickly
+      'sad': 1.2,      // Sad lingers longer
+      'angry': 1.1,    // Angry fades moderately
+      'confident': 0.9, // Confident fades slowly
+      'neutral': 0.5   // Neutral is stable
+    };
+
+    const emotionSpecificRate = emotionDecayRates[this.current as keyof typeof emotionDecayRates] || 1.0;
+    const finalDecayRate = baseDecayRate * decayModifier * emotionSpecificRate;
+
+    const targetIntensity = Math.max(0, this._intensity - finalDecayRate);
     this._intensity = this.applyInertia(this._intensity, targetIntensity);
     this._lastUpdate = new Date();
+  }
+
+  // Enhanced intensity management with bounds checking
+  public setIntensity(intensity: number): void {
+    this._intensity = Math.max(0, Math.min(1, intensity));
+    this._lastUpdate = new Date();
+  }
+
+  // Gradual intensity adjustment for smooth transitions
+  public adjustIntensity(delta: number): void {
+    const newIntensity = this._intensity + delta;
+    this.setIntensity(newIntensity);
   }
 
   protected applyInertia(current: number, target: number): number {
@@ -321,26 +342,35 @@ export abstract class BaseEmotion implements EmotionModule {
     );
   }
 
-  // Blend with another emotion
+  // Enhanced emotion blending with smooth transitions
   blendWith(other: BaseEmotion, weight: number = 0.5): EmotionBlend {
     const thisCoords = this.getCoordinates();
     const otherCoords = other.getCoordinates();
 
+    // Apply smooth blending curve for more natural transitions
+    const smoothWeight = this.applySmoothBlending(weight);
+
     return {
       coordinates: {
         valence:
-          thisCoords.valence * (1 - weight) + otherCoords.valence * weight,
+          thisCoords.valence * (1 - smoothWeight) + otherCoords.valence * smoothWeight,
         arousal:
-          thisCoords.arousal * (1 - weight) + otherCoords.arousal * weight,
+          thisCoords.arousal * (1 - smoothWeight) + otherCoords.arousal * smoothWeight,
         dominance:
-          thisCoords.dominance * (1 - weight) + otherCoords.dominance * weight,
+          thisCoords.dominance * (1 - smoothWeight) + otherCoords.dominance * smoothWeight,
       },
-      intensity: this._intensity * (1 - weight) + other.intensity * weight,
+      intensity: this._intensity * (1 - smoothWeight) + other.intensity * smoothWeight,
       components: [
-        { emotion: this.current, weight: 1 - weight },
-        { emotion: other.current, weight: weight },
+        { emotion: this.current, weight: 1 - smoothWeight },
+        { emotion: other.current, weight: smoothWeight },
       ],
     };
+  }
+
+  // Apply smooth blending curve for natural emotion transitions
+  private applySmoothBlending(weight: number): number {
+    // Use sigmoid-like curve for smoother transitions
+    return 1 / (1 + Math.exp(-6 * (weight - 0.5)));
   }
 
   // Set personality traits

@@ -12,7 +12,7 @@ import {
   beforeAll,
   afterAll,
 } from 'bun:test';
-import { OptimizedEventBus } from '../core/OptimizedEventBus';
+import { SimpleEventBus } from '../core/event-bus';
 import { LRUCache, MultiLevelCache } from '../utils/LRUCache';
 import { ConnectionPool } from '../utils/ConnectionPool';
 import { PerformanceMonitor } from '../utils/PerformanceMonitor';
@@ -25,7 +25,7 @@ import {
 import { AgentEvent } from '../types/agent';
 
 describe('Performance Optimization Components', () => {
-  let eventBus: OptimizedEventBus;
+  let eventBus: SimpleEventBus;
   let performanceMonitor: PerformanceMonitor;
   let memoryManager: MemoryManager;
 
@@ -44,23 +44,19 @@ describe('Performance Optimization Components', () => {
   });
 
   beforeEach(() => {
-    eventBus = new OptimizedEventBus({
-      maxEvents: 1000,
-      compressionEnabled: true,
-      batchingEnabled: true,
-    });
+    eventBus = new SimpleEventBus();
   });
 
   afterEach(() => {
     eventBus.shutdown();
   });
 
-  describe('OptimizedEventBus', () => {
+  describe('SimpleEventBus', () => {
     test('should handle high-volume events efficiently', async () => {
       const eventCount = 10000;
       const receivedEvents: AgentEvent[] = [];
 
-      eventBus.subscribe('test-event', (event) => {
+      eventBus.on('test-event', (event) => {
         receivedEvents.push(event);
       });
 
@@ -84,16 +80,16 @@ describe('Performance Optimization Components', () => {
       expect(benchmark.duration.avg).toBeLessThan(50); // Less than 50ms average
       expect(benchmark.throughput.opsPerSecond).toBeGreaterThan(100); // More than 100 ops/sec
 
-      // Wait for batch processing
+      // Wait for event processing
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       expect(receivedEvents.length).toBeGreaterThan(0);
     });
 
-    test('should compress events when enabled', () => {
-      const events = eventBus.getEvents();
+    test('should handle event rotation to prevent memory leaks', () => {
+      const initialEvents = eventBus.getEvents();
 
-      // Add lots of similar events
+      // Add lots of events to test rotation
       for (let i = 0; i < 1500; i++) {
         eventBus.emit({
           id: `event-${i}`,
@@ -104,38 +100,31 @@ describe('Performance Optimization Components', () => {
         });
       }
 
-      const compressedEvents = eventBus.getEvents();
+      const finalEvents = eventBus.getEvents();
       const metrics = eventBus.getMetrics();
 
-      expect(metrics.performance.compressionRatio).toBeLessThan(1.0);
-      expect(compressedEvents.length).toBeLessThan(1500);
+      // Should not exceed max history size (1000)
+      expect(finalEvents.length).toBeLessThanOrEqual(1000);
+      expect(metrics.totalEvents).toBe(1500);
     });
 
-    test('should prioritize events correctly', async () => {
+    test('should handle multiple listeners correctly', async () => {
       const receivedEvents: AgentEvent[] = [];
 
-      eventBus.subscribe(
-        'priority-event',
-        (event) => {
-          receivedEvents.push(event);
-        },
-        { priority: 10 }
-      );
+      eventBus.on('multi-listener-event', (event) => {
+        receivedEvents.push(event);
+      });
 
-      eventBus.subscribe(
-        'priority-event',
-        (event) => {
-          receivedEvents.push(event);
-        },
-        { priority: 5 }
-      );
+      eventBus.on('multi-listener-event', (event) => {
+        receivedEvents.push(event);
+      });
 
       const event: AgentEvent = {
-        id: 'priority-test',
-        type: 'priority-event',
+        id: 'multi-listener-test',
+        type: 'multi-listener-event',
         agentId: 'test-agent',
         timestamp: new Date(),
-        payload: { priority: true },
+        payload: { test: true },
       };
 
       eventBus.emit(event);

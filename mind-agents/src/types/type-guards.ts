@@ -20,24 +20,28 @@ import type {
   PlanStep,
   Decision,
   Extension,
+  EventType,
+  EventSource,
+  EmotionModuleType,
+  MemoryProviderType,
+  CognitionModuleType,
+  AgentStateType,
+} from './agent.js';
+
+// Import enums as values for runtime checks
+import {
   AgentStatus,
   ActionStatus,
   MemoryType,
   MemoryDuration,
-  EventType,
-  EventSource,
   PlanStatus,
   PlanStepStatus,
   ExtensionType,
   ExtensionStatus,
   ActionCategory,
   ActionResultType,
-  EmotionModuleType,
-  MemoryProviderType,
-  CognitionModuleType,
   LazyAgentStatus,
   EnvironmentType,
-  AgentStateType,
 } from './agent.js';
 
 import type {
@@ -56,7 +60,8 @@ import type {
   ReasoningState,
 } from './cognition.js';
 
-import type { Portal, PortalConfig, PortalType } from './portal.js';
+import type { Portal, PortalConfig } from './portal.js';
+import { PortalType } from './portal.js';
 
 import type {
   BaseConfig,

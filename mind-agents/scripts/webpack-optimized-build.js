@@ -4,7 +4,7 @@
  * Performance-Optimized Webpack Build Script
  * 
  * Integrates with our performance optimization components:
- * - OptimizedEventBus for build event tracking
+ * - SimpleEventBus for build event tracking
  * - PerformanceMonitor for build metrics
  * - MemoryManager for build process resource management
  * - LRUCache for build cache optimization
@@ -21,7 +21,7 @@ const fs = require('fs').promises;
 const { PerformanceMonitor } = require('../dist/utils/PerformanceMonitor.js');
 const { MemoryManager } = require('../dist/utils/MemoryManager.js');
 const { LRUCache } = require('../dist/utils/LRUCache.js');
-const { OptimizedEventBus } = require('../dist/core/OptimizedEventBus.js');
+const { SimpleEventBus } = require('../dist/core/event-bus.js');
 
 class OptimizedWebpackBuilder {
   constructor(options = {}) {
@@ -52,11 +52,7 @@ class OptimizedWebpackBuilder {
     });
 
     // Initialize event bus for build coordination
-    this.eventBus = new OptimizedEventBus({
-      maxEvents: 1000,
-      compressionEnabled: true,
-      batchingEnabled: false, // Don't batch build events
-    });
+    this.eventBus = new SimpleEventBus();
 
     this.options = options;
     this.stats = {
@@ -165,7 +161,7 @@ class OptimizedWebpackBuilder {
           chunks: 'all',
           cacheGroups: {
             performance: {
-              test: /[\\/]utils[\\/](PerformanceMonitor|MemoryManager|LRUCache|OptimizedEventBus)/,
+              test: /[\\/]utils[\\/](PerformanceMonitor|MemoryManager|LRUCache)/,
               name: 'performance-optimizations',
               chunks: 'all',
               priority: 30,

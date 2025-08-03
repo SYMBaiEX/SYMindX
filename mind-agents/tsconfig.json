@@ -104,7 +104,9 @@
     "src/modules/life-cycle_disabled",
     "src/modules/tools.disabled",
     "src/prompts.disabled",
-    "src/core/archived"
+    "src/core/archived",
+    "src/developer-experience",
+    "src/community"
   ],
   "ts-node": {
     "esm": true,

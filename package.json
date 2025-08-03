@@ -28,6 +28,7 @@
     "prepare": "husky"
   },
   "dependencies": {
+    "slack": "^11.0.2",
     "telegraf": "^4.16.3"
   }
 }

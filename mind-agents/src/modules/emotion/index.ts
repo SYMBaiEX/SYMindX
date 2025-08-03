@@ -1,26 +1,21 @@
 /**
- * Emotion module for SYMindX
+ * Enhanced Emotion Module for SYMindX
  *
- * This module provides a comprehensive emotion system where each emotion
- * has its own module with specific behaviors and triggers.
+ * This module provides a simplified 5-emotion system with advanced blending,
+ * state transitions, and decay management as specified in the requirements.
  */
 
 import { EmotionModule } from '../../types/emotion';
 import { runtimeLogger } from '../../utils/logger';
 
 import { CompositeEmotionModule } from './composite-emotion';
+import { EmotionEngine, EmotionEngineConfig } from './emotion-engine';
 
-// Export individual emotions for direct use if needed
+// Export 5 core emotions for direct use if needed
 export { HappyEmotion } from './happy/index';
 export { SadEmotion } from './sad/index';
 export { AngryEmotion } from './angry/index';
-export { AnxiousEmotion } from './anxious/index';
 export { ConfidentEmotion } from './confident/index';
-export { NostalgicEmotion } from './nostalgic/index';
-export { EmpatheticEmotion } from './empathetic/index';
-export { CuriousEmotion } from './curious/index';
-export { ProudEmotion } from './proud/index';
-export { ConfusedEmotion } from './confused/index';
 export { NeutralEmotion } from './neutral/index';
 
 /**
@@ -30,21 +25,19 @@ export function createEmotionModule(
   type: string,
   config: unknown
 ): EmotionModule {
-  // Creating emotion module - logged by runtime
-
   try {
-    // All emotion types now use the composite module
     switch (type) {
       case 'composite':
       case 'unified':
+      case 'enhanced':
       default:
-        // Creating CompositeEmotionModule - logged by runtime
+        // Use the enhanced composite module (now includes all advanced features)
         return new CompositeEmotionModule(config as any);
     }
   } catch (error) {
     void error;
     runtimeLogger.error(`❌ Failed to create emotion module ${type}:`, error);
-    // Creating default CompositeEmotionModule - logged by runtime
+    // Fallback to enhanced composite module
     return new CompositeEmotionModule(config as any);
   }
 }
@@ -53,24 +46,18 @@ export function createEmotionModule(
  * Get all available emotion module types
  */
 export function getEmotionModuleTypes(): string[] {
-  return ['composite', 'unified'];
+  return ['composite', 'unified', 'enhanced'];
 }
 
 /**
- * Get all available emotion types
+ * Get all available emotion types (5 core emotions)
  */
 export function getEmotionTypes(): string[] {
   return [
     'happy',
     'sad',
     'angry',
-    'anxious',
     'confident',
-    'nostalgic',
-    'empathetic',
-    'curious',
-    'proud',
-    'confused',
     'neutral',
   ];
 }
@@ -82,17 +69,11 @@ export {
 } from './composite-emotion';
 export { BaseEmotion } from './base-emotion';
 
-// Export factory functions for registry
+// Export factory functions for registry (5 core emotions)
 export { createHappyEmotionModule } from './happy/index';
 export { createSadEmotionModule } from './sad/index';
 export { createAngryEmotionModule } from './angry/index';
-export { createAnxiousEmotionModule } from './anxious/index';
 export { createConfidentEmotionModule } from './confident/index';
-export { createNostalgicEmotionModule } from './nostalgic/index';
-export { createEmpatheticEmotionModule } from './empathetic/index';
-export { createCuriousEmotionModule } from './curious/index';
-export { createProudEmotionModule } from './proud/index';
-export { createConfusedEmotionModule } from './confused/index';
 export { createNeutralEmotionModule } from './neutral/index';
 
 // Registration function with auto-discovery

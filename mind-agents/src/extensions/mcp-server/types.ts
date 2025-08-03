@@ -170,3 +170,100 @@ export interface MCPConnectionInfo {
   requestCount: number;
   lastActivity: Date;
 }
+
+/**
+ * Base interface for MCP Skills
+ * Skills encapsulate related tools, resources, and prompts for specific functionality
+ */
+export interface BaseSkill {
+  /** Unique identifier for the skill */
+  id: string;
+  
+  /** Human-readable name */
+  name: string;
+  
+  /** Description of what this skill provides */
+  description: string;
+  
+  /** Version of the skill */
+  version: string;
+  
+  /** Category of the skill */
+  category: 'communication' | 'memory' | 'emotion' | 'cognition' | 'administration' | 'diagnostics';
+  
+  /** Whether the skill is enabled */
+  enabled: boolean;
+  
+  /** Dependencies required by this skill */
+  dependencies?: string[];
+  
+  /** Configuration options for the skill */
+  readonly config?: Record<string, unknown>;
+  
+  /**
+   * Initialize the skill with agent context
+   */
+  initialize(agent: import('../../types/agent').Agent): Promise<void>;
+  
+  /**
+   * Get all tools provided by this skill
+   */
+  getTools(): Promise<MCPServerTool[]>;
+  
+  /**
+   * Get all resources provided by this skill
+   */
+  getResources(): Promise<MCPServerResource[]>;
+  
+  /**
+   * Get all prompts provided by this skill
+   */
+  getPrompts(): Promise<MCPServerPrompt[]>;
+  
+  /**
+   * Cleanup resources when skill is disabled
+   */
+  cleanup(): Promise<void>;
+  
+  /**
+   * Health check for the skill
+   */
+  isHealthy(): Promise<boolean>;
+}
+
+/**
+ * Configuration for a skill
+ */
+export interface SkillConfig {
+  enabled: boolean;
+  config?: Record<string, unknown>;
+}
+
+/**
+ * MCP Skill Manager for organizing and managing skills
+ */
+export interface MCPSkillManager {
+  /** Register a skill with the manager */
+  registerSkill(skill: BaseSkill): Promise<void>;
+  
+  /** Get all registered skills */
+  getSkills(): BaseSkill[];
+  
+  /** Get a specific skill by ID */
+  getSkill(id: string): BaseSkill | undefined;
+  
+  /** Initialize all skills */
+  initializeAll(agent: import('../../types/agent').Agent): Promise<void>;
+  
+  /** Get all tools from all skills */
+  getAllTools(): Promise<MCPServerTool[]>;
+  
+  /** Get all resources from all skills */
+  getAllResources(): Promise<MCPServerResource[]>;
+  
+  /** Get all prompts from all skills */
+  getAllPrompts(): Promise<MCPServerPrompt[]>;
+  
+  /** Cleanup all skills */
+  cleanupAll(): Promise<void>;
+}

@@ -14,6 +14,7 @@ import { NeonMemoryProvider } from './providers/neon/index';
 import { PostgresMemoryProvider } from './providers/postgres/index';
 import { SQLiteMemoryProvider } from './providers/sqlite/index';
 import { SupabaseMemoryProvider } from './providers/supabase/index';
+import { AgenticRAGProvider } from './agentic-rag-provider';
 
 // Re-export the memory provider factory and types
 export {
@@ -23,6 +24,20 @@ export {
 } from './providers/index';
 export type { MemoryProviderConfig } from './providers/index';
 export type { MemoryProviderType } from '../../types/agent';
+
+// Export Agentic-RAG provider and types
+export { 
+  AgenticRAGProvider, 
+  createAgenticRAGProvider,
+  MemoryAgentType,
+  MemoryLayer
+} from './agentic-rag-provider';
+export type { 
+  AgenticRAGConfig,
+  MemoryAgent,
+  MemoryOrchestrator,
+  OrchestrationResult
+} from './agentic-rag-provider';
 
 /**
  * Register all memory providers with the registry
@@ -50,9 +65,12 @@ export async function registerMemoryProviders(
     registry.registerMemoryFactory('postgres', (config: unknown) =>
       createMemoryProviderByName('postgres', config as any)
     );
+    registry.registerMemoryFactory('agentic-rag', (config: unknown) =>
+      new AgenticRAGProvider(config as any)
+    );
 
     runtimeLogger.info(
-      '📝 Memory providers registered: memory, sqlite, supabase, neon, postgres'
+      '📝 Memory providers registered: memory, sqlite, supabase, neon, postgres, agentic-rag'
     );
 
     // Also register the main in-memory provider for backward compatibility
@@ -69,5 +87,5 @@ export async function registerMemoryProviders(
  * Get available memory provider names
  */
 export function getAvailableMemoryProviders(): string[] {
-  return ['memory', 'sqlite', 'supabase', 'neon', 'postgres'];
+  return ['memory', 'sqlite', 'supabase', 'neon', 'postgres', 'agentic-rag'];
 }

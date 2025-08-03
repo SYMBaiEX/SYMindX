@@ -362,7 +362,7 @@ export class PathfindingSystem extends EventEmitter {
           obstacles.push({
             type: this.getObstacleType(obstacle),
             location: obstacle.location,
-            action: obstacle.actions[0],
+            action: obstacle.actions[0] || 'examine',
           });
         }
       }
@@ -696,16 +696,46 @@ export class AutomationSystem extends EventEmitter {
     actions: ActionType[],
     config: Record<string, unknown> = {}
   ): AutomationTask {
-    const task: AutomationTask = {
+    const baseTask = {
       id: uuidv4(),
       type,
       name,
-      status: 'idle',
+      status: 'idle' as const,
       progress: 0,
       actions,
       config,
       safety: this.safetyConfig,
     };
+
+    let task: AutomationTask;
+
+    switch (type) {
+      case 'sequence':
+        task = {
+          ...baseTask,
+          type: 'sequence',
+          steps: [],
+        } as SequentialTask;
+        break;
+      case 'loop':
+        task = {
+          ...baseTask,
+          type: 'loop',
+          steps: [],
+          iterations: 1,
+        } as LoopTask;
+        break;
+      case 'conditional':
+        task = {
+          ...baseTask,
+          type: 'conditional',
+          conditions: [],
+          steps: [],
+        } as ConditionalTask;
+        break;
+      default:
+        task = baseTask as BaseAutomationTask;
+    }
 
     this.tasks.set(task.id, task);
     this.emit('task:created', task);
@@ -801,7 +831,7 @@ export class AutomationSystem extends EventEmitter {
   private async executeSequentialTask(task: AutomationTask): Promise<void> {
     if ('steps' in task) {
       for (const step of task.steps) {
-        if (task.status === 'stopped') break;
+        if (task.status === 'completed') break;
         await this.executeTaskStep(task, step);
       }
     }
@@ -811,7 +841,6 @@ export class AutomationSystem extends EventEmitter {
     if ('iterations' in task && 'steps' in task) {
       while (task.status === 'running' && task.iterations > 0) {
         for (const step of task.steps) {
-          if (task.status === 'stopped') break;
           await this.executeTaskStep(task, step);
         }
         task.iterations--;
@@ -831,7 +860,7 @@ export class AutomationSystem extends EventEmitter {
       const conditionMet = await this.evaluateConditions(task.conditions);
       if (conditionMet) {
         for (const step of task.steps) {
-          if (task.status === 'stopped') break;
+          if (task.status === 'completed') break;
           await this.executeTaskStep(task, step);
         }
       }
@@ -872,6 +901,7 @@ export class AutomationSystem extends EventEmitter {
     return {
       id: `trigger_${Date.now()}`,
       type: 'condition',
+      value: conditions,
       conditions,
       enabled: true,
       priority: 1,

@@ -31,11 +31,7 @@ import {
   TelegramUser,
   TelegramChat,
 } from './types.js';
-
-// Define a simple skill interface since skills/index.js doesn't exist
-interface TelegramSkill {
-  getActions(): Record<string, ExtensionAction>;
-}
+import { TelegramSkillManager } from './skills/index.js';
 
 /**
  * Telegram Extension class
@@ -54,7 +50,7 @@ export class TelegramExtension implements Extension {
 
   public config: TelegramConfig;
   private bot: Telegraf | null = null;
-  private skills: Map<string, TelegramSkill> = new Map();
+  private skillManager: TelegramSkillManager;
   private logger: Logger;
   // private context: ExtensionContext;
   private messageHandlers: Array<(message: TelegramMessage) => void> = [];
@@ -67,8 +63,8 @@ export class TelegramExtension implements Extension {
     this.config = config;
     this.logger = new Logger('telegram');
 
-    // Initialize skills map (empty for now since skills system is not implemented)
-    this.skills = new Map();
+    // Initialize skills manager
+    this.skillManager = new TelegramSkillManager(config, this.logger);
 
     // Register actions from all skills
     this.registerSkillActions();
@@ -88,6 +84,9 @@ export class TelegramExtension implements Extension {
 
       // Set up message handlers
       this.setupMessageHandlers();
+
+      // Initialize skills
+      await this.skillManager.initialize();
 
       // Launch the bot
       await this.bot.launch();
@@ -109,6 +108,9 @@ export class TelegramExtension implements Extension {
    * Clean up resources when extension is stopped
    */
   async cleanup(): Promise<void> {
+    // Cleanup skills first
+    await this.skillManager.cleanup();
+    
     if (this.bot) {
       // Stop the bot gracefully
       await this.bot.stop();
@@ -209,12 +211,10 @@ export class TelegramExtension implements Extension {
    * Register all actions from skills
    */
   private registerSkillActions(): void {
-    // Register actions from skills when skill system is implemented
-    for (const skill of Array.from(this.skills.values())) {
-      const actions = skill.getActions();
-      for (const [actionId, action] of Object.entries(actions)) {
-        this.actions[actionId] = action as ExtensionAction;
-      }
+    // Register actions from skills using the skill manager
+    const skillActions = this.skillManager.getAllActions();
+    for (const [actionId, action] of Object.entries(skillActions)) {
+      this.actions[actionId] = action as ExtensionAction;
     }
   }
 
@@ -481,47 +481,71 @@ export class TelegramExtension implements Extension {
               goal: `respond_to_message`,
             };
 
-            // Let the agent think about the message
-            const thoughtResult = await agent.cognition.think(
-              agent,
-              thoughtContext
-            );
+            // Check if we should respond using skills (for group management)
+            const groupManagementSkill = this.skillManager.getSkill('group-management');
+            let shouldRespond = true;
+            
+            if (groupManagementSkill && messageData.chat?.type !== 'private') {
+              // For group chats, check if we should respond based on participation strategy
+              shouldRespond = (groupManagementSkill as any).shouldRespondToMessage?.(chatId.toString(), messageText) ?? true;
+            }
 
-            // Process the agent's response
-            if (thoughtResult.thoughts && thoughtResult.thoughts.length > 0) {
-              // Get the primary thought as the response
-              const response = thoughtResult.thoughts[0];
+            if (shouldRespond) {
+              // Let the agent think about the message
+              const thoughtResult = await agent.cognition.think(
+                agent,
+                thoughtContext
+              );
 
-              // Only send response if it's defined and not empty
-              if (response) {
-                // Send the response back to Telegram
-                await this.sendMessage(
-                  chatId,
-                  response,
-                  'Markdown', // Enable markdown parsing
-                  false, // Don't disable web page preview
-                  false, // Don't disable notification
-                  messageData.message_id // Reply to the original message
-                );
+              // Process the agent's response
+              if (thoughtResult.thoughts && thoughtResult.thoughts.length > 0) {
+                // Get the primary thought as the response
+                const response = thoughtResult.thoughts[0];
 
-                // Log the interaction
-                this.logger.info('Agent responded to Telegram message', {
-                  metadata: {
-                    userId,
-                    username,
-                    message: messageText.substring(0, 50) + '...',
-                    response: response.substring(0, 50) + '...',
-                  },
-                } as LogContext);
-              } else {
-                this.logger.warn('Agent returned empty response', {
-                  metadata: {
-                    userId,
-                    username,
-                    message: messageText.substring(0, 50) + '...',
-                  },
-                } as LogContext);
+                // Only send response if it's defined and not empty
+                if (response) {
+                  // Send the response back to Telegram
+                  await this.sendMessage(
+                    chatId,
+                    response,
+                    'Markdown', // Enable markdown parsing
+                    false, // Don't disable web page preview
+                    false, // Don't disable notification
+                    messageData.message_id // Reply to the original message
+                  );
+
+                  // Record message sent for group management
+                  if (groupManagementSkill && messageData.chat?.type !== 'private') {
+                    (groupManagementSkill as any).recordMessageSent?.(chatId.toString());
+                  }
+
+                  // Log the interaction
+                  this.logger.info('Agent responded to Telegram message', {
+                    metadata: {
+                      userId,
+                      username,
+                      message: messageText.substring(0, 50) + '...',
+                      response: response.substring(0, 50) + '...',
+                    },
+                  } as LogContext);
+                } else {
+                  this.logger.warn('Agent returned empty response', {
+                    metadata: {
+                      userId,
+                      username,
+                      message: messageText.substring(0, 50) + '...',
+                    },
+                  } as LogContext);
+                }
               }
+            } else {
+              this.logger.debug('Skipped responding to message based on participation strategy', {
+                metadata: {
+                  chatId: chatId.toString(),
+                  userId,
+                  message: messageText.substring(0, 50) + '...',
+                },
+              } as LogContext);
             }
           } else {
             // Fallback if agent doesn't have cognition module

@@ -333,16 +333,16 @@ export class ContextManager {
     memory: MemoryRecord
   ): ConversationContext | null {
     if (memory.type !== MemoryType.INTERACTION) return null;
-    if (!memory.metadata?.contextId) return null;
+    if (!memory.metadata?.['contextId']) return null;
 
     // Create restored context
     const context: ConversationContext = {
-      id: memory.metadata.contextId as string,
+      id: memory.metadata['contextId'] as string,
       agentId,
       startedAt: memory.timestamp,
       lastActive: new Date(),
-      participants: new Set((memory.metadata.participants as string[]) || []),
-      topics: ((memory.metadata.topics as string[]) || []).map(
+      participants: new Set((memory.metadata['participants'] as string[]) || []),
+      topics: ((memory.metadata['topics'] as string[]) || []).map(
         (topic: string) => ({
           topic,
           mentions: 1,
@@ -354,14 +354,14 @@ export class ContextManager {
       state: {
         phase: 'active',
         mood:
-          (memory.metadata.mood as 'positive' | 'negative' | 'neutral') ||
+          (memory.metadata['mood'] as 'positive' | 'negative' | 'neutral') ||
           'neutral',
         formality: 0.5,
         engagement: 0.5,
       },
       pendingQuestions: [],
-      followUpTopics: (memory.metadata.topics as string[]) || [],
-      previousContextId: memory.metadata.contextId as string,
+      followUpTopics: (memory.metadata['topics'] as string[]) || [],
+      previousContextId: memory.metadata['contextId'] as string,
       metadata: (() => {
         const metadata: Metadata = {};
         this.setMetadataValue(metadata, 'restored', true);

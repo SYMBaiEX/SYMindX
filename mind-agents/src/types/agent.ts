@@ -505,6 +505,10 @@ export enum ActionCategory {
   MEMORY = 'memory',
   AGENT = 'agent',
   QUERY = 'query',
+  ANALYSIS = 'analysis',
+  PLANNING = 'planning',
+  DISCOVERY = 'discovery',
+  GENERATION = 'generation',
 }
 
 export interface ExtensionAction {
@@ -941,7 +945,6 @@ export interface RuntimeConfig {
   };
   performance?: {
     enableMonitoring?: boolean;
-    useOptimizedEventBus?: boolean;
     useAsyncQueue?: boolean;
     maxEvents?: number;
     compression?: boolean;

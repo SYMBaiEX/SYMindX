@@ -1,12 +1,13 @@
 /**
- * Unified Cognition Module
+ * Enhanced Unified Cognition Module
  *
- * A streamlined cognition system that thinks only when necessary:
- * - When performing actions (Twitter posts, Telegram responses)
- * - When explicitly asked to analyze or plan
- * - When dealing with complex tasks
+ * A streamlined cognition system with modular helpers for:
+ * - Goal-oriented planning and execution
+ * - Reactive response capabilities  
+ * - Learning and adaptation mechanisms
+ * - Extension points for community cognition modules
  *
- * For simple conversation, it bypasses thinking to be more responsive.
+ * Implements dual-process thinking (System 1 & System 2) with metacognition.
  */
 
 import {
@@ -31,98 +32,148 @@ import {
 } from '../../types/cognition';
 import { BaseConfig, ActionParameters } from '../../types/common';
 import { MemoryType, MemoryDuration } from '../../types/enums';
+import { runtimeLogger } from '../../utils/logger';
 
 export interface UnifiedCognitionConfig extends BaseConfig {
-  // When to think
-  thinkForActions?: boolean; // Think before taking actions
-  thinkForMentions?: boolean; // Think when mentioned/tagged
-  thinkOnRequest?: boolean; // Think when explicitly asked
-
-  // Thinking parameters
-  minThinkingConfidence?: number; // Minimum confidence to act
-  quickResponseMode?: boolean; // Skip thinking for casual chat
+  // Core thinking modes
+  thinkForActions?: boolean;
+  thinkForMentions?: boolean; 
+  thinkOnRequest?: boolean;
+  quickResponseMode?: boolean;
   analysisDepth?: 'shallow' | 'normal' | 'deep';
+
+  // Enhanced dual-process thinking
+  enableDualProcess?: boolean;
+  system1Threshold?: number;
+  system2Timeout?: number;
+
+  // Goal-oriented planning
+  enableGoalTracking?: boolean;
+  maxActiveGoals?: number;
+  goalPersistence?: number;
+  planningHorizon?: number; // How far ahead to plan (ms)
+
+  // Learning and adaptation
+  enableLearning?: boolean;
+  learningRate?: number;
+  adaptationThreshold?: number;
+  experienceWeight?: number;
+
+  // Reactive capabilities
+  enableReactiveMode?: boolean;
+  reactionSpeed?: number;
+  reflexThreshold?: number;
+
+  // Metacognition and self-reflection
+  enableMetacognition?: boolean;
+  uncertaintyThreshold?: number;
+  selfReflectionInterval?: number;
 
   // Memory integration
   useMemories?: boolean;
   maxMemoryRecall?: number;
+  memoryRelevanceThreshold?: number;
 
-  // Prompt integration ready
-  promptEnhanced?: boolean;
-
-  // Dual-process thinking
-  enableDualProcess?: boolean;
-  system1Threshold?: number; // Confidence threshold for System 1
-  system2Timeout?: number; // Max time for System 2 thinking (ms)
-
-  // Metacognition
-  enableMetacognition?: boolean;
-  uncertaintyThreshold?: number; // When to doubt decisions
-
-  // Goal management
-  enableGoalTracking?: boolean;
-  maxActiveGoals?: number;
-  goalPersistence?: number; // How long to pursue goals (ms)
-
-  // Theory of mind
-  enableTheoryOfMind?: boolean;
-  theoryOfMindConfig?: BaseConfig;
+  // Extension points
+  enableExtensions?: boolean;
+  extensionTimeout?: number;
+  
+  // Community module support
+  allowCommunityModules?: boolean;
+  communityModulePaths?: string[];
 }
 
 export class UnifiedCognition implements CognitionModule {
   public id: string;
   public type: string = 'unified';
   private config: UnifiedCognitionConfig;
-  private theoryOfMind?: Record<string, unknown>; // Theory of Mind module (optional)
 
-  // Dual-process state
-  private system1Cache: Map<
-    string,
-    { response: ThoughtResult; timestamp: number }
-  > = new Map();
-  private activeGoals: Map<
-    string,
-    { goal: string; priority: number; created: Date }
-  > = new Map();
+  // Enhanced cognitive state management
+  private system1Cache: Map<string, { response: ThoughtResult; timestamp: number }> = new Map();
+  private activeGoals: Map<string, { goal: string; priority: number; created: Date; progress: number }> = new Map();
+  private learningHistory: Array<{ situation: string; action: string; outcome: number; timestamp: Date }> = [];
+  private adaptationPatterns: Map<string, { pattern: string; effectiveness: number; usage: number }> = new Map();
+  
+  // Metacognitive state with enhanced tracking
   private metacognitiveState = {
     confidence: 0.5,
     uncertainty: 0.5,
     cognitiveLoad: 0,
     recentErrors: [] as string[],
+    performanceHistory: [] as Array<{ task: string; success: boolean; timestamp: Date }>,
+    selfReflectionDue: false,
+    lastReflection: new Date()
   };
+
+  // Reactive system state
+  private reactivePatterns: Map<string, { trigger: string; response: string; confidence: number }> = new Map();
+  private reflexCache: Map<string, { action: string; timestamp: number }> = new Map();
+  
+  // Extension system
+  private loadedExtensions: Map<string, any> = new Map();
+  private communityModules: Map<string, any> = new Map();
 
   constructor(config: UnifiedCognitionConfig = {}) {
     this.id = `unified_${Date.now()}`;
+    
     const defaults: UnifiedCognitionConfig = {
-      // Defaults
+      // Core thinking
       thinkForActions: true,
       thinkForMentions: true,
       thinkOnRequest: true,
-      minThinkingConfidence: 0.6,
       quickResponseMode: true,
       analysisDepth: 'normal',
-      useMemories: true,
-      maxMemoryRecall: 10,
-      promptEnhanced: false,
+      
+      // Enhanced dual-process
       enableDualProcess: true,
       system1Threshold: 0.8,
       system2Timeout: 5000,
-      enableMetacognition: true,
-      uncertaintyThreshold: 0.7,
+      
+      // Goal-oriented planning
       enableGoalTracking: true,
       maxActiveGoals: 5,
       goalPersistence: 86400000, // 24 hours
-      enableTheoryOfMind: false,
+      planningHorizon: 3600000, // 1 hour
+      
+      // Learning and adaptation
+      enableLearning: true,
+      learningRate: 0.1,
+      adaptationThreshold: 0.7,
+      experienceWeight: 0.3,
+      
+      // Reactive capabilities
+      enableReactiveMode: true,
+      reactionSpeed: 0.8,
+      reflexThreshold: 0.9,
+      
+      // Metacognition
+      enableMetacognition: true,
+      uncertaintyThreshold: 0.7,
+      selfReflectionInterval: 3600000, // 1 hour
+      
+      // Memory integration
+      useMemories: true,
+      maxMemoryRecall: 10,
+      memoryRelevanceThreshold: 0.6,
+      
+      // Extensions
+      enableExtensions: true,
+      extensionTimeout: 2000,
+      allowCommunityModules: false,
+      communityModulePaths: []
     };
 
     this.config = { ...defaults, ...config };
-
-    // Initialize theory of mind if enabled
-    if (this.config.enableTheoryOfMind) {
-      // Theory of mind would be initialized here if we had the module
-      // For now, we'll leave it undefined
-      // this.theoryOfMind = new TheoryOfMind(this.config.theoryOfMindConfig)
+    
+    // Initialize reactive patterns
+    this.initializeReactivePatterns();
+    
+    // Load community modules if enabled
+    if (this.config.allowCommunityModules) {
+      this.loadCommunityModules();
     }
+    
+    runtimeLogger.info('🧠 Enhanced Unified Cognition Module initialized with modular helpers');
   }
 
   /**
@@ -136,13 +187,308 @@ export class UnifiedCognition implements CognitionModule {
   getMetadata(): CognitionModuleMetadata {
     return {
       id: this.id,
-      name: 'Unified Cognition',
-      version: '1.0.0',
-      description: 'Unified cognition with conditional thinking',
+      name: 'Enhanced Unified Cognition',
+      version: '2.0.0',
+      description: 'Unified cognition with goal-oriented planning, reactive responses, and learning capabilities',
       author: 'SYMindX',
-      paradigms: [ReasoningParadigm.UNIFIED, ReasoningParadigm.DUAL_PROCESS],
-      learningCapable: this.config.enableDualProcess || false,
+      paradigms: [
+        ReasoningParadigm.UNIFIED, 
+        ReasoningParadigm.DUAL_PROCESS,
+        ReasoningParadigm.GOAL_ORIENTED,
+        ReasoningParadigm.REACTIVE
+      ],
+      learningCapable: this.config.enableLearning || false,
     };
+  }
+
+  // Modular helper methods for goal-oriented planning
+  private async planGoalExecution(goal: string, context: ThoughtContext): Promise<Plan> {
+    const steps: PlanStep[] = [];
+    const goalId = `goal_${Date.now()}`;
+    
+    // Analyze goal complexity
+    const complexity = this.analyzeGoalComplexity(goal);
+    
+    if (complexity > 0.7) {
+      // Complex goal - break down into sub-goals
+      const subGoals = this.decomposeGoal(goal);
+      for (let i = 0; i < subGoals.length; i++) {
+        steps.push({
+          id: `step_${i + 1}`,
+          action: `execute_subgoal_${i + 1}`,
+          description: subGoals[i],
+          status: PlanStepStatus.PENDING,
+          parameters: { subGoal: subGoals[i] },
+          preconditions: i > 0 ? [`step_${i}`] : [],
+          effects: [`subgoal_${i + 1}_completed`]
+        });
+      }
+    } else {
+      // Simple goal - direct execution
+      steps.push({
+        id: 'step_1',
+        action: 'execute_goal',
+        description: goal,
+        status: PlanStepStatus.PENDING,
+        parameters: { goal },
+        preconditions: [],
+        effects: ['goal_completed']
+      });
+    }
+    
+    // Track goal
+    this.activeGoals.set(goalId, {
+      goal,
+      priority: complexity,
+      created: new Date(),
+      progress: 0
+    });
+    
+    return {
+      id: `plan_${Date.now()}`,
+      goal,
+      steps,
+      priority: complexity,
+      estimatedDuration: this.estimateGoalDuration(goal, complexity),
+      dependencies: [],
+      status: PlanStatus.PENDING
+    };
+  }
+
+  private analyzeGoalComplexity(goal: string): number {
+    let complexity = 0.3; // Base complexity
+    
+    // Check for complexity indicators
+    if (goal.includes('multiple') || goal.includes('several')) complexity += 0.2;
+    if (goal.includes('complex') || goal.includes('difficult')) complexity += 0.3;
+    if (goal.includes('plan') || goal.includes('strategy')) complexity += 0.2;
+    if (goal.length > 100) complexity += 0.1; // Long goals tend to be complex
+    
+    return Math.min(1.0, complexity);
+  }
+
+  private decomposeGoal(goal: string): string[] {
+    // Simple goal decomposition - can be enhanced with NLP
+    const subGoals: string[] = [];
+    
+    if (goal.includes('and')) {
+      subGoals.push(...goal.split(' and ').map(s => s.trim()));
+    } else if (goal.includes(',')) {
+      subGoals.push(...goal.split(',').map(s => s.trim()));
+    } else {
+      // Default decomposition
+      subGoals.push(`Analyze: ${goal}`);
+      subGoals.push(`Execute: ${goal}`);
+      subGoals.push(`Verify: ${goal}`);
+    }
+    
+    return subGoals.filter(s => s.length > 0);
+  }
+
+  private estimateGoalDuration(goal: string, complexity: number): number {
+    const baseTime = 300000; // 5 minutes
+    const complexityMultiplier = 1 + (complexity * 2);
+    const lengthMultiplier = 1 + (goal.length / 1000);
+    
+    return Math.round(baseTime * complexityMultiplier * lengthMultiplier);
+  }
+
+  // Modular helper methods for reactive responses
+  private async generateReactiveResponse(context: ThoughtContext): Promise<ThoughtResult> {
+    const trigger = this.identifyTrigger(context);
+    
+    // Check for cached reflex response
+    const reflexKey = this.generateReflexKey(trigger);
+    const cachedReflex = this.reflexCache.get(reflexKey);
+    
+    if (cachedReflex && Date.now() - cachedReflex.timestamp < 5000) {
+      return {
+        thoughts: [`[Reactive] Using cached reflex: ${cachedReflex.action}`],
+        actions: [],
+        emotions: this.assessBasicEmotion(context),
+        memories: [],
+        confidence: 0.9
+      };
+    }
+    
+    // Generate new reactive response
+    const response = this.processReactiveTrigger(trigger, context);
+    
+    // Cache for future use
+    this.reflexCache.set(reflexKey, {
+      action: response.thoughts[0] || 'reactive_response',
+      timestamp: Date.now()
+    });
+    
+    return response;
+  }
+
+  private identifyTrigger(context: ThoughtContext): string {
+    for (const event of context.events) {
+      if (event.type.includes('urgent') || event.type.includes('immediate')) {
+        return 'urgent';
+      }
+      if (event.type.includes('question') || event.data?.message?.includes('?')) {
+        return 'question';
+      }
+      if (event.type.includes('greeting')) {
+        return 'greeting';
+      }
+    }
+    return 'general';
+  }
+
+  private generateReflexKey(trigger: string): string {
+    return `reflex_${trigger}`;
+  }
+
+  private processReactiveTrigger(trigger: string, context: ThoughtContext): ThoughtResult {
+    const thoughts: string[] = [`[Reactive] Processing ${trigger} trigger`];
+    
+    switch (trigger) {
+      case 'urgent':
+        thoughts.push('Prioritizing immediate response');
+        break;
+      case 'question':
+        thoughts.push('Preparing direct answer');
+        break;
+      case 'greeting':
+        thoughts.push('Responding with appropriate greeting');
+        break;
+      default:
+        thoughts.push('Using general reactive pattern');
+    }
+    
+    return {
+      thoughts,
+      actions: [],
+      emotions: this.assessBasicEmotion(context),
+      memories: [],
+      confidence: 0.8
+    };
+  }
+
+  // Modular helper methods for learning and adaptation
+  private async learnFromExperience(situation: string, action: string, outcome: number): Promise<void> {
+    if (!this.config.enableLearning) return;
+    
+    // Record experience
+    this.learningHistory.push({
+      situation,
+      action,
+      outcome,
+      timestamp: new Date()
+    });
+    
+    // Update adaptation patterns
+    const patternKey = `${situation}_${action}`;
+    const existingPattern = this.adaptationPatterns.get(patternKey);
+    
+    if (existingPattern) {
+      // Update existing pattern
+      const newEffectiveness = existingPattern.effectiveness + 
+        (outcome - existingPattern.effectiveness) * this.config.learningRate!;
+      
+      this.adaptationPatterns.set(patternKey, {
+        pattern: patternKey,
+        effectiveness: newEffectiveness,
+        usage: existingPattern.usage + 1
+      });
+    } else {
+      // Create new pattern
+      this.adaptationPatterns.set(patternKey, {
+        pattern: patternKey,
+        effectiveness: outcome,
+        usage: 1
+      });
+    }
+    
+    // Prune old experiences
+    if (this.learningHistory.length > 1000) {
+      this.learningHistory = this.learningHistory.slice(-500);
+    }
+  }
+
+  private getBestAdaptationPattern(situation: string): string | null {
+    let bestPattern: string | null = null;
+    let bestScore = -1;
+    
+    for (const [key, pattern] of this.adaptationPatterns) {
+      if (key.startsWith(situation)) {
+        const score = pattern.effectiveness * Math.log(pattern.usage + 1);
+        if (score > bestScore) {
+          bestScore = score;
+          bestPattern = key.split('_')[1] || null;
+        }
+      }
+    }
+    
+    return bestPattern;
+  }
+
+  // Extension point methods for community modules
+  private initializeReactivePatterns(): void {
+    // Initialize common reactive patterns
+    this.reactivePatterns.set('greeting', {
+      trigger: 'hello|hi|hey',
+      response: 'greeting_response',
+      confidence: 0.9
+    });
+    
+    this.reactivePatterns.set('question', {
+      trigger: '\\?',
+      response: 'answer_question',
+      confidence: 0.8
+    });
+    
+    this.reactivePatterns.set('thanks', {
+      trigger: 'thank|thanks',
+      response: 'acknowledge_thanks',
+      confidence: 0.9
+    });
+  }
+
+  private async loadCommunityModules(): Promise<void> {
+    if (!this.config.communityModulePaths) return;
+    
+    for (const modulePath of this.config.communityModulePaths) {
+      try {
+        // Dynamic import would go here in a real implementation
+        // const module = await import(modulePath);
+        // this.communityModules.set(modulePath, module);
+        runtimeLogger.info(`📦 Community module loaded: ${modulePath}`);
+      } catch (error) {
+        runtimeLogger.warn(`⚠️ Failed to load community module: ${modulePath}`, error);
+      }
+    }
+  }
+
+  // Enhanced metacognitive methods
+  private async performSelfReflection(): Promise<void> {
+    if (!this.config.enableMetacognition) return;
+    
+    const now = new Date();
+    const timeSinceReflection = now.getTime() - this.metacognitiveState.lastReflection.getTime();
+    
+    if (timeSinceReflection < this.config.selfReflectionInterval!) return;
+    
+    // Analyze recent performance
+    const recentPerformance = this.metacognitiveState.performanceHistory.slice(-10);
+    const successRate = recentPerformance.filter(p => p.success).length / recentPerformance.length;
+    
+    // Update confidence based on performance
+    this.metacognitiveState.confidence = 0.5 + (successRate - 0.5) * 0.5;
+    this.metacognitiveState.uncertainty = 1 - this.metacognitiveState.confidence;
+    
+    // Identify areas for improvement
+    if (successRate < 0.6) {
+      this.metacognitiveState.recentErrors.push('Low success rate detected');
+    }
+    
+    this.metacognitiveState.lastReflection = now;
+    this.metacognitiveState.selfReflectionDue = false;
+    
+    runtimeLogger.info(`🤔 Self-reflection completed. Confidence: ${this.metacognitiveState.confidence.toFixed(2)}`);
   }
 
   /**

@@ -1,682 +1,266 @@
 /**
- * SYMindX Module Registry
+ * Clean SYMindX Module Registry
  *
- * Central registry for managing all module types in the SYMindX runtime.
+ * Simplified module registry without excessive abstraction layers.
+ * Direct registration and retrieval with type-safe interfaces.
  */
 
-import { PortalFactory } from '../portals/index';
 import {
   ModuleRegistry,
   MemoryProvider,
   Extension,
-  LazyAgent,
   Agent,
   AgentConfig,
   AgentFactory,
 } from '../types/agent';
-// Agent imports should come first
 import { CognitionModule } from '../types/cognition';
-import { BaseConfig } from '../types/common';
 import { EmotionModule } from '../types/emotion';
-import { ModuleFactory } from '../types/index';
 import { Portal, PortalConfig } from '../types/portal';
 import { runtimeLogger } from '../utils/logger';
 
+export interface MemoryConfig {
+  type: string;
+  [key: string]: any;
+}
+
+export interface EmotionConfig {
+  type: string;
+  [key: string]: any;
+}
+
+export interface CognitionConfig {
+  type: string;
+  [key: string]: any;
+}
+
 /**
- * Main module registry implementation
+ * Clean module registry with direct registration and retrieval
+ * Focuses on core functionality without excessive abstraction
  */
 export class SYMindXModuleRegistry implements ModuleRegistry {
-  private memoryProviders = new Map<string, any>();
-  private emotionModules = new Map<string, any>();
-  private cognitionModules = new Map<string, any>();
-  private extensions = new Map<string, any>();
-  private portals = new Map<string, Portal>();
-  private toolSystems = new Map<
-    string,
-    import('../modules/tools/index').ToolSystem
-  >();
-  private observabilityModules = new Map<string, any>();
-  private streamingInterfaces = new Map<string, any>();
+  // Direct module storage - single source of truth
+  private modules = new Map<string, any>();
+  
+  // Type-safe factory storage - simplified factory pattern
+  private factories = new Map<string, (config?: any) => any>();
 
-  // Factory storage maps with improved type safety
-  private memoryFactories = new Map<string, ModuleFactory<MemoryProvider>>();
-  private emotionFactories = new Map<string, ModuleFactory<EmotionModule>>();
-  private cognitionFactories = new Map<
-    string,
-    ModuleFactory<CognitionModule>
-  >();
-  private portalFactories = new Map<string, PortalFactory>();
-  private extensionFactories = new Map<string, ModuleFactory<Extension>>();
-  private agentFactories = new Map<string, AgentFactory>();
-
-  // Lazy agent management
-  private lazyAgents = new Map<string, LazyAgent | (() => Promise<Agent>)>();
-
-  registerLazyAgent(
-    agentId: string,
-    loaderOrAgent: (() => Promise<Agent>) | LazyAgent
-  ): void {
-    // Support both the interface signature and the legacy LazyAgent object
-    if (typeof loaderOrAgent === 'function') {
-      // Store the loader function
-      this.lazyAgents.set(agentId, loaderOrAgent);
-    } else {
-      // Legacy support: store the LazyAgent object
-      this.lazyAgents.set(agentId, loaderOrAgent);
-    }
-    runtimeLogger.factory(`🦥 Registered lazy agent: ${agentId}`);
+  /**
+   * Direct module registration - no complex factory patterns
+   */
+  register<T>(name: string, instance: T): void {
+    this.modules.set(name, instance);
+    runtimeLogger.debug(`Registered module: ${name}`);
   }
 
-  getLazyAgent(agentId: string): LazyAgent | undefined {
-    const value = this.lazyAgents.get(agentId);
-    if (typeof value === 'function') {
-      // If it's a loader function, we can't return it as LazyAgent
+  /**
+   * Direct module retrieval - simple and fast
+   */
+  get<T>(name: string): T | undefined {
+    return this.modules.get(name) as T | undefined;
+  }
+
+  /**
+   * Type-safe factory registration
+   */
+  registerFactory<T>(name: string, factory: (config?: any) => T): void {
+    this.factories.set(name, factory);
+    runtimeLogger.debug(`Registered factory: ${name}`);
+  }
+
+  /**
+   * Create instance from factory
+   */
+  create<T>(name: string, config?: any): T | undefined {
+    // Check if instance already exists in cache
+    const existing = this.modules.get(name);
+    if (existing) {
+      return existing as T;
+    }
+
+    const factory = this.factories.get(name);
+    if (!factory) {
+      runtimeLogger.warn(`Factory not found: ${name}`);
       return undefined;
     }
-    return value;
+
+    try {
+      const instance = factory(config);
+      // Cache the instance for reuse
+      this.modules.set(name, instance);
+      return instance as T;
+    } catch (error) {
+      runtimeLogger.error(`Failed to create instance ${name}:`, error);
+      return undefined;
+    }
   }
 
-  registerMemoryProvider(name: string, provider: any): void {
-    this.memoryProviders.set(name, provider);
-    runtimeLogger.factory(`📝 Registered memory provider: ${name}`);
+  // === ModuleRegistry Interface Implementation ===
+  // Direct registration methods - no complex prefixing
+  
+  registerMemoryProvider(name: string, provider: MemoryProvider): void {
+    this.register(`memory:${name}`, provider);
   }
 
-  registerEmotionModule(name: string, module: any): void {
-    this.emotionModules.set(name, module);
-    runtimeLogger.factory(`😊 Registered emotion module: ${name}`);
+  registerEmotionModule(name: string, module: EmotionModule): void {
+    this.register(`emotion:${name}`, module);
   }
 
-  registerCognitionModule(name: string, module: any): void {
-    this.cognitionModules.set(name, module);
-    runtimeLogger.factory(`🧠 Registered cognition module: ${name}`);
+  registerCognitionModule(name: string, module: CognitionModule): void {
+    this.register(`cognition:${name}`, module);
   }
 
-  registerExtension(name: string, extension: any): void {
-    this.extensions.set(name, extension);
-    // Reduced logging for cleaner startup
+  registerExtension(name: string, extension: Extension): void {
+    this.register(`extension:${name}`, extension);
   }
 
   registerPortal(name: string, portal: Portal): void {
-    this.portals.set(name, portal);
-    // Reduced logging for cleaner startup
+    this.register(`portal:${name}`, portal);
   }
 
+  // Direct retrieval methods
   getMemoryProvider(name: string): MemoryProvider | undefined {
-    return this.memoryProviders.get(name);
+    return this.get<MemoryProvider>(`memory:${name}`);
   }
 
   getEmotionModule(name: string): EmotionModule | undefined {
-    return this.emotionModules.get(name);
+    return this.get<EmotionModule>(`emotion:${name}`);
   }
 
   getCognitionModule(name: string): CognitionModule | undefined {
-    return this.cognitionModules.get(name);
+    return this.get<CognitionModule>(`cognition:${name}`);
   }
 
   getExtension(name: string): Extension | undefined {
-    return this.extensions.get(name);
+    return this.get<Extension>(`extension:${name}`);
   }
 
   getPortal(name: string): Portal | undefined {
-    return this.portals.get(name);
+    return this.get<Portal>(`portal:${name}`);
   }
 
-  listPortals(): string[] {
-    return Array.from(this.portals.keys());
+  // Factory registration methods - simplified
+  registerMemoryFactory(name: string, factory: (config: unknown) => MemoryProvider): void {
+    this.registerFactory(`memory:${name}`, factory);
   }
 
-  // Tool system methods
-  registerToolSystem(
-    name: string,
-    toolSystem: import('../modules/tools/index').ToolSystem
-  ): void {
-    this.toolSystems.set(name, toolSystem);
-    runtimeLogger.factory(`🔧 Registered tool system: ${name}`);
+  registerEmotionFactory(name: string, factory: (config: unknown) => EmotionModule): void {
+    this.registerFactory(`emotion:${name}`, factory);
   }
 
-  getToolSystem(): any {
-    // Return the default tool system for backward compatibility
-    return this.toolSystems.get('default');
+  registerCognitionFactory(name: string, factory: (config: unknown) => CognitionModule | Promise<CognitionModule>): void {
+    this.registerFactory(`cognition:${name}`, factory);
   }
 
-  getToolSystemByName(
-    name: string
-  ): import('../modules/tools/index').ToolSystem | undefined {
-    return this.toolSystems.get(name);
+  registerExtensionFactory(name: string, factory: (config: unknown) => Extension): void {
+    this.registerFactory(`extension:${name}`, factory);
   }
 
-  listToolSystems(): string[] {
-    return Array.from(this.toolSystems.keys());
+  registerPortalFactory(name: string, factory: (config: unknown) => Portal): void {
+    this.registerFactory(`portal:${name}`, factory);
   }
 
-  // Observability methods
-  registerObservability(name: string, observability: any): void {
-    this.observabilityModules.set(name, observability);
-    runtimeLogger.factory(`📊 Registered observability module: ${name}`);
+  registerAgentFactory(name: string, factory: (config: unknown) => Agent | Promise<Agent>): void {
+    this.registerFactory(`agent:${name}`, factory);
   }
 
-  getObservability(name: string): any {
-    return this.observabilityModules.get(name);
+  // Creation methods - simplified
+  createMemoryProvider(name: string, config?: unknown): MemoryProvider | undefined {
+    return this.create<MemoryProvider>(`memory:${name}`, config);
   }
 
-  // Streaming methods
-  registerStreaming(name: string, streaming: any): void {
-    this.streamingInterfaces.set(name, streaming);
-    runtimeLogger.factory(`📡 Registered streaming interface: ${name}`);
+  createEmotionModule(name: string, config?: unknown): EmotionModule | undefined {
+    return this.create<EmotionModule>(`emotion:${name}`, config);
   }
 
-  getStreaming(name: string): any {
-    return this.streamingInterfaces.get(name);
+  createCognitionModule(name: string, config?: unknown): CognitionModule | Promise<CognitionModule> | undefined {
+    return this.create<CognitionModule | Promise<CognitionModule>>(`cognition:${name}`, config);
   }
 
-  // Factory registration methods
-  registerMemoryFactory(
-    type: string,
-    factory: ModuleFactory<MemoryProvider>
-  ): void {
-    this.memoryFactories.set(type, factory);
-    // Silent registration for cleaner startup
+  createExtension(name: string, config?: unknown): Extension | undefined {
+    return this.create<Extension>(`extension:${name}`, config);
   }
 
-  registerEmotionFactory(
-    type: string,
-    factory: ModuleFactory<EmotionModule>
-  ): void {
-    this.emotionFactories.set(type, factory);
-    // Silent registration for cleaner startup
+  createPortal(name: string, config?: unknown): Portal | undefined {
+    return this.create<Portal>(`portal:${name}`, config);
   }
 
-  registerCognitionFactory(
-    type: string,
-    factory: ModuleFactory<CognitionModule>
-  ): void {
-    this.cognitionFactories.set(type, factory);
-    // Silent registration for cleaner startup
-  }
-
-  registerPortalFactory(type: string, factory: PortalFactory): void {
-    this.portalFactories.set(type, factory);
-    // Silent registration for cleaner startup
-  }
-
-  // Factory creation methods
-  createMemoryProvider(type: string, config: any): MemoryProvider | undefined {
-    const factory = this.memoryFactories.get(type);
-    if (!factory) {
-      runtimeLogger.warn(`⚠️ Memory factory for type '${type}' not found`);
-      return undefined;
-    }
-    try {
-      const result = factory(config);
-      // Handle both sync and async factories
-      if (result instanceof Promise) {
-        runtimeLogger.warn(
-          `⚠️ Async memory factories not supported in sync context for type '${type}'`
-        );
-        return undefined;
-      }
-      const provider = result as MemoryProvider;
-      // Silent creation for cleaner startup
-      return provider;
-    } catch (error) {
-      void error;
-      runtimeLogger.error(
-        `❌ Failed to create memory provider '${type}':`,
-        error
-      );
-      throw error;
-    }
-  }
-
-  /**
-   * Async version of createMemoryProvider for async factories
-   */
-  async createMemoryProviderAsync(
-    type: string,
-    config: any
-  ): Promise<MemoryProvider | undefined> {
-    const factory = this.memoryFactories.get(type);
-    if (!factory) {
-      runtimeLogger.warn(`⚠️ Memory factory for type '${type}' not found`);
-      return undefined;
-    }
-    try {
-      const result = factory(config);
-      // Handle both sync and async factories
-      if (result instanceof Promise) {
-        const provider = await result;
-        runtimeLogger.factory(`✅ Created async memory provider: ${type}`);
-        return provider;
-      }
-      const provider = result as MemoryProvider;
-      runtimeLogger.factory(`✅ Created memory provider: ${type}`);
-      return provider;
-    } catch (error) {
-      void error;
-      runtimeLogger.error(
-        `❌ Failed to create memory provider '${type}':`,
-        error
-      );
-      return undefined;
-    }
-  }
-
-  createEmotionModule(
-    type: string,
-    config: BaseConfig
-  ): EmotionModule | undefined {
-    const factory = this.emotionFactories.get(type);
-    if (!factory) {
-      runtimeLogger.warn(`⚠️ Emotion factory for type '${type}' not found`);
-      return undefined;
-    }
-    try {
-      const result = factory(config);
-      // Handle both sync and async factories
-      if (result instanceof Promise) {
-        // For async factories, we need to return a promise, but the interface expects sync
-        // This is a limitation we need to address
-        runtimeLogger.warn(
-          `⚠️ Async emotion factories not supported in sync context for type '${type}'`
-        );
-        return undefined;
-      }
-      const module = result as EmotionModule;
-      // Silent creation for cleaner startup
-      return module;
-    } catch (error) {
-      void error;
-      runtimeLogger.error(
-        `❌ Failed to create emotion module '${type}':`,
-        error
-      );
-      return undefined;
-    }
-  }
-
-  createCognitionModule(
-    type: string,
-    config: BaseConfig
-  ): CognitionModule | undefined {
-    const factory = this.cognitionFactories.get(type);
-    if (!factory) {
-      runtimeLogger.warn(`⚠️ Cognition factory for type '${type}' not found`);
-      return undefined;
-    }
-    try {
-      const result = factory(config);
-      // Handle both sync and async factories
-      if (result instanceof Promise) {
-        // For async factories, we need to return a promise, but the interface expects sync
-        // This is a limitation we need to address
-        runtimeLogger.warn(
-          `⚠️ Async cognition factories not supported in sync context for type '${type}'`
-        );
-        return undefined;
-      }
-      const module = result as CognitionModule;
-      // Silent creation for cleaner startup
-      return module;
-    } catch (error) {
-      void error;
-      runtimeLogger.error(
-        `❌ Failed to create cognition module '${type}':`,
-        error
-      );
-      return undefined;
-    }
-  }
-
-  /**
-   * Async version of createCognitionModule for async factories
-   */
-  async createCognitionModuleAsync(
-    type: string,
-    config: BaseConfig
-  ): Promise<CognitionModule | undefined> {
-    const factory = this.cognitionFactories.get(type);
-    if (!factory) {
-      runtimeLogger.warn(`⚠️ Cognition factory for type '${type}' not found`);
-      return undefined;
-    }
-    try {
-      const result = factory(config);
-      // Handle both sync and async factories
-      if (result instanceof Promise) {
-        const module = await result;
-        runtimeLogger.factory(`✅ Created async cognition module: ${type}`);
-        return module;
-      }
-      const module = result as CognitionModule;
-      runtimeLogger.factory(`✅ Created cognition module: ${type}`);
-      return module;
-    } catch (error) {
-      void error;
-      runtimeLogger.error(
-        `❌ Failed to create cognition module '${type}':`,
-        error
-      );
-      return undefined;
-    }
-  }
-
-  createPortal(type: string, config: PortalConfig): Portal | undefined {
-    const factory = this.portalFactories.get(type);
-    if (!factory) {
-      runtimeLogger.warn(`⚠️ Portal factory for type '${type}' not found`);
-      return undefined;
-    }
-    try {
-      const portal = factory(config);
-      runtimeLogger.factory(`✅ Created portal: ${type}`);
-      return portal;
-    } catch (error) {
-      void error;
-      runtimeLogger.error(`❌ Failed to create portal '${type}':`, error);
-      return undefined;
-    }
-  }
-
-  // Factory listing methods
+  // Listing methods - simplified
   listMemoryProviders(): string[] {
-    // Combine registered providers and factory types
-    const registeredProviders = Array.from(this.memoryProviders.keys());
-    const factoryTypes = Array.from(this.memoryFactories.keys());
-    return [...new Set([...registeredProviders, ...factoryTypes])];
+    return this.listByPrefix('memory:');
   }
 
   listEmotionModules(): string[] {
-    // Combine registered modules and factory types
-    const registeredModules = Array.from(this.emotionModules.keys());
-    const factoryTypes = Array.from(this.emotionFactories.keys());
-    return [...new Set([...registeredModules, ...factoryTypes])];
+    return this.listByPrefix('emotion:');
   }
 
   listCognitionModules(): string[] {
-    // Combine registered modules and factory types
-    const registeredModules = Array.from(this.cognitionModules.keys());
-    const factoryTypes = Array.from(this.cognitionFactories.keys());
-    return [...new Set([...registeredModules, ...factoryTypes])];
+    return this.listByPrefix('cognition:');
+  }
+
+  listExtensions(): string[] {
+    return this.listByPrefix('extension:');
+  }
+
+  listPortals(): string[] {
+    return this.listByPrefix('portal:');
   }
 
   listPortalFactories(): string[] {
-    return Array.from(this.portalFactories.keys());
+    const portals: string[] = [];
+    this.factories.forEach((_, key) => {
+      if (key.startsWith('portal:')) {
+        portals.push(key.replace('portal:', ''));
+      }
+    });
+    return portals;
   }
 
-  // Utility methods
-  getAllRegisteredModules(): Record<string, number> {
-    return {
-      memoryProviders: this.memoryProviders.size,
-      emotionModules: this.emotionModules.size,
-      cognitionModules: this.cognitionModules.size,
-      extensions: this.extensions.size,
-      portals: this.portals.size,
-      toolSystems: this.toolSystems.size,
-      observabilityModules: this.observabilityModules.size,
-      streamingInterfaces: this.streamingInterfaces.size,
-      emotionFactories: this.emotionFactories.size,
-      cognitionFactories: this.cognitionFactories.size,
-      portalFactories: this.portalFactories.size,
-      extensionFactories: this.extensionFactories.size,
-      agentFactories: this.agentFactories.size,
-      lazyAgents: this.lazyAgents.size,
-    };
+  // Other required methods
+  registerLazyAgent(): void {
+    // Simplified - lazy loading not needed in clean architecture
+    runtimeLogger.debug('Lazy agent registration not implemented in clean registry');
   }
 
-  // Generic registry methods
-  register(name: string, factory: any): void {
-    // Generic register - determine type and route to appropriate registry
-    if (name.includes('memory')) {
-      this.memoryFactories.set(name, factory);
-    } else if (name.includes('emotion')) {
-      this.emotionFactories.set(name, factory);
-    } else if (name.includes('cognition')) {
-      this.cognitionFactories.set(name, factory);
-    } else if (name.includes('portal')) {
-      this.portalFactories.set(name, factory);
-    } else if (name.includes('extension')) {
-      this.extensionFactories.set(name, factory);
-    }
-    runtimeLogger.factory(`📦 Registered generic factory: ${name}`);
+  getToolSystem(): unknown {
+    return this.get('toolSystem');
   }
 
-  get<T>(name: string): T | undefined {
-    // Generic get - try all registries
-    return (this.memoryProviders.get(name) ||
-      this.emotionModules.get(name) ||
-      this.cognitionModules.get(name) ||
-      this.extensions.get(name) ||
-      this.portals.get(name) ||
-      this.toolSystems.get(name) ||
-      this.observabilityModules.get(name) ||
-      this.streamingInterfaces.get(name)) as T | undefined;
+  getRegisteredAgents(): Agent[] {
+    const agents: Agent[] = [];
+    this.modules.forEach((value, key) => {
+      if (key.startsWith('agent:')) {
+        agents.push(value as Agent);
+      }
+    });
+    return agents;
+  }
+
+  // === Utility Methods ===
+  
+  private listByPrefix(prefix: string): string[] {
+    const items: string[] = [];
+    this.modules.forEach((_, key) => {
+      if (key.startsWith(prefix)) {
+        items.push(key.replace(prefix, ''));
+      }
+    });
+    return items;
   }
 
   has(name: string): boolean {
-    return (
-      this.memoryProviders.has(name) ||
-      this.emotionModules.has(name) ||
-      this.cognitionModules.has(name) ||
-      this.extensions.has(name) ||
-      this.portals.has(name) ||
-      this.toolSystems.has(name) ||
-      this.observabilityModules.has(name) ||
-      this.streamingInterfaces.has(name) ||
-      this.memoryFactories.has(name) ||
-      this.emotionFactories.has(name) ||
-      this.cognitionFactories.has(name) ||
-      this.portalFactories.has(name) ||
-      this.extensionFactories.has(name) ||
-      this.agentFactories.has(name) ||
-      this.lazyAgents.has(name)
-    );
+    return this.modules.has(name) || this.factories.has(name);
   }
 
   clear(): void {
-    this.memoryProviders.clear();
-    this.emotionModules.clear();
-    this.cognitionModules.clear();
-    this.extensions.clear();
-    this.portals.clear();
-    this.toolSystems.clear();
-    this.observabilityModules.clear();
-    this.streamingInterfaces.clear();
-    this.emotionFactories.clear();
-    this.cognitionFactories.clear();
-    this.portalFactories.clear();
-    this.extensionFactories.clear();
-    this.agentFactories.clear();
-    this.lazyAgents.clear();
-    runtimeLogger.info('🧹 Registry cleared');
-  }
-
-  // New factory registration methods
-  registerExtensionFactory(
-    type: string,
-    factory: ModuleFactory<Extension>
-  ): void {
-    this.extensionFactories.set(type, factory);
-    // Silent registration for cleaner startup
-  }
-
-  registerAgentFactory(
-    type: string,
-    factory: ((config: unknown) => Agent | Promise<Agent>) | AgentFactory
-  ): void {
-    // Support both the interface signature and AgentFactory objects
-    if (typeof factory === 'function') {
-      // Wrap simple function as AgentFactory
-      const agentFactory: AgentFactory = {
-        create: (config: AgentConfig) => factory(config),
-      };
-      this.agentFactories.set(type, agentFactory);
-    } else {
-      this.agentFactories.set(type, factory);
-    }
-    // Silent registration for cleaner startup
-  }
-
-  // New factory creation methods
-  createExtension(type: string, config: any): Extension | undefined {
-    const factory = this.extensionFactories.get(type);
-    if (!factory) {
-      runtimeLogger.warn(`⚠️ Extension factory for type '${type}' not found`);
-      return undefined;
-    }
-    try {
-      const result = factory(config);
-      // Handle both sync and async factories
-      if (result instanceof Promise) {
-        runtimeLogger.warn(
-          `⚠️ Async extension factories not supported in sync context for type '${type}'`
-        );
-        return undefined;
-      }
-      const extension = result as Extension;
-      return extension;
-    } catch (error) {
-      void error;
-      runtimeLogger.error(`❌ Failed to create extension '${type}':`, error);
-      return undefined;
-    }
-  }
-
-  /**
-   * Async version of createExtension for async factories
-   */
-  async createExtensionAsync(
-    type: string,
-    config: any
-  ): Promise<Extension | undefined> {
-    const factory = this.extensionFactories.get(type);
-    if (!factory) {
-      runtimeLogger.warn(`⚠️ Extension factory for type '${type}' not found`);
-      return undefined;
-    }
-    try {
-      const result = factory(config);
-      // Handle both sync and async factories
-      if (result instanceof Promise) {
-        const extension = await result;
-        runtimeLogger.factory(`✅ Created async extension: ${type}`);
-        return extension;
-      }
-      const extension = result as Extension;
-      runtimeLogger.factory(`✅ Created extension: ${type}`);
-      return extension;
-    } catch (error) {
-      void error;
-      runtimeLogger.error(`❌ Failed to create extension '${type}':`, error);
-      return undefined;
-    }
-  }
-
-  async createAgent(
-    type: string,
-    config: AgentConfig,
-    _characterConfig?: any
-  ): Promise<Agent> {
-    const factory = this.agentFactories.get(type);
-    if (!factory) {
-      throw new Error(`Agent factory for type '${type}' not found`);
-    }
-    try {
-      const agent = await factory.create(config);
-      return agent;
-    } catch (error) {
-      void error;
-      runtimeLogger.error(`❌ Failed to create agent '${type}':`, error);
-      throw error;
-    }
-  }
-
-  // Lazy agent management methods (removed duplicate - using the first definition above)
-
-  listLazyAgents(): LazyAgent[] {
-    return Array.from(this.lazyAgents.values()).filter(
-      (value): value is LazyAgent => typeof value !== 'function'
-    );
-  }
-
-  // Additional listing methods for new factories
-  listExtensions(): string[] {
-    const registeredExtensions = Array.from(this.extensions.keys());
-    const factoryTypes = Array.from(this.extensionFactories.keys());
-    return [...new Set([...registeredExtensions, ...factoryTypes])];
-  }
-
-  listAgentFactories(): string[] {
-    return Array.from(this.agentFactories.keys());
-  }
-
-  // Required method from ModuleRegistry interface
-  getRegisteredAgents(): Agent[] {
-    // Return active agents from lazy agent map
-    return Array.from(this.lazyAgents.values())
-      .filter(
-        (value): value is LazyAgent =>
-          typeof value !== 'function' && value.agent !== undefined
-      )
-      .map((lazyAgent) => lazyAgent.agent!);
-  }
-
-  // Additional missing methods that might be needed
-  unregister(name: string): boolean {
-    // Try to unregister from all maps
-    const removed =
-      this.memoryProviders.delete(name) ||
-      this.emotionModules.delete(name) ||
-      this.cognitionModules.delete(name) ||
-      this.extensions.delete(name) ||
-      this.portals.delete(name) ||
-      this.toolSystems.delete(name) ||
-      this.observabilityModules.delete(name) ||
-      this.streamingInterfaces.delete(name) ||
-      this.memoryFactories.delete(name) ||
-      this.emotionFactories.delete(name) ||
-      this.cognitionFactories.delete(name) ||
-      this.portalFactories.delete(name) ||
-      this.extensionFactories.delete(name) ||
-      this.agentFactories.delete(name) ||
-      this.lazyAgents.delete(name);
-
-    if (removed) {
-      runtimeLogger.factory(`🗑️ Unregistered: ${name}`);
-    }
-    return removed;
+    this.modules.clear();
+    this.factories.clear();
+    runtimeLogger.debug('Registry cleared');
   }
 
   list(): string[] {
-    // Return all registered names
     const allNames = new Set<string>();
-    this.memoryProviders.forEach((_, name) => allNames.add(name));
-    this.emotionModules.forEach((_, name) => allNames.add(name));
-    this.cognitionModules.forEach((_, name) => allNames.add(name));
-    this.extensions.forEach((_, name) => allNames.add(name));
-    this.portals.forEach((_, name) => allNames.add(name));
-    this.toolSystems.forEach((_, name) => allNames.add(name));
-    this.observabilityModules.forEach((_, name) => allNames.add(name));
-    this.streamingInterfaces.forEach((_, name) => allNames.add(name));
-    this.memoryFactories.forEach((_, name) => allNames.add(name));
-    this.emotionFactories.forEach((_, name) => allNames.add(name));
-    this.cognitionFactories.forEach((_, name) => allNames.add(name));
-    this.portalFactories.forEach((_, name) => allNames.add(name));
-    this.extensionFactories.forEach((_, name) => allNames.add(name));
-    this.agentFactories.forEach((_, name) => allNames.add(name));
-    this.lazyAgents.forEach((_, name) => allNames.add(name));
+    this.modules.forEach((_, name) => allNames.add(name));
+    this.factories.forEach((_, name) => allNames.add(name));
     return Array.from(allNames);
-  }
-
-  getStats() {
-    return {
-      memoryProviders: this.memoryProviders.size,
-      emotionModules: this.emotionModules.size,
-      cognitionModules: this.cognitionModules.size,
-      extensions: this.extensions.size,
-      portals: this.portals.size,
-      toolSystems: this.toolSystems.size,
-      observabilityModules: this.observabilityModules.size,
-      streamingInterfaces: this.streamingInterfaces.size,
-    };
   }
 }

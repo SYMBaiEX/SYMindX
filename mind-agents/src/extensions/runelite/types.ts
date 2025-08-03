@@ -1,4 +1,4 @@
-import { BaseConfig, DataValue } from '../../types/common.js';
+import { BaseConfig, ConfigValue } from '../../types/common.js';
 
 export interface RuneLiteSettings extends BaseConfig {
   port?: number;
@@ -30,7 +30,7 @@ export interface RuneLiteSettings extends BaseConfig {
   protocolVersion?: string;
   capabilities?: string[];
   pluginWhitelist?: string[];
-  automationSafety?: AutomationSafetyConfig;
+  automationSafety?: { [key: string]: ConfigValue };
 }
 
 export interface RuneLiteConfig {
@@ -208,8 +208,12 @@ export interface MacroAction {
 }
 
 export interface MacroTrigger {
+  id?: string;
   type: 'hotkey' | 'event' | 'condition' | 'schedule';
   value: unknown;
+  conditions?: any[];
+  enabled?: boolean;
+  priority?: number;
 }
 
 export interface MacroCondition {
@@ -606,7 +610,7 @@ export interface StateChange {
 // Task Automation
 export interface AutomationTask {
   id: string;
-  type: 'skill' | 'combat' | 'quest' | 'travel' | 'custom';
+  type: 'skill' | 'combat' | 'quest' | 'travel' | 'custom' | 'sequence' | 'loop' | 'conditional';
   name: string;
   status: 'idle' | 'running' | 'paused' | 'completed' | 'failed';
   progress: number;
@@ -693,4 +697,687 @@ export interface PerformanceMetrics {
   cpuUsage: number;
   memoryUsage: number;
   renderTime: number;
+}
+
+ // Enhanced Plugin Management
+export interface PluginInfo {
+  id: string;
+  name: string;
+  version: string;
+  description?: string;
+  author?: string;
+  enabled: boolean;
+  config: Record<string, unknown>;
+  capabilities: string[];
+  dependencies: string[];
+  conflicts: string[];
+}
+
+export interface PluginConfig {
+  enabled: boolean;
+  priority: number;
+  settings: Record<string, unknown>;
+  permissions: string[];
+  autoStart: boolean;
+}
+
+// Advanced Automation Types
+export interface AutomationProfile {
+  id: string;
+  name: string;
+  description?: string;
+  tasks: AutomationTask[];
+  safety: AutomationSafetyConfig;
+  schedule?: AutomationSchedule;
+  conditions: AutomationCondition[];
+  metadata: Record<string, unknown>;
+}
+
+export interface AutomationSchedule {
+  type: 'once' | 'recurring' | 'conditional';
+  startTime?: number;
+  endTime?: number;
+  interval?: number; // in minutes
+  daysOfWeek?: number[]; // 0-6, Sunday = 0
+  conditions?: AutomationCondition[];
+}
+
+export interface AutomationCondition {
+  type: 'time' | 'location' | 'skill_level' | 'item_count' | 'quest_completed' | 'custom';
+  parameters: Record<string, unknown>;
+  evaluate: (gameState: GameState) => boolean;
+}
+
+// Advanced Pathfinding
+export interface AdvancedPathfindingOptions extends PathfindingOptions {
+  avoidDangerousAreas?: boolean;
+  preferSafeRoutes?: boolean;
+  energyConservation?: boolean;
+  teleportOptimization?: boolean;
+  multiLevelPathfinding?: boolean;
+  dynamicObstacleAvoidance?: boolean;
+}
+
+export interface PathfindingResult {
+  path: Path;
+  alternatives: Path[];
+  metadata: {
+    totalCost: number;
+    safetyLevel: 'safe' | 'medium' | 'dangerous';
+    energyCost: number;
+    timeEstimate: number;
+    obstacles: Obstacle[];
+  };
+}
+
+// Enhanced Event System
+export interface EventHandler {
+  id: string;
+  eventType: EventType;
+  priority: EventPriority;
+  handler: (event: GameEvent) => Promise<void> | void;
+  enabled: boolean;
+  conditions?: EventCondition[];
+  metadata: Record<string, unknown>;
+}
+
+export interface EventCondition {
+  type: 'location' | 'skill_level' | 'item_owned' | 'quest_completed' | 'custom';
+  parameters: Record<string, unknown>;
+  evaluate: (gameState: GameState) => boolean;
+}
+
+// Advanced Macro System
+export interface AdvancedMacro extends Macro {
+  version: string;
+  author?: string;
+  category: string;
+  tags: string[];
+  variables: MacroVariable[];
+  loops: MacroLoop[];
+  errorHandling: MacroErrorHandling;
+  performance: MacroPerformance;
+}
+
+export interface MacroVariable {
+  name: string;
+  type: 'number' | 'string' | 'boolean' | 'array' | 'object';
+  defaultValue: unknown;
+  description?: string;
+}
+
+export interface MacroLoop {
+  type: 'for' | 'while' | 'foreach';
+  condition: string;
+  maxIterations?: number;
+  actions: MacroAction[];
+}
+
+export interface MacroErrorHandling {
+  onError: 'stop' | 'retry' | 'continue' | 'fallback';
+  maxRetries?: number;
+  retryDelay?: number;
+  fallbackActions?: MacroAction[];
+}
+
+export interface MacroPerformance {
+  maxExecutionTime?: number;
+  memoryLimit?: number;
+  cpuLimit?: number;
+  optimizationLevel: 'none' | 'basic' | 'advanced';
+}
+
+// Advanced Game State Tracking
+export interface AdvancedGameState extends GameState {
+  // Enhanced player tracking
+  playerHistory: PlayerStateHistory[];
+  skillHistory: SkillHistory[];
+  locationHistory: LocationHistory[];
+  
+  // Advanced combat tracking
+  combatHistory: CombatHistory[];
+  damageLog: DamageLog[];
+  prayerHistory: PrayerHistory[];
+  
+  // Economic tracking
+  wealthHistory: WealthHistory[];
+  tradeHistory: TradeHistory[];
+  geHistory: GrandExchangeHistory[];
+  
+  // Social tracking
+  chatHistory: ChatMessage[];
+  clanHistory: ClanHistory[];
+  
+  // Performance tracking
+  performanceHistory: PerformanceMetrics[];
+  lagHistory: LagHistory[];
+  
+  // Plugin state
+  pluginStates: Record<string, PluginState>;
+  macroStates: Record<string, MacroState>;
+}
+
+export interface PlayerStateHistory {
+  timestamp: number;
+  state: Partial<PlayerInfo>;
+  changes: StateChange[];
+}
+
+export interface SkillHistory {
+  skillName: string;
+  level: number;
+  experience: number;
+  timestamp: number;
+  source?: string;
+}
+
+export interface LocationHistory {
+  x: number;
+  y: number;
+  plane: number;
+  region: number;
+  timestamp: number;
+  method: 'walk' | 'run' | 'teleport' | 'follow';
+}
+
+export interface CombatHistory {
+  target: string;
+  startTime: number;
+  endTime?: number;
+  damageDealt: number;
+  damageTaken: number;
+  prayersUsed: string[];
+  foodEaten: number;
+  result: 'victory' | 'defeat' | 'escape' | 'interrupted';
+}
+
+export interface DamageLog {
+  timestamp: number;
+  target: string;
+  damage: number;
+  type: 'melee' | 'ranged' | 'magic' | 'special';
+  critical: boolean;
+  source: 'player' | 'npc' | 'environment';
+}
+
+export interface PrayerHistory {
+  prayer: string;
+  activated: boolean;
+  timestamp: number;
+  duration?: number;
+}
+
+export interface WealthHistory {
+  timestamp: number;
+  totalValue: number;
+  cash: number;
+  bankValue: number;
+  geValue: number;
+  items: Record<number, number>; // itemId -> quantity
+}
+
+export interface TradeHistory {
+  partner: string;
+  timestamp: number;
+  itemsGiven: InventoryItem[];
+  itemsReceived: InventoryItem[];
+  valueGiven: number;
+  valueReceived: number;
+  completed: boolean;
+}
+
+export interface GrandExchangeHistory {
+  itemId: number;
+  itemName: string;
+  type: 'buy' | 'sell';
+  quantity: number;
+  price: number;
+  timestamp: number;
+  completed: boolean;
+}
+
+export interface ChatMessage {
+  timestamp: number;
+  sender: string;
+  message: string;
+  type: 'public' | 'private' | 'clan' | 'trade' | 'system';
+  filtered: boolean;
+}
+
+export interface ClanHistory {
+  action: 'joined' | 'left' | 'rank_changed' | 'message';
+  timestamp: number;
+  details: Record<string, unknown>;
+}
+
+export interface LagHistory {
+  timestamp: number;
+  fps: number;
+  ping: number;
+  tickDelay: number;
+  serverLoad: number;
+}
+
+export interface PluginState {
+  enabled: boolean;
+  config: Record<string, unknown>;
+  lastUpdate: number;
+  errors: string[];
+  performance: PerformanceMetrics;
+}
+
+export interface MacroState {
+  running: boolean;
+  currentAction: number;
+  variables: Record<string, unknown>;
+  startTime: number;
+  iterations: number;
+  errors: string[];
+}
+
+// Advanced Configuration Types
+export interface AdvancedRuneLiteConfig extends RuneLiteConfig {
+  // Advanced features
+  enableAdvancedPathfinding: boolean;
+  enableAdvancedMacros: boolean;
+  enableEventRecording: boolean;
+  enablePerformanceMonitoring: boolean;
+  enablePluginManagement: boolean;
+  
+  // Security settings
+  securityLevel: 'low' | 'medium' | 'high' | 'maximum';
+  allowedActions: ActionType[];
+  blockedActions: ActionType[];
+  rateLimiting: RateLimitingConfig;
+  
+  // Performance settings
+  performanceMode: 'balanced' | 'performance' | 'quality';
+  memoryLimit: number;
+  cpuLimit: number;
+  networkOptimization: boolean;
+  
+  // Plugin management
+  pluginAutoUpdate: boolean;
+  pluginVerification: boolean;
+  pluginSandboxing: boolean;
+  
+  // Advanced automation
+  enableAI: boolean;
+  enableMachineLearning: boolean;
+  enablePredictivePathfinding: boolean;
+  enableAdaptiveBehavior: boolean;
+}
+
+export interface RateLimitingConfig {
+  enabled: boolean;
+  maxActionsPerMinute: number;
+  maxActionsPerHour: number;
+  burstLimit: number;
+  cooldownPeriod: number;
+  adaptiveRateLimiting: boolean;
+}
+
+// Advanced Error Handling
+export interface AdvancedError extends Error {
+  code: RuneLiteErrorType;
+  context: Record<string, unknown>;
+  timestamp: number;
+  recoverable: boolean;
+  suggestions: string[];
+  metadata: Record<string, unknown>;
+}
+
+// Advanced Event System
+export interface AdvancedEventSystem {
+  handlers: Map<EventType, EventHandler[]>;
+  middleware: EventMiddleware[];
+  filters: EventFilter[];
+  transformers: EventTransformer[];
+  metrics: EventMetrics;
+}
+
+export interface EventMiddleware {
+  name: string;
+  priority: number;
+  process: (event: GameEvent, next: () => Promise<void>) => Promise<void>;
+}
+
+export interface EventFilter {
+  name: string;
+  condition: (event: GameEvent) => boolean;
+  action: 'allow' | 'block' | 'modify';
+  modify?: (event: GameEvent) => GameEvent;
+}
+
+export interface EventTransformer {
+  name: string;
+  inputType: EventType;
+  outputType: EventType;
+  transform: (event: GameEvent) => GameEvent;
+}
+
+export interface EventMetrics {
+  totalEvents: number;
+  eventsByType: Record<EventType, number>;
+  averageProcessingTime: number;
+  errorRate: number;
+  throughput: number; // events per second
+}
+
+// Advanced Plugin System
+export interface AdvancedPluginSystem {
+  plugins: Map<string, PluginInfo>;
+  capabilities: Map<string, PluginCapability>;
+  messageQueue: PluginMessage[];
+  security: PluginSecurityConfig;
+  performance: PluginPerformanceMetrics;
+}
+
+export interface PluginSecurityConfig {
+  sandboxing: boolean;
+  permissionSystem: boolean;
+  codeSigning: boolean;
+  integrityChecking: boolean;
+  allowedAPIs: string[];
+  blockedAPIs: string[];
+}
+
+export interface PluginPerformanceMetrics {
+  totalPlugins: number;
+  activePlugins: number;
+  averageLoadTime: number;
+  memoryUsage: Record<string, number>;
+  cpuUsage: Record<string, number>;
+  errorRate: Record<string, number>;
+}
+
+// Advanced Automation System
+export interface AdvancedAutomationSystem {
+  profiles: Map<string, AutomationProfile>;
+  activeTasks: Map<string, AutomationTask>;
+  scheduler: AutomationScheduler;
+  safety: AdvancedSafetyConfig;
+  analytics: AutomationAnalytics;
+}
+
+export interface AutomationScheduler {
+  tasks: ScheduledTask[];
+  priorities: Map<string, number>;
+  resources: ResourceAllocation;
+  conflicts: ConflictResolution;
+}
+
+export interface ScheduledTask {
+  id: string;
+  profile: string;
+  schedule: AutomationSchedule;
+  priority: number;
+  status: 'scheduled' | 'running' | 'completed' | 'failed' | 'cancelled';
+  nextRun: number;
+  lastRun?: number;
+}
+
+export interface ResourceAllocation {
+  cpu: Map<string, number>;
+  memory: Map<string, number>;
+  network: Map<string, number>;
+  gameActions: Map<string, number>;
+}
+
+export interface ConflictResolution {
+  strategy: 'priority' | 'round_robin' | 'fair_share' | 'custom';
+  rules: ConflictRule[];
+  resolution: Map<string, string>;
+}
+
+export interface ConflictRule {
+  condition: string;
+  action: 'allow' | 'deny' | 'defer' | 'modify';
+  parameters: Record<string, unknown>;
+}
+
+export interface AdvancedSafetyConfig extends AutomationSafetyConfig {
+  // Advanced safety features
+  behavioralAnalysis: boolean;
+  patternDetection: boolean;
+  anomalyDetection: boolean;
+  adaptiveSafety: boolean;
+  
+  // Machine learning safety
+  mlSafety: MLSafetyConfig;
+  humanOversight: HumanOversightConfig;
+  emergencyProtocols: EmergencyProtocol[];
+}
+
+export interface MLSafetyConfig {
+  enabled: boolean;
+  modelPath: string;
+  confidenceThreshold: number;
+  trainingData: string;
+  updateInterval: number;
+}
+
+export interface HumanOversightConfig {
+  enabled: boolean;
+  approvalRequired: boolean;
+  notificationChannels: string[];
+  escalationRules: EscalationRule[];
+}
+
+export interface EmergencyProtocol {
+  trigger: string;
+  actions: ActionType[];
+  priority: EventPriority;
+  automatic: boolean;
+  notification: boolean;
+}
+
+export interface EscalationRule {
+  condition: string;
+  level: 'low' | 'medium' | 'high' | 'critical';
+  actions: string[];
+  timeout: number;
+}
+
+export interface AutomationAnalytics {
+  // Performance metrics
+  successRate: number;
+  averageCompletionTime: number;
+  resourceUtilization: Record<string, number>;
+  errorRate: number;
+  
+  // Behavioral metrics
+  patternAnalysis: PatternAnalysis[];
+  efficiencyMetrics: EfficiencyMetrics;
+  safetyMetrics: SafetyMetrics;
+  
+  // Predictive analytics
+  predictions: Prediction[];
+  recommendations: Recommendation[];
+  trends: Trend[];
+}
+
+export interface PatternAnalysis {
+  pattern: string;
+  frequency: number;
+  successRate: number;
+  efficiency: number;
+  safety: number;
+}
+
+export interface EfficiencyMetrics {
+  actionsPerMinute: number;
+  experiencePerHour: number;
+  goldPerHour: number;
+  resourceEfficiency: Record<string, number>;
+}
+
+export interface SafetyMetrics {
+  safetyViolations: number;
+  nearMisses: number;
+  safetyScore: number;
+  riskAssessment: RiskAssessment;
+}
+
+export interface RiskAssessment {
+  overallRisk: 'low' | 'medium' | 'high';
+  factors: RiskFactor[];
+  mitigation: RiskMitigation[];
+}
+
+export interface RiskFactor {
+  factor: string;
+  probability: number;
+  impact: number;
+  risk: number;
+}
+
+export interface RiskMitigation {
+  factor: string;
+  strategy: string;
+  effectiveness: number;
+  cost: number;
+}
+
+export interface Prediction {
+  type: 'completion_time' | 'success_rate' | 'resource_usage' | 'safety_risk';
+  value: number;
+  confidence: number;
+  timeframe: number;
+  factors: string[];
+}
+
+export interface Recommendation {
+  type: 'optimization' | 'safety' | 'efficiency' | 'resource';
+  action: string;
+  impact: number;
+  effort: number;
+  priority: number;
+}
+
+export interface Trend {
+  metric: string;
+  direction: 'increasing' | 'decreasing' | 'stable';
+  rate: number;
+  duration: number;
+  significance: number;
+}
+
+// Skills-Based Architecture Types
+export interface RuneLiteSkillConfig {
+  name: string;
+  description: string;
+  enabled?: boolean;
+}
+
+export interface RuneLiteSkillManagerConfig {
+  maxConcurrentSkills?: number;
+  skillTimeout?: number;
+}
+
+// Skill Trainer Types
+export interface SkillTrainerConfig extends RuneLiteSkillConfig {
+  gameState: GameState;
+  eventHandler?: SkillTrainerEventHandler;
+}
+
+export interface SkillTrainerEventHandler {
+  onAction?: (actionType: ActionType, parameters: any, activityId: string) => void;
+  onActivityStart?: (activity: any) => void;
+  onActivityPause?: (activity: any) => void;
+  onActivityComplete?: (activity: any) => void;
+  onActivityError?: (activity: any, error: any) => void;
+  onProgressUpdate?: (activity: any, progress: any) => void;
+  onCheckpoint?: (activity: any, checkpoint: any) => void;
+}
+
+// Quest Manager Types
+export interface QuestManagerConfig extends RuneLiteSkillConfig {
+  gameState: GameState;
+  eventHandler?: QuestManagerEventHandler;
+}
+
+export interface QuestManagerEventHandler {
+  onQuestStart?: (questId: number) => void;
+  onQuestProgress?: (questId: number, progress: any) => void;
+  onQuestComplete?: (questId: number) => void;
+  onDialogue?: (npcName: string, dialogue: string) => void;
+  onError?: (error: any) => void;
+}
+
+// Economic Manager Types
+export interface EconomicManagerConfig extends RuneLiteSkillConfig {
+  gameState: GameState;
+  eventHandler?: EconomicManagerEventHandler;
+}
+
+export interface EconomicManagerEventHandler {
+  onTradeStart?: (strategy: string) => void;
+  onTradeComplete?: (result: any) => void;
+  onPriceUpdate?: (itemId: number, price: number) => void;
+  onProfitOpportunity?: (opportunity: any) => void;
+  onError?: (error: any) => void;
+}
+
+// Social Manager Types
+export interface SocialManagerConfig extends RuneLiteSkillConfig {
+  gameState: GameState;
+  eventHandler?: SocialManagerEventHandler;
+}
+
+export interface SocialManagerEventHandler {
+  onMessage?: (sender: string, message: string) => void;
+  onSessionStart?: (sessionType: string) => void;
+  onSessionEnd?: (sessionType: string) => void;
+  onFriendUpdate?: (username: string, status: string) => void;
+  onClanEvent?: (event: any) => void;
+  onError?: (error: any) => void;
+}
+
+// PvP Manager Types
+export interface PvPManagerConfig extends RuneLiteSkillConfig {
+  gameState: GameState;
+  eventHandler?: PvPManagerEventHandler;
+}
+
+export interface PvPManagerEventHandler {
+  onPvPStart?: (area: string, style: string) => void;
+  onTargetFound?: (target: any) => void;
+  onCombatStart?: (target: string) => void;
+  onCombatEnd?: (result: string) => void;
+  onDanger?: (threat: any) => void;
+  onError?: (error: any) => void;
+}
+
+// Enhanced Extension Action Result Types
+export interface RuneLiteActionResult {
+  success: boolean;
+  data?: any;
+  error?: string;
+  timestamp: Date;
+  actionType?: string;
+  context?: Record<string, unknown>;
+}
+
+// Skills Manager Event Types
+export interface SkillManagerEvent {
+  type: 'skill_registered' | 'skill_unregistered' | 'skill_initialized' | 'skill_cleanup' | 'skill_error';
+  skillName: string;
+  timestamp: Date;
+  data?: any;
+  error?: Error;
+}
+
+// Skills Performance Metrics
+export interface SkillPerformanceMetrics {
+  skillName: string;
+  actionsExecuted: number;
+  successRate: number;
+  averageExecutionTime: number;
+  errorCount: number;
+  lastError?: Error;
+  resourceUsage: {
+    memory: number;
+    cpu: number;
+  };
 }

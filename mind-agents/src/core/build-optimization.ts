@@ -12,7 +12,7 @@
 import { PerformanceMonitor } from '../utils/PerformanceMonitor.js';
 import { MemoryManager } from '../utils/MemoryManager.js';
 import { LRUCache } from '../utils/LRUCache.js';
-import { OptimizedEventBus } from './OptimizedEventBus.js';
+import { SimpleEventBus } from './event-bus.js';
 import { runtimeLogger } from '../utils/logger.js';
 import { EventEmitter } from 'events';
 
@@ -100,7 +100,7 @@ export class BuildOptimizationManager extends EventEmitter {
   private performanceMonitor: PerformanceMonitor;
   private memoryManager: MemoryManager;
   private buildCache: LRUCache<string, any>;
-  private eventBus: OptimizedEventBus;
+  private eventBus: SimpleEventBus;
   private config: BuildOptimizationConfig;
   private isInitialized: boolean = false;
   private buildAnalysis: BuildAnalysis | null = null;
@@ -145,11 +145,7 @@ export class BuildOptimizationManager extends EventEmitter {
     }
 
     // Initialize event bus for coordination
-    this.eventBus = new OptimizedEventBus({
-      maxEvents: 1000,
-      compressionEnabled: this.config.cacheOptimization.enableCompression,
-      batchingEnabled: true,
-    });
+    this.eventBus = new SimpleEventBus();
   }
 
   /**

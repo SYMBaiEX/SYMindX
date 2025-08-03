@@ -1,0 +1,19 @@
+{
+  "name": "@symindx/twitter-extension",
+  "version": "1.0.0",
+  "description": "Autonomous Twitter extension for SYMindX agents",
+  "main": "index.ts",
+  "symindx": {
+    "extension": {
+      "type": "communication",
+      "factory": "createTwitterExtension",
+      "autoRegister": true
+    }
+  },
+  "dependencies": {
+    "twitter-api-v2": "^1.15.0"
+  },
+  "keywords": ["symindx", "twitter", "autonomous", "social-media"],
+  "author": "SYMindX Team",
+  "license": "MIT"
+}

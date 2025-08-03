@@ -6,8 +6,6 @@
  */
 
 import type {
-  AgentId,
-  Timestamp,
   AgentStatus,
   MemoryRecord,
   EmotionState,
@@ -20,13 +18,18 @@ import type {
 } from './agent.js';
 
 import type {
+  AgentId,
+  Timestamp,
   OperationResult,
   ExecutionResult,
   InitializationResult,
   CleanupResult,
   EventProcessingResult,
-  AgentStateTransitionResult,
 } from './helpers.js';
+
+import type {
+  AgentStateTransitionResult,
+} from './results.js';
 
 import type {
   UnifiedContext,
@@ -474,9 +477,9 @@ export interface AgentCapabilityMixin {
   version: string;
   dependencies?: string[];
   conflicts?: string[];
-  install<T>(agent: T): T;
-  uninstall<T>(agent: T): T;
-  isCompatible<T>(agent: T): boolean;
+  install<T extends AgentCore>(agent: T): T;
+  uninstall<T extends AgentCore>(agent: T): T;
+  isCompatible<T extends AgentCore>(agent: T): boolean;
 }
 
 export interface ContextAwareMixin extends AgentCapabilityMixin {

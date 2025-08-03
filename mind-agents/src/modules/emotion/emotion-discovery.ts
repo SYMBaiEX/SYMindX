@@ -415,49 +415,22 @@ export class EmotionDiscovery {
   }
 
   /**
-   * Infer emotion category from name
+   * Infer emotion category from name (simplified to 5 core emotions)
    */
   private inferEmotionCategory(emotionName: string): string {
-    const basicEmotions = [
-      'happy',
-      'sad',
-      'angry',
-      'fearful',
-      'surprised',
-      'disgusted',
-    ];
-    const complexEmotions = [
-      'nostalgic',
-      'melancholic',
-      'euphoric',
-      'serene',
-      'anxious',
-    ];
-    const socialEmotions = [
-      'empathetic',
-      'envious',
-      'grateful',
-      'guilty',
-      'proud',
-    ];
-    const cognitiveEmotions = [
-      'curious',
-      'confused',
-      'confident',
-      'frustrated',
-      'satisfied',
-    ];
+    const coreEmotions = {
+      'happy': 'basic',
+      'sad': 'basic', 
+      'angry': 'basic',
+      'confident': 'cognitive',
+      'neutral': 'basic'
+    };
 
-    if (basicEmotions.includes(emotionName)) return 'basic';
-    if (complexEmotions.includes(emotionName)) return 'complex';
-    if (socialEmotions.includes(emotionName)) return 'social';
-    if (cognitiveEmotions.includes(emotionName)) return 'cognitive';
-
-    return 'basic'; // default
+    return coreEmotions[emotionName as keyof typeof coreEmotions] || 'basic';
   }
 
   /**
-   * Get default triggers for common emotions
+   * Get default triggers for 5 core emotions
    */
   private getDefaultTriggers(emotionName: string): string[] {
     const triggerMap: Record<string, string[]> = {
@@ -467,41 +440,46 @@ export class EmotionDiscovery {
         'positive_feedback',
         'praise',
         'victory',
+        'joy',
+        'celebration',
+        'good_news'
       ],
-      sad: ['failure', 'loss', 'rejection', 'disappointment', 'separation'],
-      angry: ['frustration', 'injustice', 'blocking', 'insult', 'betrayal'],
-      anxious: ['uncertainty', 'threat', 'pressure', 'unknown', 'deadline'],
+      sad: [
+        'failure', 
+        'loss', 
+        'rejection', 
+        'disappointment', 
+        'separation',
+        'grief',
+        'loneliness'
+      ],
+      angry: [
+        'frustration', 
+        'injustice', 
+        'blocking', 
+        'insult', 
+        'betrayal',
+        'offense',
+        'irritation'
+      ],
       confident: [
         'success',
         'mastery',
         'recognition',
         'accomplishment',
         'validation',
+        'competence',
+        'self_assurance'
       ],
-      curious: ['novelty', 'mystery', 'learning', 'exploration', 'question'],
-      proud: [
-        'achievement',
-        'recognition',
-        'success',
-        'accomplishment',
-        'validation',
+      neutral: [
+        'baseline', 
+        'calm', 
+        'default', 
+        'steady', 
+        'balanced',
+        'normal',
+        'stable'
       ],
-      empathetic: [
-        'others_emotion',
-        'suffering',
-        'connection',
-        'understanding',
-        'caring',
-      ],
-      confused: [
-        'complexity',
-        'ambiguity',
-        'contradiction',
-        'uncertainty',
-        'overload',
-      ],
-      nostalgic: ['memory', 'past', 'reminiscence', 'childhood', 'tradition'],
-      neutral: ['baseline', 'calm', 'default', 'steady', 'balanced'],
     };
 
     return triggerMap[emotionName] || ['general_trigger'];

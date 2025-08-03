@@ -170,10 +170,7 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
 
   async initializeWithAgent(agent: Agent): Promise<void> {
     this.agent = agent;
-    this.registerDefaultTools();
-    this.registerDefaultResources();
-    this.registerDefaultPrompts();
-
+    // Note: Default tools/resources/prompts are now provided by the skills system
     runtimeLogger.info(
       `🎯 MCP Server Manager initialized for agent: ${agent.name}`
     );
@@ -791,6 +788,8 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
     };
   }
 
+  // Default tools/resources/prompts removed - now provided by skills system
+  /*
   private registerDefaultTools(): void {
     if (!this.agent) return;
 
@@ -1268,7 +1267,9 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
       });
     }
   }
+  */
 
+  /*
   private registerDefaultResources(): void {
     // Agent configuration resource
     this.registerResource({
@@ -1520,7 +1521,9 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
       metadata: { cacheable: false },
     });
   }
+  */
 
+  /*
   private registerDefaultPrompts(): void {
     // System prompt
     this.registerPrompt({
@@ -1763,6 +1766,7 @@ export class MCPServerManager extends EventEmitter implements MCPServer {
       metadata: { category: 'system' },
     });
   }
+  */
 
   // Public API methods
   registerTool(tool: MCPServerTool): void {

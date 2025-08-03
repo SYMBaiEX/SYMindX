@@ -193,6 +193,15 @@ import { defaultXAIConfig, createXAIPortal } from './xai/index';
 // Export base portal
 export { BasePortal } from './base-portal';
 
+// Export streamlined portal manager
+export { 
+  StreamlinedPortalManager, 
+  createStreamlinedPortalManager,
+  StreamlinedProvider,
+  defaultStreamlinedConfig
+} from './streamlined-portal-manager';
+export type { StreamlinedPortalConfig } from './streamlined-portal-manager';
+
 // Portal factory type
 export type PortalFactory = (config: PortalConfig) => Portal;
 
@@ -217,10 +226,18 @@ export class PortalRegistry {
    * Register default portals
    */
   private registerDefaultPortals(): void {
-    // Original portals
+    // Top 5 streamlined portals (recommended)
     this.register('openai', createOpenAIPortal);
-    this.register('groq', createGroqPortal);
     this.register('anthropic', createAnthropicPortal);
+    this.register('groq', createGroqPortal);
+    this.register('google-generative', (config: PortalConfig) =>
+      createGoogleGenerativePortal(config as GoogleGenerativeConfig)
+    );
+    this.register('ollama', (config: PortalConfig) =>
+      createOllamaPortal(config as OllamaConfig)
+    );
+
+    // Legacy portals (for backward compatibility)
     this.register('xai', createXAIPortal);
     this.register('openrouter', createOpenRouterPortal);
     this.register('kluster.ai', createKlusterAiPortal);
@@ -568,6 +585,21 @@ export function initializePortals(): PortalRegistry {
     }
   );
   return registry;
+}
+
+/**
+ * Create streamlined portal manager with smart defaults
+ * This is the recommended way to use the portal system
+ */
+export function createStreamlinedPortals(overrides?: Partial<StreamlinedPortalConfig>): StreamlinedPortalManager {
+  const { createStreamlinedPortalManager, defaultStreamlinedConfig } = require('./streamlined-portal-manager');
+  
+  const config = {
+    ...defaultStreamlinedConfig,
+    ...overrides
+  };
+  
+  return createStreamlinedPortalManager(config);
 }
 
 // Export portal types for external use

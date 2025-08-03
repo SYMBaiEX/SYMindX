@@ -122,6 +122,32 @@ export interface TelegramConfig extends ExtensionConfig {
   rateLimits?: Record<TelegramActionType, TelegramRateLimit>;
   rateLimitBuffer?: number; // milliseconds to wait between actions
   sessionPersistence?: TelegramSessionConfig;
+  settings?: TelegramSettings;
+}
+
+/**
+ * Telegram extension settings interface
+ */
+export interface TelegramSettings {
+  token: string;
+  allowedUsers: string[];
+  commandPrefix: string;
+  messageHandlers: Array<(message: any) => void>;
+  commandHandlers: Array<(command: string, args: string[]) => void>;
+  errorHandlers: Array<(error: Error) => void>;
+  chatWhitelist: string[];
+  chatBlacklist: string[];
+  enableLogging: boolean;
+  responseTimeout: number;
+  rateLimitPerUser: number;
+  rateLimitWindow: number;
+  maxMessageLength: number;
+  enableMarkdown: boolean;
+  enableInlineMode: boolean;
+  enableWebhook: boolean;
+  webhookPath: string;
+  webhookPort: number;
+  [key: string]: unknown; // Index signature for BaseConfig compatibility
 }
 
 export interface TelegramRateLimit {
@@ -274,4 +300,21 @@ export interface TelegramSticker {
   emoji?: string;
   setName?: string;
   fileSize?: number;
+}
+
+/**
+ * Extended Telegram group interface for group management
+ */
+export interface TelegramGroup {
+  id: string;
+  title: string;
+  type: 'group' | 'supergroup';
+  memberCount?: number;
+  description?: string;
+  inviteLink?: string;
+  permissions?: Record<string, boolean>;
+  lastActivity?: Date;
+  participationLevel: 'active' | 'moderate' | 'passive';
+  topics?: string[];
+  moderators?: string[];
 }

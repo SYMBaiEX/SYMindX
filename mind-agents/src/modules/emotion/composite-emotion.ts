@@ -1,3 +1,4 @@
+import { runtimeLogger } from '@/utils';
 import {
   EmotionState,
   EmotionRecord,
@@ -20,18 +21,12 @@ import {
   StandardLogContext,
 } from '../../utils/standard-logging.js';
 
-// Import all emotion types
+// Import 5 core emotion types
 import { AngryEmotion } from './angry/index.js';
-import { AnxiousEmotion } from './anxious/index.js';
 import { BaseEmotion } from './base-emotion.js';
 import { ConfidentEmotion } from './confident/index.js';
-import { ConfusedEmotion } from './confused/index.js';
-import { CuriousEmotion } from './curious/index.js';
-import { EmpatheticEmotion } from './empathetic/index.js';
 import { HappyEmotion } from './happy/index.js';
 import { NeutralEmotion } from './neutral/index.js';
-import { NostalgicEmotion } from './nostalgic/index.js';
-import { ProudEmotion } from './proud/index.js';
 import { SadEmotion } from './sad/index.js';
 
 export class CompositeEmotionModule implements EmotionModule {
@@ -46,47 +41,62 @@ export class CompositeEmotionModule implements EmotionModule {
   private logger = standardLoggers.emotion;
   private loggingPatterns = createStandardLoggingPatterns(this.logger);
 
-  // Continuous emotion space tracking
+  // Enhanced emotion system features
   private _currentCoordinates = { valence: 0, arousal: 0, dominance: 0 };
   private _blendedState: EmotionBlend | null = null;
   private _personalityTraits?: PersonalityTraits;
-  private _enableBlending: boolean = false;
-  private _blendSmoothing: number = 0.3;
+  private _enableBlending: boolean = true; // Enable by default
+  private _blendSmoothing: number = 0.7; // Improved smoothing
   private _contextSensitivity: number = 0.5;
+  private _lastUpdate: Date = new Date();
+  
+  // Enhanced decay management
+  private _decayRate: number = 0.02;
+  private _decayVariation: boolean = true;
+  
+  // Transition management
+  private _transitionInProgress: boolean = false;
+  private _transitionSpeed: number = 0.5;
 
   constructor(
     config: AdvancedEmotionConfig = {
       type: EmotionModuleType.COMPOSITE,
       sensitivity: 0.5,
-      decayRate: 0.1,
-      transitionSpeed: 0.3,
+      decayRate: 0.02,
+      transitionSpeed: 0.5,
     }
   ) {
-    this.config = config;
+    this.config = {
+      type: EmotionModuleType.COMPOSITE,
+      sensitivity: 0.5,
+      decayRate: 0.02,
+      transitionSpeed: 0.5,
+      enableBlending: true,
+      blendSmoothing: 0.7,
+      contextSensitivity: 0.5,
+      ...config
+    };
 
     // Initialize Map to avoid Bun class property initialization issues
     this.emotions = new Map();
 
-    // CompositeEmotion initialized with configuration
-    if (config.personalityTraits !== undefined) {
-      this._personalityTraits = config.personalityTraits;
-    }
-    this._enableBlending = config.enableBlending ?? false;
-    this._blendSmoothing = config.blendSmoothing ?? 0.3;
-    this._contextSensitivity = config.contextSensitivity ?? 0.5;
+    // Enhanced configuration
+    this._personalityTraits = this.config.personalityTraits;
+    this._enableBlending = this.config.enableBlending ?? true;
+    this._blendSmoothing = this.config.blendSmoothing ?? 0.7;
+    this._contextSensitivity = this.config.contextSensitivity ?? 0.5;
+    this._decayRate = this.config.decayRate ?? 0.02;
+    this._transitionSpeed = this.config.transitionSpeed ?? 0.5;
 
-    // Initialize all emotion modules with default configs
-    this.emotions.set('happy', new HappyEmotion({}));
-    this.emotions.set('sad', new SadEmotion({}));
-    this.emotions.set('angry', new AngryEmotion({}));
-    this.emotions.set('anxious', new AnxiousEmotion({}));
-    this.emotions.set('confident', new ConfidentEmotion({}));
-    this.emotions.set('nostalgic', new NostalgicEmotion({}));
-    this.emotions.set('empathetic', new EmpatheticEmotion({}));
-    this.emotions.set('curious', new CuriousEmotion({}));
-    this.emotions.set('proud', new ProudEmotion({}));
-    this.emotions.set('confused', new ConfusedEmotion({}));
-    this.emotions.set('neutral', new NeutralEmotion({}));
+    // Initialize 5 core emotion modules with personality traits
+    const emotionConfig = { personalityTraits: this._personalityTraits };
+    this.emotions.set('happy', new HappyEmotion(emotionConfig));
+    this.emotions.set('sad', new SadEmotion(emotionConfig));
+    this.emotions.set('angry', new AngryEmotion(emotionConfig));
+    this.emotions.set('confident', new ConfidentEmotion(emotionConfig));
+    this.emotions.set('neutral', new NeutralEmotion(emotionConfig));
+    
+    runtimeLogger.info('🎭 Enhanced 5-Emotion System initialized with blending and decay management');
   }
 
   get current(): string {
@@ -111,84 +121,85 @@ export class CompositeEmotionModule implements EmotionModule {
     eventType: string,
     context?: Record<string, unknown>
   ): EmotionResult {
-    // Processing emotional event
+    const startTime = Date.now();
+    
+    // Apply enhanced decay to all emotions first
+    this.applyEnhancedDecay();
 
     // Process event through all emotions
     const emotionResponses: Array<{
       name: string;
       emotion: BaseEmotion;
       intensity: number;
+      triggered: boolean;
     }> = [];
 
     for (const [name, emotion] of Array.from(this.emotions.entries())) {
       const result = emotion.processEvent(eventType, context);
-      if (result.state.intensity > 0.1) {
-        // Only consider emotions with meaningful intensity
-        emotionResponses.push({
-          name,
-          emotion,
-          intensity: result.state.intensity,
-        });
-      }
+      emotionResponses.push({
+        name,
+        emotion,
+        intensity: result.state.intensity,
+        triggered: result.changed
+      });
     }
 
-    if (this._enableBlending && emotionResponses.length > 1) {
-      // Blend multiple emotions in continuous space
-      this.blendEmotions(emotionResponses);
-    } else {
-      // Traditional dominant emotion approach
-      if (emotionResponses.length > 0) {
-        emotionResponses.sort((a, b) => b.intensity - a.intensity);
-        const dominant = emotionResponses[0];
+    const previousEmotion = this._current;
+    const previousIntensity = this._intensity;
 
-        // Transition to the dominant emotion
-        if (
-          dominant &&
-          (dominant.name !== this._current ||
-            Math.abs(dominant.intensity - this._intensity) > 0.1)
-        ) {
+    if (this._enableBlending) {
+      // Enhanced blending with multiple active emotions
+      const activeEmotions = emotionResponses.filter(r => r.intensity >= 0.2);
+      if (activeEmotions.length > 1) {
+        this.blendEmotions(activeEmotions);
+      } else if (activeEmotions.length === 1) {
+        const dominant = activeEmotions[0];
+        this.transitionToEmotion(dominant.name, dominant.intensity);
+        this._blendedState = null;
+      } else {
+        this.transitionToEmotion('neutral', 0);
+        this._blendedState = null;
+      }
+    } else {
+      // Traditional dominant emotion approach with enhanced transitions
+      const significantEmotions = emotionResponses.filter(r => r.intensity > 0.1);
+      if (significantEmotions.length > 0) {
+        significantEmotions.sort((a, b) => b.intensity - a.intensity);
+        const dominant = significantEmotions[0];
+        
+        if (dominant && this.shouldTransition(dominant.name, dominant.intensity)) {
           this.transitionToEmotion(dominant.name, dominant.intensity);
         }
       } else {
-        // No strong emotions, gradually return to neutral
-        if (this._current !== 'neutral') {
-          this._intensity *= 0.9;
-          if (this._intensity < 0.1) {
-            this.transitionToEmotion('neutral', 0);
-          }
-        }
+        // Enhanced neutral transition
+        this.transitionToNeutral();
       }
+    }
+
+    // Enhanced transition tracking
+    const transitions = this.trackTransitions(previousEmotion, previousIntensity);
+    
+    // Record significant changes in history
+    if (this.isSignificantChange(previousEmotion, previousIntensity)) {
+      this.recordEmotionHistory(eventType, context);
     }
 
     const state = this.getCurrentState();
-    const transitions: EmotionTransition[] = [];
-
-    // Check if we had any transitions
-    if (this._history.length > 0) {
-      const lastEntry = this._history[this._history.length - 1];
-      if (lastEntry && lastEntry.emotion !== this._current) {
-        transitions.push({
-          from: lastEntry.emotion,
-          to: this._current,
-          duration: 300, // Default transition duration
-          easing: 'ease-in-out',
-        });
-      }
-    }
+    const processingTime = Date.now() - startTime;
 
     return {
       state,
-      changed: transitions.length > 0 || emotionResponses.length > 0,
-      previousEmotion:
-        transitions.length > 0 ? transitions[0]?.from : undefined,
+      changed: this.isSignificantChange(previousEmotion, previousIntensity),
+      previousEmotion: previousEmotion !== this._current ? previousEmotion : undefined,
       transitions,
-      modifiers: undefined,
-      blendResult: this._blendedState
-        ? this.convertToBlendResult(this._blendedState)
-        : undefined,
+      modifiers: this.getEnhancedModifiers(),
+      blendResult: this._blendedState ? this.convertToBlendResult(this._blendedState) : undefined,
       metadata: {
-        processingTime: 0,
+        processingTime,
         triggersProcessed: 1,
+        emotionsActivated: emotionResponses.filter(r => r.triggered).length,
+        blendingEnabled: this._enableBlending,
+        decayApplied: true
       },
     };
   }
@@ -474,6 +485,289 @@ export class CompositeEmotionModule implements EmotionModule {
       personalityTraits: this._personalityTraits,
       contextSensitivity: this._contextSensitivity,
     };
+  }
+
+  // Influence response generation based on current emotional state
+  influenceResponse(response: string, context?: Record<string, any>): string {
+    const currentEmotion = this.emotions.get(this._current);
+    if (!currentEmotion || this._intensity < 0.1) {
+      return response; // No significant emotional influence
+    }
+
+    // Apply emotion-specific response modifications
+    switch (this._current) {
+      case 'happy':
+        return this.applyHappyInfluence(response, this._intensity);
+      case 'sad':
+        return this.applySadInfluence(response, this._intensity);
+      case 'angry':
+        return this.applyAngryInfluence(response, this._intensity);
+      case 'confident':
+        return this.applyConfidentInfluence(response, this._intensity);
+      case 'neutral':
+      default:
+        return response;
+    }
+  }
+
+  private applyHappyInfluence(response: string, intensity: number): string {
+    if (intensity > 0.7) {
+      // High happiness - add enthusiasm and positivity
+      return response + ' 😊';
+    } else if (intensity > 0.4) {
+      // Moderate happiness - add positive tone
+      return response.replace(/\.$/, '!');
+    }
+    return response;
+  }
+
+  private applySadInfluence(response: string, intensity: number): string {
+    if (intensity > 0.7) {
+      // High sadness - more subdued, empathetic tone
+      return response.replace(/!+/g, '.').toLowerCase();
+    } else if (intensity > 0.4) {
+      // Moderate sadness - slightly more reserved
+      return response.replace(/!+/g, '.');
+    }
+    return response;
+  }
+
+  private applyAngryInfluence(response: string, intensity: number): string {
+    if (intensity > 0.7) {
+      // High anger - more direct and assertive
+      return response.toUpperCase();
+    } else if (intensity > 0.4) {
+      // Moderate anger - firm but controlled
+      return response.replace(/\./g, '!');
+    }
+    return response;
+  }
+
+  private applyConfidentInfluence(response: string, intensity: number): string {
+    if (intensity > 0.7) {
+      // High confidence - assertive and decisive
+      return response.replace(/maybe|perhaps|might/gi, 'will');
+    } else if (intensity > 0.4) {
+      // Moderate confidence - more certain tone
+      return response.replace(/I think/gi, 'I believe');
+    }
+    return response;
+  }
+
+  // Influence decision-making based on emotional state
+  influenceDecision(options: any[], context?: Record<string, any>): any[] {
+    if (this._intensity < 0.1) {
+      return options; // No significant emotional influence
+    }
+
+    const modifiers = this.getEmotionModifier();
+    
+    return options.map(option => ({
+      ...option,
+      emotionalWeight: this.calculateEmotionalWeight(option, modifiers),
+      emotionalContext: {
+        emotion: this._current,
+        intensity: this._intensity,
+        modifiers
+      }
+    })).sort((a, b) => (b.emotionalWeight || 0) - (a.emotionalWeight || 0));
+  }
+
+  private calculateEmotionalWeight(option: any, modifiers: Record<string, number>): number {
+    let weight = 1.0;
+
+    // Apply emotion-specific decision biases
+    switch (this._current) {
+      case 'happy':
+        // Happy emotions favor social and creative options
+        if (option.type === 'social' || option.type === 'creative') {
+          weight *= 1.3;
+        }
+        break;
+      case 'sad':
+        // Sad emotions favor introspective or supportive options
+        if (option.type === 'introspective' || option.type === 'supportive') {
+          weight *= 1.2;
+        }
+        break;
+      case 'angry':
+        // Angry emotions favor direct action options
+        if (option.type === 'action' || option.type === 'direct') {
+          weight *= 1.4;
+        }
+        break;
+      case 'confident':
+        // Confident emotions favor challenging or leadership options
+        if (option.type === 'challenge' || option.type === 'leadership') {
+          weight *= 1.3;
+        }
+        break;
+    }
+
+    // Apply intensity scaling
+    weight = 1.0 + (weight - 1.0) * this._intensity;
+
+    return weight;
+  }
+
+  // Enhanced decay management
+  private applyEnhancedDecay(): void {
+    const timeSinceUpdate = (Date.now() - this._lastUpdate.getTime()) / 60000; // minutes
+    
+    for (const [name, emotion] of this.emotions) {
+      let decayRate = this._decayRate;
+      
+      if (this._decayVariation) {
+        // Different emotions decay at different rates
+        const decayRates = {
+          'happy': 0.8,    // Happy fades relatively quickly
+          'sad': 1.2,      // Sad lingers longer
+          'angry': 1.1,    // Angry fades moderately
+          'confident': 0.9, // Confident fades slowly
+          'neutral': 0.5   // Neutral is stable
+        };
+        decayRate *= decayRates[name as keyof typeof decayRates] || 1.0;
+      }
+      
+      // Apply personality-based decay modulation
+      if (this._personalityTraits) {
+        decayRate *= this.getPersonalityDecayModifier(name);
+      }
+      
+      const currentIntensity = emotion.intensity;
+      const newIntensity = Math.max(0, currentIntensity - (decayRate * timeSinceUpdate));
+      emotion.setIntensity(newIntensity);
+    }
+    
+    this._lastUpdate = new Date();
+  }
+
+  private getPersonalityDecayModifier(emotionName: string): number {
+    if (!this._personalityTraits) return 1.0;
+    
+    const traits = this._personalityTraits;
+    let modifier = 1.0;
+    
+    // High neuroticism makes emotions linger longer
+    if (traits.neuroticism > 0.5) {
+      modifier *= 1 - (traits.neuroticism - 0.5) * 0.5;
+    }
+    
+    // Emotion-specific personality influences
+    switch (emotionName) {
+      case 'happy':
+        if (traits.extraversion > 0.5) modifier *= 0.8;
+        break;
+      case 'sad':
+        if (traits.neuroticism > 0.5) modifier *= 0.7;
+        break;
+      case 'angry':
+        if (traits.agreeableness < 0.5) modifier *= 0.8;
+        break;
+      case 'confident':
+        if (traits.conscientiousness > 0.5) modifier *= 0.9;
+        break;
+    }
+    
+    return modifier;
+  }
+
+  private shouldTransition(emotionName: string, intensity: number): boolean {
+    return emotionName !== this._current || Math.abs(intensity - this._intensity) > 0.1;
+  }
+
+  private transitionToNeutral(): void {
+    if (this._current !== 'neutral') {
+      this._intensity *= 0.9;
+      if (this._intensity < 0.1) {
+        this.transitionToEmotion('neutral', 0);
+      }
+    }
+  }
+
+  private trackTransitions(previousEmotion: string, previousIntensity: number): EmotionTransition[] {
+    const transitions: EmotionTransition[] = [];
+    
+    if (previousEmotion !== this._current) {
+      const duration = this.calculateTransitionDuration(previousEmotion, this._current);
+      
+      transitions.push({
+        from: previousEmotion,
+        to: this._current,
+        duration,
+        easing: 'ease-in-out',
+        intensity: {
+          from: previousIntensity,
+          to: this._intensity
+        }
+      });
+      
+      this._transitionInProgress = true;
+      setTimeout(() => {
+        this._transitionInProgress = false;
+      }, duration);
+    }
+    
+    return transitions;
+  }
+
+  private calculateTransitionDuration(fromEmotion: string, toEmotion: string): number {
+    const baseTransitionTime = 300; // ms
+    const speedFactor = this._transitionSpeed;
+    
+    // Calculate emotional distance
+    const fromEmotionObj = this.emotions.get(fromEmotion);
+    const toEmotionObj = this.emotions.get(toEmotion);
+    
+    if (!fromEmotionObj || !toEmotionObj) {
+      return baseTransitionTime * (1 / speedFactor);
+    }
+    
+    const distance = fromEmotionObj.distanceTo(toEmotionObj);
+    const distanceFactor = Math.min(2.0, 1 + distance);
+    
+    return Math.round(baseTransitionTime * distanceFactor * (1 / speedFactor));
+  }
+
+  private isSignificantChange(previousEmotion: string, previousIntensity: number): boolean {
+    return previousEmotion !== this._current || Math.abs(previousIntensity - this._intensity) >= 0.1;
+  }
+
+  private recordEmotionHistory(trigger: string, context?: Record<string, unknown>): void {
+    this._history.push({
+      emotion: this._current,
+      intensity: this._intensity,
+      timestamp: new Date(),
+      duration: this._history.length > 0 ? 
+        Date.now() - this._history[this._history.length - 1].timestamp.getTime() : 0,
+      triggers: [trigger],
+      context: context ? { type: context.type, source: context.source } : undefined
+    });
+    
+    // Keep history manageable
+    if (this._history.length > 100) {
+      this._history = this._history.slice(-50);
+    }
+  }
+
+  private getEnhancedModifiers() {
+    const currentEmotion = this.emotions.get(this._current);
+    if (!currentEmotion) return [];
+    
+    const baseModifiers = currentEmotion.getEmotionModifier();
+    
+    return Object.entries(baseModifiers).map(([key, value]) => ({
+      type: 'emotion' as const,
+      factor: value * this._intensity,
+      duration: -1,
+      reason: `${this._current}_emotion`,
+      metadata: {
+        emotion: this._current,
+        intensity: this._intensity,
+        modifier: key,
+        blended: this._blendedState !== null
+      }
+    }));
   }
 
   // Convert internal blend to public blend result

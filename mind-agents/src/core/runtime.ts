@@ -7,7 +7,6 @@ import {
   AgentRuntime,
   EventBus,
   ModuleRegistry,
-  RuntimeConfig,
   AgentEvent,
   AgentAction,
   ActionStatus,
@@ -39,6 +38,7 @@ import {
 } from '../types/character';
 import { ExtensionConfig } from '../types/common';
 import {
+  RuntimeConfiguration as RuntimeConfig,
   RuntimeState,
   RuntimeStatus,
   RuntimeMetrics,
@@ -81,7 +81,6 @@ import { globalQueue } from '../utils/AsyncQueue';
 import { AutonomousEngine, AutonomousEngineConfig } from './autonomous-engine';
 import { DecisionEngine } from './decision-engine';
 import { SimpleEventBus } from './event-bus';
-import { OptimizedEventBus } from './OptimizedEventBus';
 import { ExtensionLoader, createExtensionLoader } from './extension-loader';
 import { MultiAgentManager } from './multi-agent-manager';
 import { SYMindXModuleRegistry } from './registry';
@@ -144,16 +143,8 @@ export class SYMindXRuntime implements AgentRuntime {
   constructor(config: RuntimeConfig) {
     this.config = config;
 
-    // Use optimized event bus for better performance
-    const useOptimizedEventBus =
-      config.performance?.useOptimizedEventBus ?? true;
-    this.eventBus = useOptimizedEventBus
-      ? new OptimizedEventBus({
-          maxEvents: config.performance?.maxEvents || 10000,
-          compressionEnabled: config.performance?.compression ?? true,
-          batchingEnabled: config.performance?.batching ?? true,
-        })
-      : new SimpleEventBus();
+    // Use simple event bus for clean architecture
+    this.eventBus = new SimpleEventBus();
 
     this.registry = new SYMindXModuleRegistry();
 

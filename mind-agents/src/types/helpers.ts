@@ -9,6 +9,16 @@ import type { BaseConfig, GenericData, Context, Metadata } from './common';
 import type { CommunicationStyle } from './communication';
 
 /**
+ * Basic ID and timestamp types
+ */
+export type AgentId = string;
+export type MemoryId = string;
+export type EventId = string;
+export type ModuleId = string;
+export type CorrelationId = string;
+export type Timestamp = Date;
+
+/**
  * Operation Result Types
  * These replace void returns with meaningful result types
  */
@@ -318,22 +328,16 @@ export interface LifecycleEventResult {
 export type Brand<T, K> = T & { __brand: K };
 
 /**
- * Simplified ID types (previously branded)
+ * Additional ID types (previously branded)
  * These are now plain strings for easier assignment and compatibility
  */
-export type AgentId = string;
-export type MemoryId = string;
-export type EventId = string;
 export type ExtensionId = string;
 export type PortalId = string;
-export type ModuleId = string;
 export type SessionId = string;
-export type CorrelationId = string;
 
 /**
- * Simplified timestamp types (previously branded)
+ * Additional timestamp types (previously branded)
  */
-export type Timestamp = Date;
 export type Duration = number;
 export type Milliseconds = number;
 
@@ -841,3 +845,28 @@ export interface FeedbackEntry {
 export type { PerformanceMetrics } from './results';
 
 export type { ModuleManifest } from './index';
+/**
+ * Validation Result Types
+ */
+export interface ValidationResult {
+  success: boolean;
+  valid?: boolean; // For compatibility
+  errors: ValidationError[];
+  warnings: ValidationWarning[];
+  timestamp: Date;
+  metadata?: Metadata;
+}
+
+export interface ValidationError {
+  field: string;
+  message: string;
+  code: string;
+  severity: 'error' | 'warning' | 'info';
+}
+
+export interface ValidationWarning {
+  field: string;
+  message: string;
+  code: string;
+  severity: 'warning' | 'info';
+}

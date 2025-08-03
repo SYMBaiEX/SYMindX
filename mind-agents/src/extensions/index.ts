@@ -7,10 +7,13 @@
 import { Extension, RuntimeConfig } from '../types/agent';
 import { runtimeLogger } from '../utils/logger';
 
-import { ApiExtension } from './api/index';
-import { MCPServerExtension } from './mcp-server/index';
+import { createAPIExtension } from './api/index';
+import { createMCPServerExtension } from './mcp-server/index';
 import { createRuneLiteExtension } from './runelite/index';
 import { createTelegramExtension } from './telegram/index';
+import { createCommunicationExtension } from './communication/index';
+import { createTwitterExtension } from './twitter/index';
+import { createSlackExtension } from './slack/index';
 
 export async function registerExtensions(
   config: RuntimeConfig
@@ -23,34 +26,24 @@ export async function registerExtensions(
       const apiConfig = {
         enabled: true,
         settings: {
-          port:
-            typeof config.extensions.api?.settings === 'object' &&
-            config.extensions.api.settings &&
-            'port' in config.extensions.api.settings
-              ? (config.extensions.api.settings.port as number)
-              : parseInt(process.env['API_PORT'] || '8000'),
-          host:
-            typeof config.extensions.api?.settings === 'object' &&
-            config.extensions.api.settings &&
-            'host' in config.extensions.api.settings
-              ? (config.extensions.api.settings.host as string)
-              : process.env['API_HOST'] || 'localhost',
+          port: config.extensions.api?.port || parseInt(process.env['API_PORT'] || '8000'),
+          host: config.extensions.api?.host || process.env['API_HOST'] || 'localhost',
           cors: {
-            enabled: true,
+            enabled: config.extensions.api?.cors !== false,
             origins: ['*'],
             methods: ['GET', 'POST', 'PUT', 'DELETE'],
             headers: ['Content-Type', 'Authorization'],
             credentials: false,
           },
           auth: {
-            enabled: false,
-            type: 'bearer' as const,
-            secret: 'default-secret',
+            enabled: config.extensions.api?.authentication?.type !== 'none',
+            type: (config.extensions.api?.authentication?.type as 'bearer' | 'apikey') || 'bearer',
+            secret: config.extensions.api?.authentication?.key || 'default-secret',
           },
           rateLimit: {
-            enabled: true,
-            windowMs: 60000,
-            maxRequests: 100,
+            enabled: !!config.extensions.api?.rateLimiting,
+            windowMs: config.extensions.api?.rateLimiting?.windowMs || 60000,
+            maxRequests: config.extensions.api?.rateLimiting?.maxRequests || 100,
           },
           websocket: {
             enabled: true,
@@ -69,10 +62,9 @@ export async function registerExtensions(
             actions: true,
             health: true,
           },
-          ...config.extensions.api,
         },
       };
-      const apiExtension = new ApiExtension(apiConfig);
+      const apiExtension = createAPIExtension(apiConfig);
       extensions.push(apiExtension);
       runtimeLogger.info('✅ API extension registered');
     } catch (error) {
@@ -100,25 +92,27 @@ export async function registerExtensions(
     try {
       const telegramConfig = {
         enabled: true,
-        token:
-          (typeof config.extensions.telegram.botToken === 'string'
-            ? config.extensions.telegram.botToken
-            : '') ||
-          process.env['TELEGRAM_BOT_TOKEN'] ||
-          '',
-        allowedUsers: Array.isArray(config.extensions.telegram.allowedUsers)
-          ? config.extensions.telegram.allowedUsers
-          : [],
-        commandPrefix:
-          typeof config.extensions.telegram.commandPrefix === 'string'
-            ? config.extensions.telegram.commandPrefix
-            : '/',
-        maxMessageLength:
-          typeof config.extensions.telegram.maxMessageLength === 'number'
-            ? config.extensions.telegram.maxMessageLength
-            : 4096,
-        enableLogging: config.extensions.telegram.enableLogging !== false,
-        settings: {},
+        token: config.extensions.telegram.botToken || process.env['TELEGRAM_BOT_TOKEN'] || '',
+        settings: {
+          token: config.extensions.telegram.botToken || process.env['TELEGRAM_BOT_TOKEN'] || '',
+          allowedUsers: config.extensions.telegram.allowedUsers || [],
+          commandPrefix: '/',
+          messageHandlers: [],
+          commandHandlers: [],
+          errorHandlers: [],
+          chatWhitelist: [],
+          chatBlacklist: [],
+          enableLogging: true,
+          responseTimeout: 30000,
+          rateLimitPerUser: 10,
+          rateLimitWindow: 60000,
+          maxMessageLength: 4096,
+          enableMarkdown: true,
+          enableInlineMode: false,
+          enableWebhook: false,
+          webhookPath: '/telegram-webhook',
+          webhookPort: 3001,
+        },
         priority: 1,
         dependencies: [],
         capabilities: [],
@@ -130,7 +124,7 @@ export async function registerExtensions(
         );
       } else {
         const telegramExtension = createTelegramExtension(telegramConfig);
-        extensions.push(telegramExtension);
+        extensions.push(telegramExtension as unknown as Extension);
         runtimeLogger.info('✅ Telegram extension registered');
       }
     } catch (error) {
@@ -159,24 +153,40 @@ export async function registerExtensions(
       const runeliteConfig = {
         enabled: true,
         settings: {
-          port:
-            typeof config.extensions.runelite.settings === 'object' &&
-            config.extensions.runelite.settings &&
-            'port' in config.extensions.runelite.settings
-              ? (config.extensions.runelite.settings.port as number)
-              : 8081,
-          events:
-            typeof config.extensions.runelite.settings === 'object' &&
-            config.extensions.runelite.settings &&
-            'events' in config.extensions.runelite.settings &&
-            Array.isArray(config.extensions.runelite.settings.events)
-              ? config.extensions.runelite.settings.events
-              : [],
-          ...(typeof config.extensions.runelite.settings === 'object' &&
-          config.extensions.runelite.settings
-            ? config.extensions.runelite.settings
-            : {}),
+          port: config.extensions.runelite.port || 8081,
+          host: config.extensions.runelite.host || 'localhost',
+          events: [],
+          reconnectDelay: 5000,
+          heartbeatInterval: 30000,
+          commandTimeout: 10000,
+          enableAutoReconnect: config.extensions.runelite.autoConnect !== false,
+          enableHeartbeat: true,
+          enableEventFiltering: true,
+          enableGameStateTracking: true,
+          enableAdvancedCommands: false,
+          enableSecurityValidation: true,
+          enableCompression: false,
+          enableBatching: false,
+          enableEventRecording: false,
+          enableMacroSystem: false,
+          enablePathfinding: false,
+          enableAutomation: false,
+          enablePluginBridge: false,
+          allowedOrigins: ['http://localhost'],
+          eventWhitelist: [],
+          eventBlacklist: [],
+          maxEventQueueSize: 1000,
+          eventBatchSize: 10,
+          eventBatchInterval: 1000,
+          compressionLevel: 6,
+          protocolVersion: '1.0',
+          capabilities: [],
+          pluginWhitelist: [],
+          automationSafety: {},
         },
+        priority: 1,
+        dependencies: [],
+        capabilities: [],
       };
       const runeliteExtension = createRuneLiteExtension(runeliteConfig);
       extensions.push(runeliteExtension as unknown as Extension);
@@ -242,7 +252,7 @@ export async function registerExtensions(
               : '/mcp',
         },
       };
-      const mcpServerExtension = new MCPServerExtension(mcpServerConfig);
+      const mcpServerExtension = createMCPServerExtension(mcpServerConfig);
       extensions.push(mcpServerExtension as unknown as Extension);
       runtimeLogger.info('✅ MCP Server extension registered');
     } catch (error) {
@@ -265,7 +275,170 @@ export async function registerExtensions(
     }
   }
 
-  // Communication extension removed - not configured in RuntimeConfig
+  // Register Communication extension if configured
+  const extensionsWithCommunication = config.extensions as RuntimeConfig['extensions'] & {
+    communication?: {
+      enabled?: boolean;
+      enableContextPersistence?: boolean;
+      enableStyleAdaptation?: boolean;
+      enableExpressionVariation?: boolean;
+      enableSkillsSystem?: boolean;
+    };
+  };
+
+  if (extensionsWithCommunication.communication?.enabled) {
+    try {
+      const communicationConfig = {
+        enabled: true,
+        settings: {},
+        priority: 1,
+        dependencies: [],
+        capabilities: [],
+        enableContextPersistence: extensionsWithCommunication.communication.enableContextPersistence ?? true,
+        enableStyleAdaptation: extensionsWithCommunication.communication.enableStyleAdaptation ?? true,
+        enableExpressionVariation: extensionsWithCommunication.communication.enableExpressionVariation ?? true,
+        enableSkillsSystem: extensionsWithCommunication.communication.enableSkillsSystem ?? true,
+      };
+      const communicationExtension = createCommunicationExtension(communicationConfig);
+      extensions.push(communicationExtension as unknown as Extension);
+      runtimeLogger.info('✅ Communication extension registered');
+    } catch (error) {
+      void error;
+      runtimeLogger.warn('⚠️ Failed to load Communication extension:', {
+        error:
+          error instanceof Error
+            ? {
+                code: error.name,
+                message: error.message,
+                ...(error.stack ? { stack: error.stack } : {}),
+                cause: undefined,
+              }
+            : {
+                code: 'UnknownError',
+                message: String(error),
+                cause: undefined,
+              },
+      });
+    }
+  }
+
+  // Register Slack extension if configured
+  const extensionsWithSlack = config.extensions as RuntimeConfig['extensions'] & {
+    slack?: {
+      enabled?: boolean;
+      botToken?: string;
+      appToken?: string;
+      signingSecret?: string;
+      channels?: string[];
+    };
+  };
+
+  if (extensionsWithSlack.slack?.enabled) {
+    try {
+      const slackConfig = {
+        enabled: true,
+        settings: {},
+        priority: 1,
+        dependencies: [],
+        capabilities: [],
+        botToken: extensionsWithSlack.slack.botToken || process.env['SLACK_BOT_TOKEN'] || '',
+        appToken: extensionsWithSlack.slack.appToken || process.env['SLACK_APP_TOKEN'] || '',
+        signingSecret: extensionsWithSlack.slack.signingSecret || process.env['SLACK_SIGNING_SECRET'] || '',
+        channels: extensionsWithSlack.slack.channels || [],
+        socketMode: !!extensionsWithSlack.slack.appToken,
+        enableThreading: true,
+        enableReactions: true,
+        autoJoinChannels: true,
+      };
+
+      if (!slackConfig.botToken) {
+        runtimeLogger.warn(
+          '⚠️ Slack extension enabled but no bot token provided'
+        );
+      } else {
+        const slackExtension = createSlackExtension(slackConfig);
+        extensions.push(slackExtension as unknown as Extension);
+        runtimeLogger.info('✅ Slack extension registered');
+      }
+    } catch (error) {
+      void error;
+      runtimeLogger.warn('⚠️ Failed to load Slack extension:', {
+        error:
+          error instanceof Error
+            ? {
+                code: error.name,
+                message: error.message,
+                ...(error.stack ? { stack: error.stack } : {}),
+                cause: undefined,
+              }
+            : {
+                code: 'UnknownError',
+                message: String(error),
+                cause: undefined,
+              },
+      });
+    }
+  }
+
+  // Register Twitter extension if configured
+  const extensionsWithTwitter = config.extensions as RuntimeConfig['extensions'] & {
+    twitter?: {
+      enabled?: boolean;
+      apiKey?: string;
+      apiKeySecret?: string;
+      accessToken?: string;
+      accessTokenSecret?: string;
+      bearerToken?: string;
+      username?: string;
+      autonomousMode?: boolean;
+    };
+  };
+
+  if (extensionsWithTwitter.twitter?.enabled) {
+    try {
+      const twitterConfig = {
+        enabled: true,
+        settings: {},
+        priority: 1,
+        dependencies: [],
+        capabilities: [],
+        apiKey: extensionsWithTwitter.twitter.apiKey || process.env['TWITTER_API_KEY'] || '',
+        apiKeySecret: extensionsWithTwitter.twitter.apiKeySecret || process.env['TWITTER_API_KEY_SECRET'] || '',
+        accessToken: extensionsWithTwitter.twitter.accessToken || process.env['TWITTER_ACCESS_TOKEN'] || '',
+        accessTokenSecret: extensionsWithTwitter.twitter.accessTokenSecret || process.env['TWITTER_ACCESS_TOKEN_SECRET'] || '',
+        bearerToken: extensionsWithTwitter.twitter.bearerToken || process.env['TWITTER_BEARER_TOKEN'] || '',
+        username: extensionsWithTwitter.twitter.username || process.env['TWITTER_USERNAME'] || '',
+        autonomousMode: extensionsWithTwitter.twitter.autonomousMode ?? false,
+      };
+
+      if (!twitterConfig.apiKey || !twitterConfig.apiKeySecret) {
+        runtimeLogger.warn(
+          '⚠️ Twitter extension enabled but missing API credentials'
+        );
+      } else {
+        const twitterExtension = createTwitterExtension(twitterConfig);
+        extensions.push(twitterExtension as unknown as Extension);
+        runtimeLogger.info('✅ Twitter extension registered');
+      }
+    } catch (error) {
+      void error;
+      runtimeLogger.warn('⚠️ Failed to load Twitter extension:', {
+        error:
+          error instanceof Error
+            ? {
+                code: error.name,
+                message: error.message,
+                ...(error.stack ? { stack: error.stack } : {}),
+                cause: undefined,
+              }
+            : {
+                code: 'UnknownError',
+                message: String(error),
+                cause: undefined,
+              },
+      });
+    }
+  }
 
   runtimeLogger.info(`✅ Extensions: ${extensions.length} loaded`);
   return extensions;
@@ -280,5 +453,19 @@ export {
 } from './telegram/index';
 export { RuneLiteExtension, createRuneLiteExtension } from './runelite/index';
 // export { MCPClientExtension, type MCPClientConfig } from './mcp-client/index'
-// export { MCPServerExtension, type MCPServerConfig } from './mcp-server/index'
-// export { CommunicationExtension, type CommunicationConfig } from './communication/index'
+export { MCPServerExtension } from './mcp-server/index';
+export { 
+  CommunicationExtension, 
+  createCommunicationExtension,
+  type CommunicationExtensionConfig 
+} from './communication/index';
+export {
+  TwitterExtension,
+  createTwitterExtension,
+  type TwitterConfig
+} from './twitter/index';
+export {
+  SlackExtension,
+  createSlackExtension,
+  type SlackConfig
+} from './slack/index';

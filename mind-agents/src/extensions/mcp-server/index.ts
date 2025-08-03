@@ -34,6 +34,11 @@ import {
   MCPServerResource,
   MCPServerPrompt,
 } from './types';
+import {
+  DefaultMCPSkillManager,
+  AgentCommunicationSkill,
+  MemoryManagementSkill
+} from './skills/index';
 
 export interface MCPServerExtensionConfig extends ExtensionConfig {
   enabled: boolean;
@@ -73,6 +78,7 @@ export class MCPServerExtension implements Extension {
   private mcpServer: MCPServerManager;
   private agent?: Agent;
   private lastActivityTime: number = Date.now();
+  private skillManager: DefaultMCPSkillManager;
 
   constructor(config: MCPServerExtensionConfig) {
     this.config = {
@@ -100,6 +106,7 @@ export class MCPServerExtension implements Extension {
     };
 
     this.mcpServer = new MCPServerManager(this.config.server);
+    this.skillManager = new DefaultMCPSkillManager();
     runtimeLogger.info('🎯 MCP Server Extension initialized');
   }
 
@@ -114,6 +121,9 @@ export class MCPServerExtension implements Extension {
     try {
       // Initialize the MCP server manager
       await this.mcpServer.initializeWithAgent(agent);
+
+      // Initialize skills
+      await this.initializeSkills(agent);
 
       // Register agent-specific tools, resources, and prompts
       await this.registerAgentCapabilities();
@@ -155,7 +165,12 @@ export class MCPServerExtension implements Extension {
 
   async cleanup(): Promise<void> {
     try {
+      // Clean up skills first
+      await this.skillManager.cleanupAll();
+      
+      // Then stop the MCP server
       await this.mcpServer.stop();
+      
       runtimeLogger.info('🎯 MCP Server Extension cleaned up');
     } catch (error) {
       void error;
@@ -267,6 +282,50 @@ export class MCPServerExtension implements Extension {
   }
 
   /**
+   * Initialize skills for the MCP server
+   */
+  private async initializeSkills(agent: Agent): Promise<void> {
+    try {
+      // Register communication skill if enabled
+      if (this.config.server.exposedCapabilities?.chat || 
+          this.config.server.exposedCapabilities?.textGeneration) {
+        const communicationSkill = new AgentCommunicationSkill();
+        await this.skillManager.registerSkill(communicationSkill);
+      }
+
+      // Register memory skill if enabled
+      if (this.config.server.exposedCapabilities?.memoryAccess) {
+        const memorySkill = new MemoryManagementSkill();
+        await this.skillManager.registerSkill(memorySkill);
+      }
+
+      // Initialize all registered skills with the agent
+      await this.skillManager.initializeAll(agent);
+
+      // Register all skill tools, resources, and prompts
+      const tools = await this.skillManager.getAllTools();
+      for (const tool of tools) {
+        this.registerTool(tool);
+      }
+
+      const resources = await this.skillManager.getAllResources();
+      for (const resource of resources) {
+        this.registerResource(resource);
+      }
+
+      const prompts = await this.skillManager.getAllPrompts();
+      for (const prompt of prompts) {
+        this.registerPrompt(prompt);
+      }
+
+      runtimeLogger.info(`✅ Initialized MCP server skills - tools: ${tools.length}, resources: ${resources.length}, prompts: ${prompts.length}`);
+    } catch (error) {
+      runtimeLogger.error('Failed to initialize MCP server skills:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Register agent-specific capabilities as MCP tools, resources, and prompts
    */
   private async registerAgentCapabilities(): Promise<void> {
@@ -290,7 +349,7 @@ export class MCPServerExtension implements Extension {
                       error: {
                         code: 'MCP_TOOL_REGISTRATION_ERROR',
                         message: error.message,
-                        stack: error.stack,
+                        stack: error.stack || '',
                       },
                     }
                   : {
@@ -306,204 +365,6 @@ export class MCPServerExtension implements Extension {
       }
     }
 
-    // Register advanced chat tool with emotion and memory integration
-    if (this.config.server.exposedCapabilities?.chat) {
-      this.registerTool({
-        name: 'agent_chat_advanced',
-        description:
-          'Have an advanced conversation with the agent including emotional context',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            message: {
-              type: 'string',
-              description: 'Message to send to the agent',
-            },
-            context: {
-              type: 'string',
-              description: 'Additional context for the conversation',
-            },
-            includeEmotion: {
-              type: 'boolean',
-              description: 'Include emotional state in response',
-              default: true,
-            },
-            includeMemory: {
-              type: 'boolean',
-              description: 'Use memory context in response',
-              default: true,
-            },
-          },
-          required: ['message'],
-        },
-        handler: async (args) => {
-          try {
-            if (!this.agent) {
-              throw new Error('Agent not initialized');
-            }
-
-            // Get the agent's portal for text generation
-            const portal = this.agent.portal;
-            if (!portal) {
-              throw new Error('No active portal available');
-            }
-
-            // Generate response using the agent's portal
-            const result = await portal.generateText(String(args.message), {
-              maxOutputTokens: 1000,
-              temperature: 0.7,
-            });
-
-            return {
-              type: 'text',
-              text: result.text,
-            };
-          } catch (error) {
-            return {
-              type: 'text',
-              text: `Error generating response: ${error instanceof Error ? error.message : 'Unknown error'}`,
-            };
-          }
-        },
-        metadata: {
-          category: 'communication',
-          readOnly: false,
-        },
-      });
-    }
-
-    // Register text generation tool
-    if (this.config.server.exposedCapabilities?.textGeneration) {
-      this.registerTool({
-        name: 'agent_generate_text',
-        description: "Generate text using the agent's capabilities",
-        inputSchema: {
-          type: 'object',
-          properties: {
-            prompt: {
-              type: 'string',
-              description: 'Text generation prompt',
-            },
-            maxTokens: {
-              type: 'number',
-              description: 'Maximum tokens to generate',
-              default: 1000,
-            },
-            temperature: {
-              type: 'number',
-              description: 'Temperature for generation',
-              default: 0.7,
-            },
-          },
-          required: ['prompt'],
-        },
-        handler: async (args) => {
-          try {
-            if (!this.agent) {
-              throw new Error('Agent not initialized');
-            }
-
-            // Get the agent's portal for text generation
-            const portal = this.agent.portal;
-            if (!portal) {
-              throw new Error('No active portal available');
-            }
-
-            // Generate text using the agent's portal
-            const result = await portal.generateText(String(args.prompt), {
-              maxOutputTokens: Number(args.maxTokens) || 1000,
-              temperature: Number(args.temperature) || 0.7,
-            });
-
-            return {
-              type: 'text',
-              text: result.text,
-            };
-          } catch (error) {
-            return {
-              type: 'text',
-              text: `Error generating text: ${error instanceof Error ? error.message : 'Unknown error'}`,
-            };
-          }
-        },
-        metadata: {
-          category: 'generation',
-          readOnly: false,
-        },
-      });
-    }
-
-    // Register memory tools
-    if (this.config.server.exposedCapabilities?.memoryAccess) {
-      this.registerTool({
-        name: 'agent_memory_store',
-        description: "Store information in the agent's memory",
-        inputSchema: {
-          type: 'object',
-          properties: {
-            content: {
-              type: 'string',
-              description: 'Content to store in memory',
-            },
-            tags: {
-              type: 'array',
-              items: { type: 'string' },
-              description: 'Tags for categorizing the memory',
-            },
-            importance: {
-              type: 'number',
-              description: 'Importance level (1-10)',
-              default: 5,
-            },
-          },
-          required: ['content'],
-        },
-        handler: async (args) => {
-          try {
-            if (!this.agent) {
-              throw new Error('Agent not initialized');
-            }
-
-            // Get the agent's memory provider
-            const memoryProvider = this.agent.memory;
-            if (!memoryProvider) {
-              throw new Error('No memory provider available');
-            }
-
-            // Store the content in memory
-            await memoryProvider.store(this.agent.id, {
-              id: `memory-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-              agentId: this.agent.id,
-              type: MemoryType.EXPERIENCE,
-              content: String(args.content),
-              metadata: {
-                source: 'mcp_server',
-                timestamp: new Date(),
-                tags: Array.isArray(args.tags) ? args.tags : [],
-              },
-              importance: 0.5,
-              timestamp: new Date(),
-              tags: Array.isArray(args.tags) ? args.tags : [],
-              duration: MemoryDuration.LONG_TERM,
-            });
-
-            return {
-              type: 'text',
-              text: `Stored in memory successfully`,
-            };
-          } catch (error) {
-            return {
-              type: 'text',
-              text: `Error storing in memory: ${error instanceof Error ? error.message : 'Unknown error'}`,
-            };
-          }
-        },
-        metadata: {
-          category: 'memory',
-          readOnly: false,
-        },
-      });
-    }
 
     // Register emotion resources
     if (this.config.server.exposedCapabilities?.emotionState) {
@@ -601,7 +462,7 @@ export class MCPServerExtension implements Extension {
             const history = emotionModule.getHistory
               ? emotionModule.getHistory()
               : [];
-            const transitions = [];
+            const transitions: any[] = [];
 
             // Calculate summary statistics
             const emotionCounts: Record<string, number> = {};
@@ -730,9 +591,9 @@ export class MCPServerExtension implements Extension {
             const processingState = 'idle';
             const capabilities = ['reasoning', 'planning', 'learning'];
             const cognitiveLoad = 0.2;
-            const activeThoughts = [];
-            const recentPlans = [];
-            const decisionHistory = [];
+            const activeThoughts: any[] = [];
+            const recentPlans: any[] = [];
+            const decisionHistory: any[] = [];
 
             // Calculate cognitive metrics
             const thoughtPatterns: Record<string, number> = {};
@@ -857,8 +718,8 @@ export class MCPServerExtension implements Extension {
         },
       ],
       handler: async (args) => {
-        const topic = args.topic || 'general';
-        const tone = args.tone || 'friendly';
+        const topic = args['topic'] || 'general';
+        const tone = args['tone'] || 'friendly';
 
         return `Hello! I'm ${this.agent?.name}. I'd love to discuss ${topic} with you in a ${tone} manner. What would you like to know?`;
       },
@@ -911,7 +772,7 @@ export class MCPServerExtension implements Extension {
               typeof param === 'object' &&
               param !== null &&
               'required' in param &&
-              param.required
+              param['required']
           )
           .map(([name]) => name),
       },
@@ -1061,7 +922,7 @@ export class MCPServerExtension implements Extension {
     this.events['server_started'] = {
       event: 'server_started',
       description: 'Handle MCP server started events',
-      handler: async (agent: Agent, event: AgentEvent): Promise<void> => {
+      handler: async (_agent: Agent, event: AgentEvent): Promise<void> => {
         runtimeLogger.info('MCP server started event:', event);
         this.handleMCPEvent('server_started', event.data);
       },
@@ -1070,7 +931,7 @@ export class MCPServerExtension implements Extension {
     this.events['server_stopped'] = {
       event: 'server_stopped',
       description: 'Handle MCP server stopped events',
-      handler: async (agent: Agent, event: AgentEvent): Promise<void> => {
+      handler: async (_agent: Agent, event: AgentEvent): Promise<void> => {
         runtimeLogger.info('MCP server stopped event:', event);
         this.handleMCPEvent('server_stopped', event.data);
       },
@@ -1079,7 +940,7 @@ export class MCPServerExtension implements Extension {
     this.events['connection_opened'] = {
       event: 'connection_opened',
       description: 'Handle MCP connection opened events',
-      handler: async (agent: Agent, event: AgentEvent): Promise<void> => {
+      handler: async (_agent: Agent, event: AgentEvent): Promise<void> => {
         runtimeLogger.debug('MCP connection opened event:', event);
         this.handleMCPEvent('connection_opened', event.data);
       },
@@ -1088,7 +949,7 @@ export class MCPServerExtension implements Extension {
     this.events['connection_closed'] = {
       event: 'connection_closed',
       description: 'Handle MCP connection closed events',
-      handler: async (agent: Agent, event: AgentEvent): Promise<void> => {
+      handler: async (_agent: Agent, event: AgentEvent): Promise<void> => {
         runtimeLogger.debug('MCP connection closed event:', event);
         this.handleMCPEvent('connection_closed', event.data);
       },
@@ -1097,7 +958,7 @@ export class MCPServerExtension implements Extension {
     this.events['mcp_error'] = {
       event: 'mcp_error',
       description: 'Handle MCP server errors',
-      handler: async (agent: Agent, event: AgentEvent): Promise<void> => {
+      handler: async (_agent: Agent, event: AgentEvent): Promise<void> => {
         runtimeLogger.error('MCP server error event:', event);
         this.handleMCPEvent('mcp_error', event.data);
       },
