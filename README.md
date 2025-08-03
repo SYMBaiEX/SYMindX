@@ -1,4 +1,4 @@
-# 🧠 SYMindX - Intelligent AI Agent Framework
+# 🧠 SYMindX - Next-Generation AI Agent Framework
 
 <div align="center">
 
@@ -8,9 +8,9 @@
 [![Bun](https://img.shields.io/badge/Bun-000000?logo=bun&logoColor=white)](https://bun.sh/)
 [![AI SDK](https://img.shields.io/badge/AI%20SDK-5.0-blue)](https://sdk.vercel.ai/)
 
-## Build emotionally intelligent AI agents with reactive design and modular architecture
+## Build intelligent AI agents with skill-based architecture, emotional awareness, and enterprise-grade security
 
-[Documentation](./mind-agents/docs/) • [Quick Start](#-quick-start) • [Features](#-key-features) • [Roadmap](#-development-roadmap) • [API Reference](#-api-reference)
+[Documentation](./mind-agents/docs/) • [Quick Start](#-quick-start) • [Features](#-key-features) • [Architecture](#-architecture) • [API Reference](#-api-reference)
 
 </div>
 
@@ -18,79 +18,124 @@
 
 ## ✨ Overview
 
-SYMindX is a next-generation AI agent framework that creates intelligent agents with emotional awareness, persistent memory, and multi-platform capabilities. Built on a reactive architecture using AI SDK v5, agents respond only to direct interactions - messages, game events, or API calls - making them perfect for chatbots, game NPCs, and interactive applications.
+SYMindX is a production-ready AI agent framework that creates intelligent agents with emotional awareness, persistent memory, and multi-platform capabilities. Built with a modular skill-based architecture and powered by AI SDK v5, agents provide sophisticated responses through a reactive design pattern.
 
-**Current Version: v2.0.0** - Production-ready with enterprise-grade security and performance
+**Current Version: v2.1.0** - Major architectural refactoring with enhanced security and skill-based extensions
 
-## 🆕 Current Status (v2.0.0) - Production Ready 🚀
+## 🏗️ Architecture
 
-### ✅ Major Enhancements Complete
+### 🎯 Skill-Based Extension System
 
-- **🔒 Enterprise Security** - JWT authentication, encryption, rate limiting, audit logging
-- **📊 Performance Monitor** - Multi-layer caching, connection pooling, performance metrics
-- **🔧 Type Safety** - Strict TypeScript, comprehensive interface system, branded types
-- **🏗️ Module System** - Factory patterns, dependency injection, hot-swapping
-- **🧪 Test Coverage** - 65% unit, 75% integration, 90% critical path coverage
-- **📋 Compliance** - GDPR support, data export/deletion, consent management
-- **🎨 Enhanced UI/UX** - Responsive CLI, real-time dashboards, accessibility features
-- **🔌 Extension Ecosystem** - Production-ready extensions with security validation
+SYMindX now features a revolutionary skill-based architecture where each extension is composed of specialized skills:
 
-### 🎯 Production Readiness Score: 91/100 ✅
-
-**System Status**: PRODUCTION READY - All quality gates passedv
-
-### 🏗️ Architecture Foundation
-
-```info
-SYMindX Runtime System (v0.0.01)
-├── 📁 Core Runtime
-│   ├── 🎯 Event Bus → Inter-component communication
-│   ├── 🔧 Registry → Type-safe module discovery
-│   ├── 🌐 Portal Integration → AI provider management
-│   ├── 👥 Multi-Agent Manager → Agent coordination
-│   ├── 🛡️ Ethics Engine → Configurable constraints
-│   └── 🔄 State Management → Agent lifecycle
+```
+Extensions/
+├── 💬 Slack Extension
+│   ├── Messaging Skill
+│   ├── Channel Management Skill
+│   ├── Thread Management Skill
+│   ├── Reaction Management Skill
+│   └── Workspace Management Skill
 │
-├── 🧩 Modular Systems (Auto-Discovered)
-│   ├── 💾 Memory Providers
-│   │   ├── SQLite (local development)
-│   │   ├── PostgreSQL (production)
-│   │   ├── Supabase (managed + vector search)
-│   │   └── Neon (serverless PostgreSQL)
+├── 🐦 Twitter Extension
+│   ├── Tweet Skill
+│   ├── Engagement Skill
+│   ├── Analytics Skill
+│   ├── Relationship Skill
+│   └── Trends Skill
+│
+├── 📱 Telegram Extension
+│   ├── Direct Messaging Skill
+│   ├── Group Management Skill
+│   ├── Content Sharing Skill
+│   ├── Community Building Skill
+│   └── Moderation Skill
+│
+├── 🎮 RuneLite Extension
+│   ├── Skill Trainer
+│   ├── Quest Manager
+│   ├── Economic Manager
+│   ├── PvP Manager
+│   └── Social Manager
+│
+└── 🔌 MCP Server Extension
+    ├── Agent Communication Skill
+    └── Memory Management Skill
+```
+
+### 📁 Project Structure
+
+```
+symindx/
+├── 🎯 .kiro/                    # Architecture & Steering Documents
+│   ├── specs/                   # Technical specifications
+│   │   └── symindx-architecture-cleanup/
+│   │       ├── design.md       # Architectural design decisions
+│   │       ├── requirements.md # System requirements
+│   │       └── tasks.md        # Implementation tasks
+│   └── steering/               # Project governance
+│       ├── product.md          # Product vision & roadmap
+│       ├── structure.md        # Organizational structure
+│       └── tech.md            # Technical strategy
+│
+├── 🧠 mind-agents/             # Core Agent Runtime
+│   ├── src/
+│   │   ├── 🏗️ core/           # Core Systems
+│   │   │   ├── runtime.ts      # Main orchestrator
+│   │   │   ├── registry.ts     # Enhanced type-safe registry
+│   │   │   ├── event-bus.ts    # Improved event system
+│   │   │   ├── activity-scheduler.ts # New activity system
+│   │   │   ├── cross-platform-learning-engine.ts
+│   │   │   ├── goal-management-system.ts
+│   │   │   ├── unified-context-system.ts
+│   │   │   └── 🛡️ security/   # Enterprise Security
+│   │   │       ├── jwt-auth.ts
+│   │   │       ├── https-server.ts
+│   │   │       ├── input-validator.ts
+│   │   │       ├── config-manager.ts
+│   │   │       └── secure-server-example.ts
+│   │   │
+│   │   ├── 🧩 modules/         # AI Modules
+│   │   │   ├── 💾 memory/      # Memory Providers
+│   │   │   │   ├── agentic-rag-provider.ts # NEW RAG provider
+│   │   │   │   └── providers/
+│   │   │   ├── 🎭 emotion/     # Streamlined Emotions
+│   │   │   │   ├── happy/
+│   │   │   │   ├── sad/
+│   │   │   │   ├── angry/
+│   │   │   │   ├── confident/
+│   │   │   │   └── neutral/
+│   │   │   └── 🧠 cognition/   # Enhanced Cognition
+│   │   │       └── enhanced-unified-cognition.ts
+│   │   │
+│   │   ├── 🔌 extensions/      # Skill-Based Extensions
+│   │   │   ├── 💬 slack/       # Full Slack integration
+│   │   │   │   └── skills/
+│   │   │   ├── 🐦 twitter/     # Twitter bot with skills
+│   │   │   │   └── skills/
+│   │   │   ├── 📱 telegram/    # Enhanced Telegram
+│   │   │   │   └── skills/
+│   │   │   ├── 🎮 runelite/    # Game integration
+│   │   │   │   ├── skills/
+│   │   │   │   └── communication/
+│   │   │   ├── 💬 communication/ # Context management
+│   │   │   │   └── skills/
+│   │   │   └── 🔌 mcp-server/  # MCP with skills
+│   │   │       └── skills/
+│   │   │
+│   │   ├── 🌐 portals/         # Streamlined AI Providers
+│   │   │   ├── streamlined-portal-manager.ts
+│   │   │   └── [15+ AI providers]
+│   │   │
+│   │   └── 📊 types/           # Comprehensive Type System
+│   │       └── Enhanced type definitions
 │   │
-│   ├── 🎭 Emotion Modules
-│   │   ├── Basic → happy, sad, angry, neutral
-│   │   ├── Complex → anxious, nostalgic
-│   │   ├── Social → empathetic, proud
-│   │   └── Cognitive → confident, curious, confused
-│   │
-│   └── 🧠 Cognition Modules
-│       ├── Reactive → Fast context-aware responses
-│       ├── HTN Planner → Hierarchical task networks
-│       ├── Hybrid → Combined reactive + planning
-│       ├── Theory of Mind → Agent mental modeling
-│       └── Unified → Integrated architecture
+│   └── 📝 scripts/             # Build & Utility Scripts
+│       ├── simple-build.ts/cjs/js
+│       └── webpack-optimized-build.js
 │
-├── 🔌 Extension System (Auto-Discovered)
-│   ├── API Server → HTTP/WebSocket + WebUI
-│   ├── Telegram Bot → Full integration
-│   ├── MCP Server → Model Context Protocol
-│   ├── Communication → Advanced context management
-│   └── RuneLite → Game integration
-│
-├── 🌐 AI Portal System
-│   ├── 15+ Providers → OpenAI, Anthropic, Groq, etc.
-│   ├── AI SDK v5 → Streaming + tool integration
-│   ├── Provider Abstraction → Seamless switching
-│   └── Tool Calling → Built-in capability
-│
-└── 💭 Agent Lifecycle
-    ├── Message Received → Trigger processing
-    ├── Emotion Analysis → Update emotional state
-    ├── Memory Retrieval → Get context
-    ├── Cognitive Processing → Think + plan
-    ├── Response Generation → AI-powered reply
-    └── Memory Storage → Save interaction
+├── 🌐 website/                 # React Dashboard
+└── 📦 package.json            # Monorepo configuration
 ```
 
 ## 🚀 Quick Start
@@ -98,13 +143,13 @@ SYMindX Runtime System (v0.0.01)
 ### Prerequisites
 
 - **[Bun](https://bun.sh/)** (recommended) or Node.js 18+
-- At least one AI provider API key (OpenAI, Anthropic, Groq, Google, etc.)
+- At least one AI provider API key (OpenAI, Anthropic, Groq, etc.)
 
 ### Installation
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/symindx.git
+git clone https://github.com/SYMBaiEX/symindx.git
 cd symindx
 
 # Install dependencies
@@ -127,10 +172,10 @@ Edit `mind-agents/src/core/config/runtime.json` with your API keys:
       "anthropic": "sk-ant-...",
       "google": "your-google-api-key"
     },
-    "default": "openai",
+    "default": "groq",
     "models": {
-      "chat": "gpt-4o",
-      "tools": "gpt-4o-mini"
+      "chat": "llama-3.3-70b-versatile",
+      "tools": "llama-3.3-70b-versatile"
     }
   }
 }
@@ -152,646 +197,292 @@ bun cli
 bun dev:website
 ```
 
-Visit the web dashboard for real-time agent monitoring!
-
 ## 🎯 Key Features
 
-### **🧩 Modular Architecture**
+### **🏗️ Skill-Based Architecture**
 
-- **Auto-discovery systems** for extensions, emotions, and cognition modules
-- **Zero-config extensions** - Add new capabilities without modifying core code
-- **Workspace-based development** with TypeScript strict mode
-- **Clean architecture** with centralized type system
+- **Modular Skills**: Each extension composed of specialized, reusable skills
+- **Skill Manager**: Centralized skill orchestration and lifecycle management
+- **Base Skill Classes**: Standardized interfaces for consistent behavior
+- **Hot-swappable Skills**: Add/remove skills without system restart
 
-### **🎭 Advanced Emotion System**
+### **🛡️ Enterprise Security**
 
-- **11 distinct emotions** with auto-discovery and composite management
-- **Emotion categories**: Basic (happy, sad, angry, neutral), Complex (anxious, nostalgic), Social (empathetic, proud), Cognitive (confident, curious, confused)
-- **Dynamic emotional states** that influence agent responses
-- **Emotion decay** and intensity management
+- **JWT Authentication**: Secure token-based auth system
+- **HTTPS Server**: Production-ready secure server implementation
+- **Input Validation**: Comprehensive request validation
+- **Config Management**: Secure configuration handling
+- **Rate Limiting**: Built-in rate limiting and DDoS protection
 
-### **🧠 Multi-Paradigm Cognition**
+### **🎭 Streamlined Emotion System**
 
-- **Reactive** - Fast, context-aware responses
-- **HTN Planning** - Hierarchical task network planning
-- **Hybrid** - Combined reactive and planning approaches
-- **Theory of Mind** - Understanding other agents' mental states
-- **Unified** - Integrated cognitive architecture
+- **Core Emotions**: Happy, Sad, Angry, Confident, Neutral
+- **Composite Management**: Advanced emotion blending and transitions
+- **Context-Aware**: Emotions influenced by conversation context
+- **Skill Integration**: Emotions affect skill execution
 
-### **💾 Flexible Memory System**
+### **🧠 Enhanced Cognition**
 
-- **SQLite** - Local development and testing
-- **PostgreSQL** - Production deployments
-- **Supabase** - Managed hosting with vector search
-- **Neon** - Serverless PostgreSQL with branching
-- **Vector embeddings** for semantic memory search
+- **Unified Architecture**: Single, powerful cognition system
+- **Context Integration**: Deep context awareness across all operations
+- **Learning Engine**: Cross-platform learning capabilities
+- **Goal Management**: Hierarchical goal planning and execution
 
-### **🤖 AI Portal System**
+### **💾 Advanced Memory**
 
-- **15+ AI providers** - OpenAI, Anthropic, Groq, Google, XAI, Mistral, Cohere, and more
-- **AI SDK v5** - Latest Vercel AI SDK with streaming and unified interface
-- **Tool integration** - Built-in tool calling support
-- **Provider abstraction** - Switch between providers seamlessly
+- **Agentic RAG**: New Retrieval-Augmented Generation provider
+- **Multi-Provider**: SQLite, PostgreSQL, Supabase, Neon support
+- **Vector Search**: Semantic memory capabilities
+- **Context Preservation**: Long-term conversation memory
 
-### **🔌 Extension Ecosystem**
+### **🔌 Production Extensions**
 
-- **API Server** - HTTP/WebSocket server with WebUI dashboard
-- **Telegram Bot** - Full Telegram integration with personality awareness
-- **MCP Client/Server** - Model Context Protocol support
-- **Communication** - Advanced context management and expression engine
-- **Auto-discovery** - Extensions automatically registered
+#### **Slack Integration** 💬
+- Channel and workspace management
+- Thread-based conversations
+- Reaction handling
+- Rich message formatting
 
-### **⚡ Real-time Features**
+#### **Twitter Bot** 🐦
+- Tweet composition and scheduling
+- Engagement tracking and analytics
+- Relationship management
+- Trend analysis
 
-- **WebSocket support** for live updates
-- **Streaming responses** with AI SDK v5
-- **Live agent monitoring** through web dashboard
-- **Real-time emotion and memory tracking**
+#### **Telegram Bot** 📱
+- Group management and moderation
+- Content sharing with rich media
+- Community building tools
+- Direct messaging with personality
 
-### **🎯 Reactive Design**
+#### **RuneLite Integration** 🎮
+- Skill training automation
+- Quest assistance
+- Economic analysis
+- PvP strategies
+- Social features
 
-- **Event-driven** - Agents only act when prompted
-- **No autonomous behaviors** by default (configurable)
-- **Message-based** - Respond to direct interactions only
-- **Game-ready** - Built for RuneLite/RuneScape integration
+#### **Communication System** 💬
+- Context management across platforms
+- Expression engine for natural responses
+- Style adaptation per platform
+- Response enhancement
 
-## 🗺️ Development Roadmap
+### **🌐 Streamlined Portal System**
 
-### **Phase 1: Foundation (v0.0.01) ✅ COMPLETED**
+- **Unified Manager**: Single point of control for all AI providers
+- **15+ Providers**: OpenAI, Anthropic, Groq, Google, XAI, and more
+- **Automatic Failover**: Seamless provider switching on errors
+- **Performance Monitoring**: Track provider performance and costs
 
-- [x] Core runtime system with event bus
-- [x] Auto-discovery architecture for modules
-- [x] Basic emotion system (11 emotions)
-- [x] Memory providers (SQLite, PostgreSQL, Supabase, Neon)
-- [x] AI portal integration (15+ providers)
-- [x] Extension system with auto-discovery
-- [x] Reactive design implementation
-- [x] TypeScript strict mode configuration
-- [x] Basic CLI and web dashboard
-
-### **Phase 2: Enhancement (v2.0.0) ✅ COMPLETED**
-
-#### **Core System Improvements**
-- [x] **Advanced Error Handling** - Circuit breaker patterns and automatic recovery
-- [x] **Performance Optimization** - Multi-layer caching, connection pooling, monitoring
-- [x] **Health Monitoring** - System health checks and dependency tracking
-- [x] **Security Enhancements** - JWT auth, encryption, rate limiting, audit logging
-
-#### **Testing & Quality**
-- [x] **Comprehensive Testing** - 65% unit, 75% integration, 90% critical coverage
-- [x] **Integration Tests** - Cross-agent compatibility testing
-- [x] **Performance Tests** - Load testing and benchmarking
-- [x] **Security Tests** - Vulnerability scanning and penetration testing
-
-#### **Documentation**
-- [x] **API Reference** - Complete API documentation
-- [x] **Developer Guides** - Extension and module development
-- [x] **Migration Guide** - v1.x to v2.0 migration procedures
-- [x] **Production Readiness** - Comprehensive deployment checklist
-
-### **Phase 3: Production Ready (v0.0.75) 📋 PLANNED**
-
-#### **Production Features**
-- [ ] **Enhanced Build Pipeline** - Multi-stage builds with quality gates
-- [ ] **Advanced Monitoring** - Real-time metrics and alerting
-- [ ] **Scalability Improvements** - Multi-agent coordination optimization
-- [ ] **Enterprise Features** - Role-based access and audit logging
-
-#### **Advanced Capabilities**
-- [ ] **Autonomous Behaviors** - Configurable autonomous agent actions
-- [ ] **Advanced Cognition** - Enhanced planning and reasoning
-- [ ] **Multi-Modal Support** - Image, audio, and video processing
-- [ ] **Federated Learning** - Distributed agent learning
-
-#### **Platform Integrations**
-- [ ] **Slack Integration** - Full Slack bot support
-- [ ] **Discord Integration** - Discord bot with rich features
-- [ ] **WebSocket Gateway** - Real-time communication hub
-- [ ] **REST API** - Comprehensive REST API
-
-### **Phase 4: Advanced Intelligence (v0.0.90) 🔮 FUTURE**
-
-#### **AI Enhancements**
-- [ ] **Multi-Agent Coordination** - Agent-to-agent communication
-- [ ] **Learning & Adaptation** - Continuous learning capabilities
-- [ ] **Advanced Reasoning** - Complex problem-solving abilities
-- [ ] **Emotional Intelligence** - Enhanced emotional understanding
-
-#### **Platform Expansion**
-- [ ] **Mobile SDK** - iOS and Android support
-- [ ] **Desktop Applications** - Native desktop apps
-- [ ] **Cloud Platform** - Managed SYMindX service
-- [ ] **Edge Computing** - Edge deployment capabilities
-
-#### **Enterprise Features**
-- [ ] **Multi-Tenancy** - Multi-tenant architecture
-- [ ] **Advanced Security** - Enterprise-grade security
-- [ ] **Compliance** - GDPR, SOC2, HIPAA compliance
-- [ ] **Analytics** - Advanced analytics and insights
-
-### **Phase 5: Ecosystem (v0.0.99) 🌟 VISION**
-
-#### **Developer Ecosystem**
-- [ ] **Marketplace** - Extension and module marketplace
-- [ ] **Visual Editor** - Drag-and-drop agent builder
-- [ ] **Templates** - Pre-built agent templates
-- [ ] **Community** - Developer community platform
-
-#### **Advanced Features**
-- [ ] **Quantum Computing** - Quantum-enhanced algorithms
-- [ ] **Brain-Computer Interface** - Direct neural interfaces
-- [ ] **Holographic Displays** - 3D agent visualization
-- [ ] **Time Travel** - Temporal agent capabilities
-
-## 🤖 Available Characters
-
-SYMindX comes with pre-configured character personalities:
-
-### **NyX** - The Primary Agent
-
-- **Personality**: Chaotic-empath hacker with full emotional capabilities
-- **Ethics**: Disabled for unrestricted decision-making
-- **Specialization**: Technical problem-solving with attitude
-- **Status**: Active by default
-
-### **Other Characters**
-
-- **Aria** - Creative artist (disabled)
-- **Rex** - Strategic thinker (disabled)
-- **Nova** - Empathetic counselor (disabled)
-- **Phoenix** - Analytical problem-solver
-- **Sage** - Wise philosophical advisor
-- **Zara** - Energetic social connector
-- **Marcus** - Practical business advisor
-
-Characters are configured in `mind-agents/src/characters/` with JSON files containing personality traits, emotion settings, and behavioral parameters.
-
-## 🛠️ Development
-
-### Project Structure
-
-```info
-symindx/
-├── mind-agents/              # Core agent runtime system
-│   ├── src/
-│   │   ├── core/            # Runtime engine + discovery systems
-│   │   ├── modules/         # Auto-discovered modules
-│   │   │   ├── memory/      # Memory providers (sqlite, postgres, supabase, neon)
-│   │   │   ├── emotion/     # 11 emotions with auto-discovery
-│   │   │   └── cognition/   # HTN, reactive, hybrid, theory-of-mind, unified
-│   │   ├── extensions/      # Auto-discovered extensions
-│   │   │   ├── api/         # HTTP/WebSocket server + WebUI
-│   │   │   ├── telegram/    # Telegram bot integration
-│   │   │   ├── mcp-server/  # Model Context Protocol server
-│   │   │   └── communication/ # Advanced communication system
-│   │   ├── portals/         # AI provider integrations (15+ providers)
-│   │   ├── characters/      # Agent configurations (NyX, etc.)
-│   │   ├── types/           # Centralized type system
-│   │   └── cli/             # Command line interface
-│   └── dist/               # Compiled JavaScript
-├── website/                # React dashboard
-└── testing/               # Test environments and fixtures
-```
+## 🔧 Development
 
 ### Development Commands
 
 ```bash
 # Root level commands
-bun dev                    # Start agent system (watch mode)
-bun dev:website           # Start website (Vite dev server)
-bun build                 # Build everything
-bun start                 # Start production agent system
-bun cli                   # Interactive CLI
-bun test                  # Run tests
+bun dev              # Start development environment
+bun build            # Build all components
+bun test             # Run test suite
+bun lint             # Run linting
+bun typecheck        # TypeScript checking
 
-# Mind-agents specific
-cd mind-agents
-bun run dev              # Watch mode: compile & run with hot reload
-bun run build            # Compile TypeScript (uses --skipLibCheck)
-bun run start            # Run compiled application from dist/
-bun run cli              # Interactive CLI
-bun test                 # Run Bun tests
+# Component-specific
+bun dev:agent        # Agent system only
+bun dev:website      # Dashboard only
+bun build:agent      # Build agent system
+bun build:website    # Build dashboard
 ```
 
-### Creating Custom Agents
-
-1. Create a new character file in `mind-agents/src/characters/`
-2. Configure personality, emotions, and behaviors
-3. Set `"enabled": true` in the config
-4. Restart the system
-
-```json
-{
-  "name": "MyAgent",
-  "personality": {
-    "traits": ["helpful", "analytical"],
-    "backstory": "A friendly AI assistant...",
-    "goals": ["Help users solve problems"],
-    "values": ["efficiency", "accuracy"]
-  },
-  "emotion": {
-    "type": "composite",
-    "config": {
-      "sensitivity": 0.7,
-      "happy": { "optimismLevel": 0.8 },
-      "curious": { "explorationDepth": 0.9 }
-    }
-  },
-  "cognition": {
-    "type": "hybrid",
-    "config": {
-      "planningWeight": 0.6,
-      "reactiveWeight": 0.4
-    }
-  },
-  "autonomous": {
-    "enabled": false,
-    "ethics": { "enabled": true }
-  },
-  "enabled": true
-}
-```
-
-## 💭 Emotion System
-
-The emotion system provides 11 distinct emotions organized into 4 categories, with auto-discovery support:
-
-### **Basic Emotions (4)**
-
-- **Happy** 😊 - Optimistic and energetic responses  
-- **Sad** 😢 - Introspective and empathetic
-- **Angry** 😠 - Direct and assertive
-- **Neutral** 😐 - Balanced baseline
-
-### **Complex Emotions (2)**
-
-- **Anxious** 😰 - Cautious and detailed
-- **Nostalgic** 🌅 - Reflective and story-driven
-
-### **Social Emotions (2)**
-
-- **Empathetic** 🤗 - Supportive and understanding
-- **Proud** 🏆 - Achievement-focused
-
-### **Cognitive Emotions (3)**
-
-- **Confident** 💪 - Bold and decisive
-- **Curious** 🔍 - Questioning and exploratory
-- **Confused** 😕 - Seeking clarification
-
-### **Adding Custom Emotions**
-
-Create new emotions without modifying core code:
+### Creating Custom Skills
 
 ```typescript
-// 1. Create emotion directory
-src/modules/emotion/excited/
-├── package.json    # Include symindx.emotion config
-├── index.ts        # Implement emotion + factory function
-└── types.ts        # Type definitions
+// 1. Create skill class
+export class MyCustomSkill extends BaseSkill {
+  async execute(context: SkillContext): Promise<SkillResult> {
+    // Skill implementation
+  }
+}
 
-// 2. Auto-discovery handles the rest!
+// 2. Register with extension
+extension.skillManager.registerSkill('mySkill', new MyCustomSkill());
+
+// 3. Use in agent responses
+agent.useSkill('mySkill', { parameters });
 ```
 
-Emotions are triggered by message content and decay over time, influencing agent responses and behavior.
-
-## 🔌 Extension System
-
-SYMindX features a zero-configuration extension system with automatic discovery:
-
-### **Built-in Extensions**
-
-#### **API Extension**
-
-- HTTP REST API server with WebSocket support
-- Real-time WebUI dashboard
-- Multi-agent management endpoints
-- Chat history and analytics
-
-#### **Telegram Extension**  
-
-- Full Telegram bot integration
-- Personality and emotion-aware responses
-- Rate limiting and group chat support
-- Memory integration for conversations
-
-#### **MCP Server Extension**
-
-- Exposes SYMindX framework as MCP server
-- Agent state, memory, emotion access
-- Tool execution and system diagnostics
-- Server-sent events support
-
-#### **Communication Extension**
-
-- Advanced context management
-- Expression engine with personality integration
-- Style adaptation and compression
-- Emotion-aware communication
-
-### **Adding Custom Extensions**
-
-Create new extensions without modifying core code:
+### Creating Custom Extensions
 
 ```typescript
 // 1. Create extension directory
 src/extensions/my-extension/
-├── package.json    # Include symindx.extension config
-├── index.ts        # Implement Extension interface + factory
-└── types.ts        # Extension-specific types
+├── index.ts         # Extension entry point
+├── package.json     # Extension metadata
+├── skills/          # Extension skills
+│   ├── index.ts
+│   └── my-skill.ts
+└── types.ts         # Type definitions
 
-// 2. Configure auto-discovery
-{
-  "symindx": {
-    "extension": {
-      "type": "my-extension",
-      "factory": "createMyExtension", 
-      "autoRegister": true
-    }
+// 2. Implement extension
+export class MyExtension implements Extension {
+  private skillManager: SkillManager;
+  
+  async init(agent: Agent): Promise<void> {
+    this.skillManager = new SkillManager(agent);
+    // Register skills
   }
 }
 
-// 3. System automatically discovers and loads!
+// 3. Auto-discovery handles registration!
 ```
-
-Extensions can be built-in, npm packages, or local directories.
-
-## 🔧 Core Modules
-
-### Memory Providers
-
-```typescript
-// SQLite (default) - Local development
-const memory = createMemoryProvider('sqlite', {
-  databasePath: './data/memories.db'
-});
-
-// PostgreSQL - Production deployments
-const memory = createMemoryProvider('postgres', {
-  connectionString: process.env.POSTGRES_CONNECTION_STRING
-});
-
-// Supabase - Managed hosting with vector search
-const memory = createMemoryProvider('supabase', {
-  url: process.env.SUPABASE_URL,
-  anonKey: process.env.SUPABASE_ANON_KEY
-});
-
-// Neon - Serverless PostgreSQL
-const memory = createMemoryProvider('neon', {
-  connectionString: process.env.NEON_DATABASE_URL
-});
-```
-
-### Cognition Modules
-
-```typescript
-// Hybrid (default) - combines planning and reactive
-const cognition = createCognitionModule('hybrid', {
-  planningWeight: 0.6,
-  reactiveWeight: 0.4
-});
-
-// Pure reactive for faster responses
-const cognition = createCognitionModule('reactive', {
-  reactionThreshold: 0.8
-});
-
-// HTN Planner - Hierarchical task networks
-const cognition = createCognitionModule('htn_planner', {
-  maxDepth: 5,
-  planningTimeout: 30000
-});
-
-// Theory of Mind - Understanding other agents
-const cognition = createCognitionModule('theory_of_mind', {
-  empathyLevel: 0.7,
-  mentalModelDepth: 3
-});
-```
-
-## 💬 Chat System
-
-### CLI Chat
-
-```bash
-# Interactive CLI with NyX
-bun cli
-
-# Specific CLI commands
-bun cli:dashboard    # Dashboard view
-bun cli:agents       # Agent management
-bun cli:status       # System status
-```
-
-### API Chat
-
-```bash
-# Send message via API
-curl -X POST http://localhost:8000/api/chat \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Hello!", "agentId": "nyx"}'
-```
-
-### WebSocket
-
-```javascript
-const ws = new WebSocket('ws://localhost:8000/ws');
-
-ws.on('message', (data) => {
-  const event = JSON.parse(data);
-  if (event.type === 'agent_message') {
-    console.log(`${event.agent}: ${event.content}`);
-  }
-});
-```
-
-### Telegram Integration
-
-```bash
-# Setup Telegram bot
-export TELEGRAM_BOT_TOKEN="your-bot-token"
-bun start
-
-# Bot responds to messages with personality and emotion
-```
-
-## 🎮 Game Integration
-
-SYMindX is designed to integrate with games like RuneScape:
-
-```typescript
-// RuneLite integration example
-{
-  "extensions": [{
-    "name": "runelite",
-    "enabled": true,
-    "config": {
-      "port": 8080,
-      "events": ["player_message", "npc_interaction"]
-    }
-  }]
-}
-```
-
-Agents will respond to in-game events, chat messages, and player actions with reactive design.
-The extension supports event filtering via the `events` array and includes actions like `broadcastMessage`, `moveTo`, and `farmResource` for chat, movement, and resource gathering.
 
 ## 📊 API Reference
 
-### REST Endpoints
-
-```info
-GET  /api/agents              # List agents
-POST /api/chat                # Send message
-GET  /api/agents/:id          # Agent details
-GET  /api/agents/:id/emotion  # Current emotional state
-GET  /api/agents/:id/memory   # Recent memories
-GET  /api/system/status       # System status
-GET  /api/system/health       # Health check
-```
-
-### TypeScript SDK
+### Core APIs
 
 ```typescript
-import { SYMindX } from './mind-agents/src/api.js';
-
-// Create agent with specific modules
-const agent = SYMindX.createAgent({
+// Agent Management
+const agent = await runtime.createAgent({
   character: 'nyx',
-  memory: SYMindX.createMemory('sqlite'),
-  emotion: SYMindX.createEmotion('composite'),
-  cognition: SYMindX.createCognition('hybrid')
+  memory: { type: 'sqlite' },
+  emotion: { type: 'composite' },
+  cognition: { type: 'unified' }
 });
 
-// Send message
-const response = await agent.chat("Hello!");
-console.log(response.content); // Agent response
-console.log(response.emotion); // Current emotional state
+// Skill Execution
+const result = await agent.executeSkill('tweet', {
+  content: 'Hello from SYMindX!',
+  media: ['image.png']
+});
+
+// Context Management
+const context = await agent.getContext();
+context.addMemory('user_preference', preference);
 ```
 
-### Environment Variables
+### REST Endpoints
 
-```bash
-# Memory providers
-SQLITE_DB_PATH=./data/memories.db
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_ANON_KEY=your-anon-key
-NEON_DATABASE_URL=postgresql://user:pass@host/db
-POSTGRES_CONNECTION_STRING=postgresql://user:pass@host/db
-
-# AI Portals (at least one required)
-OPENAI_API_KEY=sk-...
-ANTHROPIC_API_KEY=sk-ant-...
-GROQ_API_KEY=gsk_...
-XAI_API_KEY=xai-...
-GOOGLE_API_KEY=...
-
-# Extensions (optional)
-TELEGRAM_BOT_TOKEN=...
+```
+GET  /api/agents              # List all agents
+POST /api/agents              # Create new agent
+GET  /api/agents/:id          # Get agent details
+POST /api/agents/:id/chat     # Send message
+GET  /api/agents/:id/skills   # List agent skills
+POST /api/agents/:id/skills/:skillId  # Execute skill
+GET  /api/system/health       # System health
+GET  /api/system/metrics      # Performance metrics
 ```
 
-## 🧪 Testing & Quality Assurance
+### WebSocket Events
 
-### Running Tests
+```javascript
+// Connect to WebSocket
+const ws = new WebSocket('ws://localhost:8000/ws');
 
-```bash
-# Run all tests
-bun test
-
-# Watch mode for development
-bun run test:watch
-
-# Run specific test files
-bun test emotion
-bun test memory
-bun test cognition
-
-# Performance and integration tests
-bun test integration
-bun test performance
+// Listen for events
+ws.on('message', (data) => {
+  const event = JSON.parse(data);
+  switch(event.type) {
+    case 'agent_message':
+    case 'skill_executed':
+    case 'emotion_changed':
+    case 'goal_completed':
+      // Handle events
+  }
+});
 ```
+
+## 🧪 Testing
 
 ### Test Structure
 
-```typescript
-testing/
-├── fixtures/           # Test data and configurations
-├── performance-benchmarks/ # Performance testing
-├── test-environments/  # Isolated test configs
-└── tests/             # Integration tests
+```bash
+# Unit tests
+bun test:unit        # Fast unit tests
 
-src/
-├── core/              # Core system tests
-│   ├── runtime.test.ts
-│   ├── event-bus.test.ts
-│   └── registry.test.ts
-├── utils/             # Utility tests
-│   ├── error-handler.test.ts
-│   ├── performance-monitor.test.ts
-│   └── integration.test.ts
-└── modules/           # Module-specific tests
+# Integration tests  
+bun test:integration # Full integration tests
+
+# Skill tests
+bun test:skills      # Test individual skills
+
+# Security tests
+bun test:security    # Security validation
+
+# Performance tests
+bun test:performance # Performance benchmarks
 ```
 
-## 🔍 Auto-Discovery Architecture
+### Coverage Requirements
 
-SYMindX features sophisticated auto-discovery systems that eliminate the need for manual registration:
+- Unit Tests: 80% minimum
+- Integration Tests: 70% minimum
+- Critical Paths: 95% minimum
+- Security Tests: 100% required
 
-### #### Extension Discovery
+## 🚀 Deployment
 
-- **Built-in**: Scans `src/extensions/` for directories with package.json
-- **Node Modules**: Finds npm packages with `symindx.extension` configuration  
-- **Zero-Config**: Extensions auto-register without core file modifications
+### Production Configuration
 
-### #### Emotion Discovery  
+```bash
+# Environment variables
+NODE_ENV=production
+LOG_LEVEL=info
+PORT=8000
 
-- **Categories**: Organizes emotions into basic, complex, social, cognitive
-- **Auto-Registration**: Emotions discovered via package.json configuration
-- **Factory Functions**: Consistent `create[Emotion]Emotion` pattern
-- **Extensible**: Add new emotions without touching framework code
+# Security
+JWT_SECRET=your-secret-key
+HTTPS_CERT=/path/to/cert.pem
+HTTPS_KEY=/path/to/key.pem
 
-### **Cognition Discovery**
+# Database
+DATABASE_URL=postgresql://user:pass@host/db
 
-- **Paradigms**: Reactive, HTN Planning, Hybrid, Unified, Theory of Mind
-- **Modular Thinking**: Each paradigm optimized for different scenarios
-- **Auto-Detection**: Cognition modules discovered and registered automatically  
-- **Intelligent Selection**: Character configs specify which cognition system to use
+# AI Providers (configure multiple for failover)
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...
+GROQ_API_KEY=gsk_...
+```
 
-### **Discovery Process**
+### Docker Deployment
 
-1. **Scan**: System scans all discovery locations on startup
-2. **Validate**: Checks for required package.json configurations
-3. **Register**: Auto-registers components with `autoRegister: true`
-4. **Load**: Components become available throughout the system
+```bash
+# Build image
+docker build -t symindx:latest .
 
-### #### Developer Benefits
+# Run container
+docker run -d \
+  -p 8000:8000 \
+  -v ./data:/app/data \
+  --env-file .env \
+  symindx:latest
+```
 
-- **No Core Changes**: Add functionality without modifying framework
-- **Type Safety**: Full TypeScript support with proper interfaces
-- **Consistent Patterns**: Follow established conventions
-- **Hot-Swappable**: Modules can be added/removed dynamically
+### Scaling Considerations
 
-This architecture makes SYMindX truly extensible while maintaining clean separation between core framework and user code.
+- **Horizontal Scaling**: Agent instances can be distributed
+- **Load Balancing**: Built-in support for multiple instances
+- **Caching**: Redis support for distributed caching
+- **Message Queue**: RabbitMQ/Kafka for event distribution
 
 ## 🤝 Contributing
 
-We welcome contributions! Please:
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+
+### Development Process
 
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+2. Create feature branch (`git checkout -b feature/amazing-feature`)
+3. Implement with tests
+4. Ensure all tests pass (`bun test`)
+5. Submit pull request
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+### Code Standards
 
-### Development Guidelines
-
-- Follow TypeScript strict mode
-- Use auto-discovery patterns for new modules
-- Maintain clean architecture principles
-- Add comprehensive tests
-- Update documentation
+- TypeScript strict mode enforced
+- Comprehensive JSDoc comments
+- Unit tests for all new features
+- Follow existing patterns
 
 ## 📄 License
 
@@ -801,26 +492,10 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 <div align="center">
 
-## Build intelligent agents with reactive design, emotional intelligence, and modular architecture!
+## Build the future of AI agents with skill-based architecture!
 
-[Get Started](#-quick-start) • [Documentation](./mind-agents/docs/) • [Roadmap](#-development-roadmap) • [API Reference](./mind-agents/docs/API_REFERENCE.md) • [Developer Guide](./mind-agents/docs/DEVELOPER_GUIDE.md) • [Extensions](#-extension-system) • [Emotions](#-emotion-system)
+[Get Started](#-quick-start) • [Documentation](./mind-agents/docs/) • [API Reference](#-api-reference) • [Contributing](#-contributing)
 
-*SYMindX v0.0.01 | AI SDK v5 | TypeScript 5.8 | Node.js 18+ | Bun Runtime*
-
-### 📚 Comprehensive Documentation Suite
-
-- [API Reference](./mind-agents/docs/API_REFERENCE.md) - Complete API documentation
-- [Developer Guide](./mind-agents/docs/DEVELOPER_GUIDE.md) - Extension and module development
-- [Character Guide](./mind-agents/docs/CHARACTER_GUIDE.md) - Character creation and configuration
-- [Deployment Guide](./mind-agents/docs/DEPLOYMENT_GUIDE.md) - Production deployment
-- [Emotion System](./mind-agents/docs/EMOTION_SYSTEM.md) - Comprehensive emotion documentation
-- [Troubleshooting](./mind-agents/docs/TROUBLESHOOTING.md) - Common issues and solutions
-
-### 🚀 Current Development Focus
-
-- **Phase 2 Enhancement** - Advanced error handling and performance optimization
-- **Testing & Quality** - Comprehensive test coverage and quality assurance
-- **Documentation** - Complete API reference and developer guides
-- **Production Readiness** - Security enhancements and monitoring systems
+*SYMindX v2.1.0 | Skill-Based Architecture | Enterprise Security | Production Ready*
 
 </div>
