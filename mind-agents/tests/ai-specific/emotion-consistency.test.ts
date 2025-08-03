@@ -34,18 +34,12 @@ export class EmotionConsistencyValidator {
   }
 
   private initializeTransitionRules(): void {
-    // Define valid emotion transitions
-    this.transitionRules.set('happy', new Set(['neutral', 'proud', 'empathetic', 'curious', 'confident']));
-    this.transitionRules.set('sad', new Set(['neutral', 'empathetic', 'nostalgic', 'anxious']));
-    this.transitionRules.set('angry', new Set(['neutral', 'anxious', 'sad', 'confused']));
-    this.transitionRules.set('anxious', new Set(['neutral', 'confused', 'sad', 'angry']));
-    this.transitionRules.set('confident', new Set(['happy', 'proud', 'neutral', 'empathetic']));
-    this.transitionRules.set('nostalgic', new Set(['happy', 'sad', 'neutral', 'empathetic']));
-    this.transitionRules.set('empathetic', new Set(['happy', 'sad', 'neutral', 'curious']));
-    this.transitionRules.set('curious', new Set(['happy', 'confused', 'neutral', 'empathetic']));
-    this.transitionRules.set('proud', new Set(['happy', 'confident', 'neutral']));
-    this.transitionRules.set('confused', new Set(['anxious', 'curious', 'neutral', 'angry']));
-    this.transitionRules.set('neutral', new Set(['happy', 'sad', 'angry', 'anxious', 'confident', 'nostalgic', 'empathetic', 'curious', 'proud', 'confused']));
+    // Define valid emotion transitions (updated for current emotions)
+    this.transitionRules.set('happy', new Set(['neutral', 'confident', 'sad']));
+    this.transitionRules.set('sad', new Set(['neutral', 'angry', 'happy']));
+    this.transitionRules.set('angry', new Set(['neutral', 'sad', 'confident']));
+    this.transitionRules.set('confident', new Set(['happy', 'neutral', 'angry']));
+    this.transitionRules.set('neutral', new Set(['happy', 'sad', 'angry', 'confident']));
   }
 
   public recordEmotionState(agentId: string, state: EmotionState): void {
