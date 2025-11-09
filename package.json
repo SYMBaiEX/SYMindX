@@ -5,14 +5,16 @@
   "private": true,
   "workspaces": [
     "mind-agents",
-    "website"
+    "website",
+    "create-symindx"
   ],
   "scripts": {
     "build": "bun build:all",
-    "build:all": "bun build:agent && bun build:website",
+    "build:all": "bun build:agent && bun build:website && bun build:scaffolder",
     "build:agent": "cd mind-agents && bun run build",
     "build:cli": "cd mind-agents && bun run build:cli",
     "build:website": "cd website && bun run build",
+    "build:scaffolder": "cd create-symindx && bun run build",
     "start": "bun start:agent",
     "start:agent": "cd mind-agents && bun run start",
     "start:cli": "cd mind-agents && bun run start:cli",
@@ -28,6 +30,7 @@
     "prepare": "husky"
   },
   "dependencies": {
+    "gradient-string": "^3.0.0",
     "slack": "^11.0.2",
     "telegraf": "^4.16.3"
   }

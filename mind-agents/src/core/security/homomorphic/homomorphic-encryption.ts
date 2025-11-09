@@ -598,8 +598,20 @@ export class PrivateInferenceEngine {
  */
 export function createHECore(
   scheme: HEScheme,
-  params: HESecurityParams
+  params: HESecurityParams | HESecurityLevel
 ): HomomorphicEncryptionCore {
+  // Handle legacy call signature: createHECore(scheme, securityLevel)
+  if (typeof params === 'string') {
+    const securityLevel = params as HESecurityLevel;
+    const defaultParams: HESecurityParams = {
+      polyModulusDegree: 8192,
+      coeffModulus: [60, 40, 40, 60],
+      plainModulus: 65537,
+      scale: Math.pow(2, 40),
+      securityLevel,
+    };
+    return new HomomorphicEncryptionCore(scheme, defaultParams);
+  }
   return new HomomorphicEncryptionCore(scheme, params);
 }
 

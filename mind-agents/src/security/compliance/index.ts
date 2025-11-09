@@ -64,6 +64,6 @@ export type {
 
 // Factory function type for module registration
 export type ComplianceModuleFactory = (
-  memoryProvider: any,
-  config: any
+  memoryProvider: import('../../types/memory.js').MemoryProvider,
+  config: import('../../types/compliance.js').ComplianceConfig
 ) => Promise<ComplianceManager>;

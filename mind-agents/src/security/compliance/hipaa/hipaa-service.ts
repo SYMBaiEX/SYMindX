@@ -60,7 +60,7 @@ export class HIPAAServiceImpl extends EventEmitter implements HIPAAService {
   /**
    * Classify data to determine if it contains PHI
    */
-  classifyData(data: any): PHIClassification {
+  classifyData(data: import('../common/data-classifier.js').ClassifiableData): PHIClassification {
     if (!data) {
       return { isPHI: false, dataType: 'other', sensitivityLevel: 'low' };
     }
@@ -110,7 +110,7 @@ export class HIPAAServiceImpl extends EventEmitter implements HIPAAService {
   /**
    * Encrypt PHI data
    */
-  async encryptPHI(data: any): Promise<EncryptedData> {
+  async encryptPHI(data: import('../common/data-classifier.js').ClassifiableData): Promise<EncryptedData> {
     try {
       const dataString = typeof data === 'string' ? data : JSON.stringify(data);
       const algorithm = 'aes-256-gcm';
@@ -342,7 +342,7 @@ export class HIPAAServiceImpl extends EventEmitter implements HIPAAService {
     endDate?: Date
   ): Promise<HIPAAAuditLog[]> {
     try {
-      const filters: any = { type: 'hipaa_audit_log', patientId };
+      const filters: Record<string, unknown> = { type: 'hipaa_audit_log', patientId };
 
       const memories = await this.memoryProvider.getMemories('system', filters);
 

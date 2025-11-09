@@ -8,7 +8,7 @@
 export { SYMindXRuntime } from './runtime';
 export { SYMindXModuleRegistry } from './registry';
 export type { ExtensionLoader } from './extension-loader';
-export { SimpleEventBus } from './event-bus';
+export { SimpleEventBus, createAgentEvent } from './event-bus';
 export { MCPIntegration, mcpIntegration } from './mcp-integration';
 export type {
   MCPServerConfig,

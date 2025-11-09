@@ -157,7 +157,7 @@ export class SOXServiceImpl extends EventEmitter implements SOXService {
   /**
    * Tag financial data to identify its type and requirements
    */
-  tagFinancialData(data: any): FinancialDataTag {
+  tagFinancialData(data: import('../common/data-classifier.js').ClassifiableData): FinancialDataTag {
     if (!data) {
       return {
         isFinancial: false,
@@ -223,7 +223,7 @@ export class SOXServiceImpl extends EventEmitter implements SOXService {
    * Validate financial transaction
    */
   async validateFinancialTransaction(
-    transaction: any
+    transaction: Record<string, unknown>
   ): Promise<ValidationResult> {
     try {
       const errors: string[] = [];

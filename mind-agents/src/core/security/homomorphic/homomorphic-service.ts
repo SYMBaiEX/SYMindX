@@ -607,7 +607,29 @@ export class HomomorphicEncryptionServiceImpl
  * Create Homomorphic Encryption Service
  */
 export async function createHomomorphicEncryptionService(
-  config: HomomorphicEncryptionConfig
+  config: Partial<HomomorphicEncryptionConfig> & Pick<HomomorphicEncryptionConfig, 'defaultScheme' | 'securityLevel'>
 ): Promise<HomomorphicEncryptionService> {
-  return new HomomorphicEncryptionServiceImpl(config);
+  const fullConfig: HomomorphicEncryptionConfig = {
+    defaultScheme: config.defaultScheme,
+    securityLevel: config.securityLevel,
+    enabledFeatures: {
+      privateInference: config.enabledFeatures?.privateInference ?? false,
+      encryptedMemory: config.enabledFeatures?.encryptedMemory ?? false,
+      pir: config.enabledFeatures?.pir ?? false,
+      psi: config.enabledFeatures?.psi ?? false,
+      secureAggregation: config.enabledFeatures?.secureAggregation ?? false,
+    },
+    optimization: {
+      autoBootstrap: config.optimization?.autoBootstrap ?? false,
+      lazyReduction: config.optimization?.lazyReduction ?? false,
+      parallelization: config.optimization?.parallelization ?? false,
+      gpuAcceleration: config.optimization?.gpuAcceleration ?? false,
+    },
+    resourceLimits: {
+      maxCiphertextSizeMB: config.resourceLimits?.maxCiphertextSizeMB ?? 100,
+      maxComputeTimeMs: config.resourceLimits?.maxComputeTimeMs ?? 30000,
+      maxMemoryUsageMB: config.resourceLimits?.maxMemoryUsageMB ?? 1000,
+    },
+  };
+  return new HomomorphicEncryptionServiceImpl(fullConfig);
 }

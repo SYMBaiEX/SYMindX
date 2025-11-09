@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SYMindX Agent Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #FF006E, #8338EC, #3A86FF);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #4CAF50;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .chat-container {
+            grid-column: 1 / -1;
+        }
+
+        .chat-messages {
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: #f9f9f9;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 10px;
+            max-width: 80%;
+        }
+
+        .message.user {
+            background: #007bff;
+            color: white;
+            margin-left: auto;
+        }
+
+        .message.agent {
+            background: #e9ecef;
+            color: #333;
+        }
+
+        .chat-input {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+
+        .chat-input button {
+            padding: 15px 30px;
+            background: linear-gradient(45deg, #FF006E, #8338EC);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: transform 0.2s;
+        }
+
+        .chat-input button:hover {
+            transform: translateY(-2px);
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .metric {
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(45deg, #f8f9fa, #e9ecef);
+            border-radius: 10px;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 5px;
+        }
+
+        .metric-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .action-btn {
+            padding: 10px 20px;
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: transform 0.2s;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            text-decoration: none;
+            color: white;
+        }
+
+        .footer {
+            text-align: center;
+            color: white;
+            opacity: 0.8;
+            margin-top: 40px;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .quick-actions {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 SYMindX Agent Dashboard</h1>
+            <p>Your AI agent is running and ready to interact!</p>
+        </div>
+
+        <div class="dashboard">
+            <div class="card">
+                <h2>🔋 Agent Status</h2>
+                <div class="status">
+                    <div class="status-dot"></div>
+                    <span>Agent Online</span>
+                </div>
+                <div class="status">
+                    <div class="status-dot" style="background: #2196F3;"></div>
+                    <span id="personality">Personality: Loading...</span>
+                </div>
+                <div class="status">
+                    <div class="status-dot" style="background: #FF9800;"></div>
+                    <span id="memory">Memory: Loading...</span>
+                </div>
+                <div class="status">
+                    <div class="status-dot" style="background: #9C27B0;"></div>
+                    <span id="provider">AI Provider: Loading...</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>📊 Metrics</h2>
+                <div class="metrics">
+                    <div class="metric">
+                        <div class="metric-value" id="uptime">0s</div>
+                        <div class="metric-label">Uptime</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value" id="messages">0</div>
+                        <div class="metric-label">Messages</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value" id="emotion">😐</div>
+                        <div class="metric-label">Current Emotion</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card chat-container">
+                <h2>💬 Chat with Your Agent</h2>
+                <div class="chat-messages" id="chatMessages">
+                    <div class="message agent">
+                        <strong>Agent:</strong> Hello! I'm your SYMindX agent. How can I help you today?
+                    </div>
+                </div>
+                <div class="chat-input">
+                    <input type="text" id="messageInput" placeholder="Type your message here..." onkeypress="handleKeyPress(event)">
+                    <button onclick="sendMessage()">Send</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>🚀 Quick Actions</h2>
+            <div class="quick-actions">
+                <button class="action-btn" onclick="testAgent()">🧪 Test Agent</button>
+                <button class="action-btn" onclick="viewLogs()">📋 View Logs</button>
+                <button class="action-btn" onclick="openConfig()">⚙️ Configuration</button>
+                <a href="/api/docs" class="action-btn">📖 API Docs</a>
+                <button class="action-btn" onclick="restartAgent()">🔄 Restart</button>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>🤖 Powered by SYMindX • <a href="https://docs.symindx.com" style="color: #fff;">Documentation</a> • <a href="https://github.com/symindx/symindx" style="color: #fff;">GitHub</a></p>
+        </div>
+    </div>
+
+    <script>
+        let messageCount = 0;
+        let startTime = Date.now();
+
+        // Initialize dashboard
+        async function initDashboard() {
+            try {
+                const response = await fetch('/api/status');
+                const status = await response.json();
+                
+                document.getElementById('personality').textContent = `Personality: ${status.personality || 'Unknown'}`;
+                document.getElementById('memory').textContent = `Memory: ${status.memoryProvider || 'Unknown'}`;
+                document.getElementById('provider').textContent = `AI Provider: ${status.aiProvider || 'Unknown'}`;
+                
+                updateMetrics();
+            } catch (error) {
+                console.error('Failed to load status:', error);
+            }
+        }
+
+        // Update metrics
+        function updateMetrics() {
+            const uptime = Math.floor((Date.now() - startTime) / 1000);
+            const hours = Math.floor(uptime / 3600);
+            const minutes = Math.floor((uptime % 3600) / 60);
+            const seconds = uptime % 60;
+            
+            let uptimeStr = '';
+            if (hours > 0) uptimeStr += `${hours}h `;
+            if (minutes > 0) uptimeStr += `${minutes}m `;
+            uptimeStr += `${seconds}s`;
+            
+            document.getElementById('uptime').textContent = uptimeStr;
+            document.getElementById('messages').textContent = messageCount;
+        }
+
+        // Send message
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            // Add user message to chat
+            addMessage('user', message);
+            input.value = '';
+            messageCount++;
+            
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ message })
+                });
+                
+                const data = await response.json();
+                addMessage('agent', data.response || data.message || 'No response');
+                
+                // Update emotion if provided
+                if (data.emotion) {
+                    const emotionEmojis = {
+                        happy: '😊', sad: '😢', angry: '😠', confident: '😎',
+                        neutral: '😐', curious: '🤔', empathetic: '🤗'
+                    };
+                    document.getElementById('emotion').textContent = emotionEmojis[data.emotion] || '😐';
+                }
+            } catch (error) {
+                addMessage('agent', 'Sorry, I encountered an error. Please try again.');
+                console.error('Chat error:', error);
+            }
+        }
+
+        // Add message to chat
+        function addMessage(sender, text) {
+            const messagesContainer = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            messageDiv.innerHTML = `<strong>${sender === 'user' ? 'You' : 'Agent'}:</strong> ${text}`;
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // Handle enter key
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        // Quick actions
+        async function testAgent() {
+            addMessage('user', 'Hello, can you introduce yourself?');
+            messageCount++;
+            
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: 'Hello, can you introduce yourself?' })
+                });
+                const data = await response.json();
+                addMessage('agent', data.response || data.message || 'Test successful!');
+            } catch (error) {
+                addMessage('agent', 'Test failed. Please check the console for errors.');
+            }
+        }
+
+        function viewLogs() {
+            window.open('/api/logs', '_blank');
+        }
+
+        function openConfig() {
+            alert('Configuration editing coming soon! For now, edit src/config/agent.json manually.');
+        }
+
+        async function restartAgent() {
+            if (confirm('Are you sure you want to restart the agent?')) {
+                try {
+                    await fetch('/api/restart', { method: 'POST' });
+                    alert('Agent restart initiated. Please refresh the page in a few seconds.');
+                } catch (error) {
+                    alert('Restart failed. Please restart manually.');
+                }
+            }
+        }
+
+        // Initialize and start metrics updates
+        initDashboard();
+        setInterval(updateMetrics, 1000);
+        
+        // Add some example messages for demo
+        setTimeout(() => {
+            addMessage('agent', 'I\'m ready to help! Try asking me about my capabilities or just have a conversation.');
+        }, 1000);
+    </script>
+</body>
+</html>

@@ -14,3 +14,9 @@ export * from './auth/session-manager';
 export * from './middleware/auth-middleware';
 export * from './middleware/input-validation';
 export * from './middleware/secure-error-handler';
+
+// Export advanced security services
+export { createAIActComplianceService } from './ai-act';
+export { createQuantumSecurityService } from './quantum';
+export { createHomomorphicEncryptionService } from './homomorphic';
+export { createComplianceDashboard } from './compliance-dashboard';

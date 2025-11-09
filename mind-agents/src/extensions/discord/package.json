@@ -1,0 +1,19 @@
+{
+  "name": "@symindx/discord-extension",
+  "version": "1.0.0",
+  "description": "Autonomous Discord extension for SYMindX agents",
+  "main": "index.ts",
+  "symindx": {
+    "extension": {
+      "type": "communication",
+      "factory": "createDiscordExtension",
+      "autoRegister": true
+    }
+  },
+  "dependencies": {
+    "discord.js": "^14.14.1"
+  },
+  "keywords": ["symindx", "discord", "autonomous", "social-media"],
+  "author": "SYMindX Team",
+  "license": "MIT"
+}

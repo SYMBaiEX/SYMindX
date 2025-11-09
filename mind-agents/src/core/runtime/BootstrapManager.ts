@@ -20,11 +20,12 @@ import { ExtensionLoader, createExtensionLoader } from '../extension-loader';
 import { MultiAgentManager } from '../multi-agent-manager';
 import { standardLoggers } from '../../utils/standard-logging';
 import { createRuntimeError } from '../../utils/standard-errors';
+import { createAgentEvent } from '../event-bus';
 
 // Module imports
-import { registerMemoryFactories } from '../../modules/memory/index';
-import { registerEmotionFactories } from '../../modules/emotion/index';
-import { registerCognitionFactories } from '../../modules/cognition/index';
+import { registerMemoryProviders } from '../../modules/memory/index';
+import { registerEmotionModules } from '../../modules/emotion/index';
+import { registerCognitionModules } from '../../modules/cognition/index';
 
 export class BootstrapManager {
   private logger = standardLoggers.runtime;
@@ -86,15 +87,15 @@ export class BootstrapManager {
 
     try {
       // Register memory providers
-      registerMemoryFactories(this.registry);
+      await registerMemoryProviders(this.registry);
       this.logger.debug('Memory providers registered');
 
       // Register emotion modules
-      registerEmotionFactories(this.registry);
+      await registerEmotionModules(this.registry);
       this.logger.debug('Emotion modules registered');
 
       // Register cognition modules
-      registerCognitionFactories(this.registry);
+      await registerCognitionModules(this.registry);
       this.logger.debug('Cognition modules registered');
 
       // Log registration summary
@@ -204,12 +205,11 @@ export class BootstrapManager {
       this.extensionLoader.registerExtension(extensionId, extension);
 
       // Emit extension loaded event
-      this.eventBus.emit({
-        type: 'extension.loaded',
-        agentId: 'system',
-        data: { extensionId, config },
-        timestamp: new Date(),
-      });
+      this.eventBus.emit(createAgentEvent(
+        'extension.loaded',
+        { extensionId, config },
+        'system'
+      ));
 
       this.logger.debug(`Extension loaded: ${extensionId}`);
     } catch (error) {
@@ -344,12 +344,11 @@ export class BootstrapManager {
       this.registry.registerPortal(portalId, portal);
 
       // Emit portal loaded event
-      this.eventBus.emit({
-        type: 'portal.loaded',
-        agentId: 'system',
-        data: { portalId, config },
-        timestamp: new Date(),
-      });
+      this.eventBus.emit(createAgentEvent(
+        'portal.loaded',
+        { portalId, config },
+        'system'
+      ));
 
       this.logger.debug(`Portal loaded: ${portalId}`);
     } catch (error) {

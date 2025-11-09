@@ -178,7 +178,7 @@ export class GDPRServiceImpl extends EventEmitter implements GDPRService {
       .replace(/\b[A-Z][a-z]+ [A-Z][a-z]+\b/g, '[NAME]');
   }
 
-  private anonymizeMetadata(metadata: any): any {
+  private anonymizeMetadata(metadata: Record<string, unknown>): Record<string, unknown> {
     if (!metadata) return {};
 
     const anonymized = { ...metadata };
@@ -405,7 +405,7 @@ export class GDPRServiceImpl extends EventEmitter implements GDPRService {
         userId: request.userId,
       });
 
-      let responseData: any;
+      let responseData: Record<string, unknown> | { deleted: boolean };
 
       switch (request.type) {
         case 'access':

@@ -112,6 +112,10 @@ async function build() {
       for (const log of result.logs) {
         console.error(log);
       }
+      // Log any additional error information from logs
+      if (result.logs.length === 0) {
+        console.error("No detailed error logs available. Check TypeScript compilation output above.");
+      }
       
       // Fallback to direct TypeScript compilation
       console.log("\n🔄 Attempting TypeScript compilation fallback...");

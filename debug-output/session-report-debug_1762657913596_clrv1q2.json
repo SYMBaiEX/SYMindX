@@ -1,0 +1,96 @@
+{
+  "session": {
+    "id": "debug_1762657913596_clrv1q2",
+    "name": "integration-test",
+    "startTime": "2025-11-09T03:11:53.596Z",
+    "level": 1,
+    "filters": [],
+    "outputs": [
+      {
+        "type": "console",
+        "config": {},
+        "enabled": true
+      }
+    ],
+    "active": false
+  },
+  "summary": {
+    "duration": 1012,
+    "traceCount": 4,
+    "errorCount": 0,
+    "categories": [
+      "debug",
+      "integration"
+    ]
+  },
+  "traces": [
+    {
+      "id": "trace_1762657913596_0fwpiwm",
+      "timestamp": "2025-11-09T03:11:53.596Z",
+      "level": 2,
+      "category": "debug",
+      "message": "Debug session 'integration-test' started",
+      "data": {
+        "sessionId": "debug_1762657913596_clrv1q2",
+        "level": "DEBUG",
+        "filters": 0,
+        "outputs": 0
+      },
+      "context": {
+        "sessionId": "debug_1762657913596_clrv1q2"
+      },
+      "performance": {
+        "memory": 16845164
+      }
+    },
+    {
+      "id": "trace_1762657913596_41hbjt2",
+      "timestamp": "2025-11-09T03:11:53.596Z",
+      "level": 2,
+      "category": "integration",
+      "message": "Complex operation attempt 1",
+      "data": {
+        "attempt": 1
+      },
+      "context": {
+        "sessionId": "debug_1762657913596_clrv1q2"
+      },
+      "performance": {
+        "memory": 16845164
+      }
+    },
+    {
+      "id": "trace_1762657914596_gx2zrjg",
+      "timestamp": "2025-11-09T03:11:54.596Z",
+      "level": 2,
+      "category": "integration",
+      "message": "Complex operation attempt 2",
+      "data": {
+        "attempt": 2
+      },
+      "context": {
+        "sessionId": "debug_1762657913596_clrv1q2"
+      },
+      "performance": {
+        "memory": 16874933
+      }
+    },
+    {
+      "id": "trace_1762657914608_9qcd1rx",
+      "timestamp": "2025-11-09T03:11:54.608Z",
+      "level": 2,
+      "category": "debug",
+      "message": "Debug session 'integration-test' ended",
+      "data": {
+        "sessionId": "debug_1762657913596_clrv1q2",
+        "duration": 1012
+      },
+      "context": {
+        "sessionId": "debug_1762657913596_clrv1q2"
+      },
+      "performance": {
+        "memory": 16874933
+      }
+    }
+  ]
+}

@@ -733,14 +733,14 @@ export class PerformanceMonitor extends EventEmitter {
    */
   public createMeasureDecorator(metricName?: string) {
     return function (
-      target: any,
+      target: unknown,
       propertyKey: string,
       descriptor: PropertyDescriptor
     ) {
       const originalMethod = descriptor.value;
-      const name = metricName || `${target.constructor.name}_${propertyKey}`;
+      const name = metricName || `${(target as { constructor: { name: string } }).constructor.name}_${propertyKey}`;
 
-      descriptor.value = async function (...args: any[]) {
+      descriptor.value = async function (...args: unknown[]) {
         const monitor = PerformanceMonitor.getInstance();
         return monitor.measure(name, () => originalMethod.apply(this, args));
       };
@@ -1019,7 +1019,7 @@ export const recordMemoryOperation = (operation: string, duration: number) => {
  * Performance monitoring middleware for Express.js
  */
 export const createPerformanceMiddleware = () => {
-  return (req: any, res: any, next: any) => {
+  return (req: { method: string; url: string }, res: { on: (event: string, callback: () => void) => void }, next: () => void) => {
     const timer = performanceMonitor.createTimer('http_request');
 
     res.on('finish', () => {

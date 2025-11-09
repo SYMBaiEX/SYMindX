@@ -15,6 +15,27 @@ import {
 } from '../../../types/compliance.js';
 import { runtimeLogger } from '../../../utils/logger.js';
 
+// Type definitions for data classification
+export type ClassifiableData = string | number | boolean | object | null | undefined;
+
+export interface GDPRClassification {
+  isPersonalData: boolean;
+  dataTypes: string[];
+  lawfulBasis: string;
+}
+
+export interface AnonymizedData {
+  pseudonym?: string;
+  originalLength?: number;
+  classification?: string;
+  timestamp?: string;
+}
+
+export interface ClassificationResult {
+  level: string;
+  tags: string[];
+}
+
 export class DataClassifier {
   private classificationRules: Map<string, DataHandlingRule> = new Map();
 
@@ -153,7 +174,7 @@ export class DataClassifier {
   /**
    * Classify data comprehensively across all regulations
    */
-  classifyData(data: any): DataClassification {
+  classifyData(data: ClassifiableData): DataClassification {
     const content = this.normalizeData(data);
     const detectedPatterns = this.detectPatterns(content);
     const classification = this.determineClassification(detectedPatterns);
@@ -175,11 +196,7 @@ export class DataClassifier {
   /**
    * Classify for GDPR specifically
    */
-  classifyForGDPR(data: any): {
-    isPersonalData: boolean;
-    dataTypes: string[];
-    lawfulBasis: string;
-  } {
+  classifyForGDPR(data: ClassifiableData): GDPRClassification {
     const content = this.normalizeData(data);
     const detectedTypes: string[] = [];
 
@@ -220,7 +237,7 @@ export class DataClassifier {
   /**
    * Classify for HIPAA specifically
    */
-  classifyForHIPAA(data: any): PHIClassification {
+  classifyForHIPAA(data: ClassifiableData): PHIClassification {
     const content = this.normalizeData(data);
     let sensitivityLevel: 'low' | 'medium' | 'high' | 'critical' = 'low';
     let dataType: string = 'other';
@@ -250,7 +267,7 @@ export class DataClassifier {
 
     return {
       isPHI,
-      dataType: dataType as any,
+      dataType: dataType as 'medical_record' | 'health_plan' | 'name' | 'biometric' | 'other',
       sensitivityLevel,
     };
   }
@@ -258,7 +275,7 @@ export class DataClassifier {
   /**
    * Classify for SOX specifically
    */
-  classifyForSOX(data: any): FinancialDataTag {
+  classifyForSOX(data: ClassifiableData): FinancialDataTag {
     const content = this.normalizeData(data);
     let dataType: string = 'transaction';
     let materialityLevel: 'immaterial' | 'material' | 'highly_material' =
@@ -307,7 +324,7 @@ export class DataClassifier {
 
     return {
       isFinancial,
-      dataType: dataType as any,
+      dataType: dataType as 'transaction' | 'revenue' | 'expense' | 'asset' | 'liability' | 'equity' | 'journal_entry',
       materialityLevel,
       requiresApproval: materialityLevel !== 'immaterial',
       approvalThreshold: maxAmount,
@@ -343,7 +360,7 @@ export class DataClassifier {
   /**
    * Anonymize data based on classification
    */
-  anonymizeData(data: any, classification: DataClassification): any {
+  anonymizeData(data: ClassifiableData, classification: DataClassification): ClassifiableData {
     let content = this.normalizeData(data);
 
     // Apply anonymization based on classification level
@@ -377,7 +394,7 @@ export class DataClassifier {
   /**
    * Pseudonymize data (reversible anonymization)
    */
-  pseudonymizeData(data: any, key: string): any {
+  pseudonymizeData(data: ClassifiableData, key: string): AnonymizedData | ClassifiableData {
     const content = this.normalizeData(data);
     const classification = this.classifyData(data);
 
@@ -402,7 +419,7 @@ export class DataClassifier {
 
   // Private helper methods
 
-  private normalizeData(data: any): string {
+  private normalizeData(data: ClassifiableData): string {
     if (typeof data === 'string') {
       return data;
     } else if (typeof data === 'object' && data !== null) {
@@ -427,10 +444,7 @@ export class DataClassifier {
     return detectedPatterns;
   }
 
-  private determineClassification(patterns: Map<string, number>): {
-    level: string;
-    tags: string[];
-  } {
+  private determineClassification(patterns: Map<string, number>): ClassificationResult {
     const tags: string[] = [];
     let level: 'public' | 'internal' | 'confidential' | 'restricted' = 'public';
 
@@ -495,10 +509,7 @@ export class DataClassifier {
     return { level, tags };
   }
 
-  private getApplicableRules(classification: {
-    level: string;
-    tags: string[];
-  }): DataHandlingRule[] {
+  private getApplicableRules(classification: ClassificationResult): DataHandlingRule[] {
     const applicableRules: DataHandlingRule[] = [];
 
     // Add rules based on classification level and tags

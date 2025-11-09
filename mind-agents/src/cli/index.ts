@@ -349,7 +349,7 @@ class AwesomeSYMindXCLI {
     await this.startChatMode(selectedAgent);
   }
 
-  private formatAgentChoice(agent: any): string {
+  private formatAgentChoice(agent: { id: string; name: string; status: string; emotion?: string }): string {
     const status = agent.status === 'active' ? '🟢' : '🔴';
     const emotion = agent.emotion ? this.getEmotionEmoji(agent.emotion) : '😐';
     return `${status} ${agent.name} ${emotion} (${agent.id})`;
@@ -676,7 +676,7 @@ class AwesomeSYMindXCLI {
         type: 'input',
         name: 'id',
         message: 'Agent ID:',
-        default: (answers: any) =>
+        default: (answers: { name: string }) =>
           answers.name.toLowerCase().replace(/\s+/g, '-'),
         validate: (input) =>
           /^[a-z0-9-]+$/.test(input) ||

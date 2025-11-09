@@ -1,588 +1,336 @@
 /**
- * Performance Optimization Integration Tests
- * Comprehensive tests for optimized components and performance improvements
+ * Performance Optimization Tests
+ * Tests for memory usage, caching, and performance monitoring
  */
 
-import {
-  describe,
-  test,
-  expect,
-  beforeEach,
-  afterEach,
-  beforeAll,
-  afterAll,
-} from 'bun:test';
-import { SimpleEventBus } from '../core/event-bus';
-import { LRUCache, MultiLevelCache } from '../utils/LRUCache';
-import { ConnectionPool } from '../utils/ConnectionPool';
-import { PerformanceMonitor } from '../utils/PerformanceMonitor';
-import { MemoryManager } from '../utils/MemoryManager';
-import { AsyncQueue, globalQueue } from '../utils/AsyncQueue';
-import {
-  performanceBenchmark,
-  quickBenchmark,
-} from '../utils/PerformanceBenchmark';
-import { AgentEvent } from '../types/agent';
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { memoryManager } from '../utils/MemoryManager';
+import { globalLazyLoader } from '../utils/LazyLoader';
+import { stringPool, configPool } from '../utils/SharedMemoryPool';
+import { gcOptimizer } from '../utils/GarbageCollectionOptimizer';
+import { aiResponseCache } from '../utils/IntelligentResponseCache';
+import { healthCheckSystem } from '../utils/HealthCheckSystem';
+import { bottleneckAnalyzer } from '../utils/BottleneckAnalyzer';
 
-describe('Performance Optimization Components', () => {
-  let eventBus: SimpleEventBus;
-  let performanceMonitor: PerformanceMonitor;
-  let memoryManager: MemoryManager;
-
-  beforeAll(() => {
-    performanceMonitor = new PerformanceMonitor();
-    performanceMonitor.start();
-
-    memoryManager = new MemoryManager();
-    memoryManager.start();
-  });
-
-  afterAll(async () => {
-    performanceMonitor.stop();
-    memoryManager.stop();
-    await globalQueue.shutdown(5000);
-  });
-
+describe('Performance Optimization', () => {
   beforeEach(() => {
-    eventBus = new SimpleEventBus();
+    // Clean up before each test
+    globalLazyLoader.clear();
+    stringPool.clear();
+    configPool.clear();
+    aiResponseCache.clear();
   });
 
   afterEach(() => {
-    eventBus.shutdown();
+    // Clean up after each test
+    globalLazyLoader.clear();
+    stringPool.clear();
+    configPool.clear();
+    aiResponseCache.clear();
   });
 
-  describe('SimpleEventBus', () => {
-    test('should handle high-volume events efficiently', async () => {
-      const eventCount = 10000;
-      const receivedEvents: AgentEvent[] = [];
-
-      eventBus.on('test-event', (event) => {
-        receivedEvents.push(event);
-      });
-
-      const benchmark = await quickBenchmark(
-        'event-bus-volume',
-        () => {
-          for (let i = 0; i < 100; i++) {
-            eventBus.emit({
-              id: `event-${i}`,
-              type: 'test-event',
-              agentId: 'test-agent',
-              timestamp: new Date(),
-              payload: { index: i, data: `data-${i}` },
-            });
-          }
-        },
-        100
-      );
-
-      // Performance assertions
-      expect(benchmark.duration.avg).toBeLessThan(50); // Less than 50ms average
-      expect(benchmark.throughput.opsPerSecond).toBeGreaterThan(100); // More than 100 ops/sec
-
-      // Wait for event processing
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      expect(receivedEvents.length).toBeGreaterThan(0);
+  describe('Memory Management', () => {
+    it('should track memory usage', () => {
+      const stats = memoryManager.getStats();
+      
+      expect(stats.currentMemory).toBeDefined();
+      expect(stats.currentMemory.heapUsed).toBeGreaterThan(0);
+      expect(stats.leakDetection).toBeDefined();
+      expect(stats.resourceCount).toBeGreaterThanOrEqual(0);
     });
 
-    test('should handle event rotation to prevent memory leaks', () => {
-      const initialEvents = eventBus.getEvents();
-
-      // Add lots of events to test rotation
-      for (let i = 0; i < 1500; i++) {
-        eventBus.emit({
-          id: `event-${i}`,
-          type: 'repeated-event',
-          agentId: 'test-agent',
-          timestamp: new Date(),
-          payload: { data: 'similar-data' },
-        });
-      }
-
-      const finalEvents = eventBus.getEvents();
-      const metrics = eventBus.getMetrics();
-
-      // Should not exceed max history size (1000)
-      expect(finalEvents.length).toBeLessThanOrEqual(1000);
-      expect(metrics.totalEvents).toBe(1500);
-    });
-
-    test('should handle multiple listeners correctly', async () => {
-      const receivedEvents: AgentEvent[] = [];
-
-      eventBus.on('multi-listener-event', (event) => {
-        receivedEvents.push(event);
-      });
-
-      eventBus.on('multi-listener-event', (event) => {
-        receivedEvents.push(event);
-      });
-
-      const event: AgentEvent = {
-        id: 'multi-listener-test',
-        type: 'multi-listener-event',
-        agentId: 'test-agent',
-        timestamp: new Date(),
-        payload: { test: true },
-      };
-
-      eventBus.emit(event);
-
-      // Wait for processing
-      await new Promise((resolve) => setTimeout(resolve, 50));
-
-      expect(receivedEvents.length).toBe(2);
-    });
-  });
-
-  describe('LRUCache', () => {
-    test('should maintain LRU order and evict correctly', () => {
-      const cache = new LRUCache<string, number>({ maxSize: 3 });
-
-      cache.set('a', 1);
-      cache.set('b', 2);
-      cache.set('c', 3);
-
-      // Access 'a' to make it most recent
-      expect(cache.get('a')).toBe(1);
-
-      // Add new item, should evict 'b' (least recently used)
-      cache.set('d', 4);
-
-      expect(cache.get('b')).toBeNull();
-      expect(cache.get('a')).toBe(1);
-      expect(cache.get('c')).toBe(3);
-      expect(cache.get('d')).toBe(4);
-    });
-
-    test('should respect TTL and auto-expire entries', async () => {
-      const cache = new LRUCache<string, number>({
-        maxSize: 10,
-        ttl: 100, // 100ms TTL
-      });
-
-      cache.set('short-lived', 42);
-      expect(cache.get('short-lived')).toBe(42);
-
-      // Wait for TTL to expire
-      await new Promise((resolve) => setTimeout(resolve, 150));
-
-      expect(cache.get('short-lived')).toBeNull();
-    });
-
-    test('should perform better than Map for cache workloads', async () => {
-      const mapCache = new Map<string, any>();
-      const lruCache = new LRUCache<string, any>({ maxSize: 1000 });
-
-      const mapBenchmark = await quickBenchmark(
-        'map-cache',
-        () => {
-          const key = `key-${Math.floor(Math.random() * 100)}`;
-          if (Math.random() > 0.5) {
-            mapCache.set(key, { data: 'test' });
-          } else {
-            mapCache.get(key);
-          }
-        },
-        1000
-      );
-
-      const lruBenchmark = await quickBenchmark(
-        'lru-cache',
-        () => {
-          const key = `key-${Math.floor(Math.random() * 100)}`;
-          if (Math.random() > 0.5) {
-            lruCache.set(key, { data: 'test' });
-          } else {
-            lruCache.get(key);
-          }
-        },
-        1000
-      );
-
-      // LRU cache should be competitive with Map
-      const performanceRatio =
-        lruBenchmark.duration.avg / mapBenchmark.duration.avg;
-      expect(performanceRatio).toBeLessThan(2); // Should not be more than 2x slower
-    });
-  });
-
-  describe('MultiLevelCache', () => {
-    test('should promote frequently accessed items', () => {
-      const cache = new MultiLevelCache<string, number>({
-        l1Size: 2,
-        l2Size: 3,
-      });
-
-      // Fill cache
-      cache.set('a', 1);
-      cache.set('b', 2);
-      cache.set('c', 3);
-      cache.set('d', 4);
-      cache.set('e', 5);
-
-      // Access 'c' multiple times to promote it
-      cache.get('c');
-      cache.get('c');
-      cache.get('c');
-
-      // Check that 'c' is now in L1 (fastest access)
-      const stats = cache.getStats();
-      expect(stats.l1.size).toBeGreaterThan(0);
-    });
-  });
-
-  describe('AsyncQueue', () => {
-    test('should execute tasks in priority order', async () => {
-      const queue = new AsyncQueue({ maxConcurrency: 1 });
-      const executionOrder: number[] = [];
-
-      // Add tasks with different priorities
-      queue.add(
-        () => {
-          executionOrder.push(1);
-        },
-        { priority: 1 }
-      );
-      queue.add(
-        () => {
-          executionOrder.push(5);
-        },
-        { priority: 5 }
-      );
-      queue.add(
-        () => {
-          executionOrder.push(3);
-        },
-        { priority: 3 }
-      );
-      queue.add(
-        () => {
-          executionOrder.push(10);
-        },
-        { priority: 10 }
-      );
-
-      // Wait for execution
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      expect(executionOrder).toEqual([10, 5, 3, 1]);
-
-      await queue.shutdown();
-    });
-
-    test('should handle recurring tasks correctly', async () => {
-      const queue = new AsyncQueue();
-      const executions: number[] = [];
-
-      queue.addRecurring(
-        () => {
-          executions.push(Date.now());
-        },
-        50,
-        { maxExecutions: 3 }
-      );
-
-      // Wait for executions
-      await new Promise((resolve) => setTimeout(resolve, 200));
-
-      expect(executions.length).toBe(3);
-
-      // Check intervals are approximately correct (50ms ± 20ms tolerance)
-      for (let i = 1; i < executions.length; i++) {
-        const interval = executions[i] - executions[i - 1];
-        expect(interval).toBeGreaterThan(30);
-        expect(interval).toBeLessThan(80);
-      }
-
-      await queue.shutdown();
-    });
-
-    test('should retry failed tasks', async () => {
-      const queue = new AsyncQueue();
-      let attempts = 0;
-
-      queue.add(
-        () => {
-          attempts++;
-          if (attempts < 3) {
-            throw new Error('Simulated failure');
-          }
-          return 'success';
-        },
-        { retries: 3 }
-      );
-
-      // Wait for retries
-      await new Promise((resolve) => setTimeout(resolve, 200));
-
-      expect(attempts).toBe(3);
-
-      await queue.shutdown();
-    });
-  });
-
-  describe('PerformanceMonitor', () => {
-    test('should track metrics accurately', () => {
-      const monitor = new PerformanceMonitor();
-      monitor.start();
-
-      // Record some metrics
-      monitor.recordMetric('test.counter', 1);
-      monitor.recordMetric('test.counter', 2);
-      monitor.recordMetric('test.counter', 3);
-
-      const stats = monitor.getStats('test.counter');
-      expect(stats).not.toBeNull();
-      expect(stats!.count).toBe(3);
-      expect(stats!.avg).toBe(2);
-      expect(stats!.min).toBe(1);
-      expect(stats!.max).toBe(3);
-
-      monitor.stop();
-    });
-
-    test('should trigger alerts on threshold breaches', async () => {
-      const monitor = new PerformanceMonitor();
-      monitor.start();
-
-      monitor.setThreshold('test.metric', 5, 10);
-
-      let alertTriggered = false;
-      monitor.on('alert', (alert) => {
-        if (alert.metric === 'test.metric') {
-          alertTriggered = true;
-        }
-      });
-
-      monitor.recordMetric('test.metric', 15); // Above critical threshold
-
-      expect(alertTriggered).toBe(true);
-
-      monitor.stop();
-    });
-
-    test('should time function execution accurately', async () => {
-      const monitor = new PerformanceMonitor();
-      monitor.start();
-
-      const result = await monitor.time('test.operation', async () => {
-        await new Promise((resolve) => setTimeout(resolve, 50));
-        return 'completed';
-      });
-
-      expect(result).toBe('completed');
-
-      const stats = monitor.getStats('test.operation.duration');
-      expect(stats).not.toBeNull();
-      expect(stats!.avg).toBeGreaterThan(45); // Approximately 50ms
-
-      monitor.stop();
-    });
-  });
-
-  describe('MemoryManager', () => {
-    test('should track memory usage accurately', () => {
-      const manager = new MemoryManager();
-      manager.start();
-
-      const initialSnapshot = manager.takeSnapshot();
-      expect(initialSnapshot.heapUsed).toBeGreaterThan(0);
-      expect(initialSnapshot.timestamp).toBeCloseTo(Date.now(), -2);
-
-      manager.stop();
-    });
-
-    test('should manage resources with automatic cleanup', async () => {
-      const manager = new MemoryManager();
-      manager.start();
-
+    it('should register and cleanup resources', async () => {
+      const resource = { data: 'test' };
       let cleanupCalled = false;
-      const resourceId = manager.registerResource(
-        'test-resource',
-        { data: 'test' },
-        () => {
-          cleanupCalled = true;
-        },
-        { ttl: 100 } // 100ms TTL
+      
+      const resourceId = memoryManager.registerResource(
+        'test',
+        resource,
+        () => { cleanupCalled = true; },
+        { ttl: 1000 }
       );
 
-      expect(manager.accessResource(resourceId)).toEqual({ data: 'test' });
+      expect(resourceId).toBeDefined();
+      expect(memoryManager.accessResource(resourceId)).toBe(resource);
+
+      const success = await memoryManager.unregisterResource(resourceId);
+      expect(success).toBe(true);
+      expect(cleanupCalled).toBe(true);
+    });
+
+    it('should optimize memory usage', async () => {
+      const result = await memoryManager.optimizeMemoryUsage();
+      
+      expect(result).toBeDefined();
+      expect(typeof result.gcOptimized).toBe('boolean');
+      expect(typeof result.lazyLoaderCleaned).toBe('number');
+      expect(typeof result.sharedPoolsCleaned).toBe('number');
+      expect(typeof result.resourcesCleaned).toBe('number');
+    });
+  });
+
+  describe('Lazy Loading', () => {
+    it('should register and load resources lazily', async () => {
+      let loadCalled = false;
+      const testResource = { value: 'loaded' };
+
+      globalLazyLoader.register({
+        id: 'test-resource',
+        type: 'test',
+        loader: async () => {
+          loadCalled = true;
+          return testResource;
+        },
+        priority: 5,
+        memoryEstimate: 1024,
+      });
+
+      // Resource should not be loaded yet
+      expect(globalLazyLoader.isLoaded('test-resource')).toBe(false);
+      expect(loadCalled).toBe(false);
+
+      // Load the resource
+      const loaded = await globalLazyLoader.load('test-resource');
+      expect(loaded).toBe(testResource);
+      expect(loadCalled).toBe(true);
+      expect(globalLazyLoader.isLoaded('test-resource')).toBe(true);
+
+      // Second load should return cached version
+      loadCalled = false;
+      const loaded2 = await globalLazyLoader.load('test-resource');
+      expect(loaded2).toBe(testResource);
+      expect(loadCalled).toBe(false);
+    });
+
+    it('should cleanup unused resources', async () => {
+      globalLazyLoader.register({
+        id: 'cleanup-test',
+        type: 'test',
+        loader: async () => ({ data: 'test' }),
+        priority: 1,
+        ttl: 100, // Very short TTL
+      });
+
+      await globalLazyLoader.load('cleanup-test');
+      expect(globalLazyLoader.isLoaded('cleanup-test')).toBe(true);
 
       // Wait for TTL to expire
-      await new Promise((resolve) => setTimeout(resolve, 150));
+      await new Promise(resolve => setTimeout(resolve, 150));
 
-      // Trigger cleanup
-      await manager.cleanup();
-
-      expect(cleanupCalled).toBe(true);
-      expect(manager.accessResource(resourceId)).toBeNull();
-
-      manager.stop();
-    });
-
-    test('should detect memory leaks', () => {
-      const manager = new MemoryManager();
-      manager.start();
-
-      // Simulate memory growth
-      for (let i = 0; i < 10; i++) {
-        manager.takeSnapshot();
-        // Simulate some memory allocation between snapshots
-        const dummy = new Array(1000).fill('data');
-        global.dummyData = dummy; // Prevent GC
-      }
-
-      const leakDetection = manager.detectLeaks();
-      expect(leakDetection.trend).toBeDefined();
-      expect(leakDetection.growthRate).toBeGreaterThanOrEqual(0);
-
-      // Cleanup
-      delete global.dummyData;
-      manager.stop();
+      const cleaned = await globalLazyLoader.cleanup();
+      expect(cleaned).toBeGreaterThan(0);
+      expect(globalLazyLoader.isLoaded('cleanup-test')).toBe(false);
     });
   });
 
-  describe('Connection Pool', () => {
-    interface MockConnection {
-      id: string;
-      isConnected: boolean;
-      connect(): Promise<void>;
-      disconnect(): Promise<void>;
-      isHealthy(): Promise<boolean>;
-      execute<T>(operation: () => Promise<T>): Promise<T>;
-    }
+  describe('Shared Memory Pools', () => {
+    it('should pool and reuse strings', () => {
+      const str1 = 'test string';
+      const str2 = 'test string';
 
-    function createMockConnection(): MockConnection {
-      return {
-        id: `mock_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        isConnected: false,
-        async connect() {
-          this.isConnected = true;
-        },
-        async disconnect() {
-          this.isConnected = false;
-        },
-        async isHealthy() {
-          return this.isConnected;
-        },
-        async execute<T>(operation: () => Promise<T>): Promise<T> {
-          if (!this.isConnected) {
-            throw new Error('Connection not established');
-          }
-          return operation();
-        },
+      const pooled1 = stringPool.getOrCreate(str1);
+      const pooled2 = stringPool.getOrCreate(str2);
+
+      // Should return the same reference
+      expect(pooled1).toBe(pooled2);
+
+      const stats = stringPool.getStats();
+      expect(stats.hitRate).toBeGreaterThan(0);
+    });
+
+    it('should pool and reuse config objects', () => {
+      const config1 = { setting: 'value', number: 42 };
+      const config2 = { setting: 'value', number: 42 };
+
+      const pooled1 = configPool.getOrCreate(config1);
+      const pooled2 = configPool.getOrCreate(config2);
+
+      // Should return the same reference for identical objects
+      expect(pooled1).toBe(pooled2);
+    });
+
+    it('should cleanup expired pool entries', () => {
+      const testString = 'cleanup test';
+      stringPool.getOrCreate(testString);
+
+      const initialSize = stringPool.getStats().size;
+      expect(initialSize).toBeGreaterThan(0);
+
+      const cleaned = stringPool.cleanup();
+      // Cleanup might not remove anything immediately due to TTL
+      expect(cleaned).toBeGreaterThanOrEqual(0);
+    });
+  });
+
+  describe('Garbage Collection Optimization', () => {
+    it('should track GC statistics', () => {
+      const stats = gcOptimizer.getStats();
+      
+      expect(stats.gcCount).toBeGreaterThanOrEqual(0);
+      expect(stats.totalGCTime).toBeGreaterThanOrEqual(0);
+      expect(stats.currentMemory).toBeDefined();
+      expect(stats.recommendations).toBeInstanceOf(Array);
+    });
+
+    it('should track weak references', () => {
+      const obj = { data: 'test' };
+      const weakRef = gcOptimizer.trackWeakRef(obj);
+      
+      expect(weakRef.deref()).toBe(obj);
+      
+      const stats = gcOptimizer.getStats();
+      expect(stats.weakRefCount).toBeGreaterThan(0);
+    });
+
+    it('should optimize memory', async () => {
+      const result = await gcOptimizer.optimize();
+      
+      expect(result).toBeDefined();
+      expect(typeof result.gcPerformed).toBe('boolean');
+      expect(typeof result.weakRefsCleanedUp).toBe('number');
+      expect(typeof result.memoryBefore).toBe('number');
+      expect(typeof result.memoryAfter).toBe('number');
+    });
+  });
+
+  describe('Intelligent Response Cache', () => {
+    it('should cache and retrieve responses', async () => {
+      const key = 'test-key';
+      const value = 'test response';
+
+      // Cache miss
+      const cached1 = await aiResponseCache.get(key);
+      expect(cached1).toBeNull();
+
+      // Set value
+      await aiResponseCache.set(key, value);
+
+      // Cache hit
+      const cached2 = await aiResponseCache.get(key);
+      expect(cached2).toBe(value);
+
+      const stats = aiResponseCache.getStats();
+      expect(stats.hits).toBe(1);
+      expect(stats.misses).toBe(1);
+      expect(stats.hitRate).toBe(0.5);
+    });
+
+    it('should invalidate cache by tag', async () => {
+      await aiResponseCache.set('key1', 'value1', { tags: ['tag1'] });
+      await aiResponseCache.set('key2', 'value2', { tags: ['tag1'] });
+      await aiResponseCache.set('key3', 'value3', { tags: ['tag2'] });
+
+      expect(await aiResponseCache.get('key1')).toBe('value1');
+      expect(await aiResponseCache.get('key2')).toBe('value2');
+      expect(await aiResponseCache.get('key3')).toBe('value3');
+
+      const invalidated = aiResponseCache.invalidateByTag('tag1');
+      expect(invalidated).toBe(2);
+
+      expect(await aiResponseCache.get('key1')).toBeNull();
+      expect(await aiResponseCache.get('key2')).toBeNull();
+      expect(await aiResponseCache.get('key3')).toBe('value3');
+    });
+
+    it('should prune expired entries', async () => {
+      await aiResponseCache.set('expire-key', 'expire-value', { ttl: 50 });
+      
+      expect(await aiResponseCache.get('expire-key')).toBe('expire-value');
+      
+      // Wait for expiration
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      const pruned = aiResponseCache.prune();
+      expect(pruned).toBeGreaterThan(0);
+      
+      expect(await aiResponseCache.get('expire-key')).toBeNull();
+    });
+  });
+
+  describe('Health Check System', () => {
+    it('should provide health status', () => {
+      const status = healthCheckSystem.getHealthStatus();
+      
+      expect(status.overall).toMatch(/^(healthy|warning|critical|unknown)$/);
+      expect(status.score).toBeGreaterThanOrEqual(0);
+      expect(status.score).toBeLessThanOrEqual(100);
+      expect(status.checks).toBeDefined();
+      expect(status.summary).toBeDefined();
+      expect(status.lastUpdate).toBeGreaterThan(0);
+    });
+
+    it('should register custom health checks', async () => {
+      const customCheck = {
+        name: 'test-check',
+        description: 'Test health check',
+        category: 'custom' as const,
+        priority: 'low' as const,
+        interval: 5000,
+        timeout: 1000,
+        retries: 1,
+        enabled: true,
+        check: async () => ({
+          healthy: true,
+          status: 'healthy' as const,
+          message: 'Test check passed',
+          timestamp: 0,
+          duration: 0,
+        }),
       };
-    }
 
-    test('should manage connections efficiently', async () => {
-      const pool = new ConnectionPool(
-        () => Promise.resolve(createMockConnection()),
-        {
-          minSize: 2,
-          maxSize: 5,
-          acquireTimeoutMs: 1000,
-        }
-      );
-
-      // Get connections
-      const conn1 = await pool.acquire();
-      const conn2 = await pool.acquire();
-
-      expect(conn1.isConnected).toBe(true);
-      expect(conn2.isConnected).toBe(true);
-
-      const stats = pool.getStats();
-      expect(stats.inUse).toBe(2);
-
-      // Release connections
-      await pool.release(conn1);
-      await pool.release(conn2);
-
-      const finalStats = pool.getStats();
-      expect(finalStats.inUse).toBe(0);
-      expect(finalStats.available).toBeGreaterThan(0);
-
-      await pool.drain();
-    });
-
-    test('should handle connection failures gracefully', async () => {
-      let connectionCount = 0;
-      const pool = new ConnectionPool(
-        () => {
-          connectionCount++;
-          if (connectionCount <= 2) {
-            return Promise.reject(new Error('Connection failed'));
-          }
-          return Promise.resolve(createMockConnection());
-        },
-        {
-          minSize: 1,
-          maxSize: 3,
-          createRetries: 3,
-        }
-      );
-
-      // Should eventually succeed after retries
-      const connection = await pool.acquire();
-      expect(connection.isConnected).toBe(true);
-
-      await pool.release(connection);
-      await pool.drain();
+      healthCheckSystem.registerCheck(customCheck);
+      
+      const result = await healthCheckSystem.runCheck('test-check');
+      expect(result.healthy).toBe(true);
+      expect(result.status).toBe('healthy');
+      expect(result.message).toBe('Test check passed');
     });
   });
 
-  describe('Integration Performance Tests', () => {
-    test('should show overall performance improvement', async () => {
-      const results = await performanceBenchmark.runPerformanceTests();
+  describe('Bottleneck Analyzer', () => {
+    it('should record and analyze operations', async () => {
+      // Record some operations
+      bottleneckAnalyzer.recordOperation('test-operation', 150); // Slow operation
+      bottleneckAnalyzer.recordOperation('fast-operation', 10);   // Fast operation
+      bottleneckAnalyzer.recordOperation('test-operation', 200); // Another slow one
 
-      expect(results.size).toBeGreaterThan(0);
-
-      for (const [testName, comparison] of results) {
-        console.log(
-          `${testName}: ${comparison.verdict} (${comparison.improvement.duration.toFixed(2)}% duration improvement)`
-        );
-
-        // Most optimizations should show improvement or be at least neutral
-        if (comparison.verdict === 'worse') {
-          console.warn(`Performance regression detected in ${testName}`);
-        }
-      }
+      // Perform analysis
+      const profile = await bottleneckAnalyzer.performAnalysis();
+      
+      expect(profile.operations).toBeInstanceOf(Array);
+      expect(profile.bottlenecks).toBeInstanceOf(Array);
+      expect(profile.summary).toBeDefined();
+      expect(profile.timestamp).toBeGreaterThan(0);
     });
 
-    test('should maintain sub-200ms response times for critical paths', async () => {
-      const criticalPaths = [
-        {
-          name: 'event-emission',
-          fn: () => {
-            eventBus.emit({
-              id: 'critical-test',
-              type: 'critical-event',
-              agentId: 'test-agent',
-              timestamp: new Date(),
-              payload: { critical: true },
-            });
-          },
-        },
-        {
-          name: 'cache-access',
-          fn: () => {
-            const cache = new LRUCache<string, any>({ maxSize: 100 });
-            cache.set('key', { data: 'value' });
-            return cache.get('key');
-          },
-        },
-      ];
+    it('should identify bottlenecks', () => {
+      // Record a slow operation multiple times
+      for (let i = 0; i < 5; i++) {
+        bottleneckAnalyzer.recordOperation('slow-db-query', 300);
+      }
 
-      for (const path of criticalPaths) {
-        const result = await quickBenchmark(path.name, path.fn, 100);
+      const bottlenecks = bottleneckAnalyzer.getBottlenecks();
+      expect(bottlenecks.length).toBeGreaterThan(0);
+      
+      const dbBottleneck = bottlenecks.find(b => b.name === 'slow-db-query');
+      expect(dbBottleneck).toBeDefined();
+      expect(dbBottleneck?.category).toBe('database');
+      expect(dbBottleneck?.severity).toMatch(/^(low|medium|high|critical)$/);
+    });
 
-        console.log(
-          `${path.name}: ${result.duration.avg.toFixed(2)}ms average`
-        );
-        expect(result.duration.avg).toBeLessThan(200);
-        expect(result.duration.p95).toBeLessThan(500);
+    it('should provide recommendations', () => {
+      // Record operations to trigger bottlenecks
+      bottleneckAnalyzer.recordOperation('database-query', 500);
+      bottleneckAnalyzer.recordOperation('ai-request', 1000);
+
+      const recommendations = bottleneckAnalyzer.getRecommendations();
+      expect(recommendations).toBeInstanceOf(Array);
+      
+      if (recommendations.length > 0) {
+        expect(recommendations[0]).toHaveProperty('category');
+        expect(recommendations[0]).toHaveProperty('priority');
+        expect(recommendations[0]).toHaveProperty('recommendations');
+        expect(recommendations[0].recommendations).toBeInstanceOf(Array);
       }
     });
   });

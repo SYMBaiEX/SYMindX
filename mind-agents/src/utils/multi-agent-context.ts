@@ -29,7 +29,7 @@ export interface ContextPermissions {
 export interface ContextSharingRequest {
   fromAgentId: string;
   toAgentId: string;
-  contextData: any;
+  contextData: Record<string, unknown>;
   permissions: ContextPermissions;
   purpose?: string;
   requestId?: string;
@@ -46,7 +46,7 @@ export type AggregationStrategy = 'merge' | 'override' | 'append' | 'custom';
 export interface ConflictResolution {
   field: string;
   strategy: 'newest' | 'oldest' | 'highest_confidence' | 'source_priority';
-  customResolver?: (values: any[]) => any;
+  customResolver?: (values: unknown[]) => unknown;
 }
 
 /**
@@ -142,8 +142,8 @@ export class MultiAgentContextOrchestrator extends EventEmitter {
   /**
    * Get shared contexts for an agent
    */
-  async getSharedContexts(agentId: string): Promise<any[]> {
-    const contexts: any[] = [];
+  async getSharedContexts(agentId: string): Promise<Record<string, unknown>[]> {
+    const contexts: Record<string, unknown>[] = [];
     const agentContexts = this.sharedContexts.get(agentId);
 
     if (!agentContexts) {
@@ -173,9 +173,9 @@ export class MultiAgentContextOrchestrator extends EventEmitter {
       conflictResolution?: ConflictResolution[];
       includeShared?: boolean;
     } = {}
-  ): Promise<any> {
+  ): Promise<Record<string, unknown>> {
     const traceId = contextTracer.startTrace('context:aggregate');
-    const contexts: any[] = [];
+    const contexts: Record<string, unknown>[] = [];
 
     try {
       // Collect contexts from all agents
@@ -202,7 +202,7 @@ export class MultiAgentContextOrchestrator extends EventEmitter {
       }
 
       // Apply aggregation strategy
-      let aggregated: any = {};
+      let aggregated: Record<string, unknown> = {};
 
       switch (strategy) {
         case 'merge':
@@ -258,7 +258,7 @@ export class MultiAgentContextOrchestrator extends EventEmitter {
   /**
    * Notify subscribers of context update
    */
-  notifyContextUpdate(contextId: string, updates: any): void {
+  notifyContextUpdate(contextId: string, updates: Record<string, unknown>): void {
     const subscribers = this.contextSubscriptions.get(contextId);
     if (!subscribers) return;
 
@@ -274,8 +274,8 @@ export class MultiAgentContextOrchestrator extends EventEmitter {
   /**
    * Resolve context conflicts
    */
-  resolveConflicts(contexts: any[], rules?: ConflictResolution[]): any {
-    const resolved: any = {};
+  resolveConflicts(contexts: Record<string, unknown>[], rules?: ConflictResolution[]): Record<string, unknown> {
+    const resolved: Record<string, unknown> = {};
     const allFields = new Set<string>();
 
     // Collect all fields
@@ -369,7 +369,7 @@ export class MultiAgentContextOrchestrator extends EventEmitter {
     return true;
   }
 
-  private filterContext(context: any, permissions: ContextPermissions): any {
+  private filterContext(context: Record<string, unknown>, permissions: ContextPermissions): Record<string, unknown> {
     const filtered: any = {};
 
     // Apply field filtering

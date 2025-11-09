@@ -135,6 +135,10 @@ export type {
   EventContext,
   EventContextFilter,
   EventPropagationRule,
+  RuntimeConfig,
+  RuntimeState,
+  RuntimeMetrics,
+  AgentRuntime,
 } from './agent';
 export {
   AgentStatus,
@@ -166,6 +170,7 @@ export * from './context/index';
 // Runtime configuration and stats
 export * from './runtime-config';
 export * from './runtime-stats';
+export type { ModuleConfig } from './runtime-config';
 
 // Advanced module types (selective exports)
 export type {

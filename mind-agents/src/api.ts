@@ -85,6 +85,10 @@ export async function createAgent(config: {
   await runtime.initialize();
   // Create agent config compatible with AgentConfig interface
   const agentConfig: AgentConfig = {
+    id: config.id || `agent-${Date.now()}`,
+    name: config.name,
+    type: config.type || 'standard',
+    status: 'inactive',
     core: {
       name: config.name,
       tone: 'helpful',

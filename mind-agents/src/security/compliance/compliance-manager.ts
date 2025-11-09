@@ -18,6 +18,50 @@ import {
   AuditEntry,
   AuditFilter,
 } from '../../types/compliance.js';
+import { ClassifiableData } from './common/data-classifier.js';
+
+// Type definitions for compliance reports
+export interface ReportPeriod {
+  startDate: Date;
+  endDate: Date;
+  type: 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly';
+}
+
+export interface GDPRReport {
+  dataSubjectRequests: {
+    total: number;
+    completed: number;
+    averageResponseTime: number;
+  };
+  consents: {
+    active: number;
+    withdrawn: number;
+    renewed: number;
+  };
+  dataBreaches: number;
+  retentionCompliance: boolean;
+}
+
+export interface HIPAAReport {
+  phiAccesses: {
+    total: number;
+    authorized: number;
+    unauthorized: number;
+  };
+  securityIncidents: number;
+  trainingCompliance: {
+    compliantUsers: number;
+    totalUsers: number;
+    percentage: number;
+  };
+}
+
+export interface ReportSummary {
+  overallCompliance: boolean;
+  criticalIssues: string[];
+  recommendations: string[];
+  complianceScore: number;
+}
 import { MemoryProvider } from '../../types/memory.js';
 import { runtimeLogger } from '../../utils/logger.js';
 import { EventEmitter } from 'events';
@@ -206,7 +250,7 @@ export class ComplianceManagerImpl
   /**
    * Classify data across all compliance frameworks
    */
-  async classifyData(data: any): Promise<DataClassification> {
+  async classifyData(data: import('./common/data-classifier.js').ClassifiableData): Promise<DataClassification> {
     try {
       const classification = this.dataClassifier.classifyData(data);
 
@@ -535,7 +579,7 @@ export class ComplianceManagerImpl
     return 'general_data';
   }
 
-  private generateDataId(data: any): string {
+  private generateDataId(data: ClassifiableData): string {
     // Generate a unique ID for data based on its content
     const crypto = require('crypto');
     const content = typeof data === 'string' ? data : JSON.stringify(data);
@@ -546,7 +590,7 @@ export class ComplianceManagerImpl
       .substring(0, 16);
   }
 
-  private async generateGDPRReport(period: any): Promise<any> {
+  private async generateGDPRReport(period: ReportPeriod): Promise<GDPRReport> {
     // Generate GDPR-specific report
     return {
       dataSubjectRequests: {
@@ -564,7 +608,7 @@ export class ComplianceManagerImpl
     };
   }
 
-  private async generateHIPAAReport(period: any): Promise<any> {
+  private async generateHIPAAReport(period: ReportPeriod): Promise<HIPAAReport> {
     // Generate HIPAA-specific report
     return {
       phiAccesses: {
@@ -585,7 +629,7 @@ export class ComplianceManagerImpl
     };
   }
 
-  private generateReportSummary(regulations: any): any {
+  private generateReportSummary(regulations: { gdpr?: GDPRReport; hipaa?: HIPAAReport }): ReportSummary {
     let overallCompliance = true;
     const criticalIssues: string[] = [];
     const recommendations: string[] = [];
@@ -672,7 +716,7 @@ export class ComplianceManagerImpl
     }
   }
 
-  private updateComplianceMetrics(key: string, value: any): void {
+  private updateComplianceMetrics(key: string, value: string | number | boolean): void {
     this.complianceMetrics.set(key, value);
 
     // Store updated metrics (async, don't wait)

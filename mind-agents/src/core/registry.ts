@@ -205,6 +205,36 @@ export class SYMindXModuleRegistry implements ModuleRegistry {
     return this.listByPrefix('portal:');
   }
 
+  listMemoryFactories(): string[] {
+    const providers: string[] = [];
+    this.factories.forEach((_, key) => {
+      if (key.startsWith('memory:')) {
+        providers.push(key.replace('memory:', ''));
+      }
+    });
+    return providers;
+  }
+
+  listEmotionFactories(): string[] {
+    const modules: string[] = [];
+    this.factories.forEach((_, key) => {
+      if (key.startsWith('emotion:')) {
+        modules.push(key.replace('emotion:', ''));
+      }
+    });
+    return modules;
+  }
+
+  listCognitionFactories(): string[] {
+    const modules: string[] = [];
+    this.factories.forEach((_, key) => {
+      if (key.startsWith('cognition:')) {
+        modules.push(key.replace('cognition:', ''));
+      }
+    });
+    return modules;
+  }
+
   listPortalFactories(): string[] {
     const portals: string[] = [];
     this.factories.forEach((_, key) => {

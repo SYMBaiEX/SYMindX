@@ -6,6 +6,9 @@
 import { EventEmitter } from 'node:events';
 import { performanceMonitor } from './PerformanceMonitor';
 import { runtimeLogger } from './logger';
+import { globalLazyLoader } from './LazyLoader';
+import { stringPool, configPool, arrayPool, bufferPool } from './SharedMemoryPool';
+import { gcOptimizer } from './GarbageCollectionOptimizer';
 
 interface MemorySnapshot {
   timestamp: number;
@@ -85,19 +88,24 @@ export class MemoryManager<T = unknown> extends EventEmitter {
     // Take initial snapshot
     this.takeSnapshot();
 
+    // Start GC optimizer
+    gcOptimizer.start();
+
     // Start periodic monitoring
     this.monitoringTimer = setInterval(() => {
       this.takeSnapshot();
       this.analyzeMemoryTrends();
+      this.optimizeMemoryUsage();
     }, this.snapshotInterval);
 
     // Start resource cleanup
     this.cleanupTimer = setInterval(() => {
       this.cleanupExpiredResources();
       this.cleanupWeakRefs();
+      this.cleanupSharedPools();
     }, 60000); // Every minute
 
-    runtimeLogger.info('Memory monitoring started');
+    runtimeLogger.info('Memory monitoring started with optimization');
     this.emit('started');
   }
 
@@ -118,6 +126,9 @@ export class MemoryManager<T = unknown> extends EventEmitter {
       clearInterval(this.cleanupTimer);
       this.cleanupTimer = undefined;
     }
+
+    // Stop GC optimizer
+    gcOptimizer.stop();
 
     runtimeLogger.info('Memory monitoring stopped');
     this.emit('stopped');
@@ -203,22 +214,15 @@ export class MemoryManager<T = unknown> extends EventEmitter {
    * Register a weak reference for tracking
    */
   trackWeakRef<T extends object>(obj: T): WeakRef<T> {
-    const weakRef = new WeakRef(obj);
-    this.weakRefs.add(weakRef);
-    return weakRef;
+    // Use GC optimizer for better weak ref management
+    return gcOptimizer.trackWeakRef(obj);
   }
 
   /**
    * Force garbage collection if available
    */
   forceGC(): boolean {
-    if (global.gc) {
-      global.gc();
-      performanceMonitor.recordMetric('memory.gc.forced', 1);
-      this.emit('gcForced');
-      return true;
-    }
-    return false;
+    return gcOptimizer.forceGC();
   }
 
   /**
@@ -368,11 +372,76 @@ export class MemoryManager<T = unknown> extends EventEmitter {
 
     await Promise.all(cleanupPromises);
 
+    // Clean up shared pools
+    this.cleanupSharedPools();
+
+    // Clear lazy loader
+    await globalLazyLoader.clear();
+
     performanceMonitor.recordMetric(
       'memory.cleanup.completed',
       resources.length
     );
     this.emit('cleanupCompleted', resources.length);
+  }
+
+  /**
+   * Optimize memory usage using all available techniques
+   */
+  async optimizeMemoryUsage(): Promise<{
+    gcOptimized: boolean;
+    lazyLoaderCleaned: number;
+    sharedPoolsCleaned: number;
+    resourcesCleaned: number;
+  }> {
+    // Optimize GC
+    const gcResult = await gcOptimizer.optimize();
+
+    // Clean up lazy loader
+    const lazyLoaderCleaned = await globalLazyLoader.cleanup();
+
+    // Clean up shared pools
+    const sharedPoolsCleaned = this.cleanupSharedPools();
+
+    // Clean up expired resources
+    const resourcesCleaned = await this.cleanupExpiredResources();
+
+    const result = {
+      gcOptimized: gcResult.gcPerformed,
+      lazyLoaderCleaned,
+      sharedPoolsCleaned,
+      resourcesCleaned,
+    };
+
+    this.emit('memoryOptimized', result);
+    return result;
+  }
+
+  /**
+   * Get comprehensive memory statistics
+   */
+  getComprehensiveStats(): {
+    memoryManager: ReturnType<typeof this.getStats>;
+    lazyLoader: ReturnType<typeof globalLazyLoader.getStats>;
+    sharedPools: {
+      stringPool: ReturnType<typeof stringPool.getStats>;
+      configPool: ReturnType<typeof configPool.getStats>;
+      arrayPool: ReturnType<typeof arrayPool.getStats>;
+      bufferPool: ReturnType<typeof bufferPool.getStats>;
+    };
+    gcOptimizer: ReturnType<typeof gcOptimizer.getStats>;
+  } {
+    return {
+      memoryManager: this.getStats(),
+      lazyLoader: globalLazyLoader.getStats(),
+      sharedPools: {
+        stringPool: stringPool.getStats(),
+        configPool: configPool.getStats(),
+        arrayPool: arrayPool.getStats(),
+        bufferPool: bufferPool.getStats(),
+      },
+      gcOptimizer: gcOptimizer.getStats(),
+    };
   }
 
   // Private methods
@@ -489,7 +558,7 @@ export class MemoryManager<T = unknown> extends EventEmitter {
     this.takeSnapshot();
   }
 
-  private async cleanupExpiredResources(): Promise<void> {
+  private async cleanupExpiredResources(): Promise<number> {
     const now = Date.now();
     const toCleanup: string[] = [];
 
@@ -512,35 +581,40 @@ export class MemoryManager<T = unknown> extends EventEmitter {
         toCleanup.length
       );
     }
+
+    return toCleanup.length;
   }
 
   private cleanupWeakRefs(): void {
-    const initialSize = this.weakRefs.size;
-    const toRemove: WeakRef<T>[] = [];
+    // Delegate to GC optimizer for better weak ref management
+    const cleaned = gcOptimizer.cleanupWeakRefs();
+    
+    if (cleaned > 0) {
+      performanceMonitor.recordMetric('memory.weakrefs.cleaned', cleaned);
+    }
+  }
 
-    for (const weakRef of this.weakRefs) {
-      if (weakRef.deref() === undefined) {
-        toRemove.push(weakRef);
-      }
+  private cleanupSharedPools(): number {
+    let totalCleaned = 0;
+
+    // Clean up all shared pools
+    totalCleaned += stringPool.cleanup();
+    totalCleaned += configPool.cleanup();
+    totalCleaned += arrayPool.cleanup();
+    totalCleaned += bufferPool.cleanup();
+
+    if (totalCleaned > 0) {
+      performanceMonitor.recordMetric('memory.shared_pools.cleaned', totalCleaned);
     }
 
-    for (const weakRef of toRemove) {
-      this.weakRefs.delete(weakRef);
-    }
-
-    if (toRemove.length > 0) {
-      performanceMonitor.recordMetric(
-        'memory.weakrefs.cleaned',
-        toRemove.length
-      );
-    }
+    return totalCleaned;
   }
 }
 
-// Global memory manager instance
+// Global memory manager instance with optimized settings
 export const memoryManager = new MemoryManager({
-  snapshotInterval: 30000, // 30 seconds
-  maxSnapshots: 100,
+  snapshotInterval: 15000, // 15 seconds for better monitoring
+  maxSnapshots: 50, // Reduced for memory optimization
 });
 
 // Auto-start if not in test environment

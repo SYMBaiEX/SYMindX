@@ -236,7 +236,7 @@ export class RetentionManager extends EventEmitter {
     dataId: string,
     dataType: string,
     createdAt: Date,
-    metadata?: any
+    metadata?: Record<string, unknown>
   ): Promise<void> {
     try {
       // Find applicable policy
@@ -636,7 +636,7 @@ export class RetentionManager extends EventEmitter {
 
   private findApplicablePolicy(
     dataType: string,
-    metadata?: any
+    metadata?: Record<string, unknown>
   ): RetentionPolicy | undefined {
     // First, try exact match
     let policy = Array.from(this.policies.values()).find(

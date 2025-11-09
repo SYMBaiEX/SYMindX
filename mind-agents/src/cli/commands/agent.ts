@@ -359,7 +359,7 @@ export class AgentCommand {
       const agentId = await this.context.runtime.createAgent(config);
 
       this.spinner.succeed(`Agent created successfully with ID: ${agentId}`);
-      process.stdout.write(chalk.green(`✅ Agent '${config.core.name}' is ready`) + '\n');
+      process.stdout.write(chalk.green(`✅ Agent '${config.core?.name || config.name}' is ready`) + '\n');
     } catch (error) {
       this.spinner.fail('Failed to create agent');
       this.logger.error('Create agent error:', error);
@@ -717,6 +717,10 @@ export class AgentCommand {
     ]);
 
     return {
+      id: `agent-${Date.now()}`,
+      name: answers.name,
+      type: 'standard',
+      status: 'inactive',
       core: {
         name: answers.name,
         tone: 'friendly',
@@ -757,9 +761,15 @@ export class AgentCommand {
   }
 
   private getAgentTemplate(template: string): AgentConfig {
-    const baseConfig = {
+    const agentId = `agent-${Date.now()}`;
+    const agentName = `Agent-${Date.now()}`;
+    const baseConfig: AgentConfig = {
+      id: agentId,
+      name: agentName,
+      type: 'standard',
+      status: 'inactive',
       core: {
-        name: `Agent-${Date.now()}`,
+        name: agentName,
         tone: 'professional',
         personality: ['efficient', 'reliable', 'adaptable'],
       },
@@ -800,6 +810,8 @@ export class AgentCommand {
       case 'autonomous':
         return {
           ...baseConfig,
+          id: `agent-autonomous-${Date.now()}`,
+          name: `Autonomous-Agent-${Date.now()}`,
           core: {
             ...baseConfig.core,
             name: `Autonomous-Agent-${Date.now()}`,
@@ -810,6 +822,8 @@ export class AgentCommand {
       case 'social':
         return {
           ...baseConfig,
+          id: `agent-social-${Date.now()}`,
+          name: `Social-Agent-${Date.now()}`,
           core: {
             ...baseConfig.core,
             name: `Social-Agent-${Date.now()}`,

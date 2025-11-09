@@ -33,6 +33,8 @@ import {
   // ModuleManifest - type definition available but not used at runtime
 } from './results.js';
 import { LogLevel } from './utils/logger.js';
+import type { CharacterConfig } from './character.js';
+import { RuntimeStatus, RuntimeError } from './core/runtime.js';
 
 // Additional result types for agent lifecycle methods
 export interface InitializationResult {
@@ -79,7 +81,9 @@ export interface Agent {
   portals?: Portal[]; // Multiple portals support
   toolSystem?: unknown; // Dynamic tools system for Agent Zero-style capabilities
   config: AgentConfig;
+  character?: CharacterConfig; // Character configuration
   lastUpdate: Timestamp;
+  lastActivity?: Date; // Last activity timestamp for unloading inactive agents
   eventBus?: EventBus; // Added eventBus property as optional
   character_id?: string; // Character ID for agent configuration
   characterConfig?: Record<string, unknown>; // Character configuration object
@@ -110,17 +114,24 @@ export interface Agent {
 }
 
 export interface AgentConfig {
-  core: {
+  id: string;
+  name: string;
+  type: string;
+  status: AgentStatus;
+  character?: CharacterConfig;
+  
+  // Legacy structure for backward compatibility
+  core?: {
     name: string;
     tone: string;
     personality: string[];
   };
-  lore: {
+  lore?: {
     origin: string;
     motive: string;
     background?: string;
   };
-  psyche: {
+  psyche?: {
     traits: string[];
     defaults: {
       memory: string;
@@ -131,7 +142,7 @@ export interface AgentConfig {
   };
   personality?: string[];
   goals?: string[]; // Goals list for agent objectives
-  modules: {
+  modules?: {
     extensions: string[];
     memory?: MemoryConfig;
     emotion?: EmotionConfig;
@@ -669,15 +680,19 @@ export enum LazyAgentStatus {
   ERROR = 'error',
 }
 
-export interface LazyAgent extends Omit<Agent, 'status'> {
-  state: LazyAgentState;
-  isLazy: boolean;
-  hibernationLevel: number;
-  lastAccessTime: Date;
-  agent?: Agent;
-  lastActivated?: Date;
+export interface LazyAgent {
+  id: string;
+  name?: string;
+  config: CharacterConfig;
   status: LazyAgentStatus;
-  priority?: number;
+  priority: number;
+  lastActivated: Date | null;
+  activationCount: number;
+  state?: LazyAgentState;
+  isLazy?: boolean;
+  hibernationLevel?: number;
+  lastAccessTime?: Date;
+  agent?: Agent;
   lazyMetrics?: {
     lastLoadTime?: Date;
     loadCount?: number;
@@ -856,10 +871,50 @@ export interface EventPropagationRule {
   excluded_tags?: string[]; // Tags that prevent propagation
 }
 
+export interface RuntimeMetrics {
+  messagesProcessed: number;
+  actionsExecuted: number;
+  thoughtsGenerated: number;
+  memoriesCreated: number;
+  emotionChanges: number;
+  decisionssMade: number;
+  planStepsCompleted: number;
+  averageResponseTime: number;
+  memoryUsage: number;
+  cpuUsage: number;
+  lastUpdateTime: Date;
+}
+
+export interface RuntimeState {
+  status: RuntimeStatus;
+  startTime: Date;
+  uptime: number;
+  activeAgents: number;
+  totalAgents: number;
+  metrics: RuntimeMetrics;
+  errors: RuntimeError[];
+  version: string;
+  environment: {
+    nodeVersion: string;
+    platform: string;
+    arch: string;
+    hostname: string;
+    pid: number;
+  };
+}
+
+export interface RuntimeError {
+  message: string;
+  code: string;
+  timestamp: Date;
+  context?: Record<string, unknown>;
+}
+
 export interface RuntimeConfig {
   tickInterval: number;
   maxAgents: number;
   logLevel: LogLevel;
+  charactersPath?: string;
   persistence: {
     enabled: boolean;
     path: string;
@@ -942,6 +997,23 @@ export interface RuntimeConfig {
     paths?: string[];
     defaultEnabled?: boolean;
     charactersPath?: string;
+  };
+  multiAgent?: {
+    enabled: boolean;
+    maxConcurrentAgents?: number;
+    coordinationStrategy?: 'centralized' | 'distributed' | 'hybrid';
+    messagingProtocol?: 'direct' | 'pubsub' | 'queue';
+  };
+  plugins?: {
+    autoLoad: boolean;
+    paths?: string[];
+  };
+  debug?: {
+    enableCpuMonitoring?: boolean;
+    enableMemoryMonitoring?: boolean;
+    enableEventTracking?: boolean;
+    enablePerformanceTimers?: boolean;
+    metricsInterval?: number;
   };
   performance?: {
     enableMonitoring?: boolean;

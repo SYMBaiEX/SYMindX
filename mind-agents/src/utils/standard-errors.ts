@@ -563,7 +563,7 @@ export function isSYMindXError(error: unknown): error is SYMindXError {
  */
 export function isErrorOfType<T extends SYMindXError>(
   error: unknown,
-  errorClass: new (...args: any[]) => T
+  errorClass: new (...args: unknown[]) => T
 ): error is T {
   return error instanceof errorClass;
 }

@@ -14,11 +14,10 @@ import {
   ModuleRegistry,
   RuntimeConfig,
   RuntimeState,
-  RuntimeStatus,
   RuntimeMetrics,
-  RuntimeError,
 } from '../../types/index';
-import { SimpleEventBus } from '../event-bus';
+import { RuntimeStatus, RuntimeError } from '../../types/core/runtime';
+import { SimpleEventBus, createAgentEvent } from '../event-bus';
 import { SYMindXModuleRegistry } from '../registry';
 import {
   standardLoggers,
@@ -74,12 +73,11 @@ export class RuntimeCore {
       await this.loadEnvironmentVariables();
 
       // Initialize event bus
-      this.eventBus.emit({
-        type: 'runtime.initializing',
-        agentId: 'system',
-        data: { status: 'starting' },
-        timestamp: new Date(),
-      });
+      this.eventBus.emit(createAgentEvent(
+        'runtime.initializing',
+        { status: 'starting' },
+        'system'
+      ));
 
       this.runtimeState.status = RuntimeStatus.INITIALIZING;
 
@@ -112,15 +110,14 @@ export class RuntimeCore {
       }
 
       // Emit runtime started event
-      this.eventBus.emit({
-        type: 'runtime.started',
-        agentId: 'system',
-        data: {
+      this.eventBus.emit(createAgentEvent(
+        'runtime.started',
+        {
           status: 'running',
           tickInterval: this.config.tickInterval,
         },
-        timestamp: new Date(),
-      });
+        'system'
+      ));
 
       this.logger.info('Runtime Core started successfully');
     } catch (error) {
@@ -151,23 +148,21 @@ export class RuntimeCore {
       this.runtimeState.status = RuntimeStatus.STOPPING;
 
       // Emit stopping event
-      this.eventBus.emit({
-        type: 'runtime.stopping',
-        agentId: 'system',
-        data: { status: 'stopping' },
-        timestamp: new Date(),
-      });
+      this.eventBus.emit(createAgentEvent(
+        'runtime.stopping',
+        { status: 'stopping' },
+        'system'
+      ));
 
       // Final state update
       this.runtimeState.status = RuntimeStatus.STOPPED;
 
       // Emit stopped event
-      this.eventBus.emit({
-        type: 'runtime.stopped',
-        agentId: 'system',
-        data: { status: 'stopped' },
-        timestamp: new Date(),
-      });
+      this.eventBus.emit(createAgentEvent(
+        'runtime.stopped',
+        { status: 'stopped' },
+        'system'
+      ));
 
       this.logger.info('Runtime Core stopped successfully');
     } catch (error) {

@@ -6,8 +6,28 @@
  */
 
 import { EventEmitter } from 'node:events';
-import { AgentEvent, EventBus, EventContext, EventContextFilter } from '../types/agent';
+import { AgentEvent, EventBus, EventContext, EventContextFilter, EventSource } from '../types/agent';
 import { runtimeLogger } from '../utils/logger';
+
+/**
+ * Create a properly formatted AgentEvent
+ */
+export function createAgentEvent(
+  type: string,
+  data: any,
+  agentId?: string,
+  source: EventSource = EventSource.SYSTEM
+): AgentEvent {
+  return {
+    id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    type,
+    source,
+    data,
+    timestamp: new Date(),
+    processed: false,
+    agentId,
+  };
+}
 
 export interface EventMetrics {
   totalEvents: number;

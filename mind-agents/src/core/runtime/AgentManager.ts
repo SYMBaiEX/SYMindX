@@ -15,8 +15,6 @@ import {
   LazyAgent,
   LazyAgentStatus,
   AgentEvent,
-  ThoughtContext,
-  EnvironmentState,
   AgentState,
   MemoryRecord,
 } from '../../types/index';
@@ -24,6 +22,7 @@ import { CharacterConfig } from '../../types/character';
 import { createAgentError } from '../../utils/standard-errors';
 import { standardLoggers } from '../../utils/standard-logging';
 import { EventBus } from '../../types/agent';
+import { createAgentEvent } from '../event-bus';
 
 export class AgentManager {
   public agents: Map<string, Agent> = new Map();
@@ -69,12 +68,11 @@ export class AgentManager {
       this.agents.set(config.id, agent);
 
       // Emit agent created event
-      this.eventBus.emit({
-        type: 'agent.created',
-        agentId: config.id,
-        data: { config },
-        timestamp: new Date(),
-      });
+      this.eventBus.emit(createAgentEvent(
+        'agent.created',
+        { config },
+        config.id
+      ));
 
       this.logger.info(`Agent created successfully: ${config.id}`);
       return config.id;
@@ -108,12 +106,11 @@ export class AgentManager {
       this.lazyAgents.delete(agentId);
 
       // Emit agent removed event
-      this.eventBus.emit({
-        type: 'agent.removed',
-        agentId,
-        data: {},
-        timestamp: new Date(),
-      });
+      this.eventBus.emit(createAgentEvent(
+        'agent.removed',
+        {},
+        agentId
+      ));
 
       this.logger.info(`Agent removed: ${agentId}`);
       return true;
@@ -162,15 +159,14 @@ export class AgentManager {
       lazyAgent.activationCount++;
 
       // Emit activation event
-      this.eventBus.emit({
-        type: 'agent.activated',
-        agentId,
-        data: {
+      this.eventBus.emit(createAgentEvent(
+        'agent.activated',
+        {
           activationCount: lazyAgent.activationCount,
           priority: lazyAgent.priority,
         },
-        timestamp: new Date(),
-      });
+        agentId
+      ));
 
       this.logger.info(`Lazy agent activated: ${agentId}`);
       return agent;
@@ -215,12 +211,11 @@ export class AgentManager {
       lazyAgent.status = LazyAgentStatus.INACTIVE;
 
       // Emit deactivation event
-      this.eventBus.emit({
-        type: 'agent.deactivated',
-        agentId,
-        data: {},
-        timestamp: new Date(),
-      });
+      this.eventBus.emit(createAgentEvent(
+        'agent.deactivated',
+        {},
+        agentId
+      ));
 
       this.logger.info(`Agent deactivated: ${agentId}`);
     } catch (error) {
@@ -307,6 +302,7 @@ export class AgentManager {
   ): void {
     const lazyAgent: LazyAgent = {
       id: characterConfig.id,
+      name: characterConfig.name,
       config: characterConfig,
       status: LazyAgentStatus.INACTIVE,
       priority,

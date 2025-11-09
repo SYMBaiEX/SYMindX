@@ -64,3 +64,46 @@ export {
   thoughtContextToPortalContext,
   validateThoughtContextForUnified,
 } from './context-helpers.js';
+
+// Performance and memory optimization utilities
+export { memoryManager } from './MemoryManager.js';
+export { performanceMonitor } from './PerformanceMonitor.js';
+export { ConnectionPool } from './ConnectionPool.js';
+export { LRUCache, MultiLevelCache } from './LRUCache.js';
+export { globalLazyLoader, LazyLoader } from './LazyLoader.js';
+export { 
+  SharedMemoryPool, 
+  stringPool, 
+  configPool, 
+  arrayPool, 
+  bufferPool 
+} from './SharedMemoryPool.js';
+export { gcOptimizer, GarbageCollectionOptimizer } from './GarbageCollectionOptimizer.js';
+
+// Caching and connection pooling utilities
+export { 
+  IntelligentResponseCache, 
+  aiResponseCache, 
+  configCache, 
+  memoryCache 
+} from './IntelligentResponseCache.js';
+export { 
+  DatabaseConnectionPool, 
+  createPostgreSQLPool, 
+  createSQLitePool 
+} from './DatabaseConnectionPool.js';
+export { 
+  AIProviderConnectionPool, 
+  createOpenAIPool 
+} from './AIProviderConnectionPool.js';
+export { 
+  EventBatchProcessor, 
+  systemEventBatcher, 
+  userEventBatcher, 
+  memoryEventBatcher 
+} from './EventBatchProcessor.js';
+
+// Performance monitoring and health check utilities
+export { healthCheckSystem, HealthCheckSystem } from './HealthCheckSystem.js';
+export { performanceDashboard, PerformanceDashboard } from './PerformanceDashboard.js';
+export { bottleneckAnalyzer, BottleneckAnalyzer } from './BottleneckAnalyzer.js';

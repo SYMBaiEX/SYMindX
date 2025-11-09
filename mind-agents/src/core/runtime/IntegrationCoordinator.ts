@@ -26,7 +26,6 @@ import {
   ContextBootstrapper,
   ContextBootstrapperConfig,
   RuntimeContextAdapter,
-  ContextManager,
   createContextBootstrapper,
 } from '../context/integration/index';
 import {

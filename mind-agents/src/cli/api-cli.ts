@@ -116,14 +116,14 @@ class SYMindXAPICLI {
       console.log(chalk.blue.bold('\n📊 SYMindX Runtime Status\n'));
       console.log(`${chalk.green('●')} Runtime: ${status.runtime?.isRunning ? chalk.green('Running') : chalk.red('Stopped')}`);
       console.log(`   Agents: ${agents.length} loaded`);
-      console.log(`   Active: ${agents.filter((a: any) => a.status === 'active').length}`);
+      console.log(`   Active: ${agents.filter((a: { status: string }) => a.status === 'active').length}`);
       console.log(`   Memory: ${(metrics.memory.heapUsed / 1024 / 1024).toFixed(1)}MB / ${(metrics.memory.heapTotal / 1024 / 1024).toFixed(1)}MB`);
       console.log(`   Uptime: ${this.formatUptime(metrics.uptime)}`);
       console.log(`   Extensions: ${status.extensions?.loaded ?? 0} loaded, ${status.extensions?.active ?? 0} active`);
       
       if (agents.length > 0) {
         console.log(chalk.blue.bold('\n🤖 Agents\n'));
-        agents.forEach((agent: any) => {
+        agents.forEach((agent: { id: string; name: string; status: string; ethicsEnabled: boolean; emotion?: string }) => {
           const statusIcon = agent.status === 'active' ? '🟢' : '🔴';
           const ethicsIcon = agent.ethicsEnabled ? '🛡️' : '⚠️';
           console.log(`${statusIcon} ${chalk.cyan(agent.name.padEnd(20))} ${agent.id} ${ethicsIcon}`);
