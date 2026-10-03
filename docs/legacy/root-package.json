@@ -1,0 +1,37 @@
+{
+  "name": "symindx",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "workspaces": [
+    "mind-agents",
+    "website",
+    "create-symindx"
+  ],
+  "scripts": {
+    "build": "bun build:all",
+    "build:all": "bun build:agent && bun build:website && bun build:scaffolder",
+    "build:agent": "cd mind-agents && bun run build",
+    "build:cli": "bun run build:agent",
+    "build:website": "cd website && bun run build",
+    "build:scaffolder": "cd create-symindx && bun run build",
+    "start": "bun start:agent",
+    "start:agent": "cd mind-agents && bun run start",
+    "start:cli": "cd mind-agents && bun run start:cli",
+    "start:website": "cd website && bun run preview",
+    "dev": "bun dev:agent",
+    "dev:agent": "cd mind-agents && bun run dev",
+    "dev:website": "cd website && bun run dev",
+    "test": "cd mind-agents && bun test",
+    "cli": "cd mind-agents && bun run cli",
+    "cli:dashboard": "cd mind-agents && bun run cli:dashboard",
+    "cli:agents": "cd mind-agents && bun run cli:agents",
+    "cli:status": "cd mind-agents && bun run cli:status",
+    "prepare": "husky"
+  },
+  "dependencies": {
+    "gradient-string": "^3.0.0",
+    "slack": "^11.0.2",
+    "telegraf": "^4.16.3"
+  }
+}

@@ -1,0 +1,744 @@
+{
+  "files": [
+    {
+      "sha256": "5B1E63F50572053CEDAB675F4C98C4CB99262190555AF0982DA9044E7056693C",
+      "path": "README.md",
+      "status": " M",
+      "exists": true
+    },
+    {
+      "sha256": "9518F8527790A23DC82542E9750F1A985551D51E44580B25DCAE315A10F7E282",
+      "path": "bun.lock",
+      "status": " M",
+      "exists": true
+    },
+    {
+      "sha256": "80B4046BB49D35F0634A878DDF7A4B73DCDC6C2B3ABB661C58854963A76C4C3E",
+      "path": "mind-agents/eslint.config.js",
+      "status": " M",
+      "exists": true
+    },
+    {
+      "sha256": "79370C9C8C1EF15DE180CFF19C6C8D1B23A8D09DAE9C6077220931371F219CA3",
+      "path": "mind-agents/package.json",
+      "status": " M",
+      "exists": true
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/__tests__/README.md",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/__tests__/context-integration.test.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/__tests__/context-performance.test.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/__tests__/context-validation.test.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/__tests__/integration-coordinator.test.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/__tests__/performance-optimization.test.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/characters/examples/azure-gpt.json",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/characters/examples/claude-anthropic.json",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/characters/examples/cohere-ai.json",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/characters/examples/gemini-google.json",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/characters/examples/grok-xai.json",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/characters/examples/kluster-ai.json",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/characters/examples/llama-ollama.json",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/characters/examples/mistral-ai.json",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/characters/examples/studio-lms.json",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/characters/examples/vercel-ai.json",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/characters/examples/vertex-google.json",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/characters/examples/vision-multimodal.json",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": "49AD38B97F09853609765D7AA0EF8E55C76D25581132D9B9019467CF65C4B928",
+      "path": "mind-agents/src/core/config/runtime.example.json",
+      "status": " M",
+      "exists": true
+    },
+    {
+      "sha256": "6309C25DAA40F33FFC86DBFBB410B99BB7FD3E17A6285BC29BCE590C2EF7BC1F",
+      "path": "mind-agents/src/core/portal-integration.ts",
+      "status": " M",
+      "exists": true
+    },
+    {
+      "sha256": "4D24BE065460CE22D83293D7655825C073FB57DA86B7CAF494182F0A90DE87D7",
+      "path": "mind-agents/src/core/runtime/BootstrapManager.ts",
+      "status": " M",
+      "exists": true
+    },
+    {
+      "sha256": "4E6C9B4C76D2B470A88C3B4B31BC05DD5BA75546921B3D6EAC7BC06A520E938D",
+      "path": "mind-agents/src/modules/index.ts",
+      "status": " M",
+      "exists": true
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/modules/multimodal/__tests__/integration.test.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/modules/multimodal/__tests__/multimodal.test.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/modules/multimodal/benchmark/performance-benchmark.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/modules/multimodal/demo/multimodal-demo.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/modules/multimodal/haptic/index.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/modules/multimodal/index.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/modules/multimodal/vision/base-provider.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/modules/multimodal/vision/index.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/modules/multimodal/vision/providers/anthropic-vision.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/modules/multimodal/vision/providers/google-vision.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/modules/multimodal/vision/providers/openai-vision.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/modules/multimodal/vision/visual-memory-store.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/modules/multimodal/voice/base-provider.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/modules/multimodal/voice/index.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/modules/multimodal/voice/providers/elevenlabs.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/modules/multimodal/voice/providers/google-cloud.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/modules/multimodal/voice/providers/openai-tts.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/AI-SDK-V5-PORTAL-ENHANCEMENTS.md",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/DEPLOYMENT-GUIDE.md",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/MIGRATION-GUIDE.md",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/PORTAL_TEMPLATE.md",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": "0D1F71ACA2A3FAFFBD7879C4FB12244C0EBAAD7850A3205BA3B5A26AE726B037",
+      "path": "mind-agents/src/portals/README.md",
+      "status": " M",
+      "exists": true
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/STREAMLINED_PORTAL_SYSTEM.md",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/ai-sdk-advanced.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/ai-sdk-compat.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/ai-sdk-utils.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/anthropic/index.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/anthropic/package.json",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/anthropic/refactored-example.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/azure-openai/index.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/azure-openai/package.json",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/base-portal.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/cohere/index.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/cohere/package.json",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/context-helpers.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": "D9428C25500A55CAF2AAE950142388DCBAE3E07C9DFDFA97AF39EBD70EDFF509",
+      "path": "mind-agents/src/portals/examples/context-aware-usage.ts",
+      "status": " M",
+      "exists": true
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/google-generative/index.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/google-generative/package.json",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/google-vertex/index.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/google-vertex/package.json",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/groq/index.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/groq/package.json",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": "E794800A908995F323EBEAB28AA08AE381B201227A8B774C1B6AA93C3953CBA1",
+      "path": "mind-agents/src/portals/index.ts",
+      "status": " M",
+      "exists": true
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/integration.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/kluster.ai/index.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/kluster.ai/package.json",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/lmstudio/index.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/lmstudio/lmstudio.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/lmstudio/package.json",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/mistral/index.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/mistral/package.json",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/multimodal/index.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/multimodal/package.json",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/ollama/index.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/ollama/ollama.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/ollama/package.json",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/openai/index.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/openai/package.json",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/openrouter/index.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/openrouter/package.json",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/perplexity/index.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/perplexity/package.json",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/portal-compliance-test.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/streamlined-example.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/streamlined-integration.test.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/streamlined-portal-manager.test.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/streamlined-portal-manager.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/utils.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/vercel/index.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/vercel/package.json",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/xai/index.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/portals/xai/package.json",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": "19FC55F01A97E19B55379B10E68C7F574A486F8AF5E41E177C21BB290ABAB692",
+      "path": "mind-agents/src/types/index.ts",
+      "status": " M",
+      "exists": true
+    },
+    {
+      "sha256": null,
+      "path": "mind-agents/src/types/multimodal.ts",
+      "status": " D",
+      "exists": false
+    },
+    {
+      "sha256": "DD7145BD9C0F9F64EBE6351F0DE71479163C46B94F8E6CFB94D13758666BC1A9",
+      "path": "mind-agents/src/types/portal.ts",
+      "status": " M",
+      "exists": true
+    },
+    {
+      "sha256": "2C50FDB66F6E34FC1F3A10BF7704BB2B92AE1072B7D0BCE5B62B8A39A1404A6F",
+      "path": "mind-agents/src/utils/standard-logging.ts",
+      "status": " M",
+      "exists": true
+    },
+    {
+      "sha256": "FE29A1A7AA9F2A634C920F69569BED5BCB702F28E5946D0AB0FE367FA5DD9E86",
+      "path": "mind-agents/tsconfig.json",
+      "status": " M",
+      "exists": true
+    },
+    {
+      "sha256": "26A6F810447AA466699191A5623F89DF0E8467570318DCFA8AD944DBA0AC47C5",
+      "path": "package.json",
+      "status": " M",
+      "exists": true
+    },
+    {
+      "sha256": "FBFCED411CDFFCE54BCBE4C0F21C0F84AC3090A1FF47EE2FF6954DA7A39407C8",
+      "path": ".serena/.gitignore",
+      "status": "??",
+      "exists": true
+    },
+    {
+      "sha256": "F6BEB49A654769BF2AED8B6C99150A05DCB2E2337A5FB6A347B6EEE880318D91",
+      "path": ".serena/project.yml",
+      "status": "??",
+      "exists": true
+    },
+    {
+      "sha256": "BEF3B4C41B0999400B235D17C942B5170022AD1EBBE2F2E562CE1526BD9B4F19",
+      "path": "mind-agents/src/portals/core/base-portal.ts",
+      "status": "??",
+      "exists": true
+    },
+    {
+      "sha256": "1469D84ADC1840FF9E7D8DCA0E3D010F1A5F60AE625E385E03BA01B94A54A7CF",
+      "path": "mind-agents/src/portals/core/index.ts",
+      "status": "??",
+      "exists": true
+    },
+    {
+      "sha256": "74809DC7236F8EB0B7943C9058E28A49367485D8ECDE517EB00C1A2A818413B8",
+      "path": "mind-agents/src/portals/providers/groq/index.ts",
+      "status": "??",
+      "exists": true
+    },
+    {
+      "sha256": "91A4AD262F6EC7FCFBB656A0B2982E5165201CC2A2C603275127DF93C7C8E487",
+      "path": "mind-agents/src/portals/providers/groq/package.json",
+      "status": "??",
+      "exists": true
+    },
+    {
+      "sha256": "05BEED5E9E7B9CB8369B4DE89196FF6BF519E94CBABC12E20E463AF77AE2191E",
+      "path": "mind-agents/src/portals/providers/index.ts",
+      "status": "??",
+      "exists": true
+    },
+    {
+      "sha256": "ACDE6538AD386572AB3FD4DCACCA9F558B6ED992F71FF311A1A3ADE43BCE4388",
+      "path": "mind-agents/src/portals/providers/openai/index.ts",
+      "status": "??",
+      "exists": true
+    },
+    {
+      "sha256": "81B57D6B0CC522997C63BACBFA47B73658FAF9713D4A7AC0B8642E572153854B",
+      "path": "mind-agents/src/portals/providers/openai/package.json",
+      "status": "??",
+      "exists": true
+    },
+    {
+      "sha256": "B9EDCEDE8F2214CD882B4DFAB8EFDD415EA502BDED16E4E2D73A6228C94D1C75",
+      "path": "mind-agents/src/portals/providers/openrouter/index.ts",
+      "status": "??",
+      "exists": true
+    },
+    {
+      "sha256": "4B236F6AE4AC520AAAE4FCFF9C3EA42A2570DE14BE1D48B07001BC97444EABB9",
+      "path": "mind-agents/src/portals/providers/openrouter/package.json",
+      "status": "??",
+      "exists": true
+    },
+    {
+      "sha256": "98510919AC121B68DB6083D0F0051A1014CFDA044E051A9909490BA8677FA9D1",
+      "path": "mind-agents/src/portals/utils/ai-sdk/advanced.ts",
+      "status": "??",
+      "exists": true
+    },
+    {
+      "sha256": "530F83691254EC5D5710D42C65A8B4097984C0592CED5BABB4364AB3EB617EC3",
+      "path": "mind-agents/src/portals/utils/ai-sdk/compat.ts",
+      "status": "??",
+      "exists": true
+    },
+    {
+      "sha256": "DEB47C928DBD6D9E48631462621758AD51883E38A27508919F60C48A38F55F27",
+      "path": "mind-agents/src/portals/utils/ai-sdk/index.ts",
+      "status": "??",
+      "exists": true
+    },
+    {
+      "sha256": "310D7AD92DFCC2D95DD29AB79E414D9F0A41283B65EDE79790677E4B55AB6A7C",
+      "path": "mind-agents/src/portals/utils/ai-sdk/parameter-builder.ts",
+      "status": "??",
+      "exists": true
+    },
+    {
+      "sha256": "90CFBBF681C81CDC3934F307A77DDED90431106FC8E4F0AF813CF56B558B8C72",
+      "path": "mind-agents/src/portals/utils/context.ts",
+      "status": "??",
+      "exists": true
+    },
+    {
+      "sha256": "BF5E460B79E81FBC580C737D5617DC312EF80C2EC198120655CCAA1EC4F26BBD",
+      "path": "mind-agents/src/portals/utils/index.ts",
+      "status": "??",
+      "exists": true
+    },
+    {
+      "sha256": "9AF2566EBA9E32BA6E0CA6186EFF64E0AE4572699179E0A0642FDABBA099F625",
+      "path": "mind-agents/src/portals/utils/integration.ts",
+      "status": "??",
+      "exists": true
+    },
+    {
+      "sha256": "0E760FEE72787521BB333E1941634E7388F97BC30F83F38E5721D988E8A9EDB3",
+      "path": "mind-agents/src/portals/utils/usage.ts",
+      "status": "??",
+      "exists": true
+    }
+  ],
+  "timestamp": "2026-10-03T19:29:50.8427846Z",
+  "commit": "558f7f64fb545d6b7ba93be07f3868a201139352"
+}

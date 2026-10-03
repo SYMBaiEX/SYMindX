@@ -1,0 +1,24 @@
+{
+  "date": "2026-10-03",
+  "runtime": "Bun 1.3.10",
+  "typescript": "5.8.3",
+  "bunTypes": "1.3.10",
+  "prettier": "3.6.2",
+  "cleanWindowsPackage": {
+    "chunk_id": "cf2f14",
+    "wall_time_seconds": 2.3783311,
+    "exit_code": 0,
+    "original_token_count": 92,
+    "output": "bun install v1.3.10 (30e609e0)\n\nChecked 6 installs across 7 packages (no changes) [17.00ms]\n$ prettier --check --config .prettierrc.json --no-editorconfig src scripts\nChecking formatting...\nAll matched files use Prettier code style!\n$ tsc -p tsconfig.json\n$ bun --no-env-file scripts/build.ts && tsc -p tsconfig.build.json\nBuilt 4 outputs for @symindx/runtime 0.1.0\n"
+  },
+  "actualCheckoutDirectBuild": {
+    "chunk_id": "2b6226",
+    "wall_time_seconds": 7.1370298,
+    "exit_code": 0,
+    "original_token_count": 11,
+    "output": "Built 4 outputs for @symindx/runtime 0.1.0\n"
+  },
+  "behaviorTests": "not added or run; user testing choice unanswered",
+  "liveProviders": "not run",
+  "remoteCI": "not run"
+}

@@ -341,3 +341,11 @@ storybook-static/
 # Temporary directories
 .tmp/
 .temp/cli/
+
+# SQLite journal and shared-memory sidecars
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite3-wal
+*.sqlite3-shm
+*.db-wal
+*.db-shm

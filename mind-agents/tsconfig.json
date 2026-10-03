@@ -27,7 +27,6 @@
     "sourceMap": true,
     "removeComments": true,
     "importHelpers": false,
-    "importsNotUsedAsValues": "remove",
     "preserveConstEnums": true,
     "outDir": "./dist",
     "rootDir": "./",

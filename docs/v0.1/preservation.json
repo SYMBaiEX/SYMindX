@@ -1,0 +1,24 @@
+{
+  "originalDirtyFiles": 123,
+  "preservationMismatches": [],
+  "archivedWorkflowsMatchGitBaseline": {
+    "agent-deploy.yml": true,
+    "agent-test.yml": true,
+    "ci.yml": true,
+    "test.yml": true
+  },
+  "stagedSourceMismatches": [],
+  "sourceFileCount": 12,
+  "sourceLines": 2367,
+  "userOwnedModelProfiles": {
+    "luna-verifier.toml": "gpt-6-luna",
+    "luna-worker.toml": "gpt-6-luna",
+    "sol-engineer.toml": "gpt-6-luna",
+    "spark-explorer.toml": "gpt-6-luna",
+    "spark-verifier.toml": "gpt-6-luna",
+    "spark-worker.toml": "gpt-6-luna",
+    "terra-explorer.toml": "gpt-6-luna",
+    "terra-worker.toml": "gpt-6-luna"
+  },
+  "testFilesAdded": 0
+}
