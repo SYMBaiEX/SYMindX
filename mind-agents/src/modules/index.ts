@@ -14,7 +14,6 @@ import { createEmotionModule } from './emotion/index';
 import { createMemoryProvider } from './memory/index';
 import { createMemoryProviderByName } from './memory/providers/index';
 import { createToolSystem } from './tools/factory';
-import { createMultiModalModule } from './multimodal/index';
 import { createLearningModule } from './learning/index';
 
 // Re-export core module factories
@@ -24,7 +23,6 @@ export {
   createEmotionModule,
   createCognitionModule,
   createToolSystem,
-  createMultiModalModule,
   createLearningModule,
 };
 
@@ -40,7 +38,6 @@ export interface ModuleFactories {
   emotion: typeof createEmotionModule;
   cognition: typeof createCognitionModule;
   tools: typeof createToolSystem;
-  multimodal: typeof createMultiModalModule;
   learning: typeof createLearningModule;
 }
 
@@ -53,7 +50,6 @@ export function createModule(
     | 'emotion'
     | 'cognition'
     | 'tools'
-    | 'multimodal'
     | 'learning',
   moduleType: string,
   config: unknown
@@ -67,8 +63,6 @@ export function createModule(
       return createCognitionModule(moduleType, config as any);
     case 'tools':
       return createToolSystem(moduleType, config as any);
-    case 'multimodal':
-      return createMultiModalModule(config as any);
     case 'learning':
       return createLearningModule(moduleType as any, config as any);
     default:
@@ -99,11 +93,6 @@ export async function registerCoreModules(
     const { registerToolSystemFactory } = await import('./tools/factory');
     registerToolSystemFactory('dynamic', (config) =>
       createToolSystem('dynamic', config as any)
-    );
-
-    // Register multi-modal module factory
-    registry.registerModuleFactory('multimodal', 'default', () =>
-      createMultiModalModule()
     );
 
     // Import and register learning modules

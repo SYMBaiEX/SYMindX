@@ -4,14 +4,16 @@
  * This file demonstrates how to use the enhanced portal system with context awareness
  */
 
-import { createOpenAIPortal } from '../openai/index.js';
-import { createAnthropicPortal } from '../anthropic/index.js';
-import { ContextMigrationHelper } from '../context-helpers.js';
+import { createOpenAIPortal, type OpenAIConfig } from '../providers/openai/index';
+import { createGroqPortal, type GroqConfig } from '../providers/groq/index';
+import { ContextMigrationHelper } from '../utils/context';
 import {
   UnifiedContext,
   ContextScope,
   ContextPriority,
-} from '../../types/context/unified-context.js';
+} from '../../types/context/unified-context';
+import { MessageRole } from '../../types/portal';
+import { AgentStatus } from '../../types/agent';
 
 /**
  * Example 1: Basic context-aware text generation
@@ -19,8 +21,8 @@ import {
 export async function basicContextAwareGeneration() {
   // Create a portal instance
   const portal = createOpenAIPortal({
-    apiKey: process.env.OPENAI_API_KEY || 'your-api-key',
-  });
+    apiKey: process.env['OPENAI_API_KEY'] || 'your-api-key',
+  } as OpenAIConfig);
 
   // Create context with agent and communication preferences
   const context: UnifiedContext = {
@@ -28,24 +30,36 @@ export async function basicContextAwareGeneration() {
       id: 'example-context-1',
       scope: ContextScope.REQUEST,
       priority: ContextPriority.CONFIG,
-      createdAt: new Date().toISOString(),
-      lastModified: new Date().toISOString(),
+      createdAt: new Date(),
+      lastModified: new Date(),
       source: 'example',
       version: '1.0.0',
     },
     agent: {
       config: {
-        personality: {
-          traits: ['helpful', 'analytical'],
-          tone: 'professional',
+        id: 'example-agent',
+        name: 'Example Agent',
+        type: 'standard',
+        status: AgentStatus.IDLE,
+        personality: ['helpful', 'analytical'],
+      },
+      state: {
+        stats: {
+          totalMessages: 0,
+          totalTokens: 0,
+          averageResponseTime: 0,
         },
       },
       emotions: {
-        confidence: { intensity: 0.8 },
-        curiosity: { intensity: 0.6 },
+        current: 'confident',
+        intensity: 0.8,
+        triggers: [],
+        history: [],
+        timestamp: new Date(),
       },
       goals: ['Provide accurate information', 'Be concise'],
       capabilities: ['analysis', 'explanation'],
+      recentMemories: [],
     },
     communication: {
       conversationHistory: [],
@@ -60,8 +74,8 @@ export async function basicContextAwareGeneration() {
       },
     },
     temporal: {
-      now: new Date().toISOString(),
-      startTime: new Date().toISOString(),
+      now: new Date(),
+      startTime: new Date(),
     },
   };
 
@@ -83,9 +97,9 @@ export async function basicContextAwareGeneration() {
  * Example 2: Chat generation with conversation context
  */
 export async function contextAwareChatGeneration() {
-  const portal = createAnthropicPortal({
-    apiKey: process.env.ANTHROPIC_API_KEY || 'your-api-key',
-  });
+  const portal = createGroqPortal({
+    apiKey: process.env['GROQ_API_KEY'] || 'your-api-key',
+  } as GroqConfig);
 
   // Create context with conversation history
   const context: UnifiedContext = {
@@ -93,8 +107,8 @@ export async function contextAwareChatGeneration() {
       id: 'chat-context-1',
       scope: ContextScope.SESSION,
       priority: ContextPriority.SESSION,
-      createdAt: new Date().toISOString(),
-      lastModified: new Date().toISOString(),
+      createdAt: new Date(),
+      lastModified: new Date(),
       source: 'chat-system',
       version: '1.0.0',
     },
@@ -103,13 +117,13 @@ export async function contextAwareChatGeneration() {
         {
           role: 'user',
           content: 'I need help with React hooks',
-          timestamp: new Date().toISOString(),
+          timestamp: new Date(),
         },
         {
           role: 'assistant',
           content:
             "I'd be happy to help you with React hooks. What specific aspect would you like to learn about?",
-          timestamp: new Date().toISOString(),
+          timestamp: new Date(),
         },
       ],
       style: {
@@ -138,7 +152,7 @@ export async function contextAwareChatGeneration() {
 
   const messages = [
     {
-      role: 'user' as const,
+      role: MessageRole.USER,
       content: 'Can you analyze this useEffect hook and suggest improvements?',
       timestamp: new Date(),
     },
@@ -157,8 +171,8 @@ export async function contextAwareChatGeneration() {
  */
 export async function migrateFromLegacyUsage() {
   const portal = createOpenAIPortal({
-    apiKey: process.env.OPENAI_API_KEY || 'your-api-key',
-  });
+    apiKey: process.env['OPENAI_API_KEY'] || 'your-api-key',
+  } as OpenAIConfig);
 
   // Legacy options (existing code)
   const legacyOptions = {
@@ -206,8 +220,8 @@ export async function migrateFromLegacyUsage() {
  */
 export async function performanceOptimizedGeneration() {
   const portal = createOpenAIPortal({
-    apiKey: process.env.OPENAI_API_KEY || 'your-api-key',
-  });
+    apiKey: process.env['OPENAI_API_KEY'] || 'your-api-key',
+  } as OpenAIConfig);
 
   // Context indicating performance-critical scenario
   const context: UnifiedContext = {
@@ -215,14 +229,14 @@ export async function performanceOptimizedGeneration() {
       id: 'perf-context-1',
       scope: ContextScope.REQUEST,
       priority: ContextPriority.REQUEST,
-      createdAt: new Date().toISOString(),
-      lastModified: new Date().toISOString(),
+      createdAt: new Date(),
+      lastModified: new Date(),
       source: 'performance-test',
       version: '1.0.0',
     },
     execution: {
       mode: 'production',
-      environment: process.env,
+      environment: process.env as Record<string, string>,
       version: {
         runtime: '1.0.0',
       },
@@ -232,7 +246,7 @@ export async function performanceOptimizedGeneration() {
       },
     },
     performance: {
-      startTime: new Date().toISOString(),
+      startTime: new Date(),
       memoryUsage: 50 * 1024 * 1024, // 50MB current usage
       requestRate: 100, // 100 requests per second
     },
@@ -254,7 +268,7 @@ export async function performanceOptimizedGeneration() {
       recent: [
         {
           id: 'quick-calculator',
-          timestamp: new Date().toISOString(),
+          timestamp: new Date(),
           duration: 50,
           success: true,
         },
@@ -280,41 +294,18 @@ export async function performanceOptimizedGeneration() {
  * Example 5: Streaming with context awareness
  */
 export async function contextAwareStreaming() {
-  const portal = createAnthropicPortal({
-    apiKey: process.env.ANTHROPIC_API_KEY || 'your-api-key',
-  });
-
-  const context: UnifiedContext = {
-    metadata: {
-      id: 'stream-context-1',
-      scope: ContextScope.REQUEST,
-      priority: ContextPriority.REQUEST,
-      createdAt: new Date().toISOString(),
-      lastModified: new Date().toISOString(),
-      source: 'streaming-example',
-      version: '1.0.0',
-    },
-    communication: {
-      conversationHistory: [],
-      channel: {
-        type: 'text',
-        capabilities: ['streaming'],
-        platform: 'web',
-      },
-    },
-    temporal: {
-      now: new Date().toISOString(),
-      startTime: new Date().toISOString(),
-      constraints: {
-        deadline: new Date(Date.now() + 10000).toISOString(), // 10 seconds
-      },
-    },
-  };
+  const portal = createGroqPortal({
+    apiKey: process.env['GROQ_API_KEY'] || 'your-api-key',
+  } as GroqConfig);
 
   // Stream with context (will automatically optimize for real-time)
-  const stream = portal.streamTextWithContext?.(
+  // Note: streamTextWithContext may not be available, using streamText instead
+  const stream = portal.streamText?.(
     'Write a detailed explanation of how neural networks work',
-    context
+    {
+      temperature: 0.7,
+      maxOutputTokens: 1000,
+    }
   );
 
   if (stream) {

@@ -6,25 +6,49 @@ The SYMindX portal system provides a unified, modular framework for integrating 
 
 ```
 src/portals/
-├── index.ts              # Portal factory and registration
-├── base-portal.ts        # Base portal interface
-├── integration.ts        # Portal integration utilities
-├── utils.ts             # Common utilities
-├── README.md            # This development guide
-└── [provider-folders]/  # Individual provider implementations
-    ├── openai/          # OpenAI GPT models
-    ├── anthropic/       # Claude models
-    ├── groq/            # Ultra-fast inference
-    ├── google-generative/ # Gemini models
-    ├── google-vertex/   # Vertex AI
-    ├── xai/             # Grok models
-    ├── mistral/         # Mistral AI
-    ├── cohere/          # Command models
-    ├── azure-openai/    # Enterprise OpenAI
-    ├── ollama/          # Local models
-    ├── lmstudio/        # Local model serving
-    ├── vercel/          # Multi-provider aggregation
-    └── openrouter/      # Access to 100+ models
+├── index.ts              # Portal factory and registration (main public API)
+├── README.md             # This development guide
+│
+├── core/                 # Core abstractions and base classes
+│   ├── base-portal.ts   # Base portal implementation
+│   └── index.ts         # Core exports
+│
+├── providers/            # Provider implementations
+│   ├── openai/          # OpenAI GPT models
+│   ├── groq/            # Ultra-fast inference
+│   ├── openrouter/      # Access to 100+ models
+│   └── index.ts         # Provider registry exports
+│
+├── shared/               # Shared utilities for portal implementations
+│   ├── message-converter.ts
+│   ├── parameter-builder.ts
+│   ├── model-resolver.ts
+│   ├── error-handler.ts
+│   ├── stream-handler.ts
+│   ├── finish-reason-mapper.ts
+│   ├── provider-factory.ts
+│   ├── tool-orchestration.ts
+│   ├── performance-optimization.ts
+│   ├── adaptive-model-selection.ts
+│   ├── advanced-streaming.ts
+│   ├── index.ts
+│   └── README.md
+│
+├── utils/                # General utilities
+│   ├── ai-sdk/          # AI SDK v6 specific utilities
+│   │   ├── parameter-builder.ts
+│   │   ├── advanced.ts
+│   │   ├── compat.ts
+│   │   └── index.ts
+│   ├── context.ts       # Context transformation utilities
+│   ├── integration.ts   # Portal integration utilities
+│   ├── usage.ts         # Usage conversion utilities
+│   └── index.ts
+│
+└── examples/             # Example code
+    ├── advanced-tools-example.ts
+    ├── context-aware-usage.ts
+    └── README.md
 ```
 
 ## Available Portals

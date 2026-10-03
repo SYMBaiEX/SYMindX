@@ -14,193 +14,40 @@ import {
   ToolEvaluationOptions,
   ToolEvaluationResult,
 } from '../types/portal';
-import { standardLoggers } from '../utils/standard-logging.js';
+import { standardLoggers } from '../utils/standard-logging';
 
-// Import all portal implementations
+// Import all portal implementations from providers
 export {
   OpenAIPortal,
   createOpenAIPortal,
   defaultOpenAIConfig,
   type OpenAIConfig,
-} from './openai/index';
+} from './providers/openai/index';
 export {
   GroqPortal,
   createGroqPortal,
   defaultGroqConfig,
   groqModels,
   type GroqConfig,
-} from './groq/index';
-export {
-  AnthropicPortal,
-  createAnthropicPortal,
-  defaultAnthropicConfig,
-  anthropicModels,
-  type AnthropicConfig,
-} from './anthropic/index';
-export {
-  XAIPortal,
-  createXAIPortal,
-  defaultXAIConfig,
-  xaiModels,
-  type XAIConfig,
-} from './xai/index';
+} from './providers/groq/index';
 export {
   OpenRouterPortal,
   createOpenRouterPortal,
   defaultOpenRouterConfig,
   openRouterModels,
   type OpenRouterConfig,
-} from './openrouter/index';
-export {
-  KlusterAiPortal,
-  createKlusterAiPortal,
-  defaultKlusterAiConfig,
-  klusterAiModels,
-  type KlusterAiConfig,
-} from './kluster.ai/index';
-
-// Advanced AI Portals
-export {
-  GoogleVertexPortal,
-  createGoogleVertexPortal,
-  defaultVertexConfig,
-  vertexModels,
-  type GoogleVertexConfig,
-} from './google-vertex/index';
-export {
-  GoogleGenerativePortal,
-  createGoogleGenerativePortal,
-  defaultGenerativeConfig,
-  generativeModels,
-  type GoogleGenerativeConfig,
-} from './google-generative/index';
-export {
-  VercelAIPortal,
-  createVercelAIPortal,
-  defaultVercelConfig,
-  supportedProviders,
-  type VercelAIConfig,
-  type ProviderConfig,
-  type ModelConfig,
-  type ToolDefinition,
-} from './vercel/index';
-
-// Multimodal AI Portals
-export {
-  MultimodalPortal,
-  createMultimodalPortal,
-  defaultMultimodalConfig,
-  MultimodalPortalType,
-  type MultimodalConfig,
-  type VisionAnalysisResult,
-  type AudioAnalysisResult,
-  type VideoAnalysisResult,
-  type SpeechSynthesisResult,
-  type MusicGenerationResult,
-  type CrossModalReasoningResult,
-} from './multimodal/index';
-
-// Specialized AI Portals
-export {
-  MistralPortal,
-  createMistralPortal,
-  defaultMistralConfig,
-  mistralModels,
-  type MistralConfig,
-} from './mistral/index';
-export {
-  CoherePortal,
-  createCoherePortal,
-  defaultCohereConfig,
-  cohereModels,
-  type CohereConfig,
-} from './cohere/index';
-export {
-  AzureOpenAIPortal,
-  createAzureOpenAIPortal,
-  defaultAzureOpenAIConfig,
-  azureOpenAIModels,
-  type AzureOpenAIConfig,
-} from './azure-openai/index';
-
-// Local AI Portals
-export {
-  OllamaPortal,
-  createOllamaPortal,
-  defaultOllamaConfig,
-  ollamaModels,
-  type OllamaConfig,
-  type OllamaModelStatus,
-} from './ollama/index';
-export {
-  LMStudioPortal,
-  createLMStudioPortal,
-  defaultLMStudioConfig,
-  lmStudioModels,
-  type LMStudioConfig,
-  type LMStudioModelInfo,
-  type LMStudioServerStatus,
-} from './lmstudio/index';
+} from './providers/openrouter/index';
 
 // Import the default configs and portal creators for internal use
-import {
-  defaultAnthropicConfig,
-  createAnthropicPortal,
-} from './anthropic/index';
-import type { AzureOpenAIConfig } from './azure-openai/index';
-import {
-  defaultAzureOpenAIConfig,
-  createAzureOpenAIPortal,
-} from './azure-openai/index';
-import { defaultCohereConfig, createCoherePortal } from './cohere/index';
-import type { CohereConfig } from './cohere/index';
-import {
-  defaultGenerativeConfig,
-  createGoogleGenerativePortal,
-} from './google-generative/index';
-import type { GoogleGenerativeConfig } from './google-generative/index';
-import {
-  defaultVertexConfig,
-  createGoogleVertexPortal,
-} from './google-vertex/index';
-import type { GoogleVertexConfig } from './google-vertex/index';
-import { defaultGroqConfig, createGroqPortal } from './groq/index';
-import {
-  defaultKlusterAiConfig,
-  createKlusterAiPortal,
-} from './kluster.ai/index';
-import type { LMStudioConfig } from './lmstudio/index';
-import { defaultLMStudioConfig, createLMStudioPortal } from './lmstudio/index';
-import { defaultMistralConfig, createMistralPortal } from './mistral/index';
-import type { MistralConfig } from './mistral/index';
-import type { MultimodalConfig } from './multimodal/index';
-import {
-  defaultMultimodalConfig,
-  createMultimodalPortal,
-  MultimodalPortalType,
-} from './multimodal/index';
-import type { OllamaConfig } from './ollama/index';
-import { defaultOllamaConfig, createOllamaPortal } from './ollama/index';
-import { defaultOpenAIConfig, createOpenAIPortal } from './openai/index';
+import { defaultGroqConfig, createGroqPortal } from './providers/groq/index';
+import { defaultOpenAIConfig, createOpenAIPortal } from './providers/openai/index';
 import {
   defaultOpenRouterConfig,
   createOpenRouterPortal,
-} from './openrouter/index';
-import { defaultVercelConfig, createVercelAIPortal } from './vercel/index';
-import type { VercelAIConfig } from './vercel/index';
-import { defaultXAIConfig, createXAIPortal } from './xai/index';
+} from './providers/openrouter/index';
 
-// Export base portal
-export { BasePortal } from './base-portal';
-
-// Export streamlined portal manager
-export { 
-  StreamlinedPortalManager, 
-  createStreamlinedPortalManager,
-  StreamlinedProvider,
-  defaultStreamlinedConfig
-} from './streamlined-portal-manager';
-export type { StreamlinedPortalConfig } from './streamlined-portal-manager';
+// Export base portal from core
+export { BasePortal } from './core/base-portal';
 
 // Portal factory type
 export type PortalFactory = (config: PortalConfig) => Portal;
@@ -226,57 +73,10 @@ export class PortalRegistry {
    * Register default portals
    */
   private registerDefaultPortals(): void {
-    // Top 5 streamlined portals (recommended)
+    // Supported portals
     this.register('openai', createOpenAIPortal);
-    this.register('anthropic', createAnthropicPortal);
     this.register('groq', createGroqPortal);
-    this.register('google-generative', (config: PortalConfig) =>
-      createGoogleGenerativePortal(config as GoogleGenerativeConfig)
-    );
-    this.register('ollama', (config: PortalConfig) =>
-      createOllamaPortal(config as OllamaConfig)
-    );
-
-    // Legacy portals (for backward compatibility)
-    this.register('xai', createXAIPortal);
     this.register('openrouter', createOpenRouterPortal);
-    this.register('kluster.ai', createKlusterAiPortal);
-
-    // Advanced AI portals
-    this.register('google-vertex', (config: PortalConfig) =>
-      createGoogleVertexPortal(config as GoogleVertexConfig)
-    );
-    this.register('google-generative', (config: PortalConfig) =>
-      createGoogleGenerativePortal(config as GoogleGenerativeConfig)
-    );
-    this.register('vercel-ai', (config: PortalConfig) =>
-      createVercelAIPortal(config as VercelAIConfig)
-    );
-    this.register('multimodal', (config: PortalConfig) =>
-      createMultimodalPortal(
-        MultimodalPortalType.UNIFIED_MULTIMODAL,
-        config as MultimodalConfig
-      )
-    );
-
-    // Specialized AI portals
-    this.register('mistral', (config: PortalConfig) =>
-      createMistralPortal(config as MistralConfig)
-    );
-    this.register('cohere', (config: PortalConfig) =>
-      createCoherePortal(config as CohereConfig)
-    );
-    this.register('azure-openai', (config: PortalConfig) =>
-      createAzureOpenAIPortal(config as AzureOpenAIConfig)
-    );
-
-    // Local AI portals
-    this.register('ollama', (config: PortalConfig) =>
-      createOllamaPortal(config as OllamaConfig)
-    );
-    this.register('lmstudio', (config: PortalConfig) =>
-      createLMStudioPortal(config as LMStudioConfig)
-    );
   }
 
   /**
@@ -326,32 +126,8 @@ export class PortalRegistry {
         return defaultOpenAIConfig;
       case 'groq':
         return defaultGroqConfig;
-      case 'anthropic':
-        return defaultAnthropicConfig;
-      case 'xai':
-        return defaultXAIConfig;
       case 'openrouter':
         return defaultOpenRouterConfig;
-      case 'kluster.ai':
-        return defaultKlusterAiConfig;
-      case 'google-vertex':
-        return defaultVertexConfig;
-      case 'google-generative':
-        return defaultGenerativeConfig;
-      case 'vercel-ai':
-        return defaultVercelConfig;
-      case 'multimodal':
-        return defaultMultimodalConfig;
-      case 'mistral':
-        return defaultMistralConfig;
-      case 'cohere':
-        return defaultCohereConfig;
-      case 'azure-openai':
-        return defaultAzureOpenAIConfig;
-      case 'ollama':
-        return defaultOllamaConfig;
-      case 'lmstudio':
-        return defaultLMStudioConfig;
       default:
         return {
           maxTokens: 1000,
@@ -580,27 +356,15 @@ export function initializePortals(): PortalRegistry {
   logger.success(
     `Portals system initialized with ${availablePortals.length} providers`,
     {
-      portalCount: availablePortals.length,
-      providers: availablePortals,
+      metadata: {
+        providers: availablePortals,
+        portalCount: availablePortals.length,
+      },
     }
   );
   return registry;
 }
 
-/**
- * Create streamlined portal manager with smart defaults
- * This is the recommended way to use the portal system
- */
-export function createStreamlinedPortals(overrides?: Partial<StreamlinedPortalConfig>): StreamlinedPortalManager {
-  const { createStreamlinedPortalManager, defaultStreamlinedConfig } = require('./streamlined-portal-manager');
-  
-  const config = {
-    ...defaultStreamlinedConfig,
-    ...overrides
-  };
-  
-  return createStreamlinedPortalManager(config);
-}
 
 // Export portal types for external use
 export type {

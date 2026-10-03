@@ -15,11 +15,8 @@
     "paths": ["./portals"],
     "apiKeys": {
       "openai": "YOUR_OPENAI_API_KEY",
-      "anthropic": "YOUR_ANTHROPIC_API_KEY",
       "groq": "YOUR_GROQ_API_KEY",
-      "xai": "YOUR_XAI_API_KEY",
-      "openrouter": "YOUR_OPENROUTER_API_KEY",
-      "kluster.ai": "YOUR_KLUSTERAI_API_KEY"
+      "openrouter": "YOUR_OPENROUTER_API_KEY"
     },
     "modelConfig": {
       "openai": {

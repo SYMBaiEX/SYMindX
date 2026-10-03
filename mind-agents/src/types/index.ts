@@ -625,9 +625,6 @@ export * from './api-versioning';
 export * from './validation-utils';
 export * from './agent-interfaces';
 
-// Multi-modal types
-export * from './multimodal';
-
 // Compliance types
 export type {
   ComplianceConfig,

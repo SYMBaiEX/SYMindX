@@ -124,7 +124,7 @@
     "@slack/web-api": "^7.8.0",
     "@supabase/supabase-js": "^2.49.10",
     "@types/puppeteer": "^5.4.7",
-    "ai": "^5.0.0-canary.24",
+    "ai": "^6.0.0-beta.94",
 
     "boxen": "^8.0.1",
     "chalk": "^5.3.0",

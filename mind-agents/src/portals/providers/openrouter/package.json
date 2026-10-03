@@ -1,0 +1,14 @@
+{
+  "name": "@symindx/portal-openrouter",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "main": "index.ts",
+  "dependencies": {
+    "ai": "^6.0.0-beta.94",
+    "zod": "^3.24.0"
+  },
+  "peerDependencies": {
+    "@symindx/types": "workspace:*"
+  }
+}

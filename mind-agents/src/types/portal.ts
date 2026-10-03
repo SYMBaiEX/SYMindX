@@ -11,34 +11,10 @@ import { UnifiedContext } from './context/unified-context';
 import { z } from 'zod';
 
 export enum PortalType {
-  // Core AI Providers
+  // Supported AI Providers
   OPENAI = 'openai',
-  ANTHROPIC = 'anthropic',
   GROQ = 'groq',
-
-  // Google AI Portals
-  GOOGLE_GENERATIVE = 'google-generative',
-  GOOGLE_VERTEX = 'google-vertex',
-
-  // Enterprise AI Portals
-  AZURE_OPENAI = 'azure-openai',
-  VERCEL_AI = 'vercel-ai',
-
-  // Router & Aggregator Portals
   OPENROUTER = 'openrouter',
-  XAI = 'xai',
-  KLUSTER_AI = 'kluster.ai',
-
-  // Specialized AI Portals
-  MISTRAL = 'mistral',
-  COHERE = 'cohere',
-  PERPLEXITY = 'perplexity',
-  MULTIMODAL = 'multimodal',
-  UNIFIED_MULTIMODAL = 'unified_multimodal',
-
-  // Local AI Portals
-  OLLAMA = 'ollama',
-  LMSTUDIO = 'lmstudio',
 
   // Custom/Extensible
   CUSTOM = 'custom',
@@ -410,6 +386,9 @@ export interface ToolEvaluationResult extends Record<string, unknown> {
     totalTokens?: number;
     promptTokens?: number;
     completionTokens?: number;
+    tokenUsage?: unknown;
+    evaluationCriteria?: unknown;
+    outputFormat?: string;
   };
 }
 

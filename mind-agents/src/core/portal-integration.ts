@@ -618,12 +618,8 @@ What are your current thoughts? Respond with 2-3 brief thoughts.`;
     // Priority-based scoring
     switch (criteria.priority) {
       case 'speed':
-        // Groq and local models are typically faster
-        if (
-          portal.type === PortalType.GROQ ||
-          portal.type === PortalType.OLLAMA ||
-          portal.type === PortalType.LMSTUDIO
-        ) {
+        // Groq is typically faster
+        if (portal.type === PortalType.GROQ) {
           score += 30;
         }
         // Smaller models are faster
@@ -633,41 +629,25 @@ What are your current thoughts? Respond with 2-3 brief thoughts.`;
         break;
 
       case 'quality':
-        // GPT-4 and Claude models are highest quality
-        if (
-          config.model?.includes('gpt-4') ||
-          config.model?.includes('claude')
-        ) {
+        // GPT-4 models are highest quality
+        if (config.model?.includes('gpt-4')) {
           score += 30;
         }
         // Larger models have better quality
-        if (config.model?.includes('70b') || config.model?.includes('opus')) {
+        if (config.model?.includes('70b')) {
           score += 20;
         }
         break;
 
       case 'cost':
-        // Local models are free
-        if (
-          portal.type === PortalType.OLLAMA ||
-          portal.type === PortalType.LMSTUDIO
-        ) {
-          score += 40;
-        }
         // Smaller models are cheaper
-        if (config.model?.includes('mini') || config.model?.includes('haiku')) {
+        if (config.model?.includes('mini')) {
           score += 20;
         }
         break;
 
       case 'local':
-        // Prefer local models
-        if (
-          portal.type === PortalType.OLLAMA ||
-          portal.type === PortalType.LMSTUDIO
-        ) {
-          score += 50;
-        }
+        // No local models available
         break;
     }
 

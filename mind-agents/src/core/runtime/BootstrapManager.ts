@@ -27,6 +27,11 @@ import { registerMemoryProviders } from '../../modules/memory/index';
 import { registerEmotionModules } from '../../modules/emotion/index';
 import { registerCognitionModules } from '../../modules/cognition/index';
 
+// Portal imports - static imports for better performance and tree-shaking
+import { createGroqPortal } from '../../portals/providers/groq/index';
+import { createOpenAIPortal } from '../../portals/providers/openai/index';
+import { createOpenRouterPortal } from '../../portals/providers/openrouter/index';
+
 export class BootstrapManager {
   private logger = standardLoggers.runtime;
   private registry: ModuleRegistry;
@@ -242,7 +247,7 @@ export class BootstrapManager {
       }
 
       try {
-        await this.loadPortal(portalId, portalConfig);
+        this.loadPortal(portalId, portalConfig);
         loadedPortals.push(portalId);
       } catch (error) {
         this.logger.error(`Failed to load portal: ${portalId}`, { error });
@@ -267,77 +272,52 @@ export class BootstrapManager {
   /**
    * Load a single portal
    */
-  private async loadPortal(portalId: string, config: any): Promise<void> {
+  private loadPortal(portalId: string, config: any): void {
     try {
-      // Dynamic import based on portal ID
+      // Static imports for better performance and tree-shaking
       let portal: Portal;
 
       switch (portalId) {
         case 'groq':
-          const { createGroqPortal } = await import('../../portals/groq/index');
           portal = createGroqPortal(config);
           break;
         case 'openai':
-          const { createOpenAIPortal } = await import(
-            '../../portals/openai/index'
-          );
           portal = createOpenAIPortal(config);
           break;
-        case 'anthropic':
-          const { createAnthropicPortal } = await import(
-            '../../portals/anthropic/index'
-          );
-          portal = createAnthropicPortal(config);
+        case 'openrouter':
+          portal = createOpenRouterPortal(config);
           break;
-        case 'xai':
-          const { createXAIPortal } = await import('../../portals/xai/index');
-          portal = createXAIPortal(config);
-          break;
-        case 'google':
-        case 'google-generative':
-          const { createGooglePortal } = await import(
-            '../../portals/google-generative/index'
-          );
-          portal = createGooglePortal(config);
-          break;
-        case 'google-vertex':
-          const { createVertexPortal } = await import(
-            '../../portals/google-vertex/index'
-          );
-          portal = createVertexPortal(config);
-          break;
-        case 'mistral':
-          const { createMistralPortal } = await import(
-            '../../portals/mistral/index'
-          );
-          portal = createMistralPortal(config);
-          break;
-        case 'cohere':
-          const { createCoherePortal } = await import(
-            '../../portals/cohere/index'
-          );
-          portal = createCoherePortal(config);
-          break;
-        case 'azure-openai':
-          const { createAzureOpenAIPortal } = await import(
-            '../../portals/azure-openai/index'
-          );
-          portal = createAzureOpenAIPortal(config);
-          break;
-        case 'ollama':
-          const { createOllamaPortal } = await import(
-            '../../portals/ollama/index'
-          );
-          portal = createOllamaPortal(config);
-          break;
-        case 'lmstudio':
-          const { createLMStudioPortal } = await import(
-            '../../portals/lmstudio/index'
-          );
-          portal = createLMStudioPortal(config);
-          break;
+        // Future portals - will be added when implemented
+        // case 'anthropic':
+        //   portal = createAnthropicPortal(config);
+        //   break;
+        // case 'xai':
+        //   portal = createXAIPortal(config);
+        //   break;
+        // case 'google':
+        // case 'google-generative':
+        //   portal = createGooglePortal(config);
+        //   break;
+        // case 'google-vertex':
+        //   portal = createVertexPortal(config);
+        //   break;
+        // case 'mistral':
+        //   portal = createMistralPortal(config);
+        //   break;
+        // case 'cohere':
+        //   portal = createCoherePortal(config);
+        //   break;
+        // case 'azure-openai':
+        //   portal = createAzureOpenAIPortal(config);
+        //   break;
+        // case 'ollama':
+        //   portal = createOllamaPortal(config);
+        //   break;
+        // case 'lmstudio':
+        //   portal = createLMStudioPortal(config);
+        //   break;
         default:
-          throw new Error(`Unknown portal: ${portalId}`);
+          throw new Error(`Unknown portal: ${portalId}. Available portals: groq, openai, openrouter`);
       }
 
       // Register with registry

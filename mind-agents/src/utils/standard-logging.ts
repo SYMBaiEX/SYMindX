@@ -28,6 +28,7 @@ export interface StandardLogContext extends LogContext {
   agentId?: string;
   agentName?: string;
   extensionId?: string;
+  portalId?: string;
   portalName?: string;
   memoryProvider?: string;
   emotionType?: string;
