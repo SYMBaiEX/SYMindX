@@ -1,0 +1,14 @@
+[
+  {
+    "path": "create-symindx/src/index.ts",
+    "archive": "docs/legacy/scaffolder/legacy-index.ts",
+    "sourceCommit": "10d71e0",
+    "sha256": "14c8934e235d56bb83c31ea6e3de7c76b4483380f396d249217fca37f20bd63e"
+  },
+  {
+    "path": "create-symindx/src/setup-wizard.ts",
+    "archive": "docs/legacy/scaffolder/legacy-setup-wizard.ts",
+    "sourceCommit": "10d71e0",
+    "sha256": "7a9528f3455f39f014de6fbe10d39f86558d6379916c98cd21472fda5bc0c79c"
+  }
+]

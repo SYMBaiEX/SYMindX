@@ -1,0 +1,62 @@
+[
+  {
+    "path": "website/src/App.tsx",
+    "archive": "docs/legacy/website/src/App.tsx",
+    "sha256": "f4691f15cf6e4d41708a2cf1f25bfb5590f6b435fb932a32f890127791f6b274"
+  },
+  {
+    "path": "website/src/index.css",
+    "archive": "docs/legacy/website/src/index.css",
+    "sha256": "8e93d8dd7ddd4e9506b03aa811dd871b14944b748916c35001fcc4f0f4bacf78"
+  },
+  {
+    "path": "website/vite.config.ts",
+    "archive": "docs/legacy/website/vite.config.ts",
+    "sha256": "c153db784068dc4f590a226aa9bc3c90c58b9d70b222d13de1162d1ed9aa3601"
+  },
+  {
+    "path": "website/tsconfig.json",
+    "archive": "docs/legacy/website/tsconfig.json",
+    "sha256": "405eba9783cb62133f4a6edc268cc9b6a437d57249fa361015a42e223c60e70b"
+  },
+  {
+    "path": "website/tsconfig.node.json",
+    "archive": "docs/legacy/website/tsconfig.node.json",
+    "sha256": "169bdce61117760d7c8c8dcceadf3b6ffc2afc3ec7244e4b3c5a996d064d7383"
+  },
+  {
+    "path": "website/postcss.config.js",
+    "archive": "docs/legacy/website/postcss.config.js",
+    "sha256": "6bbbfd323867a78af8d7ee348a179835202fc7a71f4c2b3e3f34de6f5f895c76"
+  },
+  {
+    "path": "website/tailwind.config.js",
+    "archive": "docs/legacy/website/tailwind.config.js",
+    "sha256": "e96f2faaf0177138082a4e1ed60c6e37f65245850a57e7d0bbf477c2a2a8a0b7"
+  },
+  {
+    "path": "website/.storybook/main.ts",
+    "archive": "docs/legacy/website/.storybook/main.ts",
+    "sha256": "b84720b61ff1bc27bc531a9a4d4caab74ec4408902ef8fa1f13ae823abfa8f3f"
+  },
+  {
+    "path": "website/.storybook/preview.ts",
+    "archive": "docs/legacy/website/.storybook/preview.ts",
+    "sha256": "ee7acb9ef37644f5849d4fd8d568e37d8de3dfb1d1e229d5d74cbc76598f7776"
+  },
+  {
+    "path": "website/Dockerfile",
+    "archive": "docs/legacy/website/Dockerfile",
+    "sha256": "988135747a2021609316251b172eef3e7c78d31aba085d4aa7f05deb9faf7ea8"
+  },
+  {
+    "path": "website/Dockerfile.dev",
+    "archive": "docs/legacy/website/Dockerfile.dev",
+    "sha256": "40668f713ec46fd5f54fd721d293fe436e107c509b68ab1b933da321f333a382"
+  },
+  {
+    "path": "website/nginx.conf",
+    "archive": "docs/legacy/website/nginx.conf",
+    "sha256": "1dbb26217b85778355b663de8844b908a42022736c6d0772d2c0a7174ec1d0fd"
+  }
+]

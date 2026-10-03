@@ -1,0 +1,83 @@
+{
+  "capturedAt": "2026-10-03T23:27:53.297292+00:00",
+  "scope": "integrated supported runtime",
+  "toolchain": {
+    "bun": "1.4.2",
+    "typescript": "7.0.2",
+    "bunTypes": "1.4.2",
+    "prettier": "3.9.9"
+  },
+  "environment": "Windows temporary local staging; source refreshed from main checkout; no runtime behavior executed",
+  "checks": [
+    {
+      "name": "frozen install",
+      "command": "bun --no-env-file install --frozen-lockfile --ignore-scripts",
+      "status": "passed"
+    },
+    {
+      "name": "strict types",
+      "command": "bun --no-env-file run typecheck",
+      "status": "passed"
+    },
+    {
+      "name": "bundle and declarations",
+      "command": "bun --no-env-file run build",
+      "status": "passed"
+    },
+    {
+      "name": "formatting",
+      "command": "bun --no-env-file run format:check",
+      "status": "passed"
+    },
+    {
+      "name": "shell syntax",
+      "command": "sh -n scripts/dev-setup.sh scripts/deploy.sh scripts/health-check.sh .husky/pre-commit .husky/commit-msg",
+      "status": "passed"
+    },
+    {
+      "name": "redirect syntax",
+      "command": "node --check redirect-package/bin.js",
+      "status": "passed"
+    },
+    {
+      "name": "behavior tests / provider trial",
+      "status": "not-run",
+      "reason": "Not explicitly requested for this implementation; no live integration calls."
+    },
+    {
+      "name": "Docker image build",
+      "status": "not-run",
+      "reason": "Container toolchain not available in this execution environment."
+    },
+    {
+      "name": "workspace metadata",
+      "command": "bun --no-env-file mind-agents/scripts/check-workspace-deps.ts",
+      "status": "passed",
+      "detail": "29 actual registered packages, no unknown workspace dependencies."
+    },
+    {
+      "name": "workspace checker strict compile",
+      "status": "passed",
+      "detail": "Standalone TypeScript7 strict/noUncheckedIndexedAccess/exactOptionalPropertyTypes/noUnusedLocals/noUnusedParameters noEmit compile."
+    }
+  ],
+  "sourceHashes": {
+    "packages/runtime/bun.lock": "006bb1994aa6786e788a30f07724b0daf11c821a0c16394a4e39bdc175e3ae5f",
+    "packages/runtime/package.json": "ce521e101731d0a194fef3b3ccf35b553a5cca0eee2650e5c2e6e2afe4f78375",
+    "packages/runtime/scripts/build.ts": "fd1088a19ea003d339c5f72ef3547085e466f497da1ed2de75ed6349c5777fb2",
+    "packages/runtime/src/characters.ts": "890c93dff701254d88a7efcae190312a3d9e407095b5b5ee55e14ae6d5de77ba",
+    "packages/runtime/src/cli.ts": "ce9ffd5700f575e33c9b639732e669316747769f368f1a876cfb4a3348ff5c02",
+    "packages/runtime/src/emotion.ts": "38961fb49e6361439d9998f223f4f4ffa02e074f8adfeb94a39f983de1cdabf0",
+    "packages/runtime/src/errors.ts": "8aa1e6a91f5c0495c723015389f966737640e965a47d29bb7cef42855527bab3",
+    "packages/runtime/src/index.ts": "3fb648102350359581a1bc843f23fe8daff0e9fa724c75d328513eed05d1ae68",
+    "packages/runtime/src/providers.ts": "832144e6814d59e595653c08b53dfc8264390cec4713126097d6eb9555a45524",
+    "packages/runtime/src/runtime.ts": "f11d583318c3ed3979986b2809056063ecea9b050b584a5879cbed12b03427bf",
+    "packages/runtime/src/server.ts": "f8d9f60eda8f761b46113b301ebd0d767fa5a4392a8d935c4bc107349e31660b",
+    "packages/runtime/src/storage.ts": "19c53932eb473bae5ecb74d6444c6661fe0186602cc546dbfe5ad54d2511579d",
+    "packages/runtime/src/tools.ts": "ffb5f4e12de01c38fb8245760241dc264e325181718f28b36c63f1546d1bdc25",
+    "packages/runtime/src/types.ts": "0f23d108bb46995f2939071ae4ef26939f1965da878de5e8a06df76c0c2dfc23",
+    "packages/runtime/src/validation.ts": "6374eedc4a8fb889c6ab4b2fc061799d85102a65df4d71627ede1adb9476c8e7",
+    "packages/runtime/tsconfig.build.json": "aeb5597d56d059c5044cab7e38539e4ef5574c40bd3328898d757da89d61d3e5",
+    "packages/runtime/tsconfig.json": "0c0eabc4576b3d75da789ce08b44b98ab854f87b77b95c3f01b4f708b146d20a"
+  }
+}

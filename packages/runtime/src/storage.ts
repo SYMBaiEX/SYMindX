@@ -3,6 +3,8 @@ import { chmodSync, mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import type { AgentState, Character, Message, ToolAudit } from './types.js';
 import { SYMindXError } from './errors.js';
+import { parseCharacter } from './characters.js';
+import { decodeAgentState, decodeMessage, decodeToolAudit } from './validation.js';
 
 const SCHEMA_VERSION = 1;
 const APPLICATION_ID = 0x53594d58;
@@ -59,6 +61,7 @@ export class SqliteStore {
 
   upsertCharacter(character: Character): void {
     this.assertOpen();
+    character = parseCharacter(character);
     this.db
       .prepare(
         `INSERT INTO characters(id, snapshot) VALUES (?, ?)
@@ -71,13 +74,13 @@ export class SqliteStore {
     const row = this.db.prepare('SELECT snapshot FROM characters WHERE id = ?').get(id) as {
       snapshot: string;
     } | null;
-    return row ? this.parseSnapshot<Character>(row.snapshot, 'character') : undefined;
+    return row ? parseCharacter(this.parseSnapshot(row.snapshot, 'character')) : undefined;
   }
   listCharacters(): Character[] {
     this.assertOpen();
     return (
       this.db.prepare('SELECT snapshot FROM characters ORDER BY id').all() as { snapshot: string }[]
-    ).map(({ snapshot }) => this.parseSnapshot<Character>(snapshot, 'character'));
+    ).map(({ snapshot }) => parseCharacter(this.parseSnapshot(snapshot, 'character')));
   }
   getAgentState(id: string): AgentState | undefined {
     this.assertOpen();
@@ -85,9 +88,7 @@ export class SqliteStore {
       snapshot: string;
     } | null;
     if (!row) return undefined;
-    const state = this.parseSnapshot<AgentState>(row.snapshot, 'agent state');
-    this.validateState(state);
-    return state;
+    return decodeAgentState(this.parseSnapshot(row.snapshot, 'agent state'));
   }
   getRecentMessages(agentId: string, conversationId: string, limit: number): Message[] {
     this.assertOpen();
@@ -98,26 +99,22 @@ export class SqliteStore {
       FROM messages WHERE agent_id = ? AND conversation_id = ? ORDER BY seq DESC LIMIT ?`,
       )
       .all(agentId, conversationId, limit) as StoredMessage[];
-    return rows.reverse().map(
-      (row) =>
-        ({
-          id: row.id,
-          agentId: row.agent_id,
-          conversationId: row.conversation_id,
-          role: row.role,
-          content: row.content,
-          createdAt: row.created_at,
-          ...(row.tool_call_id === null ? {} : { toolCallId: row.tool_call_id }),
-          ...(row.tool_calls === null
-            ? {}
-            : {
-                toolCalls: this.parseSnapshot<Message['toolCalls']>(
-                  row.tool_calls,
-                  'message tool calls',
-                ),
-              }),
-        }) as Message,
-    );
+    return rows.reverse().map((row) => {
+      const decodedCalls =
+        row.tool_calls === null
+          ? undefined
+          : this.parseSnapshot(row.tool_calls, 'message tool calls');
+      return decodeMessage({
+        id: row.id,
+        agentId: row.agent_id,
+        conversationId: row.conversation_id,
+        role: row.role,
+        content: row.content,
+        createdAt: row.created_at,
+        ...(row.tool_call_id === null ? {} : { toolCallId: row.tool_call_id }),
+        ...(decodedCalls === undefined ? {} : { toolCalls: decodedCalls }),
+      });
+    });
   }
 
   /** Atomically appends a complete turn and persists its resulting agent state. */
@@ -151,9 +148,8 @@ export class SqliteStore {
       .transaction(() => {
         const current = getCurrentUpdatedAt.get(input.agentId) as { snapshot: string } | null;
         const currentState = current
-          ? this.parseSnapshot<AgentState>(current.snapshot, 'agent state')
+          ? decodeAgentState(this.parseSnapshot(current.snapshot, 'agent state'))
           : undefined;
-        if (currentState) this.validateState(currentState);
         const currentUpdatedAt = currentState?.updatedAt ?? 0;
         if (input.expectedUpdatedAt !== undefined && input.expectedUpdatedAt !== currentUpdatedAt)
           throw new SYMindXError('CONFLICT', 'Agent state changed; retry the message');
@@ -177,8 +173,10 @@ export class SqliteStore {
             message.role,
             message.content,
             message.createdAt,
-            message.toolCallId ?? null,
-            message.toolCalls ? JSON.stringify(message.toolCalls) : null,
+            message.role === 'tool' ? message.toolCallId : null,
+            message.role === 'assistant' && message.toolCalls
+              ? JSON.stringify(message.toolCalls)
+              : null,
           );
         }
         saveState.run(input.agentId, JSON.stringify(nextState));
@@ -189,6 +187,7 @@ export class SqliteStore {
   /** Writes audit state without storing tool arguments or results. */
   recordToolAudit(audit: ToolAudit): void {
     this.assertOpen();
+    audit = decodeToolAudit(audit);
     this.validateScope(audit.agentId, audit.conversationId);
     if (
       !audit.id ||
@@ -236,15 +235,17 @@ export class SqliteStore {
       FROM tool_audit WHERE agent_id = ? AND conversation_id = ? ORDER BY seq DESC LIMIT ?`,
       )
       .all(agentId, conversationId, limit) as StoredAudit[];
-    return rows.reverse().map((row) => ({
-      id: row.id,
-      agentId: row.agent_id,
-      conversationId: row.conversation_id,
-      name: row.name,
-      status: row.status,
-      createdAt: row.created_at,
-      ...(row.finished_at === null ? {} : { finishedAt: row.finished_at }),
-    }));
+    return rows.reverse().map((row) =>
+      decodeToolAudit({
+        id: row.id,
+        agentId: row.agent_id,
+        conversationId: row.conversation_id,
+        name: row.name,
+        status: row.status,
+        createdAt: row.created_at,
+        ...(row.finished_at === null ? {} : { finishedAt: row.finished_at }),
+      }),
+    );
   }
   close(): void {
     if (this.closed) return;
@@ -321,9 +322,9 @@ export class SqliteStore {
       PRAGMA user_version = ${SCHEMA_VERSION};`);
     }).immediate();
   }
-  private parseSnapshot<T>(snapshot: string, description: string): T {
+  private parseSnapshot(snapshot: string, description: string): unknown {
     try {
-      return JSON.parse(snapshot) as T;
+      return JSON.parse(snapshot) as unknown;
     } catch (cause) {
       throw new SYMindXError('CONFIGURATION', `Corrupt stored ${description}`, { cause });
     }
@@ -338,36 +339,16 @@ export class SqliteStore {
       throw new SYMindXError('VALIDATION', 'Agent and conversation IDs must be non-empty strings');
   }
   private validateState(state: AgentState): void {
-    if (
-      !state ||
-      !state.emotion ||
-      !Number.isFinite(state.emotion.valence) ||
-      state.emotion.valence < -1 ||
-      state.emotion.valence > 1 ||
-      !Number.isFinite(state.emotion.arousal) ||
-      state.emotion.arousal < 0 ||
-      state.emotion.arousal > 1 ||
-      !Number.isSafeInteger(state.updatedAt)
-    )
-      throw new SYMindXError('CONFIGURATION', 'Stored agent state is invalid');
+    decodeAgentState(state);
   }
   private validateMessage(message: Message, agentId: string, conversationId: string): void {
-    this.validateScope(message?.agentId, message?.conversationId);
-    if (message.agentId !== agentId || message.conversationId !== conversationId)
+    const decoded = decodeMessage(message);
+    this.validateScope(decoded.agentId, decoded.conversationId);
+    if (decoded.agentId !== agentId || decoded.conversationId !== conversationId)
       throw new SYMindXError(
         'CONFLICT',
         'Turn message agent and conversation do not match the commit scope',
       );
-    if (
-      typeof message.id !== 'string' ||
-      !message.id ||
-      !['user', 'assistant', 'tool'].includes(message.role) ||
-      typeof message.content !== 'string' ||
-      !Number.isSafeInteger(message.createdAt)
-    )
-      throw new SYMindXError('VALIDATION', 'Turn message fields are invalid');
-    if (message.toolCalls !== undefined && !Array.isArray(message.toolCalls))
-      throw new SYMindXError('VALIDATION', 'Tool calls must be an array');
   }
   private assertOpen(): void {
     if (this.closed) throw new SYMindXError('CONFLICT', 'SQLite store is closed');

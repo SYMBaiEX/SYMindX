@@ -6,7 +6,7 @@ A Bun library and CLI for persistent character agents. This is the supported SYM
 
 ## Install and build
 
-Requires Bun **1.3.10+**; development uses the exact versions in `bun.lock`.
+Requires Bun **1.4.2+**; development uses the exact versions in `bun.lock`.
 
 From the repository root:
 
@@ -23,16 +23,16 @@ The runtime uses Bun's built-in SQLite and HTTP server. Node-only runtimes are u
 
 Use Bun inside a WSL checkout, or use a normal Windows directory with Windows Bun. This audit environment has Windows Bun operating on `\\wsl.localhost\...`; its package scripts fall through CMD and lose the working directory. Bun also fails an atomic lockfile rename on that UNC path.
 
-After dependencies are installed, direct PowerShell commands from the repository root avoid the package-script issue:
+Windows Bun can run the CLI from this UNC checkout, but TypeScript 7 cannot glob source files here (it reports TS18003). Run installation, typecheck, and build from a normal local Windows checkout or from Linux Bun in WSL. From the repository root on a local Windows checkout, use:
 
 ```powershell
-bun --no-env-file packages/runtime/node_modules/typescript/lib/tsc.js -p packages/runtime/tsconfig.json
-bun --no-env-file packages/runtime/scripts/build.ts
-bun --no-env-file packages/runtime/node_modules/typescript/lib/tsc.js -p packages/runtime/tsconfig.build.json
+bun install --cwd packages/runtime --frozen-lockfile --ignore-scripts
+bun --no-env-file run --cwd packages/runtime typecheck
+bun --no-env-file run --cwd packages/runtime build
 bun --no-env-file packages/runtime/src/cli.ts --help
 ```
 
-If Windows Bun cannot install on the UNC path, use a local Windows checkout or install with Linux Bun in WSL. Use a local filesystem for the SQLite database. Do not share a WAL database over a network filesystem or between Windows and WSL processes.
+Use a local filesystem for the SQLite database. Do not share a WAL database over a network filesystem or between Windows and WSL processes.
 
 ## CLI
 

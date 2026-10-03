@@ -1,0 +1,217 @@
+[
+  {
+    "path": "Dockerfile",
+    "archive": "docs/legacy/entrypoints/Dockerfile",
+    "sha256": "2d001ac11be9287a1df997b95f1b30bf3e38f25c8a56cd6c93304c1dc8820598"
+  },
+  {
+    "path": "Dockerfile.dev",
+    "archive": "docs/legacy/entrypoints/Dockerfile.dev",
+    "sha256": "f1a889ed7c666bcdafdc989b37143592821ef96438d9053cf7631ffb0f46585d"
+  },
+  {
+    "path": "docker-compose.yml",
+    "archive": "docs/legacy/entrypoints/docker-compose.yml",
+    "sha256": "2d9edc6f0eb7479f6a1916b9cf3a083a50a81227a255728413d577432d97c3fe"
+  },
+  {
+    "path": "docker-compose.dev.yml",
+    "archive": "docs/legacy/entrypoints/docker-compose.dev.yml",
+    "sha256": "4d05d71d987a5219d46df93d1a64f7e374de8fb19d12cb7ea33d320e117d8e2e"
+  },
+  {
+    "path": "scripts/dev-setup.sh",
+    "archive": "docs/legacy/entrypoints/scripts/dev-setup.sh",
+    "sha256": "94fdb808af32a829d331c93e9d1d7e1414d6a163713fead1dba9951602a287b2"
+  },
+  {
+    "path": "scripts/deploy.sh",
+    "archive": "docs/legacy/entrypoints/scripts/deploy.sh",
+    "sha256": "1445651e643f1d397f0039e292bd1b0b905facb9febb880c13ba9d504af137de"
+  },
+  {
+    "path": "scripts/health-check.sh",
+    "archive": "docs/legacy/entrypoints/scripts/health-check.sh",
+    "sha256": "cfe1d794a76040fcfef56a96dbfe908db7ac08106eec0f67551d93d80502a089"
+  },
+  {
+    "path": ".husky/pre-commit",
+    "archive": "docs/legacy/entrypoints/.husky/pre-commit",
+    "sha256": "07bcc57f78517992c6611107ff7cafaee87d70915c5ef80f3c38d8cba475f44e"
+  },
+  {
+    "path": ".husky/commit-msg",
+    "archive": "docs/legacy/entrypoints/.husky/commit-msg",
+    "sha256": "41650c4233aa50be35a88e933efdae3f860f640dadedf7ffd1722a96033ce601"
+  },
+  {
+    "path": ".cursor/docs/2025-updates-summary.md",
+    "archive": "docs/legacy/cursor/docs/2025-updates-summary.md",
+    "sha256": "e3252ddad099bf68489f41a06552af1a3ea75fb52a601386a05e72eff86a2d8e"
+  },
+  {
+    "path": ".cursor/docs/architecture.md",
+    "archive": "docs/legacy/cursor/docs/architecture.md",
+    "sha256": "bf13a39167a785cd19ffba4de44d0588a960edbf310d8527a814951e3368a175"
+  },
+  {
+    "path": ".cursor/docs/contributing.md",
+    "archive": "docs/legacy/cursor/docs/contributing.md",
+    "sha256": "39f1ad6fe1198de325df9dde335997523528c10dd3057f3c7fef01a2e252ea58"
+  },
+  {
+    "path": ".cursor/docs/framework-integration-summary.md",
+    "archive": "docs/legacy/cursor/docs/framework-integration-summary.md",
+    "sha256": "2144f093378f4c578a3d9fd73fad3f06e1f4188558463b5eff26006f204f2cd6"
+  },
+  {
+    "path": ".cursor/docs/quick-start.md",
+    "archive": "docs/legacy/cursor/docs/quick-start.md",
+    "sha256": "5fd633ed405c7577f2cc383b07970440c6f1c21d919c86840645ff745bfbb96e"
+  },
+  {
+    "path": ".cursor/rules/000-index.mdc",
+    "archive": "docs/legacy/cursor/rules/000-index.mdc",
+    "sha256": "fa0706d272ad983f0b6437b9490a477cbab07a36573a3e6b26f462d2940fab34"
+  },
+  {
+    "path": ".cursor/rules/000-rules.mdc",
+    "archive": "docs/legacy/cursor/rules/000-rules.mdc",
+    "sha256": "7bfbe4013fa8a23bd3e21b30c0486006e7a020c20a0ec38f42b86a28079dabbc"
+  },
+  {
+    "path": ".cursor/rules/001-symindx-workspace.mdc",
+    "archive": "docs/legacy/cursor/rules/001-symindx-workspace.mdc",
+    "sha256": "87989b5df6bcba12549456bde69207bb71560016668e5b2db8daebbc1792ac5c"
+  },
+  {
+    "path": ".cursor/rules/002-cursor-rules-framework.mdc",
+    "archive": "docs/legacy/cursor/rules/002-cursor-rules-framework.mdc",
+    "sha256": "89cdba94ac4d4171e243c86cd897ac9ba15957cc795ec5a17150a23d87c6b7ce"
+  },
+  {
+    "path": ".cursor/rules/003-typescript-standards.mdc",
+    "archive": "docs/legacy/cursor/rules/003-typescript-standards.mdc",
+    "sha256": "51c078f5b3d659fe1b65f300386a730db19372431642db224e6d9fe9f2ef890e"
+  },
+  {
+    "path": ".cursor/rules/004-architecture-patterns.mdc",
+    "archive": "docs/legacy/cursor/rules/004-architecture-patterns.mdc",
+    "sha256": "84c22b7b8dc2fb41f0e267e641f2178410d62156bb41bbeafed90e8dee9e1f26"
+  },
+  {
+    "path": ".cursor/rules/005-ai-integration-patterns.mdc",
+    "archive": "docs/legacy/cursor/rules/005-ai-integration-patterns.mdc",
+    "sha256": "5a3a8a844d5f7cfa25f2005921e2c8af0a3871726c0f084fcd057ad660861f1f"
+  },
+  {
+    "path": ".cursor/rules/006-web-interface-patterns.mdc",
+    "archive": "docs/legacy/cursor/rules/006-web-interface-patterns.mdc",
+    "sha256": "d2f22df6f8cfc0570e5f716f1defe35c2403fd4ee70acf5c718aac74c30f0c25"
+  },
+  {
+    "path": ".cursor/rules/007-extension-system-patterns.mdc",
+    "archive": "docs/legacy/cursor/rules/007-extension-system-patterns.mdc",
+    "sha256": "dc714c0519c528f4bec152d82dfaaf9dc795f26e40368f77f3d7e97409520272"
+  },
+  {
+    "path": ".cursor/rules/008-testing-and-quality-standards.mdc",
+    "archive": "docs/legacy/cursor/rules/008-testing-and-quality-standards.mdc",
+    "sha256": "53b1954b42154e81eab59570a9aa4ed4448222db9027bb94b81b3e616e6f2f63"
+  },
+  {
+    "path": ".cursor/rules/009-deployment-and-operations.mdc",
+    "archive": "docs/legacy/cursor/rules/009-deployment-and-operations.mdc",
+    "sha256": "c7ff8dd2cdd100a470b5924be6d739279cf8429e221a2bfd14009e8813bbc45c"
+  },
+  {
+    "path": ".cursor/rules/010-security-and-authentication.mdc",
+    "archive": "docs/legacy/cursor/rules/010-security-and-authentication.mdc",
+    "sha256": "bef10ab6a639ce744ed588713a2ccd8ff46d48f7d93089422e4879465517ae37"
+  },
+  {
+    "path": ".cursor/rules/011-data-management-patterns.mdc",
+    "archive": "docs/legacy/cursor/rules/011-data-management-patterns.mdc",
+    "sha256": "1181b1593ab4bd95a485001392ac6e0d41f6c9b460afcc2e2ad23df60624116b"
+  },
+  {
+    "path": ".cursor/rules/012-performance-optimization.mdc",
+    "archive": "docs/legacy/cursor/rules/012-performance-optimization.mdc",
+    "sha256": "e4716c872f6e11eba4a58fb6507664110bc1741562971dbe66c4efe76d7980b9"
+  },
+  {
+    "path": ".cursor/rules/013-error-handling-logging.mdc",
+    "archive": "docs/legacy/cursor/rules/013-error-handling-logging.mdc",
+    "sha256": "f710d2ddf97e935f413272b71fc853fad6bcb0003975afe2eea455c8cb81567f"
+  },
+  {
+    "path": ".cursor/rules/014-cli-and-tooling-patterns.mdc",
+    "archive": "docs/legacy/cursor/rules/014-cli-and-tooling-patterns.mdc",
+    "sha256": "a83d8aa3dbcff7f343f8ff909a00a2abd3a371bcb60da1b22b284248cd911191"
+  },
+  {
+    "path": ".cursor/rules/015-configuration-management.mdc",
+    "archive": "docs/legacy/cursor/rules/015-configuration-management.mdc",
+    "sha256": "a1e1c12654e72cc13a506a0af5a80f2ca6ee9319c54ebbc5f939afe0f516d330"
+  },
+  {
+    "path": ".cursor/rules/016-documentation-standards.mdc",
+    "archive": "docs/legacy/cursor/rules/016-documentation-standards.mdc",
+    "sha256": "22e83ff7b8e051bec80e72b76640098566c8a9338c0de87785802c8f983a1fb3"
+  },
+  {
+    "path": ".cursor/rules/017-community-and-governance.mdc",
+    "archive": "docs/legacy/cursor/rules/017-community-and-governance.mdc",
+    "sha256": "623cac53daed314f8c3b31fd486869bcf80fe944119f5d793335186d4c30c3f4"
+  },
+  {
+    "path": ".cursor/rules/018-git-hooks.mdc",
+    "archive": "docs/legacy/cursor/rules/018-git-hooks.mdc",
+    "sha256": "208fc0330fb35af0de727d8fff664ad7da46416955e153f8d76794b7c286840a"
+  },
+  {
+    "path": ".cursor/rules/019-background-agents.mdc",
+    "archive": "docs/legacy/cursor/rules/019-background-agents.mdc",
+    "sha256": "3e6e0c4ff6c78239a077f7137403b39c77caaa50fcc61c0a2ea7a195367e974a"
+  },
+  {
+    "path": ".cursor/rules/020-mcp-integration.mdc",
+    "archive": "docs/legacy/cursor/rules/020-mcp-integration.mdc",
+    "sha256": "92b324e62c917c3652483b6adf280a356bac848a8dc2f2b20f3be0e8f3194d1f"
+  },
+  {
+    "path": ".cursor/rules/021-advanced-context.mdc",
+    "archive": "docs/legacy/cursor/rules/021-advanced-context.mdc",
+    "sha256": "f6b956a9c742d85eee84e99f9db3f440d451d4c9641baf222d1eb1fb3c8e4cb0"
+  },
+  {
+    "path": ".cursor/rules/022-workflow-automation.mdc",
+    "archive": "docs/legacy/cursor/rules/022-workflow-automation.mdc",
+    "sha256": "76fe72cbf040c4a2038b1a371e9c387767c057f29823821e6e0122547d2779c0"
+  },
+  {
+    "path": ".cursor/rules/023-ai-safety-patterns.mdc",
+    "archive": "docs/legacy/cursor/rules/023-ai-safety-patterns.mdc",
+    "sha256": "94e0a784274336872ae57d98899601f6f982447ad17b2ffec6d2fd43c8605cd9"
+  },
+  {
+    "path": ".cursor/tools/code-generator.md",
+    "archive": "docs/legacy/cursor/tools/code-generator.md",
+    "sha256": "e80da32ad5035dfb81a575e431521e16669fe5d324d783bc7ed817da55887bda"
+  },
+  {
+    "path": ".cursor/tools/debugging-guide.md",
+    "archive": "docs/legacy/cursor/tools/debugging-guide.md",
+    "sha256": "a4e25b58be6a7b0e7775fe133c5fc2757b7e588891c7868bc621b205f9369e40"
+  },
+  {
+    "path": ".cursor/tools/project-analyzer.md",
+    "archive": "docs/legacy/cursor/tools/project-analyzer.md",
+    "sha256": "091566674d140ec4835acb719cb1186014cda1a5de46775e55fd57663f3672bd"
+  },
+  {
+    "path": ".cursor/tools/verify-rule-links.js",
+    "archive": "docs/legacy/cursor/tools/verify-rule-links.js",
+    "sha256": "bebac285e9c6114df1370a8c16581ccfa8e2ec52852f2f50721bb3bcf45191f9"
+  }
+]

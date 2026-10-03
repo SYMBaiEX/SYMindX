@@ -1,106 +1,37 @@
 # create-symindx
 
-🚀 Project scaffolding tool for SYMindX AI agents
+A small Bun CLI that scaffolds a project against a **locally built** SYMindX v0.1 runtime. It does not run an installer, access the network, or assume that `@symindx/runtime` has been published.
 
-## Usage
+## Build and use
 
-Create a new SYMindX agent project:
+Requirements: Bun 1.4.2 or newer and a built `packages/runtime` checkout. The scaffolder package has no committed lockfile yet, so its first dependency resolution is unlocked; lifecycle scripts are disabled for the install command below.
 
-```bash
-npx create-symindx my-agent
+```sh
+bun install --cwd create-symindx --ignore-scripts
+bun run --cwd create-symindx build
+bun --no-env-file create-symindx/dist/index.js --out ./my-agent
 ```
 
-## Features
+By default the CLI reads `../packages/runtime` next to the scaffolder. To use another local build:
 
-- **Interactive Setup**: Guided project creation with smart defaults
-- **Multiple Templates**: Choose from basic, gaming, social, enterprise, or research templates
-- **AI Provider Support**: OpenAI, Anthropic, Groq, Google, Ollama
-- **Memory Providers**: SQLite, PostgreSQL, Supabase, Neon
-- **Extension System**: API server, Telegram, Discord, RuneLite, MCP
-- **Environment Configuration**: Automatic .env setup with examples
-- **TypeScript Ready**: Full TypeScript support with strict configuration
-- **Development Tools**: ESLint, Prettier, Jest pre-configured
+```sh
+bun --no-env-file create-symindx/dist/index.js --out ./my-agent --runtime-path ../symindx/packages/runtime
+```
 
-## Templates
+The runtime package must be named `@symindx/runtime`, have a version in the v0.1 family, and contain built `dist/index.js` and declarations. The generated project vendors only its package manifest, license, default character, and built runtime artifacts. The output path must not already exist. Generation stages files beside the destination and publishes the completed directory by rename.
 
-### 🤖 Basic Agent
-Simple chatbot with personality and memory
+## Generated project
 
-### 🎮 Gaming Agent  
-RuneScape bot with autonomous gameplay capabilities
+The generated private Bun project depends on `file:vendor/runtime`. It loads a schema-version-1 character, constructs `SYMindXRuntime`, calls `start()`, sends one input message, then calls `stop()` in `finally`. The default character uses the offline `echo` provider. Its SQLite database is stored under the generated project’s `data/` directory.
 
-### 💬 Social Agent
-Multi-platform social media bot for Twitter, Telegram, Discord
-
-### 🏢 Enterprise Agent
-Business automation with security and compliance features
-
-### 🧠 Research Agent
-Advanced cognition and learning capabilities
+The generated README explains how to switch to an OpenAI-compatible endpoint. Configuration stores only an environment variable name in `apiKeyEnv`; users provide the actual key in their process environment. v0.1 is a local single-owner runtime: conversation and tool output are stored as plaintext, recall is a bounded recent-message window, and semantic memory, multiuser isolation, and remote deployment are not provided.
 
 ## Options
 
-```bash
-npx create-symindx my-agent --template gaming --provider openai --memory supabase
+```text
+--out <directory>          Destination (default: ./my-symindx-agent)
+--runtime-path <directory> Local built runtime (default: adjacent packages/runtime)
+-h, --help                 Show help
 ```
 
-- `--template <template>` - Project template (basic, gaming, social, enterprise, research)
-- `--provider <provider>` - AI provider (openai, anthropic, groq, google, ollama)  
-- `--memory <memory>` - Memory provider (sqlite, postgres, supabase, neon)
-- `--no-install` - Skip dependency installation
-- `--no-git` - Skip git initialization
-
-## What's Created
-
-```
-my-agent/
-├── src/
-│   ├── config/
-│   │   ├── agent.json      # Agent configuration
-│   │   └── agent.ts        # TypeScript config export
-│   ├── utils/              # Utility functions
-│   ├── types/              # Type definitions
-│   └── index.ts            # Main entry point
-├── tests/                  # Test files
-├── package.json            # Dependencies and scripts
-├── tsconfig.json           # TypeScript configuration
-├── .env.example            # Environment template
-├── .env                    # Environment variables
-├── .gitignore              # Git ignore rules
-└── README.md               # Project documentation
-```
-
-## Quick Start
-
-After creating your project:
-
-1. **Configure environment:**
-   ```bash
-   cd my-agent
-   # Edit .env with your API keys
-   ```
-
-2. **Install dependencies:**
-   ```bash
-   npm install
-   ```
-
-3. **Start development:**
-   ```bash
-   npm run dev
-   ```
-
-4. **Build for production:**
-   ```bash
-   npm run build
-   npm start
-   ```
-
-## Requirements
-
-- Node.js 18+
-- npm, yarn, or bun
-
-## License
-
-MIT
+Unknown arguments and duplicate options are errors. The scaffolder itself never installs dependencies; run `bun install` in the generated project when ready.

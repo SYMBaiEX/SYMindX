@@ -1,25 +1,14 @@
-# SYMindX CLI
+# Local SYMindX CLI bridge
 
-This package automatically installs and runs the SYMindX CLI.
+This private checkout helper launches the supported packages/runtime CLI with Bun. It performs no downloads, global installation, package discovery or postinstall actions. It uses the compiled CLI when present, otherwise the local TypeScript source.
 
-## Installation
+From a complete checkout with Bun installed:
 
-```bash
-npm install -g symindx
+```sh
+node redirect-package/bin.js --help
+node redirect-package/bin.js chat --message "Hello"
 ```
 
-## Usage
+The second command explicitly starts the echo character and writes a SQLite history file in the current directory. Arguments, terminal output and termination signals are forwarded. Nonzero child exit codes are preserved. This helper is not a published replacement for the old @symindx/cli package.
 
-After installation, simply run:
-
-```bash
-symindx
-```
-
-This will automatically redirect to the actual SYMindX CLI package.
-
----
-
-**Note**: This package installs `@symindx/cli` which contains the actual CLI implementation.
-
-For more information, visit: https://github.com/SYMBaiEX/symindx-cli
+See [the runtime guide](../packages/runtime/README.md) for installation, configuration and limitations.

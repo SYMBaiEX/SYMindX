@@ -1,0 +1,2320 @@
+{
+  "capturedAt": "2026-10-03T23:17:49.3289855Z",
+  "policy": "Live manifest dependency disposition; historical package-lock and root Bun lock moved byte-for-byte to docs/legacy/locks. Website and unmigrated provider adapter majors are pending source work.",
+  "dependencies": [
+    {
+      "package": "@ai-sdk/anthropic",
+      "disposition": "updated",
+      "reason": "Updated to the current provider SDK family following source confirmation in provider-factory.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "dependencies",
+          "range": "^4.0.71"
+        }
+      ]
+    },
+    {
+      "package": "@ai-sdk/cohere",
+      "disposition": "updated",
+      "reason": "Updated to the current provider SDK family following source confirmation in provider-factory.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "dependencies",
+          "range": "^4.0.54"
+        }
+      ]
+    },
+    {
+      "package": "@ai-sdk/google",
+      "disposition": "updated",
+      "reason": "Updated to the current provider SDK family following source confirmation in provider-factory.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "dependencies",
+          "range": "^4.0.87"
+        }
+      ]
+    },
+    {
+      "package": "@ai-sdk/groq",
+      "disposition": "updated",
+      "reason": "Updated from registry metadata as part of the assigned compatibility scope; details are in declarations.",
+      "declaredIn": [
+        "mind-agents/package.json",
+        "mind-agents/src/portals/providers/groq/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "dependencies",
+          "range": "^4.0.54"
+        },
+        {
+          "manifest": "mind-agents/src/portals/providers/groq/package.json",
+          "section": "dependencies",
+          "range": "^4.0.54"
+        }
+      ]
+    },
+    {
+      "package": "@ai-sdk/mistral",
+      "disposition": "updated",
+      "reason": "Updated to the current provider SDK family following source confirmation in provider-factory.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "dependencies",
+          "range": "^4.0.56"
+        }
+      ]
+    },
+    {
+      "package": "@ai-sdk/openai",
+      "disposition": "updated",
+      "reason": "Updated from registry metadata as part of the assigned compatibility scope; details are in declarations.",
+      "declaredIn": [
+        "mind-agents/package.json",
+        "mind-agents/src/portals/providers/openai/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "dependencies",
+          "range": "^4.0.83"
+        },
+        {
+          "manifest": "mind-agents/src/portals/providers/openai/package.json",
+          "section": "dependencies",
+          "range": "^4.0.83"
+        }
+      ]
+    },
+    {
+      "package": "@ai-sdk/xai",
+      "disposition": "updated",
+      "reason": "Updated to the current provider SDK family following source confirmation in provider-factory.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "dependencies",
+          "range": "^5.0.14"
+        }
+      ]
+    },
+    {
+      "package": "@commitlint/cli",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "devDependencies",
+          "range": "^19.8.1"
+        }
+      ]
+    },
+    {
+      "package": "@commitlint/config-conventional",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "devDependencies",
+          "range": "^19.8.1"
+        }
+      ]
+    },
+    {
+      "package": "@modelcontextprotocol/sdk",
+      "disposition": "updated",
+      "reason": "Updated from registry metadata as part of the assigned compatibility scope; details are in declarations.",
+      "declaredIn": [
+        "mind-agents/package.json",
+        "mind-agents/src/extensions/mcp-server/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "dependencies",
+          "range": "^1.32.0"
+        },
+        {
+          "manifest": "mind-agents/src/extensions/mcp-server/package.json",
+          "section": "dependencies",
+          "range": "^1.32.0"
+        }
+      ]
+    },
+    {
+      "package": "@neondatabase/serverless",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json",
+        "mind-agents/src/modules/memory/providers/neon/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "dependencies",
+          "range": "^1.0.0"
+        },
+        {
+          "manifest": "mind-agents/src/modules/memory/providers/neon/package.json",
+          "section": "dependencies",
+          "range": "^1.0.0"
+        }
+      ]
+    },
+    {
+      "package": "@radix-ui/react-label",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "website/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "website/package.json",
+          "section": "dependencies",
+          "range": "^2.0.2"
+        }
+      ]
+    },
+    {
+      "package": "@radix-ui/react-select",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "website/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "website/package.json",
+          "section": "dependencies",
+          "range": "^2.0.0"
+        }
+      ]
+    },
+    {
+      "package": "@radix-ui/react-slot",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "website/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "website/package.json",
+          "section": "dependencies",
+          "range": "^1.0.2"
+        }
+      ]
+    },
+    {
+      "package": "@radix-ui/react-switch",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "website/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "website/package.json",
+          "section": "dependencies",
+          "range": "^1.0.3"
+        }
+      ]
+    },
+    {
+      "package": "@radix-ui/react-tabs",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "website/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "website/package.json",
+          "section": "dependencies",
+          "range": "^1.0.4"
+        }
+      ]
+    },
+    {
+      "package": "@slack/bolt",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "dependencies",
+          "range": "^4.0.0"
+        }
+      ]
+    },
+    {
+      "package": "@slack/events-api",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/src/extensions/slack/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/src/extensions/slack/package.json",
+          "section": "dependencies",
+          "range": "^3.0.1"
+        }
+      ]
+    },
+    {
+      "package": "@slack/interactive-messages",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/src/extensions/slack/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/src/extensions/slack/package.json",
+          "section": "dependencies",
+          "range": "^2.0.0"
+        }
+      ]
+    },
+    {
+      "package": "@slack/socket-mode",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/src/extensions/slack/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/src/extensions/slack/package.json",
+          "section": "dependencies",
+          "range": "^1.3.2"
+        }
+      ]
+    },
+    {
+      "package": "@slack/web-api",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json",
+        "mind-agents/src/extensions/slack/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "dependencies",
+          "range": "^7.8.0"
+        },
+        {
+          "manifest": "mind-agents/src/extensions/slack/package.json",
+          "section": "dependencies",
+          "range": "^6.9.0"
+        }
+      ]
+    },
+    {
+      "package": "@storybook/addon-a11y",
+      "disposition": "pending-migration",
+      "reason": "Website migration is coordinated separately; React 19, Vite 8, Tailwind 4 and Storybook 10 must move together.",
+      "declaredIn": [
+        "website/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "website/package.json",
+          "section": "devDependencies",
+          "range": "^8.4.7"
+        }
+      ]
+    },
+    {
+      "package": "@storybook/addon-backgrounds",
+      "disposition": "pending-migration",
+      "reason": "Website migration is coordinated separately; React 19, Vite 8, Tailwind 4 and Storybook 10 must move together.",
+      "declaredIn": [
+        "website/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "website/package.json",
+          "section": "devDependencies",
+          "range": "^8.4.7"
+        }
+      ]
+    },
+    {
+      "package": "@storybook/addon-controls",
+      "disposition": "pending-migration",
+      "reason": "Website migration is coordinated separately; React 19, Vite 8, Tailwind 4 and Storybook 10 must move together.",
+      "declaredIn": [
+        "website/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "website/package.json",
+          "section": "devDependencies",
+          "range": "^8.4.7"
+        }
+      ]
+    },
+    {
+      "package": "@storybook/addon-docs",
+      "disposition": "pending-migration",
+      "reason": "Website migration is coordinated separately; React 19, Vite 8, Tailwind 4 and Storybook 10 must move together.",
+      "declaredIn": [
+        "website/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "website/package.json",
+          "section": "devDependencies",
+          "range": "^8.4.7"
+        }
+      ]
+    },
+    {
+      "package": "@storybook/addon-essentials",
+      "disposition": "pending-migration",
+      "reason": "Website migration is coordinated separately; React 19, Vite 8, Tailwind 4 and Storybook 10 must move together.",
+      "declaredIn": [
+        "website/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "website/package.json",
+          "section": "devDependencies",
+          "range": "^8.4.7"
+        }
+      ]
+    },
+    {
+      "package": "@storybook/addon-interactions",
+      "disposition": "pending-migration",
+      "reason": "Website migration is coordinated separately; React 19, Vite 8, Tailwind 4 and Storybook 10 must move together.",
+      "declaredIn": [
+        "website/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "website/package.json",
+          "section": "devDependencies",
+          "range": "^8.4.7"
+        }
+      ]
+    },
+    {
+      "package": "@storybook/addon-links",
+      "disposition": "pending-migration",
+      "reason": "Website migration is coordinated separately; React 19, Vite 8, Tailwind 4 and Storybook 10 must move together.",
+      "declaredIn": [
+        "website/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "website/package.json",
+          "section": "devDependencies",
+          "range": "^8.4.7"
+        }
+      ]
+    },
+    {
+      "package": "@storybook/addon-measure",
+      "disposition": "pending-migration",
+      "reason": "Website migration is coordinated separately; React 19, Vite 8, Tailwind 4 and Storybook 10 must move together.",
+      "declaredIn": [
+        "website/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "website/package.json",
+          "section": "devDependencies",
+          "range": "^8.4.7"
+        }
+      ]
+    },
+    {
+      "package": "@storybook/addon-onboarding",
+      "disposition": "pending-migration",
+      "reason": "Website migration is coordinated separately; React 19, Vite 8, Tailwind 4 and Storybook 10 must move together.",
+      "declaredIn": [
+        "website/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "website/package.json",
+          "section": "devDependencies",
+          "range": "^8.4.7"
+        }
+      ]
+    },
+    {
+      "package": "@storybook/addon-outline",
+      "disposition": "pending-migration",
+      "reason": "Website migration is coordinated separately; React 19, Vite 8, Tailwind 4 and Storybook 10 must move together.",
+      "declaredIn": [
+        "website/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "website/package.json",
+          "section": "devDependencies",
+          "range": "^8.4.7"
+        }
+      ]
+    },
+    {
+      "package": "@storybook/addon-viewport",
+      "disposition": "pending-migration",
+      "reason": "Website migration is coordinated separately; React 19, Vite 8, Tailwind 4 and Storybook 10 must move together.",
+      "declaredIn": [
+        "website/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "website/package.json",
+          "section": "devDependencies",
+          "range": "^8.4.7"
+        }
+      ]
+    },
+    {
+      "package": "@storybook/react",
+      "disposition": "pending-migration",
+      "reason": "Website migration is coordinated separately; React 19, Vite 8, Tailwind 4 and Storybook 10 must move together.",
+      "declaredIn": [
+        "website/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "website/package.json",
+          "section": "devDependencies",
+          "range": "^8.4.7"
+        }
+      ]
+    },
+    {
+      "package": "@storybook/react-vite",
+      "disposition": "pending-migration",
+      "reason": "Website migration is coordinated separately; React 19, Vite 8, Tailwind 4 and Storybook 10 must move together.",
+      "declaredIn": [
+        "website/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "website/package.json",
+          "section": "devDependencies",
+          "range": "^8.4.7"
+        }
+      ]
+    },
+    {
+      "package": "@storybook/test",
+      "disposition": "pending-migration",
+      "reason": "Website migration is coordinated separately; React 19, Vite 8, Tailwind 4 and Storybook 10 must move together.",
+      "declaredIn": [
+        "website/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "website/package.json",
+          "section": "devDependencies",
+          "range": "^8.4.7"
+        }
+      ]
+    },
+    {
+      "package": "@storybook/theming",
+      "disposition": "pending-migration",
+      "reason": "Website migration is coordinated separately; React 19, Vite 8, Tailwind 4 and Storybook 10 must move together.",
+      "declaredIn": [
+        "website/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "website/package.json",
+          "section": "devDependencies",
+          "range": "^8.4.7"
+        }
+      ]
+    },
+    {
+      "package": "@supabase/supabase-js",
+      "disposition": "updated",
+      "reason": "Updated from registry metadata as part of the assigned compatibility scope; details are in declarations.",
+      "declaredIn": [
+        "mind-agents/package.json",
+        "mind-agents/src/modules/memory/providers/supabase/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "dependencies",
+          "range": "^2.117.2"
+        },
+        {
+          "manifest": "mind-agents/src/modules/memory/providers/supabase/package.json",
+          "section": "dependencies",
+          "range": "^2.117.2"
+        }
+      ]
+    },
+    {
+      "package": "@testing-library/jest-dom",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "devDependencies",
+          "range": "^6.1.5"
+        }
+      ]
+    },
+    {
+      "package": "@testing-library/react",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "devDependencies",
+          "range": "^14.1.2"
+        }
+      ]
+    },
+    {
+      "package": "@types/better-sqlite3",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "devDependencies",
+          "range": "^7.6.13"
+        }
+      ]
+    },
+    {
+      "package": "@types/blessed",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "devDependencies",
+          "range": "^0.1.25"
+        }
+      ]
+    },
+    {
+      "package": "@types/cors",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "devDependencies",
+          "range": "^2.8.19"
+        }
+      ]
+    },
+    {
+      "package": "@types/express",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "devDependencies",
+          "range": "^5.0.0"
+        }
+      ]
+    },
+    {
+      "package": "@types/figlet",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "devDependencies",
+          "range": "^1.7.0"
+        }
+      ]
+    },
+    {
+      "package": "@types/fs-extra",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "create-symindx/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "create-symindx/package.json",
+          "section": "devDependencies",
+          "range": "^11.0.4"
+        }
+      ]
+    },
+    {
+      "package": "@types/graphql",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "devDependencies",
+          "range": "^14.5.0"
+        }
+      ]
+    },
+    {
+      "package": "@types/jest",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json",
+        "mind-agents/src/modules/learning/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "devDependencies",
+          "range": "^30.0.0"
+        },
+        {
+          "manifest": "mind-agents/src/modules/learning/package.json",
+          "section": "devDependencies",
+          "range": "^29.5.0"
+        }
+      ]
+    },
+    {
+      "package": "@types/jsonwebtoken",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "devDependencies",
+          "range": "^9.0.5"
+        }
+      ]
+    },
+    {
+      "package": "@types/node",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "create-symindx/package.json",
+        "mind-agents/package.json",
+        "mind-agents/src/modules/learning/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "create-symindx/package.json",
+          "section": "devDependencies",
+          "range": "^22.15.34"
+        },
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "devDependencies",
+          "range": "^22.15.34"
+        },
+        {
+          "manifest": "mind-agents/src/modules/learning/package.json",
+          "section": "devDependencies",
+          "range": "^20.0.0"
+        }
+      ]
+    },
+    {
+      "package": "@types/pako",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "devDependencies",
+          "range": "^2.0.3"
+        }
+      ]
+    },
+    {
+      "package": "@types/puppeteer",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "dependencies",
+          "range": "^5.4.7"
+        }
+      ]
+    },
+    {
+      "package": "@types/react",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json",
+        "website/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "devDependencies",
+          "range": "^18.3.12"
+        },
+        {
+          "manifest": "website/package.json",
+          "section": "devDependencies",
+          "range": "^18.3.12"
+        }
+      ]
+    },
+    {
+      "package": "@types/react-dom",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "website/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "website/package.json",
+          "section": "devDependencies",
+          "range": "^18.3.1"
+        }
+      ]
+    },
+    {
+      "package": "@types/sqlstring",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "devDependencies",
+          "range": "^2.3.2"
+        }
+      ]
+    },
+    {
+      "package": "@types/supertest",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "devDependencies",
+          "range": "^2.0.16"
+        }
+      ]
+    },
+    {
+      "package": "@types/uuid",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "devDependencies",
+          "range": "^10.0.0"
+        }
+      ]
+    },
+    {
+      "package": "@types/ws",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "devDependencies",
+          "range": "^8.5.15"
+        }
+      ]
+    },
+    {
+      "package": "@typescript-eslint/eslint-plugin",
+      "disposition": "updated",
+      "reason": "Updated from registry metadata as part of the assigned compatibility scope; details are in declarations.",
+      "declaredIn": [
+        "mind-agents/package.json",
+        "mind-agents/src/modules/learning/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "devDependencies",
+          "range": "^8.71.0"
+        },
+        {
+          "manifest": "mind-agents/src/modules/learning/package.json",
+          "section": "devDependencies",
+          "range": "^6.0.0"
+        }
+      ]
+    },
+    {
+      "package": "@typescript-eslint/parser",
+      "disposition": "updated",
+      "reason": "Updated from registry metadata as part of the assigned compatibility scope; details are in declarations.",
+      "declaredIn": [
+        "mind-agents/package.json",
+        "mind-agents/src/modules/learning/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "devDependencies",
+          "range": "^8.71.0"
+        },
+        {
+          "manifest": "mind-agents/src/modules/learning/package.json",
+          "section": "devDependencies",
+          "range": "^6.0.0"
+        }
+      ]
+    },
+    {
+      "package": "@vitejs/plugin-react",
+      "disposition": "pending-migration",
+      "reason": "Website migration is coordinated separately; React 19, Vite 8, Tailwind 4 and Storybook 10 must move together.",
+      "declaredIn": [
+        "website/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "website/package.json",
+          "section": "devDependencies",
+          "range": "^4.3.3"
+        }
+      ]
+    },
+    {
+      "package": "ai",
+      "disposition": "updated",
+      "reason": "Updated from registry metadata as part of the assigned compatibility scope; details are in declarations.",
+      "declaredIn": [
+        "mind-agents/package.json",
+        "mind-agents/src/portals/providers/groq/package.json",
+        "mind-agents/src/portals/providers/openai/package.json",
+        "mind-agents/src/portals/providers/openrouter/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "dependencies",
+          "range": "^7.0.127"
+        },
+        {
+          "manifest": "mind-agents/src/portals/providers/groq/package.json",
+          "section": "dependencies",
+          "range": "^7.0.127"
+        },
+        {
+          "manifest": "mind-agents/src/portals/providers/openai/package.json",
+          "section": "dependencies",
+          "range": "^7.0.127"
+        },
+        {
+          "manifest": "mind-agents/src/portals/providers/openrouter/package.json",
+          "section": "dependencies",
+          "range": "^7.0.127"
+        }
+      ]
+    },
+    {
+      "package": "autoprefixer",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "website/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "website/package.json",
+          "section": "devDependencies",
+          "range": "^10.4.20"
+        }
+      ]
+    },
+    {
+      "package": "axios",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "devDependencies",
+          "range": "^1.6.2"
+        }
+      ]
+    },
+    {
+      "package": "boxen",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "create-symindx/package.json",
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "create-symindx/package.json",
+          "section": "dependencies",
+          "range": "^8.0.1"
+        },
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "dependencies",
+          "range": "^8.0.1"
+        }
+      ]
+    },
+    {
+      "package": "chalk",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "create-symindx/package.json",
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "create-symindx/package.json",
+          "section": "dependencies",
+          "range": "^5.3.0"
+        },
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "dependencies",
+          "range": "^5.3.0"
+        }
+      ]
+    },
+    {
+      "package": "chromatic",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "website/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "website/package.json",
+          "section": "devDependencies",
+          "range": "^11.16.0"
+        }
+      ]
+    },
+    {
+      "package": "class-variance-authority",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "website/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "website/package.json",
+          "section": "dependencies",
+          "range": "^0.7.0"
+        }
+      ]
+    },
+    {
+      "package": "cli-table3",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "dependencies",
+          "range": "^0.6.5"
+        }
+      ]
+    },
+    {
+      "package": "clsx",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "website/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "website/package.json",
+          "section": "dependencies",
+          "range": "^2.1.1"
+        }
+      ]
+    },
+    {
+      "package": "commander",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "create-symindx/package.json",
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "create-symindx/package.json",
+          "section": "dependencies",
+          "range": "^12.0.0"
+        },
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "dependencies",
+          "range": "^12.0.0"
+        }
+      ]
+    },
+    {
+      "package": "concurrently",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "dependencies",
+          "range": "^9.1.0"
+        }
+      ]
+    },
+    {
+      "package": "cors",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json",
+        "mind-agents/src/extensions/api/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "dependencies",
+          "range": "^2.8.5"
+        },
+        {
+          "manifest": "mind-agents/src/extensions/api/package.json",
+          "section": "dependencies",
+          "range": "^2.8.5"
+        }
+      ]
+    },
+    {
+      "package": "discord.js",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/src/extensions/discord/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/src/extensions/discord/package.json",
+          "section": "dependencies",
+          "range": "^14.14.1"
+        }
+      ]
+    },
+    {
+      "package": "dotenv",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json",
+        "website/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "dependencies",
+          "range": "^16.4.7"
+        },
+        {
+          "manifest": "website/package.json",
+          "section": "dependencies",
+          "range": "^16.4.7"
+        }
+      ]
+    },
+    {
+      "package": "eslint",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json",
+        "mind-agents/src/modules/learning/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "devDependencies",
+          "range": "^9.30.1"
+        },
+        {
+          "manifest": "mind-agents/src/modules/learning/package.json",
+          "section": "devDependencies",
+          "range": "^8.0.0"
+        }
+      ]
+    },
+    {
+      "package": "eslint-config-prettier",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "devDependencies",
+          "range": "^10.1.5"
+        }
+      ]
+    },
+    {
+      "package": "eslint-import-resolver-typescript",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "devDependencies",
+          "range": "^4.4.4"
+        }
+      ]
+    },
+    {
+      "package": "eslint-plugin-import",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "devDependencies",
+          "range": "^2.32.0"
+        }
+      ]
+    },
+    {
+      "package": "eslint-plugin-jsx-a11y",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "devDependencies",
+          "range": "^6.10.2"
+        }
+      ]
+    },
+    {
+      "package": "eslint-plugin-prettier",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "devDependencies",
+          "range": "^5.5.1"
+        }
+      ]
+    },
+    {
+      "package": "eslint-plugin-react",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "devDependencies",
+          "range": "^7.37.5"
+        }
+      ]
+    },
+    {
+      "package": "eslint-plugin-react-hooks",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "devDependencies",
+          "range": "^5.2.0"
+        }
+      ]
+    },
+    {
+      "package": "events",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/src/modules/learning/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/src/modules/learning/package.json",
+          "section": "dependencies",
+          "range": "^3.3.0"
+        }
+      ]
+    },
+    {
+      "package": "express",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json",
+        "mind-agents/src/extensions/api/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "dependencies",
+          "range": "^5.0.1"
+        },
+        {
+          "manifest": "mind-agents/src/extensions/api/package.json",
+          "section": "dependencies",
+          "range": "^5.0.1"
+        }
+      ]
+    },
+    {
+      "package": "express-rate-limit",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json",
+        "mind-agents/src/extensions/api/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "dependencies",
+          "range": "^7.5.0"
+        },
+        {
+          "manifest": "mind-agents/src/extensions/api/package.json",
+          "section": "dependencies",
+          "range": "^7.5.0"
+        }
+      ]
+    },
+    {
+      "package": "fs-extra",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "create-symindx/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "create-symindx/package.json",
+          "section": "dependencies",
+          "range": "^11.2.0"
+        }
+      ]
+    },
+    {
+      "package": "glob",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "devDependencies",
+          "range": "^11.0.3"
+        }
+      ]
+    },
+    {
+      "package": "gradient-string",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "create-symindx/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "create-symindx/package.json",
+          "section": "dependencies",
+          "range": "^2.0.2"
+        }
+      ]
+    },
+    {
+      "package": "groq-sdk",
+      "disposition": "updated",
+      "reason": "Updated from registry metadata as part of the assigned compatibility scope; details are in declarations.",
+      "declaredIn": [
+        "mind-agents/src/portals/providers/groq/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/src/portals/providers/groq/package.json",
+          "section": "dependencies",
+          "range": "^1.6.0"
+        }
+      ]
+    },
+    {
+      "package": "helmet",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "dependencies",
+          "range": "^7.1.0"
+        }
+      ]
+    },
+    {
+      "package": "husky",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "devDependencies",
+          "range": "^9.1.7"
+        }
+      ]
+    },
+    {
+      "package": "ink",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "dependencies",
+          "range": "^5.0.1"
+        }
+      ]
+    },
+    {
+      "package": "inquirer",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "create-symindx/package.json",
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "create-symindx/package.json",
+          "section": "dependencies",
+          "range": "^12.7.0"
+        },
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "dependencies",
+          "range": "^12.7.0"
+        }
+      ]
+    },
+    {
+      "package": "isomorphic-dompurify",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "dependencies",
+          "range": "^2.16.0"
+        }
+      ]
+    },
+    {
+      "package": "jest",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json",
+        "mind-agents/src/modules/learning/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "devDependencies",
+          "range": "^29.7.0"
+        },
+        {
+          "manifest": "mind-agents/src/modules/learning/package.json",
+          "section": "devDependencies",
+          "range": "^29.5.0"
+        }
+      ]
+    },
+    {
+      "package": "jest-html-reporter",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "devDependencies",
+          "range": "^3.10.2"
+        }
+      ]
+    },
+    {
+      "package": "jest-junit",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "devDependencies",
+          "range": "^16.0.0"
+        }
+      ]
+    },
+    {
+      "package": "jest-mock-extended",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "devDependencies",
+          "range": "^3.0.5"
+        }
+      ]
+    },
+    {
+      "package": "jsonwebtoken",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "dependencies",
+          "range": "^9.0.2"
+        }
+      ]
+    },
+    {
+      "package": "lint-staged",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "devDependencies",
+          "range": "^16.1.2"
+        }
+      ]
+    },
+    {
+      "package": "lucide-react",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "website/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "website/package.json",
+          "section": "dependencies",
+          "range": "^0.460.0"
+        }
+      ]
+    },
+    {
+      "package": "openai",
+      "disposition": "updated",
+      "reason": "Updated from registry metadata as part of the assigned compatibility scope; details are in declarations.",
+      "declaredIn": [
+        "mind-agents/src/portals/providers/openai/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/src/portals/providers/openai/package.json",
+          "section": "dependencies",
+          "range": "^7.27.0"
+        }
+      ]
+    },
+    {
+      "package": "ora",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "create-symindx/package.json",
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "create-symindx/package.json",
+          "section": "dependencies",
+          "range": "^8.2.0"
+        },
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "dependencies",
+          "range": "^8.2.0"
+        }
+      ]
+    },
+    {
+      "package": "pako",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json",
+        "mind-agents/src/extensions/runelite/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "dependencies",
+          "range": "^2.1.0"
+        },
+        {
+          "manifest": "mind-agents/src/extensions/runelite/package.json",
+          "section": "dependencies",
+          "range": "^2.1.0"
+        }
+      ]
+    },
+    {
+      "package": "pg",
+      "disposition": "updated",
+      "reason": "Updated from registry metadata as part of the assigned compatibility scope; details are in declarations.",
+      "declaredIn": [
+        "mind-agents/package.json",
+        "mind-agents/src/modules/memory/providers/neon/package.json",
+        "mind-agents/src/modules/memory/providers/postgres/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "dependencies",
+          "range": "^8.23.1"
+        },
+        {
+          "manifest": "mind-agents/src/modules/memory/providers/neon/package.json",
+          "section": "dependencies",
+          "range": "^8.23.1"
+        },
+        {
+          "manifest": "mind-agents/src/modules/memory/providers/postgres/package.json",
+          "section": "dependencies",
+          "range": "^8.23.1"
+        }
+      ]
+    },
+    {
+      "package": "pixelmatch",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "devDependencies",
+          "range": "^5.3.0"
+        }
+      ]
+    },
+    {
+      "package": "pngjs",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "devDependencies",
+          "range": "^7.0.0"
+        }
+      ]
+    },
+    {
+      "package": "postcss",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "website/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "website/package.json",
+          "section": "devDependencies",
+          "range": "^8.5.0"
+        }
+      ]
+    },
+    {
+      "package": "prettier",
+      "disposition": "updated",
+      "reason": "Updated from registry metadata as part of the assigned compatibility scope; details are in declarations.",
+      "declaredIn": [
+        "mind-agents/package.json",
+        "packages/runtime/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "devDependencies",
+          "range": "^3.6.2"
+        },
+        {
+          "manifest": "packages/runtime/package.json",
+          "section": "devDependencies",
+          "range": "3.9.9"
+        }
+      ]
+    },
+    {
+      "package": "puppeteer",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "dependencies",
+          "range": "^24.10.0"
+        }
+      ]
+    },
+    {
+      "package": "react",
+      "disposition": "pending-migration",
+      "reason": "Website migration is coordinated separately; React 19, Vite 8, Tailwind 4 and Storybook 10 must move together.",
+      "declaredIn": [
+        "mind-agents/package.json",
+        "website/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "dependencies",
+          "range": "^18.3.1"
+        },
+        {
+          "manifest": "website/package.json",
+          "section": "dependencies",
+          "range": "^18.3.1"
+        }
+      ]
+    },
+    {
+      "package": "react-devtools-core",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "dependencies",
+          "range": "^6.1.5"
+        }
+      ]
+    },
+    {
+      "package": "react-dom",
+      "disposition": "pending-migration",
+      "reason": "Website migration is coordinated separately; React 19, Vite 8, Tailwind 4 and Storybook 10 must move together.",
+      "declaredIn": [
+        "website/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "website/package.json",
+          "section": "dependencies",
+          "range": "^18.3.1"
+        }
+      ]
+    },
+    {
+      "package": "sqlstring",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "dependencies",
+          "range": "^2.3.3"
+        }
+      ]
+    },
+    {
+      "package": "storybook",
+      "disposition": "pending-migration",
+      "reason": "Website migration is coordinated separately; React 19, Vite 8, Tailwind 4 and Storybook 10 must move together.",
+      "declaredIn": [
+        "website/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "website/package.json",
+          "section": "devDependencies",
+          "range": "^8.4.7"
+        }
+      ]
+    },
+    {
+      "package": "subscriptions-transport-ws",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "dependencies",
+          "range": "^0.11.0"
+        }
+      ]
+    },
+    {
+      "package": "supertest",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "devDependencies",
+          "range": "^6.3.3"
+        }
+      ]
+    },
+    {
+      "package": "tailwind-merge",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "website/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "website/package.json",
+          "section": "dependencies",
+          "range": "^2.5.4"
+        }
+      ]
+    },
+    {
+      "package": "tailwindcss",
+      "disposition": "pending-migration",
+      "reason": "Website migration is coordinated separately; React 19, Vite 8, Tailwind 4 and Storybook 10 must move together.",
+      "declaredIn": [
+        "website/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "website/package.json",
+          "section": "devDependencies",
+          "range": "^3.4.0"
+        }
+      ]
+    },
+    {
+      "package": "tailwindcss-animate",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "website/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "website/package.json",
+          "section": "dependencies",
+          "range": "^1.0.7"
+        }
+      ]
+    },
+    {
+      "package": "telegraf",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/src/extensions/telegram/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/src/extensions/telegram/package.json",
+          "section": "dependencies",
+          "range": "^4.16.3"
+        }
+      ]
+    },
+    {
+      "package": "ts-jest",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json",
+        "mind-agents/src/modules/learning/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "devDependencies",
+          "range": "^29.2.0"
+        },
+        {
+          "manifest": "mind-agents/src/modules/learning/package.json",
+          "section": "devDependencies",
+          "range": "^29.1.0"
+        }
+      ]
+    },
+    {
+      "package": "ts-node",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "devDependencies",
+          "range": "^10.9.2"
+        }
+      ]
+    },
+    {
+      "package": "twitter-api-v2",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json",
+        "mind-agents/src/extensions/twitter/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "dependencies",
+          "range": "^1.18.0"
+        },
+        {
+          "manifest": "mind-agents/src/extensions/twitter/package.json",
+          "section": "dependencies",
+          "range": "^1.15.0"
+        }
+      ]
+    },
+    {
+      "package": "typescript",
+      "disposition": "updated",
+      "reason": "Updated from registry metadata as part of the assigned compatibility scope; details are in declarations.",
+      "declaredIn": [
+        "create-symindx/package.json",
+        "mind-agents/package.json",
+        "mind-agents/src/modules/learning/package.json",
+        "packages/runtime/package.json",
+        "website/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "create-symindx/package.json",
+          "section": "devDependencies",
+          "range": "^6.0.3"
+        },
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "devDependencies",
+          "range": "^6.0.3"
+        },
+        {
+          "manifest": "mind-agents/src/modules/learning/package.json",
+          "section": "devDependencies",
+          "range": "^6.0.3"
+        },
+        {
+          "manifest": "packages/runtime/package.json",
+          "section": "devDependencies",
+          "range": "7.0.2"
+        },
+        {
+          "manifest": "website/package.json",
+          "section": "devDependencies",
+          "range": "^5.8.0"
+        }
+      ]
+    },
+    {
+      "package": "uuid",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json",
+        "mind-agents/src/extensions/runelite/package.json",
+        "mind-agents/src/modules/memory/providers/postgres/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "dependencies",
+          "range": "^11.0.0"
+        },
+        {
+          "manifest": "mind-agents/src/extensions/runelite/package.json",
+          "section": "dependencies",
+          "range": "^11.0.0"
+        },
+        {
+          "manifest": "mind-agents/src/modules/memory/providers/postgres/package.json",
+          "section": "dependencies",
+          "range": "^11.0.0"
+        }
+      ]
+    },
+    {
+      "package": "vite",
+      "disposition": "pending-migration",
+      "reason": "Website migration is coordinated separately; React 19, Vite 8, Tailwind 4 and Storybook 10 must move together.",
+      "declaredIn": [
+        "website/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "website/package.json",
+          "section": "devDependencies",
+          "range": "^6.0.0"
+        }
+      ]
+    },
+    {
+      "package": "ws",
+      "disposition": "retained",
+      "reason": "Existing declaration retained; no version change was needed for this scoped toolchain and SDK migration.",
+      "declaredIn": [
+        "mind-agents/package.json",
+        "mind-agents/src/extensions/api/package.json",
+        "mind-agents/src/extensions/mcp-server/package.json",
+        "mind-agents/src/extensions/runelite/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "dependencies",
+          "range": "^8.18.2"
+        },
+        {
+          "manifest": "mind-agents/src/extensions/api/package.json",
+          "section": "dependencies",
+          "range": "^8.18.2"
+        },
+        {
+          "manifest": "mind-agents/src/extensions/mcp-server/package.json",
+          "section": "dependencies",
+          "range": "^8.18.2"
+        },
+        {
+          "manifest": "mind-agents/src/extensions/runelite/package.json",
+          "section": "dependencies",
+          "range": "^8.18.2"
+        }
+      ]
+    },
+    {
+      "package": "zod",
+      "disposition": "updated",
+      "reason": "Updated from registry metadata as part of the assigned compatibility scope; details are in declarations.",
+      "declaredIn": [
+        "mind-agents/package.json",
+        "mind-agents/src/portals/providers/groq/package.json",
+        "mind-agents/src/portals/providers/openai/package.json",
+        "mind-agents/src/portals/providers/openrouter/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "dependencies",
+          "range": "^4.6.5"
+        },
+        {
+          "manifest": "mind-agents/src/portals/providers/groq/package.json",
+          "section": "dependencies",
+          "range": "^4.6.5"
+        },
+        {
+          "manifest": "mind-agents/src/portals/providers/openai/package.json",
+          "section": "dependencies",
+          "range": "^4.6.5"
+        },
+        {
+          "manifest": "mind-agents/src/portals/providers/openrouter/package.json",
+          "section": "dependencies",
+          "range": "^4.6.5"
+        }
+      ]
+    },
+    {
+      "package": "@ai-sdk/mcp",
+      "disposition": "updated",
+      "reason": "Added for the SDK 7 MCP client and stdio transport migration; registry version 2.0.66.",
+      "declaredIn": [
+        "mind-agents/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "dependencies",
+          "range": "^2.0.66"
+        }
+      ]
+    },
+    {
+      "package": "@types/bun",
+      "disposition": "updated",
+      "reason": "Runtime and local Bun CLI packages use pinned Bun declaration version 1.4.2.",
+      "declaredIn": [
+        "packages/runtime/package.json",
+        "mind-agents/package.json",
+        "create-symindx/package.json"
+      ],
+      "declarations": [
+        {
+          "manifest": "packages/runtime/package.json",
+          "section": "devDependencies",
+          "range": "1.4.2"
+        },
+        {
+          "manifest": "mind-agents/package.json",
+          "section": "devDependencies",
+          "range": "^1.4.2"
+        },
+        {
+          "manifest": "create-symindx/package.json",
+          "section": "devDependencies",
+          "range": "^1.4.2"
+        }
+      ]
+    }
+  ],
+  "removed": [
+    {
+      "package": "@types/puppeteer",
+      "disposition": "removed",
+      "reason": "Puppeteer ships its own declarations.",
+      "removedFrom": [
+        "mind-agents/package.json"
+      ]
+    },
+    {
+      "package": "@types/helmet",
+      "disposition": "removed",
+      "reason": "Helmet ships its own declarations.",
+      "removedFrom": [
+        "mind-agents/package.json"
+      ]
+    },
+    {
+      "package": "@types/inquirer",
+      "disposition": "removed",
+      "reason": "Inquirer ships its own declarations.",
+      "removedFrom": [
+        "mind-agents/package.json",
+        "create-symindx/package.json"
+      ]
+    },
+    {
+      "package": "@symindx/types",
+      "disposition": "removed",
+      "reason": "No corresponding workspace package exists and source imports were absent.",
+      "removedFrom": [
+        "mind-agents/src/**/package.json"
+      ]
+    },
+    {
+      "package": "@symindx/core",
+      "disposition": "removed",
+      "reason": "No corresponding workspace package exists and source imports were absent.",
+      "removedFrom": [
+        "mind-agents/src/extensions/slack/package.json"
+      ]
+    },
+    {
+      "package": "@ai-sdk/azure",
+      "disposition": "removed",
+      "reason": "No source imports exist in the migrated provider factory or portal tree; retaining it would add an unused adapter to the SDK7 install.",
+      "removedFrom": [
+        "mind-agents/package.json"
+      ]
+    },
+    {
+      "package": "@ai-sdk/google-vertex",
+      "disposition": "removed",
+      "reason": "No source imports exist in the migrated provider factory or portal tree; retaining it would add an unused adapter to the SDK7 install.",
+      "removedFrom": [
+        "mind-agents/package.json"
+      ]
+    },
+    {
+      "package": "@ai-sdk/perplexity",
+      "disposition": "removed",
+      "reason": "No source imports exist in the migrated provider factory or portal tree; retaining it would add an unused adapter to the SDK7 install.",
+      "removedFrom": [
+        "mind-agents/package.json"
+      ]
+    }
+  ]
+}

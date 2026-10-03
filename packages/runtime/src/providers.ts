@@ -1,4 +1,5 @@
 import { abortable, SYMindXError, throwIfAborted } from './errors.js';
+import { decodeProviderResult } from './validation.js';
 import type {
   JsonValue,
   Provider,
@@ -31,8 +32,10 @@ export class OpenAICompatibleProvider implements Provider {
   private readonly transport: typeof fetch;
   private readonly timeoutMs: number;
 
+  private readonly config: Extract<ProviderConfig, { type: 'openai-compatible' }>;
+
   constructor(
-    private readonly config: ProviderConfig,
+    config: Extract<ProviderConfig, { type: 'openai-compatible' }>,
     options: OpenAICompatibleProviderOptions = {},
   ) {
     if (config.type !== 'openai-compatible')
@@ -44,6 +47,7 @@ export class OpenAICompatibleProvider implements Provider {
       throw new SYMindXError('CONFIGURATION', 'Provider model must be non-empty');
     if (!config.apiKeyEnv || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(config.apiKeyEnv))
       throw new SYMindXError('CONFIGURATION', 'A valid apiKeyEnv variable name is required');
+    this.config = Object.freeze(structuredClone(config));
     this.endpoint = validateBaseUrl(config.baseUrl);
     this.transport = options.fetch ?? globalThis.fetch;
     this.timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
@@ -61,7 +65,7 @@ export class OpenAICompatibleProvider implements Provider {
 
   async generate(request: ProviderRequest): Promise<ProviderResult> {
     throwIfAborted(request.signal);
-    const apiKey = readApiKey(this.config.apiKeyEnv!);
+    const apiKey = readApiKey(this.config.apiKeyEnv);
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort('timeout'), this.timeoutMs);
     const abortFromCaller = () => controller.abort('caller');
@@ -308,7 +312,7 @@ function parseCompletion(value: unknown): ProviderResult {
   const result: ProviderResult = { text: message.content ?? '', toolCalls };
   const usage = parseUsage(value.usage);
   if (usage) result.usage = usage;
-  return result;
+  return decodeProviderResult(result);
 }
 
 function parseUsage(value: unknown): ProviderResult['usage'] {

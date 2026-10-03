@@ -1,0 +1,73 @@
+{
+  "mode": "dynamic-task-queue",
+  "model": "gpt-6-luna",
+  "branch": "main",
+  "workerSlots": 3,
+  "tasks": [
+    {
+      "id": "A",
+      "state": "implemented",
+      "owner": "runtime",
+      "dependsOn": []
+    },
+    {
+      "id": "B",
+      "state": "running",
+      "owner": "sdk",
+      "dependsOn": []
+    },
+    {
+      "id": "C",
+      "state": "implemented",
+      "owner": "packages",
+      "dependsOn": [],
+      "note": "Integration correction: align shared factory SDK family pins with task B."
+    },
+    {
+      "id": "D",
+      "state": "implemented",
+      "owner": "runtime",
+      "dependsOn": [
+        "A"
+      ]
+    },
+    {
+      "id": "E",
+      "state": "implemented",
+      "owner": "orchestrator",
+      "dependsOn": [
+        "A"
+      ]
+    },
+    {
+      "id": "F",
+      "state": "running",
+      "owner": "runtime",
+      "dependsOn": [
+        "C"
+      ],
+      "dependencyOwner": "packages"
+    },
+    {
+      "id": "G",
+      "state": "implemented",
+      "owner": "orchestrator",
+      "dependsOn": []
+    },
+    {
+      "id": "H",
+      "state": "running",
+      "owner": "orchestrator",
+      "dependsOn": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "G"
+      ],
+      "note": "Incremental integration checks while final SDK/web code completes."
+    }
+  ]
+}

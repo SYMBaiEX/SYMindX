@@ -1,0 +1,146 @@
+---
+description: USE WHEN creating, updating, or structuring any .mdc rule file in .cursor/rules directory
+globs: .cursor/rules/*.mdc
+alwaysApply: true
+---
+          ]]></correct-example>
+          <incorrect-example title="Invalid frontmatter" conditions="Creating any .mdc file" expected-result="Proper frontmatter" incorrectness-criteria="Missing required fields"><![CDATA[
+---
+title: Some Rule
+author: Developer
+---
+          ]]></incorrect-example>
+        </example>
+      </examples>
+    </non-negotiable>
+
+    <non-negotiable priority="critical">
+      <description>Description MUST follow ACTION when TRIGGER to OUTCOME format</description>
+      <examples>
+        <example title="Description Format">
+          <correct-example title="Proper description" conditions="Writing frontmatter" expected-result="Clear action-based description" correctness-criteria="Shows action, trigger, and outcome"><![CDATA[
+description: APPLY TypeScript strict rules when editing .ts files to ensure type safety
+          ]]></correct-example>
+          <incorrect-example title="Vague description" conditions="Writing frontmatter" expected-result="Clear action-based description" incorrectness-criteria="Too vague, no clear trigger"><![CDATA[
+description: TypeScript rules for the project
+          ]]></incorrect-example>
+        </example>
+      </examples>
+    </non-negotiable>
+
+    <requirement priority="high">
+      <description>Use hierarchical numbering system for rule organization</description>
+      <examples>
+        <example title="File Naming Convention">
+          <correct-example title="Proper numbering" conditions="Creating rule files" expected-result="Clear hierarchy" correctness-criteria="Uses 3-digit prefix with logical grouping"><![CDATA[
+000-rules.mdc          # Meta-rule
+001-symindx-workspace.mdc # Core workspace
+002-cursor-framework.mdc  # Framework rules
+010-typescript.mdc     # Language rules
+100-ai-portals.mdc     # Integration rules
+          ]]></correct-example>
+        </example>
+      </examples>
+    </requirement>
+
+    <requirement priority="high">
+      <description>Use structured pseudo-XML format for rule bodies when complexity requires it</description>
+      <examples>
+        <example title="Structured vs Simple Format">
+          <correct-example title="Simple format for basic rules" conditions="Writing simple guidelines" expected-result="Clean markdown" correctness-criteria="Uses bullet points for simple rules"><![CDATA[
+# TypeScript Standards
+
+## Core Requirements
+- Use strict mode in all TypeScript files
+- Always define explicit return types for functions
+- Use interfaces for object shapes
+- Prefer const assertions for readonly data
+          ]]></correct-example>
+          <correct-example title="Structured format for complex rules" conditions="Writing complex validation rules" expected-result="Pseudo-XML structure" correctness-criteria="Uses XML tags for clarity and enforcement"><![CDATA[
+<rule>
+  <meta>
+    <title>API Route Standards</title>
+    <description>Enforces consistent API route structure</description>
+  </meta>
+  <requirements>
+    <non-negotiable priority="critical">
+      <description>All API routes must have error handling</description>
+      <examples>...</examples>
+    </non-negotiable>
+  </requirements>
+</rule>
+          ]]></correct-example>
+        </example>
+      </examples>
+    </requirement>
+
+    <requirement priority="medium">
+      <description>Include cross-references to related rules</description>
+      <examples>
+        <example title="Rule References">
+          <correct-example title="Proper cross-reference" conditions="Writing related rules" expected-result="Clear relationships" correctness-criteria="Uses @filename syntax"><![CDATA[
+## Related Rules
+- @001-symindx-workspace.mdc - Core project standards
+- @003-typescript-standards.mdc - TypeScript configuration
+          ]]></correct-example>
+        </example>
+      </examples>
+    </requirement>
+  </requirements>
+
+  <grammar>
+    <grammar-entry title="Valid Frontmatter Pattern">
+      <pattern description="YAML frontmatter format">^---\ndescription: .+\nglobs: .+\n---</pattern>
+      <example description="Minimal valid frontmatter">---
+description: ACTION when TRIGGER to OUTCOME
+globs: **/*.ts
+---</example>
+    </grammar-entry>
+    
+    <grammar-entry title="Numbering Convention">
+      <pattern description="File naming pattern">^\d{3}-[a-z-]+\.mdc$</pattern>
+      <example description="Valid filename">010-typescript-standards.mdc</example>
+    </grammar-entry>
+
+    <schema title="Rule Categories" description="Numbering ranges for different rule types"><![CDATA[
+000-099: Meta and core workspace rules
+100-199: Integration and AI portal rules  
+200-299: Framework and language-specific rules
+300-399: Testing and quality rules
+400-499: Deployment and operations rules
+500-599: Documentation and community rules
+    ]]></schema>
+  </grammar>
+
+  <context>
+    The .mdc format is Cursor's custom Markdown format that supports YAML frontmatter for AI context selection. The frontmatter tells Cursor when to apply the rule, while the body provides the actual guidance. This meta-rule ensures consistency across all project rules and follows 2025 best practices for Cursor IDE.
+  </context>
+
+  <references>
+    <reference as="context" href=".cursor/docs/quick-start.md" reason="Developer onboarding">Quick Start Guide</reference>
+    <reference as="context" href=".cursor/docs/architecture.md" reason="System architecture">Architecture Documentation</reference>
+  </references>
+</rule>
+
+## Quick Reference
+
+### Frontmatter Fields (Required)
+- `description`: ACTION when TRIGGER to OUTCOME (max 120 chars)
+- `globs`: Comma-separated file patterns
+
+### Optional Frontmatter Fields
+- `alwaysApply`: true/false (defaults to false)
+- `priority`: 1-5 (for conflict resolution)
+
+### Rule Body Formats
+1. **Simple**: Use clean Markdown for straightforward guidelines
+2. **Structured**: Use pseudo-XML `<rule>` format for complex validation rules
+
+### File Naming Convention
+`NNN-descriptive-name.mdc` where NNN is:
+- 000-099: Meta/core rules
+- 100-199: Integration rules
+- 200-299: Framework rules
+- 300-399: Testing rules
+- 400-499: Operations rules
+- 500-599: Documentation rules

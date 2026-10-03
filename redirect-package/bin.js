@@ -1,42 +1,38 @@
 #!/usr/bin/env node
+'use strict';
 
-const { spawn } = require('child_process')
-const path = require('path')
+const { spawn } = require('node:child_process');
+const { existsSync } = require('node:fs');
+const path = require('node:path');
 
-// Try to find the actual symindx CLI
-const possiblePaths = [
-  // Global npm modules
-  path.join(__dirname, '..', '@symindx', 'cli', 'dist', 'cli.js'),
-  path.join(process.env.NODE_PATH || '', '@symindx', 'cli', 'dist', 'cli.js'),
-  // Try npx as fallback
-  'npx'
-]
-
-function tryPath(pathIndex = 0) {
-  if (pathIndex >= possiblePaths.length) {
-    console.error('❌ SYMindX CLI not found. Please install with: npm install -g @symindx/cli')
-    process.exit(1)
-  }
-
-  const currentPath = possiblePaths[pathIndex]
-  const args = currentPath === 'npx' 
-    ? ['@symindx/cli', ...process.argv.slice(2)]
-    : process.argv.slice(2)
-
-  const child = spawn(
-    currentPath === 'npx' ? 'npx' : process.execPath,
-    currentPath === 'npx' ? args : [currentPath, ...args],
-    { stdio: 'inherit' }
-  )
-
-  child.on('error', () => {
-    // Try next path
-    tryPath(pathIndex + 1)
-  })
-
-  child.on('exit', (code) => {
-    process.exit(code || 0)
-  })
+// Local checkout bridge only. Installation and downloads are never implicit.
+const runtimeRoot = path.resolve(__dirname, '..', 'packages', 'runtime');
+const builtCli = path.join(runtimeRoot, 'dist', 'cli.js');
+const sourceCli = path.join(runtimeRoot, 'src', 'cli.ts');
+const cli = existsSync(builtCli) ? builtCli : existsSync(sourceCli) ? sourceCli : undefined;
+if (!cli) {
+  console.error('Supported CLI not found. Run this bridge from a complete SYMindX checkout.');
+  process.exitCode = 1;
+} else {
+  const child = spawn('bun', ['--no-env-file', cli, ...process.argv.slice(2)], {
+    stdio: 'inherit',
+    shell: false,
+  });
+  const onInterrupt = () => child.kill('SIGINT');
+  const onTerminate = () => child.kill('SIGTERM');
+  process.on('SIGINT', onInterrupt);
+  process.on('SIGTERM', onTerminate);
+  const cleanup = () => {
+    process.removeListener('SIGINT', onInterrupt);
+    process.removeListener('SIGTERM', onTerminate);
+  };
+  child.once('error', () => {
+    cleanup();
+    console.error('Unable to launch Bun. Install the project Bun version and retry.');
+    process.exitCode = 1;
+  });
+  child.once('close', (code, signal) => {
+    cleanup();
+    process.exitCode = code !== null ? code : signal === 'SIGINT' ? 130 : signal === 'SIGTERM' ? 143 : 1;
+  });
 }
-
-tryPath()

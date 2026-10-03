@@ -4,7 +4,8 @@ import { updateEmotion } from './emotion.js';
 import { abortable, SYMindXError, throwIfAborted } from './errors.js';
 import { createProvider } from './providers.js';
 import { SqliteStore } from './storage.js';
-import { clockTool, isJsonValue, ToolRegistry, validateArguments } from './tools.js';
+import { clockTool, ToolRegistry, validateArguments } from './tools.js';
+import { decodeProviderResult, isJsonValue } from './validation.js';
 import type {
   AgentState,
   Character,
@@ -17,12 +18,11 @@ import type {
   ToolAudit,
   ToolCall,
   TurnResult,
+  RuntimeEvent,
+  AgentSummary,
+  AgentSnapshot,
 } from './types.js';
-export interface RuntimeEvent {
-  type: 'started' | 'stopped' | 'turn.completed';
-  agentId?: string;
-  conversationId?: string;
-}
+export type { RuntimeEvent } from './types.js';
 interface ActiveAgent {
   character: Character;
   state: AgentState;
@@ -44,6 +44,7 @@ export class SYMindXRuntime {
   private lifecycle: 'new' | 'running' | 'stopping' | 'stopped' = 'new';
   private store: SqliteStore | undefined;
   private readonly agents = new Map<string, ActiveAgent>();
+  private readonly options: Pick<RuntimeOptions, 'dbPath' | 'providerFactory'>;
   private readonly configured = new Map<string, Character>();
   private readonly queues = new Map<string, Promise<void>>();
   private readonly queuedCounts = new Map<string, number>();
@@ -57,9 +58,24 @@ export class SYMindXRuntime {
   private readonly maxInput: number;
   private readonly maxContext: number;
   private stopping: Promise<void> | undefined;
-  constructor(private readonly options: RuntimeOptions) {
-    if (typeof options.dbPath !== 'string' || !options.dbPath.trim())
+  constructor(options: RuntimeOptions) {
+    if (
+      !options ||
+      typeof options !== 'object' ||
+      typeof options.dbPath !== 'string' ||
+      !options.dbPath.trim()
+    )
       throw new SYMindXError('CONFIGURATION', 'dbPath is required');
+    if (options.characters !== undefined && !Array.isArray(options.characters))
+      throw new SYMindXError('CONFIGURATION', 'characters must be an array');
+    if (options.tools !== undefined && !Array.isArray(options.tools))
+      throw new SYMindXError('CONFIGURATION', 'tools must be an array');
+    if (options.providerFactory !== undefined && typeof options.providerFactory !== 'function')
+      throw new SYMindXError('CONFIGURATION', 'providerFactory must be a function');
+    this.options = {
+      dbPath: options.dbPath,
+      ...(options.providerFactory ? { providerFactory: options.providerFactory } : {}),
+    };
     this.timeout = bounded(options.requestTimeoutMs, 60000, 10, 300000, 'requestTimeoutMs');
     this.toolTimeout = bounded(options.toolTimeoutMs, 10000, 10, 60000, 'toolTimeoutMs');
     this.maxRounds = bounded(options.maxToolRounds, 3, 0, 8, 'maxToolRounds');
@@ -148,13 +164,7 @@ export class SYMindXRuntime {
     this.configured.set(character.id, character);
     return structuredClone(character);
   }
-  listAgents(): {
-    id: string;
-    name: string;
-    status: 'ready' | 'busy';
-    emotion: AgentState['emotion'];
-    provider: string;
-  }[] {
+  listAgents(): AgentSummary[] {
     return [...this.agents.values()].map((agent) => ({
       id: agent.character.id,
       name: agent.character.name,
@@ -163,7 +173,7 @@ export class SYMindXRuntime {
       provider: agent.character.provider.type,
     }));
   }
-  getAgent(id: string): { character: Character; state: AgentState } | undefined {
+  getAgent(id: string): AgentSnapshot | undefined {
     const agent = this.agents.get(id);
     return agent ? structuredClone({ character: agent.character, state: agent.state }) : undefined;
   }
@@ -244,10 +254,32 @@ export class SYMindXRuntime {
   private message(
     agentId: string,
     conversationId: string,
+    role: 'user',
+    content: string,
+  ): Extract<Message, { role: 'user' }>;
+  private message(
+    agentId: string,
+    conversationId: string,
+    role: 'assistant',
+    content: string,
+  ): Extract<Message, { role: 'assistant' }>;
+  private message(
+    agentId: string,
+    conversationId: string,
+    role: 'tool',
+    content: string,
+    toolCallId: string,
+  ): Extract<Message, { role: 'tool' }>;
+  private message(
+    agentId: string,
+    conversationId: string,
     role: Message['role'],
     content: string,
+    toolCallId?: string,
   ): Message {
-    return { id: randomUUID(), agentId, conversationId, role, content, createdAt: Date.now() };
+    const metadata = { id: randomUUID(), agentId, conversationId, content, createdAt: Date.now() };
+    if (role === 'tool') return { ...metadata, role, toolCallId: toolCallId! };
+    return { ...metadata, role };
   }
   private context(
     agent: ActiveAgent,
@@ -262,7 +294,10 @@ export class SYMindXRuntime {
       conversationId,
       agent.character.memory.recentMessages * 3,
     )
-      .filter((message) => message.role !== 'tool' && !message.toolCalls?.length)
+      .filter(
+        (message) =>
+          message.role === 'user' || (message.role === 'assistant' && !message.toolCalls?.length),
+      )
       .slice(-agent.character.memory.recentMessages);
     let budget =
       this.maxContext -
@@ -277,37 +312,14 @@ export class SYMindXRuntime {
       const size = JSON.stringify({ role: message.role, content: message.content }).length + 1;
       if (size > budget) break;
       budget -= size;
-      retained.unshift({ role: message.role, content: message.content });
+      retained.unshift(
+        message.role === 'user'
+          ? { role: 'user', content: message.content }
+          : { role: 'assistant', content: message.content },
+      );
     }
     while (retained[0]?.role === 'assistant') retained.shift();
     return [...retained, { role: 'user', content: input.content }];
-  }
-  private validateResult(result: ProviderResult): void {
-    if (
-      !result ||
-      typeof result.text !== 'string' ||
-      result.text.length > 32000 ||
-      !Array.isArray(result.toolCalls) ||
-      result.toolCalls.length > 8 ||
-      (!result.text.trim() && !result.toolCalls.length)
-    )
-      throw new SYMindXError('PROVIDER', 'Provider returned an invalid or oversized response');
-    const ids = new Set<string>();
-    for (const call of result.toolCalls) {
-      if (
-        !call ||
-        typeof call.id !== 'string' ||
-        !call.id ||
-        call.id.length > 128 ||
-        ids.has(call.id) ||
-        typeof call.name !== 'string' ||
-        !/^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/.test(call.name) ||
-        !isJsonValue(call.arguments) ||
-        JSON.stringify(call.arguments).length > 16000
-      )
-        throw new SYMindXError('PROVIDER', 'Provider returned an invalid tool call');
-      ids.add(call.id);
-    }
   }
   private async executeTurn(
     agentId: string,
@@ -350,13 +362,13 @@ export class SYMindXRuntime {
         }),
         signal,
       );
-      let result: ProviderResult;
+      let copied: unknown;
       try {
-        result = structuredClone(rawResult);
+        copied = structuredClone(rawResult);
       } catch {
         throw new SYMindXError('PROVIDER', 'Provider returned a result that cannot be copied');
       }
-      this.validateResult(result);
+      const result: ProviderResult = decodeProviderResult(copied);
       for (const call of result.toolCalls) {
         if (seenToolIds.has(call.id))
           throw new SYMindXError('PROVIDER', 'Provider reused a tool call identifier');
@@ -402,8 +414,7 @@ export class SYMindXRuntime {
           signal,
         );
         outcomes.push({ name: call.name, status: outcome.status });
-        const response = this.message(agentId, conversationId, 'tool', outcome.content);
-        response.toolCallId = call.id;
+        const response = this.message(agentId, conversationId, 'tool', outcome.content, call.id);
         messages.push(response);
         conversation.push({ role: 'tool', content: outcome.content, toolCallId: call.id });
       }

@@ -5,7 +5,7 @@
   "type": "module",
   "license": "MIT",
   "engines": {
-    "bun": ">=1.3.10"
+    "bun": ">=1.4.2"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -33,9 +33,9 @@
     "format:check": "prettier --check --config .prettierrc.json --no-editorconfig src scripts"
   },
   "devDependencies": {
-    "@types/bun": "1.3.10",
-    "prettier": "3.6.2",
-    "typescript": "5.8.3"
+    "@types/bun": "1.4.2",
+    "prettier": "3.9.9",
+    "typescript": "7.0.2"
   },
   "private": true
 }

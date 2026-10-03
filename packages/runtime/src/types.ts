@@ -1,30 +1,29 @@
 export type JsonValue =
-  | null
-  | boolean
-  | number
-  | string
-  | JsonValue[]
-  | { [key: string]: JsonValue };
-export interface JsonSchema {
-  type: 'object' | 'array' | 'string' | 'number' | 'integer' | 'boolean' | 'null';
-  properties?: Record<string, JsonSchema>;
-  required?: string[];
-  additionalProperties?: boolean;
-  items?: JsonSchema;
-  enum?: JsonValue[];
-  minimum?: number;
-  maximum?: number;
-  minLength?: number;
-  maxLength?: number;
-  maxItems?: number;
-}
-export interface ProviderConfig {
-  type: 'echo' | 'openai-compatible';
-  model: string;
-  baseUrl?: string;
-  apiKeyEnv?: string;
-  maxOutputTokens?: number;
-}
+  null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
+
+type SchemaEnum = { enum?: JsonValue[] };
+export type JsonSchema =
+  | ({
+      type: 'object';
+      properties?: Record<string, JsonSchema>;
+      required?: string[];
+      additionalProperties?: boolean;
+    } & SchemaEnum)
+  | ({ type: 'array'; items?: JsonSchema; maxItems?: number } & SchemaEnum)
+  | ({ type: 'string'; minLength?: number; maxLength?: number } & SchemaEnum)
+  | ({ type: 'number' | 'integer'; minimum?: number; maximum?: number } & SchemaEnum)
+  | ({ type: 'boolean' } & SchemaEnum)
+  | ({ type: 'null' } & SchemaEnum);
+
+export type ProviderConfig =
+  | { type: 'echo'; model: string; maxOutputTokens?: number }
+  | {
+      type: 'openai-compatible';
+      model: string;
+      baseUrl: string;
+      apiKeyEnv: string;
+      maxOutputTokens?: number;
+    };
 export interface Character {
   schemaVersion: 1;
   id: string;
@@ -48,18 +47,15 @@ export interface ToolCall {
   name: string;
   arguments: JsonValue;
 }
-export interface ProviderMessage {
-  role: 'user' | 'assistant' | 'tool';
-  content: string;
-  toolCallId?: string;
-  toolCalls?: ToolCall[];
-}
-export interface Message extends ProviderMessage {
-  id: string;
-  agentId: string;
-  conversationId: string;
-  createdAt: number;
-}
+export type ProviderMessage =
+  | { role: 'user'; content: string }
+  | { role: 'assistant'; content: string; toolCalls?: ToolCall[] }
+  | { role: 'tool'; content: string; toolCallId: string };
+type MessageMetadata = { id: string; agentId: string; conversationId: string; createdAt: number };
+export type Message =
+  | (MessageMetadata & { role: 'user'; content: string })
+  | (MessageMetadata & { role: 'assistant'; content: string; toolCalls?: ToolCall[] })
+  | (MessageMetadata & { role: 'tool'; content: string; toolCallId: string });
 export interface ProviderTool {
   name: string;
   description: string;
@@ -124,3 +120,18 @@ export interface ToolAudit {
   createdAt: number;
   finishedAt?: number;
 }
+export interface AgentSummary {
+  id: string;
+  name: string;
+  status: 'ready' | 'busy';
+  emotion: EmotionState;
+  provider: ProviderConfig['type'];
+}
+export interface AgentSnapshot {
+  character: Character;
+  state: AgentState;
+}
+export type RuntimeEvent =
+  | { type: 'started' }
+  | { type: 'stopped' }
+  | { type: 'turn.completed'; agentId: string; conversationId: string };

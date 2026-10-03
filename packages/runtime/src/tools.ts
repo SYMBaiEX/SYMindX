@@ -1,17 +1,6 @@
 import { SYMindXError } from './errors.js';
+import { isJsonValue } from './validation.js';
 import type { JsonSchema, JsonValue, ProviderTool, ToolDefinition } from './types.js';
-export function isJsonValue(value: unknown, depth = 0): value is JsonValue {
-  if (depth > 12) return false;
-  if (value === null || typeof value === 'string' || typeof value === 'boolean') return true;
-  if (typeof value === 'number') return Number.isFinite(value);
-  if (Array.isArray(value)) return value.every((item) => isJsonValue(item, depth + 1));
-  if (typeof value !== 'object' || !value) return false;
-  const prototype = Object.getPrototypeOf(value);
-  return (
-    (prototype === Object.prototype || prototype === null) &&
-    Object.values(value).every((item) => isJsonValue(item, depth + 1))
-  );
-}
 function invalid(path: string): never {
   throw new SYMindXError('VALIDATION', `Tool arguments do not satisfy schema at ${path}`);
 }
@@ -82,78 +71,95 @@ function validateSchema(schema: JsonSchema, depth = 0): void {
     Array.isArray(schema) ||
     depth > 8 ||
     !['object', 'array', 'string', 'number', 'integer', 'boolean', 'null'].includes(schema.type)
-  ) {
+  )
     throw new SYMindXError('CONFIGURATION', 'Unsupported tool input schema');
-  }
-  const supported = [
-    'type',
-    'properties',
-    'required',
-    'additionalProperties',
-    'items',
-    'enum',
-    'minimum',
-    'maximum',
-    'minLength',
-    'maxLength',
-    'maxItems',
-  ];
-  if (Object.keys(schema).some((key) => !supported.includes(key)))
-    throw new SYMindXError('CONFIGURATION', 'Tool schema contains an unsupported keyword');
-  if (schema.properties !== undefined) {
-    const prototype =
-      schema.properties && typeof schema.properties === 'object'
-        ? Object.getPrototypeOf(schema.properties)
-        : undefined;
-    if (
-      !schema.properties ||
-      Array.isArray(schema.properties) ||
-      (prototype !== Object.prototype && prototype !== null)
+  const common = ['type', 'enum'];
+  const applicable: Record<JsonSchema['type'], string[]> = {
+    object: ['properties', 'required', 'additionalProperties'],
+    array: ['items', 'maxItems'],
+    string: ['minLength', 'maxLength'],
+    number: ['minimum', 'maximum'],
+    integer: ['minimum', 'maximum'],
+    boolean: [],
+    null: [],
+  };
+  if (
+    Object.keys(schema).some(
+      (key) => !common.includes(key) && !applicable[schema.type].includes(key),
     )
-      throw new SYMindXError('CONFIGURATION', 'Tool schema properties must be a plain record');
-  }
-  if (schema.required !== undefined) {
-    if (
-      !Array.isArray(schema.required) ||
-      schema.required.some((key) => typeof key !== 'string') ||
-      new Set(schema.required).size !== schema.required.length
-    ) {
-      throw new SYMindXError('CONFIGURATION', 'Tool schema required must be a unique string array');
-    }
-    if (schema.required.some((key) => !Object.hasOwn(schema.properties ?? {}, key)))
-      throw new SYMindXError('CONFIGURATION', 'Tool schema requires an undeclared property');
-  }
-  if (schema.additionalProperties !== undefined && typeof schema.additionalProperties !== 'boolean')
-    throw new SYMindXError('CONFIGURATION', 'Tool schema additionalProperties must be boolean');
-  for (const child of Object.values(schema.properties ?? {})) validateSchema(child, depth + 1);
-  if (schema.items !== undefined) validateSchema(schema.items, depth + 1);
-  for (const limit of [schema.minimum, schema.maximum]) {
-    if (limit !== undefined && (!Number.isFinite(limit) || Math.abs(limit) > 1e9))
-      throw new SYMindXError('CONFIGURATION', 'Invalid tool schema numeric limit');
-  }
-  for (const limit of [schema.minLength, schema.maxLength, schema.maxItems]) {
-    if (limit !== undefined && (!Number.isInteger(limit) || limit < 0 || limit > 1e9))
-      throw new SYMindXError('CONFIGURATION', 'Invalid tool schema size limit');
-  }
-  if (
-    schema.minimum !== undefined &&
-    schema.maximum !== undefined &&
-    schema.minimum > schema.maximum
   )
-    throw new SYMindXError('CONFIGURATION', 'Tool schema minimum exceeds maximum');
-  if (
-    schema.minLength !== undefined &&
-    schema.maxLength !== undefined &&
-    schema.minLength > schema.maxLength
-  )
-    throw new SYMindXError('CONFIGURATION', 'Tool schema minLength exceeds maxLength');
+    throw new SYMindXError(
+      'CONFIGURATION',
+      'Tool schema contains an unsupported keyword for its type',
+    );
   if (
     schema.enum !== undefined &&
     (!Array.isArray(schema.enum) ||
       schema.enum.length > 100 ||
-      !schema.enum.every((value) => isJsonValue(value)))
+      !schema.enum.every((item) => isJsonValue(item)))
   )
     throw new SYMindXError('CONFIGURATION', 'Invalid tool schema enum');
+  if (schema.type === 'object') {
+    if (schema.properties !== undefined) {
+      const proto =
+        schema.properties && typeof schema.properties === 'object'
+          ? Object.getPrototypeOf(schema.properties)
+          : undefined;
+      if (
+        !schema.properties ||
+        Array.isArray(schema.properties) ||
+        (proto !== Object.prototype && proto !== null)
+      )
+        throw new SYMindXError('CONFIGURATION', 'Tool schema properties must be a plain record');
+      for (const child of Object.values(schema.properties)) validateSchema(child, depth + 1);
+    }
+    if (
+      schema.required !== undefined &&
+      (!Array.isArray(schema.required) ||
+        schema.required.some((key) => typeof key !== 'string') ||
+        new Set(schema.required).size !== schema.required.length ||
+        schema.required.some((key) => !Object.hasOwn(schema.properties ?? {}, key)))
+    )
+      throw new SYMindXError(
+        'CONFIGURATION',
+        'Tool schema required must name unique declared properties',
+      );
+    if (
+      schema.additionalProperties !== undefined &&
+      typeof schema.additionalProperties !== 'boolean'
+    )
+      throw new SYMindXError('CONFIGURATION', 'Tool schema additionalProperties must be boolean');
+  }
+  if (schema.type === 'array' && schema.items !== undefined)
+    validateSchema(schema.items, depth + 1);
+  if (schema.type === 'number' || schema.type === 'integer') {
+    for (const limit of [schema.minimum, schema.maximum])
+      if (limit !== undefined && (!Number.isFinite(limit) || Math.abs(limit) > 1e9))
+        throw new SYMindXError('CONFIGURATION', 'Invalid tool schema numeric limit');
+    if (
+      schema.minimum !== undefined &&
+      schema.maximum !== undefined &&
+      schema.minimum > schema.maximum
+    )
+      throw new SYMindXError('CONFIGURATION', 'Tool schema minimum exceeds maximum');
+  }
+  if (schema.type === 'string') {
+    for (const limit of [schema.minLength, schema.maxLength])
+      if (limit !== undefined && (!Number.isInteger(limit) || limit < 0 || limit > 1e9))
+        throw new SYMindXError('CONFIGURATION', 'Invalid tool schema size limit');
+    if (
+      schema.minLength !== undefined &&
+      schema.maxLength !== undefined &&
+      schema.minLength > schema.maxLength
+    )
+      throw new SYMindXError('CONFIGURATION', 'Tool schema minLength exceeds maxLength');
+  }
+  if (
+    schema.type === 'array' &&
+    schema.maxItems !== undefined &&
+    (!Number.isInteger(schema.maxItems) || schema.maxItems < 0 || schema.maxItems > 1e9)
+  )
+    throw new SYMindXError('CONFIGURATION', 'Invalid tool schema size limit');
 }
 function validateSerializedSchema(schema: JsonSchema): void {
   let serialized: string | undefined;
@@ -170,12 +176,17 @@ function validateSerializedSchema(schema: JsonSchema): void {
 export class ToolRegistry {
   private readonly definitions = new Map<string, ToolDefinition>();
   constructor(definitions: ToolDefinition[]) {
-    if (definitions.length > 64)
+    if (!Array.isArray(definitions) || definitions.length > 64)
       throw new SYMindXError('CONFIGURATION', 'At most 64 tools can be registered');
     for (const definition of definitions) {
       if (
+        !definition ||
+        typeof definition !== 'object' ||
+        Array.isArray(definition) ||
+        typeof definition.name !== 'string' ||
         !/^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/.test(definition.name) ||
-        !definition.description ||
+        typeof definition.description !== 'string' ||
+        !definition.description.trim() ||
         definition.description.length > 2000 ||
         !['read', 'write'].includes(definition.effect) ||
         typeof definition.execute !== 'function' ||
@@ -193,7 +204,10 @@ export class ToolRegistry {
     }
   }
   get(name: string): ToolDefinition | undefined {
-    return this.definitions.get(name);
+    const definition = this.definitions.get(name);
+    return definition
+      ? { ...definition, inputSchema: structuredClone(definition.inputSchema) }
+      : undefined;
   }
   advertised(names: string[]): ProviderTool[] {
     return names.map((name) => {

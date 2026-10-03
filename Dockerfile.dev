@@ -1,41 +1,8 @@
-# Development Dockerfile for SYMindX
-FROM oven/bun:1.1.38-alpine
-
-# Install system dependencies
-RUN apk add --no-cache \
-    python3 \
-    make \
-    g++ \
-    libc6-compat \
-    curl \
-    ca-certificates \
-    sqlite \
-    git
-
-# Set working directory
-WORKDIR /app
-
-# Copy package files
-COPY package.json bun.lockb ./
-COPY mind-agents/package.json ./mind-agents/
-COPY website/package.json ./website/
-COPY create-symindx/package.json ./create-symindx/
-
-# Install all dependencies (including dev dependencies)
-RUN bun install --frozen-lockfile
-
-# Copy source code
-COPY . .
-
-# Create data directories
-RUN mkdir -p /app/data/logs /app/data/events /app/data/memories /app/data/db
-
-# Expose ports
-EXPOSE 3000 8080 9090 9229
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:3000/health || exit 1
-
-# Default command (can be overridden)
-CMD ["bun", "dev"]
+ARG BUN_VERSION=1.4.2
+FROM oven/bun:${BUN_VERSION}-alpine
+WORKDIR /app/packages/runtime
+COPY packages/runtime/package.json packages/runtime/bun.lock ./
+RUN bun --no-env-file install --frozen-lockfile --ignore-scripts
+COPY packages/runtime/ ./
+RUN bun --no-env-file run typecheck
+CMD ["bun", "--no-env-file", "src/cli.ts", "--help"]

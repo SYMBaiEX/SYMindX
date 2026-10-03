@@ -55,31 +55,29 @@ export function parseCharacter(input: unknown): Character {
   const kind = p['type'];
   if (kind !== 'echo' && kind !== 'openai-compatible')
     fail('provider.type must be echo or openai-compatible');
-  const provider: Character['provider'] = {
-    type: kind,
-    model: text(p['model'], 'provider.model', 200),
-  };
-  if (p['baseUrl'] !== undefined) provider.baseUrl = text(p['baseUrl'], 'provider.baseUrl', 2048);
-  if (p['apiKeyEnv'] !== undefined) {
-    if (typeof p['apiKeyEnv'] !== 'string' || !/^[A-Z][A-Z0-9_]{0,127}$/.test(p['apiKeyEnv']))
+  const model = text(p['model'], 'provider.model', 200);
+  const maxOutputTokens = p['maxOutputTokens'];
+  if (
+    maxOutputTokens !== undefined &&
+    (!Number.isInteger(maxOutputTokens) ||
+      (maxOutputTokens as number) < 1 ||
+      (maxOutputTokens as number) > 16384)
+  )
+    fail('provider.maxOutputTokens must be from 1 to 16384');
+  const tokenOption =
+    maxOutputTokens === undefined ? {} : { maxOutputTokens: maxOutputTokens as number };
+  let provider: Character['provider'];
+  if (kind === 'echo') {
+    if (p['baseUrl'] !== undefined || p['apiKeyEnv'] !== undefined)
+      fail('echo provider does not use credentials or a base URL');
+    provider = { type: 'echo', model, ...tokenOption };
+  } else {
+    const baseUrl = text(p['baseUrl'], 'provider.baseUrl', 2048);
+    const apiKeyEnv = p['apiKeyEnv'];
+    if (typeof apiKeyEnv !== 'string' || !/^[A-Z][A-Z0-9_]{0,127}$/.test(apiKeyEnv))
       fail('provider.apiKeyEnv must be an environment variable name');
-    provider.apiKeyEnv = p['apiKeyEnv'];
+    provider = { type: 'openai-compatible', model, baseUrl, apiKeyEnv, ...tokenOption };
   }
-  if (p['maxOutputTokens'] !== undefined) {
-    if (
-      !Number.isInteger(p['maxOutputTokens']) ||
-      (p['maxOutputTokens'] as number) < 1 ||
-      (p['maxOutputTokens'] as number) > 16384
-    )
-      fail('provider.maxOutputTokens must be from 1 to 16384');
-    provider.maxOutputTokens = p['maxOutputTokens'] as number;
-  }
-  if (kind === 'openai-compatible' && !provider.baseUrl)
-    fail('openai-compatible provider requires baseUrl');
-  if (kind === 'openai-compatible' && !provider.apiKeyEnv)
-    fail('openai-compatible provider requires apiKeyEnv');
-  if (kind === 'echo' && (provider.apiKeyEnv || provider.baseUrl))
-    fail('echo provider does not use credentials or a base URL');
   const m = object(c['memory'] ?? {}, 'memory', ['recentMessages']);
   const recentMessages = m['recentMessages'] ?? 20;
   if (

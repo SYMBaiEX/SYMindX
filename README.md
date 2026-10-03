@@ -2,11 +2,11 @@
 
 A small character-agent runtime with persistent conversation history, bounded emotion state, and explicitly permitted tools.
 
-The supported v0.1 implementation is **[packages/runtime](packages/runtime/README.md)**. It is a new, isolated core informed by the [repository audit](docs/audit-2026-10-03.md). The former framework, website, and scaffolder remain in the repository as migration references.
+The supported v0.1 implementation is **[packages/runtime](packages/runtime/README.md)**. It is a new, isolated core informed by the [repository audit](docs/audit-2026-10-03.md). The former framework remains as a migration reference. The website and local scaffolder have separate migration tasks tracked in the [build checklist](docs/modernization/CHECKLIST.md).
 
 ## Quick start
 
-Requires **Bun 1.3.10 or newer**. Start from a local checkout in Bash or PowerShell:
+Requires **Bun 1.4.2 or newer**. Start from a local checkout in Bash or PowerShell:
 
 ```sh
 bun install --cwd packages/runtime --frozen-lockfile --ignore-scripts
@@ -38,6 +38,6 @@ Historical root documentation and CI/deployment files are retained in [docs/lega
 
 ## Development
 
-The runtime has no third-party runtime dependencies. Its development dependencies are pinned in its own manifest and lockfile. Install inside `packages/runtime`; the preserved root lockfiles belong to the old workspace and are not used by v0.1.
+The runtime has no third-party runtime dependencies. Its development dependencies are pinned in its own manifest and lockfile. Install inside `packages/runtime`; historical root locks are archived under docs/legacy/locks and are not used by v0.1.
 
 Licensed under [MIT](LICENSE).
