@@ -1,6 +1,6 @@
-import type { AgentSummary, JsonValue, Message } from '../../../packages/runtime/src/types.js';
+import type { AgentSummary, JsonValue, Message } from './api-types.js';
 
-export type { AgentSummary } from '../../../packages/runtime/src/types.js';
+export type { AgentSummary } from './api-types.js';
 export type ConversationMessage = Message;
 
 const MAX_RESPONSE_BYTES = 8 * 1024 * 1024;
