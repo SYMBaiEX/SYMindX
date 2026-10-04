@@ -1,0 +1,24 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "include": [
+    "src/index.ts",
+    "src/appraisal/**/*.ts",
+    "src/memory/**/*.ts",
+    "src/cognition/**/*.ts",
+    "src/social/**/*.ts",
+    "src/drives/**/*.ts",
+    "src/voice/**/*.ts",
+    "src/context/**/*.ts",
+    "src/timeline/**/*.ts",
+    "src/turn/**/*.ts",
+    "src/tools/**/*.ts",
+    "src/permissions/**/*.ts",
+    "src/character/**/*.ts",
+    "src/provider/**/*.ts",
+    "src/channel/**/*.ts",
+    "src/extension/**/*.ts",
+    "src/inbound/**/*.ts",
+    "src/queue/**/*.ts",
+    "src/presence/**/*.ts"
+  ]
+}

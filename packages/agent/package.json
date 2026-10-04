@@ -1,0 +1,13 @@
+{
+  "name": "@symindx/agent",
+  "version": "0.2.0",
+  "private": true,
+  "description": "SYMindX v2 mind: appraisal, memory, dual-process cognition, social beliefs, drives, and voice. Pure modules. No database or network I/O.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  }
+}
