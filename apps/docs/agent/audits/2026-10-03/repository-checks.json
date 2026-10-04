@@ -1,0 +1,130 @@
+{
+  "tracked_present_by_top_area": {
+    ".cursor": 34,
+    "(root)": 17,
+    ".github": 4,
+    ".husky": 2,
+    ".kiro": 6,
+    "create-symindx": 11,
+    "debug-output": 2,
+    "docker": 3,
+    "mind-agents": 726,
+    "monitoring": 2,
+    "redirect-package": 3,
+    "scripts": 3,
+    "testing": 7,
+    "website": 45
+  },
+  "source_counts": {
+    "create-symindx": {
+      "files": 2,
+      "lines": 1934
+    },
+    "mind-agents": {
+      "files": 588,
+      "lines": 321092
+    },
+    "website": {
+      "files": 26,
+      "lines": 7352
+    }
+  },
+  "parsed_manifests": 31,
+  "manifest_parse_errors": [],
+  "missing_workspaces": [
+    {
+      "manifest": "mind-agents/package.json",
+      "workspace": "./src/portals/openai"
+    },
+    {
+      "manifest": "mind-agents/package.json",
+      "workspace": "./src/portals/anthropic"
+    },
+    {
+      "manifest": "mind-agents/package.json",
+      "workspace": "./src/portals/groq"
+    },
+    {
+      "manifest": "mind-agents/package.json",
+      "workspace": "./src/portals/xai"
+    },
+    {
+      "manifest": "mind-agents/package.json",
+      "workspace": "./src/portals/google-generative"
+    },
+    {
+      "manifest": "mind-agents/package.json",
+      "workspace": "./src/portals/google-vertex"
+    },
+    {
+      "manifest": "mind-agents/package.json",
+      "workspace": "./src/portals/azure-openai"
+    },
+    {
+      "manifest": "mind-agents/package.json",
+      "workspace": "./src/portals/mistral"
+    },
+    {
+      "manifest": "mind-agents/package.json",
+      "workspace": "./src/portals/cohere"
+    },
+    {
+      "manifest": "mind-agents/package.json",
+      "workspace": "./src/portals/perplexity"
+    },
+    {
+      "manifest": "mind-agents/package.json",
+      "workspace": "./src/portals/vercel"
+    },
+    {
+      "manifest": "mind-agents/package.json",
+      "workspace": "./src/portals/ollama"
+    },
+    {
+      "manifest": "mind-agents/package.json",
+      "workspace": "./src/portals/lmstudio"
+    },
+    {
+      "manifest": "mind-agents/package.json",
+      "workspace": "./src/portals/openrouter"
+    },
+    {
+      "manifest": "mind-agents/package.json",
+      "workspace": "./src/portals/kluster.ai"
+    },
+    {
+      "manifest": "mind-agents/package.json",
+      "workspace": "./src/portals/multimodal"
+    },
+    {
+      "manifest": "mind-agents/package.json",
+      "workspace": "./src/extensions/mcp-client"
+    }
+  ],
+  "shell_syntax_checks": [
+    {
+      "file": "scripts/deploy.sh",
+      "exit": 0,
+      "diagnostics": ""
+    },
+    {
+      "file": "scripts/dev-setup.sh",
+      "exit": 0,
+      "diagnostics": ""
+    },
+    {
+      "file": "scripts/health-check.sh",
+      "exit": 0,
+      "diagnostics": ""
+    }
+  ],
+  "gitlink_entries": "",
+  "website_dockerfile_exists": true,
+  "unexpected_new_changes": [],
+  "introduced_paths": [
+    "README.md",
+    "mind-agents/eslint.config.js",
+    "mind-agents/tsconfig.json",
+    "package.json"
+  ]
+}

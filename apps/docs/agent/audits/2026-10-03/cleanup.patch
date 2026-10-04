@@ -1,0 +1,106 @@
+diff --git a/README.md b/README.md
+index cf64926..35ec2a0 100644
+--- a/README.md
++++ b/README.md
+@@ -1,4 +1,4 @@
+-# 🧠 SYMindX - Next-Generation AI Agent Framework
++# 🧠 SYMindX - Experimental AI Agent Framework
+ 
+ <div align="center">
+ 
+@@ -6,9 +6,9 @@
+ [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+ [![React](https://img.shields.io/badge/React-20232A?logo=react&logoColor=61DAFB)](https://reactjs.org/)
+ [![Bun](https://img.shields.io/badge/Bun-000000?logo=bun&logoColor=white)](https://bun.sh/)
+-[![AI SDK](https://img.shields.io/badge/AI%20SDK-5.0-blue)](https://sdk.vercel.ai/)
++[![AI SDK](https://img.shields.io/badge/AI%20SDK-experimental-blue)](https://sdk.vercel.ai/)
+ 
+-## Build intelligent AI agents with skill-based architecture, emotional awareness, and enterprise-grade security
++## Character-based agents with memory, emotion, and extension modules
+ 
+ [Documentation](./mind-agents/docs/) • [Quick Start](#-quick-start) • [Features](#-key-features) • [Architecture](#-architecture) • [API Reference](#-api-reference)
+ 
+@@ -18,15 +18,15 @@
+ 
+ ## ✨ Overview
+ 
+-SYMindX is a production-ready AI agent framework that creates intelligent agents with emotional awareness, persistent memory, and multi-platform capabilities. Built with a modular skill-based architecture and powered by AI SDK v5, agents provide sophisticated responses through a reactive design pattern.
++SYMindX is an experimental AI agent framework exploring character configuration, memory, emotion, cognition, and external integrations. The current repository contains incompatible APIs and unfinished runtime composition.
+ 
+-**Current Version: v2.1.0** - Major architectural refactoring with enhanced security and skill-based extensions
++**Audit status (2026-10-03):** The core bundle and type check fail, and no complete startup-to-agent message path was demonstrated. The remaining feature descriptions and commands are historical and need reconciliation. See the [comprehensive audit](./mind-agents/docs/audits/2026-10-03/audit.md) for verified capabilities, security findings, validation, and the proposed modernization path.
+ 
+ ## 🏗️ Architecture
+ 
+ ### 🎯 Skill-Based Extension System
+ 
+-SYMindX now features a revolutionary skill-based architecture where each extension is composed of specialized skills:
++SYMindX contains a skill-based extension design where integrations are divided into specialized skills:
+ 
+ ```
+ Extensions/
+@@ -125,7 +125,7 @@ symindx/
+ │   │   │
+ │   │   ├── 🌐 portals/         # Streamlined AI Providers
+ │   │   │   ├── streamlined-portal-manager.ts
+-│   │   │   └── [15+ AI providers]
++│   │   │   └── [3 registered AI providers]
+ │   │   │
+ │   │   └── 📊 types/           # Comprehensive Type System
+ │   │       └── Enhanced type definitions
+@@ -496,6 +496,6 @@ MIT License - see [LICENSE](LICENSE) file for details.
+ 
+ [Get Started](#-quick-start) • [Documentation](./mind-agents/docs/) • [API Reference](#-api-reference) • [Contributing](#-contributing)
+ 
+-*SYMindX v2.1.0 | Skill-Based Architecture | Enterprise Security | Production Ready*
++*SYMindX | Experimental Character and Module Architecture | Modernization Required*
+ 
+ </div>
+\ No newline at end of file
+diff --git a/mind-agents/eslint.config.js b/mind-agents/eslint.config.js
+index 4bf387a..353428d 100644
+--- a/mind-agents/eslint.config.js
++++ b/mind-agents/eslint.config.js
+@@ -36,7 +36,7 @@ export default [
+         ecmaFeatures: {
+           jsx: true,
+         },
+-        project: ['./tsconfig.json', './tsconfig.build.json', './tsconfig.core.json'],
++        project: ['./tsconfig.json'],
+         tsconfigRootDir: import.meta.dirname,
+       },
+     },
+@@ -115,7 +115,7 @@ export default [
+       'import/resolver': {
+         typescript: {
+           alwaysTryTypes: true,
+-          project: ['./tsconfig.json', './tsconfig.build.json', './tsconfig.core.json'],
++          project: ['./tsconfig.json'],
+         },
+       },
+     },
+diff --git a/mind-agents/tsconfig.json b/mind-agents/tsconfig.json
+index 8663ab4..40648d9 100644
+--- a/mind-agents/tsconfig.json
++++ b/mind-agents/tsconfig.json
+@@ -27,7 +27,6 @@
+     "sourceMap": true,
+     "removeComments": true,
+     "importHelpers": false,
+-    "importsNotUsedAsValues": "remove",
+     "preserveConstEnums": true,
+     "outDir": "./dist",
+     "rootDir": "./",
+diff --git a/package.json b/package.json
+index 6c5bfc4..9adca87 100644
+--- a/package.json
++++ b/package.json
+@@ -12,7 +12,7 @@
+     "build": "bun build:all",
+     "build:all": "bun build:agent && bun build:website && bun build:scaffolder",
+     "build:agent": "cd mind-agents && bun run build",
+-    "build:cli": "cd mind-agents && bun run build:cli",
++    "build:cli": "bun run build:agent",
+     "build:website": "cd website && bun run build",
+     "build:scaffolder": "cd create-symindx && bun run build",
+     "start": "bun start:agent",
