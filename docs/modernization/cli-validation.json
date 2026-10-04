@@ -51,7 +51,16 @@
     },
     {
       "name": "clean Linux CI",
-      "status": "pending"
+      "status": "passed",
+      "commit": "a007bd138bacdf01e0c31e778c35e6a9344ecacc",
+      "url": "https://github.com/SYMBaiEX/SYMindX/actions/runs/37173551463",
+      "checks": [
+        "frozen install without lifecycle scripts",
+        "formatting",
+        "strict types",
+        "launcher syntax",
+        "bundle and declarations"
+      ]
     },
     {
       "name": "implementation behavior and backend trial",
@@ -106,5 +115,7 @@
     "package.json": "1061234ca278ab3772a87b2c1bacc46b1dcda88dbc763847eafda5a6c278e957",
     ".github/workflows/runtime.yml": "befc2bf0463def3bf47bc8a9de7767c2d5076c64434517f8090236caa482b0f8",
     "redirect-package/bin.js": "5859415e7ad76b5dba24216d87f120755041a5572a95b24a2e1583a064452ec1"
-  }
+  },
+  "validatedSourceCommit": "a007bd138bacdf01e0c31e778c35e6a9344ecacc",
+  "gitHooks": "Per-command core.hooksPath=/dev/null at checkpoint/push because WSL Bun is absent; equivalent pinned local gates and clean Linux CI pass. No persistent hook configuration change."
 }

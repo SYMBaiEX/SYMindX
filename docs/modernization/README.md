@@ -18,8 +18,13 @@ The architectural decision is to rebuild around selected components. The small s
 - `94aa5b0`: pinned supported CI toolchain and actions.
 - `f97824c`: final SDK, shared contracts, dependencies, web console and validation integration.
 - `cc94846`: remove stale references to an ignored ambient declaration, fixing clean Linux SDK CI.
+- `a007bd1`: chat/code/build agent CLI, API workspace tools and sessions, native Codex backend, secure opt-in configuration and launcher. Clean Linux compile CI passes.
 
 All source checkpoints are pushed to origin/main. The checklist records completed integration and CI follow-up. The original dirty-path inventory remains in [baseline.json](baseline.json); unrelated local `.serena/` configuration stays outside commits.
+
+## Current agent CLI evidence
+
+[The CLI guide](../v0.1/CLI.md) documents both backends and their permission/storage contracts. Frozen install, strict types (0 diagnostics), formatting, launcher syntax and bundles/declarations pass in fresh local Windows staging and [clean Linux CI](https://github.com/SYMBaiEX/SYMindX/actions/runs/37173551463). [cli-validation.json](cli-validation.json) hashes 33 current source/config inputs; SDK, website and scaffolder sources match their prior records. [The CLI checklist](CLI-CHECKLIST.md) is complete. Runtime behavior, approval interactions and live API/Codex tasks remain unverified.
 
 ## Modernization checkpoint evidence
 

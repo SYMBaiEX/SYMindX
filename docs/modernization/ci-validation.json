@@ -1,5 +1,5 @@
 {
-  "capturedAt": "2026-10-04T01:48:54.678312+00:00",
+  "capturedAt": "2026-10-04T03:17:54.029141+00:00",
   "environment": "GitHub Actions ubuntu-latest, clean checkout, pinned Bun1.4.2",
   "runs": [
     {
@@ -44,12 +44,28 @@
       "jobs": [
         "typecheck"
       ]
+    },
+    {
+      "name": "SYMindX v0.1 agent CLI",
+      "commit": "a007bd138bacdf01e0c31e778c35e6a9344ecacc",
+      "conclusion": "success",
+      "url": "https://github.com/SYMBaiEX/SYMindX/actions/runs/37173551463",
+      "checks": [
+        "frozen install without lifecycle scripts",
+        "formatting",
+        "strict types",
+        "command launcher syntax",
+        "library/CLI/declarations build"
+      ],
+      "jobs": [
+        "compile"
+      ]
     }
   ],
   "limits": [
     "Compilation/build only; no implementation behavior tests or live integrations."
   ],
-  "validatedSourceCommit": "cc9484675987c15f6236d8dabe28be57cd162759",
-  "currentSourceStatus": "all supported compile/build CI gates passed; runtime/tooling source unchanged since their successful f97824c runs",
+  "validatedSourceCommit": "a007bd138bacdf01e0c31e778c35e6a9344ecacc",
+  "currentSourceStatus": "Current agent CLI/runtime gates pass at a007bd1; SDK, website and scaffolder sources still match their previous successful records. Behavior/live backend execution remains unverified.",
   "gitHooks": "Per-command core.hooksPath=/dev/null for Git checkpoints because WSL Bun is absent; equivalent local compile/format gates and clean Linux CI passed. No persistent hook configuration was changed."
 }

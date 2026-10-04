@@ -143,10 +143,11 @@
     },
     {
       "id": "CLI-integration",
-      "state": "local-gates-passed",
+      "state": "implemented",
       "owner": "orchestrator",
       "dependsOn": [],
-      "scope": "static gates, provenance, main push and Linux CI"
+      "scope": "static gates, provenance, main push and Linux CI",
+      "note": "Final local gates, 33 input hashes, main checkpoint a007bd1 and clean Linux CI pass. No behavior/live backend checks run."
     }
   ],
   "validationRecords": [

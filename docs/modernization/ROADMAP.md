@@ -34,3 +34,12 @@ A multiuser API or remote deployment is a separate product increment. It require
 ## 5. Retire legacy breadth
 
 After a selected integration is proven in the supported core, inventory its consumers, preserve any needed history and retire the corresponding old API generation. Avoid carrying duplicate registries, contexts, result types and UI claims into the new package. The current compatibility holds in dependencies.json are migration decisions, not assurances that every legacy extension works.
+
+## Agent CLI release gates
+
+The two-backend CLI compiles and builds at `a007bd1`. Before treating it as a solid release, explicitly authorize and complete isolated behavior checks:
+
+1. Temporary workspace/API state with an injected local provider: read/search paging, existing/new file writes, stale hashes, exact character allowlists, denied effects and atomic turn commits.
+2. Fake native executable and temporary conversation state: JSON success/failure/malformed output, limits, cancellation during approval/execution, missing binary, state conflicts and no API credentials in child environment.
+3. Piped and interactive input: bounded queues, fresh approval, SIGINT/SIGTERM, slash/session/mode transitions and machine-readable output.
+4. One explicitly approved real API and native Codex task in a disposable project, across supported Windows/Linux hosts. No existing data or production integrations.
