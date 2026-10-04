@@ -11,6 +11,7 @@
     "src/context/**/*.ts",
     "src/timeline/**/*.ts",
     "src/turn/**/*.ts",
+    "src/mind/**/*.ts",
     "src/tools/**/*.ts",
     "src/permissions/**/*.ts",
     "src/character/**/*.ts",

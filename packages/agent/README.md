@@ -20,6 +20,7 @@ Public exports are `packages/agent/src/index.ts`. Modules below are directories 
 - `context` — priority assembly under a character budget.
 - `timeline` — bounded append-only facts.
 - `turn` — `composeTurn` wires one cycle.
+- `mind` — `createMind` holds that cycle: appraisal, episodes, social beliefs, the plan, and the timeline.
 - `tools` and `permissions` — a registry, plus an allow-list and write approval.
 - `provider`, `channel`, `extension`, `inbound`, `queue`, `presence` — edges around the mind.
 
@@ -31,12 +32,14 @@ Recall ranks episodes by salience, recency, and mood congruence, then keeps a sh
 
 The result is a `PreparedTurn`: next appraisal, drive, reaction, voice hint, context text, recalled episodes, intention, and an optional reflection. Nothing in that object is sent anywhere.
 
+`createMind(character, now)` is the in-memory host for one character. `hear` stores an inbound episode, notes the sender, and raises regard by 0.1. `step` runs `composeTurn` and writes the next appraisal, plan, reflection, drive, and voice hint back into the mind. When emotion is disabled, cues pass with intensity 0. Appraisal still decays toward temperament on its 30-second half-life. `say` stores the spoken episode. `request` builds one provider request from the last step. `speak` steps, generates through an injected provider, stores any text, and runs allowed read-only builtins. Writes stay refused until `useTool` is called with approval. `runBuiltin` implements `word-count`, `clock`, and `json-keys`.
+
 ## Edges
 
 `provider` is the generate boundary. `Provider.generate(request)` returns text, tool calls, and optional token usage. `createScriptedProvider` returns canned results for tests. Presets and `resolveChatCompletionsUrl` only name or build a URL string.
 
 `channel` is an in-memory local queue and mailbox. `inbound` parses a text envelope (`local`, `slack`, `telegram`, `discord`) and does not attach a remote adapter. `extension` registers a module and tracks `registered`, `started`, and `stopped`. `queue` is a bounded in-memory FIFO plus a keyed queue. `presence` is an in-memory roster of agents marked `ready` or `busy`.
 
-`tools` registers name, description, and whether a tool is read-only. `decideTool` allows a call only when the name is on the allow-list. A `write` also requires `approved: true`.
+`tools` registers name, description, and whether a tool is read-only. `decideTool` allows a call only when the name is on the allow-list. A `write` also requires `approved: true`. `runBuiltin` runs the three local tools and returns `undefined` for any other name.
 
 The host owns persistence, credentials, and transport. Character config may name an `echo` or `openai-compatible` provider and an environment variable for a key. Parsing that config does not read the environment or open a connection.

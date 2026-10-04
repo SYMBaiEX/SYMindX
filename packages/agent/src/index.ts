@@ -51,9 +51,18 @@ export { createTimeline, type Fact, type FactKind, type Timeline } from './timel
 export { composeTurn, type PreparedTurn, type TurnInput } from './turn/index.js';
 
 export {
+  createMind,
+  type Mind,
+  type MindSnapshot,
+  type MindSpeech,
+  type ToolOutcome,
+} from './mind/index.js';
+
+export {
   clockTool,
   createToolRegistry,
   jsonKeysTool,
+  runBuiltin,
   wordCountTool,
   type ToolDefinition,
   type ToolRegistry,

@@ -21,7 +21,7 @@ The CLI starts from [apps/cli](apps/cli) against `@symindx/agent`.
 
 ## Supported surface
 
-- `@symindx/agent` is an in-process mind: character parsing, appraisal, episodic memory, a bounded plan, social regard and trust, drives, voice guidance, and `composeTurn`.
+- `@symindx/agent` is an in-process mind. `createMind` keeps appraisal, episodes, regard, the plan, and a timeline, and `composeTurn` prepares each cycle.
 - Emotion values are software state for behavior and wording.
 - The provider edge is a scripted generator or an OpenAI-compatible URL check. The package does not open the network.
 - The terminal is [apps/cli](apps/cli). The website is [apps/website](apps/website).
