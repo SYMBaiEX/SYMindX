@@ -18,8 +18,5 @@
     "category": "memory",
     "displayName": "Memory System",
     "description": "Pluggable memory storage system with multiple provider options"
-  },
-  "peerDependencies": {
-    "@symindx/types": "workspace:*"
   }
 }

@@ -1,476 +1,488 @@
-import { useState, useEffect, useCallback } from 'react'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Switch } from '@/components/ui/switch'
-import { Badge } from '@/components/ui/badge'
-import { Brain, Activity, MessageSquare, Settings, AlertCircle, CheckCircle } from 'lucide-react'
-import ThoughtStream from '@/components/ThoughtStream'
-import EmotionGraph from '@/components/EmotionGraph'
-import { AgentControls } from '@/components/AgentControls'
-import StreamCanvas from '@/components/StreamCanvas'
-import { McpServerManager } from '@/components/McpServerManager'
-import { Chat } from '@/components/Chat'
-import { CoordinationDashboard } from '@/components/CoordinationDashboard'
-import { StreamingDashboard } from '@/components/StreamingDashboard'
-import { DynamicToolsDashboard } from '@/components/DynamicToolsDashboard'
-import { AgentBuilder } from '@/components/AgentBuilder'
-import { TestingDashboard } from '@/components/TestingDashboard'
-import { DeploymentConsole } from '@/components/DeploymentConsole'
-import { AnalyticsPlatform } from '@/components/AnalyticsPlatform'
+import { useEffect, useRef, useState, type FormEvent } from 'react';
+import {
+  apiRequest,
+  checkRuntime,
+  decodeAgents,
+  decodeHistory,
+  decodeTurnMessage,
+  type AgentSummary,
+  type ConversationMessage,
+} from './lib/operator-api';
 
-interface Agent {
-  id: string
-  name: string
-  status: 'active' | 'idle' | 'thinking' | 'paused' | 'error'
-  emotion: string
-  lastThought: string
-  extensions: string[]
-  mcpServers?: string[]
-  capabilities?: string[]
-  ethicsEnabled?: boolean
-  metrics?: {
-    tasksCompleted: number
-    uptime: number
-    memoryUsage: number
-  }
-}
-
-interface WebSocketMessage {
-  type: string
-  data: any
-  timestamp?: string
-}
+const conversationPattern = /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/;
 
 function App() {
-  const [agents, setAgents] = useState<Agent[]>([])
-  const [selectedAgent, setSelectedAgent] = useState<string>('')
-  const [wsConnected, setWsConnected] = useState(false)
-  const [apiConnected, setApiConnected] = useState(false)
-  const [wsInstance, setWsInstance] = useState<WebSocket | null>(null)
-  const [connectionError, setConnectionError] = useState<string>('')
+  const [tokenInput, setTokenInput] = useState('');
+  const [token, setToken] = useState<string | null>(null);
+  const [agents, setAgents] = useState<AgentSummary[]>([]);
+  const [selectedAgent, setSelectedAgent] = useState<string>('');
+  const [conversationId, setConversationId] = useState('default');
+  const [messages, setMessages] = useState<ConversationMessage[]>([]);
+  const [draft, setDraft] = useState('');
+  const [working, setWorking] = useState(false);
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
 
-  // Fetch agents from API
-  const fetchAgents = useCallback(async () => {
-    try {
-      const response = await fetch('http://localhost:3001/api/agents')
-      if (response.ok) {
-        const data = await response.json()
-        if (data.agents && data.agents.length > 0) {
-          const mappedAgents: Agent[] = data.agents.map((agent: any) => ({
-            id: agent.id,
-            name: agent.name,
-            status: agent.status || 'idle',
-            emotion: agent.emotion || 'neutral',
-            lastThought: agent.lastUpdate ? `Last active: ${new Date(agent.lastUpdate).toLocaleTimeString()}` : 'No recent activity',
-            extensions: agent.extensions || [],
-            mcpServers: agent.mcpServers || [],
-            capabilities: agent.capabilities || [],
-            ethicsEnabled: agent.ethicsEnabled,
-            metrics: {
-              tasksCompleted: 0,
-              uptime: Date.now() - new Date(agent.lastUpdate || Date.now()).getTime(),
-              memoryUsage: 0
-            }
-          }))
-          
-          setAgents(mappedAgents)
-          setApiConnected(true)
-          setConnectionError('')
-          
-          // Auto-select first agent if none selected
-          if (!selectedAgent && mappedAgents.length > 0) {
-            setSelectedAgent(mappedAgents[0].id)
-          }
-        }
-      } else {
-        setApiConnected(false)
-        setConnectionError('Failed to fetch agents')
-      }
-    } catch (error) {
-      console.error('Failed to fetch agents:', error)
-      setApiConnected(false)
-      setConnectionError('Cannot connect to API server. Ensure the runtime is running.')
-    }
-  }, [selectedAgent])
+  const selected = agents.find((agent) => agent.id === selectedAgent);
+  const validConversation = conversationPattern.test(conversationId);
 
-  // Initial fetch and polling
+  const requestEpoch = useRef(0);
+  const requestControllers = useRef(new Set<AbortController>());
+  const mounted = useRef(true);
+
   useEffect(() => {
-    fetchAgents()
-    const interval = setInterval(fetchAgents, 3000) // Poll every 3 seconds
-    return () => clearInterval(interval)
-  }, [fetchAgents])
-
-  // WebSocket connection management
-  useEffect(() => {
-    let reconnectTimeout: NodeJS.Timeout
-    let ws: WebSocket | null = null
-
-    const connectWebSocket = () => {
-      try {
-        ws = new WebSocket('ws://localhost:3001/ws')
-        
-        ws.onopen = () => {
-          setWsConnected(true)
-          setWsInstance(ws)
-          console.log('Connected to SYMindX WebSocket')
-          
-          // Subscribe to agent updates
-          if (ws?.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({
-              type: 'subscribe',
-              data: { events: ['agent_update', 'emotion_change', 'thought_update'] }
-            }))
-          }
-        }
-        
-        ws.onmessage = (event) => {
-          try {
-            const message: WebSocketMessage = JSON.parse(event.data)
-            console.log('WebSocket message:', message)
-            
-            switch (message.type) {
-              case 'agent_update':
-                setAgents(prev => prev.map(agent => 
-                  agent.id === message.data.id ? {
-                    ...agent,
-                    status: message.data.status || agent.status,
-                    emotion: message.data.emotion || agent.emotion,
-                    lastThought: message.data.thought || agent.lastThought,
-                    metrics: {
-                      ...agent.metrics,
-                      uptime: message.data.uptime || agent.metrics?.uptime || 0,
-                      memoryUsage: message.data.memoryUsage || agent.metrics?.memoryUsage || 0,
-                      tasksCompleted: message.data.tasksCompleted || agent.metrics?.tasksCompleted || 0
-                    }
-                  } : agent
-                ))
-                break
-                
-              case 'emotion_change':
-                setAgents(prev => prev.map(agent => 
-                  agent.id === message.data.agentId ? {
-                    ...agent,
-                    emotion: message.data.emotion
-                  } : agent
-                ))
-                break
-                
-              case 'thought_update':
-                setAgents(prev => prev.map(agent => 
-                  agent.id === message.data.agentId ? {
-                    ...agent,
-                    lastThought: message.data.thought
-                  } : agent
-                ))
-                break
-                
-              case 'connection_established':
-                console.log('WebSocket connection established')
-                break
-                
-              default:
-                console.log('Unknown message type:', message.type)
-            }
-          } catch (error) {
-            console.error('Failed to parse WebSocket message:', error)
-          }
-        }
-        
-        ws.onclose = () => {
-          setWsConnected(false)
-          setWsInstance(null)
-          console.log('Disconnected from SYMindX WebSocket')
-          
-          // Attempt to reconnect after 3 seconds
-          reconnectTimeout = setTimeout(connectWebSocket, 3000)
-        }
-        
-        ws.onerror = (error) => {
-          console.error('WebSocket error:', error)
-          setWsConnected(false)
-        }
-      } catch (error) {
-        console.error('Failed to create WebSocket connection:', error)
-        setWsConnected(false)
-      }
-    }
-
-    connectWebSocket()
-
+    mounted.current = true;
     return () => {
-      clearTimeout(reconnectTimeout)
-      if (ws?.readyState === WebSocket.OPEN) {
-        ws.close()
-      }
-    }
-  }, [])
+      mounted.current = false;
+      requestEpoch.current += 1;
+      for (const controller of requestControllers.current) controller.abort();
+      requestControllers.current.clear();
+    };
+  }, []);
 
-  const toggleAgent = async (agentId: string, active: boolean) => {
+  function cancelScopedRequests() {
+    requestEpoch.current += 1;
+    for (const controller of requestControllers.current) controller.abort();
+    requestControllers.current.clear();
+    setWorking(false);
+  }
+
+  function beginRequest() {
+    const epoch = requestEpoch.current;
+    const controller = new AbortController();
+    requestControllers.current.add(controller);
+    setWorking(true);
+    return {
+      controller,
+      isCurrent: () => mounted.current && requestEpoch.current === epoch,
+      finish: () => {
+        requestControllers.current.delete(controller);
+        if (mounted.current && requestEpoch.current === epoch) setWorking(false);
+      },
+    };
+  }
+
+  async function connect(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const candidate = tokenInput.trim();
+    if (
+      new TextEncoder().encode(candidate).byteLength < 32 ||
+      [...candidate].some((character) => character.trim() === '')
+    ) {
+      setError('Enter the runtime bearer token (at least 32 non-whitespace bytes).');
+      return;
+    }
+    cancelScopedRequests();
+    const request = beginRequest();
+    setError('');
+    setNotice('');
     try {
-      const response = await fetch(`http://localhost:3001/api/agent/${agentId}/toggle`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ active })
-      })
-      
-      if (response.ok) {
-        setAgents(prev => prev.map(agent => 
-          agent.id === agentId 
-            ? { ...agent, status: active ? 'active' : 'idle' }
-            : agent
-        ))
-      }
-    } catch (error) {
-      console.error('Failed to toggle agent:', error)
+      await checkRuntime(request.controller.signal);
+      const list = decodeAgents(
+        await apiRequest(candidate, '/agents', {}, request.controller.signal),
+      );
+      if (!request.isCurrent()) return;
+      setToken(candidate);
+      setTokenInput('');
+      setAgents(list);
+      setSelectedAgent('');
+      setMessages([]);
+      setNotice('Connected to the local runtime. Choose an agent and load a conversation.');
+    } catch (cause) {
+      if (!request.isCurrent()) return;
+      setToken(null);
+      setAgents([]);
+      setSelectedAgent('');
+      setMessages([]);
+      setError(cause instanceof Error ? cause.message : 'Could not connect to the runtime.');
+    } finally {
+      request.finish();
     }
   }
 
-  const currentAgent = agents.find(a => a.id === selectedAgent)
+  function disconnect() {
+    cancelScopedRequests();
+    setToken(null);
+    setTokenInput('');
+    setAgents([]);
+    setSelectedAgent('');
+    setMessages([]);
+    setDraft('');
+    setError('');
+    setNotice('Disconnected. The bearer token was cleared from this page.');
+  }
+
+  async function refreshAgents() {
+    if (!token) return;
+    const requestToken = token;
+    const request = beginRequest();
+    setError('');
+    setNotice('');
+    try {
+      const list = decodeAgents(
+        await apiRequest(requestToken, '/agents', {}, request.controller.signal),
+      );
+      if (!request.isCurrent()) return;
+      setAgents(list);
+      if (!list.some((agent) => agent.id === selectedAgent)) {
+        setSelectedAgent('');
+        setMessages([]);
+      }
+      setNotice('Loaded ' + list.length + ' agent' + (list.length === 1 ? '' : 's') + '.');
+    } catch (cause) {
+      if (!request.isCurrent()) return;
+      setError(cause instanceof Error ? cause.message : 'Could not refresh agents.');
+    } finally {
+      request.finish();
+    }
+  }
+
+  async function loadHistory() {
+    if (!token || !selectedAgent || !validConversation) return;
+    const requestToken = token;
+    const requestAgent = selectedAgent;
+    const requestConversation = conversationId;
+    const request = beginRequest();
+    setError('');
+    setNotice('');
+    try {
+      const query = new URLSearchParams({ conversationId: requestConversation, limit: '100' });
+      const history = decodeHistory(
+        await apiRequest(
+          requestToken,
+          '/agents/' + encodeURIComponent(requestAgent) + '/history?' + query.toString(),
+          {},
+          request.controller.signal,
+        ),
+      );
+      if (
+        history.some(
+          (message) =>
+            message.agentId !== requestAgent || message.conversationId !== requestConversation,
+        )
+      ) {
+        throw new Error('The API returned history outside the selected scope.');
+      }
+      if (!request.isCurrent()) return;
+      setMessages(history);
+      setNotice(
+        'Loaded ' +
+          history.length +
+          ' messages for ' +
+          requestAgent +
+          '/' +
+          requestConversation +
+          '.',
+      );
+    } catch (cause) {
+      if (!request.isCurrent()) return;
+      setError(cause instanceof Error ? cause.message : 'Could not load conversation history.');
+    } finally {
+      request.finish();
+    }
+  }
+
+  async function sendMessage(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const text = draft.trim();
+    if (!token || !selectedAgent || !validConversation || !text || working) return;
+    const requestToken = token;
+    const requestAgent = selectedAgent;
+    const requestConversation = conversationId;
+    const request = beginRequest();
+    setError('');
+    setNotice('');
+    try {
+      const response = await apiRequest(
+        requestToken,
+        '/agents/' + encodeURIComponent(requestAgent) + '/chat',
+        {
+          method: 'POST',
+          body: JSON.stringify({ text, conversationId: requestConversation }),
+        },
+        request.controller.signal,
+      );
+      const assistant = decodeTurnMessage(response, requestAgent, requestConversation);
+      if (!request.isCurrent()) return;
+      const userMessage: ConversationMessage = {
+        id: 'local-' + crypto.randomUUID(),
+        agentId: requestAgent,
+        conversationId: requestConversation,
+        role: 'user',
+        content: text,
+        createdAt: Date.now(),
+      };
+      setMessages((current) => [...current, userMessage, assistant]);
+      setDraft('');
+      setNotice('Turn completed and saved by the runtime.');
+    } catch (cause) {
+      if (!request.isCurrent()) return;
+      setError(cause instanceof Error ? cause.message : 'The message could not be sent.');
+    } finally {
+      request.finish();
+    }
+  }
+
+  function chooseAgent(agentId: string) {
+    cancelScopedRequests();
+    setSelectedAgent(agentId);
+    setMessages([]);
+    setError('');
+    setNotice('Agent selected. Load its conversation when you are ready.');
+  }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <img src="/assets/images/logos/symindx-logo.png" alt="SYMindX Logo" className="h-8 w-8" />
-            <h1 className="text-3xl font-bold text-gray-900">SYMindX</h1>
-            <Badge variant={apiConnected ? "default" : "destructive"}>
-              API: {apiConnected ? "Connected" : "Disconnected"}
-            </Badge>
-            <Badge variant={wsConnected ? "default" : "destructive"}>
-              WS: {wsConnected ? "Connected" : "Disconnected"}
-            </Badge>
-          </div>
-          {connectionError && (
-            <div className="flex items-center gap-2 text-destructive">
-              <AlertCircle className="h-4 w-4" />
-              <span className="text-sm">{connectionError}</span>
-            </div>
-          )}
+    <main className="shell">
+      <header className="topbar">
+        <div className="brand-mark" aria-hidden="true">
+          S
         </div>
+        <div className="brand-copy">
+          <p className="eyebrow">SYMindX · v0.1</p>
+          <h1>Local operator console</h1>
+        </div>
+        <div className="topbar-status">
+          <span className={`status-dot ${token ? 'is-ready' : ''}`} aria-hidden="true" />
+          <span>{token ? 'Runtime connected' : 'Not connected'}</span>
+        </div>
+      </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Agent Controls Sidebar */}
-          <div className="lg:col-span-1">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Settings className="h-5 w-5" />
-                  <span>Agents</span>
-                </CardTitle>
-                <CardDescription>
-                  Manage active AI agents
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {agents.length === 0 ? (
-                  <div className="text-center text-muted-foreground py-8">
-                    <img src="/assets/images/logos/symindx.png" alt="SYMindX" className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                    <p>No agents connected</p>
-                    <p className="text-sm mt-2">Start the SYMindX runtime:</p>
-                    <code className="text-xs bg-muted px-2 py-1 rounded">cd mind-agents && npm run start</code>
-                  </div>
-                ) : (
-                  agents.map(agent => (
-                    <div key={agent.id} className="space-y-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
-                      <div className="flex items-center justify-between">
-                        <button
-                          onClick={() => setSelectedAgent(agent.id)}
-                          className={`text-left font-medium ${
-                            selectedAgent === agent.id 
-                              ? 'text-primary' 
-                              : 'text-foreground hover:text-primary'
-                          }`}
-                        >
-                          {agent.name}
-                        </button>
-                        <Switch
-                          checked={agent.status === 'active' || agent.status === 'thinking'}
-                          onCheckedChange={(checked) => toggleAgent(agent.id, checked)}
-                          disabled={agent.status === 'error'}
-                        />
-                      </div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Badge variant={
-                          agent.status === 'active' ? 'default' : 
-                          agent.status === 'thinking' ? 'secondary' :
-                          agent.status === 'error' ? 'destructive' : 'outline'
-                        }>
-                          {agent.status}
-                        </Badge>
-                        <Badge variant="outline">{agent.emotion}</Badge>
-                        {agent.ethicsEnabled === false && (
-                          <Badge variant="destructive" className="text-xs">
-                            No Ethics
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {agent.lastThought}
-                      </p>
-                      {agent.extensions.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {agent.extensions.map(ext => (
-                            <Badge key={ext} variant="secondary" className="text-xs">
-                              {ext}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))
-                )}
-              </CardContent>
-            </Card>
+      <section className="connection-panel" aria-labelledby="connection-title">
+        <div className="connection-copy">
+          <p className="eyebrow">Private local session</p>
+          <h2 id="connection-title">Connect to your runtime</h2>
+          <p>
+            The bearer token stays in this page’s memory and is cleared when you disconnect or
+            reload. API calls use the same-origin development proxy.
+          </p>
+        </div>
+        {token ? (
+          <div className="connection-actions">
+            <button
+              className="button button-secondary"
+              type="button"
+              onClick={refreshAgents}
+              disabled={working}
+            >
+              Refresh agents
+            </button>
+            <button className="button button-quiet" type="button" onClick={disconnect}>
+              Disconnect
+            </button>
+          </div>
+        ) : (
+          <form className="connect-form" onSubmit={connect}>
+            <label className="sr-only" htmlFor="api-token">
+              Runtime bearer token
+            </label>
+            <input
+              id="api-token"
+              type="password"
+              autoComplete="off"
+              spellCheck={false}
+              placeholder="Paste local runtime token"
+              value={tokenInput}
+              onChange={(event) => setTokenInput(event.target.value)}
+              disabled={working}
+            />
+            <button className="button button-primary" type="submit" disabled={working}>
+              {working ? 'Connecting…' : 'Connect'}
+            </button>
+            {working && (
+              <button
+                className="button button-quiet"
+                type="button"
+                onClick={() => {
+                  cancelScopedRequests();
+                  setNotice('Connection cancelled.');
+                }}
+              >
+                Cancel connection
+              </button>
+            )}
+          </form>
+        )}
+      </section>
+
+      {(error || notice) && (
+        <div
+          className={`feedback ${error ? 'feedback-error' : ''}`}
+          role={error ? 'alert' : 'status'}
+        >
+          {error || notice}
+        </div>
+      )}
+
+      <div className="workspace-grid">
+        <aside className="panel agent-panel" aria-labelledby="agents-title">
+          <div className="panel-heading">
+            <div>
+              <p className="eyebrow">Runtime inventory</p>
+              <h2 id="agents-title">
+                Agents <span className="count-pill">{agents.length}</span>
+              </h2>
+            </div>
+          </div>
+          {!token ? (
+            <div className="empty-state">
+              <span className="empty-icon" aria-hidden="true">
+                ⌁
+              </span>
+              <p>Connect to load agents.</p>
+              <span>The list is requested only after you connect.</span>
+            </div>
+          ) : agents.length === 0 ? (
+            <div className="empty-state">
+              <span className="empty-icon" aria-hidden="true">
+                ○
+              </span>
+              <p>No agents are registered.</p>
+              <span>Register a character with the runtime, then refresh this list.</span>
+            </div>
+          ) : (
+            <ul className="agent-list">
+              {agents.map((agent) => (
+                <li key={agent.id}>
+                  <button
+                    className={`agent-option ${agent.id === selectedAgent ? 'agent-option-selected' : ''}`}
+                    type="button"
+                    onClick={() => chooseAgent(agent.id)}
+                    aria-pressed={agent.id === selectedAgent}
+                  >
+                    <span className="agent-option-top">
+                      <span className="agent-name">{agent.name}</span>
+                      <span
+                        className={`agent-state ${agent.status === 'busy' ? 'state-busy' : ''}`}
+                      >
+                        {agent.status}
+                      </span>
+                    </span>
+                    <span className="agent-meta">
+                      {agent.id} · {agent.provider}
+                    </span>
+                    <span className="emotion-meter">
+                      <span>Valence</span>
+                      <strong>{agent.emotion.valence.toFixed(2)}</strong>
+                      <span className="meter-track">
+                        <span style={{ width: `${((agent.emotion.valence + 1) / 2) * 100}%` }} />
+                      </span>
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </aside>
+
+        <section className="panel conversation-panel" aria-labelledby="conversation-title">
+          <div className="conversation-heading">
+            <div>
+              <p className="eyebrow">Scoped history and chat</p>
+              <h2 id="conversation-title">{selected?.name ?? 'Choose an agent'}</h2>
+              <p className="muted-copy">
+                {selected
+                  ? `Conversation ${conversationId}`
+                  : 'Select an agent to view its saved conversation.'}
+              </p>
+            </div>
+            <form
+              className="scope-form"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void loadHistory();
+              }}
+            >
+              <label htmlFor="conversation-id">Conversation ID</label>
+              <div className="scope-controls">
+                <input
+                  id="conversation-id"
+                  value={conversationId}
+                  maxLength={64}
+                  pattern="[A-Za-z0-9][A-Za-z0-9_-]{0,63}"
+                  onChange={(event) => {
+                    cancelScopedRequests();
+                    setConversationId(event.target.value);
+                    setMessages([]);
+                  }}
+                />
+                <button
+                  className="button button-secondary"
+                  type="submit"
+                  disabled={!token || !selected || !validConversation || working}
+                >
+                  Load history
+                </button>
+              </div>
+            </form>
           </div>
 
-          {/* Main Dashboard */}
-          <div className="lg:col-span-3">
-            {agents.length === 0 ? (
-              <Card className="h-full flex items-center justify-center">
-                <CardContent className="text-center py-16">
-                  <img src="/assets/images/logos/symindx.png" alt="SYMindX" className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                  <h2 className="text-2xl font-semibold mb-2">No Agents Running</h2>
-                  <p className="text-muted-foreground mb-4">
-                    Start the SYMindX runtime to begin monitoring your AI agents
-                  </p>
-                  <div className="bg-muted rounded-lg p-4 max-w-md mx-auto">
-                    <p className="text-sm font-medium mb-2">Quick Start:</p>
-                    <code className="text-xs block mb-2">cd mind-agents</code>
-                    <code className="text-xs block">npm run start</code>
-                  </div>
-                </CardContent>
-              </Card>
+          <div className="message-list" aria-live="polite" aria-label="Conversation messages">
+            {!selected ? (
+              <div className="empty-state conversation-empty">
+                <span className="empty-icon" aria-hidden="true">
+                  ↳
+                </span>
+                <p>No agent selected.</p>
+                <span>Choose one from the inventory, then load history or send a message.</span>
+              </div>
+            ) : messages.length === 0 ? (
+              <div className="empty-state conversation-empty">
+                <span className="empty-icon" aria-hidden="true">
+                  ◇
+                </span>
+                <p>No messages loaded.</p>
+                <span>History loads only after you select “Load history.”</span>
+              </div>
             ) : (
-              <Tabs defaultValue="chat" className="space-y-6">
-                <TabsList className="grid w-full grid-cols-6">
-                  <TabsTrigger value="chat">
-                    <MessageSquare className="h-4 w-4 mr-2" />
-                    Chat
-                  </TabsTrigger>
-                  <TabsTrigger value="thoughts">Thoughts</TabsTrigger>
-                  <TabsTrigger value="emotions">
-                    <Activity className="h-4 w-4 mr-2" />
-                    Emotions
-                  </TabsTrigger>
-                  <TabsTrigger value="controls">Controls</TabsTrigger>
-                  <TabsTrigger value="mcp">MCP</TabsTrigger>
-                  <TabsTrigger value="advanced">Advanced</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="chat" className="space-y-6">
-                  <Chat 
-                    agents={agents} 
-                    selectedAgent={selectedAgent} 
-                    onAgentSelect={setSelectedAgent} 
-                  />
-                </TabsContent>
-
-                <TabsContent value="thoughts" className="space-y-6">
-                  <ThoughtStream agentId={selectedAgent} wsInstance={wsInstance} />
-                </TabsContent>
-
-                <TabsContent value="emotions" className="space-y-6">
-                  <EmotionGraph agentId={selectedAgent} />
-                </TabsContent>
-
-                <TabsContent value="controls" className="space-y-6">
-                  <AgentControls activeAgent={selectedAgent} />
-                  {currentAgent && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <Card>
-                        <CardHeader>
-                          <CardTitle>Agent Details</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-2">
-                          <div className="flex justify-between">
-                            <span className="text-sm text-muted-foreground">ID:</span>
-                            <span className="text-sm font-mono">{currentAgent.id}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-muted-foreground">Ethics:</span>
-                            <span className="text-sm">
-                              {currentAgent.ethicsEnabled === false ? (
-                                <Badge variant="destructive">Disabled</Badge>
-                              ) : (
-                                <Badge variant="default">Enabled</Badge>
-                              )}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-muted-foreground">Extensions:</span>
-                            <span className="text-sm">{currentAgent.extensions.length}</span>
-                          </div>
-                        </CardContent>
-                      </Card>
-                      
-                      <Card>
-                        <CardHeader>
-                          <CardTitle>Performance</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-2">
-                          <div className="flex justify-between">
-                            <span className="text-sm text-muted-foreground">Uptime:</span>
-                            <span className="text-sm">
-                              {Math.floor((currentAgent.metrics?.uptime || 0) / 1000 / 60)}m
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-muted-foreground">Memory:</span>
-                            <span className="text-sm">{currentAgent.metrics?.memoryUsage || 0}%</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-muted-foreground">Tasks:</span>
-                            <span className="text-sm">{currentAgent.metrics?.tasksCompleted || 0}</span>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  )}
-                </TabsContent>
-
-                <TabsContent value="mcp" className="space-y-6">
-                  <McpServerManager selectedAgent={selectedAgent} />
-                </TabsContent>
-
-                <TabsContent value="advanced" className="space-y-6">
-                  <Tabs defaultValue="coordination" className="space-y-4">
-                    <TabsList className="grid w-full grid-cols-5">
-                      <TabsTrigger value="coordination">Coordination</TabsTrigger>
-                      <TabsTrigger value="streaming">Streaming</TabsTrigger>
-                      <TabsTrigger value="tools">Tools</TabsTrigger>
-                      <TabsTrigger value="builder">Builder</TabsTrigger>
-                      <TabsTrigger value="analytics">Analytics</TabsTrigger>
-                    </TabsList>
-                    
-                    <TabsContent value="coordination">
-                      <CoordinationDashboard selectedAgent={selectedAgent} />
-                    </TabsContent>
-                    
-                    <TabsContent value="streaming">
-                      <StreamingDashboard selectedAgent={selectedAgent} />
-                    </TabsContent>
-                    
-                    <TabsContent value="tools">
-                      <DynamicToolsDashboard selectedAgent={selectedAgent} />
-                    </TabsContent>
-                    
-                    <TabsContent value="builder">
-                      <AgentBuilder />
-                    </TabsContent>
-                    
-                    <TabsContent value="analytics">
-                      <AnalyticsPlatform selectedAgent={selectedAgent} />
-                    </TabsContent>
-                  </Tabs>
-                </TabsContent>
-              </Tabs>
+              messages.map((message) => (
+                <article className={`message message-${message.role}`} key={message.id}>
+                  <div className="message-label">
+                    <span>
+                      {message.role === 'tool'
+                        ? `Tool result · ${message.toolCallId}`
+                        : message.role}
+                    </span>
+                    <time dateTime={new Date(message.createdAt).toISOString()}>
+                      {new Date(message.createdAt).toLocaleString()}
+                    </time>
+                  </div>
+                  <p>{message.content}</p>
+                </article>
+              ))
             )}
           </div>
-        </div>
+
+          <form className="composer" onSubmit={sendMessage}>
+            <label htmlFor="message-input">Send a message</label>
+            <textarea
+              id="message-input"
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              placeholder={selected ? `Message ${selected.name}…` : 'Select an agent first'}
+              maxLength={16_000}
+              rows={3}
+              disabled={!token || !selected || working}
+            />
+            <div className="composer-footer">
+              <span>Messages are sent only when you press Send.</span>
+              <button
+                className="button button-primary"
+                type="submit"
+                disabled={!token || !selected || !draft.trim() || !validConversation || working}
+              >
+                {working ? 'Working…' : 'Send message'}
+              </button>
+            </div>
+          </form>
+        </section>
       </div>
-    </div>
-  )
+
+      <footer className="footer-note">
+        <span>Local development console</span>
+        <span>Runtime API is loopback-only; production static output has no API ingress.</span>
+      </footer>
+    </main>
+  );
 }
 
-export default App
+export default App;

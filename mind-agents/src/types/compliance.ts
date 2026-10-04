@@ -4,6 +4,8 @@
  * Core types for GDPR, HIPAA, and SOX compliance implementations
  */
 
+import type { ValidationResult } from './helpers';
+
 // Common Compliance Types
 export interface ComplianceConfig {
   gdpr?: GDPRConfig;
@@ -244,13 +246,7 @@ export interface HIPAAAuditLog {
   userId: string;
   patientId?: string;
   action:
-    | 'create'
-    | 'read'
-    | 'update'
-    | 'delete'
-    | 'print'
-    | 'export'
-    | 'transmit';
+    'create' | 'read' | 'update' | 'delete' | 'print' | 'export' | 'transmit';
   resource: string;
   resourceId: string;
   phi?: PHIClassification;
@@ -321,11 +317,7 @@ export interface BreachIncident {
   affectedRecords: number;
   dataTypes: string[];
   cause:
-    | 'theft'
-    | 'loss'
-    | 'unauthorized_access'
-    | 'improper_disposal'
-    | 'other';
+    'theft' | 'loss' | 'unauthorized_access' | 'improper_disposal' | 'other';
   description: string;
   containmentActions: string[];
   notificationsSent: boolean;
@@ -406,19 +398,11 @@ export interface SOXControl {
     | 'data_integrity'
     | 'monitoring';
   frequency:
-    | 'real_time'
-    | 'daily'
-    | 'weekly'
-    | 'monthly'
-    | 'quarterly'
-    | 'annual';
+    'real_time' | 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'annual';
   owner: string;
   lastTested?: Date;
   effectiveness:
-    | 'effective'
-    | 'partially_effective'
-    | 'ineffective'
-    | 'not_tested';
+    'effective' | 'partially_effective' | 'ineffective' | 'not_tested';
 }
 
 export interface FinancialDataTag {

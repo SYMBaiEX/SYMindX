@@ -1,27 +1,11 @@
-# Development Dockerfile for SYMindX Website
-FROM oven/bun:1.1.38-alpine
-
-# Install system dependencies
-RUN apk add --no-cache curl ca-certificates
-
-# Set working directory
+# Local web development container. It intentionally binds to container loopback.
+FROM oven/bun:1.4.2-alpine
 WORKDIR /app
-
-# Copy package files
-COPY package.json bun.lock* ./
-
-# Install all dependencies
-RUN bun install --frozen-lockfile
-
-# Copy source code
-COPY . .
-
-# Expose port
-EXPOSE 3000
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
-    CMD curl -f http://localhost:3000 || exit 1
-
-# Start development server
-CMD ["bun", "dev", "--host", "0.0.0.0"]
+COPY website/package.json website/bun.lock ./website/
+WORKDIR /app/website
+RUN bun --no-env-file install --frozen-lockfile --ignore-scripts
+COPY website/ ./
+WORKDIR /app
+COPY packages/runtime/src/types.ts ./packages/runtime/src/types.ts
+WORKDIR /app/website
+CMD ["bun", "--no-env-file", "run", "dev", "--host", "127.0.0.1"]

@@ -84,7 +84,7 @@ export interface EventProcessingResult {
     processingTime: number;
     actionsTriggered: string[];
     stateChanges?: GenericData;
-    [key: string]: BaseConfig[string];
+    [key: string]: BaseConfig[string] | GenericData;
   };
 }
 
@@ -159,7 +159,7 @@ export interface ConfigurationResult {
   metadata?: {
     source: 'file' | 'environment' | 'runtime' | 'default';
     validation: ValidationResult;
-    [key: string]: BaseConfig[string];
+    [key: string]: BaseConfig[string] | ValidationResult;
   };
 }
 
@@ -203,7 +203,7 @@ export interface AsyncOperationResult<T = GenericData> {
     startTime: Date;
     endTime?: Date;
     checkpoints?: string[];
-    [key: string]: BaseConfig[string];
+    [key: string]: BaseConfig[string] | Date;
   };
 }
 
@@ -294,7 +294,7 @@ export interface HealthCheckResult {
   metadata?: {
     checkType: 'basic' | 'detailed' | 'comprehensive';
     dependencies?: HealthCheckResult[];
-    [key: string]: BaseConfig[string];
+    [key: string]: BaseConfig[string] | HealthCheckResult[];
   };
 }
 
@@ -848,23 +848,23 @@ export type { ModuleManifest } from './index';
 /**
  * Validation Result Types
  */
-export interface ValidationResult {
+export interface ValidationOperationResult {
   success: boolean;
   valid?: boolean; // For compatibility
-  errors: ValidationError[];
-  warnings: ValidationWarning[];
+  errors: ValidationOperationError[];
+  warnings: ValidationOperationWarning[];
   timestamp: Date;
   metadata?: Metadata;
 }
 
-export interface ValidationError {
+export interface ValidationOperationError {
   field: string;
   message: string;
   code: string;
   severity: 'error' | 'warning' | 'info';
 }
 
-export interface ValidationWarning {
+export interface ValidationOperationWarning {
   field: string;
   message: string;
   code: string;

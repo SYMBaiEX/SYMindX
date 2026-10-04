@@ -77,7 +77,6 @@
     "assumeChangesOnlyAffectDirectDependencies": false,
     
     // Path Mapping
-    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
     },

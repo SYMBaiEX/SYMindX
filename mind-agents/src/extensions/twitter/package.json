@@ -13,7 +13,12 @@
   "dependencies": {
     "twitter-api-v2": "^1.15.0"
   },
-  "keywords": ["symindx", "twitter", "autonomous", "social-media"],
+  "keywords": [
+    "symindx",
+    "twitter",
+    "autonomous",
+    "social-media"
+  ],
   "author": "SYMindX Team",
   "license": "MIT"
 }

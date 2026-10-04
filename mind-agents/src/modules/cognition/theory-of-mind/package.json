@@ -22,8 +22,5 @@
       ],
       "category": "specialized"
     }
-  },
-  "peerDependencies": {
-    "@symindx/types": "workspace:*"
   }
 }

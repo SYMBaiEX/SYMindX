@@ -4,8 +4,8 @@
  * Provides standardized streaming logic for all portal implementations
  */
 
-import { streamText, generateText } from 'ai';
-import type { LanguageModel } from '../../types/portals/ai-sdk';
+import { streamText, generateText, isStepCount } from 'ai';
+import type { LanguageModel } from 'ai';
 
 export interface StreamOptions {
   /**
@@ -72,11 +72,11 @@ export async function* createChatStream(
 
     // Add tool streaming configuration
     if (options.enableToolStreaming && params.tools) {
-      streamParams.toolCallStreaming = true;
-      streamParams.maxSteps = options.maxSteps || 5;
+
+      streamParams.stopWhen = isStepCount(options.maxSteps || 5);
 
       if (options.callbacks?.onStepFinish) {
-        streamParams.onStepFinish = options.callbacks.onStepFinish;
+        streamParams.onStepEnd = ({ text, toolCalls, toolResults, finishReason, usage }: any) => options.callbacks!.onStepFinish!({ text, toolCalls, toolResults, finishReason, usage });
       }
     }
 
@@ -106,20 +106,20 @@ export async function* createFullAccessStream(
 
     // Configure tool streaming if enabled
     if (options.enableToolStreaming && params.tools) {
-      streamParams.toolCallStreaming = true;
-      streamParams.maxSteps = options.maxSteps || 5;
+
+      streamParams.stopWhen = isStepCount(options.maxSteps || 5);
 
       if (options.callbacks?.onStepFinish) {
-        streamParams.onStepFinish = options.callbacks.onStepFinish;
+        streamParams.onStepEnd = ({ text, toolCalls, toolResults, finishReason, usage }: any) => options.callbacks!.onStepFinish!({ text, toolCalls, toolResults, finishReason, usage });
       }
     }
 
     const result = await streamText(streamParams);
 
     // Stream all events from the full stream
-    for await (const part of result.fullStream) {
+    for await (const part of result.stream) {
       switch (part.type) {
-        case 'text':
+        case 'text-delta':
           yield { type: 'text', content: part.text };
           break;
 
@@ -132,7 +132,7 @@ export async function* createFullAccessStream(
 
         case 'tool-result':
           if (options.callbacks?.onToolCallFinish) {
-            options.callbacks.onToolCallFinish(part.toolCallId, part.result);
+            options.callbacks.onToolCallFinish(part.toolCallId, part.output);
           }
           yield { type: 'tool-result', content: part };
           break;
@@ -174,25 +174,25 @@ export async function* createEnhancedStream(
     if (params.tools) {
       streamParams.tools = params.tools;
       streamParams.toolChoice = 'auto';
-      streamParams.toolCallStreaming = options.enableToolStreaming !== false;
-      streamParams.maxSteps = options.maxSteps || 5;
+
+      streamParams.stopWhen = isStepCount(options.maxSteps || 5);
     }
 
-    const { textStream, fullStream } = await streamText(streamParams);
+    const { textStream, stream } = await streamText(streamParams);
 
     // Process the full stream to handle tool calls if callbacks are provided
     if (
       options.callbacks?.onToolCallStart ||
       options.callbacks?.onToolCallFinish
     ) {
-      const streamIterator = fullStream[Symbol.asyncIterator]();
+      const streamIterator = stream[Symbol.asyncIterator]();
 
       while (true) {
         const { done, value } = await streamIterator.next();
         if (done) break;
 
         switch (value.type) {
-          case 'text':
+          case 'text-delta':
             yield value.text;
             break;
 
@@ -209,7 +209,7 @@ export async function* createEnhancedStream(
             if (options.callbacks?.onToolCallFinish) {
               options.callbacks.onToolCallFinish(
                 value.toolCallId,
-                value.result
+                value.output
               );
             }
             break;
@@ -245,7 +245,7 @@ export async function executeMultiStep(
   const executeParams = {
     ...params,
     model,
-    maxSteps,
+    stopWhen: isStepCount(maxSteps),
   };
 
   // Add tools if provided
@@ -256,13 +256,13 @@ export async function executeMultiStep(
 
   // Add step callbacks
   if (onStepFinish) {
-    executeParams.onStepFinish = async ({
+    executeParams.onStepEnd = async ({
       stepType,
-      stepCount,
+      stepNumber,
       toolCalls,
       toolResults,
     }: any) => {
-      onStepFinish(stepCount, {
+      onStepFinish(stepNumber, {
         stepType,
         toolCalls,
         toolResults,

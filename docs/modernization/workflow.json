@@ -12,7 +12,7 @@
     },
     {
       "id": "B",
-      "state": "running",
+      "state": "implemented",
       "owner": "sdk",
       "dependsOn": []
     },
@@ -21,7 +21,7 @@
       "state": "implemented",
       "owner": "packages",
       "dependsOn": [],
-      "note": "Integration correction: align shared factory SDK family pins with task B."
+      "note": "Final declarations/locks reconciled; typed SDK parameter helpers compile."
     },
     {
       "id": "D",
@@ -41,7 +41,7 @@
     },
     {
       "id": "F",
-      "state": "running",
+      "state": "implemented",
       "owner": "runtime",
       "dependsOn": [
         "C"
@@ -56,7 +56,7 @@
     },
     {
       "id": "H",
-      "state": "running",
+      "state": "implemented",
       "owner": "orchestrator",
       "dependsOn": [
         "A",
@@ -67,7 +67,49 @@
         "F",
         "G"
       ],
-      "note": "Incremental integration checks while final SDK/web code completes."
+      "note": "Fresh frozen installs and strict SDK/web gates pass; runtime/scaffolder source hashes still match their passing gates. Behavior tests/live calls/Docker remain not run."
+    },
+    {
+      "id": "B-context",
+      "state": "implemented",
+      "owner": "orchestrator",
+      "dependsOn": [
+        "F"
+      ],
+      "scope": "mind-agents/src/types/context/** except index.ts",
+      "note": "Web worker completed F; root implemented released context slice after worker shell usage-limit rejection."
+    },
+    {
+      "id": "B-contracts",
+      "state": "implemented",
+      "owner": "orchestrator",
+      "dependsOn": [],
+      "scope": "types/type-guards.ts, types/index.ts, types/context/index.ts, types/agent.ts, types/agent-interfaces.ts, types/helpers.ts, types/results.ts"
+    },
+    {
+      "id": "B-errors",
+      "state": "implemented",
+      "owner": "packages",
+      "dependsOn": [
+        "C"
+      ],
+      "scope": "utils/error-handler.ts, utils/standard-errors.ts, utils/standard-logging.ts",
+      "note": "Coding worker fixed structured error/logging contracts; integrated compiler has 0 diagnostics."
     }
-  ]
+  ],
+  "validationRecords": [
+    "runtime-validation.json",
+    "scaffolder-validation.json",
+    "sdk-validation.json",
+    "web-validation.json"
+  ],
+  "state": "integrated-awaiting-main-commit",
+  "integrationEvidence": {
+    "validationInputsMatched": 160,
+    "preservedArchivesMatched": 57,
+    "activeDependencyNames": 115,
+    "liveManifests": 35,
+    "registeredWorkspaces": 29,
+    "yamlSyntax": "passed"
+  }
 }

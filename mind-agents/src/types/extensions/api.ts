@@ -445,7 +445,7 @@ export const isChatRequest = (obj: unknown): obj is ChatRequestPayload => {
     obj !== null &&
     typeof obj === 'object' &&
     'message' in obj &&
-    typeof (obj as Record<string, unknown>).message === 'string'
+    typeof (obj as Record<string, unknown>)['message'] === 'string'
   );
 };
 
@@ -454,6 +454,6 @@ export const isActionRequest = (obj: unknown): obj is ActionRequestPayload => {
     obj !== null &&
     typeof obj === 'object' &&
     'action' in obj &&
-    typeof (obj as Record<string, unknown>).action === 'string'
+    typeof (obj as Record<string, unknown>)['action'] === 'string'
   );
 };

@@ -27,14 +27,10 @@ import type {
   EventProcessingResult,
 } from './helpers.js';
 
-import type {
-  AgentStateTransitionResult,
-} from './results.js';
+import type { AgentStateTransitionResult } from './results.js';
 
-import type {
-  UnifiedContext,
-  ContextEnricher,
-} from './context/unified-context.js';
+import type { UnifiedContext } from './context/unified-context.js';
+import type { ContextEnricher } from './context/context-enrichment.js';
 
 import type { EmotionModule } from './emotion.js';
 
@@ -185,7 +181,8 @@ export interface AgentEventBus {
  * Complete agent interface composed of all capabilities
  */
 export interface CompositeAgent
-  extends AgentCore,
+  extends
+    AgentCore,
     AgentBehavior,
     AgentRuntime,
     AgentMemory,
@@ -203,7 +200,8 @@ export interface CompositeAgent
  * Minimal agent interface for basic functionality
  */
 export interface MinimalAgent
-  extends AgentCore,
+  extends
+    AgentCore,
     AgentRuntime,
     AgentMemory,
     AgentEmotional,
@@ -214,7 +212,8 @@ export interface MinimalAgent
  * Standard agent interface for most use cases
  */
 export interface StandardAgent
-  extends AgentCore,
+  extends
+    AgentCore,
     AgentBehavior,
     AgentRuntime,
     AgentMemory,
@@ -228,7 +227,8 @@ export interface StandardAgent
  * Advanced agent interface with full capabilities
  */
 export interface AdvancedAgent
-  extends AgentCore,
+  extends
+    AgentCore,
     AgentBehavior,
     AgentRuntime,
     AgentMemory,
@@ -253,7 +253,8 @@ export interface EnterpriseAgent extends CompositeAgent {}
  * Chatbot agent focused on conversation
  */
 export interface ChatbotAgent
-  extends AgentCore,
+  extends
+    AgentCore,
     AgentBehavior,
     AgentMemory,
     AgentEmotional,
@@ -268,7 +269,8 @@ export interface ChatbotAgent
  * Assistant agent focused on task execution
  */
 export interface AssistantAgent
-  extends AgentCore,
+  extends
+    AgentCore,
     AgentRuntime,
     AgentMemory,
     AgentCognitive,
@@ -287,7 +289,8 @@ export interface AssistantAgent
  * Research agent focused on information gathering
  */
 export interface ResearchAgent
-  extends AgentCore,
+  extends
+    AgentCore,
     AgentMemory,
     AgentCognitive,
     AgentCommunication,
@@ -303,7 +306,8 @@ export interface ResearchAgent
  * Gaming agent focused on game interactions
  */
 export interface GamingAgent
-  extends AgentCore,
+  extends
+    AgentCore,
     AgentBehavior,
     AgentRuntime,
     AgentMemory,
@@ -321,7 +325,8 @@ export interface GamingAgent
  * Social agent focused on social interactions
  */
 export interface SocialAgent
-  extends AgentCore,
+  extends
+    AgentCore,
     AgentBehavior,
     AgentMemory,
     AgentEmotional,
@@ -338,7 +343,8 @@ export interface SocialAgent
  * Learning agent focused on continuous improvement
  */
 export interface LearningAgent
-  extends AgentCore,
+  extends
+    AgentCore,
     AgentMemory,
     AgentCognitive,
     AgentLearning,
@@ -353,7 +359,8 @@ export interface LearningAgent
  * Autonomous agent with self-management capabilities
  */
 export interface AutonomousAgent
-  extends AgentCore,
+  extends
+    AgentCore,
     AgentBehavior,
     AgentRuntime,
     AgentMemory,

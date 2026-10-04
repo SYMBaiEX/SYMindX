@@ -17,8 +17,5 @@
       "factory": "createTelegramExtension",
       "autoRegister": true
     }
-  },
-  "peerDependencies": {
-    "@symindx/types": "workspace:*"
   }
 }

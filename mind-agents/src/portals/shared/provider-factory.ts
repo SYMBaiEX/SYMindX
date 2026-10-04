@@ -7,11 +7,12 @@
 import { createOpenAI } from '@ai-sdk/openai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGroq } from '@ai-sdk/groq';
-import { xai } from '@ai-sdk/xai';
+import { createXai } from '@ai-sdk/xai';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createMistral } from '@ai-sdk/mistral';
 import { createCohere } from '@ai-sdk/cohere';
 
+import type { Provider, LanguageModel, EmbeddingModel, ImageModel } from 'ai';
 import { validateApiKey } from './error-handler';
 
 export interface ProviderConfig {
@@ -22,7 +23,7 @@ export interface ProviderConfig {
   headers?: Record<string, string>;
 
   // Provider-specific configurations
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface ProviderFactoryOptions {
@@ -49,7 +50,7 @@ export function createProvider(
   provider: string,
   config: ProviderConfig,
   options: ProviderFactoryOptions = {}
-): any {
+): Provider {
   const {
     envPrefix,
     validateApiKey: shouldValidate = true,
@@ -219,8 +220,7 @@ function createGroqProvider(apiKey: string, config: ProviderConfig) {
  * Create XAI provider with configuration
  */
 function createXAIProvider(apiKey: string, config: ProviderConfig) {
-  // XAI uses the singleton pattern, configure globally if needed
-  return xai;
+  return createXai({ apiKey, ...(config.baseURL && { baseURL: config.baseURL }), ...(config.headers && { headers: config.headers }) });
 }
 
 /**
@@ -277,71 +277,31 @@ function createCohereProvider(apiKey: string, config: ProviderConfig) {
 /**
  * Get language model instance from provider
  */
-export function getLanguageModel(provider: any, modelId: string): any {
-  if (typeof provider === 'function') {
-    return provider(modelId);
-  }
-
-  // Handle providers that might have different interfaces
-  if (provider.languageModel) {
-    return provider.languageModel(modelId);
-  }
-
-  if (provider.model) {
-    return provider.model(modelId);
-  }
-
-  // Fallback: assume provider is callable
-  return provider(modelId);
+export function getLanguageModel(provider: Provider, modelId: string): LanguageModel {
+  return provider.languageModel(modelId);
 }
 
-/**
- * Get text embedding model instance from provider
- */
-export function getTextEmbeddingModel(provider: any, modelId: string): any {
-  if (provider.textEmbeddingModel) {
-    return provider.textEmbeddingModel(modelId);
-  }
-
-  if (provider.embedding) {
-    return provider.embedding(modelId);
-  }
-
-  // Fallback for providers that use the same interface
-  return provider(modelId);
+/** Get text embedding model instance from a provider. */
+export function getTextEmbeddingModel(provider: Provider, modelId: string): EmbeddingModel {
+  return provider.embeddingModel(modelId);
 }
 
-/**
- * Get image model instance from provider
- */
-export function getImageModel(provider: any, modelId: string): any {
-  if (provider.image) {
-    return provider.image(modelId);
-  }
-
-  if (provider.imageModel) {
-    return provider.imageModel(modelId);
-  }
-
-  // Fallback
-  return provider(modelId);
+/** Get image model instance from a provider. */
+export function getImageModel(provider: Provider, modelId: string): ImageModel {
+  return provider.imageModel(modelId);
 }
-
-/**
- * Create provider factory configured for specific provider type
- */
 export function createProviderFactory(providerType: string) {
   return {
     create: (config: ProviderConfig, options?: ProviderFactoryOptions) =>
       createProvider(providerType, config, options),
 
-    getLanguageModel: (provider: any, modelId: string) =>
+    getLanguageModel: (provider: Provider, modelId: string) =>
       getLanguageModel(provider, modelId),
 
-    getTextEmbeddingModel: (provider: any, modelId: string) =>
+    getTextEmbeddingModel: (provider: Provider, modelId: string) =>
       getTextEmbeddingModel(provider, modelId),
 
-    getImageModel: (provider: any, modelId: string) =>
+    getImageModel: (provider: Provider, modelId: string) =>
       getImageModel(provider, modelId),
   };
 }
@@ -354,7 +314,7 @@ export function validateProviderConfig(
   config: ProviderConfig
 ): void {
   // Basic validation
-  if (!config.apiKey && !process.env[getProviderEnvKeys(provider)[0]]) {
+  if (!config.apiKey && !process.env[getProviderEnvKeys(provider)[0] ?? (provider.toUpperCase() + '_API_KEY')]) {
     throw new Error(`API key is required for ${provider}`);
   }
 

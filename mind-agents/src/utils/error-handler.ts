@@ -19,11 +19,9 @@ import {
   SYMindXError,
   createRuntimeError,
   createPortalError,
-  createExtensionError,
   createMemoryError,
-  createConfigurationError,
-  createNetworkError,
-  safeAsync,
+  createConfigurationError as createConfigurationException,
+  createNetworkError as createNetworkException,
   isSYMindXError,
 } from './standard-errors.js';
 
@@ -258,8 +256,7 @@ export interface ErrorAlert {
 class CircuitBreaker {
   private state: CircuitBreakerState = CircuitBreakerState.CLOSED;
   private failureCount = 0;
-  private lastFailureTime?: Date;
-  private nextRetryTime?: Date;
+  private nextRetryTime: Date | undefined;
 
   constructor(
     private readonly threshold: number,
@@ -287,13 +284,11 @@ class CircuitBreaker {
   public onSuccess(): void {
     this.failureCount = 0;
     this.state = CircuitBreakerState.CLOSED;
-    this.lastFailureTime = undefined;
     this.nextRetryTime = undefined;
   }
 
   public onFailure(): void {
     this.failureCount++;
-    this.lastFailureTime = new Date();
 
     if (this.state === CircuitBreakerState.HALF_OPEN) {
       this.state = CircuitBreakerState.OPEN;
@@ -360,7 +355,7 @@ export class ErrorHandler {
     responseTime: number;
   }> = [];
   private alerts: ErrorAlert[] = [];
-  private analyticsTimer?: ReturnType<typeof setInterval>;
+  private analyticsTimer: ReturnType<typeof setInterval> | undefined;
   private startTime = new Date();
 
   private constructor(config: Partial<ErrorHandlerConfig> = {}) {
@@ -403,18 +398,7 @@ export class ErrorHandler {
       totalRecoveryTime: 0,
     });
 
-    runtimeLogger.info(
-      `Registered error handling for component: ${config.componentName}`,
-      {
-        config: {
-          category: config.defaultCategory,
-          severity: config.defaultSeverity,
-          retryEnabled: config.enableRetry,
-          circuitBreakerEnabled: config.enableCircuitBreaker,
-          fallbackEnabled: config.enableFallback,
-        },
-      }
-    );
+    runtimeLogger.info('Registered error handling for component', { source: 'error-handler' });
   }
 
   /**
@@ -462,22 +446,35 @@ export class ErrorHandler {
         this.recordError(symindxError, componentName, result.success, duration);
       }
 
+      const recoveryValue = result.metadata?.['recovery'];
+      const recovery =
+        typeof recoveryValue === 'object' &&
+        recoveryValue !== null &&
+        !Array.isArray(recoveryValue)
+          ? recoveryValue
+          : {};
+      const strategyValue = recovery['strategy'];
+      const strategy =
+        typeof strategyValue === 'string' &&
+        Object.values(RecoveryStrategy).includes(strategyValue as RecoveryStrategy)
+          ? (strategyValue as RecoveryStrategy)
+          : RecoveryStrategy.NONE;
+      const attemptsValue = recovery['attempts'];
+      const attempts = typeof attemptsValue === 'number' ? attemptsValue : 1;
+
       return {
         success: result.success,
-        data: result.data,
-        error: result.success ? undefined : symindxError,
-        strategy: result.metadata?.recovery?.strategy || RecoveryStrategy.NONE,
-        attempts: result.metadata?.recovery?.attempts || 1,
+        ...(result.data === undefined ? {} : { data: result.data }),
+        ...(result.success ? {} : { error: symindxError }),
+        strategy,
+        attempts,
         duration,
         componentName,
-        recoveryPath: this.buildRecoveryPath(
-          symindxError,
-          result.metadata?.recovery?.strategy
-        ),
+        recoveryPath: this.buildRecoveryPath(symindxError, strategy),
         metrics: {
           errorCount: metrics.errorCount,
           successRate:
-            metrics.successCount / (metrics.errorCount + metrics.successCount),
+            metrics.successCount / Math.max(metrics.errorCount + metrics.successCount, 1),
           avgRecoveryTime:
             metrics.totalRecoveryTime / Math.max(metrics.successCount, 1),
         },
@@ -571,7 +568,7 @@ export class ErrorHandler {
           cause
         );
       case ErrorCategory.CONFIGURATION:
-        return createConfigurationError(
+        return createConfigurationException(
           message,
           code,
           componentName,
@@ -580,7 +577,7 @@ export class ErrorHandler {
           cause
         );
       case ErrorCategory.NETWORK:
-        return createNetworkError(
+        return createNetworkException(
           message,
           code,
           undefined,
@@ -611,6 +608,8 @@ export class ErrorHandler {
     if (!metrics) {
       return {
         errorCount: 0,
+        successCount: 0,
+        totalRecoveryTime: 0,
         successRate: 0,
         avgRecoveryTime: 0,
       };
@@ -618,6 +617,8 @@ export class ErrorHandler {
 
     return {
       errorCount: metrics.errorCount,
+      successCount: metrics.successCount,
+      totalRecoveryTime: metrics.totalRecoveryTime,
       successRate:
         metrics.successCount /
         Math.max(metrics.errorCount + metrics.successCount, 1),
@@ -794,7 +795,7 @@ export class ErrorHandler {
           commandId: operationId,
           executorId: 'error-handler',
           operationId,
-          errorInfo: finalError,
+          errorInfo: { id: finalError.id, code: finalError.code, message: finalError.message },
         },
       };
     }
@@ -871,7 +872,7 @@ export class ErrorHandler {
           throw new Error(result.error || 'Function execution failed');
         }
 
-        return result.data;
+        return result.data as TReturn;
       }
     };
   }
@@ -929,19 +930,19 @@ export class ErrorHandler {
     const warnings: ValidationWarning[] = [];
 
     // Check required fields
-    if (!config.name || typeof config.name !== 'string') {
+    if (!config['name'] || typeof config['name'] !== 'string') {
       errors.push({
         field: 'name',
         message: 'Configuration must have a valid name',
         code: 'CONFIG_NAME_REQUIRED',
-        value: config.name as ConfigValue,
+        value: config['name'] as ConfigValue,
         severity: 'error',
       });
     }
 
     // Check API keys
-    if (config.apiKeys && typeof config.apiKeys === 'object') {
-      const apiKeys = config.apiKeys as Record<string, string>;
+    if (config['apiKeys'] && typeof config['apiKeys'] === 'object') {
+      const apiKeys = config['apiKeys'] as Record<string, string>;
       for (const [key, value] of Object.entries(apiKeys)) {
         if (typeof value !== 'string' || value.length === 0) {
           warnings.push({
@@ -1145,7 +1146,7 @@ export class ErrorHandler {
    */
   private async fallbackOperation<T>(
     operation: () => Promise<T>,
-    error: ErrorInfo,
+    _error: ErrorInfo,
     context?: Record<string, unknown>
   ): Promise<RecoveryResult & { data?: T }> {
     const startTime = Date.now();
@@ -1196,7 +1197,7 @@ export class ErrorHandler {
    */
   private async gracefulDegradation<T>(
     operation: () => Promise<T>,
-    error: ErrorInfo,
+    _error: ErrorInfo,
     context?: Record<string, unknown>
   ): Promise<RecoveryResult & { data?: T }> {
     const startTime = Date.now();
@@ -1551,17 +1552,19 @@ export class ErrorHandler {
       successRate,
       avgResponseTime,
       circuitBreakerState: circuitBreakerStatus.state,
-      lastError: lastError
+      ...(lastError
         ? {
-            timestamp: lastError.timestamp,
-            message: lastError.error.message,
-            code: 'code' in lastError.error ? lastError.error.code : 'UNKNOWN',
-            severity:
-              'severity' in lastError.error
-                ? lastError.error.severity
-                : ErrorSeverity.MEDIUM,
+            lastError: {
+              timestamp: lastError.timestamp,
+              message: lastError.error.message,
+              code: 'code' in lastError.error ? lastError.error.code : 'UNKNOWN',
+              severity:
+                'severity' in lastError.error
+                  ? lastError.error.severity
+                  : ErrorSeverity.MEDIUM,
+            },
           }
-        : undefined,
+        : {}),
       recommendations,
     };
   }
@@ -1707,9 +1710,7 @@ export class ErrorHandler {
       this.processAnalytics();
     }, this.analyticsConfig.aggregationInterval);
 
-    runtimeLogger.info('Error analytics engine started', {
-      config: this.analyticsConfig,
-    });
+    runtimeLogger.info('Error analytics engine started', { source: 'error-handler' });
   }
 
   /**
@@ -1734,9 +1735,11 @@ export class ErrorHandler {
     const analytics = this.getSystemAnalytics();
 
     runtimeLogger.debug('Error analytics processed', {
-      totalErrors: analytics.overall.totalErrors,
-      errorRate: analytics.overall.errorRate,
-      activeAlerts: analytics.alerts.length,
+      metadata: {
+        totalErrors: analytics.overall.totalErrors,
+        errorRate: analytics.overall.errorRate,
+        activeAlerts: analytics.alerts.length,
+      },
     });
   }
 
@@ -1831,7 +1834,7 @@ export class ErrorHandler {
       type,
       severity,
       message,
-      component,
+      ...(component === undefined ? {} : { component }),
       timestamp: new Date(),
       acknowledged: false,
       metadata,
@@ -1839,14 +1842,7 @@ export class ErrorHandler {
 
     this.alerts.push(alert);
 
-    runtimeLogger.warn(`Error alert created: ${message}`, {
-      alert: {
-        id: alert.id,
-        type: alert.type,
-        severity: alert.severity,
-        component: alert.component,
-      },
-    });
+    runtimeLogger.warn('Error alert created', { source: 'error-handler' });
   }
 
   /**
@@ -2058,6 +2054,12 @@ export const createResourceError = (
 /**
  * Decorator for automatic error handling
  */
+function getTargetClassName(target: unknown): string {
+  return typeof target === 'function' && 'name' in target && typeof target.name === 'string'
+    ? target.name
+    : 'unknown';
+}
+
 export function handleErrors(
   category: ErrorCategory = ErrorCategory.RUNTIME,
   severity: ErrorSeverity = ErrorSeverity.MEDIUM
@@ -2080,7 +2082,7 @@ export function handleErrors(
           severity,
           {
             methodName: propertyKey,
-            className: (target as any).constructor.name,
+            className: getTargetClassName(target),
           },
           error instanceof Error ? error : undefined
         );
@@ -2088,7 +2090,7 @@ export function handleErrors(
         const result = await errorHandler.handleError(
           errorInfo,
           () => originalMethod.apply(this, args),
-          { methodName: propertyKey, className: target.constructor.name }
+          { methodName: propertyKey, className: getTargetClassName(target) }
         );
 
         if (!result.success) {
@@ -2184,7 +2186,7 @@ export function initializeErrorHandler(
     handler.configureAnalytics({
       enabled: config?.enabled ?? true,
       retentionDays: config?.retentionDays ?? 7,
-      alertThresholds: config?.alertThresholds,
+      ...(config?.alertThresholds === undefined ? {} : { alertThresholds: config.alertThresholds }),
       aggregationInterval: config?.aggregationInterval ?? 60000,
     });
   }

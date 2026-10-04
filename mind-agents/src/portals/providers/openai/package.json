@@ -5,12 +5,13 @@
   "private": true,
   "main": "index.ts",
   "dependencies": {
-    "@ai-sdk/openai": "^2.0.0-canary.20",
-    "ai": "^6.0.0-beta.94",
-    "openai": "^4.75.0",
-    "zod": "^3.24.0"
+    "@ai-sdk/openai": "^4.0.83",
+    "ai": "^7.0.127",
+    "openai": "^7.27.0",
+    "zod": "^4.6.5"
   },
-  "peerDependencies": {
-    "@symindx/types": "workspace:*"
+  "engines": {
+    "node": ">=22",
+    "bun": ">=1.4.2"
   }
 }

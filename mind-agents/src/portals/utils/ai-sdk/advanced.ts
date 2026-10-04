@@ -1,7 +1,7 @@
 /**
- * Advanced AI SDK v5 Features and Utilities
+ * Advanced AI SDK 7 Features and Utilities
  *
- * This module provides advanced AI SDK v5 capabilities including:
+ * This module provides advanced AI SDK 7 capabilities including:
  * - Multi-step execution with stopWhen conditions
  * - Enhanced tool streaming with callbacks
  * - Advanced streaming capabilities

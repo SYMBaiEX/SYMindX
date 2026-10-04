@@ -34,7 +34,7 @@ import {
 } from './results.js';
 import { LogLevel } from './utils/logger.js';
 import type { CharacterConfig } from './character.js';
-import { RuntimeStatus, RuntimeError } from './core/runtime.js';
+import type { RuntimeStatus } from './core/runtime.js';
 
 // Additional result types for agent lifecycle methods
 export interface InitializationResult {
@@ -119,7 +119,7 @@ export interface AgentConfig {
   type: string;
   status: AgentStatus;
   character?: CharacterConfig;
-  
+
   // Legacy structure for backward compatibility
   core?: {
     name: string;

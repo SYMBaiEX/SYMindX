@@ -1,6 +1,6 @@
 # AI Portals Development Guide
 
-The SYMindX portal system provides a unified, modular framework for integrating AI providers into agents. Each portal acts as a bridge between agents and specific AI providers, offering consistent interfaces for text generation, chat completion, embeddings, and advanced features like tool calling and streaming.
+The portal source tree contains reusable adapters and utilities for legacy applications. It is outside the supported v0.1 runtime contract; the three registered adapters below are maintained against AI SDK 7. No live provider calls are verified by this guide.
 
 ## Architecture
 
@@ -16,7 +16,7 @@ src/portals/
 ├── providers/            # Provider implementations
 │   ├── openai/          # OpenAI GPT models
 │   ├── groq/            # Ultra-fast inference
-│   ├── openrouter/      # Access to 100+ models
+│   ├── openrouter/      # OpenAI-compatible routed generation
 │   └── index.ts         # Provider registry exports
 │
 ├── shared/               # Shared utilities for portal implementations
@@ -35,7 +35,7 @@ src/portals/
 │   └── README.md
 │
 ├── utils/                # General utilities
-│   ├── ai-sdk/          # AI SDK v6 specific utilities
+│   ├── ai-sdk/          # AI SDK v7 specific utilities
 │   │   ├── parameter-builder.ts
 │   │   ├── advanced.ts
 │   │   ├── compat.ts
@@ -53,76 +53,23 @@ src/portals/
 
 ## Available Portals
 
-### OpenAI Portal
+The portal registry currently exposes three BasePortal adapters: OpenAI, Groq, and OpenRouter. Each accepts a configurable model ID; provider model availability depends on account and service configuration.
 
-- **Provider**: OpenAI
-- **Models**: GPT-4.1, GPT-4o, gpt-4.1-mini, o3
-- **Features**: Text generation, chat completion, embeddings, streaming
-- **AI SDK v5**: `@ai-sdk/openai@^2.0.0-canary.11`
+| Portal | SDK adapter | Capabilities |
+| --- | --- | --- |
+| OpenAI | @ai-sdk/openai 4.x | Text, chat, embeddings, streaming, SDK tools |
+| Groq | @ai-sdk/groq 4.x | Text, chat, streaming, SDK tools |
+| OpenRouter | OpenAI-compatible @ai-sdk/openai 4.x adapter | Text, chat, streaming, SDK tools |
 
-### Groq Portal
-
-- **Provider**: Groq
-- **Models**: Llama 3.3 (70B), Llama 3.1 (405B, 70B, 8B), Mixtral, Gemma
-- **Features**: Fast inference, text generation, chat completion, streaming
-- **AI SDK v5**: `@ai-sdk/groq@^2.0.0-canary.5`
-- **Note**: No embedding support
-
-### Anthropic Portal
-
-- **Provider**: Anthropic
-- **Models**: Claude 3.5 Sonnet (20241022), Claude 3 Opus/Sonnet/Haiku
-- **Features**: Advanced reasoning, text generation, chat completion, streaming
-- **AI SDK v5**: `@ai-sdk/anthropic@^2.0.0-canary.15`
-- **Note**: No embedding support
-
-### XAI Portal
-
-- **Provider**: XAI (Grok)
-- **Models**: Grok Beta, Grok Vision Beta
-- **Features**: Text generation, chat completion
-- **Implementation**: Direct HTTP API calls
-- **Note**: No embedding support
-
-### OpenRouter Portal
-
-- **Provider**: OpenRouter
-- **Models**: Access to 100+ models from multiple providers
-- **Features**: Text generation, chat completion, embeddings
-- **Implementation**: Direct HTTP API calls
-- **Special**: Cost tracking included
-
-### Kluster.ai Portal
-
-- **Provider**: Kluster.ai
-- **Models**: Custom models
-- **Features**: Text generation, chat completion, embeddings
-- **Implementation**: Direct HTTP API calls
+The shared provider factory can create additional AI SDK provider models, but those connectors are not registered BasePortal implementations. Older Anthropic, XAI, and Kluster.ai portal documentation describes unsupported legacy code and is not part of the current registry.
 
 ## Usage
 
 ### Basic Portal Creation
 
-```typescript
-import { createPortal } from '../portals';
+Create a portal with a provider API key and configurable model ID, then call generateText. The portal method returns a TextGenerationResult with a completed text string and normalized usage.
 
-// Create an OpenAI portal with AI SDK v5
-const openaiPortal = createPortal('openai', {
-  apiKey: 'your-openai-api-key',
-  model: 'gpt-4.1-mini',
-  maxTokens: 1000,
-  temperature: 0.7,
-});
-
-// Generate text with streaming support
-const { text, textStream } = await openaiPortal.generateText('Hello, world!');
-console.log(text);
-
-// Or use streaming
-for await (const chunk of textStream) {
-  process.stdout.write(chunk);
-}
-```
+For streaming, iterate the provider portal's streamText method; generateText does not return a textStream property.
 
 ### Agent Integration
 
@@ -173,22 +120,11 @@ const response = await portal.generateChat(messages, {
 console.log(response.message.content);
 ```
 
-### Streaming Responses (AI SDK v5)
+### Streaming Responses (AI SDK 7)
 
-```typescript
-// All portals now return both text and textStream
-const { text, textStream } = await portal.generateText('Tell me a story');
+The portal streamText method returns an async iterable of text chunks. The provider adapter builds this from AI SDK 7 streamText; the public portal result remains provider-independent.
 
-// Use the stream
-for await (const chunk of textStream) {
-  process.stdout.write(chunk);
-}
-
-// Or await the full text
-console.log(await text);
-```
-
-### Function Calling (AI SDK v5)
+### Function Calling (AI SDK v7)
 
 ```typescript
 import { tool } from 'ai';
@@ -198,7 +134,7 @@ import { z } from 'zod';
 const tools = {
   get_weather: tool({
     description: 'Get current weather for a location',
-    parameters: z.object({
+    inputSchema: z.object({
       location: z.string().describe('City name'),
     }),
     execute: async ({ location }) => {
@@ -216,100 +152,15 @@ const response = await portal.generateChat(messages, {
 
 ## Portal Registry
 
-The `PortalRegistry` manages all available portals and provides factory methods:
-
-```typescript
-import { PortalRegistry } from '../portals';
-
-const registry = PortalRegistry.getInstance();
-
-// Get available portals
-const available = registry.getAvailablePortals();
-console.log(available); // ['openai', 'groq', 'anthropic', 'xai', 'openrouter', 'kluster.ai']
-
-// Check if a portal is available
-if (registry.isAvailable('openai')) {
-  const portal = registry.create('openai', config);
-}
-
-// Get default configuration
-const defaultConfig = registry.getDefaultConfig('groq');
-```
+The registry exposes only the maintained portal adapters: openai, groq, and openrouter. Pass a configurable model ID when account or deployment settings require one.
 
 ## Environment Variables
 
-Set up your API keys as environment variables:
-
-```bash
-# OpenAI
-OPENAI_API_KEY=your_openai_key
-
-# Groq
-GROQ_API_KEY=your_groq_key
-
-# Anthropic
-ANTHROPIC_API_KEY=your_anthropic_key
-
-# XAI
-XAI_API_KEY=your_xai_key
-
-# OpenRouter
-OPENROUTER_API_KEY=your_openrouter_key
-
-# Kluster.ai
-KLUSTER_AI_API_KEY=your_kluster_key
-```
+Configure credentials for the registered providers with OPENAI_API_KEY, GROQ_API_KEY, and OPENROUTER_API_KEY.
 
 ## Adding New Portals
 
-To add a new AI provider with AI SDK v5:
-
-1. Create a new folder in `src/portals/`
-2. Implement the portal class extending `BasePortal`
-3. Export factory function and default config
-4. Register in `PortalRegistry`
-
-```typescript
-// src/portals/newprovider/index.ts
-import { BasePortal } from '../base-portal.js';
-import { streamText, generateText, embed } from 'ai';
-import { newprovider } from '@ai-sdk/newprovider'; // Import the provider factory
-
-export class NewProviderPortal extends BasePortal {
-  private model: any;
-
-  constructor(config: NewProviderConfig) {
-    super('newprovider', 'New Provider', '1.0.0', config);
-    // Initialize AI SDK v5 model
-    this.model = newprovider(config.model || 'default-model', {
-      apiKey: config.apiKey,
-      baseURL: config.baseURL,
-    });
-  }
-
-  async generateText(
-    prompt: string,
-    options?: TextGenerationOptions
-  ): Promise<TextGenerationResult> {
-    const { text, textStream } = await streamText({
-      model: this.model,
-      prompt,
-      temperature: options?.temperature,
-      maxTokens: options?.maxTokens,
-    });
-
-    return { text: await text, textStream };
-  }
-
-  // ... other required methods
-}
-
-export function createNewProviderPortal(
-  config: NewProviderConfig
-): NewProviderPortal {
-  return new NewProviderPortal(config);
-}
-```
+New registered adapters should extend BasePortal, use the current provider factory and AI SDK 7 LanguageModel/ModelMessage types, map SDK usage and finish reasons into the portal contracts, and register only implemented capabilities. Use inputSchema for tools, top-level instructions for system prompts, stopWhen with isStepCount for step limits, and onStepEnd for SDK callbacks. Do not pass application-owned tool execution or permissions into provider code.
 
 ## Error Handling
 
@@ -340,34 +191,4 @@ try {
 
 ## Dependencies
 
-The portals system uses Vercel AI SDK v5 (alpha/canary version):
-
-```json
-{
-  "dependencies": {
-    "ai": "^5.0.0-canary.24",
-    "@ai-sdk/openai": "^2.0.0-canary.11",
-    "@ai-sdk/anthropic": "^2.0.0-canary.15",
-    "@ai-sdk/groq": "^2.0.0-canary.5",
-    "@ai-sdk/google": "^2.0.0-canary.12",
-    "@ai-sdk/google-vertex": "^2.0.0-canary.7",
-    "@ai-sdk/mistral": "^2.0.0-canary.7",
-    "@ai-sdk/cohere": "^2.0.0-canary.7",
-    "@ai-sdk/azure": "^2.0.0-canary.7",
-    "zod": "^3.23.8"
-  }
-}
-```
-
-Install with:
-
-```bash
-# Install AI SDK v5 and provider packages
-npm install ai@^5.0.0-canary.24
-npm install @ai-sdk/openai@^2.0.0-canary.11
-npm install @ai-sdk/anthropic@^2.0.0-canary.15
-npm install @ai-sdk/groq@^2.0.0-canary.5
-npm install @ai-sdk/google@^2.0.0-canary.12
-npm install @ai-sdk/google-vertex@^2.0.0-canary.7
-npm install zod@^3.23.8
-```
+The maintained OpenAI and Groq adapters use AI SDK 7. Versions are declared in the portal workspace manifests. Tool schemas use `inputSchema`; step limits use `stopWhen: isStepCount(...)`; system prompts use top-level `instructions`; full stream events use `streamText(...).stream`.

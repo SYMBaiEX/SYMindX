@@ -1,16 +1,11 @@
 /**
- * Advanced AI SDK v5 Streaming Utilities
+ * Advanced AI SDK 7 Streaming Utilities
  *
  * Enhanced streaming patterns including buffering, throttling, merging, and state management
  * for optimal performance and user experience across all portal implementations.
  */
 
-import {
-  streamText,
-  StreamTextResult,
-  LanguageModelV2StreamPart,
-  generateId,
-} from 'ai';
+import { generateId, type TextStreamPart, type ToolSet } from 'ai';
 import { runtimeLogger } from '../../utils/logger';
 
 // === STREAM BUFFERING ===
@@ -238,7 +233,7 @@ export class StreamMerger<T> {
     };
   }
 
-  addStream(streamId: string, stream: AsyncIterable<T>, priority = 0): void {
+  addStream(streamId: string, stream: AsyncIterable<T>, _priority = 0): void {
     this.streams.set(streamId, stream[Symbol.asyncIterator]());
     this.buffers.set(streamId, []);
     this.lastEmitTimes.set(streamId, Date.now());
@@ -317,14 +312,14 @@ export class StreamMerger<T> {
       case 'adaptive':
         return this.selectAdaptive(allItems);
       default:
-        return allItems[0];
+        return allItems[0]!;
     }
   }
 
   private selectRoundRobin(items: MergedStreamItem<T>[]): MergedStreamItem<T> {
     // Find stream that hasn't emitted recently
     let oldestEmitTime = Date.now();
-    let selectedItem = items[0];
+    let selectedItem = items[0]!;
 
     for (const item of items) {
       const lastEmit = this.lastEmitTimes.get(item.streamId) || 0;
@@ -508,7 +503,7 @@ export interface EnhancedStreamOptions {
 }
 
 export async function* createEnhancedTextStream(
-  baseStream: AsyncIterable<LanguageModelV2StreamPart>,
+  baseStream: AsyncIterable<TextStreamPart<ToolSet>>,
   options: EnhancedStreamOptions = {}
 ): AsyncGenerator<string> {
   const streamManager = options.stateManagement
@@ -543,7 +538,7 @@ export async function* createEnhancedTextStream(
     for await (const part of baseStream) {
       switch (part.type) {
         case 'text-delta':
-          const textChunk = part.delta;
+          const textChunk = part.text;
           processedChunks++;
           totalBytes += textChunk.length;
 

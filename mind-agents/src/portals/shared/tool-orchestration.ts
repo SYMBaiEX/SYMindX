@@ -2,10 +2,17 @@
  * Enhanced Tool Orchestration Framework
  *
  * Advanced tool execution patterns including chaining, parallelization, conditional logic,
- * and intelligent orchestration for AI SDK v5 tools across all portal implementations.
+ * and intelligent orchestration for AI SDK 7 tools across all portal implementations.
  */
 
-import { tool, generateText, streamText, LanguageModel, generateId } from 'ai';
+import {
+  tool,
+  type LanguageModel,
+  type ModelMessage,
+  type ToolExecutionOptions,
+  type Tool,
+  generateId,
+} from 'ai';
 import { z } from 'zod';
 import { runtimeLogger } from '../../utils/logger';
 
@@ -15,19 +22,57 @@ export interface ToolExecutionContext {
   toolCallId: string;
   stepNumber: number;
   previousResults: ToolExecutionResult[];
+  messages: ModelMessage[];
   abortSignal?: AbortSignal;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
+}
+
+function asError(value: unknown): Error {
+  return value instanceof Error ? value : new Error(String(value));
+}
+
+interface ToolOrchestrationSDKContext {
+  stepNumber: number;
+  metadata: Record<string, unknown>;
+}
+
+function getToolOrchestrationSDKContext(
+  value: unknown
+): ToolOrchestrationSDKContext {
+  if (typeof value !== 'object' || value === null) {
+    return { stepNumber: 1, metadata: {} };
+  }
+
+  const context = value as Record<string, unknown>;
+  const metadata = context['metadata'];
+  return {
+    stepNumber:
+      typeof context['stepNumber'] === 'number' ? context['stepNumber'] : 1,
+    metadata:
+      typeof metadata === 'object' && metadata !== null
+        ? (metadata as Record<string, unknown>)
+        : {},
+  };
 }
 
 export interface ToolExecutionResult {
   toolCallId: string;
   toolName: string;
-  input: any;
-  output: any;
+  input: unknown;
+  output: unknown;
   executionTime: number;
   success: boolean;
   error?: Error;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
+}
+
+/** A locally trusted executable tool with an explicit input-validation boundary. */
+export interface ExecutableTool<Input = unknown, Output = unknown> {
+  parseInput(input: unknown): Input;
+  execute(
+    input: Input,
+    options: ToolExecutionOptions<unknown>
+  ): Output | PromiseLike<Output>;
 }
 
 export interface ConditionalRule {
@@ -45,7 +90,7 @@ export interface ToolChainStep {
   inputMapper?: (
     previousResults: ToolExecutionResult[],
     context: ToolExecutionContext
-  ) => any;
+  ) => unknown;
   conditionalRules?: ConditionalRule[];
   parallelWith?: string[]; // Tool names to execute in parallel
   timeout?: number;
@@ -59,23 +104,34 @@ export interface ToolChainStep {
 // === TOOL CHAIN ORCHESTRATOR ===
 
 export class ToolChainOrchestrator {
-  private tools = new Map<string, any>();
+  private tools = new Map<
+    string,
+    {
+      execute(
+        input: unknown,
+        options: ToolExecutionOptions<unknown>
+      ): unknown | PromiseLike<unknown>;
+    }
+  >();
   private executionHistory: ToolExecutionResult[] = [];
-  private activeExecutions = new Map<string, Promise<ToolExecutionResult>>();
-
   constructor(
-    private model: LanguageModel,
+    _model: LanguageModel,
     private globalTimeout = 30000
   ) {}
 
-  registerTool(name: string, toolDefinition: any): void {
-    this.tools.set(name, toolDefinition);
+  registerTool<Input, Output>(
+    name: string,
+    toolDefinition: ExecutableTool<Input, Output>
+  ): void {
+    this.tools.set(name, {
+      execute: (input, options) =>
+        toolDefinition.execute(toolDefinition.parseInput(input), options),
+    });
   }
 
-  registerTools(tools: Record<string, any>): void {
-    for (const [name, toolDef] of Object.entries(tools)) {
+  registerTools(tools: Record<string, ExecutableTool<unknown, unknown>>): void {
+    for (const [name, toolDef] of Object.entries(tools))
       this.registerTool(name, toolDef);
-    }
   }
 
   /**
@@ -89,6 +145,7 @@ export class ToolChainOrchestrator {
       toolCallId: generateId(),
       stepNumber: 0,
       previousResults: [],
+      messages: [],
       metadata: {},
       ...initialContext,
     };
@@ -111,6 +168,7 @@ export class ToolChainOrchestrator {
         for (let i = 0; i < groupResults.length; i++) {
           const result = groupResults[i];
           const step = executionGroup[i];
+          if (!result || !step) continue;
 
           if (result.status === 'fulfilled') {
             results.push(result.value);
@@ -123,15 +181,19 @@ export class ToolChainOrchestrator {
               output: null,
               executionTime: 0,
               success: false,
-              error: result.reason,
+              error: asError(result.reason),
               metadata: { failedInChain: true },
             };
             results.push(failureResult);
 
             // Check if this failure should abort the chain
-            if (this.shouldAbortChain(step, result.reason, context)) {
+            const reason = asError(result.reason);
+            if (this.shouldAbortChain(step, reason, context)) {
               throw new Error(
-                `Tool chain aborted due to failure in ${step.toolName}: ${result.reason.message}`
+                'Tool chain aborted due to failure in ' +
+                  step.toolName +
+                  ': ' +
+                  reason.message
               );
             }
           }
@@ -150,11 +212,13 @@ export class ToolChainOrchestrator {
    * Execute tools in parallel with intelligent coordination
    */
   async executeParallel(
-    tools: Array<{ name: string; input: any; timeout?: number }>,
+    tools: Array<{ name: string; input: unknown; timeout?: number }>,
     options: {
       failFast?: boolean;
       maxConcurrency?: number;
       retryFailures?: boolean;
+      messages?: ModelMessage[];
+      abortSignal?: AbortSignal;
     } = {}
   ): Promise<ToolExecutionResult[]> {
     const {
@@ -172,16 +236,26 @@ export class ToolChainOrchestrator {
         const startTime = Date.now();
         const toolCallId = generateId();
 
-        try {
-          const toolDef = this.tools.get(toolSpec.name);
-          if (!toolDef) {
-            throw new Error(`Tool '${toolSpec.name}' not found`);
-          }
+        const toolDef = this.tools.get(toolSpec.name);
+        if (!toolDef) {
+          throw new Error('Tool not found: ' + toolSpec.name);
+        }
 
+        try {
           // Execute with timeout
           const timeoutMs = toolSpec.timeout || this.globalTimeout;
           const result = await this.executeWithTimeout(
-            toolDef.execute(toolSpec.input, { toolCallId }),
+            Promise.resolve(
+              toolDef.execute(
+                toolSpec.input,
+                this.sdkExecutionOptions(
+                  toolCallId,
+                  options.messages ?? [],
+                  options.abortSignal,
+                  {}
+                )
+              )
+            ),
             timeoutMs
           );
 
@@ -202,17 +276,23 @@ export class ToolChainOrchestrator {
             output: null,
             executionTime: Date.now() - startTime,
             success: false,
-            error: error as Error,
+            error: asError(error),
             metadata: { parallel: true },
           };
 
-          if (retryFailures && this.shouldRetry(error as Error)) {
+          if (retryFailures && this.shouldRetry(asError(error))) {
             // Implement exponential backoff retry
             try {
               await new Promise((resolve) => setTimeout(resolve, 1000));
-              const retryResult = await toolDef.execute(toolSpec.input, {
-                toolCallId,
-              });
+              const retryResult = await toolDef.execute(
+                toolSpec.input,
+                this.sdkExecutionOptions(
+                  toolCallId,
+                  options.messages ?? [],
+                  options.abortSignal,
+                  {}
+                )
+              );
               return {
                 ...failureResult,
                 output: retryResult,
@@ -221,8 +301,8 @@ export class ToolChainOrchestrator {
                 metadata: { parallel: true, retried: true },
               };
             } catch (retryError) {
-              failureResult.error = retryError as Error;
-              failureResult.metadata.retryFailed = true;
+              failureResult.error = asError(retryError);
+              failureResult.metadata['retryFailed'] = true;
             }
           }
 
@@ -255,7 +335,7 @@ export class ToolChainOrchestrator {
   async executeConditional(
     toolSpecs: Array<{
       name: string;
-      input: any;
+      input: unknown;
       condition?: (
         context: ToolExecutionContext,
         results: ToolExecutionResult[]
@@ -268,6 +348,7 @@ export class ToolChainOrchestrator {
       toolCallId: generateId(),
       stepNumber: 0,
       previousResults: this.executionHistory,
+      messages: context.messages ?? [],
       metadata: {},
       ...context,
     };
@@ -357,7 +438,7 @@ export class ToolChainOrchestrator {
         : {};
 
       // Execute with retry logic if configured
-      let result;
+      let result: unknown;
       let retryCount = 0;
       const maxRetries = step.retryConfig?.maxRetries || 0;
 
@@ -365,7 +446,18 @@ export class ToolChainOrchestrator {
         try {
           const timeoutMs = step.timeout || this.globalTimeout;
           result = await this.executeWithTimeout(
-            toolDef.execute(input, { toolCallId, ...context }),
+            Promise.resolve(
+              toolDef.execute(
+                input,
+                this.sdkExecutionOptions(
+                  toolCallId,
+                  context.messages,
+                  context.abortSignal,
+                  context.metadata,
+                  context.stepNumber
+                )
+              )
+            ),
             timeoutMs
           );
           break; // Success, exit retry loop
@@ -373,7 +465,7 @@ export class ToolChainOrchestrator {
           if (
             retryCount < maxRetries &&
             (!step.retryConfig?.retryCondition ||
-              step.retryConfig.retryCondition(error as Error))
+              step.retryConfig.retryCondition(asError(error)))
           ) {
             retryCount++;
             const delay =
@@ -405,7 +497,7 @@ export class ToolChainOrchestrator {
         output: null,
         executionTime: Date.now() - startTime,
         success: false,
-        error: error as Error,
+        error: asError(error),
         metadata: {},
       };
     }
@@ -451,6 +543,27 @@ export class ToolChainOrchestrator {
     return batches;
   }
 
+  private sdkExecutionOptions(
+    toolCallId: string,
+    messages: ModelMessage[],
+    abortSignal: AbortSignal | undefined,
+    context: unknown,
+    stepNumber = 1
+  ): ToolExecutionOptions<unknown> {
+    return {
+      toolCallId,
+      messages,
+      context: {
+        stepNumber,
+        metadata:
+          typeof context === 'object' && context !== null
+            ? (context as Record<string, unknown>)
+            : {},
+      } satisfies ToolOrchestrationSDKContext,
+      ...(abortSignal ? { abortSignal } : {}),
+    };
+  }
+
   private async executeWithTimeout<T>(
     promise: Promise<T>,
     timeoutMs: number
@@ -470,6 +583,7 @@ export class ToolChainOrchestrator {
     error: Error,
     context: ToolExecutionContext
   ): boolean {
+    void error;
     // Check if any conditional rules specify abort behavior
     if (step.conditionalRules) {
       for (const rule of step.conditionalRules) {
@@ -570,6 +684,12 @@ export class ToolChainOrchestrator {
 
 // === ADVANCED TOOL PATTERNS ===
 
+export interface StreamingToolOutput {
+  results: unknown[];
+  totalChunks: number;
+  streaming: true;
+}
+
 /**
  * Create a tool that automatically chains with other tools
  */
@@ -577,32 +697,43 @@ export function createChainableTool<T extends z.ZodType>(config: {
   name: string;
   description: string;
   inputSchema: T;
-  execute: (input: z.infer<T>, context: ToolExecutionContext) => Promise<any>;
+  execute: (
+    input: z.infer<T>,
+    context: ToolExecutionContext
+  ) => Promise<unknown>;
   chainWith?: string[];
   conditionalChains?: Array<{
-    condition: (result: any, context: ToolExecutionContext) => boolean;
+    condition: (result: unknown, context: ToolExecutionContext) => boolean;
     tools: string[];
   }>;
-}) {
+}): Tool<z.infer<T>, unknown> {
   return tool({
     description: config.description,
-    parameters: config.inputSchema,
-    execute: async (input: z.infer<T>, executeContext: any) => {
+    inputSchema: config.inputSchema,
+    execute: async (
+      input: z.infer<T>,
+      executeContext: ToolExecutionOptions<unknown>
+    ) => {
       const context: ToolExecutionContext = {
         toolCallId: executeContext.toolCallId || generateId(),
-        stepNumber: executeContext.stepNumber || 1,
-        previousResults: executeContext.previousResults || [],
-        metadata: executeContext.metadata || {},
+        stepNumber: getToolOrchestrationSDKContext(executeContext.context)
+          .stepNumber,
+        previousResults: [],
+        messages: executeContext.messages,
+        ...(executeContext.abortSignal
+          ? { abortSignal: executeContext.abortSignal }
+          : {}),
+        metadata: {},
       };
 
       try {
         const result = await config.execute(input, context);
 
         // Store result for potential chaining
-        context.metadata.lastResult = result;
-        context.metadata.chainable = true;
-        context.metadata.chainWith = config.chainWith;
-        context.metadata.conditionalChains = config.conditionalChains;
+        context.metadata['lastResult'] = result;
+        context.metadata['chainable'] = true;
+        context.metadata['chainWith'] = config.chainWith;
+        context.metadata['conditionalChains'] = config.conditionalChains;
 
         return result;
       } catch (error) {
@@ -620,17 +751,26 @@ export function createResilientTool<T extends z.ZodType>(config: {
   name: string;
   description: string;
   inputSchema: T;
-  execute: (input: z.infer<T>, context: ToolExecutionContext) => Promise<any>;
+  execute: (
+    input: z.infer<T>,
+    context: ToolExecutionContext
+  ) => Promise<unknown>;
   maxRetries?: number;
   retryDelay?: number;
   retryCondition?: (error: Error) => boolean;
-}) {
+}): Tool<z.infer<T>, unknown> {
   return tool({
     description: config.description,
-    parameters: config.inputSchema,
-    execute: async (input: z.infer<T>, executeContext: any) => {
+    inputSchema: config.inputSchema,
+    execute: async (
+      input: z.infer<T>,
+      executeContext: ToolExecutionOptions<unknown>
+    ) => {
       const maxRetries = config.maxRetries || 3;
       const retryDelay = config.retryDelay || 1000;
+      const orchestrationContext = getToolOrchestrationSDKContext(
+        executeContext.context
+      );
 
       let lastError: Error | null = null;
 
@@ -638,10 +778,14 @@ export function createResilientTool<T extends z.ZodType>(config: {
         try {
           const context: ToolExecutionContext = {
             toolCallId: executeContext.toolCallId || generateId(),
-            stepNumber: executeContext.stepNumber || 1,
-            previousResults: executeContext.previousResults || [],
+            stepNumber: orchestrationContext.stepNumber,
+            previousResults: [],
+            messages: executeContext.messages,
+            ...(executeContext.abortSignal
+              ? { abortSignal: executeContext.abortSignal }
+              : {}),
             metadata: {
-              ...executeContext.metadata,
+              ...orchestrationContext.metadata,
               attempt,
               maxRetries,
             },
@@ -649,7 +793,7 @@ export function createResilientTool<T extends z.ZodType>(config: {
 
           return await config.execute(input, context);
         } catch (error) {
-          lastError = error as Error;
+          lastError = asError(error);
 
           if (attempt < maxRetries) {
             // Check if we should retry this error
@@ -683,21 +827,29 @@ export function createStreamingTool<T extends z.ZodType>(config: {
   execute: (
     input: z.infer<T>,
     context: ToolExecutionContext
-  ) => AsyncGenerator<any>;
+  ) => AsyncGenerator<unknown>;
   bufferSize?: number;
-}) {
+}): Tool<z.infer<T>, StreamingToolOutput> {
   return tool({
     description: config.description,
-    parameters: config.inputSchema,
-    execute: async (input: z.infer<T>, executeContext: any) => {
+    inputSchema: config.inputSchema,
+    execute: async (
+      input: z.infer<T>,
+      executeContext: ToolExecutionOptions<unknown>
+    ) => {
       const context: ToolExecutionContext = {
         toolCallId: executeContext.toolCallId || generateId(),
-        stepNumber: executeContext.stepNumber || 1,
-        previousResults: executeContext.previousResults || [],
-        metadata: executeContext.metadata || {},
+        stepNumber: getToolOrchestrationSDKContext(executeContext.context)
+          .stepNumber,
+        previousResults: [],
+        messages: executeContext.messages,
+        ...(executeContext.abortSignal
+          ? { abortSignal: executeContext.abortSignal }
+          : {}),
+        metadata: {},
       };
 
-      const results: any[] = [];
+      const results: unknown[] = [];
       const bufferSize = config.bufferSize || 100;
 
       try {
@@ -737,7 +889,7 @@ export function createStreamingTool<T extends z.ZodType>(config: {
 export function mapPreviousResult(
   toolName: string,
   propertyPath?: string
-): (results: ToolExecutionResult[]) => any {
+): (results: ToolExecutionResult[]) => unknown {
   return (results: ToolExecutionResult[]) => {
     const targetResult = results.find((r) => r.toolName === toolName);
     if (!targetResult || !targetResult.success) {
@@ -748,9 +900,16 @@ export function mapPreviousResult(
 
     if (propertyPath) {
       const keys = propertyPath.split('.');
-      let value = targetResult.output;
+      let value: unknown = targetResult.output;
       for (const key of keys) {
-        value = value?.[key];
+        if (Array.isArray(value)) {
+          const index = Number(key);
+          value = Number.isInteger(index) ? value[index] : undefined;
+        } else if (typeof value === 'object' && value !== null) {
+          value = (value as Record<string, unknown>)[key];
+        } else {
+          return undefined;
+        }
       }
       return value;
     }

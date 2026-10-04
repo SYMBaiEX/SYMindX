@@ -5,10 +5,11 @@
   "private": true,
   "main": "index.ts",
   "dependencies": {
-    "ai": "^6.0.0-beta.94",
-    "zod": "^3.24.0"
+    "ai": "^7.0.127",
+    "zod": "^4.6.5"
   },
-  "peerDependencies": {
-    "@symindx/types": "workspace:*"
+  "engines": {
+    "node": ">=22",
+    "bun": ">=1.4.2"
   }
 }

@@ -3,8 +3,10 @@
  * Provides consistent logging patterns across all modules
  */
 
-import { Logger, createLogger, LoggerOptions } from './logger.js';
-import { LogLevel, LogContext } from '../types/utils/logger.js';
+import { createLogger } from './logger.js';
+import type { Logger, LoggerOptions } from './logger.js';
+import { LogLevel } from '../types/utils/logger.js';
+import type { ILogger, LogContext } from '../types/utils/logger.js';
 
 // Standard logger categories with consistent prefixes
 export const LOGGER_CATEGORIES = {
@@ -40,6 +42,12 @@ export interface StandardLogContext extends LogContext {
   sessionId?: string;
   requestId?: string;
   version?: string;
+  module?: string;
+  configType?: string;
+  recordCount?: number;
+  tokenCount?: number;
+  operationId?: string;
+  config?: string[];
 }
 
 // Performance logging helper
@@ -49,8 +57,8 @@ export interface PerformanceMetrics {
   endTime?: number;
   duration?: number;
   success?: boolean;
-  error?: Error;
-  metadata?: Record<string, any>;
+  error: Error | undefined;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -80,7 +88,7 @@ export class StandardLoggerFactory {
   static createChildLogger(
     parentLogger: Logger,
     context: StandardLogContext
-  ): Logger {
+  ): ILogger {
     return parentLogger.child(context);
   }
 
@@ -110,20 +118,18 @@ export class PerformanceLogger {
   startOperation(
     operationId: string,
     operation: string,
-    metadata?: Record<string, any>
+    metadata?: Record<string, unknown>
   ): void {
     const metrics: PerformanceMetrics = {
       operation,
       startTime: Date.now(),
-      metadata,
+      error: undefined,
+      ...(metadata === undefined ? {} : { metadata }),
     };
     this.metrics.set(operationId, metrics);
 
-    this.logger.debug(`⏱️ Started: ${operation}`, {
-      operation,
-      operationId,
-      ...metadata,
-    });
+    const logContext: StandardLogContext = { operation, operationId };
+    this.logger.debug('Started: ' + operation, logContext);
   }
 
   /**
@@ -174,7 +180,7 @@ export class PerformanceLogger {
   timeOperation<T>(
     operation: string,
     fn: () => T | Promise<T>,
-    metadata?: Record<string, any>
+    metadata?: Record<string, unknown>
   ): Promise<T> {
     const operationId = `${operation}-${Date.now()}`;
     this.startOperation(operationId, operation, metadata);
@@ -215,7 +221,7 @@ export class StandardLoggingPatterns {
    */
   logInitialization(
     moduleName: string,
-    config?: any,
+    config?: Record<string, unknown>,
     context?: StandardLogContext
   ): void {
     this.logger.start(`Initializing ${moduleName}`, {
@@ -383,7 +389,7 @@ export function logConsoleReplacement(
   category: keyof typeof LOGGER_CATEGORIES,
   level: 'debug' | 'info' | 'warn' | 'error',
   message: string,
-  ...args: any[]
+  ...args: unknown[]
 ): void {
   const logger = StandardLoggerFactory.createLogger(category);
   const fullMessage =

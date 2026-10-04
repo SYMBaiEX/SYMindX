@@ -261,7 +261,7 @@ export function createModelResolver(provider: string, config?: any) {
         | 'reasoning'
         | 'vision' = 'chat',
       explicit?: string
-    ) => resolveModel(type, { explicit, config, provider }),
+    ) => resolveModel(type, { ...(explicit ? { explicit } : {}), config, provider }),
 
     getSupportedModels: (capability: PortalCapability) =>
       getSupportedModels(capability, provider),

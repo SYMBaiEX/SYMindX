@@ -1,0 +1,41 @@
+name: SYMindX local tooling
+
+on:
+  push:
+    branches: [main]
+    paths: ['create-symindx/**', 'website/**', 'packages/runtime/src/types.ts', '.github/workflows/tooling.yml']
+  pull_request:
+    paths: ['create-symindx/**', 'website/**', 'packages/runtime/src/types.ts', '.github/workflows/tooling.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tooling-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [create-symindx, website]
+    defaults:
+      run:
+        working-directory: ${{ matrix.package }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: '1.4.2'
+      - name: Install pinned package dependencies without lifecycle scripts
+        run: bun --no-env-file install --frozen-lockfile --ignore-scripts
+      - name: Check types
+        run: bun --no-env-file run typecheck
+      - name: Build local tooling
+        run: bun --no-env-file run build

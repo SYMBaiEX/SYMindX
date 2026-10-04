@@ -8,22 +8,9 @@
  * @author SYMindX Core Team
  */
 
-import type {
-  BaseConfig,
-  Metadata,
-  GenericData,
-  ActionParameters,
-} from '../common.js';
-import type {
-  Agent,
-  AgentState,
-  AgentEvent,
-  MemoryRecord,
-  EmotionState,
-  Extension,
-} from '../agent.js';
-import type { Portal } from '../portal.js';
-import type { Timestamp, AgentId } from '../helpers.js';
+import type { BaseConfig, Metadata, GenericData } from '../common.js';
+
+import type { Timestamp } from '../helpers.js';
 
 /**
  * Context State Enumeration

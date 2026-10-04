@@ -11,7 +11,6 @@
 // Import types needed for local interface definitions
 import type { CognitionModule } from './cognition';
 import type { Metadata } from './common';
-import type { PortalContext, ToolResult, MCPToolSet } from './context';
 import type { EmotionModule } from './emotion';
 import type { Extension } from './extensions';
 import type {
@@ -20,7 +19,6 @@ import type {
   EventDispatchResult,
   HealthCheckResult,
   SystemHealthResult,
-  ComponentHealth,
   Duration,
   ConfigurationUpdateResult,
   ConfigurationLoadResult,
@@ -746,7 +744,7 @@ export type {
   ExplanationRequest,
   ExplanationResponse,
   DataQualityConfig,
-  ValidationRule,
+  ValidationRule as AIActValidationRule,
   QualityThreshold,
   DataQualityReport,
   DataQualityMetric,
@@ -773,9 +771,9 @@ export type {
   Certification,
   AIActComplianceService,
   LogFilter,
-  ValidationResult,
-  ValidationError,
-  ValidationWarning,
+  ValidationResult as AIActValidationResult,
+  ValidationError as AIActValidationError,
+  ValidationWarning as AIActValidationWarning,
   AIActComplianceReport,
   AuditPackage,
   AIActComplianceFactory,
@@ -828,3 +826,30 @@ export type {
   HomomorphicEncryptionConfig,
   HomomorphicEncryptionFactory,
 } from './homomorphic-encryption';
+
+// Canonical contracts resolve formerly ambiguous star exports.
+// Specialized alternatives remain available from their defining modules.
+export type { MCPTool } from './context';
+export type {
+  ResourceUsage,
+  ValidationSuggestion,
+  SecurityConfig,
+  AgentBuilder,
+  ImpactAssessment,
+  Permission,
+  ResourceLimits,
+  Risk,
+  SecurityVulnerability,
+  TestCase,
+  TestCoverage,
+  TestResult,
+} from './lifecycle';
+export type {
+  APIError,
+  APIRequest,
+  APIResponse,
+  SkillRegistry,
+} from './extensions';
+export type { ValidationReport } from './modules/index';
+export type { DeepPartial, DeepReadonly } from './context/context-types';
+export type { EventData } from './core/events';

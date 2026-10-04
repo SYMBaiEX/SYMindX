@@ -2,7 +2,7 @@
  * Adaptive Model Selection System
  *
  * Intelligent model selection based on context, performance metrics, cost optimization,
- * and dynamic routing with fallback strategies for AI SDK v5 portals.
+ * and dynamic routing with fallback strategies for AI SDK 7 portals.
  */
 
 import { runtimeLogger } from '../../utils/logger';
@@ -182,28 +182,25 @@ export class AdaptiveModelSelector {
     scoredModels.sort((a, b) => b.score - a.score);
 
     // Select primary and fallbacks
-    const primary = scoredModels[0].modelId;
+    const best = scoredModels[0];
+    if (!best) throw new Error('No eligible models satisfy the request requirements');
+    const primary = best.modelId;
     const fallbacks = scoredModels
       .slice(1, this.config.fallbackChainLength + 1)
       .map((m) => m.modelId);
 
     // Generate reasoning
     const reasoning = {
-      score: scoredModels[0].score,
-      factors: scoredModels[0].factors,
+      score: best.score,
+      factors: best.factors,
       alternatives: scoredModels.slice(1, 5).map((m) => ({
         modelId: m.modelId,
         score: m.score,
-        reason: this.generateSelectionReason(m.modelId, m.factors),
+        reason: this.generateSelectionReason(m.factors),
       })),
     };
 
-    runtimeLogger.debug('Model selection completed', {
-      primary,
-      fallbacks,
-      reasoning,
-      context,
-    });
+    runtimeLogger.debug('Model selection completed: ' + JSON.stringify({ primary, fallbacks, reasoning, context }));
 
     return { primary, fallbacks, reasoning };
   }
@@ -272,7 +269,8 @@ export class AdaptiveModelSelector {
           this.getDefaultMetrics();
       }
       const domainMetrics =
-        existing.contextMetrics.performanceByDomain[context.domain];
+        existing.contextMetrics.performanceByDomain[context.domain] ??
+        (existing.contextMetrics.performanceByDomain[context.domain] = this.getDefaultMetrics());
       domainMetrics.avgResponseTime =
         domainMetrics.avgResponseTime * (1 - alpha) +
         actualMetrics.responseTime * alpha;
@@ -302,9 +300,9 @@ export class AdaptiveModelSelector {
       actualPerformance: {
         avgResponseTime: actualMetrics.responseTime,
         successRate: actualMetrics.success ? 1 : 0,
-        avgTokensPerSecond: actualMetrics.tokensPerSecond,
-        costPerToken: actualMetrics.cost,
-        qualityScore: actualMetrics.qualityScore,
+        ...(actualMetrics.tokensPerSecond !== undefined ? { avgTokensPerSecond: actualMetrics.tokensPerSecond } : {}),
+        ...(actualMetrics.cost !== undefined ? { costPerToken: actualMetrics.cost } : {}),
+        ...(actualMetrics.qualityScore !== undefined ? { qualityScore: actualMetrics.qualityScore } : {}),
       },
       timestamp: new Date(),
     });
@@ -553,8 +551,7 @@ export class AdaptiveModelSelector {
       context.domain &&
       metrics.contextMetrics.performanceByDomain[context.domain]
     ) {
-      const domainMetrics =
-        metrics.contextMetrics.performanceByDomain[context.domain];
+      const domainMetrics = metrics.contextMetrics.performanceByDomain[context.domain]!;
       qualityScore = (qualityScore + domainMetrics.qualityScore) / 2;
     }
 
@@ -599,7 +596,6 @@ export class AdaptiveModelSelector {
   }
 
   private generateSelectionReason(
-    modelId: string,
     factors: Record<string, number>
   ): string {
     const topFactors = Object.entries(factors)
@@ -640,7 +636,7 @@ export class AdaptiveModelSelector {
    */
   exportPerformanceData(): {
     metrics: ModelPerformanceMetrics[];
-    history: typeof this.selectionHistory;
+    history: Array<{ modelId: string; context: RequestContext; actualPerformance: Partial<ModelPerformanceMetrics['metrics']>; timestamp: Date }>;
     summary: {
       totalRequests: number;
       modelUsage: Record<string, number>;
@@ -680,7 +676,7 @@ export class AdaptiveModelSelector {
       string,
       ModelPerformanceMetrics['metrics']
     > = {};
-    for (const [provider, stats] of Object.entries(providerStats)) {
+    for (const [provider] of Object.entries(providerStats)) {
       const providerModels = metrics.filter((m) => m.provider === provider);
       if (providerModels.length > 0) {
         avgPerformanceByProvider[provider] = {
@@ -744,16 +740,14 @@ export function createRequestContext(options: {
 
   return {
     complexity,
-    domain: options.domain,
+    ...(options.domain ? { domain: options.domain } : {}),
     expectedTokens,
     priority: options.priority || 'medium',
-    budget: options.budget
-      ? {
-          maxCostPerRequest: options.budget,
-          totalBudget: options.budget * 100, // Assume 100x budget for total
-          remainingBudget: options.budget * 50, // Assume 50x remaining
-        }
-      : undefined,
+    ...(options.budget ? { budget: {
+      maxCostPerRequest: options.budget,
+      totalBudget: options.budget * 100,
+      remainingBudget: options.budget * 50,
+    } } : {}),
     requirements: {
       needsStreaming: false, // Default
       needsTools: !!options.tools,

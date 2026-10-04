@@ -13,7 +13,12 @@
   "dependencies": {
     "discord.js": "^14.14.1"
   },
-  "keywords": ["symindx", "discord", "autonomous", "social-media"],
+  "keywords": [
+    "symindx",
+    "discord",
+    "autonomous",
+    "social-media"
+  ],
   "author": "SYMindX Team",
   "license": "MIT"
 }

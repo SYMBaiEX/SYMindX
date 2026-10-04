@@ -70,7 +70,8 @@ export function handleAISDKError(
       return createNetworkError(
         `${provider} API call failed during ${operation}`,
         provider,
-        model || 'unknown',
+        operation,
+        typeof statusCode === 'number' ? statusCode : undefined,
         `${provider.toUpperCase()}_API_CALL_FAILED`,
         {
           operation,
@@ -97,7 +98,8 @@ export function handleAISDKError(
       return createNetworkError(
         `${provider} rate limit exceeded during ${operation}`,
         provider,
-        model || 'unknown',
+        operation,
+        typeof statusCode === 'number' ? statusCode : 429,
         `${provider.toUpperCase()}_RATE_LIMIT_EXCEEDED`,
         {
           operation,
@@ -124,7 +126,7 @@ export function handleAISDKError(
         `${provider} content filter triggered during ${operation}`,
         provider,
         model || 'unknown',
-        `${provider.toUpperCase()}_CONTENT_FILTERED`,
+        provider.toUpperCase() + '_CONTENT_FILTERED',
         {
           operation,
           originalMessage: errorMessage,
@@ -183,7 +185,7 @@ function handleProviderSpecificError(
         `${provider} resource not found during ${operation}`,
         provider,
         model || 'unknown',
-        `${provider.toUpperCase()}_NOT_FOUND`,
+        provider.toUpperCase() + '_NOT_FOUND',
         { operation, originalMessage: errorMessage },
         error
       );
@@ -192,7 +194,8 @@ function handleProviderSpecificError(
       return createNetworkError(
         `${provider} rate limit exceeded`,
         provider,
-        model || 'unknown',
+        operation,
+        typeof statusCode === 'number' ? statusCode : 429,
         `${provider.toUpperCase()}_RATE_LIMITED`,
         {
           operation,
@@ -209,7 +212,8 @@ function handleProviderSpecificError(
       return createNetworkError(
         `${provider} server error during ${operation}`,
         provider,
-        model || 'unknown',
+        operation,
+        typeof statusCode === 'number' ? statusCode : undefined,
         `${provider.toUpperCase()}_SERVER_ERROR`,
         { operation, statusCode, originalMessage: errorMessage },
         error
@@ -220,7 +224,7 @@ function handleProviderSpecificError(
         `${provider} ${operation} failed`,
         provider,
         model || 'unknown',
-        `${provider.toUpperCase()}_${operation.toUpperCase()}_FAILED`,
+        provider.toUpperCase() + '_' + operation.toUpperCase() + '_FAILED',
         { operation, statusCode, originalMessage: errorMessage },
         error
       );
@@ -294,12 +298,14 @@ function isNonRetryableError(error: any): boolean {
  */
 export function createErrorHandler(provider: string, defaultModel?: string) {
   return {
-    handleError: (error: any, operation: string, model?: string) =>
-      handleAISDKError(error, {
+    handleError: (error: any, operation: string, model?: string) => {
+      const resolvedModel = model ?? defaultModel;
+      return handleAISDKError(error, {
         provider,
         operation,
-        model: model || defaultModel,
-      }),
+        ...(resolvedModel !== undefined ? { model: resolvedModel } : {}),
+      });
+    },
 
     withRetry: <T>(
       operation: () => Promise<T>,
@@ -314,11 +320,12 @@ export function createErrorHandler(provider: string, defaultModel?: string) {
         ...retryOptions,
       };
 
+      const resolvedModel = model ?? defaultModel;
       return withRetry(operation, fullRetryOptions, (error) =>
         handleAISDKError(error, {
           provider,
           operation: operationName,
-          model: model || defaultModel,
+          ...(resolvedModel !== undefined ? { model: resolvedModel } : {}),
         })
       );
     },

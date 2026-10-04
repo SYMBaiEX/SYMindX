@@ -5,7 +5,7 @@
   "private": true,
   "main": "index.ts",
   "dependencies": {
-    "pg": "^8.16.0",
+    "pg": "^8.23.1",
     "uuid": "^11.0.0"
   },
   "symindx": {
@@ -13,8 +13,5 @@
     "category": "memory",
     "displayName": "PostgreSQL Memory Provider",
     "description": "PostgreSQL database for scalable agent memory storage"
-  },
-  "peerDependencies": {
-    "@symindx/types": "workspace:*"
   }
 }

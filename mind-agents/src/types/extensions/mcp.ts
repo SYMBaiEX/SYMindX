@@ -472,7 +472,7 @@ export const isMCPRequest = (obj: unknown): obj is MCPRequest => {
     obj !== null &&
     typeof obj === 'object' &&
     'jsonrpc' in obj &&
-    (obj as Record<string, unknown>).jsonrpc === '2.0' &&
+    (obj as Record<string, unknown>)['jsonrpc'] === '2.0' &&
     'method' in obj
   );
 };
@@ -482,7 +482,7 @@ export const isMCPResponse = (obj: unknown): obj is MCPResponse => {
     obj !== null &&
     typeof obj === 'object' &&
     'jsonrpc' in obj &&
-    (obj as Record<string, unknown>).jsonrpc === '2.0' &&
+    (obj as Record<string, unknown>)['jsonrpc'] === '2.0' &&
     ('result' in obj || 'error' in obj)
   );
 };
@@ -492,7 +492,7 @@ export const isErrorResponse = (obj: unknown): obj is ErrorResponse => {
     obj !== null &&
     typeof obj === 'object' &&
     'jsonrpc' in obj &&
-    (obj as Record<string, unknown>).jsonrpc === '2.0' &&
+    (obj as Record<string, unknown>)['jsonrpc'] === '2.0' &&
     'error' in obj
   );
 };

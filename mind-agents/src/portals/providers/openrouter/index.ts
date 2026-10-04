@@ -1,3 +1,6 @@
+import { createOpenAI } from '@ai-sdk/openai';
+import { generateText, isStepCount } from 'ai';
+import { convertToAIMessages, getSystemInstructions } from '../../shared/message-converter';
 import {
   PortalConfig,
   TextGenerationOptions,
@@ -120,64 +123,51 @@ export class OpenRouterPortal extends BasePortal {
         (this.config as OpenRouterConfig).model ||
         'meta-llama/llama-3.1-8b-instruct:free';
 
-      const response = await fetch(`${this.baseURL}/chat/completions`, {
-        method: 'POST',
+      const provider = createOpenAI({
+        baseURL: this.baseURL,
+        apiKey: this.config.apiKey || '',
         headers: {
-          Authorization: `Bearer ${this.config.apiKey}`,
-          'Content-Type': 'application/json',
-          'HTTP-Referer':
-            (this.config as OpenRouterConfig).siteUrl ||
-            'https://localhost:3000',
-          'X-Title':
-            (this.config as OpenRouterConfig).siteName || 'Symindx Agent',
+          'HTTP-Referer': (this.config as OpenRouterConfig).siteUrl || 'https://localhost:3000',
+          'X-Title': (this.config as OpenRouterConfig).siteName || 'Symindx Agent',
         },
-        body: JSON.stringify({
-          model,
-          messages: messages.map((msg) => ({
-            role: msg.role,
-            content: msg.content,
-          })),
-          max_tokens: options?.maxTokens || this.config.maxTokens,
-          temperature: options?.temperature || this.config.temperature,
-          top_p: options?.topP,
-          frequency_penalty: options?.frequencyPenalty,
-          presence_penalty: options?.presencePenalty,
-          tools: options?.functions?.map((fn: { name: string; description?: string; parameters?: unknown }) => ({
-            type: 'function',
-            function: {
-              name: fn.name,
-              description: fn.description,
-              parameters: fn.parameters,
-            },
-          })),
-        }),
       });
-
-      if (!response.ok) {
-        throw new Error(`OpenRouter API error: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      const choice = data.choices[0];
-
+      const instructions = getSystemInstructions(messages);
+      const result = await generateText({
+        model: provider.chat(model),
+        messages: convertToAIMessages(messages),
+        ...(instructions ? { instructions } : {}),
+        ...(options?.maxTokens ?? this.config.maxTokens ? { maxOutputTokens: options?.maxTokens ?? this.config.maxTokens } : {}),
+        ...(options?.temperature !== undefined ? { temperature: options.temperature } : {}),
+        ...(options?.topP !== undefined ? { topP: options.topP } : {}),
+        ...(options?.frequencyPenalty !== undefined ? { frequencyPenalty: options.frequencyPenalty } : {}),
+        ...(options?.presencePenalty !== undefined ? { presencePenalty: options.presencePenalty } : {}),
+        ...(options?.tools ? { tools: options.tools, stopWhen: isStepCount(options.maxSteps || 5) } : {}),
+      });
+      const toolCalls = result.toolCalls.map((call) => ({
+        id: call.toolCallId,
+        type: 'function' as const,
+        function: { name: call.toolName, arguments: JSON.stringify(call.input) },
+      }));
       return {
-        text: choice.message.content,
+        text: result.text,
         message: {
           role: MessageRole.ASSISTANT,
-          content: choice.message.content,
+          content: result.text,
+          ...(toolCalls.length ? { toolCalls } : {}),
         },
+        toolResults: result.toolResults.map((item) => ({
+          toolName: item.toolName,
+          args: item.input,
+          result: item.output,
+          timestamp: new Date(),
+        })),
         usage: {
-          promptTokens: data.usage?.prompt_tokens || 0,
-          completionTokens: data.usage?.completion_tokens || 0,
-          totalTokens: data.usage?.total_tokens || 0,
+          promptTokens: result.usage.inputTokens ?? 0,
+          completionTokens: result.usage.outputTokens ?? 0,
+          totalTokens: (result.usage.inputTokens ?? 0) + (result.usage.outputTokens ?? 0),
         },
-        finishReason:
-          (choice.finish_reason as FinishReason) || FinishReason.STOP,
-        metadata: {
-          model,
-          provider: 'openrouter',
-          cost: data.usage?.total_cost || 0,
-        },
+        finishReason: result.finishReason as FinishReason,
+        metadata: { model, provider: 'openrouter' },
       };
     } catch (error) {
       void error;

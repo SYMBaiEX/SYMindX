@@ -8,7 +8,7 @@
 import { Agent } from './agent';
 import { BaseConfig, Metadata, ActionParameters } from './common';
 import { UnifiedContext } from './context/unified-context';
-import { z } from 'zod';
+import type { ToolSet } from 'ai';
 
 export enum PortalType {
   // Supported AI Providers
@@ -137,7 +137,7 @@ export interface PortalConfig extends Record<string, unknown> {
 export interface TextGenerationOptions {
   model?: string;
   maxTokens?: number;
-  maxOutputTokens?: number; // AI SDK v5 parameter
+  maxOutputTokens?: number; // AI SDK 7 parameter
   temperature?: number;
   topP?: number;
   frequencyPenalty?: number;
@@ -146,12 +146,14 @@ export interface TextGenerationOptions {
   stream?: boolean;
   logitBias?: Record<string, number>;
 
-  // AI SDK v5 tool calling and streaming support
+  // AI SDK 7 tool calling and streaming support
   tools?: AISDKToolSet;
   maxSteps?: number;
   onStepFinish?: (step: {
     text: string;
     toolCalls?: ToolCall[];
+  toolCallId?: string;
+  toolName?: string;
     toolResults?: unknown[];
     finishReason: FinishReason;
     usage?: {
@@ -222,6 +224,8 @@ export interface ChatMessage {
     arguments: string;
   };
   toolCalls?: ToolCall[];
+  toolCallId?: string;
+  toolName?: string;
   attachments?: MessageAttachment[];
   timestamp?: Date;
 }
@@ -244,15 +248,11 @@ export interface MessageAttachment {
 }
 
 /**
- * AI SDK v5 ToolSet - compatible with generateText/streamText
+ * AI SDK 7 tool definitions used by generateText/streamText
  */
-export interface AISDKTool {
-  description?: string;
-  parameters: z.ZodTypeAny | Record<string, unknown>;
-  execute?: (...args: unknown[]) => unknown | Promise<unknown>;
-}
+export type AISDKTool = ToolSet[string];
 
-export type AISDKToolSet = Record<string, AISDKTool>;
+export type AISDKToolSet = ToolSet;
 
 /**
  * Options for chat generation
@@ -260,7 +260,7 @@ export type AISDKToolSet = Record<string, AISDKTool>;
 export interface ChatGenerationOptions extends TextGenerationOptions {
   functions?: FunctionDefinition[];
   functionCall?: string | { name: string };
-  tools?: AISDKToolSet; // Native AI SDK v5 tools from MCP
+  tools?: AISDKToolSet; // AI SDK 7 executable tools from MCP
   // context is inherited from TextGenerationOptions
 }
 

@@ -2,7 +2,7 @@
  * Performance Optimization Utilities
  *
  * Advanced performance optimization including connection pooling, request batching,
- * intelligent caching, and dynamic rate limiting for AI SDK v5 portals.
+ * intelligent caching, and dynamic rate limiting for AI SDK 7 portals.
  */
 
 import { runtimeLogger } from '../../utils/logger';
@@ -173,7 +173,7 @@ export class ConnectionPool {
         } catch (error) {
           runtimeLogger.warn(
             `Failed to initialize connection for ${providerId}:`,
-            error
+            { metadata: { error: String(error) } }
           );
         }
       }
@@ -200,7 +200,7 @@ export class ConnectionPool {
     } catch (error) {
       runtimeLogger.error(
         `Failed to create connection for ${providerId}:`,
-        error
+            { metadata: { error: String(error) } }
       );
       throw error;
     }
@@ -241,7 +241,7 @@ export class ConnectionPool {
             connection.client.destroy();
           }
         } catch (error) {
-          runtimeLogger.warn(`Error cleaning up connection ${id}:`, error);
+          runtimeLogger.warn('Error cleaning up connection ' + id + ':', { metadata: { error: String(error) } });
         }
 
         this.connections.delete(id);
@@ -279,7 +279,6 @@ export interface BatchableRequest {
 export class RequestBatcher {
   private pendingRequests = new Map<string, BatchableRequest[]>();
   private batchTimers = new Map<string, NodeJS.Timeout>();
-  private similarityCache = new Map<string, string>();
 
   constructor(private config: BatchRequestConfig) {}
 
@@ -359,7 +358,7 @@ export class RequestBatcher {
   private async executeBatchGroup(group: BatchableRequest[]): Promise<void> {
     if (group.length === 1) {
       // Single request - execute normally
-      const request = group[0];
+      const request = group[0]!;
       try {
         const result = await this.executeSingleRequest(request);
         request.resolve(result);
@@ -375,17 +374,17 @@ export class RequestBatcher {
 
       // Distribute results back to individual requests
       for (let i = 0; i < group.length; i++) {
-        if (batchResults[i]) {
-          group[i].resolve(batchResults[i]);
-        } else {
-          group[i].reject(new Error('Batch execution failed'));
-        }
+        const request = group[i];
+        if (!request) continue;
+        const result = batchResults[i];
+        if (result) request.resolve(result);
+        else request.reject(new Error('Batch execution failed'));
       }
     } catch (error) {
       // Fallback: execute requests individually
       runtimeLogger.warn(
         'Batch execution failed, falling back to individual requests:',
-        error
+        { metadata: { error: String(error) } }
       );
 
       for (const request of group) {
@@ -453,13 +452,13 @@ export class RequestBatcher {
     return intersection.size / union.size;
   }
 
-  private async executeSingleRequest(request: BatchableRequest): Promise<any> {
+  private async executeSingleRequest(_request: BatchableRequest): Promise<any> {
     // This would be implemented by the specific portal
     throw new Error('executeSingleRequest must be implemented by the portal');
   }
 
   private async executeBatchedRequest(
-    group: BatchableRequest[]
+    _group: BatchableRequest[]
   ): Promise<any[]> {
     // This would be implemented by the specific portal for batch processing
     throw new Error('executeBatchedRequest must be implemented by the portal');
@@ -479,7 +478,7 @@ export class RequestBatcher {
 
     for (const [batchKey, requests] of this.pendingRequests) {
       totalRequests += requests.length;
-      const [provider] = batchKey.split(':');
+      const provider = batchKey.split(':')[0] || 'unknown';
       batchesByProvider[provider] = (batchesByProvider[provider] || 0) + 1;
     }
 
@@ -516,6 +515,8 @@ export interface CacheEntry {
 
 export class IntelligentCache {
   private cache = new Map<string, CacheEntry>();
+  private hits = 0;
+  private misses = 0;
   private accessOrder: string[] = []; // For LRU
   private currentSize = 0;
 
@@ -529,14 +530,19 @@ export class IntelligentCache {
    */
   get(key: string): any | null {
     const entry = this.cache.get(key);
-    if (!entry) return null;
+    if (!entry) {
+      this.misses++;
+      return null;
+    }
 
     // Check TTL
     if (Date.now() - entry.createdAt.getTime() > this.config.ttl) {
       this.delete(key);
+      this.misses++;
       return null;
     }
 
+    this.hits++;
     // Update access statistics
     entry.lastAccessed = new Date();
     entry.accessCount++;
@@ -665,11 +671,8 @@ export class IntelligentCache {
     compressionRatio: number;
   } {
     const entries = Array.from(this.cache.values());
-    const totalHits = entries.reduce(
-      (sum, entry) => sum + entry.accessCount,
-      0
-    );
-    const totalRequests = totalHits + this.getStats.misses || 0;
+    const totalHits = this.hits;
+    const totalRequests = totalHits + this.misses;
 
     const compressedEntries = entries.filter((e) => e.compressed);
     const compressionRatio =
@@ -685,7 +688,7 @@ export class IntelligentCache {
           ? entries.reduce(
               (oldest, entry) =>
                 entry.createdAt < oldest ? entry.createdAt : oldest,
-              entries[0].createdAt
+              entries[0]!.createdAt
             )
           : null,
       compressionRatio,

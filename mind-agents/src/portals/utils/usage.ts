@@ -6,9 +6,10 @@
 
 import type { LanguageModelUsage } from 'ai';
 import type { AIUsage, ProviderConfig } from '../../types/portals/ai-sdk';
+import type { ChatGenerationOptions, TextGenerationOptions } from '../../types/portal';
 
 /**
- * Convert AI SDK v6 usage to our internal format
+ * Convert AI SDK 7 usage to our internal format
  * Returns a guaranteed usage object (never undefined) for type safety
  */
 export function convertUsage(usage?: LanguageModelUsage | AIUsage): {
@@ -16,25 +17,11 @@ export function convertUsage(usage?: LanguageModelUsage | AIUsage): {
   completionTokens: number;
   totalTokens: number;
 } {
-  if (!usage) {
-    return {
-      promptTokens: 0,
-      completionTokens: 0,
-      totalTokens: 0,
-    };
-  }
-
-  // Handle different usage formats
-  const promptTokens = (usage as any).promptTokens || 0;
-  const completionTokens = (usage as any).completionTokens || 0;
-
-  return {
-    promptTokens,
-    completionTokens,
-    totalTokens: promptTokens + completionTokens,
-  };
+  if (!usage) return { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
+  const promptTokens = 'inputTokens' in usage ? usage.inputTokens ?? 0 : usage.promptTokens;
+  const completionTokens = 'outputTokens' in usage ? usage.outputTokens ?? 0 : usage.completionTokens;
+  return { promptTokens, completionTokens, totalTokens: promptTokens + completionTokens };
 }
-
 /**
  * Safely build provider settings with conditional inclusion
  * Only includes properties that are defined (not undefined)
@@ -72,10 +59,10 @@ export function buildProviderSettings(
 }
 
 /**
- * Safely build AI SDK v6 parameters with conditional inclusion
+ * Safely build AI SDK 7 parameters with conditional inclusion
  * This helper ensures that optional parameters are only included when they have values
  * Prevents TypeScript exactOptionalPropertyTypes errors by only including defined values
- * Handles maxTokens -> maxOutputTokens conversion for AI SDK v6 compatibility
+ * Handles maxTokens -> maxOutputTokens conversion for AI SDK 7 compatibility
  *
  * @deprecated Use the enhanced parameter builders from utils/ai-sdk/parameter-builder.ts instead
  */
@@ -90,7 +77,7 @@ export function buildAISDKParams<T extends Record<string, unknown>>(
   // Dynamically add only defined and non-null properties
   for (const [key, value] of Object.entries(options)) {
     if (value !== undefined && value !== null) {
-      // Handle maxTokens -> maxOutputTokens conversion for AI SDK v6
+      // Handle maxTokens -> maxOutputTokens conversion for AI SDK 7
       if (key === 'maxTokens') {
         (params as Record<string, unknown>)['maxOutputTokens'] = value;
         continue;

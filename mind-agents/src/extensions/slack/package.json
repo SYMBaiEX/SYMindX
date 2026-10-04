@@ -13,9 +13,6 @@
     "@slack/interactive-messages": "^2.0.0",
     "@slack/events-api": "^3.0.1"
   },
-  "peerDependencies": {
-    "@symindx/core": "*"
-  },
   "keywords": [
     "slack",
     "bot",

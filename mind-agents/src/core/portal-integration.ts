@@ -4,10 +4,8 @@
  * Provides utilities for integrating AI portals with cognition and interaction systems
  */
 
-import { experimental_createMCPClient } from 'ai';
-import { Experimental_StdioMCPTransport } from 'ai/mcp-stdio';
-import { z } from 'zod';
-
+import { createMCPClient } from '@ai-sdk/mcp';
+import { Experimental_StdioMCPTransport } from '@ai-sdk/mcp/mcp-stdio';
 import { PortalRouter } from '../portals/index';
 import { Agent } from '../types/agent';
 import {
@@ -23,13 +21,11 @@ import { errorHandler } from '../utils/error-handler';
 import {
   createPortalError,
   createRuntimeError,
-  createNetworkError,
-  safeAsync,
   formatError,
 } from '../utils/standard-errors';
 
 import { MCPResponseFormatter } from './mcp-response-formatter';
-import type { PortalContext, ToolResult, MCPToolSet } from '../types/context';
+import type { PortalContext, ToolResult } from '../types/context';
 
 export interface PortalSelectionCriteria {
   capability: PortalCapability;
@@ -90,7 +86,7 @@ export class PortalIntegration {
 
       // Add system message with agent personality and enhanced context
       if (agent.config?.core) {
-        let systemContent = `You are ${agent.name}${agent.config.lore?.origin ? `, ${agent.config.lore.origin}` : ''}. 
+        let systemContent = `You are ${agent.name}${agent.config.lore?.origin ? `, ${agent.config.lore.origin}` : ''}.
 Your personality traits: ${agent.config.core.personality?.join(', ') || 'helpful, friendly'}.`;
 
         // Add tool usage instructions (tools will be added dynamically)
@@ -167,18 +163,13 @@ Tools will be automatically executed and their results will be available for you
         `🤖 ${agent.name} is thinking using ${chatPortal.name}...`
       );
 
-      // Create MCP tools directly using AI SDK v5 approach
-      let mcpTools: AISDKToolSet | undefined = undefined;
-      let mcpClient:
-        | {
-            tools: () => Promise<AISDKToolSet>;
-            close: () => Promise<void>;
-          }
-        | undefined = undefined;
+      // Create MCP tools directly using AI SDK 7 approach
+      let mcpTools: AISDKToolSet | undefined;
+      let mcpClient: Awaited<ReturnType<typeof createMCPClient>> | undefined;
 
+      const mcpServers = (agent.characterConfig as any)?.mcpServers;
       try {
         // Check if agent has MCP server configuration
-        const mcpServers = (agent.characterConfig as any)?.mcpServers;
         if (mcpServers) {
           // Create MCP client for Context7
           if (mcpServers.context7) {
@@ -186,7 +177,7 @@ Tools will be automatically executed and their results will be available for you
               command: 'npx',
               args: ['-y', '@upstash/context7-mcp'],
             });
-            mcpClient = await experimental_createMCPClient({
+            mcpClient = await createMCPClient({
               transport,
             });
 
@@ -195,7 +186,7 @@ Tools will be automatically executed and their results will be available for you
             runtimeLogger.debug('Raw MCP tools:', {
               metadata: { tools: Object.keys(rawTools) },
             });
-            mcpTools = this.fixMCPToolsForOpenAI(rawTools);
+            mcpTools = rawTools;
             runtimeLogger.debug('Fixed MCP tools for OpenAI');
           }
         }
@@ -218,7 +209,7 @@ Tools will be automatically executed and their results will be available for you
       const result = await chatPortal.generateChat(messages, {
         maxTokens: 2048,
         temperature: 0.4,
-        tools: mcpTools, // Use 'tools' instead of 'functions' for AI SDK v5
+        ...(mcpTools && { tools: mcpTools }), // Native AI SDK 7 tools
       });
 
       // Clean up MCP client
@@ -237,14 +228,14 @@ Tools will be automatically executed and their results will be available for you
         }
       }
 
-      // Log conversation flow stages as per AI SDK v5 best practices
+      // Log conversation flow stages as per AI SDK 7 best practices
       MCPResponseFormatter.logConversationFlow('portal-response-received', {
         hasText: !!result.text,
         hasToolResults: !!(result as any).toolResults?.length,
         model: (result as any).metadata?.model || chatPortal.name,
       });
 
-      // Handle tool results if present (AI SDK v5 pattern)
+      // Handle tool results if present (AI SDK 7 pattern)
       if (
         (result as any).toolResults &&
         (result as any).toolResults.length > 0
@@ -277,7 +268,7 @@ Tools will be automatically executed and their results will be available for you
         // Combine AI response with formatted tool results
         const aiText = result.text || result.message?.content || '';
 
-        // AI SDK v5 pattern: Let the model's response lead, augmented by tool results
+        // AI SDK 7 pattern: Let the model's response lead, augmented by tool results
         if (aiText) {
           // Model already incorporated tool results in its response
           return aiText;
@@ -297,13 +288,13 @@ Tools will be automatically executed and their results will be available for you
           error: {
             code: 'PORTAL_GENERATION_ERROR',
             message: (result as any).error || 'Unknown error',
-            cause: result,
+            cause: new Error(String((result as any).error || 'Portal generation failed')),
           },
         });
         return this.getFallbackResponse(prompt);
       } else {
         runtimeLogger.warn('⚠️ Unexpected portal result format:', {
-          metadata: { result },
+          metadata: { result: JSON.stringify(result) },
         });
         return this.getFallbackResponse(prompt);
       }
@@ -340,104 +331,6 @@ Tools will be automatically executed and their results will be available for you
 
       return this.getFallbackResponse(prompt);
     }
-  }
-
-  /**
-   * Fix MCP tools schemas for OpenAI compatibility
-   * Convert raw MCP schemas to proper AI SDK v5 tool format
-   */
-  private static fixMCPToolsForOpenAI(tools: MCPToolSet): AISDKToolSet {
-    const fixedTools: AISDKToolSet = {};
-
-    for (const [toolName, tool] of Object.entries(tools)) {
-      try {
-        const toolDef = tool as any;
-
-        runtimeLogger.debug(`Processing MCP tool: ${toolName}`, {
-          metadata: {
-            hasParameters: !!toolDef.parameters,
-            hasExecute: typeof toolDef.execute === 'function',
-          },
-        });
-
-        // Convert MCP tool to AI SDK v5 format
-        if (toolDef && toolDef.parameters) {
-          // Build a Zod schema from the JSON schema
-          const jsonSchema = toolDef.parameters;
-          let zodSchema = z.object({});
-
-          if (jsonSchema.properties) {
-            const schemaFields: Record<string, any> = {};
-
-            for (const [propName, propDef] of Object.entries(
-              jsonSchema.properties
-            )) {
-              const prop = propDef as any;
-
-              // Convert JSON Schema to Zod
-              let fieldSchema;
-              if (prop.type === 'string') {
-                fieldSchema = z.string();
-              } else if (prop.type === 'number') {
-                fieldSchema = z.number();
-              } else if (prop.type === 'boolean') {
-                fieldSchema = z.boolean();
-              } else {
-                fieldSchema = z.string(); // Default to string
-              }
-
-              // Add description if available
-              if (prop.description) {
-                fieldSchema = fieldSchema.describe(prop.description);
-              }
-
-              // Make optional if not in required array
-              const required = jsonSchema.required || [];
-              if (!required.includes(propName)) {
-                fieldSchema = fieldSchema.optional();
-              }
-
-              schemaFields[propName] = fieldSchema;
-            }
-
-            zodSchema = z.object(schemaFields);
-          }
-
-          // Create AI SDK v5 compatible tool
-          fixedTools[toolName] = {
-            description: toolDef.description || toolName,
-            parameters: zodSchema,
-            execute:
-              toolDef.execute ||
-              (async (_args: Record<string, unknown>) => {
-                runtimeLogger.warn(
-                  `Tool ${toolName} executed without implementation`
-                );
-                return {
-                  result: 'Tool executed but no implementation provided',
-                };
-              }),
-          };
-
-          runtimeLogger.debug(`Fixed tool ${toolName} with Zod schema`);
-        } else {
-          // Keep original if it's already in the right format
-          fixedTools[toolName] = tool;
-        }
-      } catch (error) {
-        void error;
-        runtimeLogger.warn(
-          `Failed to fix schema for tool ${toolName}: ${error}`
-        );
-        // Skip problematic tools
-        continue;
-      }
-    }
-
-    runtimeLogger.debug(
-      `Fixed ${Object.keys(fixedTools).length} MCP tools for OpenAI`
-    );
-    return fixedTools;
   }
 
   /**
@@ -785,7 +678,7 @@ What are your current thoughts? Respond with 2-3 brief thoughts.`;
   }
 
   /**
-   * Generate a streaming response with MCP tool support (AI SDK v5 pattern)
+   * Generate a streaming response with MCP tool support (AI SDK 7 pattern)
    * @param agent The agent with portal and MCP tools
    * @param prompt The prompt to respond to
    * @param context Additional context
@@ -860,7 +753,7 @@ What are your current thoughts? Respond with 2-3 brief thoughts.`;
       let buffer = '';
       const toolResults: ToolResult[] = [];
 
-      // Process the stream following AI SDK v5 patterns
+      // Process the stream following AI SDK 7 patterns
       for await (const chunk of stream) {
         // Handle different chunk types
         if (chunk.type === 'text-delta') {
@@ -888,7 +781,13 @@ What are your current thoughts? Respond with 2-3 brief thoughts.`;
       // If we have tool results, format and yield them
       if (toolResults.length > 0) {
         const formattedResults = MCPResponseFormatter.formatToolResults(
-          toolResults,
+          toolResults.map((item) => ({
+            toolName: item.toolName,
+            args: item.args,
+            result: item.result,
+            timestamp: item.timestamp,
+            ...(item.error !== undefined && { error: String(item.error) }),
+          })),
           {
             userQuery: prompt,
             agentPersonality: agent.name,

@@ -87,10 +87,12 @@ export function createMigrationProxy<T extends Record<string, unknown>>(
         const camelProp = snakeToCamel(prop);
         if (camelProp in obj) {
           runtimeLogger.warn('Deprecated snake_case property access', {
-            component: componentName,
-            deprecated: prop,
-            replacement: camelProp,
-            stack: new Error().stack,
+            source: componentName,
+            metadata: {
+              deprecated: prop,
+              replacement: camelProp,
+              stack: new Error().stack,
+            },
           });
           return obj[camelProp as keyof T];
         }
@@ -102,10 +104,12 @@ export function createMigrationProxy<T extends Record<string, unknown>>(
       if (typeof prop === 'string' && prop.includes('_')) {
         const camelProp = snakeToCamel(prop);
         runtimeLogger.warn('Deprecated snake_case property assignment', {
-          component: componentName,
-          deprecated: prop,
-          replacement: camelProp,
-          stack: new Error().stack,
+          source: componentName,
+          metadata: {
+            deprecated: prop,
+            replacement: camelProp,
+            stack: new Error().stack,
+          },
         });
         obj[camelProp as keyof T] = value;
         return true;
@@ -278,13 +282,18 @@ export function validateNamingConsistency(
 /**
  * Runtime deprecation warning for snake_case usage
  */
-export function deprecateSnakeCase(target: unknown, propertyKey: string): void {
+export function deprecateSnakeCase(
+  _target: unknown,
+  propertyKey: string
+): void {
   if (propertyKey.includes('_')) {
     const camelCaseKey = snakeToCamel(propertyKey);
     runtimeLogger.warn('Snake_case property is deprecated', {
-      deprecated: propertyKey,
-      replacement: camelCaseKey,
-      migration: `Please update your code to use '${camelCaseKey}' instead of '${propertyKey}'`,
+      metadata: {
+        deprecated: propertyKey,
+        replacement: camelCaseKey,
+        migration: `Please update your code to use '${camelCaseKey}' instead of '${propertyKey}'`,
+      },
     });
   }
 }

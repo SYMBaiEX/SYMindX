@@ -6,8 +6,7 @@
  * community tools, and contribution systems.
  */
 
-import type { BaseConfig, Metadata, AgentId, ValidationResult } from './common';
-import type { MemoryRecord } from './memory';
+import type { BaseConfig, Metadata, ValidationResult } from './common';
 
 // ========================== CORE TYPES ==========================
 
@@ -393,15 +392,7 @@ export interface PluginSearchQuery {
 export interface PluginFilter {
   field: string;
   operator:
-    | 'eq'
-    | 'ne'
-    | 'gt'
-    | 'gte'
-    | 'lt'
-    | 'lte'
-    | 'in'
-    | 'nin'
-    | 'contains';
+    'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'nin' | 'contains';
   value: unknown;
 }
 
@@ -1729,11 +1720,7 @@ export interface MentorProfile {
   hourlyRate?: number;
   currency?: string;
   sessionTypes: (
-    | 'one-on-one'
-    | 'group'
-    | 'code-review'
-    | 'career'
-    | 'project'
+    'one-on-one' | 'group' | 'code-review' | 'career' | 'project'
   )[];
   tools: string[];
   approach: string;
@@ -1991,12 +1978,7 @@ export interface SupportTicket {
   id: string;
   user: string;
   type:
-    | 'bug'
-    | 'feature'
-    | 'question'
-    | 'documentation'
-    | 'account'
-    | 'billing';
+    'bug' | 'feature' | 'question' | 'documentation' | 'account' | 'billing';
   priority: 'low' | 'medium' | 'high' | 'critical';
   status: 'open' | 'in-progress' | 'waiting' | 'resolved' | 'closed';
   subject: string;
@@ -2669,12 +2651,7 @@ export interface Bounty {
 
   // Participation
   status:
-    | 'open'
-    | 'claimed'
-    | 'in-progress'
-    | 'completed'
-    | 'expired'
-    | 'cancelled';
+    'open' | 'claimed' | 'in-progress' | 'completed' | 'expired' | 'cancelled';
   claimant?: string;
   submissions: BountySubmission[];
 
@@ -2709,11 +2686,7 @@ export interface BountySubmission {
   description: string;
   evidence: ContributionEvidence[];
   status:
-    | 'submitted'
-    | 'reviewing'
-    | 'accepted'
-    | 'rejected'
-    | 'revision-requested';
+    'submitted' | 'reviewing' | 'accepted' | 'rejected' | 'revision-requested';
   feedback?: string;
   score?: number;
   submitted: Date;
@@ -2965,12 +2938,7 @@ export interface RecognitionSystem {
 export interface Recognition {
   id: string;
   type:
-    | 'contributor'
-    | 'mentor'
-    | 'innovator'
-    | 'leader'
-    | 'helper'
-    | 'ambassador';
+    'contributor' | 'mentor' | 'innovator' | 'leader' | 'helper' | 'ambassador';
   title: string;
   description: string;
   recipient: string;
@@ -3593,11 +3561,7 @@ export interface TutorialReview {
 
 export interface RoleRequirement {
   type:
-    | 'reputation'
-    | 'contribution'
-    | 'certification'
-    | 'nomination'
-    | 'tenure';
+    'reputation' | 'contribution' | 'certification' | 'nomination' | 'tenure';
   value: number | string;
   description: string;
 }

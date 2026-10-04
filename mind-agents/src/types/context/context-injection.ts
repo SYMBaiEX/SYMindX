@@ -8,12 +8,12 @@
 import type {
   OperationResult,
   ValidationResult,
-  Metadata,
   AgentId,
   ModuleId,
   CorrelationId,
 } from '../helpers';
 import type { BaseContext } from '../context';
+import type { Metadata } from '../common';
 import type { Agent } from '../agent';
 import type { Extension } from '../extension';
 import type { Portal } from '../portal';

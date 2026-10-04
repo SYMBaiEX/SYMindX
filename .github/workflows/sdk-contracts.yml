@@ -1,0 +1,35 @@
+name: SYMindX SDK contract typecheck
+
+on:
+  push:
+    branches: [main]
+    paths: ['mind-agents/**', '.github/workflows/sdk-contracts.yml']
+  pull_request:
+    paths: ['mind-agents/**', '.github/workflows/sdk-contracts.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sdk-contracts-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  typecheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: mind-agents
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: '1.4.2'
+      - name: Install pinned dependencies without lifecycle scripts
+        run: bun --no-env-file install --frozen-lockfile --ignore-scripts
+      - name: Typecheck SDK contracts
+        run: bun --no-env-file run typecheck:sdk

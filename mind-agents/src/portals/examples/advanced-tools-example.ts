@@ -1,7 +1,7 @@
 /**
- * Advanced AI SDK v5 Tools Example
+ * Advanced AI SDK 7 Tools Example
  *
- * This file demonstrates advanced tool usage patterns with AI SDK v5,
+ * This file demonstrates advanced tool usage patterns with AI SDK 7,
  * including multi-step execution, tool streaming, and orchestration.
  */
 
@@ -14,7 +14,7 @@ import { z } from 'zod';
  */
 export const weatherTool = tool({
   description: 'Get the weather in a location',
-  parameters: z.object({
+  inputSchema: z.object({
     location: z.string().describe('The location to get the weather for'),
     unit: z.enum(['celsius', 'fahrenheit']).describe('Temperature unit'),
   }),
@@ -46,7 +46,7 @@ export const weatherTool = tool({
  */
 export const locationTool = tool({
   description: 'Get the current location of the user',
-  parameters: z.object({}),
+  inputSchema: z.object({}),
   execute: async () => {
     // Simulate location detection
     const cities = [
@@ -66,7 +66,7 @@ export const locationTool = tool({
  */
 export const temperatureConverterTool = tool({
   description: 'Convert temperature between different units',
-  parameters: z.object({
+  inputSchema: z.object({
     temperature: z.number().describe('The temperature value'),
     fromUnit: z.enum(['celsius', 'fahrenheit', 'kelvin']),
     toUnit: z.enum(['celsius', 'fahrenheit', 'kelvin']),
@@ -112,7 +112,7 @@ export const temperatureConverterTool = tool({
  */
 export const analysisTool = tool({
   description: 'Perform detailed analysis with progress updates',
-  parameters: z.object({
+  inputSchema: z.object({
     topic: z.string().describe('Topic to analyze'),
     depth: z.enum(['shallow', 'medium', 'deep']).describe('Analysis depth'),
   }),
@@ -144,7 +144,7 @@ export async function multiStepExample() {
   };
 
   const result = await generateText({
-    model: openai('gpt-4o-mini') as any, // Cast to resolve v1/v2 compatibility
+    model: openai('gpt-4o-mini'),
     messages: [
       {
         role: 'user',
@@ -154,7 +154,7 @@ export async function multiStepExample() {
     ],
     tools,
     toolChoice: 'required',
-    onStepFinish: async ({ toolCalls, toolResults }) => {
+    onStepEnd: async ({ toolCalls, toolResults }) => {
       console.log(`Step completed:`);
 
       if (toolCalls && toolCalls.length > 0) {
@@ -185,7 +185,7 @@ export async function streamingToolExample() {
   };
 
   const stream = streamText({
-    model: openai('gpt-4o-mini') as any, // Cast to resolve v1/v2 compatibility
+    model: openai('gpt-4o-mini'),
     messages: [
       {
         role: 'user',
@@ -194,11 +194,10 @@ export async function streamingToolExample() {
       },
     ],
     tools,
-    toolCallStreaming: true, // Enable tool call streaming
   });
 
   // Process the full stream to handle different event types
-  for await (const chunk of stream.fullStream) {
+  for await (const chunk of stream.stream) {
     switch (chunk.type) {
       case 'text':
         process.stdout.write(chunk.text);
@@ -254,7 +253,7 @@ export class WeatherAssistant {
    */
   async getLocalWeather(preferredUnit: 'celsius' | 'fahrenheit' = 'celsius') {
     const result = await generateText({
-      model: openai('gpt-4o-mini') as any, // Cast to resolve v1/v2 compatibility
+      model: openai('gpt-4o-mini'),
       messages: [
         {
           role: 'system',
@@ -288,7 +287,7 @@ export class WeatherAssistant {
     depth: 'shallow' | 'medium' | 'deep' = 'medium'
   ) {
     const stream = streamText({
-      model: openai('gpt-4o-mini') as any, // Cast to resolve v1/v2 compatibility
+      model: openai('gpt-4o-mini'),
       messages: [
         {
           role: 'system',
@@ -301,7 +300,6 @@ export class WeatherAssistant {
         },
       ],
       tools: this.tools,
-      toolCallStreaming: true,
     });
 
     for await (const chunk of stream.textStream) {
@@ -315,7 +313,7 @@ export class WeatherAssistant {
  */
 export const robustWeatherTool = tool({
   description: 'Get weather with error handling',
-  parameters: z.object({
+  inputSchema: z.object({
     location: z.string(),
   }),
   execute: async ({ location }) => {
@@ -347,7 +345,7 @@ export const robustWeatherTool = tool({
  */
 export async function customStopExample() {
   const result = await generateText({
-    model: openai('gpt-4o-mini') as any, // Cast to resolve v1/v2 compatibility
+    model: openai('gpt-4o-mini'),
     messages: [
       {
         role: 'user',

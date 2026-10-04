@@ -1,20 +1,29 @@
-/**
- * Shared Parameter Builder Utilities
- *
- * Provides standardized parameter building logic for AI SDK operations
- */
-
 import {
-  TextGenerationOptions,
-  ChatGenerationOptions,
-  ImageGenerationOptions,
-  EmbeddingOptions,
+  jsonSchema,
+  stepCountIs,
+  type CallSettings,
+  type GenerateTextOnStepFinishCallback,
+  type JSONSchema7,
+  type StopCondition,
+  type ToolSet,
+} from 'ai';
+import {
+  FinishReason as PortalFinishReason,
+  type ChatGenerationOptions,
+  type EmbeddingOptions,
+  type FunctionDefinition,
+  type ImageGenerationOptions,
+  type TextGenerationOptions,
 } from '../../types/portal';
 
+type ParameterRecord = Record<string, unknown>;
+type ChatCallSettings = CallSettings & {
+  tools?: ToolSet;
+  stopWhen?: StopCondition<ToolSet>[];
+  onStepEnd?: GenerateTextOnStepFinishCallback<ToolSet>;
+};
+
 export interface ParameterBuilderOptions {
-  /**
-   * Default values to use when options are not provided
-   */
   defaults?: {
     maxOutputTokens?: number;
     temperature?: number;
@@ -22,192 +31,145 @@ export interface ParameterBuilderOptions {
     frequencyPenalty?: number;
     presencePenalty?: number;
   };
-
-  /**
-   * Provider-specific parameter mappings and validations
-   */
   provider?: string;
-
-  /**
-   * Whether to include provider-specific optimizations
-   */
   useProviderOptimizations?: boolean;
 }
 
-/**
- * Build parameters for text generation with validation and defaults
- */
-export function buildTextGenerationParams<T extends Record<string, any>>(
+export function buildTextGenerationParams<T extends ParameterRecord>(
   baseParams: T,
   options?: TextGenerationOptions,
   config?: ParameterBuilderOptions
-): T & Record<string, any> {
+): T & CallSettings {
   const { defaults, provider = 'openai' } = config || {};
-  const params = { ...baseParams };
-
-  // Get provider-specific defaults
   const providerDefaults = getProviderDefaults(provider);
   const finalDefaults = { ...providerDefaults, ...defaults };
+  const params: Partial<CallSettings> = {};
 
-  // Handle maxOutputTokens (AI SDK v5 standard)
   const maxTokens =
-    options?.maxOutputTokens ??
-    options?.maxTokens ??
-    finalDefaults.maxOutputTokens;
-
+    options?.maxOutputTokens ?? options?.maxTokens ?? finalDefaults.maxOutputTokens;
   if (maxTokens !== undefined && maxTokens > 0) {
-    (params as any).maxOutputTokens = maxTokens;
+    params.maxOutputTokens = maxTokens;
   }
 
-  // Handle temperature with validation
   const temperature = options?.temperature ?? finalDefaults.temperature;
   if (temperature !== undefined) {
-    (params as any).temperature = Math.min(Math.max(temperature, 0), 2);
+    params.temperature = Math.min(Math.max(temperature, 0), 2);
   }
 
-  // Handle topP with validation
   const topP = options?.topP ?? finalDefaults.topP;
   if (topP !== undefined) {
-    (params as any).topP = Math.min(Math.max(topP, 0), 1);
+    params.topP = Math.min(Math.max(topP, 0), 1);
   }
 
-  // Handle frequency penalty (OpenAI-style providers)
   if (supportsParameter(provider, 'frequencyPenalty')) {
     const frequencyPenalty =
       options?.frequencyPenalty ?? finalDefaults.frequencyPenalty;
     if (frequencyPenalty !== undefined) {
-      (params as any).frequencyPenalty = Math.min(
-        Math.max(frequencyPenalty, -2),
-        2
-      );
+      params.frequencyPenalty = Math.min(Math.max(frequencyPenalty, -2), 2);
     }
   }
 
-  // Handle presence penalty (OpenAI-style providers)
   if (supportsParameter(provider, 'presencePenalty')) {
     const presencePenalty =
       options?.presencePenalty ?? finalDefaults.presencePenalty;
     if (presencePenalty !== undefined) {
-      (params as any).presencePenalty = Math.min(
-        Math.max(presencePenalty, -2),
-        2
-      );
+      params.presencePenalty = Math.min(Math.max(presencePenalty, -2), 2);
     }
   }
 
-  // Handle stop sequences
-  if (options?.stop && options.stop.length > 0) {
-    (params as any).stopSequences = options.stop;
+  if (options?.stop?.length) {
+    params.stopSequences = options.stop;
   }
 
-  return params;
+  return Object.assign({}, baseParams, params) as T & CallSettings;
 }
 
-/**
- * Build parameters for chat generation with tool support
- */
-export function buildChatGenerationParams<T extends Record<string, any>>(
+export function buildChatGenerationParams<T extends ParameterRecord>(
   baseParams: T,
   options?: ChatGenerationOptions,
   config?: ParameterBuilderOptions
-): T & Record<string, any> {
-  // Start with text generation parameters
-  const params = buildTextGenerationParams(baseParams, options, config);
+): T & ChatCallSettings {
+  const params = buildTextGenerationParams(baseParams, options, config) as T &
+    ChatCallSettings;
 
-  // Add tool support if provided
   if (options?.tools && Object.keys(options.tools).length > 0) {
-    (params as any).tools = options.tools;
-    (params as any).maxSteps = options.maxSteps || 5;
-
-    // Add tool streaming support for compatible providers
-    if (supportsParameter(config?.provider || 'openai', 'toolCallStreaming')) {
-      (params as any).toolCallStreaming = true;
-    }
-
-    // Add step callbacks
+    params.tools = options.tools;
+    params.stopWhen = [stepCountIs(options.maxSteps ?? 5)];
     if (options.onStepFinish) {
-      (params as any).onStepFinish = options.onStepFinish;
+      params.onStepEnd = (event) =>
+        options.onStepFinish?.({
+          text: event.text,
+          toolCalls: event.toolCalls.map((call) => ({
+            id: call.toolCallId,
+            type: 'function',
+            function: {
+              name: call.toolName,
+              arguments: JSON.stringify(call.input),
+            },
+          })),
+          toolResults: event.toolResults,
+          finishReason: mapFinishReason(event.finishReason),
+          usage: {
+            promptTokens: event.usage.inputTokens ?? 0,
+            completionTokens: event.usage.outputTokens ?? 0,
+            totalTokens: event.usage.totalTokens ?? 0,
+          },
+        });
     }
   }
 
-  // Add function support (legacy compatibility)
-  if (options?.functions && options.functions.length > 0) {
-    // Convert functions to tools if needed
-    const convertedTools = convertFunctionsToTools(options.functions);
-    (params as any).tools = convertedTools;
-    (params as any).maxSteps = options.maxSteps || 5;
+  if (options?.functions?.length) {
+    params.tools = convertFunctionsToTools(options.functions);
+    params.stopWhen = [stepCountIs(options.maxSteps ?? 5)];
   }
 
   return params;
 }
 
-/**
- * Build parameters for image generation
- */
-export function buildImageGenerationParams<T extends Record<string, any>>(
+export function buildImageGenerationParams<T extends ParameterRecord>(
   baseParams: T,
   options?: ImageGenerationOptions,
   config?: ParameterBuilderOptions
-): T & Record<string, any> {
-  const params = { ...baseParams };
-  const provider = config?.provider || 'openai';
+): T & ParameterRecord {
+  const params: ParameterRecord = {};
+  const provider = config?.provider ?? 'openai';
 
-  if (options?.size) {
-    (params as any).size = options.size;
-  }
-
-  if (options?.n && options.n > 0) {
-    (params as any).n = options.n;
-  }
-
+  if (options?.size !== undefined) params['size'] = options.size;
+  if (options?.n !== undefined && options.n > 0) params['n'] = options.n;
   if (options?.quality && supportsParameter(provider, 'quality')) {
-    (params as any).quality = options.quality;
+    params['quality'] = options.quality;
   }
-
   if (options?.style && supportsParameter(provider, 'style')) {
-    (params as any).style = options.style;
+    params['style'] = options.style;
   }
 
-  // Provider-specific options
   if (provider === 'openai' && options) {
-    const providerOptions: any = {};
-
-    if (options.quality) providerOptions.quality = options.quality;
-    if (options.style) providerOptions.style = options.style;
-    if (options.responseFormat)
-      providerOptions.response_format = options.responseFormat;
-
+    const providerOptions: Record<string, unknown> = {};
+    if (options.quality) providerOptions['quality'] = options.quality;
+    if (options.style) providerOptions['style'] = options.style;
+    if (options.responseFormat) {
+      providerOptions['response_format'] = options.responseFormat;
+    }
     if (Object.keys(providerOptions).length > 0) {
-      (params as any).providerOptions = {
-        openai: providerOptions,
-      };
+      params['providerOptions'] = { openai: providerOptions };
     }
   }
 
-  return params;
+  return Object.assign({}, baseParams, params);
 }
 
-/**
- * Build parameters for embedding generation
- */
-export function buildEmbeddingParams<T extends Record<string, any>>(
+export function buildEmbeddingParams<T extends ParameterRecord>(
   baseParams: T,
   options?: EmbeddingOptions,
-  config?: ParameterBuilderOptions
-): T & Record<string, any> {
-  const params = { ...baseParams };
-
-  // Embedding parameters are typically simpler
-  if (options?.dimensions) {
-    (params as any).dimensions = options.dimensions;
+  _config?: ParameterBuilderOptions
+): T & ParameterRecord {
+  const params: ParameterRecord = {};
+  if (options?.dimensions !== undefined && options.dimensions > 0) {
+    params['dimensions'] = options.dimensions;
   }
-
-  return params;
+  return Object.assign({}, baseParams, params);
 }
 
-/**
- * Get provider-specific default parameters
- */
 function getProviderDefaults(provider: string): {
   maxOutputTokens: number;
   temperature: number;
@@ -217,148 +179,113 @@ function getProviderDefaults(provider: string): {
 } {
   switch (provider.toLowerCase()) {
     case 'openai':
-      return {
-        maxOutputTokens: 1000,
-        temperature: 0.7,
-        topP: 1.0,
-        frequencyPenalty: 0,
-        presencePenalty: 0,
-      };
-
-    case 'anthropic':
-      return {
-        maxOutputTokens: 1000,
-        temperature: 0.7,
-        topP: 1.0,
-      };
-
     case 'groq':
       return {
         maxOutputTokens: 1000,
         temperature: 0.7,
-        topP: 1.0,
+        topP: 1,
         frequencyPenalty: 0,
         presencePenalty: 0,
       };
-
+    case 'anthropic':
+    case 'google':
+    case 'gemini':
+      return { maxOutputTokens: 1000, temperature: 0.7, topP: 1 };
     case 'xai':
     case 'grok':
       return {
         maxOutputTokens: 2000,
         temperature: 0.8,
-        topP: 1.0,
+        topP: 1,
         frequencyPenalty: 0,
         presencePenalty: 0,
       };
-
     case 'mistral':
       return {
         maxOutputTokens: 8192,
         temperature: 0.7,
-        topP: 1.0,
+        topP: 1,
         frequencyPenalty: 0,
         presencePenalty: 0,
       };
-
     case 'cohere':
       return {
         maxOutputTokens: 1000,
         temperature: 0.7,
-        topP: 1.0,
+        topP: 1,
         frequencyPenalty: 0,
         presencePenalty: 0,
       };
-
-    case 'google':
-    case 'gemini':
-      return {
-        maxOutputTokens: 1000,
-        temperature: 0.7,
-        topP: 1.0,
-      };
-
     default:
-      return {
-        maxOutputTokens: 1000,
-        temperature: 0.7,
-        topP: 1.0,
-      };
+      return { maxOutputTokens: 1000, temperature: 0.7, topP: 1 };
   }
 }
 
-/**
- * Check if a provider supports a specific parameter
- */
 function supportsParameter(provider: string, parameter: string): boolean {
-  const supportMatrix: Record<string, string[]> = {
-    openai: [
-      'frequencyPenalty',
-      'presencePenalty',
-      'toolCallStreaming',
-      'quality',
-      'style',
-    ],
-    anthropic: ['toolCallStreaming'],
-    groq: ['frequencyPenalty', 'presencePenalty', 'toolCallStreaming'],
+  const supportMatrix: Record<string, readonly string[]> = {
+    openai: ['frequencyPenalty', 'presencePenalty', 'quality', 'style'],
+    groq: ['frequencyPenalty', 'presencePenalty'],
     xai: ['frequencyPenalty', 'presencePenalty'],
-    mistral: ['frequencyPenalty', 'presencePenalty', 'toolCallStreaming'],
+    mistral: ['frequencyPenalty', 'presencePenalty'],
     cohere: ['frequencyPenalty', 'presencePenalty'],
-    google: ['toolCallStreaming'],
   };
-
-  const supportedParams = supportMatrix[provider.toLowerCase()] || [];
-  return supportedParams.includes(parameter);
+  return supportMatrix[provider.toLowerCase()]?.includes(parameter) ?? false;
 }
 
-/**
- * Convert legacy function definitions to AI SDK v5 tool format
- */
-function convertFunctionsToTools(functions: any[]): Record<string, any> {
-  const tools: Record<string, any> = {};
-
+function convertFunctionsToTools(functions: FunctionDefinition[]): ToolSet {
+  const tools: ToolSet = {};
   for (const func of functions) {
     if (func.name && func.description && func.parameters) {
       tools[func.name] = {
         description: func.description,
-        parameters: func.parameters,
-        execute: async (params: any) => {
-          // This would need to be implemented by the specific portal
-          return params;
-        },
+        inputSchema: jsonSchema(func.parameters as JSONSchema7),
+        execute: async (input) => input,
       };
     }
   }
-
   return tools;
 }
 
-/**
- * Create parameter builder configured for specific provider
- */
-export function createParameterBuilder(provider: string, defaults?: any) {
+function mapFinishReason(reason: string): PortalFinishReason {
+  switch (reason) {
+    case 'length':
+      return PortalFinishReason.LENGTH;
+    case 'tool-calls':
+    case 'function-call':
+      return PortalFinishReason.FUNCTION_CALL;
+    case 'content-filter':
+      return PortalFinishReason.CONTENT_FILTER;
+    case 'error':
+      return PortalFinishReason.ERROR;
+    default:
+      return PortalFinishReason.STOP;
+  }
+}
+
+export function createParameterBuilder(
+  provider: string,
+  defaults?: ParameterBuilderOptions['defaults']
+) {
   const config: ParameterBuilderOptions = {
     provider,
-    defaults,
+    ...(defaults === undefined ? {} : { defaults }),
     useProviderOptimizations: true,
   };
 
   return {
-    buildTextParams: <T extends Record<string, any>>(
+    buildTextParams: <T extends ParameterRecord>(
       baseParams: T,
       options?: TextGenerationOptions
     ) => buildTextGenerationParams(baseParams, options, config),
-
-    buildChatParams: <T extends Record<string, any>>(
+    buildChatParams: <T extends ParameterRecord>(
       baseParams: T,
       options?: ChatGenerationOptions
     ) => buildChatGenerationParams(baseParams, options, config),
-
-    buildImageParams: <T extends Record<string, any>>(
+    buildImageParams: <T extends ParameterRecord>(
       baseParams: T,
       options?: ImageGenerationOptions
     ) => buildImageGenerationParams(baseParams, options, config),
-
-    buildEmbeddingParams: <T extends Record<string, any>>(
+    buildEmbeddingParams: <T extends ParameterRecord>(
       baseParams: T,
       options?: EmbeddingOptions
     ) => buildEmbeddingParams(baseParams, options, config),

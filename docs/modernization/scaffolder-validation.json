@@ -1,0 +1,50 @@
+{
+  "scope": "completed local scaffolder",
+  "toolchain": {
+    "bun": "1.4.2",
+    "typescript": "7.0.2"
+  },
+  "checks": [
+    {
+      "name": "fresh frozen install",
+      "status": "passed",
+      "command": "bun --no-env-file install --frozen-lockfile --ignore-scripts"
+    },
+    {
+      "name": "strict source types",
+      "status": "passed",
+      "command": "bun --no-env-file run typecheck"
+    },
+    {
+      "name": "build and declarations",
+      "status": "passed",
+      "command": "bun --no-env-file run build"
+    },
+    {
+      "name": "format",
+      "status": "passed",
+      "detail": "Independent Prettier3.9.9 check against runtime config."
+    },
+    {
+      "name": "generated template strict types",
+      "status": "passed",
+      "detail": "Coding worker statically compiled the emitted TypeScript source against current runtime dist declarations; generator/app was not run."
+    },
+    {
+      "name": "native compiler on Windows WSL UNC",
+      "status": "failed",
+      "detail": "TS18003 no inputs from glob. Same source compiled in fresh local Windows staging. README documents platform limitation."
+    },
+    {
+      "name": "generator behavior / app startup",
+      "status": "not-run",
+      "reason": "No implementation tests or behavior probes explicitly requested."
+    }
+  ],
+  "sourceHashes": {
+    "create-symindx/src/index.ts": "daf60b402af6679d2f9b2b81ca0882f5cdb478a8536e88aacad1d8e2b1951382",
+    "create-symindx/tsconfig.json": "46ef588da35676007cec49ef212294df2858fed64ad8516ed5b69433583a432f",
+    "create-symindx/package.json": "e4c1463146723ceea62abf71e56a0e4351dcf2ec5d0793b0a75e656b99a96ef4",
+    "create-symindx/bun.lock": "a4c1cab4af7ba401d1c056a105139af8914c1f3281c943d51353aaf4f9df41cc"
+  }
+}

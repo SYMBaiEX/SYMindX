@@ -20,8 +20,5 @@
       "factory": "createAPIExtension",
       "autoRegister": true
     }
-  },
-  "peerDependencies": {
-    "@symindx/types": "workspace:*"
   }
 }

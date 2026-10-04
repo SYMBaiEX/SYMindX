@@ -1,12 +1,14 @@
 /**
  * Groq Portal Implementation
  *
- * This portal provides integration with Groq's API using the Vercel AI SDK v6.
+ * This portal provides integration with Groq's API using the AI SDK 7.
  * Groq specializes in fast inference with open-source models.
  */
 
 import { createGroq } from '@ai-sdk/groq';
-import { generateText, streamText, tool } from 'ai';
+import { generateText, streamText, tool, isStepCount } from 'ai';
+import type { ToolSet } from 'ai';
+import { convertToAIMessages, getSystemInstructions } from '../../shared/message-converter';
 import { z } from 'zod';
 
 import {
@@ -50,7 +52,7 @@ export class GroqPortal extends BasePortal {
   constructor(config: GroqConfig) {
     super('groq', 'Groq', '1.0.0', config);
 
-    // Create Groq provider with proper AI SDK v6 configuration
+    // Create Groq provider with proper AI SDK 7 configuration
     const apiKey = config.apiKey || process.env['GROQ_API_KEY'];
     if (!apiKey) {
       throw new Error('Groq API key is required');
@@ -88,64 +90,24 @@ export class GroqPortal extends BasePortal {
   }
 
   /**
-   * Convert function definitions to AI SDK v6 tool format
+   * Convert function definitions to AI SDK 7 tool format
    */
-  private convertFunctionsToTools(
-    functions: unknown
-  ): Record<string, ReturnType<typeof tool>> {
-    const tools: Record<string, ReturnType<typeof tool>> = {};
-
-    // Handle both array format and MCP tools object format
-    if (Array.isArray(functions)) {
-      // Original array format - these are FunctionDefinition objects
-      for (const fn of functions) {
-        // Create a simple schema that accepts any object for compatibility
-        const schema = z.object({});
-
-        tools[fn.name] = tool({
-          description: fn.description,
-          parameters: schema, // AI SDK v6: still uses 'parameters' for tool() function
-          execute: async (input: Record<string, unknown>) => {
-            // Tool execution would be handled by the caller
-            return input;
-          },
-        });
-      }
-    } else {
-      // MCP tools object format - these have execute functions
-      for (const [toolName, toolDef] of Object.entries(functions as Record<string, unknown>)) {
-        // Type guard to ensure toolDef is an object
-        if (toolDef && typeof toolDef === 'object') {
-          const def = toolDef as {
-            description?: string;
-            parameters?: unknown;
-            inputSchema?: unknown;
-            execute?: (input: Record<string, unknown>) => Promise<unknown>;
-          };
-
-          tools[toolName] = tool({
-            description: def.description || toolName,
-            // AI SDK v6: tool() function still uses 'parameters'
-            parameters: (def.parameters as any) || z.object({}),
-            execute:
-              def.execute ||
-              (async (
-                _input: Record<string, unknown>
-              ): Promise<{ error: string }> => {
-                // Tool has no execute function
-                return { error: 'Tool execution not implemented' };
-              }),
-          });
-        }
-      }
+  private convertFunctionsToTools(functions: unknown): ToolSet {
+    if (!Array.isArray(functions)) {
+      return functions as ToolSet;
     }
-
+    const tools: ToolSet = {};
+    for (const fn of functions) {
+      if (!fn || typeof fn !== 'object' || !('name' in fn)) continue;
+      const definition = fn as { name: string; description?: string };
+      tools[definition.name] = tool({
+        description: definition.description || definition.name,
+        inputSchema: z.object({}),
+        execute: async () => ({ error: 'Tool execution must be provided by the application' }),
+      });
+    }
     return tools;
   }
-
-  /**
-   * Generate text using Groq's completion API
-   */
   override async generateText(
     prompt: string,
     options?: TextGenerationOptions
@@ -153,14 +115,7 @@ export class GroqPortal extends BasePortal {
     try {
       const model = this.resolveModel('chat', 'GROQ');
 
-      const config = this.config as GroqConfig;
-      const apiKey = config.apiKey || process.env['GROQ_API_KEY'];
-      const providerSettings: { apiKey?: string; baseURL?: string } = {};
-      if (apiKey) providerSettings.apiKey = apiKey;
-      if (config.baseURL) providerSettings.baseURL = config.baseURL;
-
-      const baseParams = {
-        model: this.groqProvider(model, providerSettings as any),
+      const baseParams = { model: this.groqProvider.languageModel(model),
         prompt,
       };
 
@@ -192,7 +147,7 @@ export class GroqPortal extends BasePortal {
 
       const params = buildAISDKParams(baseParams, optionalParams);
 
-      const result = await generateText(params as any);
+      const result = await generateText(params);
 
       return {
         text: result.text,
@@ -221,40 +176,14 @@ export class GroqPortal extends BasePortal {
     try {
       const model = this.resolveModel('chat', 'GROQ');
 
-      // Convert ChatMessage[] to message format for AI SDK
-      const aiMessages = messages.map((msg) => {
-        if (msg.role === MessageRole.FUNCTION) {
-          return { role: 'assistant' as const, content: msg.content };
-        }
-        if (msg.role === MessageRole.USER) {
-          return { role: 'user' as const, content: msg.content };
-        }
-        if (msg.role === MessageRole.ASSISTANT) {
-          return { role: 'assistant' as const, content: msg.content };
-        }
-        if (msg.role === MessageRole.SYSTEM) {
-          return { role: 'system' as const, content: msg.content };
-        }
-        return { role: 'user' as const, content: msg.content };
-      });
+      // Convert portal messages to AI SDK 7 ModelMessage values
+      const aiMessages = convertToAIMessages(messages, { supportsMultimodal: false });
 
-      const hasTools =
-        options?.functions && Object.keys(options.functions).length > 0;
+      const tools = options?.tools || (options?.functions ? this.convertFunctionsToTools(options.functions) : undefined);
 
-      // Convert tools for AI SDK v6 compatibility
-      const tools = hasTools
-        ? this.convertFunctionsToTools(options.functions!)
-        : undefined;
-
-      const config = this.config as GroqConfig;
-      const apiKey = config.apiKey || process.env['GROQ_API_KEY'];
-      const providerSettings: { apiKey?: string; baseURL?: string } = {};
-      if (apiKey) providerSettings.apiKey = apiKey;
-      if (config.baseURL) providerSettings.baseURL = config.baseURL;
-
-      const baseOptions = {
-        model: this.groqProvider(model, providerSettings as any),
+      const baseOptions = { model: this.groqProvider.languageModel(model),
         messages: aiMessages,
+        ...(getSystemInstructions(messages) ? { instructions: getSystemInstructions(messages)! } : {}),
       };
 
       // Build params with only defined values
@@ -283,21 +212,9 @@ export class GroqPortal extends BasePortal {
         optionalParams['presencePenalty'] = options.presencePenalty;
       }
 
-      const generateOptions = buildAISDKParams(baseOptions, optionalParams);
-
-        // Add tools if provided with comprehensive AI SDK v6 support
-      if (tools) {
-        const optionsWithTools = generateOptions as any;
-        optionsWithTools.tools = tools;
-        optionsWithTools.maxSteps = options?.maxSteps || 5; // Enable configurable multi-step tool execution
-
-        // Add comprehensive tool streaming callbacks
-        if (options?.onStepFinish) {
-          optionsWithTools.onStepFinish = options.onStepFinish;
-        }
-      }
-
-      const result = await generateText(generateOptions as any);
+      const params = buildAISDKParams(baseOptions, optionalParams);
+      const callOptions = { ...params, ...(tools && { tools, stopWhen: isStepCount(options?.maxSteps || 5) }), ...(options?.onStepFinish && { onStepEnd: ({ text, toolCalls, toolResults, finishReason, usage }: any) => options.onStepFinish!({ text, toolCalls, toolResults, finishReason, usage }) }) };
+      const result = await generateText(callOptions);
 
       // Handle the case where the model wants to use tools but hasn't generated final text yet
       if (
@@ -310,7 +227,7 @@ export class GroqPortal extends BasePortal {
           const toolResultsText = result.toolResults
             .map(
               (tr) =>
-                `Tool ${tr.toolName} returned: ${JSON.stringify(tr.result)}`
+                `Tool ${tr.toolName} returned: ${JSON.stringify(tr.output)}`
             )
             .join('\n');
           return {
@@ -391,14 +308,7 @@ export class GroqPortal extends BasePortal {
       // Build evaluation prompt using base method
       const evaluationPrompt = super.buildEvaluationPrompt(options);
 
-      const config = this.config as GroqConfig;
-      const apiKey = config.apiKey || process.env['GROQ_API_KEY'];
-      const providerSettings: { apiKey?: string; baseURL?: string } = {};
-      if (apiKey) providerSettings.apiKey = apiKey;
-      if (config.baseURL) providerSettings.baseURL = config.baseURL;
-
-      const baseParams = {
-        model: this.groqProvider(toolModel, providerSettings as any),
+      const baseParams = { model: this.groqProvider.languageModel(toolModel),
         prompt: evaluationPrompt,
       };
 
@@ -410,7 +320,7 @@ export class GroqPortal extends BasePortal {
         topP: 0.9,
       });
 
-      const result = await generateText(params as any);
+      const result = await generateText(params);
 
       const processingTime = Date.now() - startTime;
 
@@ -552,14 +462,7 @@ export class GroqPortal extends BasePortal {
     try {
       const model = this.resolveModel('chat', 'GROQ');
 
-      const config = this.config as GroqConfig;
-      const apiKey = config.apiKey || process.env['GROQ_API_KEY'];
-      const providerSettings: { apiKey?: string; baseURL?: string } = {};
-      if (apiKey) providerSettings.apiKey = apiKey;
-      if (config.baseURL) providerSettings.baseURL = config.baseURL;
-
-      const baseParams = {
-        model: this.groqProvider(model, providerSettings as any),
+      const baseParams = { model: this.groqProvider.languageModel(model),
         prompt,
       };
 
@@ -578,23 +481,8 @@ export class GroqPortal extends BasePortal {
       }
 
       const params = buildAISDKParams(baseParams, optionalParams);
-
-        // Add tools if provided with comprehensive AI SDK v6 streaming support
-      const hasTools =
-        options?.functions && Object.keys(options.functions).length > 0;
-      if (hasTools) {
-        const tools = this.convertFunctionsToTools(options.functions!);
-        const streamOptionsWithTools = params as any;
-        streamOptionsWithTools.tools = tools;
-        streamOptionsWithTools.maxSteps = options?.maxSteps || 5;
-        streamOptionsWithTools.toolCallStreaming = true;
-
-        if (options?.onStepFinish) {
-          streamOptionsWithTools.onStepFinish = options.onStepFinish;
-        }
-      }
-
-      const result = await streamText(params as any);
+      const streamOptions = { ...params, ...((options?.tools || options?.functions) && { tools: options?.tools || this.convertFunctionsToTools(options!.functions!), stopWhen: isStepCount(options?.maxSteps || 5) }), ...(options?.onStepFinish && { onStepEnd: ({ text, toolCalls, toolResults, finishReason, usage }: any) => options.onStepFinish!({ text, toolCalls, toolResults, finishReason, usage }) }) };
+      const result = await streamText(streamOptions);
 
       for await (const delta of result.textStream) {
         yield delta;
@@ -616,32 +504,12 @@ export class GroqPortal extends BasePortal {
     try {
       const model = this.resolveModel('chat', 'GROQ');
 
-      // Convert ChatMessage[] to message format for AI SDK
-      const aiMessages = messages.map((msg) => {
-        if (msg.role === MessageRole.FUNCTION) {
-          return { role: 'assistant' as const, content: msg.content };
-        }
-        if (msg.role === MessageRole.USER) {
-          return { role: 'user' as const, content: msg.content };
-        }
-        if (msg.role === MessageRole.ASSISTANT) {
-          return { role: 'assistant' as const, content: msg.content };
-        }
-        if (msg.role === MessageRole.SYSTEM) {
-          return { role: 'system' as const, content: msg.content };
-        }
-        return { role: 'user' as const, content: msg.content };
-      });
+      // Convert portal messages to AI SDK 7 ModelMessage values
+      const aiMessages = convertToAIMessages(messages, { supportsMultimodal: false });
 
-      const config = this.config as GroqConfig;
-      const apiKey = config.apiKey || process.env['GROQ_API_KEY'];
-      const providerSettings: { apiKey?: string; baseURL?: string } = {};
-      if (apiKey) providerSettings.apiKey = apiKey;
-      if (config.baseURL) providerSettings.baseURL = config.baseURL;
-
-      const baseParams = {
-        model: this.groqProvider(model, providerSettings as any),
+      const baseParams = { model: this.groqProvider.languageModel(model),
         messages: aiMessages,
+        ...(getSystemInstructions(messages) ? { instructions: getSystemInstructions(messages)! } : {}),
       };
 
       // Build params with only defined values
@@ -671,23 +539,8 @@ export class GroqPortal extends BasePortal {
       }
 
       const params = buildAISDKParams(baseParams, optionalParams);
-
-        // Add tools if provided with comprehensive AI SDK v6 streaming support
-      const hasTools =
-        options?.functions && Object.keys(options.functions).length > 0;
-      if (hasTools) {
-        const tools = this.convertFunctionsToTools(options.functions!);
-        const streamOptionsWithTools = params as any;
-        streamOptionsWithTools.tools = tools;
-        streamOptionsWithTools.maxSteps = options?.maxSteps || 5;
-        streamOptionsWithTools.toolCallStreaming = true;
-
-        if (options?.onStepFinish) {
-          streamOptionsWithTools.onStepFinish = options.onStepFinish;
-        }
-      }
-
-      const result = await streamText(params as any);
+      const streamOptions = { ...params, ...((options?.tools || options?.functions) && { tools: options?.tools || this.convertFunctionsToTools(options!.functions!), stopWhen: isStepCount(options?.maxSteps || 5) }), ...(options?.onStepFinish && { onStepEnd: ({ text, toolCalls, toolResults, finishReason, usage }: any) => options.onStepFinish!({ text, toolCalls, toolResults, finishReason, usage }) }) };
+      const result = await streamText(streamOptions);
 
       for await (const delta of result.textStream) {
         yield delta;

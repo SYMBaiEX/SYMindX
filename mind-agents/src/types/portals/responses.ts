@@ -7,7 +7,7 @@
 
 import { MessageRole } from '../portal';
 
-import { AIMessage, AIToolCall, AIToolResult, AIFinishReason } from './ai-sdk';
+import type { AIToolCall, AIToolResult, AIFinishReason } from './ai-sdk';
 
 /**
  * Token usage details with breakdown
@@ -140,8 +140,9 @@ export interface PortalErrorResponse {
 /**
  * Batch response for multiple requests
  */
-export interface PortalBatchResponse<T extends BasePortalResponse>
-  extends BasePortalResponse {
+export interface PortalBatchResponse<
+  T extends BasePortalResponse,
+> extends BasePortalResponse {
   results: T[];
   errors?: PortalErrorResponse[];
   successCount: number;

@@ -8,24 +8,15 @@
  * @author SYMindX Core Team
  */
 
+import type { Metadata, GenericData, ActionParameters } from '../common.js';
 import type {
-  BaseConfig,
-  Metadata,
-  Context,
-  GenericData,
-  ActionParameters,
-} from '../common.js';
-import type {
-  Agent,
   AgentConfig,
   AgentState,
   AgentEvent,
   MemoryRecord,
   EmotionState,
-  RuntimeConfig,
-  Extension,
 } from '../agent.js';
-import type { Portal, PortalConfig } from '../portal.js';
+import type { PortalConfig } from '../portal.js';
 import type { CommunicationStyle } from '../communication.js';
 import type { Timestamp, AgentId } from '../helpers.js';
 import type { ExtensionConfig } from '../common.js';

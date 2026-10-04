@@ -59,15 +59,15 @@ export function mapFinishReason(reason?: string): FinishReason {
  * Create finish reason mapper configured for specific provider
  */
 export function createFinishReasonMapper(provider: string) {
-  return (reason?: string) => mapProviderFinishReason(reason, provider);
+  return (reason?: string) => mapProviderFinishReason(provider, reason);
 }
 
 /**
  * Map provider-specific finish reasons with additional context
  */
 function mapProviderFinishReason(
-  reason?: string,
-  provider: string
+  provider: string,
+  reason?: string
 ): FinishReason {
   if (!reason) {
     return FinishReason.STOP;

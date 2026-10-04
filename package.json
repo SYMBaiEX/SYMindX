@@ -10,8 +10,13 @@
     "cli": "bun --no-env-file packages/runtime/src/cli.ts",
     "dev": "bun --no-env-file packages/runtime/src/cli.ts chat",
     "legacy:build:agent": "cd mind-agents && bun run build",
-    "legacy:build:website": "cd website && bun run build",
-    "legacy:build:scaffolder": "cd create-symindx && bun run build",
-    "legacy:cli": "cd mind-agents && bun run cli"
+    "legacy:cli": "cd mind-agents && bun run cli",
+    "build:website": "bun --no-env-file run --cwd website build",
+    "typecheck:website": "bun --no-env-file run --cwd website typecheck",
+    "build:scaffolder": "bun --no-env-file run --cwd create-symindx build",
+    "typecheck:scaffolder": "bun --no-env-file run --cwd create-symindx typecheck",
+    "web:dev": "bun --no-env-file run --cwd website dev",
+    "scaffold": "bun --no-env-file run --cwd create-symindx start",
+    "legacy:typecheck:sdk": "bun --no-env-file run --cwd mind-agents typecheck:sdk"
   }
 }

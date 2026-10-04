@@ -18,7 +18,6 @@ import {
   isUnifiedContext,
   isMessage,
   validateBatch,
-  assertType,
 } from './type-guards.js';
 
 import type {
@@ -31,10 +30,10 @@ import type {
   AgentAction,
   AgentEvent,
   Extension,
-  Portal,
-  UnifiedContext,
-  Message,
 } from './agent.js';
+import type { Portal } from './portal.js';
+import type { UnifiedContext } from './context/unified-context.js';
+import type { Message } from './common.js';
 
 export interface ValidationReport {
   valid: boolean;
@@ -402,7 +401,7 @@ export class TypeValidator {
   validateBatch<T>(
     objects: unknown[],
     validator: (obj: unknown) => obj is T,
-    typeName: string
+    _typeName: string
   ): { valid: T[]; invalid: unknown[] } {
     return validateBatch(objects, validator);
   }
@@ -465,17 +464,14 @@ export class TypeValidator {
       field,
       value,
       message,
-      suggestion,
+      ...(suggestion === undefined ? {} : { suggestion }),
     });
   }
 
   /**
    * Check for deprecated naming patterns
    */
-  private checkDeprecatedNaming(
-    obj: Record<string, unknown>,
-    fieldPath: string
-  ): void {
+  private checkDeprecatedNaming(obj: object, fieldPath: string): void {
     const deprecatedPatterns = [
       'decision_making',
       'human_interaction',
@@ -487,11 +483,12 @@ export class TypeValidator {
       'interruption_tolerance',
     ];
 
-    for (const key of Object.keys(obj)) {
+    const entries: Array<[string, unknown]> = Object.entries(obj);
+    for (const [key, value] of entries) {
       if (deprecatedPatterns.some((pattern) => key.includes(pattern))) {
         this.addWarning(
           `${fieldPath}.${key}`,
-          obj[key],
+          value,
           `Property '${key}' uses deprecated snake_case naming`,
           'Consider migrating to camelCase naming convention'
         );

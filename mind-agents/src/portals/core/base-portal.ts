@@ -5,6 +5,7 @@ import {
   TextGenerationOptions,
   TextGenerationResult,
   ChatMessage,
+  MessageRole,
   ChatGenerationOptions,
   ChatGenerationResult,
   EmbeddingOptions,
@@ -560,7 +561,7 @@ export abstract class BasePortal implements Portal {
   }
 
   /**
-   * Generate text with multi-step support (AI SDK v5 feature)
+   * Generate text with multi-step support (AI SDK 7 feature)
    * This is a placeholder that child classes can override to implement
    * multi-step generation with tools
    */
@@ -577,7 +578,7 @@ export abstract class BasePortal implements Portal {
   }
 
   /**
-   * Generate chat with multi-step support (AI SDK v5 feature)
+   * Generate chat with multi-step support (AI SDK 7 feature)
    * This is a placeholder that child classes can override to implement
    * multi-step generation with tools
    */
@@ -594,7 +595,7 @@ export abstract class BasePortal implements Portal {
   }
 
   /**
-   * Generate multiple embeddings in batch (AI SDK v5 feature)
+   * Generate multiple embeddings in batch (AI SDK 7 feature)
    * This is a placeholder that child classes can override for optimized batch processing
    */
   async generateEmbeddingBatch(
@@ -610,7 +611,7 @@ export abstract class BasePortal implements Portal {
   }
 
   /**
-   * Stream text with enhanced tool support (AI SDK v5 feature)
+   * Stream text with enhanced tool support (AI SDK 7 feature)
    * This is a placeholder that child classes can override
    */
   async *streamTextEnhanced(
@@ -626,7 +627,7 @@ export abstract class BasePortal implements Portal {
   }
 
   /**
-   * Stream chat with enhanced tool support (AI SDK v5 feature)
+   * Stream chat with enhanced tool support (AI SDK 7 feature)
    * This is a placeholder that child classes can override
    */
   async *streamChatEnhanced(
@@ -899,7 +900,7 @@ export abstract class BasePortal implements Portal {
     if (contextParts.length === 0) return null;
 
     return {
-      role: 'system' as any,
+      role: MessageRole.SYSTEM,
       content: contextParts.join('\n\n'),
       timestamp: new Date(),
     };
@@ -979,7 +980,7 @@ export abstract class BasePortal implements Portal {
     for (const tool of context.tools.available) {
       tools[tool.name] = {
         description: tool.description,
-        parameters: tool.parameters,
+        inputSchema: tool.parameters,
       };
     }
 

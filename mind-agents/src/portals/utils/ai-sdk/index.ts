@@ -1,7 +1,7 @@
 /**
- * AI SDK v6 Utilities
+ * AI SDK 7 Utilities
  *
- * Shared utilities for working with the Vercel AI SDK v6
+ * Shared utilities for working with the Vercel AI SDK 7
  */
 
 export * from './parameter-builder';

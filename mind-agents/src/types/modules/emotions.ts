@@ -5,8 +5,8 @@
  * triggers, modifiers, and transitions.
  */
 
-import { EmotionState, EmotionRecord } from '../agent';
-import { Context, Metadata } from '../common';
+import type { EmotionState } from '../agent';
+import type { Context, Metadata } from '../common';
 
 /**
  * Event that triggers an emotion change
@@ -500,7 +500,7 @@ export function isEmotionResult(value: unknown): value is EmotionResult {
     value !== null &&
     'state' in value &&
     'changed' in value &&
-    typeof (value as Record<string, unknown>).changed === 'boolean'
+    typeof (value as Record<string, unknown>)['changed'] === 'boolean'
   );
 }
 
@@ -516,8 +516,8 @@ export function isEmotionTriggerEvent(
     'type' in value &&
     'source' in value &&
     'intensity' in value &&
-    typeof (value as Record<string, unknown>).type === 'string' &&
-    typeof (value as Record<string, unknown>).source === 'string' &&
-    typeof (value as Record<string, unknown>).intensity === 'number'
+    typeof (value as Record<string, unknown>)['type'] === 'string' &&
+    typeof (value as Record<string, unknown>)['source'] === 'string' &&
+    typeof (value as Record<string, unknown>)['intensity'] === 'number'
   );
 }

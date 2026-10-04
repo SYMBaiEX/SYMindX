@@ -15,8 +15,5 @@
       "factory": "createCommunicationExtension",
       "autoRegister": true
     }
-  },
-  "peerDependencies": {
-    "@symindx/types": "workspace:*"
   }
 }

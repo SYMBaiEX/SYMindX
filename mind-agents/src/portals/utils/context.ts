@@ -9,13 +9,13 @@ import {
   UnifiedContext,
   ContextScope,
   ContextPriority,
-} from '../types/context/unified-context';
+} from '../../types/context/unified-context';
 import {
   PortalCapability,
   TextGenerationOptions,
   ChatGenerationOptions,
-} from '../types/portal';
-import { CommunicationStyle } from '../types/communication';
+} from '../../types/portal';
+import { CommunicationStyle } from '../../types/communication';
 
 /**
  * Context to Prompt Transformation Utilities
@@ -287,7 +287,7 @@ export class ContextModelSelector {
 
     // Analyze accuracy requirements
     if (
-      context.agent?.config?.personality?.precision === 'high' ||
+      context.agent?.config?.personality?.includes('precise') ||
       context.execution?.mode === 'production'
     ) {
       requirements.accuracy = 'high';
@@ -422,7 +422,7 @@ export class ContextPerformanceOptimizer {
     context: UnifiedContext,
     baseOptions?: TextGenerationOptions | ChatGenerationOptions
   ): TextGenerationOptions | ChatGenerationOptions {
-    const optimized = { ...baseOptions };
+    const optimized: TextGenerationOptions & ChatGenerationOptions = { ...baseOptions };
 
     // Token optimization
     optimized.maxOutputTokens = this.optimizeTokenLimit(
@@ -439,11 +439,6 @@ export class ContextPerformanceOptimizer {
     // Streaming optimization
     if (this.shouldEnableStreaming(context)) {
       optimized.stream = true;
-    }
-
-    // Tool optimization
-    if (context.tools?.available && !optimized.tools) {
-      optimized.tools = this.optimizeToolSelection(context);
     }
 
     return optimized;
@@ -535,51 +530,118 @@ export class ContextPerformanceOptimizer {
     return false;
   }
 
+
   /**
-   * Optimize tool selection based on context
+   * Convert legacy options to context-aware options
    */
-  private static optimizeToolSelection(
-    context: UnifiedContext
-  ): Record<string, any> | undefined {
-    if (!context.tools?.available) return undefined;
+  static migrateToContextAware(
+    legacyOptions: TextGenerationOptions | ChatGenerationOptions,
+    context?: UnifiedContext
+  ): TextGenerationOptions | ChatGenerationOptions {
+    const migrated = { ...legacyOptions };
 
-    const tools: Record<string, any> = {};
+    if (context) {
+      // Add context to options
+      migrated.context = context;
 
-    // Prioritize tools based on recent usage
-    const toolsByRecency = context.tools.recent || [];
-    const recentToolNames = toolsByRecency.map((usage: any) => usage.id);
+      // Migrate temperature if not set
+      if (migrated.temperature === undefined && context.communication?.style) {
+        const style = context.communication.style as any;
+        if (style.creativity === 'high') migrated.temperature = 0.8;
+        if (style.creativity === 'low') migrated.temperature = 0.3;
+      }
 
-    // Add recently used tools first
-    for (const tool of context.tools.available) {
-      if (recentToolNames.includes(tool.id)) {
-        tools[tool.name] = {
-          description: tool.description,
-          parameters: tool.parameters,
-        };
+      // Migrate model selection if not set
+      if (
+        !migrated.model &&
+        context.tools?.available &&
+        context.tools.available.length > 0
+      ) {
+        // This would typically be set by the portal's context-aware methods
+        migrated.model = 'tool-optimized-model';
       }
     }
 
-    // Add other relevant tools (up to a reasonable limit)
-    const maxTools = 10;
-    let toolCount = Object.keys(tools).length;
+    return migrated;
+  }
 
-    for (const tool of context.tools.available) {
-      if (toolCount >= maxTools) break;
-      if (!tools[tool.name]) {
-        tools[tool.name] = {
-          description: tool.description,
-          parameters: tool.parameters,
-        };
-        toolCount++;
-      }
-    }
+  /**
+   * Create minimal context for backward compatibility
+   */
+  static createMinimalContext(
+    agentId?: string,
+    sessionId?: string,
+    communicationStyle?: CommunicationStyle
+  ): UnifiedContext {
+    const now = new Date();
 
-    return Object.keys(tools).length > 0 ? tools : undefined;
+    return {
+      metadata: {
+        id: `context_${Date.now()}`,
+        scope: ContextScope.REQUEST,
+        priority: ContextPriority.CONFIG,
+        createdAt: now,
+        lastModified: now,
+        source: 'migration-helper',
+        version: '1.0.0',
+      },
+      ...(agentId ? { identity: { agentId } } : {}),
+      ...(sessionId ? { session: {
+        id: sessionId,
+        startTime: new Date(now),
+        events: [],
+        state: {},
+      } } : {}),
+      ...(communicationStyle ? { communication: {
+        conversationHistory: [],
+        style: communicationStyle,
+      } } : {}),
+      temporal: {
+        now: new Date(now),
+        startTime: new Date(now),
+      },
+    };
+  }
+
+  /**
+   * Detect if context should be used based on available data
+   */
+  static shouldUseContext(data: any): boolean {
+    // Check if we have meaningful context data
+    const hasAgentInfo = data.agent || data.agentId;
+    const hasMemory = data.memory || data.memories;
+    const hasCommunicationPrefs = data.communication || data.style;
+    const hasEnvironmentInfo = data.environment || data.location || data.device;
+
+    return !!(
+      hasAgentInfo ||
+      hasMemory ||
+      hasCommunicationPrefs ||
+      hasEnvironmentInfo
+    );
   }
 }
 
 /**
- * Migration Helpers for Existing Portal Usage
+ * Type definitions for context helpers
+ */
+interface ContextRequirements {
+  complexity: 'low' | 'medium' | 'high';
+  speed: 'low' | 'medium' | 'high';
+  creativity: 'low' | 'medium' | 'high';
+  accuracy: 'low' | 'medium' | 'high';
+  multimodal: boolean;
+  toolUsage: boolean;
+  conversational: boolean;
+}
+
+interface ModelInfo {
+  speed: 'slow' | 'medium' | 'fast';
+  capabilities: string[];
+}
+
+/**
+ * Utility functions for common context operations
  */
 export class ContextMigrationHelper {
   /**
@@ -624,7 +686,7 @@ export class ContextMigrationHelper {
     sessionId?: string,
     communicationStyle?: CommunicationStyle
   ): UnifiedContext {
-    const now = new Date().toISOString();
+    const now = new Date();
 
     return {
       metadata: {
@@ -636,21 +698,9 @@ export class ContextMigrationHelper {
         source: 'migration-helper',
         version: '1.0.0',
       },
-      identity: agentId ? { agentId } : undefined,
-      session: sessionId
-        ? {
-            id: sessionId,
-            startTime: new Date(now),
-            events: [],
-            state: {},
-          }
-        : undefined,
-      communication: communicationStyle
-        ? {
-            conversationHistory: [],
-            style: communicationStyle,
-          }
-        : undefined,
+      ...(agentId ? { identity: { agentId } } : {}),
+      ...(sessionId ? { session: { id: sessionId, startTime: new Date(now), events: [], state: {} } } : {}),
+      ...(communicationStyle ? { communication: { conversationHistory: [], style: communicationStyle } } : {}),
       temporal: {
         now: new Date(now),
         startTime: new Date(now),

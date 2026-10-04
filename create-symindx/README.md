@@ -4,11 +4,11 @@ A small Bun CLI that scaffolds a project against a **locally built** SYMindX v0.
 
 ## Build and use
 
-Requirements: Bun 1.4.2 or newer and a built `packages/runtime` checkout. The scaffolder package has no committed lockfile yet, so its first dependency resolution is unlocked; lifecycle scripts are disabled for the install command below.
+Requirements: Bun 1.4.2 or newer and a built `packages/runtime` checkout. The package has an independent pinned lockfile; install it without lifecycle scripts.
 
 ```sh
-bun install --cwd create-symindx --ignore-scripts
-bun run --cwd create-symindx build
+bun --no-env-file install --cwd create-symindx --frozen-lockfile --ignore-scripts
+bun --no-env-file run --cwd create-symindx build
 bun --no-env-file create-symindx/dist/index.js --out ./my-agent
 ```
 
@@ -35,3 +35,7 @@ The generated README explains how to switch to an OpenAI-compatible endpoint. Co
 ```
 
 Unknown arguments and duplicate options are errors. The scaffolder itself never installs dependencies; run `bun install` in the generated project when ready.
+
+## Windows and WSL
+
+Bun package scripts and the native TypeScript compiler cannot reliably operate from a Windows WSL UNC path. Use a local Windows checkout or run the commands inside WSL with a Linux Bun installation. This build was checked in a fresh local Windows staging directory.

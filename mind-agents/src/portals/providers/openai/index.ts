@@ -1,7 +1,7 @@
 /**
  * OpenAI Portal Implementation
  *
- * This portal provides integration with OpenAI's API using the Vercel AI SDK v6.
+ * This portal provides integration with OpenAI's API using the AI SDK 7.
  * It supports text generation, chat completion, embeddings, and image generation.
  */
 
@@ -11,9 +11,11 @@ import {
   streamText,
   embed,
   embedMany,
-  experimental_generateImage as generateImage,
+  generateImage,
 } from 'ai';
-import type { CoreMessage } from 'ai';
+import { isStepCount } from 'ai';
+import type { ModelMessage } from 'ai';
+import { getSystemInstructions } from '../../shared/message-converter';
 import { runtimeLogger } from '../../../utils/logger';
 
 import {
@@ -58,7 +60,7 @@ export interface OpenAIConfig extends PortalConfig {
   baseURL?: string;
   apiKey?: string; // Explicitly include apiKey from PortalConfig
   maxTokens?: number; // Add maxTokens for default config
-  // Advanced AI SDK v6 features
+  // Advanced AI SDK 7 features
   enableToolStreaming?: boolean;
   maxSteps?: number;
   parallelToolCalls?: boolean;
@@ -133,7 +135,7 @@ export class OpenAIPortal extends BasePortal {
   /**
    * Convert ChatMessage array to AI SDK format using shared utilities
    */
-  private convertToModelMessages(messages: ChatMessage[]): CoreMessage[] {
+  private convertToModelMessages(messages: ChatMessage[]): ModelMessage[] {
     return this.helper.convertMessages(messages);
   }
 
@@ -195,6 +197,7 @@ export class OpenAIPortal extends BasePortal {
         const baseOptions = {
           model: languageModel,
           messages: modelMessages,
+      ...(getSystemInstructions(messages) && { instructions: getSystemInstructions(messages) }),
         };
 
         const params = this.helper.buildChatParams(baseOptions, options);
@@ -233,7 +236,7 @@ export class OpenAIPortal extends BasePortal {
         'text-embedding-3-large';
 
       const { embedding, usage } = await embed({
-        model: this.openaiProvider.textEmbeddingModel(model) as any,
+        model: this.openaiProvider.embeddingModel(model),
         value: _text,
       });
 
@@ -269,9 +272,9 @@ export class OpenAIPortal extends BasePortal {
         (this.config as OpenAIConfig).imageModel ||
         'dall-e-3';
 
-      // Use AI SDK v5 native image generation
+      // Use AI SDK 7 native image generation
       const result = await generateImage({
-        model: this.openaiProvider.image(model) as any,
+        model: this.openaiProvider.imageModel(model),
         prompt,
         size: (options?.size || '1024x1024') as `${number}x${number}`,
         n: options?.n || 1,
@@ -298,7 +301,7 @@ export class OpenAIPortal extends BasePortal {
       };
     } catch (error) {
       void error;
-      // OpenAI image generation error using AI SDK v5
+      // OpenAI image generation error using AI SDK 7
       throw new Error(`OpenAI image generation failed: ${error}`);
     }
   }
@@ -350,6 +353,7 @@ export class OpenAIPortal extends BasePortal {
     const baseOptions = {
       model: languageModel,
       messages: modelMessages,
+      ...(getSystemInstructions(messages) && { instructions: getSystemInstructions(messages) }),
     };
 
     const params = this.helper.buildChatParams(baseOptions, options);
@@ -412,20 +416,19 @@ export class OpenAIPortal extends BasePortal {
       // Add tools with full streaming support
       if (options?.tools) {
         params.tools = options.tools;
-        params.maxSteps = options?.maxSteps || 5;
-        params.toolCallStreaming = true;
+        params.stopWhen = isStepCount(options?.maxSteps || 5);
 
         if (options?.onStepFinish) {
-          params.onStepFinish = options.onStepFinish;
+          params.onStepEnd = ({ text, toolCalls, toolResults, finishReason, usage }: any) => options.onStepFinish!({ text, toolCalls, toolResults, finishReason, usage });
         }
       }
 
       const result = await streamText(params);
 
       // Stream all events from the full stream
-      for await (const part of result.fullStream) {
+      for await (const part of result.stream) {
         switch (part.type) {
-          case 'text':
+          case 'text-delta':
             yield { type: 'text', content: part.text };
             break;
           case 'tool-call':
@@ -478,7 +481,7 @@ export class OpenAIPortal extends BasePortal {
   }
 
   /**
-   * Generate text with multi-step support (AI SDK v6 feature)
+   * Generate text with multi-step support (AI SDK 7 feature)
    * Supports tool calling with multiple steps
    */
   override async generateTextMultiStep(
@@ -509,20 +512,20 @@ export class OpenAIPortal extends BasePortal {
       if (options?.tools) {
         params.tools = options.tools;
         params.toolChoice = 'auto';
-        // TODO: Re-enable when stepCountIs is available in stable AI SDK v5
-        // params.stopWhen = stepCountIs(maxSteps);
-        params.maxSteps = maxSteps; // Fallback to maxSteps
+        // TODO: Re-enable when stepCountIs is available in stable AI SDK 7
+
+        params.stopWhen = isStepCount(maxSteps);
       }
 
       // Add step callbacks
       if (options?.onStepFinish) {
-        params.onStepFinish = async ({
+        params.onStepEnd = async ({
           stepType,
-          stepCount,
+          stepNumber,
           toolCalls,
           toolResults,
         }: any) => {
-          options.onStepFinish!(stepCount, {
+          options.onStepFinish!(stepNumber, {
             stepType,
             toolCalls,
             toolResults,
@@ -540,7 +543,7 @@ export class OpenAIPortal extends BasePortal {
         timestamp: new Date(),
         metadata: {
           steps: steps?.length || 1,
-          toolCalls: steps?.flatMap((s) => s.toolCalls || []),
+          toolCalls: steps?.flatMap((s) => s.toolCalls.map((call) => ({ toolCallId: call.toolCallId, toolName: call.toolName }))),
         },
       };
     } catch (error) {
@@ -549,7 +552,7 @@ export class OpenAIPortal extends BasePortal {
   }
 
   /**
-   * Generate chat with multi-step support (AI SDK v5 feature)
+   * Generate chat with multi-step support (AI SDK 7 feature)
    */
   override async generateChatMultiStep(
     messages: ChatMessage[],
@@ -570,6 +573,7 @@ export class OpenAIPortal extends BasePortal {
           options?.model || this.helper.resolveModel('tool')
         ),
         messages: modelMessages,
+      ...(getSystemInstructions(messages) && { instructions: getSystemInstructions(messages) }),
         maxOutputTokens:
           options?.maxOutputTokens ??
           options?.maxTokens ??
@@ -581,20 +585,20 @@ export class OpenAIPortal extends BasePortal {
       if (options?.tools) {
         params.tools = options.tools;
         params.toolChoice = 'auto';
-        // TODO: Re-enable when stepCountIs is available in stable AI SDK v5
-        // params.stopWhen = stepCountIs(maxSteps);
-        params.maxSteps = maxSteps; // Fallback to maxSteps
+        // TODO: Re-enable when stepCountIs is available in stable AI SDK 7
+
+        params.stopWhen = isStepCount(maxSteps);
       }
 
       // Add step callbacks
       if (options?.onStepFinish) {
-        params.onStepFinish = async ({
+        params.onStepEnd = async ({
           stepType,
-          stepCount,
+          stepNumber,
           toolCalls,
           toolResults,
         }: any) => {
-          options.onStepFinish!(stepCount, {
+          options.onStepFinish!(stepNumber, {
             stepType,
             toolCalls,
             toolResults,
@@ -619,7 +623,7 @@ export class OpenAIPortal extends BasePortal {
         timestamp: new Date(),
         metadata: {
           steps: steps?.length || 1,
-          toolCalls: steps?.flatMap((s) => s.toolCalls || []),
+          toolCalls: steps?.flatMap((s) => s.toolCalls.map((call) => ({ toolCallId: call.toolCallId, toolName: call.toolName }))),
         },
       };
     } catch (error) {
@@ -628,7 +632,7 @@ export class OpenAIPortal extends BasePortal {
   }
 
   /**
-   * Generate multiple embeddings in batch (AI SDK v5 feature)
+   * Generate multiple embeddings in batch (AI SDK 7 feature)
    * Uses embedMany for optimized batch processing
    */
   override async generateEmbeddingBatch(
@@ -642,7 +646,7 @@ export class OpenAIPortal extends BasePortal {
         'text-embedding-3-small';
 
       const { embeddings, usage } = await embedMany({
-        model: this.openaiProvider.textEmbeddingModel(embeddingModel) as any,
+        model: this.openaiProvider.embeddingModel(embeddingModel),
         values: texts,
       });
 
@@ -665,7 +669,7 @@ export class OpenAIPortal extends BasePortal {
   }
 
   /**
-   * Stream text with enhanced tool support (AI SDK v5 feature)
+   * Stream text with enhanced tool support (AI SDK 7 feature)
    */
   override async *streamTextEnhanced(
     prompt: string,
@@ -675,8 +679,6 @@ export class OpenAIPortal extends BasePortal {
       onToolCallFinish?: (toolCallId: string, result: any) => void;
     }
   ): AsyncGenerator<string> {
-    const config = this.config as OpenAIConfig;
-
     try {
       const params: any = {
         model: this.getLanguageModel(
@@ -694,21 +696,20 @@ export class OpenAIPortal extends BasePortal {
       if (options?.tools) {
         params.tools = options.tools;
         params.toolChoice = 'auto';
-        params.toolCallStreaming = config.enableToolStreaming !== false;
       }
 
-      const { textStream, fullStream } = await streamText(params);
+      const { textStream, stream } = await streamText(params);
 
       // Process the full stream to handle tool calls
       if (options?.onToolCallStart || options?.onToolCallFinish) {
-        const streamIterator = fullStream[Symbol.asyncIterator]();
+        const streamIterator = stream[Symbol.asyncIterator]();
 
         while (true) {
           const { done, value } = await streamIterator.next();
           if (done) break;
 
           switch (value.type) {
-            case 'text':
+            case 'text-delta':
               yield value.text;
               break;
             case 'tool-call':
@@ -718,7 +719,7 @@ export class OpenAIPortal extends BasePortal {
               break;
             case 'tool-result':
               if (options.onToolCallFinish) {
-                options.onToolCallFinish(value.toolCallId, value.result);
+                options.onToolCallFinish(value.toolCallId, value.output);
               }
               break;
           }
@@ -867,6 +868,7 @@ export class OpenAIPortal extends BasePortal {
       const baseOptions = {
         model: languageModel,
         messages: modelMessages,
+      ...(getSystemInstructions(messages) && { instructions: getSystemInstructions(messages) }),
       };
 
       const params = this.helper.buildChatParams(baseOptions, {
@@ -1069,6 +1071,7 @@ export class OpenAIPortal extends BasePortal {
       const baseOptions = {
         model: languageModel,
         messages: modelMessages,
+      ...(getSystemInstructions(messages) && { instructions: getSystemInstructions(messages) }),
       };
 
       const params = this.helper.buildChatParams(baseOptions, {

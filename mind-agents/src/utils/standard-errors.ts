@@ -13,7 +13,7 @@ export abstract class SYMindXError extends Error {
   public readonly severity: ErrorSeverity;
   public readonly code: string;
   public readonly timestamp: Date;
-  public readonly context?: Record<string, unknown>;
+  public readonly context: Record<string, unknown> | undefined;
 
   constructor(
     message: string,
@@ -33,7 +33,7 @@ export abstract class SYMindXError extends Error {
 
     if (cause) {
       this.cause = cause;
-      this.stack = cause.stack;
+      if (cause.stack !== undefined) this.stack = cause.stack;
     }
 
     // Ensure proper prototype chain
@@ -96,8 +96,8 @@ export class RuntimeError extends SYMindXError {
  * Portal-related errors (AI provider issues)
  */
 export class PortalError extends SYMindXError {
-  public readonly portalType?: string;
-  public readonly model?: string;
+  public readonly portalType: string | undefined;
+  public readonly model: string | undefined;
 
   constructor(
     message: string,
@@ -131,8 +131,8 @@ export class PortalError extends SYMindXError {
  * Extension-related errors
  */
 export class ExtensionError extends SYMindXError {
-  public readonly extensionName?: string;
-  public readonly action?: string;
+  public readonly extensionName: string | undefined;
+  public readonly action: string | undefined;
 
   constructor(
     message: string,
@@ -166,8 +166,8 @@ export class ExtensionError extends SYMindXError {
  * Configuration-related errors
  */
 export class ConfigurationError extends SYMindXError {
-  public readonly configPath?: string;
-  public readonly field?: string;
+  public readonly configPath: string | undefined;
+  public readonly field: string | undefined;
 
   constructor(
     message: string,
@@ -201,8 +201,8 @@ export class ConfigurationError extends SYMindXError {
  * Memory provider errors
  */
 export class MemoryError extends SYMindXError {
-  public readonly provider?: string;
-  public readonly operation?: string;
+  public readonly provider: string | undefined;
+  public readonly operation: string | undefined;
 
   constructor(
     message: string,
@@ -236,8 +236,8 @@ export class MemoryError extends SYMindXError {
  * Authentication and authorization errors
  */
 export class AuthError extends SYMindXError {
-  public readonly operation?: string;
-  public readonly resource?: string;
+  public readonly operation: string | undefined;
+  public readonly resource: string | undefined;
 
   constructor(
     message: string,
@@ -271,9 +271,9 @@ export class AuthError extends SYMindXError {
  * Network-related errors
  */
 export class NetworkError extends SYMindXError {
-  public readonly url?: string;
-  public readonly method?: string;
-  public readonly statusCode?: number;
+  public readonly url: string | undefined;
+  public readonly method: string | undefined;
+  public readonly statusCode: number | undefined;
 
   constructor(
     message: string,
@@ -310,8 +310,8 @@ export class NetworkError extends SYMindXError {
  * Validation errors
  */
 export class ValidationError extends SYMindXError {
-  public readonly field?: string;
-  public readonly value?: unknown;
+  public readonly field: string | undefined;
+  public readonly value: unknown | undefined;
 
   constructor(
     message: string,
@@ -345,8 +345,8 @@ export class ValidationError extends SYMindXError {
  * Agent-related errors
  */
 export class AgentError extends SYMindXError {
-  public readonly agentId?: string;
-  public readonly operation?: string;
+  public readonly agentId: string | undefined;
+  public readonly operation: string | undefined;
 
   constructor(
     message: string,
@@ -380,8 +380,8 @@ export class AgentError extends SYMindXError {
  * Tool system errors
  */
 export class ToolError extends SYMindXError {
-  public readonly toolName?: string;
-  public readonly operation?: string;
+  public readonly toolName: string | undefined;
+  public readonly operation: string | undefined;
 
   constructor(
     message: string,

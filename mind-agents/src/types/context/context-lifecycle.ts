@@ -5,11 +5,7 @@
  * creation, validation, enrichment, propagation, and cleanup.
  */
 
-import { Agent } from '../agent';
 import { BaseContext } from '../context';
-import { OperationResult } from '../helpers';
-import { EmotionState } from '../emotion';
-import { MemoryRecord } from '../memory';
 
 /**
  * Context lifecycle states
@@ -77,12 +73,7 @@ export interface ContextRequest {
 
   /** Request type and purpose */
   requestType:
-    | 'conversation'
-    | 'task'
-    | 'emotion'
-    | 'memory'
-    | 'autonomous'
-    | 'custom';
+    'conversation' | 'task' | 'emotion' | 'memory' | 'autonomous' | 'custom';
 
   /** Base context data */
   baseContext?: Partial<BaseContext>;

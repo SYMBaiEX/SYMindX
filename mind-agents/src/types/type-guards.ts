@@ -1,6 +1,7 @@
 /**
- * Type guards for runtime type validation
- * Provides comprehensive type safety for all major interfaces
+ * Partial structure guards retained for legacy call sites.
+ * These checks do not validate every optional contract or decode untrusted JSON.
+ * The supported v0.1 boundary uses packages/runtime/src/validation.ts.
  */
 
 import type {
@@ -20,12 +21,6 @@ import type {
   PlanStep,
   Decision,
   Extension,
-  EventType,
-  EventSource,
-  EmotionModuleType,
-  MemoryProviderType,
-  CognitionModuleType,
-  AgentStateType,
 } from './agent.js';
 
 // Import enums as values for runtime checks
@@ -44,45 +39,19 @@ import {
   EnvironmentType,
 } from './agent.js';
 
-import type {
-  EmotionModule,
-  PersonalityTraits,
-  EmotionBlend,
-  AdvancedEmotionConfig,
-} from './emotion.js';
+import type { EmotionModule } from './emotion.js';
 
-import type {
-  CognitionModule,
-  SerializableRule,
-  PDDLExpression,
-  ReasoningParadigm,
-  ContextAnalysis,
-  ReasoningState,
-} from './cognition.js';
+import type { CognitionModule } from './cognition.js';
 
 import type { Portal, PortalConfig } from './portal.js';
 import { PortalType } from './portal.js';
 
-import type {
-  BaseConfig,
-  ActionParameters,
-  Metadata,
-  Context,
-  GenericData,
-  Message,
-} from './common.js';
+import type { ActionParameters, Message } from './common.js';
 
 import type {
   UnifiedContext,
   ContextMetadata,
 } from './context/unified-context.js';
-
-import type {
-  SearchQuery,
-  SearchResult,
-  MemoryRelationship,
-  MemoryManagementPolicy,
-} from './memory.js';
 
 // Helper type guard utilities
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -134,35 +103,35 @@ export function isAgent(obj: unknown): obj is Agent {
 
   return (
     hasProperty(obj, 'id') &&
-    isString(obj.id) &&
+    isString(obj['id']) &&
     hasProperty(obj, 'name') &&
-    isString(obj.name) &&
+    isString(obj['name']) &&
     hasProperty(obj, 'status') &&
-    isEnum(obj.status, AgentStatus) &&
+    isEnum(obj['status'], AgentStatus) &&
     hasProperty(obj, 'emotion') &&
-    isEmotionModule(obj.emotion) &&
+    isEmotionModule(obj['emotion']) &&
     hasProperty(obj, 'memory') &&
-    isMemoryProvider(obj.memory) &&
+    isMemoryProvider(obj['memory']) &&
     hasProperty(obj, 'cognition') &&
-    isCognitionModule(obj.cognition) &&
+    isCognitionModule(obj['cognition']) &&
     hasProperty(obj, 'extensions') &&
-    isArray(obj.extensions, isExtension) &&
+    isArray(obj['extensions'], isExtension) &&
     hasProperty(obj, 'config') &&
-    isAgentConfig(obj.config) &&
+    isAgentConfig(obj['config']) &&
     hasProperty(obj, 'lastUpdate') &&
-    isDate(obj.lastUpdate) &&
+    isDate(obj['lastUpdate']) &&
     hasProperty(obj, 'initialize') &&
-    typeof obj.initialize === 'function' &&
+    typeof obj['initialize'] === 'function' &&
     hasProperty(obj, 'cleanup') &&
-    typeof obj.cleanup === 'function' &&
+    typeof obj['cleanup'] === 'function' &&
     hasProperty(obj, 'tick') &&
-    typeof obj.tick === 'function' &&
+    typeof obj['tick'] === 'function' &&
     hasProperty(obj, 'updateState') &&
-    typeof obj.updateState === 'function' &&
+    typeof obj['updateState'] === 'function' &&
     hasProperty(obj, 'processEvent') &&
-    typeof obj.processEvent === 'function' &&
+    typeof obj['processEvent'] === 'function' &&
     hasProperty(obj, 'executeAction') &&
-    typeof obj.executeAction === 'function'
+    typeof obj['executeAction'] === 'function'
   );
 }
 
@@ -171,29 +140,29 @@ export function isAgentConfig(obj: unknown): obj is AgentConfig {
 
   return (
     hasProperty(obj, 'core') &&
-    isObject(obj.core) &&
-    hasProperty(obj.core, 'name') &&
-    isString(obj.core.name) &&
-    hasProperty(obj.core, 'tone') &&
-    isString(obj.core.tone) &&
-    hasProperty(obj.core, 'personality') &&
-    isArray(obj.core.personality, isString) &&
+    isObject(obj['core']) &&
+    hasProperty(obj['core'], 'name') &&
+    isString(obj['core']['name']) &&
+    hasProperty(obj['core'], 'tone') &&
+    isString(obj['core']['tone']) &&
+    hasProperty(obj['core'], 'personality') &&
+    isArray(obj['core']['personality'], isString) &&
     hasProperty(obj, 'lore') &&
-    isObject(obj.lore) &&
-    hasProperty(obj.lore, 'origin') &&
-    isString(obj.lore.origin) &&
-    hasProperty(obj.lore, 'motive') &&
-    isString(obj.lore.motive) &&
+    isObject(obj['lore']) &&
+    hasProperty(obj['lore'], 'origin') &&
+    isString(obj['lore']['origin']) &&
+    hasProperty(obj['lore'], 'motive') &&
+    isString(obj['lore']['motive']) &&
     hasProperty(obj, 'psyche') &&
-    isObject(obj.psyche) &&
-    hasProperty(obj.psyche, 'traits') &&
-    isArray(obj.psyche.traits, isString) &&
-    hasProperty(obj.psyche, 'defaults') &&
-    isObject(obj.psyche.defaults) &&
+    isObject(obj['psyche']) &&
+    hasProperty(obj['psyche'], 'traits') &&
+    isArray(obj['psyche']['traits'], isString) &&
+    hasProperty(obj['psyche'], 'defaults') &&
+    isObject(obj['psyche']['defaults']) &&
     hasProperty(obj, 'modules') &&
-    isObject(obj.modules) &&
-    hasProperty(obj.modules, 'extensions') &&
-    isArray(obj.modules.extensions, isString)
+    isObject(obj['modules']) &&
+    hasProperty(obj['modules'], 'extensions') &&
+    isArray(obj['modules']['extensions'], isString)
   );
 }
 
@@ -202,17 +171,18 @@ export function isAgentState(obj: unknown): obj is AgentState {
 
   // All properties are optional, so we just need to check their types if present
   return (
-    (!hasProperty(obj, 'location') || isString(obj.location)) &&
-    (!hasProperty(obj, 'inventory') || isObject(obj.inventory)) &&
+    (!hasProperty(obj, 'location') || isString(obj['location'])) &&
+    (!hasProperty(obj, 'inventory') || isObject(obj['inventory'])) &&
     (!hasProperty(obj, 'stats') ||
-      (isObject(obj.stats) && Object.values(obj.stats).every(isNumber))) &&
-    (!hasProperty(obj, 'goals') || isArray(obj.goals, isString)) &&
-    (!hasProperty(obj, 'energy') || isNumber(obj.energy)) &&
-    (!hasProperty(obj, 'focus') || isNumber(obj.focus)) &&
-    (!hasProperty(obj, 'stress') || isNumber(obj.stress)) &&
-    (!hasProperty(obj, 'confidence') || isNumber(obj.confidence)) &&
-    (!hasProperty(obj, 'lastAction') || isString(obj.lastAction)) &&
-    (!hasProperty(obj, 'currentTask') || isString(obj.currentTask))
+      (isObject(obj['stats']) &&
+        Object.values(obj['stats']).every(isNumber))) &&
+    (!hasProperty(obj, 'goals') || isArray(obj['goals'], isString)) &&
+    (!hasProperty(obj, 'energy') || isNumber(obj['energy'])) &&
+    (!hasProperty(obj, 'focus') || isNumber(obj['focus'])) &&
+    (!hasProperty(obj, 'stress') || isNumber(obj['stress'])) &&
+    (!hasProperty(obj, 'confidence') || isNumber(obj['confidence'])) &&
+    (!hasProperty(obj, 'lastAction') || isString(obj['lastAction'])) &&
+    (!hasProperty(obj, 'currentTask') || isString(obj['currentTask']))
   );
 }
 
@@ -221,15 +191,15 @@ export function isLazyAgent(obj: unknown): obj is LazyAgent {
 
   return (
     hasProperty(obj, 'state') &&
-    isLazyAgentState(obj.state) &&
+    isLazyAgentState(obj['state']) &&
     hasProperty(obj, 'isLazy') &&
-    obj.isLazy === true &&
+    obj['isLazy'] === true &&
     hasProperty(obj, 'hibernationLevel') &&
-    isNumber(obj.hibernationLevel) &&
+    isNumber(obj['hibernationLevel']) &&
     hasProperty(obj, 'lastAccessTime') &&
-    isDate(obj.lastAccessTime) &&
+    isDate(obj['lastAccessTime']) &&
     hasProperty(obj, 'status') &&
-    isEnum(obj.status, LazyAgentStatus)
+    isEnum(obj['status'], LazyAgentStatus)
   );
 }
 
@@ -239,9 +209,9 @@ function isLazyAgentState(obj: unknown): obj is LazyAgent['state'] {
 
   return (
     hasProperty(obj, 'emotionState') &&
-    isEmotionState(obj.emotionState) &&
+    isEmotionState(obj['emotionState']) &&
     hasProperty(obj, 'recentMemories') &&
-    isArray(obj.recentMemories, isMemoryRecord)
+    isArray(obj['recentMemories'], isMemoryRecord)
   );
 }
 
@@ -251,23 +221,23 @@ export function isMemoryRecord(obj: unknown): obj is MemoryRecord {
 
   return (
     hasProperty(obj, 'id') &&
-    isString(obj.id) &&
+    isString(obj['id']) &&
     hasProperty(obj, 'agentId') &&
-    isString(obj.agentId) &&
+    isString(obj['agentId']) &&
     hasProperty(obj, 'type') &&
-    isEnum(obj.type, MemoryType) &&
+    isEnum(obj['type'], MemoryType) &&
     hasProperty(obj, 'content') &&
-    isString(obj.content) &&
+    isString(obj['content']) &&
     hasProperty(obj, 'metadata') &&
-    isObject(obj.metadata) &&
+    isObject(obj['metadata']) &&
     hasProperty(obj, 'importance') &&
-    isNumber(obj.importance) &&
+    isNumber(obj['importance']) &&
     hasProperty(obj, 'timestamp') &&
-    isDate(obj.timestamp) &&
+    isDate(obj['timestamp']) &&
     hasProperty(obj, 'tags') &&
-    isArray(obj.tags, isString) &&
+    isArray(obj['tags'], isString) &&
     hasProperty(obj, 'duration') &&
-    isEnum(obj.duration, MemoryDuration)
+    isEnum(obj['duration'], MemoryDuration)
   );
 }
 
@@ -276,17 +246,17 @@ export function isMemoryProvider(obj: unknown): obj is Agent['memory'] {
 
   return (
     hasProperty(obj, 'store') &&
-    typeof obj.store === 'function' &&
+    typeof obj['store'] === 'function' &&
     hasProperty(obj, 'retrieve') &&
-    typeof obj.retrieve === 'function' &&
+    typeof obj['retrieve'] === 'function' &&
     hasProperty(obj, 'search') &&
-    typeof obj.search === 'function' &&
+    typeof obj['search'] === 'function' &&
     hasProperty(obj, 'delete') &&
-    typeof obj.delete === 'function' &&
+    typeof obj['delete'] === 'function' &&
     hasProperty(obj, 'clear') &&
-    typeof obj.clear === 'function' &&
+    typeof obj['clear'] === 'function' &&
     hasProperty(obj, 'getRecent') &&
-    typeof obj.getRecent === 'function'
+    typeof obj['getRecent'] === 'function'
   );
 }
 
@@ -296,15 +266,15 @@ export function isEmotionState(obj: unknown): obj is EmotionState {
 
   return (
     hasProperty(obj, 'current') &&
-    isString(obj.current) &&
+    isString(obj['current']) &&
     hasProperty(obj, 'intensity') &&
-    isNumber(obj.intensity) &&
+    isNumber(obj['intensity']) &&
     hasProperty(obj, 'triggers') &&
-    isArray(obj.triggers, isString) &&
+    isArray(obj['triggers'], isString) &&
     hasProperty(obj, 'history') &&
-    isArray(obj.history, isEmotionRecord) &&
+    isArray(obj['history'], isEmotionRecord) &&
     hasProperty(obj, 'timestamp') &&
-    isDate(obj.timestamp)
+    isDate(obj['timestamp'])
   );
 }
 
@@ -313,15 +283,15 @@ function isEmotionRecord(obj: unknown): obj is EmotionState['history'][0] {
 
   return (
     hasProperty(obj, 'emotion') &&
-    isString(obj.emotion) &&
+    isString(obj['emotion']) &&
     hasProperty(obj, 'intensity') &&
-    isNumber(obj.intensity) &&
+    isNumber(obj['intensity']) &&
     hasProperty(obj, 'timestamp') &&
-    isDate(obj.timestamp) &&
+    isDate(obj['timestamp']) &&
     hasProperty(obj, 'triggers') &&
-    isArray(obj.triggers, isString) &&
+    isArray(obj['triggers'], isString) &&
     hasProperty(obj, 'duration') &&
-    isNumber(obj.duration)
+    isNumber(obj['duration'])
   );
 }
 
@@ -330,15 +300,15 @@ export function isEmotionModule(obj: unknown): obj is EmotionModule {
 
   return (
     hasProperty(obj, 'getState') &&
-    typeof obj.getState === 'function' &&
+    typeof obj['getState'] === 'function' &&
     hasProperty(obj, 'processEvent') &&
-    typeof obj.processEvent === 'function' &&
+    typeof obj['processEvent'] === 'function' &&
     hasProperty(obj, 'updateEmotion') &&
-    typeof obj.updateEmotion === 'function' &&
+    typeof obj['updateEmotion'] === 'function' &&
     hasProperty(obj, 'decay') &&
-    typeof obj.decay === 'function' &&
+    typeof obj['decay'] === 'function' &&
     hasProperty(obj, 'reset') &&
-    typeof obj.reset === 'function'
+    typeof obj['reset'] === 'function'
   );
 }
 
@@ -348,11 +318,11 @@ export function isCognitionModule(obj: unknown): obj is CognitionModule {
 
   return (
     hasProperty(obj, 'think') &&
-    typeof obj.think === 'function' &&
+    typeof obj['think'] === 'function' &&
     hasProperty(obj, 'plan') &&
-    typeof obj.plan === 'function' &&
+    typeof obj['plan'] === 'function' &&
     hasProperty(obj, 'decide') &&
-    typeof obj.decide === 'function'
+    typeof obj['decide'] === 'function'
   );
 }
 
@@ -361,13 +331,13 @@ export function isThoughtContext(obj: unknown): obj is ThoughtContext {
 
   return (
     hasProperty(obj, 'events') &&
-    isArray(obj.events, isAgentEvent) &&
+    isArray(obj['events'], isAgentEvent) &&
     hasProperty(obj, 'memories') &&
-    isArray(obj.memories, isMemoryRecord) &&
+    isArray(obj['memories'], isMemoryRecord) &&
     hasProperty(obj, 'currentState') &&
-    isAgentState(obj.currentState) &&
+    isAgentState(obj['currentState']) &&
     hasProperty(obj, 'environment') &&
-    isEnvironmentState(obj.environment)
+    isEnvironmentState(obj['environment'])
   );
 }
 
@@ -376,15 +346,15 @@ export function isThoughtResult(obj: unknown): obj is ThoughtResult {
 
   return (
     hasProperty(obj, 'thoughts') &&
-    isArray(obj.thoughts, isString) &&
+    isArray(obj['thoughts'], isString) &&
     hasProperty(obj, 'emotions') &&
-    isEmotionState(obj.emotions) &&
+    isEmotionState(obj['emotions']) &&
     hasProperty(obj, 'actions') &&
-    isArray(obj.actions, isAgentAction) &&
+    isArray(obj['actions'], isAgentAction) &&
     hasProperty(obj, 'memories') &&
-    isArray(obj.memories, isMemoryRecord) &&
+    isArray(obj['memories'], isMemoryRecord) &&
     hasProperty(obj, 'confidence') &&
-    isNumber(obj.confidence)
+    isNumber(obj['confidence'])
   );
 }
 
@@ -394,19 +364,19 @@ export function isPlan(obj: unknown): obj is Plan {
 
   return (
     hasProperty(obj, 'id') &&
-    isString(obj.id) &&
+    isString(obj['id']) &&
     hasProperty(obj, 'goal') &&
-    isString(obj.goal) &&
+    isString(obj['goal']) &&
     hasProperty(obj, 'steps') &&
-    isArray(obj.steps, isPlanStep) &&
+    isArray(obj['steps'], isPlanStep) &&
     hasProperty(obj, 'priority') &&
-    isNumber(obj.priority) &&
+    isNumber(obj['priority']) &&
     hasProperty(obj, 'estimatedDuration') &&
-    isNumber(obj.estimatedDuration) &&
+    isNumber(obj['estimatedDuration']) &&
     hasProperty(obj, 'dependencies') &&
-    isArray(obj.dependencies, isString) &&
+    isArray(obj['dependencies'], isString) &&
     hasProperty(obj, 'status') &&
-    isEnum(obj.status, PlanStatus)
+    isEnum(obj['status'], PlanStatus)
   );
 }
 
@@ -415,19 +385,19 @@ export function isPlanStep(obj: unknown): obj is PlanStep {
 
   return (
     hasProperty(obj, 'id') &&
-    isString(obj.id) &&
+    isString(obj['id']) &&
     hasProperty(obj, 'description') &&
-    isString(obj.description) &&
+    isString(obj['description']) &&
     hasProperty(obj, 'action') &&
-    isString(obj.action) &&
+    isString(obj['action']) &&
     hasProperty(obj, 'parameters') &&
-    isActionParameters(obj.parameters) &&
+    isActionParameters(obj['parameters']) &&
     hasProperty(obj, 'preconditions') &&
-    isArray(obj.preconditions, isString) &&
+    isArray(obj['preconditions'], isString) &&
     hasProperty(obj, 'effects') &&
-    isArray(obj.effects, isString) &&
+    isArray(obj['effects'], isString) &&
     hasProperty(obj, 'status') &&
-    isEnum(obj.status, PlanStepStatus)
+    isEnum(obj['status'], PlanStepStatus)
   );
 }
 
@@ -436,19 +406,19 @@ export function isDecision(obj: unknown): obj is Decision {
 
   return (
     hasProperty(obj, 'id') &&
-    isString(obj.id) &&
+    isString(obj['id']) &&
     hasProperty(obj, 'description') &&
-    isString(obj.description) &&
+    isString(obj['description']) &&
     hasProperty(obj, 'action') &&
-    isAgentAction(obj.action) &&
+    isAgentAction(obj['action']) &&
     hasProperty(obj, 'confidence') &&
-    isNumber(obj.confidence) &&
+    isNumber(obj['confidence']) &&
     hasProperty(obj, 'reasoning') &&
-    isString(obj.reasoning) &&
+    isString(obj['reasoning']) &&
     hasProperty(obj, 'rationale') &&
-    isString(obj.rationale) &&
+    isString(obj['rationale']) &&
     hasProperty(obj, 'consequences') &&
-    isArray(obj.consequences, isString)
+    isArray(obj['consequences'], isString)
   );
 }
 
@@ -458,21 +428,21 @@ export function isAgentAction(obj: unknown): obj is AgentAction {
 
   return (
     hasProperty(obj, 'id') &&
-    isString(obj.id) &&
+    isString(obj['id']) &&
     hasProperty(obj, 'agentId') &&
-    isString(obj.agentId) &&
+    isString(obj['agentId']) &&
     hasProperty(obj, 'type') &&
-    isString(obj.type) &&
+    isString(obj['type']) &&
     hasProperty(obj, 'extension') &&
-    isString(obj.extension) &&
+    isString(obj['extension']) &&
     hasProperty(obj, 'action') &&
-    isString(obj.action) &&
+    isString(obj['action']) &&
     hasProperty(obj, 'parameters') &&
-    isActionParameters(obj.parameters) &&
+    isActionParameters(obj['parameters']) &&
     hasProperty(obj, 'timestamp') &&
-    isDate(obj.timestamp) &&
+    isDate(obj['timestamp']) &&
     hasProperty(obj, 'status') &&
-    isEnum(obj.status, ActionStatus)
+    isEnum(obj['status'], ActionStatus)
   );
 }
 
@@ -485,12 +455,12 @@ export function isActionResult(obj: unknown): obj is ActionResult {
 
   return (
     hasProperty(obj, 'success') &&
-    isBoolean(obj.success) &&
+    isBoolean(obj['success']) &&
     hasProperty(obj, 'type') &&
-    isEnum(obj.type, ActionResultType) &&
-    (!hasProperty(obj, 'error') || isString(obj.error)) &&
-    (!hasProperty(obj, 'duration') || isNumber(obj.duration)) &&
-    (!hasProperty(obj, 'timestamp') || isDate(obj.timestamp))
+    isEnum(obj['type'], ActionResultType) &&
+    (!hasProperty(obj, 'error') || isString(obj['error'])) &&
+    (!hasProperty(obj, 'duration') || isNumber(obj['duration'])) &&
+    (!hasProperty(obj, 'timestamp') || isDate(obj['timestamp']))
   );
 }
 
@@ -500,17 +470,17 @@ export function isAgentEvent(obj: unknown): obj is AgentEvent {
 
   return (
     hasProperty(obj, 'id') &&
-    isString(obj.id) &&
+    isString(obj['id']) &&
     hasProperty(obj, 'type') &&
-    isString(obj.type) &&
+    isString(obj['type']) &&
     hasProperty(obj, 'source') &&
-    isString(obj.source) &&
+    isString(obj['source']) &&
     hasProperty(obj, 'data') &&
-    isObject(obj.data) &&
+    isObject(obj['data']) &&
     hasProperty(obj, 'timestamp') &&
-    isDate(obj.timestamp) &&
+    isDate(obj['timestamp']) &&
     hasProperty(obj, 'processed') &&
-    isBoolean(obj.processed)
+    isBoolean(obj['processed'])
   );
 }
 
@@ -520,27 +490,27 @@ export function isExtension(obj: unknown): obj is Extension {
 
   return (
     hasProperty(obj, 'id') &&
-    isString(obj.id) &&
+    isString(obj['id']) &&
     hasProperty(obj, 'name') &&
-    isString(obj.name) &&
+    isString(obj['name']) &&
     hasProperty(obj, 'version') &&
-    isString(obj.version) &&
+    isString(obj['version']) &&
     hasProperty(obj, 'type') &&
-    isEnum(obj.type, ExtensionType) &&
+    isEnum(obj['type'], ExtensionType) &&
     hasProperty(obj, 'enabled') &&
-    isBoolean(obj.enabled) &&
+    isBoolean(obj['enabled']) &&
     hasProperty(obj, 'status') &&
-    isEnum(obj.status, ExtensionStatus) &&
+    isEnum(obj['status'], ExtensionStatus) &&
     hasProperty(obj, 'config') &&
-    isObject(obj.config) &&
+    isObject(obj['config']) &&
     hasProperty(obj, 'init') &&
-    typeof obj.init === 'function' &&
+    typeof obj['init'] === 'function' &&
     hasProperty(obj, 'tick') &&
-    typeof obj.tick === 'function' &&
+    typeof obj['tick'] === 'function' &&
     hasProperty(obj, 'actions') &&
-    isObject(obj.actions) &&
+    isObject(obj['actions']) &&
     hasProperty(obj, 'events') &&
-    isObject(obj.events)
+    isObject(obj['events'])
   );
 }
 
@@ -549,15 +519,15 @@ export function isExtensionAction(obj: unknown): obj is ExtensionAction {
 
   return (
     hasProperty(obj, 'name') &&
-    isString(obj.name) &&
+    isString(obj['name']) &&
     hasProperty(obj, 'description') &&
-    isString(obj.description) &&
+    isString(obj['description']) &&
     hasProperty(obj, 'category') &&
-    isEnum(obj.category, ActionCategory) &&
+    isEnum(obj['category'], ActionCategory) &&
     hasProperty(obj, 'parameters') &&
-    isActionParameters(obj.parameters) &&
+    isActionParameters(obj['parameters']) &&
     hasProperty(obj, 'execute') &&
-    typeof obj.execute === 'function'
+    typeof obj['execute'] === 'function'
   );
 }
 
@@ -567,9 +537,9 @@ export function isPortal(obj: unknown): obj is Portal {
 
   return (
     hasProperty(obj, 'generateResponse') &&
-    typeof obj.generateResponse === 'function' &&
+    typeof obj['generateResponse'] === 'function' &&
     hasProperty(obj, 'streamResponse') &&
-    typeof obj.streamResponse === 'function'
+    typeof obj['streamResponse'] === 'function'
   );
 }
 
@@ -578,11 +548,11 @@ export function isPortalConfig(obj: unknown): obj is PortalConfig {
 
   return (
     hasProperty(obj, 'type') &&
-    isEnum(obj.type, PortalType) &&
+    isEnum(obj['type'], PortalType) &&
     hasProperty(obj, 'apiKey') &&
-    isString(obj.apiKey) &&
+    isString(obj['apiKey']) &&
     hasProperty(obj, 'model') &&
-    isString(obj.model)
+    isString(obj['model'])
   );
 }
 
@@ -592,19 +562,19 @@ export function isUnifiedContext(obj: unknown): obj is UnifiedContext {
 
   return (
     hasProperty(obj, 'contextId') &&
-    isString(obj.contextId) &&
+    isString(obj['contextId']) &&
     hasProperty(obj, 'agentId') &&
-    isString(obj.agentId) &&
+    isString(obj['agentId']) &&
     hasProperty(obj, 'timestamp') &&
-    isDate(obj.timestamp) &&
+    isDate(obj['timestamp']) &&
     hasProperty(obj, 'requestType') &&
-    isString(obj.requestType) &&
+    isString(obj['requestType']) &&
     hasProperty(obj, 'ttl') &&
-    isNumber(obj.ttl) &&
+    isNumber(obj['ttl']) &&
     hasProperty(obj, 'priority') &&
-    isNumber(obj.priority) &&
+    isNumber(obj['priority']) &&
     hasProperty(obj, 'metadata') &&
-    isContextMetadata(obj.metadata)
+    isContextMetadata(obj['metadata'])
   );
 }
 
@@ -613,17 +583,17 @@ export function isContextMetadata(obj: unknown): obj is ContextMetadata {
 
   return (
     hasProperty(obj, 'source') &&
-    isString(obj.source) &&
+    isString(obj['source']) &&
     hasProperty(obj, 'version') &&
-    isString(obj.version) &&
+    isString(obj['version']) &&
     hasProperty(obj, 'lastUpdated') &&
-    isDate(obj.lastUpdated) &&
+    isDate(obj['lastUpdated']) &&
     hasProperty(obj, 'updateCount') &&
-    isNumber(obj.updateCount) &&
+    isNumber(obj['updateCount']) &&
     hasProperty(obj, 'accessCount') &&
-    isNumber(obj.accessCount) &&
+    isNumber(obj['accessCount']) &&
     hasProperty(obj, 'tags') &&
-    isArray(obj.tags, isString)
+    isArray(obj['tags'], isString)
   );
 }
 
@@ -633,15 +603,17 @@ export function isMessage(obj: unknown): obj is Message {
 
   return (
     hasProperty(obj, 'id') &&
-    isString(obj.id) &&
+    isString(obj['id']) &&
     hasProperty(obj, 'agentId') &&
-    isString(obj.agentId) &&
+    isString(obj['agentId']) &&
     hasProperty(obj, 'content') &&
-    isString(obj.content) &&
+    isString(obj['content']) &&
     hasProperty(obj, 'timestamp') &&
-    isDate(obj.timestamp) &&
+    isDate(obj['timestamp']) &&
     hasProperty(obj, 'role') &&
-    (obj.role === 'user' || obj.role === 'assistant' || obj.role === 'system')
+    (obj['role'] === 'user' ||
+      obj['role'] === 'assistant' ||
+      obj['role'] === 'system')
   );
 }
 
@@ -653,9 +625,9 @@ function isEnvironmentState(
 
   return (
     hasProperty(obj, 'type') &&
-    isEnum(obj.type, EnvironmentType) &&
+    isEnum(obj['type'], EnvironmentType) &&
     hasProperty(obj, 'time') &&
-    isDate(obj.time)
+    isDate(obj['time'])
   );
 }
 

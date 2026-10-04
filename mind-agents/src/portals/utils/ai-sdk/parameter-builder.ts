@@ -1,24 +1,22 @@
-/**
- * AI SDK v5 Utility Functions
- *
- * Shared utilities for building AI SDK parameters with strict type safety
- * and exactOptionalPropertyTypes compliance
- */
-
 import {
-  TextGenerationOptions,
+  stepCountIs,
+  type CallSettings,
+  type ToolSet,
+} from 'ai';
+import type {
   ChatGenerationOptions,
   ImageGenerationOptions,
+  TextGenerationOptions,
 } from '../../../types/portal';
 
-/**
- * Enhanced parameter builder for AI SDK v5 with exactOptionalPropertyTypes support
- */
+type ParameterRecord = Record<string, unknown>;
+type ChatSettings = CallSettings & {
+  tools?: ToolSet;
+  stopWhen?: ReturnType<typeof stepCountIs>[];
+};
+
 export class AISDKParameterBuilder {
-  /**
-   * Build AI SDK parameters with strict type safety for text generation
-   */
-  static buildTextGenerationParams<T extends Record<string, any>>(
+  static buildTextGenerationParams<T extends ParameterRecord>(
     baseParams: T,
     options?: TextGenerationOptions,
     defaults?: {
@@ -28,59 +26,36 @@ export class AISDKParameterBuilder {
       frequencyPenalty?: number;
       presencePenalty?: number;
     }
-  ): T & Record<string, any> {
-    const params = { ...baseParams };
-
-    // Apply defaults if not provided in options
-    // Handle both maxTokens (legacy) and maxOutputTokens (AI SDK v5)
-    const maxTokens =
-      options?.maxOutputTokens ??
-      options?.maxTokens ??
-      defaults?.maxOutputTokens;
-    if (maxTokens !== undefined && maxTokens > 0) {
-      (params as any).maxOutputTokens = maxTokens;
+  ): T & CallSettings {
+    const settings: Partial<CallSettings> = {};
+    const maxOutputTokens =
+      options?.maxOutputTokens ?? options?.maxTokens ?? defaults?.maxOutputTokens;
+    if (maxOutputTokens !== undefined && maxOutputTokens > 0) {
+      settings.maxOutputTokens = maxOutputTokens;
     }
-
     const temperature = options?.temperature ?? defaults?.temperature;
-    if (temperature !== undefined && temperature >= 0) {
-      (params as any).temperature = Math.min(Math.max(temperature, 0), 2);
+    if (temperature !== undefined) {
+      settings.temperature = Math.min(Math.max(temperature, 0), 2);
     }
-
     const topP = options?.topP ?? defaults?.topP;
     if (topP !== undefined && topP > 0) {
-      (params as any).topP = Math.min(Math.max(topP, 0), 1);
+      settings.topP = Math.min(Math.max(topP, 0), 1);
     }
-
     const frequencyPenalty =
       options?.frequencyPenalty ?? defaults?.frequencyPenalty;
     if (frequencyPenalty !== undefined) {
-      (params as any).frequencyPenalty = Math.min(
-        Math.max(frequencyPenalty, -2),
-        2
-      );
+      settings.frequencyPenalty = Math.min(Math.max(frequencyPenalty, -2), 2);
     }
-
     const presencePenalty =
       options?.presencePenalty ?? defaults?.presencePenalty;
     if (presencePenalty !== undefined) {
-      (params as any).presencePenalty = Math.min(
-        Math.max(presencePenalty, -2),
-        2
-      );
+      settings.presencePenalty = Math.min(Math.max(presencePenalty, -2), 2);
     }
-
-    // Handle stop sequences - only include if array is not empty
-    if (options?.stop !== undefined && options.stop.length > 0) {
-      (params as any).stopSequences = options.stop;
-    }
-
-    return params;
+    if (options?.stop?.length) settings.stopSequences = options.stop;
+    return Object.assign({}, baseParams, settings) as T & CallSettings;
   }
 
-  /**
-   * Build AI SDK parameters with strict type safety for chat generation
-   */
-  static buildChatGenerationParams<T extends Record<string, any>>(
+  static buildChatGenerationParams<T extends ParameterRecord>(
     baseParams: T,
     options?: ChatGenerationOptions,
     defaults?: {
@@ -90,93 +65,32 @@ export class AISDKParameterBuilder {
       frequencyPenalty?: number;
       presencePenalty?: number;
     }
-  ): T & Record<string, any> {
-    const params = { ...baseParams };
-
-    // Apply defaults if not provided in options
-    // Handle both maxTokens (legacy) and maxOutputTokens (AI SDK v5)
-    const maxTokens =
-      options?.maxOutputTokens ??
-      options?.maxTokens ??
-      defaults?.maxOutputTokens;
-    if (maxTokens !== undefined && maxTokens > 0) {
-      (params as any).maxOutputTokens = maxTokens;
+  ): T & ChatSettings {
+    const settings = this.buildTextGenerationParams(
+      baseParams,
+      options,
+      defaults
+    ) as T & ChatSettings;
+    if (options?.tools && Object.keys(options.tools).length > 0) {
+      settings.tools = options.tools;
+      settings.stopWhen = [stepCountIs(options.maxSteps ?? 5)];
     }
-
-    const temperature = options?.temperature ?? defaults?.temperature;
-    if (temperature !== undefined && temperature >= 0) {
-      (params as any).temperature = Math.min(Math.max(temperature, 0), 2);
-    }
-
-    const topP = options?.topP ?? defaults?.topP;
-    if (topP !== undefined && topP > 0) {
-      (params as any).topP = Math.min(Math.max(topP, 0), 1);
-    }
-
-    const frequencyPenalty =
-      options?.frequencyPenalty ?? defaults?.frequencyPenalty;
-    if (frequencyPenalty !== undefined) {
-      (params as any).frequencyPenalty = Math.min(
-        Math.max(frequencyPenalty, -2),
-        2
-      );
-    }
-
-    const presencePenalty =
-      options?.presencePenalty ?? defaults?.presencePenalty;
-    if (presencePenalty !== undefined) {
-      (params as any).presencePenalty = Math.min(
-        Math.max(presencePenalty, -2),
-        2
-      );
-    }
-
-    // Handle stop sequences - only include if array is not empty
-    if (options?.stop !== undefined && options.stop.length > 0) {
-      (params as any).stopSequences = options.stop;
-    }
-
-    // Add tools support for AI SDK v5 - only include if tools exist
-    if (options?.tools !== undefined && Object.keys(options.tools).length > 0) {
-      (params as any).tools = options.tools;
-      (params as any).maxSteps = 5; // Enable multi-step tool execution
-    }
-
-    return params;
+    return settings;
   }
 
-  /**
-   * Build AI SDK parameters with strict type safety for image generation
-   */
-  static buildImageGenerationParams<T extends Record<string, any>>(
+  static buildImageGenerationParams<T extends ParameterRecord>(
     baseParams: T,
     options?: ImageGenerationOptions
-  ): T & Record<string, any> {
-    const params: any = { ...baseParams };
-
-    if (options?.size !== undefined) {
-      params.size = options.size;
-    }
-
-    if (options?.n !== undefined && options.n > 0) {
-      params.n = options.n;
-    }
-
-    if (options?.quality !== undefined) {
-      params.quality = options.quality;
-    }
-
-    if (options?.style !== undefined) {
-      params.style = options.style;
-    }
-
-    return params;
+  ): T & ParameterRecord {
+    const params: ParameterRecord = {};
+    if (options?.size !== undefined) params['size'] = options.size;
+    if (options?.n !== undefined && options.n > 0) params['n'] = options.n;
+    if (options?.quality !== undefined) params['quality'] = options.quality;
+    if (options?.style !== undefined) params['style'] = options.style;
+    return Object.assign({}, baseParams, params);
   }
 
-  /**
-   * Build provider-specific configuration with strict type safety
-   */
-  static buildProviderConfig<T extends Record<string, any>>(
+  static buildProviderConfig<T extends ParameterRecord>(
     baseConfig: T,
     options?: {
       apiKey?: string;
@@ -184,48 +98,27 @@ export class AISDKParameterBuilder {
       organization?: string;
       headers?: Record<string, string>;
     }
-  ): T & Record<string, any> {
-    const config: any = { ...baseConfig };
-
-    if (options?.apiKey !== undefined) {
-      config.apiKey = options.apiKey;
-    }
-
-    if (options?.baseURL !== undefined) {
-      config.baseURL = options.baseURL;
-    }
-
+  ): T & ParameterRecord {
+    const additions: ParameterRecord = {};
+    if (options?.apiKey !== undefined) additions['apiKey'] = options.apiKey;
+    if (options?.baseURL !== undefined) additions['baseURL'] = options.baseURL;
     if (options?.organization !== undefined) {
-      config.organization = options.organization;
+      additions['organization'] = options.organization;
     }
-
-    if (options?.headers !== undefined) {
-      config.headers = options.headers;
-    }
-
-    return config;
+    if (options?.headers !== undefined) additions['headers'] = options.headers;
+    return Object.assign({}, baseConfig, additions);
   }
 
-  /**
-   * Safely build object with only defined properties
-   */
-  static buildSafeObject<T extends Record<string, any>>(
+  static buildSafeObject<T extends ParameterRecord>(
     source: T
-  ): Record<string, any> {
-    const result: Record<string, any> = {};
-
+  ): ParameterRecord {
+    const result: ParameterRecord = {};
     for (const [key, value] of Object.entries(source)) {
-      if (value !== undefined) {
-        result[key] = value;
-      }
+      if (value !== undefined) result[key] = value;
     }
-
     return result;
   }
 
-  /**
-   * Provider-specific parameter validation and defaults
-   */
   static getProviderDefaults(provider: string): {
     maxOutputTokens: number;
     temperature: number;
@@ -235,32 +128,13 @@ export class AISDKParameterBuilder {
   } {
     switch (provider.toLowerCase()) {
       case 'openai':
-        return {
-          maxOutputTokens: 1000,
-          temperature: 0.7,
-          topP: 1.0,
-          frequencyPenalty: 0,
-          presencePenalty: 0,
-        };
-      case 'anthropic':
-        return {
-          maxOutputTokens: 1000,
-          temperature: 0.7,
-          topP: 1.0,
-        };
       case 'groq':
-        return {
-          maxOutputTokens: 1000,
-          temperature: 0.7,
-          topP: 1.0,
-          frequencyPenalty: 0,
-          presencePenalty: 0,
-        };
       case 'mistral':
+      case 'cohere':
         return {
-          maxOutputTokens: 8192,
+          maxOutputTokens: provider.toLowerCase() === 'mistral' ? 8192 : 1000,
           temperature: 0.7,
-          topP: 1.0,
+          topP: 1,
           frequencyPenalty: 0,
           presencePenalty: 0,
         };
@@ -269,114 +143,91 @@ export class AISDKParameterBuilder {
         return {
           maxOutputTokens: 2000,
           temperature: 0.8,
-          topP: 1.0,
+          topP: 1,
           frequencyPenalty: 0,
           presencePenalty: 0,
-        };
-      case 'cohere':
-        return {
-          maxOutputTokens: 1000,
-          temperature: 0.7,
-          topP: 1.0,
-          frequencyPenalty: 0,
-          presencePenalty: 0,
-        };
-      case 'google':
-      case 'gemini':
-        return {
-          maxOutputTokens: 1000,
-          temperature: 0.7,
-          topP: 1.0,
         };
       default:
-        return {
-          maxOutputTokens: 1000,
-          temperature: 0.7,
-          topP: 1.0,
-        };
+        return { maxOutputTokens: 1000, temperature: 0.7, topP: 1 };
     }
   }
 }
 
-/**
- * Utility function to handle AI SDK errors with proper typing
- */
-export function handleAISDKError(error: any, provider: string): Error {
-  if (error.name === 'AI_APICallError') {
-    return new Error(`${provider} API Error: ${error.message}`);
+export function handleAISDKError(error: unknown, provider: string): Error {
+  const details =
+    error instanceof Error
+      ? error.message
+      : typeof error === 'string'
+        ? error
+        : 'Unknown error';
+  const errorName =
+    typeof error === 'object' && error !== null && 'name' in error
+      ? error.name
+      : undefined;
+  if (errorName === 'AI_APICallError') {
+    return new Error(`${provider} API Error: ${details}`);
   }
-
-  if (error.name === 'AI_InvalidArgumentError') {
-    return new Error(`Invalid ${provider} parameters: ${error.message}`);
+  if (errorName === 'AI_InvalidArgumentError') {
+    return new Error(`Invalid ${provider} parameters: ${details}`);
   }
-
-  if (error.name === 'AI_RateLimitError') {
-    return new Error(`${provider} rate limit exceeded: ${error.message}`);
+  if (errorName === 'AI_RateLimitError') {
+    return new Error(`${provider} rate limit exceeded: ${details}`);
   }
-
-  if (error.name === 'AI_AuthenticationError') {
-    return new Error(`${provider} authentication failed: ${error.message}`);
+  if (errorName === 'AI_AuthenticationError') {
+    return new Error(`${provider} authentication failed: ${details}`);
   }
-
-  return new Error(`${provider} Error: ${error.message || 'Unknown error'}`);
+  return new Error(`${provider} Error: ${details}`);
 }
 
-/**
- * Utility function to validate generation options
- */
 export function validateGenerationOptions(
   options: TextGenerationOptions | ChatGenerationOptions,
   provider: string
 ): void {
   if (options.maxOutputTokens !== undefined && options.maxOutputTokens <= 0) {
-    throw new Error(
-      `Invalid maxOutputTokens for ${provider}: must be positive`
-    );
+    throw new Error(`Invalid maxOutputTokens for ${provider}: must be positive`);
   }
-
   if (
     options.temperature !== undefined &&
     (options.temperature < 0 || options.temperature > 2)
   ) {
-    throw new Error(
-      `Invalid temperature for ${provider}: must be between 0 and 2`
-    );
+    throw new Error(`Invalid temperature for ${provider}: must be between 0 and 2`);
   }
-
   if (options.topP !== undefined && (options.topP <= 0 || options.topP > 1)) {
     throw new Error(`Invalid topP for ${provider}: must be between 0 and 1`);
   }
-
   if (
     options.frequencyPenalty !== undefined &&
     (options.frequencyPenalty < -2 || options.frequencyPenalty > 2)
   ) {
-    throw new Error(
-      `Invalid frequencyPenalty for ${provider}: must be between -2 and 2`
-    );
+    throw new Error(`Invalid frequencyPenalty for ${provider}: must be between -2 and 2`);
   }
-
   if (
     options.presencePenalty !== undefined &&
     (options.presencePenalty < -2 || options.presencePenalty > 2)
   ) {
-    throw new Error(
-      `Invalid presencePenalty for ${provider}: must be between -2 and 2`
-    );
+    throw new Error(`Invalid presencePenalty for ${provider}: must be between -2 and 2`);
   }
 }
 
-/**
- * Convert AI SDK usage to portal usage format
- */
-export function convertUsage(usage: any): any {
-  if (!usage) return {};
+export interface PortalUsage {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+}
 
+export function convertUsage(usage: unknown): Partial<PortalUsage> {
+  if (typeof usage !== 'object' || usage === null) return {};
+  const values = usage as Record<string, unknown>;
+  const promptTokens =
+    typeof values['promptTokens'] === 'number' ? values['promptTokens'] : 0;
+  const completionTokens =
+    typeof values['completionTokens'] === 'number' ? values['completionTokens'] : 0;
   return {
-    promptTokens: usage.promptTokens || 0,
-    completionTokens: usage.completionTokens || 0,
+    promptTokens,
+    completionTokens,
     totalTokens:
-      usage.totalTokens ||
-      (usage.promptTokens || 0) + (usage.completionTokens || 0),
+      typeof values['totalTokens'] === 'number'
+        ? values['totalTokens']
+        : promptTokens + completionTokens,
   };
 }

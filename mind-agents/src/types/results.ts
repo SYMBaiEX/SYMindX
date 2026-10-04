@@ -48,7 +48,7 @@ export interface AgentDestructionResult {
     resourcesReleased: string[];
     finalState: GenericData;
     cleanupTime: Duration;
-    [key: string]: BaseConfig[string];
+    [key: string]: BaseConfig[string] | GenericData;
   };
 }
 
@@ -66,7 +66,7 @@ export interface AgentStateTransitionResult {
   metadata?: {
     sideEffects: string[];
     validationResults: ValidationResult[];
-    [key: string]: BaseConfig[string];
+    [key: string]: BaseConfig[string] | ValidationResult[];
   };
 }
 
@@ -150,7 +150,7 @@ export interface EmotionUpdateResult {
     moduleType: string;
     blendingEnabled: boolean;
     contextFactors: GenericData;
-    [key: string]: BaseConfig[string];
+    [key: string]: BaseConfig[string] | GenericData;
   };
 }
 
@@ -196,7 +196,7 @@ export interface ThoughtProcessingResult {
     contextFactors: GenericData;
     memoryInfluence: number;
     emotionalInfluence: number;
-    [key: string]: BaseConfig[string];
+    [key: string]: BaseConfig[string] | GenericData;
   };
 }
 
@@ -247,7 +247,7 @@ export interface DecisionMakingResult {
     decisionTime: Duration;
     ethicalConstraints: boolean;
     riskAssessment: GenericData;
-    [key: string]: BaseConfig[string];
+    [key: string]: BaseConfig[string] | GenericData;
   };
 }
 
@@ -396,7 +396,7 @@ export interface CommandExecutionResult {
     correlationId?: CorrelationId;
     retryCount?: number;
     validation: ValidationResult;
-    [key: string]: BaseConfig[string];
+    [key: string]: BaseConfig[string] | ValidationResult;
   };
 }
 
@@ -495,7 +495,7 @@ export interface AuthenticationResult {
     method: string;
     expiresAt: Timestamp;
     sessionId: string;
-    [key: string]: BaseConfig[string];
+    [key: string]: BaseConfig[string] | Timestamp;
   };
 }
 
@@ -531,7 +531,7 @@ export interface ConfigurationLoadResult {
     version: string;
     validation: ValidationResult;
     loadTime: Duration;
-    [key: string]: BaseConfig[string];
+    [key: string]: BaseConfig[string] | ValidationResult;
   };
 }
 
@@ -549,7 +549,7 @@ export interface ConfigurationUpdateResult {
     validation: ValidationResult;
     propagated: boolean;
     affectedModules: string[];
-    [key: string]: BaseConfig[string];
+    [key: string]: BaseConfig[string] | ValidationResult;
   };
 }
 
@@ -711,7 +711,7 @@ export interface RestoreResult {
   metadata?: {
     verification: ValidationResult;
     conflicts: string[];
-    [key: string]: BaseConfig[string];
+    [key: string]: BaseConfig[string] | ValidationResult;
   };
 }
 

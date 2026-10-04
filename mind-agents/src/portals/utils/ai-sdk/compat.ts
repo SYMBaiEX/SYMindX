@@ -1,106 +1,97 @@
-/**
- * AI SDK v5 Compatibility Layer
- *
- * This file provides compatibility helpers for working with AI SDK v5
- * and resolves type issues between different versions and providers.
- */
-
-import { tool as aiTool } from 'ai';
+import { tool as aiTool, type CallSettings, type Tool } from 'ai';
 import { z } from 'zod';
 
-/**
- * Create a compatible tool definition for AI SDK v5
- * This handles the overload issues with the tool function
- */
 export function createTool(
   description: string,
-  parameters: z.ZodSchema = z.object({}),
-  execute?: (args: any) => Promise<any>
-) {
-  // Use the exact overload signature expected by AI SDK v5
+  inputSchema: z.ZodType = z.object({}),
+  execute?: (args: unknown) => Promise<unknown>
+): Tool<unknown, unknown> {
   return aiTool({
     description,
-    parameters,
-    execute:
-      execute || (async (args: any) => ({ result: 'Tool executed', args })),
+    inputSchema,
+    execute: execute ?? (args => Promise.resolve({ result: 'Tool executed', args })),
   });
 }
 
-/**
- * Create provider settings with proper typing for AI SDK providers
- */
-export function createProviderSettings(apiKey?: string, baseURL?: string) {
-  const settings: any = {};
-
-  if (apiKey) {
-    settings.apiKey = apiKey;
-  }
-
-  if (baseURL) {
-    settings.baseURL = baseURL;
-  }
-
-  return settings;
+export interface ProviderSettings {
+  apiKey?: string;
+  baseURL?: string;
 }
 
-/**
- * Convert message role to AI SDK compatible format
- */
+export function createProviderSettings(
+  apiKey?: string,
+  baseURL?: string
+): ProviderSettings {
+  return {
+    ...(apiKey === undefined ? {} : { apiKey }),
+    ...(baseURL === undefined ? {} : { baseURL }),
+  };
+}
+
 export function convertMessageRole(
   role: string
 ): 'system' | 'user' | 'assistant' | 'tool' {
   switch (role) {
     case 'system':
-      return 'system';
     case 'user':
-      return 'user';
     case 'assistant':
-      return 'assistant';
     case 'tool':
-    case 'function':
-      return 'tool';
+      return role;
     default:
       return 'user';
   }
 }
 
-/**
- * Build safe AI SDK parameters avoiding exactOptionalPropertyTypes issues
- */
 export function buildSafeAISDKParams(
-  params: Record<string, any>
-): Record<string, any> {
-  const result: Record<string, any> = {};
-
-  for (const [key, value] of Object.entries(params)) {
-    // Only include defined values
-    if (value !== undefined) {
-      result[key] = value;
-    }
-  }
-
-  return result;
+  params: Partial<CallSettings>
+): Partial<CallSettings> {
+  return Object.fromEntries(
+    Object.entries(params).filter((entry) => entry[1] !== undefined)
+  ) as Partial<CallSettings>;
 }
 
-/**
- * Convert content parts safely for multimodal messages
- */
-export function buildContentPart(type: string, data: any) {
-  const part: any = { type };
+export type ContentPart =
+  | { type: 'text'; text: string }
+  | { type: 'image'; image: string | URL | Uint8Array; mediaType?: string };
 
-  if (type === 'text' && data.text !== undefined) {
-    part.text = data.text;
+export function buildContentPart(
+  type: 'text',
+  data: { text?: string }
+): Extract<ContentPart, { type: 'text' }>;
+export function buildContentPart(
+  type: 'image',
+  data: { image?: string | URL | Uint8Array; mediaType?: string }
+): Extract<ContentPart, { type: 'image' }>;
+export function buildContentPart(type: string, data: unknown): ContentPart {
+  if (typeof data !== 'object' || data === null) {
+    throw new TypeError('Content part data must be an object');
+  }
+
+  const values = data as Record<string, unknown>;
+  if (type === 'text') {
+    const text = values['text'];
+    if (typeof text !== 'string') {
+      throw new TypeError('Text content part requires a string');
+    }
+    return { type: 'text', text };
   }
 
   if (type === 'image') {
-    if (data.image !== undefined) {
-      part.image = data.image;
+    const image = values['image'];
+    if (
+      typeof image !== 'string' &&
+      !(image instanceof URL) &&
+      !(image instanceof Uint8Array)
+    ) {
+      throw new TypeError('Image content part requires a supported image value');
     }
-    // Don't include mediaType if undefined
-    if (data.mediaType) {
-      part.mediaType = data.mediaType;
-    }
+    const mediaType = values['mediaType'];
+    return {
+      type: 'image',
+      image,
+      ...(typeof mediaType === 'string' ? { mediaType } : {}),
+    };
   }
 
-  return part;
+  throw new TypeError('Unsupported content part type: ' + type);
 }

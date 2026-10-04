@@ -1,0 +1,97 @@
+{
+  "capturedAt": "2026-10-04T01:23:54.709998+00:00",
+  "scope": "supported local operator console plus static component catalog",
+  "environment": "fresh minimal Windows staging with only source/config/current manifests; no environment/data/caches copied",
+  "toolchain": {
+    "bun": "1.4.2",
+    "typescript": "6.0.3",
+    "react": "19.3.0",
+    "vite": "8.3.2",
+    "tailwind": "4.3.3",
+    "storybook": "10.6.1"
+  },
+  "checks": [
+    {
+      "name": "fresh frozen install",
+      "status": "passed",
+      "command": "bun --no-env-file install --frozen-lockfile --ignore-scripts"
+    },
+    {
+      "name": "strict app/client/config types",
+      "status": "passed",
+      "command": "bun --no-env-file run typecheck"
+    },
+    {
+      "name": "production static bundle",
+      "status": "passed",
+      "command": "bun --no-env-file run build"
+    },
+    {
+      "name": "static Storybook catalog",
+      "status": "passed",
+      "command": "STORYBOOK_DISABLE_TELEMETRY=1 bun --no-env-file run build-storybook"
+    },
+    {
+      "name": "formatting",
+      "status": "passed",
+      "detail": "Coding worker formatted edited source/config/docs with pinned Prettier3.9.9."
+    },
+    {
+      "name": "browser/runtime/interaction tests",
+      "status": "not-run",
+      "reason": "No implementation behavior checks explicitly requested; no local server or provider actions performed."
+    },
+    {
+      "name": "Docker image",
+      "status": "not-run",
+      "reason": "Container toolchain unavailable; root context/COPY inputs inspected."
+    }
+  ],
+  "warnings": [
+    "Static Storybook catalog has chunks over500KiB; the production console bundle is about236KiB uncompressed."
+  ],
+  "limits": [
+    "Legacy dashboards outside the supported entry point are retained as migration references; strict app inclusion is intentionally limited to the new entry/client.",
+    "Static assets do not include production API ingress; local Vite proxy uses fixed loopback8000 and keeps token only in page memory."
+  ],
+  "sourceHashes": {
+    "packages/runtime/src/types.ts": "0f23d108bb46995f2939071ae4ef26939f1965da878de5e8a06df76c0c2dfc23",
+    "website/.storybook/main.ts": "7daaff34504495f0efc59e0c8b2d36e02b0817f7a89a0be6e5d34c2582437883",
+    "website/.storybook/manager.ts": "ce5f34f6b1dd2a8f94270ee8bf0670262e5bd35b016de4e4474f83c0958fcc6d",
+    "website/.storybook/preview.ts": "70dc4222c63c805514103b6e0c76a3f1f8e90fab24851341fe607ddd8f615991",
+    "website/bun.lock": "b14c42cdfe539114d333561a998c8976253cf703225129f68438c29419da2a92",
+    "website/index.html": "6e6807bfc9f3e2b587e13c63c4ac950b38a800b9ebb355e818556318e913d94d",
+    "website/package.json": "d74c4639386ee3a54539222ed6daf8fc21e9f51c021b8bd0af642efa6c730519",
+    "website/src/App.tsx": "9d6947b3328265efaa888584d3bf78dadfa31b3d1ba1464d1a5cab7f1b232a59",
+    "website/src/components/AgentBuilder.tsx": "b08c4caf00b169af684cb2e816fd589a220f10e2427657b1ab1fb753ff8b2d4b",
+    "website/src/components/AgentControls.tsx": "cfc8b2f97a7cb2f541bca3f079a2ed126e62f9323090cbdc3a5bffb755d0c5b3",
+    "website/src/components/AnalyticsPlatform.tsx": "91b7a91923d2f13ec22c9ffe5b5f469329815894fa5230726e03713247881abc",
+    "website/src/components/Chat.tsx": "3046a0b0ee95de8fe1599f3f8393c2b15f10dfcea933159ac99193711a42b8b5",
+    "website/src/components/CoordinationDashboard.tsx": "6d11d258340398e301176cc78be340184c77f6761838ddec3abdbdfda85e00cd",
+    "website/src/components/DeploymentConsole.tsx": "74c173ad98b45836029b49fe646b6e54e38faf85a10051c74bed7815655e49c8",
+    "website/src/components/DynamicToolsDashboard.tsx": "378f7c2c04c5abdb5ea35c1b985665c51d00baa8199b95ff05f6d547e7d89865",
+    "website/src/components/EmotionGraph.tsx": "57ebc7a51ab38847ea5a575237c2f466be0e6cb1caa6859a0410ffa14a4ec3ad",
+    "website/src/components/McpServerManager.tsx": "25ea3be64db2cfd3f068d2c9cd111baf046fe207da71b339c1285610ee990d4d",
+    "website/src/components/StreamCanvas.tsx": "53499a6ae0719329ded8718f41b6fbd353e3d8891a213290d05a2242ea9c20ae",
+    "website/src/components/StreamingDashboard.tsx": "6b57964ea76b1ed64d3442e7f85d64af7ace802279789312a3464abef15ac568",
+    "website/src/components/TestingDashboard.tsx": "8067681dfa44f37e0fe68d0af7deb511b9bb4f5172e9963cd40da326308ccd87",
+    "website/src/components/ThoughtStream.tsx": "da6c51d0c50f7fc20854623edf2f9ab422378205d6dad923b46866b890d86f96",
+    "website/src/components/ui/badge.tsx": "0a48acb7732b77864ba083489074e2cbcda8802c4b0899b023ad1125e80e2c6f",
+    "website/src/components/ui/button.stories.tsx": "5c22f881663566701fbc983ab7100fb01e90773f95d2165081cc5b69d413480d",
+    "website/src/components/ui/button.tsx": "4cd9d8863820eed814bf695277193e1f472da2b1534e7ff946a0732d54e3219e",
+    "website/src/components/ui/card.stories.tsx": "17db77c5030a7f8b0eee8fab67bc70c47cc0cdc83aade6bfb37619a616ea26fe",
+    "website/src/components/ui/card.tsx": "7774b9166c7f3d24b6378bd86d38067ad9f3e1e545ecac8f6547fedd36a732b9",
+    "website/src/components/ui/input.tsx": "938634e8b227dc1e34870ebea38c278f6865d3575627a423bc36a77c4b7ec59b",
+    "website/src/components/ui/label.tsx": "f9f5d6a9f1f2a82589e6ec8503041b218883e9632dbb54281683cbe016365453",
+    "website/src/components/ui/select.tsx": "26c663a89e2bc09f0d0f648922d3f11d3d3caff89a92492a5a65a7fffd5bc809",
+    "website/src/components/ui/switch.tsx": "f7ac130123f9e34c79c028de294293bfe86dc192f080fa71a357b64a16e9426e",
+    "website/src/components/ui/tabs.tsx": "19e727ec3ef3c83c909c6ffd0bbaafca9248cf273d66ebb602099f38bc28bdda",
+    "website/src/index.css": "8b81cb0c2de4ca6d307078e3faab0fdc602ec60ff3efbb594a64a8439bc5f051",
+    "website/src/lib/operator-api.ts": "5de06ea39b470f3c392e3867553d36b8fa3d16a7bb18a7e069fe768e289fd4e0",
+    "website/src/lib/utils.ts": "fc6663b09bf31db0713f89c37f4bf75477476f8553bab9c07b0bb3214d5b161d",
+    "website/src/main.tsx": "8580e3730bee25418e0001b6621dc9795ab195b4b21d0b4f26d6fd29f23dcb5c",
+    "website/tsconfig.json": "002855f4076668ce35e75ae714a35bda7b82f65bc1cbe634d1430d46109b70cb",
+    "website/tsconfig.node.json": "808d54e260550292101174b3f2ae89192c1c933cb05ba49c3207ce6ec7f486b7",
+    "website/vite.config.ts": "146b37b6a58a99b97a246442c8cc7de838a62525533d0d2bbd4234ee0d7015f6"
+  }
+}

@@ -12,7 +12,7 @@ Work in `packages/runtime/`. Read its README and `docs/v0.1/IMPLEMENTATION.md` b
 - Authorized dependency maintenance may read official documentation, release pages, and package-registry metadata, and perform project-scoped installs with lifecycle scripts disabled. Runtime checks must use temporary files, injected providers, and loopback servers; do not contact live model/messaging services or existing databases.
 - Keep the API loopback-only and require its bearer token. The current API is a single local owner's interface, not a multiuser service.
 - Never import legacy runtime modules into the supported package without a scoped migration and demonstrated contract compatibility.
-- Keep documented capabilities consistent with implemented behavior. Semantic memory, learning, autonomy, MCP, web dashboards, and remote deployment remain future work.
+- Keep documented capabilities consistent with implemented behavior. Semantic memory, learning, autonomy, MCP, and remote deployment remain future work. The local website console and scaffolder use the supported core; retired legacy UI components are migration references.
 
 ## Agent path
 

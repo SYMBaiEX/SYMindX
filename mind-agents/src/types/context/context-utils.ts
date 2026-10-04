@@ -17,25 +17,15 @@ import {
   ContextCreationOptions,
   ContextUpdateOptions,
   ContextDiff,
-  ContextSystemConfig,
   DEFAULT_CONTEXT_SYSTEM_CONFIG,
   ContextTypeGuards,
   UnifiedContextQuery,
 } from './unified-context.js';
 import {
-  ContextState,
   ContextValidationResult,
   ContextValidationRule,
-  ContextFilter,
   ContextSnapshot,
-  ContextPatch,
-  ContextError,
-  ContextValidationError,
-  ContextNotFoundError,
-  ContextExpiredError,
 } from './context-types.js';
-import type { Timestamp } from '../helpers.js';
-import type { Metadata } from '../common.js';
 
 /**
  * Context Creation Utilities
@@ -61,7 +51,7 @@ export namespace ContextCreation {
   export function createContext(
     options: ContextCreationOptions
   ): UnifiedContext {
-    const now = new Date().toISOString() as Timestamp;
+    const now = new Date();
     const contextId = randomUUID();
 
     const metadata: ContextMetadata = {
@@ -73,8 +63,10 @@ export namespace ContextCreation {
       lastModified: now,
       source: options.source,
       version: DEFAULT_CONTEXT_SYSTEM_CONFIG.version,
-      expiresAt: options.expiresAt,
-      tags: options.tags,
+      ...(options.expiresAt === undefined
+        ? {}
+        : { expiresAt: options.expiresAt }),
+      ...(options.tags === undefined ? {} : { tags: [...options.tags] }),
     };
 
     const context: UnifiedContext = {
@@ -84,10 +76,13 @@ export namespace ContextCreation {
 
     // Inherit from parent if specified
     if (options.parent && ContextTypeGuards.isUnifiedContext(options.parent)) {
-      return mergeContexts(context, options.parent, {
-        merge: true,
-        source: options.source,
-      });
+      return mergeContexts(context, [
+        options.parent,
+        {
+          merge: true,
+          source: options.source,
+        },
+      ]);
     }
 
     return context;
@@ -356,7 +351,7 @@ export namespace ContextComparison {
       modified,
       removed,
       unchanged,
-      timestamp: new Date().toISOString() as Timestamp,
+      timestamp: new Date(),
     };
   }
 
@@ -381,30 +376,19 @@ export namespace ContextComparison {
       return options.customComparator(context1, context2);
     }
 
-    const ctx1 = options.ignoreMetadata
-      ? { ...context1, metadata: undefined }
-      : context1;
-    const ctx2 = options.ignoreMetadata
-      ? { ...context2, metadata: undefined }
-      : context2;
-
-    if (options.ignoreTimestamps) {
-      // Remove timestamp fields for comparison
-      const cleanContext = (ctx: UnifiedContext) => {
-        const cleaned = { ...ctx };
-        if (cleaned.metadata) {
-          cleaned.metadata = {
-            ...cleaned.metadata,
-            createdAt: undefined as any,
-            lastModified: undefined as any,
-          };
-        }
-        return cleaned;
-      };
-      return deepEqual(cleanContext(ctx1), cleanContext(ctx2));
-    }
-
-    return deepEqual(ctx1, ctx2);
+    const cleanContext = (context: UnifiedContext): Record<string, unknown> => {
+      const cleaned: Record<string, unknown> = { ...context };
+      if (options.ignoreMetadata) {
+        delete cleaned['metadata'];
+      } else if (options.ignoreTimestamps) {
+        const metadata: Record<string, unknown> = { ...context.metadata };
+        delete metadata['createdAt'];
+        delete metadata['lastModified'];
+        cleaned['metadata'] = metadata;
+      }
+      return cleaned;
+    };
+    return deepEqual(cleanContext(context1), cleanContext(context2));
   }
 
   /**
@@ -461,13 +445,12 @@ export namespace ContextMerging {
     let result = { ...target };
 
     for (const sourceOrTuple of sources) {
-      const [source, options] =
-        Array.isArray(sourceOrTuple) && sourceOrTuple.length === 2
-          ? sourceOrTuple
-          : [
-              sourceOrTuple as UnifiedContext,
-              { merge: true } as ContextUpdateOptions,
-            ];
+      const source = Array.isArray(sourceOrTuple)
+        ? sourceOrTuple[0]
+        : sourceOrTuple;
+      const options: ContextUpdateOptions = Array.isArray(sourceOrTuple)
+        ? sourceOrTuple[1]
+        : { merge: true };
 
       if (options?.merge === false) {
         // Replace mode - overwrite target with source
@@ -477,19 +460,29 @@ export namespace ContextMerging {
         result = deepMerge(result, source);
       }
 
-      // Update metadata (create mutable copy)
-      const mutableMetadata = { ...result.metadata } as any;
-      mutableMetadata.lastModified = new Date().toISOString();
-      mutableMetadata.source = options.source ?? result.metadata.source;
-      mutableMetadata.tags = options.tags ?? result.metadata.tags;
-      result.metadata = mutableMetadata as ContextMetadata;
+      // Metadata retains Date values and omits absent optional fields.
+      const metadata = {
+        ...result.metadata,
+        lastModified: new Date(),
+        source: options.source ?? result.metadata.source,
+      };
+      if (options.tags !== undefined) metadata.tags = [...options.tags];
+      result.metadata = metadata;
 
-      // Add trace information if provided
       if (options.trace) {
+        const previous = result.trace;
+        const update = options.trace;
         result.trace = {
-          ...result.trace,
-          ...options.trace,
-          timestamp: new Date().toISOString() as Timestamp,
+          ...previous,
+          ...update,
+          traceId: update.traceId ?? previous?.traceId ?? randomUUID(),
+          spanId: update.spanId ?? previous?.spanId ?? randomUUID(),
+          operation:
+            update.operation ??
+            previous?.operation ??
+            options.source ??
+            'context-merge',
+          timestamp: new Date(),
         };
       }
     }
@@ -516,7 +509,9 @@ export namespace ContextMerging {
     }
 
     if (contexts.length === 1) {
-      return contexts[0];
+      const single = contexts[0];
+      if (!single) throw new Error('Context array must contain an entry');
+      return single;
     }
 
     // Sort contexts based on strategy
@@ -579,14 +574,14 @@ export namespace ContextCloning {
     const cloned = deepClone(context);
 
     // Create a mutable metadata object
-    const mutableMetadata = { ...cloned.metadata } as any;
+    const mutableMetadata = { ...cloned.metadata };
 
     if (options.newId) {
       mutableMetadata.id = randomUUID();
     }
 
     if (options.updateTimestamp) {
-      const now = new Date().toISOString();
+      const now = new Date();
       mutableMetadata.lastModified = now;
       if (options.newId) {
         mutableMetadata.createdAt = now;
@@ -597,7 +592,7 @@ export namespace ContextCloning {
       mutableMetadata.source = options.newSource;
     }
 
-    cloned.metadata = mutableMetadata as ContextMetadata;
+    cloned.metadata = mutableMetadata;
     return cloned;
   }
 
@@ -623,7 +618,7 @@ export namespace ContextCloning {
     return {
       ...deepClone(context),
       _snapshotId: randomUUID(),
-      _timestamp: new Date().toISOString() as Timestamp,
+      _timestamp: new Date(),
       _version: context.metadata.version,
     } as unknown as ContextSnapshot<UnifiedContext>;
   }
@@ -812,7 +807,7 @@ function deepMerge<T, U>(target: T, source: U): T & U {
   const result = { ...target } as T & U;
 
   for (const key in source) {
-    if (source.hasOwnProperty(key)) {
+    if (Object.prototype.hasOwnProperty.call(source, key)) {
       const sourceValue = source[key];
       const targetValue = (target as any)[key];
 

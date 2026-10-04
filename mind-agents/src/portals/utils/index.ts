@@ -7,8 +7,10 @@
 export * from './ai-sdk/index';
 export * from './context';
 export * from './integration';
-export * from './usage';
+export { buildAISDKParams, buildProviderSettings } from './usage';
+export { convertUsage } from './usage';
 
 // Re-export shared utilities for backwards compatibility
-export * from '../shared/index';
+export { handleAISDKError, withRetry } from '../shared/error-handler';
+export { createMessageConverter } from '../shared/message-converter';
 

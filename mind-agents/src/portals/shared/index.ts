@@ -1,3 +1,12 @@
+import { createMessageConverter } from './message-converter';
+import { createParameterBuilder } from './parameter-builder';
+import { createModelResolver } from './model-resolver';
+import { createErrorHandler } from './error-handler';
+import { createStreamHandler } from './stream-handler';
+import { createFinishReasonMapper } from './finish-reason-mapper';
+import { createProviderFactory } from './provider-factory';
+
+
 /**
  * Shared Portal Utilities
  *
@@ -85,7 +94,7 @@ export {
   convertUsage,
   buildAISDKParams,
   buildProviderSettings,
-} from '../utils';
+} from '../utils/usage';
 
 /**
  * Create a complete portal toolkit for a specific provider
@@ -128,8 +137,8 @@ export class PortalImplementationHelper {
   private toolkit: ReturnType<typeof createPortalToolkit>;
 
   constructor(
-    private provider: string,
-    private config: any = {}
+    provider: string,
+    config: any = {}
   ) {
     this.toolkit = createPortalToolkit(provider, config);
   }
