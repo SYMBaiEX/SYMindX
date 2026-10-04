@@ -3,9 +3,9 @@ name: SYMindX local tooling
 on:
   push:
     branches: [main]
-    paths: ['create-symindx/**', 'website/**', 'packages/runtime/src/types.ts', '.github/workflows/tooling.yml']
+    paths: ['apps/website/**', '.github/workflows/tooling.yml']
   pull_request:
-    paths: ['create-symindx/**', 'website/**', 'packages/runtime/src/types.ts', '.github/workflows/tooling.yml']
+    paths: ['apps/website/**', '.github/workflows/tooling.yml']
   workflow_dispatch:
 
 permissions:
@@ -22,7 +22,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        package: [create-symindx, website]
+        package: [apps/website]
     defaults:
       run:
         working-directory: ${{ matrix.package }}
