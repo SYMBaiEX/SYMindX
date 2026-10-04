@@ -1,25 +1,31 @@
 # Contributing to SYMindX
 
-Thank you for considering contributing to this project! This repository uses **Bun** for package management.
+This repository uses [Bun](https://bun.sh/).
+
+## Layout
+
+- `packages/agent` (`@symindx/agent`) is the in-process mind library.
+- `apps/cli`, `apps/docs`, and `apps/website` are the applications.
+- There is no separate scaffolder or CLI bridge. `bun run cli` starts the terminal.
 
 ## Setup
 
-1. Install [Bun](https://bun.sh/).
-2. Install dependencies from the repository root:
-   ```bash
-   bun install
-   ```
-   This command also installs packages for the `mind-agents` and `website` workspaces.
-3. Run the test suite:
-   ```bash
-   bun test
-   ```
-   The tests are located in the `mind-agents` package and are executed automatically in CI.
+Install Bun, then install website dependencies with lifecycle scripts disabled:
 
-## Development Workflow
+```bash
+bun install --cwd apps/website --frozen-lockfile --ignore-scripts
+```
 
-- Create a new branch for your change.
-- Ensure `bun test` passes before opening a pull request.
-- The GitHub Actions workflow will run `bun test` and build the project for every push and pull request.
+From the repository root:
 
-We appreciate your contributions!
+```bash
+bun run typecheck
+bun run cli
+bun run web:dev
+```
+
+`typecheck` checks `packages/agent`. `cli` starts the terminal in `apps/cli`. `web:dev` starts the website.
+
+## Pull requests
+
+Branch from `main`. Run `bun run typecheck` before opening a pull request.

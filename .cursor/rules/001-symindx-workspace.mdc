@@ -1,16 +1,15 @@
 ---
-description: APPLY supported runtime contracts when editing SYMindX to keep changes type safe and reviewable
+description: Apply the current SYMindX layout when editing the agent package and apps
 globs: **/*
 alwaysApply: true
 ---
 # SYMindX implementation
 
 - Work on main. Preserve unrelated edits. The orchestrator owns Git integration.
-- packages/runtime is the supported v0.1 core: Bun, SQLite, independent strict TypeScript contracts, character schema 1, explicit tools, echo or OpenAI-compatible provider, local authenticated API.
-- mind-agents contains experimental legacy modules undergoing migration. Website demonstrations are not deployed runtime services. Do not equate legacy advertised capabilities with supported behavior.
-- Use GPT-6 Luna coding fleets and the dynamic queue in docs/modernization/workflow.json. Each writer owns exact paths. Reuse completed findings; start the next implementation task when a slot opens.
+- packages/agent (@symindx/agent) is the agent runtime. apps/cli, apps/website, and apps/docs are the applications. packages/runtime and mind-agents/ have been removed.
+- Use GPT-6 Luna coding fleets and the dynamic queue in apps/docs/modernization/workflow.json. Each writer owns exact paths. Reuse completed findings; start the next implementation task when a slot opens.
 - Provider SDK types belong behind adapters. Parse external and persisted JSON as unknown and validate it before use. Use role/event/config unions to make invalid states unrepresentable.
 - Inspect scripts before validation. Use explicit no-env-file and ignore-scripts dependency installs. Compile, format and build as authorized; tests or behavior probes require an explicit request.
 - No live provider calls, messaging, deployments, production data mutation or global install side effects.
 
-Current commands and limits: packages/runtime/README.md. Historical guidance: docs/legacy/cursor.
+Current commands are in the root package.json. Historical guidance: apps/docs/legacy/cursor.
