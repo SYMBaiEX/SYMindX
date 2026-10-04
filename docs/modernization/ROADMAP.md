@@ -17,7 +17,7 @@ Before treating the candidate as a reliable release, add explicitly requested of
 - API authentication/origin/body limits and CLI signal handling.
 - Generator no-overwrite/atomic publication and the console's scope/request lifecycle.
 
-Run the same supported gates in a clean Linux environment and inspect actual CI results. Use a separate opt-in provider trial only when an account, endpoint and cost budget are selected. No live database migration is required.
+Maintain the supported gates in clean Linux CI; current compile/build results are recorded in ci-validation.json. Add behavior checks to that gate once requested and implemented. Use a separate opt-in provider trial only when an account, endpoint and cost budget are selected. No live database migration is required.
 
 ## 3. Promote selected integrations
 

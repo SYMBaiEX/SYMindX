@@ -67,7 +67,7 @@
         "F",
         "G"
       ],
-      "note": "Fresh frozen installs and strict SDK/web gates pass; runtime/scaffolder source hashes still match their passing gates. Behavior tests/live calls/Docker remain not run."
+      "note": "Frozen installs, strict SDK/web/runtime/tooling gates and clean Linux CI pass; provenance hashes match tracked inputs. Behavior tests, live calls and Docker remain not run."
     },
     {
       "id": "B-context",
@@ -95,21 +95,36 @@
       ],
       "scope": "utils/error-handler.ts, utils/standard-errors.ts, utils/standard-logging.ts",
       "note": "Coding worker fixed structured error/logging contracts; integrated compiler has 0 diagnostics."
+    },
+    {
+      "id": "CI-SDK",
+      "state": "implemented",
+      "owner": "sdk",
+      "dependsOn": [
+        "B"
+      ],
+      "scope": "types/index.ts and core/checkpoint-system.ts obsolete globals.d.ts references",
+      "note": "Removed two obsolete references; ignored declaration preserved locally. Local compiler has 0 diagnostics with 93 tracked source inputs; clean Linux SDK CI passes at cc94846."
     }
   ],
   "validationRecords": [
     "runtime-validation.json",
     "scaffolder-validation.json",
     "sdk-validation.json",
-    "web-validation.json"
+    "web-validation.json",
+    "ci-validation.json"
   ],
-  "state": "integrated-awaiting-main-commit",
+  "state": "complete",
   "integrationEvidence": {
-    "validationInputsMatched": 160,
+    "validationInputsMatched": 159,
     "preservedArchivesMatched": 57,
     "activeDependencyNames": 115,
     "liveManifests": 35,
     "registeredWorkspaces": 29,
-    "yamlSyntax": "passed"
-  }
+    "yamlSyntax": "passed",
+    "allRecordedInputsTracked": true,
+    "linuxCI": "passed for current runtime, tooling and SDK source"
+  },
+  "integrationCommit": "f97824ce0cb63cbebc2cc803bce3aa0954d03a9b",
+  "validatedSourceCommit": "cc9484675987c15f6236d8dabe28be57cd162759"
 }

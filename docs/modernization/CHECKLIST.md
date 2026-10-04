@@ -8,9 +8,9 @@ User direction: work on main; build in GPT-6 Luna fleets using a dynamic task qu
 - [x] Preserve the existing portal/module refactor in its own main checkpoint: `10d71e0`.
 - [x] Commit runtime contracts and local tooling on main: `54451ad`.
 - [x] Pin the supported CI toolchain and actions on main: `94aa5b0`.
-- [ ] Commit final SDK, shared contract, package and web changes on main.
+- [x] Commit final SDK, shared contract, package and web changes on main: `f97824c`.
 - [x] Push the completed runtime/tooling checkpoints to origin/main.
-- [ ] Push final fleet integration after checks; keep local editor configuration separate.
+- [x] Push final fleet integration after local checks; keep local editor configuration separate.
 
 ## Fleet 1: completed
 
@@ -50,6 +50,15 @@ Each task closes on source changes and compiler evidence. The legacy workspace r
 - Runtime and scaffolder compile/build provenance: **matches** their passing records.
 - Workspace metadata: **29 registered packages**, with 115 active dependency names reconciled across 35 live manifests.
 - Preserved tooling/web/scaffolder preimages: **57 of 57 hashes match**.
-- Behavior tests, live providers/MCP, Linux remote CI and Docker execution: **not run**. See the gate records and ROADMAP.md.
+- Clean Linux CI: **pass** for runtime, scaffolder, website and SDK gates. Behavior tests, live providers/MCP and Docker execution: **not run**. See the gate records and ROADMAP.md.
 
-The final source/config provenance check matched all 160 recorded inputs. Workflow and Compose YAML syntax also passed. See [README.md](README.md) for the integrated scope and [ROADMAP.md](ROADMAP.md) for release behavior work.
+The final source/config provenance check matched all 159 current recorded inputs. Workflow and Compose YAML syntax also passed. See [README.md](README.md) for the integrated scope and [ROADMAP.md](ROADMAP.md) for release behavior work.
+
+## Clean Linux CI follow-up
+
+- [x] Runtime frozen install, format, types and library/CLI/declarations build.
+- [x] Scaffolder and website frozen installs, strict types and builds.
+- [x] Fix the SDK barrel's reference to an ignored local-only declaration; compile from tracked inputs and verify clean Linux CI. Owner: SDK coding worker.
+- [x] Record final remote CI result and close the queue.
+
+The CI repair is pushed on main as `cc94846`. No compiler input depends on an untracked local declaration. Remote outcomes and the initially failed/resolved check are retained in [ci-validation.json](ci-validation.json).

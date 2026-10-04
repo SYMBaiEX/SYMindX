@@ -1,0 +1,55 @@
+{
+  "capturedAt": "2026-10-04T01:48:54.678312+00:00",
+  "environment": "GitHub Actions ubuntu-latest, clean checkout, pinned Bun1.4.2",
+  "runs": [
+    {
+      "name": "SYMindX v0.1",
+      "commit": "f97824ce0cb63cbebc2cc803bce3aa0954d03a9b",
+      "conclusion": "success",
+      "url": "https://github.com/SYMBaiEX/SYMindX/actions/runs/37168831104",
+      "checks": [
+        "frozen install without lifecycle scripts",
+        "format",
+        "strict types",
+        "library/CLI/declarations build"
+      ]
+    },
+    {
+      "name": "SYMindX local tooling",
+      "commit": "f97824ce0cb63cbebc2cc803bce3aa0954d03a9b",
+      "conclusion": "success",
+      "url": "https://github.com/SYMBaiEX/SYMindX/actions/runs/37168831125",
+      "checks": [
+        "scaffolder frozen install/types/build",
+        "website frozen install/types/build"
+      ]
+    },
+    {
+      "name": "SYMindX SDK contract typecheck",
+      "commit": "f97824ce0cb63cbebc2cc803bce3aa0954d03a9b",
+      "conclusion": "failure",
+      "url": "https://github.com/SYMBaiEX/SYMindX/actions/runs/37168831112",
+      "finding": "TS6053: type barrel references untracked/ignored globals.d.ts; the sole local-only recorded validation input.",
+      "disposition": "resolved by cc94846; obsolete local-only references removed and subsequent clean Linux SDK compile passed"
+    },
+    {
+      "name": "SYMindX SDK contract typecheck",
+      "commit": "cc9484675987c15f6236d8dabe28be57cd162759",
+      "conclusion": "success",
+      "url": "https://github.com/SYMBaiEX/SYMindX/actions/runs/37169042159",
+      "checks": [
+        "frozen install without lifecycle scripts",
+        "strict SDK/transitive contract compile"
+      ],
+      "jobs": [
+        "typecheck"
+      ]
+    }
+  ],
+  "limits": [
+    "Compilation/build only; no implementation behavior tests or live integrations."
+  ],
+  "validatedSourceCommit": "cc9484675987c15f6236d8dabe28be57cd162759",
+  "currentSourceStatus": "all supported compile/build CI gates passed; runtime/tooling source unchanged since their successful f97824c runs",
+  "gitHooks": "Per-command core.hooksPath=/dev/null for Git checkpoints because WSL Bun is absent; equivalent local compile/format gates and clean Linux CI passed. No persistent hook configuration was changed."
+}

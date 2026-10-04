@@ -59,6 +59,13 @@
       "name": "workspace checker strict compile",
       "status": "passed",
       "detail": "Standalone TypeScript7 strict/noUncheckedIndexedAccess/exactOptionalPropertyTypes/noUnusedLocals/noUnusedParameters noEmit compile."
+    },
+    {
+      "name": "clean Linux CI",
+      "status": "passed",
+      "commit": "f97824ce0cb63cbebc2cc803bce3aa0954d03a9b",
+      "url": "https://github.com/SYMBaiEX/SYMindX/actions/runs/37168831104",
+      "detail": "Frozen install, formatting, strict types, library/CLI/declarations"
     }
   ],
   "sourceHashes": {

@@ -45,6 +45,13 @@
       "name": "Docker image",
       "status": "not-run",
       "reason": "Container toolchain unavailable; root context/COPY inputs inspected."
+    },
+    {
+      "name": "clean Linux CI",
+      "status": "passed",
+      "commit": "f97824ce0cb63cbebc2cc803bce3aa0954d03a9b",
+      "url": "https://github.com/SYMBaiEX/SYMindX/actions/runs/37168831125",
+      "detail": "Frozen install, strict app/config types, production static bundle"
     }
   ],
   "warnings": [

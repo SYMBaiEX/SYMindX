@@ -39,6 +39,13 @@
       "name": "generator behavior / app startup",
       "status": "not-run",
       "reason": "No implementation tests or behavior probes explicitly requested."
+    },
+    {
+      "name": "clean Linux CI",
+      "status": "passed",
+      "commit": "f97824ce0cb63cbebc2cc803bce3aa0954d03a9b",
+      "url": "https://github.com/SYMBaiEX/SYMindX/actions/runs/37168831125",
+      "detail": "Frozen install, strict types, bundle/declarations"
     }
   ],
   "sourceHashes": {
