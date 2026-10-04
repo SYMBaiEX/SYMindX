@@ -5,9 +5,6 @@
  * providing a single point of access for all type definitions.
  */
 
-// Global type definitions
-/// <reference path="./globals.d.ts" />
-
 // Import types needed for local interface definitions
 import type { CognitionModule } from './cognition';
 import type { Metadata } from './common';

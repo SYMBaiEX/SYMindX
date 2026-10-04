@@ -5,8 +5,6 @@
 
 import { EventEmitter } from 'events';
 
-/// <reference path="../types/globals.d.ts" />
-
 import { Agent } from '../types/agent';
 import { Logger } from '../utils/logger';
 
