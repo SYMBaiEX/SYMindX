@@ -21,5 +21,5 @@
     "types": ["vite/client"],
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src/main.tsx", "src/App.tsx", "src/lib/operator-api.ts"]
+    "include": ["src/main.tsx", "src/App.tsx"]
 }
