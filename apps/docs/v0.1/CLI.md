@@ -1,27 +1,14 @@
 # SYMindX agent CLI
 
-The supported CLI lives in packages/runtime. Its two backends are API (SYMindX runtime and tools) and local Codex (installed native CLI and existing login). No model request occurs during help, configuration creation or compilation.
+This page records the former `packages/runtime` command line. That package has been removed. The current terminal is `apps/cli`, started with `bun run cli` from the repository root.
 
-## Install the command
-
-Requires Bun 1.4.2+ and Node for the command launcher. In a normal local checkout:
+## Current command
 
 ```sh
-bun --no-env-file install --cwd packages/runtime --frozen-lockfile --ignore-scripts
-bun run build
-cd packages/runtime
-bun link
-symindx agent --help
+bun run cli
 ```
 
-The local link is an explicit user setup step; the launcher never downloads or globally installs anything. You can use the checkout without linking:
-
-```sh
-bun run agent --help
-node redirect-package/bin.js agent --help
-```
-
-Use Bun and Codex on the same host as your checkout. Linux tools in WSL and native Windows tools have separate PATH/login stores. Windows TypeScript7 cannot enumerate this WSL UNC checkout; use a local Windows checkout or Linux Bun in WSL for builds. Keep state databases on a local filesystem.
+The commands below belonged to the removed runtime. They are not implemented by `apps/cli`.
 
 ## Start with local Codex
 
