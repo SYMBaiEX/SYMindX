@@ -1,8 +1,9 @@
+# One app service for local use. Builds Dockerfile.dev and starts the CLI.
 services:
-  runtime-build:
-    profiles: [build]
+  app:
     build:
       context: .
       dockerfile: Dockerfile.dev
-    command: [bun, --no-env-file, run, build]
+    stdin_open: true
+    tty: true
     init: true

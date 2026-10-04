@@ -1,13 +1,9 @@
-# Explicit one-shot CLI profile; no deployment or secret loading.
+# One app service: the SYMindX CLI, started from source with bun.
 services:
-  cli:
-    profiles: [cli]
+  app:
     build:
       context: .
       dockerfile: Dockerfile
-    command: [chat, --db, /app/data/symindx.sqlite, --message, Hello]
-    volumes:
-      - runtime_data:/app/data
+    stdin_open: true
+    tty: true
     init: true
-volumes:
-  runtime_data:
