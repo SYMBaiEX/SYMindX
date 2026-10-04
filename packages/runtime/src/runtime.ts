@@ -78,7 +78,7 @@ export class SYMindXRuntime {
     };
     this.timeout = bounded(options.requestTimeoutMs, 60000, 10, 300000, 'requestTimeoutMs');
     this.toolTimeout = bounded(options.toolTimeoutMs, 10000, 10, 60000, 'toolTimeoutMs');
-    this.maxRounds = bounded(options.maxToolRounds, 3, 0, 8, 'maxToolRounds');
+    this.maxRounds = bounded(options.maxToolRounds, 3, 0, 32, 'maxToolRounds');
     this.maxQueued = bounded(options.maxQueuedMessages, 8, 1, 100, 'maxQueuedMessages');
     this.maxInput = bounded(options.maxInputChars, 16000, 1, 100000, 'maxInputChars');
     this.maxContext = bounded(options.maxContextChars, 48000, 1000, 200000, 'maxContextChars');
@@ -483,14 +483,19 @@ export class SYMindXRuntime {
       audit.finishedAt = Date.now();
       this.store!.recordToolAudit(audit);
       return { status: 'completed', content };
-    } catch {
-      audit.status = 'failed';
+    } catch (error) {
+      const denied = error instanceof SYMindXError && error.code === 'POLICY';
+      audit.status = denied ? 'denied' : 'failed';
       audit.finishedAt = Date.now();
       this.store!.recordToolAudit(audit);
       throwIfAborted(signal);
       return {
-        status: 'failed',
-        content: JSON.stringify({ error: 'Tool execution failed or timed out' }),
+        status: denied ? 'denied' : 'failed',
+        content: JSON.stringify({
+          error: denied
+            ? 'Tool call denied by the application'
+            : 'Tool execution failed or timed out',
+        }),
       };
     } finally {
       clearTimeout(timer);

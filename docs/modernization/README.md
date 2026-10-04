@@ -1,6 +1,6 @@
 # v0.1 modernization build
 
-The architectural decision is to rebuild around selected components. The small supported runtime is the product foundation; migrated legacy adapters remain candidates for promotion after behavior validation. Work proceeds on main through [the coding checklist](CHECKLIST.md) and [a native dynamic task queue](workflow.json), using three GPT-6 Luna coding workers plus the orchestrator.
+The architectural decision is to rebuild around selected components. The small supported runtime is the product foundation; migrated legacy adapters remain candidates for promotion after behavior validation. Work proceeds on main through [the coding checklist](CHECKLIST.md) and [a native dynamic task queue](workflow.json), using three GPT-6 Luna coding workers plus the orchestrator. The current [agent CLI checklist](CLI-CHECKLIST.md) adds API and native Codex chat/code/build workflows.
 
 ## Implemented system
 
@@ -21,7 +21,7 @@ The architectural decision is to rebuild around selected components. The small s
 
 All source checkpoints are pushed to origin/main. The checklist records completed integration and CI follow-up. The original dirty-path inventory remains in [baseline.json](baseline.json); unrelated local `.serena/` configuration stays outside commits.
 
-## Validation evidence
+## Modernization checkpoint evidence
 
 | Scope | Result | Record |
 | --- | --- | --- |
@@ -33,11 +33,11 @@ All source checkpoints are pushed to origin/main. The checklist records complete
 | Clean Linux CI | Runtime, scaffolder, website and SDK compile/build gates pass | [CI](ci-validation.json) |
 | Preservation | 57 of 57 recorded tooling/web/scaffolder preimages match their archived hashes | [Tooling](tooling-preservation.json), [web](website-preservation.json), [scaffolder](scaffolder-preservation.json) |
 
-All 159 current recorded validation inputs match the checkout and are tracked in Git. Clean Linux CI caught a stale reference to an ignored declaration file; that reference and a second obsolete reference were removed, and the SDK gate then passed. Workflow and Compose YAML syntax parsed successfully. The native TypeScript7 compiler cannot enumerate inputs from Windows WSL UNC paths; equivalent fresh local staging passes. Storybook reports catalog chunks over 500 KiB. Neither result establishes application behavior.
+The completed modernization checkpoint matched all 159 recorded inputs in Git. The agent CLI changes supersede the runtime source hashes from that checkpoint; [cli-validation.json](cli-validation.json) records current runtime inputs and gates. SDK, website and scaffolder sources remain at their prior validated checkpoint. Clean Linux CI caught a stale reference to an ignored declaration file; that reference and a second obsolete reference were removed, and the SDK gate then passed. Workflow and Compose YAML syntax parsed successfully. The native TypeScript7 compiler cannot enumerate inputs from Windows WSL UNC paths; equivalent fresh local staging passes. Storybook reports catalog chunks over 500 KiB. Neither result establishes application behavior.
 
 ## Readiness and next work
 
-This is a v0.1 implementation candidate. Implementation behavior tests, browser interaction, live provider/MCP calls and Docker execution were not run. No application startup, external messages, existing database changes, deployment or global installation occurred. The complete legacy application, older dashboards, extensions, autonomy and learning remain outside the supported gates.
+This is a v0.1 implementation candidate. Implementation behavior tests, browser interaction, live provider/MCP calls and Docker execution were not run. No application startup, external messages, existing database changes, deployment or global installation occurred. A new API key was created through the approved secure credential workflow and saved only to an ignored local environment file; it has not been used for a live request. The complete legacy application, older dashboards, extensions, autonomy and learning remain outside the supported gates.
 
 [ROADMAP.md](ROADMAP.md) begins with release behavior checks against temporary databases and injected providers, then promotes one integration at a time. Memory ownership/export/retention and observable failure handling come before broad autonomy or remote deployment. See [the framework audit](../audit-2026-10-03.md) for the original assessment; historical implementation records remain unchanged.
 

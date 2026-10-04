@@ -10,3 +10,10 @@ export type * from './types.js';
 
 export type { ApiServerOptions } from './server.js';
 export type { OpenAICompatibleProviderOptions } from './providers.js';
+
+export { openAgentSession } from './agent-session.js';
+export { openCodexAgentSession } from './codex-agent.js';
+export { createCharacterFile } from './agent-config.js';
+export { createWorkspaceTools, WORKSPACE_TOOL_NAMES } from './workspace-tools.js';
+export type * from './agent-types.js';
+export type { WorkspaceActionRequest, WorkspaceToolsOptions } from './workspace-tools.js';

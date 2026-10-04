@@ -1,0 +1,110 @@
+{
+  "capturedAt": "2026-10-04T03:14:58.639626+00:00",
+  "scope": "integrated supported agent CLI and runtime",
+  "baselineCommit": "2528be033a83cf864e759b445a3a39930b9c5777",
+  "modelRouting": {
+    "workers": "gpt-6-luna",
+    "workerSlots": 3,
+    "workflow": "bounded coding tasks, reused workers"
+  },
+  "toolchain": {
+    "bun": "1.4.2",
+    "typescript": "7.0.2",
+    "bunTypes": "1.4.2",
+    "prettier": "3.9.9",
+    "node": "24.14.0"
+  },
+  "environment": "Fresh local Windows staging copied from released source. No environment files, credentials, user state or existing databases copied.",
+  "checks": [
+    {
+      "name": "frozen install",
+      "command": "bun --no-env-file install --frozen-lockfile --ignore-scripts",
+      "status": "passed"
+    },
+    {
+      "name": "strict types",
+      "command": "bun --no-env-file run typecheck",
+      "status": "passed",
+      "diagnostics": 0
+    },
+    {
+      "name": "formatting",
+      "command": "bun --no-env-file run format:check",
+      "status": "passed"
+    },
+    {
+      "name": "launcher syntax",
+      "command": "node --check bin/symindx.cjs",
+      "status": "passed"
+    },
+    {
+      "name": "bundle and declarations",
+      "command": "bun --no-env-file run build",
+      "status": "passed",
+      "bundleOutputs": 4,
+      "totalArtifacts": 48
+    },
+    {
+      "name": "source provenance",
+      "status": "passed",
+      "detail": "30 staged source/config inputs byte-match the checkout; explicit launcher/workflow metadata also hashed."
+    },
+    {
+      "name": "clean Linux CI",
+      "status": "pending"
+    },
+    {
+      "name": "implementation behavior and backend trial",
+      "status": "not-run",
+      "reason": "Not requested for this build. No application startup, live API/Codex task, tool execution or existing database mutation."
+    },
+    {
+      "name": "JSON and CI YAML metadata",
+      "status": "passed",
+      "detail": "Edited JSON records parse; workflow YAML parses and includes launcher gate."
+    }
+  ],
+  "credentialSetup": "New key provisioned by the approved secure workflow into ignored .env.local. No value included in this record; no live key validation.",
+  "protocolReference": "https://learn.chatgpt.com/docs/non-interactive-mode",
+  "limits": [
+    "Static gates do not verify interaction, file races, provider tool compatibility, crash recovery or real native process behavior.",
+    "Native Codex approval covers a complete workspace-write turn; API approval covers each write/command.",
+    "Commands are trusted local code; only native Codex supplies its executable sandbox. External effects are not atomic with conversation persistence.",
+    "Windows and WSL use separate native authentication/PATH/state environments. Descendant termination is best effort."
+  ],
+  "sourceHashes": {
+    "packages/runtime/.prettierrc.json": "85378d4d734cb7d35641c44ffdf322fe0bc76a3b12841927f20aa5f0eba12695",
+    "packages/runtime/bin/symindx.cjs": "6242e9c5b8b71d4e989df2ffabef6d5a2ab8231ade40da55414ce9ad56f44002",
+    "packages/runtime/bun.lock": "006bb1994aa6786e788a30f07724b0daf11c821a0c16394a4e39bdc175e3ae5f",
+    "packages/runtime/characters/demo.json": "36244e147e2e3265303901d7f6e31758c1e92bd10cf6deffe964819cdb48d6f7",
+    "packages/runtime/package.json": "0bbd37ad49d38c0e332897f01ca942779fb732e6fcd7ea164b4fc2612bb09ef4",
+    "packages/runtime/scripts/build.ts": "fd1088a19ea003d339c5f72ef3547085e466f497da1ed2de75ed6349c5777fb2",
+    "packages/runtime/src/agent-config.ts": "69b5892865a378f207dda2e9c27bc8b2d2797e2e9521a703b196bd5475d86808",
+    "packages/runtime/src/agent-security.ts": "d8c81c52f31bc8c467dc0df2cb95d5112ff6d71141f195c256b61457b7d8559b",
+    "packages/runtime/src/agent-session.ts": "2c32b20fd414165d3aafa98741b8ce638651f010b82819699341a30078f204fd",
+    "packages/runtime/src/agent-types.ts": "dc8d668ce84039948512d7c6d669fc563d1cfb3b12b97551d2ea3dac966139a1",
+    "packages/runtime/src/characters.ts": "890c93dff701254d88a7efcae190312a3d9e407095b5b5ee55e14ae6d5de77ba",
+    "packages/runtime/src/cli-args.ts": "de6429056c22d2092818ff4f010f31286077262a63634bfba19203d21335e27b",
+    "packages/runtime/src/cli-display.ts": "c7759e5fac1cf43726e0e4e5ffbee24dd5f4ec34dece9464aa8a5c4cbba12d80",
+    "packages/runtime/src/cli-environment.ts": "47ace0308eff39967e0a0161f8b6d6457d5a0e0c47a0df01609f2a31806ed81c",
+    "packages/runtime/src/cli-input.ts": "96d9e0e988e41a8643f0e1f23fd1c5dd9bb61276302e3136aac96efd9b47f7d7",
+    "packages/runtime/src/cli.ts": "7d4746343f0887fb6a46f68cba6b12fc0fd1c894c5de3be97a5db9cce73ef790",
+    "packages/runtime/src/codex-agent.ts": "5ef98283268142d20ff8c13c384b80ae98bbb932ac1f97035a030eb7fa1507be",
+    "packages/runtime/src/emotion.ts": "38961fb49e6361439d9998f223f4f4ffa02e074f8adfeb94a39f983de1cdabf0",
+    "packages/runtime/src/errors.ts": "39351f53f39b6368017a4a0f7067b2d4b6aac43efc5666b26b1ba5e11e8b66d4",
+    "packages/runtime/src/index.ts": "96c5b65fb166546dc513ffc49721da607cedb96906232dce93446e716e68699a",
+    "packages/runtime/src/providers.ts": "832144e6814d59e595653c08b53dfc8264390cec4713126097d6eb9555a45524",
+    "packages/runtime/src/runtime.ts": "11bd6a6ec41a0a60f87adb2bdb4c2592fad2798f52d7904e67e1dcfae0916422",
+    "packages/runtime/src/server.ts": "cc4119abb54ac5a36eff52e74aea3cda81b638763e50f09f88c821671c019210",
+    "packages/runtime/src/storage.ts": "19c53932eb473bae5ecb74d6444c6661fe0186602cc546dbfe5ad54d2511579d",
+    "packages/runtime/src/tools.ts": "ffb5f4e12de01c38fb8245760241dc264e325181718f28b36c63f1546d1bdc25",
+    "packages/runtime/src/types.ts": "0f23d108bb46995f2939071ae4ef26939f1965da878de5e8a06df76c0c2dfc23",
+    "packages/runtime/src/validation.ts": "6374eedc4a8fb889c6ab4b2fc061799d85102a65df4d71627ede1adb9476c8e7",
+    "packages/runtime/src/workspace-tools.ts": "b7024ed51e5f2ab474ff4ab54226f6575bd3eb18b712f0f19686db1cab66e921",
+    "packages/runtime/tsconfig.build.json": "aeb5597d56d059c5044cab7e38539e4ef5574c40bd3328898d757da89d61d3e5",
+    "packages/runtime/tsconfig.json": "0c0eabc4576b3d75da789ce08b44b98ab854f87b77b95c3f01b4f708b146d20a",
+    "package.json": "1061234ca278ab3772a87b2c1bacc46b1dcda88dbc763847eafda5a6c278e957",
+    ".github/workflows/runtime.yml": "befc2bf0463def3bf47bc8a9de7767c2d5076c64434517f8090236caa482b0f8",
+    "redirect-package/bin.js": "5859415e7ad76b5dba24216d87f120755041a5572a95b24a2e1583a064452ec1"
+  }
+}

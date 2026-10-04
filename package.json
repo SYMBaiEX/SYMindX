@@ -17,6 +17,7 @@
     "typecheck:scaffolder": "bun --no-env-file run --cwd create-symindx typecheck",
     "web:dev": "bun --no-env-file run --cwd website dev",
     "scaffold": "bun --no-env-file run --cwd create-symindx start",
-    "legacy:typecheck:sdk": "bun --no-env-file run --cwd mind-agents typecheck:sdk"
+    "legacy:typecheck:sdk": "bun --no-env-file run --cwd mind-agents typecheck:sdk",
+    "agent": "bun --no-env-file packages/runtime/src/cli.ts agent"
   }
 }

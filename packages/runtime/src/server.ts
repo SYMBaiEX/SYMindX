@@ -238,6 +238,7 @@ function runtimeError(error: unknown): Response {
     TIMEOUT: { status: 504, message: 'Request timed out' },
     PROVIDER: { status: 502, message: 'Provider request failed' },
     TOOL: { status: 502, message: 'Tool execution failed' },
+    POLICY: { status: 403, message: 'Action denied by policy' },
     VALIDATION: { status: 400, message: 'Request is invalid' },
     CONFLICT: { status: 409, message: 'Request conflicts with current state' },
   };

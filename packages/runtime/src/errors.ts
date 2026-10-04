@@ -7,6 +7,7 @@ export type ErrorCode =
   | 'TIMEOUT'
   | 'PROVIDER'
   | 'TOOL'
+  | 'POLICY'
   | 'VALIDATION'
   | 'CONFLICT';
 export class SYMindXError extends Error {

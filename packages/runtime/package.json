@@ -16,9 +16,10 @@
     }
   },
   "bin": {
-    "symindx": "./dist/cli.js"
+    "symindx": "./bin/symindx.cjs"
   },
   "files": [
+    "bin",
     "dist",
     "characters",
     "README.md",
@@ -30,7 +31,8 @@
     "start": "bun --no-env-file src/cli.ts",
     "dev": "bun --no-env-file src/cli.ts chat",
     "cli": "bun --no-env-file src/cli.ts",
-    "format:check": "prettier --check --config .prettierrc.json --no-editorconfig src scripts"
+    "format:check": "prettier --check --config .prettierrc.json --no-editorconfig src scripts bin",
+    "agent": "bun --no-env-file src/cli.ts agent"
   },
   "devDependencies": {
     "@types/bun": "1.4.2",

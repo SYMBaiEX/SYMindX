@@ -34,7 +34,19 @@ bun --no-env-file packages/runtime/src/cli.ts --help
 
 Use a local filesystem for the SQLite database. Do not share a WAL database over a network filesystem or between Windows and WSL processes.
 
-## CLI
+## Agent CLI
+
+See [the complete CLI guide](../../docs/v0.1/CLI.md) for installation, API/local Codex backends, coding/build tasks, permissions and sessions.
+
+```sh
+symindx agent
+symindx agent code --workspace ./my-app "Add a settings page"
+symindx agent build --backend api --workspace ./my-app --env-file /path/to/.env.local "Build a notes app"
+```
+
+The API coding tools are trusted local application code with explicit effect approval. The native Codex backend uses its own workspace sandbox and existing login. The loopback HTTP API does not install these tools or grant their permissions.
+
+## Core CLI
 
 ```sh
 # Offline demonstration; creates a new local SQLite file if necessary.
@@ -50,7 +62,7 @@ bun --no-env-file packages/runtime/src/cli.ts chat --character ./character.json 
 bun --no-env-file packages/runtime/src/cli.ts agents --db ./data/agents.sqlite
 ```
 
-Commands are `init`, `chat`, `agents`, `serve`, `help`, and `version`. Chat accepts `--agent` and `--message`. Interactive chat accepts piped input and handles SIGINT/SIGTERM. Serve accepts `--host`, `--port`, and `--token-env`.
+Commands include `agent` (chat/code/build/create/list/show/history), and the existing `init`, `chat`, `agents`, `serve`, `help`, and `version`. Chat accepts `--agent` and `--message`. Interactive chat accepts piped input and handles SIGINT/SIGTERM. Serve accepts `--host`, `--port`, and `--token-env`.
 
 The built-in `demo` character uses `echo`: it returns the input with an `Echo:` prefix. It does not reason or call tools. With an empty database, chat/serve create this demo; the library creates only characters you explicitly register. Reopening the same database recalls its character snapshots and completed conversation turns.
 
@@ -137,7 +149,7 @@ Recent recall contains plain user/assistant messages only. Previous tool transcr
 
 Default limits are 8 queued/active messages per agent, a 60-second deadline including queue time, 3 tool rounds, 8 calls per round, a 10-second tool deadline, 16,000 input characters, and 48,000 context characters. Provider HTTP responses are limited to 4 MiB; assistant text and tool results have further limits. A stale agent-state commit from another process fails with `CONFLICT`; it is not automatically retried.
 
-The only built-in tool is read-only `clock`. Add it to a character's `tools` to advertise it to a tool-capable provider. Custom `ToolDefinition` handlers are trusted application code. The schema validator supports only the declared `JsonSchema` subset and rejects unknown schema keywords.
+The core runtime built-in tool is read-only `clock`. The agent CLI explicitly composes additional workspace tools; embedding/API servers do not receive them automatically. Add it to a character's `tools` to advertise it to a tool-capable provider. Custom `ToolDefinition` handlers are trusted application code. The schema validator supports only the declared `JsonSchema` subset and rejects unknown schema keywords.
 
 Write tools require both the character allowlist and `sendMessage(..., { approvedTools: ['name'] })` from the trusted application. HTTP clients cannot submit approvals or install tools. The write approval list is copied when the message is submitted.
 
@@ -166,6 +178,6 @@ This API is for one local owner. The token grants access to all loaded agents/hi
 
 ## Deliberate limits and next steps
 
-No learning, autonomous background actions, semantic memory, multimodal support, MCP, external messaging integrations, web dashboard, or remote/container API deployment is exposed by this package. The legacy modules implement incompatible contracts and are not silently loaded.
+No learning, autonomous background actions, semantic memory, multimodal support, MCP registration, external messaging integrations, or remote/container API deployment is exposed by this package. The separate local web console and agent CLI use the supported core. The legacy modules implement incompatible contracts and are not silently loaded.
 
 Before calling this a solid release, complete the offline behavior gates and platform checks in [the implementation record](../../docs/v0.1/IMPLEMENTATION.md), then run an explicitly configured provider trial. The [audit](../../docs/audit-2026-10-03.md) explains why broad legacy feature migration should follow demonstrated product value.

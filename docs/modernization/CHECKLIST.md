@@ -47,7 +47,7 @@ Each task closes on source changes and compiler evidence. The legacy workspace r
 
 - Fresh SDK7 portal project plus transitive contracts: **0 diagnostics**. This is not the entire legacy application build.
 - Fresh website install, strict types, Vite assets and static Storybook: **pass**. Catalog chunks exceed 500 KiB; no application/browser interaction tests were run.
-- Runtime and scaffolder compile/build provenance: **matches** their passing records.
+- Runtime and scaffolder compile/build provenance at the pre-CLI checkpoint: **matched** their passing records.
 - Workspace metadata: **29 registered packages**, with 115 active dependency names reconciled across 35 live manifests.
 - Preserved tooling/web/scaffolder preimages: **57 of 57 hashes match**.
 - Clean Linux CI: **pass** for runtime, scaffolder, website and SDK gates. Behavior tests, live providers/MCP and Docker execution: **not run**. See the gate records and ROADMAP.md.
@@ -62,3 +62,7 @@ The final source/config provenance check matched all 159 current recorded inputs
 - [x] Record final remote CI result and close the queue.
 
 The CI repair is pushed on main as `cc94846`. No compiler input depends on an untracked local declaration. Remote outcomes and the initially failed/resolved check are retained in [ci-validation.json](ci-validation.json).
+
+## Agent CLI follow-up
+
+The dedicated [CLI checklist](CLI-CHECKLIST.md) tracks the new chat/code/build commands, workspace tools, API sessions, native Codex backend, setup and current compile evidence. Its record supersedes the prior runtime hash snapshot.

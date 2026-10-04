@@ -4,7 +4,19 @@ A small character-agent runtime with persistent conversation history, bounded em
 
 The supported v0.1 implementation is **[packages/runtime](packages/runtime/README.md)**. It is a new, isolated core informed by the [repository audit](docs/audit-2026-10-03.md). The former framework remains as a migration reference. The local scaffolder and web operator console target this core. Implementation tasks and compile evidence are tracked in the [build checklist](docs/modernization/CHECKLIST.md).
 
-## Quick start
+## Agent CLI
+
+Use SYMindX to chat, code in a workspace, or build from a task. The default backend uses the installed Codex CLI and its existing login; `--backend api` uses a configured OpenAI-compatible model.
+
+```sh
+bun run agent chat --workspace ./my-app
+bun run agent code --workspace ./my-app "Add a settings page"
+bun run agent build --workspace ./my-app "Build a notes app"
+```
+
+Code/build asks for permission before effects. Reuse `--session feature1` to continue a conversation, or use `--approval read-only` for inspection. API sessions ask before each file write or command; Codex asks for one workspace sandbox turn. The [agent CLI guide](docs/v0.1/CLI.md) covers installation of the `symindx` command, API setup, permissions, JSON output and state storage. [CLI build evidence](docs/modernization/CLI-CHECKLIST.md) records implementation and compile gates.
+
+## Core demonstration
 
 Requires **Bun 1.4.2 or newer**. Start from a local checkout in Bash or PowerShell:
 
@@ -22,7 +34,7 @@ For Windows PowerShell operating on a WSL UNC checkout, Bun package scripts curr
 ## Supported surface
 
 - Schema version 1 JSON characters with validated configuration.
-- Library, CLI, and an authenticated API bound to loopback.
+- Library, a chat/code/build agent CLI with API and local Codex backends, and an authenticated API bound to loopback.
 - SQLite history separated by agent and conversation; atomic turn and state commits.
 - Per-agent queues, deadlines, cancellation, bounded provider/tool rounds, and tool audit records.
 - Echo and explicit OpenAI-compatible Chat Completions providers.

@@ -45,7 +45,8 @@
   },
   "notes": [
     "The mind-agents root workspace list matches the 29 package manifests that exist. Fictional @symindx/types and @symindx/core workspace peers were removed only after source-import scans found none. Website addon packages retained all peer-compatible Storybook 10 builds. Unmigrated third-party integrations remain pinned on compatible majors.",
-    "Final active declarations reconciled against all 35 live manifests. Website is private ESM; unused dotenv and publishing-only Chromatic declarations removed. Removals are historical dispositions, not active ranges."
+    "Final active declarations reconciled against all 35 live manifests. Website is private ESM; unused dotenv and publishing-only Chromatic declarations removed. Removals are historical dispositions, not active ranges.",
+    "Agent CLI adds local scripts/bin packaging only; dependency versions and frozen lock are unchanged. Root/runtime manifest hashes refreshed for this metadata change."
   ],
   "dependencies": [
     {
@@ -2297,8 +2298,8 @@
     "mind-agents/src/portals/providers/openai/package.json": "134d0828e64130e91f87f30e45e796b3b2a96b435f41c4b7f781110f109ccc8b",
     "mind-agents/src/portals/providers/openrouter/package.json": "0f9e58361b87283b776196644be653414aa6f4e5128ac4a9c34a154aca36999c",
     "mind-agents/package.json": "173af89ced9aea1f3945f5f6c52e132370933acbd1f479ec0f8ef8d17ce8c768",
-    "package.json": "50436532b6a67f6c073c4e5cdd2730e5bcbc39b90f9a0b84c8bdb2697aade4b2",
-    "packages/runtime/package.json": "ce521e101731d0a194fef3b3ccf35b553a5cca0eee2650e5c2e6e2afe4f78375",
+    "package.json": "1061234ca278ab3772a87b2c1bacc46b1dcda88dbc763847eafda5a6c278e957",
+    "packages/runtime/package.json": "0bbd37ad49d38c0e332897f01ca942779fb732e6fcd7ea164b4fc2612bb09ef4",
     "redirect-package/package.json": "d90ba8b14d745f2f52ffdbd081e8a6592f3a6ccf8e3fdd9c37d8e4be9612d761",
     "website/package.json": "d74c4639386ee3a54539222ed6daf8fc21e9f51c021b8bd0af642efa6c730519"
   }
