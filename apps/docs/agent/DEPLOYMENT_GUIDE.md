@@ -1,5 +1,7 @@
 # SYMindX Deployment Guide
 
+The SQLite runtime server and mind-agents extensions in this guide are not part of v2; the library is `packages/agent`, the CLI is `apps/cli`, and the website is `apps/website`.
+
 ## Table of Contents
 
 1. [Overview](#overview)
@@ -88,7 +90,7 @@ This guide covers deploying SYMindX in various environments, from local developm
 1. **Clone the Repository**:
    ```bash
    git clone https://github.com/yourusername/symindx.git
-   cd symindx/mind-agents
+   cd symindx/packages/agent
    ```
 
 2. **Install Dependencies**:
@@ -330,7 +332,7 @@ LOG_FILE_PATH=./logs/symindx.log
    # Clone repository
    cd /opt/symindx
    git clone https://github.com/yourusername/symindx.git .
-   cd mind-agents
+   cd packages/agent
    
    # Install dependencies
    bun install --production
@@ -342,7 +344,7 @@ LOG_FILE_PATH=./logs/symindx.log
 3. **Configure Production Environment**:
    ```bash
    # Create production environment file
-   sudo -u symindx vim /opt/symindx/mind-agents/.env
+   sudo -u symindx vim /opt/symindx/packages/agent/.env
    ```
 
    ```bash
@@ -371,7 +373,7 @@ LOG_FILE_PATH=./logs/symindx.log
    sudo npm install -g pm2
    
    # Create PM2 ecosystem file
-   sudo -u symindx vim /opt/symindx/mind-agents/ecosystem.config.js
+   sudo -u symindx vim /opt/symindx/packages/agent/ecosystem.config.js
    ```
 
    ```javascript
@@ -381,7 +383,7 @@ LOG_FILE_PATH=./logs/symindx.log
        name: 'symindx',
        script: 'bun',
        args: 'start',
-       cwd: '/opt/symindx/mind-agents',
+       cwd: '/opt/symindx/apps/cli',
        instances: 'max',
        exec_mode: 'cluster',
        env: {
@@ -539,7 +541,7 @@ LOG_FILE_PATH=./logs/symindx.log
    
        # Static Files (if serving web interface)
        location /static/ {
-           alias /opt/symindx/website/dist/;
+           alias /opt/symindx/apps/website/dist/;
            expires 1y;
            add_header Cache-Control "public, immutable";
        }
@@ -1007,7 +1009,7 @@ LOG_FILE_PATH=./logs/symindx.log
      github:
        repo: your-username/symindx
        branch: main
-     run_command: cd mind-agents && bun start
+     run_command: cd apps/cli && bun run start
      environment_slug: node-js
      instance_count: 1
      instance_size_slug: basic-xxs
@@ -1583,7 +1585,7 @@ LOG_FILE_PATH=./logs/symindx.log
    #!/bin/bash
    # backup-data.sh
    
-   APP_DATA_DIR="/opt/symindx/mind-agents/data"
+   APP_DATA_DIR="/opt/symindx/packages/agent/data"
    BACKUP_DIR="/opt/backups/symindx/data"
    DATE=$(date +%Y%m%d_%H%M%S)
    
@@ -1600,8 +1602,8 @@ LOG_FILE_PATH=./logs/symindx.log
    psql $DATABASE_URL < backup_file.sql
    
    # Data recovery
-   tar -xzf data_backup.tar.gz -C /opt/symindx/mind-agents/data/
-   sudo chown -R symindx:symindx /opt/symindx/mind-agents/data/
+   tar -xzf data_backup.tar.gz -C /opt/symindx/packages/agent/data/
+   sudo chown -R symindx:symindx /opt/symindx/packages/agent/data/
    ```
 
 ### Disaster Recovery
@@ -1638,7 +1640,7 @@ LOG_FILE_PATH=./logs/symindx.log
    bun upgrade
    
    # Update application dependencies
-   cd /opt/symindx/mind-agents
+   cd /opt/symindx/packages/agent
    bun update
    
    # Restart services

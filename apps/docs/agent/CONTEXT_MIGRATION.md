@@ -1,5 +1,7 @@
 # Context Migration Guide for SYMindX
 
+The mind-agents config paths in this guide are not part of v2; the library is `packages/agent`.
+
 ## Overview
 
 This guide provides step-by-step instructions for migrating your existing SYMindX installation to incorporate the new Context Integration system. The migration is designed to be backward-compatible with zero downtime and gradual feature adoption.
@@ -64,7 +66,7 @@ bun cli status
 mkdir -p ./migration-backup/$(date +%Y%m%d_%H%M%S)
 
 # Backup current configuration
-cp -r mind-agents/src/core/config/ ./migration-backup/$(date +%Y%m%d_%H%M%S)/config/
+cp -r packages/agent/src/core/config/ ./migration-backup/$(date +%Y%m%d_%H%M%S)/config/
 cp -r characters/ ./migration-backup/$(date +%Y%m%d_%H%M%S)/characters/
 
 # Backup database files (if using SQLite)
@@ -80,7 +82,7 @@ bun cli export-state ./migration-backup/$(date +%Y%m%d_%H%M%S)/runtime-state.jso
 // Check for context-related types in existing code
 import { checkContextDependencies } from './migration-helpers';
 
-const analysis = await checkContextDependencies('./mind-agents/src');
+const analysis = await checkContextDependencies('./packages/agent/src');
 console.log('Context migration readiness:', analysis);
 ```
 
@@ -645,10 +647,10 @@ bun cli benchmark --duration 600 --detailed
 bun cli stop
 
 # Disable context system completely
-echo '{"contextConfig":{"enabled":false}}' > mind-agents/src/core/config/runtime.json
+echo '{"contextConfig":{"enabled":false}}' > packages/agent/src/core/config/runtime.json
 
 # Restore backup configuration
-cp ./migration-backup/*/config/* mind-agents/src/core/config/
+cp ./migration-backup/*/config/* packages/agent/src/core/config/
 
 # Restart system
 bun start
@@ -898,7 +900,7 @@ bun cli export-config --include-context --output context-config.json
 ```bash
 # Create post-migration backup
 mkdir -p ./migration-backup/post-migration-$(date +%Y%m%d_%H%M%S)
-cp -r mind-agents/src/core/config/ ./migration-backup/post-migration-$(date +%Y%m%d_%H%M%S)/config/
+cp -r packages/agent/src/core/config/ ./migration-backup/post-migration-$(date +%Y%m%d_%H%M%S)/config/
 bun cli export-state ./migration-backup/post-migration-$(date +%Y%m%d_%H%M%S)/final-state.json
 ```
 

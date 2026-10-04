@@ -8,7 +8,7 @@ Build a small new runtime around the useful SYMindX concepts: explicit character
 
 The implementation is a **v0.1 candidate**, not a certified solid release. Its independent installation, formatting, strict TypeScript checks, library/CLI bundle, and declaration build pass locally. No new runtime behavior tests, application startup, or real provider calls have been performed. The user-facing testing choice remains unanswered; session instructions require an explicit request before adding or running implementation tests.
 
-The supported surface is `packages/runtime/`. Old runtime, provider, integration, web, and scaffolder code remains available for deliberate migration and retains the defects in the audit. A passing new-package build does not repair or validate those legacy trees.
+The supported surface recorded here was `packages/runtime/`. That SQLite runtime server is not part of v2; the library is `packages/agent`. Old runtime, provider, integration, web, and scaffolder code retained the defects in the audit. A passing new-package build does not repair or validate those legacy trees.
 
 ## Implemented system
 
@@ -43,16 +43,16 @@ The source trace is `characters.ts` -> `runtime.ts.start` -> `sendMessage` -> `p
 
 The implementation baseline recorded 123 dirty-file records in [baseline.json](baseline.json). The existing portal refactor, deletions, untracked provider work, agent configuration changes, and root lockfiles were preserved.
 
-Two baseline files intentionally gained supported v0.1 entry points. Their exact former contents remain at `docs/legacy/original-README.md` and `docs/legacy/root-package.json`. Independent verification matched all 123 baseline hashes/existence states using these two relocation mappings. The root package-lock also matches its Git baseline. No reset, stash, commit, push, branch change, or live data migration occurred.
+Two baseline files intentionally gained supported v0.1 entry points. Their exact former contents remain at `apps/docs/legacy/original-README.md` and `apps/docs/legacy/root-package.json`. Independent verification matched all 123 baseline hashes/existence states using these two relocation mappings. The root package-lock also matches its Git baseline. No reset, stash, commit, push, branch change, or live data migration occurred.
 
 Additional integration changes:
 
 - Root commands now select the isolated package; legacy build/CLI commands require explicit `legacy:*` selection.
 - Removed the old workspace and root runtime dependency/hook setup from the supported root manifest. The complete former manifest is retained; new-package dependency resolution does not include those old workspaces.
-- Archived four obsolete automatic CI/deployment workflows under `docs/legacy/workflows/`, preserving their contents. The new workflow compiles only the supported package with read-only permissions; it does not publish, deploy, or message external services.
+- Archived four obsolete automatic CI/deployment workflows under `apps/docs/legacy/workflows/`, preserving their contents. The new workflow compiles only the supported package with read-only permissions; it does not publish, deploy, or message external services.
 - Replaced obsolete root capability/instruction descriptions with current contracts, while retaining historical copies.
 - Added SQLite WAL/shared-memory sidecars to ignore rules.
-- Copied the original ignored audit report to the tracked `docs/` area for a permanent decision record.
+- Copied the original ignored audit report to the tracked `apps/docs/` area for a permanent decision record.
 
 This does not claim the legacy code is unused everywhere or safe to delete. Large architectural removals were avoided because they would overlap existing work or require product decisions.
 

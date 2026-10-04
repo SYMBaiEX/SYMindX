@@ -2,6 +2,8 @@
 
 **Date:** 2026-10-03. **Snapshot:** main at `558f7f64fb545d6b7ba93be07f3868a201139352`, including the existing dirty worktree. This assesses the present repository; no deployed instance was inspected.
 
+The audited `mind-agents/` tree, its SQLite runtime, and the root `website/` are not part of v2; the library is `packages/agent`.
+
 ## Verdict
 
 **Rebuild around selected components.** There is enough useful work and a coherent character-agent idea to justify a small modernization pilot. Modernizing the entire framework in place would retain too many incompatible abstractions and experimental subsystems. Archiving everything would discard useful storage and orchestration work.
@@ -16,9 +18,9 @@ Git status was captured before edits: 111 dirty status paths, expanding to 126 i
 
 Existing modifications included the agent manifest, bun.lock, BootstrapManager, portal integration, module/type exports, logging, scripts, and portal docs. New portal core/providers/utils files were already untracked. This audit changed four previously clean files: root README/package manifest and agent TypeScript/flat ESLint configuration. It added this audit directory. No stash, reset, commit, branch change, install, or Git configuration change occurred.
 
-All 126 original dirty-file existence/hash records matched after validation. Original deletions remain deleted. See the metadata-only [baseline](<\\wsl.localhost\Ubuntu\home\cid\CursorProjects\symindx\mind-agents\docs\audits\2026-10-03\baseline.json>) and [validation summary](<\\wsl.localhost\Ubuntu\home\cid\CursorProjects\symindx\mind-agents\docs\audits\2026-10-03\validation-summary.json>).
+All 126 original dirty-file existence/hash records matched after validation. Original deletions remain deleted. See the metadata-only [baseline](baseline.json) and [validation summary](validation-summary.json).
 
-Every top-level area was inventoried. Present tracked agent source includes 588 JS/TS files and 321,092 lines; website source has 26 files/7,352 lines, scaffolder 2/1,934. These include tests/exploratory code and are not functionality measures. Existing untracked portal files were reviewed separately. Thirty-one tracked manifests parsed; 17 nested workspace entries point to missing directories. [Inventory details](<\\wsl.localhost\Ubuntu\home\cid\CursorProjects\symindx\mind-agents\docs\audits\2026-10-03\repository-checks.json>).
+Every top-level area was inventoried. Present tracked agent source includes 588 JS/TS files and 321,092 lines; website source has 26 files/7,352 lines, scaffolder 2/1,934. These include tests/exploratory code and are not functionality measures. Existing untracked portal files were reviewed separately. Thirty-one tracked manifests parsed; 17 nested workspace entries point to missing directories. [Inventory details](repository-checks.json).
 
 ## Actual system trace
 

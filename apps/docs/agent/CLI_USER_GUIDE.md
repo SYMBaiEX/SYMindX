@@ -1,5 +1,7 @@
 # SYMindX CLI User Guide
 
+The mind-agents CLI layout on this page is not part of v2; the library is `packages/agent` and the CLI is `apps/cli`.
+
 ## Table of Contents
 
 1. [Overview](#overview)
@@ -48,8 +50,8 @@ bun --version   # Should be 1.0.0 or higher
 ### Installation
 
 ```bash
-# Navigate to the mind-agents directory
-cd mind-agents
+# The CLI is apps/cli; the library is packages/agent
+cd apps/cli
 
 # Install dependencies
 bun install

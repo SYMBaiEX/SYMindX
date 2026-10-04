@@ -1,5 +1,7 @@
 # SYMindX Troubleshooting Guide
 
+The SQLite runtime server and mind-agents extensions in this guide are not part of v2; the library is `packages/agent`.
+
 ## Table of Contents
 
 1. [Quick Diagnostics](#quick-diagnostics)
@@ -2025,7 +2027,7 @@ echo "✅ Health check complete"
 bun cli context:status
 
 # Verify configuration
-cat mind-agents/src/core/config/runtime.json | grep -A 10 "contextConfig"
+cat packages/agent/src/core/config/runtime.json | grep -A 10 "contextConfig"
 
 # Enable context system
 {

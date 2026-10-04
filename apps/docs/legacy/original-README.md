@@ -10,7 +10,7 @@
 
 ## Character-based agents with memory, emotion, and extension modules
 
-[Documentation](./mind-agents/docs/) • [Quick Start](#-quick-start) • [Features](#-key-features) • [Architecture](#-architecture) • [API Reference](#-api-reference)
+[Documentation](../agent/README.md) • [Quick Start](#-quick-start) • [Features](#-key-features) • [Architecture](#-architecture) • [API Reference](#-api-reference)
 
 </div>
 
@@ -20,7 +20,7 @@
 
 SYMindX is an experimental AI agent framework exploring character configuration, memory, emotion, cognition, and external integrations. The current repository contains incompatible APIs and unfinished runtime composition.
 
-**Audit status (2026-10-03):** The core bundle and type check fail, and no complete startup-to-agent message path was demonstrated. The remaining feature descriptions and commands are historical and need reconciliation. See the [comprehensive audit](./mind-agents/docs/audits/2026-10-03/audit.md) for verified capabilities, security findings, validation, and the proposed modernization path.
+**Audit status (2026-10-03):** The core bundle and type check fail, and no complete startup-to-agent message path was demonstrated. The remaining feature descriptions and commands are historical and need reconciliation. See the [comprehensive audit](../agent/audits/2026-10-03/audit.md) for verified capabilities, security findings, validation, and the proposed modernization path.
 
 ## 🏗️ Architecture
 
@@ -494,7 +494,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## Build the future of AI agents with skill-based architecture!
 
-[Get Started](#-quick-start) • [Documentation](./mind-agents/docs/) • [API Reference](#-api-reference) • [Contributing](#-contributing)
+[Get Started](#-quick-start) • [Documentation](../agent/README.md) • [API Reference](#-api-reference) • [Contributing](#-contributing)
 
 *SYMindX | Experimental Character and Module Architecture | Modernization Required*
 

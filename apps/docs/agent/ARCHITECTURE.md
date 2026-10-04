@@ -1,5 +1,7 @@
 # SYMindX Plugin Architecture
 
+The SQLite runtime server, mind-agents extensions, and RuneLite on this page are not part of v2; the library is `packages/agent`.
+
 This document outlines the modular plugin architecture of SYMindX and the current integration status.
 
 ## Architecture Overview

@@ -1,5 +1,7 @@
 # SYMindX Migration to Modular Architecture
 
+The SQLite runtime server and mind-agents extensions in this migration are not part of v2; the library is `packages/agent`, the CLI is `apps/cli`, and the website is `apps/website`.
+
 ## Overview
 
 This document outlines the migration from the legacy monolithic structure to the new modular architecture for the SYMindX mind-agents system.
@@ -13,7 +15,7 @@ This document outlines the migration from the legacy monolithic structure to the
    - Legacy emotion module (`rune-emotion-stack.ts`)
    - Legacy cognition module (`htn-planner.ts`)
    - Legacy module index files
-   - Frontend components (moved to `/website/src/`)
+   - Frontend components (moved to `apps/website/src/`)
 
 2. **Legacy Configuration Files**:
    - Root `tsconfig.json`
@@ -29,9 +31,9 @@ This document outlines the migration from the legacy monolithic structure to the
 
 The system is now organized into three main directories:
 
-#### 1. `/mind-agents/` - Core Agent Runtime
+#### 1. `packages/agent` - Core Agent Runtime
 ```
-mind-agents/
+packages/agent/
 ├── src/
 │   ├── modules/
 │   │   ├── memory/
@@ -61,9 +63,9 @@ mind-agents/
 └── package.json
 ```
 
-#### 2. `/website/` - Frontend Interface
+#### 2. `apps/website` - Frontend Interface
 ```
-website/
+apps/website/
 ├── src/
 │   ├── components/
 │   │   ├── AgentControls.tsx
@@ -78,7 +80,7 @@ website/
 #### 3. Root Directory - Project Orchestration
 ```
 /
-├── package.json          # Orchestrates mind-agents and website
+├── package.json          # Orchestrates packages/agent and apps/website
 ├── characters/           # Agent character definitions
 ├── config/              # Runtime configurations
 └── legacy_backup/       # Backup of old structure
@@ -120,7 +122,7 @@ website/
 
 ### Running the System
 ```bash
-# Development (both mind-agents and website)
+# Development (packages/agent and apps/website)
 bun run dev
 
 # Individual components

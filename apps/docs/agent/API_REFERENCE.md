@@ -1,5 +1,7 @@
 # SYMindX API Reference
 
+The SQLite runtime server and mind-agents extensions in this reference are not part of v2; the library is `packages/agent` (`@symindx/agent`).
+
 ## Overview
 
 SYMindX provides a comprehensive API for building, configuring, and managing AI agents. This reference covers all public APIs, interfaces, and integration points available in the framework.
@@ -1019,10 +1021,10 @@ try {
 
 ## Support and Resources
 
-- **Documentation**: [docs/](./docs/)
-- **Examples**: [src/characters/examples/](../src/characters/examples/)
+- **Documentation**: [README.md](./README.md)
+- **Examples**: [packages/agent/src/character/](../../../packages/agent/src/character/)
 - **Issues**: GitHub Issues
 - **Discord**: Community Discord server
 - **Email**: support@symindx.com
 
-For more detailed information about specific components, see the individual documentation files in the [docs/](./docs/) directory.
+For more detailed information about specific components, see the individual documentation files in [apps/docs/agent](./README.md).

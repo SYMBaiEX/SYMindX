@@ -18,7 +18,7 @@ Agents are orchestrated by the `SYMindXRuntime`, which handles:
 4. **Communication**: Processing incoming messages and generating responses
 5. **Shutdown**: Gracefully stopping agents and releasing resources
 
-Refer to the detailed architecture in [ARCHITECTURE.md](mind-agents/docs/ARCHITECTURE.md).
+Refer to the detailed architecture in [ARCHITECTURE.md](../agent/ARCHITECTURE.md).
 
 ## Character Configuration
 
@@ -34,7 +34,7 @@ mind-agents/src/characters/
 └── examples/           # Sample character templates
 ```
 
-For full schema and examples, see [CHARACTER_GUIDE.md](mind-agents/docs/CHARACTER_GUIDE.md) and the characters README in the source tree.
+For full schema and examples, see [CHARACTER_GUIDE.md](../agent/CHARACTER_GUIDE.md) and the characters README in the source tree.
 
 ## Agent Management via API
 
@@ -52,7 +52,7 @@ await runtime.removeAgent(agent.id);
 await runtime.stop();
 ```
 
-See [API_REFERENCE.md#agent-management-api](mind-agents/docs/API_REFERENCE.md#agent-management-api) for the complete interface.
+See [API_REFERENCE.md#agent-management-api](../agent/API_REFERENCE.md#agent-management-api) for the complete interface.
 
 ## Agent Management via CLI
 
@@ -73,15 +73,15 @@ symindx agent info nyx
 symindx agent create
 ```
 
-For more commands and interactive menus, refer to [CLI_USER_GUIDE.md#agent-management](mind-agents/docs/CLI_USER_GUIDE.md#agent-management).
+For more commands and interactive menus, refer to [CLI_USER_GUIDE.md#agent-management](../agent/CLI_USER_GUIDE.md#agent-management).
 
 ## Further Resources
 
-- **Character Configuration**: mind-agents/docs/CHARACTER_GUIDE.md
-- **API Reference**: mind-agents/docs/API_REFERENCE.md
-- **CLI Guide**: mind-agents/docs/CLI_USER_GUIDE.md
-- **Architecture Overview**: mind-agents/docs/ARCHITECTURE.md
-- **Characters Development**: mind-agents/src/characters/README.md
+- **Character Configuration**: [CHARACTER_GUIDE.md](../agent/CHARACTER_GUIDE.md)
+- **API Reference**: [API_REFERENCE.md](../agent/API_REFERENCE.md)
+- **CLI Guide**: [CLI_USER_GUIDE.md](../agent/CLI_USER_GUIDE.md)
+- **Architecture Overview**: [ARCHITECTURE.md](../agent/ARCHITECTURE.md)
+- **Characters Development**: [CHARACTER_GUIDE.md](../agent/CHARACTER_GUIDE.md)
 
 ---
 

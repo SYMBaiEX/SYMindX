@@ -1,5 +1,7 @@
 # Character Configuration User Guide
 
+The mind-agents character directory and extensions on this page are not part of v2; the library is `packages/agent`.
+
 ## Table of Contents
 
 1. [Introduction](#introduction)
@@ -40,7 +42,7 @@ A SYMindX character consists of:
 
 1. **Navigate to the characters directory**:
    ```bash
-   cd mind-agents/src/characters/
+   cd packages/agent/src/character/
    ```
 
 2. **Copy an existing character as a template**:

@@ -1,5 +1,7 @@
 # 🧠 SYMindX — High-Level Design (System Architecture)
 
+RuneLite and the mind-agents extensions in this design are not part of v2; the library is `packages/agent`.
+
 ## 🧭 Purpose
 
 A modular, agent-based AI runtime designed to simulate intelligent, emotionally reactive characters (like `NyX` and `bobalou777`) that can operate autonomously in games, on the web, and across social platforms. Each agent is composable, memory-driven, and can run its own thought/emotion/action loop.

@@ -1,5 +1,7 @@
 # SYMindX Migration Guide
 
+The mind-agents package imports in this guide are not part of v2; the library is `packages/agent` (`@symindx/agent`).
+
 This guide helps you migrate to the enhanced SYMindX system with all the improvements from the 8-agent coordination effort.
 
 ## Overview of Changes

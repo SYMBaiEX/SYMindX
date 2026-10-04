@@ -1,5 +1,7 @@
 # SYMindX Multi-Modal Integration Guide
 
+The mind-agents multimodal imports on this page are not part of v2; the library is `packages/agent` (`@symindx/agent`).
+
 ## Overview
 
 SYMindX now features cutting-edge multi-modal capabilities that enable agents to communicate through voice, vision, and haptic feedback. This creates more natural, immersive interactions that adapt to user emotions and context.

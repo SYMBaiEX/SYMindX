@@ -6,10 +6,10 @@ The notes below describe that earlier build.
 
 ## Implemented system
 
-- `packages/runtime`: strict character/provider/message contracts, scoped SQLite history, bounded provider/tool execution, local bearer API, CLI and cancellation/shutdown handling.
+- Former `packages/runtime`: strict character/provider/message contracts, scoped SQLite history, bounded provider/tool execution, local bearer API, CLI and cancellation/shutdown handling.
 - `create-symindx`: local scaffolding against the supported runtime, with no-overwrite publication and no global installer.
-- `website`: manual local operator console using shared pure runtime types, in-memory token custody, scoped request cancellation and a fixed loopback development proxy.
-- `mind-agents`: AI SDK7 provider/message/tool/MCP contracts and transitive type repairs. These compile separately and are not imported into the supported runtime.
+- Former root `website/`: manual local operator console using shared pure runtime types, in-memory token custody, scoped request cancellation and a fixed loopback development proxy. The website is now `apps/website`.
+- Former `mind-agents/`: AI SDK7 provider/message/tool/MCP contracts and transitive type repairs. These compiled separately and were not imported into the supported runtime. That tree is not part of v2.
 - Packages/tooling: 115 active dependency names reconciled across 35 live manifests, 29 actual registered workspaces, independent frozen locks, current compile CI, entry points and editor guidance.
 
 ## Main checkpoints

@@ -1,5 +1,7 @@
 # MCP and API Integration for SYMindX
 
+The mind-agents HTTP and MCP extensions on this page are not part of v2; the library is `packages/agent`.
+
 This document describes the Model Context Protocol (MCP) and HTTP API extensions added to the SYMindX Mind-Agents framework.
 
 ## Overview

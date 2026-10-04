@@ -1,5 +1,7 @@
 # Plugin Development Guide
 
+RuneLite and the mind-agents extensions in this guide are not part of v2; the library is `packages/agent`.
+
 This guide explains how to develop dynamic plugins for the SYMindX runtime system.
 
 ## Table of Contents

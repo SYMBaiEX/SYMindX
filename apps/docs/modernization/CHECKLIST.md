@@ -34,7 +34,7 @@ User direction: work on main; build in GPT-6 Luna fleets using a dynamic task qu
 - No live model calls, external messaging, deployment, existing database mutation, global installs, or force pushes.
 - Dependency metadata/install access is authorized for this update. Use official sources and disable lifecycle scripts.
 - Report changes and compiler evidence briefly. A completed review alone does not close a build task.
-- Historical docs/legacy and audit records are evidence, not active version promises; preserve their original contents.
+- Historical apps/docs/legacy and audit records are evidence, not active version promises; preserve their original contents.
 ## Fleet 2: shared contract repairs
 
 - [x] **B-context:** repair context timestamps, optional fields and utility contracts. Owner: orchestrator after the web worker released the slice following a shell usage-limit rejection.

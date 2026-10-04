@@ -1,5 +1,7 @@
 # SYMindX Developer Guide
 
+The SQLite runtime server, mind-agents extensions, and RuneLite on this page are not part of v2; the library is `packages/agent`.
+
 ## Table of Contents
 
 1. [Getting Started](#getting-started)
@@ -31,7 +33,7 @@
 ```bash
 # Clone the repository
 git clone https://github.com/yourusername/symindx.git
-cd symindx/mind-agents
+cd symindx/packages/agent
 
 # Install dependencies
 bun install
@@ -114,7 +116,7 @@ API_SERVER_PORT=3000
 ## Project Structure
 
 ```
-mind-agents/
+packages/agent/
 ├── src/
 │   ├── api.ts                 # Public API exports
 │   ├── index.ts               # Main entry point
@@ -163,7 +165,6 @@ mind-agents/
 │       ├── logger.ts          # Logging system
 │       └── config-resolver.ts # Configuration resolution
 │
-├── docs/                      # Documentation
 ├── data/                      # Runtime data (gitignored)
 ├── dist/                      # Build output (gitignored)
 └── package.json              # Project configuration
