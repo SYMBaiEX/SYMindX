@@ -1,6 +1,8 @@
 # v0.1 modernization build
 
-The architectural decision is to rebuild around selected components. The small supported runtime is the product foundation; migrated legacy adapters remain candidates for promotion after behavior validation. Work proceeds on main through [the coding checklist](CHECKLIST.md) and [a native dynamic task queue](workflow.json), using three GPT-6 Luna coding workers plus the orchestrator. The current [agent CLI checklist](CLI-CHECKLIST.md) adds API and native Codex chat/code/build workflows.
+This directory is the record of the v0.1 runtime. That runtime, `create-symindx`, the root `website/`, and `mind-agents/` have been removed. The current library is `packages/agent`. The applications are `apps/cli`, `apps/docs`, and `apps/website`.
+
+The notes below describe that earlier build.
 
 ## Implemented system
 

@@ -1,8 +1,10 @@
 # v0.1 completion and next increments
 
+`packages/runtime` has been removed. The library is now `packages/agent`.
+
 ## 1. Smallest useful system
 
-The supported core lives in `packages/runtime`: validated version-1 characters, one provider per agent, scoped recent history, bounded emotion state, permitted tools, atomic SQLite turn/state commits, cancellation and graceful shutdown. The local CLI, scaffolder and manual web console target this core. The legacy framework is not part of that supported execution path.
+The v0.1 core lived in `packages/runtime`: validated version-1 characters, one provider per agent, scoped recent history, bounded emotion state, permitted tools, atomic SQLite turn/state commits, cancellation and graceful shutdown. The local CLI, scaffolder and manual web console target this core. The legacy framework is not part of that supported execution path.
 
 Compile gates cover frozen installs, strict source types, declarations/bundles, formatting and metadata. A passing compiler is not evidence that the message path, shutdown or provider protocol behaved correctly. Current gate records are linked from this directory's README.
 
