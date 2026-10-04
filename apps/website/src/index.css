@@ -25,9 +25,16 @@ input {
 }
 
 .shell {
-  width: min(720px, calc(100% - 32px));
+  width: min(1100px, calc(100% - 32px));
   margin: 0 auto;
-  padding: 48px 0 64px;
+  padding: 40px 0 64px;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: start;
 }
 
 .eyebrow {
@@ -54,9 +61,9 @@ h1 {
 
 .state {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 12px;
-  margin: 28px 0 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 0 12px;
 }
 
 .state p {
@@ -146,9 +153,38 @@ button:hover {
   color: #8d2b2b;
 }
 
-@media (max-width: 700px) {
+.evals {
+  margin-top: 12px;
+}
+
+.evals li {
+  display: grid;
+  grid-template-columns: 72px 1fr auto;
+  gap: 4px 8px;
+}
+
+.evals li p {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--muted);
+}
+
+.evals li.pass span {
+  color: #087e83;
+}
+
+.evals li.fail span {
+  color: #8d2b2b;
+}
+
+.evals li.running span {
+  color: #8a6420;
+}
+
+@media (max-width: 800px) {
+  .layout,
   .state {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
   }
 
   .row {

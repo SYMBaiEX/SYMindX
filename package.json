@@ -13,6 +13,7 @@
     "build:website": "bun --no-env-file run --cwd apps/website build",
     "typecheck:website": "bun --no-env-file run --cwd apps/website typecheck",
     "web:dev": "bun --no-env-file run --cwd apps/website dev",
-    "agent": "bun --no-env-file run --cwd apps/cli start"
+    "agent": "bun --no-env-file run --cwd apps/cli start",
+    "eval": "bun --no-env-file run --cwd apps/cli eval"
   }
 }

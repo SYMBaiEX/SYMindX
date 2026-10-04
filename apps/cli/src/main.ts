@@ -1,60 +1,60 @@
-import { createMind, labelAppraisal, parseCharacter, type Mind, type PreparedTurn } from '../../../packages/agent/src/index.js';
+import { labelAppraisal } from '../../../packages/agent/src/index.js';
+import { ask, createDemoMind } from './answer.js';
+import { runEvals, type EvalRow } from './evals.js';
 
-const character = parseCharacter({
-  schemaVersion: 1,
-  id: 'demo',
-  name: 'Demo',
-  systemPrompt: 'You are Demo, a local SYMindX mind. Keep replies to one short sentence.',
-  provider: { type: 'echo', model: 'echo' },
-  tools: ['word-count', 'clock'],
-  memory: { recentMessages: 20 },
-  emotion: { enabled: true, decay: 0.85 },
-});
-
-const mind = createMind(character, Date.now());
-
+const base = 'http://127.0.0.1:11434';
 const args = process.argv.slice(2);
+
 if (args[0] === '--help' || args[0] === '-h') {
-  console.log('Usage: bun run cli [hear] <message>');
-  console.log('With no message, prints the resting drive.');
+  console.log('Usage: bun run cli [eval | message]');
+  console.log('eval runs the local qwen3.5:9b suite with thinking off.');
   process.exit(0);
 }
 
-const message = (args[0] === 'hear' ? args.slice(1) : args).join(' ').trim();
-const now = Date.now();
+if (args[0] === 'eval') {
+  const summary = await runEvals(base, AbortSignal.timeout(180_000), printRow);
+  console.log(`${summary.passed} passed, ${summary.failed} failed`);
+  process.exit(summary.failed === 0 ? 0 : 1);
+}
+
+const message = args.join(' ').trim();
+const mind = createDemoMind(Date.now());
+if (message.length === 0) {
+  const turn = mind.step(Date.now());
+  printTurn(turn.drive.kind, turn.reaction.intent, turn.drive.reason, labelAppraisal(mind.snapshot().appraisal));
+  process.exit(0);
+}
 
 try {
-  if (message.length > 0) {
-    mind.hear({ channel: 'local', sender: 'user', text: message }, now);
+  const answer = await ask(mind, base, AbortSignal.timeout(60_000), message);
+  const snap = mind.snapshot();
+  const mood = labelAppraisal(snap.appraisal);
+  const drive = answer.prepared?.drive.kind ?? snap.lastStep?.drive.kind ?? 'rest';
+  const intent = answer.prepared?.reaction.intent ?? 'defer';
+  printTurn(drive, intent, answer.prepared?.drive.reason ?? '', mood);
+  if (answer.tools.length > 0) {
+    console.log(`tools ${answer.tools.join(', ')}`);
   }
-  const turn = mind.step(now);
-  if (message.length > 0) {
-    mind.say(spokenLine(turn, message), now);
+  if (answer.text.length > 0) {
+    console.log(answer.text);
   }
-  printState(mind, turn);
 } catch (error) {
-  const text = error instanceof Error ? error.message : 'The mind could not take this turn.';
-  console.error(text);
+  console.error(error instanceof Error ? error.message : 'The mind could not take this turn.');
   process.exit(1);
 }
 
-function spokenLine(turn: PreparedTurn, heard: string): string {
-  if (turn.drive.kind === 'reply') {
-    return heard;
+function printTurn(drive: string, intent: string, reason: string, mood: string): void {
+  console.log(`Demo [${drive}] ${intent}  mood ${mood}`);
+  if (reason.length > 0) {
+    console.log(reason);
   }
-  return turn.drive.reason;
 }
 
-function printState(session: Mind, turn: PreparedTurn): void {
-  const snap = session.snapshot();
-  const mood = labelAppraisal(snap.appraisal);
-  console.log(`${character.name} [${turn.drive.kind}] ${turn.reaction.intent}`);
-  console.log(
-    `mood ${mood}  valence ${snap.appraisal.valence.toFixed(2)}  arousal ${snap.appraisal.arousal.toFixed(2)}  dominance ${snap.appraisal.dominance.toFixed(2)}`,
-  );
-  console.log(turn.drive.reason);
-  const latest = snap.episodes[snap.episodes.length - 1];
-  if (latest !== undefined && latest.source === 'assistant') {
-    console.log(latest.text);
+function printRow(row: EvalRow): void {
+  if (row.status === 'running') {
+    console.log(`… ${row.id}`);
+    return;
   }
+  const mark = row.status === 'pass' ? 'pass' : 'FAIL';
+  console.log(`${mark} ${String(row.ms).padStart(5)}ms  ${row.id}  ${row.detail}`);
 }

@@ -1,39 +1,17 @@
 import { useState, type FormEvent } from 'react';
-import {
-  createMind,
-  labelAppraisal,
-  parseCharacter,
-  type AppraisalState,
-  type DriveKind,
-  type Episode,
-  type Mind,
-} from '../../../packages/agent/src/index.js';
+import { labelAppraisal, type AppraisalState, type DriveKind, type Episode, type Mind } from '../../../packages/agent/src/index.js';
+import { ask, createDemoMind } from '../../cli/src/answer.js';
+import { EVALS, runEvals, type EvalRow } from '../../cli/src/evals.js';
+import { OLLAMA_MODEL } from '../../cli/src/ollama.js';
 
-const character = parseCharacter({
-  schemaVersion: 1,
-  id: 'demo',
-  name: 'Demo',
-  systemPrompt: 'You are Demo, a local SYMindX mind. Keep replies to one short sentence.',
-  provider: { type: 'echo', model: 'echo' },
-  tools: ['word-count', 'clock'],
-  memory: { recentMessages: 20 },
-  emotion: { enabled: true, decay: 0.85 },
-});
+const OLLAMA = '/ollama';
 
 interface View {
   readonly mood: string;
   readonly appraisal: AppraisalState;
   readonly drive: DriveKind;
   readonly reason: string;
-  readonly guidance: string;
   readonly episodes: readonly Episode[];
-}
-
-function boot(): Mind {
-  const now = Date.now();
-  const session = createMind(character, now);
-  session.step(now);
-  return session;
 }
 
 function read(session: Mind): View {
@@ -44,108 +22,126 @@ function read(session: Mind): View {
     appraisal: snap.appraisal,
     drive: step?.drive.kind ?? 'rest',
     reason: step?.drive.reason ?? 'quiet',
-    guidance: step?.voice.guidance ?? '',
     episodes: snap.episodes,
   };
 }
 
 export default function App() {
-  const [mind] = useState(boot);
-  const [view, setView] = useState(() => read(mind));
+  const [mind, setMind] = useState(() => {
+    const session = createDemoMind(Date.now());
+    session.step(Date.now());
+    return session;
+  });
+  const [view, setView] = useState<View>(() => read(mind));
   const [draft, setDraft] = useState('');
   const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [rows, setRows] = useState<readonly EvalRow[]>([]);
+  const [summary, setSummary] = useState('');
 
-  function onSubmit(event: FormEvent<HTMLFormElement>) {
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const text = draft.trim();
     if (text.length === 0) {
       setError('Enter a message.');
       return;
     }
-    const now = Date.now();
+    setBusy(true);
+    setError('');
     try {
-      mind.hear({ channel: 'local', sender: 'user', text }, now);
-      const turn = mind.step(now);
-      const spoken = turn.drive.kind === 'reply' ? text : turn.drive.reason;
-      mind.say(spoken, now);
+      const answer = await ask(mind, OLLAMA, AbortSignal.timeout(60_000), text);
       setDraft('');
-      setError('');
       setView(read(mind));
+      if (answer.text.length === 0) {
+        setError('The model returned no reply.');
+      }
     } catch (caught) {
-      const message = caught instanceof Error ? caught.message : 'The mind could not take this turn.';
-      setError(message);
+      setError(caught instanceof Error ? caught.message : 'The mind could not take this turn.');
+    } finally {
+      setBusy(false);
     }
+  }
+
+  async function onEval() {
+    setBusy(true);
+    setError('');
+    setSummary('');
+    setRows(EVALS.map((item) => ({ id: item.id, status: 'running' as const, ms: 0, text: '', tools: [], detail: 'queued' })));
+    const seen = new Map<string, EvalRow>();
+    try {
+      const result = await runEvals('/ollama', AbortSignal.timeout(180_000), (row) => {
+        seen.set(row.id, row);
+        setRows(EVALS.map((item) => seen.get(item.id) ?? { id: item.id, status: 'running', ms: 0, text: '', tools: [], detail: 'queued' }));
+      });
+      setSummary(`${result.passed} passed, ${result.failed} failed`);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'The eval run stopped.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function onReset() {
+    const session = createDemoMind(Date.now());
+    session.step(Date.now());
+    setMind(session);
+    setView(read(session));
+    setDraft('');
+    setError('');
   }
 
   return (
     <main className="shell">
       <header className="mast">
-        <p className="eyebrow">SYMindX</p>
-        <h1>{character.name}</h1>
-        <p className="lede">
-          This page runs the in-memory mind in your browser. A reply echoes your message. Nothing is sent to a model.
-        </p>
+        <p className="eyebrow">SYMindX · {OLLAMA_MODEL} · thinking off</p>
+        <h1>Demo</h1>
+        <p className="lede">Local Ollama on this machine. Each send steps the mind, then asks qwen3.5:9b with reasoning disabled.</p>
       </header>
-
-      <section className="state" aria-label="Mind state">
-        <p>
-          <span>Mood</span>
-          {view.mood}
-        </p>
-        <p>
-          <span>Drive</span>
-          {view.drive}
-        </p>
-        <p>
-          <span>Valence</span>
-          {view.appraisal.valence.toFixed(2)}
-        </p>
-        <p>
-          <span>Arousal</span>
-          {view.appraisal.arousal.toFixed(2)}
-        </p>
-        <p>
-          <span>Dominance</span>
-          {view.appraisal.dominance.toFixed(2)}
-        </p>
-      </section>
-      <p className="reason">{view.reason}</p>
-      {view.guidance.length > 0 ? <p className="guidance">{view.guidance}</p> : null}
-
-      <section className="thread" aria-labelledby="thread-title">
-        <h2 id="thread-title">Conversation</h2>
-        {view.episodes.length === 0 ? (
-          <p className="empty">No episodes yet.</p>
-        ) : (
-          <ol>
-            {view.episodes.map((episode) => (
-              <li key={episode.id}>
-                <span>{episode.source}</span>
-                {episode.text}
+      <div className="layout">
+        <section className="thread" aria-labelledby="thread-title">
+          <h2 id="thread-title">Conversation</h2>
+          <section className="state" aria-label="Mind state">
+            <p><span>Mood</span>{view.mood}</p>
+            <p><span>Drive</span>{view.drive}</p>
+            <p><span>Valence</span>{view.appraisal.valence.toFixed(2)}</p>
+            <p><span>Arousal</span>{view.appraisal.arousal.toFixed(2)}</p>
+          </section>
+          <p className="reason">{view.reason}</p>
+          {view.episodes.length === 0 ? <p className="empty">No episodes yet.</p> : (
+            <ol>
+              {view.episodes.map((episode) => (
+                <li key={episode.id}><span>{episode.source}</span>{episode.text}</li>
+              ))}
+            </ol>
+          )}
+          <form onSubmit={onSubmit}>
+            <label htmlFor="message">Message</label>
+            <div className="row">
+              <input id="message" name="message" value={draft} onChange={(event) => setDraft(event.target.value)} autoComplete="off" maxLength={16000} disabled={busy} />
+              <button type="submit" disabled={busy}>Send</button>
+              <button type="button" onClick={onReset} disabled={busy}>Reset</button>
+            </div>
+            {error.length > 0 ? <p className="error" role="alert">{error}</p> : null}
+          </form>
+        </section>
+        <section className="thread" aria-labelledby="eval-title">
+          <h2 id="eval-title">Live evals</h2>
+          <div className="row">
+            <button type="button" onClick={onEval} disabled={busy}>Run {EVALS.length} evals</button>
+            {summary.length > 0 ? <p className="reason">{summary}</p> : null}
+          </div>
+          <ol className="evals" aria-live="polite">
+            {rows.map((row) => (
+              <li key={row.id} className={row.status}>
+                <span>{row.status}</span>
+                <strong>{row.id}</strong>
+                <em>{row.status === 'running' && row.detail === 'queued' ? '' : `${row.ms}ms`}</em>
+                <p>{row.detail}</p>
               </li>
             ))}
           </ol>
-        )}
-        <form onSubmit={onSubmit}>
-          <label htmlFor="message">Message</label>
-          <div className="row">
-            <input
-              id="message"
-              name="message"
-              value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-              autoComplete="off"
-              maxLength={16000}
-            />
-            <button type="submit">Send</button>
-          </div>
-          {error.length > 0 ? (
-            <p className="error" role="alert">
-              {error}
-            </p>
-          ) : null}
-        </form>
-      </section>
+        </section>
+      </div>
     </main>
   );
 }

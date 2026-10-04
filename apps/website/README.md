@@ -1,6 +1,6 @@
 # SYMindX console
 
-The website runs one in-memory `@symindx/agent` mind in the browser. Sending a message calls `hear`, `step`, and `say`. A reply drive echoes the message. No token, database, or model request is involved.
+The website runs one in-memory `@symindx/agent` mind and asks local Ollama `qwen3.5:9b` with thinking disabled. Vite proxies `/ollama` to `http://127.0.0.1:11434`. `bun run eval` runs the same 20 checks in the terminal.
 
 ```sh
 bun install --cwd apps/website --frozen-lockfile --ignore-scripts

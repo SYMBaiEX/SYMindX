@@ -5,6 +5,7 @@
   "description": "SYMindX terminal. Runs one in-memory mind from @symindx/agent.",
   "type": "module",
   "scripts": {
-    "start": "bun --no-env-file src/main.ts"
+    "start": "bun --no-env-file src/main.ts",
+    "eval": "bun --no-env-file src/main.ts eval"
   }
 }
