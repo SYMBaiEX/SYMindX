@@ -2,13 +2,9 @@
   "name": "@symindx/cli",
   "version": "1.0.0",
   "private": true,
-  "description": "SYMindX terminal CLI. Runs against @symindx/agent.",
+  "description": "SYMindX terminal. Runs one in-memory mind from @symindx/agent.",
   "type": "module",
   "scripts": {
-    "start": "bun --no-env-file --cwd ../../packages/agent ../../apps/cli/src/ink-cli.tsx",
-    "dashboard": "bun --no-env-file --cwd ../../packages/agent ../../apps/cli/src/ink-cli.tsx dashboard",
-    "agents": "bun --no-env-file --cwd ../../packages/agent ../../apps/cli/src/ink-cli.tsx agents",
-    "status": "bun --no-env-file --cwd ../../packages/agent ../../apps/cli/src/ink-cli.tsx status",
-    "api": "bun --no-env-file --cwd ../../packages/agent ../../apps/cli/src/api-cli.ts"
+    "start": "bun --no-env-file src/main.ts"
   }
 }

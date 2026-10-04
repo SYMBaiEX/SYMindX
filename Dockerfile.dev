@@ -7,4 +7,4 @@ COPY --chown=bun:bun packages/agent /app/packages/agent
 COPY --chown=bun:bun apps/cli /app/apps/cli
 
 USER bun
-CMD ["bun", "--no-env-file", "--cwd", "/app/packages/agent", "/app/apps/cli/src/ink-cli.tsx", "dashboard"]
+CMD ["bun", "--no-env-file", "/app/apps/cli/src/main.ts"]

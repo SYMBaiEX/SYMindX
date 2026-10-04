@@ -9,7 +9,7 @@
     "typecheck:modules": "tsc -p packages/agent/tsconfig.json --noEmit",
     "start": "bun --no-env-file run --cwd apps/cli start",
     "cli": "bun --no-env-file run --cwd apps/cli start",
-    "dev": "bun --no-env-file run --cwd apps/cli dashboard",
+    "dev": "bun --no-env-file run --cwd apps/cli start",
     "build:website": "bun --no-env-file run --cwd apps/website build",
     "typecheck:website": "bun --no-env-file run --cwd apps/website typecheck",
     "web:dev": "bun --no-env-file run --cwd apps/website dev",

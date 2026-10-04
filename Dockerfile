@@ -7,5 +7,4 @@ COPY --chown=bun:bun packages/agent /app/packages/agent
 COPY --chown=bun:bun apps/cli /app/apps/cli
 
 USER bun
-ENTRYPOINT ["bun", "--no-env-file", "--cwd", "/app/packages/agent", "/app/apps/cli/src/ink-cli.tsx"]
-CMD ["dashboard"]
+ENTRYPOINT ["bun", "--no-env-file", "/app/apps/cli/src/main.ts"]
