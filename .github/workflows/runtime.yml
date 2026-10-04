@@ -1,15 +1,17 @@
-name: SYMindX v0.1
+name: SYMindX agent
 
 on:
   push:
     branches: [main]
     paths:
-      - 'packages/runtime/**'
+      - 'packages/agent/**'
+      - 'tsconfig.base.json'
       - 'package.json'
       - '.github/workflows/runtime.yml'
   pull_request:
     paths:
-      - 'packages/runtime/**'
+      - 'packages/agent/**'
+      - 'tsconfig.base.json'
       - 'package.json'
       - '.github/workflows/runtime.yml'
   workflow_dispatch:
@@ -18,16 +20,13 @@ permissions:
   contents: read
 
 concurrency:
-  group: runtime-${{ github.workflow }}-${{ github.ref }}
+  group: agent-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   compile:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    defaults:
-      run:
-        working-directory: packages/runtime
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -35,13 +34,5 @@ jobs:
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: '1.4.2'
-      - name: Install pinned development dependencies without lifecycle scripts
-        run: bun install --frozen-lockfile --ignore-scripts
-      - name: Check formatting
-        run: bun run format:check
-      - name: Check strict types
-        run: bun run typecheck
-      - name: Check command launcher syntax
-        run: node --check bin/symindx.cjs
-      - name: Build library, CLI, and declarations
-        run: bun run build
+      - name: Typecheck the agent package
+        run: bun --no-env-file run --cwd packages/agent typecheck

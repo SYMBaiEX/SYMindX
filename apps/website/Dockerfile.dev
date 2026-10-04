@@ -1,0 +1,11 @@
+# Local web development container. It intentionally binds to container loopback.
+FROM oven/bun:1.4.2-alpine
+WORKDIR /app
+COPY apps/website/package.json apps/website/bun.lock ./apps/website/
+WORKDIR /app/apps/website
+RUN bun --no-env-file install --frozen-lockfile --ignore-scripts
+WORKDIR /app
+COPY apps/website/ ./apps/website/
+COPY packages/agent/ ./packages/agent/
+WORKDIR /app/apps/website
+CMD ["bun", "--no-env-file", "run", "dev", "--host", "127.0.0.1"]

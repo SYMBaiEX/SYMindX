@@ -1,8 +1,10 @@
+# Local CLI image. Same sources as the CLI image; nothing is compiled or installed.
 ARG BUN_VERSION=1.4.2
 FROM oven/bun:${BUN_VERSION}-alpine
-WORKDIR /app/packages/runtime
-COPY packages/runtime/package.json packages/runtime/bun.lock ./
-RUN bun --no-env-file install --frozen-lockfile --ignore-scripts
-COPY packages/runtime/ ./
-RUN bun --no-env-file run typecheck
-CMD ["bun", "--no-env-file", "src/cli.ts", "--help"]
+
+WORKDIR /app
+COPY --chown=bun:bun packages/agent /app/packages/agent
+COPY --chown=bun:bun apps/cli /app/apps/cli
+
+USER bun
+CMD ["bun", "--no-env-file", "/app/apps/cli/src/main.ts"]

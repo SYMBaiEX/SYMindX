@@ -1,0 +1,11 @@
+{
+  "name": "@symindx/cli",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SYMindX terminal. Runs one in-memory mind from @symindx/agent.",
+  "type": "module",
+  "scripts": {
+    "start": "bun --no-env-file src/main.ts",
+    "eval": "bun --no-env-file src/main.ts eval"
+  }
+}

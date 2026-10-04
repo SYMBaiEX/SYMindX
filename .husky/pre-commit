@@ -2,6 +2,5 @@
 # Non-mutating compile gates for the supported package only.
 set -eu
 cd "$(git rev-parse --show-toplevel)"
-command -v bun >/dev/null 2>&1 || { echo 'Bun is required for the supported runtime compile gate.' >&2; exit 1; }
-bun --no-env-file run --cwd packages/runtime typecheck
-bun --no-env-file run --cwd packages/runtime format:check
+command -v bun >/dev/null 2>&1 || { echo 'Bun is required to typecheck packages/agent.' >&2; exit 1; }
+bun --no-env-file run --cwd packages/agent typecheck

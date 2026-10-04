@@ -1,7 +1,7 @@
 # Current SYMindX development
 
-The supported package is [packages/runtime](../../packages/runtime/README.md). Follow [AGENTS.md](../../AGENTS.md) and the [implementation queue](../../docs/modernization/CHECKLIST.md).
+The agent package is [packages/agent](../../packages/agent). The CLI, website, and docs are under [apps](../../apps). Follow [AGENTS.md](../../AGENTS.md) and the [implementation queue](../../apps/docs/modernization/CHECKLIST.md).
 
-Install package-scoped dependencies with lifecycle scripts disabled, then compile types and build. The runtime README gives platform-specific commands, including Windows UNC limitations. CLI startup is explicit and writes a new SQLite database unless a path is selected.
+Install package-scoped dependencies with lifecycle scripts disabled, then build from the repo root with `bun run build`. Start the runtime with `bun run start` and the terminal with `bun run cli`.
 
-Historical architecture, generation templates and analysis guides are preserved in docs/legacy/cursor. They describe the former experimental framework.
+Historical architecture, generation templates and analysis guides are preserved in apps/docs/legacy/cursor.
