@@ -1,5 +1,5 @@
 import { labelAppraisal, updateAppraisal, type AppraisalCue, type AppraisalState, type Temperament } from '../appraisal/index.js';
-import { planGoal, react, type Intention, type Reaction } from '../cognition/index.js';
+import { completeStep, planGoal, react, type Intention, type Reaction } from '../cognition/index.js';
 import { assemble, type AssembledContext, type ContextSlice } from '../context/index.js';
 import { selectDrive, type DriveChoice } from '../drives/index.js';
 import { recall, type Episode } from '../memory/index.js';
@@ -20,6 +20,7 @@ export interface TurnInput {
   readonly silenceMs: number;
   readonly now: number;
   readonly toolNames: readonly string[];
+  readonly decay: number;
 }
 
 export interface PreparedTurn {
@@ -41,7 +42,7 @@ export function composeTurn(input: TurnInput): PreparedTurn {
     throw new RangeError('characterName and systemPrompt must be non-empty');
   }
 
-  const nextAppraisal = updateAppraisal(input.appraisal, input.cue, input.temperament);
+  const nextAppraisal = updateAppraisal(input.appraisal, input.cue, input.temperament, input.decay);
   const inboundText = input.inbound?.trim() ?? '';
   const reaction = react(inboundText, nextAppraisal.arousal);
   const openSteps = countOpenSteps(input.intention);
@@ -88,6 +89,12 @@ function resolveIntention(
   now: number,
 ): Intention | undefined {
   if (current !== undefined) {
+    if (driveKind === 'reply' && inboundText.length > 0) {
+      const active = current.steps.find((step) => step.status === 'active');
+      if (active !== undefined) {
+        return completeStep(current, active.id);
+      }
+    }
     return current;
   }
   if (driveKind === 'reply' && inboundText.length > 0) {

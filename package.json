@@ -5,7 +5,8 @@
   "private": true,
   "scripts": {
     "build": "bun --no-env-file run --cwd packages/agent typecheck",
-    "typecheck": "bun --no-env-file run --cwd packages/agent typecheck",
+    "typecheck": "bun --no-env-file run --cwd packages/agent typecheck && bun --no-env-file run --cwd packages/orchestration typecheck",
+    "typecheck:orchestration": "tsc -p packages/orchestration/tsconfig.json --noEmit",
     "typecheck:modules": "tsc -p packages/agent/tsconfig.json --noEmit",
     "start": "bun --no-env-file run --cwd apps/cli start",
     "cli": "bun --no-env-file run --cwd apps/cli start",
@@ -14,6 +15,8 @@
     "typecheck:website": "bun --no-env-file run --cwd apps/website typecheck",
     "web:dev": "bun --no-env-file run --cwd apps/website dev",
     "agent": "bun --no-env-file run --cwd apps/cli start",
-    "eval": "bun --no-env-file run --cwd apps/cli eval"
+    "eval": "bun --no-env-file run --cwd apps/cli eval",
+    "suite": "bun --no-env-file run --cwd apps/cli suite",
+    "swarm": "bun --no-env-file run --cwd apps/cli swarm"
   }
 }

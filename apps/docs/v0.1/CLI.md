@@ -1,12 +1,22 @@
 # SYMindX agent CLI
 
-This page records the former `packages/runtime` command line. That package has been removed. The current terminal is `apps/cli`, started with `bun run cli` from the repository root.
+This page records the former `packages/runtime` command line. That package and `mind-agents/` stay removed. The current terminal is `apps/cli`, started with `bun run cli` from the repository root.
 
 ## Current command
 
 ```sh
-bun run cli
+bun run cli --help
+bun run cli chat
+bun run cli agents
+bun run cli sessions
+bun run cli rooms
+bun run cli room
+bun run cli status
+bun run cli eval
+bun run cli demo
 ```
+
+Production commands are `agents`, `agents new`, `agents show`, `agents use`, `chat`, `sessions`, `sessions new`, `rooms`, `rooms new`, `rooms show`, `room`, `code`, `build`, `eval`, `demo`, and `status`. `code` and `build` are one coding session: the agent can read, edit, and run a shell command in the workspace. With no task, the prompt stays open. Chat does not change files. Group messages support `@everyone` and `@agentId`. An unaddressed room message asks every member. The CLI stores the catalog in `.symindx/catalog.sqlite` and imports an existing `.symindx/catalog.json` once. The local model is Ollama `qwen3.5:9b` on loopback, with thinking disabled.
 
 The commands below belonged to the removed runtime. They are not implemented by `apps/cli`.
 

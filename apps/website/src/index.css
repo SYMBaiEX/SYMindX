@@ -25,7 +25,7 @@ input {
 }
 
 .shell {
-  width: min(1100px, calc(100% - 32px));
+  width: min(1200px, calc(100% - 32px));
   margin: 0 auto;
   padding: 40px 0 64px;
 }
@@ -61,7 +61,7 @@ h1 {
 
 .state {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(108px, 1fr));
   gap: 8px;
   margin: 0 0 12px;
 }
@@ -91,9 +91,18 @@ h1 {
   border-radius: 16px;
 }
 
-.thread h2 {
+.thread h2,
+.thread h3 {
   margin: 0 0 12px;
   font-size: 1.1rem;
+}
+
+.thread h3 {
+  margin-top: 18px;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 
 ol {
@@ -177,8 +186,44 @@ button:hover {
   color: #8d2b2b;
 }
 
-.evals li.running span {
+.evals li.running span,
+.beats li.running span {
   color: #8a6420;
+}
+
+.evals li.queued span,
+.beats li.queued span {
+  color: var(--muted);
+}
+
+.beats {
+  margin-top: 12px;
+}
+
+.beats li,
+.evals li {
+  display: grid;
+  grid-template-columns: 72px 1fr auto;
+  gap: 4px 8px;
+}
+
+.beats li p,
+.evals li p {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--muted);
+}
+
+.beats li.pass span {
+  color: #087e83;
+}
+
+.beats li.fail span {
+  color: #8d2b2b;
+}
+
+.facts {
+  margin-bottom: 20px;
 }
 
 @media (max-width: 800px) {

@@ -258,6 +258,7 @@ Thumbs.db
 # cli/
 
 # Agent runtime data
+.symindx/
 data/
 logs/
 # memory/ # Removed - we want to track modules/memory

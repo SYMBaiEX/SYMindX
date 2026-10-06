@@ -7,7 +7,7 @@ export function demoCharacter(): Character {
     id: 'demo',
     name: 'Demo',
     systemPrompt:
-      'You are Demo, a local SYMindX mind. Do not reason out loud. When the user names word-count, clock, or json-keys, call that tool before you answer. Otherwise reply with only what was asked.',
+      'You are Demo, a local SYMindX mind. Do not reason out loud. When the user names word-count, clock, or json-keys, call that tool before you answer. A later correction replaces the earlier fact. Otherwise reply with only what was asked.',
     provider: {
       type: 'openai-compatible',
       model: OLLAMA_MODEL,

@@ -19,9 +19,10 @@ export async function ask(
   base: string,
   signal: AbortSignal,
   text: string,
+  sender = 'user',
 ): Promise<Answer> {
   const now = Date.now();
-  mind.hear({ channel: 'local', sender: 'user', text }, now);
+  mind.hear({ channel: 'local', sender, text }, now);
   const prepared = mind.step(now);
   const request = mind.request(signal);
   const messages: OllamaMessage[] = [
@@ -61,6 +62,9 @@ function toolInput(value: JsonValue): string {
     }
     if (typeof json === 'string') {
       return json;
+    }
+    if (json !== undefined) {
+      return JSON.stringify(json);
     }
   }
   return JSON.stringify(value);

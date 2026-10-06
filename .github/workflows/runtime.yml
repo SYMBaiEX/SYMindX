@@ -5,12 +5,14 @@ on:
     branches: [main]
     paths:
       - 'packages/agent/**'
+      - 'packages/orchestration/**'
       - 'tsconfig.base.json'
       - 'package.json'
       - '.github/workflows/runtime.yml'
   pull_request:
     paths:
       - 'packages/agent/**'
+      - 'packages/orchestration/**'
       - 'tsconfig.base.json'
       - 'package.json'
       - '.github/workflows/runtime.yml'
@@ -36,3 +38,5 @@ jobs:
           bun-version: '1.4.2'
       - name: Typecheck the agent package
         run: bun --no-env-file run --cwd packages/agent typecheck
+      - name: Typecheck the orchestration package
+        run: bun --no-env-file run --cwd packages/orchestration typecheck

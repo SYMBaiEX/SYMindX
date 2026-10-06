@@ -1,6 +1,6 @@
 # SYMindX Developer Guide
 
-The SQLite runtime server, mind-agents extensions, and RuneLite on this page are not part of v2; the library is `packages/agent`.
+The mind library is `packages/agent`. Slack, Twitter, RuneLite, and the provider portals are CLI host extensions in `apps/cli/src/extensions`. The mind does not open the network.
 
 ## Table of Contents
 

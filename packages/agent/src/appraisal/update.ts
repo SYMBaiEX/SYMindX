@@ -110,17 +110,32 @@ export function baselineAppraisal(temperament: Temperament, at: number): Apprais
   };
 }
 
+export function appraisalHalfLife(decay: number): number {
+  if (!Number.isFinite(decay) || decay < 0 || decay > 1) {
+    throw new RangeError('decay must be from 0 to 1');
+  }
+  if (decay >= 1) {
+    return Number.POSITIVE_INFINITY;
+  }
+  if (decay <= 0) {
+    return 0;
+  }
+  return DECAY_HALF_LIFE_MS * (Math.log(0.85) / Math.log(decay));
+}
+
 export function updateAppraisal(
   state: AppraisalState,
   cue: AppraisalCue,
   temperament: Temperament,
+  decay = 0.85,
 ): AppraisalState {
   assertState(state);
   assertCue(cue);
   assertAxes(temperament, 'temperament');
 
   const elapsed = Math.max(0, cue.at - state.updatedAt);
-  const retain = 0.5 ** (elapsed / DECAY_HALF_LIFE_MS);
+  const halfLife = appraisalHalfLife(decay);
+  const retain = halfLife === 0 ? 0 : halfLife === Number.POSITIVE_INFINITY ? 1 : 0.5 ** (elapsed / halfLife);
   const valence = decayToward(state.valence, temperament.valence, retain) + cue.valence * cue.intensity * VALENCE_GAIN;
   const arousal = decayToward(state.arousal, temperament.arousal, retain) + arousalDelta(cue.kind, cue.intensity);
   const dominance =
@@ -132,6 +147,22 @@ export function updateAppraisal(
     dominance: clampAxis(dominance),
     updatedAt: cue.at,
   };
+}
+
+export type RuneTone = 'calm' | 'focused' | 'excited' | 'frustrated';
+
+export function runeTone(state: AppraisalState): RuneTone {
+  const label = labelAppraisal(state);
+  if (label === 'activated' && state.valence < 0) {
+    return 'frustrated';
+  }
+  if (label === 'activated') {
+    return 'excited';
+  }
+  if (label === 'positive' || state.dominance > 0.2) {
+    return 'focused';
+  }
+  return 'calm';
 }
 
 export function labelAppraisal(state: AppraisalState): 'positive' | 'negative' | 'calm' | 'activated' {

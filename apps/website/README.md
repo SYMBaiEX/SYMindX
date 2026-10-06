@@ -1,6 +1,6 @@
 # SYMindX console
 
-The website runs one in-memory `@symindx/agent` mind and asks local Ollama `qwen3.5:9b` with thinking disabled. Vite proxies `/ollama` to `http://127.0.0.1:11434`. `bun run eval` runs the same 20 checks in the terminal.
+The website runs one in-memory `@symindx/agent` mind and asks local Ollama `qwen3.5:9b` with thinking disabled. Vite proxies `/ollama` to `http://127.0.0.1:11434`. Play demo walks one mind through a scripted conversation. `bun run eval` runs the same grouped suite in the terminal.
 
 ```sh
 bun install --cwd apps/website --frozen-lockfile --ignore-scripts

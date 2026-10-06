@@ -1,4 +1,4 @@
-import { baselineAppraisal, type AppraisalCue, type AppraisalState } from '../appraisal/index.js';
+import { baselineAppraisal, labelAppraisal, type AppraisalCue, type AppraisalState } from '../appraisal/index.js';
 import type { Character } from '../character/index.js';
 import type { Intention } from '../cognition/index.js';
 import { createMemoryStore, type Episode } from '../memory/index.js';
@@ -22,12 +22,19 @@ const SENDER_PATTERN = /^[A-Za-z0-9_.:-]{1,64}$/;
 const SOCIAL_ID = /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$/;
 const CHANNELS = new Set(['local', 'slack', 'telegram', 'discord']);
 
+export interface MindSeed {
+  readonly appraisal: AppraisalState;
+  readonly intention: Intention | undefined;
+  readonly lastAt: number;
+}
+
 export interface MindSnapshot {
   readonly appraisal: AppraisalState;
   readonly episodes: readonly Episode[];
   readonly beliefs: readonly Belief[];
   readonly intention: Intention | undefined;
   readonly lastStep: PreparedTurn | undefined;
+  readonly lastAt: number;
 }
 
 export interface ToolOutcome {
@@ -46,6 +53,7 @@ export interface Mind {
   readonly character: Character;
   snapshot(): MindSnapshot;
   facts(limit: number): readonly Fact[];
+  restore(seed: MindSeed): void;
   hear(message: InboundText, now: number): void;
   step(now: number): PreparedTurn;
   say(text: string, now: number): void;
@@ -54,8 +62,12 @@ export interface Mind {
   useTool(name: string, input: string, now: number, approved: boolean): ToolOutcome;
 }
 
-export function createMind(character: Character, now: number): Mind {
+export function createMind(character: Character, now: number, seed?: MindSeed): Mind {
   assertNow(now);
+  if (seed !== undefined) {
+    assertNow(seed.lastAt);
+    assertOrder(now, seed.lastAt);
+  }
   if (character.schemaVersion !== 1) {
     throw new RangeError('character schemaVersion must be 1');
   }
@@ -68,10 +80,10 @@ export function createMind(character: Character, now: number): Mind {
   tools.register(clockTool());
   tools.register(jsonKeysTool());
 
-  let appraisal = baselineAppraisal(character.temperament, now);
-  let intention: Intention | undefined;
+  let appraisal = seed === undefined ? baselineAppraisal(character.temperament, now) : copyAppraisal(seed.appraisal);
+  let intention: Intention | undefined = seed?.intention;
   let lastStep: PreparedTurn | undefined;
-  let lastAt = now;
+  let lastAt = seed === undefined ? now : seed.lastAt;
   let lastPrompt = '';
   let seq = 0;
   const pending: InboundText[] = [];
@@ -102,7 +114,15 @@ export function createMind(character: Character, now: number): Mind {
         beliefs: social.list(),
         intention,
         lastStep,
+        lastAt,
       };
+    },
+    restore(next: MindSeed): void {
+      if (!Number.isFinite(next.lastAt)) {
+        throw new RangeError('now must be finite');
+      }
+      appraisal = copyAppraisal(next.appraisal);
+      intention = next.intention;
     },
     facts(limit: number): readonly Fact[] {
       return timeline.recent(limit);
@@ -159,6 +179,7 @@ export function createMind(character: Character, now: number): Mind {
         silenceMs: at - lastAt,
         now: at,
         toolNames: allow,
+        decay: character.emotion.enabled ? character.emotion.decay : 1,
       });
       appraisal = prepared.appraisal;
       intention = prepared.intention;
@@ -220,7 +241,13 @@ export function createMind(character: Character, now: number): Mind {
       assertNow(at);
       const definition = tools.get(name);
       const effect = definition === undefined || definition.readOnly ? 'read' : 'write';
-      const decision = decideTool({ name, effect, allow, approved });
+      const decision = decideTool({
+        name,
+        effect,
+        allow,
+        approved,
+        mood: character.emotion.enabled ? labelAppraisal(appraisal) : 'calm',
+      });
       if (!decision.allowed) {
         note('tool', at, `${name} refused`);
         return { name, decision, output: undefined };
@@ -232,6 +259,15 @@ export function createMind(character: Character, now: number): Mind {
   };
 
   return mind;
+}
+
+function copyAppraisal(state: AppraisalState): AppraisalState {
+  return {
+    valence: state.valence,
+    arousal: state.arousal,
+    dominance: state.dominance,
+    updatedAt: state.updatedAt,
+  };
 }
 
 function assertNow(now: number): void {
@@ -318,6 +354,9 @@ function toolInput(value: JsonValue): string {
     }
     if (typeof json === 'string') {
       return json;
+    }
+    if (json !== undefined) {
+      return JSON.stringify(json);
     }
   }
   return JSON.stringify(value);

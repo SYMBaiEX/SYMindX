@@ -1,9 +1,12 @@
 export { parseCharacter, validateId, type Character } from './character/index.js';
 
 export {
+  appraisalHalfLife,
   baselineAppraisal,
   labelAppraisal,
+  runeTone,
   updateAppraisal,
+  type RuneTone,
   type AppraisalCue,
   type AppraisalState,
   type CueKind,
@@ -53,6 +56,7 @@ export { composeTurn, type PreparedTurn, type TurnInput } from './turn/index.js'
 export {
   createMind,
   type Mind,
+  type MindSeed,
   type MindSnapshot,
   type MindSpeech,
   type ToolOutcome,

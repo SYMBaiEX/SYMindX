@@ -1,0 +1,13 @@
+{
+  "name": "@symindx/orchestration",
+  "version": "0.2.0",
+  "private": true,
+  "description": "SYMindX orchestration: named agents, sessions, group rooms, and the workspace tool contract. Pure modules. A host supplies the model call and file I/O.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  }
+}

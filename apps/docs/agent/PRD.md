@@ -1,6 +1,6 @@
 # 🧠 SYMindX — High-Level Design (System Architecture)
 
-RuneLite and the mind-agents extensions in this design are not part of v2; the library is `packages/agent`.
+The mind library is `packages/agent`. Slack, Twitter, RuneLite, and the provider portals are CLI host extensions in `apps/cli/src/extensions`. The mind does not open the network. Twitter posts through the X API. RuneLite accepts only a loopback plugin socket.
 
 ## 🧭 Purpose
 

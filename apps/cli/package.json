@@ -2,10 +2,13 @@
   "name": "@symindx/cli",
   "version": "1.0.0",
   "private": true,
-  "description": "SYMindX terminal. Runs one in-memory mind from @symindx/agent.",
+  "description": "SYMindX terminal for agents, sessions, group rooms, and workspace coding.",
   "type": "module",
   "scripts": {
     "start": "bun --no-env-file src/main.ts",
-    "eval": "bun --no-env-file src/main.ts eval"
+    "eval": "bun --no-env-file src/main.ts eval",
+    "suite": "bun --no-env-file src/main.ts suite",
+    "swarm": "bun --no-env-file src/main.ts swarm",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
   }
 }

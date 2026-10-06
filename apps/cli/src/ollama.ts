@@ -16,6 +16,12 @@ export interface OllamaReply {
   readonly toolCalls: readonly ToolCall[];
 }
 
+export interface OllamaTool {
+  readonly name: string;
+  readonly description: string;
+  readonly parameters?: JsonValue;
+}
+
 const TOOL_PARAMETERS: Readonly<Record<string, JsonValue>> = {
   'word-count': {
     type: 'object',
@@ -34,6 +40,26 @@ export function ollamaChatUrl(base: string): string {
   if (base.startsWith('/')) {
     return `${base.replace(/\/$/, '')}/api/chat`;
   }
+  return loopbackUrl(base, '/api/chat');
+}
+
+export async function ollamaVersion(base: string, signal: AbortSignal): Promise<string> {
+  const response = await fetch(loopbackUrl(base, '/api/version'), { signal });
+  if (!response.ok) {
+    throw new Error(`Ollama version check failed (${response.status})`);
+  }
+  const payload: unknown = await response.json();
+  if (payload === null || typeof payload !== 'object' || Array.isArray(payload)) {
+    throw new Error('Ollama version payload was not an object');
+  }
+  const version = Reflect.get(payload, 'version');
+  if (typeof version !== 'string' || version.trim().length === 0) {
+    throw new Error('Ollama version payload had no version');
+  }
+  return version;
+}
+
+function loopbackUrl(base: string, pathname: string): string {
   const url = new URL(base);
   const host = url.hostname.toLowerCase();
   if (url.protocol !== 'http:' || !LOOPBACK.has(host)) {
@@ -42,7 +68,7 @@ export function ollamaChatUrl(base: string): string {
   if (url.username || url.password) {
     throw new Error('Ollama URL cannot contain credentials');
   }
-  url.pathname = '/api/chat';
+  url.pathname = pathname;
   url.search = '';
   url.hash = '';
   return url.toString();
@@ -51,9 +77,14 @@ export function ollamaChatUrl(base: string): string {
 export async function ollamaChat(
   base: string,
   messages: readonly OllamaMessage[],
-  tools: readonly { readonly name: string; readonly description: string }[],
+  tools: readonly OllamaTool[],
   signal: AbortSignal,
+  options?: { readonly numPredict?: number },
 ): Promise<OllamaReply> {
+  const numPredict = options?.numPredict ?? 128;
+  if (!Number.isInteger(numPredict) || numPredict < 1 || numPredict > 4096) {
+    throw new Error('num_predict must be from 1 to 4096');
+  }
   const response = await fetch(ollamaChatUrl(base), {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -62,14 +93,14 @@ export async function ollamaChat(
       think: false,
       stream: false,
       keep_alive: '10m',
-      options: { temperature: 0, num_predict: 128 },
+      options: { temperature: 0, num_predict: numPredict },
       messages: messages.map(toWireMessage),
       tools: tools.map((tool) => ({
         type: 'function',
         function: {
           name: tool.name,
           description: tool.description,
-          parameters: TOOL_PARAMETERS[tool.name] ?? { type: 'object', properties: {} },
+          parameters: tool.parameters ?? TOOL_PARAMETERS[tool.name] ?? { type: 'object', properties: {} },
         },
       })),
     }),
